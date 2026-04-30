@@ -12,13 +12,18 @@ export interface GatewayRequest {
   provider: ModelProvider;
   context?: string; // Seitenkontext (z.B. markierter Text)
   customApiKey?: string; // BYO API Key Unterstützung
+  systemPrompt?: string; // Persona/Rollen-Override (z.B. Kodee VPS Sidekick)
 }
 
 // Dies ist deine API-Route Logik (wird im Preview im Client ausgeführt, später Server-Side)
 export async function processAIGatewayRequest(req: GatewayRequest) {
-  const finalPrompt = req.context 
+  const userBlock = req.context
     ? `Hier ist der Inhalt einer Webseite:\n"""\n${req.context}\n"""\n\nFrage/Aufgabe des Nutzers:\n${req.prompt}`
     : req.prompt;
+
+  const finalPrompt = req.systemPrompt
+    ? `${req.systemPrompt}\n\n---\n\n${userBlock}`
+    : userBlock;
 
   console.log(`[AI-Gateway] Routing Anfrage an: ${req.provider}`);
 

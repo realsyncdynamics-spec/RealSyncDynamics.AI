@@ -7,6 +7,9 @@ import {
 import Markdown from 'react-markdown';
 import { processAIGatewayRequest, ModelProvider } from '../../core/ai-gateway/gateway';
 import { KODEE_PERSONA } from './kodee-persona';
+import { ActionRunner, formatActionResult } from './ActionRunner';
+import { listConnections, type VpsConnection } from './connections/api';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 type Msg = { role: 'user' | 'kodee'; text: string; status?: 'loading' | 'error' | 'success' };
 
@@ -42,11 +45,26 @@ export function KodeeView() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [provider, setProvider] = useState<ModelProvider>('gemini');
+  const [connections, setConnections] = useState<VpsConnection[]>([]);
+  const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let cancelled = false;
+    listConnections()
+      .then((rows) => {
+        if (cancelled) return;
+        setConnections(rows);
+        setActiveConnectionId((cur) => cur ?? rows[0]?.id ?? null);
+      })
+      .catch(() => { /* not signed in or no connections — silent for chat-only mode */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const send = async (override?: string) => {
     const text = (override ?? input).trim();
@@ -97,18 +115,27 @@ export function KodeeView() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/kodee/connections"
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors"
-            title="VPS-Verbindungen verwalten"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            Verbindungen
-          </Link>
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Bereit
-          </span>
+          {connections.length > 0 ? (
+            <select
+              value={activeConnectionId ?? ''}
+              onChange={(e) => setActiveConnectionId(e.target.value || null)}
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-slate-100 max-w-[180px] truncate"
+              title="Aktive VPS-Verbindung"
+            >
+              {connections.map((c) => (
+                <option key={c.id} value={c.id}>{c.label} · {c.host}</option>
+              ))}
+            </select>
+          ) : (
+            <Link
+              to="/kodee/connections"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors"
+              title="VPS-Verbindungen verwalten"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Verbindungen
+            </Link>
+          )}
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as ModelProvider)}
@@ -195,7 +222,14 @@ export function KodeeView() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 p-4 bg-white border-t border-slate-200/60">
+      <div className="shrink-0 px-4 pt-3 pb-4 bg-white border-t border-slate-200/60">
+        <ActionRunner
+          connectionId={activeConnectionId}
+          onResult={(action, _args, result) => {
+            const text = formatActionResult(action, result);
+            setMessages((prev) => [...prev, { role: 'kodee', text, status: result.ok ? 'success' : 'error' }]);
+          }}
+        />
         <div className="max-w-3xl mx-auto flex items-end gap-2 bg-slate-50 border border-slate-200/80 rounded-2xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-400 transition-all">
           <textarea
             value={input}

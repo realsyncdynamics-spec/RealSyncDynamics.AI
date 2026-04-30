@@ -1,16 +1,16 @@
-import { 
-  SubscriptionSnapshot, 
-  OrganizationContext, 
-  CurrentUsage, 
+import {
+  SubscriptionSnapshot,
+  TenantContext,
+  CurrentUsage,
   EntitlementDecision,
-  FeatureKey
+  FeatureKey,
 } from './types';
 import { PLAN_CONFIG } from './plan-config';
 
 export function resolveEntitlements(
   subscription: SubscriptionSnapshot,
-  org: OrganizationContext,
-  usage: CurrentUsage
+  tenant: TenantContext,
+  usage: CurrentUsage,
 ): EntitlementDecision {
   const base = PLAN_CONFIG[subscription.planKey];
   
@@ -30,7 +30,7 @@ export function resolveEntitlements(
     features: Object.fromEntries(
       Object.entries(base.features).map(([key, enabled]) => {
         if (!isActive && key !== 'asset.verify') return [key, false];
-        if (key === 'public-sector.mode' && !org.isPublicSector && subscription.planKey !== 'enterprise_public') {
+        if (key === 'public-sector.mode' && !tenant.isPublicSector && subscription.planKey !== 'enterprise_public') {
           return [key, false];
         }
         return [key, enabled];
@@ -39,7 +39,7 @@ export function resolveEntitlements(
     limits: base.limits,
     seatsAllowed,
     overages: {
-      seatsExceeded: seatsAllowed === null ? false : org.memberCount > seatsAllowed,
+      seatsExceeded: seatsAllowed === null ? false : tenant.memberCount > seatsAllowed,
       assetsExceeded:
         base.limits.activeAssets === null ? false : usage.activeAssets > base.limits.activeAssets,
       apiExceeded:

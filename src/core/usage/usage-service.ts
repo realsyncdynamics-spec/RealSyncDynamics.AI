@@ -1,24 +1,23 @@
 import { resolveEntitlements } from '../billing/entitlements';
-import { 
-  OrganizationContext, 
-  SubscriptionSnapshot, 
-  CurrentUsage, 
-  EntitlementDecision 
+import {
+  TenantContext,
+  SubscriptionSnapshot,
+  CurrentUsage,
+  EntitlementDecision,
 } from '../billing/types';
 
 /**
  * Mock Service Layer for resolving entitlements.
  * In a real application, this would fetch data from Supabase/PostgreSQL.
  */
-export async function getEntitlementsForOrganization(organizationId: string): Promise<EntitlementDecision> {
+export async function getEntitlementsForTenant(tenantId: string): Promise<EntitlementDecision> {
   // TODO: Fetch from database (e.g., Supabase)
-  // const org = await db.organizations.findById(organizationId);
-  // const sub = await db.subscriptions.findByOrgId(organizationId);
-  // const usage = await db.usage_counters.getCurrentMonth(organizationId);
-  
-  // Mock Data for demonstration
-  const mockOrg: OrganizationContext = {
-    organizationId,
+  //   const tenant = await db.tenants.findById(tenantId);
+  //   const sub    = await db.subscriptions.findByTenantId(tenantId);
+  //   const usage  = await db.usage_counters.getCurrentMonth(tenantId);
+
+  const mockTenant: TenantContext = {
+    tenantId,
     planKey: 'silver',
     roles: ['admin'],
     memberCount: 2,
@@ -47,6 +46,5 @@ export async function getEntitlementsForOrganization(organizationId: string): Pr
     complianceExportsMonthly: 0,
   };
 
-  // Resolve the single source of truth for entitlements
-  return resolveEntitlements(mockSub, mockOrg, mockUsage);
+  return resolveEntitlements(mockSub, mockTenant, mockUsage);
 }

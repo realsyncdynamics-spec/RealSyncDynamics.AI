@@ -17,7 +17,7 @@ export type SubscriptionStatus =
   | 'incomplete'
   | 'paused';
 
-export type OrgRole =
+export type TenantRole =
   | 'owner'
   | 'admin'
   | 'editor'
@@ -67,10 +67,10 @@ export interface SubscriptionSnapshot {
   addOns: string[];
 }
 
-export interface OrganizationContext {
-  organizationId: string;
+export interface TenantContext {
+  tenantId: string;
   planKey: PlanKey;
-  roles: OrgRole[];
+  roles: TenantRole[];
   memberCount: number;
   isPublicSector: boolean;
 }

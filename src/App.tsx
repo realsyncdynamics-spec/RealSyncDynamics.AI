@@ -6,6 +6,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { CreatorDashboard } from './pages/CreatorDashboard';
+import { KodeeView } from './features/kodee/KodeeView';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<CreatorDashboard />} />
+        <Route path="/kodee" element={<KodeeView />} />
       </Routes>
     </BrowserRouter>
   );

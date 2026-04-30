@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  ShieldCheck, Settings, CreditCard, ChevronDown, 
-  Bot, Sparkles, Send, Paperclip, FileText, 
+  ShieldCheck, Settings, CreditCard, ChevronDown,
+  Bot, Sparkles, Send, Paperclip, FileText,
   LayoutPanelLeft, CheckCircle2, Shield, Plus,
   MessageSquare, FolderKanban, Star, Copy, Save,
-  AlertTriangle, X, Search, Globe, Library, UploadCloud
+  AlertTriangle, X, Search, Globe, Library, UploadCloud,
+  Server
 } from 'lucide-react';
 import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gateway';
 import Markdown from 'react-markdown';
@@ -137,12 +138,18 @@ export function CreatorDashboard() {
               >
                 <ShieldCheck className={`h-4 w-4 ${activeView === 'assets' ? 'text-blue-600' : ''}`} /> C2PA Assets
               </button>
-              <button 
+              <button
                 onClick={() => setActiveView('workflows')}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeView === 'workflows' ? 'bg-slate-200/50 text-slate-900' : 'text-slate-600 hover:bg-slate-200/50 hover:text-slate-900'}`}
               >
                 <FolderKanban className={`h-4 w-4 ${activeView === 'workflows' ? 'text-blue-600' : ''}`} /> Workflows
               </button>
+              <Link
+                to="/kodee"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition-colors"
+              >
+                <Server className="h-4 w-4 text-emerald-600" /> Kodee · VPS Sidekick
+              </Link>
             </nav>
 
             <div className="px-4 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">

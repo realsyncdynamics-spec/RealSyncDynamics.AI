@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Send, Server, ShieldCheck, Globe, Database, FileLock2,
-  Terminal, AlertTriangle, Sparkles, ArrowLeft,
+  Terminal, AlertTriangle, Sparkles, ArrowLeft, Settings2,
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { processAIGatewayRequest, ModelProvider } from '../../core/ai-gateway/gateway';
@@ -97,6 +97,14 @@ export function KodeeView() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            to="/kodee/connections"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors"
+            title="VPS-Verbindungen verwalten"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            Verbindungen
+          </Link>
           <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-100">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Bereit

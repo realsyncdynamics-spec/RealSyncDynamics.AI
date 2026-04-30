@@ -75,13 +75,20 @@ Error codes: `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`,
 
 See `types.ts` for typed argument and response shapes per action.
 
-| Action            | Args                                          | Returns                          |
-| ----------------- | --------------------------------------------- | -------------------------------- |
-| `vps.status`      | `{ units?: string[] }`                        | uptime, load, memory, failed units |
-| `vps.logs.tail`   | `{ unit?, container?, lines?, grep? }`        | log lines (journalctl or docker)  |
-| `vps.disk`        | `{ top_dirs?: number }`                        | df + optional top-N largest dirs  |
-| `vps.dns_check`   | `{ domain, types? }`                          | A/AAAA/etc. records, match-vs-VPS |
-| `vps.tls_check`   | `{ domain?, port? }`                          | issuer, validity window, SAN match |
+| Action                | Args                                                    | Returns                          |
+| --------------------- | ------------------------------------------------------- | -------------------------------- |
+| `vps.status`          | `{ units?: string[] }`                                  | uptime, load, memory, failed units |
+| `vps.logs.tail`       | `{ unit?, container?, lines?, grep? }`                  | log lines (journalctl or docker)  |
+| `vps.disk`            | `{ top_dirs?: number }`                                  | df + optional top-N largest dirs  |
+| `vps.dns_check`       | `{ domain, types? }`                                    | A/AAAA/etc. records, match-vs-VPS |
+| `vps.tls_check`       | `{ domain?, port? }`                                    | issuer, validity window, SAN match |
+| `vps.service.restart` | `{ service, confirm }` — `confirm === service`           | exit code, stdout, stderr        |
+| `vps.compose.up`      | `{ compose_dir, confirm: "UP" }`                        | exit code, stdout, stderr        |
+| `vps.compose.restart` | `{ compose_dir, service?, confirm: "RESTART" }`          | exit code, stdout, stderr        |
+
+Write actions (last three) require the `confirm` token to match the expected
+value — the edge function rejects any mismatch with `FORBIDDEN`. The `compose_dir`
+is validated as an absolute path with no `..` and a restricted character set.
 
 ## Security model
 

@@ -6,6 +6,7 @@ import type {
   ActionArgs, ActionName,
   StatusArgs, LogsTailArgs, DiskArgs, DnsCheckArgs, TlsCheckArgs,
   StatusData, LogsTailData, DiskData, DnsCheckData, TlsCheckData,
+  ServiceRestartArgs, ComposeUpArgs, ComposeRestartArgs, WriteActionData,
   VpsConnectionRow,
 } from './types.ts';
 import { sshExec, shellQuote, SshError } from './ssh.ts';
@@ -27,9 +28,65 @@ export async function dispatch(
     case 'vps.disk':       return await diskAction((args ?? {}) as DiskArgs, ctx);
     case 'vps.dns_check':  return await dnsCheck(args as DnsCheckArgs, ctx.conn);
     case 'vps.tls_check':  return await tlsCheck((args ?? {}) as TlsCheckArgs, ctx.conn);
+
+    case 'vps.service.restart': return await serviceRestart(args as ServiceRestartArgs, ctx);
+    case 'vps.compose.up':      return await composeUp(args as ComposeUpArgs, ctx);
+    case 'vps.compose.restart': return await composeRestart(args as ComposeRestartArgs, ctx);
+
     default:
       throw Object.assign(new SshError('UNKNOWN_ACTION', `unknown action: ${action}`));
   }
+}
+
+// ─── write actions ────────────────────────────────────────────────────────────
+
+async function serviceRestart(args: ServiceRestartArgs, ctx: ActionContext): Promise<WriteActionData> {
+  if (!args.service || typeof args.service !== 'string') {
+    throw new SshError('BAD_REQUEST', 'service is required');
+  }
+  if (args.confirm !== args.service) {
+    throw new SshError('FORBIDDEN', 'confirm must equal the service name');
+  }
+  if (!/^[a-zA-Z0-9._@-]+$/.test(args.service)) {
+    throw new SshError('BAD_REQUEST', 'invalid service name');
+  }
+  const cmd = `sudo -n systemctl restart ${shellQuote(args.service)} && sudo -n systemctl is-active ${shellQuote(args.service)}`;
+  return await runWrite(cmd, ctx);
+}
+
+async function composeUp(args: ComposeUpArgs, ctx: ActionContext): Promise<WriteActionData> {
+  validateComposeDir(args.compose_dir);
+  if (args.confirm !== 'UP') {
+    throw new SshError('FORBIDDEN', 'confirm must equal "UP"');
+  }
+  const cmd = `cd ${shellQuote(args.compose_dir)} && (docker compose up -d 2>&1 || docker-compose up -d 2>&1)`;
+  return await runWrite(cmd, ctx, { timeoutMs: 120_000 });
+}
+
+async function composeRestart(args: ComposeRestartArgs, ctx: ActionContext): Promise<WriteActionData> {
+  validateComposeDir(args.compose_dir);
+  if (args.confirm !== 'RESTART') {
+    throw new SshError('FORBIDDEN', 'confirm must equal "RESTART"');
+  }
+  const svc = args.service ? ' ' + shellQuote(args.service) : '';
+  const cmd = `cd ${shellQuote(args.compose_dir)} && (docker compose restart${svc} 2>&1 || docker-compose restart${svc} 2>&1)`;
+  return await runWrite(cmd, ctx, { timeoutMs: 60_000 });
+}
+
+function validateComposeDir(dir: string): void {
+  if (!dir || typeof dir !== 'string') throw new SshError('BAD_REQUEST', 'compose_dir is required');
+  if (!dir.startsWith('/')) throw new SshError('BAD_REQUEST', 'compose_dir must be an absolute path');
+  if (dir.includes('..')) throw new SshError('BAD_REQUEST', 'compose_dir must not contain ".."');
+  if (!/^[\w\/.@+-]+$/.test(dir)) throw new SshError('BAD_REQUEST', 'compose_dir contains invalid characters');
+}
+
+async function runWrite(
+  command: string,
+  ctx: ActionContext,
+  opts?: { timeoutMs?: number },
+): Promise<WriteActionData> {
+  const { stdout, stderr, exitCode } = await sshExec(ctx.conn, ctx.privateKey, command, opts);
+  return { command, exit_code: exitCode, stdout, stderr };
 }
 
 async function statusAction(args: StatusArgs, ctx: ActionContext): Promise<StatusData> {

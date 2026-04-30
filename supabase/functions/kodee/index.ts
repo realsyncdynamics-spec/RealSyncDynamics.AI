@@ -27,6 +27,7 @@ import {
 
 const ALLOWED_ACTIONS: ActionName[] = [
   'vps.status', 'vps.logs.tail', 'vps.disk', 'vps.dns_check', 'vps.tls_check',
+  'vps.service.restart', 'vps.compose.up', 'vps.compose.restart',
 ];
 
 const corsHeaders = {
@@ -90,9 +91,7 @@ Deno.serve(async (req) => {
 
   // 4. Decrypt private key (only required for SSH-backed actions)
   let privateKey = '';
-  const needsSsh = body.action === 'vps.status'
-    || body.action === 'vps.logs.tail'
-    || body.action === 'vps.disk';
+  const needsSsh = body.action !== 'vps.dns_check' && body.action !== 'vps.tls_check';
   if (needsSsh) {
     const { data: keyRow, error: keyErr } = await adminClient
       .from('vps_ssh_keys')

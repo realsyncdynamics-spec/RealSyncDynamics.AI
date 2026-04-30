@@ -8,7 +8,22 @@ export type ActionName =
   | 'vps.logs.tail'
   | 'vps.disk'
   | 'vps.dns_check'
-  | 'vps.tls_check';
+  | 'vps.tls_check'
+  // v2 — write actions, require an explicit confirm token.
+  | 'vps.service.restart'
+  | 'vps.compose.up'
+  | 'vps.compose.restart';
+
+/** Write actions that mutate VPS state. They must include a matching `confirm` token. */
+export const WRITE_ACTIONS: readonly ActionName[] = [
+  'vps.service.restart',
+  'vps.compose.up',
+  'vps.compose.restart',
+] as const;
+
+export function isWriteAction(a: ActionName): boolean {
+  return (WRITE_ACTIONS as readonly string[]).includes(a);
+}
 
 export interface KodeeRequest {
   v?: number;
@@ -22,7 +37,32 @@ export type ActionArgs =
   | LogsTailArgs
   | DiskArgs
   | DnsCheckArgs
-  | TlsCheckArgs;
+  | TlsCheckArgs
+  | ServiceRestartArgs
+  | ComposeUpArgs
+  | ComposeRestartArgs;
+
+export interface ServiceRestartArgs {
+  /** systemd unit, e.g. "nginx" or "myapp.service" */
+  service: string;
+  /** Must match the service name to confirm intent. */
+  confirm: string;
+}
+
+export interface ComposeUpArgs {
+  /** absolute path to the directory holding docker-compose.yml */
+  compose_dir: string;
+  /** Must equal "UP" to confirm intent. */
+  confirm: string;
+}
+
+export interface ComposeRestartArgs {
+  compose_dir: string;
+  /** Optional service name in the compose file; restarts all if omitted. */
+  service?: string;
+  /** Must equal "RESTART" to confirm intent. */
+  confirm: string;
+}
 
 export interface StatusArgs {
   /** Optional: list of systemd units whose `is-failed` should be checked. */
@@ -128,6 +168,13 @@ export interface TlsCheckData {
   days_remaining: number | null;
   san: string[];
   matches_domain: boolean;
+}
+
+export interface WriteActionData {
+  command: string;
+  exit_code: number | null;
+  stdout: string;
+  stderr: string;
 }
 
 // DB row shape used across modules

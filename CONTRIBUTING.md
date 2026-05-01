@@ -46,6 +46,12 @@ supabase db reset
    Need to fix something? Add a new migration that ALTERs the offending
    object. CI blocks PRs that modify already-merged migrations.
 
+   **Hotfix exception:** if a migration on `main` has never applied
+   successfully anywhere (e.g. a SQL error caught by CI on its very first
+   run), the file may be edited in place. Mark the PR title with
+   `[hotfix]` to bypass the append-only check. Use sparingly — once the
+   migration runs cleanly anywhere, this exit door closes.
+
 2. **Reset before push.** Always run `supabase db reset` locally before
    opening a PR. CI runs the same on every PR — but catching it locally
    saves a round-trip.

@@ -21,8 +21,15 @@ CREATE TABLE IF NOT EXISTS public.usage_events (
 CREATE INDEX IF NOT EXISTS idx_usage_events_tenant_key
     ON public.usage_events(tenant_id, entitlement_key, created_at DESC);
 
+-- date_trunc on timestamptz is STABLE (timezone-dependent) and Postgres rejects
+-- it in index expressions. Cast to a TZ-fixed timestamp first to make the call
+-- IMMUTABLE; semantics unchanged because every read site treats months in UTC.
 CREATE INDEX IF NOT EXISTS idx_usage_events_tenant_period
-    ON public.usage_events(tenant_id, entitlement_key, (date_trunc('month', created_at)));
+    ON public.usage_events(
+        tenant_id,
+        entitlement_key,
+        (date_trunc('month', (created_at AT TIME ZONE 'UTC')))
+    );
 
 -- 2. Aggregated monthly totals
 CREATE TABLE IF NOT EXISTS public.usage_totals (

@@ -6,11 +6,13 @@
 // Anthropic:  prompt-caching enabled on the system prompt so repeated tool
 //             invocations only pay full input price for the user prompt.
 // Google:     uses @google/genai (already in the repo, mirrors gateway.ts).
-// OpenAI:     not implemented in v1 — throws PROVIDER_NOT_IMPLEMENTED so the
-//             surface is uniform and callers see a clear error.
+// OpenAI:     uses openai SDK (Chat Completions). Token counts come back from
+//             response.usage so cost tracking works the same way as the other
+//             providers.
 
 import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
+import OpenAI from 'npm:openai@4.77.0';
 
 export type ProviderId = 'anthropic' | 'google' | 'openai';
 
@@ -42,7 +44,7 @@ export async function callProvider(req: ProviderRequest): Promise<ProviderResult
   switch (req.provider) {
     case 'anthropic': return await callAnthropic(req);
     case 'google':    return await callGoogle(req);
-    case 'openai':    throw new ProviderError('OpenAI provider not implemented in v1', 'PROVIDER_NOT_IMPLEMENTED');
+    case 'openai':    return await callOpenAI(req);
     default:
       throw new ProviderError(`unsupported provider: ${req.provider}`, 'PROVIDER_UNSUPPORTED');
   }
@@ -112,5 +114,39 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
     inputTokens: usage.promptTokenCount ?? 0,
     outputTokens: usage.candidatesTokenCount ?? 0,
     cachedTokens: usage.cachedContentTokenCount ?? 0,
+  };
+}
+
+// ─── OpenAI (Chat Completions) ──────────────────────────────────────────────
+async function callOpenAI(req: ProviderRequest): Promise<ProviderResult> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new ProviderError('OPENAI_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+
+  const client = new OpenAI({ apiKey });
+
+  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
+  messages.push({ role: 'user', content: req.userPrompt });
+
+  const resp = await client.chat.completions.create({
+    model: req.modelId,
+    max_tokens: req.maxTokens,
+    temperature: req.temperature,
+    messages,
+  });
+
+  const text = resp.choices[0]?.message?.content ?? '';
+  const usage = resp.usage;
+
+  // OpenAI exposes cached prompt tokens via prompt_tokens_details.cached_tokens
+  // (when prompt caching is in use; safe-default to 0 otherwise).
+  // deno-lint-ignore no-explicit-any
+  const cached = (usage as any)?.prompt_tokens_details?.cached_tokens ?? 0;
+
+  return {
+    text,
+    inputTokens: usage?.prompt_tokens ?? 0,
+    outputTokens: usage?.completion_tokens ?? 0,
+    cachedTokens: cached,
   };
 }

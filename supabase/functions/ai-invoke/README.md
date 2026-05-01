@@ -8,6 +8,7 @@ gating against `limit.ai_*_monthly`, and per-call audit + cost logging.
 ```bash
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase secrets set GEMINI_API_KEY=AIza...        # optional, for google tools
+supabase secrets set OPENAI_API_KEY=sk-...         # optional, for openai tools
 supabase functions deploy ai-invoke
 ```
 
@@ -45,9 +46,10 @@ Content-Type: application/json
 - **402 QUOTA_EXCEEDED** — call or token quota would be exceeded.
 - **403 FORBIDDEN** — not a tenant member, or `ai.tool.<key>` not entitled.
 - **404 NOT_FOUND** — unknown or disabled tool.
-- **501 PROVIDER_NOT_IMPLEMENTED** — e.g. `openai` in v1.
+- **501 PROVIDER_NOT_IMPLEMENTED** — reserved for future providers.
 - **502 PROVIDER_ERROR** — model API failed.
-- **503 PROVIDER_NOT_CONFIGURED** — env key missing.
+- **503 PROVIDER_NOT_CONFIGURED** — env key missing for the tool's provider
+  (`ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY`).
 
 ## Pipeline
 

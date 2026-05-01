@@ -4,45 +4,53 @@
 # One-time setup für die EU-lokale Ollama-Instanz auf dem Kodee-VPS.
 # Idempotent: sicher mehrfach auszuführen.
 #
+# Strategie: keine eigene Subdomain, kein eigenes TLS-Cert. Stattdessen wird
+# die existierende Apex-Domain realsyncdynamicsai.de (cert + nginx schon da)
+# um einen Bearer-geschützten Pfad /_kodee/ollama erweitert. Vorteil: zero DNS,
+# sofort live nach nginx-Reload.
+#
 # Was das Skript macht:
 #   1. Installiert Ollama (offizielles install.sh) und pinnt es auf 127.0.0.1
 #   2. Pullt das Default-Modell (qwen2.5:7b-instruct-q4_K_M, ~4.7 GB)
 #   3. Generiert einen Bearer-Token (oder nutzt den übergebenen)
-#   4. Schreibt den nginx-Reverse-Proxy mit Bearer-Auth nach
-#      /etc/nginx/sites-available/ und enabled ihn
-#   5. certbot --nginx für TLS-Cert (Let's Encrypt)
-#   6. Health-Check
+#   4. Schreibt /etc/nginx/snippets/kodee-ollama.conf mit eingesetztem Token
+#   5. Injiziert (falls nötig) die include-Zeile in den existierenden Apex-Vhost
+#   6. nginx -t + reload
+#   7. Health-Check + Inference-Smoke-Test gegen den öffentlichen URL
 #
 # Voraussetzungen:
 #   - Ubuntu/Debian, root oder sudo
-#   - DNS-A-Record für $OLLAMA_DOMAIN zeigt schon auf diesen VPS
-#   - nginx + certbot bereits installiert (war bei realsyncdynamicsai.de
-#     der Fall — falls nicht: apt install nginx certbot python3-certbot-nginx)
+#   - nginx läuft mit Apex-Vhost realsyncdynamicsai.de (war ja schon der Fall)
+#   - openssl (für Token-Generierung)
 #
-# Verwendung (auf dem VPS):
-#   sudo OLLAMA_DOMAIN=ollama.realsyncdynamicsai.de \
-#        OLLAMA_BEARER_TOKEN="$(openssl rand -hex 32)" \
-#        bash install-ollama-vps.sh
+# Verwendung (auf dem VPS, im Repo-Root):
+#   sudo OLLAMA_BEARER_TOKEN="$(openssl rand -hex 32)" bash scripts/install-ollama-vps.sh
 #
 # Token wird am Ende ausgegeben — abspeichern, ist später nur noch in
-# /etc/nginx/sites-available/... lesbar.
+# /etc/nginx/snippets/kodee-ollama.conf lesbar (chmod 600).
 
 set -euo pipefail
 
 # ─── Config ─────────────────────────────────────────────────────────────────
-OLLAMA_DOMAIN="${OLLAMA_DOMAIN:-ollama.realsyncdynamicsai.de}"
+APEX_DOMAIN="${APEX_DOMAIN:-realsyncdynamicsai.de}"
+OLLAMA_PATH="${OLLAMA_PATH:-/_kodee/ollama}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b-instruct-q4_K_M}"
 OLLAMA_BEARER_TOKEN="${OLLAMA_BEARER_TOKEN:-$(openssl rand -hex 32)}"
-CERTBOT_EMAIL="${CERTBOT_EMAIL:-admin@realsyncdynamicsai.de}"
 
-NGINX_CONF_SRC="$(dirname "$(readlink -f "$0")")/../deploy/nginx/ollama.realsyncdynamicsai.de.conf"
-NGINX_CONF_DST="/etc/nginx/sites-available/ollama.realsyncdynamicsai.de.conf"
+REPO_ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+SNIPPET_SRC="$REPO_ROOT/deploy/nginx/snippets/kodee-ollama.conf"
+SNIPPET_DST="/etc/nginx/snippets/kodee-ollama.conf"
+APEX_VHOST="/etc/nginx/sites-available/${APEX_DOMAIN}.conf"
+INCLUDE_LINE="include /etc/nginx/snippets/kodee-ollama.conf;"
+
 SYSTEMD_DROPIN_DIR="/etc/systemd/system/ollama.service.d"
 
 log() { echo "[ollama-setup] $*"; }
 fail() { echo "[ollama-setup] ERROR: $*" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || fail "Bitte als root oder mit sudo ausführen."
+[ -f "$SNIPPET_SRC" ] || fail "Snippet-Template nicht gefunden: $SNIPPET_SRC (im Repo-Root ausführen)"
+[ -f "$APEX_VHOST" ]  || fail "Apex-Vhost nicht gefunden: $APEX_VHOST"
 
 # ─── 1. Ollama installieren ─────────────────────────────────────────────────
 if ! command -v ollama >/dev/null 2>&1; then
@@ -84,43 +92,46 @@ else
     ollama pull "$OLLAMA_MODEL"
 fi
 
-# ─── 4. nginx vhost ─────────────────────────────────────────────────────────
-[ -f "$NGINX_CONF_SRC" ] || fail "nginx-Template nicht gefunden: $NGINX_CONF_SRC"
+# ─── 4. nginx-Snippet schreiben (mit Bearer eingesetzt) ─────────────────────
+log "Schreibe nginx-Snippet nach $SNIPPET_DST…"
+mkdir -p "$(dirname "$SNIPPET_DST")"
+sed "s|__OLLAMA_BEARER_TOKEN__|$OLLAMA_BEARER_TOKEN|g" "$SNIPPET_SRC" > "$SNIPPET_DST"
+chmod 600 "$SNIPPET_DST"     # Token nicht world-readable
 
-log "Schreibe nginx-Vhost nach $NGINX_CONF_DST mit Bearer-Token…"
-sed "s|__OLLAMA_BEARER_TOKEN__|$OLLAMA_BEARER_TOKEN|g" "$NGINX_CONF_SRC" \
-    | sed "s|ollama.realsyncdynamicsai.de|$OLLAMA_DOMAIN|g" \
-    > "$NGINX_CONF_DST"
-chmod 600 "$NGINX_CONF_DST"  # Token nicht world-readable
-
-ln -sf "$NGINX_CONF_DST" "/etc/nginx/sites-enabled/$(basename "$NGINX_CONF_DST")"
-
-log "nginx-Konfig validieren…"
-nginx -t || fail "nginx -t fehlgeschlagen, sieh Output oben"
-systemctl reload nginx
-
-# ─── 5. TLS via certbot ─────────────────────────────────────────────────────
-if [ ! -f "/etc/letsencrypt/live/$OLLAMA_DOMAIN/fullchain.pem" ]; then
-    log "Hole TLS-Zertifikat für $OLLAMA_DOMAIN via certbot…"
-    certbot --nginx -d "$OLLAMA_DOMAIN" \
-        --non-interactive --agree-tos -m "$CERTBOT_EMAIL" --redirect
+# ─── 5. include-Zeile in Apex-Vhost injizieren (falls fehlt) ────────────────
+if grep -qF "$INCLUDE_LINE" "$APEX_VHOST"; then
+    log "include-Zeile bereits im Apex-Vhost vorhanden."
 else
-    log "TLS-Zertifikat existiert bereits."
+    log "Injiziere include-Zeile in $APEX_VHOST…"
+    # Backup
+    cp "$APEX_VHOST" "${APEX_VHOST}.bak-$(date +%s)"
+    # Direkt nach 'index index.html;' im 443-Block einfügen.
+    # awk weil sed kein zuverlässiges 'after first match' bei Multi-Line hat.
+    awk -v line="    $INCLUDE_LINE" '
+        /index index.html;/ && !done { print; print ""; print "    # Kodee Ollama-Proxy"; print line; done=1; next }
+        { print }
+    ' "$APEX_VHOST" > "${APEX_VHOST}.new"
+    mv "${APEX_VHOST}.new" "$APEX_VHOST"
 fi
 
-# ─── 6. Health-Check ────────────────────────────────────────────────────────
-log "Health-Check (extern, mit Bearer-Token)…"
+log "nginx-Konfig validieren…"
+nginx -t || fail "nginx -t fehlgeschlagen"
+systemctl reload nginx
+
+# ─── 6. Health-Check (extern, mit Bearer) ───────────────────────────────────
+ENDPOINT_BASE="https://${APEX_DOMAIN}${OLLAMA_PATH}"
+log "Health-Check $ENDPOINT_BASE/ mit Bearer…"
 HEALTH=$(curl -sf -o /dev/null -w '%{http_code}' \
     -H "Authorization: Bearer $OLLAMA_BEARER_TOKEN" \
-    "https://$OLLAMA_DOMAIN/" || true)
+    "$ENDPOINT_BASE/" || true)
 [ "$HEALTH" = "200" ] || fail "Health-Check fehlgeschlagen (HTTP $HEALTH)"
 
-UNAUTH=$(curl -sf -o /dev/null -w '%{http_code}' "https://$OLLAMA_DOMAIN/" || true)
+UNAUTH=$(curl -s -o /dev/null -w '%{http_code}' "$ENDPOINT_BASE/" || true)
 [ "$UNAUTH" = "401" ] || fail "Auth-Check fehlgeschlagen — ohne Bearer kam HTTP $UNAUTH zurück (erwartet 401)"
 
 # ─── 7. Inference Smoke-Test ────────────────────────────────────────────────
 log "Smoke-Test einer Inferenz (kann 30-60 Sek dauern)…"
-SMOKE=$(curl -sf -X POST "https://$OLLAMA_DOMAIN/api/chat" \
+SMOKE=$(curl -sf --max-time 180 -X POST "$ENDPOINT_BASE/api/chat" \
     -H "Authorization: Bearer $OLLAMA_BEARER_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"model\":\"$OLLAMA_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"Sag nur: ok\"}],\"stream\":false}" \
@@ -134,16 +145,16 @@ cat <<EOF
 ╔══════════════════════════════════════════════════════════════════════╗
 ║ OLLAMA-VPS-SETUP ABGESCHLOSSEN                                       ║
 ╠══════════════════════════════════════════════════════════════════════╣
-║ Endpoint:  https://$OLLAMA_DOMAIN
+║ Endpoint:  $ENDPOINT_BASE
 ║ Modell:    $OLLAMA_MODEL
 ║ Bearer:    $OLLAMA_BEARER_TOKEN
 ╚══════════════════════════════════════════════════════════════════════╝
 
 Setze in Supabase Edge-Function-Secrets:
 
-  OLLAMA_URL        = https://$OLLAMA_DOMAIN
+  OLLAMA_URL        = $ENDPOINT_BASE
   OLLAMA_AUTH_TOKEN = $OLLAMA_BEARER_TOKEN
 
-Token JETZT abspeichern — er steht nur in /etc/nginx/sites-available/$(basename "$NGINX_CONF_DST")
+Token JETZT abspeichern — er steht nur noch in $SNIPPET_DST (chmod 600)
 und ist sonst nicht mehr abrufbar.
 EOF

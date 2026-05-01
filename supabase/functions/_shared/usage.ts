@@ -85,6 +85,31 @@ async function loadLimits(
   };
 }
 
+/**
+ * Record a usage delta without checking limits.
+ *
+ * Use this AFTER an external resource (LLM call, third-party API) has been
+ * paid for, when refusing to log would silently lose the usage. The DB trigger
+ * still keeps usage_totals correct; consumers can react to over-limit on the
+ * next read.
+ */
+export async function recordUsage(
+  admin: SupabaseClient,
+  tenantId: string,
+  entitlementKey: string,
+  delta = 1,
+  metadata: Record<string, unknown> = {},
+): Promise<void> {
+  if (delta === 0) return;
+  const { error } = await admin.from('usage_events').insert({
+    tenant_id: tenantId,
+    entitlement_key: entitlementKey,
+    delta,
+    metadata,
+  });
+  if (error) throw new UsageError(error.message, 'INTERNAL');
+}
+
 export async function consumeUsage(
   admin: SupabaseClient,
   tenantId: string,

@@ -17,12 +17,12 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { dispatch } from './actions.ts';
 import { decryptPrivateKey } from './secrets.ts';
+import { loadConnectionForUser } from '../_shared/connections.ts';
 import {
   API_VERSION,
   type ActionName,
   type KodeeRequest,
   type KodeeResponse,
-  type VpsConnectionRow,
 } from './types.ts';
 
 const ALLOWED_ACTIONS: ActionName[] = [
@@ -79,15 +79,8 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const { data: conn, error: connErr } = await adminClient
-    .from('vps_connections')
-    .select('*')
-    .eq('id', body.connection_id)
-    .eq('owner_id', userId)
-    .maybeSingle<VpsConnectionRow>();
-
-  if (connErr) return jsonError(500, 'INTERNAL', connErr.message, undefined, start, body.action);
-  if (!conn)   return jsonError(404, 'NOT_FOUND', 'connection not found', undefined, start, body.action);
+  const conn = await loadConnectionForUser(adminClient, userId, body.connection_id);
+  if (!conn) return jsonError(404, 'NOT_FOUND', 'connection not found', undefined, start, body.action);
 
   // 4. Decrypt private key (only required for SSH-backed actions)
   let privateKey = '';

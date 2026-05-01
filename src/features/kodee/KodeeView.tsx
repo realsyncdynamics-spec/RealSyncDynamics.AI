@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Send, Server, ShieldCheck, Globe, Database, FileLock2,
-  Terminal, AlertTriangle, Sparkles, ArrowLeft, Settings2,
+  Terminal, AlertTriangle, Sparkles, ArrowLeft, Settings2, Wand2,
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { processAIGatewayRequest, ModelProvider } from '../../core/ai-gateway/gateway';
@@ -10,6 +10,8 @@ import { KODEE_PERSONA } from './kodee-persona';
 import { ActionRunner, formatActionResult } from './ActionRunner';
 import { listConnections, type VpsConnection } from './connections/api';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import { runDiagnose } from './diagnose';
+import { useTenant } from '../../core/access/TenantProvider';
 
 type Msg = { role: 'user' | 'kodee'; text: string; status?: 'loading' | 'error' | 'success' };
 
@@ -47,7 +49,9 @@ export function KodeeView() {
   const [provider, setProvider] = useState<ModelProvider>('gemini');
   const [connections, setConnections] = useState<VpsConnection[]>([]);
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(null);
+  const [diagnosing, setDiagnosing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { activeTenantId, hasFeature } = useTenant();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -230,6 +234,34 @@ export function KodeeView() {
             setMessages((prev) => [...prev, { role: 'kodee', text, status: result.ok ? 'success' : 'error' }]);
           }}
         />
+        {activeConnectionId && activeTenantId && hasFeature('ai.tool.vps_status') && (
+          <div className="max-w-3xl mx-auto w-full mb-2">
+            <button
+              type="button"
+              disabled={diagnosing}
+              onClick={async () => {
+                setDiagnosing(true);
+                setMessages((prev) => [...prev, { role: 'kodee', text: '', status: 'loading' }]);
+                try {
+                  const r = await runDiagnose(activeTenantId, activeConnectionId);
+                  const text = r.ok && r.diagnosis
+                    ? `**🩺 AI-Diagnose** _(${r.duration_ms} ms · $${r.cost_usd?.toFixed(4)} · ${r.tokens?.input ?? 0}+${r.tokens?.output ?? 0} tk${r.tokens?.cached ? `, ${r.tokens.cached} cached` : ''})_\n\n${r.diagnosis}`
+                    : `**❌ Diagnose** \`${r.error?.code ?? 'ERROR'}\`: ${r.error?.message ?? 'unbekannter Fehler'}`;
+                  setMessages((prev) => [
+                    ...prev.slice(0, -1),
+                    { role: 'kodee', text, status: r.ok ? 'success' : 'error' },
+                  ]);
+                } finally {
+                  setDiagnosing(false);
+                }
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg shadow-sm disabled:opacity-50 transition-all"
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              {diagnosing ? 'Diagnose läuft…' : 'AI-Diagnose ausführen'}
+            </button>
+          </div>
+        )}
         <div className="max-w-3xl mx-auto flex items-end gap-2 bg-slate-50 border border-slate-200/80 rounded-2xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-400 transition-all">
           <textarea
             value={input}

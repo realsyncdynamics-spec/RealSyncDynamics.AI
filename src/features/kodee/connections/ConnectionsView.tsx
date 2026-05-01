@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Server, Plus, Trash2, Globe, KeyRound, Loader2,
-  AlertTriangle, CheckCircle2, X,
+  AlertTriangle, CheckCircle2, X, Users,
 } from 'lucide-react';
 import { AuthGate } from './AuthGate';
 import {
   listConnections, createConnection, deleteConnection,
   type VpsConnection, type CreateConnectionInput,
 } from './api';
+import { useTenant } from '../../../core/access/TenantProvider';
 
 export function ConnectionsView() {
   return <AuthGate>{() => <ConnectionsInner />}</AuthGate>;
@@ -111,8 +112,13 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
 }
 
 function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: () => void }) {
+  const { tenants } = useTenant();
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
+
+  const tenantLabel = conn.tenant_id
+    ? tenants.find((t) => t.tenantId === conn.tenant_id)?.name ?? '(unbekannt)'
+    : null;
 
   const remove = async () => {
     setBusy(true);
@@ -126,7 +132,18 @@ function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: ()
         <Globe className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-slate-900 truncate">{conn.label}</div>
+        <div className="flex items-center gap-2">
+          <div className="font-semibold text-slate-900 truncate">{conn.label}</div>
+          {tenantLabel ? (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+              <Users className="h-2.5 w-2.5" /> {tenantLabel}
+            </span>
+          ) : (
+            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold border border-slate-200">
+              persönlich
+            </span>
+          )}
+        </div>
         <div className="text-xs text-slate-500 truncate font-mono">
           {conn.username}@{conn.host}:{conn.port}
         </div>
@@ -166,8 +183,10 @@ function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: ()
 }
 
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const { tenants, activeTenantId } = useTenant();
   const [form, setForm] = useState<CreateConnectionInput>({
     label: '', host: '', port: 22, username: '', private_key: '',
+    tenant_id: activeTenantId,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -239,6 +258,21 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               disabled={busy}
             />
           </Field>
+          {tenants.length > 0 && (
+            <Field label="Sichtbarkeit" hint="Persönlich = nur du. Tenant = jedes Mitglied darf Aktionen ausführen.">
+              <select
+                value={form.tenant_id ?? ''}
+                onChange={(e) => setForm({ ...form, tenant_id: e.target.value || null })}
+                className={inputCls}
+                disabled={busy}
+              >
+                <option value="">Persönlich (nur ich)</option>
+                {tenants.map((t) => (
+                  <option key={t.tenantId} value={t.tenantId}>Tenant: {t.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Privater SSH-Key" hint="OpenSSH-Format. Wird verschlüsselt gespeichert.">
             <textarea
               required

@@ -181,6 +181,7 @@ export interface WriteActionData {
 export interface VpsConnectionRow {
   id: string;
   owner_id: string;
+  tenant_id: string | null;
   label: string;
   host: string;
   port: number;

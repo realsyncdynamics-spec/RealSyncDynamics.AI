@@ -96,24 +96,24 @@ export function KodeeView() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-50 text-slate-800 overflow-hidden">
+    <div className="flex flex-col h-screen w-screen bg-obsidian-950 text-titanium-100 overflow-hidden">
       {/* Header */}
-      <header className="h-14 shrink-0 border-b border-slate-200/60 bg-white flex items-center justify-between px-4">
+      <header className="h-14 shrink-0 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Link
             to="/dashboard"
-            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors"
+            className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 transition-colors"
             aria-label="Zurück zum Dashboard"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
               <Server className="h-4 w-4 text-white" />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-sm tracking-tight text-slate-900">Kodee</div>
-              <div className="text-[11px] text-slate-500 font-medium">Dein VPS-Sidekick</div>
+              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Kodee</div>
+              <div className="text-[11px] text-titanium-400 font-medium">Dein VPS-Sidekick</div>
             </div>
           </div>
         </div>
@@ -123,7 +123,7 @@ export function KodeeView() {
             <select
               value={activeConnectionId ?? ''}
               onChange={(e) => setActiveConnectionId(e.target.value || null)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-slate-100 max-w-[180px] truncate"
+              className="bg-obsidian-950 border border-titanium-900 text-titanium-200 text-xs rounded-none px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-obsidian-800 max-w-[180px] truncate"
               title="Aktive VPS-Verbindung"
             >
               {connections.map((c) => (
@@ -133,7 +133,7 @@ export function KodeeView() {
           ) : (
             <Link
               to="/kodee/connections"
-              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-titanium-300 bg-obsidian-950 hover:bg-obsidian-800 border border-titanium-900 rounded-none transition-colors"
               title="VPS-Verbindungen verwalten"
             >
               <Settings2 className="h-3.5 w-3.5" />
@@ -143,7 +143,7 @@ export function KodeeView() {
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as ModelProvider)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-slate-100"
+            className="bg-obsidian-950 border border-titanium-900 text-titanium-200 text-xs rounded-none px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-obsidian-800"
           >
             <option value="gemini">Gemini 3.1 Pro</option>
             <option value="claude">Claude 4.6</option>
@@ -156,13 +156,13 @@ export function KodeeView() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         {messages.length === 0 ? (
           <div className="max-w-2xl mx-auto flex flex-col items-center text-center pt-8">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-5">
+            <div className="w-14 h-14 rounded-none bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-5">
               <Sparkles className="h-7 w-7 text-white" />
             </div>
-            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 mb-2">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-titanium-50 mb-2">
               Hi, ich bin Kodee 👋
             </h1>
-            <p className="text-slate-500 leading-relaxed max-w-md">
+            <p className="text-titanium-400 leading-relaxed max-w-md">
               Dein persönlicher VPS-Sidekick. Ich helfe beim Einrichten, Debuggen, Logs lesen,
               Domains, SSL, Backups – frag einfach.
             </p>
@@ -172,12 +172,12 @@ export function KodeeView() {
                 <button
                   key={label}
                   onClick={() => send(prompt)}
-                  className="flex items-center gap-3 p-3.5 bg-white border border-slate-200/80 rounded-xl hover:border-emerald-400 hover:shadow-md transition-all text-left"
+                  className="flex items-center gap-3 p-3.5 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-emerald-400 hover:shadow-md transition-all text-left"
                 >
-                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+                  <div className="p-2 bg-emerald-950/40 text-emerald-400 rounded-none shrink-0">
                     <Icon className="h-4 w-4" />
                   </div>
-                  <span className="font-semibold text-slate-800 text-sm">{label}</span>
+                  <span className="font-semibold text-titanium-100 text-sm">{label}</span>
                 </button>
               ))}
             </div>
@@ -187,7 +187,7 @@ export function KodeeView() {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.role === 'kodee' && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 mr-3 shadow-sm mt-1">
+                  <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 mr-3 shadow-sm mt-1">
                     <Server className="h-4 w-4" />
                   </div>
                 )}
@@ -195,26 +195,26 @@ export function KodeeView() {
                 <div
                   className={
                     m.role === 'user'
-                      ? 'max-w-[85%] bg-slate-900 text-white px-4 py-2.5 rounded-2xl rounded-tr-sm text-[15px] shadow-sm whitespace-pre-wrap'
+                      ? 'max-w-[85%] bg-obsidian-950 text-white px-4 py-2.5 rounded-none rounded-tr-sm text-[15px] shadow-sm whitespace-pre-wrap'
                       : 'max-w-[85%] w-full'
                   }
                 >
                   {m.status === 'loading' ? (
-                    <div className="flex items-center gap-2 text-slate-400 py-1.5">
+                    <div className="flex items-center gap-2 text-titanium-500 py-1.5">
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />
                       <span className="text-sm font-medium ml-1">Kodee tippt…</span>
                     </div>
                   ) : m.status === 'error' ? (
-                    <div className="bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl flex items-start gap-2.5">
+                    <div className="bg-red-950/50 border border-red-900 text-red-300 px-4 py-3 rounded-none flex items-start gap-2.5">
                       <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                       <span className="text-sm">{m.text}</span>
                     </div>
                   ) : m.role === 'user' ? (
                     m.text
                   ) : (
-                    <div className="prose prose-slate prose-sm max-w-none prose-headings:font-display prose-headings:tracking-tight prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-code:text-emerald-700 prose-code:bg-emerald-50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+                    <div className="prose prose-slate prose-sm max-w-none prose-headings:font-display prose-headings:tracking-tight prose-pre:bg-obsidian-950 prose-pre:text-titanium-100 prose-code:text-emerald-300 prose-code:bg-emerald-950/40 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
                       <Markdown>{m.text}</Markdown>
                     </div>
                   )}
@@ -226,7 +226,7 @@ export function KodeeView() {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 px-4 pt-3 pb-4 bg-white border-t border-slate-200/60">
+      <div className="shrink-0 px-4 pt-3 pb-4 bg-obsidian-900 border-t border-titanium-900">
         <ActionRunner
           connectionId={activeConnectionId}
           onResult={(action, _args, result) => {
@@ -255,14 +255,14 @@ export function KodeeView() {
                   setDiagnosing(false);
                 }
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-lg shadow-sm disabled:opacity-50 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-none shadow-sm disabled:opacity-50 transition-all"
             >
               <Wand2 className="h-3.5 w-3.5" />
               {diagnosing ? 'Diagnose läuft…' : 'AI-Diagnose ausführen'}
             </button>
           </div>
         )}
-        <div className="max-w-3xl mx-auto flex items-end gap-2 bg-slate-50 border border-slate-200/80 rounded-2xl p-2 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-400 transition-all">
+        <div className="max-w-3xl mx-auto flex items-end gap-2 bg-obsidian-950 border border-titanium-900 rounded-none p-2 shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-400 transition-all">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -273,19 +273,19 @@ export function KodeeView() {
               }
             }}
             placeholder={'Was brauchst du? z. B. „Logs des nginx-Containers checken"…'}
-            className="flex-1 max-h-40 min-h-[44px] bg-transparent resize-none py-3 px-3 text-[15px] outline-none text-slate-800 placeholder:text-slate-400"
+            className="flex-1 max-h-40 min-h-[44px] bg-transparent resize-none py-3 px-3 text-[15px] outline-none text-titanium-100 placeholder:text-titanium-500"
             rows={1}
           />
           <button
             onClick={() => send()}
             disabled={!input.trim()}
-            className="p-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-40 disabled:hover:bg-emerald-600 transition-colors shadow-sm shrink-0"
+            className="p-2.5 bg-security-500 text-white rounded-none hover:bg-security-600 disabled:opacity-40 disabled:hover:bg-security-500 transition-colors shadow-sm shrink-0"
             aria-label="Senden"
           >
             <Send className="h-4 w-4" />
           </button>
         </div>
-        <p className="text-center text-[10px] text-slate-400 font-medium tracking-wide mt-2">
+        <p className="text-center text-[10px] text-titanium-500 font-medium tracking-wide mt-2">
           Kodee kann Fehler machen. Prüfe Befehle, bevor du sie auf Produktion ausführst.
         </p>
       </div>

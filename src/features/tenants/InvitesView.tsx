@@ -33,19 +33,19 @@ function InvitesInner() {
   useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [activeTenantId]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="h-14 border-b border-slate-200/60 bg-white flex items-center justify-between px-4">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <Link to="/dashboard" className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700">
+          <Link to="/dashboard" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
               <Users className="h-4 w-4 text-white" />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-sm tracking-tight text-slate-900">Team-Einladungen</div>
-              <div className="text-[11px] text-slate-500 font-medium">Mitglieder über Token-Link einladen</div>
+              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Team-Einladungen</div>
+              <div className="text-[11px] text-titanium-400 font-medium">Mitglieder über Token-Link einladen</div>
             </div>
           </div>
         </div>
@@ -54,7 +54,7 @@ function InvitesInner() {
             <select
               value={activeTenantId ?? ''}
               onChange={(e) => setActiveTenant(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-slate-100 max-w-[200px]"
+              className="bg-obsidian-950 border border-titanium-900 text-titanium-200 text-xs rounded-none px-2 py-1.5 outline-none cursor-pointer font-medium hover:bg-obsidian-800 max-w-[200px]"
             >
               {tenants.map((t) => (
                 <option key={t.tenantId} value={t.tenantId}>{t.name}</option>
@@ -64,7 +64,7 @@ function InvitesInner() {
           <button
             onClick={() => setCreating(true)}
             disabled={!activeTenantId}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600 disabled:opacity-50 transition-colors"
           >
             <Plus className="h-4 w-4" /> Neue Einladung
           </button>
@@ -73,16 +73,16 @@ function InvitesInner() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {error && (
-          <div className="mb-4 flex items-start gap-2.5 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-3">
+          <div className="mb-4 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {!activeTenantId ? (
-          <div className="text-slate-400 text-sm">Wähle einen Tenant aus, um Einladungen zu verwalten.</div>
+          <div className="text-titanium-500 text-sm">Wähle einen Tenant aus, um Einladungen zu verwalten.</div>
         ) : invites === null ? (
-          <div className="flex items-center gap-2 text-slate-400 text-sm py-12 justify-center">
+          <div className="flex items-center gap-2 text-titanium-500 text-sm py-12 justify-center">
             <Loader2 className="h-4 w-4 animate-spin" /> Lade Einladungen…
           </div>
         ) : invites.length === 0 ? (
@@ -108,16 +108,16 @@ function InvitesInner() {
 function Empty({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="text-center py-16">
-      <div className="w-14 h-14 mx-auto rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-4">
-        <Mail className="h-6 w-6 text-slate-300" />
+      <div className="w-14 h-14 mx-auto rounded-none bg-obsidian-900 border border-titanium-900 flex items-center justify-center mb-4">
+        <Mail className="h-6 w-6 text-titanium-600" />
       </div>
-      <h2 className="font-display text-lg font-bold text-slate-900 mb-1">Noch keine Einladungen</h2>
-      <p className="text-sm text-slate-500 mb-6">
+      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch keine Einladungen</h2>
+      <p className="text-sm text-titanium-400 mb-6">
         Lade jemanden mit einem Magic Link in deinen Tenant ein.
       </p>
       <button
         onClick={onCreate}
-        className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600"
       >
         <Plus className="h-4 w-4" /> Erste Einladung erstellen
       </button>
@@ -134,30 +134,30 @@ function InviteRow({ inv, onRevoked }: { inv: Invite; onRevoked: () => void }) {
                : 'pending';
 
   const badge = {
-    accepted: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    revoked:  'bg-slate-100 text-slate-500 border-slate-200',
-    expired:  'bg-amber-50 text-amber-700 border-amber-100',
-    pending:  'bg-blue-50 text-blue-700 border-blue-100',
+    accepted: 'bg-emerald-950/40 text-emerald-300 border-emerald-900',
+    revoked:  'bg-obsidian-800 text-titanium-400 border-titanium-900',
+    expired:  'bg-amber-950/40 text-amber-300 border-amber-800',
+    pending:  'bg-security-900/30 text-security-300 border-security-800',
   }[status];
 
   return (
-    <li className="bg-white border border-slate-200 rounded-xl p-3 flex items-center gap-3">
-      <Mail className="h-4 w-4 text-slate-400 shrink-0" />
+    <li className="bg-obsidian-900 border border-titanium-900 rounded-none p-3 flex items-center gap-3">
+      <Mail className="h-4 w-4 text-titanium-500 shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-slate-900 truncate">{inv.email}</div>
-        <div className="text-xs text-slate-500">
+        <div className="text-sm font-semibold text-titanium-50 truncate">{inv.email}</div>
+        <div className="text-xs text-titanium-400">
           Rolle: <span className="font-mono">{inv.role}</span> · läuft ab am{' '}
           {new Date(inv.expires_at).toLocaleDateString('de-DE')}
         </div>
       </div>
-      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${badge}`}>
+      <span className={`px-2 py-0.5 rounded-none text-[10px] font-bold uppercase tracking-wider border ${badge}`}>
         {status}
       </span>
       {status === 'pending' && (
         <button
           onClick={async () => { setBusy(true); await revokeInvite(inv.id); onRevoked(); setBusy(false); }}
           disabled={busy}
-          className="px-2 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md disabled:opacity-50"
+          className="px-2 py-1 text-xs font-semibold text-titanium-300 bg-obsidian-800 hover:bg-titanium-900 rounded-none disabled:opacity-50"
         >
           {busy ? '…' : 'Widerrufen'}
         </button>
@@ -188,39 +188,39 @@ function CreateInviteModal({
   const url = token ? `${window.location.origin}/tenant/invite/${token}` : '';
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200">
-          <h2 className="font-display font-bold text-slate-900">
+    <div className="fixed inset-0 bg-obsidian-950 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-obsidian-900 rounded-none shadow-xl w-full max-w-lg">
+        <div className="flex items-center justify-between p-4 border-b border-titanium-900">
+          <h2 className="font-display font-bold text-titanium-50">
             {token ? 'Einladung erstellt' : 'Neue Einladung'}
           </h2>
-          <button onClick={() => { setToken(null); onClose(); }} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400">
+          <button onClick={() => { setToken(null); onClose(); }} className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-500">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {token ? (
           <div className="p-5 space-y-4">
-            <div className="flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+            <div className="flex items-start gap-2 text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-900 rounded-none p-3">
               <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
               <span>
                 Token erstellt. Schick diesen Link an <b>{email}</b> — er ist <b>nur einmal</b> einlösbar
                 und nach Ablauf nicht erneut anzeigbar.
               </span>
             </div>
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg p-2">
-              <code className="flex-1 truncate text-xs font-mono text-slate-700">{url}</code>
+            <div className="flex items-center gap-2 bg-obsidian-950 border border-titanium-900 rounded-none p-2">
+              <code className="flex-1 truncate text-xs font-mono text-titanium-200">{url}</code>
               <button
                 onClick={async () => { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
-                className="p-1.5 rounded-md hover:bg-slate-200 text-slate-500"
+                className="p-1.5 rounded-none hover:bg-titanium-900 text-titanium-400"
                 aria-label="Kopieren"
               >
-                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
             <button
               onClick={() => { setToken(null); onCreated(); }}
-              className="w-full py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-slate-800"
+              className="w-full py-2 bg-obsidian-950 text-white text-sm font-semibold rounded-none hover:bg-obsidian-800"
             >
               Fertig
             </button>
@@ -228,19 +228,19 @@ function CreateInviteModal({
         ) : (
           <form onSubmit={submit} className="p-5 space-y-4">
             <label className="block">
-              <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-Mail</span>
+              <span className="block text-xs font-bold text-titanium-400 uppercase tracking-wider mb-1">E-Mail</span>
               <input
                 type="email" required value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
+                className="w-full px-3 py-2 text-sm bg-obsidian-950 border border-titanium-900 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
                 disabled={busy}
               />
             </label>
             <label className="block">
-              <span className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Rolle</span>
+              <span className="block text-xs font-bold text-titanium-400 uppercase tracking-wider mb-1">Rolle</span>
               <select
                 value={role} onChange={(e) => setRole(e.target.value as Role)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
+                className="w-full px-3 py-2 text-sm bg-obsidian-950 border border-titanium-900 rounded-none outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
                 disabled={busy}
               >
                 <option value="admin">admin</option>
@@ -249,18 +249,18 @@ function CreateInviteModal({
               </select>
             </label>
             {error && (
-              <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2.5">
+              <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-2.5">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-titanium-900/50">
               <button type="button" onClick={onClose}
-                className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg" disabled={busy}>
+                className="px-4 py-2 text-sm font-semibold text-titanium-300 hover:bg-obsidian-800 rounded-none" disabled={busy}>
                 Abbrechen
               </button>
               <button type="submit" disabled={busy}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600 disabled:opacity-50">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Einladung erstellen
               </button>

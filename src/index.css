@@ -1,20 +1,90 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Hard-Edge Industrial DNA — see AGENTS.md */
+  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Obsidian (background + surfaces) */
+  --color-obsidian-50:  #f4f4f5;
+  --color-obsidian-100: #d8d8da;
+  --color-obsidian-200: #a8a8ac;
+  --color-obsidian-300: #6c6c72;
+  --color-obsidian-400: #3d3d44;
+  --color-obsidian-500: #1f1f23;
+  --color-obsidian-600: #16161a;
+  --color-obsidian-700: #101013;
+  --color-obsidian-800: #0c0c0f;
+  --color-obsidian-900: #0A0A0B;
+  --color-obsidian-950: #050506;
+
+  /* Titanium (text + borders) */
+  --color-titanium-50:  #fafafa;
+  --color-titanium-100: #ededee;
+  --color-titanium-200: #E2E2E2;
+  --color-titanium-300: #c2c2c4;
+  --color-titanium-400: #97979b;
+  --color-titanium-500: #71717a;
+  --color-titanium-600: #52525a;
+  --color-titanium-700: #3f3f46;
+  --color-titanium-800: #2a2a30;
+  --color-titanium-900: #1a1a1e;
+
+  /* Security Blue (primary accent) */
+  --color-security-50:  #e6efff;
+  --color-security-100: #b3cfff;
+  --color-security-200: #80afff;
+  --color-security-300: #4d8fff;
+  --color-security-400: #1a6fff;
+  --color-security-500: #0052FF;
+  --color-security-600: #0042cc;
+  --color-security-700: #003299;
+  --color-security-800: #002166;
+  --color-security-900: #001133;
 }
 
-body {
-  @apply antialiased text-slate-900 bg-slate-50;
+html, body {
+  background-color: var(--color-obsidian-950);
+  color: var(--color-titanium-100);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "ss02";
 }
 
-.bg-grid-slate-900 {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(15 23 42 / 0.04)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+::selection {
+  background: var(--color-security-500);
+  color: var(--color-titanium-50);
 }
 
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-obsidian-900); }
+::-webkit-scrollbar-thumb { background: var(--color-titanium-800); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-titanium-700); }
+
+/* Sovereign Grid backdrop — 40px subtle grid */
+.bg-grid-slate-900,
+.bg-grid-sovereign {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' width='40' height='40' fill='none' stroke='rgb(226 226 226 / 0.04)'%3e%3cpath d='M0 .5H40M.5 0V40'/%3e%3c/svg%3e");
+}
 .bg-grid-white {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(255 255 255 / 0.1)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' width='40' height='40' fill='none' stroke='rgb(255 255 255 / 0.06)'%3e%3cpath d='M0 .5H40M.5 0V40'/%3e%3c/svg%3e");
+}
+
+/* Hairline border helper */
+.hairline { border: 1px solid var(--color-titanium-900); }
+
+/* Tabular numerics for tech data */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Prose customizations for the dark theme — used in chat / advice / docs */
+.prose-invert {
+  --tw-prose-body: var(--color-titanium-200);
+  --tw-prose-headings: var(--color-titanium-50);
+  --tw-prose-links: var(--color-security-400);
+  --tw-prose-code: var(--color-security-300);
+  --tw-prose-pre-bg: var(--color-obsidian-900);
+  --tw-prose-bullets: var(--color-titanium-700);
+  --tw-prose-quotes: var(--color-titanium-300);
 }

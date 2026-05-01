@@ -29,7 +29,7 @@ export function Gate({ feature, fallback, featureLabel, children }: GateProps) {
   if (fallback !== undefined) return <>{fallback}</>;
 
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded-md">
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-titanium-400 bg-obsidian-800 border border-titanium-900 rounded-none">
       <Lock className="h-3 w-3" />
       {featureLabel ?? feature} ist im aktuellen Plan nicht enthalten
     </div>

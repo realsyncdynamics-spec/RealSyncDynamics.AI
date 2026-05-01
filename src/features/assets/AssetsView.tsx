@@ -73,18 +73,18 @@ export function AssetsView() {
   return (
     <>
       <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-200 pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-titanium-900 pb-6">
           <div>
             <h1 className="text-3xl font-mono font-bold text-[#0A0A0B] tracking-tight uppercase">C2PA Assets & Performance</h1>
-            <p className="text-sm text-slate-500 mt-1 font-medium flex items-center gap-2">
+            <p className="text-sm text-titanium-400 mt-1 font-medium flex items-center gap-2">
               <Activity className="h-3.5 w-3.5 text-[#0052FF]" />
               Status deiner signierten Inhalte und deren Performance.
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center bg-[#E2E2E2] p-1 border border-slate-300 hidden sm:flex">
+            <div className="flex items-center bg-[#E2E2E2] p-1 border border-titanium-800 hidden sm:flex">
               <button className="px-4 py-1.5 bg-[#0A0A0B] text-white font-mono text-[10px] font-bold uppercase tracking-widest">30 Tage</button>
-              <button className="px-4 py-1.5 text-slate-600 font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors">Dieses Jahr</button>
+              <button className="px-4 py-1.5 text-titanium-300 font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-obsidian-900 transition-colors">Dieses Jahr</button>
             </div>
             <button 
               onClick={() => setIsModalOpen(true)}
@@ -97,60 +97,60 @@ export function AssetsView() {
         </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+        <div className="bg-obsidian-900 p-6 border border-titanium-900 shadow-sm relative overflow-hidden group">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
-          <div className="flex items-center gap-3 text-slate-500 mb-4">
+          <div className="flex items-center gap-3 text-titanium-400 mb-4">
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
             <span className="text-[10px] font-bold uppercase tracking-widest font-mono">Aktive C2PA Seals</span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-mono font-bold text-[#0A0A0B]">8,405</span>
-            <span className="text-[10px] font-bold text-emerald-600 font-mono">+12.4%</span>
+            <span className="text-[10px] font-bold text-emerald-400 font-mono">+12.4%</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+        <div className="bg-obsidian-900 p-6 border border-titanium-900 shadow-sm relative overflow-hidden group">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#0052FF]"></div>
-          <div className="flex items-center gap-3 text-slate-500 mb-4">
+          <div className="flex items-center gap-3 text-titanium-400 mb-4">
             <Activity className="h-4 w-4 text-[#0052FF]" />
             <span className="text-[10px] font-bold uppercase tracking-widest font-mono">Verifizierte Views</span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-mono font-bold text-[#0A0A0B]">2.1M</span>
-            <span className="text-[10px] font-bold text-emerald-600 font-mono">+8.1%</span>
+            <span className="text-[10px] font-bold text-emerald-400 font-mono">+8.1%</span>
           </div>
         </div>
 
-        <div className="bg-white p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+        <div className="bg-obsidian-900 p-6 border border-titanium-900 shadow-sm relative overflow-hidden group">
           <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500"></div>
-          <div className="flex items-center gap-3 text-slate-500 mb-4">
+          <div className="flex items-center gap-3 text-titanium-400 mb-4">
             <CreditCard className="h-4 w-4 text-indigo-500" />
             <span className="text-[10px] font-bold uppercase tracking-widest font-mono">Lizenzeinnahmen</span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-mono font-bold text-[#0A0A0B]">8,240€</span>
-            <span className="text-[10px] font-bold text-emerald-600 font-mono">+24.2%</span>
+            <span className="text-[10px] font-bold text-emerald-400 font-mono">+24.2%</span>
           </div>
         </div>
 
         <div className="bg-[#0A0A0B] p-6 border border-[#E2E2E2]/10 shadow-md text-white relative">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-bold uppercase tracking-widest font-mono text-slate-400">Quota usage</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest font-mono text-titanium-500">Quota usage</span>
             <span className="text-[10px] font-bold px-2 py-0.5 border border-[#0052FF] text-[#0052FF] font-mono">ENTERPRISE</span>
           </div>
-          <div className="w-full bg-slate-800 h-1 mb-3">
+          <div className="w-full bg-obsidian-800 h-1 mb-3">
             <div className="bg-[#0052FF] h-1" style={{ width: '84%' }}></div>
           </div>
-          <p className="font-mono text-[10px] font-bold text-slate-500">8,405 / 10,000 SIGNED</p>
+          <p className="font-mono text-[10px] font-bold text-titanium-400">8,405 / 10,000 SIGNED</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 bg-white border border-slate-200 p-8">
+        <div className="xl:col-span-2 bg-obsidian-900 border border-titanium-900 p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-sm font-bold text-[#0A0A0B] uppercase tracking-widest font-mono border-l-4 border-[#0052FF] pl-3">Performance Historie</h2>
-              <p className="text-[10px] text-slate-500 font-mono font-bold mt-1 uppercase">Metric_Stream: Views & Revenue</p>
+              <p className="text-[10px] text-titanium-400 font-mono font-bold mt-1 uppercase">Metric_Stream: Views & Revenue</p>
             </div>
           </div>
           <div className="h-[300px] w-full">
@@ -177,7 +177,7 @@ export function AssetsView() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 p-8 flex flex-col">
+        <div className="bg-obsidian-900 border border-titanium-900 p-8 flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-sm font-bold text-[#0A0A0B] uppercase tracking-widest font-mono border-l-4 border-[#0052FF] pl-3">Asset Monitor</h2>
             <button className="text-[10px] font-bold text-[#0052FF] uppercase tracking-widest hover:underline">Full_Export</button>
@@ -185,8 +185,8 @@ export function AssetsView() {
           <div className="flex-1 overflow-auto">
             <div className="space-y-3">
               {recentAssets.map((asset) => (
-                <div key={asset.id} className="flex items-start gap-4 p-4 border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 bg-[#E2E2E2] flex items-center justify-center shrink-0 border border-slate-200 group-hover:border-[#0052FF] transition-colors">
+                <div key={asset.id} className="flex items-start gap-4 p-4 border border-transparent hover:border-titanium-900 hover:bg-obsidian-950 transition-all cursor-pointer group">
+                  <div className="w-12 h-12 bg-[#E2E2E2] flex items-center justify-center shrink-0 border border-titanium-900 group-hover:border-[#0052FF] transition-colors">
                     <ImageIcon className={`h-6 w-6 text-[#0A0A0B]`} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -194,11 +194,11 @@ export function AssetsView() {
                       <p className="text-sm font-bold text-[#0A0A0B] truncate font-mono uppercase">{asset.name}</p>
                       <StatusBadge status={asset.status} />
                     </div>
-                    <div className="flex items-center gap-3 font-mono text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="flex items-center gap-3 font-mono text-[9px] font-bold uppercase tracking-wider text-titanium-500">
                       <span>ID: {asset.id}</span>
-                      <span className="text-slate-200">|</span>
+                      <span className="text-titanium-200">|</span>
                       <span className="flex items-center gap-1"><Activity className="h-2.5 w-2.5" /> {asset.views} VIEWS</span>
-                      <span className="text-slate-200">|</span>
+                      <span className="text-titanium-200">|</span>
                       <span>TS: {asset.date}</span>
                     </div>
                   </div>
@@ -209,7 +209,7 @@ export function AssetsView() {
               ))}
             </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-slate-100 font-mono">
+          <div className="mt-8 pt-6 border-t border-titanium-900/50 font-mono">
             <button className="w-full flex items-center justify-center gap-3 py-4 bg-[#E2E2E2] text-[#0A0A0B] hover:bg-[#0A0A0B] hover:text-white font-bold text-[10px] tracking-[0.2em] uppercase transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none translate-x-[-2px] translate-y-[-2px] hover:translate-x-0 hover:translate-y-0">
               PRÜFPFAD KONSOLE ÖFFNEN <ChevronRight className="h-4 w-4" />
             </button>

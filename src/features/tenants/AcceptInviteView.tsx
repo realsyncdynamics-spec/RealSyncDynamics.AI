@@ -37,27 +37,27 @@ function AcceptInner() {
   }, [token]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+    <div className="min-h-screen flex items-center justify-center bg-obsidian-950 p-4">
+      <div className="w-full max-w-md bg-obsidian-900 border border-titanium-900 rounded-none shadow-sm p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-none bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
             <Users className="h-5 w-5 text-white" />
           </div>
-          <h1 className="font-display text-lg font-bold tracking-tight text-slate-900">Einladung einlösen</h1>
+          <h1 className="font-display text-lg font-bold tracking-tight text-titanium-50">Einladung einlösen</h1>
         </div>
         {state === 'pending' && (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-2 text-sm text-titanium-400">
             <Loader2 className="h-4 w-4 animate-spin" /> Token wird geprüft …
           </div>
         )}
         {state === 'ok' && (
-          <div className="flex items-start gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
+          <div className="flex items-start gap-2 text-sm text-emerald-300 bg-emerald-950/40 border border-emerald-900 rounded-none p-3">
             <CheckCircle2 className="h-5 w-5 shrink-0 mt-0.5" />
             <span>Beitritt erfolgreich. Du wirst zum Dashboard weitergeleitet …</span>
           </div>
         )}
         {state === 'error' && (
-          <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-3">
+          <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>

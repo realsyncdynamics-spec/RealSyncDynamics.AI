@@ -43,7 +43,7 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
           <div className="bg-[#E2E2E2] p-4 flex flex-col items-center">
             <QRCodeSVG value={`https://realsyncdynamics.com/verify/${asset.id}`} size={160} fgColor="#0A0A0B" bgColor="#E2E2E2" />
           </div>
-          <div className="font-mono text-[9px] uppercase tracking-widest text-slate-500 mt-4 mb-8 text-center flex flex-col gap-1">
+          <div className="font-mono text-[9px] uppercase tracking-widest text-titanium-400 mt-4 mb-8 text-center flex flex-col gap-1">
              <span>SCANNABLE_SIGNATURE_TOKEN</span>
              <span>ID: {asset.id}</span>
           </div>
@@ -59,7 +59,7 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
            <div className="flex items-start justify-between mb-8">
              <div>
                <h2 className="text-xl font-bold uppercase tracking-widest text-white mb-2">{asset.name}</h2>
-               <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400">
+               <div className="flex items-center gap-3 text-[10px] font-bold text-titanium-500">
                  <span className="flex items-center"><Activity className="h-3 w-3 mr-1" /> {asset.views} VIEWS</span>
                  <span className="text-[#0052FF]">|</span>
                  <span>TS: {asset.date}</span>
@@ -67,7 +67,7 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
                  <span className="text-emerald-500">C2PA_VERIFIED</span>
                </div>
              </div>
-             <button onClick={onClose} className="p-2 text-slate-500 hover:text-white hover:bg-[#141416] transition-colors">
+             <button onClick={onClose} className="p-2 text-titanium-400 hover:text-white hover:bg-[#141416] transition-colors">
                <X className="h-5 w-5" />
              </button>
            </div>
@@ -82,7 +82,7 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
                   </div>
                   <div>
                     <div className="text-xs font-bold text-white uppercase tracking-wider mb-1 mt-1">VERIFIED_BY_REALSYNC_DYNAMICS</div>
-                    <div className="text-[10px] text-slate-400">SIGNATURE TIMESTAMP: {asset.date} (UTC)</div>
+                    <div className="text-[10px] text-titanium-500">SIGNATURE TIMESTAMP: {asset.date} (UTC)</div>
                   </div>
                 </div>
              </div>
@@ -91,13 +91,13 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
              <div className="border border-[#E2E2E2]/20 p-5 bg-[#141416]">
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#0052FF] mb-4 flex items-center border-b border-[#E2E2E2]/10 pb-2"><Fingerprint className="h-3 w-3 mr-2" /> WASSERZEICHEN_METADATEN</h3>
                 <div className="mb-4">
-                  <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                  <div className="flex justify-between text-[10px] text-titanium-500 mb-1">
                      <span>UNSICHTBARES WASSERZEICHEN</span>
                      <span className="text-emerald-500">ACTIVE</span>
                   </div>
                   <div className="bg-[#0A0A0B] border border-[#E2E2E2]/10 p-3 flex justify-between items-center group cursor-pointer hover:border-[#0052FF]/50 transition-colors mt-2">
                     <span className="text-xs text-[#E2E2E2] font-bold tracking-widest">{mockHashString}</span>
-                    <Copy className="h-3.5 w-3.5 text-slate-500 group-hover:text-[#0052FF]" />
+                    <Copy className="h-3.5 w-3.5 text-titanium-400 group-hover:text-[#0052FF]" />
                   </div>
                 </div>
                 <SovereignButton variant="primary" className="w-full text-[10px] py-4 mt-2 bg-[#0052FF] text-white hover:bg-[#0041CC] border-transparent"><LinkIcon className="h-3.5 w-3.5 mr-2" /> ASSET_PROOF_SEITE ÖFFNEN</SovereignButton>
@@ -106,19 +106,19 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
              {/* Package & Tools */}
              <div className="border border-[#E2E2E2]/20 p-5 bg-[#0A0A0B] relative overflow-hidden">
                 <div className="absolute right-0 top-0 bottom-0 w-1 bg-[#0052FF]"></div>
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center border-b border-[#E2E2E2]/10 pb-2"><Box className="h-3 w-3 mr-2" /> AKTIVES PAKET & TOOLS</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-titanium-400 mb-4 flex items-center border-b border-[#E2E2E2]/10 pb-2"><Box className="h-3 w-3 mr-2" /> AKTIVES PAKET & TOOLS</h3>
                 <div className="flex items-center gap-3 mb-5 mt-2">
                    <div className="px-3 py-1 bg-[#0052FF]/10 text-[#0052FF] border border-[#0052FF]/30 text-[10px] font-bold tracking-wider uppercase">
                      {pkg}
                    </div>
-                   <span className="text-[10px] text-slate-500 uppercase tracking-widest">REALSYNC_BADGE_AUTHORIZED</span>
+                   <span className="text-[10px] text-titanium-400 uppercase tracking-widest">REALSYNC_BADGE_AUTHORIZED</span>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-[10px] text-slate-300">
+                <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-[10px] text-titanium-600">
                   <div className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 font-bold" /> UNSICHTBARES WATERMARK</div>
                   <div className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 font-bold" /> QR & BARCODE GEN</div>
                   <div className="flex items-center gap-2">
-                    {pkg.includes('Sovereign') ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 font-bold" /> : <div className="h-3.5 w-3.5 rounded-full border border-slate-600 flex items-center justify-center opacity-50"><X className="h-2.5 w-2.5" /></div>} 
+                    {pkg.includes('Sovereign') ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 font-bold" /> : <div className="h-3.5 w-3.5 rounded-full border border-titanium-700 flex items-center justify-center opacity-50"><X className="h-2.5 w-2.5" /></div>} 
                     <span className={!pkg.includes('Sovereign') ? 'opacity-50 line-through' : ''}>BLOCKCHAIN_PROOF</span>
                   </div>
                   <div className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 font-bold" /> ANALYTICS ({pkg.includes('Start') ? 'BASIC' : pkg.includes('Pro') ? 'ADVANCED' : 'FULL'})</div>

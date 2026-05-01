@@ -1,0 +1,96 @@
+name: Deploy Frontend
+
+# Builds the Vite app and ships dist/ to the production VPS via SSH+rsync.
+# Triggers on push to main when frontend sources change, plus manual dispatch.
+#
+# Required repo secrets:
+#   VPS_SSH_HOST            e.g. 72.61.89.191 or realsyncdynamicsai.de
+#   VPS_SSH_USER            e.g. deploy
+#   VPS_SSH_KEY             OpenSSH private key (BEGIN OPENSSH PRIVATE KEY ...)
+#   VPS_SSH_KNOWN_HOST      output of `ssh-keyscan -t ed25519 <host>`
+#   VPS_FRONTEND_PATH       absolute path on VPS, e.g. /var/www/realsyncdynamicsai.de/dist
+#   VITE_SUPABASE_URL       e.g. https://ebljyceifhnlzhjfyxup.supabase.co
+#   VITE_SUPABASE_ANON_KEY  Supabase anon public key (baked into the bundle)
+#
+# Missing secrets fail the job fast at the verify step.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build + ship to VPS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        run: |
+          missing=""
+          for key in VPS_SSH_HOST VPS_SSH_USER VPS_SSH_KEY VPS_SSH_KNOWN_HOST VPS_FRONTEND_PATH VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
+            value=$(jq -r --arg k "$key" '.[$k] // empty' <<<'${{ toJson(secrets) }}')
+            [ -z "$value" ] && missing="$missing $key"
+          done
+          if [ -n "$missing" ]; then
+            echo "❌ missing secrets:$missing"
+            echo "set them under repo Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.VPS_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync dist/ to VPS
+        run: |
+          rsync \
+            --archive \
+            --delete \
+            --compress \
+            --human-readable \
+            --stats \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes" \
+            dist/ \
+            "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:${{ secrets.VPS_FRONTEND_PATH }}/"
+
+      - name: Smoke-test the public URL
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://realsyncdynamicsai.de/ || echo "000")
+            echo "attempt $i: HTTP $code"
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 3
+          done
+          echo "::warning::public URL did not return 200; check nginx + DNS"

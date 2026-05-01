@@ -14,7 +14,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
 import OpenAI from 'npm:openai@4.77.0';
 
-export type ProviderId = 'anthropic' | 'google' | 'openai';
+export type ProviderId = 'anthropic' | 'google' | 'openai' | 'ollama';
 
 export interface ProviderRequest {
   provider: ProviderId;
@@ -45,6 +45,7 @@ export async function callProvider(req: ProviderRequest): Promise<ProviderResult
     case 'anthropic': return await callAnthropic(req);
     case 'google':    return await callGoogle(req);
     case 'openai':    return await callOpenAI(req);
+    case 'ollama':    return await callOllama(req);
     default:
       throw new ProviderError(`unsupported provider: ${req.provider}`, 'PROVIDER_UNSUPPORTED');
   }
@@ -114,6 +115,70 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
     inputTokens: usage.promptTokenCount ?? 0,
     outputTokens: usage.candidatesTokenCount ?? 0,
     cachedTokens: usage.cachedContentTokenCount ?? 0,
+  };
+}
+
+// ─── Ollama (self-hosted, EU-local) ─────────────────────────────────────────
+// Routed via a Bearer-protected reverse-proxy on the Kodee-VPS.
+// The Ollama /api/chat endpoint streams by default — we request stream=false
+// so we can parse a single JSON body and stay aligned with the other
+// providers' synchronous shape.
+async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
+  const baseUrl = Deno.env.get('OLLAMA_URL');
+  if (!baseUrl) throw new ProviderError('OLLAMA_URL not set', 'PROVIDER_NOT_CONFIGURED');
+
+  const token = Deno.env.get('OLLAMA_AUTH_TOKEN');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
+  messages.push({ role: 'user', content: req.userPrompt });
+
+  // CPU-only inference on the VPS can take 30-60s for a 200-token reply.
+  // Edge Functions cap at 150s — abort earlier so we surface a clean error.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
+  let resp: Response;
+  try {
+    resp = await fetch(`${baseUrl.replace(/\/$/, '')}/api/chat`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: req.modelId,
+        messages,
+        stream: false,
+        options: {
+          temperature: req.temperature,
+          num_predict: req.maxTokens,
+        },
+      }),
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    const msg = (e as Error).name === 'AbortError'
+      ? 'Ollama request timed out (>120s)'
+      : `Ollama fetch failed: ${(e as Error).message}`;
+    throw new ProviderError(msg, 'PROVIDER_ERROR');
+  }
+  clearTimeout(timeout);
+
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '');
+    throw new ProviderError(`Ollama HTTP ${resp.status}: ${body.slice(0, 200)}`, 'PROVIDER_ERROR');
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const data: any = await resp.json();
+  const text: string = data?.message?.content ?? '';
+
+  return {
+    text,
+    inputTokens: data?.prompt_eval_count ?? 0,
+    outputTokens: data?.eval_count ?? 0,
+    cachedTokens: 0,
   };
 }
 

@@ -145,10 +145,10 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                 type="button"
                 disabled={disabled}
                 onClick={() => (hasFields ? setOpenAction(isOpen ? null : def.action) : fire(def))}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-none border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   isOpen
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-200'
+                    : 'bg-obsidian-900 text-titanium-200 border-titanium-900 hover:bg-obsidian-950'
                 }`}
                 title={!connectionId ? 'Erst eine Verbindung wählen' : def.action}
               >
@@ -158,9 +158,9 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
               </button>
 
               {isOpen && hasFields && (
-                <div className="absolute bottom-full mb-2 left-0 z-20 bg-white border border-slate-200 rounded-xl shadow-lg p-3 w-72 space-y-2.5">
+                <div className="absolute bottom-full mb-2 left-0 z-20 bg-obsidian-900 border border-titanium-900 rounded-none shadow-lg p-3 w-72 space-y-2.5">
                   {isWrite(def.action) && (
-                    <div className="flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
+                    <div className="flex items-start gap-2 text-[11px] text-amber-300 bg-amber-950/40 border border-amber-800 rounded-none p-2">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>Diese Aktion verändert den VPS-Zustand.</span>
                     </div>
@@ -171,21 +171,21 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                         type="button"
                         disabled={adviseBusy}
                         onClick={() => fetchAdvice(def.action)}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-md disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-security-300 bg-security-950/40 hover:bg-security-900/40 border border-security-700 rounded-none disabled:opacity-50"
                       >
                         {adviseBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
                         {adviseBusy ? 'AI denkt nach…' : advice ? 'Erneut prüfen' : 'AI prüfen lassen'}
                       </button>
                       {advice && (
                         advice.ok && advice.advice ? (
-                          <div className="text-[11px] bg-purple-50/50 border border-purple-100 rounded-md p-2 max-h-48 overflow-y-auto prose prose-sm prose-slate max-w-none prose-headings:font-display prose-headings:tracking-tight prose-pre:text-[10px] prose-code:text-purple-700 prose-code:bg-purple-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+                          <div className="text-[11px] bg-security-950/40 border border-security-800 rounded-none p-2 max-h-48 overflow-y-auto prose prose-sm prose-slate max-w-none prose-headings:font-display prose-headings:tracking-tight prose-pre:text-[10px] prose-code:text-security-300 prose-code:bg-security-900/40 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
                             <Markdown>{advice.advice}</Markdown>
-                            <div className="mt-1 text-[10px] text-slate-400 not-prose">
+                            <div className="mt-1 text-[10px] text-titanium-500 not-prose">
                               ${advice.cost_usd?.toFixed(4)} · {advice.duration_ms} ms
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-start gap-1.5 text-[11px] text-red-700 bg-red-50 border border-red-100 rounded-md p-2">
+                          <div className="flex items-start gap-1.5 text-[11px] text-red-300 bg-red-950/50 border border-red-900 rounded-none p-2">
                             <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
                             <span>{advice.error?.message ?? 'Konnte keine Bewertung abrufen'}</span>
                           </div>
@@ -195,7 +195,7 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                   )}
                   {def.fields!.map((f) => (
                     <label key={String(f.key)} className="block">
-                      <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      <span className="block text-[11px] font-bold uppercase tracking-wider text-titanium-400 mb-1">
                         {f.label}
                         {f.required && <span className="text-red-500"> *</span>}
                       </span>
@@ -210,13 +210,13 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                             : (e.target.value || undefined);
                           setArgs({ ...args, [f.key]: v });
                         }}
-                        className="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400"
+                        className="w-full px-2.5 py-1.5 text-xs bg-obsidian-950 border border-titanium-900 rounded-none outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400"
                       />
                     </label>
                   ))}
                   {isWrite(def.action) && (
                     <label className="block">
-                      <span className="block text-[11px] font-bold uppercase tracking-wider text-amber-700 mb-1">
+                      <span className="block text-[11px] font-bold uppercase tracking-wider text-amber-300 mb-1">
                         Bestätigung <span className="text-red-500">*</span>
                       </span>
                       <input
@@ -224,10 +224,10 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                         placeholder={def.confirmHint}
                         value={args.confirm ?? ''}
                         onChange={(e) => setArgs({ ...args, confirm: e.target.value || undefined })}
-                        className="w-full px-2.5 py-1.5 text-xs bg-amber-50 border border-amber-300 rounded-md outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-500 font-mono"
+                        className="w-full px-2.5 py-1.5 text-xs bg-amber-950/40 border border-amber-300 rounded-none outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-500 font-mono"
                       />
                       {def.confirmExpected && (
-                        <span className="block mt-1 text-[10px] text-slate-400">
+                        <span className="block mt-1 text-[10px] text-titanium-500">
                           erwartet: <code className="font-mono">{def.confirmExpected(args) || '…'}</code>
                         </span>
                       )}
@@ -237,8 +237,8 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                     type="button"
                     disabled={busy || (isWrite(def.action) && args.confirm !== def.confirmExpected?.(args))}
                     onClick={() => fire(def)}
-                    className={`w-full py-1.5 text-xs font-bold text-white rounded-md disabled:opacity-50 ${
-                      isWrite(def.action) ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                    className={`w-full py-1.5 text-xs font-bold text-white rounded-none disabled:opacity-50 ${
+                      isWrite(def.action) ? 'bg-amber-600 hover:bg-amber-700' : 'bg-security-500 hover:bg-security-600'
                     }`}
                   >
                     {busy ? 'Läuft…' : isWrite(def.action) ? 'Bestätigen & Ausführen' : 'Ausführen'}

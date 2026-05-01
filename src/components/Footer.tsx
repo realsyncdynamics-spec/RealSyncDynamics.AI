@@ -14,7 +14,7 @@ export function Footer() {
                 RealSync<span className="text-[#0052FF]">Dynamics</span>
               </span>
             </div>
-            <p className="text-slate-400 font-mono text-sm max-w-sm leading-relaxed">
+            <p className="text-titanium-500 font-mono text-sm max-w-sm leading-relaxed">
               [SYSTEM_STATUS: OPERATIONAL]
               <br />
               Sovereign AI-Infrastruktur für Europa. 
@@ -32,7 +32,7 @@ export function Footer() {
                 <li key={item}>
                   <a 
                     href="#" 
-                    className="block w-full text-left bg-[#141416] border border-slate-800 text-slate-400 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-[#0052FF] hover:text-white hover:border-[#0052FF] transition-all"
+                    className="block w-full text-left bg-[#141416] border border-titanium-900 text-titanium-500 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-[#0052FF] hover:text-white hover:border-[#0052FF] transition-all"
                   >
                     {item}
                   </a>
@@ -50,7 +50,7 @@ export function Footer() {
                 <li key={item}>
                   <a 
                     href="#" 
-                    className="block w-full text-left bg-[#141416] border border-slate-800 text-slate-400 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-[#E2E2E2] hover:text-[#0A0A0B] hover:border-[#E2E2E2] transition-all"
+                    className="block w-full text-left bg-[#141416] border border-titanium-900 text-titanium-500 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-[#E2E2E2] hover:text-[#0A0A0B] hover:border-[#E2E2E2] transition-all"
                   >
                     {item}
                   </a>
@@ -60,8 +60,8 @@ export function Footer() {
           </div>
         </div>
         
-        <div className="border-t border-slate-800 mt-20 pt-10 flex flex-col md:flex-row justify-between items-center gap-8 font-mono">
-          <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">
+        <div className="border-t border-titanium-900 mt-20 pt-10 flex flex-col md:flex-row justify-between items-center gap-8 font-mono">
+          <p className="text-titanium-400 text-[10px] uppercase font-bold tracking-widest">
             © {new Date().getFullYear()} REALSYNCDYNAMICS_TERMINAL. ALL RIGHTS RESERVED.
           </p>
           <div className="flex items-center gap-6 text-[10px] font-bold uppercase tracking-widest">

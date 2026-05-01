@@ -32,29 +32,29 @@ function ConnectionsInner() {
   useEffect(() => { void load(); }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800">
-      <header className="h-14 border-b border-slate-200/60 bg-white flex items-center justify-between px-4">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Link
             to="/kodee"
-            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+            className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200"
             aria-label="Zurück zu Kodee"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
               <Server className="h-4 w-4 text-white" />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-sm tracking-tight text-slate-900">VPS-Verbindungen</div>
-              <div className="text-[11px] text-slate-500 font-medium">Hosts, die Kodee verwalten darf</div>
+              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">VPS-Verbindungen</div>
+              <div className="text-[11px] text-titanium-400 font-medium">Hosts, die Kodee verwalten darf</div>
             </div>
           </div>
         </div>
         <button
           onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600 transition-colors"
         >
           <Plus className="h-4 w-4" /> Neue Verbindung
         </button>
@@ -62,14 +62,14 @@ function ConnectionsInner() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
         {error && (
-          <div className="mb-4 flex items-start gap-2.5 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-3">
+          <div className="mb-4 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
             <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center gap-2 text-slate-400 text-sm py-12 justify-center">
+          <div className="flex items-center gap-2 text-titanium-500 text-sm py-12 justify-center">
             <Loader2 className="h-4 w-4 animate-spin" /> Lade Verbindungen…
           </div>
         ) : items.length === 0 ? (
@@ -94,16 +94,16 @@ function ConnectionsInner() {
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="text-center py-16">
-      <div className="w-14 h-14 mx-auto rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-4">
-        <Server className="h-6 w-6 text-slate-300" />
+      <div className="w-14 h-14 mx-auto rounded-none bg-obsidian-900 border border-titanium-900 flex items-center justify-center mb-4">
+        <Server className="h-6 w-6 text-titanium-600" />
       </div>
-      <h2 className="font-display text-lg font-bold text-slate-900 mb-1">Noch keine VPS-Verbindung</h2>
-      <p className="text-sm text-slate-500 mb-6">
+      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch keine VPS-Verbindung</h2>
+      <p className="text-sm text-titanium-400 mb-6">
         Lege eine Verbindung an, damit Kodee Server-Aktionen für dich ausführen kann.
       </p>
       <button
         onClick={onCreate}
-        className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700"
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600"
       >
         <Plus className="h-4 w-4" /> Erste Verbindung anlegen
       </button>
@@ -127,28 +127,28 @@ function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: ()
   };
 
   return (
-    <li className="bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+    <li className="bg-obsidian-900 border border-titanium-900 rounded-none p-4 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-none bg-emerald-950/40 text-emerald-400 flex items-center justify-center shrink-0">
         <Globe className="h-5 w-5" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <div className="font-semibold text-slate-900 truncate">{conn.label}</div>
+          <div className="font-semibold text-titanium-50 truncate">{conn.label}</div>
           {tenantLabel ? (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none bg-security-900/30 text-security-300 text-[10px] font-bold border border-security-800">
               <Users className="h-2.5 w-2.5" /> {tenantLabel}
             </span>
           ) : (
-            <span className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold border border-slate-200">
+            <span className="px-1.5 py-0.5 rounded-none bg-obsidian-800 text-titanium-400 text-[10px] font-bold border border-titanium-900">
               persönlich
             </span>
           )}
         </div>
-        <div className="text-xs text-slate-500 truncate font-mono">
+        <div className="text-xs text-titanium-400 truncate font-mono">
           {conn.username}@{conn.host}:{conn.port}
         </div>
         {conn.last_used_at && (
-          <div className="text-[11px] text-slate-400 mt-0.5">
+          <div className="text-[11px] text-titanium-500 mt-0.5">
             Zuletzt benutzt: {new Date(conn.last_used_at).toLocaleString()}
           </div>
         )}
@@ -158,13 +158,13 @@ function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: ()
           <button
             onClick={remove}
             disabled={busy}
-            className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+            className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-none disabled:opacity-50"
           >
             {busy ? 'Lösche…' : 'Wirklich löschen'}
           </button>
           <button
             onClick={() => setConfirm(false)}
-            className="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-md"
+            className="px-2.5 py-1 text-xs font-semibold text-titanium-300 bg-obsidian-800 hover:bg-titanium-900 rounded-none"
           >
             Abbrechen
           </button>
@@ -172,7 +172,7 @@ function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: ()
       ) : (
         <button
           onClick={() => setConfirm(true)}
-          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+          className="p-2 text-titanium-500 hover:text-red-400 hover:bg-red-950/50 rounded-none transition-colors"
           aria-label="Löschen"
         >
           <Trash2 className="h-4 w-4" />
@@ -206,11 +206,11 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200">
-          <h2 className="font-display font-bold text-slate-900">Neue VPS-Verbindung</h2>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400">
+    <div className="fixed inset-0 bg-obsidian-950 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-obsidian-900 rounded-none shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-titanium-900">
+          <h2 className="font-display font-bold text-titanium-50">Neue VPS-Verbindung</h2>
+          <button onClick={onClose} className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-500">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -298,17 +298,17 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           </Field>
 
           {error && (
-            <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-2.5">
+            <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-2.5">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-titanium-900/50">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+              className="px-4 py-2 text-sm font-semibold text-titanium-300 hover:bg-obsidian-800 rounded-none"
               disabled={busy}
             >
               Abbrechen
@@ -316,7 +316,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               Verbindung anlegen
@@ -329,14 +329,14 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 }
 
 const inputCls =
-  'w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 disabled:opacity-50';
+  'w-full px-3 py-2 text-sm bg-obsidian-950 border border-titanium-900 rounded-none outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 disabled:opacity-50';
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <div className="flex items-baseline justify-between mb-1">
-        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{label}</span>
-        {hint && <span className="text-[11px] text-slate-400 font-normal">{hint}</span>}
+        <span className="text-xs font-bold text-titanium-300 uppercase tracking-wider">{label}</span>
+        {hint && <span className="text-[11px] text-titanium-500 font-normal">{hint}</span>}
       </div>
       {children}
     </label>

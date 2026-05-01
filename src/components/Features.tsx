@@ -6,7 +6,7 @@ const features = [
     name: 'RealSync Creator OS',
     description: 'Das zentrale Betriebssystem für Ihre digitalen Assets. Verwalten Sie Content, Rechte und Workflows an einem Ort.',
     icon: LayoutDashboard,
-    color: 'bg-blue-500',
+    color: 'bg-security-400',
   },
   {
     name: 'RealSync Copilot (Extension)',
@@ -30,19 +30,19 @@ const features = [
     name: 'RealSync DealFlow & LocalFlow',
     description: 'Automatisierte Verträge und On-Premise Datenverarbeitung für höchste Enterprise Sicherheitsanforderungen.',
     icon: Server,
-    color: 'bg-slate-700',
+    color: 'bg-titanium-800',
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="py-24 bg-white border-t border-slate-200/50">
+    <section id="features" className="py-24 bg-obsidian-900 border-t border-titanium-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display text-3xl font-bold tracking-tight text-titanium-50 sm:text-4xl">
             Ein modulares Ökosystem
           </h2>
-          <p className="mt-4 text-lg text-slate-500 font-light">
+          <p className="mt-4 text-lg text-titanium-400 font-light">
             Wählen Sie genau die Module, die Sie für Ihre digitale Wertschöpfungskette benötigen. Nahtlos integriert und hochsicher.
           </p>
         </div>
@@ -55,8 +55,8 @@ export function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`group relative p-8 rounded-3xl border border-slate-200/60 transition-all duration-300 overflow-hidden ${
-                index === 1 || index === 4 ? 'bg-slate-900 text-white shadow-xl' : 'bg-slate-50 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 text-slate-900'
+              className={`group relative p-8 rounded-none border border-titanium-900 transition-all duration-300 overflow-hidden ${
+                index === 1 || index === 4 ? 'bg-obsidian-950 text-white shadow-xl' : 'bg-obsidian-950 hover:bg-obsidian-900 hover:shadow-xl hover:shadow-slate-200/50 text-titanium-50'
               } ${index === 3 || index === 4 ? 'lg:col-span-1.5' : ''}`}
             >
               {/* Optional ambient glow for dark cards */}
@@ -64,16 +64,16 @@ export function Features() {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-white/0 rounded-full blur-2xl group-hover:scale-110 transition-transform"></div>
               )}
               
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 shadow-sm border ${
-                index === 1 || index === 4 ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 text-slate-700'
+              <div className={`w-12 h-12 rounded-none flex items-center justify-center mb-6 shadow-sm border ${
+                index === 1 || index === 4 ? 'bg-obsidian-800 border-titanium-800' : 'bg-obsidian-900 border-titanium-900 text-titanium-200'
               }`}>
-                <feature.icon className={`h-6 w-6 ${index === 1 || index === 4 ? 'text-white' : 'text-blue-600'}`} />
+                <feature.icon className={`h-6 w-6 ${index === 1 || index === 4 ? 'text-white' : 'text-security-400'}`} />
               </div>
               
               <h3 className="font-display text-xl font-bold tracking-tight mb-3">
                 {feature.name}
               </h3>
-              <p className={`leading-relaxed text-sm ${index === 1 || index === 4 ? 'text-slate-300' : 'text-slate-600'}`}>
+              <p className={`leading-relaxed text-sm ${index === 1 || index === 4 ? 'text-titanium-600' : 'text-titanium-300'}`}>
                 {feature.description}
               </p>
             </motion.div>

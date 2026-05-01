@@ -37,7 +37,7 @@ export function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-              className="text-lg text-slate-400 max-w-xl mb-12 font-mono leading-relaxed"
+              className="text-lg text-titanium-500 max-w-xl mb-12 font-mono leading-relaxed"
             >
               Wir bauen die Infrastruktur für das post-generative Zeitalter. 
               Kryptografische Absicherung von Assets nach C2PA-Standard. 
@@ -74,7 +74,7 @@ export function Hero() {
                </div>
                <div className="relative h-full border-2 border-[#0052FF] flex items-center justify-center bg-[#0A0A0B]/80 backdrop-blur-sm">
                  <Shield className="h-32 w-32 text-[#0052FF]" />
-                 <div className="absolute bottom-4 left-4 right-4 flex justify-between font-mono text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+                 <div className="absolute bottom-4 left-4 right-4 flex justify-between font-mono text-[10px] text-titanium-400 uppercase tracking-widest font-bold">
                     <span>C2PA_VERIFIED</span>
                     <span>EIDAS_COMPLIANT</span>
                  </div>
@@ -99,7 +99,7 @@ export function Hero() {
             </div>
             <div className="text-left">
               <h4 className="text-[#E2E2E2] text-xs font-bold uppercase tracking-widest">C2PA_Standard</h4>
-              <p className="text-slate-500 text-[10px]">VERIFIZIERTE_CREDENTIALS</p>
+              <p className="text-titanium-400 text-[10px]">VERIFIZIERTE_CREDENTIALS</p>
             </div>
           </div>
           <div className="flex items-center gap-4 group">
@@ -108,7 +108,7 @@ export function Hero() {
             </div>
             <div className="text-left">
               <h4 className="text-[#E2E2E2] text-xs font-bold uppercase tracking-widest">eIDAS_Sicherheit</h4>
-              <p className="text-slate-500 text-[10px]">EU_LEVEL_COMPLIANCE</p>
+              <p className="text-titanium-400 text-[10px]">EU_LEVEL_COMPLIANCE</p>
             </div>
           </div>
           <div className="flex items-center gap-4 group">
@@ -117,7 +117,7 @@ export function Hero() {
             </div>
             <div className="text-left">
               <h4 className="text-[#E2E2E2] text-xs font-bold uppercase tracking-widest">DSGVO_Enforced</h4>
-              <p className="text-slate-500 text-[10px]">100%_DATEN_SOUVERÄNITÄT</p>
+              <p className="text-titanium-400 text-[10px]">100%_DATEN_SOUVERÄNITÄT</p>
             </div>
           </div>
         </motion.div>

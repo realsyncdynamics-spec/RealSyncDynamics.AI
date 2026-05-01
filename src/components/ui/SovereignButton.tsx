@@ -17,8 +17,8 @@ export const SovereignButton = ({
   
   const variants = {
     primary: "bg-[#0052FF] text-white hover:bg-[#0041CC] shadow-[4px_4px_0px_0px_#0A0A0B] active:translate-x-1 active:translate-y-1 active:shadow-none",
-    secondary: "bg-[#E2E2E2] text-[#0A0A0B] hover:bg-white shadow-[4px_4px_0px_0px_#0A0A0B] active:translate-x-1 active:translate-y-1 active:shadow-none",
-    outline: "bg-transparent border-2 border-[#E2E2E2] text-[#E2E2E2] hover:bg-[#E2E2E2] hover:text-[#0A0A0B] active:bg-white active:border-white",
+    secondary: "bg-[#E2E2E2] text-[#0A0A0B] hover:bg-obsidian-900 shadow-[4px_4px_0px_0px_#0A0A0B] active:translate-x-1 active:translate-y-1 active:shadow-none",
+    outline: "bg-transparent border-2 border-[#E2E2E2] text-[#E2E2E2] hover:bg-[#E2E2E2] hover:text-[#0A0A0B] active:bg-obsidian-900 active:border-white",
     ghost: "bg-transparent text-[#E2E2E2] hover:bg-[#E2E2E2]/10",
   };
 

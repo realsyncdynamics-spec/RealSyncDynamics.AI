@@ -62,13 +62,13 @@ const tiers = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 bg-white border-t border-slate-200/50">
+    <section id="pricing" className="py-24 bg-obsidian-900 border-t border-titanium-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          <h2 className="font-display text-3xl font-bold tracking-tight text-titanium-50 sm:text-4xl">
             Flexibles Freemium-Modell
           </h2>
-          <p className="mt-4 text-lg text-slate-500 font-light">
+          <p className="mt-4 text-lg text-titanium-400 font-light">
             Skalieren Sie Ihre Sicherheit mit Ihrem Erfolg. Keine versteckten Kosten, jederzeit kündbar.
           </p>
         </div>
@@ -81,25 +81,25 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative flex flex-col p-8 rounded-3xl ${
+              className={`relative flex flex-col p-8 rounded-none ${
                 tier.highlighted 
-                  ? 'bg-slate-900 text-white shadow-2xl scale-105 z-10 border border-slate-800' 
-                  : 'bg-slate-50 text-slate-900 border border-slate-200/60 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all'
+                  ? 'bg-obsidian-950 text-white shadow-2xl scale-105 z-10 border border-titanium-900' 
+                  : 'bg-obsidian-950 text-titanium-50 border border-titanium-900 hover:bg-obsidian-900 hover:shadow-xl hover:shadow-slate-200/50 transition-all'
               }`}
             >
               {tier.highlighted && (
                 <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                  <span className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                  <span className="bg-security-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
                     Am beliebtesten
                   </span>
                 </div>
               )}
               
               <div className="mb-6">
-                <h3 className={`font-display text-xl font-bold tracking-tight ${tier.highlighted ? 'text-white' : 'text-slate-900'}`}>
+                <h3 className={`font-display text-xl font-bold tracking-tight ${tier.highlighted ? 'text-white' : 'text-titanium-50'}`}>
                   {tier.name}
                 </h3>
-                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-slate-400' : 'text-slate-500'}`}>
+                <p className={`mt-2 text-sm ${tier.highlighted ? 'text-titanium-500' : 'text-titanium-400'}`}>
                   {tier.description}
                 </p>
               </div>
@@ -108,15 +108,15 @@ export function Pricing() {
                 <div className="flex items-baseline font-display text-5xl font-extrabold tracking-tighter">
                   {tier.price !== 'Custom' && <span className="text-3xl mr-1">€</span>}
                   {tier.price}
-                  {tier.price !== 'Custom' && <span className={`ml-1 text-sm font-medium tracking-normal ${tier.highlighted ? 'text-slate-400' : 'text-slate-500'}`}>/Monat</span>}
+                  {tier.price !== 'Custom' && <span className={`ml-1 text-sm font-medium tracking-normal ${tier.highlighted ? 'text-titanium-500' : 'text-titanium-400'}`}>/Monat</span>}
                 </div>
               </div>
 
               <ul className="flex-1 space-y-4 mb-8">
                 {tier.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-3">
-                    <Check className={`h-5 w-5 shrink-0 ${tier.highlighted ? 'text-blue-400' : 'text-blue-600'}`} />
-                    <span className={`text-sm ${tier.highlighted ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <Check className={`h-5 w-5 shrink-0 ${tier.highlighted ? 'text-security-300' : 'text-security-400'}`} />
+                    <span className={`text-sm ${tier.highlighted ? 'text-titanium-600' : 'text-titanium-300'}`}>
                       {feature}
                     </span>
                   </li>
@@ -125,10 +125,10 @@ export function Pricing() {
 
               <Link
                 to="/pricing"
-                className={`block text-center w-full py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
+                className={`block text-center w-full py-3 px-6 rounded-none text-sm font-semibold transition-all ${
                   tier.highlighted
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)]'
-                    : 'bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 shadow-sm'
+                    ? 'bg-security-500 hover:bg-security-400 text-white shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)]'
+                    : 'bg-obsidian-900 hover:bg-obsidian-800 text-titanium-50 border border-titanium-900 shadow-sm'
                 }`}
               >
                 {tier.cta}

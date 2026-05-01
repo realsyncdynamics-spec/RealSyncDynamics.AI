@@ -88,19 +88,19 @@ const PLANS: PlanTile[] = [
 
 export function PricingPage() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="h-14 border-b border-slate-200/60 bg-white flex items-center justify-between px-4">
+    <div className="min-h-screen bg-obsidian-950">
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <div className="bg-slate-900 p-1.5 rounded-lg shadow-sm">
+          <div className="bg-obsidian-950 p-1.5 rounded-none shadow-sm">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
-          <span className="font-display font-bold text-lg tracking-tight text-slate-900">
-            RealSync<span className="text-slate-500 font-medium">Dynamics</span>
+          <span className="font-display font-bold text-lg tracking-tight text-titanium-50">
+            RealSync<span className="text-titanium-400 font-medium">Dynamics</span>
           </span>
         </Link>
         <Link
           to="/dashboard"
-          className="text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+          className="text-sm font-semibold text-titanium-200 hover:text-titanium-50 transition-colors"
         >
           Zum Dashboard →
         </Link>
@@ -108,10 +108,10 @@ export function PricingPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="text-center mb-12">
-          <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mb-3">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-titanium-50 mb-3">
             Pläne & Preise
           </h1>
-          <p className="text-slate-500 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-titanium-400 max-w-2xl mx-auto leading-relaxed">
             Plan jederzeit upgrade- oder downgradebar. Du zahlst über Stripe;
             Rechnungen kommen automatisch.
           </p>
@@ -164,7 +164,7 @@ function Tiles() {
   return (
     <>
       {error && (
-        <div className="max-w-2xl mx-auto mb-6 flex items-start gap-2.5 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg p-3">
+        <div className="max-w-2xl mx-auto mb-6 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
           <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -175,26 +175,26 @@ function Tiles() {
           return (
             <div
               key={p.key}
-              className={`relative bg-white border rounded-2xl p-6 flex flex-col ${
+              className={`relative bg-obsidian-900 border rounded-none p-6 flex flex-col ${
                 p.highlight
                   ? 'border-indigo-300 shadow-lg shadow-indigo-200/40 ring-2 ring-indigo-100'
-                  : 'border-slate-200'
+                  : 'border-titanium-900'
               }`}
             >
               {p.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-indigo-600 text-white text-[11px] font-bold tracking-wider rounded-full uppercase">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-security-500 text-white text-[11px] font-bold tracking-wider rounded-full uppercase">
                   Beliebt
                 </span>
               )}
               <div>
-                <div className="font-display font-bold text-lg text-slate-900">{p.name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{p.tagline}</div>
-                <div className="mt-3 font-mono text-sm text-slate-700">{p.priceLabel}</div>
+                <div className="font-display font-bold text-lg text-titanium-50">{p.name}</div>
+                <div className="text-xs text-titanium-400 mt-0.5">{p.tagline}</div>
+                <div className="mt-3 font-mono text-sm text-titanium-200">{p.priceLabel}</div>
               </div>
-              <ul className="mt-4 space-y-2 text-sm text-slate-700 flex-1">
+              <ul className="mt-4 space-y-2 text-sm text-titanium-200 flex-1">
                 {p.highlights.map((h, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
                     <span>{h}</span>
                   </li>
                 ))}
@@ -203,10 +203,10 @@ function Tiles() {
                 type="button"
                 disabled={busy || loading}
                 onClick={() => onChoose(p.key)}
-                className={`mt-6 w-full py-2.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1.5 ${
+                className={`mt-6 w-full py-2.5 text-sm font-semibold rounded-none transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1.5 ${
                   p.highlight
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-slate-900 text-white hover:bg-slate-800'
+                    ? 'bg-security-500 text-white hover:bg-security-600'
+                    : 'bg-obsidian-950 text-white hover:bg-obsidian-800'
                 }`}
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
@@ -217,7 +217,7 @@ function Tiles() {
         })}
       </div>
 
-      <p className="text-center text-xs text-slate-400 mt-8 max-w-xl mx-auto">
+      <p className="text-center text-xs text-titanium-500 mt-8 max-w-xl mx-auto">
         Preise zzgl. MwSt. Auto-renew nach 30 Tagen. Du kannst jederzeit
         kündigen oder den Plan wechseln. Zahlungsabwicklung über Stripe.
       </p>

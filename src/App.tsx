@@ -12,6 +12,7 @@ import { UsageView } from './features/billing/UsageView';
 import { PricingPage } from './features/billing/PricingPage';
 import { InvitesView } from './features/tenants/InvitesView';
 import { AcceptInviteView } from './features/tenants/AcceptInviteView';
+import { AiResidencySettings } from './features/settings/AiResidencySettings';
 import { TenantProvider } from './core/access/TenantProvider';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/tenant/invites" element={<InvitesView />} />
           <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
+          <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
         </Routes>
       </BrowserRouter>
     </TenantProvider>

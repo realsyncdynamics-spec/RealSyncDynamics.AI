@@ -1,0 +1,98 @@
+name: Deploy
+
+# Pushes pending migrations and (optionally) edge functions to the linked
+# Supabase project. Auto-runs on main; manual via workflow_dispatch.
+#
+# Required repository secrets:
+#   SUPABASE_ACCESS_TOKEN   personal access token (account → Access Tokens)
+#   SUPABASE_PROJECT_ID     project ref (the xxxx in xxxx.supabase.co)
+#   SUPABASE_DB_PASSWORD    the linked project's DB password
+#
+# If any of these secrets is unset, the job fails fast — that's intentional;
+# we'd rather not silently no-op a deploy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      deploy_functions:
+        description: 'Also deploy edge functions'
+        type: boolean
+        default: false
+
+jobs:
+  db-push:
+    name: Push migrations
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD:  ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        run: |
+          missing=""
+          [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -z "${{ secrets.SUPABASE_PROJECT_ID }}"   ] && missing="$missing SUPABASE_PROJECT_ID"
+          [ -z "${{ secrets.SUPABASE_DB_PASSWORD }}"  ] && missing="$missing SUPABASE_DB_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "❌ missing secrets:$missing"
+            echo "set them under repo Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+
+      - name: Diff against remote (informational)
+        run: supabase db diff --linked --schema public || true
+
+      - name: Push pending migrations
+        run: supabase db push
+
+  functions-deploy:
+    name: Deploy edge functions
+    needs: db-push
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_functions }}
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+
+      - name: Deploy all functions
+        run: |
+          set -e
+          for dir in supabase/functions/*/; do
+            name=$(basename "$dir")
+            # Skip _shared and any folder without an index.ts
+            if [ "$name" = "_shared" ] || [ ! -f "$dir/index.ts" ]; then
+              continue
+            fi
+            # stripe-* functions verify their own auth (signature / shared secret),
+            # so deploy them with --no-verify-jwt.
+            case "$name" in
+              stripe-webhook|stripe-meter-sync) flags="--no-verify-jwt" ;;
+              *) flags="" ;;
+            esac
+            echo "::group::deploy $name"
+            supabase functions deploy "$name" $flags
+            echo "::endgroup::"
+          done

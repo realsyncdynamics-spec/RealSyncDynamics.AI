@@ -8,6 +8,7 @@ import { Landing } from './pages/Landing';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
+import { UsageView } from './features/billing/UsageView';
 import { TenantProvider } from './core/access/TenantProvider';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/dashboard" element={<CreatorDashboard />} />
           <Route path="/kodee" element={<KodeeView />} />
           <Route path="/kodee/connections" element={<ConnectionsView />} />
+          <Route path="/billing/usage" element={<UsageView />} />
         </Routes>
       </BrowserRouter>
     </TenantProvider>

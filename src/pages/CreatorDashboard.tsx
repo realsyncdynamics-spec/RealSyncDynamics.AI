@@ -178,13 +178,19 @@ export function CreatorDashboard() {
             >
               <Settings className="h-4 w-4" /> Einstellungen
             </button>
-            <button 
+            <button
               onClick={() => setActiveView('billing')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeView === 'billing' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
             >
               <div className="flex items-center gap-2.5"><CreditCard className="h-4 w-4" /> Billing / Plan</div>
               <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-bold tracking-wider">GOLD</span>
             </button>
+            <Link
+              to="/billing/usage"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              <Bot className="h-4 w-4 text-indigo-600" /> Verbrauch & Limits
+            </Link>
           </div>
         </aside>
 

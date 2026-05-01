@@ -3,11 +3,14 @@
 // currently selected VPS connection. Results are pushed back to the parent via onResult.
 
 import React, { useState } from 'react';
+import Markdown from 'react-markdown';
 import {
   Activity, FileText, HardDrive, Globe, Lock, ChevronDown,
-  RotateCw, PlayCircle, RefreshCw, AlertTriangle,
+  RotateCw, PlayCircle, RefreshCw, AlertTriangle, Wand2, Loader2,
 } from 'lucide-react';
 import { runAction, type ActionName, type RunActionArgs, type RunActionResult } from './api';
+import { adviseAction, type AdviseResult } from './advise';
+import { useTenant } from '../../core/access/TenantProvider';
 
 const WRITE_ACTIONS: ActionName[] = ['vps.service.restart', 'vps.compose.up', 'vps.compose.restart'];
 const isWrite = (a: ActionName) => WRITE_ACTIONS.includes(a);
@@ -82,9 +85,13 @@ const ACTIONS: ActionDef[] = [
 ];
 
 export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
+  const { activeTenantId, hasFeature } = useTenant();
+  const canAdvise = !!activeTenantId && hasFeature('ai.tool.vps_action_advisor');
   const [openAction, setOpenAction] = useState<ActionName | null>(null);
   const [args, setArgs] = useState<RunActionArgs>({});
   const [busy, setBusy] = useState(false);
+  const [advice, setAdvice] = useState<AdviseResult | null>(null);
+  const [adviseBusy, setAdviseBusy] = useState(false);
 
   const disabled = !connectionId || busy;
 
@@ -107,8 +114,21 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
       onResult(def.action, args, result);
       setOpenAction(null);
       setArgs({});
+      setAdvice(null);
     } finally {
       setBusy(false); onBusyChange?.(false);
+    }
+  };
+
+  const fetchAdvice = async (action: ActionName) => {
+    if (!connectionId || !activeTenantId) return;
+    setAdviseBusy(true);
+    setAdvice(null);
+    try {
+      const r = await adviseAction(activeTenantId, connectionId, action, args);
+      setAdvice(r);
+    } finally {
+      setAdviseBusy(false);
     }
   };
 
@@ -143,6 +163,34 @@ export function ActionRunner({ connectionId, onResult, onBusyChange }: Props) {
                     <div className="flex items-start gap-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-2">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>Diese Aktion verändert den VPS-Zustand.</span>
+                    </div>
+                  )}
+                  {isWrite(def.action) && canAdvise && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        disabled={adviseBusy}
+                        onClick={() => fetchAdvice(def.action)}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-md disabled:opacity-50"
+                      >
+                        {adviseBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                        {adviseBusy ? 'AI denkt nach…' : advice ? 'Erneut prüfen' : 'AI prüfen lassen'}
+                      </button>
+                      {advice && (
+                        advice.ok && advice.advice ? (
+                          <div className="text-[11px] bg-purple-50/50 border border-purple-100 rounded-md p-2 max-h-48 overflow-y-auto prose prose-sm prose-slate max-w-none prose-headings:font-display prose-headings:tracking-tight prose-pre:text-[10px] prose-code:text-purple-700 prose-code:bg-purple-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+                            <Markdown>{advice.advice}</Markdown>
+                            <div className="mt-1 text-[10px] text-slate-400 not-prose">
+                              ${advice.cost_usd?.toFixed(4)} · {advice.duration_ms} ms
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-start gap-1.5 text-[11px] text-red-700 bg-red-50 border border-red-100 rounded-md p-2">
+                            <AlertTriangle className="h-3 w-3 shrink-0 mt-0.5" />
+                            <span>{advice.error?.message ?? 'Konnte keine Bewertung abrufen'}</span>
+                          </div>
+                        )
+                      )}
                     </div>
                   )}
                   {def.fields!.map((f) => (

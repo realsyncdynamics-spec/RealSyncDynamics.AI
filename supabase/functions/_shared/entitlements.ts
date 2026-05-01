@@ -1,38 +1,31 @@
 // Server-side entitlement guard for edge functions.
 //
+// Backed by the products / entitlements / product_entitlements tables and the
+// `public.tenant_entitlements(uuid)` SQL function added in migration 20260430200000.
+//
 // Usage:
 //   const ent = await loadEntitlementsForTenant(supabaseAdmin, tenantId);
 //   requireFeature(ent, 'api.access');
-//
-// Logic mirrors src/core/billing/entitlements.ts but is duplicated here so the
-// Deno runtime doesn't have to reach into the Vite/React tree.
+//   requireQuota(ent, 'limit.api_calls_monthly', currentApiCalls);
 
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
-export type PlanKey = 'free' | 'bronze' | 'silver' | 'gold' | 'enterprise_public';
+export type EntitlementKind = 'boolean' | 'limit';
 
-export type FeatureKey =
-  | 'asset.register' | 'asset.verify' | 'watermark.apply' | 'barcode.issue'
-  | 'provenance.basic' | 'provenance.advanced' | 'c2pa.export'
-  | 'team.members' | 'api.access' | 'bulk.jobs' | 'compliance.export'
-  | 'org.governance' | 'sso.enabled' | 'public-sector.mode';
-
-export interface Entitlements {
-  planKey: PlanKey;
-  isActive: boolean;
-  features: Partial<Record<FeatureKey, boolean>>;
+export interface EntitlementValue {
+  key: string;
+  kind: EntitlementKind;
+  /** -1 = unlimited / always-on; 0 = off / no quota; >0 = numeric limit. */
+  value: number;
 }
 
-const PLAN_FEATURES: Record<PlanKey, FeatureKey[]> = {
-  free: ['asset.verify'],
-  bronze: ['asset.verify', 'asset.register', 'provenance.basic'],
-  silver: ['asset.verify', 'asset.register', 'provenance.basic', 'watermark.apply', 'barcode.issue', 'c2pa.export', 'team.members'],
-  gold: ['asset.verify', 'asset.register', 'provenance.basic', 'provenance.advanced', 'watermark.apply', 'barcode.issue', 'c2pa.export', 'team.members', 'api.access', 'bulk.jobs', 'compliance.export'],
-  enterprise_public: ['asset.verify', 'asset.register', 'provenance.basic', 'provenance.advanced', 'watermark.apply', 'barcode.issue', 'c2pa.export', 'team.members', 'api.access', 'bulk.jobs', 'compliance.export', 'org.governance', 'sso.enabled', 'public-sector.mode'],
-};
+export interface Entitlements {
+  /** Indexed view of the resolved values for fast lookup. */
+  byKey: Record<string, EntitlementValue>;
+}
 
 export class EntitlementError extends Error {
-  code: 'FORBIDDEN' | 'NOT_FOUND' | 'INTERNAL' = 'FORBIDDEN';
+  code: 'FORBIDDEN' | 'QUOTA_EXCEEDED' | 'NOT_FOUND' | 'INTERNAL' = 'FORBIDDEN';
   constructor(message: string, code: EntitlementError['code'] = 'FORBIDDEN') {
     super(message); this.code = code;
   }
@@ -42,52 +35,57 @@ export async function loadEntitlementsForTenant(
   admin: SupabaseClient,
   tenantId: string,
 ): Promise<Entitlements> {
-  const [tenantResp, subResp] = await Promise.all([
-    admin.from('tenants').select('id,is_public_sector').eq('id', tenantId).maybeSingle(),
-    admin.from('subscriptions').select('plan_key,status')
-      .eq('tenant_id', tenantId)
-      .order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  if (tenantResp.error) throw new EntitlementError(tenantResp.error.message, 'INTERNAL');
-  if (!tenantResp.data) throw new EntitlementError('tenant not found', 'NOT_FOUND');
+  const { data, error } = await admin.rpc('tenant_entitlements', { p_tenant_id: tenantId });
+  if (error) throw new EntitlementError(error.message, 'INTERNAL');
 
-  const planKey = (subResp.data?.plan_key as PlanKey) ?? 'free';
-  const status = subResp.data?.status as string | undefined;
-  const isActive = planKey === 'free' || status === 'active' || status === 'trialing';
-
-  const allowed = new Set<FeatureKey>(PLAN_FEATURES[planKey] ?? []);
-  const isPublic = !!tenantResp.data.is_public_sector;
-
-  const features: Partial<Record<FeatureKey, boolean>> = {};
-  for (const f of allowed) {
-    if (!isActive && f !== 'asset.verify') continue;
-    if (f === 'public-sector.mode' && !isPublic && planKey !== 'enterprise_public') continue;
-    features[f] = true;
+  const byKey: Record<string, EntitlementValue> = {};
+  for (const row of (data ?? []) as EntitlementValue[]) {
+    byKey[row.key] = { key: row.key, kind: row.kind, value: row.value };
   }
-  return { planKey, isActive, features };
+  return { byKey };
 }
 
-export function hasFeature(ent: Entitlements, feature: FeatureKey): boolean {
-  if (!ent.isActive && feature !== 'asset.verify') return false;
-  return !!ent.features[feature];
+/** Boolean check. Treats value=1 or value=-1 (unlimited) as enabled. */
+export function hasFeature(ent: Entitlements, key: string): boolean {
+  const v = ent.byKey[key];
+  if (!v) return false;
+  return v.value === -1 || v.value > 0;
 }
 
-export function requireFeature(ent: Entitlements, feature: FeatureKey): void {
-  if (!hasFeature(ent, feature)) {
-    throw new EntitlementError(`feature ${feature} is not available on plan ${ent.planKey}`);
+/** Throws FORBIDDEN if the boolean feature is off. */
+export function requireFeature(ent: Entitlements, key: string): void {
+  if (!hasFeature(ent, key)) {
+    throw new EntitlementError(`feature ${key} is not available on this plan`);
   }
 }
 
 /**
- * Convenience: load + require in one call. Returns the entitlements object
- * if the gate is open, throws EntitlementError otherwise.
+ * Numeric quota check. `current` is the caller's already-consumed count.
+ * Returns the limit (or null for unlimited). Throws QUOTA_EXCEEDED if `current`
+ * meets or exceeds the limit.
  */
+export function requireQuota(ent: Entitlements, key: string, current: number): number | null {
+  const v = ent.byKey[key];
+  if (!v) {
+    throw new EntitlementError(`quota ${key} is not part of this plan`);
+  }
+  if (v.value === -1) return null; // unlimited
+  if (current >= v.value) {
+    throw new EntitlementError(
+      `quota ${key} exceeded (${current} / ${v.value})`,
+      'QUOTA_EXCEEDED',
+    );
+  }
+  return v.value;
+}
+
+/** Convenience: load + boolean require in one call. */
 export async function gateFeature(
   admin: SupabaseClient,
   tenantId: string,
-  feature: FeatureKey,
+  key: string,
 ): Promise<Entitlements> {
   const ent = await loadEntitlementsForTenant(admin, tenantId);
-  requireFeature(ent, feature);
+  requireFeature(ent, key);
   return ent;
 }

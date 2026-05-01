@@ -1,10 +1,10 @@
 import React from 'react';
 import { Lock } from 'lucide-react';
 import { useTenant } from './TenantProvider';
-import type { FeatureKey } from '../billing/types';
 
 interface GateProps {
-  feature: FeatureKey;
+  /** Entitlement key from the catalog (e.g. "api.access" or "limit.api_calls_monthly"). */
+  feature: string;
   /** Custom render when the feature is gated. Defaults to a small upsell badge. */
   fallback?: React.ReactNode;
   /** Optional label shown in the default fallback to identify the feature. */
@@ -37,7 +37,7 @@ export function Gate({ feature, fallback, featureLabel, children }: GateProps) {
 }
 
 /** Inverse: render only when the feature is NOT available. Useful for upsell banners. */
-export function NotGate({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
+export function NotGate({ feature, children }: { feature: string; children: React.ReactNode }) {
   const { hasFeature, loading } = useTenant();
   if (loading) return null;
   if (hasFeature(feature)) return null;

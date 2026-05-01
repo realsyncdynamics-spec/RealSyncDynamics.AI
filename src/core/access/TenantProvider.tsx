@@ -1,7 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { listMyTenants, loadEntitlements, type TenantSummary } from './load-entitlements';
-import { canUseFeature } from './access-policy';
-import type { EntitlementDecision, FeatureKey } from '../billing/types';
+import {
+  listMyTenants, loadEntitlements,
+  hasFeature as hasFeatureRaw, getLimit as getLimitRaw,
+  type TenantSummary, type EntitlementSet,
+} from './load-entitlements';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 interface TenantState {
@@ -9,10 +11,11 @@ interface TenantState {
   error: string | null;
   tenants: TenantSummary[];
   activeTenantId: string | null;
-  entitlements: EntitlementDecision | null;
+  entitlements: EntitlementSet | null;
   setActiveTenant: (id: string) => void;
   refresh: () => Promise<void>;
-  hasFeature: (f: FeatureKey) => boolean;
+  hasFeature: (key: string) => boolean;
+  getLimit: (key: string) => number | null;
 }
 
 const Ctx = createContext<TenantState | null>(null);
@@ -22,7 +25,7 @@ const ACTIVE_KEY = 'realsync.activeTenantId';
 export function TenantProvider({ children }: { children: React.ReactNode }) {
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
   const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
-  const [entitlements, setEntitlements] = useState<EntitlementDecision | null>(null);
+  const [entitlements, setEntitlements] = useState<EntitlementSet | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,7 +81,8 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     entitlements,
     setActiveTenant,
     refresh,
-    hasFeature: (f) => (entitlements ? canUseFeature(entitlements, f) : false),
+    hasFeature: (k) => hasFeatureRaw(entitlements, k),
+    getLimit: (k) => getLimitRaw(entitlements, k),
   }), [loading, error, tenants, activeTenantId, entitlements, setActiveTenant, refresh]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -90,6 +94,6 @@ export function useTenant(): TenantState {
   return v;
 }
 
-export function useEntitlements(): EntitlementDecision | null {
+export function useEntitlements(): EntitlementSet | null {
   return useTenant().entitlements;
 }

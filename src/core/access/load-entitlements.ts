@@ -1,11 +1,24 @@
-// Loads everything needed to resolve entitlements for a tenant from Supabase
-// and runs resolveEntitlements(). Pure read operations, RLS-friendly.
+// Client-side entitlement loader.
+//
+// Backed by the products / entitlements / product_entitlements tables and the
+// `tenant_entitlements(uuid)` SQL function. Hardcoded plan→features tables are
+// intentionally not consulted any more — the DB is the single source of truth.
 
-import { resolveEntitlements } from '../billing/entitlements';
-import type {
-  TenantContext, SubscriptionSnapshot, CurrentUsage, EntitlementDecision, PlanKey, TenantRole,
-} from '../billing/types';
 import { getSupabase } from '../../lib/supabase';
+import type { TenantRole } from '../billing/types';
+
+export type EntitlementKind = 'boolean' | 'limit';
+
+export interface EntitlementValue {
+  key: string;
+  kind: EntitlementKind;
+  /** -1 = unlimited / always-on; 0 = off / no quota; >0 = numeric limit. */
+  value: number;
+}
+
+export interface EntitlementSet {
+  byKey: Record<string, EntitlementValue>;
+}
 
 export interface TenantSummary {
   tenantId: string;
@@ -23,7 +36,7 @@ export async function listMyTenants(): Promise<TenantSummary[]> {
     .order('created_at', { ascending: true });
   if (error) throw error;
   return (data ?? [])
-    // deno-lint-ignore no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((row: any) => ({
       tenantId: row.tenant?.id,
       name: row.tenant?.name ?? '(unbenannt)',
@@ -33,76 +46,28 @@ export async function listMyTenants(): Promise<TenantSummary[]> {
     .filter((t) => t.tenantId);
 }
 
-/** Loads tenant context, subscription and usage, then resolves entitlements. */
-export async function loadEntitlements(tenantId: string): Promise<EntitlementDecision> {
+/** Resolves the active entitlement set for the given tenant via the DB function. */
+export async function loadEntitlements(tenantId: string): Promise<EntitlementSet> {
   const sb = getSupabase();
-
-  const [tenantResp, subResp, usageResp, memberCountResp] = await Promise.all([
-    sb.from('tenants').select('id,is_public_sector').eq('id', tenantId).maybeSingle(),
-    sb.from('subscriptions').select('*').eq('tenant_id', tenantId)
-      .order('updated_at', { ascending: false }).limit(1).maybeSingle(),
-    sb.from('usage_counters').select('*').eq('tenant_id', tenantId)
-      .order('month_bucket', { ascending: false }).limit(1).maybeSingle(),
-    sb.from('memberships').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-  ]);
-
-  if (tenantResp.error) throw tenantResp.error;
-  if (subResp.error)    throw subResp.error;
-  if (usageResp.error)  throw usageResp.error;
-
-  const tenantRow = tenantResp.data;
-  const subRow = subResp.data;
-  const usageRow = usageResp.data;
-
-  const planKey: PlanKey = (subRow?.plan_key as PlanKey) ?? 'free';
-
-  const tenant: TenantContext = {
-    tenantId,
-    planKey,
-    roles: [],
-    memberCount: memberCountResp.count ?? 1,
-    isPublicSector: !!tenantRow?.is_public_sector,
-  };
-
-  const sub: SubscriptionSnapshot = subRow
-    ? {
-        customerId: subRow.stripe_customer_id,
-        subscriptionId: subRow.stripe_subscription_id,
-        productId: subRow.stripe_product_id ?? null,
-        priceId: subRow.stripe_price_id ?? null,
-        planKey,
-        interval: (subRow.billing_interval ?? 'month') as 'month' | 'year' | 'custom',
-        status: subRow.status,
-        quantity: subRow.quantity ?? 0,
-        cancelAtPeriodEnd: !!subRow.cancel_at_period_end,
-        currentPeriodEnd: subRow.current_period_end,
-        addOns: [],
-      }
-    : freeSnapshot();
-
-  const usage: CurrentUsage = {
-    activeAssets: usageRow?.active_assets ?? 0,
-    monthlyRegistrations: usageRow?.monthly_registrations ?? 0,
-    apiCallsMonthly: usageRow?.api_calls_monthly ?? 0,
-    bulkJobsMonthly: usageRow?.bulk_jobs_monthly ?? 0,
-    complianceExportsMonthly: usageRow?.compliance_exports_monthly ?? 0,
-  };
-
-  return resolveEntitlements(sub, tenant, usage);
+  const { data, error } = await sb.rpc('tenant_entitlements', { p_tenant_id: tenantId });
+  if (error) throw error;
+  const byKey: Record<string, EntitlementValue> = {};
+  for (const row of (data ?? []) as EntitlementValue[]) {
+    byKey[row.key] = { key: row.key, kind: row.kind, value: row.value };
+  }
+  return { byKey };
 }
 
-function freeSnapshot(): SubscriptionSnapshot {
-  return {
-    customerId: '',
-    subscriptionId: null,
-    productId: null,
-    priceId: null,
-    planKey: 'free',
-    interval: 'month',
-    status: 'inactive',
-    quantity: 0,
-    cancelAtPeriodEnd: false,
-    currentPeriodEnd: null,
-    addOns: [],
-  };
+/** Boolean check (value === -1 or > 0). */
+export function hasFeature(ent: EntitlementSet | null, key: string): boolean {
+  if (!ent) return false;
+  const v = ent.byKey[key];
+  if (!v) return false;
+  return v.value === -1 || v.value > 0;
+}
+
+/** Returns the numeric limit for a key (-1 = unlimited, 0 = none, >0 = limit), or null if unknown. */
+export function getLimit(ent: EntitlementSet | null, key: string): number | null {
+  if (!ent) return null;
+  return ent.byKey[key]?.value ?? null;
 }

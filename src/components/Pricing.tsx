@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const tiers = [
   {
@@ -122,15 +123,16 @@ export function Pricing() {
                 ))}
               </ul>
 
-              <button
-                className={`w-full py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
+              <Link
+                to="/pricing"
+                className={`block text-center w-full py-3 px-6 rounded-xl text-sm font-semibold transition-all ${
                   tier.highlighted
                     ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_-5px_rgba(37,99,235,0.4)]'
                     : 'bg-white hover:bg-slate-100 text-slate-900 border border-slate-200 shadow-sm'
                 }`}
               >
                 {tier.cta}
-              </button>
+              </Link>
             </motion.div>
           ))}
         </div>

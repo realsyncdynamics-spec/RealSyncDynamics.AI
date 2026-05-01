@@ -24,3 +24,83 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  db:
+    runs-on: ubuntu-latest
+    name: Migration validation
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bootstrap Supabase-equivalent stubs
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+          CREATE SCHEMA IF NOT EXISTS auth;
+          CREATE TABLE IF NOT EXISTS auth.users (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              email TEXT UNIQUE,
+              raw_user_meta_data JSONB,
+              created_at TIMESTAMPTZ DEFAULT now()
+          );
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID
+              LANGUAGE sql STABLE
+              AS 'SELECT NULL::uuid';
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT
+              LANGUAGE sql STABLE
+              AS 'SELECT $$authenticated$$::text';
+          SQL
+
+      - name: Apply all migrations in order
+        run: |
+          set -e
+          for f in supabase/migrations/*.sql; do
+            echo "::group::$(basename "$f")"
+            psql -v ON_ERROR_STOP=1 -f "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Verify migrations are append-only
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')
+        run: |
+          set -e
+          changed=$(git diff --name-only origin/main...HEAD -- 'supabase/migrations/' || true)
+          modified_existing=""
+          for f in $changed; do
+            if git cat-file -e "origin/main:$f" 2>/dev/null; then
+              if ! git diff --quiet "origin/main" -- "$f"; then
+                modified_existing="$modified_existing $f"
+              fi
+            fi
+          done
+          if [ -n "$modified_existing" ]; then
+            echo "❌ append-only rule broken; do not edit merged migrations:"
+            for f in $modified_existing; do echo "    $f"; done
+            echo
+            echo "If this is a fix for a migration that has never applied"
+            echo "successfully (e.g. SQL syntax error caught by CI on the"
+            echo "very first run), prefix the PR title with [hotfix]."
+            exit 2
+          fi
+          echo "✅ migrations are append-only"

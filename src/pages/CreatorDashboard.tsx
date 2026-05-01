@@ -191,6 +191,12 @@ export function CreatorDashboard() {
             >
               <Bot className="h-4 w-4 text-indigo-600" /> Verbrauch & Limits
             </Link>
+            <Link
+              to="/tenant/invites"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              <Bot className="h-4 w-4 text-blue-600" /> Team-Einladungen
+            </Link>
           </div>
         </aside>
 

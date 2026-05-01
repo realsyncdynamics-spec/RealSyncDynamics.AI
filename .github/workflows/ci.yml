@@ -28,33 +28,75 @@ jobs:
   db:
     runs-on: ubuntu-latest
     name: Migration validation
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
     steps:
       - uses: actions/checkout@v4
-
-      - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          fetch-depth: 0
 
-      - name: Start local Supabase stack
-        run: supabase start
+      - name: Bootstrap Supabase-equivalent stubs
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-      - name: Apply migrations from scratch
-        run: supabase db reset --debug
+          CREATE SCHEMA IF NOT EXISTS auth;
+          CREATE TABLE IF NOT EXISTS auth.users (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              email TEXT UNIQUE,
+              raw_user_meta_data JSONB,
+              created_at TIMESTAMPTZ DEFAULT now()
+          );
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID
+              LANGUAGE sql STABLE
+              AS 'SELECT NULL::uuid';
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT
+              LANGUAGE sql STABLE
+              AS 'SELECT $$authenticated$$::text';
+          SQL
+
+      - name: Apply all migrations in order
+        run: |
+          set -e
+          for f in supabase/migrations/*.sql; do
+            echo "::group::$(basename "$f")"
+            psql -v ON_ERROR_STOP=1 -f "$f"
+            echo "::endgroup::"
+          done
 
       - name: Verify migrations are append-only
+        if: github.event_name == 'pull_request'
         run: |
-          # Block PRs that modify any migration file already merged on main.
-          if git diff --name-only origin/main...HEAD | grep -E '^supabase/migrations/' | xargs -r -I{} bash -c '
-            f="{}"
+          set -e
+          changed=$(git diff --name-only origin/main...HEAD -- 'supabase/migrations/' || true)
+          modified_existing=""
+          for f in $changed; do
             if git cat-file -e "origin/main:$f" 2>/dev/null; then
               if ! git diff --quiet "origin/main" -- "$f"; then
-                echo "❌ migration modified: $f"
-                exit 2
+                modified_existing="$modified_existing $f"
               fi
             fi
-          '; then
-            echo "✅ migrations are append-only"
-          else
-            exit 1
+          done
+          if [ -n "$modified_existing" ]; then
+            echo "❌ append-only rule broken; do not edit merged migrations:"
+            for f in $modified_existing; do echo "    $f"; done
+            exit 2
           fi
-        if: github.event_name == 'pull_request'
+          echo "✅ migrations are append-only"

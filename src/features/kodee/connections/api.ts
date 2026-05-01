@@ -6,6 +6,8 @@ export interface VpsConnection {
   host: string;
   port: number;
   username: string;
+  owner_id: string;
+  tenant_id: string | null;
   known_host_fingerprint: string | null;
   created_at: string;
   updated_at: string;
@@ -19,6 +21,8 @@ export interface CreateConnectionInput {
   username: string;
   private_key: string;
   known_host_fingerprint?: string;
+  /** Optional tenant scope. null/undefined = personal connection (owner-only). */
+  tenant_id?: string | null;
 }
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {

@@ -19,9 +19,9 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
+import { loadConnectionForUser } from '../_shared/connections.ts';
 import { dispatch } from '../kodee/actions.ts';
 import { decryptPrivateKey } from '../kodee/secrets.ts';
-import type { VpsConnectionRow } from '../kodee/types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,13 +65,9 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // Load connection (owner-scoped — vps_connections is per-user in v1)
-  const { data: conn, error: connErr } = await admin
-    .from('vps_connections').select('*')
-    .eq('id', body.connection_id).eq('owner_id', userId)
-    .maybeSingle<VpsConnectionRow>();
-  if (connErr) return jsonError(500, 'INTERNAL', connErr.message);
-  if (!conn)   return jsonError(404, 'NOT_FOUND', 'connection not found');
+  // Load connection — owner OR member of the connection's tenant
+  const conn = await loadConnectionForUser(admin, userId, body.connection_id);
+  if (!conn) return jsonError(404, 'NOT_FOUND', 'connection not found');
 
   // Decrypt SSH key
   const { data: keyRow, error: keyErr } = await admin

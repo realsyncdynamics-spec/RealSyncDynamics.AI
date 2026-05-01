@@ -26,6 +26,8 @@ interface CreateOp {
   private_key: string;
   known_host_fingerprint?: string;
   public_key_fingerprint?: string;
+  /** Optional tenant scope; null = personal connection (owner-only). */
+  tenant_id?: string | null;
 }
 interface ListOp { op: 'list' }
 interface DeleteOp { op: 'delete'; connection_id: string }
@@ -38,6 +40,8 @@ interface UpdateOp {
   username?: string;
   known_host_fingerprint?: string | null;
   private_key?: string;
+  /** Re-scope: null = make personal, uuid = move to that tenant. */
+  tenant_id?: string | null;
 }
 type OnboardRequest = CreateOp | ListOp | DeleteOp | UpdateOp;
 
@@ -71,10 +75,19 @@ Deno.serve(async (req) => {
   try {
     switch (body.op) {
       case 'list': {
+        // Owner-or-tenant-member visibility — fetch the user's tenants and OR
+        // them into the query. Done in two steps because supabase-js .or()
+        // syntax is awkward across nullable refs.
+        const { data: memberships } = await admin
+          .from('memberships').select('tenant_id').eq('user_id', userId);
+        const tenantIds = (memberships ?? []).map((m) => m.tenant_id);
+        const filter = tenantIds.length
+          ? `owner_id.eq.${userId},tenant_id.in.(${tenantIds.join(',')})`
+          : `owner_id.eq.${userId}`;
         const { data, error } = await admin
           .from('vps_connections')
-          .select('id,label,host,port,username,known_host_fingerprint,created_at,updated_at,last_used_at')
-          .eq('owner_id', userId)
+          .select('id,label,host,port,username,owner_id,tenant_id,known_host_fingerprint,created_at,updated_at,last_used_at')
+          .or(filter)
           .order('created_at', { ascending: false });
         if (error) throw error;
         return json({ ok: true, connections: data ?? [] });
@@ -86,17 +99,27 @@ Deno.serve(async (req) => {
         const port = body.port ?? 22;
         if (port < 1 || port > 65535) return jsonError(400, 'BAD_REQUEST', 'port out of range');
 
+        // If tenant_id is provided, the caller must be a member of it.
+        if (body.tenant_id) {
+          const { count } = await admin
+            .from('memberships')
+            .select('id', { count: 'exact', head: true })
+            .eq('tenant_id', body.tenant_id).eq('user_id', userId);
+          if (!count) return jsonError(403, 'FORBIDDEN', 'not a member of the requested tenant');
+        }
+
         const { data: conn, error: connErr } = await admin
           .from('vps_connections')
           .insert({
             owner_id: userId,
+            tenant_id: body.tenant_id ?? null,
             label: body.label,
             host: body.host,
             port,
             username: body.username,
             known_host_fingerprint: body.known_host_fingerprint ?? null,
           })
-          .select('id,label,host,port,username,known_host_fingerprint,created_at')
+          .select('id,label,host,port,username,owner_id,tenant_id,known_host_fingerprint,created_at')
           .single();
         if (connErr || !conn) throw connErr ?? new Error('insert failed');
 
@@ -127,6 +150,16 @@ Deno.serve(async (req) => {
         }
         if (body.username !== undefined) patch.username = body.username;
         if (body.known_host_fingerprint !== undefined) patch.known_host_fingerprint = body.known_host_fingerprint;
+        if (body.tenant_id !== undefined) {
+          if (body.tenant_id) {
+            const { count } = await admin
+              .from('memberships')
+              .select('id', { count: 'exact', head: true })
+              .eq('tenant_id', body.tenant_id).eq('user_id', userId);
+            if (!count) return jsonError(403, 'FORBIDDEN', 'not a member of the requested tenant');
+          }
+          patch.tenant_id = body.tenant_id;
+        }
 
         if (Object.keys(patch).length) {
           const { error } = await admin

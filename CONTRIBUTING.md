@@ -70,12 +70,32 @@ This preserves history and ordering on `main`.
 
 ### Deploying
 
-```bash
-# Once linked (see deploy playbook): pushes pending migrations.
-supabase db push
-```
+Two paths:
 
-CI does not auto-deploy; that's a deliberate manual step today.
+1. **Manual** (one-off, from your laptop):
+   ```bash
+   supabase link --project-ref <project-ref>
+   supabase db push
+   ```
+
+2. **Automatic via `.github/workflows/deploy.yml`** — runs on every push to
+   `main` that touches `supabase/migrations/**` or `supabase/functions/**`,
+   and on demand via *Actions → Deploy → Run workflow*. Posts pending
+   migrations to the linked Supabase project. Edge functions deploy only
+   on a manual run with the `deploy_functions` input checked, to keep the
+   blast radius narrow.
+
+   **Required repo secrets** (Settings → Secrets and variables → Actions):
+   - `SUPABASE_ACCESS_TOKEN` — personal access token from
+     supabase.com → Account → Access Tokens
+   - `SUPABASE_PROJECT_ID` — the `xxxxxxxx` part of `xxxxxxxx.supabase.co`
+   - `SUPABASE_DB_PASSWORD` — the linked project's DB password
+
+   The workflow fails fast if any of those is missing.
+
+Function-side runtime secrets (`KODEE_SECRETS_KEY`, `ANTHROPIC_API_KEY`,
+`STRIPE_*`, `STRIPE_METER_SHARED_SECRET`) are set inside Supabase via
+`supabase secrets set` — they live with the runtime, not in GitHub.
 
 ## Edge functions
 

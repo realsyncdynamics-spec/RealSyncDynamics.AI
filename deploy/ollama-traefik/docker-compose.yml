@@ -1,0 +1,88 @@
+# Self-contained Ollama-Stack für den Kodee-VPS, Traefik-aware.
+#
+# Architektur:
+#
+#   [internet] ─ TLS ─→ Host-Traefik ─ http ─→ ollama-proxy (caddy:8080)
+#                                                  │ (bearer-auth check)
+#                                                  ▼
+#                                              ollama:11434  (interne docker-net)
+#
+# Host-Traefik bleibt unangetastet (kein Restart, keine Konfig-Änderung im
+# Traefik-Image). Wir docken über das gemeinsame Docker-Netz an UND einen
+# file-provider-Snippet (siehe traefik-dynamic.yml).
+#
+# Voraussetzungen auf dem VPS:
+#   - Docker + docker-compose (v2)
+#   - Ein Docker-Netz, an dem Host-Traefik hängt (Default: 'web' oder 'proxy';
+#     siehe README — wird als external network angeschlossen)
+#   - Eine .env neben dieser Datei mit OLLAMA_AUTH_TOKEN gesetzt
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kodee-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      # CPU-only Inferenz: nur ein paralleler Slot, sonst kollabiert die Latenz.
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_KEEP_ALIVE: "30m"
+    # Kein ports: — Ollama bleibt im internen Netz, nur kodee-ollama-proxy
+    # erreicht es. Das ist wichtig: ohne Bearer-Gate dürfte es niemand sehen.
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  ollama-proxy:
+    image: caddy:2.8-alpine
+    container_name: kodee-ollama-proxy
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      # Caddy expandet ${OLLAMA_AUTH_TOKEN} aus der .env zur Laufzeit.
+      OLLAMA_AUTH_TOKEN: "${OLLAMA_AUTH_TOKEN:?OLLAMA_AUTH_TOKEN must be set in .env}"
+    networks:
+      - internal
+      - traefik_proxy
+    labels:
+      # ─── Traefik discovery via labels ────────────────────────────────────
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik_proxy}"
+
+      # Router: matcht nur die Apex-Domain + den /_kodee/ollama-Pfad.
+      - "traefik.http.routers.kodee-ollama.rule=Host(`realsyncdynamicsai.de`) && PathPrefix(`/_kodee/ollama`)"
+      - "traefik.http.routers.kodee-ollama.entrypoints=websecure"
+      - "traefik.http.routers.kodee-ollama.tls=true"
+      - "traefik.http.routers.kodee-ollama.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
+      - "traefik.http.routers.kodee-ollama.service=kodee-ollama"
+      - "traefik.http.routers.kodee-ollama.middlewares=kodee-ollama-strip"
+
+      # Stripprefix: /_kodee/ollama wird abgeschnitten, bevor's an Caddy geht.
+      - "traefik.http.middlewares.kodee-ollama-strip.stripprefix.prefixes=/_kodee/ollama"
+
+      # Service: Caddy lauscht auf 8080.
+      - "traefik.http.services.kodee-ollama.loadbalancer.server.port=8080"
+
+volumes:
+  ollama_models:
+    name: kodee_ollama_models
+
+networks:
+  internal:
+    driver: bridge
+  # Externes Netz, an dem Host-Traefik schon hängt. Name kommt aus .env
+  # (TRAEFIK_NETWORK), Default 'traefik_proxy'.
+  traefik_proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik_proxy}

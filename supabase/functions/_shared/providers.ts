@@ -119,7 +119,13 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
 }
 
 // ─── Ollama (self-hosted, EU-local) ─────────────────────────────────────────
-// Routed via a Bearer-protected reverse-proxy on the Kodee-VPS.
+// Routed via Traefik with a BasicAuth middleware on ollama.realsyncdynamicsai.de.
+// Traefik can't natively validate Bearer tokens, so we stand on BasicAuth which
+// is server-agnostic and supported by every reverse-proxy out of the box.
+//
+// Secret format: OLLAMA_AUTH_TOKEN = "user:plaintext-password" (the same
+// plaintext password that was bcrypted into traefik's basicauth.users entry).
+//
 // The Ollama /api/chat endpoint streams by default — we request stream=false
 // so we can parse a single JSON body and stay aligned with the other
 // providers' synchronous shape.
@@ -127,9 +133,9 @@ async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
   const baseUrl = Deno.env.get('OLLAMA_URL');
   if (!baseUrl) throw new ProviderError('OLLAMA_URL not set', 'PROVIDER_NOT_CONFIGURED');
 
-  const token = Deno.env.get('OLLAMA_AUTH_TOKEN');
+  const cred = Deno.env.get('OLLAMA_AUTH_TOKEN');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (cred) headers['Authorization'] = `Basic ${btoa(cred)}`;
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
   if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });

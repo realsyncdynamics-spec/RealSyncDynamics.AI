@@ -1,21 +1,28 @@
-# Self-contained Ollama-Stack für den Kodee-VPS, Traefik-aware.
+# Ollama + Open WebUI hinter dem bestehenden Host-Traefik.
 #
 # Architektur:
 #
-#   [internet] ─ TLS ─→ Host-Traefik ─ http ─→ ollama-proxy (caddy:8080)
-#                                                  │ (bearer-auth check)
-#                                                  ▼
-#                                              ollama:11434  (interne docker-net)
+#   [internet] ─TLS─→ Host-Traefik ─→ ollama.realsyncdynamicsai.de
+#                                       │ (BasicAuth-Middleware)
+#                                       ▼
+#                                     ollama:11434  (interne Compose-Net)
+#                                       ▲
+#                                       │ (kein Auth, internes Netz)
+#                                       │
+#                       chat.realsyncdynamicsai.de
+#                                       │ (Open WebUI eigene Login/API-Keys)
+#                                       ▼
+#                                     open-webui:8080
 #
-# Host-Traefik bleibt unangetastet (kein Restart, keine Konfig-Änderung im
-# Traefik-Image). Wir docken über das gemeinsame Docker-Netz an UND einen
-# file-provider-Snippet (siehe traefik-dynamic.yml).
+# Routing rein über Traefik-Labels — kein Caddy, kein PathPrefix.
+# Ollama-API ist via BasicAuth gegated (Traefik-native, ohne Plugin).
+# Open WebUI bringt eigene Auth mit (erste Registrierung wird Admin).
 #
 # Voraussetzungen auf dem VPS:
-#   - Docker + docker-compose (v2)
-#   - Ein Docker-Netz, an dem Host-Traefik hängt (Default: 'web' oder 'proxy';
-#     siehe README — wird als external network angeschlossen)
-#   - Eine .env neben dieser Datei mit OLLAMA_AUTH_TOKEN gesetzt
+#   - Docker + docker-compose v2
+#   - Bestehender Host-Traefik mit Docker-Provider + Let's-Encrypt-Resolver
+#   - Externes Docker-Netz (TRAEFIK_NETWORK in .env)
+#   - DNS A-Records ollama + chat → 194.163.130.123
 
 services:
   ollama:
@@ -26,63 +33,78 @@ services:
       - ollama_models:/root/.ollama
     environment:
       OLLAMA_HOST: "0.0.0.0:11434"
-      # CPU-only Inferenz: nur ein paralleler Slot, sonst kollabiert die Latenz.
       OLLAMA_NUM_PARALLEL: "1"
       OLLAMA_KEEP_ALIVE: "30m"
-    # Kein ports: — Ollama bleibt im internen Netz, nur kodee-ollama-proxy
-    # erreicht es. Das ist wichtig: ohne Bearer-Gate dürfte es niemand sehen.
     networks:
       - internal
+      - traefik_proxy
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
 
-  ollama-proxy:
-    image: caddy:2.8-alpine
-    container_name: kodee-ollama-proxy
+      # ── Router: ollama.realsyncdynamicsai.de ─────────────────────────────
+      - "traefik.http.routers.kodee-ollama.rule=Host(`ollama.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-ollama.entrypoints=websecure"
+      - "traefik.http.routers.kodee-ollama.tls=true"
+      - "traefik.http.routers.kodee-ollama.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-ollama.service=kodee-ollama"
+      - "traefik.http.routers.kodee-ollama.middlewares=kodee-ollama-auth"
+
+      # ── BasicAuth Middleware (Traefik-native) ────────────────────────────
+      # Format: user:bcrypt-hash, generiert per:
+      #   htpasswd -nbB <USER> "$(openssl rand -base64 24)"
+      - "traefik.http.middlewares.kodee-ollama-auth.basicauth.users=${OLLAMA_BASIC_AUTH}"
+      - "traefik.http.middlewares.kodee-ollama-auth.basicauth.realm=Kodee Ollama"
+
+      # ── Service ──────────────────────────────────────────────────────────
+      - "traefik.http.services.kodee-ollama.loadbalancer.server.port=11434"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: kodee-open-webui
     restart: unless-stopped
     depends_on:
       ollama:
         condition: service_healthy
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - open_webui_data:/app/backend/data
     environment:
-      # Caddy expandet ${OLLAMA_AUTH_TOKEN} aus der .env zur Laufzeit.
-      OLLAMA_AUTH_TOKEN: "${OLLAMA_AUTH_TOKEN:?OLLAMA_AUTH_TOKEN must be set in .env}"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:?WEBUI_SECRET_KEY must be set in .env}"
+      # Disable signup nachdem Du Dich als Admin registriert hast — siehe README
+      ENABLE_SIGNUP: "${ENABLE_SIGNUP:-true}"
     networks:
       - internal
       - traefik_proxy
     labels:
-      # ─── Traefik discovery via labels ────────────────────────────────────
       - "traefik.enable=true"
-      - "traefik.docker.network=${TRAEFIK_NETWORK:-traefik_proxy}"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
 
-      # Router: matcht nur die Apex-Domain + den /_kodee/ollama-Pfad.
-      - "traefik.http.routers.kodee-ollama.rule=Host(`realsyncdynamicsai.de`) && PathPrefix(`/_kodee/ollama`)"
-      - "traefik.http.routers.kodee-ollama.entrypoints=websecure"
-      - "traefik.http.routers.kodee-ollama.tls=true"
-      - "traefik.http.routers.kodee-ollama.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}"
-      - "traefik.http.routers.kodee-ollama.service=kodee-ollama"
-      - "traefik.http.routers.kodee-ollama.middlewares=kodee-ollama-strip"
+      # ── Router: chat.realsyncdynamicsai.de ───────────────────────────────
+      - "traefik.http.routers.kodee-chat.rule=Host(`chat.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-chat.entrypoints=websecure"
+      - "traefik.http.routers.kodee-chat.tls=true"
+      - "traefik.http.routers.kodee-chat.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-chat.service=kodee-chat"
 
-      # Stripprefix: /_kodee/ollama wird abgeschnitten, bevor's an Caddy geht.
-      - "traefik.http.middlewares.kodee-ollama-strip.stripprefix.prefixes=/_kodee/ollama"
-
-      # Service: Caddy lauscht auf 8080.
-      - "traefik.http.services.kodee-ollama.loadbalancer.server.port=8080"
+      # Open WebUI hat eigene Auth — kein Traefik-Middleware-Gate hier.
+      - "traefik.http.services.kodee-chat.loadbalancer.server.port=8080"
 
 volumes:
   ollama_models:
     name: kodee_ollama_models
+  open_webui_data:
+    name: kodee_open_webui_data
 
 networks:
   internal:
     driver: bridge
-  # Externes Netz, an dem Host-Traefik schon hängt. Name kommt aus .env
-  # (TRAEFIK_NETWORK), Default 'traefik_proxy'.
   traefik_proxy:
     external: true
-    name: ${TRAEFIK_NETWORK:-traefik_proxy}
+    name: ${TRAEFIK_NETWORK}

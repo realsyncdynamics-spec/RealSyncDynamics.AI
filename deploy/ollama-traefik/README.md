@@ -1,116 +1,172 @@
-# Kodee Ollama-Stack (Traefik-Variante)
+# Kodee Ollama-Stack (Traefik-Variante, Subdomain-Routing)
 
 EU-lokale AI-Inferenz für RealSyncDynamics.AI, hinter dem bestehenden
-Host-Traefik auf dem Kodee-VPS (187.77.89.1, Hostinger srv1622293).
+Host-Traefik auf dem Kodee-VPS (194.163.130.123, Hostinger srv1622293).
 
 ## Architektur
 
 ```
-[internet] ─TLS─→ Host-Traefik ─http─→ kodee-ollama-proxy (caddy:8080)
-                                            │ (Bearer-Auth, Pfad-Whitelist)
-                                            ▼
-                                       kodee-ollama (ollama:11434)
-                                            │
-                                            ▼
-                                       qwen2.5:7b-instruct-q4_K_M
-                                       (~4.7 GB, persistent volume)
+[internet] ─TLS─→ Host-Traefik
+                     │
+                     ├── ollama.realsyncdynamicsai.de
+                     │      ↓ BasicAuth-Middleware (Traefik native)
+                     │   ollama:11434  (interne Compose-Net, keine Public-Ports)
+                     │      ↑
+                     │      │ http (internal)
+                     │      │
+                     └── chat.realsyncdynamicsai.de
+                            ↓ Open WebUI bringt eigene Login + API-Keys
+                         open-webui:8080
 ```
 
-- **Caddy** terminiert die Bearer-Auth und proxiet nur `/`, `/api/chat`, `/api/tags`.
-- **Ollama** läuft im internen Docker-Netz, hat **keine veröffentlichten Ports** —
-  Modell-Management (`/api/pull`, `/api/delete`) ist nur über `docker exec`
-  möglich, niemals von außen.
-- **Host-Traefik** wird per Labels entdeckt (kein Restart der Traefik-Instanz
-  nötig) und routet `https://realsyncdynamicsai.de/_kodee/ollama` an Caddy.
+- **Routing rein über Traefik-Labels** — kein Caddy, kein PathPrefix.
+- **BasicAuth auf der API** über Traefik-Middleware (Bearer kann Traefik nicht
+  ohne Plugin validieren).
+- **Open WebUI** als Standard-Frontend für Ollama, mit Auto-Admin-Flow für
+  den ersten User + Multi-User danach.
+- Beide Container hängen am externen Traefik-Netz (`TRAEFIK_NETWORK`) und
+  einem privaten Compose-Netz (`internal`).
 
 ## Voraussetzungen
 
 - Docker + docker-compose v2 (`docker compose version`)
-- Bestehender Host-Traefik mit aktivem Docker-Provider und Let's-Encrypt-Resolver
-- Docker-Netz, an dem Host-Traefik schon hängt — Name in `.env` als
-  `TRAEFIK_NETWORK` setzen
-- DNS für `realsyncdynamicsai.de` zeigt auf den VPS (heute auf 187.77.89.1)
+- Bestehender Host-Traefik mit Docker-Provider + Let's-Encrypt-Resolver
+- `apache2-utils` (für `htpasswd`) — `apt install -y apache2-utils`
+- DNS A-Records:
+  - `ollama.realsyncdynamicsai.de` → 194.163.130.123
+  - `chat.realsyncdynamicsai.de`   → 194.163.130.123
 
-## Setup (5 Min auf dem VPS)
+## Setup
+
+### 1. DNS anlegen
+
+Im Hostinger-DNS-Panel **zwei neue A-Records**:
+
+```
+A  ollama  194.163.130.123  3600
+A  chat    194.163.130.123  3600
+```
+
+Warten bis beide auflösen (Cloudflare DoH:
+`curl 'https://cloudflare-dns.com/dns-query?name=ollama.realsyncdynamicsai.de&type=A' -H 'Accept: application/dns-json'`).
+
+### 2. Auf dem VPS
 
 ```bash
-cd /root/RealSyncDynamics.AI/deploy/ollama-traefik
+ssh root@194.163.130.123
+cd /root/RealSyncDynamics.AI
+git pull origin claude/kodee-vps-assistant-QAj43
+cd deploy/ollama-traefik
+```
 
-# 1. Docker-Netz von Host-Traefik finden (typisch: traefik_proxy / web / proxy)
-docker network ls | grep -iE 'traefik|proxy|web'
+### 3. .env anlegen
 
-# 2. .env anlegen
+```bash
 cp .env.example .env
-sed -i "s/^OLLAMA_AUTH_TOKEN=.*/OLLAMA_AUTH_TOKEN=$(openssl rand -hex 32)/" .env
-# TRAEFIK_NETWORK=... auf den Namen aus Schritt 1 setzen, falls nicht traefik_proxy
-# TRAEFIK_CERT_RESOLVER=... auf euren Resolver-Namen setzen, falls nicht letsencrypt
-nano .env
 
-# 3. Stack starten
+# BasicAuth-Credentials erzeugen
+apt install -y apache2-utils
+PASS=$(openssl rand -base64 24)
+HASH=$(htpasswd -nbB kodee "$PASS" | sed 's/\$/\$\$/g')
+echo "PLAIN PASSWORD (für Supabase-Secret OLLAMA_AUTH_TOKEN als 'kodee:$PASS'): $PASS"
+
+# WebUI-Secret
+WEBUI_KEY=$(openssl rand -hex 32)
+
+# Traefik-Netz vom Host finden
+NET=$(docker ps --format '{{.Names}}\t{{.Networks}}' | grep -i traefik | head -1 | awk '{print $NF}')
+[ -z "$NET" ] && NET="openclaw_default"
+
+# In .env eintragen
+sed -i "s|^OLLAMA_BASIC_AUTH=.*|OLLAMA_BASIC_AUTH=$HASH|" .env
+sed -i "s|^WEBUI_SECRET_KEY=.*|WEBUI_SECRET_KEY=$WEBUI_KEY|" .env
+sed -i "s|^TRAEFIK_NETWORK=.*|TRAEFIK_NETWORK=$NET|" .env
+
+cat .env
+```
+
+### 4. Stack starten
+
+```bash
 docker compose up -d
+sleep 5
+docker compose ps
+```
 
-# 4. Modell pullen (~4.7 GB, einmalig, ~5-15 Min)
+Beide Container sollten `Up` (Ollama eventuell `health: starting` bis 60s).
+
+### 5. Modell pullen (~5-15 Min, einmalig)
+
+```bash
 docker exec -it kodee-ollama ollama pull qwen2.5:7b-instruct-q4_K_M
+```
 
-# 5. Selbsttest
-TOKEN=$(grep '^OLLAMA_AUTH_TOKEN=' .env | cut -d= -f2)
+### 6. Tests
 
-curl -sf -o /dev/null -w 'mit-bearer: %{http_code}\n' \
-  -H "Authorization: Bearer $TOKEN" \
-  https://realsyncdynamicsai.de/_kodee/ollama/
+```bash
+# 401 ohne Auth
+curl -s -o /dev/null -w 'no-auth: %{http_code}\n' \
+  https://ollama.realsyncdynamicsai.de/
 
-curl -s -o /dev/null -w 'ohne-bearer: %{http_code}\n' \
-  https://realsyncdynamicsai.de/_kodee/ollama/
+# 200 mit BasicAuth
+curl -sf -u "kodee:$PASS" https://ollama.realsyncdynamicsai.de/
 
 # Echte Inferenz (30-60s auf 16GB CPU)
-curl -sf --max-time 180 -X POST \
-  https://realsyncdynamicsai.de/_kodee/ollama/api/chat \
-  -H "Authorization: Bearer $TOKEN" \
+curl -sf --max-time 180 -u "kodee:$PASS" \
+  -X POST https://ollama.realsyncdynamicsai.de/api/chat \
   -H "Content-Type: application/json" \
   -d '{"model":"qwen2.5:7b-instruct-q4_K_M","messages":[{"role":"user","content":"Antworte mit genau einem Wort: ok"}],"stream":false}'
+
+# WebUI im Browser:  https://chat.realsyncdynamicsai.de
 ```
 
 Erwartung:
-- `mit-bearer: 200`
-- `ohne-bearer: 401`
-- Inferenz: `{"model":"qwen2.5:...","message":{"role":"assistant","content":"ok"},...}`
+- `no-auth: 401`
+- BasicAuth → `Ollama is running` (Default-Antwort an `/`)
+- Inferenz → `{"model":"...","message":{"content":"ok"},...}`
 
 ## Supabase Edge-Function Secrets
 
-Sobald der Stack läuft, im Supabase-Dashboard
-[Settings → Edge Functions → Secrets](https://supabase.com/dashboard/project/ebljyceifhnlzhjfyxup/settings/functions)
-zwei Werte setzen:
+[Settings → Edge Functions → Secrets](https://supabase.com/dashboard/project/ebljyceifhnlzhjfyxup/settings/functions):
 
 ```
-OLLAMA_URL        = https://realsyncdynamicsai.de/_kodee/ollama
-OLLAMA_AUTH_TOKEN = <Wert aus deploy/ollama-traefik/.env>
+OLLAMA_URL        = https://ollama.realsyncdynamicsai.de
+OLLAMA_AUTH_TOKEN = kodee:<das Klartext-Passwort aus Schritt 3>
 ```
 
-Danach kann der Endbenutzer in `/settings/ai-residency` auf "EU-lokal"
-schalten, und `ai-invoke` routet automatisch über den lokalen Stack.
+`OLLAMA_AUTH_TOKEN` ist hier **`user:password`**, nicht ein hex-Token. Die
+Edge-Function rechnet das in `Authorization: Basic base64(user:password)` um.
+
+## WebUI-Hardening nach erstem Login
+
+1. https://chat.realsyncdynamicsai.de aufrufen, Konto anlegen → Du bist Admin.
+2. In `.env`: `ENABLE_SIGNUP=false`, dann:
+   ```bash
+   docker compose up -d open-webui
+   ```
+3. (Optional) Im Admin-Panel weitere User einladen + Permissions setzen.
 
 ## Troubleshooting
 
-**`docker network ... not found`** beim `compose up` —
-Du hast den falschen `TRAEFIK_NETWORK` in der `.env`. Den richtigen Namen aus
-`docker network ls` nehmen.
+**`network openclaw_default not found`** beim `compose up` —
+Falscher `TRAEFIK_NETWORK`. Auf VPS: `docker network ls`. Den richtigen
+Namen in `.env` eintragen.
 
-**`ohne-bearer` liefert 200 oder eine andere Seite, nicht 401** —
-Traefik sieht den Router noch nicht. Check:
-- `docker compose ps` — beide Container „Up (healthy)"?
-- `docker network inspect $TRAEFIK_NETWORK` — `kodee-ollama-proxy` sollte gelistet sein
-- Host-Traefik-Logs: `docker logs traefik 2>&1 | grep -i kodee`
+**`no-auth` liefert 200 oder 404 statt 401** —
+Traefik sieht den Router nicht oder die Middleware greift nicht. Check:
+- `docker compose ps` — beide `Up`?
+- Traefik-Logs: `docker logs $(docker ps --format '{{.Names}}' | grep -i traefik | head -1) 2>&1 | grep -iE 'kodee|ollama|chat'`
 
-**`mit-bearer` liefert 502** —
-Caddy unreachable oder Ollama down. `docker compose logs caddy ollama` checken.
+**`mit-auth` liefert 502** —
+Container im selben Netz wie Traefik? `docker network inspect $NET | grep -E 'kodee'` sollte beide listen.
 
-**Inferenz dauert >2 Min und timed out** —
-Modell ist nicht warm. Erste Inferenz nach Start kann lang dauern; danach hält
-`OLLAMA_KEEP_ALIVE=30m` das Modell im RAM.
+**Cert-Fehler** —
+`TRAEFIK_CERT_RESOLVER`-Name passt nicht. Im Traefik-static-config (typisch
+`traefik.yml`) unter `certificatesResolvers:` nachsehen.
 
 ## Stack stoppen / aufräumen
 
 ```bash
-docker compose down              # Container weg, Modelle bleiben
-docker compose down -v           # auch das Modell-Volume löschen (4.7 GB frei)
+docker compose down              # Container weg, Modelle + WebUI-Daten bleiben
+docker compose down -v           # auch alle Volumes löschen (4.7 GB Modell + WebUI-DB)
 ```

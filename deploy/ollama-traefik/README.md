@@ -33,8 +33,11 @@ Host-Traefik auf dem Kodee-VPS (194.163.130.123, Hostinger srv1622293).
 - Bestehender Host-Traefik mit Docker-Provider + Let's-Encrypt-Resolver
 - `apache2-utils` (für `htpasswd`) — `apt install -y apache2-utils`
 - DNS A-Records:
-  - `ollama.realsyncdynamicsai.de` → 194.163.130.123
-  - `chat.realsyncdynamicsai.de`   → 194.163.130.123
+  - `ollama.realsyncdynamicsai.de` → 187.77.89.1 (VPS public IP)
+  - `chat.realsyncdynamicsai.de`   → 187.77.89.1
+- Mind. 4 GB RAM für `qwen2.5:3b` (Default-Modell). 7B-Modelle brauchen
+  ≥ 16 GB — wenn die VPS knapp ist, beim 3B bleiben + 2 GB Swap einrichten:
+  `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab`
 
 ## Setup
 

@@ -96,6 +96,20 @@ services:
       # Open WebUI hat eigene Auth — kein Traefik-Middleware-Gate hier.
       - "traefik.http.services.kodee-chat.loadbalancer.server.port=8080"
 
+      # ── Router: realsyncdynamicsai.de (Apex) → Redirect auf chat ─────────
+      # Placeholder bis das echte Marketing-/App-Frontend deployed ist.
+      # Sorgt dafür dass Traefik einen LE-Cert für die Apex anfordert und
+      # Browser keine "common name mismatch"-Warnung mehr werfen.
+      - "traefik.http.routers.kodee-apex.rule=Host(`realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-apex.entrypoints=websecure"
+      - "traefik.http.routers.kodee-apex.tls=true"
+      - "traefik.http.routers.kodee-apex.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-apex.service=kodee-chat"
+      - "traefik.http.routers.kodee-apex.middlewares=kodee-apex-redirect"
+      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.regex=^https?://realsyncdynamicsai\\.de(.*)$$"
+      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.replacement=https://chat.realsyncdynamicsai.de$${1}"
+      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.permanent=false"
+
 volumes:
   ollama_models:
     name: kodee_ollama_models

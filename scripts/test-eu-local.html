@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>EU-lokal Verify</title>
+<style>
+  body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; max-width: 720px; margin: 2em auto; padding: 1em; background: #0f1115; color: #d8e0e9; }
+  h1 { color: #fff; font-size: 1.2em; }
+  input, button, select { padding: .6em .8em; margin: .4em 0; border: 1px solid #353a44; background: #1a1d24; color: #d8e0e9; font-family: inherit; font-size: 14px; border-radius: 4px; }
+  button { cursor: pointer; background: #2563eb; border: none; color: #fff; font-weight: 600; }
+  button:disabled { opacity: .4; cursor: wait; }
+  pre { background: #1a1d24; padding: 1em; border-radius: 4px; overflow-x: auto; font-size: 12px; line-height: 1.4; max-height: 50vh; }
+  .ok    { color: #4ade80; }
+  .warn  { color: #fbbf24; }
+  .err   { color: #f87171; }
+  .step  { margin: 1.5em 0; padding: 1em; background: #15181f; border-left: 3px solid #353a44; border-radius: 4px; }
+  .step.active { border-left-color: #2563eb; }
+  .step.done   { border-left-color: #4ade80; }
+  label { display: block; font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: .04em; margin-top: .8em; }
+  small { color: #9ca3af; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>RealSyncDynamics.AI — EU-lokal Routing Verify</h1>
+<small>Self-contained Test — füllt selbsständig user_id, tenant_id auf, schaltet auf <code>eu_local</code> und ruft <code>ai-invoke</code>.<br>
+Lokal öffnen: <code>open scripts/test-eu-local.html</code> (Mac) oder doppelklick.</small>
+
+<div id="step1" class="step active">
+  <strong>Schritt 1 — Login per Magic Link</strong>
+  <label>E-Mail</label>
+  <input id="email" type="email" placeholder="dein@email.de" style="width: 100%;">
+  <button id="sendLink">Magic Link senden</button>
+  <div id="step1status"></div>
+</div>
+
+<div id="step2" class="step">
+  <strong>Schritt 2 — Tenant + Residency</strong>
+  <div id="step2content"><small>Erst Schritt 1.</small></div>
+</div>
+
+<div id="step3" class="step">
+  <strong>Schritt 3 — AI-Tool aufrufen (eu_local)</strong>
+  <div id="step3content"><small>Erst Schritt 2.</small></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://ebljyceifhnlzhjfyxup.supabase.co';
+const SUPABASE_ANON_KEY = prompt(
+  'Supabase ANON Key benötigt (einmalig).\n' +
+  'Holen via: Supabase Dashboard → Project Settings → API Keys → "anon public" (eyJ...)\n' +
+  'Wird nur in dieser Browser-Session benutzt, nichts wird gespeichert.'
+);
+if (!SUPABASE_ANON_KEY) { document.body.innerHTML = '<h1 class="err">Abgebrochen — kein anon key.</h1>'; throw new Error('no key'); }
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = (id) => document.getElementById(id);
+const log = (id, html, cls='') => { $(id).innerHTML += `<div class="${cls}">${html}</div>`; };
+
+// ── Step 1: Magic Link ──────────────────────────────────────────────
+$('sendLink').onclick = async () => {
+  const email = $('email').value.trim();
+  if (!email) return;
+  $('sendLink').disabled = true;
+  log('step1status', 'Sende Magic Link…');
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href },
+  });
+  if (error) {
+    log('step1status', 'ERR: ' + error.message, 'err');
+    $('sendLink').disabled = false;
+    return;
+  }
+  log('step1status', `✓ Link verschickt an ${email} — bitte klicken, kommt zurück hierher.`, 'ok');
+};
+
+// Auto-detect session on page load (after redirect from magic link)
+sb.auth.getSession().then(async ({ data }) => {
+  if (!data.session) return;
+  $('step1').classList.add('done');
+  $('step2').classList.add('active');
+  log('step1status', `✓ Eingeloggt als ${data.session.user.email}`, 'ok');
+  await loadStep2(data.session);
+});
+
+// ── Step 2: Tenant + Residency ──────────────────────────────────────
+async function loadStep2(session) {
+  const userId = session.user.id;
+  const c = $('step2content');
+  c.innerHTML = `<small>user_id: <code>${userId}</code></small><br>`;
+
+  const { data: memberships, error: mErr } = await sb
+    .from('memberships')
+    .select('tenant_id, tenant:tenants(id, name)')
+    .eq('user_id', userId);
+
+  if (mErr) { c.innerHTML += `<div class="err">ERR loading tenants: ${mErr.message}</div>`; return; }
+  if (!memberships?.length) { c.innerHTML += `<div class="err">Keine Tenants — erst per /signup einen Tenant anlegen.</div>`; return; }
+
+  c.innerHTML += `<label>Tenant</label><select id="tenantSelect">${memberships.map(m =>
+    `<option value="${m.tenant_id}">${m.tenant?.name || m.tenant_id}</option>`).join('')}</select>`;
+
+  const { data: profile } = await sb.from('profiles').select('ai_data_residency').eq('id', userId).maybeSingle();
+  c.innerHTML += `<br><small>Aktuelle Residency: <code>${profile?.ai_data_residency || 'cloud'}</code></small><br>
+    <button id="setEuLocal">Auf eu_local setzen</button>`;
+
+  $('setEuLocal').onclick = async () => {
+    $('setEuLocal').disabled = true;
+    const { error } = await sb.from('profiles').update({ ai_data_residency: 'eu_local' }).eq('id', userId);
+    if (error) { c.innerHTML += `<div class="err">ERR: ${error.message}</div>`; return; }
+    c.innerHTML += `<div class="ok">✓ Residency = eu_local gesetzt</div>`;
+    $('step2').classList.add('done');
+    $('step3').classList.add('active');
+    loadStep3(session, $('tenantSelect').value);
+  };
+}
+
+// ── Step 3: ai-invoke ────────────────────────────────────────────────
+async function loadStep3(session, tenantId) {
+  const c = $('step3content');
+  c.innerHTML = `<small>tenant_id: <code>${tenantId}</code></small><br>
+    <label>Tool</label>
+    <select id="toolSel">
+      <option value="code_explain">code_explain (hat ollama_model_id)</option>
+      <option value="log_analyze">log_analyze (hat ollama_model_id)</option>
+      <option value="vps_status">vps_status (KEIN ollama → erwartet 503 LOCAL_UNAVAILABLE)</option>
+    </select>
+    <label>Input</label>
+    <input id="inputTxt" type="text" value="const x = 1; was macht der?" style="width:100%">
+    <button id="invoke">Aufrufen</button>
+    <pre id="result"></pre>`;
+
+  $('invoke').onclick = async () => {
+    $('invoke').disabled = true;
+    $('result').textContent = 'Läuft… (Ollama-CPU braucht 30-60s)';
+    const start = performance.now();
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/ai-invoke`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          tool_key: $('toolSel').value,
+          input: $('inputTxt').value,
+        }),
+      });
+      const dur = Math.round(performance.now() - start);
+      const body = await resp.text();
+      let parsed; try { parsed = JSON.parse(body); } catch { parsed = body; }
+      $('result').textContent = `HTTP ${resp.status} — ${dur}ms\n\n` + JSON.stringify(parsed, null, 2);
+      if (resp.ok && typeof parsed === 'object' && parsed.ok) {
+        $('step3').classList.add('done');
+      }
+    } catch (e) {
+      $('result').textContent = 'ERR: ' + e.message;
+    } finally {
+      $('invoke').disabled = false;
+    }
+  };
+}
+</script>
+
+</body>
+</html>

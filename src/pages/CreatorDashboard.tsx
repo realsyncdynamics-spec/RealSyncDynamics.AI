@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gateway';
 import Markdown from 'react-markdown';
-import { WorkflowsView } from '../features/workflows/WorkflowsView';
 import { AssetsView } from '../features/assets/AssetsView';
 import { PromptsView } from '../features/workspace/PromptsView';
 import { SettingsView } from '../features/settings/SettingsView';
@@ -27,7 +26,7 @@ export function CreatorDashboard() {
   const [selectedModel, setSelectedModel] = useState<ModelProvider>('gemini');
   const [selectedMode, setSelectedMode] = useState<ThreadMode>('chat');
   const [isStrictEU, setIsStrictEU] = useState(true);
-  const [activeView, setActiveView] = useState<'chat' | 'assets' | 'workflows' | 'prompts' | 'settings' | 'billing'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'assets' | 'prompts' | 'settings' | 'billing'>('chat');
   const [useContext, setUseContext] = useState(false);
 
   const handleSend = async (overridePrompt?: string) => {
@@ -138,12 +137,12 @@ export function CreatorDashboard() {
               >
                 <ShieldCheck className={`h-4 w-4 ${activeView === 'assets' ? 'text-security-400' : ''}`} /> C2PA Assets
               </button>
-              <button
-                onClick={() => setActiveView('workflows')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'workflows' ? 'bg-titanium-900 text-titanium-50' : 'text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50'}`}
+              <Link
+                to="/workflows"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
               >
-                <FolderKanban className={`h-4 w-4 ${activeView === 'workflows' ? 'text-security-400' : ''}`} /> Workflows
-              </button>
+                <FolderKanban className="h-4 w-4" /> Workflows
+              </Link>
               <Link
                 to="/kodee"
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
@@ -536,7 +535,6 @@ export function CreatorDashboard() {
         ) : (
           <div className="flex-1 overflow-y-auto bg-obsidian-950">
             {activeView === 'assets' && <AssetsView />}
-            {activeView === 'workflows' && <div className="p-4 sm:p-6 lg:p-8"><WorkflowsView /></div>}
             {activeView === 'prompts' && <PromptsView />}
             {activeView === 'settings' && <SettingsView />}
             {activeView === 'billing' && <BillingView />}

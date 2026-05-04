@@ -13,6 +13,7 @@ import { PricingPage } from './features/billing/PricingPage';
 import { InvitesView } from './features/tenants/InvitesView';
 import { AcceptInviteView } from './features/tenants/AcceptInviteView';
 import { AiResidencySettings } from './features/settings/AiResidencySettings';
+import { WorkflowsView } from './features/workflows/WorkflowsView';
 import { TenantProvider } from './core/access/TenantProvider';
 
 export default function App() {
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/tenant/invites" element={<InvitesView />} />
           <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
           <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
+          <Route path="/workflows" element={<WorkflowsView />} />
         </Routes>
       </BrowserRouter>
     </TenantProvider>

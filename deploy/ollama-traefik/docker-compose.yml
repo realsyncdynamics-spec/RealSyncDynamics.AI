@@ -110,11 +110,68 @@ services:
       - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.replacement=https://chat.realsyncdynamicsai.de$${1}"
       - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.permanent=false"
 
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: kodee-n8n
+    restart: unless-stopped
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      # Identität / URLs
+      N8N_HOST: "n8n.realsyncdynamicsai.de"
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: "https"
+      WEBHOOK_URL: "https://n8n.realsyncdynamicsai.de/"
+      N8N_EDITOR_BASE_URL: "https://n8n.realsyncdynamicsai.de/"
+
+      # Auth — n8n eigene User-Verwaltung (erste Registrierung wird Admin)
+      N8N_USER_MANAGEMENT_DISABLED: "false"
+      N8N_BASIC_AUTH_ACTIVE: "false"
+      # Optional: Initial-Owner über Setup-Page; alternativ via Env vorgeben
+      # N8N_USER_MANAGEMENT_JWT_SECRET wird automatisch generiert wenn nicht gesetzt
+
+      # Encryption für Workflow-Credentials in der n8n-DB
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY must be set in .env}"
+
+      # Telemetrie + Diagnostics aus
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+
+      # Timezone
+      GENERIC_TIMEZONE: "Europe/Berlin"
+      TZ: "Europe/Berlin"
+
+      # Logging
+      N8N_LOG_LEVEL: "info"
+
+      # CORS — RealSync Frontend darf n8n-API direkt callen (für Embeds später)
+      N8N_DISABLE_PRODUCTION_MAIN_PROCESS: "false"
+    networks:
+      - internal
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: n8n.realsyncdynamicsai.de ────────────────────────────────
+      - "traefik.http.routers.kodee-n8n.rule=Host(`n8n.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-n8n.entrypoints=websecure"
+      - "traefik.http.routers.kodee-n8n.tls=true"
+      - "traefik.http.routers.kodee-n8n.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-n8n.service=kodee-n8n"
+      - "traefik.http.services.kodee-n8n.loadbalancer.server.port=5678"
+
+      # WebSocket-Support (n8n Editor nutzt WS für Live-Updates)
+      - "traefik.http.services.kodee-n8n.loadbalancer.passhostheader=true"
+
 volumes:
   ollama_models:
     name: kodee_ollama_models
   open_webui_data:
     name: kodee_open_webui_data
+  n8n_data:
+    name: kodee_n8n_data
 
 networks:
   internal:

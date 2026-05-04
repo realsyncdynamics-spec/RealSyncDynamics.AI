@@ -110,7 +110,7 @@ die EU-lokale Ollama-Instanz, kommt zurück mit erklärendem Text.
 2. **HTTP Request** — Method `POST`, URL `https://ollama.realsyncdynamicsai.de/api/chat`, Auth: HTTP Basic, Username `kodee`, Password aus `{{ $vars.OLLAMA_PASSWORD }}`. Body JSON:
    ```json
    {
-     "model": "qwen2.5:3b",
+     "model": "qwen3:4b",
      "messages": [
        { "role": "system", "content": "Du bist Senior-Entwickler. Erkläre Code prägnant auf Deutsch." },
        { "role": "user", "content": "{{ $('Webhook').item.json.input.code }}" }

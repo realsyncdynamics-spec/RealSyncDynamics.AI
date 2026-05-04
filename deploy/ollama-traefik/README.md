@@ -1,7 +1,29 @@
 # Kodee Ollama-Stack (Traefik-Variante, Subdomain-Routing)
 
-EU-lokale AI-Inferenz für RealSyncDynamics.AI, hinter dem bestehenden
-Host-Traefik auf dem Kodee-VPS (194.163.130.123, Hostinger srv1622293).
+EU-lokale, **DSGVO-konforme** AI-Inferenz für RealSyncDynamics.AI, hinter dem
+bestehenden Host-Traefik auf dem Kodee-VPS (187.77.89.1, Hostinger srv1622293).
+
+## DSGVO-Posture (Stand 2026-05-03)
+
+- **Modell:** `qwen3:4b` (Apache 2.0, Alibaba) — läuft komplett auf dem
+  Hostinger-EU-VPS; keine Daten an Anthropic, Google, OpenAI oder andere
+  Drittländer.
+- **Telemetrie aus:** Ollama hat keine Telemetrie; Open WebUI mit
+  `ENABLE_SIGNUP=false`; n8n mit `N8N_DIAGNOSTICS_ENABLED=false` und
+  `N8N_VERSION_NOTIFICATIONS_ENABLED=false`.
+- **Verschlüsselung:** TLS für alle externen Verbindungen (Let's Encrypt
+  via Traefik), n8n-Workflow-Credentials AES-256 via `N8N_ENCRYPTION_KEY`.
+- **Zugriffskontrolle:** Ollama-API über BasicAuth-Middleware (Traefik),
+  Open WebUI über eigene Login + `DEFAULT_USER_ROLE=pending` (kein
+  Auto-Approve).
+- **Datenfluss-Transparenz:** Edge-Function `ai-invoke` schreibt jeden
+  Aufruf in `ai_tool_runs` (Audit-Log) mit `metadata.provider` und
+  `metadata.residency` — User kann jederzeit sehen wo seine Anfrage lief.
+- **Nutzer-Wahl:** `/settings/ai-residency` — Per-User-Toggle und
+  Per-Tenant-Policy für `eu_local` vs `cloud`.
+- **Kein Cross-Border-Routing:** Edge-Functions weigern sich strikt
+  Cloud-Provider zu callen wenn `residency=eu_local` gesetzt ist (auch
+  wenn der Cloud-Provider technisch verfügbar wäre).
 
 ## Architektur
 
@@ -35,7 +57,7 @@ Host-Traefik auf dem Kodee-VPS (194.163.130.123, Hostinger srv1622293).
 - DNS A-Records:
   - `ollama.realsyncdynamicsai.de` → 187.77.89.1 (VPS public IP)
   - `chat.realsyncdynamicsai.de`   → 187.77.89.1
-- Mind. 4 GB RAM für `qwen2.5:3b` (Default-Modell). 7B-Modelle brauchen
+- Mind. 4 GB RAM für `qwen3:4b` (Default-Modell, ~2.5 GB). 7B/8B-Modelle brauchen
   ≥ 16 GB — wenn die VPS knapp ist, beim 3B bleiben + 2 GB Swap einrichten:
   `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab`
 
@@ -101,7 +123,7 @@ Beide Container sollten `Up` (Ollama eventuell `health: starting` bis 60s).
 ### 5. Modell pullen (~5-15 Min, einmalig)
 
 ```bash
-docker exec -it kodee-ollama ollama pull qwen2.5:7b-instruct-q4_K_M
+docker exec -it kodee-ollama ollama pull qwen3:4b
 ```
 
 ### 6. Tests
@@ -118,7 +140,7 @@ curl -sf -u "kodee:$PASS" https://ollama.realsyncdynamicsai.de/
 curl -sf --max-time 180 -u "kodee:$PASS" \
   -X POST https://ollama.realsyncdynamicsai.de/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"model":"qwen2.5:7b-instruct-q4_K_M","messages":[{"role":"user","content":"Antworte mit genau einem Wort: ok"}],"stream":false}'
+  -d '{"model":"qwen3:4b","messages":[{"role":"user","content":"Antworte mit genau einem Wort: ok"}],"stream":false}'
 
 # WebUI im Browser:  https://chat.realsyncdynamicsai.de
 ```

@@ -11,7 +11,7 @@
 #
 # Was das Skript macht:
 #   1. Installiert Ollama (offizielles install.sh) und pinnt es auf 127.0.0.1
-#   2. Pullt das Default-Modell (qwen2.5:7b-instruct-q4_K_M, ~4.7 GB)
+#   2. Pullt das Default-Modell (qwen3:4b, ~4.7 GB)
 #   3. Generiert einen Bearer-Token (oder nutzt den übergebenen)
 #   4. Schreibt /etc/nginx/snippets/kodee-ollama.conf mit eingesetztem Token
 #   5. Injiziert (falls nötig) die include-Zeile in den existierenden Apex-Vhost
@@ -34,7 +34,7 @@ set -euo pipefail
 # ─── Config ─────────────────────────────────────────────────────────────────
 APEX_DOMAIN="${APEX_DOMAIN:-realsyncdynamicsai.de}"
 OLLAMA_PATH="${OLLAMA_PATH:-/_kodee/ollama}"
-OLLAMA_MODEL="${OLLAMA_MODEL:-qwen2.5:7b-instruct-q4_K_M}"
+OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3:4b}"
 OLLAMA_BEARER_TOKEN="${OLLAMA_BEARER_TOKEN:-$(openssl rand -hex 32)}"
 
 REPO_ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"

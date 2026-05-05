@@ -81,13 +81,20 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     ? [{ type: 'text' as const, text: req.systemPrompt, cache_control: { type: 'ephemeral' as const } }]
     : undefined;
 
-  const resp = await client.messages.create({
+  // Anthropic deprecated `temperature` for Claude 4.x+ models — passing it
+  // returns 400 invalid_request_error. Pass it only for older model IDs.
+  // deno-lint-ignore no-explicit-any
+  const params: any = {
     model: req.modelId,
     max_tokens: req.maxTokens,
-    temperature: req.temperature,
     system: systemBlocks,
     messages: [{ role: 'user', content: req.userPrompt }],
-  });
+  };
+  if (!/^claude-(opus|sonnet|haiku)-4/.test(req.modelId)) {
+    params.temperature = req.temperature;
+  }
+
+  const resp = await client.messages.create(params);
 
   // Concatenate all text blocks of the response.
   const text = resp.content

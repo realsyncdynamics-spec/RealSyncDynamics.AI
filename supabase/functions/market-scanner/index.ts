@@ -72,17 +72,13 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // Bearer token aus Vault (service_role darf decrypted_secrets lesen).
-  const { data: secretRow, error: secretErr } = await admin
-    .schema('vault')
-    .from('decrypted_secrets')
-    .select('decrypted_secret')
-    .eq('name', 'market_scanner_token')
-    .maybeSingle();
-  if (secretErr || !secretRow?.decrypted_secret) {
-    return jsonError(500, 'NOT_CONFIGURED', `vault token missing: ${secretErr?.message ?? 'no row'}`);
+  // Bearer token aus Vault via SECURITY-DEFINER-Wrapper (service_role only).
+  const { data: tokenStr, error: secretErr } = await admin
+    .rpc('get_market_scanner_token');
+  if (secretErr || !tokenStr) {
+    return jsonError(500, 'NOT_CONFIGURED', `vault token missing: ${secretErr?.message ?? 'empty'}`);
   }
-  const expected = `Bearer ${secretRow.decrypted_secret}`;
+  const expected = `Bearer ${tokenStr}`;
   const auth = req.headers.get('authorization') ?? '';
   if (auth !== expected) return jsonError(401, 'UNAUTHORIZED', 'invalid bearer');
 

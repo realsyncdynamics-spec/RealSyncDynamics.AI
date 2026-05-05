@@ -1,0 +1,347 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  ArrowLeft, Server, Plus, Trash2, Globe, KeyRound, Loader2,
+  AlertTriangle, CheckCircle2, X, Users,
+} from 'lucide-react';
+import { AuthGate } from './AuthGate';
+import {
+  listConnections, createConnection, deleteConnection,
+  type VpsConnection, type CreateConnectionInput,
+} from './api';
+import { useTenant } from '../../../core/access/TenantProvider';
+
+export function ConnectionsView() {
+  return <AuthGate>{() => <ConnectionsInner />}</AuthGate>;
+}
+
+function ConnectionsInner() {
+  const [items, setItems] = useState<VpsConnection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try { setItems(await listConnections()); }
+    catch (e: any) { setError(e?.message ?? 'Laden fehlgeschlagen'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/kodee"
+            className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200"
+            aria-label="Zurück zu Kodee"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
+              <Server className="h-4 w-4 text-white" />
+            </div>
+            <div className="leading-tight">
+              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">VPS-Verbindungen</div>
+              <div className="text-[11px] text-titanium-400 font-medium">Hosts, die Kodee verwalten darf</div>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => setCreating(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600 transition-colors"
+        >
+          <Plus className="h-4 w-4" /> Neue Verbindung
+        </button>
+      </header>
+
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        {error && (
+          <div className="mb-4 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center gap-2 text-titanium-500 text-sm py-12 justify-center">
+            <Loader2 className="h-4 w-4 animate-spin" /> Lade Verbindungen…
+          </div>
+        ) : items.length === 0 ? (
+          <EmptyState onCreate={() => setCreating(true)} />
+        ) : (
+          <ul className="space-y-3">
+            {items.map((c) => <ConnectionRow key={c.id} conn={c} onDeleted={load} />)}
+          </ul>
+        )}
+      </main>
+
+      {creating && (
+        <CreateModal
+          onClose={() => setCreating(false)}
+          onCreated={() => { setCreating(false); void load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ onCreate }: { onCreate: () => void }) {
+  return (
+    <div className="text-center py-16">
+      <div className="w-14 h-14 mx-auto rounded-none bg-obsidian-900 border border-titanium-900 flex items-center justify-center mb-4">
+        <Server className="h-6 w-6 text-titanium-600" />
+      </div>
+      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch keine VPS-Verbindung</h2>
+      <p className="text-sm text-titanium-400 mb-6">
+        Lege eine Verbindung an, damit Kodee Server-Aktionen für dich ausführen kann.
+      </p>
+      <button
+        onClick={onCreate}
+        className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600"
+      >
+        <Plus className="h-4 w-4" /> Erste Verbindung anlegen
+      </button>
+    </div>
+  );
+}
+
+function ConnectionRow({ conn, onDeleted }: { conn: VpsConnection; onDeleted: () => void }) {
+  const { tenants } = useTenant();
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+
+  const tenantLabel = conn.tenant_id
+    ? tenants.find((t) => t.tenantId === conn.tenant_id)?.name ?? '(unbekannt)'
+    : null;
+
+  const remove = async () => {
+    setBusy(true);
+    try { await deleteConnection(conn.id); onDeleted(); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <li className="bg-obsidian-900 border border-titanium-900 rounded-none p-4 flex items-center gap-4">
+      <div className="w-10 h-10 rounded-none bg-emerald-950/40 text-emerald-400 flex items-center justify-center shrink-0">
+        <Globe className="h-5 w-5" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <div className="font-semibold text-titanium-50 truncate">{conn.label}</div>
+          {tenantLabel ? (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-none bg-security-900/30 text-security-300 text-[10px] font-bold border border-security-800">
+              <Users className="h-2.5 w-2.5" /> {tenantLabel}
+            </span>
+          ) : (
+            <span className="px-1.5 py-0.5 rounded-none bg-obsidian-800 text-titanium-400 text-[10px] font-bold border border-titanium-900">
+              persönlich
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-titanium-400 truncate font-mono">
+          {conn.username}@{conn.host}:{conn.port}
+        </div>
+        {conn.last_used_at && (
+          <div className="text-[11px] text-titanium-500 mt-0.5">
+            Zuletzt benutzt: {new Date(conn.last_used_at).toLocaleString()}
+          </div>
+        )}
+      </div>
+      {confirm ? (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={remove}
+            disabled={busy}
+            className="px-2.5 py-1 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-none disabled:opacity-50"
+          >
+            {busy ? 'Lösche…' : 'Wirklich löschen'}
+          </button>
+          <button
+            onClick={() => setConfirm(false)}
+            className="px-2.5 py-1 text-xs font-semibold text-titanium-300 bg-obsidian-800 hover:bg-titanium-900 rounded-none"
+          >
+            Abbrechen
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirm(true)}
+          className="p-2 text-titanium-500 hover:text-red-400 hover:bg-red-950/50 rounded-none transition-colors"
+          aria-label="Löschen"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+    </li>
+  );
+}
+
+function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const { tenants, activeTenantId } = useTenant();
+  const [form, setForm] = useState<CreateConnectionInput>({
+    label: '', host: '', port: 22, username: '', private_key: '',
+    tenant_id: activeTenantId,
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await createConnection(form);
+      onCreated();
+    } catch (e: any) {
+      setError(e?.message ?? 'Anlegen fehlgeschlagen');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-obsidian-950 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-obsidian-900 rounded-none shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-titanium-900">
+          <h2 className="font-display font-bold text-titanium-50">Neue VPS-Verbindung</h2>
+          <button onClick={onClose} className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-500">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <form onSubmit={submit} className="p-5 space-y-4">
+          <Field label="Label" hint={'z. B. „Production VPS"'}>
+            <input
+              required
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              className={inputCls}
+              disabled={busy}
+            />
+          </Field>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <Field label="Host" hint="FQDN oder IP">
+                <input
+                  required
+                  value={form.host}
+                  onChange={(e) => setForm({ ...form, host: e.target.value })}
+                  placeholder="vps.example.com"
+                  className={inputCls}
+                  disabled={busy}
+                />
+              </Field>
+            </div>
+            <Field label="Port">
+              <input
+                type="number"
+                min={1}
+                max={65535}
+                value={form.port ?? 22}
+                onChange={(e) => setForm({ ...form, port: parseInt(e.target.value, 10) })}
+                className={inputCls}
+                disabled={busy}
+              />
+            </Field>
+          </div>
+          <Field label="SSH User" hint='Linux-User, z. B. „ubuntu" oder „deploy"'>
+            <input
+              required
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              className={inputCls}
+              disabled={busy}
+            />
+          </Field>
+          {tenants.length > 0 && (
+            <Field label="Sichtbarkeit" hint="Persönlich = nur du. Tenant = jedes Mitglied darf Aktionen ausführen.">
+              <select
+                value={form.tenant_id ?? ''}
+                onChange={(e) => setForm({ ...form, tenant_id: e.target.value || null })}
+                className={inputCls}
+                disabled={busy}
+              >
+                <option value="">Persönlich (nur ich)</option>
+                {tenants.map((t) => (
+                  <option key={t.tenantId} value={t.tenantId}>Tenant: {t.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label="Privater SSH-Key" hint="OpenSSH-Format. Wird verschlüsselt gespeichert.">
+            <textarea
+              required
+              value={form.private_key}
+              onChange={(e) => setForm({ ...form, private_key: e.target.value })}
+              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…"
+              rows={6}
+              className={`${inputCls} font-mono text-xs`}
+              disabled={busy}
+            />
+          </Field>
+          <Field
+            label="Host-Key Fingerprint (optional)"
+            hint='SHA256 — Pinning verhindert MITM. Auf dem VPS: ssh-keyscan -t ed25519 host | ssh-keygen -lf -'
+          >
+            <input
+              value={form.known_host_fingerprint ?? ''}
+              onChange={(e) => setForm({ ...form, known_host_fingerprint: e.target.value || undefined })}
+              placeholder="SHA256:…"
+              className={`${inputCls} font-mono text-xs`}
+              disabled={busy}
+            />
+          </Field>
+
+          {error && (
+            <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-2.5">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-titanium-900/50">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-semibold text-titanium-300 hover:bg-obsidian-800 rounded-none"
+              disabled={busy}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="submit"
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600 disabled:opacity-50"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Verbindung anlegen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const inputCls =
+  'w-full px-3 py-2 text-sm bg-obsidian-950 border border-titanium-900 rounded-none outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 disabled:opacity-50';
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="flex items-baseline justify-between mb-1">
+        <span className="text-xs font-bold text-titanium-300 uppercase tracking-wider">{label}</span>
+        {hint && <span className="text-[11px] text-titanium-500 font-normal">{hint}</span>}
+      </div>
+      {children}
+    </label>
+  );
+}
+
+// silence unused
+void KeyRound;

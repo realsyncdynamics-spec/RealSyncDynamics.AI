@@ -13,6 +13,23 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
 import OpenAI from 'npm:openai@4.77.0';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+// Edge-Function-Project-Secrets müssen per Dashboard/CLI gesetzt werden.
+// Wenn nicht da: Fallback auf Supabase Vault via SECURITY-DEFINER-RPC.
+// service_role darf get_app_secret() aufrufen — der von Supabase auto-injizierte
+// SUPABASE_SERVICE_ROLE_KEY ist immer im Edge-Function-Env.
+async function getApiKey(envVar: string, vaultName: string): Promise<string | null> {
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const url = Deno.env.get('SUPABASE_URL');
+  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !srk) return null;
+  const admin = createClient(url, srk, { auth: { persistSession: false } });
+  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  if (error) return null;
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
 
 export type ProviderId = 'anthropic' | 'google' | 'openai' | 'ollama';
 
@@ -53,8 +70,8 @@ export async function callProvider(req: ProviderRequest): Promise<ProviderResult
 
 // ─── Anthropic ──────────────────────────────────────────────────────────────
 async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  if (!apiKey) throw new ProviderError('ANTHROPIC_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+  const apiKey = await getApiKey('ANTHROPIC_API_KEY', 'anthropic_api_key');
+  if (!apiKey) throw new ProviderError('ANTHROPIC_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
   const client = new Anthropic({ apiKey });
 
@@ -91,8 +108,9 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
 
 // ─── Google (Gemini) ────────────────────────────────────────────────────────
 async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
-  const apiKey = Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('GOOGLE_API_KEY');
-  if (!apiKey) throw new ProviderError('GEMINI_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+  const apiKey = (await getApiKey('GEMINI_API_KEY', 'gemini_api_key'))
+              ?? (await getApiKey('GOOGLE_API_KEY', 'google_api_key'));
+  if (!apiKey) throw new ProviderError('GEMINI_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
   const ai = new GoogleGenAI({ apiKey });
 
@@ -130,10 +148,10 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
 // so we can parse a single JSON body and stay aligned with the other
 // providers' synchronous shape.
 async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
-  const baseUrl = Deno.env.get('OLLAMA_URL');
-  if (!baseUrl) throw new ProviderError('OLLAMA_URL not set', 'PROVIDER_NOT_CONFIGURED');
+  const baseUrl = await getApiKey('OLLAMA_URL', 'ollama_url');
+  if (!baseUrl) throw new ProviderError('OLLAMA_URL not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
-  const cred = Deno.env.get('OLLAMA_AUTH_TOKEN');
+  const cred = await getApiKey('OLLAMA_AUTH_TOKEN', 'ollama_auth_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (cred) headers['Authorization'] = `Basic ${btoa(cred)}`;
 
@@ -190,8 +208,8 @@ async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
 
 // ─── OpenAI (Chat Completions) ──────────────────────────────────────────────
 async function callOpenAI(req: ProviderRequest): Promise<ProviderResult> {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey) throw new ProviderError('OPENAI_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+  const apiKey = await getApiKey('OPENAI_API_KEY', 'openai_api_key');
+  if (!apiKey) throw new ProviderError('OPENAI_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
   const client = new OpenAI({ apiKey });
 

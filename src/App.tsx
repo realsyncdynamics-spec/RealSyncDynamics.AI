@@ -25,10 +25,16 @@ import { SubProcessors } from './features/legal/SubProcessors';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 
+// Vite injects the configured `base` as `import.meta.env.BASE_URL`.
+// For GitHub Pages this is `/RealSyncDynamics.AI/`; for root deploys it's `/`.
+// react-router needs the same value as `basename` so paths like /pricing
+// resolve relative to the deploy location.
+const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
+
 export default function App() {
   return (
     <TenantProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={ROUTER_BASENAME}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/agencies" element={<AgenciesLanding />} />

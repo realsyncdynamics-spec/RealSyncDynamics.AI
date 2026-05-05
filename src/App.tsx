@@ -14,6 +14,7 @@ import { InvitesView } from './features/tenants/InvitesView';
 import { AcceptInviteView } from './features/tenants/AcceptInviteView';
 import { AiResidencySettings } from './features/settings/AiResidencySettings';
 import { AccountSettings } from './features/settings/AccountSettings';
+import { SettingsView } from './features/settings/SettingsView';
 import { WorkflowsView } from './features/workflows/WorkflowsView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/tenant/invites" element={<InvitesView />} />
           <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
+          <Route path="/settings" element={<SettingsView />} />
           <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
           <Route path="/settings/account" element={<AccountSettings />} />
           <Route path="/workflows" element={<WorkflowsView />} />

@@ -12,7 +12,6 @@ import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gatew
 import Markdown from 'react-markdown';
 import { AssetsView } from '../features/assets/AssetsView';
 import { PromptsView } from '../features/workspace/PromptsView';
-import { SettingsView } from '../features/settings/SettingsView';
 import { BillingView } from '../features/billing/BillingView';
 
 type Message = { role: 'user' | 'ai', text: string, status?: 'loading' | 'error' | 'success' };
@@ -26,7 +25,7 @@ export function CreatorDashboard() {
   const [selectedModel, setSelectedModel] = useState<ModelProvider>('gemini');
   const [selectedMode, setSelectedMode] = useState<ThreadMode>('chat');
   const [isStrictEU, setIsStrictEU] = useState(true);
-  const [activeView, setActiveView] = useState<'chat' | 'assets' | 'prompts' | 'settings' | 'billing'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'assets' | 'prompts' | 'billing'>('chat');
   const [useContext, setUseContext] = useState(false);
 
   const handleSend = async (overridePrompt?: string) => {
@@ -171,12 +170,12 @@ export function CreatorDashboard() {
             >
               <Library className="h-4 w-4" /> Prompts & Vorlagen
             </button>
-            <button 
-              onClick={() => setActiveView('settings')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'settings' ? 'bg-obsidian-800 text-titanium-50' : 'text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50'}`}
+            <Link
+              to="/settings"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
             >
               <Settings className="h-4 w-4" /> Einstellungen
-            </button>
+            </Link>
             <button
               onClick={() => setActiveView('billing')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'billing' ? 'bg-obsidian-800 text-titanium-50' : 'text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50'}`}
@@ -554,7 +553,6 @@ export function CreatorDashboard() {
           <div className="flex-1 overflow-y-auto bg-obsidian-950">
             {activeView === 'assets' && <AssetsView />}
             {activeView === 'prompts' && <PromptsView />}
-            {activeView === 'settings' && <SettingsView />}
             {activeView === 'billing' && <BillingView />}
           </div>
         )}

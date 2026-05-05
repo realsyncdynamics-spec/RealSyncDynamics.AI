@@ -96,19 +96,36 @@ services:
       # Open WebUI hat eigene Auth — kein Traefik-Middleware-Gate hier.
       - "traefik.http.services.kodee-chat.loadbalancer.server.port=8080"
 
-      # ── Router: realsyncdynamicsai.de (Apex) → Redirect auf chat ─────────
-      # Placeholder bis das echte Marketing-/App-Frontend deployed ist.
-      # Sorgt dafür dass Traefik einen LE-Cert für die Apex anfordert und
-      # Browser keine "common name mismatch"-Warnung mehr werfen.
+      # ── Router: realsyncdynamicsai.de (Apex) → frontend container ────────
+      # Vite-build wird via GitHub Actions in /var/www/realsyncdynamicsai.de/dist
+      # auf dem VPS rsynct, der frontend-Container served das.
       - "traefik.http.routers.kodee-apex.rule=Host(`realsyncdynamicsai.de`)"
       - "traefik.http.routers.kodee-apex.entrypoints=websecure"
       - "traefik.http.routers.kodee-apex.tls=true"
       - "traefik.http.routers.kodee-apex.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
-      - "traefik.http.routers.kodee-apex.service=kodee-chat"
-      - "traefik.http.routers.kodee-apex.middlewares=kodee-apex-redirect"
-      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.regex=^https?://realsyncdynamicsai\\.de(.*)$$"
-      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.replacement=https://chat.realsyncdynamicsai.de$${1}"
-      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.permanent=false"
+      - "traefik.http.routers.kodee-apex.service=kodee-frontend"
+
+  frontend:
+    image: nginx:1.27-alpine
+    container_name: kodee-frontend
+    restart: unless-stopped
+    volumes:
+      # Wird vom GitHub Actions Deploy via rsync@deploy gefüllt (siehe deploy/README.md)
+      - /var/www/realsyncdynamicsai.de/dist:/usr/share/nginx/html:ro
+      - ./frontend.nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      - "traefik.http.routers.kodee-frontend.rule=Host(`realsyncdynamicsai.de`) || Host(`www.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-frontend.entrypoints=websecure"
+      - "traefik.http.routers.kodee-frontend.tls=true"
+      - "traefik.http.routers.kodee-frontend.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-frontend.service=kodee-frontend"
+      - "traefik.http.services.kodee-frontend.loadbalancer.server.port=80"
+      - "traefik.http.services.kodee-frontend.loadbalancer.passhostheader=true"
 
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest

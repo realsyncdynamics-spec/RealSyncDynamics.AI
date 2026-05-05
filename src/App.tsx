@@ -19,6 +19,7 @@ import { AccountSettings } from './features/settings/AccountSettings';
 import { SettingsView } from './features/settings/SettingsView';
 import { WorkflowsView } from './features/workflows/WorkflowsView';
 import { MarketGapsView } from './features/market/MarketGapsView';
+import { OutreachView } from './features/outreach/OutreachView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { CookieConsent } from './components/CookieConsent';
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/settings/account" element={<AccountSettings />} />
           <Route path="/workflows" element={<WorkflowsView />} />
           <Route path="/market-gaps" element={<MarketGapsView />} />
+          <Route path="/outreach" element={<OutreachView />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="/legal/sub-processors" element={<SubProcessors />} />
         </Routes>

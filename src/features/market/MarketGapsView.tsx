@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Sparkles, Filter, RefreshCw, AlertTriangle, Loader2,
-  TrendingUp, Building2, X, FileText, ExternalLink,
+  TrendingUp, Building2, X, FileText, ExternalLink, Download, Send,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 interface MarketGap {
   id: string;
@@ -241,8 +243,48 @@ function Inner({ session }: { session: Session }) {
 }
 
 function DetailModal({ gap, onClose, onChanged }: { gap: MarketGap; onClose: () => void; onChanged: () => void }) {
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [briefId, setBriefId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sb = getSupabase();
+    sb.from('ceo_briefs')
+      .select('id')
+      .eq('market_gap_id', gap.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setBriefId(data?.id ?? null));
+  }, [gap.id]);
+
+  async function downloadBrief() {
+    if (!briefId) return;
+    setErr(null);
+    try {
+      const sb = getSupabase();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) throw new Error('Nicht eingeloggt');
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/ceo-brief-pdf?id=${briefId}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+      const html = await resp.text();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  }
+
+  function startOutreach() {
+    const params = new URLSearchParams({ gap_id: gap.id });
+    if (briefId) params.set('brief_id', briefId);
+    navigate(`/outreach?${params.toString()}`);
+  }
 
   async function setStatus(next: MarketGap['status']) {
     setBusy(true); setErr(null);
@@ -331,29 +373,50 @@ function DetailModal({ gap, onClose, onChanged }: { gap: MarketGap; onClose: () 
         )}
 
         <div className="flex flex-wrap gap-2 border-t border-titanium-900 px-6 py-4 bg-obsidian-950">
-          <span className="text-xs text-titanium-500 mr-2 self-center">Status: <span className="text-titanium-300">{gap.status}</span></span>
+          <span className="text-xs text-titanium-500 mr-2 self-center">
+            Status: <span className="text-titanium-300">{gap.status}</span>
+          </span>
+
+          {briefId && (
+            <button
+              onClick={downloadBrief}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-security-700 hover:border-security-500 text-security-400 hover:text-security-300 rounded-none"
+            >
+              <Download className="h-3.5 w-3.5" /> Brief öffnen (PDF)
+            </button>
+          )}
+
           <button
-            disabled={busy || gap.status === 'validated'}
-            onClick={() => setStatus('validated')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-titanium-800 hover:border-security-500 text-titanium-300 hover:text-titanium-50 disabled:opacity-40 rounded-none"
+            onClick={startOutreach}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-security-500 hover:bg-security-600 text-white rounded-none"
           >
-            Validiert
+            <Send className="h-3.5 w-3.5" /> Outreach starten
           </button>
-          <button
-            disabled={busy || gap.status === 'building'}
-            onClick={() => setStatus('building')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-titanium-800 hover:border-security-500 text-titanium-300 hover:text-titanium-50 disabled:opacity-40 rounded-none"
-          >
-            <FileText className="h-3.5 w-3.5" /> Übergeben (build)
-          </button>
-          <button
-            disabled={busy || gap.status === 'rejected'}
-            onClick={() => setStatus('rejected')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-titanium-800 hover:border-red-500 text-titanium-400 hover:text-red-300 disabled:opacity-40 rounded-none"
-          >
-            Verwerfen
-          </button>
-          {busy && <Loader2 className="h-4 w-4 animate-spin text-titanium-400 self-center ml-1" />}
+
+          <div className="ml-auto flex gap-2">
+            <button
+              disabled={busy || gap.status === 'validated'}
+              onClick={() => setStatus('validated')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-titanium-800 hover:border-security-500 text-titanium-300 hover:text-titanium-50 disabled:opacity-40 rounded-none"
+            >
+              Validiert
+            </button>
+            <button
+              disabled={busy || gap.status === 'building'}
+              onClick={() => setStatus('building')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-titanium-800 hover:border-security-500 text-titanium-300 hover:text-titanium-50 disabled:opacity-40 rounded-none"
+            >
+              <FileText className="h-3.5 w-3.5" /> Übergeben
+            </button>
+            <button
+              disabled={busy || gap.status === 'rejected'}
+              onClick={() => setStatus('rejected')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-titanium-800 hover:border-red-500 text-titanium-400 hover:text-red-300 disabled:opacity-40 rounded-none"
+            >
+              Verwerfen
+            </button>
+            {busy && <Loader2 className="h-4 w-4 animate-spin text-titanium-400 self-center ml-1" />}
+          </div>
         </div>
       </div>
     </div>

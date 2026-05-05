@@ -8,8 +8,10 @@
 //   - manuell via super-admin UI mit explizitem industry/sector
 //
 // Auth:
-//   Header `Authorization: Bearer <MARKET_SCANNER_SECRET>` (env-Secret).
-//   pg_cron schickt diesen Header mit; ohne Secret → 401.
+//   Header `Authorization: Bearer <token>` — Token wird aus Supabase Vault
+//   gelesen (`vault.decrypted_secrets WHERE name = 'market_scanner_token'`).
+//   pg_cron liest den gleichen Wert aus Vault — kein Project-Secret nötig.
+//   Ohne Match → 401.
 //
 // Flow:
 //   1. INSERT research_runs (status='running')
@@ -64,11 +66,25 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
 
-  const SECRET = Deno.env.get('MARKET_SCANNER_SECRET');
-  if (!SECRET) return jsonError(500, 'NOT_CONFIGURED', 'MARKET_SCANNER_SECRET missing');
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
 
+  // Bearer token aus Vault (service_role darf decrypted_secrets lesen).
+  const { data: secretRow, error: secretErr } = await admin
+    .schema('vault')
+    .from('decrypted_secrets')
+    .select('decrypted_secret')
+    .eq('name', 'market_scanner_token')
+    .maybeSingle();
+  if (secretErr || !secretRow?.decrypted_secret) {
+    return jsonError(500, 'NOT_CONFIGURED', `vault token missing: ${secretErr?.message ?? 'no row'}`);
+  }
+  const expected = `Bearer ${secretRow.decrypted_secret}`;
   const auth = req.headers.get('authorization') ?? '';
-  if (auth !== `Bearer ${SECRET}`) return jsonError(401, 'UNAUTHORIZED', 'invalid bearer');
+  if (auth !== expected) return jsonError(401, 'UNAUTHORIZED', 'invalid bearer');
 
   let body: { industry?: string; sector?: string; depth?: string; rotate?: boolean } = {};
   try { body = await req.json(); } catch { /* empty body OK */ }
@@ -88,12 +104,6 @@ Deno.serve(async (req) => {
   }
 
   if (!industry) return jsonError(400, 'BAD_REQUEST', 'industry or rotate:true required');
-
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
 
   const startedAt = Date.now();
   const { data: runRow, error: runErr } = await admin

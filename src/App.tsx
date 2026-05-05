@@ -5,6 +5,8 @@
 
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Landing } from './pages/Landing';
+import { AgenciesLanding } from './pages/AgenciesLanding';
+import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -27,6 +29,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/agencies" element={<AgenciesLanding />} />
+          <Route path="/contact-sales" element={<ContactSales />} />
           <Route path="/dashboard" element={<CreatorDashboard />} />
           <Route path="/kodee" element={<KodeeView />} />
           <Route path="/kodee/connections" element={<ConnectionsView />} />

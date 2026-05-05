@@ -196,6 +196,24 @@ export function CreatorDashboard() {
             >
               <Bot className="h-4 w-4 text-security-400" /> Team-Einladungen
             </Link>
+            <Link
+              to="/settings/ai-residency"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
+            >
+              <ShieldCheck className="h-4 w-4 text-emerald-400" /> EU-lokal AI
+            </Link>
+            <Link
+              to="/settings/account"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
+            >
+              <ShieldCheck className="h-4 w-4 text-titanium-400" /> Mein Account · DSGVO
+            </Link>
+            <Link
+              to="/legal/privacy"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-xs font-medium text-titanium-500 hover:text-titanium-300 transition-colors"
+            >
+              Datenschutz · Sub-Prozessoren
+            </Link>
           </div>
         </aside>
 

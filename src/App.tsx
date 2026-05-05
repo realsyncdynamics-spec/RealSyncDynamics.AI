@@ -15,6 +15,9 @@ import { AcceptInviteView } from './features/tenants/AcceptInviteView';
 import { AiResidencySettings } from './features/settings/AiResidencySettings';
 import { AccountSettings } from './features/settings/AccountSettings';
 import { WorkflowsView } from './features/workflows/WorkflowsView';
+import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
+import { SubProcessors } from './features/legal/SubProcessors';
+import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 
 export default function App() {
@@ -33,7 +36,10 @@ export default function App() {
           <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
           <Route path="/settings/account" element={<AccountSettings />} />
           <Route path="/workflows" element={<WorkflowsView />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+          <Route path="/legal/sub-processors" element={<SubProcessors />} />
         </Routes>
+        <CookieConsent />
       </BrowserRouter>
     </TenantProvider>
   );

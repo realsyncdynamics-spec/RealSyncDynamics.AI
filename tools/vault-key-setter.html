@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<title>RealSync · Vault Key Setter</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #111821;
+    --border: #232b36;
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #3fb950;
+    --error: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 540px; background: var(--surface);
+    border: 1px solid var(--border); padding: 28px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 24px; }
+  label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 6px; }
+  input, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 12px; font: inherit; font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  button {
+    width: 100%; margin-top: 20px; background: var(--accent); color: #0a0e14;
+    border: none; padding: 12px; font: inherit; font-weight: 700; font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .result {
+    margin-top: 18px; padding: 12px; font-family: ui-monospace, monospace; font-size: 12px;
+    background: var(--bg); border: 1px solid var(--border); white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .result.ok { border-color: var(--accent); }
+  .result.err { border-color: var(--error); color: var(--error); }
+  .hint { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row > input { flex: 1; }
+  .toggle {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    width: auto; margin: 0; padding: 8px 12px; font-size: 12px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Vault Key Setter</h1>
+    <div class="sub">Schreibt API-Keys direkt in deine Supabase Vault. Key verlässt nie deinen Browser außer per HTTPS an deine Edge Function.</div>
+
+    <label>Project URL</label>
+    <input id="url" value="https://ebljyceifhnlzhjfyxup.supabase.co" />
+
+    <label>Bearer Token (market_scanner_token aus Vault)</label>
+    <input id="bearer" type="password" value="585217a7f9efb92d9453d62fe0d8bb65053d06ea6287e38aa395dfc56c71a080" />
+
+    <label>Secret Name</label>
+    <select id="name">
+      <option value="anthropic_api_key">anthropic_api_key</option>
+      <option value="gemini_api_key">gemini_api_key</option>
+      <option value="openai_api_key">openai_api_key</option>
+      <option value="ollama_url">ollama_url</option>
+      <option value="ollama_auth_token">ollama_auth_token</option>
+    </select>
+
+    <label>Secret Value</label>
+    <div class="row">
+      <input id="value" type="password" placeholder="sk-ant-api03-... oder AIzaSy... oder sk-..." autocomplete="off" />
+      <button class="toggle" type="button" onclick="toggleVisible()">Show</button>
+    </div>
+    <div class="hint">Nichts wird im Browser gespeichert. Key wird per HTTPS POST an /functions/v1/vault-set-secret geschickt.</div>
+
+    <button id="submit" onclick="submit()">In Vault speichern</button>
+
+    <div id="result" class="result" style="display:none"></div>
+  </div>
+
+<script>
+function toggleVisible() {
+  const v = document.getElementById('value');
+  const btn = event.target;
+  if (v.type === 'password') { v.type = 'text'; btn.textContent = 'Hide'; }
+  else { v.type = 'password'; btn.textContent = 'Show'; }
+}
+
+async function submit() {
+  const url = document.getElementById('url').value.replace(/\/$/, '');
+  const bearer = document.getElementById('bearer').value.trim();
+  const name = document.getElementById('name').value;
+  const value = document.getElementById('value').value.trim();
+  const resultEl = document.getElementById('result');
+  const submitBtn = document.getElementById('submit');
+
+  resultEl.style.display = 'block';
+  resultEl.className = 'result';
+  resultEl.textContent = 'Sende ...';
+  submitBtn.disabled = true;
+
+  try {
+    const resp = await fetch(`${url}/functions/v1/vault-set-secret`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${bearer}`,
+      },
+      body: JSON.stringify({ name, value }),
+    });
+    const data = await resp.json();
+    if (resp.ok && data.ok) {
+      resultEl.className = 'result ok';
+      resultEl.textContent =
+        `OK — ${name} in Vault gespeichert.\n` +
+        `length: ${data.stored.length}\n` +
+        `prefix: ${data.stored.prefix}\n` +
+        `suffix: ${data.stored.suffix}`;
+      // Clear input after success
+      document.getElementById('value').value = '';
+    } else {
+      resultEl.className = 'result err';
+      resultEl.textContent = `Fehler ${resp.status}: ${data.error || JSON.stringify(data)}`;
+    }
+  } catch (e) {
+    resultEl.className = 'result err';
+    resultEl.textContent = `Network-Fehler: ${e.message}`;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

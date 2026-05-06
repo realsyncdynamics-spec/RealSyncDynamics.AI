@@ -7,6 +7,13 @@ import {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
+interface HistoryPoint {
+  score: number;
+  severity: string;
+  created_at: string;
+  issue_count: number;
+}
+
 interface SharedAudit {
   share_token: string;
   domain: string;
@@ -14,6 +21,9 @@ interface SharedAudit {
   severity: 'critical' | 'high' | 'medium' | 'low' | 'pass';
   issues: { id: string; severity: string; title: string; detail: string; paragraph_ref?: string }[];
   created_at: string;
+  previous_score: number | null;
+  previous_at: string | null;
+  history: HistoryPoint[] | null;
 }
 
 export function AuditShare() {
@@ -113,16 +123,23 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
             <h2 className="text-xs text-titanium-500 uppercase tracking-wider mb-1">DSGVO-Score</h2>
             <div className={`text-base font-display font-bold ${config.color}`}>{config.label}</div>
           </div>
-          <div className={`text-5xl sm:text-6xl font-display font-bold tabular-nums ${config.color}`}>
-            {audit.score}<span className="text-base text-titanium-500"> / 100</span>
+          <div className="flex flex-col items-end gap-1">
+            <div className={`text-5xl sm:text-6xl font-display font-bold tabular-nums ${config.color}`}>
+              {audit.score}<span className="text-base text-titanium-500"> / 100</span>
+            </div>
+            {audit.previous_score !== null && audit.previous_score !== audit.score && (
+              <ScoreDelta current={audit.score} previous={audit.previous_score} previousAt={audit.previous_at} />
+            )}
           </div>
         </div>
         <p className="text-sm text-titanium-300 mt-3 leading-relaxed">
           {audit.issues.length === 0
             ? 'Keine Befunde — saubere Site.'
-            : `${audit.issues.length} ${audit.issues.length === 1 ? 'Befund' : 'Befunde'} aus 19 DSGVO-Heuristik-Checks.`}
+            : `${audit.issues.length} ${audit.issues.length === 1 ? 'Befund' : 'Befunde'} aus 29 DSGVO-Heuristik-Checks.`}
         </p>
       </div>
+
+      {audit.history && audit.history.length > 1 && <HistoryStrip history={audit.history} />}
 
       {audit.issues.length > 0 && (
         <div>
@@ -185,6 +202,67 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
         </div>
       </div>
     </article>
+  );
+}
+
+function ScoreDelta({ current, previous, previousAt }: { current: number; previous: number; previousAt: string | null }) {
+  const delta = current - previous;
+  const positive = delta > 0;
+  const color = positive ? 'text-emerald-300 border-emerald-700 bg-emerald-950/40'
+                         : 'text-red-300 border-red-700 bg-red-950/40';
+  const arrow = positive ? '↑' : '↓';
+  const days = previousAt
+    ? Math.max(1, Math.round((Date.now() - new Date(previousAt).getTime()) / 86400000))
+    : null;
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 border ${color} text-xs font-bold tabular-nums rounded-none`}>
+      {arrow} {Math.abs(delta)}
+      {days !== null && <span className="opacity-70 font-normal">seit {days}d</span>}
+    </div>
+  );
+}
+
+function HistoryStrip({ history }: { history: { score: number; severity: string; created_at: string; issue_count: number }[] }) {
+  return (
+    <section>
+      <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">
+        Verlauf · {history.length} {history.length === 1 ? 'Audit' : 'Audits'}
+      </h2>
+      <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
+        <div className="flex items-end gap-2 h-24 print:h-16">
+          {history.map((h, i) => {
+            const color = h.score >= 80 ? 'bg-emerald-500'
+                        : h.score >= 60 ? 'bg-amber-500'
+                        : h.score >= 40 ? 'bg-orange-500'
+                        : 'bg-red-500';
+            const heightPct = Math.max(10, h.score);
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
+                <div className="text-[10px] text-titanium-400 font-mono opacity-0 group-hover:opacity-100 transition">
+                  {h.score}
+                </div>
+                <div className={`${color} w-full transition-all`} style={{ height: `${heightPct}%`, minHeight: '4px' }} />
+                <div className="text-[9px] text-titanium-500 tabular-nums">
+                  {new Date(h.created_at).toLocaleDateString('de-DE', { month: '2-digit', day: '2-digit' })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {history.length >= 2 && (
+          <p className="text-[11px] text-titanium-400 mt-3 leading-relaxed">
+            {(() => {
+              const first = history[0].score;
+              const last = history[history.length - 1].score;
+              const delta = last - first;
+              if (delta > 0) return `↑ ${delta} Punkte verbessert seit dem ersten Scan. Weiter so!`;
+              if (delta < 0) return `↓ ${Math.abs(delta)} Punkte verschlechtert seit dem ersten Scan. Zeit für einen Compliance-Refresh.`;
+              return `Score stabil. Bleib am Ball.`;
+            })()}
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
 

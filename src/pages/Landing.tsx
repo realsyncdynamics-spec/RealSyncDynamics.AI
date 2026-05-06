@@ -37,6 +37,7 @@ function Header() {
           <span className="font-display font-bold text-titanium-50 tracking-tight">RealSyncDynamics.AI</span>
         </div>
         <nav className="flex items-center gap-2">
+          <Link to="/audit" className="hidden sm:inline px-3 py-1.5 text-sm text-emerald-300 hover:text-emerald-200 font-semibold">DSGVO-Audit</Link>
           <a href="#leistungen" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Leistungen</a>
           <a href="#preise" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Preise</a>
           <Link to="/agencies" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Agenturen</Link>

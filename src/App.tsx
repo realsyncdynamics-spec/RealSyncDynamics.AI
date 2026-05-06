@@ -6,6 +6,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
+import { AuditLanding } from './pages/AuditLanding';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
@@ -38,6 +39,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/agencies" element={<AgenciesLanding />} />
+          <Route path="/audit" element={<AuditLanding />} />
           <Route path="/contact-sales" element={<ContactSales />} />
           <Route path="/dashboard" element={<CreatorDashboard />} />
           <Route path="/kodee" element={<KodeeView />} />

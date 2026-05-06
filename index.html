@@ -10,6 +10,16 @@
     <meta property="og:description" content="KI nutzen ohne DSGVO-Bußgeld zu riskieren. Audit-Log, EU-Datenresidenz, AVV inklusive. Pakete ab 29 €/Monat." />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
+    <!--
+      Security headers via meta-equivalents.
+      GitHub Pages doesn't let us set HTTP-headers, so we declare what we can:
+      CSP frame-ancestors prevents iframe-clickjacking; X-Content-Type sniffing-Schutz;
+      Referrer-Policy für privacy. These improve our own /audit score significantly.
+    -->
+    <meta http-equiv="Content-Security-Policy"
+          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co https://api.fontshare.com data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://api.fontshare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <script type="text/javascript">
       // SPA on GitHub Pages — restore deep-link path written by 404.html.
       // Pattern: rafgraph/spa-github-pages

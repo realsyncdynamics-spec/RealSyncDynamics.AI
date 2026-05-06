@@ -314,6 +314,87 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
     });
   }
 
+  // ── Microsoft Clarity ohne Consent ──
+  if (/clarity\.ms|window\.clarity/i.test(html) && !hasConsent) {
+    issues.push({
+      id: 'clarity_no_consent',
+      severity: 'high',
+      title: 'Microsoft Clarity ohne sichtbares Consent-Banner',
+      detail: 'Clarity zeichnet Mausbewegungen + Klicks auf (Session-Replay) — laut BfDI „besondere Eingriffsintensität". Aktives Opt-In zwingend erforderlich.',
+      paragraph_ref: '§ 25 TTDSG',
+    });
+  }
+
+  // ── TikTok / Pinterest Pixel ohne Consent ──
+  const hasTikTok = /analytics\.tiktok\.com|ttq\(/i.test(html);
+  const hasPinterest = /pinimg\.com\/ct\/|pintrk\(/i.test(html);
+  if ((hasTikTok || hasPinterest) && !hasConsent) {
+    const trackers = [hasTikTok && 'TikTok Pixel', hasPinterest && 'Pinterest Tag'].filter(Boolean).join(', ');
+    issues.push({
+      id: 'social_pixel_no_consent',
+      severity: 'critical',
+      title: `Social-Media-Pixel ohne Consent: ${trackers}`,
+      detail: 'TikTok + Pinterest übertragen ins Drittland (CN/US) ohne SCC. Höchstes Risiko-Profil.',
+      paragraph_ref: 'DSGVO Art. 44',
+    });
+  }
+
+  // ── Reverse-IP-Tracker (Lead-Generation à la Albacross/Leadfeeder) ──
+  if (/albacross|leadfeeder|leadinfo|dealfront|wisepops/i.test(html)) {
+    issues.push({
+      id: 'reverse_ip_tracker',
+      severity: 'critical',
+      title: 'Reverse-IP / B2B-Tracker erkannt',
+      detail: 'Albacross/Leadfeeder/etc. identifizieren Firmen anhand IP-Adresse — DSK-Beschluss 2023: ohne Einwilligung der Betroffenen unzulässig (Profilbildung). Hohe Bußgelder.',
+      paragraph_ref: 'DSGVO Art. 6 + 22, DSK 2023',
+    });
+  }
+
+  // ── Newsletter-Signup ohne Double-Opt-In-Hinweis ──
+  if (/newsletter|abonnier|subscribe/i.test(html) && /<input[^>]+type=["']?email["']?/i.test(html)) {
+    if (!/(double.opt.in|bestätigung|confirm.*email|verifizierung)/i.test(html)) {
+      issues.push({
+        id: 'newsletter_no_doi',
+        severity: 'medium',
+        title: 'Newsletter-Anmeldung ohne erkennbaren Double-Opt-In',
+        detail: 'BGH (Az. I ZR 218/07): Werbe-Emails brauchen DOI-Bestätigung. Single-Opt-In = Wettbewerbsverstoß + Abmahnrisiko.',
+        paragraph_ref: '§ 7 UWG',
+      });
+    }
+  }
+
+  // ── HTML-lang-Attribut ──
+  if (!/<html[^>]+lang=/i.test(html)) {
+    issues.push({
+      id: 'no_html_lang',
+      severity: 'low',
+      title: '<html lang="…"> Attribut fehlt',
+      detail: 'BITV / WCAG 2.1: Sprache muss maschinenlesbar deklariert sein für Screenreader. Bei Behörden = Pflicht (BFSG ab 2025).',
+      paragraph_ref: 'BFSG / BITV 2.0',
+    });
+  }
+
+  // ── Open Graph für Social-Sharing ──
+  if (!/<meta[^>]+property=["']og:title["']/i.test(html)) {
+    issues.push({
+      id: 'no_og_tags',
+      severity: 'info',
+      title: 'Keine Open-Graph-Tags',
+      detail: 'Wenn Dein Link auf LinkedIn/WhatsApp gepostet wird, sieht er aus wie ein Lottoschein-URL — ohne Vorschau-Bild oder Beschreibung.',
+    });
+  }
+
+  // ── Meta-Refresh-Redirect (anti-pattern) ──
+  if (/<meta[^>]+http-equiv=["']?refresh["']?/i.test(html)) {
+    issues.push({
+      id: 'meta_refresh',
+      severity: 'low',
+      title: 'Meta-Refresh-Redirect verwendet',
+      detail: 'WCAG 2.1: Auto-Redirects via meta-refresh sind problematisch für Screenreader-User. Server-Redirect (301) bevorzugen.',
+      paragraph_ref: 'BITV 2.0 / WCAG 2.2.1',
+    });
+  }
+
   return issues;
 }
 

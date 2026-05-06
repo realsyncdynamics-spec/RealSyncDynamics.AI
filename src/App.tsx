@@ -12,6 +12,8 @@ import { AiActFaq } from './pages/AiActFaq';
 import { SchremsIIErklaert } from './pages/SchremsIIErklaert';
 import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
+import { CaseStudies } from './pages/CaseStudies';
+import { Resources } from './pages/Resources';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
@@ -54,6 +56,9 @@ function RoutesWithTracking() {
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
       <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
       <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
+      <Route path="/case-studies" element={<CaseStudies />} />
+      <Route path="/ressourcen" element={<Resources />} />
+      <Route path="/resources" element={<Resources />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

@@ -5,6 +5,8 @@ import {
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2,
 } from 'lucide-react';
 
+import { getAffiliateRef } from '../lib/affiliate';
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info' | 'pass';
@@ -48,6 +50,7 @@ export function AuditLanding() {
           url: normalizedUrl,
           email: email.trim(),
           company: company.trim() || undefined,
+          referral_code: getAffiliateRef() || undefined,
         }),
       });
       const data = await resp.json();

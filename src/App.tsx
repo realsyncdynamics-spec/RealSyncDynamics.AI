@@ -24,6 +24,7 @@ import { AvvGenerator } from './pages/AvvGenerator';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
+import { MeldepflichtTimer } from './pages/MeldepflichtTimer';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -81,6 +82,8 @@ function RoutesWithTracking() {
       <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
       <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
       <Route path="/tom-generator" element={<TomGenerator />} />
+      <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
+      <Route path="/tools/meldepflicht-timer" element={<MeldepflichtTimer />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

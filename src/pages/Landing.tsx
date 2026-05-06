@@ -488,7 +488,7 @@ function Footer() {
     <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-10">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-titanium-500">
         <div>
-          © 2026 RealSync Dynamics · Made in Germany
+          © 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)
         </div>
         <div className="flex flex-wrap gap-4">
           <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>

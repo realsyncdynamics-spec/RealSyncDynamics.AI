@@ -60,6 +60,22 @@ const SUB_PROCESSORS: SubProcessor[] = [
     dpa_url: 'https://www.hostinger.com/legal/data-processing-agreement',
     status: 'available',
   },
+  {
+    name: 'Resend Inc.',
+    purpose: 'Transaktionale Emails (Audit-Reports, Welcome-Emails, System-Notifications)',
+    data_categories: ['Email-Adresse des Empfängers', 'Email-Inhalt'],
+    region: 'EU (Ireland) — Versand-Endpoint, Storage in EU',
+    dpa_url: 'https://resend.com/legal/dpa',
+    status: 'available',
+  },
+  {
+    name: 'GitHub, Inc. (Microsoft Corporation)',
+    purpose: 'Statisches Frontend-Hosting via GitHub Pages CDN, Repository-Hosting',
+    data_categories: ['IP-Adresse + User-Agent (HTTP-Logs, kein PII-Storage)'],
+    region: 'Global CDN (Edge), USA (mit EU-DPA + SCCs)',
+    dpa_url: 'https://github.com/customer-terms/github-data-protection-agreement',
+    status: 'available',
+  },
 ];
 
 export function SubProcessors() {

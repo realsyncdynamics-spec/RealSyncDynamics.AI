@@ -197,7 +197,7 @@ function Capabilities() {
         'Audit-Log: Provider, Modell, Tokens, Kosten, Residenz pro Call',
         'CSV/PDF-Export für Datenschutzbeauftragte',
         'AVV / DPA inklusive (Sub-Prozessoren öffentlich)',
-        'C2PA-Provenance für AI-generierte Inhalte',
+        'Auskunfts- + Lösch-API (DSGVO Art. 15 / 17)',
       ],
     },
     {

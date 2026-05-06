@@ -245,7 +245,7 @@ function WorkflowList({ tenantId }: { tenantId: string }) {
           <input
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="z. B. Asset C2PA-Sign-Pipeline"
+            placeholder="z. B. AI-Audit-Log Export Pipeline"
             className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2 text-sm rounded-none outline-none focus:border-security-500"
           />
           <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider">Beschreibung (optional)</label>

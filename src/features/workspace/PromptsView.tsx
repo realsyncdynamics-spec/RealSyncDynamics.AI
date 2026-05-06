@@ -2,11 +2,11 @@ import React from 'react';
 import { Plus, Search, FileText, Globe, Shield, LayoutPanelLeft, MoreVertical, Bookmark } from 'lucide-react';
 
 const prompts = [
-  { title: 'AGB/Policy Discovery', description: 'Analysiert Dokumente auf DSGVO, eIDAS & AI Act Compliance Lücken.', icon: <Search className="h-4 w-4" />, color: 'text-security-400', bg: 'bg-security-900/30', border: 'border-security-800', tags: ['Research', 'Legal'] },
-  { title: 'Betriebsrat-Guide C2PA', description: 'Erstellt ein transparentes Informationspaket für den Betriebsrat bezgl. Belegschafts-Tracking.', icon: <Shield className="h-4 w-4" />, color: 'text-emerald-400', bg: 'bg-emerald-950/40', border: 'border-emerald-900', tags: ['Internal', 'Compliance'] },
-  { title: 'Generative AI Policy', description: 'Blueprint zur Unternehmensrichtlinie im Umgang mit externen AI Generatoren.', icon: <FileText className="h-4 w-4" />, color: 'text-security-400', bg: 'bg-security-950/40', border: 'border-security-800', tags: ['Policy', 'Governance'] },
-  { title: 'On-Premise Architektur', description: 'Systemdiagramm und API Specifications für Self-Hosted Sovereign Flow.', icon: <LayoutPanelLeft className="h-4 w-4" />, color: 'text-amber-400', bg: 'bg-amber-950/40', border: 'border-amber-800', tags: ['Tech', 'Architecture'] },
-  { title: 'Website Content Metadaten', description: 'Extrahiert SEO & C2PA Metadaten für Website Relaunch Workflows.', icon: <Globe className="h-4 w-4" />, color: 'text-security-400', bg: 'bg-security-900/30', border: 'border-security-800', tags: ['Marketing', 'Web'] }
+  { title: 'AGB/Policy Discovery', description: 'Analysiert Dokumente auf DSGVO, AI Act und BAIT Compliance-Lücken.', icon: <Search className="h-4 w-4" />, color: 'text-security-400', bg: 'bg-security-900/30', border: 'border-security-800', tags: ['Research', 'Legal'] },
+  { title: 'Betriebsrat-AI-Paket', description: 'BetrVG § 87 Abs. 1 Nr. 6 konformes Informationspaket zur AI-Einführung am Arbeitsplatz.', icon: <Shield className="h-4 w-4" />, color: 'text-emerald-400', bg: 'bg-emerald-950/40', border: 'border-emerald-900', tags: ['Internal', 'Compliance'] },
+  { title: 'Generative AI Policy', description: 'Blueprint zur Unternehmensrichtlinie im Umgang mit externen AI-Generatoren.', icon: <FileText className="h-4 w-4" />, color: 'text-security-400', bg: 'bg-security-950/40', border: 'border-security-800', tags: ['Policy', 'Governance'] },
+  { title: 'On-Premise Architektur', description: 'Systemdiagramm und API-Specs für Self-Hosted EU-Local-AI-Flow.', icon: <LayoutPanelLeft className="h-4 w-4" />, color: 'text-amber-400', bg: 'bg-amber-950/40', border: 'border-amber-800', tags: ['Tech', 'Architecture'] },
+  { title: 'AVV-Generator', description: 'Erstellt eine angepasste Auftragsverarbeitungs-Vereinbarung für AI-Anbieter.', icon: <Globe className="h-4 w-4" />, color: 'text-security-400', bg: 'bg-security-900/30', border: 'border-security-800', tags: ['Legal', 'DSGVO'] }
 ];
 
 export function PromptsView() {

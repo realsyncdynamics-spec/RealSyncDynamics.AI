@@ -25,6 +25,7 @@ import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
 import { MeldepflichtTimer } from './pages/MeldepflichtTimer';
+import { DatenschutzGenerator } from './pages/DatenschutzGenerator';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -84,6 +85,8 @@ function RoutesWithTracking() {
       <Route path="/tom-generator" element={<TomGenerator />} />
       <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
       <Route path="/tools/meldepflicht-timer" element={<MeldepflichtTimer />} />
+      <Route path="/datenschutz-generator" element={<DatenschutzGenerator />} />
+      <Route path="/tools/datenschutz-generator" element={<DatenschutzGenerator />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
@@ -122,4 +125,4 @@ export default function App() {
       </BrowserRouter>
     </TenantProvider>
   );
-}
+        }

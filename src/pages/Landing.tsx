@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { WaitlistSection } from '../components/WaitlistSection';
 import {
   ShieldCheck, Lock, FileSearch, Eye, Layers, GitMerge,
   ArrowRight, CheckCircle2, Building2, Briefcase, Stethoscope, Scale,
@@ -12,7 +13,8 @@ export function Landing() {
       <Header />
       <main>
         <Hero />
-        <RegulatoryPressure />
+        <WaitlistSection />         
+                  <RegulatoryPressure />
         <WhatWeDo />
         <Capabilities />
         <Pricing />

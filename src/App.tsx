@@ -28,6 +28,7 @@ import { OutreachView } from './features/outreach/OutreachView';
 import { AnalyticsView } from './features/analytics/AnalyticsView';
 import { LeadsView } from './features/admin/LeadsView';
 import { SystemHealthView } from './features/admin/SystemHealthView';
+import { CustomersView } from './features/admin/CustomersView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { AVVTemplate } from './features/legal/AVVTemplate';
@@ -67,6 +68,7 @@ function RoutesWithTracking() {
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
+      <Route path="/admin/customers" element={<CustomersView />} />
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />

@@ -85,17 +85,20 @@ export function CookieConsent() {
                   in der <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link>.
                 </p>
                 <div className="flex flex-wrap gap-2">
+                  {/* BfDI-Leitlinie 2024: Accept + Reject müssen visuell gleichberechtigt sein.
+                      Beide Buttons gleiche Größe, gleiches Padding, gleicher Font-Weight —
+                      nur unterschiedliche Farbe (security vs. titanium) als rein semantisches Cue. */}
                   <button onClick={acceptAll}
-                    className="px-3 py-2 bg-security-500 hover:bg-security-600 text-white text-xs font-bold rounded-none">
+                    className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-xs font-bold rounded-none">
                     Alles akzeptieren
                   </button>
                   <button onClick={acceptNecessary}
-                    className="px-3 py-2 bg-obsidian-950 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 text-xs font-semibold rounded-none">
-                    Nur notwendige
+                    className="px-4 py-2 bg-titanium-700 hover:bg-titanium-600 text-white text-xs font-bold rounded-none">
+                    Alle ablehnen
                   </button>
                   <button onClick={() => setShowCustom(true)}
-                    className="px-3 py-2 text-titanium-400 hover:text-titanium-200 text-xs font-medium">
-                    Anpassen
+                    className="px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-bold rounded-none">
+                    Einstellungen
                   </button>
                 </div>
               </>

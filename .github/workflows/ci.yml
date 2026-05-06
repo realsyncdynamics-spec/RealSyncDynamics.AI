@@ -57,19 +57,71 @@ jobs:
           CREATE EXTENSION IF NOT EXISTS pgcrypto;
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+          -- auth schema stub
           CREATE SCHEMA IF NOT EXISTS auth;
           CREATE TABLE IF NOT EXISTS auth.users (
-              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              email TEXT UNIQUE,
-              raw_user_meta_data JSONB,
-              created_at TIMESTAMPTZ DEFAULT now()
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            email TEXT UNIQUE,
+            raw_user_meta_data JSONB,
+            created_at TIMESTAMPTZ DEFAULT now()
           );
-          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID
-              LANGUAGE sql STABLE
-              AS 'SELECT NULL::uuid';
-          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT
-              LANGUAGE sql STABLE
-              AS 'SELECT $$authenticated$$::text';
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS 'SELECT NULL::uuid';
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS 'SELECT $$authenticated$$::text';
+
+          -- vault schema stub (Supabase Vault)
+          CREATE SCHEMA IF NOT EXISTS vault;
+          CREATE TABLE IF NOT EXISTS vault.secrets (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT UNIQUE,
+            secret TEXT,
+            description TEXT,
+            created_at TIMESTAMPTZ DEFAULT now(),
+            updated_at TIMESTAMPTZ DEFAULT now()
+          );
+          CREATE OR REPLACE VIEW vault.decrypted_secrets AS
+            SELECT id, name, secret AS decrypted_secret, description, created_at, updated_at
+            FROM vault.secrets;
+          CREATE OR REPLACE FUNCTION vault.create_secret(
+            p_secret text, p_name text, p_description text DEFAULT ''
+          ) RETURNS uuid LANGUAGE sql AS $$
+            INSERT INTO vault.secrets (secret, name, description)
+            VALUES (p_secret, p_name, p_description)
+            ON CONFLICT (name) DO UPDATE SET secret = EXCLUDED.secret
+            RETURNING id;
+          $$;
+
+          -- cron schema stub (pg_cron)
+          CREATE SCHEMA IF NOT EXISTS cron;
+          CREATE TABLE IF NOT EXISTS cron.job (
+            jobid BIGSERIAL PRIMARY KEY,
+            schedule TEXT,
+            command TEXT,
+            nodename TEXT DEFAULT 'localhost',
+            nodeport INT DEFAULT 5432,
+            database TEXT DEFAULT 'postgres',
+            username TEXT DEFAULT 'postgres',
+            active BOOLEAN DEFAULT true,
+            jobname TEXT UNIQUE
+          );
+          CREATE OR REPLACE FUNCTION cron.schedule(
+            p_name text, p_schedule text, p_command text
+          ) RETURNS bigint LANGUAGE sql AS $$
+            INSERT INTO cron.job (jobname, schedule, command)
+            VALUES (p_name, p_schedule, p_command)
+            ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule, command = EXCLUDED.command
+            RETURNING jobid;
+          $$;
+          CREATE OR REPLACE FUNCTION cron.unschedule(p_name text) RETURNS boolean LANGUAGE sql AS $$
+            DELETE FROM cron.job WHERE jobname = p_name;
+            SELECT true;
+          $$;
+
+          -- net schema stub (pg_net)
+          CREATE SCHEMA IF NOT EXISTS net;
+          CREATE OR REPLACE FUNCTION net.http_post(
+            url text, headers jsonb DEFAULT '{}'::jsonb, body jsonb DEFAULT '{}'::jsonb,
+            timeout_milliseconds int DEFAULT 5000
+          ) RETURNS bigint LANGUAGE sql AS 'SELECT 1::bigint';
           SQL
 
       - name: Apply all migrations in order
@@ -96,7 +148,7 @@ jobs:
           done
           if [ -n "$modified_existing" ]; then
             echo "❌ append-only rule broken; do not edit merged migrations:"
-            for f in $modified_existing; do echo "    $f"; done
+            for f in $modified_existing; do echo "  $f"; done
             echo
             echo "If this is a fix for a migration that has never applied"
             echo "successfully (e.g. SQL syntax error caught by CI on the"

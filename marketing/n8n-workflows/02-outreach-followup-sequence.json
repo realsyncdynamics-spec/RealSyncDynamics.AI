@@ -1,0 +1,84 @@
+{
+  "name": "Outreach Follow-up Sequence (3-7-14 Tage)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 9 * * 1-5" }]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 9:00 (Mo-Fr)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/outreach_contacts?status=eq.new&created_at=lte.{{$now.minus({days:3}).toISO()}}&select=id,name,email,company,linkedin_url,created_at",
+        "method": "GET",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi"
+      },
+      "id": "fetch-stale-3day",
+      "name": "Fetch: status=new + ≥3 Tage alt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/outreach_contacts?status=eq.contacted&created_at=lte.{{$now.minus({days:7}).toISO()}}&select=id,name,email,company,linkedin_url",
+        "method": "GET",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi"
+      },
+      "id": "fetch-stale-7day",
+      "name": "Fetch: contacted + ≥7 Tage alt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SLACK_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"📌 Bump-Reminder (Tag 3): \" + $json.length + \" Outreach-Kontakte warten auf erste Kontaktaufnahme.\\n\" + $json.map(c => '· ' + (c.company || c.email)).slice(0, 10).join('\\n')\n}"
+      },
+      "id": "slack-3day",
+      "name": "Slack: Day-3 Bump",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SLACK_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"⏰ Reply-Boost-Welle (Tag 7): \" + $json.length + \" Kontakte warten auf 2nd-Touch.\\n\" + $json.map(c => '· ' + (c.company || c.email) + ' — ' + (c.linkedin_url || 'kein LinkedIn')).slice(0, 10).join('\\n')\n}"
+      },
+      "id": "slack-7day",
+      "name": "Slack: Day-7 Reply-Boost",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 400]
+    }
+  ],
+  "connections": {
+    "cron-trigger": {
+      "main": [[{ "node": "fetch-stale-3day", "type": "main", "index": 0 }, { "node": "fetch-stale-7day", "type": "main", "index": 0 }]]
+    },
+    "fetch-stale-3day": {
+      "main": [[{ "node": "slack-3day", "type": "main", "index": 0 }]]
+    },
+    "fetch-stale-7day": {
+      "main": [[{ "node": "slack-7day", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["outreach", "follow-up", "automation"]
+}

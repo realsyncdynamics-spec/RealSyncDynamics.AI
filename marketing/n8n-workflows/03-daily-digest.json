@@ -1,0 +1,55 @@
+{
+  "name": "Daily Digest 08:00 — Founder Morning Brief",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 08:00 UTC",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/rpc/admin_system_health",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{$env.SUPABASE_SERVICE_ROLE_KEY}}" },
+            { "name": "Authorization", "value": "=Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}" }
+          ]
+        }
+      },
+      "id": "fetch-health",
+      "name": "Fetch system health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "team@realsyncdynamicsai.de",
+        "toEmail": "{{$env.FOUNDER_EMAIL}}",
+        "subject": "📊 Daily Digest — {{$now.toFormat('yyyy-MM-dd')}}",
+        "options": {},
+        "html": "=<h1>Stand heute</h1><h2>Letzte 24h</h2><ul><li>Audits: <strong>{{$json.last_24h.audits}}</strong></li><li>Leads: <strong>{{$json.last_24h.leads}}</strong></li><li>Pageviews: <strong>{{$json.last_24h.pageviews}}</strong></li><li>Audits unversendet: <strong>{{$json.last_24h.audits_unsent_email}}</strong></li></ul><h2>Totals</h2><ul><li>Aktive Subs: <strong>{{$json.totals.subscriptions}}</strong></li><li>Tenants: <strong>{{$json.totals.profiles}}</strong></li><li>Outreach: <strong>{{$json.totals.outreach_contacts}}</strong></li></ul><p><a href=\"https://realsyncdynamicsai.de/admin/system\">→ Full Health Dashboard</a></p>"
+      },
+      "id": "send-email",
+      "name": "Send Resend Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "cron-trigger": { "main": [[{ "node": "fetch-health", "type": "main", "index": 0 }]] },
+    "fetch-health": { "main": [[{ "node": "send-email", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["digest", "ops", "founder"]
+}

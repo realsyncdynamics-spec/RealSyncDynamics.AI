@@ -1,0 +1,97 @@
+{
+  "name": "Audit-Submit → Outreach-Insert + Slack-Ping",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "audit-submitted",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook: gdpr-audit submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "audit-submitted"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.severity}}",
+              "operation": "regex",
+              "value2": "^(critical|high)$"
+            }
+          ]
+        }
+      },
+      "id": "if-high-severity",
+      "name": "If severity ≥ high",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SUPABASE_URL}}/rest/v1/outreach_contacts",
+        "method": "POST",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": null,\n  \"company\": $json.body.company,\n  \"email\": $json.body.email,\n  \"linkedin_url\": null,\n  \"status\": \"new\",\n  \"industry\": null,\n  \"notes\": \"Auto-Insert aus Audit (Score \" + $json.body.score + \"/100, severity \" + $json.body.severity + \"). audit_id: \" + $json.body.audit_id\n}"
+      },
+      "id": "insert-outreach",
+      "name": "Insert outreach_contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.SLACK_WEBHOOK_URL}}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"🔥 Hot Lead: \" + $json.body.email + \" (\" + ($json.body.company || 'no company') + \") · \" + $json.body.domain + \" · Score \" + $json.body.score + \"/100 · \" + $json.body.severity.toUpperCase() + \"\\n→ https://realsyncdynamicsai.de/audit/share/\" + $json.body.audit_id\n}"
+      },
+      "id": "slack-ping",
+      "name": "Slack: Hot Lead Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true, \"processed\": true }"
+      },
+      "id": "respond",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [[{ "node": "if-high-severity", "type": "main", "index": 0 }]]
+    },
+    "if-high-severity": {
+      "main": [
+        [{ "node": "insert-outreach", "type": "main", "index": 0 }, { "node": "slack-ping", "type": "main", "index": 0 }],
+        [{ "node": "respond", "type": "main", "index": 0 }]
+      ]
+    },
+    "insert-outreach": {
+      "main": [[{ "node": "respond", "type": "main", "index": 0 }]]
+    },
+    "slack-ping": {
+      "main": [[{ "node": "respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["audit", "outreach", "lead-routing"]
+}

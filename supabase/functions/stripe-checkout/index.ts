@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
 
-  let body: { tenant_id?: string; plan_key?: string; return_url?: string };
+  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.plan_key) {
@@ -105,14 +105,24 @@ Deno.serve(async (req) => {
   const successUrl = `${origin || ''}/billing/usage?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl  = `${origin || ''}/billing/usage?checkout=cancelled`;
 
+  // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
+  // Triggered via body.pilot=true (typically set from /contact-sales after
+  // a sales call agreed on the pilot terms in marketing/demo-skript.md).
+  // Stripe will not charge until day 15 — user can cancel anytime in trial.
+  const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
+    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+  };
+  if (body.pilot === true) {
+    subscriptionData.trial_period_days = 14;
+    subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
+  }
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: stripeCustomerId!,
     line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
-    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
-    subscription_data: {
-      metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
-    },
+    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
+    subscription_data: subscriptionData,
     success_url: successUrl,
     cancel_url: cancelUrl,
     allow_promotion_codes: true,

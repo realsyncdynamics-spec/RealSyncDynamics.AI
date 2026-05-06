@@ -464,6 +464,8 @@ function Footer() {
         <div className="flex flex-wrap gap-4">
           <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
           <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>
+          <Link to="/legal/avv" className="hover:text-titanium-300">AVV-Template</Link>
+          <Link to="/legal/compliance-matrix" className="hover:text-titanium-300">Compliance-Matrix</Link>
           <Link to="/pricing" className="hover:text-titanium-300">Preise</Link>
           <Link to="/contact-sales" className="hover:text-titanium-300">Kontakt</Link>
           <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-300">privacy@…</a>

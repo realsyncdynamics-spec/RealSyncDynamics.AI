@@ -23,6 +23,8 @@ import { MarketGapsView } from './features/market/MarketGapsView';
 import { OutreachView } from './features/outreach/OutreachView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
+import { AVVTemplate } from './features/legal/AVVTemplate';
+import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 
@@ -56,6 +58,8 @@ export default function App() {
           <Route path="/outreach" element={<OutreachView />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="/legal/sub-processors" element={<SubProcessors />} />
+          <Route path="/legal/avv" element={<AVVTemplate />} />
+          <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
         </Routes>
         <CookieConsent />
       </BrowserRouter>

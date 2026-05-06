@@ -184,8 +184,11 @@ export function ContactSales() {
 }
 
 function CalendlyBlock() {
-  const calendlyUrl = import.meta.env.VITE_CALENDLY_URL as string | undefined;
-  if (!calendlyUrl) return null;
+  // Fallback to live Calendly link when no env-var is set, so the block
+  // renders without needing GitHub Secrets. Override via VITE_CALENDLY_URL
+  // if the slug or handle changes.
+  const calendlyUrl = (import.meta.env.VITE_CALENDLY_URL as string | undefined)
+    ?? 'https://calendly.com/realsyncdynamics/30min';
   return (
     <div className="bg-obsidian-900 border border-emerald-900 p-5 rounded-none mb-8">
       <div className="flex items-start gap-3 mb-3">

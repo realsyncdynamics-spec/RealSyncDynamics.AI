@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { WaitlistSection } from '../components/WaitlistSection';
+import { NewsletterForm } from '../components/NewsletterForm';
 import {
   ShieldCheck, Lock, FileSearch, Eye, Layers, GitMerge,
   ArrowRight, CheckCircle2, Building2, Briefcase, Stethoscope, Scale,
-  Gavel, AlertTriangle, Database, Workflow,
+  Gavel, AlertTriangle, Database, Workflow, X, Minus, ChevronDown, Clock, TrendingUp,
 } from 'lucide-react';
 
 export function Landing() {
@@ -13,13 +14,16 @@ export function Landing() {
       <Header />
       <main>
         <Hero />
+        <StatsBar />
         <TrustStrip />
         <WaitlistSection />
         <RegulatoryPressure />
+        <ComparisonTable />
         <WhatWeDo />
         <Capabilities />
         <Pricing />
         <Audience />
+        <FAQ />
         <CTA />
       </main>
       <Footer />
@@ -84,6 +88,36 @@ function Hero() {
         <div className="pt-6 text-xs text-titanium-500">
           Hosted in EU · DSGVO-konformes AVV inklusive · Sub-Prozessoren öffentlich gelistet
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Stats Bar (Enterprise-Trust) ─────────────────────────────────────────
+
+function StatsBar() {
+  const stats = [
+    { value: '29', unit: 'Heuristiken', sub: 'pro DSGVO-Audit-Run', icon: <FileSearch className="h-4 w-4" /> },
+    { value: '14', unit: 'Tage', sub: 'Pilot-Trial kostenlos', icon: <Clock className="h-4 w-4" /> },
+    { value: '4 %', unit: 'Jahresumsatz', sub: 'Bußgeld-Risiko ohne Compliance', icon: <AlertTriangle className="h-4 w-4" /> },
+    { value: '< 30', unit: 'Sekunden', sub: 'pro Site-Audit ohne Account', icon: <TrendingUp className="h-4 w-4" /> },
+  ];
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-10 bg-obsidian-950/40">
+      <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((s) => (
+          <div key={s.unit} className="flex items-start gap-3">
+            <div className="shrink-0 w-9 h-9 rounded-none bg-emerald-950/40 border border-emerald-900 flex items-center justify-center text-emerald-400">
+              {s.icon}
+            </div>
+            <div>
+              <div className="font-display text-2xl sm:text-3xl font-bold text-titanium-50 tabular-nums leading-none">
+                {s.value} <span className="text-sm font-normal text-titanium-400">{s.unit}</span>
+              </div>
+              <div className="text-xs text-titanium-500 mt-1.5">{s.sub}</div>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -164,6 +198,63 @@ function TrustStrip() {
       </div>
     </section>
   );
+}
+
+// ─── Comparison: Eigenbau vs RealSync ─────────────────────────────────────
+
+function ComparisonTable() {
+  const rows: { feature: string; diy: 'no' | 'partial' | 'yes' | string; rsd: 'yes' | string }[] = [
+    { feature: 'EU-Datenresidenz erzwingbar pro Tenant', diy: 'partial', rsd: 'yes' },
+    { feature: 'Audit-Log pro AI-Call (Provider, Token, Kosten)', diy: 'no', rsd: 'yes' },
+    { feature: 'AVV-Generator gemäß DSGVO Art. 28 Abs. 3', diy: 'no', rsd: 'yes' },
+    { feature: 'DSGVO-Selfservice (Art. 15 + 17) automatisiert', diy: 'no', rsd: 'yes' },
+    { feature: 'Sub-Prozessor-Liste öffentlich + AVV-verlinkt', diy: 'no', rsd: 'yes' },
+    { feature: 'AI-Provider-Routing (Anthropic + Google + Ollama EU)', diy: 'no', rsd: 'yes' },
+    { feature: 'Multi-Tenant + SSO + Org-Governance (Gold/Enterprise)', diy: 'partial', rsd: 'yes' },
+    { feature: 'Setup-Zeit', diy: '6 Monate Eigenbau', rsd: '14 Tage Pilot' },
+    { feature: 'Wartungsaufwand', diy: '~1 FTE', rsd: 'inkl. SaaS-Plan' },
+    { feature: 'BaFin-/Aufsichts-Sonderprüfung-ready', diy: 'no', rsd: 'yes' },
+  ];
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16">
+      <div className="max-w-5xl mx-auto">
+        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Build vs Buy</h2>
+        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-2 max-w-3xl">
+          Du kannst das selbst bauen. Aber willst du das wirklich?
+        </h3>
+        <p className="text-sm text-titanium-400 mb-8 max-w-2xl">
+          Vergleich der typischen Eigenbau-Lösung gegen RealSyncDynamics.AI. Keine theoretischen Versprechen — nur Features, die wir heute liefern.
+        </p>
+        <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-obsidian-950 text-[11px] font-bold text-titanium-400 uppercase tracking-wider">
+              <tr>
+                <th className="text-left px-4 py-3">Feature</th>
+                <th className="text-center px-4 py-3 w-32">Eigenbau</th>
+                <th className="text-center px-4 py-3 w-32 text-emerald-300">RealSync</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-titanium-900">
+              {rows.map((r) => (
+                <tr key={r.feature} className="hover:bg-obsidian-950">
+                  <td className="px-4 py-3 text-titanium-200">{r.feature}</td>
+                  <td className="px-4 py-3 text-center">{renderCell(r.diy)}</td>
+                  <td className="px-4 py-3 text-center">{renderCell(r.rsd)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function renderCell(v: string): React.ReactNode {
+  if (v === 'yes') return <CheckCircle2 className="h-4 w-4 text-emerald-400 inline" />;
+  if (v === 'no') return <X className="h-4 w-4 text-red-400 inline" />;
+  if (v === 'partial') return <Minus className="h-4 w-4 text-amber-400 inline" />;
+  return <span className="text-xs text-titanium-300">{v}</span>;
 }
 
 // ─── What We Do ────────────────────────────────────────────────────────────
@@ -453,28 +544,98 @@ function Audience() {
   );
 }
 
+// ─── FAQ ──────────────────────────────────────────────────────────────────
+
+function FAQ() {
+  const items = [
+    {
+      q: 'Wie schnell sind wir compliance-ready?',
+      a: '14 Tage. Pilot-Tier kostenlos. Nach 7 Tagen Feedback-Call, danach Conversion oder Cancel.',
+    },
+    {
+      q: 'Was passiert mit unseren Daten in den USA?',
+      a: 'Standardmäßig nichts. EU-Datenresidenz ist Default — sensible Tenants laufen via Ollama in Frankfurt. Optional via Anthropic/OpenAI mit SCCs + DPF, transparent dokumentiert.',
+    },
+    {
+      q: 'Brauchen wir einen eigenen Datenschutzbeauftragten?',
+      a: 'Falls Du nach DSGVO Art. 37 / § 38 BDSG einen brauchst — ja, bleibt extern. Wir liefern Tools, die DSB-Arbeit ersetzen können (DSGVO-Selfservice, Audit-Log, AVV-Templates), nicht die DSB-Rolle.',
+    },
+    {
+      q: 'Wie unterscheidet ihr euch von OneTrust / TrustArc / Usercentrics?',
+      a: 'Die machen Cookie-Consent + Privacy-Banner. Wir machen KI-Compliance — kein Overlap. Beides läuft oft parallel.',
+    },
+    {
+      q: 'Funktioniert das mit unserem bestehenden ChatGPT-Enterprise?',
+      a: 'Ja. Audit-Log läuft cross-provider — auch wenn Du parallel Claude oder lokales Llama nutzt. Single-Source-of-Truth pro AI-Call: User, Modell, Tokens, Kosten, Datenresidenz.',
+    },
+    {
+      q: 'Wie ist der AVV-Vertrag mit euch?',
+      a: 'AVV gemäß DSGVO Art. 28 Abs. 3 inklusive in jedem Plan. EU-Hosting, Sub-Prozessor-Liste öffentlich, ladbar als PDF. Standard-TOM-Anhang. Audit-Rechte für Aufsichts-Sonderprüfungen.',
+    },
+    {
+      q: 'Was passiert bei BaFin-Sonderprüfung?',
+      a: 'Audit-Log ist revisionssicher exportierbar (CSV + signiertes PDF in Gold/Enterprise). Wir helfen aktiv beim Q&A-Prozess gegenüber Aufsicht.',
+    },
+    {
+      q: 'Können wir eigene API-Keys nutzen (BYOK)?',
+      a: 'Ab Gold-Plan: Bring-Your-Own-Key für Anthropic/OpenAI/Google. Sub-Prozessor wird dann zu „Nutzer-direkt", was AVV-Komplexität reduziert.',
+    },
+  ];
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16">
+      <div className="max-w-3xl mx-auto">
+        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">FAQ</h2>
+        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-8">
+          Die Fragen, die du wahrscheinlich gerade hast.
+        </h3>
+        <div className="space-y-3">
+          {items.map((item, i) => (
+            <details key={i} className="group bg-obsidian-900 border border-titanium-900 rounded-none">
+              <summary className="cursor-pointer p-4 sm:p-5 list-none flex items-start gap-3 hover:bg-obsidian-950">
+                <span className="font-display font-bold text-titanium-50 text-sm flex-1">{item.q}</span>
+                <ChevronDown className="h-4 w-4 text-titanium-500 shrink-0 mt-0.5 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="px-4 sm:px-5 pb-4 sm:pb-5 -mt-1">
+                <p className="text-sm text-titanium-300 leading-relaxed">{item.a}</p>
+              </div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── CTA ───────────────────────────────────────────────────────────────────
 
 function CTA() {
   return (
     <section className="px-4 sm:px-6 py-20">
       <div className="max-w-3xl mx-auto text-center space-y-5">
+        <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none">
+          <ShieldCheck className="h-3 w-3" /> 14 Tage Pilot · Kostenlos · Kein Lock-in
+        </div>
         <h2 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight">
-          Demo in 30 Min — keine Kaltakquise.
+          Demo in 30 Min — du entscheidest danach.
         </h2>
         <p className="text-titanium-300 leading-relaxed">
-          Wir zeigen den eu_local-Modus, das Audit-Log, einen Beispiel-Workflow und die DSGVO-Selfservice-API
-          live an deinen Daten — du entscheidest danach.
+          Live an deinen Daten: eu_local-Modus, Audit-Log, Beispiel-Workflow, DSGVO-Selfservice-API.
+          Wenn der Pilot nicht passt, brichst Du in 7 Tagen ab — keine Karte vorab nötig.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/contact-sales?source=apex_cta"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none">
             Demo buchen <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link to="/legal/sub-processors"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 font-semibold rounded-none">
-            Sub-Prozessoren ansehen
+          <Link to="/audit?source=apex_cta"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-emerald-700 hover:bg-emerald-950/30 text-emerald-300 font-semibold rounded-none">
+            Kostenloser DSGVO-Scan (30 Sek)
           </Link>
+        </div>
+        <div className="pt-4 grid sm:grid-cols-3 gap-2 text-[11px] text-titanium-500 max-w-xl mx-auto">
+          <div className="flex items-center gap-1.5 justify-center"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> EU-Hosted (Frankfurt)</div>
+          <div className="flex items-center gap-1.5 justify-center"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> AVV inklusive</div>
+          <div className="flex items-center gap-1.5 justify-center"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> Made in Germany</div>
         </div>
       </div>
     </section>
@@ -485,19 +646,52 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-10">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-titanium-500">
-        <div>
-          © 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)
+    <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-12">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
+                <ShieldCheck className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-display font-bold text-titanium-50">RealSyncDynamics.AI</span>
+            </div>
+            <p className="text-xs text-titanium-400 mb-5 max-w-sm leading-relaxed">
+              DSGVO-konforme KI-Compliance-Plattform für regulierte Branchen — HealthTech, Legal, FinTech, Behörden.
+              EU-Hosted, Audit-by-default, AVV inklusive.
+            </p>
+            <div className="text-[11px] text-titanium-500 uppercase tracking-wider mb-2 font-bold">Newsletter</div>
+            <NewsletterForm source="footer" variant="footer" />
+          </div>
+          <div>
+            <div className="text-[11px] text-titanium-500 uppercase tracking-wider mb-3 font-bold">Produkt</div>
+            <ul className="space-y-1.5 text-xs text-titanium-300">
+              <li><Link to="/audit" className="hover:text-emerald-300">DSGVO-Audit (kostenlos)</Link></li>
+              <li><Link to="/pricing" className="hover:text-titanium-50">Preise</Link></li>
+              <li><Link to="/agencies" className="hover:text-titanium-50">Für Agenturen</Link></li>
+              <li><Link to="/contact-sales" className="hover:text-titanium-50">Demo buchen</Link></li>
+              <li><Link to="/dashboard" className="hover:text-titanium-50">Login</Link></li>
+            </ul>
+          </div>
+          <div>
+            <div className="text-[11px] text-titanium-500 uppercase tracking-wider mb-3 font-bold">Compliance & Legal</div>
+            <ul className="space-y-1.5 text-xs text-titanium-300">
+              <li><Link to="/dsgvo-ki-checkliste" className="hover:text-titanium-50">DSGVO-KI-Checkliste</Link></li>
+              <li><Link to="/ai-act-faq" className="hover:text-titanium-50">EU AI Act FAQ</Link></li>
+              <li><Link to="/schrems-ii-erklaert" className="hover:text-titanium-50">Schrems-II erklärt</Link></li>
+              <li><Link to="/bait-marisk-compliance-guide" className="hover:text-titanium-50">BAIT &amp; MaRisk</Link></li>
+              <li><Link to="/legal/compliance-matrix" className="hover:text-titanium-50">Compliance-Matrix</Link></li>
+              <li><Link to="/legal/avv" className="hover:text-titanium-50">AVV-Template</Link></li>
+            </ul>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-          <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>
-          <Link to="/legal/avv" className="hover:text-titanium-300">AVV-Template</Link>
-          <Link to="/legal/compliance-matrix" className="hover:text-titanium-300">Compliance-Matrix</Link>
-          <Link to="/pricing" className="hover:text-titanium-300">Preise</Link>
-          <Link to="/contact-sales" className="hover:text-titanium-300">Kontakt</Link>
-          <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-300">privacy@…</a>
+        <div className="border-t border-titanium-900 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-titanium-500">
+          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</div>
+          <div className="flex flex-wrap gap-4">
+            <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
+            <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>
+            <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-300">privacy@realsyncdynamicsai.de</a>
+          </div>
         </div>
       </div>
     </footer>

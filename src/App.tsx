@@ -16,13 +16,15 @@ import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
 import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
+import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
+import { ContactSales } from './pages/ContactSales';
+import { CreatorDashboard } from './pages/CreatorDashboard';
+// Compliance Tools
 import { AvvGenerator } from './pages/AvvGenerator';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
-import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
-// MeldepflichtTimer skipped: file pushed incomplete, awaiting fix
-import { ContactSales } from './pages/ContactSales';
-import { CreatorDashboard } from './pages/CreatorDashboard';
+import { TomGenerator } from './pages/TomGenerator';
+// Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
 import { UsageView } from './features/billing/UsageView';
@@ -54,11 +56,12 @@ function RoutesWithTracking() {
   useTrackPageview();
   return (
     <Routes>
+      {/* Public */}
       <Route path="/" element={<Landing />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
-      <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
+      <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
       <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
@@ -68,11 +71,17 @@ function RoutesWithTracking() {
       <Route path="/resources" element={<Resources />} />
       <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
       <Route path="/audit-pro" element={<AuditPro />} />
-      <Route path="/tools/avv-generator" element={<AvvGenerator />} />
-      <Route path="/tools/vvt-wizard" element={<VvtWizard />} />
-      <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      {/* Compliance Tools (Free) */}
+      <Route path="/avv-generator" element={<AvvGenerator />} />
+      <Route path="/tools/avv-generator" element={<AvvGenerator />} />
+      <Route path="/vvt-wizard" element={<VvtWizard />} />
+      <Route path="/tools/vvt-wizard" element={<VvtWizard />} />
+      <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
+      <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
+      <Route path="/tom-generator" element={<TomGenerator />} />
+      {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
@@ -87,10 +96,12 @@ function RoutesWithTracking() {
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />
+      {/* Admin */}
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/customers" element={<CustomersView />} />
+      {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />

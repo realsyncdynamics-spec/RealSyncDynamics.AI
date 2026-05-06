@@ -19,13 +19,14 @@ import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
-// Compliance Tools
+// Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
 import { MeldepflichtTimer } from './pages/MeldepflichtTimer';
 import { DatenschutzGenerator } from './pages/DatenschutzGenerator';
+import { ToolsHub } from './pages/ToolsHub';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -75,6 +76,8 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      {/* Tools Hub */}
+      <Route path="/tools" element={<ToolsHub />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />
@@ -83,6 +86,7 @@ function RoutesWithTracking() {
       <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
       <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
       <Route path="/tom-generator" element={<TomGenerator />} />
+      <Route path="/tools/tom-generator" element={<TomGenerator />} />
       <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
       <Route path="/tools/meldepflicht-timer" element={<MeldepflichtTimer />} />
       <Route path="/datenschutz-generator" element={<DatenschutzGenerator />} />
@@ -125,4 +129,4 @@ export default function App() {
       </BrowserRouter>
     </TenantProvider>
   );
-        }
+      }

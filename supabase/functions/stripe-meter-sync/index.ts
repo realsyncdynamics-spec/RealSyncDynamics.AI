@@ -5,21 +5,28 @@
 // POST /functions/v1/stripe-meter-sync
 // Authorization: Bearer <STRIPE_METER_SHARED_SECRET>     (NOT a user JWT)
 //
-// Designed to be called by a scheduler (pg_cron, Vercel Cron, GitHub Actions,
-// Supabase Schedules). Returns a summary { synced, skipped, errors } per run.
+// Auth: shared secret read from env first, falls back to Supabase Vault
+// (public.get_app_secret('stripe_meter_shared_secret')) so cron + manual
+// invocations work without a project-secret roundtrip in the dashboard.
+// Same fallback for STRIPE_SECRET_KEY (vault name 'stripe_secret_key').
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
-const SHARED_SECRET = Deno.env.get('STRIPE_METER_SHARED_SECRET')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
-
 const periodMonth = (d = new Date()): string =>
   `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  if (error) return null;
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
 
 interface MapRow {
   tenant_id: string;
@@ -39,16 +46,22 @@ interface SummaryRow {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return text('POST only', 405);
 
+  const sharedSecret = await getSecret('STRIPE_METER_SHARED_SECRET', 'stripe_meter_shared_secret');
+  if (!sharedSecret) return text('shared secret not configured', 500);
+
   const auth = req.headers.get('Authorization');
-  if (!auth || auth !== `Bearer ${SHARED_SECRET}`) {
+  if (!auth || auth !== `Bearer ${sharedSecret}`) {
     return text('forbidden', 403);
   }
+
+  const stripeKey = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  if (!stripeKey) return text('stripe key not configured', 500);
+  const stripe = new Stripe(stripeKey, { apiVersion: '2024-06-20' });
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
 
-  // Only sync keys whose billing_mode is 'metered'.
   const { data: meteredKeys, error: cfgErr } = await admin
     .from('usage_limits_config')
     .select('entitlement_key')
@@ -58,7 +71,6 @@ Deno.serve(async (req) => {
   const meteredSet = new Set((meteredKeys ?? []).map((r) => r.entitlement_key));
   if (meteredSet.size === 0) return json({ ok: true, synced: 0, skipped: 0, errors: 0, results: [] });
 
-  // Pull all SI mappings that fall under metered keys.
   const { data: maps, error: mapErr } = await admin
     .from('metered_subscription_items')
     .select('tenant_id, entitlement_key, stripe_subscription_item_id, stripe_unit_factor')
@@ -82,7 +94,6 @@ Deno.serve(async (req) => {
       const internal = total?.total ?? 0;
       const quantity = Math.max(0, Math.round(internal * Number(m.stripe_unit_factor)));
 
-      // Check last reported quantity to skip no-ops.
       const { data: last } = await admin
         .from('usage_meter_sync')
         .select('last_quantity, last_status')
@@ -96,7 +107,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Idempotent: action='set' overwrites any prior posting in the same period.
       await stripe.subscriptionItems.createUsageRecord(
         m.stripe_subscription_item_id,
         {

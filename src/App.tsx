@@ -29,6 +29,10 @@ import { DatenschutzGenerator } from './pages/DatenschutzGenerator';
 import { DsfaWizard } from './pages/DsfaWizard';
 import { BusseldRechner } from './pages/BusseldRechner';
 import { ToolsHub } from './pages/ToolsHub';
+// Industry + Competitor Doorways
+import { HealthTechLanding } from './pages/HealthTechLanding';
+import { LegalTechLanding } from './pages/LegalTechLanding';
+import { OneTrustAlternative } from './pages/OneTrustAlternative';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -80,6 +84,11 @@ function RoutesWithTracking() {
       <Route path="/contact-sales" element={<ContactSales />} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
+      {/* Industry-Doorways */}
+      <Route path="/healthtech" element={<HealthTechLanding />} />
+      <Route path="/legal-tech" element={<LegalTechLanding />} />
+      {/* Competitor-Alternative-Doorways */}
+      <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

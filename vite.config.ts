@@ -19,9 +19,30 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
+    build: {
+      // Manual chunks split the previously 1.5MB single-bundle into cacheable
+      // vendor-chunks. Browser CDNs (GH-Pages Fastly) cache vendor-* across
+      // deploys since they only change when dependencies change, while the
+      // small app-chunk re-downloads each deploy.
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined;
+            if (id.includes('react-router') || id.includes('@remix-run/router')) return 'vendor-router';
+            if (id.includes('recharts') || id.includes('d3-')) return 'vendor-charts';
+            if (id.includes('@supabase')) return 'vendor-supabase';
+            if (id.includes('@stripe') || id.includes('stripe')) return 'vendor-stripe';
+            if (id.includes('@sentry')) return 'vendor-sentry';
+            if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('react-dom') || id.includes('scheduler') || id.includes('/react/')) return 'vendor-react';
+            return 'vendor';
+          },
+        },
+      },
+      chunkSizeWarningLimit: 600,
+    },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

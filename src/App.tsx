@@ -21,6 +21,7 @@ import { InvitesView } from './features/tenants/InvitesView';
 import { AcceptInviteView } from './features/tenants/AcceptInviteView';
 import { AiResidencySettings } from './features/settings/AiResidencySettings';
 import { AccountSettings } from './features/settings/AccountSettings';
+import { ApiKeysSettings } from './features/settings/ApiKeysSettings';
 import { SettingsView } from './features/settings/SettingsView';
 import { WorkflowsView } from './features/workflows/WorkflowsView';
 import { MarketGapsView } from './features/market/MarketGapsView';
@@ -62,6 +63,7 @@ function RoutesWithTracking() {
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />
+      <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />

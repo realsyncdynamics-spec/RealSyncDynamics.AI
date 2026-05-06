@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#0F766E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Solid green background -->
+  <rect width="400" height="400" fill="url(#bg)"/>
+
+  <!-- Centered shield with checkmark -->
+  <g transform="translate(115, 100)">
+    <path d="M85 0 L170 28 L170 100 Q170 165 85 200 Q0 165 0 100 L0 28 Z" fill="white"/>
+    <path d="M45 100 L75 130 L130 70" stroke="#10B981" stroke-width="14" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+  </g>
+
+  <!-- Bottom text -->
+  <text x="200" y="350" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="800" fill="white" text-anchor="middle" letter-spacing="2">RSD.AI</text>
+</svg>

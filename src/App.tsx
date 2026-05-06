@@ -135,4 +135,4 @@ export default function App() {
       </BrowserRouter>
     </TenantProvider>
   );
-      }
+}

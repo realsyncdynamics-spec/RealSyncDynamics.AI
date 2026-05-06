@@ -102,6 +102,13 @@ Deno.serve(async (req) => {
   }
 
   const issues: Issue[] = runChecks(url, html, headers, status, fetchError);
+
+  // Scan subpages (/datenschutz + /impressum) — best-effort, non-blocking.
+  // Findings are merged into the issue list with prefixed IDs to avoid
+  // collisions with homepage findings.
+  const subpages = await scanSubpages(url, html);
+  for (const sub of subpages) issues.push(sub);
+
   const { score, severity } = scoreReport(issues);
 
   // Insert sales_lead
@@ -430,6 +437,169 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
   } finally {
     clearTimeout(t);
   }
+}
+
+// ─── Subpage-Scan: /datenschutz + /impressum ─────────────────────────────
+// Findet Befunde, die nur auf den dedizierten Legal-Pages stehen:
+// - AVV-Auflistung der Auftragsverarbeiter (Art. 28)
+// - DSB-Kontakt (Art. 37+38)
+// - Verarbeitungs-Zwecke (Art. 13 lit. c)
+// - Beschwerderecht (Art. 13 lit. d)
+// - Drittlandtransfer-Hinweise (Art. 44)
+// - Impressum-Pflichtfelder (§ 5 TMG)
+async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]> {
+  const issues: Issue[] = [];
+  const base = new URL(baseUrl);
+
+  // Discover privacy + imprint URLs from homepage links
+  const linkRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([^<]{0,80})<\/a>/gi;
+  const candidates: { kind: 'privacy' | 'imprint'; url: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = linkRegex.exec(baseHtml)) !== null) {
+    const href = m[1];
+    const text = m[2].toLowerCase();
+    let resolved: string;
+    try { resolved = new URL(href, base).toString(); } catch { continue; }
+    if (new URL(resolved).hostname !== base.hostname) continue; // same-domain only
+    if (/datenschutz|privacy|privacy-policy/i.test(href + text)) {
+      candidates.push({ kind: 'privacy', url: resolved });
+    } else if (/impressum|imprint|legal-notice/i.test(href + text)) {
+      candidates.push({ kind: 'imprint', url: resolved });
+    }
+  }
+
+  // Try common fallback paths if not linked
+  for (const fallback of ['/datenschutz', '/datenschutzerklaerung', '/privacy', '/legal/privacy']) {
+    if (!candidates.some(c => c.kind === 'privacy')) {
+      candidates.push({ kind: 'privacy', url: new URL(fallback, base).toString() });
+    }
+  }
+  for (const fallback of ['/impressum', '/imprint', '/legal/imprint']) {
+    if (!candidates.some(c => c.kind === 'imprint')) {
+      candidates.push({ kind: 'imprint', url: new URL(fallback, base).toString() });
+    }
+  }
+
+  // Take first valid privacy + imprint, fetch in parallel
+  const seenKinds = new Set<string>();
+  const targets = candidates.filter(c => {
+    if (seenKinds.has(c.kind)) return false;
+    seenKinds.add(c.kind);
+    return true;
+  });
+
+  const fetched = await Promise.all(
+    targets.map(async (t) => {
+      try {
+        const resp = await fetchWithTimeout(t.url, 5000);
+        if (!resp.ok) return { kind: t.kind, html: '', status: resp.status };
+        const reader = resp.body?.getReader();
+        if (!reader) return { kind: t.kind, html: '', status: resp.status };
+        const chunks: Uint8Array[] = [];
+        let total = 0;
+        while (total < 500_000) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          total += value.byteLength;
+        }
+        await reader.cancel();
+        const html = new TextDecoder('utf-8', { fatal: false }).decode(concat(chunks));
+        return { kind: t.kind, html, status: resp.status };
+      } catch {
+        return { kind: t.kind, html: '', status: 0 };
+      }
+    }),
+  );
+
+  for (const f of fetched) {
+    if (!f.html || f.status !== 200) continue;
+    const lc = f.html.toLowerCase();
+
+    if (f.kind === 'privacy') {
+      // Auftragsverarbeiter / Sub-Prozessor-Liste
+      if (!/auftragsverarbeit|sub.?prozessor|sub.?processor|art\.\s*28/i.test(lc)) {
+        issues.push({
+          id: 'sub_privacy_no_avv_list',
+          severity: 'high',
+          title: 'Datenschutzerklärung nennt keine Auftragsverarbeiter',
+          detail: 'Art. 13 Abs. 1 lit. e: jeder Empfänger personenbezogener Daten muss namentlich genannt werden. „Wir nutzen Cookies" reicht nicht.',
+          paragraph_ref: 'DSGVO Art. 13 Abs. 1 lit. e',
+        });
+      }
+
+      // Datenschutzbeauftragter
+      if (!/datenschutzbeauftragt|data.protection.officer|dsb|dpo/i.test(lc)) {
+        issues.push({
+          id: 'sub_privacy_no_dpo_contact',
+          severity: 'medium',
+          title: 'Kein DSB-Kontakt in Datenschutzerklärung',
+          detail: 'Bei DSB-Pflicht (>20 Personen mit personenbez. Daten regelmäßig befasst, oder Kerntätigkeit „umfangreiche Verarbeitung") muss Name + Email des DSB genannt sein.',
+          paragraph_ref: 'DSGVO Art. 37 + 38, § 38 BDSG',
+        });
+      }
+
+      // Beschwerderecht bei Aufsichtsbehörde
+      if (!/beschwerde|aufsichtsbehörde|beschwerderecht/i.test(lc)) {
+        issues.push({
+          id: 'sub_privacy_no_complaint_right',
+          severity: 'medium',
+          title: 'Kein Hinweis auf Beschwerderecht bei Aufsichtsbehörde',
+          detail: 'Pflicht-Hinweis nach Art. 13 Abs. 2 lit. d: Betroffene haben das Recht, sich bei einer Aufsichtsbehörde zu beschweren.',
+          paragraph_ref: 'DSGVO Art. 13 Abs. 2 lit. d',
+        });
+      }
+
+      // Drittland-Transfer-Hinweis
+      if (/usa|united states|drittland|third country|amerika/i.test(lc)
+          && !/standardvertragsklausel|standard contractual clauses|sccs?|adäquanzbeschluss|tadpf|data privacy framework/i.test(lc)) {
+        issues.push({
+          id: 'sub_privacy_third_country_no_legal_basis',
+          severity: 'high',
+          title: 'Drittlandtransfer erwähnt, aber keine Rechtsgrundlage',
+          detail: 'Bei US/Drittland-Hinweis muss SCCs oder DPF (Data Privacy Framework) als Rechtsgrundlage genannt sein.',
+          paragraph_ref: 'DSGVO Art. 44–46',
+        });
+      }
+    }
+
+    if (f.kind === 'imprint') {
+      // Impressum-Pflichtfelder § 5 TMG
+      const hasName = /\b(GmbH|UG|AG|GbR|KG|e\.K\.|inhaber|geschäftsführer)\b/i.test(lc);
+      const hasAddress = /\b(straße|str\.|allee|platz|weg|gasse)\s+\d/i.test(f.html);
+      const hasContact = /(\bemail\b|@|tel\.|telefon|phone)/i.test(lc);
+
+      if (!hasName) {
+        issues.push({
+          id: 'sub_imprint_no_legal_form',
+          severity: 'critical',
+          title: 'Impressum nennt keine Rechtsform',
+          detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 TMG: vollständige Angabe der Firma inkl. Rechtsform (GmbH, UG, e.K. etc.) bzw. Inhaber-Name bei Einzelunternehmen.',
+          paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+        });
+      }
+      if (!hasAddress) {
+        issues.push({
+          id: 'sub_imprint_no_address',
+          severity: 'critical',
+          title: 'Impressum hat keine ladungsfähige Anschrift',
+          detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 TMG. Postfach reicht nicht.',
+          paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+        });
+      }
+      if (!hasContact) {
+        issues.push({
+          id: 'sub_imprint_no_contact',
+          severity: 'high',
+          title: 'Impressum ohne unmittelbaren Kontaktweg',
+          detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 TMG: Email + Telefon müssen genannt sein.',
+          paragraph_ref: '§ 5 Abs. 1 Nr. 2 TMG',
+        });
+      }
+    }
+  }
+
+  return issues;
 }
 
 function concat(chunks: Uint8Array[]): Uint8Array {

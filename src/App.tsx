@@ -9,6 +9,7 @@ import { AuditLanding } from './pages/AuditLanding';
 import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
 import { AiActFaq } from './pages/AiActFaq';
+import { SchremsIIErklaert } from './pages/SchremsIIErklaert';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
@@ -25,6 +26,7 @@ import { MarketGapsView } from './features/market/MarketGapsView';
 import { OutreachView } from './features/outreach/OutreachView';
 import { AnalyticsView } from './features/analytics/AnalyticsView';
 import { LeadsView } from './features/admin/LeadsView';
+import { SystemHealthView } from './features/admin/SystemHealthView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { AVVTemplate } from './features/legal/AVVTemplate';
@@ -45,6 +47,7 @@ function RoutesWithTracking() {
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
+      <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
@@ -61,6 +64,7 @@ function RoutesWithTracking() {
       <Route path="/outreach" element={<OutreachView />} />
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
+      <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />

@@ -16,6 +16,10 @@ import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
 import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
+import { AvvGenerator } from './pages/AvvGenerator';
+import { VvtWizard } from './pages/VvtWizard';
+import { AiActClassifier } from './pages/AiActClassifier';
+// MeldepflichtTimer skipped: file pushed incomplete, awaiting fix
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
@@ -63,6 +67,9 @@ function RoutesWithTracking() {
       <Route path="/resources" element={<Resources />} />
       <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
       <Route path="/audit-pro" element={<AuditPro />} />
+      <Route path="/tools/avv-generator" element={<AvvGenerator />} />
+      <Route path="/tools/vvt-wizard" element={<VvtWizard />} />
+      <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

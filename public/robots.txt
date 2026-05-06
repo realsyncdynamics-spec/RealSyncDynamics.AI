@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Block analytics/admin routes from indexing
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /dashboard
+Disallow: /tenant/
+
+Sitemap: https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/sitemap.xml

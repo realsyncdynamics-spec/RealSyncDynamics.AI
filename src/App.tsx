@@ -19,13 +19,16 @@ import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
-// Compliance Tools
+// Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
 import { MeldepflichtTimer } from './pages/MeldepflichtTimer';
-import { Tools } from './pages/Tools';
+import { DatenschutzGenerator } from './pages/DatenschutzGenerator';
+import { DsfaWizard } from './pages/DsfaWizard';
+import { BusseldRechner } from './pages/BusseldRechner';
+import { ToolsHub } from './pages/ToolsHub';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -75,6 +78,8 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      {/* Tools Hub */}
+      <Route path="/tools" element={<ToolsHub />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />
@@ -83,9 +88,15 @@ function RoutesWithTracking() {
       <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
       <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
       <Route path="/tom-generator" element={<TomGenerator />} />
+      <Route path="/tools/tom-generator" element={<TomGenerator />} />
       <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
       <Route path="/tools/meldepflicht-timer" element={<MeldepflichtTimer />} />
-      <Route path="/tools" element={<Tools />} />
+      <Route path="/datenschutz-generator" element={<DatenschutzGenerator />} />
+      <Route path="/tools/datenschutz-generator" element={<DatenschutzGenerator />} />
+      <Route path="/dsfa-wizard" element={<DsfaWizard />} />
+      <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
+      <Route path="/busseld-rechner" element={<BusseldRechner />} />
+      <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

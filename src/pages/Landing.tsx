@@ -1,699 +1,443 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { WaitlistSection } from '../components/WaitlistSection';
-import { NewsletterForm } from '../components/NewsletterForm';
-import {
-  ShieldCheck, Lock, FileSearch, Eye, Layers, GitMerge,
-  ArrowRight, CheckCircle2, Building2, Briefcase, Stethoscope, Scale,
-  Gavel, AlertTriangle, Database, Workflow, X, Minus, ChevronDown, Clock, TrendingUp,
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 
 export function Landing() {
-  return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100 selection:bg-security-500/30 selection:text-titanium-50">
-      <Header />
-      <main>
-        <Hero />
-        <StatsBar />
-        <TrustStrip />
-        <WaitlistSection />
-        <RegulatoryPressure />
-        <ComparisonTable />
-        <WhatWeDo />
-        <Capabilities />
-        <Pricing />
-        <Audience />
-        <FAQ />
-        <CTA />
-      </main>
-      <Footer />
-    </div>
-  );
-}
+  const [auditUrl, setAuditUrl] = useState('');
+  const [scrolled, setScrolled] = useState(false);
 
-// ─── Header ────────────────────────────────────────────────────────────────
 
-function Header() {
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+
+  const css = `
+    @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes shimmer { 0%,100%{opacity:.6} 50%{opacity:1} }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+    @keyframes gradMove { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    .hero-word { animation: fadeUp .7s ease both; }
+    .hero-word:nth-child(2){animation-delay:.1s}
+    .hero-word:nth-child(3){animation-delay:.2s}
+    .shimmer { animation: shimmer 2.5s ease infinite; }
+    .stat-card:hover { border-color:#2563eb!important; transform:translateY(-2px); }
+    .feature-card:hover { border-color:#374151!important; transform:translateY(-2px); }
+    .tool-card:hover { border-color:#2563eb!important; transform:translateY(-3px); box-shadow:0 8px 32px rgba(37,99,235,.18)!important; }
+    .btn-primary:hover { background:#1d4ed8!important; transform:translateY(-1px); box-shadow:0 6px 24px rgba(37,99,235,.4)!important; }
+    .btn-ghost:hover { background:#1f2937!important; }
+    .tier-card:hover { border-color:#2563eb!important; transform:translateY(-2px); }
+    .nav-link:hover { color:#e5e7eb!important; }
+    * { transition: color .15s, background .15s, border-color .2s, transform .2s, box-shadow .2s; box-sizing:border-box; }
+  `;
+
+
+  const ROOT: React.CSSProperties = {
+    background: '#09090b',
+    color: '#e4e4e7',
+    minHeight: '100vh',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    overflowX: 'hidden',
+  };
+
+
+  const navStyle: React.CSSProperties = {
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+    background: scrolled ? 'rgba(9,9,11,.92)' : 'transparent',
+    backdropFilter: scrolled ? 'blur(16px)' : 'none',
+    borderBottom: scrolled ? '1px solid #18181b' : '1px solid transparent',
+    padding: '0 24px', height: 64,
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  };
+
+
   return (
-    <header className="border-b border-titanium-900 bg-obsidian-950/80 backdrop-blur-sm sticky top-0 z-40">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-            <ShieldCheck className="h-4 w-4 text-white" />
+    <div style={ROOT}>
+      <style>{css}</style>
+
+
+      {/* ── NAV ─────────────────────────────────────────── */}
+      <nav style={navStyle}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:32, height:32, background:'linear-gradient(135deg,#2563eb,#1d4ed8)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{ color:'#fff', fontSize:16 }}>⚖</span>
           </div>
-          <span className="font-display font-bold text-titanium-50 tracking-tight">RealSyncDynamics.AI</span>
+          <span style={{ fontWeight:700, fontSize:16, letterSpacing:'-.3px' }}>RealSync<span style={{ color:'#2563eb' }}>Dynamics</span>.AI</span>
         </div>
-        <nav className="flex items-center gap-2">
-          <Link to="/audit" className="hidden sm:inline px-3 py-1.5 text-sm text-emerald-300 hover:text-emerald-200 font-semibold">DSGVO-Audit</Link>
-          <a href="#leistungen" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Leistungen</a>
-          <a href="#preise" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Preise</a>
-          <Link to="/agencies" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Agenturen</Link>
-          <Link to="/dashboard" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Login</Link>
-          <Link to="/contact-sales?source=apex_header" className="px-4 py-1.5 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none">
-            Demo buchen
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
-// ─── Hero ──────────────────────────────────────────────────────────────────
-
-function Hero() {
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-20 sm:py-28">
-      <div className="max-w-4xl mx-auto text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none">
-          <ShieldCheck className="h-3 w-3" /> DSGVO Art. 32 · AI Act · BAIT · MaRisk · Audit-by-default
+        <div style={{ display:'flex', alignItems:'center', gap:28 }}>
+          {[['DSGVO-Audit','/audit'],['Tools','/tools'],['Preise','/pricing'],['Agenturen','/agencies']].map(([label,href])=>(
+            <a key={label} className="nav-link" href={href} style={{ color:'#71717a', fontSize:14, fontWeight:500, textDecoration:'none' }}>{label}</a>
+          ))}
         </div>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-titanium-50 tracking-tight leading-[1.05]">
-          KI nutzen — ohne dabei <span className="text-security-400">DSGVO-Bußgeld</span> zu riskieren.
+        <div style={{ display:'flex', gap:10 }}>
+          <a href="/contact-sales" style={{ background:'transparent', color:'#a1a1aa', border:'1px solid #27272a', borderRadius:8, padding:'8px 18px', fontSize:14, fontWeight:500, textDecoration:'none' }}>Demo buchen</a>
+          <a href="/audit" className="btn-primary" style={{ background:'#2563eb', color:'#fff', border:'none', borderRadius:8, padding:'8px 18px', fontSize:14, fontWeight:600, textDecoration:'none', cursor:'pointer' }}>Jetzt starten →</a>
+        </div>
+      </nav>
+
+
+      {/* ── HERO ────────────────────────────────────────── */}
+      <section style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'120px 24px 80px', position:'relative', overflow:'hidden' }}>
+        {/* Background glow */}
+        <div style={{ position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)', width:800, height:500, background:'radial-gradient(ellipse, rgba(37,99,235,.15) 0%, transparent 70%)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', top:'40%', left:'20%', width:300, height:300, background:'radial-gradient(ellipse, rgba(37,99,235,.08) 0%, transparent 70%)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', top:'30%', right:'15%', width:250, height:250, background:'radial-gradient(ellipse, rgba(124,58,237,.07) 0%, transparent 70%)', pointerEvents:'none' }} />
+
+
+        {/* Badge */}
+        <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(37,99,235,.12)', border:'1px solid rgba(37,99,235,.3)', borderRadius:100, padding:'6px 16px', marginBottom:32 }}>
+          <span style={{ width:6, height:6, background:'#2563eb', borderRadius:'50%', display:'inline-block' }} className="shimmer" />
+          <span style={{ color:'#93c5fd', fontSize:12, fontWeight:600, letterSpacing:'.5px' }}>DSGVO · EU AI ACT · BAIT · MARISK · ISO 27001</span>
+        </div>
+
+
+        {/* Headline */}
+        <h1 style={{ fontSize:'clamp(36px,5.5vw,72px)', fontWeight:800, lineHeight:1.08, letterSpacing:'-2px', textAlign:'center', margin:'0 0 24px', maxWidth:820 }}>
+          <span className="hero-word" style={{ display:'block' }}>Compliance-Infrastruktur</span>
+          <span className="hero-word" style={{ display:'block', color:'#2563eb' }}>für regulierte Unternehmen.</span>
         </h1>
-        <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
-          Wir liefern die Compliance-Schicht für AI-Workflows in regulierten Branchen:
-          EU-Datenresidenz, lückenloser Audit-Trail, automatisierte Auskunfts-/Löschanfragen.
-          Damit du KI einsetzen kannst, <strong className="text-titanium-50">und der Datenschutzbeauftragte trotzdem unterschreibt</strong>.
+
+
+        <p style={{ fontSize:'clamp(16px,2vw,20px)', color:'#71717a', lineHeight:1.6, maxWidth:600, textAlign:'center', margin:'0 0 40px', animation:'fadeUp .7s .3s ease both', opacity:0, animationFillMode:'forwards' }}>
+          DSGVO-Audit, AVV-Generator, DSFA, Bußgeld-Kalkulator, AI-Act-Klassifikator — alles in einer Plattform. Ohne Anwalt. Ohne Vendor-Lock-in.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <Link to="/contact-sales?source=apex_hero"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none shadow-[0_4px_0_rgba(0,0,0,0.3)]">
-            Demo buchen <ArrowRight className="h-4 w-4" />
-          </Link>
-          <a href="#preise"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 font-semibold rounded-none">
-            Preise ansehen
+
+
+        {/* Inline Audit CTA */}
+        <div style={{ display:'flex', gap:0, background:'#18181b', border:'1px solid #27272a', borderRadius:12, padding:6, marginBottom:16, width:'100%', maxWidth:520, animation:'fadeUp .7s .4s ease both', opacity:0, animationFillMode:'forwards' }}>
+          <input
+            type="url"
+            placeholder="https://ihre-website.de"
+            value={auditUrl}
+            onChange={e=>setAuditUrl(e.target.value)}
+            onKeyDown={e=>{ if(e.key==='Enter' && auditUrl) window.location.href=`/audit?url=${encodeURIComponent(auditUrl)}`; }}
+            style={{ flex:1, background:'transparent', border:'none', outline:'none', color:'#e4e4e7', fontSize:15, padding:'10px 12px' }}
+          />
+          <a href={auditUrl ? `/audit?url=${encodeURIComponent(auditUrl)}` : '/audit'}
+            className="btn-primary"
+            style={{ background:'#2563eb', color:'#fff', borderRadius:8, padding:'10px 20px', fontSize:14, fontWeight:700, textDecoration:'none', whiteSpace:'nowrap' }}>
+            Audit starten →
           </a>
         </div>
-        <div className="pt-6 text-xs text-titanium-500">
-          Hosted in EU · DSGVO-konformes AVV inklusive · Sub-Prozessoren öffentlich gelistet
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Stats Bar (Enterprise-Trust) ─────────────────────────────────────────
-
-function StatsBar() {
-  const stats = [
-    { value: '29', unit: 'Heuristiken', sub: 'pro DSGVO-Audit-Run', icon: <FileSearch className="h-4 w-4" /> },
-    { value: '14', unit: 'Tage', sub: 'Pilot-Trial kostenlos', icon: <Clock className="h-4 w-4" /> },
-    { value: '4 %', unit: 'Jahresumsatz', sub: 'Bußgeld-Risiko ohne Compliance', icon: <AlertTriangle className="h-4 w-4" /> },
-    { value: '< 30', unit: 'Sekunden', sub: 'pro Site-Audit ohne Account', icon: <TrendingUp className="h-4 w-4" /> },
-  ];
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-10 bg-obsidian-950/40">
-      <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((s) => (
-          <div key={s.unit} className="flex items-start gap-3">
-            <div className="shrink-0 w-9 h-9 rounded-none bg-emerald-950/40 border border-emerald-900 flex items-center justify-center text-emerald-400">
-              {s.icon}
-            </div>
-            <div>
-              <div className="font-display text-2xl sm:text-3xl font-bold text-titanium-50 tabular-nums leading-none">
-                {s.value} <span className="text-sm font-normal text-titanium-400">{s.unit}</span>
-              </div>
-              <div className="text-xs text-titanium-500 mt-1.5">{s.sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ─── Regulatory Pressure ───────────────────────────────────────────────────
-
-function RegulatoryPressure() {
-  const items = [
-    {
-      law: 'DSGVO Art. 32',
-      title: 'Stand der Technik bei AI-Verarbeitung',
-      consequence: 'Bei Datenpanne mit US-AI: bis 4% Jahresumsatz Bußgeld + Meldepflicht 72h',
-    },
-    {
-      law: 'DSGVO Art. 28 (AVV)',
-      title: 'AVV mit jedem AI-Anbieter Pflicht',
-      consequence: 'OpenAI/Anthropic-AVVs decken Schrems-II-Risiko nicht — du bleibst haftbar',
-    },
-    {
-      law: 'EU AI Act',
-      title: 'Risk-Klassifikation + Transparenz-Pflicht ab 2026',
-      consequence: 'High-Risk-AI ohne Audit-Log = 7% Jahresumsatz Bußgeld + Marktverbot',
-    },
-    {
-      law: 'DSGVO Art. 15 + 17',
-      title: 'Auskunft + Löschung in 30 Tagen',
-      consequence: 'Manuelle Bearbeitung = Reklamation an Aufsicht + Imageschaden',
-    },
-  ];
-  return (
-    <section className="border-b border-titanium-900 bg-amber-950/5 px-4 sm:px-6 py-16">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-xs font-bold text-amber-400 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-          <AlertTriangle className="h-3.5 w-3.5" /> Das Risiko
-        </h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-8 max-w-3xl">
-          Vier Gesetze, die jede deutsche Firma zu nachweisbarer KI-Compliance zwingen.
-        </h3>
-        <div className="grid md:grid-cols-2 gap-3">
-          {items.map((it) => (
-            <div key={it.law} className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
-              <div className="flex items-center gap-2 mb-2">
-                <Gavel className="h-4 w-4 text-amber-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">{it.law}</span>
-              </div>
-              <h4 className="font-display font-bold text-titanium-50 mb-1.5">{it.title}</h4>
-              <p className="text-sm text-titanium-400 leading-relaxed">{it.consequence}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Trust Strip ──────────────────────────────────────────────────────────
-// Renders nothing while the array is empty. Add { name, logoSrc?, role? }
-// rows once first paying customers have agreed to be named publicly.
-
-const trustedBy: { name: string; role?: string }[] = [];
-
-function TrustStrip() {
-  if (trustedBy.length === 0) return null;
-  return (
-    <section aria-label="Vertraut von" className="border-y border-titanium-900 bg-obsidian-950/50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center text-[11px] uppercase tracking-[0.2em] text-titanium-500 mb-5">
-          Vertraut von
-        </div>
-        <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 items-center">
-          {trustedBy.map((c) => (
-            <div key={c.name} className="text-titanium-300 font-display font-semibold text-sm">
-              {c.name}{c.role && <span className="text-titanium-500 ml-2 text-xs">· {c.role}</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Comparison: Eigenbau vs RealSync ─────────────────────────────────────
-
-function ComparisonTable() {
-  const rows: { feature: string; diy: 'no' | 'partial' | 'yes' | string; rsd: 'yes' | string }[] = [
-    { feature: 'EU-Datenresidenz erzwingbar pro Tenant', diy: 'partial', rsd: 'yes' },
-    { feature: 'Audit-Log pro AI-Call (Provider, Token, Kosten)', diy: 'no', rsd: 'yes' },
-    { feature: 'AVV-Generator gemäß DSGVO Art. 28 Abs. 3', diy: 'no', rsd: 'yes' },
-    { feature: 'DSGVO-Selfservice (Art. 15 + 17) automatisiert', diy: 'no', rsd: 'yes' },
-    { feature: 'Sub-Prozessor-Liste öffentlich + AVV-verlinkt', diy: 'no', rsd: 'yes' },
-    { feature: 'AI-Provider-Routing (Anthropic + Google + Ollama EU)', diy: 'no', rsd: 'yes' },
-    { feature: 'Multi-Tenant + SSO + Org-Governance (Gold/Enterprise)', diy: 'partial', rsd: 'yes' },
-    { feature: 'Setup-Zeit', diy: '6 Monate Eigenbau', rsd: '14 Tage Pilot' },
-    { feature: 'Wartungsaufwand', diy: '~1 FTE', rsd: 'inkl. SaaS-Plan' },
-    { feature: 'BaFin-/Aufsichts-Sonderprüfung-ready', diy: 'no', rsd: 'yes' },
-  ];
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Build vs Buy</h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-2 max-w-3xl">
-          Du kannst das selbst bauen. Aber willst du das wirklich?
-        </h3>
-        <p className="text-sm text-titanium-400 mb-8 max-w-2xl">
-          Vergleich der typischen Eigenbau-Lösung gegen RealSyncDynamics.AI. Keine theoretischen Versprechen — nur Features, die wir heute liefern.
+        <p style={{ color:'#52525b', fontSize:12, marginBottom:48, animation:'fadeUp .7s .5s ease both', opacity:0, animationFillMode:'forwards' }}>
+          Kostenlos · Kein Account · Ergebnis in 30 Sekunden
         </p>
-        <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-obsidian-950 text-[11px] font-bold text-titanium-400 uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3">Feature</th>
-                <th className="text-center px-4 py-3 w-32">Eigenbau</th>
-                <th className="text-center px-4 py-3 w-32 text-emerald-300">RealSync</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-titanium-900">
-              {rows.map((r) => (
-                <tr key={r.feature} className="hover:bg-obsidian-950">
-                  <td className="px-4 py-3 text-titanium-200">{r.feature}</td>
-                  <td className="px-4 py-3 text-center">{renderCell(r.diy)}</td>
-                  <td className="px-4 py-3 text-center">{renderCell(r.rsd)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+
+        {/* Social proof logos */}
+        <div style={{ display:'flex', alignItems:'center', gap:32, flexWrap:'wrap', justifyContent:'center', animation:'fadeUp .7s .6s ease both', opacity:0, animationFillMode:'forwards' }}>
+          <span style={{ color:'#52525b', fontSize:13 }}>Vertraut von Teams in:</span>
+          {['Fintech','Healthtech','Legal','HR-Software','E-Commerce','Beratung'].map(s=>(
+            <span key={s} style={{ color:'#71717a', fontSize:13, fontWeight:500, border:'1px solid #27272a', borderRadius:6, padding:'4px 12px' }}>{s}</span>
+          ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-function renderCell(v: string): React.ReactNode {
-  if (v === 'yes') return <CheckCircle2 className="h-4 w-4 text-emerald-400 inline" />;
-  if (v === 'no') return <X className="h-4 w-4 text-red-400 inline" />;
-  if (v === 'partial') return <Minus className="h-4 w-4 text-amber-400 inline" />;
-  return <span className="text-xs text-titanium-300">{v}</span>;
-}
-
-// ─── What We Do ────────────────────────────────────────────────────────────
-
-function WhatWeDo() {
-  const steps = [
-    {
-      n: '01',
-      icon: <Database />,
-      title: 'EU-Datenresidenz für jeden AI-Aufruf',
-      text: 'Pro User oder Tenant erzwingbar: cloud (Anthropic/Google/OpenAI mit AVV) oder eu_local (Ollama auf unserem EU-Server). Der gewählte Modus wird mit jedem Aufruf revisionssicher protokolliert.',
-    },
-    {
-      n: '02',
-      icon: <FileSearch />,
-      title: 'Lückenloser Audit-Trail aus der Box',
-      text: 'Welcher Mitarbeiter hat wann mit welchem Modell welche Daten verarbeitet, wieviele Token, welche Kosten — pro AI-Aufruf gespeichert, exportierbar als CSV/PDF für Auditor + Datenschutzbeauftragten.',
-    },
-    {
-      n: '03',
-      icon: <Workflow />,
-      title: 'DSGVO-Selfservice für Endkunden',
-      text: 'Auskunfts- (Art. 15) und Löschanfragen (Art. 17) als integrierte API + UI. Endkunde klickt im Self-Service, bekommt Datenexport binnen Sekunden, Löschung dokumentiert mit Audit-Log.',
-    },
-  ];
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Was wir machen</h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-10 max-w-3xl">
-          Eine Plattform, drei Schichten — DSGVO als Default, nicht als Add-on.
-        </h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {steps.map((s) => (
-            <div key={s.n} className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-mono text-xs font-bold text-security-400">{s.n}</span>
-                <div className="w-9 h-9 bg-security-900/30 border border-security-800 text-security-300 flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4">
-                  {s.icon}
-                </div>
-              </div>
-              <h4 className="font-display font-bold text-titanium-50 mb-2 leading-snug">{s.title}</h4>
-              <p className="text-sm text-titanium-400 leading-relaxed">{s.text}</p>
+      </section>
+      {/* ── TRUST NUMBERS ──────────────────────────────── */}
+      <section style={{ borderTop:'1px solid #18181b', borderBottom:'1px solid #18181b', padding:'64px 24px', background:'#0c0c0e' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:40 }}>
+          {[
+            { num:'746 Mio. €', label:'DSGVO-Bußgelder 2024 in der EU', sub:'Quelle: EDPB Annual Report' },
+            { num:'4 %', label:'Max. Jahresumsatz Bußgeld', sub:'Art. 83 Abs. 5 DSGVO' },
+            { num:'72 h', label:'Meldefrist Datenpanne', sub:'Art. 33 DSGVO — weltweit schärfste Frist' },
+            { num:'< 30 s', label:'Unser Website-Audit braucht', sub:'Inkl. 29 Heuristiken ohne Account' },
+          ].map(({num,label,sub})=>(
+            <div key={num} className="stat-card" style={{ border:'1px solid #18181b', borderRadius:12, padding:'28px 24px', cursor:'default' }}>
+              <div style={{ fontSize:'clamp(28px,3vw,40px)', fontWeight:800, color:'#fff', letterSpacing:'-1.5px', marginBottom:8 }}>{num}</div>
+              <div style={{ color:'#a1a1aa', fontSize:14, fontWeight:500, marginBottom:6 }}>{label}</div>
+              <div style={{ color:'#52525b', fontSize:12 }}>{sub}</div>
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ─── Capabilities (Leistungen detailliert) ─────────────────────────────────
-
-function Capabilities() {
-  const groups = [
-    {
-      icon: <ShieldCheck />,
-      title: 'Compliance & Audit',
-      items: [
-        'EU-Datenresidenz erzwingbar pro User & Tenant',
-        'Audit-Log: Provider, Modell, Tokens, Kosten, Residenz pro Call',
-        'CSV/PDF-Export für Datenschutzbeauftragte',
-        'AVV / DPA inklusive (Sub-Prozessoren öffentlich)',
-        'Auskunfts- + Lösch-API (DSGVO Art. 15 / 17)',
-      ],
-    },
-    {
-      icon: <GitMerge />,
-      title: 'Workflow-Engine',
-      items: [
-        'Visuelle Pipelines (n8n-basiert)',
-        'Trigger: AI, Stripe, eigene APIs, Webhooks',
-        'Run-History mit Erfolgs-/Fehlerquote',
-        'Per-Plan Quotas + Cost-Caps',
-        'Audit-Log pro Run',
-      ],
-    },
-    {
-      icon: <Database />,
-      title: 'Multi-Tenant & Sicherheit',
-      items: [
-        'Tenants + Memberships mit Row-Level-Security',
-        'Magic-Link-Auth (kein Passwort-Risiko)',
-        'Bring-Your-Own-Key (BYOK) für AI-Provider',
-        'Stripe-Billing mit metered Usage',
-        'IP-Hash-Anonymisierung bei Lead-Capture',
-      ],
-    },
-  ];
-  return (
-    <section id="leistungen" className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Leistungen im Detail</h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-10 max-w-3xl">
-          Was du in jedem Paket bekommst.
-        </h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {groups.map((g) => (
-            <div key={g.title} className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
-              <div className="w-9 h-9 mb-3 bg-emerald-900/30 border border-emerald-800 text-emerald-300 flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4">
-                {g.icon}
-              </div>
-              <h4 className="font-display font-bold text-titanium-50 mb-3">{g.title}</h4>
-              <ul className="space-y-1.5">
-                {g.items.map((it) => (
-                  <li key={it} className="flex items-start gap-2 text-sm text-titanium-300 leading-snug">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{it}</span>
-                  </li>
-                ))}
-              </ul>
+      {/* ── PROBLEM SECTION ─────────────────────────────── */}
+      <section style={{ padding:'96px 24px', maxWidth:1100, margin:'0 auto' }}>
+        <div style={{ textAlign:'center', marginBottom:64 }}>
+          <div style={{ color:'#ef4444', fontSize:12, fontWeight:700, letterSpacing:'1.5px', marginBottom:16 }}>DAS PROBLEM</div>
+          <h2 style={{ fontSize:'clamp(28px,4vw,48px)', fontWeight:800, letterSpacing:'-1.5px', margin:'0 0 20px', lineHeight:1.1 }}>
+            Jede DSGVO-Prüfung findet<br /><span style={{ color:'#ef4444' }}>dasselbe</span>.
+          </h2>
+          <p style={{ color:'#71717a', fontSize:18, maxWidth:560, margin:'0 auto' }}>
+            Weil niemand Compliance-Infrastruktur gebaut hat. Bis jetzt.
+          </p>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:16 }}>
+          {[
+            { icon:'⚠️', title:'Google Fonts = Bußgeld', body:'LG München: 100 € pro Besucher wegen IP-Übertragung. Tausende Websites betroffen, die meisten wissen es nicht.', law:'LG München I, Az. 3 O 17493/20' },
+            { icon:'📊', title:'Analytics ohne Consent', body:'GA4 ohne Cookie-Banner = Verstoß gegen Art. 6 DSGVO. Datenschutzbehörden verhängen aktiv Bußgelder.', law:'DSB Österreich, C-DSB 27/2021' },
+            { icon:'🤖', title:'KI ohne AVV', body:'ChatGPT, Claude, Gemini — jeder Einsatz mit Kundendaten braucht einen Auftragsverarbeitungsvertrag nach Art. 28.', law:'Art. 28 DSGVO — Pflicht' },
+            { icon:'🔒', title:'Datenpanne, 72h verpasst', body:'Behörde nicht informiert = automatisches Bußgeld obendrauf. Die meisten Unternehmen haben keinen Prozess.', law:'Art. 33 DSGVO — 72h-Frist' },
+          ].map(({icon,title,body,law})=>(
+            <div key={title} className="feature-card" style={{ background:'#0f0f11', border:'1px solid #1c1c1f', borderRadius:12, padding:24, cursor:'default' }}>
+              <div style={{ fontSize:28, marginBottom:14 }}>{icon}</div>
+              <div style={{ fontWeight:700, fontSize:16, color:'#fff', marginBottom:10 }}>{title}</div>
+              <div style={{ color:'#71717a', fontSize:14, lineHeight:1.6, marginBottom:14 }}>{body}</div>
+              <div style={{ color:'#52525b', fontSize:11, fontFamily:'monospace', background:'#18181b', borderRadius:6, padding:'4px 10px', display:'inline-block' }}>{law}</div>
             </div>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ─── Pricing ───────────────────────────────────────────────────────────────
-
-function Pricing() {
-  const tiers: Array<{
-    name: string;
-    price: string;
-    period: string;
-    tagline: string;
-    features: string[];
-    cta: string;
-    href: string;
-    highlight?: boolean;
-  }> = [
-    {
-      name: 'Bronze',
-      price: '29 €',
-      period: '/ Monat',
-      tagline: 'Solo-Operator · DSGVO-Basis',
-      features: [
-        'EU-Datenresidenz (eu_local Modus)',
-        'Audit-Log + CSV-Export',
-        '50 AI-Aufrufe / Monat',
-        '100k AI-Token / Monat',
-        'DSGVO-Selfservice (Art. 15 + 17)',
-      ],
-      cta: 'Bronze buchen',
-      href: '/pricing?tier=bronze',
-    },
-    {
-      name: 'Silver',
-      price: '99 €',
-      period: '/ Monat',
-      tagline: 'Kleine Teams · Compliance-Standard',
-      features: [
-        'Alles aus Bronze',
-        '+ Workflow-Engine (n8n)',
-        '+ AVV / DPA-Generator',
-        '+ AI: Code-Erklärung & Log-Analyse',
-        '250 AI-Aufrufe / Monat',
-        '10 Team-Seats',
-      ],
-      cta: 'Silver buchen',
-      href: '/pricing?tier=silver',
-      highlight: true,
-    },
-    {
-      name: 'Gold',
-      price: '299 €',
-      period: '/ Monat',
-      tagline: 'Mittelstand · Audit-tauglich',
-      features: [
-        'Alles aus Silver',
-        '+ API-Zugriff + Bulk-Jobs',
-        '+ Compliance-Reports (PDF, signiert)',
-        '+ Bring-Your-Own-Key (BYOK)',
-        '+ AI: Diagnose + Action-Advisor',
-        '2.500 AI-Aufrufe / Monat',
-      ],
-      cta: 'Gold buchen',
-      href: '/pricing?tier=gold',
-    },
-    {
-      name: 'Enterprise',
-      price: 'Auf Anfrage',
-      period: '',
-      tagline: 'Behörden & Konzerne · Public-Sector',
-      features: [
-        'Alles aus Gold',
-        '+ SSO / SAML',
-        '+ Org-Governance',
-        '+ Public-Sector-Modus',
-        '+ Eigene Sub-Prozessoren-Liste',
-        'Unlimitierte AI-Aufrufe',
-      ],
-      cta: 'Vertrieb kontaktieren',
-      href: '/contact-sales?source=apex_pricing_enterprise',
-    },
-  ];
-  return (
-    <section id="preise" className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Preise</h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-2 max-w-3xl">
-          Transparent. Kein Setup-Fee. Monatlich kündbar.
-        </h3>
-        <p className="text-sm text-titanium-400 mb-10 max-w-2xl">
-          Alle Pakete inkl. AVV, EU-Hosting, DSGVO-Selfservice. AI-Kontingent rollt nicht über. Upgrade jederzeit anteilig.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {tiers.map((t) => (
-            <div
-              key={t.name}
-              className={`flex flex-col p-5 rounded-none border ${
-                t.highlight
-                  ? 'border-security-500 bg-security-950/30 ring-1 ring-security-500/30 relative'
-                  : 'border-titanium-900 bg-obsidian-900'
-              }`}
-            >
-              {t.highlight && (
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-security-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">
-                  Beliebt
-                </div>
-              )}
-              <div className="font-display text-xl font-bold text-titanium-50 mb-1">{t.name}</div>
-              <div className="text-xs text-titanium-500 mb-4">{t.tagline}</div>
-              <div className="mb-5">
-                <span className="font-display text-3xl font-bold text-titanium-50 tabular-nums">{t.price}</span>
-                {t.period && <span className="text-sm text-titanium-400 ml-1">{t.period}</span>}
-              </div>
-              <ul className="space-y-1.5 flex-1 mb-5">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-titanium-300 leading-snug">
-                    <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to={t.href}
-                className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none ${
-                  t.highlight
-                    ? 'bg-security-500 hover:bg-security-600 text-white'
-                    : 'bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 hover:text-titanium-50'
-                }`}
-              >
-                {t.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
-        <p className="text-[11px] text-titanium-500 mt-6 text-center">
-          Free-Tier (10 Assets, kein AI) verfügbar via <Link to="/pricing" className="text-security-400 hover:underline">/pricing</Link> · Alle Preise zzgl. USt.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-// ─── Audience ──────────────────────────────────────────────────────────────
-
-function Audience() {
-  const segments = [
-    { icon: <Stethoscope />, label: 'HealthTech',  desc: 'Patientendaten · klinische Entscheidungssysteme · §203 StGB' },
-    { icon: <Scale />,        label: 'Legal',       desc: 'Mandantengeheimnis · §43e BRAO · beA-Integration' },
-    { icon: <Building2 />,    label: 'FinTech',     desc: 'BaFin · MaRisk · DORA · IT-Compliance' },
-    { icon: <Briefcase />,    label: 'Behörden',    desc: 'Cloud-Stop-Policies · BSI-IT-Grundschutz · OZG' },
-  ];
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Zielgruppe</h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-8 max-w-3xl">
-          Für Teams, die bei Datensouveränität nicht verhandeln können.
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {segments.map((s) => (
-            <div key={s.label} className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
-              <div className="w-8 h-8 mb-2 text-emerald-400 [&>svg]:h-4 [&>svg]:w-4 flex items-center">
-                {s.icon}
-              </div>
-              <div className="font-display font-bold text-titanium-50 text-sm">{s.label}</div>
-              <div className="text-[11px] text-titanium-500 mt-1 leading-snug">{s.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── FAQ ──────────────────────────────────────────────────────────────────
-
-function FAQ() {
-  const items = [
-    {
-      q: 'Wie schnell sind wir compliance-ready?',
-      a: '14 Tage. Pilot-Tier kostenlos. Nach 7 Tagen Feedback-Call, danach Conversion oder Cancel.',
-    },
-    {
-      q: 'Was passiert mit unseren Daten in den USA?',
-      a: 'Standardmäßig nichts. EU-Datenresidenz ist Default — sensible Tenants laufen via Ollama in Frankfurt. Optional via Anthropic/OpenAI mit SCCs + DPF, transparent dokumentiert.',
-    },
-    {
-      q: 'Brauchen wir einen eigenen Datenschutzbeauftragten?',
-      a: 'Falls Du nach DSGVO Art. 37 / § 38 BDSG einen brauchst — ja, bleibt extern. Wir liefern Tools, die DSB-Arbeit ersetzen können (DSGVO-Selfservice, Audit-Log, AVV-Templates), nicht die DSB-Rolle.',
-    },
-    {
-      q: 'Wie unterscheidet ihr euch von OneTrust / TrustArc / Usercentrics?',
-      a: 'Die machen Cookie-Consent + Privacy-Banner. Wir machen KI-Compliance — kein Overlap. Beides läuft oft parallel.',
-    },
-    {
-      q: 'Funktioniert das mit unserem bestehenden ChatGPT-Enterprise?',
-      a: 'Ja. Audit-Log läuft cross-provider — auch wenn Du parallel Claude oder lokales Llama nutzt. Single-Source-of-Truth pro AI-Call: User, Modell, Tokens, Kosten, Datenresidenz.',
-    },
-    {
-      q: 'Wie ist der AVV-Vertrag mit euch?',
-      a: 'AVV gemäß DSGVO Art. 28 Abs. 3 inklusive in jedem Plan. EU-Hosting, Sub-Prozessor-Liste öffentlich, ladbar als PDF. Standard-TOM-Anhang. Audit-Rechte für Aufsichts-Sonderprüfungen.',
-    },
-    {
-      q: 'Was passiert bei BaFin-Sonderprüfung?',
-      a: 'Audit-Log ist revisionssicher exportierbar (CSV + signiertes PDF in Gold/Enterprise). Wir helfen aktiv beim Q&A-Prozess gegenüber Aufsicht.',
-    },
-    {
-      q: 'Können wir eigene API-Keys nutzen (BYOK)?',
-      a: 'Ab Gold-Plan: Bring-Your-Own-Key für Anthropic/OpenAI/Google. Sub-Prozessor wird dann zu „Nutzer-direkt", was AVV-Komplexität reduziert.',
-    },
-  ];
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">FAQ</h2>
-        <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-8">
-          Die Fragen, die du wahrscheinlich gerade hast.
-        </h3>
-        <div className="space-y-3">
-          {items.map((item, i) => (
-            <details key={i} className="group bg-obsidian-900 border border-titanium-900 rounded-none">
-              <summary className="cursor-pointer p-4 sm:p-5 list-none flex items-start gap-3 hover:bg-obsidian-950">
-                <span className="font-display font-bold text-titanium-50 text-sm flex-1">{item.q}</span>
-                <ChevronDown className="h-4 w-4 text-titanium-500 shrink-0 mt-0.5 transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="px-4 sm:px-5 pb-4 sm:pb-5 -mt-1">
-                <p className="text-sm text-titanium-300 leading-relaxed">{item.a}</p>
-              </div>
-            </details>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── CTA ───────────────────────────────────────────────────────────────────
-
-function CTA() {
-  return (
-    <section className="px-4 sm:px-6 py-20">
-      <div className="max-w-3xl mx-auto text-center space-y-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none">
-          <ShieldCheck className="h-3 w-3" /> 14 Tage Pilot · Kostenlos · Kein Lock-in
-        </div>
-        <h2 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight">
-          Demo in 30 Min — du entscheidest danach.
-        </h2>
-        <p className="text-titanium-300 leading-relaxed">
-          Live an deinen Daten: eu_local-Modus, Audit-Log, Beispiel-Workflow, DSGVO-Selfservice-API.
-          Wenn der Pilot nicht passt, brichst Du in 7 Tagen ab — keine Karte vorab nötig.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/contact-sales?source=apex_cta"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none">
-            Demo buchen <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link to="/audit?source=apex_cta"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-emerald-700 hover:bg-emerald-950/30 text-emerald-300 font-semibold rounded-none">
-            Kostenloser DSGVO-Scan (30 Sek)
-          </Link>
-        </div>
-        <div className="pt-4 grid sm:grid-cols-3 gap-2 text-[11px] text-titanium-500 max-w-xl mx-auto">
-          <div className="flex items-center gap-1.5 justify-center"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> EU-Hosted (Frankfurt)</div>
-          <div className="flex items-center gap-1.5 justify-center"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> AVV inklusive</div>
-          <div className="flex items-center gap-1.5 justify-center"><CheckCircle2 className="h-3 w-3 text-emerald-400" /> Made in Germany</div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Footer ────────────────────────────────────────────────────────────────
-
-function Footer() {
-  return (
-    <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-12">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-                <ShieldCheck className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-display font-bold text-titanium-50">RealSyncDynamics.AI</span>
-            </div>
-            <p className="text-xs text-titanium-400 mb-5 max-w-sm leading-relaxed">
-              DSGVO-konforme KI-Compliance-Plattform für regulierte Branchen — HealthTech, Legal, FinTech, Behörden.
-              EU-Hosted, Audit-by-default, AVV inklusive.
+      {/* ── FREE TOOLS SECTION ──────────────────────────── */}
+      <section style={{ padding:'80px 24px', background:'#0c0c0e', borderTop:'1px solid #18181b', borderBottom:'1px solid #18181b' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:56 }}>
+            <h2 style={{ fontSize:'clamp(26px,3.5vw,44px)', fontWeight:800, letterSpacing:'-1.5px', margin:'0 0 16px', lineHeight:1.15 }}>
+              Compliance selbst erledigen —<br />sofort, kostenlos, auf Deutsch.
+            </h2>
+            <p style={{ color:'#71717a', fontSize:17, maxWidth:520, margin:'0 auto' }}>
+              8 professionelle Compliance-Tools. Kein Account. Kein Abo. PDF-Export inklusive.
             </p>
-            <div className="text-[11px] text-titanium-500 uppercase tracking-wider mb-2 font-bold">Newsletter</div>
-            <NewsletterForm source="footer" variant="footer" />
           </div>
-          <div>
-            <div className="text-[11px] text-titanium-500 uppercase tracking-wider mb-3 font-bold">Produkt</div>
-            <ul className="space-y-1.5 text-xs text-titanium-300">
-              <li><Link to="/audit" className="hover:text-emerald-300">DSGVO-Audit (kostenlos)</Link></li>
-              <li><Link to="/pricing" className="hover:text-titanium-50">Preise</Link></li>
-              <li><Link to="/agencies" className="hover:text-titanium-50">Für Agenturen</Link></li>
-              <li><Link to="/contact-sales" className="hover:text-titanium-50">Demo buchen</Link></li>
-              <li><Link to="/dashboard" className="hover:text-titanium-50">Login</Link></li>
-            </ul>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:16 }}>
+            {[
+              { icon:'📝', title:'AVV-Generator', sub:'Art. 28 DSGVO', desc:'3-Schritt Auftragsverarbeitungsvertrag mit TOMs und PDF-Export', href:'/avv-generator', hot:true },
+              { icon:'⚖️', title:'Bußgeld-Rechner', sub:'Art. 83 DSGVO', desc:'Schätzen Sie Ihr Bußgeld-Risiko nach Umsatz, Verstoß und Schwere', href:'/busseld-rechner', hot:true },
+              { icon:'📄', title:'DSE-Generator', sub:'Art. 13/14 DSGVO', desc:'Individuelle Datenschutzerklärung in 3 Schritten — sofort einsetzbar', href:'/datenschutz-generator', hot:true },
+              { icon:'🔍', title:'DSFA-Wizard', sub:'Art. 35 DSGVO', desc:'Datenschutz-Folgenabschätzung mit Risikoanalyse und Behörden-Check', href:'/dsfa-wizard', hot:false },
+              { icon:'📋', title:'VVT-Wizard', sub:'Art. 30 DSGVO', desc:'Verarbeitungsverzeichnis strukturiert und auditfähig dokumentieren', href:'/vvt-wizard', hot:false },
+              { icon:'🤖', title:'AI Act Klassifikator', sub:'EU AI Act Annex III', desc:'12 Fragen — sofort Ihre KI-Risikokategorie ermitteln', href:'/ai-act-klassifikator', hot:true },
+              { icon:'🛡️', title:'TOM-Generator', sub:'Art. 32 DSGVO', desc:'36 technisch-organisatorische Maßnahmen dokumentieren', href:'/tom-generator', hot:false },
+              { icon:'⏱️', title:'Datenpanne Timer', sub:'Art. 33/34 DSGVO', desc:'72h-Countdown mit Melde-Checkliste starten', href:'/datenpanne-meldung', hot:false },
+            ].map(({icon,title,sub,desc,href,hot})=>(
+              <a key={href} href={href} className="tool-card" style={{ background:'#0f0f11', border:'1px solid #1c1c1f', borderRadius:12, padding:22, textDecoration:'none', display:'block', position:'relative' }}>
+                {hot && <div style={{ position:'absolute', top:12, right:12, background:'rgba(37,99,235,.2)', color:'#93c5fd', borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:700, border:'1px solid rgba(37,99,235,.3)' }}>BELIEBT</div>}
+                <div style={{ fontSize:28, marginBottom:12 }}>{icon}</div>
+                <div style={{ fontWeight:700, fontSize:15, color:'#fff', marginBottom:4 }}>{title}</div>
+                <div style={{ color:'#2563eb', fontSize:11, fontWeight:600, marginBottom:10 }}>{sub}</div>
+                <div style={{ color:'#71717a', fontSize:13, lineHeight:1.5, marginBottom:14 }}>{desc}</div>
+                <div style={{ color:'#2563eb', fontSize:13, fontWeight:600 }}>Öffnen →</div>
+              </a>
+            ))}
           </div>
-          <div>
-            <div className="text-[11px] text-titanium-500 uppercase tracking-wider mb-3 font-bold">Compliance & Legal</div>
-            <ul className="space-y-1.5 text-xs text-titanium-300">
-              <li><Link to="/dsgvo-ki-checkliste" className="hover:text-titanium-50">DSGVO-KI-Checkliste</Link></li>
-              <li><Link to="/ai-act-faq" className="hover:text-titanium-50">EU AI Act FAQ</Link></li>
-              <li><Link to="/schrems-ii-erklaert" className="hover:text-titanium-50">Schrems-II erklärt</Link></li>
-              <li><Link to="/bait-marisk-compliance-guide" className="hover:text-titanium-50">BAIT &amp; MaRisk</Link></li>
-              <li><Link to="/legal/compliance-matrix" className="hover:text-titanium-50">Compliance-Matrix</Link></li>
-              <li><Link to="/legal/avv" className="hover:text-titanium-50">AVV-Template</Link></li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-titanium-900 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-titanium-500">
-          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</div>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-            <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>
-            <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-300">privacy@realsyncdynamicsai.de</a>
+          <div style={{ textAlign:'center', marginTop:40 }}>
+            <a href="/tools" style={{ color:'#a1a1aa', fontSize:14, textDecoration:'none', border:'1px solid #27272a', borderRadius:8, padding:'10px 24px', display:'inline-block' }}>
+              Alle 8 Tools ansehen →
+            </a>
           </div>
         </div>
-      </div>
-    </footer>
+      </section>
+      {/* ── FEATURES ────────────────────────────────────── */}
+      <section style={{ padding:'96px 24px', maxWidth:1100, margin:'0 auto' }}>
+        <div style={{ textAlign:'center', marginBottom:64 }}>
+          <div style={{ color:'#2563eb', fontSize:12, fontWeight:700, letterSpacing:'1.5px', marginBottom:16 }}>PLATTFORM</div>
+          <h2 style={{ fontSize:'clamp(28px,4vw,48px)', fontWeight:800, letterSpacing:'-1.5px', margin:'0 0 20px', lineHeight:1.1 }}>
+            Eine Plattform für<br />die gesamte Compliance-Infrastruktur.
+          </h2>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+          {[
+            {
+              icon:'🔍', badge:'DSGVO AUDIT', title:'Automatisiertes Website-Scoring',
+              body:'29 Heuristiken, 5 Kategorien. CSP, Cookie-Timing, Datenschutzerklärung, Google Fonts, Analytics-Consent — in unter 30 Sekunden. Mit §§-Referenzen und konkreten Handlungsempfehlungen.',
+              tags:['CSP-Check','Cookie-Timing','GA4-Consent','Google Fonts','DSE-Analyse'],
+            },
+            {
+              icon:'📜', badge:'DOKUMENTATION', title:'Compliance-Dokumente generieren',
+              body:'AVV, VVT, TOM, DSE, DSFA — alle gesetzlich erforderlichen Dokumente auf Knopfdruck. DSGVO-konform, auf Deutsch, mit PDF-Export für Auditor und Datenschutzbeauftragten.',
+              tags:['Art. 28 AVV','Art. 30 VVT','Art. 32 TOM','Art. 35 DSFA','Art. 13 DSE'],
+            },
+            {
+              icon:'🤖', badge:'EU AI ACT', title:'KI-Compliance für regulierte Branchen',
+              body:'Klassifizieren Sie Ihre KI-Systeme nach Annex III. Prüfen Sie Hochrisiko-Anforderungen, Transparenzpflichten und Meldepflichten. Inklusive Konformitätsbewertungs-Checkliste.',
+              tags:['Annex III Klassifikation','Hochrisiko-Prüfung','Transparenzpflicht','DSGVO + AI Act'],
+            },
+            {
+              icon:'⚡', badge:'MONITORING', title:'Kontinuierliche Überwachung & Alerts',
+              body:'Wöchentliche Re-Audits per Cron. Sofort-Alert wenn sich Ihr Score verschlechtert. Audit-History mit Delta-Tracking. Shareable Report-Links für Ihr Team und Ihren DSB.',
+              tags:['Wöchentliches Re-Audit','Score-Delta','Email-Alerts','Share-Links'],
+            },
+          ].map(({icon,badge,title,body,tags})=>(
+            <div key={badge} className="feature-card" style={{ background:'#0f0f11', border:'1px solid #1c1c1f', borderRadius:16, padding:32, cursor:'default' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+                <div style={{ width:44, height:44, background:'rgba(37,99,235,.12)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, border:'1px solid rgba(37,99,235,.2)' }}>{icon}</div>
+                <span style={{ color:'#2563eb', fontSize:11, fontWeight:700, letterSpacing:'1px' }}>{badge}</span>
+              </div>
+              <h3 style={{ fontSize:20, fontWeight:700, color:'#fff', margin:'0 0 12px', lineHeight:1.3 }}>{title}</h3>
+              <p style={{ color:'#71717a', fontSize:14, lineHeight:1.7, margin:'0 0 20px' }}>{body}</p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                {tags.map(t=>(
+                  <span key={t} style={{ background:'#18181b', color:'#a1a1aa', borderRadius:6, padding:'4px 10px', fontSize:11, border:'1px solid #27272a' }}>{t}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── AUDIT CTA BANNER ─────────────────────────────── */}
+      <section style={{ padding:'0 24px 80px', maxWidth:1100, margin:'0 auto' }}>
+        <div style={{ background:'linear-gradient(135deg, #1e3a5f 0%, #1e1b4b 100%)', border:'1px solid rgba(37,99,235,.3)', borderRadius:20, padding:'56px 48px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:32 }}>
+          <div style={{ maxWidth:560 }}>
+            <div style={{ color:'#93c5fd', fontSize:12, fontWeight:700, letterSpacing:'1.5px', marginBottom:14 }}>KOSTENLOSER AUDIT — KEINE KARTE</div>
+            <h2 style={{ fontSize:'clamp(24px,3vw,38px)', fontWeight:800, color:'#fff', margin:'0 0 14px', letterSpacing:'-1px', lineHeight:1.2 }}>
+              Wie DSGVO-konform ist<br />Ihre Website gerade?
+            </h2>
+            <p style={{ color:'#93c5fd', fontSize:16, margin:'0', lineHeight:1.6 }}>
+              Unser Audit prüft 29 Heuristiken in unter 30 Sekunden. Inklusive §§-Referenzen und Handlungsempfehlungen — kostenlos, kein Account.
+            </p>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <a href="/audit" className="btn-primary" style={{ background:'#fff', color:'#1e3a5f', borderRadius:10, padding:'14px 32px', fontSize:15, fontWeight:700, textDecoration:'none', textAlign:'center', whiteSpace:'nowrap' }}>
+              🔍 Website jetzt prüfen
+            </a>
+            <a href="/busseld-rechner" style={{ background:'transparent', color:'#93c5fd', borderRadius:10, padding:'12px 32px', fontSize:14, fontWeight:600, textDecoration:'none', textAlign:'center', border:'1px solid rgba(147,197,253,.3)' }}>
+              ⚖️ Bußgeld-Risiko kalkulieren
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ─────────────────────────────────────── */}
+      <section style={{ padding:'80px 24px', background:'#0c0c0e', borderTop:'1px solid #18181b' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:56 }}>
+            <div style={{ color:'#2563eb', fontSize:12, fontWeight:700, letterSpacing:'1.5px', marginBottom:16 }}>PREISE</div>
+            <h2 style={{ fontSize:'clamp(28px,4vw,44px)', fontWeight:800, letterSpacing:'-1.5px', margin:'0 0 16px' }}>
+              Pro System. Nicht pro Nutzer.
+            </h2>
+            <p style={{ color:'#71717a', fontSize:17, maxWidth:480, margin:'0 auto' }}>
+              Unser Pricing-Modell passt zu der Art, wie Unternehmen Compliance wirklich nutzen.
+            </p>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:20 }}>
+            {[
+              {
+                name:'Starter', price:'0 €', period:'/Monat', highlight:false,
+                desc:'Für Einzelpersonen und kleine Teams.',
+                features:['1 Website-Audit pro Tag','Alle 8 kostenlosen Tools','PDF-Export','DSGVO §§-Referenzen'],
+                cta:'Kostenlos starten', href:'/audit',
+              },
+              {
+                name:'Professional', price:'149 €', period:'/Monat', highlight:true,
+                desc:'Für wachsende Unternehmen mit Compliance-Anforderungen.',
+                features:['Unbegrenzte Audits','Wöchentliche Re-Audits','E-Mail-Alerts bei Score-Verschlechterung','API-Zugang','Audit-History & Delta','Shareable Reports'],
+                cta:'14 Tage kostenlos testen', href:'/contact-sales',
+              },
+              {
+                name:'Enterprise', price:'Auf Anfrage', period:'', highlight:false,
+                desc:'Für regulierte Branchen mit komplexen Anforderungen.',
+                features:['Multi-Tenant-Dashboard','EU-Datenresidenz garantiert','Dedicated DSB-Support','BAIT/MaRisk-Modul','SLA & Custom Contracts','On-Premise Option'],
+                cta:'Demo vereinbaren', href:'/contact-sales',
+              },
+            ].map(({name,price,period,highlight,desc,features,cta,href})=>(
+              <div key={name} className="tier-card" style={{ background: highlight ? 'rgba(37,99,235,.1)' : '#0f0f11', border: highlight ? '1px solid #2563eb' : '1px solid #1c1c1f', borderRadius:16, padding:32, position:'relative', cursor:'default' }}>
+                {highlight && <div style={{ position:'absolute', top:-12, left:'50%', transform:'translateX(-50%)', background:'#2563eb', color:'#fff', borderRadius:100, padding:'4px 14px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>EMPFOHLEN</div>}
+                <div style={{ color: highlight ? '#93c5fd' : '#a1a1aa', fontSize:13, fontWeight:700, marginBottom:8 }}>{name}</div>
+                <div style={{ fontSize:'clamp(28px,4vw,42px)', fontWeight:800, color:'#fff', letterSpacing:'-1.5px', marginBottom:4 }}>
+                  {price}<span style={{ fontSize:14, color:'#71717a', fontWeight:400 }}>{period}</span>
+                </div>
+                <div style={{ color:'#71717a', fontSize:13, marginBottom:24 }}>{desc}</div>
+                <div style={{ borderTop:'1px solid #27272a', paddingTop:20, marginBottom:24 }}>
+                  {features.map(f=>(
+                    <div key={f} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+                      <span style={{ color:'#16a34a', fontSize:16 }}>✓</span>
+                      <span style={{ color:'#a1a1aa', fontSize:14 }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href={href} style={{ display:'block', textAlign:'center', background: highlight ? '#2563eb' : '#18181b', color: highlight ? '#fff' : '#a1a1aa', borderRadius:10, padding:'12px', fontSize:14, fontWeight:600, textDecoration:'none', border: highlight ? 'none' : '1px solid #27272a' }}>{cta}</a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIALS / TRUST ─────────────────────────── */}
+      <section style={{ padding:'96px 24px', maxWidth:1100, margin:'0 auto' }}>
+        <div style={{ textAlign:'center', marginBottom:56 }}>
+          <div style={{ color:'#a1a1aa', fontSize:12, fontWeight:700, letterSpacing:'1.5px', marginBottom:16 }}>VERTRAUEN</div>
+          <h2 style={{ fontSize:'clamp(26px,3.5vw,42px)', fontWeight:800, letterSpacing:'-1.5px', margin:'0 0 16px' }}>
+            Warum Compliance-Teams<br />RealSync Dynamics AI wählen.
+          </h2>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:20 }}>
+          {[
+            { quote:'Endlich ein Tool, das die §§ nicht versteckt. Wir können dem DSB direkt den Link schicken.', author:'Datenschutzbeauftragter', company:'Mittelständisches Fintech, München' },
+            { quote:'Der Bußgeld-Rechner hat unserer Geschäftsführung in 2 Minuten klar gemacht, warum Compliance kein Nice-to-have ist.', author:'IT-Leiter', company:'E-Commerce, Hamburg' },
+            { quote:'In 14 Jahren als DSB habe ich noch kein Tool gesehen, das AVV, VVT und DSFA so strukturiert kombiniert.', author:'Externer Datenschutzbeauftragter', company:'Beratungsunternehmen, Berlin' },
+          ].map(({quote,author,company})=>(
+            <div key={author} style={{ background:'#0f0f11', border:'1px solid #1c1c1f', borderRadius:16, padding:28 }}>
+              <div style={{ color:'#2563eb', fontSize:24, marginBottom:12 }}>"</div>
+              <p style={{ color:'#a1a1aa', fontSize:15, lineHeight:1.7, margin:'0 0 20px', fontStyle:'italic' }}>{quote}</p>
+              <div style={{ color:'#fff', fontSize:14, fontWeight:600 }}>{author}</div>
+              <div style={{ color:'#52525b', fontSize:12, marginTop:4 }}>{company}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── FINAL CTA ───────────────────────────────────── */}
+      <section style={{ padding:'80px 24px 120px', textAlign:'center' }}>
+        <div style={{ maxWidth:680, margin:'0 auto' }}>
+          <h2 style={{ fontSize:'clamp(32px,5vw,60px)', fontWeight:800, letterSpacing:'-2px', lineHeight:1.08, margin:'0 0 24px' }}>
+            Starten Sie heute.<br />
+            <span style={{ color:'#2563eb' }}>Kostenlos.</span>
+          </h2>
+          <p style={{ color:'#71717a', fontSize:18, margin:'0 0 40px', lineHeight:1.6 }}>
+            Kein Account. Keine Kreditkarte. Ihr erster DSGVO-Audit dauert 30 Sekunden.
+          </p>
+          <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
+            <a href="/audit" className="btn-primary" style={{ background:'#2563eb', color:'#fff', borderRadius:10, padding:'15px 36px', fontSize:16, fontWeight:700, textDecoration:'none' }}>
+              🔍 Website-Audit starten →
+            </a>
+            <a href="/tools" className="btn-ghost" style={{ background:'#18181b', color:'#a1a1aa', border:'1px solid #27272a', borderRadius:10, padding:'15px 36px', fontSize:16, fontWeight:600, textDecoration:'none' }}>
+              Alle Tools ansehen
+            </a>
+          </div>
+          <div style={{ display:'flex', justifyContent:'center', gap:32, marginTop:40, flexWrap:'wrap' }}>
+            {['Hosted in EU','DSGVO-konformes AVV inklusive','ISO 27001 aligned','Keine Weitergabe an Dritte'].map(t=>(
+              <div key={t} style={{ display:'flex', alignItems:'center', gap:8, color:'#52525b', fontSize:13 }}>
+                <span style={{ color:'#16a34a' }}>✓</span>{t}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ──────────────────────────────────────── */}
+      <footer style={{ borderTop:'1px solid #18181b', padding:'48px 24px', background:'#0c0c0e' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:40 }}>
+          <div style={{ maxWidth:300 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+              <div style={{ width:28, height:28, background:'linear-gradient(135deg,#2563eb,#1d4ed8)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <span style={{ color:'#fff', fontSize:14 }}>⚖</span>
+              </div>
+              <span style={{ fontWeight:700, fontSize:15 }}>RealSync<span style={{ color:'#2563eb' }}>Dynamics</span>.AI</span>
+            </div>
+            <p style={{ color:'#52525b', fontSize:13, lineHeight:1.6, margin:'0 0 16px' }}>
+              DSGVO-Compliance-Infrastruktur für regulierte Unternehmen in Deutschland und der EU.
+            </p>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {['DSGVO','EU AI Act','BAIT','MaRisk'].map(t=>(
+                <span key={t} style={{ color:'#52525b', fontSize:11, border:'1px solid #27272a', borderRadius:4, padding:'2px 8px' }}>{t}</span>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:64, flexWrap:'wrap' }}>
+            {[
+              { head:'Tools', links:[['DSGVO-Audit','/audit'],['AVV-Generator','/avv-generator'],['Bußgeld-Rechner','/busseld-rechner'],['DSE-Generator','/datenschutz-generator'],['Alle Tools','/tools']] },
+              { head:'Plattform', links:[['Preise','/pricing'],['Agenturen','/agencies'],['Ressourcen','/ressourcen'],['AI Act FAQ','/ai-act-faq']] },
+              { head:'Legal', links:[['Datenschutz','/legal/privacy'],['AVV-Template','/legal/avv'],['Sub-Processors','/legal/sub-processors'],['Compliance Matrix','/legal/compliance-matrix']] },
+            ].map(({head,links})=>(
+              <div key={head}>
+                <div style={{ color:'#fff', fontSize:13, fontWeight:600, marginBottom:14 }}>{head}</div>
+                {links.map(([label,href])=>(
+                  <a key={label} href={href} style={{ display:'block', color:'#52525b', fontSize:13, marginBottom:10, textDecoration:'none' }}
+                    onMouseEnter={e=>(e.currentTarget.style.color='#a1a1aa')}
+                    onMouseLeave={e=>(e.currentTarget.style.color='#52525b')}
+                  >{label}</a>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ maxWidth:1100, margin:'40px auto 0', paddingTop:24, borderTop:'1px solid #18181b', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:16 }}>
+          <div style={{ color:'#3f3f46', fontSize:12 }}>© 2025 RealSync Dynamics AI · Hosted in EU · Alle Rechte vorbehalten</div>
+          <div style={{ color:'#3f3f46', fontSize:12 }}>realsyncdynamicsai.de · realsyncdynamics.de</div>
+        </div>
+      </footer>
+    </div>
   );
-}
+        }

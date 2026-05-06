@@ -1,204 +1,173 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, ArrowRight, CheckCircle2, Users, Zap, Award, TrendingUp } from 'lucide-react';
-
-const benefits = [
-  {
-        icon: <Award className="h-5 w-5" />,
-        title: 'White-Label-Option',
-        desc: 'Brande die Plattform mit deinem Logo und deiner Domain. Deine Kunden sehen nur deine Marke.',
-  },
-  {
-        icon: <TrendingUp className="h-5 w-5" />,
-        title: 'Revenue-Share',
-        desc: '20% recurring Revenue auf jede vermittelte Subscription. Monatlich, ohne Deckel.',
-  },
-  {
-        icon: <Users className="h-5 w-5" />,
-        title: 'Multi-Tenant-Management',
-        desc: 'Verwalte alle deine Kunden in einem Dashboard. Billing, Quotas, Audit-Logs auf einen Blick.',
-  },
-  {
-        icon: <Zap className="h-5 w-5" />,
-        title: 'Dedicated Onboarding',
-        desc: 'Wir onboarden deine ersten 3 Kunden gemeinsam. Templates, Schulung, Support-Prio.',
-  },
-  ];
 
 const tiers = [
   {
-        name: 'Reseller',
-        price: 'Ab 199 EUR/Monat',
-        desc: 'Fuer Agenturen mit 3-10 Kunden',
-        features: [
-                'White-Label-Domain',
-                '20% Revenue-Share',
-                'Bis 10 Kunden-Tenants',
-                'Quarterly Business Review',
-              ],
+    name: 'Bronze Partner',
+    rev: '< 50k EUR/Monat',
+    commission: '15%',
+    support: 'E-Mail Support',
+    highlight: false,
   },
   {
-        name: 'Strategic Partner',
-        price: 'Auf Anfrage',
-        desc: 'Fuer Agenturen mit 10+ Kunden oder spezifischer Branchenfokussierung',
-        features: [
-                'Alles aus Reseller',
-                'Custom SLA',
-                'Co-Marketing',
-                'API-Integration in dein Stack',
-                'Dedicated Account Manager',
-              ],
-        highlight: true,
+    name: 'Silver Partner',
+    rev: '50k – 200k EUR/Monat',
+    commission: '20%',
+    support: 'Priority Support + Slack',
+    highlight: true,
   },
-  ];
+  {
+    name: 'Gold Partner',
+    rev: '> 200k EUR/Monat',
+    commission: '25%',
+    support: 'Dedicated Partner Manager',
+    highlight: false,
+  },
+];
 
-export function Agencies() {
-    return (
-          <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-                <header className="border-b border-titanium-900 bg-obsidian-950/80 backdrop-blur-sm sticky top-0 z-40">
-                        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-                                  <Link to="/" className="flex items-center gap-2.5">
-                                              <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-                                                            <ShieldCheck className="h-4 w-4 text-white" />
-                                              </div>div>
-                                              <span className="font-display font-bold text-titanium-50 tracking-tight">RealSyncDynamics.AI</span>span>
-                                  </Link>Link>
-                                  <Link to="/" className="flex items-center gap-1.5 text-sm text-titanium-400 hover:text-titanium-100">
-                                              <ArrowLeft className="h-4 w-4" /> Zurueck
-                                  </Link>Link>
-                        </div>div>
-                </header>header>
-          
-                <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16 space-y-16">
-                  {/* Hero */}
-                        <div className="text-center space-y-5 max-w-3xl mx-auto">
-                                  <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none">
-                                              <Users className="h-3 w-3" /> Agentur-Partnerprogramm
-                                  </div>div>
-                                  <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight">
-                                              Verdiene mit DSGVO-konformer KI-Compliance.
-                                  </h1>h1>
-                                  <p className="text-lg text-titanium-300 leading-relaxed">
-                                              Als RealSyncDynamics-Partner bietest du regulierten Unternehmen eine schluesselfertige
-                                              Compliance-Infrastruktur — und profitierst von monatlichem Recurring Revenue.
-                                  </p>p>
-                                  <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                                              <Link
-                                                              to="/contact-sales?source=agencies_hero"
-                                                              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none"
-                                                            >
-                                                            Partner werden <ArrowRight className="h-4 w-4" />
-                                              </Link>Link>
-                                              <a
-                                                              href="#vorteile"
-                                                              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 font-semibold rounded-none"
-                                                            >
-                                                            Vorteile ansehen
-                                              </a>a>
-                                  </div>div>
-                        </div>div>
-                
-                  {/* Benefits */}
-                        <section id="vorteile" className="space-y-6">
-                                  <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em]">Ihre Vorteile</h2>h2>
-                                  <div className="grid sm:grid-cols-2 gap-4">
-                                    {benefits.map((b) => (
-                          <div key={b.title} className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
-                                          <div className="w-10 h-10 mb-3 bg-security-900/30 border border-security-800 text-security-300 flex items-center justify-center">
-                                            {b.icon}
-                                          </div>div>
-                                          <h3 className="font-display font-bold text-titanium-50 mb-1.5">{b.title}</h3>h3>
-                                          <p className="text-sm text-titanium-400 leading-relaxed">{b.desc}</p>p>
-                          </div>div>
-                        ))}
-                                  </div>div>
-                        </section>section>
-                
-                  {/* Partner Tiers */}
-                        <section className="space-y-6">
-                                  <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em]">Partner-Modelle</h2>h2>
-                                  <div className="grid sm:grid-cols-2 gap-4">
-                                    {tiers.map((t) => (
-                          <div
-                                            key={t.name}
-                                            className={`flex flex-col p-6 rounded-none border relative ${
-                                                                t.highlight
-                                                                  ? 'border-security-500 bg-security-950/20 ring-1 ring-security-500/20'
-                                                                  : 'border-titanium-900 bg-obsidian-900'
-                                            }`}
-                                          >
-                            {t.highlight && (
-                                                              <div className="absolute -top-2.5 left-6 bg-security-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5">
-                                                                                  Empfohlen
-                                                              </div>div>
-                                          )}
-                                          <h3 className="font-display text-xl font-bold text-titanium-50 mb-1">{t.name}</h3>h3>
-                                          <p className="text-sm font-bold text-security-400 mb-1">{t.price}</p>p>
-                                          <p className="text-xs text-titanium-500 mb-4">{t.desc}</p>p>
-                                          <ul className="space-y-1.5 flex-1 mb-5">
-                                            {t.features.map((f) => (
-                                                                <li key={f} className="flex items-start gap-2 text-sm text-titanium-300 leading-snug">
-                                                                                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                                                                  {f}
-                                                                </li>li>
-                                                              ))}
-                                          </ul>ul>
-                                          <Link
-                                                              to="/contact-sales?source=agencies_tier"
-                                                              className={`inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none ${
-                                                                                    t.highlight
-                                                                                      ? 'bg-security-500 hover:bg-security-600 text-white'
-                                                                                      : 'bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200'
-                                                              }`}
-                                                            >
-                                                            Jetzt anfragen <ArrowRight className="h-4 w-4" />
-                                          </Link>Link>
-                          </div>div>
-                        ))}
-                                  </div>div>
-                        </section>section>
-                
-                  {/* Process */}
-                        <section className="space-y-6">
-                                  <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em]">Wie es funktioniert</h2>h2>
-                                  <div className="grid sm:grid-cols-3 gap-4">
-                                    {[
-            { n: '01', title: 'Erstgespraech (30 Min)', desc: 'Wir verstehen deinen Kundenstamm und passen das Angebot an.' },
-            { n: '02', title: 'Partner-Onboarding', desc: 'White-Label-Setup, Vertragsabschluss, erste 3 Kunden gemeinsam onboarden.' },
-            { n: '03', title: 'Recurring Revenue', desc: 'Jeder geworbene Kunde generiert monatlichen Revenue-Share ohne Mehraufwand.' },
-                        ].map((s) => (
-                                        <div key={s.n} className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
-                                                        <span className="font-mono text-xs font-bold text-security-400 block mb-2">{s.n}</span>span>
-                                                        <h3 className="font-display font-bold text-titanium-50 mb-1.5">{s.title}</h3>h3>
-                                                        <p className="text-sm text-titanium-400 leading-relaxed">{s.desc}</p>p>
-                                        </div>div>
-                                      ))}
-                                  </div>div>
-                        </section>section>
-                
-                  {/* CTA */}
-                        <section className="text-center p-10 bg-obsidian-900 border border-titanium-900 rounded-none space-y-4">
-                                  <h2 className="text-2xl font-display font-bold text-titanium-50">Bereit, DSGVO-Compliance zu monetarisieren?</h2>h2>
-                                  <p className="text-titanium-300 text-sm max-w-xl mx-auto">
-                                              Sprich mit uns ueber dein Agenturmodell. Keine langen Vertragsverhandlungen, kein Vorab-Investment.
-                                  </p>p>
-                                  <Link
-                                                to="/contact-sales?source=agencies_cta"
-                                                className="inline-flex items-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none"
-                                              >
-                                              Partner-Gespraech anfragen <ArrowRight className="h-4 w-4" />
-                                  </Link>Link>
-                        </section>section>
-                </main>main>
-          
-                <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-8 mt-8">
-                        <div className="max-w-6xl mx-auto flex flex-wrap gap-4 text-xs text-titanium-500 justify-center">
-                                  <Link to="/" className="hover:text-titanium-300">Startseite</Link>Link>
-                                  <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>Link>
-                                  <Link to="/pricing" className="hover:text-titanium-300">Preise</Link>Link>
-                                  <Link to="/contact-sales" className="hover:text-titanium-300">Kontakt</Link>Link>
-                        </div>div>
-                </footer>footer>
-          </div>div>
-        );
-}</div>
+const benefits = [
+  { title: 'Co-Marketing', desc: 'Gemeinsame Kampagnen, Co-Branding und Feature in unserem Partner-Verzeichnis.' },
+  { title: 'Technische Integration', desc: 'API-Zugang, White-Label-Option und Sandbox-Umgebung für Ihre Entwickler.' },
+  { title: 'Revenue Share', desc: 'Monatliche Auszahlung auf Basis verifizierter Netto-ARR Ihrer vermittelten Kunden.' },
+  { title: 'Training & Zertifizierung', desc: 'Exklusive Schulungen, Zertifikate und Zugang zu internen Produktroadmaps.' },
+];
+
+export default function Agencies() {
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-titanium-900 bg-obsidian-950/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight text-titanium-100">
+              RealSync<span className="text-security-400">Dynamics</span>.AI
+            </span>
+          </Link>
+          <nav className="hidden items-center gap-8 text-sm font-medium text-titanium-300 md:flex">
+            <Link to="/agencies" className="text-security-400">Agenturen</Link>
+            <Link to="/pricing" className="hover:text-titanium-100 transition-colors">Preise</Link>
+            <Link to="/dashboard" className="hover:text-titanium-100 transition-colors">Login</Link>
+            <Link
+              to="/contact-sales"
+              className="bg-security-500 px-4 py-2 text-obsidian-950 font-semibold hover:bg-security-400 transition-colors"
+            >
+              Demo buchen
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="border-b border-titanium-900 py-24 text-center">
+        <div className="mx-auto max-w-4xl px-6">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-security-400">
+            Partnerprogramm
+          </p>
+          <h1 className="mb-6 text-5xl font-bold leading-tight text-titanium-100">
+            Wachsen Sie gemeinsam<br />mit RealSyncDynamics.AI
+          </h1>
+          <p className="mb-10 text-xl text-titanium-400">
+            Als zertifizierter Partner erhalten Sie exklusive Provisionen, Marketing-Support
+            und technischen Zugang — skalierbar mit Ihrem Geschäft.
+          </p>
+          <Link
+            to="/contact-sales?source=agencies_hero"
+            className="inline-block bg-security-500 px-8 py-4 text-obsidian-950 font-bold text-lg hover:bg-security-400 transition-colors"
+          >
+            Partnerschaft anfragen
+          </Link>
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section className="border-b border-titanium-900 py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <h2 className="mb-12 text-center text-3xl font-bold text-titanium-100">
+            Was Sie als Partner erhalten
+          </h2>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            {benefits.map((b) => (
+              <div
+                key={b.title}
+                className="border border-titanium-900 bg-obsidian-900 p-6"
+              >
+                <h3 className="mb-3 text-lg font-semibold text-security-400">{b.title}</h3>
+                <p className="text-sm text-titanium-400 leading-relaxed">{b.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Tiers */}
+      <section className="border-b border-titanium-900 py-20">
+        <div className="mx-auto max-w-5xl px-6">
+          <h2 className="mb-12 text-center text-3xl font-bold text-titanium-100">
+            Partner-Stufen
+          </h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            {tiers.map((t) => (
+              <div
+                key={t.name}
+                className={[
+                  'border p-8 flex flex-col gap-4',
+                  t.highlight
+                    ? 'border-security-500 bg-obsidian-900'
+                    : 'border-titanium-900 bg-obsidian-950',
+                ].join(' ')}
+              >
+                {t.highlight && (
+                  <span className="text-xs font-bold uppercase tracking-widest text-security-400">
+                    Empfohlen
+                  </span>
+                )}
+                <h3 className="text-xl font-bold text-titanium-100">{t.name}</h3>
+                <p className="text-sm text-titanium-400">Monatlicher Umsatz: {t.rev}</p>
+                <p className="text-3xl font-bold text-security-400">{t.commission}</p>
+                <p className="text-sm text-titanium-300">Provision auf vermittelte ARR</p>
+                <p className="text-sm text-titanium-400">{t.support}</p>
+                <Link
+                  to="/contact-sales?source=agencies_tier"
+                  className="mt-auto block bg-security-500 py-3 text-center text-obsidian-950 font-semibold hover:bg-security-400 transition-colors"
+                >
+                  Jetzt bewerben
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 text-center">
+        <div className="mx-auto max-w-2xl px-6">
+          <h2 className="mb-6 text-3xl font-bold text-titanium-100">
+            Bereit, Partner zu werden?
+          </h2>
+          <p className="mb-10 text-titanium-400">
+            Unser Partner-Team meldet sich innerhalb von 24 Stunden bei Ihnen.
+          </p>
+          <Link
+            to="/contact-sales?source=agencies_cta"
+            className="inline-block bg-security-500 px-8 py-4 text-obsidian-950 font-bold text-lg hover:bg-security-400 transition-colors"
+          >
+            Jetzt Kontakt aufnehmen
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-titanium-900 py-10">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <span className="text-sm text-titanium-500">
+            © 2025 RealSyncDynamics.AI — Alle Rechte vorbehalten
+          </span>
+          <div className="flex gap-6 text-sm text-titanium-500">
+            <Link to="/legal/privacy" className="hover:text-titanium-100 transition-colors">Datenschutz</Link>
+            <Link to="/legal/sub-processors" className="hover:text-titanium-100 transition-colors">Sub-Prozessoren</Link>
+            <Link to="/contact-sales" className="hover:text-titanium-100 transition-colors">Kontakt</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

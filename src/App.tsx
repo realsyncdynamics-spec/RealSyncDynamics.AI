@@ -33,6 +33,9 @@ import { ToolsHub } from './pages/ToolsHub';
 import { HealthTechLanding } from './pages/HealthTechLanding';
 import { LegalTechLanding } from './pages/LegalTechLanding';
 import { OneTrustAlternative } from './pages/OneTrustAlternative';
+import { FinTechLanding } from './pages/FinTechLanding';
+import { PublicSectorLanding } from './pages/PublicSectorLanding';
+import { UsercentricsAlternative } from './pages/UsercentricsAlternative';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -89,6 +92,10 @@ function RoutesWithTracking() {
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}
       <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />
+      <Route path="/fintech" element={<FinTechLanding />} />
+      <Route path="/oeffentliche-verwaltung" element={<PublicSectorLanding />} />
+      <Route path="/behoerden" element={<PublicSectorLanding />} />
+      <Route path="/usercentrics-alternative" element={<UsercentricsAlternative />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

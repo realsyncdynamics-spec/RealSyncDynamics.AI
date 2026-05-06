@@ -27,6 +27,7 @@ import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
+import { useTrackPageview } from './lib/track';
 
 // Vite injects the configured `base` as `import.meta.env.BASE_URL`.
 // For GitHub Pages this is `/RealSyncDynamics.AI/`; for root deploys it's `/`.
@@ -34,11 +35,10 @@ import { TenantProvider } from './core/access/TenantProvider';
 // resolve relative to the deploy location.
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
-export default function App() {
+function RoutesWithTracking() {
+  useTrackPageview();
   return (
-    <TenantProvider>
-      <BrowserRouter basename={ROUTER_BASENAME}>
-        <Routes>
+    <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/agencies" element={<AgenciesLanding />} />
           <Route path="/audit" element={<AuditLanding />} />
@@ -61,6 +61,14 @@ export default function App() {
           <Route path="/legal/avv" element={<AVVTemplate />} />
           <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
         </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <TenantProvider>
+      <BrowserRouter basename={ROUTER_BASENAME}>
+        <RoutesWithTracking />
         <CookieConsent />
       </BrowserRouter>
     </TenantProvider>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
-  Globe, Mail, Building2, Gavel, ArrowRight,
+  Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2,
 } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -261,6 +261,57 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             Andere URL prüfen
           </button>
         </div>
+      </div>
+
+      <ShareBlock report={report} />
+    </div>
+  );
+}
+
+function ShareBlock({ report }: { report: Report }) {
+  const landingUrl = 'https://realsyncdynamicsai.de/audit';
+  const shareText = report.score >= 80
+    ? `Meine Website hat ${report.score}/100 im DSGVO-Audit von RealSyncDynamics.AI erreicht. Wie schneidet Deine ab?`
+    : `${report.issues.length} DSGVO-Schwachstellen auf meiner Website (Score ${report.score}/100). Kostenloser Check via RealSyncDynamics.AI:`;
+  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(landingUrl)}`;
+  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(landingUrl)}`;
+  const copyLink = () => {
+    navigator.clipboard?.writeText(`${shareText} ${landingUrl}`).catch(() => {});
+  };
+  return (
+    <div className="bg-obsidian-900 border border-titanium-800 p-5 rounded-none">
+      <div className="flex items-start gap-3 mb-3">
+        <Share2 className="h-4 w-4 text-titanium-400 mt-1" />
+        <div>
+          <div className="font-display font-bold text-titanium-100 text-sm">Score teilen</div>
+          <div className="text-xs text-titanium-500 mt-0.5">
+            DSGVO-Awareness verbreiten — keine personenbezogenen Daten werden übermittelt.
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <a
+          href={linkedInUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-semibold rounded-none"
+        >
+          <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+        </a>
+        <a
+          href={xUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-semibold rounded-none"
+        >
+          X / Twitter
+        </a>
+        <button
+          onClick={copyLink}
+          className="inline-flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-semibold rounded-none"
+        >
+          Link kopieren
+        </button>
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
 import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
+import { AiActFaq } from './pages/AiActFaq';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
@@ -43,6 +44,7 @@ function RoutesWithTracking() {
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
+      <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

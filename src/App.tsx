@@ -27,6 +27,7 @@ import { TomGenerator } from './pages/TomGenerator';
 import { MeldepflichtTimer } from './pages/MeldepflichtTimer';
 import { DatenschutzGenerator } from './pages/DatenschutzGenerator';
 import { DsfaWizard } from './pages/DsfaWizard';
+import { BusseldRechner } from './pages/BusseldRechner';
 import { ToolsHub } from './pages/ToolsHub';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
@@ -94,6 +95,8 @@ function RoutesWithTracking() {
       <Route path="/tools/datenschutz-generator" element={<DatenschutzGenerator />} />
       <Route path="/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
+      <Route path="/busseld-rechner" element={<BusseldRechner />} />
+      <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
@@ -132,4 +135,4 @@ export default function App() {
       </BrowserRouter>
     </TenantProvider>
   );
-        }
+      }

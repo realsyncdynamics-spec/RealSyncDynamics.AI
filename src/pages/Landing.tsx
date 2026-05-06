@@ -69,7 +69,7 @@ function Hero() {
         <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
           Wir liefern die Compliance-Schicht für AI-Workflows in regulierten Branchen:
           EU-Datenresidenz, lückenloser Audit-Trail, automatisierte Auskunfts-/Löschanfragen.
-          Damit Du AI nutzen kannst, <strong className="text-titanium-50">und der Datenschutzbeauftragte trotzdem unterschreibt</strong>.
+          Damit du KI einsetzen kannst, <strong className="text-titanium-50">und der Datenschutzbeauftragte trotzdem unterschreibt</strong>.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
           <Link to="/contact-sales?source=apex_hero"
@@ -121,7 +121,7 @@ function RegulatoryPressure() {
           <AlertTriangle className="h-3.5 w-3.5" /> Das Risiko
         </h2>
         <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-8 max-w-3xl">
-          Vier Gesetze die jede deutsche Firma zu nachweisbarer KI-Compliance zwingen.
+          Vier Gesetze, die jede deutsche Firma zu nachweisbarer KI-Compliance zwingen.
         </h3>
         <div className="grid md:grid-cols-2 gap-3">
           {items.map((it) => (
@@ -246,7 +246,7 @@ function Capabilities() {
       title: 'Multi-Tenant & Sicherheit',
       items: [
         'Tenants + Memberships mit Row-Level-Security',
-        'Magic-Link-Auth (kein Passwort-Risk)',
+        'Magic-Link-Auth (kein Passwort-Risiko)',
         'Bring-Your-Own-Key (BYOK) für AI-Provider',
         'Stripe-Billing mit metered Usage',
         'IP-Hash-Anonymisierung bei Lead-Capture',
@@ -435,7 +435,7 @@ function Audience() {
       <div className="max-w-5xl mx-auto">
         <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Zielgruppe</h2>
         <h3 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-8 max-w-3xl">
-          Für Teams die bei Datensouveränität nicht verhandeln können.
+          Für Teams, die bei Datensouveränität nicht verhandeln können.
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {segments.map((s) => (
@@ -464,7 +464,7 @@ function CTA() {
         </h2>
         <p className="text-titanium-300 leading-relaxed">
           Wir zeigen den eu_local-Modus, das Audit-Log, einen Beispiel-Workflow und die DSGVO-Selfservice-API
-          live an Deinen Daten — Du entscheidest danach.
+          live an deinen Daten — du entscheidest danach.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/contact-sales?source=apex_cta"

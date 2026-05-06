@@ -1,65 +1,70 @@
 name: Deploy to GitHub Pages
 
+# Builds the Vite SPA and publishes to GitHub Pages.
+# With custom domain realsyncdynamicsai.de, VITE_BASE must be /
+# Supabase secrets are optional — if missing the app builds fine
+# and runs in offline/demo mode.
+
 on:
   push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
-      - '.github/workflows/deploy-pages.yml'
-  workflow_dispatch:
+      branches: [main]
+          paths:
+                - 'src/**'
+                      - 'public/**'
+                            - 'index.html'
+                                  - 'package.json'
+                                        - 'package-lock.json'
+                                              - 'vite.config.ts'
+                                                    - 'tsconfig.json'
+                                                          - '.github/workflows/deploy-pages.yml'
+                                                            workflow_dispatch:
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
+                                                            concurrency:
+                                                              group: pages
+                                                                cancel-in-progress: false
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+                                                                permissions:
+                                                                  contents: read
+                                                                    pages: write
+                                                                      id-token: write
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+                                                                      jobs:
+                                                                        build:
+                                                                            runs-on: ubuntu-latest
+                                                                                steps:
+                                                                                      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install
-        run: npm ci
-
-      - name: Build
-        env:
-          VITE_BASE: /RealSyncDynamics.AI/
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
-
-      - name: SPA fallback + Jekyll bypass
-        run: |
-          cp dist/index.html dist/404.html
-          touch dist/.nojekyll
-          ls -la dist/
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+                                                                                            - uses: actions/setup-node@v4
+                                                                                                    with:
+                                                                                                              node-version: '20'
+                                                                                                                        cache: 'npm'
+                                                                                                                              
+                                                                                                                                    - name: Install
+                                                                                                                                            run: npm ci
+                                                                                                                                                  
+                                                                                                                                                        - name: Build
+                                                                                                                                                                env:
+                                                                                                                                                                          VITE_BASE: /
+                                                                                                                                                                                    VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+                                                                                                                                                                                              VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+                                                                                                                                                                                                      run: npm run build
+                                                                                                                                                                                                            
+                                                                                                                                                                                                                  - name: SPA fallback + Jekyll bypass
+                                                                                                                                                                                                                          run: |
+                                                                                                                                                                                                                                    cp dist/index.html dist/404.html
+                                                                                                                                                                                                                                              touch dist/.nojekyll
+                                                                                                                                                                                                                                                        ls -la dist/
+                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                    - uses: actions/upload-pages-artifact@v3
+                                                                                                                                                                                                                                                                            with:
+                                                                                                                                                                                                                                                                                      path: dist
+                                                                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                                                              deploy:
+                                                                                                                                                                                                                                                                                                  needs: build
+                                                                                                                                                                                                                                                                                                      runs-on: ubuntu-latest
+                                                                                                                                                                                                                                                                                                          environment:
+                                                                                                                                                                                                                                                                                                                name: github-pages
+                                                                                                                                                                                                                                                                                                                      url: ${{ steps.deployment.outputs.page_url }}
+                                                                                                                                                                                                                                                                                                                          steps:
+                                                                                                                                                                                                                                                                                                                                - id: deployment
+                                                                                                                                                                                                                                                                                                                                        uses: actions/deploy-pages@v4

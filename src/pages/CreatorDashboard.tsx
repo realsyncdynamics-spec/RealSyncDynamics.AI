@@ -12,6 +12,7 @@ import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gatew
 import Markdown from 'react-markdown';
 import { PromptsView } from '../features/workspace/PromptsView';
 import { BillingView } from '../features/billing/BillingView';
+import { OnboardingTour } from '../components/OnboardingTour';
 
 type Message = { role: 'user' | 'ai', text: string, status?: 'loading' | 'error' | 'success' };
 type ThreadMode = 'chat' | 'research' | 'policy' | 'roi';
@@ -67,7 +68,8 @@ export function CreatorDashboard() {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-obsidian-900 font-sans overflow-hidden text-titanium-100">
-      
+      <OnboardingTour />
+
       {/* 1. Global Header (Thin) */}
       <header className="h-14 shrink-0 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4 z-20">
         <div className="flex items-center gap-6">

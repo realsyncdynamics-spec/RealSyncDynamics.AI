@@ -13,6 +13,7 @@ export function Landing() {
       <Header />
       <main>
         <Hero />
+        <TrustStrip />
         <WaitlistSection />
         <RegulatoryPressure />
         <WhatWeDo />
@@ -131,6 +132,32 @@ function RegulatoryPressure() {
               </div>
               <h4 className="font-display font-bold text-titanium-50 mb-1.5">{it.title}</h4>
               <p className="text-sm text-titanium-400 leading-relaxed">{it.consequence}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Trust Strip ──────────────────────────────────────────────────────────
+// Renders nothing while the array is empty. Add { name, logoSrc?, role? }
+// rows once first paying customers have agreed to be named publicly.
+
+const trustedBy: { name: string; role?: string }[] = [];
+
+function TrustStrip() {
+  if (trustedBy.length === 0) return null;
+  return (
+    <section aria-label="Vertraut von" className="border-y border-titanium-900 bg-obsidian-950/50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="text-center text-[11px] uppercase tracking-[0.2em] text-titanium-500 mb-5">
+          Vertraut von
+        </div>
+        <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 items-center">
+          {trustedBy.map((c) => (
+            <div key={c.name} className="text-titanium-300 font-display font-semibold text-sm">
+              {c.name}{c.role && <span className="text-titanium-500 ml-2 text-xs">· {c.role}</span>}
             </div>
           ))}
         </div>

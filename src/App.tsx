@@ -21,6 +21,7 @@ import { SettingsView } from './features/settings/SettingsView';
 import { WorkflowsView } from './features/workflows/WorkflowsView';
 import { MarketGapsView } from './features/market/MarketGapsView';
 import { OutreachView } from './features/outreach/OutreachView';
+import { AnalyticsView } from './features/analytics/AnalyticsView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { AVVTemplate } from './features/legal/AVVTemplate';
@@ -56,6 +57,7 @@ function RoutesWithTracking() {
           <Route path="/workflows" element={<WorkflowsView />} />
           <Route path="/market-gaps" element={<MarketGapsView />} />
           <Route path="/outreach" element={<OutreachView />} />
+          <Route path="/admin/analytics" element={<AnalyticsView />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="/legal/sub-processors" element={<SubProcessors />} />
           <Route path="/legal/avv" element={<AVVTemplate />} />

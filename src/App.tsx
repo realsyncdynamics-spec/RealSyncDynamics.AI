@@ -18,24 +18,24 @@ import { AcceptInviteView } from './features/tenants/AcceptInviteView';
 import { TenantProvider } from './core/access/TenantProvider';
 
 export default function App() {
-    return (
-          <TenantProvider>
-                <BrowserRouter>
-                        <Routes>
-                                  <Route path="/" element={<Landing />} />
-                                  <Route path="/dashboard" element={<CreatorDashboard />} />
-                                  <Route path="/contact-sales" element={<ContactSales />} />
-                                  <Route path="/agencies" element={<Agencies />} />
-                                  <Route path="/legal/privacy" element={<Privacy />} />
-                                  <Route path="/legal/sub-processors" element={<SubProcessors />} />
-                                  <Route path="/kodee" element={<KodeeView />} />
-                                  <Route path="/kodee/connections" element={<ConnectionsView />} />
-                                  <Route path="/billing/usage" element={<UsageView />} />
-                                  <Route path="/pricing" element={<PricingPage />} />
-                                  <Route path="/tenant/invites" element={<InvitesView />} />
-                                  <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
-                        </Routes>Routes>
-                </BrowserRouter>BrowserRouter>
-          </TenantProvider>TenantProvider>
-        );
-}</TenantProvider>
+  return (
+    <TenantProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/dashboard" element={<CreatorDashboard />} />
+          <Route path="/contact-sales" element={<ContactSales />} />
+          <Route path="/agencies" element={<Agencies />} />
+          <Route path="/legal/privacy" element={<Privacy />} />
+          <Route path="/legal/sub-processors" element={<SubProcessors />} />
+          <Route path="/kodee" element={<KodeeView />} />
+          <Route path="/kodee/connections" element={<ConnectionsView />} />
+          <Route path="/billing/usage" element={<UsageView />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/tenant/invites" element={<InvitesView />} />
+          <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
+        </Routes>
+      </BrowserRouter>
+    </TenantProvider>
+  );
+}

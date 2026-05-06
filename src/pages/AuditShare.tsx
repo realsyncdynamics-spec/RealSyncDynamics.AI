@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, ArrowRight, Share2, Linkedin,
+  ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, ArrowRight, Share2, Linkedin, Printer,
 } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -48,10 +48,20 @@ export function AuditShare() {
   }, [token]);
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100 print:bg-white print:text-zinc-900">
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 16mm 14mm; }
+          body { background: white !important; color: #18181b !important; }
+          .print\\:hidden { display: none !important; }
+          a { text-decoration: none !important; color: inherit !important; }
+          header { display: none !important; }
+          footer { border-top: 1px solid #e4e4e7 !important; color: #71717a !important; }
+        }
+      `}</style>
       <Header />
 
-      <main className="px-4 sm:px-6 py-12 sm:py-16">
+      <main className="px-4 sm:px-6 py-12 sm:py-16 print:py-0">
         <div className="max-w-3xl mx-auto">
           {loading && (
             <div className="flex items-center justify-center gap-3 py-20 text-titanium-400">
@@ -157,10 +167,10 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
         </Link>
       </div>
 
-      <div className="bg-obsidian-900 border border-titanium-800 p-5 rounded-none">
+      <div className="bg-obsidian-900 border border-titanium-800 p-5 rounded-none print:hidden">
         <div className="flex items-center gap-2 mb-3">
           <Share2 className="h-4 w-4 text-titanium-400" />
-          <div className="font-display font-bold text-titanium-100 text-sm">Weiter teilen</div>
+          <div className="font-display font-bold text-titanium-100 text-sm">Weiter teilen oder drucken</div>
         </div>
         <div className="flex flex-wrap gap-2">
           <a href={linkedInUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-semibold rounded-none">
@@ -169,6 +179,9 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
           <a href={xUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-semibold rounded-none">
             X / Twitter
           </a>
+          <button onClick={() => window.print()} className="inline-flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-semibold rounded-none">
+            <Printer className="h-3.5 w-3.5" /> Als PDF speichern
+          </button>
         </div>
       </div>
     </article>

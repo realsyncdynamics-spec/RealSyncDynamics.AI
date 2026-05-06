@@ -2,7 +2,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -31,40 +30,36 @@ import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 import { useTrackPageview } from './lib/track';
 
-// Vite injects the configured `base` as `import.meta.env.BASE_URL`.
-// For GitHub Pages this is `/RealSyncDynamics.AI/`; for root deploys it's `/`.
-// react-router needs the same value as `basename` so paths like /pricing
-// resolve relative to the deploy location.
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
 function RoutesWithTracking() {
   useTrackPageview();
   return (
     <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/agencies" element={<AgenciesLanding />} />
-          <Route path="/audit" element={<AuditLanding />} />
-          <Route path="/contact-sales" element={<ContactSales />} />
-          <Route path="/dashboard" element={<CreatorDashboard />} />
-          <Route path="/kodee" element={<KodeeView />} />
-          <Route path="/kodee/connections" element={<ConnectionsView />} />
-          <Route path="/billing/usage" element={<UsageView />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/tenant/invites" element={<InvitesView />} />
-          <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
-          <Route path="/settings" element={<SettingsView />} />
-          <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
-          <Route path="/settings/account" element={<AccountSettings />} />
-          <Route path="/workflows" element={<WorkflowsView />} />
-          <Route path="/market-gaps" element={<MarketGapsView />} />
-          <Route path="/outreach" element={<OutreachView />} />
-          <Route path="/admin/analytics" element={<AnalyticsView />} />
-          <Route path="/admin/leads" element={<LeadsView />} />
-          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-          <Route path="/legal/sub-processors" element={<SubProcessors />} />
-          <Route path="/legal/avv" element={<AVVTemplate />} />
-          <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
-        </Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/agencies" element={<AgenciesLanding />} />
+      <Route path="/audit" element={<AuditLanding />} />
+      <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/dashboard" element={<CreatorDashboard />} />
+      <Route path="/kodee" element={<KodeeView />} />
+      <Route path="/kodee/connections" element={<ConnectionsView />} />
+      <Route path="/billing/usage" element={<UsageView />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/tenant/invites" element={<InvitesView />} />
+      <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
+      <Route path="/settings" element={<SettingsView />} />
+      <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
+      <Route path="/settings/account" element={<AccountSettings />} />
+      <Route path="/workflows" element={<WorkflowsView />} />
+      <Route path="/market-gaps" element={<MarketGapsView />} />
+      <Route path="/outreach" element={<OutreachView />} />
+      <Route path="/admin/analytics" element={<AnalyticsView />} />
+      <Route path="/admin/leads" element={<LeadsView />} />
+      <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+      <Route path="/legal/sub-processors" element={<SubProcessors />} />
+      <Route path="/legal/avv" element={<AVVTemplate />} />
+      <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
+    </Routes>
   );
 }
 

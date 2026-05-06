@@ -1,16 +1,5 @@
 name: Deploy to GitHub Pages
 
-# Builds the Vite SPA and publishes to GitHub Pages.
-# First successful run auto-creates + enables the Pages site (no manual
-# Settings → Pages click needed) thanks to the `pages: write` permission
-# on the deploy step.
-#
-# URL after first run: https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/
-#
-# Required repo secrets (Settings → Secrets and variables → Actions):
-#   VITE_SUPABASE_URL        e.g. https://ebljyceifhnlzhjfyxup.supabase.co
-#   VITE_SUPABASE_ANON_KEY   the anon/publishable key
-
 on:
   push:
     branches: [main]
@@ -25,7 +14,6 @@ on:
       - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
-# Allow only one concurrent deployment, skip queued runs in between.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -54,13 +42,7 @@ jobs:
           VITE_BASE: /RealSyncDynamics.AI/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "::error::Missing required secrets VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY."
-            echo "::error::Set them at https://github.com/${{ github.repository }}/settings/secrets/actions"
-            exit 1
-          fi
-          npm run build
+        run: npm run build
 
       - name: SPA fallback + Jekyll bypass
         run: |

@@ -1,236 +1,221 @@
-import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, ArrowRight, CheckCircle2, Calendar, Mail, Building2, User } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-const sources: Record<string, string> = {
-    apex_header: 'Navigation',
-    apex_hero: 'Hero-Bereich',
-    apex_cta: 'CTA-Bereich',
-    apex_pricing_enterprise: 'Enterprise-Preisplan',
+interface FormState {
+  name: string;
+  email: string;
+  company: string;
+  phone: string;
+  employees: string;
+  message: string;
+}
+
+const initialForm: FormState = {
+  name: '',
+  email: '',
+  company: '',
+  phone: '',
+  employees: '',
+  message: '',
 };
 
-export function ContactSales() {
-    const [params] = useSearchParams();
-    const source = params.get('source') || '';
-    const [submitted, setSubmitted] = useState(false);
-    const [form, setForm] = useState({
-          name: '',
-          email: '',
-          company: '',
-          role: '',
-          message: '',
-          tier: params.get('tier') || '',
-    });
+export default function ContactSales() {
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // TODO: connect to Supabase edge function or Formspree
-        setSubmitted(true);
+    e.preventDefault();
+    // TODO: connect to Supabase or email service
+    setSubmitted(true);
   };
 
   return (
-        <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-              <header className="border-b border-titanium-900 bg-obsidian-950/80 backdrop-blur-sm sticky top-0 z-40">
-                      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-                                <Link to="/" className="flex items-center gap-2.5">
-                                            <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-                                                          <ShieldCheck className="h-4 w-4 text-white" />
-                                            </div>div>
-                                            <span className="font-display font-bold text-titanium-50 tracking-tight">RealSyncDynamics.AI</span>span>
-                                </Link>Link>
-                                <Link to="/" className="flex items-center gap-1.5 text-sm text-titanium-400 hover:text-titanium-100">
-                                            <ArrowLeft className="h-4 w-4" /> Zurueck
-                                </Link>Link>
-                      </div>div>
-              </header>header>
-        
-              <main className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
-                      <div className="grid lg:grid-cols-2 gap-12">
-                        {/* Left: Info */}
-                                <div className="space-y-6">
-                                  {source && sources[source] && (
-                        <div className="inline-flex items-center gap-2 px-3 py-1 border border-titanium-800 bg-obsidian-900 text-titanium-400 text-xs rounded-none">
-                                        Angefragt ueber: {sources[source]}
-                        </div>div>
-                                            )}
-                                            <div>
-                                                          <p className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-2">Demo buchen</p>p>
-                                                          <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 mb-3">
-                                                                          30 Min. — keine Kaltakquise.
-                                                          </h1>h1>
-                                                          <p className="text-titanium-300 leading-relaxed">
-                                                                          Wir zeigen den eu_local-Modus, das Audit-Log, einen Beispiel-Workflow und die
-                                                                          DSGVO-Selfservice-API live. Du entscheidest danach.
-                                                          </p>p>
-                                            </div>div>
-                                
-                                            <div className="space-y-3">
-                                              {[
-          { icon: <Calendar className="h-4 w-4" />, text: 'Termin innerhalb von 48h' },
-          { icon: <ShieldCheck className="h-4 w-4" />, text: 'Deine Daten werden nicht weitergegeben' },
-          { icon: <CheckCircle2 className="h-4 w-4" />, text: 'Kein Sales-Druck, kein Upsell' },
-                        ].map((item, i) => (
-                                          <div key={i} className="flex items-center gap-3 text-sm text-titanium-300">
-                                                            <div className="text-emerald-400">{item.icon}</div>div>
-                                            {item.text}
-                                          </div>div>
-                                        ))}
-                                            </div>div>
-                                
-                                            <div className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
-                                                          <p className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-2">Was wir zeigen</p>p>
-                                                          <ul className="space-y-1.5 text-sm text-titanium-300">
-                                                            {[
-                            'eu_local-Modus live an deinen Daten',
-                            'Audit-Log: Provider, Modell, Token, Kosten',
-                            'DSGVO-Selfservice (Art. 15 + 17) in Aktion',
-                            'Workflow-Demo mit echtem Trigger',
-                            'Pricing & Onboarding-Prozess',
-                          ].map((item) => (
-                                              <li key={item} className="flex items-start gap-2">
-                                                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                                                {item}
-                                              </li>li>
-                                            ))}
-                                                          </ul>ul>
-                                            </div>div>
-                                </div>div>
-                      
-                        {/* Right: Form */}
-                                <div className="bg-obsidian-900 border border-titanium-900 p-6 rounded-none">
-                                  {submitted ? (
-                        <div className="flex flex-col items-center justify-center h-full py-12 text-center space-y-4">
-                                        <div className="w-12 h-12 bg-emerald-900/30 border border-emerald-800 flex items-center justify-center">
-                                                          <CheckCircle2 className="h-6 w-6 text-emerald-400" />
-                                        </div>div>
-                                        <h2 className="text-xl font-display font-bold text-titanium-50">Anfrage erhalten!</h2>h2>
-                                        <p className="text-titanium-300 text-sm">Wir melden uns innerhalb von 48h mit einem Terminvorschlag.</p>p>
-                                        <Link to="/" className="mt-4 inline-flex items-center gap-2 text-sm text-security-400 hover:text-security-300">
-                                                          <ArrowLeft className="h-4 w-4" /> Zur Startseite
-                                        </Link>Link>
-                        </div>div>
-                      ) : (
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                                        <h2 className="font-display font-bold text-titanium-50 mb-2">Demo-Anfrage</h2>h2>
-                        
-                                        <div className="grid sm:grid-cols-2 gap-4">
-                                                          <div className="space-y-1">
-                                                                              <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider flex items-center gap-1">
-                                                                                                    <User className="h-3 w-3" /> Name *
-                                                                              </label>label>
-                                                                              <input
-                                                                                                      name="name"
-                                                                                                      value={form.name}
-                                                                                                      onChange={handleChange}
-                                                                                                      required
-                                                                                                      placeholder="Max Mustermann"
-                                                                                                      className="w-full px-3 py-2 bg-obsidian-950 border border-titanium-800 text-titanium-100 text-sm focus:outline-none focus:border-security-500 rounded-none"
-                                                                                                    />
-                                                          </div>div>
-                                                          <div className="space-y-1">
-                                                                              <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider flex items-center gap-1">
-                                                                                                    <Mail className="h-3 w-3" /> E-Mail *
-                                                                              </label>label>
-                                                                              <input
-                                                                                                      name="email"
-                                                                                                      type="email"
-                                                                                                      value={form.email}
-                                                                                                      onChange={handleChange}
-                                                                                                      required
-                                                                                                      placeholder="max@firma.de"
-                                                                                                      className="w-full px-3 py-2 bg-obsidian-950 border border-titanium-800 text-titanium-100 text-sm focus:outline-none focus:border-security-500 rounded-none"
-                                                                                                    />
-                                                          </div>div>
-                                        </div>div>
-                        
-                                        <div className="space-y-1">
-                                                          <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider flex items-center gap-1">
-                                                                              <Building2 className="h-3 w-3" /> Unternehmen *
-                                                          </label>label>
-                                                          <input
-                                                                                name="company"
-                                                                                value={form.company}
-                                                                                onChange={handleChange}
-                                                                                required
-                                                                                placeholder="Muster GmbH"
-                                                                                className="w-full px-3 py-2 bg-obsidian-950 border border-titanium-800 text-titanium-100 text-sm focus:outline-none focus:border-security-500 rounded-none"
-                                                                              />
-                                        </div>div>
-                        
-                                        <div className="space-y-1">
-                                                          <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider">Branche</label>label>
-                                                          <select
-                                                                                name="role"
-                                                                                value={form.role}
-                                                                                onChange={handleChange}
-                                                                                className="w-full px-3 py-2 bg-obsidian-950 border border-titanium-800 text-titanium-100 text-sm focus:outline-none focus:border-security-500 rounded-none"
-                                                                              >
-                                                                              <option value="">Bitte waehlen...</option>option>
-                                                                              <option value="healthtech">HealthTech / Medizin</option>option>
-                                                                              <option value="legal">Legal / Kanzlei</option>option>
-                                                                              <option value="fintech">FinTech / Bank / Versicherung</option>option>
-                                                                              <option value="behoerde">Behoerde / Public Sector</option>option>
-                                                                              <option value="other">Sonstiges</option>option>
-                                                          </select>select>
-                                        </div>div>
-                        
-                                        <div className="space-y-1">
-                                                          <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider">Paket-Interesse</label>label>
-                                                          <select
-                                                                                name="tier"
-                                                                                value={form.tier}
-                                                                                onChange={handleChange}
-                                                                                className="w-full px-3 py-2 bg-obsidian-950 border border-titanium-800 text-titanium-100 text-sm focus:outline-none focus:border-security-500 rounded-none"
-                                                                              >
-                                                                              <option value="">Noch nicht entschieden</option>option>
-                                                                              <option value="bronze">Bronze (29 EUR/Monat)</option>option>
-                                                                              <option value="silver">Silver (99 EUR/Monat)</option>option>
-                                                                              <option value="gold">Gold (299 EUR/Monat)</option>option>
-                                                                              <option value="enterprise">Enterprise (Auf Anfrage)</option>option>
-                                                          </select>select>
-                                        </div>div>
-                        
-                                        <div className="space-y-1">
-                                                          <label className="text-xs font-bold text-titanium-400 uppercase tracking-wider">Nachricht / Use Case</label>label>
-                                                          <textarea
-                                                                                name="message"
-                                                                                value={form.message}
-                                                                                onChange={handleChange}
-                                                                                rows={3}
-                                                                                placeholder="Kurze Beschreibung deines Use Case oder spezifische Fragen..."
-                                                                                className="w-full px-3 py-2 bg-obsidian-950 border border-titanium-800 text-titanium-100 text-sm focus:outline-none focus:border-security-500 rounded-none resize-none"
-                                                                              />
-                                        </div>div>
-                        
-                                        <p className="text-[11px] text-titanium-500">
-                                                          Mit dem Absenden stimmst du der Verarbeitung deiner Daten gemaess unserer{' '}
-                                                          <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklaerung</Link>Link> zu.
-                                        </p>p>
-                        
-                                        <button
-                                                            type="submit"
-                                                            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none"
-                                                          >
-                                                          Demo anfragen <ArrowRight className="h-4 w-4" />
-                                        </button>button>
-                        </form>form>
-                                            )}
-                                </div>div>
-                      </div>div>
-              </main>main>
-        
-              <footer className="border-t border-titanium-900 bg-obsidian-950 px-4 sm:px-6 py-8 mt-8">
-                      <div className="max-w-6xl mx-auto flex flex-wrap gap-4 text-xs text-titanium-500 justify-center">
-                                <Link to="/" className="hover:text-titanium-300">Startseite</Link>Link>
-                                <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>Link>
-                                <Link to="/pricing" className="hover:text-titanium-300">Preise</Link>Link>
-                                <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-300">privacy@...</a>a>
-                      </div>div>
-              </footer>footer>
-        </div>div>
-      );
-}</div>
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-titanium-900 bg-obsidian-950/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight text-titanium-100">
+              RealSync<span className="text-security-400">Dynamics</span>.AI
+            </span>
+          </Link>
+          <nav className="hidden items-center gap-8 text-sm font-medium text-titanium-300 md:flex">
+            <Link to="/agencies" className="hover:text-titanium-100 transition-colors">Agenturen</Link>
+            <Link to="/pricing" className="hover:text-titanium-100 transition-colors">Preise</Link>
+            <Link to="/dashboard" className="hover:text-titanium-100 transition-colors">Login</Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="mx-auto max-w-2xl px-6 py-20">
+        <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-security-400">
+          Demo-Anfrage
+        </p>
+        <h1 className="mb-4 text-4xl font-bold leading-tight text-titanium-100">
+          Sprechen Sie mit unserem Vertrieb
+        </h1>
+        <p className="mb-12 text-titanium-400">
+          Unser Team meldet sich innerhalb von einem Werktag bei Ihnen — individuell und ohne
+          Verkaufsdruck.
+        </p>
+
+        {submitted ? (
+          <div className="border border-security-500 bg-obsidian-900 p-10 text-center">
+            <h2 className="mb-4 text-2xl font-bold text-security-400">Vielen Dank!</h2>
+            <p className="text-titanium-300">
+              Wir haben Ihre Anfrage erhalten und melden uns innerhalb von 24 Stunden.
+            </p>
+            <Link
+              to="/"
+              className="mt-8 inline-block bg-security-500 px-6 py-3 text-obsidian-950 font-semibold hover:bg-security-400 transition-colors"
+            >
+              Zur Startseite
+            </Link>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            {/* Name */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="name">
+                Vollständiger Name *
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={form.name}
+                onChange={handleChange}
+                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
+                placeholder="Max Mustermann"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="email">
+                Geschäftliche E-Mail *
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={form.email}
+                onChange={handleChange}
+                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
+                placeholder="max@unternehmen.de"
+              />
+            </div>
+
+            {/* Company */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="company">
+                Unternehmen *
+              </label>
+              <input
+                id="company"
+                name="company"
+                type="text"
+                required
+                value={form.company}
+                onChange={handleChange}
+                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
+                placeholder="Mustermann GmbH"
+              />
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="phone">
+                Telefonnummer
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={form.phone}
+                onChange={handleChange}
+                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
+                placeholder="+49 30 123456"
+              />
+            </div>
+
+            {/* Employees */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="employees">
+                Anzahl Mitarbeiter
+              </label>
+              <select
+                id="employees"
+                name="employees"
+                value={form.employees}
+                onChange={handleChange}
+                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 focus:border-security-500 focus:outline-none"
+              >
+                <option value="">Bitte auswählen</option>
+                <option value="1-10">1–10</option>
+                <option value="11-50">11–50</option>
+                <option value="51-200">51–200</option>
+                <option value="201-1000">201–1.000</option>
+                <option value="1000+">1.000+</option>
+              </select>
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="message">
+                Ihre Nachricht
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={5}
+                value={form.message}
+                onChange={handleChange}
+                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none resize-none"
+                placeholder="Beschreiben Sie kurz Ihre Anforderungen..."
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="bg-security-500 py-4 text-obsidian-950 font-bold text-lg hover:bg-security-400 transition-colors"
+            >
+              Demo anfragen
+            </button>
+
+            <p className="text-xs text-titanium-600 text-center">
+              Mit dem Absenden stimmen Sie unserer{' '}
+              <Link to="/legal/privacy" className="underline hover:text-titanium-300">
+                Datenschutzerklärung
+              </Link>{' '}
+              zu.
+            </p>
+          </form>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-titanium-900 py-10">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <span className="text-sm text-titanium-500">
+            © 2025 RealSyncDynamics.AI — Alle Rechte vorbehalten
+          </span>
+          <div className="flex gap-6 text-sm text-titanium-500">
+            <Link to="/legal/privacy" className="hover:text-titanium-100 transition-colors">Datenschutz</Link>
+            <Link to="/legal/sub-processors" className="hover:text-titanium-100 transition-colors">Sub-Prozessoren</Link>
+            <Link to="/contact-sales" className="hover:text-titanium-100 transition-colors">Kontakt</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

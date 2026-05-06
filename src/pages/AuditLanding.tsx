@@ -53,6 +53,14 @@ export function AuditLanding() {
       const data = await resp.json();
       if (!resp.ok || !data.ok) throw new Error(data.error?.message ?? `HTTP ${resp.status}`);
       setReport(data as Report);
+      if (data.audit_id) {
+        // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
+        // Failures are intentionally swallowed — report is already shown in-browser.
+        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.audit_id}`, {
+          method: 'GET',
+          keepalive: true,
+        }).catch(() => { /* non-blocking */ });
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {

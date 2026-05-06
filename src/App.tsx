@@ -10,6 +10,7 @@ import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
 import { AiActFaq } from './pages/AiActFaq';
 import { SchremsIIErklaert } from './pages/SchremsIIErklaert';
+import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 import { KodeeView } from './features/kodee/KodeeView';
@@ -48,6 +49,7 @@ function RoutesWithTracking() {
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
+      <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

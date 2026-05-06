@@ -5,7 +5,11 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
+  // GitHub Pages serves project sites under <user>.github.io/<repo>/.
+  // VITE_BASE lets us override at build-time (e.g. for Netlify which serves at root).
+  const base = env.VITE_BASE ?? '/';
   return {
+    base,
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),

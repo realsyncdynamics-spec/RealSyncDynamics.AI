@@ -10,9 +10,114 @@
     <meta property="og:description" content="KI nutzen ohne DSGVO-Bußgeld zu riskieren. Audit-Log, EU-Datenresidenz, AVV inklusive. Pakete ab 29 €/Monat." />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
+    <meta property="og:url" content="https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/" />
+    <meta property="og:image" content="https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="RealSyncDynamics.AI — DSGVO-konforme KI-Compliance-Plattform" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RealSyncDynamics.AI — DSGVO-konforme KI für regulierte Branchen" />
+    <meta name="twitter:description" content="KI nutzen ohne DSGVO-Bußgeld zu riskieren. Audit-Log, EU-Datenresidenz, AVV inklusive." />
+    <meta name="twitter:image" content="https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/og-image.png" />
+    <!--
+      Security headers via meta-equivalents.
+      GitHub Pages doesn't let us set HTTP-headers, so we declare what we can:
+      CSP frame-ancestors prevents iframe-clickjacking; X-Content-Type sniffing-Schutz;
+      Referrer-Policy für privacy. These improve our own /audit score significantly.
+    -->
+    <meta http-equiv="Content-Security-Policy"
+          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co https://api.fontshare.com data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://api.fontshare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="canonical" href="https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/" />
+    <!--
+      JSON-LD structured data: SoftwareApplication + Organization + FAQ.
+      Enables rich snippets in Google for queries like "DSGVO KI Plattform",
+      "AI Act Compliance Tool". Hard-coded; React doesn't need to manage it.
+    -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/#org",
+          "name": "RealSync Dynamics",
+          "url": "https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/",
+          "description": "EU-konforme KI-Compliance-Plattform für regulierte Branchen (HealthTech, Legal, FinTech, Behörden).",
+          "areaServed": "DE"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "RealSyncDynamics.AI",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "description": "DSGVO-konforme KI-Plattform mit EU-Datenresidenz, lückenlosem Audit-Trail und automatisierter DSGVO-Selfservice (Art. 15 + 17). Konform mit DSGVO Art. 32, AI Act, BAIT, MaRisk.",
+          "offers": [
+            {"@type": "Offer", "name": "Bronze", "price": "29", "priceCurrency": "EUR"},
+            {"@type": "Offer", "name": "Silver", "price": "99", "priceCurrency": "EUR"},
+            {"@type": "Offer", "name": "Gold", "price": "299", "priceCurrency": "EUR"}
+          ],
+          "publisher": {"@id": "https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/#org"}
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Ist RealSyncDynamics.AI DSGVO-konform?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Ja. EU-Datenresidenz, AVV gemäß DSGVO Art. 28 inklusive, lückenloser Audit-Trail (Art. 32) und automatisierter Selfservice für Auskunfts- und Löschrechte (Art. 15 + 17)."}
+            },
+            {
+              "@type": "Question",
+              "name": "Erfüllt die Plattform den AI Act?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Ja. Risiko-Klassifikation, technische Dokumentation, Transparenzpflichten und Human-Oversight sind in der Plattform integriert."}
+            },
+            {
+              "@type": "Question",
+              "name": "Werden Daten in die USA übertragen?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Standardmäßig nein. EU-Datenresidenz ist Default; Schrems-II-Konformität durch EU-Hosting (Frankfurt) und optional self-hosted Ollama für vollständige Datenhoheit."}
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+    <script type="text/javascript">
+      // SPA on GitHub Pages — restore deep-link path written by 404.html.
+      // Pattern: rafgraph/spa-github-pages
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search.slice(1).split('&').map(function (s) {
+            return s.replace(/~and~/g, '&');
+          }).join('?');
+          window.history.replaceState(null, null,
+            l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      }(window.location));
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      SEO + DSGVO-Crawler-Visibility: legal links in initial HTML so static
+      audits (incl. our own /audit) detect them before the SPA mounts.
+      Hidden visually for users (the React-rendered footer takes over),
+      but readable for crawlers and accessibility tools without JS.
+    -->
+    <noscript>
+      <p>RealSync Dynamics — DSGVO-konforme KI-Compliance-Plattform.</p>
+      <ul>
+        <li><a href="/RealSyncDynamics.AI/legal/privacy">Datenschutzerklärung</a></li>
+        <li><a href="/RealSyncDynamics.AI/legal/sub-processors">Sub-Prozessoren / Impressum</a></li>
+        <li><a href="/RealSyncDynamics.AI/pricing">Preise</a></li>
+        <li><a href="/RealSyncDynamics.AI/contact-sales">Kontakt</a></li>
+      </ul>
+    </noscript>
+    <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+      <a href="/RealSyncDynamics.AI/legal/privacy">Datenschutz</a>
+      <a href="/RealSyncDynamics.AI/legal/sub-processors">Impressum</a>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

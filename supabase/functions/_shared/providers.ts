@@ -13,8 +13,25 @@
 import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
 import OpenAI from 'npm:openai@4.77.0';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-export type ProviderId = 'anthropic' | 'google' | 'openai';
+// Edge-Function-Project-Secrets müssen per Dashboard/CLI gesetzt werden.
+// Wenn nicht da: Fallback auf Supabase Vault via SECURITY-DEFINER-RPC.
+// service_role darf get_app_secret() aufrufen — der von Supabase auto-injizierte
+// SUPABASE_SERVICE_ROLE_KEY ist immer im Edge-Function-Env.
+async function getApiKey(envVar: string, vaultName: string): Promise<string | null> {
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const url = Deno.env.get('SUPABASE_URL');
+  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !srk) return null;
+  const admin = createClient(url, srk, { auth: { persistSession: false } });
+  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  if (error) return null;
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
+
+export type ProviderId = 'anthropic' | 'google' | 'openai' | 'ollama';
 
 export interface ProviderRequest {
   provider: ProviderId;
@@ -45,6 +62,7 @@ export async function callProvider(req: ProviderRequest): Promise<ProviderResult
     case 'anthropic': return await callAnthropic(req);
     case 'google':    return await callGoogle(req);
     case 'openai':    return await callOpenAI(req);
+    case 'ollama':    return await callOllama(req);
     default:
       throw new ProviderError(`unsupported provider: ${req.provider}`, 'PROVIDER_UNSUPPORTED');
   }
@@ -52,8 +70,8 @@ export async function callProvider(req: ProviderRequest): Promise<ProviderResult
 
 // ─── Anthropic ──────────────────────────────────────────────────────────────
 async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  if (!apiKey) throw new ProviderError('ANTHROPIC_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+  const apiKey = await getApiKey('ANTHROPIC_API_KEY', 'anthropic_api_key');
+  if (!apiKey) throw new ProviderError('ANTHROPIC_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
   const client = new Anthropic({ apiKey });
 
@@ -63,13 +81,20 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     ? [{ type: 'text' as const, text: req.systemPrompt, cache_control: { type: 'ephemeral' as const } }]
     : undefined;
 
-  const resp = await client.messages.create({
+  // Anthropic deprecated `temperature` for Claude 4.x+ models — passing it
+  // returns 400 invalid_request_error. Pass it only for older model IDs.
+  // deno-lint-ignore no-explicit-any
+  const params: any = {
     model: req.modelId,
     max_tokens: req.maxTokens,
-    temperature: req.temperature,
     system: systemBlocks,
     messages: [{ role: 'user', content: req.userPrompt }],
-  });
+  };
+  if (!/^claude-(opus|sonnet|haiku)-4/.test(req.modelId)) {
+    params.temperature = req.temperature;
+  }
+
+  const resp = await client.messages.create(params);
 
   // Concatenate all text blocks of the response.
   const text = resp.content
@@ -90,8 +115,9 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
 
 // ─── Google (Gemini) ────────────────────────────────────────────────────────
 async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
-  const apiKey = Deno.env.get('GEMINI_API_KEY') ?? Deno.env.get('GOOGLE_API_KEY');
-  if (!apiKey) throw new ProviderError('GEMINI_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+  const apiKey = (await getApiKey('GEMINI_API_KEY', 'gemini_api_key'))
+              ?? (await getApiKey('GOOGLE_API_KEY', 'google_api_key'));
+  if (!apiKey) throw new ProviderError('GEMINI_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
   const ai = new GoogleGenAI({ apiKey });
 
@@ -117,10 +143,80 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
   };
 }
 
+// ─── Ollama (self-hosted, EU-local) ─────────────────────────────────────────
+// Routed via Traefik with a BasicAuth middleware on ollama.realsyncdynamicsai.de.
+// Traefik can't natively validate Bearer tokens, so we stand on BasicAuth which
+// is server-agnostic and supported by every reverse-proxy out of the box.
+//
+// Secret format: OLLAMA_AUTH_TOKEN = "user:plaintext-password" (the same
+// plaintext password that was bcrypted into traefik's basicauth.users entry).
+//
+// The Ollama /api/chat endpoint streams by default — we request stream=false
+// so we can parse a single JSON body and stay aligned with the other
+// providers' synchronous shape.
+async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
+  const baseUrl = await getApiKey('OLLAMA_URL', 'ollama_url');
+  if (!baseUrl) throw new ProviderError('OLLAMA_URL not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
+
+  const cred = await getApiKey('OLLAMA_AUTH_TOKEN', 'ollama_auth_token');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cred) headers['Authorization'] = `Basic ${btoa(cred)}`;
+
+  const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+  if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });
+  messages.push({ role: 'user', content: req.userPrompt });
+
+  // CPU-only inference on the VPS can take 30-60s for a 200-token reply.
+  // Edge Functions cap at 150s — abort earlier so we surface a clean error.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+
+  let resp: Response;
+  try {
+    resp = await fetch(`${baseUrl.replace(/\/$/, '')}/api/chat`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: req.modelId,
+        messages,
+        stream: false,
+        options: {
+          temperature: req.temperature,
+          num_predict: req.maxTokens,
+        },
+      }),
+    });
+  } catch (e) {
+    clearTimeout(timeout);
+    const msg = (e as Error).name === 'AbortError'
+      ? 'Ollama request timed out (>120s)'
+      : `Ollama fetch failed: ${(e as Error).message}`;
+    throw new ProviderError(msg, 'PROVIDER_ERROR');
+  }
+  clearTimeout(timeout);
+
+  if (!resp.ok) {
+    const body = await resp.text().catch(() => '');
+    throw new ProviderError(`Ollama HTTP ${resp.status}: ${body.slice(0, 200)}`, 'PROVIDER_ERROR');
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const data: any = await resp.json();
+  const text: string = data?.message?.content ?? '';
+
+  return {
+    text,
+    inputTokens: data?.prompt_eval_count ?? 0,
+    outputTokens: data?.eval_count ?? 0,
+    cachedTokens: 0,
+  };
+}
+
 // ─── OpenAI (Chat Completions) ──────────────────────────────────────────────
 async function callOpenAI(req: ProviderRequest): Promise<ProviderResult> {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey) throw new ProviderError('OPENAI_API_KEY not set', 'PROVIDER_NOT_CONFIGURED');
+  const apiKey = await getApiKey('OPENAI_API_KEY', 'openai_api_key');
+  if (!apiKey) throw new ProviderError('OPENAI_API_KEY not set (env+vault)', 'PROVIDER_NOT_CONFIGURED');
 
   const client = new OpenAI({ apiKey });
 

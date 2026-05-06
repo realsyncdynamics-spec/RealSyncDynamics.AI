@@ -1,119 +1,193 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  ArrowLeft, Mail, CheckCircle2, AlertTriangle, Loader2, Send,
+} from 'lucide-react';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 interface FormState {
   name: string;
   email: string;
   company: string;
-  phone: string;
-  employees: string;
+  use_case: string;
   message: string;
 }
 
-const initialForm: FormState = { name: '', email: '', company: '', phone: '', employees: '', message: '' };
-
 export function ContactSales() {
-  const [form, setForm] = useState<FormState>(initialForm);
-  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState<FormState>({
+    name: '', email: '', company: '', use_case: '', message: '',
+  });
+  const [source, setSource] = useState('direct');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  // Capture source (utm_source / ?source / referrer) on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get('source') ?? params.get('utm_source');
+    if (s) {
+      setSource(s);
+    } else if (document.referrer) {
+      try {
+        const ref = new URL(document.referrer);
+        setSource(`ref:${ref.hostname}`);
+      } catch { /* ignore */ }
+    }
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  function handleChange(field: keyof FormState) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    };
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitted(true);
-  };
+    setLoading(true); setError(null);
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/sales-lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim() || undefined,
+          email: form.email.trim(),
+          company: form.company.trim() || undefined,
+          use_case: form.use_case || undefined,
+          message: form.message.trim() || undefined,
+          source,
+          path: window.location.pathname,
+        }),
+      });
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(body.error?.message ?? `HTTP ${resp.status}`);
+      setDone(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
+        <div className="max-w-md w-full bg-obsidian-900 border border-emerald-900 p-8 text-center rounded-none">
+          <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — wir melden uns.</h1>
+          <p className="text-sm text-titanium-300 leading-relaxed mb-5">
+            Innerhalb von 24 Stunden mit konkretem Termin-Vorschlag.
+            Falls Du parallel die Architektur ansehen willst — alles ist
+            transparent dokumentiert.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Link to="/legal/sub-processors"
+              className="text-sm text-security-400 hover:underline">→ Sub-Prozessoren</Link>
+            <Link to="/" className="text-sm text-security-400 hover:underline">→ Zurück zur Startseite</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      <header className="sticky top-0 z-50 border-b border-titanium-900 bg-obsidian-950/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link to="/" className="text-xl font-bold tracking-tight text-titanium-100">
-            RealSync<span className="text-security-400">Dynamics</span>.AI
-          </Link>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-titanium-300 md:flex">
-            <Link to="/agencies" className="hover:text-titanium-100">Agenturen</Link>
-            <Link to="/pricing" className="hover:text-titanium-100">Preise</Link>
-            <Link to="/dashboard" className="hover:text-titanium-100">Login</Link>
-          </nav>
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
+        <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
+            <Mail className="h-4 w-4 text-white" />
+          </div>
+          <div className="leading-tight">
+            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Demo / Kontakt</div>
+            <div className="text-[11px] text-titanium-400 font-medium">Antwort innerhalb 24h</div>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-6 py-20">
-        <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-security-400">Demo-Anfrage</p>
-        <h1 className="mb-4 text-4xl font-bold text-titanium-100">Sprechen Sie mit unserem Vertrieb</h1>
-        <p className="mb-12 text-titanium-400">Unser Team meldet sich innerhalb eines Werktags bei Ihnen.</p>
+      <main className="max-w-xl mx-auto px-4 sm:px-6 py-10">
+        <h1 className="font-display text-3xl font-bold text-titanium-50 tracking-tight mb-2">
+          Demo buchen
+        </h1>
+        <p className="text-sm text-titanium-400 leading-relaxed mb-8">
+          30 Minuten, kein Pitch — wir gehen die für Dich relevanten Features
+          live durch (eu_local-Modus, Audit-Log, n8n-Workflows, GDPR-Selfservice,
+          Multi-Tenant-Setup).
+        </p>
 
-        {submitted ? (
-          <div className="border border-security-500 bg-obsidian-900 p-10 text-center">
-            <h2 className="mb-4 text-2xl font-bold text-security-400">Vielen Dank!</h2>
-            <p className="text-titanium-300">Wir haben Ihre Anfrage erhalten und melden uns innerhalb von 24 Stunden.</p>
-            <Link to="/" className="mt-8 inline-block bg-security-500 px-6 py-3 text-obsidian-950 font-semibold hover:bg-security-400">Zur Startseite</Link>
+        {error && (
+          <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" /><span>{error}</span>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="name">Vollstandiger Name *</label>
-              <input id="name" name="name" type="text" required value={form.name} onChange={handleChange}
-                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
-                placeholder="Max Mustermann" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="email">Geschaftliche E-Mail *</label>
-              <input id="email" name="email" type="email" required value={form.email} onChange={handleChange}
-                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
-                placeholder="max@unternehmen.de" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="company">Unternehmen *</label>
-              <input id="company" name="company" type="text" required value={form.company} onChange={handleChange}
-                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
-                placeholder="Mustermann GmbH" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="phone">Telefonnummer</label>
-              <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange}
-                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none"
-                placeholder="+49 30 123456" />
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="employees">Anzahl Mitarbeiter</label>
-              <select id="employees" name="employees" value={form.employees} onChange={handleChange}
-                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 focus:border-security-500 focus:outline-none">
-                <option value="">Bitte auswahlen</option>
-                <option value="1-10">1-10</option>
-                <option value="11-50">11-50</option>
-                <option value="51-200">51-200</option>
-                <option value="201-1000">201-1.000</option>
-                <option value="1000+">1.000+</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-titanium-300" htmlFor="message">Ihre Nachricht</label>
-              <textarea id="message" name="message" rows={5} value={form.message} onChange={handleChange}
-                className="w-full border border-titanium-900 bg-obsidian-900 px-4 py-3 text-titanium-100 placeholder-titanium-600 focus:border-security-500 focus:outline-none resize-none"
-                placeholder="Beschreiben Sie kurz Ihre Anforderungen..." />
-            </div>
-            <button type="submit" className="bg-security-500 py-4 text-obsidian-950 font-bold text-lg hover:bg-security-400">Demo anfragen</button>
-            <p className="text-xs text-titanium-600 text-center">
-              Mit dem Absenden stimmen Sie unserer{' '}
-              <Link to="/legal/privacy" className="underline hover:text-titanium-300">Datenschutzerklarung</Link> zu.
-            </p>
-          </form>
         )}
-      </main>
 
-      <footer className="border-t border-titanium-900 py-10">
-        <div className="mx-auto max-w-7xl px-6 flex items-center justify-between">
-          <span className="text-sm text-titanium-500">2025 RealSyncDynamics.AI</span>
-          <div className="flex gap-6 text-sm text-titanium-500">
-            <Link to="/legal/privacy" className="hover:text-titanium-100">Datenschutz</Link>
-            <Link to="/legal/sub-processors" className="hover:text-titanium-100">Sub-Prozessoren</Link>
-            <Link to="/contact-sales" className="hover:text-titanium-100">Kontakt</Link>
-          </div>
-        </div>
-      </footer>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="E-Mail" required>
+            <input type="email" required value={form.email} onChange={handleChange('email')}
+              placeholder="dein@firma.de" autoComplete="email"
+              className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500" />
+          </Field>
+
+          <Field label="Name">
+            <input type="text" value={form.name} onChange={handleChange('name')}
+              placeholder="Vor- und Nachname" autoComplete="name"
+              className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500" />
+          </Field>
+
+          <Field label="Firma / Kanzlei / Behörde">
+            <input type="text" value={form.company} onChange={handleChange('company')}
+              placeholder="z. B. Kanzlei Müller GmbH" autoComplete="organization"
+              className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500" />
+          </Field>
+
+          <Field label="Use-Case">
+            <select value={form.use_case} onChange={handleChange('use_case')}
+              className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500">
+              <option value="">— bitte wählen —</option>
+              <option value="compliance">DSGVO / Compliance / Audit-Pflicht</option>
+              <option value="legal">Anwaltskanzlei / Mandantengeheimnis</option>
+              <option value="health">HealthTech / Patientendaten</option>
+              <option value="fintech">FinTech / BaFin</option>
+              <option value="public">Behörde / öffentlicher Sektor</option>
+              <option value="agency">Agentur / System-Integrator (White-Label)</option>
+              <option value="other">Etwas anderes</option>
+            </select>
+          </Field>
+
+          <Field label="Was sollen wir wissen? (optional)">
+            <textarea value={form.message} onChange={handleChange('message')} rows={4}
+              placeholder="Kurz: was wollt Ihr automatisieren oder absichern? Welcher Zeitrahmen? Etwa wieviele Endkunden / Dokumente / Anfragen?"
+              className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500 resize-y" />
+          </Field>
+
+          <button type="submit" disabled={loading || !form.email}
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-none">
+            {loading
+              ? (<><Loader2 className="h-4 w-4 animate-spin" /> Senden…</>)
+              : (<><Send className="h-4 w-4" /> Demo anfragen</>)}
+          </button>
+
+          <p className="text-[11px] text-titanium-500 text-center pt-2">
+            Mit dem Absenden willigst Du in die Verarbeitung Deiner Anfrage gemäß unserer{' '}
+            <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link> ein.
+            Source-Tracking via UTM (kein Cookie nötig).
+          </p>
+        </form>
+      </main>
     </div>
+  );
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-bold text-titanium-400 uppercase tracking-wider mb-1.5 block">
+        {label}{required && <span className="text-red-400 ml-1">*</span>}
+      </span>
+      {children}
+    </label>
   );
 }

@@ -10,10 +10,7 @@ import {
 } from 'lucide-react';
 import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gateway';
 import Markdown from 'react-markdown';
-import { WorkflowsView } from '../features/workflows/WorkflowsView';
-import { AssetsView } from '../features/assets/AssetsView';
 import { PromptsView } from '../features/workspace/PromptsView';
-import { SettingsView } from '../features/settings/SettingsView';
 import { BillingView } from '../features/billing/BillingView';
 
 type Message = { role: 'user' | 'ai', text: string, status?: 'loading' | 'error' | 'success' };
@@ -27,7 +24,7 @@ export function CreatorDashboard() {
   const [selectedModel, setSelectedModel] = useState<ModelProvider>('gemini');
   const [selectedMode, setSelectedMode] = useState<ThreadMode>('chat');
   const [isStrictEU, setIsStrictEU] = useState(true);
-  const [activeView, setActiveView] = useState<'chat' | 'assets' | 'workflows' | 'prompts' | 'settings' | 'billing'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'prompts' | 'billing'>('chat');
   const [useContext, setUseContext] = useState(false);
 
   const handleSend = async (overridePrompt?: string) => {
@@ -132,18 +129,12 @@ export function CreatorDashboard() {
               >
                 <MessageSquare className={`h-4 w-4 ${activeView === 'chat' ? 'text-security-400' : ''}`} /> Alle Chats
               </button>
-              <button 
-                onClick={() => setActiveView('assets')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'assets' ? 'bg-titanium-900 text-titanium-50' : 'text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50'}`}
+              <Link
+                to="/workflows"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
               >
-                <ShieldCheck className={`h-4 w-4 ${activeView === 'assets' ? 'text-security-400' : ''}`} /> C2PA Assets
-              </button>
-              <button
-                onClick={() => setActiveView('workflows')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'workflows' ? 'bg-titanium-900 text-titanium-50' : 'text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50'}`}
-              >
-                <FolderKanban className={`h-4 w-4 ${activeView === 'workflows' ? 'text-security-400' : ''}`} /> Workflows
-              </button>
+                <FolderKanban className="h-4 w-4" /> Workflows
+              </Link>
               <Link
                 to="/kodee"
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
@@ -172,12 +163,12 @@ export function CreatorDashboard() {
             >
               <Library className="h-4 w-4" /> Prompts & Vorlagen
             </button>
-            <button 
-              onClick={() => setActiveView('settings')}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'settings' ? 'bg-obsidian-800 text-titanium-50' : 'text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50'}`}
+            <Link
+              to="/settings"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
             >
               <Settings className="h-4 w-4" /> Einstellungen
-            </button>
+            </Link>
             <button
               onClick={() => setActiveView('billing')}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-none text-sm font-medium transition-colors ${activeView === 'billing' ? 'bg-obsidian-800 text-titanium-50' : 'text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50'}`}
@@ -196,6 +187,24 @@ export function CreatorDashboard() {
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
             >
               <Bot className="h-4 w-4 text-security-400" /> Team-Einladungen
+            </Link>
+            <Link
+              to="/settings/ai-residency"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
+            >
+              <ShieldCheck className="h-4 w-4 text-emerald-400" /> EU-lokal AI
+            </Link>
+            <Link
+              to="/settings/account"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors"
+            >
+              <ShieldCheck className="h-4 w-4 text-titanium-400" /> Mein Account · DSGVO
+            </Link>
+            <Link
+              to="/legal/privacy"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-xs font-medium text-titanium-500 hover:text-titanium-300 transition-colors"
+            >
+              Datenschutz · Sub-Prozessoren
             </Link>
           </div>
         </aside>
@@ -260,18 +269,18 @@ export function CreatorDashboard() {
                           <p className="text-xs text-titanium-400 mt-0.5">Analysiert die referenzierten URLs</p>
                         </div>
                       </button>
-                      <button onClick={() => handleSend("Bereite ein Betriebsrat-Informationspaket zur C2PA Einführung vor.")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-emerald-400 hover:shadow-md transition-all text-left group">
+                      <button onClick={() => handleSend("Bereite ein Betriebsrat-Informationspaket zur AI-Einführung am Arbeitsplatz vor (BetrVG § 87 Abs. 1 Nr. 6, AI Act).")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-emerald-400 hover:shadow-md transition-all text-left group">
                         <div className="p-2 bg-emerald-950/40 text-emerald-400 rounded-none group-hover:bg-security-500 group-hover:text-white transition-colors"><Shield className="h-4 w-4" /></div>
                         <div>
                           <h4 className="font-semibold text-titanium-50 text-sm">Betriebsrat-Paket</h4>
-                          <p className="text-xs text-titanium-400 mt-0.5">Generiert standardisiertes Info-Material</p>
+                          <p className="text-xs text-titanium-400 mt-0.5">BetrVG-konformes Info-Material zur AI-Einführung</p>
                         </div>
                       </button>
-                      <button onClick={() => handleSend("Entwickle einen Policy-Blueprint für den CreatorSeal.")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-purple-400 hover:shadow-md transition-all text-left group">
+                      <button onClick={() => handleSend("Entwickle einen DSGVO-Policy-Blueprint mit AVV-Vorlage und Datenfluss-Diagramm.")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-purple-400 hover:shadow-md transition-all text-left group">
                         <div className="p-2 bg-security-950/40 text-security-400 rounded-none group-hover:bg-purple-600 group-hover:text-white transition-colors"><FileText className="h-4 w-4" /></div>
                         <div>
-                          <h4 className="font-semibold text-titanium-50 text-sm">Policy-Blueprint</h4>
-                          <p className="text-xs text-titanium-400 mt-0.5">Erstellt C2PA Compliance Richtlinien</p>
+                          <h4 className="font-semibold text-titanium-50 text-sm">DSGVO-Policy-Blueprint</h4>
+                          <p className="text-xs text-titanium-400 mt-0.5">AVV-Template + Datenfluss-Dokumentation</p>
                         </div>
                       </button>
                       <button onClick={() => handleSend("Skizziere die Architektur für die LocalFlow On-Premise Integration.")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-amber-400 hover:shadow-md transition-all text-left group">
@@ -535,10 +544,8 @@ export function CreatorDashboard() {
           </>
         ) : (
           <div className="flex-1 overflow-y-auto bg-obsidian-950">
-            {activeView === 'assets' && <AssetsView />}
-            {activeView === 'workflows' && <div className="p-4 sm:p-6 lg:p-8"><WorkflowsView /></div>}
+            {/* assets view (CreatorSeal/C2PA) was retired — see PR for compliance reasons */}
             {activeView === 'prompts' && <PromptsView />}
-            {activeView === 'settings' && <SettingsView />}
             {activeView === 'billing' && <BillingView />}
           </div>
         )}

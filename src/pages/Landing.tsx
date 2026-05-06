@@ -13,8 +13,8 @@ export function Landing() {
       <Header />
       <main>
         <Hero />
-        <WaitlistSection />         
-                  <RegulatoryPressure />
+        <WaitlistSection />
+        <RegulatoryPressure />
         <WhatWeDo />
         <Capabilities />
         <Pricing />
@@ -39,6 +39,7 @@ function Header() {
           <span className="font-display font-bold text-titanium-50 tracking-tight">RealSyncDynamics.AI</span>
         </div>
         <nav className="flex items-center gap-2">
+          <Link to="/audit" className="hidden sm:inline px-3 py-1.5 text-sm text-emerald-300 hover:text-emerald-200 font-semibold">DSGVO-Audit</Link>
           <a href="#leistungen" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Leistungen</a>
           <a href="#preise" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Preise</a>
           <Link to="/agencies" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Agenturen</Link>
@@ -199,7 +200,7 @@ function Capabilities() {
         'Audit-Log: Provider, Modell, Tokens, Kosten, Residenz pro Call',
         'CSV/PDF-Export für Datenschutzbeauftragte',
         'AVV / DPA inklusive (Sub-Prozessoren öffentlich)',
-        'C2PA-Provenance für AI-generierte Inhalte',
+        'Auskunfts- + Lösch-API (DSGVO Art. 15 / 17)',
       ],
     },
     {
@@ -465,6 +466,8 @@ function Footer() {
         <div className="flex flex-wrap gap-4">
           <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
           <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Prozessoren</Link>
+          <Link to="/legal/avv" className="hover:text-titanium-300">AVV-Template</Link>
+          <Link to="/legal/compliance-matrix" className="hover:text-titanium-300">Compliance-Matrix</Link>
           <Link to="/pricing" className="hover:text-titanium-300">Preise</Link>
           <Link to="/contact-sales" className="hover:text-titanium-300">Kontakt</Link>
           <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-300">privacy@…</a>

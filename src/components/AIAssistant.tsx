@@ -66,7 +66,7 @@ export function AIAssistant() {
             Sovereign Copilot
           </h2>
           <p className="mt-4 text-lg text-titanium-400 font-light">
-            Ein dediziertes API-Gateway. Wählen Sie Ihr favorisiertes Modell für sichere C2PA- und Architektur-Analysen.
+            Ein dediziertes API-Gateway. Wählen Sie Ihr favorisiertes Modell für DSGVO-konforme Compliance- und Architektur-Analysen.
           </p>
         </div>
 

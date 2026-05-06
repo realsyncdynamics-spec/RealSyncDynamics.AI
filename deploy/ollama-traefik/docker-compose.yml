@@ -1,0 +1,198 @@
+# Ollama + Open WebUI hinter dem bestehenden Host-Traefik.
+#
+# Architektur:
+#
+#   [internet] ─TLS─→ Host-Traefik ─→ ollama.realsyncdynamicsai.de
+#                                       │ (BasicAuth-Middleware)
+#                                       ▼
+#                                     ollama:11434  (interne Compose-Net)
+#                                       ▲
+#                                       │ (kein Auth, internes Netz)
+#                                       │
+#                       chat.realsyncdynamicsai.de
+#                                       │ (Open WebUI eigene Login/API-Keys)
+#                                       ▼
+#                                     open-webui:8080
+#
+# Routing rein über Traefik-Labels — kein Caddy, kein PathPrefix.
+# Ollama-API ist via BasicAuth gegated (Traefik-native, ohne Plugin).
+# Open WebUI bringt eigene Auth mit (erste Registrierung wird Admin).
+#
+# Voraussetzungen auf dem VPS:
+#   - Docker + docker-compose v2
+#   - Bestehender Host-Traefik mit Docker-Provider + Let's-Encrypt-Resolver
+#   - Externes Docker-Netz (TRAEFIK_NETWORK in .env)
+#   - DNS A-Records ollama + chat → 194.163.130.123
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kodee-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_KEEP_ALIVE: "30m"
+    networks:
+      - internal
+      - traefik_proxy
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: ollama.realsyncdynamicsai.de ─────────────────────────────
+      - "traefik.http.routers.kodee-ollama.rule=Host(`ollama.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-ollama.entrypoints=websecure"
+      - "traefik.http.routers.kodee-ollama.tls=true"
+      - "traefik.http.routers.kodee-ollama.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-ollama.service=kodee-ollama"
+      - "traefik.http.routers.kodee-ollama.middlewares=kodee-ollama-auth"
+
+      # ── BasicAuth Middleware (Traefik-native) ────────────────────────────
+      # Format: user:bcrypt-hash, generiert per:
+      #   htpasswd -nbB <USER> "$(openssl rand -base64 24)"
+      - "traefik.http.middlewares.kodee-ollama-auth.basicauth.users=${OLLAMA_BASIC_AUTH}"
+      - "traefik.http.middlewares.kodee-ollama-auth.basicauth.realm=Kodee Ollama"
+
+      # ── Service ──────────────────────────────────────────────────────────
+      - "traefik.http.services.kodee-ollama.loadbalancer.server.port=11434"
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: kodee-open-webui
+    restart: unless-stopped
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - open_webui_data:/app/backend/data
+    environment:
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      WEBUI_SECRET_KEY: "${WEBUI_SECRET_KEY:?WEBUI_SECRET_KEY must be set in .env}"
+      # Disable signup nachdem Du Dich als Admin registriert hast — siehe README
+      ENABLE_SIGNUP: "${ENABLE_SIGNUP:-true}"
+    networks:
+      - internal
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: chat.realsyncdynamicsai.de ───────────────────────────────
+      - "traefik.http.routers.kodee-chat.rule=Host(`chat.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-chat.entrypoints=websecure"
+      - "traefik.http.routers.kodee-chat.tls=true"
+      - "traefik.http.routers.kodee-chat.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-chat.service=kodee-chat"
+
+      # Open WebUI hat eigene Auth — kein Traefik-Middleware-Gate hier.
+      - "traefik.http.services.kodee-chat.loadbalancer.server.port=8080"
+
+      # ── Router: realsyncdynamicsai.de (Apex) → frontend container ────────
+      # Vite-build wird via GitHub Actions in /var/www/realsyncdynamicsai.de/dist
+      # auf dem VPS rsynct, der frontend-Container served das.
+      - "traefik.http.routers.kodee-apex.rule=Host(`realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-apex.entrypoints=websecure"
+      - "traefik.http.routers.kodee-apex.tls=true"
+      - "traefik.http.routers.kodee-apex.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-apex.service=kodee-frontend"
+
+  frontend:
+    image: nginx:1.27-alpine
+    container_name: kodee-frontend
+    restart: unless-stopped
+    volumes:
+      # Wird vom GitHub Actions Deploy via rsync@deploy gefüllt (siehe deploy/README.md)
+      - /var/www/realsyncdynamicsai.de/dist:/usr/share/nginx/html:ro
+      - ./frontend.nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      - "traefik.http.routers.kodee-frontend.rule=Host(`realsyncdynamicsai.de`) || Host(`www.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-frontend.entrypoints=websecure"
+      - "traefik.http.routers.kodee-frontend.tls=true"
+      - "traefik.http.routers.kodee-frontend.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-frontend.service=kodee-frontend"
+      - "traefik.http.services.kodee-frontend.loadbalancer.server.port=80"
+      - "traefik.http.services.kodee-frontend.loadbalancer.passhostheader=true"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: kodee-n8n
+    restart: unless-stopped
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      # Identität / URLs
+      N8N_HOST: "n8n.realsyncdynamicsai.de"
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: "https"
+      WEBHOOK_URL: "https://n8n.realsyncdynamicsai.de/"
+      N8N_EDITOR_BASE_URL: "https://n8n.realsyncdynamicsai.de/"
+
+      # Auth — n8n eigene User-Verwaltung (erste Registrierung wird Admin)
+      N8N_USER_MANAGEMENT_DISABLED: "false"
+      N8N_BASIC_AUTH_ACTIVE: "false"
+      # Optional: Initial-Owner über Setup-Page; alternativ via Env vorgeben
+      # N8N_USER_MANAGEMENT_JWT_SECRET wird automatisch generiert wenn nicht gesetzt
+
+      # Encryption für Workflow-Credentials in der n8n-DB
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY must be set in .env}"
+
+      # Telemetrie + Diagnostics aus
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+
+      # Timezone
+      GENERIC_TIMEZONE: "Europe/Berlin"
+      TZ: "Europe/Berlin"
+
+      # Logging
+      N8N_LOG_LEVEL: "info"
+
+      # CORS — RealSync Frontend darf n8n-API direkt callen (für Embeds später)
+      N8N_DISABLE_PRODUCTION_MAIN_PROCESS: "false"
+    networks:
+      - internal
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: n8n.realsyncdynamicsai.de ────────────────────────────────
+      - "traefik.http.routers.kodee-n8n.rule=Host(`n8n.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.kodee-n8n.entrypoints=websecure"
+      - "traefik.http.routers.kodee-n8n.tls=true"
+      - "traefik.http.routers.kodee-n8n.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.kodee-n8n.service=kodee-n8n"
+      - "traefik.http.services.kodee-n8n.loadbalancer.server.port=5678"
+
+      # WebSocket-Support (n8n Editor nutzt WS für Live-Updates)
+      - "traefik.http.services.kodee-n8n.loadbalancer.passhostheader=true"
+
+volumes:
+  ollama_models:
+    name: kodee_ollama_models
+  open_webui_data:
+    name: kodee_open_webui_data
+  n8n_data:
+    name: kodee_n8n_data
+
+networks:
+  internal:
+    driver: bridge
+  traefik_proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK}

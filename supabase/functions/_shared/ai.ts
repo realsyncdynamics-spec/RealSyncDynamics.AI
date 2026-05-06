@@ -43,8 +43,9 @@ export class AiInvokeError extends Error {
 interface ToolRow {
   id: string;
   key: string;
-  model_provider: 'anthropic' | 'google' | 'openai';
+  model_provider: 'anthropic' | 'google' | 'openai' | 'ollama';
   model_id: string;
+  ollama_model_id: string | null;
   system_prompt: string | null;
   max_tokens: number;
   temperature: number;
@@ -52,6 +53,24 @@ interface ToolRow {
   cost_output_per_million_usd: number;
   required_entitlement_key: string | null;
   enabled: boolean;
+}
+
+type Residency = 'cloud' | 'eu_local';
+
+async function resolveResidency(
+  admin: SupabaseClient,
+  tenantId: string,
+  userId: string | null,
+): Promise<Residency> {
+  const { data, error } = await admin.rpc('resolve_ai_residency', {
+    p_tenant_id: tenantId,
+    p_user_id: userId,
+  });
+  if (error) {
+    console.error('resolve_ai_residency failed, defaulting to cloud:', error.message);
+    return 'cloud';
+  }
+  return data === 'eu_local' ? 'eu_local' : 'cloud';
 }
 
 export async function runAiTool(
@@ -114,12 +133,30 @@ export async function runAiTool(
     });
   }
 
+  // Resolve effective data residency (tenant policy > user pref > default 'cloud')
+  // and override the tool's provider when the caller opted into eu_local routing.
+  const residency = await resolveResidency(admin, tenantId, userId);
+  let effectiveProvider = tool.model_provider;
+  let effectiveModelId  = tool.model_id;
+  if (residency === 'eu_local') {
+    if (!tool.ollama_model_id) {
+      throw new AiInvokeError(
+        `tool ${tool.key} is not available in EU-local mode`,
+        'LOCAL_UNAVAILABLE',
+        503,
+        { tool_key: tool.key },
+      );
+    }
+    effectiveProvider = 'ollama';
+    effectiveModelId  = tool.ollama_model_id;
+  }
+
   // Call provider
   const start = performance.now();
   try {
     const result = await callProvider({
-      provider: tool.model_provider,
-      modelId: tool.model_id,
+      provider: effectiveProvider,
+      modelId: effectiveModelId,
       systemPrompt: tool.system_prompt,
       userPrompt: input,
       maxTokens: tool.max_tokens,
@@ -127,9 +164,12 @@ export async function runAiTool(
     });
     const durationMs = Math.round(performance.now() - start);
 
-    const costUsd =
-      (result.inputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
-      (result.outputTokens / 1_000_000) * Number(tool.cost_output_per_million_usd);
+    // Local inference is free at the per-call level (paid for via VPS),
+    // so zero-out cost when the residency override kicked in.
+    const costUsd = effectiveProvider === 'ollama'
+      ? 0
+      : (result.inputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
+        (result.outputTokens / 1_000_000) * Number(tool.cost_output_per_million_usd);
 
     const { data: run } = await admin.from('ai_tool_runs').insert({
       tenant_id: tenantId,
@@ -142,7 +182,7 @@ export async function runAiTool(
       cost_usd: costUsd,
       duration_ms: durationMs,
       status: 'success',
-      metadata: opts.metadata ?? {},
+      metadata: { ...(opts.metadata ?? {}), residency, provider: effectiveProvider },
     }).select('id').single();
 
     const totalTokens = result.inputTokens + result.outputTokens;
@@ -184,13 +224,14 @@ export async function runAiTool(
       status: 'error',
       error_code: code,
       error_message: message,
-      metadata: opts.metadata ?? {},
+      metadata: { ...(opts.metadata ?? {}), residency, provider: effectiveProvider },
     });
 
     const status = code === 'PROVIDER_NOT_CONFIGURED' ? 503
                  : code === 'PROVIDER_NOT_IMPLEMENTED' ? 501
                  : code === 'PROVIDER_ERROR' ? 502
                  : code === 'QUOTA_EXCEEDED' ? 402
+                 : code === 'LOCAL_UNAVAILABLE' ? 503
                  : 500;
     throw new AiInvokeError(message, code, status);
   }

@@ -107,6 +107,7 @@ export function PricingPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+        <PilotBanner />
         <div className="text-center mb-12">
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-titanium-50 mb-3">
             Pläne & Preise
@@ -119,6 +120,25 @@ export function PricingPage() {
 
         <AuthGate>{(_session) => <Tiles />}</AuthGate>
       </main>
+    </div>
+  );
+}
+
+function PilotBanner() {
+  const isPilot = new URLSearchParams(window.location.search).get('pilot') === 'true';
+  if (!isPilot) return null;
+  return (
+    <div className="max-w-3xl mx-auto mb-10 p-4 sm:p-5 bg-emerald-950/40 border border-emerald-700 rounded-none flex items-start gap-3">
+      <div className="text-2xl shrink-0">🎟️</div>
+      <div>
+        <div className="font-display font-bold text-emerald-200 text-sm sm:text-base mb-1">
+          Pilot-Modus aktiv — 14 Tage kostenlos
+        </div>
+        <div className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed">
+          Beim Checkout wird kein Geld eingezogen. Stripe rechnet erst ab Tag 15 ab.
+          Vorher jederzeit kündbar im Customer Portal.
+        </div>
+      </div>
     </div>
   );
 }

@@ -277,14 +277,14 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
 }
 
 function ShareBlock({ report }: { report: Report }) {
-  const landingUrl = 'https://realsyncdynamicsai.de/audit';
+  const shareUrl = `${window.location.origin}${import.meta.env.BASE_URL}audit/share/${report.audit_id}`.replace(/\/+/g, '/').replace(':/', '://');
   const shareText = report.score >= 80
-    ? `Meine Website hat ${report.score}/100 im DSGVO-Audit von RealSyncDynamics.AI erreicht. Wie schneidet Deine ab?`
-    : `${report.issues.length} DSGVO-Schwachstellen auf meiner Website (Score ${report.score}/100). Kostenloser Check via RealSyncDynamics.AI:`;
-  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(landingUrl)}`;
-  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(landingUrl)}`;
+    ? `Meine Website hat ${report.score}/100 im DSGVO-Audit von RealSyncDynamics.AI erreicht. Hier ist der Report:`
+    : `${report.issues.length} DSGVO-Schwachstellen auf meiner Website (Score ${report.score}/100). Vollständiger Report:`;
+  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+  const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
   const copyLink = () => {
-    navigator.clipboard?.writeText(`${shareText} ${landingUrl}`).catch(() => {});
+    navigator.clipboard?.writeText(`${shareText} ${shareUrl}`).catch(() => {});
   };
   return (
     <div className="bg-obsidian-900 border border-titanium-800 p-5 rounded-none">

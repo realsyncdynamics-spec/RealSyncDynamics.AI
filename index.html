@@ -26,6 +26,25 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      SEO + DSGVO-Crawler-Visibility: legal links in initial HTML so static
+      audits (incl. our own /audit) detect them before the SPA mounts.
+      Hidden visually for users (the React-rendered footer takes over),
+      but readable for crawlers and accessibility tools without JS.
+    -->
+    <noscript>
+      <p>RealSync Dynamics — DSGVO-konforme KI-Compliance-Plattform.</p>
+      <ul>
+        <li><a href="/RealSyncDynamics.AI/legal/privacy">Datenschutzerklärung</a></li>
+        <li><a href="/RealSyncDynamics.AI/legal/sub-processors">Sub-Prozessoren / Impressum</a></li>
+        <li><a href="/RealSyncDynamics.AI/pricing">Preise</a></li>
+        <li><a href="/RealSyncDynamics.AI/contact-sales">Kontakt</a></li>
+      </ul>
+    </noscript>
+    <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+      <a href="/RealSyncDynamics.AI/legal/privacy">Datenschutz</a>
+      <a href="/RealSyncDynamics.AI/legal/sub-processors">Impressum</a>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -14,13 +14,15 @@ import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
 import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
+import { CookieConsentSdk } from './pages/CookieConsentSdk';
+import { AuditPro } from './pages/AuditPro';
+import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
 import { CreatorDashboard } from './pages/CreatorDashboard';
 // Compliance Tools
 import { AvvGenerator } from './pages/AvvGenerator';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
-import { MeldepflichtTimer } from './pages/MeldepflichtTimer';
 import { TomGenerator } from './pages/TomGenerator';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
@@ -67,12 +69,17 @@ function RoutesWithTracking() {
       <Route path="/case-studies" element={<CaseStudies />} />
       <Route path="/ressourcen" element={<Resources />} />
       <Route path="/resources" element={<Resources />} />
+      <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
+      <Route path="/audit-pro" element={<AuditPro />} />
+      <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
+      <Route path="/tools/avv-generator" element={<AvvGenerator />} />
       <Route path="/vvt-wizard" element={<VvtWizard />} />
+      <Route path="/tools/vvt-wizard" element={<VvtWizard />} />
       <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
-      <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
+      <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
       <Route path="/tom-generator" element={<TomGenerator />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
@@ -112,4 +119,4 @@ export default function App() {
       </BrowserRouter>
     </TenantProvider>
   );
-      }
+}

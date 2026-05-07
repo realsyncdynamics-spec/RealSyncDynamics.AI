@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -19,7 +19,8 @@ import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
-import { CreatorDashboard } from './pages/CreatorDashboard';
+// CreatorDashboard ist auth-gated → lazy
+const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { VvtWizard } from './pages/VvtWizard';
@@ -60,30 +61,32 @@ import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
 import { EuAiActCheck } from './pages/seo/EuAiActCheck';
 import { CookieCompliance } from './pages/seo/CookieCompliance';
-// Features
-import { KodeeView } from './features/kodee/KodeeView';
-import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
-import { UsageView } from './features/billing/UsageView';
+// Public Legal-Pages bleiben eager (SEO + small bundle)
 import { PricingPage } from './features/billing/PricingPage';
-import { InvitesView } from './features/tenants/InvitesView';
-import { AcceptInviteView } from './features/tenants/AcceptInviteView';
-import { AiResidencySettings } from './features/settings/AiResidencySettings';
-import { AccountSettings } from './features/settings/AccountSettings';
-import { ApiKeysSettings } from './features/settings/ApiKeysSettings';
-import { SettingsView } from './features/settings/SettingsView';
-import { WorkflowsView } from './features/workflows/WorkflowsView';
-import { MarketGapsView } from './features/market/MarketGapsView';
-import { OutreachView } from './features/outreach/OutreachView';
-import { AnalyticsView } from './features/analytics/AnalyticsView';
-import { LeadsView } from './features/admin/LeadsView';
-import { SystemHealthView } from './features/admin/SystemHealthView';
-import { CustomersView } from './features/admin/CustomersView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
 import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { LegalMethodology } from './features/legal/LegalMethodology';
+
+// Auth-gated Features → lazy. Reduzieren Initial-Bundle für public Audit-Page.
+const KodeeView = lazy(() => import('./features/kodee/KodeeView').then((m) => ({ default: m.KodeeView })));
+const ConnectionsView = lazy(() => import('./features/kodee/connections/ConnectionsView').then((m) => ({ default: m.ConnectionsView })));
+const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => ({ default: m.UsageView })));
+const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
+const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
+const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
+const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
+const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
+const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
+const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
+const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
+const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
+const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
+const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
+const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
+const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 import { Limits } from './pages/Limits';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
@@ -92,9 +95,18 @@ import { initMarketingPixels } from './lib/pixels';
 
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
+function LazyFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-obsidian-950 text-titanium-400 text-sm">
+      Lade …
+    </div>
+  );
+}
+
 function RoutesWithTracking() {
   useTrackPageview();
   return (
+    <Suspense fallback={<LazyFallback />}>
     <Routes>
       {/* Public */}
       <Route path="/" element={<Landing />} />
@@ -219,6 +231,7 @@ function RoutesWithTracking() {
       <Route path="/grenzen" element={<Limits />} />
       <Route path="/limits" element={<Limits />} />
     </Routes>
+    </Suspense>
   );
 }
 

@@ -176,6 +176,21 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://realsyncdynamicsai.de/api</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/integrations</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/steuerberater</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
     <loc>https://realsyncdynamicsai.de/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

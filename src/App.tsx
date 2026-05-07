@@ -52,6 +52,9 @@ import { Marktanalyse } from './pages/Marktanalyse';
 import { EducationLanding } from './pages/EducationLanding';
 import { HrSoftwareLanding } from './pages/HrSoftwareLanding';
 import { IubendaAlternative } from './pages/IubendaAlternative';
+import { ApiDocs } from './pages/ApiDocs';
+import { Integrations } from './pages/Integrations';
+import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -145,6 +148,13 @@ function RoutesWithTracking() {
       <Route path="/personalwesen" element={<HrSoftwareLanding />} />
       {/* More Competitor-Alternatives */}
       <Route path="/iubenda-alternative" element={<IubendaAlternative />} />
+      {/* API + Integrations + Niche */}
+      <Route path="/api" element={<ApiDocs />} />
+      <Route path="/api-docs" element={<ApiDocs />} />
+      <Route path="/integrations" element={<Integrations />} />
+      <Route path="/integrationen" element={<Integrations />} />
+      <Route path="/steuerberater" element={<SteuerberaterLanding />} />
+      <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

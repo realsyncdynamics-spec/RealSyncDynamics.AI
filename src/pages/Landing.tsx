@@ -153,7 +153,7 @@ export function Landing() {
     { icon: '🛡️', title: 'TOM-Generator', desc: 'Technisch-organisatorische Maßnahmen', badge: 'Art. 32', path: '/tom-generator' },
     { icon: '📄', title: 'DSE-Generator', desc: 'Datenschutzerklärung Art. 13/14', badge: 'Art. 13', path: '/datenschutz-generator' },
     { icon: '⚖️', title: 'DSFA-Wizard', desc: 'Datenschutz-Folgenabschätzung', badge: 'Art. 35', path: '/dsfa-wizard' },
-    { icon: '💶', title: 'Bußgeld-Rechner', desc: 'Bußgeldrisiko kalkulieren', badge: 'Art. 83', path: '/busseld-rechner' },
+    { icon: '💶', title: 'Bußgeld-Simulator', desc: 'Bußgeldrahmen simulieren (Bandbreite)', badge: 'Art. 83', path: '/busseld-rechner' },
     { icon: '🤖', title: 'AI Act Klassifikator', desc: 'EU AI Act Risikobewertung', badge: 'EU AI Act', path: '/ai-act-klassifikator' },
   ];
 

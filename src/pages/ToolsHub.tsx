@@ -84,9 +84,9 @@ export function ToolsHub() {
     },
     {
       icon: '⚖️',
-      title: 'DSGVO-Bußgeldrechner',
-      subtitle: 'Bußgeld-Risiko nach Art. 83 DSGVO schätzen',
-      desc: 'Schätzen Sie das Bußgeldrisiko Ihres Unternehmens — basierend auf Verstoßtyp, Umsatz und Schwere.',
+      title: 'DSGVO-Bußgeld-Simulator',
+      subtitle: 'Bußgeldrahmen-Simulation nach Art. 83 DSGVO',
+      desc: 'Educational Tool — Bandbreiten-Simulation auf Basis Verstoßtyp, Umsatz, Schwere. Keine Vorhersage, keine Rechtsberatung.',
       href: '/busseld-rechner',
       badge: 'Art. 83 DSGVO',
       badgeColor: '#3b1515',

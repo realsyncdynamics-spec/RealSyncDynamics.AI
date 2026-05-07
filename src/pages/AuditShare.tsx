@@ -9,6 +9,11 @@ import { HumanVerificationGate } from '../components/HumanVerificationGate';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
+// Versions-Tags für Audit-Engine + Tracker-DB. Sichtbar im Report für
+// Reproduzierbarkeit. Bei Major-Release in /changelog dokumentieren.
+const AUDIT_ENGINE_VERSION = '2026.05.0';
+const TRACKER_DB_VERSION = '2026.05.0 (EasyList + Disconnect.me + DACH-Custom)';
+
 interface HistoryPoint {
   score: number;
   severity: string;
@@ -116,7 +121,20 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
       <div className="text-center mb-8">
         <div className="text-xs text-titanium-400 uppercase tracking-wider mb-2">Geteilter Audit-Report</div>
         <h1 className="text-2xl sm:text-3xl font-display font-bold text-titanium-50 mb-1">{audit.domain}</h1>
-        <div className="text-xs text-titanium-500">geprüft am {new Date(audit.created_at).toLocaleDateString('de-DE')}</div>
+        <div className="text-xs text-titanium-500">
+          geprüft am {new Date(audit.created_at).toLocaleDateString('de-DE')}
+        </div>
+        <div className="mt-2 inline-flex flex-wrap items-center gap-2 text-[10px] text-titanium-500 font-mono">
+          <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none">
+            audit-engine: {AUDIT_ENGINE_VERSION}
+          </span>
+          <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none">
+            tracker-db: {TRACKER_DB_VERSION}
+          </span>
+          <Link to="/legal/methodology" className="text-titanium-400 hover:text-titanium-200 underline">
+            Methodik
+          </Link>
+        </div>
       </div>
 
       <div className={`p-6 sm:p-8 ${config.bg} border ${config.border} rounded-none`}>

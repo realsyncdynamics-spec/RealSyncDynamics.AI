@@ -34,6 +34,7 @@ import { Logo } from '../components/Logo';
 import { ArchitectureDiagram } from '../components/ArchitectureDiagram';
 import { LiveProductDemo } from '../components/LiveProductDemo';
 import { IdealCustomers } from '../components/IdealCustomers';
+import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
 
 export function Landing() {
   return (
@@ -50,6 +51,7 @@ export function Landing() {
         <TrustSection />
         <ProofStats />
         <IdealCustomers />
+        <ThreeStepDsgvoSection />
         <PricingPreview />
         <ClosingCta />
       </main>
@@ -755,6 +757,7 @@ function PricingPreview() {
       to: '/audit',
       cta: 'Starten',
       highlight: false,
+      managed: false,
     },
     {
       name: 'Team',
@@ -764,6 +767,23 @@ function PricingPreview() {
       to: '/pricing?tier=team',
       cta: 'Pilot starten',
       highlight: true,
+      managed: false,
+    },
+    {
+      name: 'Managed Website',
+      price: 'ab € 99',
+      sub: 'pro Monat · Audit + Rebuild + Betrieb',
+      features: [
+        'Voller Audit Ihrer bestehenden Site',
+        'Automatischer Neuaufbau auf EU-Infrastruktur',
+        'EU-Hosting · TLS · Security-Header · Monitoring',
+        'Integriertes Consent-Management',
+        '2× Re-Audit pro Jahr · AVV inklusive',
+      ],
+      to: '/dsgvo-website',
+      cta: 'Website-as-a-Service starten',
+      highlight: false,
+      managed: true,
     },
     {
       name: 'Enterprise',
@@ -773,6 +793,7 @@ function PricingPreview() {
       to: '/contact-sales?intent=enterprise',
       cta: 'Sales kontaktieren',
       highlight: false,
+      managed: false,
     },
   ];
 
@@ -784,15 +805,26 @@ function PricingPreview() {
           title={<>Skalierbar von Einzelprüfung bis Enterprise-Governance.</>}
         />
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
           {tiers.map((t) => (
             <div
               key={t.name}
-              className={`relative p-8 ${t.highlight ? 'bg-obsidian-900 ring-1 ring-indigo-500/40' : 'bg-obsidian-950'}`}
+              className={`relative p-8 ${
+                t.highlight
+                  ? 'bg-obsidian-900 ring-1 ring-indigo-500/40'
+                  : t.managed
+                    ? 'bg-obsidian-900 ring-1 ring-amber-500/40'
+                    : 'bg-obsidian-950'
+              }`}
             >
               {t.highlight && (
                 <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-indigo-500 text-white">
                   Empfohlen
+                </span>
+              )}
+              {t.managed && (
+                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-amber-500 text-obsidian-950">
+                  Komplett-Service
                 </span>
               )}
               <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">{t.name}</div>
@@ -811,7 +843,9 @@ function PricingPreview() {
                 className={`mt-7 inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold tracking-tight rounded-none transition-colors ${
                   t.highlight
                     ? 'bg-white text-obsidian-950 hover:bg-titanium-200'
-                    : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
+                    : t.managed
+                      ? 'bg-amber-500 text-obsidian-950 hover:bg-amber-400'
+                      : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
                 }`}
               >
                 {t.cta} <ArrowRight className="h-3.5 w-3.5" />

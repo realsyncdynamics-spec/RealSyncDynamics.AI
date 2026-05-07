@@ -7,6 +7,7 @@ import {
 
 import { getAffiliateRef } from '../lib/affiliate';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -145,6 +146,7 @@ export function AuditLanding() {
               </form>
 
               <Pillars />
+              <AuditToWebsiteNote source="audit-pre" />
             </>
           )}
 

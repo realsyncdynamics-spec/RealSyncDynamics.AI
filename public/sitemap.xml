@@ -380,4 +380,24 @@
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
   </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/bait-compliance</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/marisk-audit</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/eu-ai-act-check</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/cookie-compliance</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.95</priority>
+  </url>
 </urlset>

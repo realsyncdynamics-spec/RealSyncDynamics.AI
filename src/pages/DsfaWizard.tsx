@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 interface DsfaEntry {
   id: string;
@@ -122,7 +123,10 @@ export function DsfaWizard() {
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <span style={{ fontSize: 36 }}>🔍</span>
           <h1 style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 4px' }}>DSFA-Assistent</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>Datenschutz-Folgenabschätzung nach Art. 35 DSGVO — strukturiert & auditfähig</p>
+          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px 0' }}>Datenschutz-Folgenabschätzung nach Art. 35 DSGVO — strukturiert & auditfähig</p>
+        </div>
+        <LegalDisclaimer context="document" />
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
             {[1,2,3].map(n => (
               <div key={n} style={{ width: 32, height: 4, borderRadius: 2, background: step >= n ? '#2563eb' : '#1f2937' }} />

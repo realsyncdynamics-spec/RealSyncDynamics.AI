@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 export function AvvGenerator() {
   const [step, setStep] = useState(1);
@@ -42,7 +43,8 @@ export function AvvGenerator() {
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         <div style={{ marginBottom: '0.25rem', fontSize: '0.7rem', color: '#6b7280', letterSpacing: '0.1em', textTransform: 'uppercase' }}>DSGVO Art. 28</div>
         <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>AVV-Generator</h1>
-        <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Rechtssicherer Auftragsverarbeitungsvertrag in 3 Schritten. Kostenlos, kein Account.</p>
+        <p style={{ color: '#9ca3af', marginBottom: '1rem' }}>Rechtssicherer Auftragsverarbeitungsvertrag in 3 Schritten. Kostenlos, kein Account.</p>
+        <LegalDisclaimer context="document" />
 
         {/* Progress Bar */}
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>

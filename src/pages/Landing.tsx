@@ -4,7 +4,7 @@
  * Strikt 7 Sections, maximaler Whitespace, dunkle Premium-Ästhetik.
  * Jede Section: ein klarer CTA. Keine Feature-Listen im Hero.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -23,6 +23,7 @@ import {
 import { Navbar } from '../components/Navbar';
 import { Logo } from '../components/Logo';
 import { ArchitectureDiagram } from '../components/ArchitectureDiagram';
+import { LiveProductDemo } from '../components/LiveProductDemo';
 
 export function Landing() {
   return (
@@ -118,79 +119,10 @@ function Hero() {
         </div>
 
         <div className="mt-14 sm:mt-24">
-          <DashboardPreview />
+          <LiveProductDemo />
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * Animated mini-dashboard preview as visual hook.
- * Shows live-counting Compliance-Score + tracker findings.
- */
-function DashboardPreview() {
-  const score = useAnimatedNumber(87, 1800);
-  const findings = useAnimatedNumber(12, 1200);
-  const audits = useAnimatedNumber(1247, 2200);
-
-  return (
-    <div className="relative max-w-3xl mx-auto">
-      <div
-        aria-hidden="true"
-        className="absolute -inset-1 rounded-none blur-2xl opacity-30"
-        style={{
-          background:
-            'linear-gradient(110deg, #6366f1 0%, #a78bfa 50%, transparent 100%)',
-        }}
-      />
-      <div className="relative bg-obsidian-900/80 backdrop-blur border border-titanium-800 rounded-none">
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-titanium-900 text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-          <span className="w-2 h-2 rounded-full bg-red-500/60" />
-          <span className="w-2 h-2 rounded-full bg-amber-500/60" />
-          <span className="w-2 h-2 rounded-full bg-emerald-500/60" />
-          <span className="ml-3">realsyncdynamicsai.de · audit-engine 2026.05.0</span>
-        </div>
-
-        <div className="grid grid-cols-3 divide-x divide-titanium-900">
-          <Stat label="Compliance-Score" value={`${score}`} suffix="/ 100" accent="emerald" />
-          <Stat label="Open Findings" value={`${findings}`} suffix="" accent="amber" />
-          <Stat label="Audits gesamt" value={audits.toLocaleString('de-DE')} suffix="" accent="indigo" />
-        </div>
-
-        <div className="px-5 py-4 border-t border-titanium-900 flex items-center justify-between text-[11px] font-mono">
-          <span className="text-titanium-500">tracker-db: 2026.05.0 · sources: EasyList · Disconnect.me</span>
-          <span className="text-emerald-400 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            live
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  suffix,
-  accent,
-}: {
-  label: string;
-  value: string;
-  suffix: string;
-  accent: 'emerald' | 'amber' | 'indigo';
-}) {
-  const color =
-    accent === 'emerald' ? 'text-emerald-300' : accent === 'amber' ? 'text-amber-300' : 'text-indigo-300';
-  return (
-    <div className="px-5 py-6 sm:py-8">
-      <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">{label}</div>
-      <div className={`mt-2 font-display font-bold text-2xl sm:text-4xl ${color} tabular-nums`}>
-        {value}
-        {suffix && <span className="text-titanium-500 text-sm font-medium ml-1">{suffix}</span>}
-      </div>
-    </div>
   );
 }
 
@@ -855,29 +787,3 @@ function FooterMinimal() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  Hooks                                                                   */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-/**
- * Animiert eine Zahl von 0 auf das Ziel mit easing — für Hero-Stats.
- */
-function useAnimatedNumber(target: number, durationMs = 1500) {
-  const [value, setValue] = useState(0);
-  useEffect(() => {
-    let start: number | null = null;
-    let frame = 0;
-    const step = (ts: number) => {
-      if (start === null) start = ts;
-      const elapsed = ts - start;
-      const progress = Math.min(1, elapsed / durationMs);
-      // easeOutCubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(target * eased));
-      if (progress < 1) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [target, durationMs]);
-  return value;
-}

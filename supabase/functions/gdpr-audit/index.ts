@@ -11,6 +11,7 @@
 // 6. Return report JSON for UI display
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -109,6 +110,28 @@ Deno.serve(async (req) => {
   const subpages = await scanSubpages(url, html);
   for (const sub of subpages) issues.push(sub);
 
+  // Rule Engine pass — additive zur bestehenden runChecks-Logik.
+  // Evaluiert versionierte JSON-Regeln aus _shared/rules/{gdpr,ai-act}.json
+  // gegen extrahierte facts. Findings werden in das Issue-Format konvertiert
+  // und an die bestehenden Issues angehängt. Engine-Version landet in der
+  // Response für Reproduzierbarkeit.
+  if (status !== null && !fetchError) {
+    const facts = extractFacts(url, html, headers, issues);
+    const ruleFindings = evaluateAll(facts);
+    for (const f of ruleFindings) {
+      // Skip duplicates (Rule Engine kann ID-Overlap mit hardcoded checks haben)
+      const dupKey = `rule:${f.rule_id}`;
+      if (issues.some((i) => i.id === dupKey)) continue;
+      issues.push({
+        id: dupKey,
+        severity: f.severity,
+        title: f.title,
+        detail: `${f.description} · Quelle: Rule Engine ${RULE_ENGINE_VERSION}.`,
+        paragraph_ref: f.norms.join(' · '),
+      });
+    }
+  }
+
   const { score, severity } = scoreReport(issues);
 
   // Insert sales_lead
@@ -153,6 +176,10 @@ Deno.serve(async (req) => {
     fetched_status: status,
     fetched: status !== null && fetchError === null,
     fetch_error: fetchError,
+    methodology: {
+      audit_engine: '2026.05.0',
+      rule_engine: RULE_ENGINE_VERSION,
+    },
   });
 });
 
@@ -600,6 +627,86 @@ async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]>
   }
 
   return issues;
+}
+
+/**
+ * Facts-Extraktion für Rule Engine.
+ *
+ * Konvertiert html + Headers + bestehende Issues in das fact-Dictionary,
+ * gegen das die JSON-Regeln (gdpr.json + ai-act.json) evaluiert werden.
+ * Static-Analyse — Server-Side-Tracking nicht erkannt (siehe /grenzen).
+ */
+function extractFacts(
+  url: string,
+  html: string,
+  _headers: Headers | null,
+  issues: Issue[],
+): Record<string, unknown> {
+  const lc = html.toLowerCase();
+
+  // Tracker-Detection via URL-Patterns im HTML
+  const ga = /googletagmanager\.com\/gtag\/js|google-analytics\.com\/g\/collect|google-analytics\.com\/analytics\.js/.test(lc);
+  const meta = /connect\.facebook\.net\/.+\/fbevents\.js|www\.facebook\.com\/tr/.test(lc);
+  const tiktok = /analytics\.tiktok\.com/.test(lc);
+  const linkedin = /snap\.licdn\.com\/li\.lms-analytics|px\.ads\.linkedin\.com/.test(lc);
+  const hotjar = /static\.hotjar\.com|script\.hotjar\.com/.test(lc);
+  const gFonts = /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(lc);
+  const gtm = /googletagmanager\.com\/gtm\.js/.test(lc);
+
+  // Consent-Banner-Heuristik (statische DOM-Detection ist begrenzt)
+  const consentKeywords = ['cookie', 'einwilligung', 'consent', 'datenschutz', 'akzeptieren', 'ablehnen'];
+  const consentBannerLikely = consentKeywords.some((k) => lc.includes(k));
+  // Einfache Heuristik für 3-Button-Pattern: prüft ob "ablehnen" und "akzeptieren" beide existieren
+  const rejectBtnPresent = /(ablehnen|alle ablehnen|reject|nur notwendige)/i.test(lc);
+  const acceptBtnPresent = /(akzeptieren|alle akzeptieren|accept all)/i.test(lc);
+  const rejectEqualProminence = consentBannerLikely && rejectBtnPresent && acceptBtnPresent;
+
+  // Pflicht-Page-Existenz (basiert auf Subpages-Check der bereits ran)
+  const privacyMissing = issues.some((i) => i.id.startsWith('subpage_privacy_') || i.id === 'privacy_no_link');
+  const impressumMissing = issues.some((i) => i.id.startsWith('subpage_impressum_') || i.id === 'impressum_no_link');
+
+  return {
+    tracker: {
+      google_analytics: { detected: ga },
+      meta_pixel: { detected: meta },
+      tiktok_pixel: { detected: tiktok },
+      linkedin_insight: { detected: linkedin },
+      hotjar: { detected: hotjar },
+      google_tag_manager: { detected: gtm },
+      any_external: ga || meta || tiktok || linkedin || hotjar || gtm,
+    },
+    asset: {
+      google_fonts: { dynamic: gFonts },
+    },
+    consent: {
+      banner: {
+        detected: consentBannerLikely,
+        reject_button_equal_prominence: rejectEqualProminence,
+      },
+      detected_before_load: false,
+      required: true,
+    },
+    page: {
+      privacy_policy: {
+        url_found: !privacyMissing,
+        mentions_avv: lc.includes('auftragsverarbeit') || lc.includes('art. 28') || lc.includes('avv'),
+      },
+      impressum: { url_found: !impressumMissing },
+    },
+    // AI-Act-Use-Case-facts: aus Static-HTML nicht ableitbar, daher false-Default
+    ai_use_case: {
+      detects_emotion: false,
+      scoring: false,
+      is_chatbot: /chatbot|chatbase|intercom\.io|drift\.com|tidio/i.test(lc),
+      disclosure_visible: false,
+      uses_foundation_model_directly: false,
+      purpose: '',
+      context: '',
+      actor: '',
+    },
+    // Engine-Version-Tag für Audit-Trail
+    audit_engine: { version: RULE_ENGINE_VERSION, scanned_at: new Date().toISOString(), url },
+  };
 }
 
 function concat(chunks: Uint8Array[]): Uint8Array {

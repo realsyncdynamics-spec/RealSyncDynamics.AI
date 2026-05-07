@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
 
 interface DSEConfig {
   companyName: string;
@@ -351,16 +352,20 @@ Diese Datenschutzerklärung ist aktuell gültig und hat den Stand ${date}. Durch
               <span style={{ color: '#86efac', fontSize: 14, fontWeight: 600 }}>Datenschutzerklärung erfolgreich generiert</span>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' as const }}>
+            <HumanVerificationGate
+              context="avv"
+              proceedLabel="Datenschutzerklärung als PDF drucken"
+              onProceed={printDSE}
+            />
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, marginBottom: 16, flexWrap: 'wrap' as const }}>
               <button style={{ ...btn, marginTop: 0, background: '#374151' }} onClick={copyToClipboard}>
                 {copied ? '✓ Kopiert!' : '📋 In Zwischenablage kopieren'}
-              </button>
-              <button style={{ ...btn, marginTop: 0, background: '#1d4ed8' }} onClick={printDSE}>
-                🖨️ Als PDF drucken/speichern
               </button>
               <button style={{ ...btn, marginTop: 0, background: '#4b5563' }} onClick={() => setStep(1)}>
                 🔄 Neu erstellen
               </button>
+              <a href="/grenzen" style={{ ...btn, marginTop: 0, background: 'transparent', color: '#9ca3af', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Grenzen dieser Vorlage</a>
             </div>
 
             <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, padding: 20, maxHeight: 500, overflowY: 'auto' as const }}>

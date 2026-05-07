@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, ArrowRight, Share2, Linkedin, Printer,
+  ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, ArrowRight, Share2, Linkedin,
 } from 'lucide-react';
+import { ConfidenceScore } from '../components/ConfidenceScore';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -141,6 +143,14 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
 
       {audit.history && audit.history.length > 1 && <HistoryStrip history={audit.history} />}
 
+      <div className="print:hidden">
+        <ConfidenceScore
+          score={auditConfidence(audit)}
+          flags={auditConfidenceFlags(audit)}
+          methodologyVersion="audit:2026.05.0"
+        />
+      </div>
+
       {audit.issues.length > 0 && (
         <div>
           <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">Befunde</h2>
@@ -196,13 +206,42 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
           <a href={xUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-semibold rounded-none">
             X / Twitter
           </a>
-          <button onClick={() => window.print()} className="inline-flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-semibold rounded-none">
-            <Printer className="h-3.5 w-3.5" /> Als PDF speichern
-          </button>
+        </div>
+        <div className="mt-3">
+          <HumanVerificationGate
+            context="audit"
+            proceedLabel="Bericht als PDF drucken"
+            onProceed={() => window.print()}
+          />
         </div>
       </div>
     </article>
   );
+}
+
+function auditConfidence(a: SharedAudit): number {
+  // Static-Audit ist limitiert. Mit historischen Vergleichen + mehr Befunden steigt Aussagekraft.
+  let score = 70;
+  if (a.history && a.history.length >= 2) score += 5;
+  if (a.history && a.history.length >= 5) score += 3;
+  if (a.issues.length === 0 && a.score >= 80) score += 5;       // saubere Site, plausibel
+  if (a.issues.length >= 5) score += 5;                          // Kohärentes Bild
+  return Math.min(score, 85); // Static-Audit kann nicht > 85, Server-Side-Tracking unbekannt
+}
+
+function auditConfidenceFlags(a: SharedAudit): string[] {
+  const flags: string[] = [];
+  flags.push('Static-Analyse — Server-Side-Tracking, dynamisch geladene Skripte und verschachtelte Tracker werden nicht erkannt');
+  if (a.issues.some((i) => i.title.toLowerCase().includes('cookie'))) {
+    flags.push('Cookie-Banner-Konformität: manuelle Klick-Pfad-Prüfung empfohlen (3 gleichberechtigte Buttons, Reject-Pfad)');
+  }
+  if (a.issues.some((i) => /google|meta|facebook|tiktok|linkedin/i.test(i.title))) {
+    flags.push('Drittland-Tracker erkannt — Schrems-II-Bewertung + AVV-Status der Anbieter prüfen');
+  }
+  if (a.issues.length === 0) {
+    flags.push('Keine Befunde — kann auch Detection-Limit bedeuten (z. B. Tracker erst nach Consent geladen)');
+  }
+  return flags;
 }
 
 function ScoreDelta({ current, previous, previousAt }: { current: number; previous: number; previousAt: string | null }) {

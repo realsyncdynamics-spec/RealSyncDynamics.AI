@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CheckCircle2, ArrowRight, Copy, Check, AlertTriangle, ArrowLeft } from 'lucide-react';
+import {
+  CheckCircle2, ArrowRight, Copy, Check, AlertTriangle, ArrowLeft, Loader2, Mail,
+} from 'lucide-react';
 import { Logo } from '../components/Logo';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 /**
  * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
  *
- * Flow:
- *   Step 1 — Account-Info bestätigen (email aus session, optional Name)
- *   Step 2 — API-Key generieren + kopieren
- *   Step 3 — Snippet einbauen (für Cookie-SDK Pro) bzw. Domain für Audit-Pro
+ * Step 1 — Email eingeben → Magic-Link wird per Supabase signInWithOtp versendet.
+ * Step 2 — Nach Magic-Link-Klick ist der User signed-in (auto_tenant_on_signup
+ *          legt Tenant + Owner-Membership an); wir generieren clientseitig einen
+ *          rsd_live_*-Key, hashen mit SHA-256 und speichern via RLS in api_keys.
+ *          Plaintext wird einmalig angezeigt.
+ * Step 3 — Cookie-SDK: Snippet mit echtem Key. Audit-Pro: Domain-Submit triggert
+ *          die gdpr-audit Edge-Function.
  *
  * URL: /welcome?session=cs_...&product=...
- *
- * Persistiert Step-State in customer_onboarding-Table sobald User auth'd.
- * Im Pre-Auth-Status wird API-Key über Supabase-Magic-Link erzeugt.
  */
 export function Welcome() {
   const [params] = useSearchParams();
@@ -27,22 +30,122 @@ export function Welcome() {
   const [copied, setCopied] = useState(false);
   const [domain, setDomain] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [magicSent, setMagicSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [auditQueued, setAuditQueued] = useState(false);
 
-  // Step 1 → 2: Account-Info gespeichert + Magic-Link gesendet
+  // Detect signed-in state on mount + on auth changes (post-magic-link return)
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    const sb = getSupabase();
+    let cancelled = false;
+
+    sb.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data.session?.user) {
+        setEmail((prev) => prev || data.session?.user.email || '');
+        setStep((prev) => (prev === 1 ? 2 : prev));
+      }
+    });
+
+    const { data: subscription } = sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        setEmail((prev) => prev || session.user.email || '');
+        setStep((prev) => (prev === 1 ? 2 : prev));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Resolve owner-tenant for the signed-in user once we hit step 2+
+  useEffect(() => {
+    if (!isSupabaseConfigured() || step < 2 || tenantId) return;
+    const sb = getSupabase();
+    let cancelled = false;
+    void (async () => {
+      const { data: userData } = await sb.auth.getUser();
+      if (cancelled || !userData.user) return;
+      const { data, error: lookupErr } = await sb
+        .from('memberships')
+        .select('tenant_id, role')
+        .eq('user_id', userData.user.id)
+        .order('role', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (lookupErr) {
+        setError(lookupErr.message);
+        return;
+      }
+      if (data?.tenant_id) setTenantId(data.tenant_id);
+    })();
+    return () => { cancelled = true; };
+  }, [step, tenantId]);
+
+  // Step 1 → Magic-Link
   const submitAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!email) return;
-    // In Folge-PR: Magic-Link via supabase.auth.signInWithOtp + customer_onboarding upsert
-    setStep(2);
+    if (!isSupabaseConfigured()) {
+      setError('Auth ist nicht konfiguriert (VITE_SUPABASE_URL fehlt).');
+      return;
+    }
+    setBusy(true);
+    try {
+      const sb = getSupabase();
+      const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+      const { error: otpErr } = await sb.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: redirectTo,
+          data: name ? { full_name: name } : undefined,
+        },
+      });
+      if (otpErr) throw otpErr;
+      setMagicSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Magic-Link konnte nicht gesendet werden.');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  // Step 2: API-Key generieren — Demo-Generierung clientside; in echter Impl
-  // ruft das ein RPC `generate_api_key_for_session(session_id)` auf.
+  // Step 2 → Generate + persist API key
   const generateKey = async () => {
     setError(null);
-    const k = `rsd_live_${randString(40)}`;
-    setApiKey(k);
+    if (!isSupabaseConfigured()) {
+      setError('Supabase nicht konfiguriert.');
+      return;
+    }
+    if (!tenantId) {
+      setError('Kein Tenant gefunden — bitte zuerst über den Magic-Link einloggen.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const plain = `rsd_live_${randString(40)}`;
+      const keyHash = await sha256Hex(plain);
+      const keyPrefix = plain.slice(0, 12);
+      const sb = getSupabase();
+      const { error: insertErr } = await sb.from('api_keys').insert({
+        tenant_id: tenantId,
+        name: 'Onboarding key',
+        key_hash: keyHash,
+        key_prefix: keyPrefix,
+      });
+      if (insertErr) throw insertErr;
+      setApiKey(plain);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'API-Key-Generierung fehlgeschlagen.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const copyKey = async () => {
@@ -56,7 +159,30 @@ export function Welcome() {
     }
   };
 
-  // Snippet (Cookie-SDK) bzw. Audit-CTA (Audit-Pro)
+  // Step 3 (Audit-Pro) → trigger gdpr-audit edge function with the entered domain
+  const submitAuditDomain = async () => {
+    setError(null);
+    if (!domain) return;
+    if (!isSupabaseConfigured()) {
+      setError('Supabase nicht konfiguriert.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const sb = getSupabase();
+      const url = /^https?:\/\//i.test(domain) ? domain : `https://${domain}`;
+      const { error: invokeErr } = await sb.functions.invoke('gdpr-audit', {
+        body: { url, email },
+      });
+      if (invokeErr) throw invokeErr;
+      setAuditQueued(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Audit konnte nicht gestartet werden.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const isCookieSdk = product.includes('Cookie-SDK');
 
   useEffect(() => {
@@ -76,7 +202,6 @@ export function Welcome() {
 
       <main className="px-4 sm:px-6 py-12 sm:py-16">
         <div className="max-w-2xl mx-auto">
-          {/* Header */}
           <div className="mb-12 text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
               <CheckCircle2 className="h-3 w-3" /> Kauf bestätigt · {product}
@@ -89,7 +214,6 @@ export function Welcome() {
             </p>
           </div>
 
-          {/* Stepper */}
           <div className="flex items-center justify-center gap-3 mb-12">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex items-center gap-3">
@@ -114,8 +238,8 @@ export function Welcome() {
             </div>
           )}
 
-          {/* Step 1 — Account */}
-          {step === 1 && (
+          {/* Step 1 — Account / Magic-Link */}
+          {step === 1 && !magicSent && (
             <form onSubmit={submitAccount} className="space-y-5">
               <div>
                 <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
@@ -144,12 +268,37 @@ export function Welcome() {
               </div>
               <button
                 type="submit"
-                disabled={!email}
+                disabled={!email || busy}
                 className="inline-flex items-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 disabled:bg-titanium-800 disabled:text-titanium-600 disabled:cursor-not-allowed px-6 py-3 text-sm font-semibold rounded-none transition-colors"
               >
-                Weiter zu API-Key <ArrowRight className="h-4 w-4" />
+                {busy
+                  ? (<><Loader2 className="h-4 w-4 animate-spin" /> Sende Magic-Link …</>)
+                  : (<>Magic-Link senden <ArrowRight className="h-4 w-4" /></>)}
               </button>
             </form>
+          )}
+
+          {step === 1 && magicSent && (
+            <div className="p-6 bg-obsidian-900 border border-emerald-700 rounded-none space-y-3">
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-emerald-400" />
+                <h2 className="font-display font-bold text-lg text-titanium-50">Magic-Link gesendet</h2>
+              </div>
+              <p className="text-sm text-titanium-300 leading-relaxed">
+                Wir haben einen Login-Link an <strong className="text-titanium-50">{email}</strong> gesendet.
+                Öffne ihn auf diesem Gerät — du landest automatisch hier zurück und gehst zu Schritt 2.
+              </p>
+              <p className="text-xs text-titanium-500">
+                Keine E-Mail bekommen?{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMagicSent(false); }}
+                  className="text-emerald-400 hover:text-emerald-300 underline-offset-2 hover:underline"
+                >
+                  E-Mail-Adresse korrigieren und erneut senden
+                </button>
+              </p>
+            </div>
           )}
 
           {/* Step 2 — API Key */}
@@ -158,15 +307,18 @@ export function Welcome() {
               <h2 className="font-display font-bold text-xl text-titanium-50 tracking-tight">API-Key generieren</h2>
               <p className="text-sm text-titanium-400">
                 Dein API-Key authentifiziert API-Calls und Webhooks. Speichere ihn sicher — nach diesem
-                Bildschirm kannst du ihn nicht mehr abrufen.
+                Bildschirm kannst du den Plaintext nicht mehr abrufen.
               </p>
 
               {!apiKey ? (
                 <button
                   onClick={generateKey}
-                  className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 text-sm font-semibold rounded-none transition-colors"
+                  disabled={busy || !tenantId}
+                  className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600 text-white px-6 py-3 text-sm font-semibold rounded-none transition-colors"
                 >
-                  Jetzt generieren <ArrowRight className="h-4 w-4" />
+                  {busy
+                    ? (<><Loader2 className="h-4 w-4 animate-spin" /> Generiere …</>)
+                    : (<>Jetzt generieren <ArrowRight className="h-4 w-4" /></>)}
                 </button>
               ) : (
                 <div className="space-y-4">
@@ -224,20 +376,40 @@ export function Welcome() {
                     Stack-agnostisch: WordPress, Shopify, React, Vue, Next, Astro, statisch.
                   </p>
                 </>
+              ) : auditQueued ? (
+                <div className="p-4 bg-obsidian-900 border border-emerald-700 rounded-none flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-display font-bold text-titanium-50 mb-1">Audit gestartet</div>
+                    <p className="text-sm text-titanium-300 leading-relaxed">
+                      Wir analysieren <strong className="text-titanium-50">{domain}</strong>. Ergebnisse landen
+                      in deiner Inbox ({email}) — Tiefenscan binnen 5 Werktagen als signiertes PDF.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <>
                   <p className="text-sm text-titanium-400">
                     Trage die Domain ein, die wir für deinen Audit-Pro-Tiefenscan analysieren sollen:
                   </p>
                   <input
-                    type="url"
+                    type="text"
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
                     placeholder="https://example.com"
                     className="w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-indigo-500 outline-none placeholder:text-titanium-600"
                   />
+                  <button
+                    onClick={submitAuditDomain}
+                    disabled={!domain || busy}
+                    className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 disabled:bg-titanium-800 disabled:text-titanium-600 text-white px-6 py-3 text-sm font-semibold rounded-none transition-colors"
+                  >
+                    {busy
+                      ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit wird gestartet …</>)
+                      : (<>Audit starten <ArrowRight className="h-4 w-4" /></>)}
+                  </button>
                   <p className="text-xs text-titanium-500">
-                    Dein Bericht wird innerhalb von 5 Werktagen per Email zugestellt — als signiertes PDF.
+                    Der Tiefenscan-Bericht kommt innerhalb von 5 Werktagen per E-Mail — als signiertes PDF.
                   </p>
                 </>
               )}
@@ -259,7 +431,6 @@ export function Welcome() {
             </div>
           )}
 
-          {/* Footer info */}
           {sessionId && (
             <div className="mt-12 pt-8 border-t border-titanium-900 text-[11px] font-mono text-titanium-600">
               session: {sessionId.slice(0, 24)}…
@@ -282,4 +453,12 @@ function randString(len: number): string {
     for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
   }
   return out;
+}
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = new TextEncoder().encode(s);
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }

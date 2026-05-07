@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { LogIn, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
+import { getAuthRedirectUrl } from '../../../lib/auth-redirect';
 import type { Session } from '@supabase/supabase-js';
 
 interface Props {
@@ -52,7 +53,11 @@ export function AuthGate({ children }: Props) {
       const sb = getSupabase();
       const { error } = await sb.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.href },
+        options: {
+          // Production-Build: immer Apex-Domain (verhindert localhost-Bug,
+          // wenn von Dev-Server aus eingeloggt wird).
+          emailRedirectTo: getAuthRedirectUrl('/kodee/connections'),
+        },
       });
       if (error) throw error;
       setSent(true);

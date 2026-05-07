@@ -29,26 +29,25 @@ export function PrivacyPolicy() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 text-titanium-300 text-sm leading-relaxed">
-        <div className="flex items-start gap-2 p-3 bg-red-950/40 border border-red-800 rounded-none text-xs">
-          <AlertTriangle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-          <span className="text-red-200">
-            <strong>Vor Live-Schaltung:</strong> Felder in eckigen Klammern <code className="px-1 bg-obsidian-950 text-red-300">[…]</code>
-            (Anschrift, Geschäftsführung) müssen mit echten Daten ersetzt werden — sonst Art. 13 DSGVO verletzt.
-            Mustertext-Skelett · vor Produktiv-Einsatz durch DSGVO-Berater oder Anwalt prüfen lassen.
-            Pflichtangaben (Art. 13/14 DSGVO) sind strukturell abgedeckt, ggf. aber an konkrete Verarbeitungsprozesse anzupassen.
+        <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
+          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+          <span className="text-amber-200">
+            <strong>Status: Pre-Launch.</strong> Verantwortlicher (Name, Anschrift) und Aufsichtsbehörde (TLfDI) sind eingetragen.
+            Mustertext-Skelett — vor Produktiv-Einsatz durch DSGVO-Berater oder Anwalt prüfen lassen, insbesondere zur
+            Anpassung an konkrete Verarbeitungsprozesse.
           </span>
         </div>
 
         <Section title="1. Verantwortlicher (Art. 4 Nr. 7 DSGVO)">
           <p>
-            RealSync Dynamics<br />
-            [Strasse + Hausnummer]<br />
-            [PLZ Ort]<br />
-            Deutschland
+            <strong className="text-titanium-50">RealSync Dynamics</strong><br />
+            Schwarzburger Str. 31<br />
+            98724 Neuhaus am Rennweg<br />
+            Thüringen, Deutschland
           </p>
           <p>
             E-Mail: <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a><br />
-            Geschäftsführung: [Name]
+            Inhaber / Vertretungsberechtigt: <strong className="text-titanium-50">Dominik Steiner</strong>
           </p>
         </Section>
 
@@ -123,7 +122,10 @@ export function PrivacyPolicy() {
             <li><strong>Art. 17</strong> Recht auf Löschung — Selfservice-Löschung unter /settings/account.</li>
             <li><strong>Art. 20</strong> Datenübertragbarkeit — der Export liefert maschinenlesbares JSON.</li>
             <li><strong>Art. 21</strong> Widerspruchsrecht gegen Verarbeitung auf Grundlage berechtigter Interessen.</li>
-            <li><strong>Art. 77</strong> Beschwerderecht bei der zuständigen Aufsichtsbehörde.</li>
+            <li><strong>Art. 77</strong> Beschwerderecht bei der zuständigen Aufsichtsbehörde — für uns:
+              <strong className="text-titanium-50"> Thüringer Landesbeauftragter für den Datenschutz und die Informationsfreiheit (TLfDI)</strong>,
+              Häßlerstraße 8, 99096 Erfurt, <a className="text-security-400" href="mailto:poststelle@datenschutz.thueringen.de">poststelle@datenschutz.thueringen.de</a>.
+            </li>
           </ul>
           <p>
             Anfragen die nicht im Selfservice abgedeckt sind:

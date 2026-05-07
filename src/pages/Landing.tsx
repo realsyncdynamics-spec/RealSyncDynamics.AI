@@ -36,6 +36,7 @@ import { LiveProductDemo } from '../components/LiveProductDemo';
 import { IdealCustomers } from '../components/IdealCustomers';
 import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
+import { SectionDivider } from '../components/visual/SectionDivider';
 
 export function Landing() {
   return (
@@ -45,8 +46,10 @@ export function Landing() {
       <main>
         <Hero />
         <Problem />
+        <SectionDivider label="Audit Engine" spacing="md" />
         <AuditEngine />
         <ExampleReport />
+        <SectionDivider label="Methodology" spacing="md" />
         <HowItWorks />
         <UspDecisionLayer />
         <TrustSection />
@@ -54,6 +57,7 @@ export function Landing() {
         <IdealCustomers />
         <WatchmakerShowcase />
         <ThreeStepDsgvoSection />
+        <SectionDivider label="Pricing" spacing="md" />
         <PricingPreview />
         <ClosingCta />
       </main>
@@ -396,6 +400,8 @@ function AuditEngine() {
       Icon: Activity,
       eyebrow: 'Tracking Layer',
       title: 'Detection',
+      iconClass: 'text-ai-cyan-400',
+      arrowClass: 'text-ai-cyan-400',
       items: [
         'Google Analytics / Meta Pixel / LinkedIn / TikTok',
         'Consent-Status-Validierung pro Tag',
@@ -406,6 +412,8 @@ function AuditEngine() {
       Icon: Lock,
       eyebrow: 'Security Layer',
       title: 'Headers &amp; Hardening',
+      iconClass: 'text-brass-400',
+      arrowClass: 'text-brass-400',
       items: [
         'CSP-Direktive parsen + Schwächen flaggen',
         'HSTS · X-Frame-Options · Referrer-Policy',
@@ -416,6 +424,8 @@ function AuditEngine() {
       Icon: ShieldCheck,
       eyebrow: 'Compliance Layer',
       title: 'Norm-Mapping',
+      iconClass: 'text-security-400',
+      arrowClass: 'text-security-400',
       items: [
         'DSGVO Art. 5 / 6 / 28 / 32 / 35',
         'TTDSG § 25 (technische Cookies vs. Tracker)',
@@ -432,8 +442,11 @@ function AuditEngine() {
         />
         <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
           {layers.map((layer) => (
-            <div key={layer.title} className="bg-obsidian-950 p-7 sm:p-8">
-              <layer.Icon className="h-6 w-6 text-indigo-400" strokeWidth={1.5} />
+            <div
+              key={layer.title}
+              className="bg-obsidian-950 p-7 sm:p-8 border-t border-t-transparent hover:border-t-brass-700/60 transition-colors"
+            >
+              <layer.Icon className={`h-6 w-6 ${layer.iconClass}`} strokeWidth={1.5} />
               <div className="mt-5 text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
                 {layer.eyebrow}
               </div>
@@ -443,7 +456,7 @@ function AuditEngine() {
               <ul className="mt-5 space-y-2 text-sm text-titanium-400">
                 {layer.items.map((it) => (
                   <li key={it} className="flex items-start gap-2">
-                    <span className="text-indigo-400 mt-1">→</span>
+                    <span className={`${layer.arrowClass} mt-1`}>→</span>
                     <span dangerouslySetInnerHTML={{ __html: it }} />
                   </li>
                 ))}
@@ -815,7 +828,7 @@ function PricingPreview() {
                 t.highlight
                   ? 'bg-obsidian-900 ring-1 ring-indigo-500/40'
                   : t.managed
-                    ? 'bg-obsidian-900 ring-1 ring-amber-500/40'
+                    ? 'bg-obsidian-900 ring-1 ring-brass-500/40'
                     : 'bg-obsidian-950'
               }`}
             >
@@ -825,7 +838,7 @@ function PricingPreview() {
                 </span>
               )}
               {t.managed && (
-                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-amber-500 text-obsidian-950">
+                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] surface-brass text-obsidian-950 font-bold">
                   Komplett-Service
                 </span>
               )}
@@ -846,7 +859,7 @@ function PricingPreview() {
                   t.highlight
                     ? 'bg-white text-obsidian-950 hover:bg-titanium-200'
                     : t.managed
-                      ? 'bg-amber-500 text-obsidian-950 hover:bg-amber-400'
+                      ? 'bg-brass-500 text-obsidian-950 hover:bg-brass-400'
                       : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
                 }`}
               >

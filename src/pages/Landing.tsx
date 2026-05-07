@@ -32,10 +32,14 @@ export function Landing() {
       <main>
         <Hero />
         <TrustBar />
+        <Frameworks />
         <Pillars />
+        <CourtCases />
         <HowItWorks />
+        <WhatIsAutomated />
         <UniqueValue />
         <EnterpriseTrust />
+        <PricingCompact />
         <FinalCta />
       </main>
 
@@ -50,7 +54,7 @@ export function Landing() {
 
 function Hero() {
   return (
-    <section className="relative pt-32 pb-24 sm:pt-40 sm:pb-32 px-4 sm:px-6 lg:px-8">
+    <section className="relative pt-24 pb-16 sm:pt-40 sm:pb-32 px-4 sm:px-6 lg:px-8">
       {/* Subtle grid background */}
       <div
         aria-hidden="true"
@@ -74,7 +78,7 @@ function Hero() {
           Compliance-Infrastruktur · Made in Germany
         </div>
 
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-bold tracking-tight text-titanium-50 leading-[1.05]">
+        <h1 className="text-3xl sm:text-5xl lg:text-7xl font-display font-bold tracking-tight text-titanium-50 leading-[1.08] sm:leading-[1.05]">
           Compliance,
           <br />
           <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
@@ -82,13 +86,22 @@ function Hero() {
           </span>
         </h1>
 
-        <p className="mt-8 max-w-2xl mx-auto text-lg sm:text-xl text-titanium-400 leading-relaxed">
-          Die Compliance-Operating-System für regulierte Unternehmen. DSGVO,
-          EU&nbsp;AI&nbsp;Act, BAIT &mdash; auditierbar, evidenzbasiert,
-          EU-souverän.
+        <p className="mt-6 sm:mt-8 max-w-2xl mx-auto text-base sm:text-xl text-titanium-400 leading-relaxed">
+          Compliance-Operating-System für regulierte Unternehmen. DSGVO,
+          EU&nbsp;AI&nbsp;Act, BAIT &mdash; auditierbar, evidenzbasiert, EU-souverän.
         </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Above-the-fold trust signals — visible on mobile WITHOUT scroll */}
+        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] sm:text-xs text-titanium-400">
+          {['DSGVO + EU AI Act', 'BAIT & MaRisk Ready', 'EU-Hosted Frankfurt', 'ISO 27001 aligned'].map((t) => (
+            <li key={t} className="inline-flex items-center gap-1.5">
+              <CheckCircle2 className="h-3 w-3 text-emerald-400" strokeWidth={2} />
+              {t}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             to="/audit"
             className="group inline-flex items-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
@@ -104,7 +117,7 @@ function Hero() {
           </Link>
         </div>
 
-        <div className="mt-20 sm:mt-24">
+        <div className="mt-14 sm:mt-24">
           <DashboardPreview />
         </div>
       </div>
@@ -501,6 +514,269 @@ function FinalCta() {
         <p className="mt-4 text-[11px] font-mono text-titanium-600 uppercase tracking-[0.18em]">
           Keine Kreditkarte · Kein Account · DSGVO-konform
         </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  FRAMEWORKS STRIP                                                        */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function Frameworks() {
+  const items = [
+    { code: 'DSGVO', sub: 'EU 2016/679' },
+    { code: 'EU AI Act', sub: '2024/1689' },
+    { code: 'BAIT', sub: 'BaFin' },
+    { code: 'MaRisk', sub: 'AT 7.2' },
+    { code: 'TTDSG', sub: '§ 25' },
+    { code: 'BDSG', sub: '§ 26 / § 38' },
+  ];
+  return (
+    <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-10">
+          <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
+            Native Coverage
+          </div>
+          <h2 className="mt-3 font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50">
+            Sechs Frameworks. Eine Plattform.
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-titanium-900">
+          {items.map((it) => (
+            <div
+              key={it.code}
+              className="bg-obsidian-950 hover:bg-obsidian-900 transition-colors p-5 text-center"
+            >
+              <div className="font-display font-bold text-base text-titanium-50">{it.code}</div>
+              <div className="mt-1 text-[10px] font-mono uppercase tracking-[0.18em] text-titanium-500">
+                {it.sub}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  COURT CASES                                                             */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function CourtCases() {
+  const cases = [
+    {
+      court: 'LG München I',
+      year: '2022',
+      norm: 'Google Fonts',
+      penalty: '€ 100 / Anlassfall',
+      ref: 'Az. 3 O 17493/20',
+    },
+    {
+      court: 'LfDI BaWü',
+      year: '2023',
+      norm: 'Newsletter ohne DOI',
+      penalty: '€ 50 000',
+      ref: 'Tätigkeitsbericht 2023',
+    },
+    {
+      court: 'DSB Österreich',
+      year: '2022',
+      norm: 'Google Analytics',
+      penalty: 'Untersagungsverfügung',
+      ref: 'GZ. D155.027 / 22',
+    },
+    {
+      court: 'BfDI · BVerwG',
+      year: '2023',
+      norm: 'Verschlüsselung Art. 32',
+      penalty: '€ 105 000',
+      ref: '6 C 23.21 / 2023',
+    },
+  ];
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
+      <div className="max-w-6xl mx-auto">
+        <SectionHeader
+          eyebrow="Realer Enforcement-Druck"
+          title={<>Vier Bescheide, die zeigen warum es jetzt eilt.</>}
+        />
+        <p className="mt-6 max-w-2xl text-titanium-400 text-base leading-relaxed">
+          Aufsichtsbehörden setzen DSGVO seit 2022 spürbar durch. Die folgenden Fälle
+          haben Präzedenz für Standard-Verstöße geschaffen, denen 80&nbsp;% der DACH-Sites ausgesetzt sind.
+        </p>
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-px bg-titanium-900">
+          {cases.map((c) => (
+            <div key={c.ref} className="bg-obsidian-950 p-6 sm:p-8">
+              <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                <span className="font-display font-bold text-titanium-50 text-lg">{c.court}</span>
+                <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500">
+                  {c.year}
+                </span>
+              </div>
+              <div className="mt-3 flex items-baseline gap-3 flex-wrap">
+                <span className="text-titanium-300 text-sm">{c.norm}</span>
+                <span className="text-amber-300 font-mono font-bold text-sm">{c.penalty}</span>
+              </div>
+              <div className="mt-4 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-600">
+                {c.ref}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link
+            to="/audit"
+            className="inline-flex items-center gap-2 text-sm font-medium text-titanium-200 hover:text-titanium-50 underline-offset-4 hover:underline"
+          >
+            Bin ich einem dieser Risiken ausgesetzt? Audit starten
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  WHAT IS AUTOMATED                                                       */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function WhatIsAutomated() {
+  const items = [
+    'Cookie- & Tracker-Erkennung (URL-Pattern + DOM)',
+    'Datenschutzerklärung-Generation (Block-System)',
+    'AVV-Vorlagen pro Sub-Processor',
+    'Risiko-Klassifikation (AI Act Annex III)',
+    'Audit-Protokolle (append-only)',
+    'Continuous-Compliance-Monitoring',
+    'TOMs & DSFA-Workflows',
+    '72h-Meldepflicht-Timer mit Aufsichtsbehörden je Bundesland',
+  ];
+
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <SectionHeader
+          eyebrow="Was die Plattform ohne Aufwand erledigt"
+          title={<>Acht operative Routinen — automatisiert.</>}
+        />
+        <ul className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+          {items.map((it) => (
+            <li key={it} className="flex items-start gap-3 text-titanium-300">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+              <span className="text-base">{it}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  PRICING COMPACT                                                         */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function PricingCompact() {
+  const tiers = [
+    {
+      name: 'Starter',
+      price: 'Kostenlos',
+      sub: 'Self-Service',
+      features: ['8 Free-Tools', 'Audit für 1 Domain', 'Methodik einsehbar'],
+      to: '/audit',
+      cta: 'Jetzt loslegen',
+      highlight: false,
+    },
+    {
+      name: 'Professional',
+      price: '€ 149',
+      sub: 'pro Monat / System',
+      features: ['Alle Tools mit Dashboard', 'API + Webhooks', 'Continuous Monitoring', 'Sub-Processor-Notification'],
+      to: '/pricing?tier=pro',
+      cta: 'Pilot starten',
+      highlight: true,
+    },
+    {
+      name: 'Enterprise',
+      price: 'Anfrage',
+      sub: 'Custom · SLA · DPA',
+      features: ['Unlimited Systeme', 'Multi-Tenant für Agenturen', 'On-Premise möglich', 'SLA 99.9 %'],
+      to: '/contact-sales?intent=enterprise',
+      cta: 'Sales kontaktieren',
+      highlight: false,
+    },
+  ];
+
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
+      <div className="max-w-6xl mx-auto">
+        <SectionHeader
+          eyebrow="Preise"
+          title={<>Drei Tiers. Klar abgegrenzt. Keine Setup-Fees.</>}
+        />
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
+          {tiers.map((t) => (
+            <div
+              key={t.name}
+              className={`relative p-8 sm:p-10 ${
+                t.highlight
+                  ? 'bg-obsidian-900 ring-1 ring-indigo-500/40'
+                  : 'bg-obsidian-950'
+              }`}
+            >
+              {t.highlight && (
+                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-indigo-500 text-white">
+                  Empfohlen
+                </span>
+              )}
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
+                {t.name}
+              </div>
+              <div className="mt-3 font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight">
+                {t.price}
+              </div>
+              <div className="mt-1 text-xs text-titanium-500">{t.sub}</div>
+
+              <ul className="mt-6 space-y-2">
+                {t.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-titanium-300">
+                    <CheckCircle2 className="h-4 w-4 text-titanium-500 shrink-0 mt-0.5" strokeWidth={1.5} />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Link
+                to={t.to}
+                className={`mt-8 inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold tracking-tight rounded-none transition-colors ${
+                  t.highlight
+                    ? 'bg-white text-obsidian-950 hover:bg-titanium-200'
+                    : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
+                }`}
+              >
+                {t.cta}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link
+            to="/pricing"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-titanium-300 hover:text-titanium-50 underline-offset-4 hover:underline"
+          >
+            Volle Pricing-Details ansehen
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
     </section>
   );

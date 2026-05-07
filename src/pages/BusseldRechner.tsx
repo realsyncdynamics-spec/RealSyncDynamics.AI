@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { ConfidenceScore } from '../components/ConfidenceScore';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
 
 interface BusseldConfig {
   companySize: 'micro' | 'small' | 'medium' | 'large' | 'enterprise';
@@ -73,6 +75,27 @@ function calcFine(config: BusseldConfig): { min: number; max: number; likely: nu
   return { min, max, likely, basis };
 }
 
+function confidenceFromConfig(c: BusseldConfig): number {
+  let score = 70;
+  if (c.annualRevenue >= 100000) score += 10;
+  if (c.annualRevenue >= 1000000) score += 5;
+  if (c.affectedPersons >= 100) score += 5;
+  if (c.severity !== 'mittel') score += 5; // explicit choice rather than default
+  if (c.intentional || c.repeated || c.cooperation || c.selfReported) score += 5;
+  return Math.min(score, 92); // never claim High-100, simulator can't be certain
+}
+
+function confidenceFlags(c: BusseldConfig): string[] {
+  const flags: string[] = [];
+  if (c.sensitiveData) flags.push('Besondere Datenkategorien (Art. 9 DSGVO) — höheres Strafmaß möglich, Anwalt hinzuziehen');
+  if (c.childrenAffected) flags.push('Minderjährige betroffen (Art. 8 DSGVO) — verschärfte Schutzanforderungen');
+  if (c.violationType === 'third_country') flags.push('Drittlandtransfer — Schrems II / TIA durch Verantwortlichen prüfen');
+  if (c.violationType === 'data_breach') flags.push('Datenpanne (Art. 33) — 72h-Meldepflicht-Timer prüfen');
+  if (c.annualRevenue >= 500000000) flags.push('Konzern-Umsatz — abweichende Bußgeld-Bemessung im Konzernverbund');
+  if (c.intentional && c.repeated) flags.push('Vorsatz + Wiederholung — Strafmaß-Zuschläge laut DSK-Konzept signifikant');
+  return flags;
+}
+
 function formatEuro(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.', ',') + ' Mio. €';
   if (n >= 1000) return (n / 1000).toFixed(0) + '.000 €';
@@ -117,8 +140,8 @@ export function BusseldRechner() {
       <div style={card}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <span style={{ fontSize: 40 }}>⚖️</span>
-          <h1 style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 4px' }}>DSGVO-Bußgeldrechner</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px 0' }}>Schätzen Sie das Bußgeldrisiko Ihres Unternehmens — auf Basis von Art. 83 DSGVO</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 4px' }}>DSGVO-Bußgeld-Simulation</h1>
+          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px 0' }}>Educational Tool — Bandbreiten-Simulation auf Basis Art. 83 DSGVO + DSK-Bußgeld-Konzept. Keine Vorhersage, keine Rechtsberatung.</p>
         </div>
         <LegalDisclaimer context="calculator" />
 
@@ -173,18 +196,27 @@ export function BusseldRechner() {
         </div>
 
         <button style={btn} onClick={() => setShowResult(true)}>
-          Bußgeld berechnen →
+          Simulation starten →
         </button>
 
         {showResult && result.likely > 0 && (
           <div style={{ marginTop: 28 }}>
             <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: 12, padding: 24 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 0, marginBottom: 16 }}>Bußgeld-Schätzung</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 0, marginBottom: 8 }}>Simulierte Bandbreite</h2>
+              <p style={{ color: '#9ca3af', fontSize: 13, marginTop: 0, marginBottom: 16 }}>
+                Die folgende Bandbreite ist eine Orientierung auf Basis Art. 83 DSGVO + DSK-Bußgeld-Konzept.
+                Die tatsächliche Höhe bestimmt ausschließlich die zuständige Aufsichtsbehörde.
+              </p>
+              <ConfidenceScore
+                score={confidenceFromConfig(config)}
+                methodologyVersion="busseld-sim:2026.05.0"
+                flags={confidenceFlags(config)}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 16, marginBottom: 20 }}>
                 {[
-                  { label: 'Minimum', val: result.min, color: '#16a34a' },
-                  { label: 'Mittlere Schätzung', val: result.likely, color: '#d97706', bold: true },
-                  { label: 'Maximum', val: result.max, color: '#dc2626' },
+                  { label: 'Untergrenze', val: result.min, color: '#16a34a' },
+                  { label: 'Erwartungswert', val: result.likely, color: '#d97706', bold: true },
+                  { label: 'Obergrenze', val: result.max, color: '#dc2626' },
                 ].map(({ label: lbl, val, color, bold }) => (
                   <div key={lbl} style={{ background: '#1a1a2e', borderRadius: 10, padding: 16, textAlign: 'center' as const }}>
                     <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 8 }}>{lbl}</div>
@@ -202,20 +234,30 @@ export function BusseldRechner() {
               {result.likely > 50000 && (
                 <div style={{ background: '#3b1515', borderRadius: 8, padding: '14px 16px', marginBottom: 16 }}>
                   <p style={{ color: '#fca5a5', fontSize: 14, margin: 0, fontWeight: 600 }}>
-                    🚨 Kritisches Bußgeldrisiko — professionelle Beratung empfohlen
+                    Hoher Erwartungswert — manuelle Prüfung dringend empfohlen
                   </p>
                   <p style={{ color: '#fca5a5', fontSize: 13, margin: '6px 0 0' }}>
-                    Bei diesem Risikoprofil ist ein DSGVO-Audit dringend empfohlen. Ein präventiver Audit kostet einen Bruchteil des Bußgeldes.
+                    Wenn der Erwartungswert bei einer realen Aufsichts-Prüfung erreicht würde, wäre ein DSGVO-Audit
+                    plus juristische Beratung wirtschaftlich plausibel. Diese Simulation ersetzt sie nicht.
                   </p>
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const }}>
+              <HumanVerificationGate
+                context="simulation"
+                proceedLabel="Simulations-Snapshot drucken"
+                onProceed={() => window.print()}
+              />
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, marginTop: 16 }}>
                 <a href="/audit" style={{ background: '#2563eb', color: '#fff', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-                  🔍 Kostenloser DSGVO-Audit
+                  Kostenloser DSGVO-Audit
                 </a>
                 <a href="/contact-sales" style={{ background: '#374151', color: '#e5e7eb', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
                   Beratung anfragen
+                </a>
+                <a href="/grenzen" style={{ background: 'transparent', color: '#9ca3af', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                  Grenzen dieser Simulation
                 </a>
               </div>
             </div>

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
+import { ConfidenceScore } from '../components/ConfidenceScore';
 
 interface DsfaEntry {
   id: string;
@@ -19,6 +21,41 @@ const dataTypeOptions = ['Identifikationsdaten', 'Kontaktdaten', 'Gesundheitsdat
 const subjectOptions = ['Mitarbeiter', 'Kunden', 'Patienten', 'Minderjährige', 'Öffentlichkeit', 'Lieferanten', 'Interessenten', 'Bewerber'];
 
 const emptyRisk = () => ({ risk: '', severity: 'mittel' as const, likelihood: 'mittel' as const, measure: '' });
+
+const SENSITIVE_TYPES = ['Gesundheitsdaten', 'Biometrische Daten', 'Genetische Daten', 'Rassische/ethnische Herkunft', 'Politische Meinungen', 'Religiöse Überzeugungen', 'Sexualleben/Orientierung', 'Strafrechtliche Daten'];
+
+function dsfaConfidence(entries: DsfaEntry[]): number {
+  if (entries.length === 0) return 0;
+  let score = 65; // base — wizards leiten Entwurf, nicht Endurteil
+  const allHaveRisks = entries.every((e) => e.risks.some((r) => r.risk.length > 0));
+  if (allHaveRisks) score += 10;
+  const allHaveMeasures = entries.every((e) => e.risks.every((r) => r.measure.length > 0));
+  if (allHaveMeasures) score += 10;
+  const allHaveSubjects = entries.every((e) => e.subjects.length > 0);
+  if (allHaveSubjects) score += 5;
+  return Math.min(score, 88); // never claim certainty — Final-DSFA durch DSB
+}
+
+function dsfaConfidenceFlags(entries: DsfaEntry[]): string[] {
+  const flags: string[] = [];
+  for (const e of entries) {
+    const sensitive = e.dataTypes.filter((t) => SENSITIVE_TYPES.includes(t));
+    if (sensitive.length > 0) {
+      flags.push(`„${e.name}": Art. 9 besondere Kategorien (${sensitive.join(', ')}) — Anwalt + DSB zwingend einbeziehen`);
+    }
+    if (e.subjects.includes('Minderjährige')) {
+      flags.push(`„${e.name}": Minderjährige (Art. 8) — verschärfte Schutzanforderungen + Eltern-Einwilligung`);
+    }
+    if (e.consultationRequired) {
+      flags.push(`„${e.name}": Vor-Konsultation der Aufsichtsbehörde nach Art. 36 erforderlich (Hochrisiko)`);
+    }
+    if (e.risks.length > 0 && e.risks.every((r) => !r.measure)) {
+      flags.push(`„${e.name}": Keine TOMs zu Risiken erfasst — Sektion ergänzen`);
+    }
+  }
+  if (entries.length === 0) flags.push('Keine Verarbeitungen erfasst — DSFA unvollständig');
+  return flags;
+}
 
 export function DsfaWizard() {
   const [step, setStep] = useState(1);
@@ -310,17 +347,21 @@ export function DsfaWizard() {
               );
             })}
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 24, flexWrap: 'wrap' as const }}>
-              <button style={{ ...btn, background: '#374151' }} onClick={() => setStep(2)}>← Zurück</button>
-              <button style={{ ...btn, background: '#16a34a' }} onClick={printReport}>
-                🖨️ DSFA-Report drucken / als PDF
-              </button>
-            </div>
+            <ConfidenceScore
+              score={dsfaConfidence(entries)}
+              flags={dsfaConfidenceFlags(entries)}
+              methodologyVersion="dsfa:2026.05.0"
+            />
 
-            <div style={{ background: '#1a1a2e', borderRadius: 8, padding: 14, marginTop: 20 }}>
-              <p style={{ color: '#fbbf24', fontSize: 13, margin: 0 }}>
-                ⚠️ <strong>Hinweis:</strong> Diese DSFA dient als Dokumentationsunterlage. Eine rechtssichere DSFA erfordert zusätzlich die Einbeziehung des Datenschutzbeauftragten und ggf. der betroffenen Personen (Art. 35 Abs. 9 DSGVO).
-              </p>
+            <HumanVerificationGate
+              context="dsfa"
+              proceedLabel="DSFA-Entwurf drucken / als PDF"
+              onProceed={printReport}
+            />
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' as const }}>
+              <button style={{ ...btn, background: '#374151' }} onClick={() => setStep(2)}>← Zurück</button>
+              <a href="/grenzen" style={{ ...btn, background: 'transparent', color: '#9ca3af', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Grenzen dieses Wizards</a>
             </div>
           </div>
         )}

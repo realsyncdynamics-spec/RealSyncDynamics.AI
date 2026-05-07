@@ -112,6 +112,35 @@ export function DsgvoWebsiteLanding() {
             </ul>
           </Section>
 
+          <Section title="Häufige Fragen">
+            <dl className="space-y-3 text-sm">
+              <Faq q="Wer hostet meine Website?">
+                EU-Server in Deutschland (Hostinger DE / Hetzner Falkenstein, je nach Tarif). Auftragsverarbeitungsvertrag (AVV nach Art. 28 DSGVO) liegt unterschrieben vor. Kein US-Cloud-Default, keine Subprocessor-Kette außerhalb der EU.
+              </Faq>
+              <Faq q="Was passiert bei Kündigung — bin ich gelockt?">
+                Sie bekommen den vollständigen Quellcode (Git-Repo) plus Datenbank-Dump. Domain bleibt bei Ihnen. Kündigungsfrist: 1 Monat zum Monatsende. Keine Knebelverträge, keine Mindestlaufzeit über 12 Monate hinaus.
+              </Faq>
+              <Faq q="Werden meine bestehenden Inhalte migriert?">
+                Ja — Texte, Bilder, Strukturseiten (Über uns, Leistungen, Kontakt etc.) übernehmen wir aus der alten Site. Was nicht übernommen wird: veraltete Plugins, fragwürdige Tracker, Inhalte ohne Quellnachweis.
+              </Faq>
+              <Faq q="Wie lange dauert der Rebuild?">
+                Standard 2–4 Wochen ab Auftragsbestätigung — abhängig von Seitenanzahl und Kunden-Material-Lieferung (Logo, Texte, Bilder). Engpass ist meist nicht unsere Seite.
+              </Faq>
+              <Faq q="Was ist NICHT im Managed-Tarif drin?">
+                Inhalts-Updates (Texte/Bilder), neue Funktions-Wünsche (Shop, Buchungssystem), eigene Newsletter-Versand, Social-Media-Pflege. Diese sind als Zusatz buchbar oder Sie pflegen selbst.
+              </Faq>
+              <Faq q="Bekomme ich einen AVV?">
+                Ja, automatisch vor Vertragsunterzeichnung. Standard-AVV nach EU-Mustervertrag plus Sub-Processor-Liste (transparent, mit 30-Tage-Vorab-Notice bei Änderungen — siehe <Link to="/legal/sub-processors" className="text-security-400 hover:text-security-300 underline-offset-2 hover:underline">Sub-Processor-Page</Link>).
+              </Faq>
+              <Faq q="Gibt es Setup-Kosten zusätzlich zum Rebuild?">
+                Nein. Der Rebuild-Preis (1.500–4.000 €) deckt: Audit-Inhalte, Layout, Migration, Pflichtseiten, DNS-/Domain-Setup, ersten Monat Hosting, Übergabe. Ab Monat 2 läuft der Managed-Tarif (99–249 €/Monat).
+              </Faq>
+              <Faq q="Funktioniert das auch ohne Rebuild — nur Hosting-Übernahme?">
+                Auf Anfrage. Wir machen das aber selten — meistens lohnt sich ein Rebuild allein wegen der Header-/Consent-/Font-Probleme. Wenn Ihre Site sauber ist, brauchen Sie uns nicht.
+              </Faq>
+            </dl>
+          </Section>
+
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
               Erst der Quick-Scan, dann reden wir.
@@ -152,6 +181,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         {children}
       </div>
     </section>
+  );
+}
+
+function Faq({ q, children }: { q: string; children: React.ReactNode }) {
+  return (
+    <div className="border-l-2 border-titanium-800 pl-3 py-1">
+      <dt className="font-display font-bold text-titanium-50 mb-1">{q}</dt>
+      <dd className="text-titanium-300 leading-relaxed">{children}</dd>
+    </div>
   );
 }
 

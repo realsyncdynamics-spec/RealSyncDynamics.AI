@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
+import { ConfidenceScore } from '../components/ConfidenceScore';
 
 const QUESTIONS = [
   { id: 'biometric', text: 'Verarbeitet Ihr System biometrische Daten zur Identifikation?', high: true },
@@ -17,6 +19,42 @@ const QUESTIONS = [
 ];
 
 type Risk = 'prohibited' | 'high' | 'limited' | 'minimal';
+
+function aiActConfidence(answers: Record<string, boolean | null>, result: Risk | null): number {
+  // Eindeutige Antworten (vor allem für Prohibited / High-Marker) ergeben höhere Confidence
+  if (!result) return 0;
+  if (result === 'prohibited') return 90; // Art. 5 ist scharfkantig formuliert
+  const highCount = QUESTIONS.filter((q) => q.high && answers[q.id] === true).length;
+  if (result === 'high' && highCount >= 2) return 85;
+  if (result === 'high' && highCount === 1) return 75;
+  if (result === 'limited') return 78;
+  return 70; // Minimal: kein klarer Marker, aber abwesend nicht ausgeschlossen
+}
+
+function aiActFlags(answers: Record<string, boolean | null>, result: Risk | null): string[] {
+  const flags: string[] = [];
+  if (result === 'high') {
+    flags.push('High-Risk-Bestätigung erfordert Notified-Body-Prüfung (Conformity Assessment Art. 43 AI Act)');
+    flags.push('Risk-Management-Framework + Technical Documentation Pflicht (Art. 9, 11)');
+    flags.push('Human-Oversight-Mechanismus implementieren (Art. 14)');
+  }
+  if (result === 'prohibited') {
+    flags.push('Art. 5 verbotene Praktik — System darf in EU nicht eingesetzt werden, sofortige Anwalts-Konsultation');
+  }
+  if (result === 'limited') {
+    flags.push('Transparenz-Pflicht nach Art. 52 — User müssen wissen, dass sie mit KI interagieren');
+  }
+  if (answers['emotion'] === true) {
+    flags.push('Emotion Recognition am Arbeitsplatz / in Bildung ist verboten (Art. 5(1)(f))');
+  }
+  if (answers['biometric'] === true && answers['law_enforcement'] === true) {
+    flags.push('Biometrische Echtzeit-Identifikation in öffentl. Räumen ist eingeschränkt (Art. 5(1)(h))');
+  }
+  if (Object.keys(answers).length < QUESTIONS.length) {
+    flags.push('Nicht alle Fragen beantwortet — Klassifikation unvollständig, weitere Use-Cases prüfen');
+  }
+  return flags;
+}
 
 export function AiActClassifier() {
   const [answers, setAnswers] = useState<Record<string, boolean | null>>({});
@@ -134,11 +172,26 @@ export function AiActClassifier() {
           <div>
             <div style={{ background: riskConfig[result].bg, border: `1px solid ${riskConfig[result].color}`, borderRadius: 4, padding: '1.5rem 2rem', marginBottom: '1.5rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{riskConfig[result].icon}</div>
-              <div style={{ fontSize: '0.7rem', color: riskConfig[result].color, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>AI Act Risiko-Einstufung</div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: riskConfig[result].color, marginBottom: '0.5rem' }}>{riskConfig[result].label}</h2>
+              <div style={{ fontSize: '0.7rem', color: riskConfig[result].color, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>AI Act Indikative Einstufung</div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: riskConfig[result].color, marginBottom: '0.5rem' }}>Möglicherweise: {riskConfig[result].label}</h2>
               {system && <p style={{ color: '#9ca3af', marginBottom: '0.75rem', fontSize: '0.875rem' }}>System: {system}</p>}
               <p style={{ lineHeight: 1.7 }}>{riskConfig[result].desc}</p>
+              <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.75rem', fontStyle: 'italic' }}>
+                Final-Klassifikation für High-Risk-Systeme erfolgt durch Notified Body (Conformity Assessment). Diese Einschätzung ist eine Vor-Klassifikation auf Basis Annex III + Art. 5/52.
+              </p>
             </div>
+
+            <ConfidenceScore
+              score={aiActConfidence(answers, result)}
+              flags={aiActFlags(answers, result)}
+              methodologyVersion="aiact:2026.05.0"
+            />
+
+            <HumanVerificationGate
+              context="classification"
+              proceedLabel="Klassifikation übernehmen"
+              onProceed={() => window.print()}
+            />
 
             <div style={{ border: '1px solid #374151', borderRadius: 4, padding: '1.5rem', marginBottom: '1.5rem' }}>
               <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Erforderliche Maßnahmen:</h3>

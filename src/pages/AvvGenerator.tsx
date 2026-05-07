@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
 
 export function AvvGenerator() {
   const [step, setStep] = useState(1);
@@ -117,8 +118,8 @@ export function AvvGenerator() {
           <div>
             <div style={{ background: '#052e16', border: '1px solid #16a34a', borderRadius: 4, padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <span style={{ color: '#16a34a', fontSize: '1.5rem' }}>✓</span>
-              <div><div style={{ fontWeight: 700, color: '#16a34a' }}>AVV generiert — rechtssicher nach DSGVO Art. 28</div>
-              <div style={{ fontSize: '0.8rem', color: '#86efac' }}>Stand Mai 2026 · Rechtsform-geprüft · Druckfertig</div></div>
+              <div><div style={{ fontWeight: 700, color: '#16a34a' }}>AVV-Vorlage generiert — Standardklauseln nach DSGVO Art. 28</div>
+              <div style={{ fontSize: '0.8rem', color: '#86efac' }}>Stand Mai 2026 · Vorlage zur Anpassung · Anwaltliche Prüfung empfohlen</div></div>
             </div>
 
             <div id="avv-print" style={{ background: '#fff', color: '#111', padding: '3rem', borderRadius: 4, fontSize: '0.9rem', lineHeight: 1.8, fontFamily: 'Georgia, serif' }}>
@@ -157,9 +158,15 @@ export function AvvGenerator() {
               </div>
             </div>
 
+            <HumanVerificationGate
+              context="avv"
+              proceedLabel="AVV-Vorlage als PDF drucken"
+              onProceed={() => window.print()}
+            />
+
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-              <button onClick={() => window.print()} style={{ ...btnPrimary, background: '#1d4ed8' }}>⎙ Als PDF drucken</button>
               <a href="/contact-sales" style={{ ...btnPrimary, background: '#0f766e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Demo buchen — AVV vollständig umsetzen</a>
+              <a href="/grenzen" style={{ ...btnSecondary, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Grenzen dieser Vorlage</a>
               <button onClick={() => { setStep(1); setGenerated(false); }} style={btnSecondary}>Neuen AVV erstellen</button>
             </div>
           </div>

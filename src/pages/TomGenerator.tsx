@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { HumanVerificationGate } from '../components/HumanVerificationGate';
 
 const CATEGORIES = [
   {
@@ -161,9 +162,15 @@ export function TomGenerator() {
               })}
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-              <button onClick={() => window.print()} style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 4, padding: '0.75rem 1.5rem', fontWeight: 700, cursor: 'pointer' }}>⎙ PDF drucken</button>
+            <HumanVerificationGate
+              context="tom"
+              proceedLabel="TOM-Dokument als PDF drucken"
+              onProceed={() => window.print()}
+            />
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <button onClick={() => setExported(false)} style={{ background: 'transparent', color: '#9ca3af', border: '1px solid #374151', borderRadius: 4, padding: '0.75rem 1.5rem', fontWeight: 700, cursor: 'pointer' }}>Bearbeiten</button>
+              <a href="/grenzen" style={{ background: 'transparent', color: '#9ca3af', border: '1px solid #374151', borderRadius: 4, padding: '0.75rem 1.5rem', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Grenzen dieser Vorlage</a>
             </div>
           </div>
         )}

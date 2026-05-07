@@ -85,26 +85,44 @@ create trigger trg_audit_evidence_no_delete
   before delete on public.audit_evidence
   for each row execute function public.audit_evidence_block_modification();
 
--- 7. Storage-Bucket erstellen für binäre Evidence (Screenshots, DOM-Dumps)
--- Wenn Bucket "audit-evidence" noch nicht existiert. Privat per default.
-insert into storage.buckets (id, name, public)
-values ('audit-evidence', 'audit-evidence', false)
-on conflict (id) do nothing;
+-- 7. Storage-Bucket + Policy — nur wenn Supabase-Storage-Schema vorhanden ist.
+-- CI-Migration-Validation-Stub hat kein storage-Schema, deshalb defensiv guarded.
+-- In Production (Supabase) ist storage.buckets + storage.objects immer da.
+do $storage_setup$
+begin
+  if exists (
+    select 1 from information_schema.schemata where schema_name = 'storage'
+  ) and exists (
+    select 1 from information_schema.tables
+    where table_schema = 'storage' and table_name = 'buckets'
+  ) then
+    -- Bucket erstellen falls nicht existiert
+    execute $sql$
+      insert into storage.buckets (id, name, public)
+      values ('audit-evidence', 'audit-evidence', false)
+      on conflict (id) do nothing
+    $sql$;
 
--- 8. Storage-Policy: Tenant-Members lesen via signed URL
-drop policy if exists "audit_evidence_storage_tenant_read" on storage.objects;
-create policy "audit_evidence_storage_tenant_read"
-  on storage.objects for select
-  to authenticated
-  using (
-    bucket_id = 'audit-evidence'
-    and (
-      -- Pfad-Konvention: <tenant_id>/<audit_id>/<evidence_id>.<ext>
-      (storage.foldername(name))[1] in (
-        select tenant_id::text from public.memberships where user_id = auth.uid()
-      )
-    )
-  );
+    -- Policy für tenant-scoped read via signed URL
+    execute $sql$drop policy if exists "audit_evidence_storage_tenant_read" on storage.objects$sql$;
+    execute $sql$
+      create policy "audit_evidence_storage_tenant_read"
+        on storage.objects for select
+        to authenticated
+        using (
+          bucket_id = 'audit-evidence'
+          and (
+            (storage.foldername(name))[1] in (
+              select tenant_id::text from public.memberships where user_id = auth.uid()
+            )
+          )
+        )
+    $sql$;
+  else
+    raise notice 'storage schema not available — skipping bucket + policy setup (CI/test env)';
+  end if;
+end
+$storage_setup$;
 
 -- 9. Helper-View: Findings mit Evidence (für UI + PDF-Rendering)
 -- Einfache View; falls audit_findings noch nicht existiert wird die View

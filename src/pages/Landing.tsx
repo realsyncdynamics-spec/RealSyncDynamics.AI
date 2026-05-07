@@ -24,6 +24,7 @@ import { Navbar } from '../components/Navbar';
 import { Logo } from '../components/Logo';
 import { ArchitectureDiagram } from '../components/ArchitectureDiagram';
 import { LiveProductDemo } from '../components/LiveProductDemo';
+import { IdealCustomers } from '../components/IdealCustomers';
 
 export function Landing() {
   return (
@@ -33,6 +34,7 @@ export function Landing() {
       <main>
         <Hero />
         <TrustBar />
+        <IdealCustomers />
         <Frameworks />
         <Pillars />
         <CourtCases />

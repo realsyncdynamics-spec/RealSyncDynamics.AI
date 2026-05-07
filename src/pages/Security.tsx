@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Shield, Lock, Server, FileCheck, AlertOctagon, Mail, CheckCircle2, Clock } from 'lucide-react';
+import { ArchitectureDiagram } from '../components/ArchitectureDiagram';
 
 export function Security() {
   return (
@@ -101,28 +102,12 @@ export function Security() {
             </p>
           </Section>
 
-          <Section title="Architektur-Diagramm" icon={<Server className="h-5 w-5 text-security-400" />}>
+          <Section title="Architektur-Diagramm (interaktiv)" icon={<Server className="h-5 w-5 text-security-400" />}>
             <p>
-              Vereinfachter Datenfluss von Browser bis Datenbank:
+              Datenfluss von Browser bis Datenbank. Klicke jede Schicht für Controls und Sub-Processor-Details.
             </p>
-            <pre className="p-4 bg-obsidian-950 border border-titanium-700 rounded-none overflow-x-auto text-xs font-mono text-titanium-300 leading-relaxed whitespace-pre">
-{`Browser
-  ↓  HTTPS (TLS 1.3 erzwungen)
-GitHub-Pages CDN  (Edge, kein PII-Storage)
-  ↓
-Static Frontend (React SPA)
-  ↓  Bearer-JWT
-Supabase Edge Functions  (eu-central-1, Frankfurt)
-  ↓  RLS-enforced Queries
-Postgres + Vault  (eu-central-1, AES-256 at rest)
-  ↓  Tenant-ID-Filter (RLS)
-Append-only Audit-Log
-  ↘
-   Optional KI-Pfad:
-     - EU-Cloud (Anthropic EU / OpenAI EU / Google Vertex eu-central)
-     - oder Ollama EU-local (Hostinger Frankfurt VPS, voll souverän)`}
-            </pre>
-            <p className="text-xs text-titanium-500">
+            <ArchitectureDiagram />
+            <p className="text-xs text-titanium-500 mt-3">
               Tenant-ID wird auf jeder Schicht erneut validiert (Browser-Token → Edge-Function-Auth → Postgres-RLS).
               Kein Single-Point-of-Failure für Mandanten-Trennung.
             </p>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BookOpen, Database, Cog, FileSearch, Calendar, GitBranch, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Database, Cog, FileSearch, Calendar, GitBranch, AlertTriangle } from 'lucide-react';
+import { MethodologyBooking } from '../../components/MethodologyBooking';
 
 /**
  * /legal/methodology — Methodology Center.
@@ -205,23 +206,15 @@ export function LegalMethodology() {
             </p>
           </Section>
 
-          <div className="mt-12 p-6 bg-obsidian-900 border border-security-700 rounded-none">
-            <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">Methodik prüfen, dann nutzen</h2>
-            <p className="text-titanium-300 text-sm mb-4">
-              Wenn deine Anwendung regulatorisch sensibel ist (HealthTech, FinTech, Behörden):
-              schau dir vor Pilot-Start unsere Use-Case-Mappings an oder buche einen Methodik-Walkthrough.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Link to="/contact-sales?source=methodology" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Methodik-Walkthrough buchen <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link to="/changelog" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Versions-Changelog
-              </Link>
-              <Link to="/security" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
-                Security-Posture
-              </Link>
-            </div>
+          <MethodologyBooking source="methodology" />
+
+          <div className="flex flex-col sm:flex-row gap-2 pt-4">
+            <Link to="/changelog" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+              Versions-Changelog
+            </Link>
+            <Link to="/security" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
+              Security-Posture
+            </Link>
           </div>
 
           <p className="text-xs text-titanium-500 leading-relaxed">

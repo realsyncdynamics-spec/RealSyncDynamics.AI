@@ -9,10 +9,9 @@ import { HumanVerificationGate } from '../components/HumanVerificationGate';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-// Versions-Tags für Audit-Engine + Tracker-DB. Sichtbar im Report für
-// Reproduzierbarkeit. Bei Major-Release in /changelog dokumentieren.
+// Audit-Engine-Version: Frontend-Side, bei Major-Engine-Bump manuell anpassen
+// und in /changelog dokumentieren.
 const AUDIT_ENGINE_VERSION = '2026.05.0';
-const TRACKER_DB_VERSION = '2026.05.0 (EasyList + Disconnect.me + DACH-Custom)';
 
 interface HistoryPoint {
   score: number;
@@ -33,11 +32,26 @@ interface SharedAudit {
   history: HistoryPoint[] | null;
 }
 
+interface TrackerDbMeta {
+  version: string;
+  updated_at: string;
+  sources: string[];
+}
+
 export function AuditShare() {
   const { token } = useParams<{ token: string }>();
   const [audit, setAudit] = useState<SharedAudit | null>(null);
+  const [trackerDb, setTrackerDb] = useState<TrackerDbMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Tracker-DB-Meta wird wöchentlich vom GH-Action-Bot aktualisiert.
+    fetch('/tracker-db-version.json')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setTrackerDb(data))
+      .catch(() => null);
+  }, []);
 
   useEffect(() => {
     if (!token) { setError('Kein Share-Token in der URL.'); setLoading(false); return; }
@@ -101,7 +115,7 @@ export function AuditShare() {
             </div>
           )}
 
-          {!loading && audit && <SharedReport audit={audit} />}
+          {!loading && audit && <SharedReport audit={audit} trackerDb={trackerDb} />}
         </div>
       </main>
 
@@ -110,7 +124,7 @@ export function AuditShare() {
   );
 }
 
-function SharedReport({ audit }: { audit: SharedAudit }) {
+function SharedReport({ audit, trackerDb }: { audit: SharedAudit; trackerDb: TrackerDbMeta | null }) {
   const config = severityConfig(audit.severity, audit.score);
   const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
   const xText = `${audit.domain} hat ${audit.score}/100 im DSGVO-Audit. Wie schneidet Deine Site ab?`;
@@ -128,8 +142,8 @@ function SharedReport({ audit }: { audit: SharedAudit }) {
           <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none">
             audit-engine: {AUDIT_ENGINE_VERSION}
           </span>
-          <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none">
-            tracker-db: {TRACKER_DB_VERSION}
+          <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none" title={trackerDb ? `Aktualisiert ${trackerDb.updated_at} · Quellen: ${trackerDb.sources.join(', ')}` : ''}>
+            tracker-db: {trackerDb ? `${trackerDb.version} (${trackerDb.updated_at})` : '2026.05.0'}
           </span>
           <Link to="/legal/methodology" className="text-titanium-400 hover:text-titanium-200 underline">
             Methodik

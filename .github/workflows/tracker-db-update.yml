@@ -1,0 +1,79 @@
+name: Tracker-DB Version Update
+
+# Wöchentlicher Job: erzeugt eine frische Version-Tag für die Tracker-DB,
+# basierend auf EasyList-Last-Modified-Header. Schreibt
+# public/tracker-db-version.json und committet die Änderung.
+#
+# Triggert dadurch den Deploy-Workflow (deploy-pages.yml watcht public/**),
+# sodass /audit-Reports automatisch neue Versions-Pills zeigen.
+
+on:
+  schedule:
+    # Jeden Donnerstag um 06:00 UTC (08:00 MEZ / 09:00 MESZ)
+    - cron: '0 6 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-tracker-db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute new tracker-db version
+        id: compute
+        run: |
+          # EasyList Last-Modified-Header als Versions-Anker
+          easylist_modified=$(curl -sI https://easylist.to/easylist/easylist.txt | grep -i '^last-modified:' | cut -d' ' -f2- | tr -d '\r' || true)
+          today=$(date -u +%Y-%m-%d)
+          year=$(date -u +%Y)
+          month=$(date -u +%m)
+          # Existing micro-version aus aktueller JSON, sonst 0
+          old_version=$(jq -r '.version' public/tracker-db-version.json 2>/dev/null || echo "0.0.0")
+          old_micro=$(echo "$old_version" | awk -F. '{print $NF}')
+          # Wenn Major (Jahr+Monat) noch identisch: micro inkrementieren
+          old_major=$(echo "$old_version" | awk -F. '{print $1"."$2}')
+          new_major="${year}.${month}"
+          if [ "$old_major" = "$new_major" ]; then
+            new_micro=$((old_micro + 1))
+          else
+            new_micro=0
+          fi
+          new_version="${new_major}.${new_micro}"
+          next_update=$(date -u -d '+7 days' +%Y-%m-%d 2>/dev/null || date -u -v+7d +%Y-%m-%d)
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+          echo "today=$today" >> "$GITHUB_OUTPUT"
+          echo "next_update=$next_update" >> "$GITHUB_OUTPUT"
+          echo "easylist_modified=$easylist_modified" >> "$GITHUB_OUTPUT"
+
+      - name: Update public/tracker-db-version.json
+        run: |
+          cat > public/tracker-db-version.json <<EOF
+          {
+            "version": "${{ steps.compute.outputs.new_version }}",
+            "updated_at": "${{ steps.compute.outputs.today }}",
+            "easylist_last_modified": "${{ steps.compute.outputs.easylist_modified }}",
+            "sources": [
+              "EasyList",
+              "Disconnect.me",
+              "DACH-Custom"
+            ],
+            "next_update": "${{ steps.compute.outputs.next_update }}"
+          }
+          EOF
+          # Format mit jq für stable diff
+          jq . public/tracker-db-version.json > /tmp/tdb.json && mv /tmp/tdb.json public/tracker-db-version.json
+
+      - name: Commit if changed
+        run: |
+          git config user.name "tracker-db-bot"
+          git config user.email "tracker-db-bot@users.noreply.github.com"
+          if git diff --quiet public/tracker-db-version.json; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git add public/tracker-db-version.json
+          git commit -m "chore(tracker-db): bump to ${{ steps.compute.outputs.new_version }}"
+          git push

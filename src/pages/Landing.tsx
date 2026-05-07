@@ -1,24 +1,33 @@
 /**
- * Landing — Enterprise Redesign (Linear / Vercel / Stripe / Resend Niveau).
+ * Landing — Enterprise-Spec (Engineering-Report-Style, kein Fear-Marketing).
  *
- * Strikt 7 Sections, maximaler Whitespace, dunkle Premium-Ästhetik.
- * Jede Section: ein klarer CTA. Keine Feature-Listen im Hero.
+ * Strikt 10 Sections, neutral-präzise Tonalität, procurement-tauglich.
+ *   1. Hero (sachlich, 3 CTAs)
+ *   2. Problem (neutral, kein Bußgeld-Drama)
+ *   3. Audit Engine (3 Layers: Tracking / Security / Compliance)
+ *   4. Example Report (Engineering-Report-Stil)
+ *   5. How It Works
+ *   6. USP (Decision-Layer-Framing)
+ *   7. Trust (Procurement-Anforderungen)
+ *   8. Proof (aggregierte Stats statt Einzelfälle)
+ *   9. Pricing Preview
+ *   10. Closing CTA
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   ArrowUpRight,
-  ShieldCheck,
-  Database,
-  Cpu,
-  Server,
-  Layers,
-  Lock,
   Activity,
-  Zap,
+  ShieldCheck,
+  Lock,
   CheckCircle2,
-  Globe,
+  AlertCircle,
+  Code2,
+  Database,
+  Server,
+  FileSearch,
+  Layers,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Logo } from '../components/Logo';
@@ -33,17 +42,16 @@ export function Landing() {
 
       <main>
         <Hero />
-        <TrustBar />
-        <IdealCustomers />
-        <Frameworks />
-        <Pillars />
-        <CourtCases />
+        <Problem />
+        <AuditEngine />
+        <ExampleReport />
         <HowItWorks />
-        <WhatIsAutomated />
-        <UniqueValue />
-        <EnterpriseTrust />
-        <PricingCompact />
-        <FinalCta />
+        <UspDecisionLayer />
+        <TrustSection />
+        <ProofStats />
+        <IdealCustomers />
+        <PricingPreview />
+        <ClosingCta />
       </main>
 
       <FooterMinimal />
@@ -57,8 +65,7 @@ export function Landing() {
 
 function Hero() {
   return (
-    <section className="relative pt-24 pb-16 sm:pt-40 sm:pb-32 px-4 sm:px-6 lg:px-8">
-      {/* Subtle grid background */}
+    <section className="relative pt-24 pb-16 sm:pt-40 sm:pb-28 px-4 sm:px-6 lg:px-8">
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 opacity-[0.04]"
@@ -68,35 +75,33 @@ function Hero() {
           backgroundSize: '64px 64px',
         }}
       />
-      {/* Indigo radial glow */}
       <div
         aria-hidden="true"
-        className="absolute top-0 left-1/2 -translate-x-1/2 -z-10 w-[800px] h-[400px] rounded-full opacity-30 blur-3xl"
+        className="absolute top-0 left-1/2 -translate-x-1/2 -z-10 w-[800px] h-[400px] rounded-full opacity-25 blur-3xl"
         style={{ background: 'radial-gradient(circle, #6366f1 0%, transparent 60%)' }}
       />
 
       <div className="max-w-5xl mx-auto text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 border border-titanium-800 bg-obsidian-900/60 backdrop-blur text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-400 rounded-full">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Compliance-Infrastruktur · Made in Germany
+          Compliance-Infrastruktur · EU-Hosted · Engineering-Report-Style
         </div>
 
-        <h1 className="text-3xl sm:text-5xl lg:text-7xl font-display font-bold tracking-tight text-titanium-50 leading-[1.08] sm:leading-[1.05]">
-          Compliance,
-          <br />
+        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight text-titanium-50 leading-[1.08] sm:leading-[1.05]">
+          DSGVO- und Tracking-Audits<br />
           <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            programmatisch geführt.
+            in Minuten statt Wochen.
           </span>
         </h1>
 
-        <p className="mt-6 sm:mt-8 max-w-2xl mx-auto text-base sm:text-xl text-titanium-400 leading-relaxed">
-          Compliance-Operating-System für regulierte Unternehmen. DSGVO,
-          EU&nbsp;AI&nbsp;Act, BAIT &mdash; auditierbar, evidenzbasiert, EU-souverän.
+        <p className="mt-6 sm:mt-8 max-w-2xl mx-auto text-base sm:text-lg text-titanium-400 leading-relaxed">
+          Automatisierte Analyse von Cookies, Tracking-Skripten und Datenflüssen — mit konkreten
+          Umsetzungsmaßnahmen für Compliance-Teams und Entwickler. Strukturierte Findings,
+          versionierte Methodik, audit-fähig.
         </p>
 
-        {/* Above-the-fold trust signals — visible on mobile WITHOUT scroll */}
-        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] sm:text-xs text-titanium-400">
-          {['DSGVO + EU AI Act', 'BAIT & MaRisk Ready', 'EU-Hosted Frankfurt', 'ISO 27001 aligned'].map((t) => (
+        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] sm:text-xs text-titanium-400">
+          {['EU-Datenverarbeitung', 'Audit-Logs pro Scan', 'Kein Tracking ohne Consent im Produktmodus'].map((t) => (
             <li key={t} className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="h-3 w-3 text-emerald-400" strokeWidth={2} />
               {t}
@@ -106,21 +111,27 @@ function Hero() {
 
         <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            to="/audit"
+            to="/contact-sales?source=hero-demo"
             className="group inline-flex items-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
           >
-            Audit starten
+            Live-Demo starten
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <Link
-            to="/contact-sales?source=hero-demo"
-            className="group inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-900/60 backdrop-blur text-titanium-100 hover:border-titanium-500 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
+            to="/audit"
+            className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-900/60 backdrop-blur text-titanium-100 hover:border-titanium-500 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
           >
-            Demo buchen
+            Beispiel-Audit ansehen
+          </Link>
+          <Link
+            to="/api"
+            className="inline-flex items-center gap-2 text-titanium-400 hover:text-titanium-200 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
+          >
+            API &amp; Integration prüfen
           </Link>
         </div>
 
-        <div className="mt-14 sm:mt-24">
+        <div className="mt-14 sm:mt-20">
           <LiveProductDemo />
         </div>
       </div>
@@ -129,23 +140,117 @@ function Hero() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/*  2) TRUST BAR                                                            */
+/*  2) PROBLEM (neutral)                                                    */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function TrustBar() {
+function Problem() {
   const items = [
-    { Icon: Globe, label: 'EU-Hosting · Frankfurt' },
-    { Icon: ShieldCheck, label: 'ISO 27001 aligned' },
-    { Icon: Lock, label: 'DSGVO Art. 5 · DSGVO Art. 32' },
+    {
+      title: 'Third-Party Tracking ohne vollständige Consent-Kaskade',
+      body: 'Tags werden via GTM, Inline-Scripts oder Webhooks geladen, bevor Consent durch User gewährt wurde.',
+    },
+    {
+      title: 'Consent-Banner deckt nicht alle Skripte ab',
+      body: 'Pixel- und Conversion-Tags entstehen oft nachträglich durch Marketing-Tools — Banner-Konfiguration veraltet.',
+    },
+    {
+      title: 'Internationale Tools mit Datenübertragungs-Risiken',
+      body: 'Drittland-Provider laden via CDN, ohne dass Schrems-II-/SCCs-Bewertung dokumentiert ist.',
+    },
+    {
+      title: 'Fehlende technische Schutzmechanismen',
+      body: 'CSP, HSTS, Referrer-Policy oft nicht konfiguriert — Erkennung im Static-Audit trivial.',
+    },
   ];
   return (
-    <section className="border-y border-titanium-900/60 bg-obsidian-950/50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-12">
-          {items.map(({ Icon, label }) => (
-            <div key={label} className="flex items-center justify-center gap-3 text-titanium-500">
-              <Icon className="h-5 w-5 text-titanium-400" strokeWidth={1.5} />
-              <span className="text-xs font-mono uppercase tracking-[0.18em]">{label}</span>
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <SectionHeader
+          eyebrow="Beobachtungen aus der Praxis"
+          title={<>Warum moderne Websites häufig nicht DSGVO-konform sind.</>}
+        />
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-px bg-titanium-900">
+          {items.map((it) => (
+            <div key={it.title} className="bg-obsidian-950 p-6 sm:p-7">
+              <h3 className="font-display font-bold text-titanium-50 text-base">{it.title}</h3>
+              <p className="mt-2 text-sm text-titanium-400 leading-relaxed">{it.body}</p>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 text-xs text-titanium-500 italic">
+          Beobachtungen aus 12&nbsp;Compliance-Audits — keine Drama-Statistik. Detaillierte Methodik:{' '}
+          <Link to="/legal/methodology" className="text-titanium-400 hover:text-titanium-200 underline-offset-4 hover:underline">
+            /legal/methodology
+          </Link>
+          .
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  3) AUDIT ENGINE (3 Layers)                                              */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function AuditEngine() {
+  const layers = [
+    {
+      Icon: Activity,
+      eyebrow: 'Tracking Layer',
+      title: 'Detection',
+      items: [
+        'Google Analytics / Meta Pixel / LinkedIn / TikTok',
+        'Consent-Status-Validierung pro Tag',
+        'Third-Party-Request-Mapping (Pre/Post-Consent)',
+      ],
+    },
+    {
+      Icon: Lock,
+      eyebrow: 'Security Layer',
+      title: 'Headers &amp; Hardening',
+      items: [
+        'CSP-Direktive parsen + Schwächen flaggen',
+        'HSTS · X-Frame-Options · Referrer-Policy',
+        'HTTPS-Enforcement + TLS-Version',
+      ],
+    },
+    {
+      Icon: ShieldCheck,
+      eyebrow: 'Compliance Layer',
+      title: 'Norm-Mapping',
+      items: [
+        'DSGVO Art. 5 / 6 / 28 / 32 / 35',
+        'TTDSG § 25 (technische Cookies vs. Tracker)',
+        'Drittlandtransfer (SCCs · Schrems-II · DPF)',
+      ],
+    },
+  ];
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
+      <div className="max-w-6xl mx-auto">
+        <SectionHeader
+          eyebrow="Audit Engine"
+          title={<>Automatisierte Analyse mit technischer und rechtlicher Bewertung.</>}
+        />
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
+          {layers.map((layer) => (
+            <div key={layer.title} className="bg-obsidian-950 p-7 sm:p-8">
+              <layer.Icon className="h-6 w-6 text-indigo-400" strokeWidth={1.5} />
+              <div className="mt-5 text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
+                {layer.eyebrow}
+              </div>
+              <h3 className="mt-1 font-display font-bold text-xl tracking-tight text-titanium-50">
+                {layer.title}
+              </h3>
+              <ul className="mt-5 space-y-2 text-sm text-titanium-400">
+                {layer.items.map((it) => (
+                  <li key={it} className="flex items-start gap-2">
+                    <span className="text-indigo-400 mt-1">→</span>
+                    <span dangerouslySetInnerHTML={{ __html: it }} />
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
@@ -155,64 +260,125 @@ function TrustBar() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/*  3) PILLARS                                                              */
+/*  4) EXAMPLE REPORT                                                       */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function Pillars() {
-  const pillars = [
-    {
-      Icon: Cpu,
-      title: 'EU AI Act',
-      sub: 'Annex III Klassifikation',
-      body: 'Indikative Risiko-Einstufung, Transparenz-Pflichten nach Art. 52, Conformity-Assessment-Vorlage. Keine Auto-Endurteile — versionierte Decision Trees.',
-      to: '/ai-act-faq',
-      cta: 'Annex III erkunden',
-    },
-    {
-      Icon: ShieldCheck,
-      title: 'DSGVO Compliance',
-      sub: 'Art. 5 / 28 / 30 / 32 / 35',
-      body: 'AVV, VVT, DSFA, TOM-Vorlagen mit branchenspezifischen Use-Cases. 72h-Meldepflicht-Timer mit Aufsichtsbehörden je Bundesland.',
-      to: '/legal/methodology',
-      cta: 'Methodik einsehen',
-    },
-    {
-      Icon: Database,
-      title: 'Daten & Infrastruktur',
-      sub: 'EU-Souverän · Audit-Trail',
-      body: 'Postgres mit RLS, append-only Audit-Log, optionaler EU-local AI-Stack via Ollama. Kein US-Cloud-Default-Pfad.',
-      to: '/security',
-      cta: 'Security-Posture',
-    },
-  ];
-
+function ExampleReport() {
   return (
     <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <SectionHeader
-          eyebrow="Drei Säulen"
-          title={<>Compliance, in drei klar trennbaren Domänen.</>}
+          eyebrow="Engineering-Report-Stil"
+          title={<>So sieht ein Audit-Finding bei uns aus.</>}
         />
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
-          {pillars.map((p) => (
+        <div className="mt-12 bg-obsidian-900 border border-titanium-800 rounded-none">
+          <div className="px-5 py-3 border-b border-titanium-900 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.2em]">
+            <span className="text-titanium-500">finding · GA4_WITHOUT_CONSENT</span>
+            <span className="inline-flex items-center gap-1.5 text-red-300">
+              <AlertCircle className="h-3 w-3" strokeWidth={2} /> severity: high
+            </span>
+          </div>
+
+          <div className="p-6 sm:p-7 space-y-5">
+            <Field label="Finding">Google Analytics ohne wirksames Consent geladen</Field>
+            <Field label="Impact">
+              Unautorisierte Datenverarbeitung vor Einwilligung. Personenbezogene Daten (IP, User-Agent,
+              Client-ID) werden an <code className="font-mono text-emerald-300 text-[12px]">www.google-analytics.com/g/collect</code> übertragen,
+              bevor der Nutzer dem zustimmen konnte.
+            </Field>
+            <Field label="Legal Basis">
+              <span className="font-mono text-[12px]">DSGVO Art. 6 Abs. 1 lit. a · TTDSG § 25 Abs. 1 · Schrems II (USA-Transfer)</span>
+            </Field>
+            <Field label="Technical Fix">
+              Deferred-Loading via Google Consent Mode v2 oder GTM-Tag-Trigger auf{' '}
+              <code className="font-mono text-emerald-300 text-[12px]">consent.granted</code>.
+              Default-State <code className="font-mono text-emerald-300 text-[12px]">analytics_storage: 'denied'</code> setzen.
+            </Field>
+            <Field label="Recommendation">
+              Block-Script-Execution-Before-Opt-In. Test: erste Network-Requests vor Consent prüfen
+              (analytics.google.com darf nicht erscheinen). Nach Fix: Re-Audit zur Bestätigung.
+            </Field>
+            <div className="pt-3 border-t border-titanium-900 flex items-center justify-between text-[11px] font-mono text-titanium-500">
+              <span>methodology: rule_engine 2026.05.0 · tracker-db 2026.05.0</span>
+              <span className="text-emerald-300">confidence: 92 / 100</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 text-center">
+          <Link
+            to="/audit"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-titanium-200 hover:text-titanium-50 underline-offset-4 hover:underline"
+          >
+            Eigene Domain prüfen — kostenlos
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500 mb-1">{label}</div>
+      <div className="text-sm sm:text-base text-titanium-200 leading-relaxed">{children}</div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  5) HOW IT WORKS                                                         */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function HowItWorks() {
+  const steps = [
+    { step: '01', title: 'URL eingeben', body: 'Eine Domain oder mehrere via API. Ohne Account, ohne Setup.' },
+    { step: '02', title: 'Automatisierter Scan', body: '10–60 Sekunden. Real-Browser-Render, Tracker-Detection, Header-Analyse.' },
+    { step: '03', title: 'Compliance-Report', body: 'Strukturierte Findings + Fix-Recommendations + Methodology-Version.' },
+  ];
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
+      <div className="max-w-5xl mx-auto">
+        <SectionHeader
+          eyebrow="Workflow"
+          title={<>Von URL zu Compliance-Report in drei Schritten.</>}
+        />
+
+        <div className="mt-14 relative">
+          <div
+            aria-hidden="true"
+            className="hidden md:block absolute top-6 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+            {steps.map((s) => (
+              <div key={s.step} className="relative text-center md:text-left">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-indigo-500/40 bg-obsidian-950 text-indigo-300 font-mono text-sm font-bold relative z-10">
+                  {s.step}
+                </div>
+                <h3 className="mt-5 font-display font-bold text-xl tracking-tight text-titanium-50">{s.title}</h3>
+                <p className="mt-3 text-sm text-titanium-400 leading-relaxed">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-12 grid sm:grid-cols-3 gap-3 max-w-3xl mx-auto">
+          {[
+            { icon: Code2, label: 'API-Zugriff', to: '/api' },
+            { icon: Layers, label: 'CI/CD-Integration', to: '/integrations' },
+            { icon: Database, label: 'Batch-Scanning', to: '/contact-sales?intent=batch' },
+          ].map((opt) => (
             <Link
-              key={p.title}
-              to={p.to}
-              className="group relative bg-obsidian-950 hover:bg-obsidian-900 transition-colors p-8 sm:p-10"
+              key={opt.label}
+              to={opt.to}
+              className="group flex items-center gap-2 px-4 py-3 border border-titanium-800 hover:border-titanium-600 bg-obsidian-950 text-titanium-300 hover:text-titanium-100 text-sm font-medium transition-colors"
             >
-              <p.Icon className="h-6 w-6 text-indigo-400" strokeWidth={1.5} />
-              <div className="mt-6 text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-                {p.sub}
-              </div>
-              <h3 className="mt-2 font-display font-bold text-2xl tracking-tight text-titanium-50">
-                {p.title}
-              </h3>
-              <p className="mt-4 text-sm text-titanium-400 leading-relaxed">{p.body}</p>
-              <div className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-titanium-200 group-hover:text-white">
-                {p.cta}
-                <ArrowUpRight className="h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </div>
+              <opt.icon className="h-4 w-4 text-titanium-500 group-hover:text-indigo-400" strokeWidth={1.5} />
+              {opt.label}
+              <ArrowUpRight className="h-3 w-3 ml-auto text-titanium-500 group-hover:text-titanium-300" />
             </Link>
           ))}
         </div>
@@ -222,64 +388,251 @@ function Pillars() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/*  4) HOW IT WORKS                                                         */
+/*  6) USP                                                                  */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function HowItWorks() {
-  const steps = [
+function UspDecisionLayer() {
+  const items = [
+    'Technische und rechtliche Bewertung kombiniert — kein Tool-Silo.',
+    'Priorisierte Fix-Liste statt reiner Findings — Engineering-tauglich.',
+    'Developer-first Output: JSON-API + CI-Integration — kein PDF-only-Tool.',
+    'Audit-ready Export für DSBs &amp; Legal-Teams — Sub-Processor-Notification automatisiert.',
+  ];
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <SectionHeader
+          eyebrow="Differentiation"
+          title={<>Mehr als ein Scanner — ein Compliance-Decision-Layer.</>}
+        />
+        <ul className="mt-12 space-y-4 max-w-3xl">
+          {items.map((it) => (
+            <li key={it} className="flex items-start gap-3">
+              <span className="font-mono text-xs text-indigo-300 mt-1">+</span>
+              <p className="text-base text-titanium-200" dangerouslySetInnerHTML={{ __html: it }} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  7) TRUST SECTION                                                        */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function TrustSection() {
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-10">
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
+              Procurement-tauglich · Audit-ready
+            </div>
+            <h2 className="mt-3 font-display font-bold text-3xl sm:text-4xl tracking-tight text-titanium-50">
+              Für Teams, die Compliance ernsthaft operationalisieren.
+            </h2>
+          </div>
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-emerald-700/60 bg-emerald-950/20 text-emerald-300 text-[11px] font-mono uppercase tracking-[0.18em]">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            SOC 2-ready
+          </span>
+        </div>
+
+        <ul className="mb-12 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 max-w-3xl">
+          {[
+            'EU-Datenhosting (Frankfurt · Supabase eu-central-1)',
+            'Audit-Logs pro Scan (append-only Postgres-Trigger)',
+            'Rollen- &amp; Rechtekonzept (RLS · SECURITY DEFINER)',
+            'DSGVO-konforme Verarbeitung im Produktmodus (Art. 5/32)',
+            'Subprozessoren transparent dokumentiert',
+            'Versionierte Rule-Engine (2026.05.0)',
+          ].map((it) => (
+            <li key={it} className="flex items-start gap-2 text-sm text-titanium-300">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={1.5} />
+              <span dangerouslySetInnerHTML={{ __html: it }} />
+            </li>
+          ))}
+        </ul>
+
+        <ArchitectureDiagram />
+
+        <div className="mt-12 flex items-center gap-6 flex-wrap text-sm">
+          <Link to="/security" className="group inline-flex items-center gap-2 text-titanium-100 hover:text-white">
+            Security-Posture
+            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <Link to="/legal/sub-processors" className="text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline">
+            Sub-Processors
+          </Link>
+          <Link to="/grenzen" className="text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline">
+            Grenzen
+          </Link>
+          <Link to="/legal/methodology" className="text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline">
+            Methodik
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  8) PROOF — aggregierte Stats                                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function ProofStats() {
+  return (
+    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <SectionHeader
+          eyebrow="Aggregierte Audit-Befunde"
+          title={<>Typische Ergebnisse aus realen Analysen.</>}
+        />
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
+          <StatCard
+            number="8 – 15"
+            label="Tracking-Findings pro Website"
+            sub="Median über static-HTTP-Audits"
+          />
+          <StatCard
+            number="62 %"
+            label="Sites mit Tracker vor Consent"
+            sub="Third-Party-Scripts pre-load"
+          />
+          <StatCard
+            number="3 / 5"
+            label="Header-Schwächen pro Site"
+            sub="CSP · HSTS · Referrer-Policy"
+          />
+        </div>
+
+        <div className="mt-10 max-w-3xl">
+          <h3 className="font-display font-bold text-titanium-50 text-base mb-3">Häufigste Issue-Cluster</h3>
+          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {['CSP fehlt oder ineffektiv', 'Unkontrollierte Pixel (Meta · LinkedIn · TikTok)', 'Fehlende IP-Anonymisierung'].map((it) => (
+              <li
+                key={it}
+                className="p-3 bg-obsidian-900 border border-titanium-800 text-sm text-titanium-300"
+              >
+                {it}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 text-xs text-titanium-500 italic">
+            Anonymisiert &amp; aggregiert. Keine Site-spezifische Aussage. Datenbasis verfügbar in der
+            Methodology-Doc unter{' '}
+            <Link to="/legal/methodology" className="text-titanium-400 hover:text-titanium-200 underline-offset-4 hover:underline">
+              /legal/methodology
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatCard({ number, label, sub }: { number: string; label: string; sub: string }) {
+  return (
+    <div className="bg-obsidian-950 p-7 sm:p-8 text-center">
+      <div className="font-display font-bold text-4xl sm:text-5xl tracking-tight bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent">
+        {number}
+      </div>
+      <div className="mt-3 text-sm text-titanium-200 font-medium">{label}</div>
+      <div className="mt-1 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500">{sub}</div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  9) PRICING PREVIEW                                                      */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function PricingPreview() {
+  const tiers = [
     {
-      step: '01',
-      title: 'Audit',
-      body: 'Real-Browser-Scan mit Tracker-DB-Match, Cookie-Banner-Heuristik, Subpages-Crawl.',
+      name: 'Starter',
+      price: 'Kostenlos',
+      sub: 'Einzel-URLs',
+      features: ['8 Free-Tools', '1 Domain pro Scan', 'Methodik einsehbar'],
+      to: '/audit',
+      cta: 'Starten',
+      highlight: false,
     },
     {
-      step: '02',
-      title: 'Analyse',
-      body: 'Versionierte Rule Engine evaluiert Findings, Confidence-Score per Rule, Evidence-Layer persistiert Beweise.',
+      name: 'Team',
+      price: '€ 149',
+      sub: 'pro Monat / System',
+      features: ['Wiederkehrende Audits', 'API + Webhooks', 'Continuous Monitoring'],
+      to: '/pricing?tier=team',
+      cta: 'Pilot starten',
+      highlight: true,
     },
     {
-      step: '03',
-      title: 'Dokumente',
-      body: 'AVV, VVT, DSFA, TOM, AI-Act-Klassifikation als Block-komponierte Vorlagen — vor Export gated durch Human-Verification.',
+      name: 'Enterprise',
+      price: 'Anfrage',
+      sub: 'API · Compliance Monitoring',
+      features: ['Unlimited Systeme', 'SLA · DPA', 'Multi-Tenant für Agenturen'],
+      to: '/contact-sales?intent=enterprise',
+      cta: 'Sales kontaktieren',
+      highlight: false,
     },
   ];
 
   return (
     <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <SectionHeader
-          eyebrow="Workflow"
-          title={<>Drei Schritte vom Scan zum Dokument.</>}
+          eyebrow="Pricing Preview"
+          title={<>Skalierbar von Einzelprüfung bis Enterprise-Governance.</>}
         />
 
-        <div className="mt-16 relative">
-          {/* Connecting line */}
-          <div
-            aria-hidden="true"
-            className="hidden md:block absolute top-6 left-[8.33%] right-[8.33%] h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
-            {steps.map((s) => (
-              <div key={s.step} className="relative text-center md:text-left">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-indigo-500/40 bg-obsidian-950 text-indigo-300 font-mono text-sm font-bold relative z-10">
-                  {s.step}
-                </div>
-                <h3 className="mt-6 font-display font-bold text-xl tracking-tight text-titanium-50">
-                  {s.title}
-                </h3>
-                <p className="mt-3 text-sm text-titanium-400 leading-relaxed">{s.body}</p>
-              </div>
-            ))}
-          </div>
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
+          {tiers.map((t) => (
+            <div
+              key={t.name}
+              className={`relative p-8 ${t.highlight ? 'bg-obsidian-900 ring-1 ring-indigo-500/40' : 'bg-obsidian-950'}`}
+            >
+              {t.highlight && (
+                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-indigo-500 text-white">
+                  Empfohlen
+                </span>
+              )}
+              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">{t.name}</div>
+              <div className="mt-3 font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight">{t.price}</div>
+              <div className="mt-1 text-xs text-titanium-500">{t.sub}</div>
+              <ul className="mt-6 space-y-2">
+                {t.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-titanium-300">
+                    <CheckCircle2 className="h-4 w-4 text-titanium-500 shrink-0 mt-0.5" strokeWidth={1.5} />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to={t.to}
+                className={`mt-7 inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold tracking-tight rounded-none transition-colors ${
+                  t.highlight
+                    ? 'bg-white text-obsidian-950 hover:bg-titanium-200'
+                    : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
+                }`}
+              >
+                {t.cta} <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-16 text-center">
+        <div className="mt-10 text-center">
           <Link
-            to="/legal/methodology"
+            to="/pricing"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-titanium-300 hover:text-titanium-50 underline-offset-4 hover:underline"
           >
-            Wie unsere Methodik im Detail funktioniert
+            Pricing-Details ansehen
             <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -289,142 +642,32 @@ function HowItWorks() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/*  5) UNIQUE VALUE                                                         */
+/*  10) CLOSING CTA                                                         */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function UniqueValue() {
-  const items = [
-    {
-      Icon: Layers,
-      title: 'Rule Engine',
-      body: 'Versionierte JSON-Regeln pro Norm. Keine if/else-Kaskaden. Audit-Trail über jede Engine-Version.',
-    },
-    {
-      Icon: Activity,
-      title: 'Evidence Layer',
-      body: 'Append-only Beweis-Items pro Finding: Screenshot, Network-Log, DOM-Snapshot, Cookie-Dump.',
-    },
-    {
-      Icon: Lock,
-      title: 'Immutable Audit Logs',
-      body: 'Postgres-Trigger blockiert UPDATE/DELETE. Pflicht-Nachweis für BAIT, MaRisk, AI-Act-High-Risk.',
-    },
-    {
-      Icon: Zap,
-      title: 'Real-Time Monitoring',
-      body: 'Auto-Re-Audits bei Site-Changes. Webhook-Notifications bei neuen Trackern, Sub-Processor-Veränderungen.',
-    },
-  ];
-
-  return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <SectionHeader
-          eyebrow="Was uns einmalig macht"
-          title={<>Defensible Assets statt Feature-Sammlung.</>}
-        />
-
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 gap-px bg-titanium-900">
-          {items.map((it) => (
-            <div key={it.title} className="bg-obsidian-950 p-8 sm:p-10">
-              <it.Icon className="h-5 w-5 text-purple-400" strokeWidth={1.5} />
-              <h3 className="mt-5 font-display font-bold text-xl tracking-tight text-titanium-50">
-                {it.title}
-              </h3>
-              <p className="mt-3 text-sm text-titanium-400 leading-relaxed">{it.body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  6) ENTERPRISE TRUST                                                     */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function EnterpriseTrust() {
-  return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-10">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-              Architektur · Enterprise-ready
-            </div>
-            <h2 className="mt-3 font-display font-bold text-3xl sm:text-5xl tracking-tight text-titanium-50">
-              Tenant-Isolation auf jeder Schicht.
-            </h2>
-          </div>
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-emerald-700/60 bg-emerald-950/20 text-emerald-300 text-[11px] font-mono uppercase tracking-[0.18em]">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            SOC 2-ready
-          </span>
-        </div>
-
-        <ArchitectureDiagram />
-
-        <div className="mt-12 flex items-center gap-6 flex-wrap">
-          <Link
-            to="/security"
-            className="group inline-flex items-center gap-2 text-sm font-medium text-titanium-100 hover:text-white"
-          >
-            Volle Security-Posture ansehen
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-          <Link
-            to="/legal/sub-processors"
-            className="text-sm text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline"
-          >
-            Sub-Processors-Liste
-          </Link>
-          <Link
-            to="/grenzen"
-            className="text-sm text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline"
-          >
-            Grenzen automatisierter Compliance
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  7) FINAL CTA                                                            */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function FinalCta() {
+function ClosingCta() {
   const [email, setEmail] = useState('');
   return (
     <section className="py-32 sm:py-40 px-4 sm:px-6 lg:px-8 relative">
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 opacity-20 blur-3xl"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, #6366f1 0%, transparent 60%)',
-        }}
+        className="absolute inset-0 -z-10 opacity-15 blur-3xl"
+        style={{ background: 'radial-gradient(circle at 50% 50%, #6366f1 0%, transparent 60%)' }}
       />
-
       <div className="max-w-3xl mx-auto text-center">
-        <h2 className="font-display font-bold text-4xl sm:text-6xl tracking-tight text-titanium-50 leading-[1.05]">
-          Starte deine
+        <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight text-titanium-50 leading-[1.05]">
+          Machen Sie Ihre Web-Compliance
           <br />
           <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            Compliance-Journey.
+            messbar.
           </span>
         </h2>
-        <p className="mt-6 text-lg text-titanium-400">
-          Erster Audit in 30 Sekunden — kostenlos, ohne Account.
-        </p>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
             if (!email) return;
-            const url = `/audit?email=${encodeURIComponent(email)}`;
-            window.location.assign(url);
+            window.location.assign(`/audit?email=${encodeURIComponent(email)}`);
           }}
           className="mt-10 flex flex-col sm:flex-row gap-2 max-w-lg mx-auto"
         >
@@ -440,276 +683,15 @@ function FinalCta() {
             type="submit"
             className="group inline-flex items-center justify-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
           >
-            Audit starten
+            Eigene Domain prüfen
             <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </form>
 
-        <p className="mt-4 text-[11px] font-mono text-titanium-600 uppercase tracking-[0.18em]">
-          Keine Kreditkarte · Kein Account · DSGVO-konform
-        </p>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  FRAMEWORKS STRIP                                                        */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function Frameworks() {
-  const items = [
-    { code: 'DSGVO', sub: 'EU 2016/679' },
-    { code: 'EU AI Act', sub: '2024/1689' },
-    { code: 'BAIT', sub: 'BaFin' },
-    { code: 'MaRisk', sub: 'AT 7.2' },
-    { code: 'TTDSG', sub: '§ 25' },
-    { code: 'BDSG', sub: '§ 26 / § 38' },
-  ];
-  return (
-    <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-            Native Coverage
-          </div>
-          <h2 className="mt-3 font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50">
-            Sechs Frameworks. Eine Plattform.
-          </h2>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-titanium-900">
-          {items.map((it) => (
-            <div
-              key={it.code}
-              className="bg-obsidian-950 hover:bg-obsidian-900 transition-colors p-5 text-center"
-            >
-              <div className="font-display font-bold text-base text-titanium-50">{it.code}</div>
-              <div className="mt-1 text-[10px] font-mono uppercase tracking-[0.18em] text-titanium-500">
-                {it.sub}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  COURT CASES                                                             */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function CourtCases() {
-  const cases = [
-    {
-      court: 'LG München I',
-      year: '2022',
-      norm: 'Google Fonts',
-      penalty: '€ 100 / Anlassfall',
-      ref: 'Az. 3 O 17493/20',
-    },
-    {
-      court: 'LfDI BaWü',
-      year: '2023',
-      norm: 'Newsletter ohne DOI',
-      penalty: '€ 50 000',
-      ref: 'Tätigkeitsbericht 2023',
-    },
-    {
-      court: 'DSB Österreich',
-      year: '2022',
-      norm: 'Google Analytics',
-      penalty: 'Untersagungsverfügung',
-      ref: 'GZ. D155.027 / 22',
-    },
-    {
-      court: 'BfDI · BVerwG',
-      year: '2023',
-      norm: 'Verschlüsselung Art. 32',
-      penalty: '€ 105 000',
-      ref: '6 C 23.21 / 2023',
-    },
-  ];
-  return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
-      <div className="max-w-6xl mx-auto">
-        <SectionHeader
-          eyebrow="Realer Enforcement-Druck"
-          title={<>Vier Bescheide, die zeigen warum es jetzt eilt.</>}
-        />
-        <p className="mt-6 max-w-2xl text-titanium-400 text-base leading-relaxed">
-          Aufsichtsbehörden setzen DSGVO seit 2022 spürbar durch. Die folgenden Fälle
-          haben Präzedenz für Standard-Verstöße geschaffen, denen 80&nbsp;% der DACH-Sites ausgesetzt sind.
-        </p>
-
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-px bg-titanium-900">
-          {cases.map((c) => (
-            <div key={c.ref} className="bg-obsidian-950 p-6 sm:p-8">
-              <div className="flex items-baseline justify-between gap-3 flex-wrap">
-                <span className="font-display font-bold text-titanium-50 text-lg">{c.court}</span>
-                <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500">
-                  {c.year}
-                </span>
-              </div>
-              <div className="mt-3 flex items-baseline gap-3 flex-wrap">
-                <span className="text-titanium-300 text-sm">{c.norm}</span>
-                <span className="text-amber-300 font-mono font-bold text-sm">{c.penalty}</span>
-              </div>
-              <div className="mt-4 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-600">
-                {c.ref}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <Link
-            to="/audit"
-            className="inline-flex items-center gap-2 text-sm font-medium text-titanium-200 hover:text-titanium-50 underline-offset-4 hover:underline"
-          >
-            Bin ich einem dieser Risiken ausgesetzt? Audit starten
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  WHAT IS AUTOMATED                                                       */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function WhatIsAutomated() {
-  const items = [
-    'Cookie- & Tracker-Erkennung (URL-Pattern + DOM)',
-    'Datenschutzerklärung-Generation (Block-System)',
-    'AVV-Vorlagen pro Sub-Processor',
-    'Risiko-Klassifikation (AI Act Annex III)',
-    'Audit-Protokolle (append-only)',
-    'Continuous-Compliance-Monitoring',
-    'TOMs & DSFA-Workflows',
-    '72h-Meldepflicht-Timer mit Aufsichtsbehörden je Bundesland',
-  ];
-
-  return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
-        <SectionHeader
-          eyebrow="Was die Plattform ohne Aufwand erledigt"
-          title={<>Acht operative Routinen — automatisiert.</>}
-        />
-        <ul className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-          {items.map((it) => (
-            <li key={it} className="flex items-start gap-3 text-titanium-300">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" strokeWidth={1.5} />
-              <span className="text-base">{it}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  PRICING COMPACT                                                         */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function PricingCompact() {
-  const tiers = [
-    {
-      name: 'Starter',
-      price: 'Kostenlos',
-      sub: 'Self-Service',
-      features: ['8 Free-Tools', 'Audit für 1 Domain', 'Methodik einsehbar'],
-      to: '/audit',
-      cta: 'Jetzt loslegen',
-      highlight: false,
-    },
-    {
-      name: 'Professional',
-      price: '€ 149',
-      sub: 'pro Monat / System',
-      features: ['Alle Tools mit Dashboard', 'API + Webhooks', 'Continuous Monitoring', 'Sub-Processor-Notification'],
-      to: '/pricing?tier=pro',
-      cta: 'Pilot starten',
-      highlight: true,
-    },
-    {
-      name: 'Enterprise',
-      price: 'Anfrage',
-      sub: 'Custom · SLA · DPA',
-      features: ['Unlimited Systeme', 'Multi-Tenant für Agenturen', 'On-Premise möglich', 'SLA 99.9 %'],
-      to: '/contact-sales?intent=enterprise',
-      cta: 'Sales kontaktieren',
-      highlight: false,
-    },
-  ];
-
-  return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
-      <div className="max-w-6xl mx-auto">
-        <SectionHeader
-          eyebrow="Preise"
-          title={<>Drei Tiers. Klar abgegrenzt. Keine Setup-Fees.</>}
-        />
-
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900">
-          {tiers.map((t) => (
-            <div
-              key={t.name}
-              className={`relative p-8 sm:p-10 ${
-                t.highlight
-                  ? 'bg-obsidian-900 ring-1 ring-indigo-500/40'
-                  : 'bg-obsidian-950'
-              }`}
-            >
-              {t.highlight && (
-                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-indigo-500 text-white">
-                  Empfohlen
-                </span>
-              )}
-              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-                {t.name}
-              </div>
-              <div className="mt-3 font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight">
-                {t.price}
-              </div>
-              <div className="mt-1 text-xs text-titanium-500">{t.sub}</div>
-
-              <ul className="mt-6 space-y-2">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-titanium-300">
-                    <CheckCircle2 className="h-4 w-4 text-titanium-500 shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link
-                to={t.to}
-                className={`mt-8 inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold tracking-tight rounded-none transition-colors ${
-                  t.highlight
-                    ? 'bg-white text-obsidian-950 hover:bg-titanium-200'
-                    : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
-                }`}
-              >
-                {t.cta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 text-center">
-          <Link
-            to="/pricing"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-titanium-300 hover:text-titanium-50 underline-offset-4 hover:underline"
-          >
-            Volle Pricing-Details ansehen
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500">
+          <Link to="/contact-sales?source=closing-demo" className="hover:text-titanium-300">Live-Demo starten</Link>
+          <Link to="/api" className="hover:text-titanium-300">API testen</Link>
+          <Link to="/audit" className="hover:text-titanium-300">Beispiel-Audit</Link>
         </div>
       </div>
     </section>
@@ -722,7 +704,7 @@ function PricingCompact() {
 
 function SectionHeader({ eyebrow, title }: { eyebrow: string; title: React.ReactNode }) {
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">{eyebrow}</div>
       <h2 className="mt-3 font-display font-bold text-3xl sm:text-5xl tracking-tight text-titanium-50 leading-[1.05]">
         {title}
@@ -749,7 +731,6 @@ function FooterMinimal() {
           </div>
         </div>
 
-        {/* Haftungsausschluss */}
         <div className="mt-10 p-5 border border-amber-900/40 bg-amber-950/10 rounded-none">
           <div className="flex items-start gap-3">
             <Server className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" strokeWidth={1.5} />
@@ -758,34 +739,23 @@ function FooterMinimal() {
               RealSync Dynamics liefert automatisiert generierte Vorlagen und Methodik-basierte
               Klassifikationen — keine individuelle Rechtsberatung im Sinne des RDG. Outputs sind
               nicht durch externen Datenschutz-Anwalt validiert; vor produktivem Einsatz empfehlen
-              wir anwaltliche Prüfung. Methodik und Grenzen sind transparent unter{' '}
+              wir anwaltliche Prüfung.{' '}
               <Link to="/legal/methodology" className="text-amber-300 hover:text-amber-200 underline-offset-4 hover:underline">
                 /legal/methodology
               </Link>{' '}
-              und{' '}
+              ·{' '}
               <Link to="/grenzen" className="text-amber-300 hover:text-amber-200 underline-offset-4 hover:underline">
                 /grenzen
-              </Link>{' '}
-              dokumentiert. Bei juristischer Pflicht-Prüfung vermitteln wir Partner-Anwälte über{' '}
-              <Link
-                to="/contact-sales?source=footer-disclaimer"
-                className="text-amber-300 hover:text-amber-200 underline-offset-4 hover:underline"
-              >
-                Kontakt
               </Link>
-              .
             </p>
           </div>
         </div>
 
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-[11px] font-mono text-titanium-600 uppercase tracking-[0.18em]">
           <span>© 2026 RealSync Dynamics · Made in Germany · Hosted in EU</span>
-          <Link to="/legal/methodology" className="hover:text-titanium-400">
-            Methodik 2026.05.0
-          </Link>
+          <Link to="/legal/methodology" className="hover:text-titanium-400">Methodik 2026.05.0</Link>
         </div>
       </div>
     </footer>
   );
 }
-

@@ -64,6 +64,9 @@ Deno.serve(async (req) => {
       case 'customer.subscription.deleted':
         await syncSubscription(admin, event.data.object as Stripe.Subscription);
         break;
+      case 'checkout.session.completed':
+        await sendOnboardingWelcome(admin, event.data.object as Stripe.Checkout.Session);
+        break;
       // Add more handlers as the billing surface grows; ignore unknown types.
     }
   } catch (err) {
@@ -111,4 +114,80 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
     .from('subscriptions')
     .upsert(row, { onConflict: 'stripe_subscription_id' });
   if (error) throw error;
+}
+
+// deno-lint-ignore no-explicit-any
+async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Session): Promise<void> {
+  const email = session.customer_details?.email ?? session.customer_email;
+  if (!email) {
+    console.log("[stripe-webhook] checkout.session.completed: no email — skip welcome");
+    return;
+  }
+
+  const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
+  const FROM = Deno.env.get("RESEND_FROM") ?? "RealSync Dynamics <hello@realsyncdynamicsai.de>";
+  const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://realsyncdynamicsai.de";
+
+  // Plan-Key + Produkt aus Line-Items für Email-Personalisierung.
+  // Verwende eine einfache Detection: amount_total + currency + first line description.
+  const amount = session.amount_total ?? 0;
+  const currency = (session.currency ?? "eur").toUpperCase();
+  const isOneTime = session.mode === "payment";
+  const isSubscription = session.mode === "subscription";
+  const productLabel = isSubscription
+    ? "RealSync Cookie-SDK Pro"
+    : isOneTime
+      ? "RealSync Audit-Pro"
+      : "RealSync Dynamics";
+
+  // Setup-Wizard-URL mit session-id für Auto-Linking
+  const setupUrl = `${SITE}/welcome?session=${encodeURIComponent(session.id)}&product=${encodeURIComponent(productLabel)}`;
+
+  // Persistiere Onboarding-State (idempotent — falls Webhook retry, nichts kaputt)
+  await admin
+    .from("customer_onboarding")
+    .upsert(
+      {
+        stripe_session_id: session.id,
+        email,
+        product_label: productLabel,
+        amount_cents: amount,
+        currency,
+        mode: session.mode,
+        completed_at: null,
+      },
+      { onConflict: "stripe_session_id" }
+    )
+    .select()
+    .single();
+
+  if (!RESEND_KEY) {
+    console.log("[stripe-webhook] RESEND_API_KEY missing — onboarding state saved, email skipped");
+    return;
+  }
+
+  const subject = `Willkommen bei RealSync Dynamics — ${productLabel}`;
+  const html = `<!doctype html>
+<html lang="de">
+<body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f9fafb;margin:0;padding:24px;color:#374151;line-height:1.6">
+  <div style="max-width:560px;margin:0 auto;background:#fff;padding:32px 28px;border:1px solid #e5e7eb">
+    <h1 style="font-size:22px;color:#0f172a;font-weight:700;margin:0 0 16px">Willkommen — Kauf bestätigt.</h1>
+    <p style="margin:0 0 16px"><strong>Produkt:</strong> ${productLabel}<br /><strong>Betrag:</strong> ${(amount / 100).toFixed(2)} ${currency}</p>
+    <p style="margin:0 0 24px">Nächster Schritt: 3-Klick-Setup. Dort generierst du deinen API-Key, verbindest deine Domain und lädst das Embed-Snippet.</p>
+    <a href="${setupUrl}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:#fff;text-decoration:none;font-weight:600;border-radius:0">Setup starten</a>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0 16px" />
+    <p style="font-size:11px;color:#9ca3af;margin:0 0 8px">RealSync Dynamics · Schwarzburger Str. 31, 98724 Neuhaus am Rennweg · Made in Germany · EU-Hosted</p>
+    <p style="font-size:11px;color:#9ca3af;margin:0">Bei Fragen: <a href="mailto:hello@realsyncdynamicsai.de" style="color:#9ca3af">hello@realsyncdynamicsai.de</a></p>
+  </div>
+</body>
+</html>`;
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from: FROM, to: [email], subject, html }),
+  });
 }

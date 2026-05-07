@@ -49,6 +49,9 @@ import { Faq } from './pages/Faq';
 import { Changelog } from './pages/Changelog';
 import { SaasAnbieterLanding } from './pages/SaasAnbieterLanding';
 import { Marktanalyse } from './pages/Marktanalyse';
+import { EducationLanding } from './pages/EducationLanding';
+import { HrSoftwareLanding } from './pages/HrSoftwareLanding';
+import { IubendaAlternative } from './pages/IubendaAlternative';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -134,6 +137,14 @@ function RoutesWithTracking() {
       <Route path="/saas-providers" element={<SaasAnbieterLanding />} />
       <Route path="/marktanalyse" element={<Marktanalyse />} />
       <Route path="/market-analysis" element={<Marktanalyse />} />
+      {/* Education + HR Doorways */}
+      <Route path="/bildung" element={<EducationLanding />} />
+      <Route path="/education" element={<EducationLanding />} />
+      <Route path="/schulen" element={<EducationLanding />} />
+      <Route path="/hr-software" element={<HrSoftwareLanding />} />
+      <Route path="/personalwesen" element={<HrSoftwareLanding />} />
+      {/* More Competitor-Alternatives */}
+      <Route path="/iubenda-alternative" element={<IubendaAlternative />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

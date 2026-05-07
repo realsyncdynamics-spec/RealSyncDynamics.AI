@@ -35,6 +35,7 @@ import { ArchitectureDiagram } from '../components/ArchitectureDiagram';
 import { LiveProductDemo } from '../components/LiveProductDemo';
 import { IdealCustomers } from '../components/IdealCustomers';
 import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
+import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 
 export function Landing() {
   return (
@@ -51,6 +52,7 @@ export function Landing() {
         <TrustSection />
         <ProofStats />
         <IdealCustomers />
+        <WatchmakerShowcase />
         <ThreeStepDsgvoSection />
         <PricingPreview />
         <ClosingCta />

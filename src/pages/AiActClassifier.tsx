@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 const QUESTIONS = [
   { id: 'biometric', text: 'Verarbeitet Ihr System biometrische Daten zur Identifikation?', high: true },
@@ -86,7 +87,8 @@ export function AiActClassifier() {
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
         <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>EU AI Act · Annex III</div>
         <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>KI-Risikoklassifikation</h1>
-        <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Finden Sie in 2 Minuten heraus, welche AI-Act-Anforderungen für Ihr System gelten.</p>
+        <p style={{ color: '#9ca3af', marginBottom: '1rem' }}>Finden Sie in 2 Minuten heraus, welche AI-Act-Anforderungen für Ihr System gelten.</p>
+        <LegalDisclaimer context="classification" />
 
         {result === null ? (
           <div style={{ border: '1px solid #374151', borderRadius: 4, padding: '2rem' }}>

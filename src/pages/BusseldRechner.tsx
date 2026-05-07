@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 interface BusseldConfig {
   companySize: 'micro' | 'small' | 'medium' | 'large' | 'enterprise';
@@ -117,13 +118,9 @@ export function BusseldRechner() {
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <span style={{ fontSize: 40 }}>⚖️</span>
           <h1 style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 4px' }}>DSGVO-Bußgeldrechner</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>Schätzen Sie das Bußgeldrisiko Ihres Unternehmens — auf Basis von Art. 83 DSGVO</p>
-          <div style={{ background: '#3b1515', border: '1px solid #dc2626', borderRadius: 8, padding: '10px 16px', marginTop: 16 }}>
-            <p style={{ color: '#fca5a5', fontSize: 13, margin: 0 }}>
-              ⚠️ Dies ist eine <strong>Schätzung</strong> zur Risikoorientierung. Die tatsächlichen Bußgelder werden von Aufsichtsbehörden im Einzelfall festgesetzt.
-            </p>
-          </div>
+          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px 0' }}>Schätzen Sie das Bußgeldrisiko Ihres Unternehmens — auf Basis von Art. 83 DSGVO</p>
         </div>
+        <LegalDisclaimer context="calculator" />
 
         <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 4 }}>Unternehmensgröße</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, marginTop: 10 }}>
@@ -186,7 +183,7 @@ export function BusseldRechner() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
                 {[
                   { label: 'Minimum', val: result.min, color: '#16a34a' },
-                  { label: 'Wahrscheinlich', val: result.likely, color: '#d97706', bold: true },
+                  { label: 'Mittlere Schätzung', val: result.likely, color: '#d97706', bold: true },
                   { label: 'Maximum', val: result.max, color: '#dc2626' },
                 ].map(({ label: lbl, val, color, bold }) => (
                   <div key={lbl} style={{ background: '#1a1a2e', borderRadius: 10, padding: 16, textAlign: 'center' as const }}>

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -87,10 +88,13 @@ export function AuditLanding() {
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
                   Wo verstößt Deine Website gegen die <span className="text-security-400">DSGVO</span>?
                 </h1>
-                <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
+                <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-6">
                   Wir scannen Deine Site auf 12 typische Compliance-Fallen — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern.
                   Du bekommst sofort einen Score und eine konkrete Fix-Liste.
                 </p>
+                <div className="max-w-xl mx-auto text-left">
+                  <LegalDisclaimer context="audit" />
+                </div>
               </div>
 
               {error && (

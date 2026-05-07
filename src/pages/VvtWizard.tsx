@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LegalDisclaimer } from '../components/LegalDisclaimer';
 
 interface VvtEntry {
   id: string;
@@ -54,7 +55,8 @@ export function VvtWizard() {
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <div style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>DSGVO Art. 30</div>
         <h1 style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>Verarbeitungsverzeichnis (VVT)</h1>
-        <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Pflichtdokument nach Art. 30 DSGVO — strukturiert erfassen, als PDF exportieren.</p>
+        <p style={{ color: '#9ca3af', marginBottom: '1rem' }}>Pflichtdokument nach Art. 30 DSGVO — strukturiert erfassen, als PDF exportieren.</p>
+        <LegalDisclaimer context="document" />
 
         {!exported ? (
           <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '1.5rem' }}>

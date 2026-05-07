@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, ArrowRight, CheckCircle2, FileText, Award, Clock } from 'lucide-react';
 
 const STRIPE_PAYMENT_LINK = (import.meta.env.VITE_STRIPE_AUDIT_PRO_LINK as string | undefined)
-  ?? 'https://realsyncdynamicsai.de/contact-sales?source=audit-pro';
+  ?? 'https://buy.stripe.com/4gM00icIC44L76HgCp8og0g';
 
 export function AuditPro() {
   return (

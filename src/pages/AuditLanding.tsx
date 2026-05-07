@@ -7,6 +7,7 @@ import {
 
 import { getAffiliateRef } from '../lib/affiliate';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
+import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -145,6 +146,7 @@ export function AuditLanding() {
               </form>
 
               <Pillars />
+              <AuditToWebsiteNote source="audit-pre" />
             </>
           )}
 
@@ -305,6 +307,28 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           >
             Andere URL prüfen
           </button>
+        </div>
+      </div>
+
+      <div className="bg-obsidian-900 border border-amber-800/60 p-5 sm:p-6 rounded-none">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 w-10 h-10 rounded-none bg-gradient-to-br from-fuchsia-600 to-amber-600 flex items-center justify-center mt-0.5">
+            <Globe className="h-5 w-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[10px] uppercase tracking-wider text-amber-400 font-bold mb-1">Alternative · Komplett-Service</div>
+            <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Lieber kein Tool, sondern jemand der's macht?</h3>
+            <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
+              Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site DSGVO-konform neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
+              <strong className="text-titanium-50"> Ab 99 €/Monat</strong> nach einmaligem Rebuild.
+            </p>
+            <Link
+              to={`/dsgvo-website?source=audit&audit=${report.audit_id}`}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-obsidian-950 text-xs font-bold rounded-none"
+            >
+              3-Paket-Angebot ansehen <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
       </div>
 

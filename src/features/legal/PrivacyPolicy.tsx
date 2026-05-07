@@ -42,7 +42,7 @@ export function PrivacyPolicy() {
           <p>
             <strong className="text-titanium-50">RealSync Dynamics</strong><br />
             Schwarzburger Str. 31<br />
-            98721 Neuhaus am Rennweg<br />
+            98724 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
           </p>
           <p>

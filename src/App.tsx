@@ -57,6 +57,7 @@ import { IubendaAlternative } from './pages/IubendaAlternative';
 import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
+import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
 import { EuAiActCheck } from './pages/seo/EuAiActCheck';
@@ -125,6 +126,9 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      {/* Onboarding nach Stripe-Checkout */}
+      <Route path="/welcome" element={<Welcome />} />
+      <Route path="/setup" element={<Welcome />} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}

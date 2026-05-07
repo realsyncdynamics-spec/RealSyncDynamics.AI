@@ -39,8 +39,8 @@ export function Impressum() {
         <Section title="Anbieter / Verantwortlicher i. S. d. § 5 TMG">
           <p>
             <strong className="text-titanium-50">RealSync Dynamics</strong><br />
-            <span className="text-titanium-500">[Strasse + Hausnummer]</span><br />
-            98724 Neuhaus am Rennweg<br />
+            Schwarzburger Str. 31<br />
+            98721 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
           </p>
           <p className="text-xs text-titanium-500">
@@ -60,7 +60,7 @@ export function Impressum() {
 
         <Section title="Vertretungsberechtigte/r">
           <p>
-            <span className="text-titanium-500">[Vor- und Nachname]</span> (Inhaber / vertretungsberechtigt)
+            <strong className="text-titanium-50">Dominik Steiner</strong> (Inhaber / vertretungsberechtigt)
           </p>
         </Section>
 
@@ -116,7 +116,7 @@ export function Impressum() {
 
         <Section title="Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV">
           <p>
-            <span className="text-titanium-500">[Vor- und Nachname]</span><br />
+            <strong className="text-titanium-50">Dominik Steiner</strong><br />
             Anschrift wie Anbieter (siehe oben).
           </p>
           <p className="text-xs text-titanium-500">

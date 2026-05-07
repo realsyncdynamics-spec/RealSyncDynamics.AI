@@ -41,13 +41,13 @@ export function PrivacyPolicy() {
         <Section title="1. Verantwortlicher (Art. 4 Nr. 7 DSGVO)">
           <p>
             <strong className="text-titanium-50">RealSync Dynamics</strong><br />
-            <span className="text-titanium-500">[Strasse + Hausnummer]</span><br />
-            98724 Neuhaus am Rennweg<br />
+            Schwarzburger Str. 31<br />
+            98721 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
           </p>
           <p>
             E-Mail: <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a><br />
-            Inhaber / Vertretungsberechtigt: <span className="text-titanium-500">[Vor- und Nachname]</span>
+            Inhaber / Vertretungsberechtigt: <strong className="text-titanium-50">Dominik Steiner</strong>
           </p>
         </Section>
 

@@ -23,15 +23,13 @@
     </style>
     <script type="text/javascript">
       // SPA on GitHub Pages — preserve deep-link path before showing 404 UI.
-      // If the path matches a known SPA route, redirect via the rafgraph trick.
-      // Otherwise the styled 404 UI below stays visible for users + crawlers.
-      // Pattern: rafgraph/spa-github-pages, 1 path segment to keep.
+      // Site is served at the apex of the custom domain realsyncdynamicsai.de
+      // (no project-base segment), so pathSegmentsToKeep = 0.
+      // Pattern: rafgraph/spa-github-pages.
       (function () {
-        var pathSegmentsToKeep = 1;
+        var pathSegmentsToKeep = 0;
         var l = window.location;
         var path = l.pathname.split('/').slice(1 + pathSegmentsToKeep).join('/');
-        // Only redirect if there's actually a deep path (else we land on the
-        // 404 page from a real 404, not a SPA route mismatch).
         if (path && path !== '404.html') {
           l.replace(
             l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
@@ -50,10 +48,10 @@
       <h1>404</h1>
       <p class="sub">Die Seite, die Du suchst, existiert nicht — oder wurde verschoben. Hier sind die wichtigsten Einstiegspunkte:</p>
       <div class="links">
-        <a class="primary" href="/RealSyncDynamics.AI/">Zur Startseite</a>
-        <a class="secondary" href="/RealSyncDynamics.AI/audit">DSGVO-Audit starten</a>
-        <a class="secondary" href="/RealSyncDynamics.AI/dsgvo-ki-checkliste">DSGVO-KI-Checkliste</a>
-        <a class="secondary" href="/RealSyncDynamics.AI/pricing">Preise</a>
+        <a class="primary" href="/">Zur Startseite</a>
+        <a class="secondary" href="/audit">DSGVO-Audit starten</a>
+        <a class="secondary" href="/dsgvo-ki-checkliste">DSGVO-KI-Checkliste</a>
+        <a class="secondary" href="/pricing">Preise</a>
       </div>
       <footer>RealSync Dynamics · Made in Germany · EU-Hosted</footer>
     </div>

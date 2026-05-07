@@ -44,19 +44,15 @@ export function Landing() {
       <Navbar />
 
       <main>
+        {/* Streamlined journey — 6 content sections (vorher: 11 + 3 dividers).
+            Removed from primary funnel (still defined below for /security &
+            ggf. dedizierte Pages): Problem, HowItWorks, UspDecisionLayer,
+            TrustSection, ProofStats, IdealCustomers, ThreeStepDsgvoSection. */}
         <Hero />
-        <Problem />
+        <WatchmakerShowcase />
+        <ExampleReport />
         <SectionDivider label="Audit Engine" spacing="md" />
         <AuditEngine />
-        <ExampleReport />
-        <SectionDivider label="Methodology" spacing="md" />
-        <HowItWorks />
-        <UspDecisionLayer />
-        <TrustSection />
-        <ProofStats />
-        <IdealCustomers />
-        <WatchmakerShowcase />
-        <ThreeStepDsgvoSection />
         <SectionDivider label="Pricing" spacing="md" />
         <PricingPreview />
         <ClosingCta />
@@ -76,24 +72,14 @@ function Hero() {
   // Inline-Styles für pixelgenau Premium-Optik (Gradients, Glows, Border-Mixing).
   // Farbsystem: BG #06070C, Magenta #FF3AAE (Risiko), Gold #D9A24A (CTA),
   // Ice Blue #4DB8FF (Trust/Headline-Akzent), Warm-Light Text #F4E7D0.
+  // EIN repräsentatives Risiko-Beispiel statt Triple-Threat — der Newsletter-
+  // Fall ist für KMU am greifbarsten und steht stellvertretend für die Klasse.
   const cards = [
-    {
-      amount: '€100',
-      qualifier: 'pro Nutzer',
-      headline: 'Google Fonts ohne sauberes Consent-Setup',
-      tag: 'Hohe Strafe · rechtliches Risiko',
-    },
     {
       amount: '€50.000',
       qualifier: 'Newsletter',
       headline: 'Newsletter ohne Opt-in',
-      tag: 'Hohe Bußgeldgefahr',
-    },
-    {
-      amount: '€105.000',
-      qualifier: 'Verschlüsselung',
-      headline: 'Fehlende Verschlüsselung',
-      tag: 'Kritisches Sicherheitsrisiko',
+      tag: 'Bußgeld-Risiko · stellvertretend für 12 Standardbefunde',
     },
   ];
 
@@ -249,7 +235,7 @@ function Hero() {
                 marginBottom: '24px',
               }}
             >
-              30 Sekunden
+              30 Sekunden · kostenlos · kein Account
             </div>
 
             <h1
@@ -260,11 +246,24 @@ function Hero() {
                 letterSpacing: '-0.02em',
                 color: '#F4E7D0',
                 margin: 0,
-                marginBottom: '36px',
+                marginBottom: '20px',
               }}
             >
-              DSGVO-Scan
+              Compliance-Decision-Layer für Developer-Teams.
             </h1>
+
+            <p
+              style={{
+                fontSize: '18px',
+                lineHeight: 1.5,
+                color: 'rgba(244,231,208,0.72)',
+                margin: 0,
+                marginBottom: '36px',
+                maxWidth: '520px',
+              }}
+            >
+              Ein Quick-Scan zeigt in 30 Sekunden, wo Ihre Site gegen DSGVO, TTDSG und BSI-Header verstößt. Befunde mit Paragraph-Bezug, kein LLM-Halluzinieren.
+            </p>
 
             <Link
               to="/audit"
@@ -300,16 +299,38 @@ function Hero() {
               Jetzt kostenlos scannen
             </Link>
 
-            <div
-              style={{
-                marginTop: '14px',
-                fontSize: '13px',
-                color: 'rgba(244,231,208,0.55)',
-                letterSpacing: '0.04em',
-                fontWeight: 400,
-              }}
-            >
-              EU-Hosting · AVV · Audit-Log
+            <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+              <Link
+                to="/pricing"
+                style={{
+                  fontSize: '14px',
+                  color: 'rgba(244,231,208,0.65)',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid rgba(244,231,208,0.25)',
+                  paddingBottom: '2px',
+                  transition: 'color 160ms ease, border-color 160ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#F4E7D0';
+                  e.currentTarget.style.borderColor = 'rgba(244,231,208,0.55)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgba(244,231,208,0.65)';
+                  e.currentTarget.style.borderColor = 'rgba(244,231,208,0.25)';
+                }}
+              >
+                Pricing ansehen
+              </Link>
+              <span
+                style={{
+                  fontSize: '13px',
+                  color: 'rgba(244,231,208,0.42)',
+                  letterSpacing: '0.04em',
+                  fontWeight: 400,
+                }}
+              >
+                EU-Hosting · AVV · Audit-Log
+              </span>
             </div>
           </div>
         </div>
@@ -930,11 +951,10 @@ function ClosingCta() {
           </button>
         </form>
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500">
-          <Link to="/contact-sales?source=closing-demo" className="hover:text-titanium-300">Live-Demo starten</Link>
-          <Link to="/api" className="hover:text-titanium-300">API testen</Link>
-          <Link to="/audit" className="hover:text-titanium-300">Beispiel-Audit</Link>
-          <Link to="/dsgvo-website" className="text-amber-400/90 hover:text-amber-300">Website-as-a-Service</Link>
+        <div className="mt-6 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500">
+          <Link to="/legal/methodology" className="hover:text-titanium-300">
+            Methodik einsehen
+          </Link>
         </div>
       </div>
     </section>

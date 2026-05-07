@@ -30,73 +30,98 @@ export function Impressum() {
         <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
           <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
           <span className="text-amber-200">
-            <strong>Vor Live-Schaltung:</strong> Alle Felder in eckigen Klammern <code className="px-1 bg-obsidian-950 text-amber-300">[…]</code>
-            müssen mit echten Unternehmensdaten ersetzt werden. § 5 TMG ist sonst nicht erfüllt
-            und die Seite sofort abmahnfähig.
+            <strong>Status: Pre-Launch.</strong> Sitz steht (Neuhaus am Rennweg, Thüringen). Vor Live-Schaltung
+            müssen ausstehend ersetzt werden: Strasse + Hausnummer · Telefon · Vor- und Nachname (Inhaber/Geschäftsführer) ·
+            HR-Eintrag (falls UG/GmbH) · USt-IdNr. (kommt nach Finanzamt-Fragebogen). Werte in eckigen Klammern <code className="px-1 bg-obsidian-950 text-amber-300">[…]</code> kennzeichnen offene Felder.
           </span>
         </div>
 
         <Section title="Anbieter / Verantwortlicher i. S. d. § 5 TMG">
           <p>
-            <strong className="text-titanium-50">[Firmenname / Inhaber]</strong><br />
-            [Strasse + Hausnummer]<br />
-            [PLZ Ort]<br />
-            Deutschland
+            <strong className="text-titanium-50">RealSync Dynamics</strong><br />
+            <span className="text-titanium-500">[Strasse + Hausnummer]</span><br />
+            98724 Neuhaus am Rennweg<br />
+            Thüringen, Deutschland
+          </p>
+          <p className="text-xs text-titanium-500">
+            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI" — finaler
+            Eintrag bei Gewerbeanmeldung (Gewerbeamt Neuhaus am Rennweg, Landkreis Sonneberg).
           </p>
         </Section>
 
         <Section title="Kontakt">
           <p>
-            Telefon: [+49 …]<br />
+            Telefon: <span className="text-titanium-500">[+49 …]</span><br />
             E-Mail: <a className="text-security-400" href="mailto:hello@realsyncdynamicsai.de">hello@realsyncdynamicsai.de</a><br />
+            Datenschutz: <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a><br />
             Web: <a className="text-security-400" href="https://realsyncdynamicsai.de">realsyncdynamicsai.de</a>
           </p>
         </Section>
 
         <Section title="Vertretungsberechtigte/r">
           <p>
-            [Vor- und Nachname der/des Geschäftsführer/Inhabers]
+            <span className="text-titanium-500">[Vor- und Nachname]</span> (Inhaber / vertretungsberechtigt)
           </p>
         </Section>
 
-        <Section title="Handelsregister">
+        <Section title="Tätigkeitsschwerpunkte">
           <p>
-            Eingetragen im Handelsregister.<br />
-            Registergericht: [Amtsgericht Stadt]<br />
-            Registernummer: [HRB …] / [HRA …]
+            Entwicklung, Vermarktung und Betrieb von KI-gestützten Software-as-a-Service (SaaS)-Lösungen;
+            IT-Dienstleistungen; Unternehmensberatung im Bereich digitale Prozessautomatisierung und
+            Datenschutz-/AI-Act-Compliance. Schwerpunkt: EU-souveräne KI-Infrastruktur,
+            DSGVO-Compliance-Tools (AVV / VVT / DSFA / Cookie-Consent), Audit-Trail.
           </p>
           <p className="text-xs text-titanium-500">
-            Falls keine Eintragung besteht (z. B. Einzelunternehmen ohne HR-Eintrag oder GbR),
-            diesen Abschnitt entfernen oder als „Nicht eingetragen" kennzeichnen.
+            WZ-Code (vorläufig, finaler Eintrag durch Finanzamt): 62.01.0 (Programmierungstätigkeiten),
+            ergänzend 62.09.0 (sonstige Tätigkeiten der Informationstechnologie).
+          </p>
+        </Section>
+
+        <Section title="Handelsregister / Rechtsform">
+          <p className="text-titanium-500">
+            <span className="text-titanium-300">Aktueller Status:</span> Einzelunternehmen, nicht im Handelsregister eingetragen.
+            Bei späterer Umwandlung in UG (haftungsbeschränkt) oder GmbH wird hier der HRB-Eintrag
+            (Registergericht Jena oder zuständiges Amtsgericht) ergänzt.
+          </p>
+          <p className="text-xs text-titanium-500">
+            Falls Einzelunternehmen bleibt: dieser Abschnitt kann entfernt werden, der Hinweis „Nicht im Handelsregister eingetragen" reicht.
           </p>
         </Section>
 
         <Section title="Umsatzsteuer-Identifikationsnummer">
           <p>
-            USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <strong className="text-titanium-50">[DE…]</strong>
+            USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="text-titanium-500">[wird nach Finanzamt-Fragebogen vergeben]</span>
           </p>
           <p className="text-xs text-titanium-500">
-            Falls Kleinunternehmer-Regelung (§ 19 UStG) ohne USt-IdNr.: stattdessen Hinweis aufnehmen
-            („Hinweis: Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.").
+            Falls Kleinunternehmer-Regelung (§ 19 UStG) bei Anmeldung gewählt wird: Diesen Block ersetzen durch
+            „Hinweis: Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen."
           </p>
         </Section>
 
         <Section title="Wirtschafts-ID (sobald vergeben)">
+          <p className="text-titanium-500">
+            Wirtschafts-Identifikationsnummer (§ 139c AO): [noch nicht vergeben]
+          </p>
+        </Section>
+
+        <Section title="Aufsichtsbehörde Datenschutz">
           <p>
-            Wirtschafts-Identifikationsnummer (§ 139c AO): [DE… / noch nicht vergeben]
+            Aufgrund des Sitzes in Thüringen ist zuständig:<br />
+            <strong className="text-titanium-50">Thüringer Landesbeauftragter für den Datenschutz und die Informationsfreiheit (TLfDI)</strong><br />
+            Häßlerstraße 8, 99096 Erfurt<br />
+            Telefon: 0361 57 311 29 00 · E-Mail: <a className="text-security-400" href="mailto:poststelle@datenschutz.thueringen.de">poststelle@datenschutz.thueringen.de</a><br />
+            Web: <a href="https://www.tlfdi.de" target="_blank" rel="noreferrer noopener" className="text-security-400">tlfdi.de</a>
           </p>
         </Section>
 
         <Section title="Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV">
           <p>
-            [Vor- und Nachname]<br />
-            [Strasse + Hausnummer]<br />
-            [PLZ Ort]
+            <span className="text-titanium-500">[Vor- und Nachname]</span><br />
+            Anschrift wie Anbieter (siehe oben).
           </p>
           <p className="text-xs text-titanium-500">
-            Pflicht bei journalistisch-redaktionell gestalteten Angeboten (z. B. Blog,
-            News-Bereich). Falls die Site rein produkt-/marketing-orientiert bleibt, kann
-            dieser Abschnitt entfallen — bei Hinzufügung eines Blogs aber zwingend.
+            Pflicht bei journalistisch-redaktionell gestalteten Angeboten (z. B. Blog, News).
+            Aktuell keine redaktionellen Inhalte — Abschnitt wird bei Blog-Aufnahme aktiv.
           </p>
         </Section>
 

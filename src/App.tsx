@@ -65,6 +65,7 @@ import { SystemHealthView } from './features/admin/SystemHealthView';
 import { CustomersView } from './features/admin/CustomersView';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
+import { Impressum } from './features/legal/Impressum';
 import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { CookieConsent } from './components/CookieConsent';
@@ -161,8 +162,8 @@ function RoutesWithTracking() {
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
-      <Route path="/impressum" element={<SubProcessors />} />
-      <Route path="/legal/impressum" element={<SubProcessors />} />
+      <Route path="/impressum" element={<Impressum />} />
+      <Route path="/legal/impressum" element={<Impressum />} />
       <Route path="/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />

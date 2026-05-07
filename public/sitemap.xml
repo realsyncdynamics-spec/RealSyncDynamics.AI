@@ -168,7 +168,12 @@
   <url>
     <loc>https://realsyncdynamicsai.de/impressum</loc>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/legal/impressum</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/legal/avv</loc>

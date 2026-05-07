@@ -885,6 +885,7 @@ function ClosingCta() {
           <Link to="/contact-sales?source=closing-demo" className="hover:text-titanium-300">Live-Demo starten</Link>
           <Link to="/api" className="hover:text-titanium-300">API testen</Link>
           <Link to="/audit" className="hover:text-titanium-300">Beispiel-Audit</Link>
+          <Link to="/dsgvo-website" className="text-amber-400/90 hover:text-amber-300">Website-as-a-Service</Link>
         </div>
       </div>
     </section>
@@ -916,6 +917,7 @@ function FooterMinimal() {
             <Link to="/legal/methodology" className="hover:text-titanium-300">Methodik</Link>
             <Link to="/grenzen" className="hover:text-titanium-300">Grenzen</Link>
             <Link to="/security" className="hover:text-titanium-300">Security</Link>
+            <Link to="/dsgvo-website" className="hover:text-titanium-300">Website-Service</Link>
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
             <Link to="/impressum" className="hover:text-titanium-300">Impressum</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-300">Sub-Processors</Link>

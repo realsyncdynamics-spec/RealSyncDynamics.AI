@@ -57,6 +57,7 @@ import { IubendaAlternative } from './pages/IubendaAlternative';
 import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
+import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -179,6 +180,9 @@ function RoutesWithTracking() {
       <Route path="/integrationen" element={<Integrations />} />
       <Route path="/steuerberater" element={<SteuerberaterLanding />} />
       <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
+      <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
+      <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
+      <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
       {/* SEO Doorways — Framework-spezifisch */}
       <Route path="/bait-compliance" element={<BaitCompliance />} />
       <Route path="/marisk-audit" element={<MariskAudit />} />

@@ -88,11 +88,12 @@ export function AuditLanding() {
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
                   Wo verstößt Deine Website gegen die <span className="text-security-400">DSGVO</span>?
                 </h1>
-                <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-6">
+                <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
                   Wir scannen Deine Site auf 12 typische Compliance-Fallen — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern.
                   Du bekommst sofort einen Score und eine konkrete Fix-Liste.
                 </p>
-                <div className="max-w-xl mx-auto text-left">
+                <AuditMethodologyTags />
+                <div className="max-w-xl mx-auto text-left mt-4">
                   <LegalDisclaimer context="audit" />
                 </div>
               </div>
@@ -157,6 +158,35 @@ export function AuditLanding() {
 }
 
 // ─── Header ────────────────────────────────────────────────────────────────
+
+function AuditMethodologyTags() {
+  const [trackerDb, setTrackerDb] = React.useState<{ version: string; updated_at: string; sources: string[] } | null>(null);
+  React.useEffect(() => {
+    fetch('/tracker-db-version.json')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => data && setTrackerDb(data))
+      .catch(() => null);
+  }, []);
+  return (
+    <div className="inline-flex flex-wrap items-center justify-center gap-2 text-[10px] text-titanium-500 font-mono">
+      <span className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none">
+        audit-engine: 2026.05.0
+      </span>
+      <span
+        className="px-2 py-0.5 border border-titanium-800 bg-obsidian-900 rounded-none"
+        title={trackerDb ? `Aktualisiert ${trackerDb.updated_at} · ${trackerDb.sources.join(' + ')}` : ''}
+      >
+        tracker-db: {trackerDb ? `${trackerDb.version} (${trackerDb.updated_at})` : '2026.05.0'}
+      </span>
+      <Link to="/legal/methodology" className="text-titanium-400 hover:text-titanium-200 underline">
+        Methodik
+      </Link>
+      <Link to="/grenzen" className="text-titanium-400 hover:text-titanium-200 underline">
+        Grenzen
+      </Link>
+    </div>
+  );
+}
 
 function Header() {
   return (

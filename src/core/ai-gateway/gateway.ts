@@ -25,7 +25,9 @@ export async function processAIGatewayRequest(req: GatewayRequest) {
     ? `${req.systemPrompt}\n\n---\n\n${userBlock}`
     : userBlock;
 
-  console.log(`[AI-Gateway] Routing Anfrage an: ${req.provider}`);
+  if (import.meta.env.DEV) {
+    console.debug(`[AI-Gateway] Routing Anfrage an: ${req.provider}`);
+  }
 
   try {
     if (req.provider === 'gemini') {

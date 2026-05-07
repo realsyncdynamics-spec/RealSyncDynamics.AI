@@ -156,6 +156,8 @@ export function SubProcessors() {
           </table>
         </div>
 
+        <SubProcessorSubscribeForm />
+
         <div className="flex flex-wrap items-center gap-4 text-xs text-titanium-400 pt-4 border-t border-titanium-900">
           <Link to="/legal/privacy" className="hover:text-titanium-200">Datenschutzerklärung</Link>
           <Link to="/settings/account" className="hover:text-titanium-200">Mein Account · Datenexport / Löschung</Link>
@@ -163,5 +165,106 @@ export function SubProcessors() {
         </div>
       </main>
     </div>
+  );
+}
+
+function SubProcessorSubscribeForm() {
+  const [email, setEmail] = React.useState('');
+  const [company, setCompany] = React.useState('');
+  const [status, setStatus] = React.useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [errorMsg, setErrorMsg] = React.useState('');
+
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('submitting');
+    setErrorMsg('');
+
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      // Fallback: mailto
+      window.location.href = `mailto:hello@realsyncdynamicsai.de?subject=Sub-Processor-Notifications%20abonnieren&body=Email%3A%20${encodeURIComponent(email)}%0AFirma%3A%20${encodeURIComponent(company)}`;
+      setStatus('success');
+      return;
+    }
+
+    try {
+      const resp = await fetch(`${SUPABASE_URL}/rest/v1/sub_processor_subscriptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), company: company.trim() || null }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      setStatus('success');
+    } catch (err) {
+      setStatus('error');
+      setErrorMsg(err instanceof Error ? err.message : 'Unbekannter Fehler');
+    }
+  }
+
+  if (status === 'success') {
+    return (
+      <div className="mt-6 p-4 bg-emerald-950/20 border border-emerald-800 rounded-none">
+        <div className="text-emerald-300 font-bold text-sm mb-1">Eingetragen.</div>
+        <div className="text-xs text-titanium-300">
+          Wir senden dir 30 Tage vor jeder Sub-Processor-Änderung eine Notification per E-Mail. Widersprochenes
+          ist via Antwort-Mail oder Unsubscribe-Link möglich.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mt-8 p-4 bg-obsidian-900 border border-titanium-900 rounded-none"
+    >
+      <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-1">
+        Art. 28 Abs. 2 DSGVO · 30-Tage-Vorab-Notice
+      </div>
+      <div className="font-display font-bold text-titanium-50 text-sm mb-3">
+        Sub-Processor-Änderungen abonnieren
+      </div>
+      <div className="grid sm:grid-cols-2 gap-2 mb-2">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="vorname.name@firma.de"
+          className="bg-obsidian-950 border border-titanium-800 text-titanium-100 px-3 py-2 text-sm rounded-none focus:border-security-500 outline-none"
+        />
+        <input
+          type="text"
+          value={company}
+          onChange={(e) => setCompany(e.target.value)}
+          placeholder="Firma (optional)"
+          className="bg-obsidian-950 border border-titanium-800 text-titanium-100 px-3 py-2 text-sm rounded-none focus:border-security-500 outline-none"
+        />
+      </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          type="submit"
+          disabled={status === 'submitting' || !email}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-security-500 hover:bg-security-600 disabled:bg-titanium-800 disabled:text-titanium-600 disabled:cursor-not-allowed text-white text-xs font-bold rounded-none"
+        >
+          {status === 'submitting' ? 'Sende …' : 'Abonnieren'}
+        </button>
+        {status === 'error' && (
+          <span className="text-xs text-red-300">Fehler: {errorMsg}</span>
+        )}
+      </div>
+      <p className="text-[10px] text-titanium-500 mt-3 leading-relaxed">
+        Wir verarbeiten E-Mail + optional Firma zur Erfüllung der Notification-Pflicht (Art. 28 Abs. 2).
+        Rechtsgrundlage: Art. 6 Abs. 1 lit. b/c. Abbestellen jederzeit per Link in der Mail oder Antwort.
+      </p>
+    </form>
   );
 }

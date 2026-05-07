@@ -30,6 +30,13 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <link rel="canonical" href="https://realsyncdynamicsai.de/" />
+
+    <!-- Performance: pre-connect zu kritischen Origins damit TLS-Handshake
+         vor dem ersten Request läuft. Nur die origins die wirklich gebraucht
+         werden (Supabase API + Fontshare CDN) — mehr preconnects bremsen. -->
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link rel="dns-prefetch" href="https://api.fontshare.com" />
+    <link rel="dns-prefetch" href="https://supabase.co" />
     <!--
       JSON-LD structured data: SoftwareApplication + Organization + FAQ.
       Enables rich snippets in Google for queries like "DSGVO KI Plattform",

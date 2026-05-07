@@ -64,77 +64,270 @@ export function Landing() {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 function Hero() {
+  // Premium Luxury-Look: 2-Spalten Desktop, gestapelt Mobile.
+  // Inline-Styles für pixelgenau Premium-Optik (Gradients, Glows, Border-Mixing).
+  // Farbsystem: BG #06070C, Magenta #FF3AAE (Risiko), Gold #D9A24A (CTA),
+  // Ice Blue #4DB8FF (Trust/Headline-Akzent), Warm-Light Text #F4E7D0.
+  const cards = [
+    {
+      amount: '€100',
+      qualifier: 'pro Nutzer',
+      headline: 'Google Fonts ohne sauberes Consent-Setup',
+      tag: 'Hohe Strafe · rechtliches Risiko',
+    },
+    {
+      amount: '€50.000',
+      qualifier: 'Newsletter',
+      headline: 'Newsletter ohne Opt-in',
+      tag: 'Hohe Bußgeldgefahr',
+    },
+    {
+      amount: '€105.000',
+      qualifier: 'Verschlüsselung',
+      headline: 'Fehlende Verschlüsselung',
+      tag: 'Kritisches Sicherheitsrisiko',
+    },
+  ];
+
   return (
-    <section className="relative pt-24 pb-16 sm:pt-40 sm:pb-28 px-4 sm:px-6 lg:px-8">
+    <section
+      style={{
+        position: 'relative',
+        background: '#06070C',
+        paddingTop: '72px',
+        paddingBottom: '128px',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Sehr subtiler radialer Verlauf — 12 % Sichtbarkeit, blau-violett */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 opacity-[0.04]"
         style={{
-          backgroundImage:
-            'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
-          backgroundSize: '64px 64px',
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(ellipse at 30% 30%, rgba(99,102,241,0.10) 0%, transparent 55%), radial-gradient(ellipse at 75% 65%, rgba(167,139,250,0.07) 0%, transparent 60%)',
+          pointerEvents: 'none',
         }}
       />
+
       <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/2 -translate-x-1/2 -z-10 w-[800px] h-[400px] rounded-full opacity-25 blur-3xl"
-        style={{ background: 'radial-gradient(circle, #6366f1 0%, transparent 60%)' }}
-      />
-
-      <div className="max-w-5xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 border border-titanium-800 bg-obsidian-900/60 backdrop-blur text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-400 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Compliance-Infrastruktur · EU-Hosted · Engineering-Report-Style
+        style={{
+          position: 'relative',
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '0 32px',
+        }}
+      >
+        {/* Logo + Brandname zentriert oben */}
+        <div style={{ textAlign: 'center', marginBottom: '88px' }}>
+          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+            <Logo size={44} iconOnly />
+            <span
+              style={{
+                fontSize: '22px',
+                fontWeight: 600,
+                letterSpacing: '-0.01em',
+                color: '#F4E7D0',
+              }}
+            >
+              RealSync<span style={{ color: 'rgba(244,231,208,0.55)', fontWeight: 400, marginLeft: '4px' }}>Dynamics.AI</span>
+            </span>
+          </div>
         </div>
 
-        <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-bold tracking-tight text-titanium-50 leading-[1.08] sm:leading-[1.05]">
-          DSGVO- und Tracking-Audits<br />
-          <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
-            in Minuten statt Wochen.
-          </span>
-        </h1>
+        {/* 2-Column Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(280px, 1fr) 1px minmax(280px, 1fr)',
+            gap: '88px',
+            alignItems: 'center',
+          }}
+          className="hero-grid"
+        >
+          {/* LEFT — 3 Risiko-Karten */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            {cards.map((card) => (
+              <div
+                key={card.amount + card.qualifier}
+                style={{
+                  position: 'relative',
+                  padding: '28px 30px',
+                  borderRadius: '24px',
+                  background:
+                    'linear-gradient(135deg, rgba(255,58,174,0.06) 0%, rgba(255,58,174,0.02) 100%)',
+                  border: '1px solid rgba(255,58,174,0.18)',
+                  backdropFilter: 'saturate(120%) blur(8px)',
+                  WebkitBackdropFilter: 'saturate(120%) blur(8px)',
+                  boxShadow:
+                    '0 0 60px -20px rgba(255,58,174,0.18), inset 0 1px 0 rgba(255,255,255,0.04)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '10px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '28px',
+                      fontWeight: 500,
+                      color: '#FF3AAE',
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {card.amount}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      color: 'rgba(244,231,208,0.55)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {card.qualifier}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: '15px',
+                    color: '#F4E7D0',
+                    fontWeight: 400,
+                    lineHeight: 1.45,
+                    marginBottom: '8px',
+                  }}
+                >
+                  {card.headline}
+                </div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: 'rgba(244,231,208,0.42)',
+                    fontWeight: 400,
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {card.tag}
+                </div>
+              </div>
+            ))}
+          </div>
 
-        <p className="mt-6 sm:mt-8 max-w-2xl mx-auto text-base sm:text-lg text-titanium-400 leading-relaxed">
-          Automatisierte Analyse von Cookies, Tracking-Skripten und Datenflüssen — mit konkreten
-          Umsetzungsmaßnahmen für Compliance-Teams und Entwickler. Strukturierte Findings,
-          versionierte Methodik, audit-fähig.
-        </p>
+          {/* DIVIDER */}
+          <div
+            aria-hidden="true"
+            style={{
+              width: '1px',
+              height: '60%',
+              alignSelf: 'center',
+              background:
+                'linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.13) 30%, rgba(255,255,255,0.13) 70%, transparent 100%)',
+            }}
+          />
 
-        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] sm:text-xs text-titanium-400">
-          {['EU-Datenverarbeitung', 'Audit-Logs pro Scan', 'Kein Tracking ohne Consent im Produktmodus'].map((t) => (
-            <li key={t} className="inline-flex items-center gap-1.5">
-              <CheckCircle2 className="h-3 w-3 text-emerald-400" strokeWidth={2} />
-              {t}
-            </li>
-          ))}
-        </ul>
+          {/* RIGHT — Headline + CTA + Trust */}
+          <div>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 500,
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                color: '#4DB8FF',
+                marginBottom: '24px',
+              }}
+            >
+              30 Sekunden
+            </div>
 
-        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/contact-sales?source=hero-demo"
-            className="group inline-flex items-center gap-2 bg-white text-obsidian-950 hover:bg-titanium-200 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
-          >
-            Live-Demo starten
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-          <Link
-            to="/audit"
-            className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-900/60 backdrop-blur text-titanium-100 hover:border-titanium-500 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
-          >
-            Beispiel-Audit ansehen
-          </Link>
-          <Link
-            to="/api"
-            className="inline-flex items-center gap-2 text-titanium-400 hover:text-titanium-200 px-6 py-3 text-sm font-semibold tracking-tight rounded-none transition-colors"
-          >
-            API &amp; Integration prüfen
-          </Link>
+            <h1
+              style={{
+                fontSize: 'clamp(36px, 5.2vw, 60px)',
+                fontWeight: 400,
+                lineHeight: 1.05,
+                letterSpacing: '-0.02em',
+                color: '#F4E7D0',
+                margin: 0,
+                marginBottom: '36px',
+              }}
+            >
+              DSGVO-Scan
+            </h1>
+
+            <Link
+              to="/audit"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '16px 32px',
+                borderRadius: '999px',
+                background:
+                  'linear-gradient(135deg, #E8B765 0%, #D9A24A 50%, #B8862E 100%)',
+                color: '#1B1206',
+                fontSize: '20px',
+                fontWeight: 600,
+                letterSpacing: '-0.005em',
+                textDecoration: 'none',
+                boxShadow:
+                  '0 0 60px -8px rgba(217,162,74,0.45), 0 12px 28px -10px rgba(217,162,74,0.55), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.18)',
+                border: '1px solid rgba(255,225,170,0.35)',
+                transition: 'transform 160ms ease, box-shadow 160ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px) scale(1.015)';
+                e.currentTarget.style.boxShadow =
+                  '0 0 80px -8px rgba(217,162,74,0.55), 0 16px 32px -10px rgba(217,162,74,0.65), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.18)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow =
+                  '0 0 60px -8px rgba(217,162,74,0.45), 0 12px 28px -10px rgba(217,162,74,0.55), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.18)';
+              }}
+            >
+              Jetzt kostenlos scannen
+            </Link>
+
+            <div
+              style={{
+                marginTop: '14px',
+                fontSize: '13px',
+                color: 'rgba(244,231,208,0.55)',
+                letterSpacing: '0.04em',
+                fontWeight: 400,
+              }}
+            >
+              EU-Hosting · AVV · Audit-Log
+            </div>
+          </div>
         </div>
 
-        <div className="mt-14 sm:mt-20">
+        {/* LiveProductDemo unten — sehr großer Abstand für Premium-Wirkung */}
+        <div style={{ marginTop: '160px' }}>
           <LiveProductDemo />
         </div>
       </div>
+
+      {/* Mobile-Stack: 2-Spalten kollabiert auf 1 Spalte unter 880px */}
+      <style>{`
+        @media (max-width: 880px) {
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+            gap: 56px !important;
+          }
+          .hero-grid > div:nth-child(2) {
+            display: none;
+          }
+          .hero-grid > div:last-child {
+            order: -1;
+            text-align: center;
+          }
+        }
+      `}</style>
     </section>
   );
 }

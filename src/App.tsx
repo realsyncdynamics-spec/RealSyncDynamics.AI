@@ -36,6 +36,9 @@ import { OneTrustAlternative } from './pages/OneTrustAlternative';
 import { FinTechLanding } from './pages/FinTechLanding';
 import { PublicSectorLanding } from './pages/PublicSectorLanding';
 import { UsercentricsAlternative } from './pages/UsercentricsAlternative';
+import { DataGuardAlternative } from './pages/DataGuardAlternative';
+import { About } from './pages/About';
+import { Press } from './pages/Press';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -96,6 +99,12 @@ function RoutesWithTracking() {
       <Route path="/oeffentliche-verwaltung" element={<PublicSectorLanding />} />
       <Route path="/behoerden" element={<PublicSectorLanding />} />
       <Route path="/usercentrics-alternative" element={<UsercentricsAlternative />} />
+      <Route path="/dataguard-alternative" element={<DataGuardAlternative />} />
+      {/* Trust / Press */}
+      <Route path="/about" element={<About />} />
+      <Route path="/ueber-uns" element={<About />} />
+      <Route path="/press" element={<Press />} />
+      <Route path="/presse" element={<Press />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

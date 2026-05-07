@@ -32,9 +32,9 @@ export function PrivacyPolicy() {
         <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
           <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
           <span className="text-amber-200">
-            <strong>Status: Pre-Launch.</strong> Sitz steht (Neuhaus am Rennweg, Thüringen). Vor Live-Schaltung
-            müssen Strasse + Hausnummer und Vor-/Nachname des Verantwortlichen in Sektion 1 eingetragen werden.
-            Mustertext-Skelett · vor Produktiv-Einsatz durch DSGVO-Berater oder Anwalt prüfen lassen.
+            <strong>Status: Pre-Launch.</strong> Verantwortlicher (Name, Anschrift) und Aufsichtsbehörde (TLfDI) sind eingetragen.
+            Mustertext-Skelett — vor Produktiv-Einsatz durch DSGVO-Berater oder Anwalt prüfen lassen, insbesondere zur
+            Anpassung an konkrete Verarbeitungsprozesse.
           </span>
         </div>
 

@@ -30,9 +30,9 @@ export function Impressum() {
         <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
           <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
           <span className="text-amber-200">
-            <strong>Status: Pre-Launch.</strong> Sitz steht (Neuhaus am Rennweg, Thüringen). Vor Live-Schaltung
-            müssen ausstehend ersetzt werden: Strasse + Hausnummer · Telefon · Vor- und Nachname (Inhaber/Geschäftsführer) ·
-            HR-Eintrag (falls UG/GmbH) · USt-IdNr. (kommt nach Finanzamt-Fragebogen). Werte in eckigen Klammern <code className="px-1 bg-obsidian-950 text-amber-300">[…]</code> kennzeichnen offene Felder.
+            <strong>Status: Pre-Launch.</strong> Anbieter, Anschrift, Telefon, Vertretungsberechtigter und Aufsichtsbehörde sind eingetragen.
+            Ausstehend: USt-IdNr. (kommt nach Finanzamt-Fragebogen) · HR-Eintrag (nur falls spätere UG/GmbH-Umwandlung).
+            Vor Live-Schaltung Empfehlung: Anwalt-Review für individuelle Verarbeitungsprozesse.
           </span>
         </div>
 
@@ -51,7 +51,7 @@ export function Impressum() {
 
         <Section title="Kontakt">
           <p>
-            Telefon: <span className="text-titanium-500">[+49 …]</span><br />
+            Telefon: <a className="text-security-400" href="tel:+4917640132161">+49 176 4013 2161</a><br />
             E-Mail: <a className="text-security-400" href="mailto:hello@realsyncdynamicsai.de">hello@realsyncdynamicsai.de</a><br />
             Datenschutz: <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a><br />
             Web: <a className="text-security-400" href="https://realsyncdynamicsai.de">realsyncdynamicsai.de</a>

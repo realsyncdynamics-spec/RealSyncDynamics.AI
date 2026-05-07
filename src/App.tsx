@@ -2,6 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -81,6 +82,7 @@ import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 import { useTrackPageview } from './lib/track';
+import { initMarketingPixels } from './lib/pixels';
 
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '') || undefined;
 
@@ -206,6 +208,7 @@ function RoutesWithTracking() {
 }
 
 export default function App() {
+  useEffect(() => { initMarketingPixels(); }, []);
   return (
     <TenantProvider>
       <BrowserRouter basename={ROUTER_BASENAME}>

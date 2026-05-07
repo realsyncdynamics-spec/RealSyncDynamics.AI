@@ -39,6 +39,9 @@ import { UsercentricsAlternative } from './pages/UsercentricsAlternative';
 import { DataGuardAlternative } from './pages/DataGuardAlternative';
 import { BorlabsAlternative } from './pages/BorlabsAlternative';
 import { CookiebotAlternative } from './pages/CookiebotAlternative';
+import { ProlianceAlternative } from './pages/ProlianceAlternative';
+import { InsuranceLanding } from './pages/InsuranceLanding';
+import { EcommerceLanding } from './pages/EcommerceLanding';
 import { About } from './pages/About';
 import { Press } from './pages/Press';
 import { Security } from './pages/Security';
@@ -105,6 +108,12 @@ function RoutesWithTracking() {
       <Route path="/dataguard-alternative" element={<DataGuardAlternative />} />
       <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
       <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
+      <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
+      {/* More Industry-Doorways */}
+      <Route path="/versicherungen" element={<InsuranceLanding />} />
+      <Route path="/insurance" element={<InsuranceLanding />} />
+      <Route path="/ecommerce" element={<EcommerceLanding />} />
+      <Route path="/online-shops" element={<EcommerceLanding />} />
       {/* Trust / Press / Security */}
       <Route path="/about" element={<About />} />
       <Route path="/ueber-uns" element={<About />} />
@@ -152,6 +161,10 @@ function RoutesWithTracking() {
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
+      <Route path="/impressum" element={<SubProcessors />} />
+      <Route path="/legal/impressum" element={<SubProcessors />} />
+      <Route path="/datenschutz" element={<PrivacyPolicy />} />
+      <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
     </Routes>

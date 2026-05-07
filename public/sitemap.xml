@@ -1,158 +1,182 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/</loc>
+    <loc>https://realsyncdynamicsai.de/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/agencies</loc>
+    <loc>https://realsyncdynamicsai.de/agencies</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/audit</loc>
+    <loc>https://realsyncdynamicsai.de/audit</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/dsgvo-ki-checkliste</loc>
+    <loc>https://realsyncdynamicsai.de/dsgvo-ki-checkliste</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/ai-act-faq</loc>
+    <loc>https://realsyncdynamicsai.de/ai-act-faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/schrems-ii-erklaert</loc>
+    <loc>https://realsyncdynamicsai.de/schrems-ii-erklaert</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/bait-marisk-compliance-guide</loc>
+    <loc>https://realsyncdynamicsai.de/bait-marisk-compliance-guide</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/ressourcen</loc>
+    <loc>https://realsyncdynamicsai.de/ressourcen</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/case-studies</loc>
+    <loc>https://realsyncdynamicsai.de/case-studies</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/cookie-consent-sdk</loc>
+    <loc>https://realsyncdynamicsai.de/cookie-consent-sdk</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/audit-pro</loc>
+    <loc>https://realsyncdynamicsai.de/audit-pro</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/dsgvo-tool-vergleich</loc>
+    <loc>https://realsyncdynamicsai.de/dsgvo-tool-vergleich</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/tools</loc>
+    <loc>https://realsyncdynamicsai.de/tools</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/healthtech</loc>
+    <loc>https://realsyncdynamicsai.de/healthtech</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/legal-tech</loc>
+    <loc>https://realsyncdynamicsai.de/legal-tech</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/onetrust-alternative</loc>
+    <loc>https://realsyncdynamicsai.de/fintech</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/oeffentliche-verwaltung</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/versicherungen</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/ecommerce</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/onetrust-alternative</loc>
     <changefreq>monthly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/fintech</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/oeffentliche-verwaltung</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/usercentrics-alternative</loc>
+    <loc>https://realsyncdynamicsai.de/usercentrics-alternative</loc>
     <changefreq>monthly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-  <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/dataguard-alternative</loc>
+    <loc>https://realsyncdynamicsai.de/dataguard-alternative</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/about</loc>
+    <loc>https://realsyncdynamicsai.de/borlabs-alternative</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/cookiebot-alternative</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/proliance-alternative</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/press</loc>
+    <loc>https://realsyncdynamicsai.de/press</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/security</loc>
+    <loc>https://realsyncdynamicsai.de/security</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/borlabs-alternative</loc>
+    <loc>https://realsyncdynamicsai.de/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/cookiebot-alternative</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/pricing</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/contact-sales</loc>
+    <loc>https://realsyncdynamicsai.de/contact-sales</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/legal/privacy</loc>
+    <loc>https://realsyncdynamicsai.de/legal/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/legal/sub-processors</loc>
+    <loc>https://realsyncdynamicsai.de/datenschutz</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/legal/avv</loc>
+    <loc>https://realsyncdynamicsai.de/legal/sub-processors</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/impressum</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/legal/avv</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/legal/compliance-matrix</loc>
+    <loc>https://realsyncdynamicsai.de/legal/compliance-matrix</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

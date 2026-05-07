@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1584 396" width="1584" height="396">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A0A0B"/>
+      <stop offset="100%" stop-color="#16161A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#0F766E"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1584" height="396" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.04">
+    <path d="M0 0 L1584 396 M396 0 L1584 198 M792 0 L1584 0" stroke="#10B981" stroke-width="0.5"/>
+  </g>
+
+  <!-- Corner industrial marks -->
+  <path d="M40 40 L120 40 M40 40 L40 120" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <path d="M1544 40 L1464 40 M1544 40 L1544 120" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <path d="M1544 356 L1464 356 M1544 356 L1544 276" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <path d="M40 356 L120 356 M40 356 L40 276" stroke="#3F3F46" stroke-width="2" fill="none"/>
+
+  <!-- Left content block -->
+  <g transform="translate(120, 110)">
+    <!-- Compliance pills row -->
+    <g font-family="JetBrains Mono, monospace" font-size="13" fill="#6EE7B7">
+      <rect x="0" y="0" width="160" height="28" fill="none" stroke="#064E3B" stroke-width="1"/>
+      <text x="14" y="19">DSGVO Art. 32</text>
+      <rect x="172" y="0" width="100" height="28" fill="none" stroke="#064E3B" stroke-width="1"/>
+      <text x="186" y="19">AI Act</text>
+      <rect x="284" y="0" width="80" height="28" fill="none" stroke="#064E3B" stroke-width="1"/>
+      <text x="298" y="19">BAIT</text>
+      <rect x="376" y="0" width="100" height="28" fill="none" stroke="#064E3B" stroke-width="1"/>
+      <text x="390" y="19">MaRisk</text>
+    </g>
+
+    <!-- Headline -->
+    <text x="0" y="100" font-family="Inter, system-ui, sans-serif" font-size="56" font-weight="800" fill="#F4F4F5">
+      KI nutzen.
+    </text>
+    <text x="0" y="160" font-family="Inter, system-ui, sans-serif" font-size="56" font-weight="800" fill="url(#accent)">
+      Ohne Bußgeld-Risiko.
+    </text>
+
+    <!-- Subline -->
+    <text x="0" y="210" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="400" fill="#A1A1AA">
+      DSGVO-konforme KI-Compliance-Plattform · Made in Germany · EU-Hosted
+    </text>
+  </g>
+
+  <!-- Right block: Shield + URL -->
+  <g transform="translate(1280, 130)">
+    <path d="M75 0 L150 25 L150 90 Q150 145 75 175 Q0 145 0 90 L0 25 Z" fill="url(#accent)"/>
+    <path d="M40 90 L65 115 L115 65" stroke="white" stroke-width="10" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+  </g>
+
+  <!-- Bottom URL -->
+  <text x="120" y="350" font-family="JetBrains Mono, monospace" font-size="16" fill="#71717A">
+    realsyncdynamicsai.de
+  </text>
+  <text x="1464" y="350" font-family="Inter, system-ui, sans-serif" font-size="16" fill="#10B981" text-anchor="end" font-weight="600">
+    Audit kostenlos · 30 Sek.
+  </text>
+</svg>

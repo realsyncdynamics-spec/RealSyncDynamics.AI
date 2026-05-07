@@ -121,16 +121,17 @@ export function Press() {
             </p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
               {[
-                { f: 'logo-square-400.png', d: 'Quadratisch · 400×400' },
+                { f: 'logo-square-400.png', d: 'Quadratisch · 400×400 PNG' },
                 { f: 'logo-square-400.svg', d: 'Quadratisch · Vektor' },
-                { f: 'avatar-400.png', d: 'Founder-Avatar · 400×400' },
-                { f: 'linkedin-banner-1584x396.png', d: 'Banner · LinkedIn-Format' },
+                { f: 'avatar-400.png', d: 'Founder-Avatar · 400×400 PNG' },
+                { f: 'avatar-400.svg', d: 'Founder-Avatar · Vektor' },
+                { f: 'linkedin-banner-1584x396.png', d: 'Banner · LinkedIn-Format PNG' },
                 { f: 'linkedin-banner-1584x396.svg', d: 'Banner · Vektor' },
-                { f: 'logo-monochrome.svg', d: 'Monochrom · Print-tauglich' },
               ].map((a) => (
                 <a
                   key={a.f}
-                  href={`/marketing/assets/${a.f}`}
+                  href={`/brand/${a.f}`}
+                  download
                   className="flex items-start gap-3 p-3 bg-obsidian-900 border border-titanium-900 hover:border-security-500 rounded-none transition-colors group"
                 >
                   <ImageIcon className="h-5 w-5 text-security-400 shrink-0 mt-0.5" />
@@ -142,10 +143,6 @@ export function Press() {
                 </a>
               ))}
             </div>
-            <p className="text-xs text-titanium-500 mt-2">
-              Hinweis: Asset-Dateien werden im Repo unter <code className="px-1 bg-obsidian-950 text-emerald-300">marketing/assets/</code> gepflegt.
-              Sollte ein Asset hier 404 liefern, bitte direkt anfragen.
-            </p>
           </Section>
 
           <Section title="Themen, zu denen wir gerne Auskunft geben">

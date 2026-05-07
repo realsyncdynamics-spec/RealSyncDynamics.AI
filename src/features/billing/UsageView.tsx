@@ -256,7 +256,7 @@ function StatCard({
 
 function Section({
   icon: Icon, title, children,
-}: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+}: { icon: React.ElementType<{ className?: string }>; title: string; children: React.ReactNode }) {
   return (
     <section>
       <div className="flex items-center gap-2 mb-3">

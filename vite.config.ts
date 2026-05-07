@@ -34,6 +34,7 @@ export default defineConfig(({mode}) => {
             if (id.includes('@stripe') || id.includes('stripe')) return 'vendor-stripe';
             if (id.includes('@sentry')) return 'vendor-sentry';
             if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('three') || id.includes('@react-three')) return 'vendor-three';
             if (id.includes('react-dom') || id.includes('scheduler') || id.includes('/react/')) return 'vendor-react';
             return 'vendor';
           },

@@ -1,5 +1,5 @@
 import { ScrollReveal } from '../motion/ScrollReveal';
-import { AiCoreVisual } from './AiCoreVisual';
+import { AiCoreInteractive } from './AiCoreInteractive';
 
 /**
  * Watchmaker-AI Showcase — introduces the new design language on Landing.
@@ -87,7 +87,7 @@ export function WatchmakerShowcase() {
                     'radial-gradient(circle at center, rgba(20,196,179,0.20) 0%, transparent 60%)',
                 }}
               />
-              <AiCoreVisual size={360} className="relative z-10" />
+              <AiCoreInteractive size={360} className="relative z-10" />
 
               {/* Bottom plate — gravur wordmark */}
               <div className="relative z-10 mt-6 mx-auto max-w-[320px]">

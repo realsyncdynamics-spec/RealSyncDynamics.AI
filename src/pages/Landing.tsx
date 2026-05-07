@@ -31,7 +31,6 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Logo } from '../components/Logo';
-import { ArchitectureDiagram } from '../components/ArchitectureDiagram';
 import { LiveProductDemo } from '../components/LiveProductDemo';
 import { IdealCustomers } from '../components/IdealCustomers';
 import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
@@ -650,65 +649,13 @@ function UspDecisionLayer() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/*  7) TRUST SECTION                                                        */
+/*  7) TRUST SECTION — moved to /security in PR #84.                        */
+/*     ArchitectureDiagram lives at src/pages/Security.tsx as the           */
+/*     interactive centerpiece; this section was removed from the Landing   */
+/*     funnel during the simplification (#82) and the function definition   */
+/*     was deleted here so the orphan ArchitectureDiagram import could be   */
+/*     dropped.                                                             */
 /* ─────────────────────────────────────────────────────────────────────── */
-
-function TrustSection() {
-  return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-10">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
-              Procurement-tauglich · Audit-ready
-            </div>
-            <h2 className="mt-3 font-display font-bold text-3xl sm:text-4xl tracking-tight text-titanium-50">
-              Für Teams, die Compliance ernsthaft operationalisieren.
-            </h2>
-          </div>
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-emerald-700/60 bg-emerald-950/20 text-emerald-300 text-[11px] font-mono uppercase tracking-[0.18em]">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            SOC 2-ready
-          </span>
-        </div>
-
-        <ul className="mb-12 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 max-w-3xl">
-          {[
-            'EU-Datenhosting (Frankfurt · Supabase eu-central-1)',
-            'Audit-Logs pro Scan (append-only Postgres-Trigger)',
-            'Rollen- &amp; Rechtekonzept (RLS · SECURITY DEFINER)',
-            'DSGVO-konforme Verarbeitung im Produktmodus (Art. 5/32)',
-            'Subprozessoren transparent dokumentiert',
-            'Versionierte Rule-Engine (2026.05.0)',
-          ].map((it) => (
-            <li key={it} className="flex items-start gap-2 text-sm text-titanium-300">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" strokeWidth={1.5} />
-              <span dangerouslySetInnerHTML={{ __html: it }} />
-            </li>
-          ))}
-        </ul>
-
-        <ArchitectureDiagram />
-
-        <div className="mt-12 flex items-center gap-6 flex-wrap text-sm">
-          <Link to="/security" className="group inline-flex items-center gap-2 text-titanium-100 hover:text-white">
-            Security-Posture
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-          <Link to="/legal/sub-processors" className="text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline">
-            Sub-Processors
-          </Link>
-          <Link to="/grenzen" className="text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline">
-            Grenzen
-          </Link>
-          <Link to="/legal/methodology" className="text-titanium-500 hover:text-titanium-300 underline-offset-4 hover:underline">
-            Methodik
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────── */
 /*  8) PROOF — aggregierte Stats                                            */

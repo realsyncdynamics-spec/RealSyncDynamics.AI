@@ -161,6 +161,10 @@ function RoutesWithTracking() {
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
+      <Route path="/impressum" element={<SubProcessors />} />
+      <Route path="/legal/impressum" element={<SubProcessors />} />
+      <Route path="/datenschutz" element={<PrivacyPolicy />} />
+      <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
     </Routes>

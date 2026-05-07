@@ -1,0 +1,161 @@
+{
+  "rules": [
+    {
+      "id": "GA4_WITHOUT_CONSENT",
+      "title": "Google Analytics ohne Einwilligung",
+      "description": "GA4-Script wird vor User-Consent geladen. Verstößt gegen § 25 Abs. 1 TTDSG (Einwilligung vor Speicherung im Endgerät) und Art. 6 Abs. 1 DSGVO.",
+      "category": "tracking",
+      "severity": "high",
+      "norms": ["DSGVO Art. 6 Abs. 1", "DSGVO Art. 44", "TTDSG § 25 Abs. 1"],
+      "conditions": [
+        { "fact": "tracker.google_analytics.detected", "operator": "equals", "value": true },
+        { "fact": "consent.banner.detected", "operator": "equals", "value": false }
+      ],
+      "remediation": {
+        "summary": "GA4 hinter Consent-Mode v2 stellen oder durch consent-konformen Tracker ersetzen.",
+        "steps": [
+          "Cookie-Consent-SDK einbetten (BfDI 2024 konform, 3 gleichberechtigte Buttons)",
+          "Google Consent Mode v2 aktivieren — analytics_storage:'denied' bis Opt-In",
+          "GTM-Tag Trigger auf consent.granted ändern",
+          "Test: erste Network-Requests ohne Consent prüfen (analytics.google.com darf nicht erscheinen)"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "META_PIXEL_WITHOUT_CONSENT",
+      "title": "Meta Pixel ohne Einwilligung",
+      "description": "Facebook/Meta-Pixel wird vor Consent geladen. Drittland-Übermittlung an USA-Server ohne Rechtsgrundlage.",
+      "category": "tracking",
+      "severity": "high",
+      "norms": ["DSGVO Art. 6 Abs. 1 lit. a", "DSGVO Art. 44", "TTDSG § 25 Abs. 1"],
+      "conditions": [
+        { "fact": "tracker.meta_pixel.detected", "operator": "equals", "value": true },
+        { "fact": "consent.detected_before_load", "operator": "equals", "value": false }
+      ],
+      "remediation": {
+        "summary": "Meta Pixel hinter Consent-Mode oder Server-Side-Tracking mit Anonymisierung.",
+        "steps": [
+          "Pixel-Code in Consent-bedingten Block verschieben",
+          "Conversions-API-Server-Side mit IP-Anonymisierung erwägen",
+          "Drittland-Pfad: TIA nach EDPB 01/2020 dokumentieren oder Pixel ersetzen"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "MISSING_PRIVACY_POLICY",
+      "title": "Fehlende oder unauffindbare Datenschutzerklärung",
+      "description": "Pflichtangabe nach Art. 13 DSGVO fehlt oder ist nicht von jeder Seite aus verlinkt.",
+      "category": "documentation",
+      "severity": "critical",
+      "norms": ["DSGVO Art. 13", "TMG § 13"],
+      "conditions": [
+        { "fact": "page.privacy_policy.url_found", "operator": "equals", "value": false }
+      ],
+      "remediation": {
+        "summary": "Datenschutzerklärung erstellen und im Footer von jeder Seite verlinken.",
+        "steps": [
+          "/legal/privacy oder /datenschutz Seite anlegen",
+          "Pflichtangaben Art. 13 DSGVO (Verantwortlicher, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer, Rechte) ausfüllen",
+          "Footer-Link auf jeder Seite",
+          "Datenschutz-Generator nutzen unter /datenschutz-generator"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "MISSING_IMPRESSUM",
+      "title": "Fehlendes oder unvollständiges Impressum",
+      "description": "Pflichtangabe nach § 5 TMG / § 18 MStV nicht oder unvollständig vorhanden.",
+      "category": "documentation",
+      "severity": "critical",
+      "norms": ["TMG § 5", "MStV § 18"],
+      "conditions": [
+        { "fact": "page.impressum.url_found", "operator": "equals", "value": false }
+      ],
+      "remediation": {
+        "summary": "§-5-TMG-konformes Impressum mit Anbieter, Vertretungsberechtigtem, Kontakt, Register-Eintrag.",
+        "steps": [
+          "/impressum oder /legal/impressum Seite anlegen",
+          "Pflichtangaben: Name, Anschrift, Telefon, E-Mail, Vertretungsberechtigter, USt-IdNr, HR-Eintrag",
+          "Footer-Link",
+          "Bei journalistisch-redaktionellen Inhalten: zusätzlich § 18 MStV verantwortlicher Autor"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "COOKIE_BANNER_DARK_PATTERN",
+      "title": "Cookie-Banner ohne gleichberechtigten Reject-Button",
+      "description": "Banner zeigt prominenten Accept-All-Button ohne sichtbar gleichwertigen Reject-All-Button. Verstößt gegen BfDI 2024 Guidelines + LG-Düsseldorf-Rechtsprechung.",
+      "category": "consent",
+      "severity": "medium",
+      "norms": ["DSGVO Art. 7", "TTDSG § 25", "BfDI 2024 Guidelines"],
+      "conditions": [
+        { "fact": "consent.banner.detected", "operator": "equals", "value": true },
+        { "fact": "consent.banner.reject_button_equal_prominence", "operator": "equals", "value": false }
+      ],
+      "remediation": {
+        "summary": "Banner umbauen: Accept-All, Reject-All, Anpassen alle drei gleichberechtigt.",
+        "steps": [
+          "Cookie-Consent-SDK von RealSync einbetten (default-konform)",
+          "Oder bestehendes CMP konfigurieren: 3 Buttons same-size, same-color, same-position",
+          "A/B-Test entfernen, falls Variante mit Dark-Pattern aktiv"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "GOOGLE_FONTS_EMBEDDED",
+      "title": "Google Fonts dynamisch eingebunden",
+      "description": "Google Fonts werden vom Google-CDN geladen. Das überträgt IP-Adressen an Google in den USA. EuGH-relevant (LG-München 2022).",
+      "category": "data-transfer",
+      "severity": "medium",
+      "norms": ["DSGVO Art. 6 Abs. 1", "DSGVO Art. 44"],
+      "conditions": [
+        { "fact": "asset.google_fonts.dynamic", "operator": "equals", "value": true }
+      ],
+      "remediation": {
+        "summary": "Fonts lokal hosten oder durch consent-bedingte Einbindung ersetzen.",
+        "steps": [
+          "Google Fonts Webfonts-Helper nutzen für Self-Hosting",
+          "Font-Files in /public/fonts/ ablegen",
+          "@font-face statt <link>",
+          "Test: keine Requests mehr an fonts.googleapis.com"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "MISSING_AVV_REFERENCE",
+      "title": "Kein AVV-Hinweis in Datenschutzerklärung",
+      "description": "Kunde nutzt offensichtlich Auftragsverarbeiter (Stripe, GA, Hosting), aber Datenschutzerklärung referenziert keine AVV. Pflicht nach Art. 28 DSGVO.",
+      "category": "documentation",
+      "severity": "medium",
+      "norms": ["DSGVO Art. 28"],
+      "conditions": [
+        { "fact": "page.privacy_policy.url_found", "operator": "equals", "value": true },
+        { "fact": "page.privacy_policy.mentions_avv", "operator": "equals", "value": false },
+        { "fact": "tracker.any_external", "operator": "equals", "value": true }
+      ],
+      "remediation": {
+        "summary": "Sub-Processors-Liste mit AVV-Status pro Anbieter ergänzen.",
+        "steps": [
+          "Sub-Processors-Page anlegen (siehe /legal/sub-processors als Vorlage)",
+          "Pro Anbieter: Name, Zweck, Region, Link zum AVV/DPA",
+          "AVV mit Anbietern abschließen falls noch offen",
+          "Aus Datenschutzerklärung darauf verlinken"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+version: '3.8'
+
+# Worker-Compose-Setup für lokale Entwicklung und für VPS-Deployment.
+# Aktivierung siehe worker/README.md (status: scaffold).
+
+services:
+  worker:
+    build: .
+    image: realsync/audit-worker:latest
+    container_name: realsync-audit-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - WORKER_ID=worker-1
+      - PLAYWRIGHT_TIMEOUT_MS=30000
+      - POLL_INTERVAL_MS=5000
+    # Volume für Playwright-Browser-Caching (nicht Pflicht, schnellerer Start)
+    volumes:
+      - playwright-cache:/ms-playwright
+    # Resource-Limits — verhindert Runaway bei pathologischen Sites
+    mem_limit: 1g
+    cpus: 1.0
+    # Health-Check via Prozess-Existenz
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "node dist/index.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Logs — bei Coolify automatisch aggregiert
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  playwright-cache:

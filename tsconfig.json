@@ -21,11 +21,14 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "exclude": [
     "node_modules",
     "dist",
-    "supabase/functions"
+    "supabase/functions",
+    "worker"
   ]
 }

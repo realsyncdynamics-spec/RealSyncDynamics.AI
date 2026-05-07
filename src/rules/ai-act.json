@@ -1,0 +1,167 @@
+{
+  "rules": [
+    {
+      "id": "AI_ACT_PROHIBITED_EMOTION_RECOGNITION",
+      "title": "Verbotene Praktik: Emotion Recognition am Arbeitsplatz / Bildung",
+      "description": "Art. 5 Abs. 1 lit. f AI Act verbietet KI-Systeme, die Emotionen am Arbeitsplatz oder in Bildungseinrichtungen erkennen — außer bei medizinischen oder Sicherheits-Zwecken.",
+      "category": "ai-act",
+      "severity": "critical",
+      "norms": ["AI Act Art. 5 Abs. 1 lit. f"],
+      "conditions": [
+        { "fact": "ai_use_case.detects_emotion", "operator": "equals", "value": true },
+        { "fact": "ai_use_case.context", "operator": "in", "value": ["workplace", "education"] }
+      ],
+      "remediation": {
+        "summary": "System darf in EU nicht eingesetzt werden. Sofortige juristische Beratung erforderlich.",
+        "steps": [
+          "System in EU-Tenant deaktivieren bis juristische Klärung",
+          "Anwalt für KI-Compliance kontaktieren",
+          "Falls medizinischer/Sicherheits-Zweck: Conformity Assessment + DSFA dokumentieren",
+          "Dokumentation in Audit-Trail hinterlegen"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "AI_ACT_PROHIBITED_SOCIAL_SCORING",
+      "title": "Verbotene Praktik: Social Scoring durch öffentliche Stellen",
+      "description": "Art. 5 Abs. 1 lit. c AI Act verbietet KI-Systeme zur Bewertung oder Klassifizierung natürlicher Personen über die Zeit auf Basis von sozialem Verhalten / persönlichen Eigenschaften.",
+      "category": "ai-act",
+      "severity": "critical",
+      "norms": ["AI Act Art. 5 Abs. 1 lit. c"],
+      "conditions": [
+        { "fact": "ai_use_case.scoring", "operator": "equals", "value": true },
+        { "fact": "ai_use_case.actor", "operator": "equals", "value": "public_authority" }
+      ],
+      "remediation": {
+        "summary": "System ist verboten. Alternativ-Lösungen ohne ML-basiertes Personen-Scoring.",
+        "steps": [
+          "System abschalten",
+          "Use-Case neu evaluieren ohne Personen-Scoring-Aspekt",
+          "Anwaltliche Konsultation"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "AI_ACT_HIGH_RISK_RECRUITING",
+      "title": "High-Risk: KI-gestütztes Recruiting / HR-Selektion",
+      "description": "Annex III Abs. 4 AI Act stuft KI-Systeme zur Beschäftigung, Workforce-Management und Recruiting als High-Risk ein. Conformity Assessment + Risk-Management + Human Oversight Pflicht.",
+      "category": "ai-act",
+      "severity": "high",
+      "norms": ["AI Act Annex III Abs. 4", "AI Act Art. 9", "AI Act Art. 11", "AI Act Art. 14"],
+      "conditions": [
+        { "fact": "ai_use_case.purpose", "operator": "in", "value": ["recruiting", "performance_review", "termination_decision", "promotion_decision"] }
+      ],
+      "remediation": {
+        "summary": "High-Risk-Pflichten umsetzen: Conformity Assessment, Risk-Management, Technical Doc, Human Oversight.",
+        "steps": [
+          "AI-Act-Klassifikator durchlaufen unter /ai-act-klassifikator",
+          "Conformity Assessment durch Notified Body planen",
+          "Risk-Management-Framework nach Art. 9 dokumentieren",
+          "Technical Documentation nach Art. 11 erstellen",
+          "Human-in-the-Loop-Mechanismus implementieren (Art. 14)",
+          "Bias-Auditing und Test-Daten-Diversität dokumentieren",
+          "DSFA nach Art. 35 DSGVO + § 26 BDSG-Beschäftigtendaten-Bewertung",
+          "Betriebsrat einbeziehen (BetrVG § 87)"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "AI_ACT_HIGH_RISK_EDUCATION_SELECTION",
+      "title": "High-Risk: KI-Auswahl / Bewertung in Bildung",
+      "description": "Annex III Abs. 3 AI Act stuft KI-Systeme zur Bewertung, Auswahl, Prüfungs-Aufsicht in Bildungseinrichtungen als High-Risk ein.",
+      "category": "ai-act",
+      "severity": "high",
+      "norms": ["AI Act Annex III Abs. 3"],
+      "conditions": [
+        { "fact": "ai_use_case.purpose", "operator": "in", "value": ["student_selection", "student_evaluation", "exam_proctoring", "learning_path_recommendation"] }
+      ],
+      "remediation": {
+        "summary": "High-Risk-Pflichten + DSGVO Art. 8 (Minderjährige) + KMK + Landes-Schulgesetze.",
+        "steps": [
+          "AI-Act-Klassifikator + DSFA durchlaufen",
+          "Eltern-Einwilligungs-Workflow für < 16 Jahre einrichten",
+          "BFSG/BITV-konforme UI sicherstellen",
+          "Pädagogisches Konzept dokumentieren (KMK-Beschlüsse beachten)",
+          "Final-Bewertung muss durch Lehrkraft erfolgen (Human-Oversight)"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "AI_ACT_HIGH_RISK_CREDIT_SCORING",
+      "title": "High-Risk: KI für Kreditwürdigkeits- oder Underwriting-Entscheidung",
+      "description": "Annex III Abs. 5 lit. b AI Act stuft KI-Systeme zur Kreditwürdigkeits-Bewertung natürlicher Personen als High-Risk ein.",
+      "category": "ai-act",
+      "severity": "high",
+      "norms": ["AI Act Annex III Abs. 5 lit. b", "BAIT AT 4.5", "MaRisk AT 7.2"],
+      "conditions": [
+        { "fact": "ai_use_case.purpose", "operator": "equals", "value": "credit_scoring" }
+      ],
+      "remediation": {
+        "summary": "AI Act + BAIT/MaRisk + DSGVO Art. 22 + Bankaufsichts-Auflagen kombinieren.",
+        "steps": [
+          "Conformity Assessment durch Notified Body",
+          "BaFin-Notifikation falls wesentliche Auslagerung",
+          "DSGVO Art. 22 — Auskunfts-, Erklärungs-, Anfechtungsrecht des Betroffenen",
+          "BAIT-konformer Audit-Trail pro Scoring-Aufruf",
+          "Bias-Auditing über geschützte Merkmale (AGG-Konformität)",
+          "Vor-Konsultation der Aufsichtsbehörde nach Art. 36 DSGVO bei Hochrisiko"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "AI_ACT_LIMITED_RISK_CHATBOT",
+      "title": "Limited-Risk: Chatbot ohne Transparenz-Hinweis",
+      "description": "Art. 52 AI Act verlangt, dass User wissen, dass sie mit KI interagieren. Fehlt der Disclosure-Hinweis, ist die Pflicht verletzt.",
+      "category": "ai-act",
+      "severity": "low",
+      "norms": ["AI Act Art. 52"],
+      "conditions": [
+        { "fact": "ai_use_case.is_chatbot", "operator": "equals", "value": true },
+        { "fact": "ai_use_case.disclosure_visible", "operator": "equals", "value": false }
+      ],
+      "remediation": {
+        "summary": "Im Chatbot-UI sichtbarer Hinweis: 'Sie chatten mit einer KI'.",
+        "steps": [
+          "Initial-Message des Bots: 'Hallo, ich bin eine KI-Assistenz von [Firma].'",
+          "Persistenter UI-Hinweis im Chat-Header",
+          "Bei Eskalation an Mensch: explizite Übergabe-Nachricht",
+          "Falls AI-generated Content (Bilder, Texte) ausgegeben wird: Markierung als KI-erzeugt"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    },
+    {
+      "id": "AI_ACT_GPAI_FOUNDATION_MODEL",
+      "title": "GPAI / Foundation Model — Transparenz-Pflicht",
+      "description": "Wenn Foundation-Models direkt genutzt werden (statt Cloud-API), gelten ab August 2025 GPAI-Transparenz-Pflichten nach Art. 53 AI Act.",
+      "category": "ai-act",
+      "severity": "medium",
+      "norms": ["AI Act Art. 53"],
+      "conditions": [
+        { "fact": "ai_use_case.uses_foundation_model_directly", "operator": "equals", "value": true }
+      ],
+      "remediation": {
+        "summary": "Trainings-Daten-Zusammenfassung publizieren + Copyright-Compliance + technische Dokumentation.",
+        "steps": [
+          "Trainings-Daten-Sources dokumentieren (öffentlich)",
+          "Copyright-Compliance-Statement nach Art. 53 Abs. 1 lit. d",
+          "Technische Dokumentation für Behörden auf Anfrage bereithalten",
+          "Falls Modell systemic risk threshold erreicht: zusätzliche Pflichten Art. 55"
+        ]
+      },
+      "version": "2026.05.0",
+      "updated_at": "2026-05-07"
+    }
+  ]
+}

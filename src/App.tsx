@@ -37,8 +37,11 @@ import { FinTechLanding } from './pages/FinTechLanding';
 import { PublicSectorLanding } from './pages/PublicSectorLanding';
 import { UsercentricsAlternative } from './pages/UsercentricsAlternative';
 import { DataGuardAlternative } from './pages/DataGuardAlternative';
+import { BorlabsAlternative } from './pages/BorlabsAlternative';
+import { CookiebotAlternative } from './pages/CookiebotAlternative';
 import { About } from './pages/About';
 import { Press } from './pages/Press';
+import { Security } from './pages/Security';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -100,11 +103,15 @@ function RoutesWithTracking() {
       <Route path="/behoerden" element={<PublicSectorLanding />} />
       <Route path="/usercentrics-alternative" element={<UsercentricsAlternative />} />
       <Route path="/dataguard-alternative" element={<DataGuardAlternative />} />
-      {/* Trust / Press */}
+      <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
+      <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
+      {/* Trust / Press / Security */}
       <Route path="/about" element={<About />} />
       <Route path="/ueber-uns" element={<About />} />
       <Route path="/press" element={<Press />} />
       <Route path="/presse" element={<Press />} />
+      <Route path="/security" element={<Security />} />
+      <Route path="/sicherheit" element={<Security />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

@@ -24,7 +24,7 @@ interface Props {
 interface ActionDef {
   action: ActionName;
   label: string;
-  icon: React.ElementType;
+  icon: React.ElementType<{ className?: string }>;
   /** Optional inline form fields to collect before running. */
   fields?: Array<{
     key: keyof RunActionArgs;

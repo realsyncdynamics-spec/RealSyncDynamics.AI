@@ -15,7 +15,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 
 type Msg = { role: 'user' | 'kodee'; text: string; status?: 'loading' | 'error' | 'success' };
 
-const QUICK_PROMPTS: { icon: React.ElementType; label: string; prompt: string }[] = [
+const QUICK_PROMPTS: { icon: React.ElementType<{ className?: string }>; label: string; prompt: string }[] = [
   {
     icon: ShieldCheck,
     label: 'Was fehlt für meine Webseite?',

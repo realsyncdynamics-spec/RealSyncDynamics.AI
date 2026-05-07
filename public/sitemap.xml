@@ -96,6 +96,7 @@
     <priority>0.95</priority>
   </url>
   <url>
+  <url>
     <loc>https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/dataguard-alternative</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>

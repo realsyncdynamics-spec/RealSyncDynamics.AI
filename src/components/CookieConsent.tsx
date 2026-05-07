@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cookie, X } from 'lucide-react';
+import { emitConsentChanged } from '../lib/pixels';
 
 const STORAGE_KEY = 'realsync.cookie-consent.v1';
 
@@ -36,6 +37,7 @@ export function CookieConsent() {
   function save(consent: Consent) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(consent)); } catch { /* ignore */ }
     setDecided(true);
+    emitConsentChanged();
   }
 
   function acceptAll() {

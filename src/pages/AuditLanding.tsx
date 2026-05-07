@@ -223,10 +223,10 @@ function Pillars() {
       <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-4 text-center">Was wir prüfen</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {items.map((it) => (
-          <div key={it.law} className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
+          <div key={it.law} className="p-4 bg-obsidian-900 border border-titanium-900 border-l-2 border-l-brass-700/60 rounded-none">
             <div className="flex items-center gap-2 mb-1.5">
-              <Gavel className="h-3.5 w-3.5 text-amber-400" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">{it.law}</span>
+              <Gavel className="h-3.5 w-3.5 text-brass-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-brass-300">{it.law}</span>
             </div>
             <div className="font-display font-bold text-sm text-titanium-50">{it.issue}</div>
             <div className="text-xs text-titanium-500 mt-0.5">Risiko: {it.max}</div>

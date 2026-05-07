@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AiCoreVisual } from './AiCoreVisual';
 
 const AiCoreScene = lazy(() => import('./AiCoreScene'));
@@ -16,36 +16,72 @@ type Props = {
  * AiCoreInteractive — picks the right rendering tier:
  *   - Mobile / tablet (< threeJsBreakpoint) → static SVG (AiCoreVisual)
  *   - prefers-reduced-motion → static SVG
- *   - Otherwise on desktop → lazy-load AiCoreScene (Three.js / R3F)
+ *   - Desktop ≥ threeJsBreakpoint → upgrade to 3D once the element is within
+ *     200px of the viewport (IntersectionObserver), then lazy-load AiCoreScene
  *
- * SVG renders synchronously as Suspense fallback so there is no layout-jump
- * while the three chunk downloads. When the 3D scene is ready, it overlays
- * the SVG seamlessly.
+ * The IO deferral means vendor-three.js does not even start downloading until
+ * the user has scrolled close to the WatchmakerShowcase section. SVG renders
+ * synchronously throughout, including as Suspense fallback while the chunk
+ * resolves — zero layout-jump.
  */
 export function AiCoreInteractive({ size = 360, className, threeJsBreakpoint = 1024 }: Props) {
   const [tier, setTier] = useState<'svg' | '3d'>('svg');
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (tier === '3d') return; // already upgraded — nothing to do
+
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) return;
-    const update = () => {
-      setTier(window.innerWidth >= threeJsBreakpoint ? '3d' : 'svg');
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, [threeJsBreakpoint]);
 
-  if (tier === 'svg') {
-    return <AiCoreVisual size={size} className={className} />;
-  }
+    const isCapableViewport = () => window.innerWidth >= threeJsBreakpoint;
+    const node = wrapperRef.current;
+
+    let observer: IntersectionObserver | null = null;
+
+    const armObserver = () => {
+      if (!isCapableViewport() || !node) return;
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            setTier('3d');
+            observer?.disconnect();
+            observer = null;
+          }
+        },
+        { rootMargin: '200px' },
+      );
+      observer.observe(node);
+    };
+
+    armObserver();
+
+    const onResize = () => {
+      if (!observer && isCapableViewport()) armObserver();
+    };
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', onResize);
+    };
+  }, [threeJsBreakpoint, tier]);
 
   return (
-    <div className={className} style={{ width: size, height: size, position: 'relative' }} aria-hidden="true">
-      <Suspense fallback={<AiCoreVisual size={size} />}>
-        <AiCoreScene />
-      </Suspense>
+    <div
+      ref={wrapperRef}
+      className={className}
+      style={{ width: size, height: size, position: 'relative' }}
+      aria-hidden="true"
+    >
+      {tier === 'svg' ? (
+        <AiCoreVisual size={size} />
+      ) : (
+        <Suspense fallback={<AiCoreVisual size={size} />}>
+          <AiCoreScene />
+        </Suspense>
+      )}
     </div>
   );
 }

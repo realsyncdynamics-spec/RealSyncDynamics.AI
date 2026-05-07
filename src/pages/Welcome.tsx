@@ -215,20 +215,26 @@ export function Welcome() {
           </div>
 
           <div className="flex items-center justify-center gap-3 mb-12">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex items-center gap-3">
-                <div
-                  className={`w-8 h-8 flex items-center justify-center text-sm font-mono border-2 ${
-                    step >= s
-                      ? 'border-indigo-500 bg-indigo-500 text-white'
-                      : 'border-titanium-800 text-titanium-500'
-                  }`}
-                >
-                  {step > s ? <Check className="h-4 w-4" /> : s}
+            {[1, 2, 3].map((s) => {
+              const isCompleted = step > s;
+              const isCurrent = step === s;
+              return (
+                <div key={s} className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 flex items-center justify-center text-sm font-mono border-2 transition-colors ${
+                      isCompleted
+                        ? 'border-brass-500 bg-brass-500 text-obsidian-950'
+                        : isCurrent
+                          ? 'border-ai-cyan-500 bg-ai-cyan-500/15 text-ai-cyan-300'
+                          : 'border-titanium-800 text-titanium-500'
+                    }`}
+                  >
+                    {isCompleted ? <Check className="h-4 w-4" /> : s}
+                  </div>
+                  {s < 3 && <div className={`w-12 h-px ${isCompleted ? 'bg-brass-500' : 'bg-titanium-800'}`} />}
                 </div>
-                {s < 3 && <div className={`w-12 h-px ${step > s ? 'bg-indigo-500' : 'bg-titanium-800'}`} />}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {error && (
@@ -251,7 +257,7 @@ export function Welcome() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="vorname.name@firma.de"
-                  className="mt-2 w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-indigo-500 outline-none placeholder:text-titanium-600"
+                  className="mt-2 w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-ai-cyan-500 outline-none placeholder:text-titanium-600"
                 />
               </div>
               <div>
@@ -263,7 +269,7 @@ export function Welcome() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Vor- + Nachname"
-                  className="mt-2 w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-indigo-500 outline-none placeholder:text-titanium-600"
+                  className="mt-2 w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-ai-cyan-500 outline-none placeholder:text-titanium-600"
                 />
               </div>
               <button
@@ -397,7 +403,7 @@ export function Welcome() {
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
                     placeholder="https://example.com"
-                    className="w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-indigo-500 outline-none placeholder:text-titanium-600"
+                    className="w-full bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-ai-cyan-500 outline-none placeholder:text-titanium-600"
                   />
                   <button
                     onClick={submitAuditDomain}

@@ -45,6 +45,10 @@ import { EcommerceLanding } from './pages/EcommerceLanding';
 import { About } from './pages/About';
 import { Press } from './pages/Press';
 import { Security } from './pages/Security';
+import { Faq } from './pages/Faq';
+import { Changelog } from './pages/Changelog';
+import { SaasAnbieterLanding } from './pages/SaasAnbieterLanding';
+import { Marktanalyse } from './pages/Marktanalyse';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -122,6 +126,14 @@ function RoutesWithTracking() {
       <Route path="/presse" element={<Press />} />
       <Route path="/security" element={<Security />} />
       <Route path="/sicherheit" element={<Security />} />
+      <Route path="/faq" element={<Faq />} />
+      <Route path="/haeufige-fragen" element={<Faq />} />
+      <Route path="/changelog" element={<Changelog />} />
+      <Route path="/release-notes" element={<Changelog />} />
+      <Route path="/saas-anbieter" element={<SaasAnbieterLanding />} />
+      <Route path="/saas-providers" element={<SaasAnbieterLanding />} />
+      <Route path="/marktanalyse" element={<Marktanalyse />} />
+      <Route path="/market-analysis" element={<Marktanalyse />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

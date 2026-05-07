@@ -357,7 +357,7 @@ export function Landing() {
                 {tool.hot && (
                   <div style={{ position: 'absolute', top: '16px', right: '16px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '20px', letterSpacing: '0.05em' }}>BELIEBT</div>
                 )}
-                <div style={{ fontSize: '32px', marginBottom: '16px', display: 'inline-block', background: 'rgba(99,102,241,0.1)', width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', ...(hoveredCard === i ? { background: 'rgba(99,102,241,0.2)', transform: 'scale(1.1)' } : {}) }}>{tool.icon}</div>
+                <div style={{ fontSize: '32px', marginBottom: '16px', background: 'rgba(99,102,241,0.1)', width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', ...(hoveredCard === i ? { background: 'rgba(99,102,241,0.2)', transform: 'scale(1.1)' } : {}) }}>{tool.icon}</div>
                 <div style={{ display: 'inline-block', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '4px', padding: '2px 8px', fontSize: '11px', color: '#818cf8', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '10px', marginLeft: hoveredCard === i ? '0' : '0' }}>{tool.badge}</div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9', marginBottom: '6px' }}>{tool.title}</h3>
                 <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>{tool.desc}</p>

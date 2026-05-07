@@ -56,6 +56,10 @@ import { IubendaAlternative } from './pages/IubendaAlternative';
 import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
+import { BaitCompliance } from './pages/seo/BaitCompliance';
+import { MariskAudit } from './pages/seo/MariskAudit';
+import { EuAiActCheck } from './pages/seo/EuAiActCheck';
+import { CookieCompliance } from './pages/seo/CookieCompliance';
 // Features
 import { KodeeView } from './features/kodee/KodeeView';
 import { ConnectionsView } from './features/kodee/connections/ConnectionsView';
@@ -159,6 +163,11 @@ function RoutesWithTracking() {
       <Route path="/integrationen" element={<Integrations />} />
       <Route path="/steuerberater" element={<SteuerberaterLanding />} />
       <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
+      {/* SEO Doorways — Framework-spezifisch */}
+      <Route path="/bait-compliance" element={<BaitCompliance />} />
+      <Route path="/marisk-audit" element={<MariskAudit />} />
+      <Route path="/eu-ai-act-check" element={<EuAiActCheck />} />
+      <Route path="/cookie-compliance" element={<CookieCompliance />} />
       {/* Compliance Tools (Free) */}
       <Route path="/avv-generator" element={<AvvGenerator />} />
       <Route path="/tools/avv-generator" element={<AvvGenerator />} />

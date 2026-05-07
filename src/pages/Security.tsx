@@ -81,6 +81,53 @@ export function Security() {
             </p>
           </Section>
 
+          <Section title="SOC 2-ready Architektur (statt Marketing-Zertifikat)" icon={<FileCheck className="h-5 w-5 text-security-400" />}>
+            <p>
+              Statt eines „SOC 2 certified"-Logos, das wir formal noch nicht haben dürfen, sind unsere
+              Controls bereits an den SOC 2 Trust Services Criteria ausgerichtet — auditierbar bei
+              Bedarf des Enterprise-Kunden:
+            </p>
+            <ul className="space-y-1.5 text-sm">
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Access Management (CC6.1–6.3):</strong> Tenant-Isolation per Postgres RLS, Default-Deny, explizite Policies. Least-Privilege auf SECURITY-DEFINER-Funktionen.</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Logging &amp; Monitoring (CC7.1–7.2):</strong> Append-only Audit-Trail über alle KI-Aufrufe und kritischen DB-Mutations. Sentry-Stub für Errors (DSGVO-konform, keine PII).</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Encryption (CC6.7):</strong> TLS 1.3 in Transit, AES-256 At-Rest (Supabase-Standard). Vault für Secret-Storage statt Env-Variables im Klartext.</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Incident Response (CC7.3–7.5):</strong> 72h-Meldepflicht-Timer, Sub-Processor-Notification-Webhook, Disclosure-Prozess (siehe oben).</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Change Management (CC8.1):</strong> Versionierte Methodology (siehe <Link to="/legal/methodology" className="text-security-400 hover:text-security-300">/legal/methodology</Link>) und öffentliches <Link to="/changelog" className="text-security-400 hover:text-security-300">Changelog</Link>.</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Data Retention (P3.1):</strong> Klare Aufbewahrungsfristen pro Datenkategorie in <Link to="/legal/privacy" className="text-security-400 hover:text-security-300">Datenschutzerklärung</Link>; DSGVO Art. 17 Selfservice.</span></li>
+            </ul>
+            <p className="text-xs text-titanium-500 mt-3">
+              SOC 2 Type 1 Audit geplant 2026 Q4. Bis dahin: detaillierte Controls-Mapping-Tabelle
+              (TSC ↔ Implementierung) auf Anfrage für Enterprise-Procurement.
+            </p>
+          </Section>
+
+          <Section title="Architektur-Diagramm" icon={<Server className="h-5 w-5 text-security-400" />}>
+            <p>
+              Vereinfachter Datenfluss von Browser bis Datenbank:
+            </p>
+            <pre className="p-4 bg-obsidian-950 border border-titanium-700 rounded-none overflow-x-auto text-xs font-mono text-titanium-300 leading-relaxed whitespace-pre">
+{`Browser
+  ↓  HTTPS (TLS 1.3 erzwungen)
+GitHub-Pages CDN  (Edge, kein PII-Storage)
+  ↓
+Static Frontend (React SPA)
+  ↓  Bearer-JWT
+Supabase Edge Functions  (eu-central-1, Frankfurt)
+  ↓  RLS-enforced Queries
+Postgres + Vault  (eu-central-1, AES-256 at rest)
+  ↓  Tenant-ID-Filter (RLS)
+Append-only Audit-Log
+  ↘
+   Optional KI-Pfad:
+     - EU-Cloud (Anthropic EU / OpenAI EU / Google Vertex eu-central)
+     - oder Ollama EU-local (Hostinger Frankfurt VPS, voll souverän)`}
+            </pre>
+            <p className="text-xs text-titanium-500">
+              Tenant-ID wird auf jeder Schicht erneut validiert (Browser-Token → Edge-Function-Auth → Postgres-RLS).
+              Kein Single-Point-of-Failure für Mandanten-Trennung.
+            </p>
+          </Section>
+
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <div className="flex items-center gap-2 mb-2">
               <Mail className="h-5 w-5 text-security-400" />

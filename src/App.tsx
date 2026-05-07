@@ -79,6 +79,8 @@ import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
 import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
+import { LegalMethodology } from './features/legal/LegalMethodology';
+import { Limits } from './pages/Limits';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 import { useTrackPageview } from './lib/track';
@@ -203,6 +205,10 @@ function RoutesWithTracking() {
       <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
+      <Route path="/legal/methodology" element={<LegalMethodology />} />
+      <Route path="/methodik" element={<LegalMethodology />} />
+      <Route path="/grenzen" element={<Limits />} />
+      <Route path="/limits" element={<Limits />} />
     </Routes>
   );
 }

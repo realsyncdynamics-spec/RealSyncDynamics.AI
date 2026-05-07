@@ -609,34 +609,77 @@ export function Landing() {
             </div>
             <div>
               <h4 style={{ fontSize: '13px', color: '#f1f5f9', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>Tools</h4>
-              {['DSGVO-Audit', 'AVV-Generator', 'Bußgeld-Rechner', 'DSE-Generator', 'Alle Tools'].map((item, i) => (
-                <a key={i} href={item === 'DSGVO-Audit' ? '/audit' : item === 'Alle Tools' ? '/tools' : '/' + item.toLowerCase().replace(/ /g, '-').replace('ü', 'u').replace('ß', 'ss')} style={{ display: 'block', fontSize: '14px', color: '#475569', textDecoration: 'none', marginBottom: '10px', transition: 'color 0.2s ease' }}
+              {[
+                { label: 'DSGVO-Audit', href: '/audit' },
+                { label: 'AVV-Generator', href: '/avv-generator' },
+                { label: 'Bußgeld-Simulator', href: '/busseld-rechner' },
+                { label: 'DSE-Generator', href: '/datenschutz-generator' },
+                { label: 'Alle Tools', href: '/tools' },
+              ].map((item) => (
+                <a key={item.label} href={item.href} style={{ display: 'block', fontSize: '14px', color: '#475569', textDecoration: 'none', marginBottom: '10px', transition: 'color 0.2s ease' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}>{item}</a>
+                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}>{item.label}</a>
               ))}
             </div>
             <div>
               <h4 style={{ fontSize: '13px', color: '#f1f5f9', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>Plattform</h4>
-              {['Preise', 'Agenturen', 'Ressourcen', 'AI Act FAQ'].map((item, i) => (
-                <a key={i} href={'#' + item.toLowerCase()} style={{ display: 'block', fontSize: '14px', color: '#475569', textDecoration: 'none', marginBottom: '10px', transition: 'color 0.2s ease' }}
+              {[
+                { label: 'Preise', href: '/pricing' },
+                { label: 'Agenturen', href: '/agencies' },
+                { label: 'Ressourcen', href: '/ressourcen' },
+                { label: 'AI Act FAQ', href: '/ai-act-faq' },
+                { label: 'Methodik', href: '/legal/methodology' },
+                { label: 'Grenzen', href: '/grenzen' },
+              ].map((item) => (
+                <a key={item.label} href={item.href} style={{ display: 'block', fontSize: '14px', color: '#475569', textDecoration: 'none', marginBottom: '10px', transition: 'color 0.2s ease' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}>{item}</a>
+                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}>{item.label}</a>
               ))}
             </div>
             <div>
               <h4 style={{ fontSize: '13px', color: '#f1f5f9', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>Legal</h4>
-              {['Datenschutz', 'Impressum', 'AVV-Template', 'Sub-Processors', 'Compliance Matrix'].map((item, i) => (
-                <a key={i} href={'#' + item.toLowerCase()} style={{ display: 'block', fontSize: '14px', color: '#475569', textDecoration: 'none', marginBottom: '10px', transition: 'color 0.2s ease' }}
+              {[
+                { label: 'Datenschutz', href: '/legal/privacy' },
+                { label: 'Impressum', href: '/impressum' },
+                { label: 'AVV-Template', href: '/legal/avv' },
+                { label: 'Sub-Processors', href: '/legal/sub-processors' },
+                { label: 'Compliance Matrix', href: '/legal/compliance-matrix' },
+              ].map((item) => (
+                <a key={item.label} href={item.href} style={{ display: 'block', fontSize: '14px', color: '#475569', textDecoration: 'none', marginBottom: '10px', transition: 'color 0.2s ease' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#94a3b8'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}>{item}</a>
+                  onMouseLeave={e => e.currentTarget.style.color = '#475569'}>{item.label}</a>
               ))}
             </div>
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <span style={{ fontSize: '13px', color: '#334155' }}>© 2025 RealSync Dynamics AI · Hosted in EU · Alle Rechte vorbehalten</span>
+
+          {/* Haftungsausschluss + Trust Statement */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '24px', marginBottom: '24px', background: 'rgba(245,158,11,0.04)', borderRadius: '8px', padding: '18px 20px', border: '1px solid rgba(245,158,11,0.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '18px', flexShrink: 0 }} aria-hidden="true">⚠️</span>
+              <div style={{ flex: 1, minWidth: '280px' }}>
+                <div style={{ fontSize: '13px', color: '#fcd34d', fontWeight: 700, marginBottom: '6px' }}>
+                  Haftungsausschluss · Anwalts-Validierung
+                </div>
+                <p style={{ fontSize: '12px', color: '#9ca3af', lineHeight: 1.6, margin: 0 }}>
+                  RealSync Dynamics liefert <strong style={{ color: '#cbd5e1' }}>automatisiert generierte Vorlagen
+                  und Methodik-basierte Klassifikationen</strong> — keine individuelle Rechtsberatung im Sinne des RDG.
+                  Outputs sind <strong style={{ color: '#cbd5e1' }}>nicht durch externen Datenschutz-Anwalt
+                  validiert</strong>; vor produktivem Einsatz empfehlen wir anwaltliche Prüfung. Methodik
+                  und Grenzen sind transparent unter{' '}
+                  <a href="/legal/methodology" style={{ color: '#fbbf24' }}>/legal/methodology</a> und{' '}
+                  <a href="/grenzen" style={{ color: '#fbbf24' }}>/grenzen</a> dokumentiert.
+                  Bei juristischer Pflicht-Prüfung vermitteln wir Partner-Anwälte über{' '}
+                  <a href="/contact-sales?source=footer-disclaimer" style={{ color: '#fbbf24' }}>Kontakt</a>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <span style={{ fontSize: '13px', color: '#334155' }}>© 2026 RealSync Dynamics · Made in Germany · Hosted in EU</span>
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+              <a href="/legal/methodology" style={{ fontSize: '12px', color: '#64748b', textDecoration: 'none' }}>Methodik 2026.05.0</a>
               <span style={{ fontSize: '12px', color: '#1e3a5f', background: 'rgba(59,130,246,0.08)', padding: '3px 10px', borderRadius: '4px' }}>realsyncdynamicsai.de</span>
-              <span style={{ fontSize: '12px', color: '#1e3a5f', background: 'rgba(59,130,246,0.08)', padding: '3px 10px', borderRadius: '4px' }}>realsyncdynamics.de</span>
             </div>
           </div>
         </div>

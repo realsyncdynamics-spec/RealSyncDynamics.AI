@@ -8,6 +8,7 @@ import { WebsiteRebuildOffer } from './WebsiteRebuildOffer';
 import { ProTeamsPanel } from './panels/ProTeamsPanel';
 import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
 import { EnterprisePanel } from './panels/EnterprisePanel';
+import { AIActPanel } from './panels/AIActPanel';
 
 /**
  * HeroOnly — Single-viewport Landing-Experience.
@@ -35,7 +36,8 @@ type ModalKey =
   | 'example'       // ExampleReportPanel (GA4-Demo)
   | 'pro'           // ProTeamsPanel (Watchmaker-3-Pillars + AuditEngine-Tri-Layer)
   | 'compliance'    // ComplianceCenterPanel (Methodik / Grenzen / Sub-Processors / AVV)
-  | 'enterprise';   // EnterprisePanel (Multi-Tenant / SLA / Procurement)
+  | 'enterprise'    // EnterprisePanel (Multi-Tenant / SLA / Procurement)
+  | 'aiact';        // AIActPanel (Klassifikator + Workflow-Inventory + Doku-Pflichten)
 
 export function HeroOnly() {
   const [openModal, setOpenModal] = useState<ModalKey>(null);
@@ -46,7 +48,10 @@ export function HeroOnly() {
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <nav className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm">
           <NavButton onClick={() => setOpenModal('check')}>Produkt</NavButton>
-          <NavButton onClick={() => setOpenModal('compliance')} className="hidden sm:inline-flex">
+          <NavButton onClick={() => setOpenModal('aiact')} className="hidden sm:inline-flex">
+            AI-Act
+          </NavButton>
+          <NavButton onClick={() => setOpenModal('compliance')} className="hidden md:inline-flex">
             Compliance-Center
           </NavButton>
           <NavButton onClick={() => setOpenModal('pricing')}>Preise</NavButton>
@@ -126,6 +131,7 @@ export function HeroOnly() {
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-gold-400">Cookie-Scanner · Free</Link>
+            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-gold-400">AI-Act Inventar · Beta</Link>
             <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
             <Link to="/legal/sub-processors"  className="hover:text-titanium-50">Sub-Processors</Link>
@@ -196,6 +202,16 @@ export function HeroOnly() {
         size="xl"
       >
         <EnterprisePanel />
+      </Modal>
+
+      <Modal
+        open={openModal === 'aiact'}
+        onClose={() => setOpenModal(null)}
+        title="EU AI Act für Ihre Firma"
+        eyebrow="Klassifikator · Workflow-Inventar · Doku-Pflichten"
+        size="xl"
+      >
+        <AIActPanel />
       </Modal>
     </div>
   );

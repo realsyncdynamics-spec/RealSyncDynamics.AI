@@ -1,21 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E for the Landing page.
+ * Smoke-E2E for the Landing page Hero.
  *
- * Asserts that the post-simplification (#82) Hero structure renders with the
- * Compliance-Decision-Layer headline and that the primary CTA targets /audit.
- * Catches regressions where someone accidentally drops the Hero refactor or
- * breaks routing.
+ * Asserts the audience-broadened (PR-G) Hero structure: H1 fragt nach
+ * DSGVO-Konformität in Alltagssprache, primärer CTA führt zum /audit-
+ * Quick-Scan. Catches regressions wenn jemand den Hero-Reframe versehentlich
+ * zurückdreht oder das CTA-Routing bricht.
  */
-test('Landing renders Hero and primary CTA', async ({ page }) => {
+test('Landing renders Hero with audience-broadened claim and primary CTA', async ({ page }) => {
   await page.goto('/');
 
   await expect(
-    page.getByRole('heading', { name: /Compliance-Decision-Layer/i }),
+    page.getByRole('heading', { name: /Ist Ihre Website wirklich DSGVO-konform/i }),
   ).toBeVisible();
 
-  const cta = page.getByRole('link', { name: /Jetzt kostenlos scannen/i });
+  const cta = page.getByRole('link', { name: /Kostenlosen Website-Check starten/i });
   await expect(cta).toBeVisible();
   await expect(cta).toHaveAttribute('href', /\/audit/);
 });

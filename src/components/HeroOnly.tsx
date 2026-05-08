@@ -143,25 +143,35 @@ export function HeroOnly() {
               {
                 title: 'Online-Unternehmen & SaaS',
                 body: 'Sie erfassen Leads, nutzen Analytics, Chatbots oder Recommendation-Engines — wir prüfen, ob Ihre Datenflüsse wirklich DSGVO-konform sind.',
+                href: '/fuer-saas',
+                cta: 'Niche-Landing für SaaS',
               },
               {
                 title: 'Dienstleister & Agenturen',
                 body: 'Sie betreuen viele Kundenseiten und KI-Kampagnen — wir liefern Ihnen den technischen Compliance-Überblick für alle Projekte.',
+                href: '/fuer-agenturen',
+                cta: 'Niche-Landing für Agenturen',
               },
               {
                 title: 'Praxen, Kanzleien, lokale Betriebe',
                 body: 'Sie verarbeiten sensible Daten über Formulare und Terminbuchungen — wir decken versteckte Risiken in Formularen, Scripts und Plugins auf.',
+                href: '/fuer-praxen',
+                cta: 'Niche-Landing für Praxen',
               },
             ].map((item) => (
-              <div
+              <Link
                 key={item.title}
-                className="p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+                to={item.href}
+                className="group p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors block"
               >
                 <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
                   {item.title}
                 </h3>
                 <p className="text-sm text-silver-300 leading-relaxed">{item.body}</p>
-              </div>
+                <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-gold-400 group-hover:text-gold-300">
+                  {item.cta} <ArrowRight className="h-3 w-3" />
+                </span>
+              </Link>
             ))}
           </div>
         </div>

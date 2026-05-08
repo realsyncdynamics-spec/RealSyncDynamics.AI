@@ -113,6 +113,12 @@ interface Tracker {
   consent_compliant: boolean;
 }
 
+interface PrivacyAnalytics {
+  id: string;
+  name: string;
+  pattern_matched: string;
+}
+
 interface ScanResult {
   ok: true;
   url: string;
@@ -122,6 +128,7 @@ interface ScanResult {
   scanned_at: string;
   cookies: CookieRow[];
   trackers: Tracker[];
+  privacy_analytics?: PrivacyAnalytics[];
   consent_manager_detected: boolean;
   score: number;
   severity: Severity;
@@ -279,9 +286,9 @@ export function CookieScanner() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     { Icon: Cookie,      title: 'Cookies vor Consent',       body: 'Alle Set-Cookie-Header beim ersten Page-Load — name, domain, expires, http-only, same-site.' },
-                    { Icon: Eye,         title: '7 Tracker-Familien',         body: 'GA4 / Meta Pixel / LinkedIn / TikTok / Hotjar / Microsoft Clarity / Matomo.' },
-                    { Icon: ShieldCheck, title: 'Consent-Manager-Detection', body: 'Cookiebot / Usercentrics / Borlabs / Klaro / OneTrust / CookieYes / Real Cookie Banner / Iubenda.' },
-                    { Icon: Activity,    title: 'First-/Third-Party Split',  body: 'Cookies werden klassifiziert als essential / tracking / unknown und mit Cross-Domain-Markierung.' },
+                    { Icon: Eye,         title: '20+ Tracker-Familien',       body: 'GA4 / Meta / LinkedIn / TikTok / Pinterest / X / Snapchat / Reddit · Hotjar / Clarity / FullStory / Mouseflow / Smartlook · Mixpanel / Amplitude / Segment / PostHog · Criteo / Outbrain / Taboola / Adform · Matomo.' },
+                    { Icon: ShieldCheck, title: '15+ Consent-Manager',         body: 'Cookiebot · Usercentrics · Borlabs · Klaro · OneTrust · CookieYes · Real Cookie Banner · Iubenda · ConsentManager · CCM19 · Cookie-Information · Didomi · TrustArc · Sourcepoint · Osano.' },
+                    { Icon: Activity,    title: 'Privacy-Friendly Analytics', body: 'Plausible / Fathom / Simple Analytics / Umami werden separat als consent-frei betreibbare Analytics ausgewiesen — kein Befund, sondern Information.' },
                   ].map((it) => (
                     <div key={it.title} className="p-4 bg-obsidian-900 border border-titanium-900 rounded-none">
                       <div className="flex items-center gap-2 mb-1.5">
@@ -408,6 +415,29 @@ function ResultView({ result, onRetry }: { result: ScanResult; onRetry: () => vo
                   <span className="text-[10px] font-mono uppercase tracking-wider text-red-300">{t.category}</span>
                 </div>
                 <code className="text-[11px] font-mono text-titanium-500 break-all">{t.pattern_matched}</code>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {result.privacy_analytics && result.privacy_analytics.length > 0 && (
+        <section>
+          <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-3">
+            {result.privacy_analytics.length} Privacy-Analytics erkannt
+            <span className="ml-2 normal-case text-titanium-400 font-normal">— consent-frei betreibbar</span>
+          </h2>
+          <ul className="space-y-2">
+            {result.privacy_analytics.map((p) => (
+              <li
+                key={p.id}
+                className="p-3 bg-obsidian-900 border border-titanium-900 border-l-2 border-l-emerald-600 rounded-none"
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="font-display font-bold text-sm text-titanium-50">{p.name}</span>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-300">analytics · privacy-friendly</span>
+                </div>
+                <code className="text-[11px] font-mono text-titanium-500 break-all">{p.pattern_matched}</code>
               </li>
             ))}
           </ul>

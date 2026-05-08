@@ -133,14 +133,27 @@ export function Welcome() {
       const keyHash = await sha256Hex(plain);
       const keyPrefix = plain.slice(0, 12);
       const sb = getSupabase();
-      const { error: insertErr } = await sb.from('api_keys').insert({
-        tenant_id: tenantId,
-        name: 'Onboarding key',
-        key_hash: keyHash,
-        key_prefix: keyPrefix,
-      });
+      const { data: insertedKey, error: insertErr } = await sb
+        .from('api_keys')
+        .insert({
+          tenant_id: tenantId,
+          name: 'Onboarding key',
+          key_hash: keyHash,
+          key_prefix: keyPrefix,
+        })
+        .select('id')
+        .single();
       if (insertErr) throw insertErr;
       setApiKey(plain);
+
+      // Persist wizard progress so the customer_onboarding row reflects step 2
+      // completion + the new api_key_id. Best-effort: a row may not exist if
+      // the user landed on /welcome without prior Stripe-checkout (e.g. test
+      // flow), in which case the RPC silently returns zero rows — not an error.
+      await sb.rpc('update_onboarding_progress', {
+        p_step: 2,
+        p_api_key_id: insertedKey?.id ?? null,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'API-Key-Generierung fehlgeschlagen.');
     } finally {
@@ -176,6 +189,13 @@ export function Welcome() {
       });
       if (invokeErr) throw invokeErr;
       setAuditQueued(true);
+
+      // Persist step-3 completion + the connected domain so customer_onboarding
+      // reflects the wizard's terminal state. Best-effort — see Step-2 note.
+      await sb.rpc('update_onboarding_progress', {
+        p_step: 4,
+        p_domain_connected: url,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Audit konnte nicht gestartet werden.');
     } finally {

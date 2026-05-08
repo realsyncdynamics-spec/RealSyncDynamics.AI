@@ -4,8 +4,8 @@
 
 | Tool | Scope | Speed | CI |
 |---|---|---|---|
-| **Vitest** | Unit tests for components, helpers, pure functions | ~1 s for current 5 tests | ✅ runs in `build` job after typecheck |
-| **Playwright** | E2E smoke specs against the running dev server | ~10 s per spec (browser-bound) | ❌ not yet — runnable locally |
+| **Vitest** | Unit tests for components, helpers, pure functions | ~1 s for current 5 tests | ✅ `ci.yml` `build` job after typecheck |
+| **Playwright** | E2E smoke specs against the production preview-server | ~10 s per spec | ✅ `e2e.yml` separate workflow |
 
 ## Run Vitest (unit)
 
@@ -38,16 +38,25 @@ Specs live under `e2e/`. Currently one smoke spec asserting the Landing Hero ren
 
 ## CI integration
 
-`.github/workflows/ci.yml` `build` job runs:
+**`.github/workflows/ci.yml` `build` job** (Vitest + typecheck + build):
 
 1. `npm ci`
 2. `npm run lint` — TypeScript typecheck (no emit)
 3. `npm test` — Vitest unit tests
 4. `npm run build` — Vite production build
 
-Any failure short-circuits the pipeline. Missing test → bug doesn't catch it; failing test → PR can't merge until fixed.
+**`.github/workflows/e2e.yml` `playwright` job** (E2E):
 
-Playwright is **not** in CI yet — would need `npx playwright install --with-deps chromium` (slow, ~30 s) plus a server boot, and currently has only one spec. Promote when the spec count justifies the cost.
+1. Container `mcr.microsoft.com/playwright:v1.x-noble` (pre-baked browsers, skips `playwright install` overhead)
+2. `npm ci`
+3. `npm run build` — production bundle
+4. `npx vite preview --port=3000` in background, poll until ready
+5. `npx playwright test` against `localhost:3000`
+6. On failure: upload `playwright-report/` artifact (7-day retention)
+
+E2E only runs when `src/`, `public/`, `package*.json`, `vite.config.ts`, `playwright.config.ts`, `e2e/`, or the workflow itself changes — Doku-only-PRs überspringen es. Concurrency-grouped per branch (cancel previous run if new commit pushed).
+
+Any failure in either job short-circuits its pipeline. Missing test → bug doesn't catch it; failing test → PR can't merge until fixed.
 
 ## Adding a new unit test
 

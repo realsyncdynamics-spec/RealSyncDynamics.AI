@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CheckCircle2, ArrowRight, Copy, Check, AlertTriangle, ArrowLeft, Loader2, Mail,
 } from 'lucide-react';
@@ -21,6 +21,7 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
  */
 export function Welcome() {
   const [params] = useSearchParams();
+  const navigate = useNavigate();
   const sessionId = params.get('session');
   const product = params.get('product') ?? 'RealSync Dynamics';
   const [step, setStep] = useState<number>(1);
@@ -204,6 +205,23 @@ export function Welcome() {
   };
 
   const isCookieSdk = product.includes('Cookie-SDK');
+
+  // Final "Setup abschließen" CTA — mark wizard complete, then navigate to
+  // the product-specific landing. Persists step=4 for both Cookie-SDK and
+  // Audit-Pro paths (Audit-Pro path also writes step=4 on domain submit;
+  // calling here is idempotent — the RPC's COALESCE keeps fields stable).
+  const finalizeAndNavigate = async () => {
+    const target = isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro';
+    if (isSupabaseConfigured()) {
+      try {
+        const sb = getSupabase();
+        await sb.rpc('update_onboarding_progress', { p_step: 4 });
+      } catch {
+        // Best-effort: navigation should still happen even if persistence fails.
+      }
+    }
+    navigate(target);
+  };
 
   useEffect(() => {
     if (!sessionId) {
@@ -441,12 +459,13 @@ export function Welcome() {
               )}
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                <Link
-                  to={isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro'}
+                <button
+                  type="button"
+                  onClick={finalizeAndNavigate}
                   className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-obsidian-950 px-6 py-3 text-sm font-semibold rounded-none transition-colors"
                 >
                   Setup abschließen <CheckCircle2 className="h-4 w-4" />
-                </Link>
+                </button>
                 <Link
                   to="/legal/methodology"
                   className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 hover:border-titanium-500 px-6 py-3 text-sm font-semibold rounded-none transition-colors"

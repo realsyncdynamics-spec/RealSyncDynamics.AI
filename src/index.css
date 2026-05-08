@@ -44,6 +44,116 @@
   --color-security-700: #003299;
   --color-security-800: #002166;
   --color-security-900: #001133;
+
+  /* Brass (mechanical / watchmaker accent — Watchmaker-AI design language) */
+  --color-brass-50:  #fbf6e9;
+  --color-brass-100: #f3e7c2;
+  --color-brass-200: #e9d397;
+  --color-brass-300: #d9b46a;
+  --color-brass-400: #c69e4d;
+  --color-brass-500: #b78a3d;
+  --color-brass-600: #9a7330;
+  --color-brass-700: #8a6526;
+  --color-brass-800: #6e4f1c;
+  --color-brass-900: #5a4218;
+
+  /* Gunmetal (deeper-than-obsidian surface for premium 3D backdrops) */
+  --color-gunmetal-500: #2a2e35;
+  --color-gunmetal-600: #20232a;
+  --color-gunmetal-700: #1a1d23;
+  --color-gunmetal-800: #12141a;
+  --color-gunmetal-900: #0c0e12;
+
+  /* AI Cyan (electric teal — circuit traces / AI chip glow) */
+  --color-ai-cyan-100: #c2f7ee;
+  --color-ai-cyan-300: #5fe5d1;
+  --color-ai-cyan-400: #2dd6bf;
+  --color-ai-cyan-500: #14c4b3;
+  --color-ai-cyan-600: #0fa195;
+  --color-ai-cyan-700: #0a7568;
+  --color-ai-cyan-900: #053f37;
+
+  /* Gold — Hero-only Pivot primary CTA, top-nav-button-Highlight,
+     Logo-Glow. Wärmer als brass, satter Sättigung für „Grok-like" Feel. */
+  --color-gold-50:  #fffaeb;
+  --color-gold-100: #fef0c8;
+  --color-gold-300: #fcd66e;
+  --color-gold-400: #f9c544;
+  --color-gold-500: #f5b324;
+  --color-gold-600: #d99410;
+  --color-gold-700: #b3760e;
+  --color-gold-800: #845608;
+  --color-gold-900: #5a3a04;
+
+  /* Silver — Secondary-Buttons, Card-Outlines, Sub-Text. Kühler als
+     titanium für klareren Schwarz-Gold-Silber-Trichotomie-Look. */
+  --color-silver-50:  #fafbfc;
+  --color-silver-100: #eceff3;
+  --color-silver-300: #c0c5ce;
+  --color-silver-400: #9da4ad;
+  --color-silver-500: #7a818b;
+  --color-silver-700: #4a4f57;
+  --color-silver-900: #1a1d22;
+
+  /* Animations — subtle, performant, GPU-accelerated where possible */
+  --animate-glow-pulse:    glow-pulse 2.6s ease-in-out infinite;
+  --animate-brass-shimmer: brass-shimmer 6s linear infinite;
+  --animate-circuit-flow:  circuit-flow 4s linear infinite;
+  --animate-gear-rotate:   gear-rotate 32s linear infinite;
+  --animate-gear-rotate-reverse: gear-rotate-reverse 24s linear infinite;
+  --animate-logo-pulse: logo-pulse 4.5s ease-in-out infinite;
+}
+
+/* Keyframes — declared at root scope so motion-utility classes can reference. */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(20, 196, 179, 0.0),
+      0 0 18px 2px rgba(20, 196, 179, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(20, 196, 179, 0.06),
+      0 0 32px 8px rgba(20, 196, 179, 0.32);
+  }
+}
+
+@keyframes brass-shimmer {
+  0%   { background-position:  -200% 0; }
+  100% { background-position:   200% 0; }
+}
+
+@keyframes circuit-flow {
+  to { stroke-dashoffset: -120; }
+}
+
+@keyframes gear-rotate {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes gear-rotate-reverse {
+  to { transform: rotate(-360deg); }
+}
+
+/* Hero-only Logo „Atemzug" — gold/silver-glow oszilliert für Grok-like Feel */
+@keyframes logo-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(249, 197, 68, 0.18))
+            drop-shadow(0 0 24px rgba(192, 197, 206, 0.06));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(249, 197, 68, 0.42))
+            drop-shadow(0 0 44px rgba(192, 197, 206, 0.14));
+  }
+}
+
+/* Respect reduced-motion preferences — kill the infinite animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 html, body {
@@ -70,6 +180,83 @@ html, body {
 }
 .bg-grid-white {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' width='40' height='40' fill='none' stroke='rgb(255 255 255 / 0.06)'%3e%3cpath d='M0 .5H40M.5 0V40'/%3e%3c/svg%3e");
+}
+
+/* Puzzle-piece dimensional backdrop — Watchmaker-AI design language. */
+/* Subtle interlocking tiles at low opacity; sits behind hero/section content. */
+.bg-puzzle-grid {
+  background-color: var(--color-obsidian-950);
+  background-image:
+    linear-gradient(135deg, rgba(183, 138, 61, 0.025) 0%, transparent 28%),
+    url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' width='120' height='120' fill='none' stroke='rgb(226 226 226 / 0.04)' stroke-width='1'%3E%3Cpath d='M0 0H50C50 8 60 8 60 0H120M0 60H50C50 68 60 68 60 60H120M0 120H50C50 112 60 112 60 120H120M0 0V50C8 50 8 60 0 60V120M60 0V50C68 50 68 60 60 60V120M120 0V50C112 50 112 60 120 60V120'/%3E%3C/svg%3E");
+}
+
+/* Brass gradient surface — used on dimensional CTAs / wordmark plates. */
+.surface-brass {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-brass-700) 0%,
+    var(--color-brass-300) 24%,
+    var(--color-brass-500) 48%,
+    var(--color-brass-700) 72%,
+    var(--color-brass-300) 100%
+  );
+  background-size: 250% 100%;
+  animation: var(--animate-brass-shimmer);
+}
+
+/* AI Core glow — hover/active state for AI-related panels. */
+.glow-ai-core { animation: var(--animate-glow-pulse); }
+
+/* Circuit-trace SVG line styling — applied to <path stroke="..."> in AiCoreVisual. */
+.circuit-trace {
+  stroke-dasharray: 4 6;
+  animation: var(--animate-circuit-flow);
+}
+
+/* Hero-only Logo-Animation — applied to the centered Logo in <HeroOnly>. */
+.logo-pulse { animation: var(--animate-logo-pulse); }
+
+/* Hero-only Background — tiefes Schwarz mit dezenter diagonaler Textur. */
+.bg-hero-only {
+  background-color: #050509;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(249, 197, 68, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(192, 197, 206, 0.04) 0%, transparent 60%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.012) 0px,
+      rgba(255, 255, 255, 0.012) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+}
+
+/* Hero-only Gold-Surface — primary CTA-Button-Background mit Hover-Glow.
+   Nur noch auf Free-Tools / Special-CTAs verwenden; für die neue
+   mono-Enterprise-Sprache der Hauptpages nutzt Primary `.surface-mono`. */
+.surface-gold {
+  background: linear-gradient(135deg, #fcd66e 0%, #f9c544 50%, #d99410 100%);
+  color: #050509;
+  transition: box-shadow 200ms ease, transform 160ms ease;
+}
+.surface-gold:hover {
+  box-shadow: 0 0 36px -8px rgba(249, 197, 68, 0.55), 0 8px 22px -8px rgba(249, 197, 68, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Mono-Enterprise primary CTA — flaches Light-Grey auf Dunkel. Entspricht
+   `#E5E7EB`-Accent aus dem Mono-Design-System (kein Verlauf, kein Glow,
+   barrierearmer Fokus-Ring). Verwendet auf /, /audit, /pricing. */
+.surface-mono {
+  background: #e5e7eb;
+  color: #050607;
+  transition: background 160ms ease;
+}
+.surface-mono:hover { background: #f3f4f6; }
+.surface-mono:focus-visible {
+  outline: 2px solid #f9fafb;
+  outline-offset: 2px;
 }
 
 /* Hairline border helper */

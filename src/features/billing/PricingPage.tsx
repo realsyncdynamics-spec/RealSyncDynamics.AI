@@ -1,246 +1,317 @@
-import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Sparkles, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
-import { useTenant } from '../../core/access/TenantProvider';
-import { isSupabaseConfigured } from '../../lib/supabase';
-import { AuthGate } from '../kodee/connections/AuthGate';
-import { createCheckoutSession, type PlanKey } from './checkout';
+import {
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck,
+} from 'lucide-react';
+import { Logo } from '../../components/Logo';
 
-interface PlanTile {
-  key: PlanKey;
+/**
+ * /pricing — public Pricing-Page mit 3 Paketen.
+ *
+ * Bewusst KEIN useTenant()/AuthGate-Aufruf, damit die Route public ohne
+ * Login zugänglich ist. Die Route ist zwar innerhalb des TenantProvider-
+ * Trees (siehe App.tsx), das ist aber kein hartes Gate solange wir die
+ * Tenant-Hooks nicht aufrufen.
+ *
+ * Style: gleiche Schwarz/Gold/Silber-Bühne wie HeroOnly + Niche-Landings.
+ *
+ * Drei Pakete (Stand 2026-05):
+ *   1. Scan     —  0 € / einmalig         · Lead-Funnel
+ *   2. Protect  — 99 € / Monat (EMPFOHLEN)· Standard-KMU
+ *   3. Comply   — 249 € / Monat           · Multi-Domain + AI-Act + API
+ *
+ * Keine Stripe-Anbindung in dieser PR — CTAs gehen auf /audit (Free-Scan)
+ * bzw. /contact-sales?intent=… (Buchung manuell durch Sales-Team bis
+ * Stripe-Setup steht).
+ */
+
+interface Tier {
+  id: 'scan' | 'protect' | 'comply';
   name: string;
-  priceLabel: string;
+  price: string;
+  priceSuffix: string;
   tagline: string;
-  highlights: string[];
-  highlight?: boolean;
+  bullets: string[];
+  badges?: string[];
   ctaLabel: string;
+  ctaHref: string;
+  highlight: boolean;
 }
 
-const PLANS: PlanTile[] = [
+const TIERS: Tier[] = [
   {
-    key: 'free',
-    name: 'Free',
-    priceLabel: '0 € / Monat',
-    tagline: 'Zum Reinschnuppern',
-    highlights: [
-      'EU-Hosting + AVV',
-      'DSGVO-Selfservice (Art. 15 + 17)',
-      'Kein AI-Kontingent',
+    id: 'scan',
+    name: 'Scan',
+    price: 'Kostenlos',
+    priceSuffix: 'einmalig',
+    tagline: 'Schneller DSGVO-Check ohne Verpflichtung',
+    bullets: [
+      'Einmaliger DSGVO-Scan der Domain',
+      'Risk-Score + Top-3-Findings',
+      'Kein Account nötig',
     ],
-    ctaLabel: 'Kostenlos starten',
+    ctaLabel: 'Jetzt kostenlos scannen',
+    ctaHref: '/audit?source=pricing-scan',
+    highlight: false,
   },
   {
-    key: 'bronze',
-    name: 'Bronze',
-    priceLabel: '29 € / Monat',
-    tagline: 'Solo-Operator · DSGVO-Basis',
-    highlights: [
-      '+ EU-Datenresidenz (eu_local Modus)',
-      '+ Audit-Log + CSV-Export',
-      '50 AI-Aufrufe / Monat',
-      '100k AI-Token / Monat',
+    id: 'protect',
+    name: 'Protect',
+    price: '99 €',
+    priceSuffix: '/ Monat',
+    tagline: 'Compliance-Standard für eine Domain',
+    bullets: [
+      'Vollständiger Audit-Report (alle Findings mit Paragraphenbezug)',
+      'Datenschutzerklärung automatisch generiert',
+      'AVV als PDF',
+      'Cookie-Banner-Konfiguration geliefert',
+      'Wöchentlicher Re-Audit + Alert bei neuen Verstößen',
+      '1 Domain',
     ],
-    ctaLabel: 'Bronze buchen',
-  },
-  {
-    key: 'silver',
-    name: 'Silver',
-    priceLabel: '99 € / Monat',
-    tagline: 'Kleine Teams · Compliance-Standard',
-    highlights: [
-      '+ Workflow-Engine (n8n)',
-      '+ AVV / DPA-Generator',
-      '+ AI: Code-Erklärung & Log-Analyse',
-      '250 AI-Aufrufe / Monat',
-      '10 Team-Seats',
-    ],
+    badges: ['Geprüft durch Partnerkanzlei'],
+    ctaLabel: 'Jetzt starten',
+    ctaHref: '/contact-sales?intent=protect&source=pricing',
     highlight: true,
-    ctaLabel: 'Silver buchen',
   },
   {
-    key: 'gold',
-    name: 'Gold',
-    priceLabel: '299 € / Monat',
-    tagline: 'Mittelstand · Audit-tauglich',
-    highlights: [
-      '+ API-Zugriff + Bulk-Jobs',
-      '+ Compliance-Reports (PDF, signiert)',
-      '+ Bring-Your-Own-Key (BYOK)',
-      '+ AI: VPS-Diagnose + Action-Advisor',
-      '2.500 AI-Aufrufe / Monat',
+    id: 'comply',
+    name: 'Comply',
+    price: '249 €',
+    priceSuffix: '/ Monat',
+    tagline: 'Mittelstand mit AI-Act-Pflichten',
+    bullets: [
+      'Alles aus Protect',
+      'Verzeichnis der Verarbeitungstätigkeiten (VVT)',
+      'TOM-Dokumentation',
+      'KI-Risikoabschätzung (EU AI Act)',
+      'Sub-Processor-Liste (automatisch gepflegt)',
+      'Bis zu 5 Domains',
+      'API-Zugriff + CI-Integration',
+      'Signierte PDF-Exports',
+      'Externer DSB buchbar (Add-on)',
     ],
-    ctaLabel: 'Gold buchen',
-  },
-  {
-    key: 'enterprise_public',
-    name: 'Enterprise Public',
-    priceLabel: 'Auf Anfrage',
-    tagline: 'Behörden & Konzerne',
-    highlights: [
-      '+ SSO / SAML',
-      '+ Org-Governance + Audit-Logs',
-      '+ Public-Sector-Modus',
-      'Unlimitierte AI-Aufrufe',
-    ],
-    ctaLabel: 'Vertrieb kontaktieren',
+    ctaLabel: 'Jetzt starten',
+    ctaHref: '/contact-sales?intent=comply&source=pricing',
+    highlight: false,
   },
 ];
 
 export function PricingPage() {
   return (
-    <div className="min-h-screen bg-obsidian-950">
-      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="bg-obsidian-950 p-1.5 rounded-none shadow-sm">
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
-          <span className="font-display font-bold text-lg tracking-tight text-titanium-50">
-            RealSync<span className="text-titanium-400 font-medium">Dynamics</span>
-          </span>
+    <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
+      {/* Top bar — gleicher Stil wie HeroOnly */}
+      <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
+          <Sparkles className="h-3.5 w-3.5 text-titanium-100" />
+          <span className="font-display font-bold tracking-tight text-titanium-50">RealSyncDynamics.AI</span>
         </Link>
         <Link
-          to="/dashboard"
-          className="text-sm font-semibold text-titanium-200 hover:text-titanium-50 transition-colors"
+          to="/audit?source=pricing-top"
+          className="surface-mono inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
         >
-          Zum Dashboard →
+          Audit starten <ArrowRight className="h-3.5 w-3.5" />
         </Link>
-      </header>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <PilotBanner />
-        <div className="text-center mb-12">
-          <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-titanium-50 mb-3">
-            Pläne & Preise
+      {/* Hero */}
+      <section className="px-4 sm:px-6 lg:px-8 pt-10 pb-12 sm:pt-16 sm:pb-16">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="mb-7 flex flex-col items-center gap-3">
+            <div className="logo-pulse">
+              <Logo size={48} iconOnly />
+            </div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100">
+              Preise · Public
+            </div>
+          </div>
+
+          <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
+            Drei Pakete. Klare Preise. Kein Account.
           </h1>
-          <p className="text-titanium-400 max-w-2xl mx-auto leading-relaxed">
-            Plan jederzeit upgrade- oder downgradebar. Du zahlst über Stripe;
-            Rechnungen kommen automatisch.
+          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
+            Vom kostenlosen Schnell-Check bis zum Multi-Domain-Compliance-Setup mit AI-Act-Layer
+            und API-Zugriff. Sie wählen das Paket, das zu Ihrem Risiko und Ihrer Org-Größe passt —
+            wir liefern.
           </p>
         </div>
+      </section>
 
-        <AuthGate>{(_session) => <Tiles />}</AuthGate>
-      </main>
+      {/* Tier-Cards */}
+      <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
+            {TIERS.map((tier) => (
+              <TierCard key={tier.id} tier={tier} />
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
+              EU-Datenresidenz · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany
+            </p>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
+            <div className="flex items-start gap-3">
+              <Award className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
+              <p className="text-sm text-silver-300 leading-relaxed">
+                Dokumente werden automatisch generiert und durch unsere Partnerkanzlei geprüft.
+                <strong className="text-titanium-200"> Kein Rechtsberatungsersatz.</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section
+        id="pricing-faq"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
+              FAQ
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              Häufige Fragen zu den Preisen
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                q: 'Brauche ich einen Account um zu starten?',
+                a: 'Für „Scan" nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für Protect und Comply legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
+              },
+              {
+                q: 'Wie kündige ich, wenn es nicht passt?',
+                a: 'Monatlich, formlos per E-Mail. Keine Mindestlaufzeit, kein Trick mit „Nur in den ersten 14 Tagen". Daten und Reports bleiben Ihnen für 90 Tage exportierbar erhalten.',
+              },
+              {
+                q: 'Was ist „Geprüft durch Partnerkanzlei"?',
+                a: 'Ihre automatisch generierten Dokumente (DSE, AVV, VVT) durchlaufen einen Review unserer DSGVO-spezialisierten Partnerkanzlei. Das ersetzt keine individuelle Rechtsberatung — bringt aber Ihre Doku auf einen Standard, der dem juristischen Mainstream entspricht.',
+              },
+              {
+                q: 'Muss ich für Comply schon API/CI nutzen?',
+                a: 'Nein. API + CI-Integration sind im Paket enthalten, aber optional. Sie können Comply auch nur wegen VVT/TOM/AI-Act buchen und API später aktivieren — kein Up- oder Downgrade nötig.',
+              },
+              {
+                q: 'Was ist der externe DSB-Add-on?',
+                a: 'Auf Wunsch vermitteln wir einen externen Datenschutzbeauftragten unserer Partnerkanzlei. Stundenkontingent oder Pauschale, separate Vereinbarung.',
+              },
+            ].map((item) => (
+              <details
+                key={item.q}
+                className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-titanium-200/60 rounded-none transition-colors"
+              >
+                <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
+                  <span className="font-display font-bold text-titanium-50 text-base leading-snug">
+                    {item.q}
+                  </span>
+                  <span className="text-titanium-100 text-xl leading-none transition-transform group-open:rotate-45 select-none">
+                    +
+                  </span>
+                </summary>
+                <p className="text-sm text-silver-300 leading-relaxed mt-3">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer — gleiche Struktur wie HeroOnly */}
+      <footer className="border-t border-silver-700/40 px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-silver-500">
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-titanium-100" />
+            <span>© 2026 RealSync Dynamics · Made in Germany</span>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-titanium-100">Cookie-Scanner · Free</Link>
+            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
+            <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
+            <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
+            <Link to="/legal/sub-processors"  className="hover:text-titanium-50">Sub-Processors</Link>
+            <Link to="/legal/methodology"     className="hover:text-titanium-50">Methodik</Link>
+            <Link to="/security"              className="hover:text-titanium-50">Security</Link>
+            <Link to="/status"                className="hover:text-titanium-50">Status</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function PilotBanner() {
-  const isPilot = new URLSearchParams(window.location.search).get('pilot') === 'true';
-  if (!isPilot) return null;
-  return (
-    <div className="max-w-3xl mx-auto mb-10 p-4 sm:p-5 bg-emerald-950/40 border border-emerald-700 rounded-none flex items-start gap-3">
-      <div className="text-2xl shrink-0">🎟️</div>
-      <div>
-        <div className="font-display font-bold text-emerald-200 text-sm sm:text-base mb-1">
-          Pilot-Modus aktiv — 14 Tage kostenlos
-        </div>
-        <div className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed">
-          Beim Checkout wird kein Geld eingezogen. Stripe rechnet erst ab Tag 15 ab.
-          Vorher jederzeit kündbar im Customer Portal.
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Tiles() {
-  const { activeTenantId, loading } = useTenant();
-  const [busyPlan, setBusyPlan] = useState<PlanKey | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const onChoose = async (planKey: PlanKey) => {
-    setError(null);
-
-    if (planKey === 'enterprise_public') {
-      window.location.href = 'mailto:sales@realsyncdynamicsai.de?subject=Enterprise%20Public%20Plan';
-      return;
-    }
-    if (planKey === 'free') {
-      window.location.href = '/dashboard';
-      return;
-    }
-    if (!activeTenantId) {
-      setError('Tenant wird gerade angelegt — bitte kurz warten und nochmal klicken.');
-      return;
-    }
-    if (!isSupabaseConfigured()) {
-      setError('Supabase ist nicht konfiguriert — Checkout nicht verfügbar.');
-      return;
-    }
-
-    setBusyPlan(planKey);
-    try {
-      const r = await createCheckoutSession(activeTenantId, planKey);
-      if (r.ok && r.url) {
-        window.location.href = r.url;
-        return;
-      }
-      setError(r.error?.message ?? 'Checkout konnte nicht gestartet werden.');
-    } finally {
-      setBusyPlan(null);
-    }
-  };
+function TierCard({ tier }: { tier: Tier }) {
+  const TierIcon = tier.id === 'scan' ? Cookie : tier.id === 'protect' ? ShieldCheck : Building2;
 
   return (
-    <>
-      {error && (
-        <div className="max-w-2xl mx-auto mb-6 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
-          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-          <span>{error}</span>
+    <div
+      className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border rounded-none transition-colors ${
+        tier.highlight
+          ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
+          : 'border-silver-700/30 hover:border-titanium-200/60'
+      }`}
+    >
+      {tier.highlight && (
+        <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
+          Empfohlen
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
-        {PLANS.map((p) => {
-          const busy = busyPlan === p.key;
-          return (
-            <div
-              key={p.key}
-              className={`relative bg-obsidian-900 border rounded-none p-6 flex flex-col ${
-                p.highlight
-                  ? 'border-indigo-300 shadow-lg shadow-indigo-200/40 ring-2 ring-indigo-100'
-                  : 'border-titanium-900'
-              }`}
-            >
-              {p.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 bg-security-500 text-white text-[11px] font-bold tracking-wider rounded-full uppercase">
-                  Beliebt
-                </span>
-              )}
-              <div>
-                <div className="font-display font-bold text-lg text-titanium-50">{p.name}</div>
-                <div className="text-xs text-titanium-400 mt-0.5">{p.tagline}</div>
-                <div className="mt-3 font-mono text-sm text-titanium-200">{p.priceLabel}</div>
-              </div>
-              <ul className="mt-4 space-y-2 text-sm text-titanium-200 flex-1">
-                {p.highlights.map((h, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{h}</span>
-                  </li>
-                ))}
-              </ul>
-              <button
-                type="button"
-                disabled={busy || loading}
-                onClick={() => onChoose(p.key)}
-                className={`mt-6 w-full py-2.5 text-sm font-semibold rounded-none transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-1.5 ${
-                  p.highlight
-                    ? 'bg-security-500 text-white hover:bg-security-600'
-                    : 'bg-obsidian-950 text-white hover:bg-obsidian-800'
-                }`}
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                {busy ? 'Stripe lädt…' : p.ctaLabel}
-              </button>
-            </div>
-          );
-        })}
+
+      <div className="flex items-center gap-2 mb-2 mt-1">
+        <TierIcon className="h-4 w-4 text-titanium-100" />
+        <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">
+          {tier.name}
+        </div>
       </div>
 
-      <p className="text-center text-xs text-titanium-500 mt-8 max-w-xl mx-auto">
-        Preise zzgl. MwSt. Auto-renew nach 30 Tagen. Du kannst jederzeit
-        kündigen oder den Plan wechseln. Zahlungsabwicklung über Stripe.
-      </p>
-    </>
+      <div className="flex items-baseline gap-1.5 mb-1.5">
+        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">
+          {tier.price}
+        </div>
+        <div className="text-xs font-mono uppercase tracking-wider text-silver-400">
+          {tier.priceSuffix}
+        </div>
+      </div>
+
+      <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-4">
+        {tier.tagline}
+      </div>
+
+      {tier.badges && tier.badges.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {tier.badges.map((b) => (
+            <span
+              key={b}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-titanium-200/10 border border-titanium-200/40 text-titanium-100 rounded-none"
+            >
+              <Award className="h-2.5 w-2.5" /> {b}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <ul className="space-y-2 text-sm text-silver-200 mb-6 flex-1">
+        {tier.bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2 leading-relaxed">
+            <Check className="h-3.5 w-3.5 text-titanium-100 shrink-0 mt-1" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <Link
+        to={tier.ctaHref}
+        className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+          tier.highlight
+            ? 'surface-mono'
+            : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+        }`}
+      >
+        {tier.ctaLabel} <ArrowRight className="h-4 w-4" />
+      </Link>
+    </div>
   );
 }

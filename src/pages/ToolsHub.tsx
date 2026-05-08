@@ -6,6 +6,28 @@ export function ToolsHub() {
 
   const tools = [
     {
+      icon: '📄',
+      title: 'DSGVO-Dokumente generieren',
+      subtitle: '5 PDFs in 60 Sekunden — DSE / AVV / VVT / TOM / DSFA',
+      desc: 'Stammdaten einmal eingeben, fünf Pflicht-Dokumente als PDF herunterladen. Automatisch befüllt, mit Watermark + Methodik-Versionierung.',
+      href: '/dokumente-bundle',
+      badge: 'Bundle · Free',
+      badgeColor: '#3b2a00',
+      textColor: '#fcd34d',
+      popular: true,
+    },
+    {
+      icon: '🍪',
+      title: 'Cookie-Scanner',
+      subtitle: 'Welche Cookies setzt Ihre Website vor Consent?',
+      desc: 'URL eingeben → Set-Cookie-Header + Tracker-Scripts in 15s analysiert. Kein Email-Gate, kein Account.',
+      href: '/cookie-scanner',
+      badge: 'TTDSG § 25',
+      badgeColor: '#3b2a00',
+      textColor: '#fcd34d',
+      popular: true,
+    },
+    {
       icon: '📝',
       title: 'AVV-Generator',
       subtitle: 'Auftragsverarbeitungsvertrag nach Art. 28 DSGVO',

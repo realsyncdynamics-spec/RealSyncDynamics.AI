@@ -23,6 +23,12 @@ import { ContactSales } from './pages/ContactSales';
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
+import { CookieScanner } from './pages/CookieScanner';
+import { DokumenteBundle } from './pages/DokumenteBundle';
+import { AiActWorkflows } from './pages/AiActWorkflows';
+import { SaasLanding } from './pages/niche/SaasLanding';
+import { AgenturenLanding } from './pages/niche/AgenturenLanding';
+import { PraxenLanding } from './pages/niche/PraxenLanding';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
@@ -33,6 +39,7 @@ import { BusseldRechner } from './pages/BusseldRechner';
 import { ToolsHub } from './pages/ToolsHub';
 // Industry + Competitor Doorways
 import { HealthTechLanding } from './pages/HealthTechLanding';
+import { Branchen } from './pages/Branchen';
 import { LegalTechLanding } from './pages/LegalTechLanding';
 import { OneTrustAlternative } from './pages/OneTrustAlternative';
 import { FinTechLanding } from './pages/FinTechLanding';
@@ -47,6 +54,7 @@ import { EcommerceLanding } from './pages/EcommerceLanding';
 import { About } from './pages/About';
 import { Press } from './pages/Press';
 import { Security } from './pages/Security';
+import { Status } from './pages/Status';
 import { Faq } from './pages/Faq';
 import { Changelog } from './pages/Changelog';
 import { SaasAnbieterLanding } from './pages/SaasAnbieterLanding';
@@ -89,6 +97,7 @@ const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').th
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
+const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 import { Limits } from './pages/Limits';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
@@ -114,6 +123,15 @@ function RoutesWithTracking() {
       <Route path="/" element={<Landing />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
+      <Route path="/cookie-scanner" element={<CookieScanner />} />
+      <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
+      <Route path="/dokumente-bundle" element={<DokumenteBundle />} />
+      <Route path="/tools/dokumente-bundle" element={<DokumenteBundle />} />
+      <Route path="/ai-act-workflows" element={<AiActWorkflows />} />
+      <Route path="/tools/ai-act-workflows" element={<AiActWorkflows />} />
+      <Route path="/fuer-saas"      element={<SaasLanding />} />
+      <Route path="/fuer-agenturen" element={<AgenturenLanding />} />
+      <Route path="/fuer-praxen"    element={<PraxenLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
@@ -133,6 +151,7 @@ function RoutesWithTracking() {
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}
+      <Route path="/branchen" element={<Branchen />} />
       <Route path="/healthtech" element={<HealthTechLanding />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}
@@ -156,6 +175,7 @@ function RoutesWithTracking() {
       <Route path="/press" element={<Press />} />
       <Route path="/presse" element={<Press />} />
       <Route path="/security" element={<Security />} />
+      <Route path="/status" element={<Status />} />
       <Route path="/sicherheit" element={<Security />} />
       <Route path="/faq" element={<Faq />} />
       <Route path="/haeufige-fragen" element={<Faq />} />
@@ -225,6 +245,7 @@ function RoutesWithTracking() {
       <Route path="/admin/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/customers" element={<CustomersView />} />
+      <Route path="/admin/onboarding" element={<OnboardingView />} />
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />

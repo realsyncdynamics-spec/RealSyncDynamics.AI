@@ -7,6 +7,7 @@ import {
 import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
+import { EmptyStateGraphic } from '../../components/visual/EmptyStateGraphic';
 
 interface SalesLead {
   id: string;
@@ -329,5 +330,10 @@ function Td({ children, className = '' }: { children: React.ReactNode; className
   return <td className={`px-3 py-2 align-top ${className}`}>{children}</td>;
 }
 function Empty({ msg }: { msg: string }) {
-  return <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-8 text-center text-sm text-titanium-500">{msg}</div>;
+  return (
+    <div className="bg-obsidian-900 border border-titanium-900 border-l-2 border-l-brass-700/50 rounded-none p-10 flex flex-col items-center gap-4">
+      <EmptyStateGraphic size={88} />
+      <div className="text-sm text-titanium-500 text-center">{msg}</div>
+    </div>
+  );
 }

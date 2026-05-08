@@ -1,0 +1,67 @@
+name: VPS Backup
+
+# Daily snapshot of the production VPS (frontend dist, nginx config, deploy/).
+# Backups land on the VPS itself in /var/backups/realsyncdynamicsai/ with a
+# 7-day rotation. No external storage credentials required for the M1-Pilot
+# baseline; uplift to S3/B2 is a follow-up once we have a managed-customer
+# data inventory worth off-site replication.
+#
+# Required repo secrets (already configured for deploy-frontend.yml):
+#   VPS_SSH_HOST       currently 187.77.89.1
+#   VPS_SSH_USER       e.g. deploy
+#   VPS_SSH_KEY        OpenSSH private key
+#   VPS_SSH_KNOWN_HOST output of `ssh-keyscan -t ed25519 <host>`
+#
+# Schedule: 03:17 UTC daily — off-peak for EU traffic, deliberate non-round
+# minute to avoid contention with other repos that pick :00 / :15 / :30.
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch: {}
+
+concurrency:
+  group: vps-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        env:
+          VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+          VPS_SSH_KEY:  ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KNOWN_HOST: ${{ secrets.VPS_SSH_KNOWN_HOST }}
+        run: |
+          for v in VPS_SSH_HOST VPS_SSH_USER VPS_SSH_KEY VPS_SSH_KNOWN_HOST; do
+            if [ -z "${!v}" ]; then
+              echo "::error::secret $v is not set"
+              exit 1
+            fi
+          done
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_KNOWN_HOST: ${{ secrets.VPS_SSH_KNOWN_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$VPS_SSH_KNOWN_HOST" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Run backup script on VPS
+        env:
+          VPS_SSH_USER: ${{ secrets.VPS_SSH_USER }}
+          VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST }}
+        run: |
+          # Ship the script and execute it remotely — keeps logic in repo,
+          # avoids state drift on the VPS itself.
+          scp scripts/vps-backup.sh "$VPS_SSH_USER@$VPS_SSH_HOST:/tmp/vps-backup.sh"
+          ssh "$VPS_SSH_USER@$VPS_SSH_HOST" "chmod +x /tmp/vps-backup.sh && /tmp/vps-backup.sh"

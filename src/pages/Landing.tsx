@@ -37,6 +37,7 @@ import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
 import { ServiceLaunchpad } from '../components/ServiceLaunchpad';
 import { TargetAudience } from '../components/TargetAudience';
 import { HowItWorks3Steps } from '../components/HowItWorks3Steps';
+import { WebsiteRebuildOffer } from '../components/WebsiteRebuildOffer';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
 
@@ -54,6 +55,7 @@ export function Landing() {
         <ServiceLaunchpad />
         <TargetAudience />
         <HowItWorks3Steps />
+        <WebsiteRebuildOffer />
         <ExampleReport />
         {/* WatchmakerShowcase wird in PR-H weiter nach unten als „Für Profis & Teams"-Sektion verschoben. */}
         <WatchmakerShowcase />

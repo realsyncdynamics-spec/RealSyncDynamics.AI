@@ -66,6 +66,7 @@ import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
+import { DsgvoWebsiteDanke } from './pages/DsgvoWebsiteDanke';
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -98,6 +99,7 @@ const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
+const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
 import { Limits } from './pages/Limits';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
@@ -201,6 +203,7 @@ function RoutesWithTracking() {
       <Route path="/steuerberater" element={<SteuerberaterLanding />} />
       <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
       <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
+      <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
       <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
       <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
       {/* SEO Doorways — Framework-spezifisch */}
@@ -246,6 +249,7 @@ function RoutesWithTracking() {
       <Route path="/admin/system" element={<SystemHealthView />} />
       <Route path="/admin/customers" element={<CustomersView />} />
       <Route path="/admin/onboarding" element={<OnboardingView />} />
+      <Route path="/admin/rebuilds" element={<RebuildsView />} />
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />

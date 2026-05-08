@@ -188,12 +188,13 @@ export function AiActWorkflows() {
               <Brain className="h-3 w-3" /> Free · Lokale Speicherung · Kein Account
             </div>
             <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight mb-3">
-              Alle AI-Workflows einer Org gegen <span className="text-amber-400">Annex III</span> mappen
+              Ihre KI-Workflows gegen <span className="text-amber-400">Annex III</span> mappen
             </h1>
             <p className="text-titanium-300 max-w-2xl leading-relaxed">
-              Tragen Sie jeden AI-Use-Case einzeln ein — Chatbot, Lead-Scoring, Recommendation, Bewerber-
-              Screening, Bonität, GenAI. Sie bekommen eine Portfolio-Übersicht mit indikativer Risiko-
-              Klassifizierung. Speicherung ausschließlich im Browser (localStorage), kein Versand.
+              Tragen Sie jeden AI-Use-Case Ihrer Firma einzeln ein — Chatbot, Lead-Scoring, Recommendation,
+              Bewerber-Screening, Bonität, GenAI. Sie bekommen eine Portfolio-Übersicht mit indikativer
+              Risiko-Klassifizierung — verständlich für Geschäftsführung, IT und Marketing. Speicherung
+              ausschließlich im Browser (localStorage), kein Versand.
             </p>
           </section>
 
@@ -342,16 +343,17 @@ export function AiActWorkflows() {
           {workflows.length === 0 && (
             <div className="p-5 bg-obsidian-900 border border-titanium-900 border-l-2 border-l-amber-500 rounded-none">
               <h3 className="font-display font-bold text-titanium-50 mb-1.5 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-400" /> Beispiel-Inventar einer mittelständischen Agentur
+                <Sparkles className="h-4 w-4 text-amber-400" /> Beispiel-Inventar eines KMU mit eigener Website + KI-Marketing
               </h3>
               <ul className="text-xs text-titanium-400 space-y-0.5 leading-relaxed">
-                <li>· „Kunden-Chatbot Mandant Müller" → Limited (Art. 50)</li>
-                <li>· „Lead-Scoring HubSpot" → Minimal (DSGVO-Profiling-Regeln aber relevant)</li>
-                <li>· „GPT-4-Texte für Marketing" → Limited (Art. 50 Abs. 2 — Markierungspflicht)</li>
-                <li>· „CV-Screening Bewerber" → High (Annex III §4)</li>
+                <li>· „Support-Chatbot auf der Website" → Limited (Art. 50)</li>
+                <li>· „Lead-Scoring HubSpot / Salesforce" → Minimal (DSGVO-Profiling-Regeln aber relevant)</li>
+                <li>· „GPT-4-Texte fürs Marketing" → Limited (Art. 50 Abs. 2 — Markierungspflicht)</li>
+                <li>· „CV-Screening im Recruiting-Tool" → High (Annex III §4)</li>
               </ul>
               <p className="text-xs text-titanium-400 mt-2">
-                Tipp: Erfassen Sie zuerst die offensichtlichen Public-Touch-Workflows, dann Backoffice-Use-Cases.
+                Tipp: Erfassen Sie zuerst die offensichtlichen Public-Touch-Workflows (was Kunden sehen),
+                dann Backoffice-Use-Cases (was intern läuft).
               </p>
             </div>
           )}
@@ -368,10 +370,10 @@ export function AiActWorkflows() {
               <div className="text-sm font-display font-bold text-titanium-50 mb-0.5">DSGVO-Audit</div>
               <div className="text-xs text-titanium-400">Zusätzlich Tracker / Security / Drittland.</div>
             </Link>
-            <Link to="/contact-sales?intent=agency_aiact" className="group p-4 bg-obsidian-900 border border-amber-700 hover:bg-amber-950/20 rounded-none">
+            <Link to="/contact-sales?intent=firmen_aiact" className="group p-4 bg-obsidian-900 border border-amber-700 hover:bg-amber-950/20 rounded-none">
               <Briefcase className="h-4 w-4 text-amber-400 mb-1.5" />
-              <div className="text-sm font-display font-bold text-titanium-50 mb-0.5">Agentur-Pilot</div>
-              <div className="text-xs text-titanium-400">Multi-Mandanten + White-Label.</div>
+              <div className="text-sm font-display font-bold text-titanium-50 mb-0.5">Beratungstermin</div>
+              <div className="text-xs text-titanium-400">Doku-Pflichten für Ihre Use-Cases klären.</div>
             </Link>
           </section>
 

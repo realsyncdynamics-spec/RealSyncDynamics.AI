@@ -24,6 +24,7 @@ const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) 
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
+import { AiActWorkflows } from './pages/AiActWorkflows';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
@@ -120,6 +121,8 @@ function RoutesWithTracking() {
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
+      <Route path="/ai-act-workflows" element={<AiActWorkflows />} />
+      <Route path="/tools/ai-act-workflows" element={<AiActWorkflows />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />

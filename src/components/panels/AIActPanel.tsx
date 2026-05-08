@@ -19,8 +19,8 @@ export function AIActPanel() {
         <p className="text-titanium-200 text-sm leading-relaxed">
           Die EU-AI-Act-Stichtage rollen heran — <strong className="text-titanium-50">Art. 5 (verbotene Praktiken)</strong>{' '}
           gilt seit 2. August 2024, <strong className="text-titanium-50">Annex III High-Risk-Pflichten</strong> ab
-          2. August 2026. Für Agenturen und Compliance-Berater bedeutet das: Inventar erstellen, klassifizieren,
-          Doku-Bundle vorbereiten — pro Mandant.
+          2. August 2026. Für Firmen mit Chatbots, Lead-Scoring oder GenAI im Marketing heißt das:
+          Use-Cases inventarisieren, klassifizieren, Doku-Pflichten kennen.
         </p>
       </div>
 
@@ -56,8 +56,8 @@ export function AIActPanel() {
               </span>
             </div>
             <p className="text-xs text-titanium-400 mb-3 leading-relaxed">
-              Alle AI-Workflows einer Organisation sammeln (Chatbot, Lead-Scoring, Recommendation, …) und
-              gemeinsam gegen Annex III mappen. Lokale Speicherung, kein Account.
+              Alle AI-Workflows Ihrer Firma sammeln (Chatbot, Lead-Scoring, Recommendation, GenAI, …) und
+              gemeinsam gegen Annex III mappen. Lokale Speicherung im Browser, kein Account.
             </p>
             <span className="text-xs font-mono uppercase tracking-wider text-amber-400 group-hover:text-amber-300 inline-flex items-center gap-1">
               Inventar starten <ArrowRight className="h-3 w-3" />
@@ -74,7 +74,7 @@ export function AIActPanel() {
             { Icon: AlertTriangle, title: 'Art. 5 Verbote',           body: 'Emotion-Recognition / Workplace, Social-Scoring, Manipulation. 4 explizite Pre-Checks vor Inventarisierung.' },
             { Icon: Sparkles,      title: 'Annex III High-Risk',      body: 'Biometrie / HR / Bildung / Krediteinschätzung / kritische Infrastruktur / Strafverfolgung — Mapping pro Workflow.' },
             { Icon: BookOpen,      title: 'Art. 50 Transparenz',      body: 'Chatbots, Deepfakes, AI-generated Content. Markierungspflicht-Hinweise + Snippets für UX-Labels.' },
-            { Icon: Shield,        title: 'GPAI + Foundation Models', body: 'Provider-Pflichten ab 2. August 2025. Für Agenturen, die GenAI-Workflows in Mandanten-Sites einbauen.' },
+            { Icon: Shield,        title: 'GPAI + Foundation Models', body: 'Provider-Pflichten ab 2. August 2025 — relevant, wenn Sie GPT / Claude / Mistral in Produkten oder Marketing einsetzen.' },
           ].map((it) => (
             <div key={it.title} className="p-4 bg-obsidian-950 border border-titanium-900 rounded-none">
               <div className="flex items-center gap-2 mb-1.5">
@@ -87,18 +87,18 @@ export function AIActPanel() {
         </div>
       </div>
 
-      {/* Agency-CTA */}
+      {/* Firmen-CTA */}
       <div className="bg-obsidian-900 border border-amber-700 p-5 rounded-none">
-        <h3 className="font-display font-bold text-titanium-50 text-base mb-1.5">Für Agenturen + Compliance-Berater</h3>
+        <h3 className="font-display font-bold text-titanium-50 text-base mb-1.5">Für Firmen, die KI im Marketing oder Service einsetzen</h3>
         <p className="text-sm text-titanium-300 mb-3 leading-relaxed">
-          Multi-Mandanten-Inventar, White-Label-Reports, gemeinsamer DSGVO + AI-Act-Audit pro Domain.
-          Procurement-tauglich, AVV-fertig, mit Conformity-Roadmap.
+          Sie wissen nicht, ob Ihre Chatbots, Lead-Scoring-Tools oder GenAI-Workflows AI-Act-konform sind?
+          Wir liefern eine klare To-do-Liste pro Use-Case — verständlich für Geschäftsführung, IT und Marketing.
         </p>
         <Link
-          to="/contact-sales?intent=agency_aiact"
+          to="/contact-sales?intent=firmen_aiact"
           className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-obsidian-950 text-sm font-bold rounded-none"
         >
-          Pilot-Gespräch starten <ArrowRight className="h-4 w-4" />
+          Beratungstermin vereinbaren <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 

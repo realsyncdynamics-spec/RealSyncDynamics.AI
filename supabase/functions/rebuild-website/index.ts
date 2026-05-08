@@ -133,11 +133,61 @@ async function runWorkflow(admin: ReturnType<typeof createClient>, ctx: RebuildC
     bundle_path: state.bundlePath ?? null,
   }).eq('id', ctx.rebuildId);
 
+  // Notify-Email an Customer (best-effort — Workflow gilt auch ohne Email
+  // als erfolgreich; Fehler werden nur geloggt, blockieren nichts).
+  try {
+    await sendPreviewReadyEmail(ctx, (state.previewUrl as string | null) ?? null);
+  } catch (e) {
+    console.error(`[rebuild-website] preview-email failed for ${ctx.rebuildId}: ${(e as Error).message}`);
+  }
+
   return new Response(JSON.stringify({
     rebuild_id: ctx.rebuildId,
     status: 'preview_ready',
     preview_url: state.previewUrl ?? null,
   }), { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } });
+}
+
+async function sendPreviewReadyEmail(ctx: RebuildContext, previewUrl: string | null): Promise<void> {
+  const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
+  if (!RESEND_KEY) {
+    console.log(`[rebuild-website] RESEND_API_KEY missing — skip email for ${ctx.rebuildId}`);
+    return;
+  }
+  const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
+  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
+
+  const subject = `Ihre DSGVO-Website-Preview ist bereit — ${ctx.sourceDomain}`;
+  const previewLink = previewUrl ?? `${SITE}/dsgvo-website/danke`;
+  const html = `<!doctype html>
+<html lang="de">
+<body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f9fafb;margin:0;padding:24px;color:#374151;line-height:1.6">
+  <div style="max-width:560px;margin:0 auto;background:#fff;padding:32px 28px;border:1px solid #e5e7eb">
+    <h1 style="font-size:22px;color:#0f172a;font-weight:700;margin:0 0 16px">Ihre Website-Preview ist bereit.</h1>
+    <p style="margin:0 0 16px">Wir haben <strong>${ctx.sourceDomain}</strong> DSGVO-konform neu aufgebaut: Tracker entfernt, Google Fonts auf EU-Server umgestellt, Cookie-Consent (opt-in, default-deny) eingebettet, Rechtsdokumente generiert, AI-Ready-Schemata gesetzt.</p>
+    <p style="margin:0 0 24px">Schauen Sie sich die Vorschau in Ruhe an. Bei Freigabe übernehmen wir Hosting + DNS-Setup.</p>
+    <a href="${previewLink}" style="display:inline-block;padding:12px 24px;background:#10b981;color:#fff;text-decoration:none;font-weight:600;border-radius:0">Preview ansehen</a>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0 16px" />
+    <p style="font-size:13px;color:#6b7280;margin:0 0 8px"><strong>Bestell-Referenz:</strong> ${ctx.rebuildId}</p>
+    <p style="font-size:11px;color:#9ca3af;margin:0 0 8px">RealSync Dynamics · Schwarzburger Str. 31, 98724 Neuhaus am Rennweg · Made in Germany · EU-Hosted</p>
+    <p style="font-size:11px;color:#9ca3af;margin:0">Bei Fragen: <a href="mailto:hello@realsyncdynamicsai.de" style="color:#9ca3af">hello@realsyncdynamicsai.de</a></p>
+  </div>
+</body>
+</html>`;
+
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${RESEND_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: FROM, to: [ctx.customerEmail], subject, html }),
+  });
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error(`resend ${r.status}: ${txt}`);
+  }
+  console.log(`[rebuild-website] preview-email sent to ${ctx.customerEmail} for ${ctx.rebuildId}`);
 }
 
 async function executeStep(

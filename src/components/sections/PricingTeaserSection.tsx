@@ -16,24 +16,24 @@ export interface PricingTeaserProps {
 
 const TIERS = [
   {
-    name: 'Bronze',
-    price: '29 € / Monat',
-    tagline: 'Solo-Operator · DSGVO-Basis',
-    bullets: ['EU-Datenresidenz', 'Audit-Log + CSV-Export', '50 AI-Aufrufe / Monat'],
+    name: 'Scan',
+    price: 'Kostenlos',
+    tagline: 'Schneller DSGVO-Check',
+    bullets: ['Einmaliger Domain-Scan', 'Risk-Score + Top-3-Findings', 'Kein Account nötig'],
     highlight: false,
   },
   {
-    name: 'Silver',
+    name: 'Protect',
     price: '99 € / Monat',
-    tagline: 'Kleine Teams · Compliance-Standard',
-    bullets: ['Workflow-Engine (n8n)', 'AVV / DPA-Generator', '250 AI-Aufrufe · 10 Seats'],
+    tagline: 'Compliance-Standard · 1 Domain',
+    bullets: ['Vollständiger Audit + Paragraphenbezug', 'DSE + AVV automatisch generiert', 'Wöchentlicher Re-Audit + Alerts'],
     highlight: true,
   },
   {
-    name: 'Gold',
-    price: '299 € / Monat',
-    tagline: 'Mittelstand · Audit-tauglich',
-    bullets: ['API-Zugriff + Bulk-Jobs', 'Signierte PDF-Reports', 'BYOK · 2.500 AI-Aufrufe'],
+    name: 'Comply',
+    price: '249 € / Monat',
+    tagline: 'AI-Act + Multi-Domain',
+    bullets: ['VVT + TOM + AI-Act-Risk', 'Bis zu 5 Domains', 'API + Signierte PDF-Exports'],
     highlight: false,
   },
 ];

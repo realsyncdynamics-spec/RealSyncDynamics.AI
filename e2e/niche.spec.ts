@@ -80,5 +80,11 @@ for (const n of NICHES) {
         page.locator('footer').getByRole('link', { name: new RegExp(`^${otherNicheLabel}$`, 'i') }),
       ).toBeVisible();
     }
+
+    // Pricing-Teaser-Section (geteilte Component aus #111-Refactor)
+    await expect(
+      page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
+    ).toBeVisible();
+    await expect(page.getByText(/29 € \/ Monat/).first()).toBeVisible();
   });
 }

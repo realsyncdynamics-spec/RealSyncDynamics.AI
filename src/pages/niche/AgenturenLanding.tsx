@@ -3,6 +3,7 @@ import { NicheLanding, type NicheConfig } from './NicheLanding';
 
 const AGENTUREN_CONFIG: NicheConfig = {
   segment: 'Agentur',
+  sourceTag: 'fuer-agenturen',
   eyebrow: 'Für Agenturen + Web-Studios',
   headline: 'DSGVO + AI-Act Compliance für 50 Kundenseiten — ohne 50 Consent-Tools.',
   subline:

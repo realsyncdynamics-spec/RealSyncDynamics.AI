@@ -3,6 +3,7 @@ import { NicheLanding, type NicheConfig } from './NicheLanding';
 
 const SAAS_CONFIG: NicheConfig = {
   segment: 'SaaS',
+  sourceTag: 'fuer-saas',
   eyebrow: 'Für SaaS-Plattformen',
   headline: 'DSGVO + EU AI Act für SaaS — Plattform, Marketing-Site und KI-Features in einem Audit.',
   subline:

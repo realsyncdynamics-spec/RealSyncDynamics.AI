@@ -11,23 +11,24 @@ import { EnterprisePanel } from './panels/EnterprisePanel';
 import { AIActPanel } from './panels/AIActPanel';
 
 /**
- * HeroOnly — Single-viewport Landing-Experience.
+ * HeroOnly — Hero-Bühne + zwei Long-Form-Sections.
  *
- * Strategischer Pivot weg von der Long-Form-Landing hin zu einer „Grok-like"
- * Hero-Bühne, die in einen Viewport passt; alle weiteren Inhalte werden
- * über Modals geladen, kein Scrollen für die Erst-Experience.
+ * Bis #104 war das eine reine Single-Viewport-Erfahrung. Mit dem Pivot
+ * auf Firmen-Targeting werden zwei Sektionen unter dem Hero ergänzt
+ * (Zielgruppen + FAQ), während Modals als Tiefenkanäle erhalten bleiben.
+ * Hero füllt weiterhin den ersten Viewport (`flex-1 justify-center`),
+ * Sektionen darunter sind Scroll-Content.
  *
- * Layout (vertikal):
- *   1. Top-Bar mit Mini-Nav (links) + Audit-CTA (rechts)
- *   2. Zentrierter Logo-Block mit Gold-Glow-Animation
- *   3. Headline + Subline
- *   4. Primary + Secondary CTA-Pair
- *   5. Drei Mid-Buttons (öffnen Modals)
- *   6. Trust-Leiste am unteren Rand
+ * Layout:
+ *   - Top-Bar: Mini-Nav (links) + Audit-CTA (rechts)
+ *   - Hero (viewport-zentriert): Logo · Headline · Subline · CTAs ·
+ *     Mid-Buttons · Trust-Leiste
+ *   - Sektion „Zielgruppen": 3-Card-Grid für SaaS / Agenturen / lokale Betriebe
+ *   - Sektion „FAQ": 3 details-summary Q&A-Pairs + Schluss-CTA
+ *   - Footer: Legal- + Free-Tool-Links
  *
- * Farb-System: Schwarz/Gold/Silber (additiv-getypt, beeinflusst nur diese
- * Component und Children — Welcome/Audit/Admin behalten ihr bestehendes
- * obsidian/titanium-Theme).
+ * Farb-System: Schwarz/Gold/Silber (additiv-getypt, beeinflusst nur
+ * diese Component und Children).
  */
 type ModalKey =
   | null
@@ -84,11 +85,11 @@ export function HeroOnly() {
 
           {/* Headline + Subline */}
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
-            Ist Ihre Website wirklich DSGVO-konform?
+            Ihre Website & KI-Prozesse DSGVO-sicher – in 30 Sekunden geprüft.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
-            In 30 Sekunden zeigt RealSyncDynamics, wo Ihre Website gegen DSGVO, TTDSG und Sicherheits-Standards
-            verstößt — mit klaren Fix-Empfehlungen, die Ihr Webmaster direkt umsetzen kann.
+            RealSyncDynamics.AI scannt Ihre Website, Tracking-Tools und KI-Workflows und zeigt Ihnen konkret,
+            wo Sie gegen DSGVO, TTDSG und EU AI Act verstoßen — inklusive To-do-Liste für Ihr Team.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -97,14 +98,14 @@ export function HeroOnly() {
               to="/audit?source=hero-primary"
               className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3.5 text-base font-bold rounded-none"
             >
-              Kostenlosen Website-Check starten <ArrowRight className="h-4 w-4" />
+              Jetzt kostenlosen Compliance-Check starten <ArrowRight className="h-4 w-4" />
             </Link>
             <button
               type="button"
               onClick={() => setOpenModal('example')}
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-base font-semibold rounded-none transition-colors"
             >
-              Beispiel-Report
+              Beispiel-Report ansehen
             </button>
           </div>
 
@@ -117,10 +118,112 @@ export function HeroOnly() {
 
           {/* Trust-Leiste */}
           <div className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-silver-500">
-            EU-Hosting · AVV inklusive · Audit-Log · Methodik offen einsehbar
+            EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany
           </div>
         </div>
       </main>
+
+      {/* ─── Sektion: Für welche Firmen ist das? ─────────────────── */}
+      <section
+        id="zielgruppen"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 sm:mb-12">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              Zielgruppen
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-2xl mx-auto">
+              Ideal für Unternehmen mit eigener Website und KI-Einsatz
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              {
+                title: 'Online-Unternehmen & SaaS',
+                body: 'Sie erfassen Leads, nutzen Analytics, Chatbots oder Recommendation-Engines — wir prüfen, ob Ihre Datenflüsse wirklich DSGVO-konform sind.',
+              },
+              {
+                title: 'Dienstleister & Agenturen',
+                body: 'Sie betreuen viele Kundenseiten und KI-Kampagnen — wir liefern Ihnen den technischen Compliance-Überblick für alle Projekte.',
+              },
+              {
+                title: 'Praxen, Kanzleien, lokale Betriebe',
+                body: 'Sie verarbeiten sensible Daten über Formulare und Terminbuchungen — wir decken versteckte Risiken in Formularen, Scripts und Plugins auf.',
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+              >
+                <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-silver-300 leading-relaxed">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: FAQ ─────────────────────────────────────────── */}
+      <section
+        id="faq"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-8 sm:mb-10">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              FAQ
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              Häufige Fragen
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                q: 'Müssen wir dafür unsere ganze IT umbauen?',
+                a: 'Nein. Sie bekommen zunächst einen Report mit Prioritäten. Was Sie umsetzen, entscheiden Sie selbst — wir liefern technische Einschätzung, keine Pflicht zur Umsetzung.',
+              },
+              {
+                q: 'Greifen Sie auf personenbezogene Daten zu?',
+                a: 'Wir analysieren Ihre Website und Konfigurationen, nicht Ihre internen Datenbanken oder CRM-Systeme. Datenflüsse + Verarbeitungs-Details stehen in unserem AVV.',
+              },
+              {
+                q: 'Wie schnell haben wir Ergebnisse?',
+                a: 'Den ersten Überblick bekommen Sie meist innerhalb von Minuten — Cookie-Scan + Tracker-Erkennung in unter 30 Sekunden, vollständige Audit-Reports je nach Umfang innerhalb von 24 Stunden.',
+              },
+            ].map((item) => (
+              <details
+                key={item.q}
+                className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+              >
+                <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
+                  <span className="font-display font-bold text-titanium-50 text-base leading-snug">
+                    {item.q}
+                  </span>
+                  <span className="text-gold-400 text-xl leading-none transition-transform group-open:rotate-45 select-none">
+                    +
+                  </span>
+                </summary>
+                <p className="text-sm text-silver-300 leading-relaxed mt-3">{item.a}</p>
+              </details>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link
+              to="/audit?source=hero-faq"
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              Jetzt kostenlosen Compliance-Check starten <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Footer-mini — nur Legal-Links, KEIN scrollender Content darunter */}
       <footer className="border-t border-silver-700/40 px-4 sm:px-6 lg:px-8 py-4">

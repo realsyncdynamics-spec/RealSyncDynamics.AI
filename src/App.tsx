@@ -33,6 +33,7 @@ import { BusseldRechner } from './pages/BusseldRechner';
 import { ToolsHub } from './pages/ToolsHub';
 // Industry + Competitor Doorways
 import { HealthTechLanding } from './pages/HealthTechLanding';
+import { Branchen } from './pages/Branchen';
 import { LegalTechLanding } from './pages/LegalTechLanding';
 import { OneTrustAlternative } from './pages/OneTrustAlternative';
 import { FinTechLanding } from './pages/FinTechLanding';
@@ -133,6 +134,7 @@ function RoutesWithTracking() {
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}
+      <Route path="/branchen" element={<Branchen />} />
       <Route path="/healthtech" element={<HealthTechLanding />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}

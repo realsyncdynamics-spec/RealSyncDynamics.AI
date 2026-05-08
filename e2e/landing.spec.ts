@@ -2,14 +2,14 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Smoke-E2E for the Landing (Hero + Zielgruppen + So-funktioniert +
- * Leistungen + Gründe + FAQ sections).
+ * Leistungen + Gründe + Preise + FAQ sections).
  *
  * Asserts the Firmen-Pivot copy: H1 verspricht „DSGVO-sicher in 30 Sekunden",
  * Primary-CTA „Compliance-Check starten" → /audit, Trust-Leiste mit
  * Datenresidenz/AVV/Audit-Log/Made-in-Germany, Beispiel-Report-Modal
- * öffnet GA4-Finding, alle 5 Long-Form-Sektionen rendern.
+ * öffnet GA4-Finding, alle 6 Long-Form-Sektionen rendern.
  */
-test('Landing renders Firmen-Pivot Hero + 5 sections + example-report modal', async ({ page }) => {
+test('Landing renders Firmen-Pivot Hero + 6 sections + example-report modal', async ({ page }) => {
   await page.goto('/');
 
   await expect(
@@ -43,6 +43,12 @@ test('Landing renders Firmen-Pivot Hero + 5 sections + example-report modal', as
   await expect(
     page.getByRole('heading', { name: /Typische Gründe, warum Firmen RealSyncDynamics.AI einsetzen/i }),
   ).toBeVisible();
+
+  // Sektion „Preise"
+  await expect(
+    page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
+  ).toBeVisible();
+  await expect(page.getByText(/29 € \/ Monat/).first()).toBeVisible();
 
   // Sektion „FAQ"
   await expect(page.getByRole('heading', { name: /^Häufige Fragen$/i })).toBeVisible();

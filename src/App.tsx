@@ -24,6 +24,7 @@ const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) 
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
+import { DokumenteBundle } from './pages/DokumenteBundle';
 import { AiActWorkflows } from './pages/AiActWorkflows';
 import { SaasLanding } from './pages/niche/SaasLanding';
 import { AgenturenLanding } from './pages/niche/AgenturenLanding';
@@ -124,6 +125,8 @@ function RoutesWithTracking() {
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
+      <Route path="/dokumente-bundle" element={<DokumenteBundle />} />
+      <Route path="/tools/dokumente-bundle" element={<DokumenteBundle />} />
       <Route path="/ai-act-workflows" element={<AiActWorkflows />} />
       <Route path="/tools/ai-act-workflows" element={<AiActWorkflows />} />
       <Route path="/fuer-saas"      element={<SaasLanding />} />

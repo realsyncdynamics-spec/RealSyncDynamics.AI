@@ -40,35 +40,22 @@ import { HowItWorks3Steps } from '../components/HowItWorks3Steps';
 import { WebsiteRebuildOffer } from '../components/WebsiteRebuildOffer';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
+import { HeroOnly } from '../components/HeroOnly';
 
+/**
+ * Landing — Hero-only-Pivot.
+ *
+ * Strategischer Wechsel weg von der scrollbaren Long-Form-Landing hin zu
+ * einer Single-Viewport-Hero-Bühne. Alle weiteren Inhalte werden über
+ * Modals geladen (siehe HeroOnly.tsx). Die untenstehenden Section-
+ * Funktionen (Hero, ServiceLaunchpad, TargetAudience, HowItWorks3Steps,
+ * WebsiteRebuildOffer, ExampleReport, WatchmakerShowcase, AuditEngine,
+ * PricingPreview, ClosingCta) bleiben definiert, sodass sie in Folge-
+ * PRs auf dedizierte Routen (/produkt, /tools, /enterprise) ausgelagert
+ * werden können — ohne Code-Verlust beim Pivot.
+ */
 export function Landing() {
-  return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100 overflow-x-hidden">
-      <Navbar />
-
-      <main>
-        {/* Streamlined journey — 6 content sections (vorher: 11 + 3 dividers).
-            Removed from primary funnel (still defined below for /security &
-            ggf. dedizierte Pages): Problem, HowItWorks, UspDecisionLayer,
-            TrustSection, ProofStats, IdealCustomers, ThreeStepDsgvoSection. */}
-        <Hero />
-        <ServiceLaunchpad />
-        <TargetAudience />
-        <HowItWorks3Steps />
-        <WebsiteRebuildOffer />
-        <ExampleReport />
-        {/* WatchmakerShowcase wird in PR-H weiter nach unten als „Für Profis & Teams"-Sektion verschoben. */}
-        <WatchmakerShowcase />
-        <SectionDivider label="Audit Engine" spacing="md" />
-        <AuditEngine />
-        <SectionDivider label="Pricing" spacing="md" />
-        <PricingPreview />
-        <ClosingCta />
-      </main>
-
-      <FooterMinimal />
-    </div>
-  );
+  return <HeroOnly />;
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */

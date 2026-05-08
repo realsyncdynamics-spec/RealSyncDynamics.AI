@@ -73,12 +73,35 @@
   --color-ai-cyan-700: #0a7568;
   --color-ai-cyan-900: #053f37;
 
+  /* Gold — Hero-only Pivot primary CTA, top-nav-button-Highlight,
+     Logo-Glow. Wärmer als brass, satter Sättigung für „Grok-like" Feel. */
+  --color-gold-50:  #fffaeb;
+  --color-gold-100: #fef0c8;
+  --color-gold-300: #fcd66e;
+  --color-gold-400: #f9c544;
+  --color-gold-500: #f5b324;
+  --color-gold-600: #d99410;
+  --color-gold-700: #b3760e;
+  --color-gold-800: #845608;
+  --color-gold-900: #5a3a04;
+
+  /* Silver — Secondary-Buttons, Card-Outlines, Sub-Text. Kühler als
+     titanium für klareren Schwarz-Gold-Silber-Trichotomie-Look. */
+  --color-silver-50:  #fafbfc;
+  --color-silver-100: #eceff3;
+  --color-silver-300: #c0c5ce;
+  --color-silver-400: #9da4ad;
+  --color-silver-500: #7a818b;
+  --color-silver-700: #4a4f57;
+  --color-silver-900: #1a1d22;
+
   /* Animations — subtle, performant, GPU-accelerated where possible */
   --animate-glow-pulse:    glow-pulse 2.6s ease-in-out infinite;
   --animate-brass-shimmer: brass-shimmer 6s linear infinite;
   --animate-circuit-flow:  circuit-flow 4s linear infinite;
   --animate-gear-rotate:   gear-rotate 32s linear infinite;
   --animate-gear-rotate-reverse: gear-rotate-reverse 24s linear infinite;
+  --animate-logo-pulse: logo-pulse 4.5s ease-in-out infinite;
 }
 
 /* Keyframes — declared at root scope so motion-utility classes can reference. */
@@ -110,6 +133,18 @@
 
 @keyframes gear-rotate-reverse {
   to { transform: rotate(-360deg); }
+}
+
+/* Hero-only Logo „Atemzug" — gold/silver-glow oszilliert für Grok-like Feel */
+@keyframes logo-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(249, 197, 68, 0.18))
+            drop-shadow(0 0 24px rgba(192, 197, 206, 0.06));
+  }
+  50% {
+    filter: drop-shadow(0 0 22px rgba(249, 197, 68, 0.42))
+            drop-shadow(0 0 44px rgba(192, 197, 206, 0.14));
+  }
 }
 
 /* Respect reduced-motion preferences — kill the infinite animations */
@@ -177,6 +212,35 @@ html, body {
 .circuit-trace {
   stroke-dasharray: 4 6;
   animation: var(--animate-circuit-flow);
+}
+
+/* Hero-only Logo-Animation — applied to the centered Logo in <HeroOnly>. */
+.logo-pulse { animation: var(--animate-logo-pulse); }
+
+/* Hero-only Background — tiefes Schwarz mit dezenter diagonaler Textur. */
+.bg-hero-only {
+  background-color: #050509;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(249, 197, 68, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(192, 197, 206, 0.04) 0%, transparent 60%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.012) 0px,
+      rgba(255, 255, 255, 0.012) 1px,
+      transparent 1px,
+      transparent 6px
+    );
+}
+
+/* Hero-only Gold-Surface — primary CTA-Button-Background mit Hover-Glow */
+.surface-gold {
+  background: linear-gradient(135deg, #fcd66e 0%, #f9c544 50%, #d99410 100%);
+  color: #050509;
+  transition: box-shadow 200ms ease, transform 160ms ease;
+}
+.surface-gold:hover {
+  box-shadow: 0 0 36px -8px rgba(249, 197, 68, 0.55), 0 8px 22px -8px rgba(249, 197, 68, 0.45);
+  transform: translateY(-1px);
 }
 
 /* Hairline border helper */

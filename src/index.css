@@ -232,7 +232,9 @@ html, body {
     );
 }
 
-/* Hero-only Gold-Surface — primary CTA-Button-Background mit Hover-Glow */
+/* Hero-only Gold-Surface — primary CTA-Button-Background mit Hover-Glow.
+   Nur noch auf Free-Tools / Special-CTAs verwenden; für die neue
+   mono-Enterprise-Sprache der Hauptpages nutzt Primary `.surface-mono`. */
 .surface-gold {
   background: linear-gradient(135deg, #fcd66e 0%, #f9c544 50%, #d99410 100%);
   color: #050509;
@@ -241,6 +243,20 @@ html, body {
 .surface-gold:hover {
   box-shadow: 0 0 36px -8px rgba(249, 197, 68, 0.55), 0 8px 22px -8px rgba(249, 197, 68, 0.45);
   transform: translateY(-1px);
+}
+
+/* Mono-Enterprise primary CTA — flaches Light-Grey auf Dunkel. Entspricht
+   `#E5E7EB`-Accent aus dem Mono-Design-System (kein Verlauf, kein Glow,
+   barrierearmer Fokus-Ring). Verwendet auf /, /audit, /pricing. */
+.surface-mono {
+  background: #e5e7eb;
+  color: #050607;
+  transition: background 160ms ease;
+}
+.surface-mono:hover { background: #f3f4f6; }
+.surface-mono:focus-visible {
+  outline: 2px solid #f9fafb;
+  outline-offset: 2px;
 }
 
 /* Hairline border helper */

@@ -101,12 +101,12 @@ export function PricingPage() {
       {/* Top bar — gleicher Stil wie HeroOnly */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
-          <Sparkles className="h-3.5 w-3.5 text-gold-400" />
+          <Sparkles className="h-3.5 w-3.5 text-titanium-100" />
           <span className="font-display font-bold tracking-tight text-titanium-50">RealSyncDynamics.AI</span>
         </Link>
         <Link
           to="/audit?source=pricing-top"
-          className="surface-gold inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
+          className="surface-mono inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
         >
           Audit starten <ArrowRight className="h-3.5 w-3.5" />
         </Link>
@@ -119,7 +119,7 @@ export function PricingPage() {
             <div className="logo-pulse">
               <Logo size={48} iconOnly />
             </div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100">
               Preise · Public
             </div>
           </div>
@@ -151,9 +151,9 @@ export function PricingPage() {
           </div>
 
           {/* Disclaimer */}
-          <div className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-gold-400 rounded-none">
+          <div className="mt-10 max-w-3xl mx-auto p-5 bg-obsidian-900/60 border border-silver-700/30 border-l-2 border-l-titanium-200 rounded-none">
             <div className="flex items-start gap-3">
-              <Award className="h-4 w-4 text-gold-400 mt-0.5 shrink-0" />
+              <Award className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
               <p className="text-sm text-silver-300 leading-relaxed">
                 Dokumente werden automatisch generiert und durch unsere Partnerkanzlei geprüft.
                 <strong className="text-titanium-200"> Kein Rechtsberatungsersatz.</strong>
@@ -170,7 +170,7 @@ export function PricingPage() {
       >
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8 sm:mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
               FAQ
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
@@ -203,13 +203,13 @@ export function PricingPage() {
             ].map((item) => (
               <details
                 key={item.q}
-                className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+                className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-titanium-200/60 rounded-none transition-colors"
               >
                 <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
                   <span className="font-display font-bold text-titanium-50 text-base leading-snug">
                     {item.q}
                   </span>
-                  <span className="text-gold-400 text-xl leading-none transition-transform group-open:rotate-45 select-none">
+                  <span className="text-titanium-100 text-xl leading-none transition-transform group-open:rotate-45 select-none">
                     +
                   </span>
                 </summary>
@@ -224,12 +224,12 @@ export function PricingPage() {
       <footer className="border-t border-silver-700/40 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-silver-500">
           <div className="flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-gold-400" />
+            <Sparkles className="h-3 w-3 text-titanium-100" />
             <span>© 2026 RealSync Dynamics · Made in Germany</span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-gold-400">Cookie-Scanner · Free</Link>
-            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-gold-400">AI-Act Inventar · Beta</Link>
+            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-titanium-100">Cookie-Scanner · Free</Link>
+            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
             <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
             <Link to="/legal/sub-processors"  className="hover:text-titanium-50">Sub-Processors</Link>
@@ -250,25 +250,25 @@ function TierCard({ tier }: { tier: Tier }) {
     <div
       className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border rounded-none transition-colors ${
         tier.highlight
-          ? 'border-gold-400/80 shadow-[0_0_0_1px_rgba(212,175,55,0.25)]'
-          : 'border-silver-700/30 hover:border-gold-400/60'
+          ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
+          : 'border-silver-700/30 hover:border-titanium-200/60'
       }`}
     >
       {tier.highlight && (
-        <div className="absolute -top-3 left-5 px-2 py-0.5 bg-gold-400 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
+        <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
           Empfohlen
         </div>
       )}
 
       <div className="flex items-center gap-2 mb-2 mt-1">
-        <TierIcon className="h-4 w-4 text-gold-400" />
+        <TierIcon className="h-4 w-4 text-titanium-100" />
         <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">
           {tier.name}
         </div>
       </div>
 
       <div className="flex items-baseline gap-1.5 mb-1.5">
-        <div className="text-3xl font-display font-bold text-gold-400 tabular-nums">
+        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">
           {tier.price}
         </div>
         <div className="text-xs font-mono uppercase tracking-wider text-silver-400">
@@ -285,7 +285,7 @@ function TierCard({ tier }: { tier: Tier }) {
           {tier.badges.map((b) => (
             <span
               key={b}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-gold-400/10 border border-gold-400/40 text-gold-300 rounded-none"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-titanium-200/10 border border-titanium-200/40 text-titanium-100 rounded-none"
             >
               <Award className="h-2.5 w-2.5" /> {b}
             </span>
@@ -296,7 +296,7 @@ function TierCard({ tier }: { tier: Tier }) {
       <ul className="space-y-2 text-sm text-silver-200 mb-6 flex-1">
         {tier.bullets.map((b) => (
           <li key={b} className="flex items-start gap-2 leading-relaxed">
-            <Check className="h-3.5 w-3.5 text-gold-400 shrink-0 mt-1" />
+            <Check className="h-3.5 w-3.5 text-titanium-100 shrink-0 mt-1" />
             <span>{b}</span>
           </li>
         ))}
@@ -306,8 +306,8 @@ function TierCard({ tier }: { tier: Tier }) {
         to={tier.ctaHref}
         className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
           tier.highlight
-            ? 'surface-gold'
-            : 'border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50'
+            ? 'surface-mono'
+            : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
         }`}
       >
         {tier.ctaLabel} <ArrowRight className="h-4 w-4" />

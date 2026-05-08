@@ -83,11 +83,11 @@ export function AuditLanding() {
           {!report && (
             <>
               <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1 border border-titanium-700 bg-obsidian-900 text-titanium-200 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
                   <ShieldCheck className="h-3 w-3" /> Kostenlos · Kein Account · 30 Sekunden
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-                  Wo verstößt Deine Website gegen die <span className="text-security-400">DSGVO</span>?
+                  Wo verstößt Deine Website gegen die DSGVO?
                 </h1>
                 <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
                   Wir scannen Deine Site auf 12 typische Compliance-Fallen — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern.
@@ -110,7 +110,7 @@ export function AuditLanding() {
                   <input
                     type="text" required value={url} onChange={(e) => setUrl(e.target.value)}
                     placeholder="kanzlei-mueller.de"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500"
+                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-titanium-100"
                   />
                 </Field>
 
@@ -118,7 +118,7 @@ export function AuditLanding() {
                   <input
                     type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="dein@kanzlei.de" autoComplete="email"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500"
+                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-titanium-100"
                   />
                 </Field>
 
@@ -126,13 +126,13 @@ export function AuditLanding() {
                   <input
                     type="text" value={company} onChange={(e) => setCompany(e.target.value)}
                     placeholder="Kanzlei Müller & Partner"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-security-500"
+                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-titanium-100"
                   />
                 </Field>
 
                 <button
                   type="submit" disabled={loading || !url || !email}
-                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 disabled:opacity-40 text-white font-bold rounded-none"
+                  className="surface-mono w-full inline-flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-40 font-bold rounded-none"
                 >
                   {loading
                     ? (<><Loader2 className="h-4 w-4 animate-spin" /> Audit läuft …</>)
@@ -141,7 +141,7 @@ export function AuditLanding() {
 
                 <p className="text-[11px] text-titanium-500 text-center pt-1">
                   Wir scannen Deine Site nur einmalig und speichern keine Inhalte. Email landet in unserem CRM für späteren Outreach.
-                  Verarbeitung gemäß <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link>.
+                  Verarbeitung gemäß <Link to="/legal/privacy" className="text-titanium-100 hover:underline">Datenschutzerklärung</Link>.
                 </p>
               </form>
 
@@ -197,8 +197,8 @@ function Header() {
         <ArrowLeft className="h-4 w-4" />
       </Link>
       <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-none bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center">
-          <ShieldCheck className="h-4 w-4 text-white" />
+        <div className="w-8 h-8 rounded-none bg-obsidian-950 border border-titanium-700 flex items-center justify-center">
+          <ShieldCheck className="h-4 w-4 text-titanium-100" />
         </div>
         <div className="leading-tight">
           <div className="font-display font-bold text-sm tracking-tight text-titanium-50">DSGVO-Audit</div>
@@ -223,10 +223,10 @@ function Pillars() {
       <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-4 text-center">Was wir prüfen</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {items.map((it) => (
-          <div key={it.law} className="p-4 bg-obsidian-900 border border-titanium-900 border-l-2 border-l-brass-700/60 rounded-none">
+          <div key={it.law} className="p-4 bg-obsidian-900 border border-titanium-800 border-l-2 border-l-titanium-500 rounded-none">
             <div className="flex items-center gap-2 mb-1.5">
-              <Gavel className="h-3.5 w-3.5 text-brass-400" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brass-300">{it.law}</span>
+              <Gavel className="h-3.5 w-3.5 text-titanium-300" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-titanium-300">{it.law}</span>
             </div>
             <div className="font-display font-bold text-sm text-titanium-50">{it.issue}</div>
             <div className="text-xs text-titanium-500 mt-0.5">Risiko: {it.max}</div>
@@ -265,8 +265,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         </h2>
         {report.issues.length === 0
           ? (
-            <div className="p-5 bg-emerald-950/30 border border-emerald-900 rounded-none flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
+            <div className="p-5 bg-obsidian-900 border border-titanium-700 rounded-none flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-titanium-100 mt-0.5 shrink-0" />
               <div>
                 <div className="font-display font-bold text-titanium-50 mb-0.5">Saubere Site!</div>
                 <div className="text-sm text-titanium-300">
@@ -284,7 +284,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
 
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
 
-      <div className="bg-obsidian-900 border border-security-700 p-6 rounded-none">
+      <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
         <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">So fixen wir das für Dich</h3>
         <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
           RealSync Dynamics liefert die fehlenden DSGVO-Bausteine als SaaS — EU-Datenresidenz, Audit-Log, AVV/DPA-Generator,
@@ -293,13 +293,13 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         <div className="flex flex-col sm:flex-row gap-2">
           <Link
             to={`/contact-sales?source=audit_lp&audit=${report.audit_id}`}
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none"
+            className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
           >
             Demo buchen <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/pricing"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none"
           >
             Preise ansehen
           </Link>
@@ -312,13 +312,13 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         </div>
       </div>
 
-      <div className="bg-obsidian-900 border border-amber-800/60 p-5 sm:p-6 rounded-none">
+      <div className="bg-obsidian-900 border border-titanium-800 p-5 sm:p-6 rounded-none">
         <div className="flex items-start gap-3">
-          <div className="shrink-0 w-10 h-10 rounded-none bg-gradient-to-br from-fuchsia-600 to-amber-600 flex items-center justify-center mt-0.5">
-            <Globe className="h-5 w-5 text-white" />
+          <div className="shrink-0 w-10 h-10 rounded-none bg-obsidian-950 border border-titanium-700 flex items-center justify-center mt-0.5">
+            <Globe className="h-5 w-5 text-titanium-100" />
           </div>
           <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-wider text-amber-400 font-bold mb-1">Alternative · Komplett-Service</div>
+            <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Alternative · Komplett-Service</div>
             <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Lieber kein Tool, sondern jemand der's macht?</h3>
             <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
               Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site DSGVO-konform neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
@@ -326,7 +326,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             </p>
             <Link
               to={`/dsgvo-website?source=audit&audit=${report.audit_id}`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-obsidian-950 text-xs font-bold rounded-none"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-100 text-xs font-bold rounded-none"
             >
               3-Paket-Angebot ansehen <ArrowRight className="h-3 w-3" />
             </Link>
@@ -389,12 +389,14 @@ function ShareBlock({ report }: { report: Report }) {
 }
 
 function IssueCard({ issue }: { issue: Issue }) {
+  // Mono-Enterprise: nur `critical` rot, restliche Severities via
+  // Helligkeit und Border-Stärke differenziert (kein Bling-Bling).
   const sevColor: Record<Issue['severity'], string> = {
     critical: 'text-red-300 border-red-900 bg-red-950/30',
-    high:     'text-orange-300 border-orange-900 bg-orange-950/30',
-    medium:   'text-amber-300 border-amber-900 bg-amber-950/30',
-    low:      'text-titanium-400 border-titanium-800 bg-obsidian-900',
-    info:     'text-blue-300 border-blue-900 bg-blue-950/30',
+    high:     'text-titanium-50 border-titanium-600 bg-obsidian-900',
+    medium:   'text-titanium-100 border-titanium-700 bg-obsidian-900',
+    low:      'text-titanium-300 border-titanium-800 bg-obsidian-900',
+    info:     'text-titanium-200 border-titanium-800 bg-obsidian-900',
   };
   const sevLabel: Record<Issue['severity'], string> = {
     critical: 'KRITISCH',
@@ -426,16 +428,18 @@ function severityConfig(s: Severity): {
   color: string;
   summary: (n: number) => string;
 } {
+  // Mono-Enterprise: nur `critical` nutzt rot als einziges Warnsignal,
+  // alle anderen Severities werden über Helligkeit + Text differenziert.
   switch (s) {
     case 'critical': return { label: 'Kritisch — handeln', bg: 'bg-red-950/30', border: 'border-red-900', color: 'text-red-300',
       summary: (n) => `${n} Befunde, davon mindestens einer mit Bußgeld-Risiko bis 4 % Jahresumsatz. Hier brauchst Du eine Lösung — bevor Dich ein Mitbewerber abmahnt oder Dein DSB blockt.` };
-    case 'high':     return { label: 'Hohe Priorität', bg: 'bg-orange-950/30', border: 'border-orange-900', color: 'text-orange-300',
+    case 'high':     return { label: 'Hohe Priorität', bg: 'bg-obsidian-900', border: 'border-titanium-700', color: 'text-titanium-50',
       summary: (n) => `${n} Befunde mit hohem Risiko-Profil. Schnell adressieren — bevor erste Beschwerden bei der Aufsicht eingehen.` };
-    case 'medium':   return { label: 'Verbesserungsbedarf', bg: 'bg-amber-950/30', border: 'border-amber-900', color: 'text-amber-300',
+    case 'medium':   return { label: 'Verbesserungsbedarf', bg: 'bg-obsidian-900', border: 'border-titanium-800', color: 'text-titanium-100',
       summary: (n) => `${n} Befunde mittlerer Severity. Kein akutes Bußgeld-Risiko, aber rechtssicher ist anders.` };
-    case 'low':      return { label: 'Solide Basis', bg: 'bg-titanium-950', border: 'border-titanium-900', color: 'text-titanium-300',
+    case 'low':      return { label: 'Solide Basis', bg: 'bg-obsidian-900', border: 'border-titanium-900', color: 'text-titanium-200',
       summary: (n) => `${n} kleinere Findings. Best-Practice-Verbesserungen.` };
-    case 'pass':     return { label: 'Audit bestanden', bg: 'bg-emerald-950/30', border: 'border-emerald-900', color: 'text-emerald-300',
+    case 'pass':     return { label: 'Audit bestanden', bg: 'bg-obsidian-900', border: 'border-titanium-700', color: 'text-titanium-50',
       summary: () => 'Keiner unserer Checks hat angeschlagen. Sehr selten — Glückwunsch.' };
     default:         return { label: 'Audit-Ergebnis', bg: 'bg-obsidian-900', border: 'border-titanium-900', color: 'text-titanium-200',
       summary: () => '' };
@@ -506,9 +510,9 @@ function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: 
   }
 
   return (
-    <div className="bg-obsidian-900 border border-amber-700/50 p-6 rounded-none">
+    <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
       <div className="flex items-start gap-3 mb-4">
-        <FileText className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <FileText className="h-5 w-5 text-titanium-100 shrink-0 mt-0.5" />
         <div className="flex-1">
           <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">
             DSGVO-Dokumente aus diesem Audit generieren
@@ -539,8 +543,8 @@ function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: 
               disabled={isGen || (generating !== null && generating !== doc.id)}
               className={`text-left p-4 border rounded-none transition-colors ${
                 isDone
-                  ? 'border-emerald-700 bg-emerald-950/20'
-                  : 'border-titanium-700 hover:border-amber-500 bg-obsidian-950'
+                  ? 'border-titanium-200 bg-obsidian-950'
+                  : 'border-titanium-700 hover:border-titanium-200 bg-obsidian-950'
               } disabled:opacity-50`}
             >
               <div className="flex items-start justify-between gap-2 mb-1">
@@ -549,9 +553,9 @@ function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: 
                   <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-400">{doc.norm}</div>
                 </div>
                 {isGen
-                  ? <Loader2 className="h-4 w-4 text-amber-400 animate-spin shrink-0 mt-0.5" />
+                  ? <Loader2 className="h-4 w-4 text-titanium-100 animate-spin shrink-0 mt-0.5" />
                   : isDone
-                    ? <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    ? <CheckCircle2 className="h-4 w-4 text-titanium-100 shrink-0 mt-0.5" />
                     : <FileText className="h-4 w-4 text-titanium-400 shrink-0 mt-0.5" />}
               </div>
               <p className="text-xs text-titanium-400 leading-snug">{doc.hint}</p>

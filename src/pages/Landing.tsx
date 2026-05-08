@@ -420,21 +420,21 @@ function AuditEngine() {
       Icon: Activity,
       eyebrow: 'Tracking Layer',
       title: 'Detection',
-      iconClass: 'text-ai-cyan-400',
+      iconClass: 'text-titanium-200',
       summary: 'GA / Meta / LinkedIn / TikTok mit Consent-Status pro Tag und Pre/Post-Consent-Request-Map.',
     },
     {
       Icon: Lock,
       eyebrow: 'Security Layer',
       title: 'Headers & Hardening',
-      iconClass: 'text-brass-400',
+      iconClass: 'text-titanium-200',
       summary: 'CSP / HSTS / X-Frame-Options / Referrer-Policy + TLS-Version + HTTPS-Enforcement.',
     },
     {
       Icon: ShieldCheck,
       eyebrow: 'Compliance Layer',
       title: 'Norm-Mapping',
-      iconClass: 'text-security-400',
+      iconClass: 'text-titanium-100',
       summary: 'DSGVO Art. 5/6/28/32/35 · § 25 TTDSG · Drittlandtransfer (SCCs · Schrems-II · DPF).',
     },
   ];
@@ -449,7 +449,7 @@ function AuditEngine() {
           {layers.map((layer) => (
             <div
               key={layer.title}
-              className="bg-obsidian-950 p-7 sm:p-8 border-t border-t-transparent hover:border-t-brass-700/60 transition-colors"
+              className="bg-obsidian-950 p-7 sm:p-8 border-t border-t-transparent hover:border-t-titanium-700/60 transition-colors"
             >
               <layer.Icon className={`h-6 w-6 ${layer.iconClass}`} strokeWidth={1.5} />
               <div className="mt-5 text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
@@ -503,7 +503,7 @@ function ExampleReport() {
             <Field label="Finding">Google Analytics ohne wirksames Consent geladen</Field>
             <Field label="Impact">
               Unautorisierte Datenverarbeitung vor Einwilligung. Personenbezogene Daten (IP, User-Agent,
-              Client-ID) werden an <code className="font-mono text-emerald-300 text-[12px]">www.google-analytics.com/g/collect</code> übertragen,
+              Client-ID) werden an <code className="font-mono text-titanium-200 text-[12px]">www.google-analytics.com/g/collect</code> übertragen,
               bevor der Nutzer dem zustimmen konnte.
             </Field>
             <Field label="Legal Basis">
@@ -511,8 +511,8 @@ function ExampleReport() {
             </Field>
             <Field label="Technical Fix">
               Deferred-Loading via Google Consent Mode v2 oder GTM-Tag-Trigger auf{' '}
-              <code className="font-mono text-emerald-300 text-[12px]">consent.granted</code>.
-              Default-State <code className="font-mono text-emerald-300 text-[12px]">analytics_storage: 'denied'</code> setzen.
+              <code className="font-mono text-titanium-200 text-[12px]">consent.granted</code>.
+              Default-State <code className="font-mono text-titanium-200 text-[12px]">analytics_storage: 'denied'</code> setzen.
             </Field>
             <Field label="Recommendation">
               Block-Script-Execution-Before-Opt-In. Test: erste Network-Requests vor Consent prüfen
@@ -520,7 +520,7 @@ function ExampleReport() {
             </Field>
             <div className="pt-3 border-t border-titanium-900 flex items-center justify-between text-[11px] font-mono text-titanium-500">
               <span>methodology: rule_engine 2026.05.0 · tracker-db 2026.05.0</span>
-              <span className="text-emerald-300">confidence: 92 / 100</span>
+              <span className="text-titanium-200">confidence: 92 / 100</span>
             </div>
           </div>
         </div>
@@ -569,12 +569,12 @@ function HowItWorks() {
         <div className="mt-14 relative">
           <div
             aria-hidden="true"
-            className="hidden md:block absolute top-6 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent"
+            className="hidden md:block absolute top-6 left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-titanium-500/40 to-transparent"
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
             {steps.map((s) => (
               <div key={s.step} className="relative text-center md:text-left">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-indigo-500/40 bg-obsidian-950 text-indigo-300 font-mono text-sm font-bold relative z-10">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full border border-titanium-700/40 bg-obsidian-950 text-titanium-200 font-mono text-sm font-bold relative z-10">
                   {s.step}
                 </div>
                 <h3 className="mt-5 font-display font-bold text-xl tracking-tight text-titanium-50">{s.title}</h3>
@@ -595,7 +595,7 @@ function HowItWorks() {
               to={opt.to}
               className="group flex items-center gap-2 px-4 py-3 border border-titanium-800 hover:border-titanium-600 bg-obsidian-950 text-titanium-300 hover:text-titanium-100 text-sm font-medium transition-colors"
             >
-              <opt.icon className="h-4 w-4 text-titanium-500 group-hover:text-indigo-400" strokeWidth={1.5} />
+              <opt.icon className="h-4 w-4 text-titanium-500 group-hover:text-titanium-100" strokeWidth={1.5} />
               {opt.label}
               <ArrowUpRight className="h-3 w-3 ml-auto text-titanium-500 group-hover:text-titanium-300" />
             </Link>
@@ -627,7 +627,7 @@ function UspDecisionLayer() {
         <ul className="mt-12 space-y-4 max-w-3xl">
           {items.map((it) => (
             <li key={it} className="flex items-start gap-3">
-              <span className="font-mono text-xs text-indigo-300 mt-1">+</span>
+              <span className="font-mono text-xs text-titanium-200 mt-1">+</span>
               <p className="text-base text-titanium-200" dangerouslySetInnerHTML={{ __html: it }} />
             </li>
           ))}
@@ -706,7 +706,7 @@ function ProofStats() {
 function StatCard({ number, label, sub }: { number: string; label: string; sub: string }) {
   return (
     <div className="bg-obsidian-950 p-7 sm:p-8 text-center">
-      <div className="font-display font-bold text-4xl sm:text-5xl tracking-tight bg-gradient-to-r from-indigo-300 to-purple-300 bg-clip-text text-transparent">
+      <div className="font-display font-bold text-4xl sm:text-5xl tracking-tight bg-gradient-to-r from-titanium-100 to-titanium-300 bg-clip-text text-transparent">
         {number}
       </div>
       <div className="mt-3 text-sm text-titanium-200 font-medium">{label}</div>
@@ -785,14 +785,14 @@ function PricingPreview() {
               key={t.name}
               className={`relative p-8 ${
                 t.highlight
-                  ? 'bg-obsidian-900 ring-1 ring-indigo-500/40'
+                  ? 'bg-obsidian-900 ring-1 ring-titanium-300/40'
                   : t.managed
-                    ? 'bg-obsidian-900 ring-1 ring-brass-500/40'
+                    ? 'bg-obsidian-900 ring-1 ring-titanium-300/40'
                     : 'bg-obsidian-950'
               }`}
             >
               {t.highlight && (
-                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-indigo-500 text-white">
+                <span className="absolute -top-3 left-8 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] bg-titanium-50 text-obsidian-950">
                   Empfohlen
                 </span>
               )}
@@ -818,7 +818,7 @@ function PricingPreview() {
                   t.highlight
                     ? 'bg-white text-obsidian-950 hover:bg-titanium-200'
                     : t.managed
-                      ? 'bg-brass-500 text-obsidian-950 hover:bg-brass-400'
+                      ? 'bg-titanium-50 text-obsidian-950 hover:bg-titanium-100'
                       : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
                 }`}
               >
@@ -859,7 +859,7 @@ function ClosingCta() {
         <h2 className="font-display font-bold text-4xl sm:text-5xl tracking-tight text-titanium-50 leading-[1.05]">
           Machen Sie Ihre Web-Compliance
           <br />
-          <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-titanium-100 to-titanium-300 bg-clip-text text-transparent">
             messbar.
           </span>
         </h2>
@@ -877,7 +877,7 @@ function ClosingCta() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="vorname.name@firma.de"
-            className="flex-1 bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-indigo-500 outline-none placeholder:text-titanium-600"
+            className="flex-1 bg-obsidian-900 border border-titanium-800 text-titanium-50 px-4 py-3 text-sm rounded-none focus:border-titanium-100 outline-none placeholder:text-titanium-600"
             aria-label="E-Mail für Audit"
           />
           <button
@@ -935,20 +935,20 @@ function FooterMinimal() {
           </div>
         </div>
 
-        <div className="mt-10 p-5 border border-amber-900/40 bg-amber-950/10 rounded-none">
+        <div className="mt-10 p-5 border border-titanium-700/40 bg-obsidian-900/40 rounded-none">
           <div className="flex items-start gap-3">
-            <Server className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" strokeWidth={1.5} />
-            <p className="text-[12px] text-amber-200/80 leading-relaxed">
-              <strong className="text-amber-200">Haftungsausschluss · Anwalts-Validierung.</strong>{' '}
+            <Server className="h-4 w-4 text-titanium-200 shrink-0 mt-0.5" strokeWidth={1.5} />
+            <p className="text-[12px] text-titanium-300 leading-relaxed">
+              <strong className="text-titanium-200">Haftungsausschluss · Anwalts-Validierung.</strong>{' '}
               RealSync Dynamics liefert automatisiert generierte Vorlagen und Methodik-basierte
               Klassifikationen — keine individuelle Rechtsberatung im Sinne des RDG. Outputs sind
               nicht durch externen Datenschutz-Anwalt validiert; vor produktivem Einsatz empfehlen
               wir anwaltliche Prüfung.{' '}
-              <Link to="/legal/methodology" className="text-amber-300 hover:text-amber-200 underline-offset-4 hover:underline">
+              <Link to="/legal/methodology" className="text-titanium-200 hover:text-titanium-200 underline-offset-4 hover:underline">
                 /legal/methodology
               </Link>{' '}
               ·{' '}
-              <Link to="/grenzen" className="text-amber-300 hover:text-amber-200 underline-offset-4 hover:underline">
+              <Link to="/grenzen" className="text-titanium-200 hover:text-titanium-200 underline-offset-4 hover:underline">
                 /grenzen
               </Link>
             </p>

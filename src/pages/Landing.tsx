@@ -35,6 +35,8 @@ import { LiveProductDemo } from '../components/LiveProductDemo';
 import { IdealCustomers } from '../components/IdealCustomers';
 import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
 import { ServiceLaunchpad } from '../components/ServiceLaunchpad';
+import { TargetAudience } from '../components/TargetAudience';
+import { HowItWorks3Steps } from '../components/HowItWorks3Steps';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
 
@@ -50,8 +52,11 @@ export function Landing() {
             TrustSection, ProofStats, IdealCustomers, ThreeStepDsgvoSection. */}
         <Hero />
         <ServiceLaunchpad />
-        <WatchmakerShowcase />
+        <TargetAudience />
+        <HowItWorks3Steps />
         <ExampleReport />
+        {/* WatchmakerShowcase wird in PR-H weiter nach unten als „Für Profis & Teams"-Sektion verschoben. */}
+        <WatchmakerShowcase />
         <SectionDivider label="Audit Engine" spacing="md" />
         <AuditEngine />
         <SectionDivider label="Pricing" spacing="md" />
@@ -250,7 +255,7 @@ function Hero() {
                 marginBottom: '20px',
               }}
             >
-              Compliance-Decision-Layer für Developer-Teams.
+              Ist Ihre Website wirklich DSGVO-konform?
             </h1>
 
             <p
@@ -263,7 +268,7 @@ function Hero() {
                 maxWidth: '520px',
               }}
             >
-              Ein Quick-Scan zeigt in 30 Sekunden, wo Ihre Site gegen DSGVO, TTDSG und BSI-Header verstößt. Befunde mit Paragraph-Bezug, kein LLM-Halluzinieren.
+              In 30 Sekunden sehen Sie, welche Risiken Ihre Website bei Tracking, Cookies und Sicherheit hat — mit klaren Handlungsempfehlungen in Klartext.
             </p>
 
             <Link
@@ -297,12 +302,12 @@ function Hero() {
                   '0 0 60px -8px rgba(217,162,74,0.45), 0 12px 28px -10px rgba(217,162,74,0.55), inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -1px 0 rgba(0,0,0,0.18)';
               }}
             >
-              Jetzt kostenlos scannen
+              Kostenlosen Website-Check starten
             </Link>
 
             <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-              <Link
-                to="/pricing"
+              <a
+                href="#example-report"
                 style={{
                   fontSize: '14px',
                   color: 'rgba(244,231,208,0.65)',
@@ -320,8 +325,8 @@ function Hero() {
                   e.currentTarget.style.borderColor = 'rgba(244,231,208,0.25)';
                 }}
               >
-                Pricing ansehen
-              </Link>
+                Beispiel-Report ansehen
+              </a>
               <span
                 style={{
                   fontSize: '13px',
@@ -490,7 +495,7 @@ function AuditEngine() {
 
 function ExampleReport() {
   return (
-    <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+    <section id="example-report" className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         <SectionHeader
           eyebrow="Engineering-Report-Stil"

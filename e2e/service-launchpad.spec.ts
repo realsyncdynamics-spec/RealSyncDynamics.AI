@@ -22,11 +22,13 @@ test.describe('ServiceLaunchpad', () => {
   });
 
   test('renders 4 service cards with the expected eyebrow labels', async ({ page }) => {
+    // exact:true — sonst matcht „Pricing" sowohl das Eyebrow-Span als auch den
+    // „Pricing ansehen"-CTA-Span und wirft strict-mode violation.
     const region = launchpad(page);
-    await expect(region.getByText('Quick-Scan')).toBeVisible();
-    await expect(region.getByText('Website-Service')).toBeVisible();
-    await expect(region.getByText('Pricing')).toBeVisible();
-    await expect(region.getByText('Methodology')).toBeVisible();
+    await expect(region.getByText('Quick-Scan',       { exact: true })).toBeVisible();
+    await expect(region.getByText('Website-Service',  { exact: true })).toBeVisible();
+    await expect(region.getByText('Pricing',          { exact: true })).toBeVisible();
+    await expect(region.getByText('Methodology',      { exact: true })).toBeVisible();
   });
 
   test('Audit card navigates to /audit', async ({ page }) => {

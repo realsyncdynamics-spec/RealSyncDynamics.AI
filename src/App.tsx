@@ -48,6 +48,7 @@ import { EcommerceLanding } from './pages/EcommerceLanding';
 import { About } from './pages/About';
 import { Press } from './pages/Press';
 import { Security } from './pages/Security';
+import { Status } from './pages/Status';
 import { Faq } from './pages/Faq';
 import { Changelog } from './pages/Changelog';
 import { SaasAnbieterLanding } from './pages/SaasAnbieterLanding';
@@ -159,6 +160,7 @@ function RoutesWithTracking() {
       <Route path="/press" element={<Press />} />
       <Route path="/presse" element={<Press />} />
       <Route path="/security" element={<Security />} />
+      <Route path="/status" element={<Status />} />
       <Route path="/sicherheit" element={<Security />} />
       <Route path="/faq" element={<Faq />} />
       <Route path="/haeufige-fragen" element={<Faq />} />

@@ -64,9 +64,12 @@ Deno.serve(async (req) => {
       case 'customer.subscription.deleted':
         await syncSubscription(admin, event.data.object as Stripe.Subscription);
         break;
-      case 'checkout.session.completed':
-        await sendOnboardingWelcome(admin, event.data.object as Stripe.Checkout.Session);
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await sendOnboardingWelcome(admin, session);
+        await triggerWebsiteRebuildIfApplicable(admin, session);
         break;
+      }
       // Add more handlers as the billing surface grows; ignore unknown types.
     }
   } catch (err) {
@@ -190,4 +193,85 @@ async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Sessio
     },
     body: JSON.stringify({ from: FROM, to: [email], subject, html }),
   });
+}
+
+// Trigger den Website-Rebuild-Workflow wenn der Checkout den
+// Managed-Website-Tier gekauft hat. Stripe-Checkout-Session muss in metadata:
+//   product_type: 'managed_website'
+//   source_url:   'https://kunde.de'
+//   tier?:        'managed' | 'premium' | 'enterprise'   (default: 'managed')
+//   tenant_id?:   uuid
+//   audit_id?:    uuid    (verlinkt vorhandenen DSGVO-Audit)
+//   company?:     'ACME GmbH'
+// gesetzt haben. Insert ist synchron (sichtbar im Admin sofort), Workflow-Run
+// läuft via EdgeRuntime.waitUntil im Hintergrund — Webhook acked sofort.
+//
+// deno-lint-ignore no-explicit-any
+async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Checkout.Session): Promise<void> {
+  const meta = session.metadata ?? {};
+  if (meta.product_type !== 'managed_website') return;
+
+  const sourceUrl = meta.source_url;
+  const email = session.customer_details?.email ?? session.customer_email;
+  if (!sourceUrl || !email) {
+    console.warn(`[stripe-webhook] managed_website checkout ${session.id}: missing source_url or email — skip rebuild`);
+    return;
+  }
+
+  let domain = '';
+  try { domain = new URL(sourceUrl).hostname.toLowerCase(); }
+  catch {
+    console.warn(`[stripe-webhook] managed_website ${session.id}: invalid source_url ${sourceUrl}`);
+    return;
+  }
+
+  const tier = (['managed', 'premium', 'enterprise'].includes(meta.tier ?? '') ? meta.tier : 'managed') as
+    'managed' | 'premium' | 'enterprise';
+
+  // Insert queued row — Admin sieht ihn sofort, auch wenn waitUntil-Trigger
+  // verloren geht ist der Job sichtbar und manuell resumebar.
+  const { data: rebuild, error } = await admin
+    .from('website_rebuilds')
+    .insert({
+      tenant_id:      meta.tenant_id ?? null,
+      audit_id:       meta.audit_id ?? null,
+      source_url:     sourceUrl,
+      source_domain:  domain,
+      customer_email: String(email).toLowerCase(),
+      company:        meta.company ?? null,
+      tier,
+      status:         'queued',
+    })
+    .select('id')
+    .single();
+
+  if (error || !rebuild) {
+    console.error(`[stripe-webhook] failed to queue website_rebuild for ${session.id}: ${error?.message}`);
+    return;
+  }
+
+  // Fire-and-forget — Webhook muss in <30s acken, Workflow läuft im Hintergrund.
+  const triggerPromise = fetch(`${SUPABASE_URL}/functions/v1/rebuild-website`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ rebuild_id: rebuild.id }),
+  }).then(async (r) => {
+    if (!r.ok) {
+      const txt = await r.text().catch(() => '');
+      console.error(`[stripe-webhook] rebuild-website trigger ${rebuild.id} failed: ${r.status} ${txt}`);
+    } else {
+      console.log(`[stripe-webhook] rebuild-website ${rebuild.id} triggered for ${domain}`);
+    }
+  }).catch((e) => {
+    console.error(`[stripe-webhook] rebuild-website trigger ${rebuild.id} threw: ${(e as Error).message}`);
+  });
+
+  // @ts-ignore — EdgeRuntime is provided by Supabase Edge Runtime
+  if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(triggerPromise);
+  }
 }

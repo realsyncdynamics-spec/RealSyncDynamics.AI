@@ -48,7 +48,7 @@ test('Landing renders Firmen-Pivot Hero + 6 sections + example-report modal', as
   await expect(
     page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
   ).toBeVisible();
-  await expect(page.getByText(/29 € \/ Monat/).first()).toBeVisible();
+  await expect(page.getByText(/99 € \/ Monat/).first()).toBeVisible();
 
   // Sektion „FAQ"
   await expect(page.getByRole('heading', { name: /^Häufige Fragen$/i })).toBeVisible();

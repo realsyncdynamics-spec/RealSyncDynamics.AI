@@ -85,6 +85,6 @@ for (const n of NICHES) {
     await expect(
       page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
     ).toBeVisible();
-    await expect(page.getByText(/29 € \/ Monat/).first()).toBeVisible();
+    await expect(page.getByText(/99 € \/ Monat/).first()).toBeVisible();
   });
 }

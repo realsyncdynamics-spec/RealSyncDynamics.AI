@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, FileSearch, Layers, Tag } from 'lucide-react';
+import {
+  ArrowRight, Sparkles, FileSearch, Layers, Tag,
+  Cookie, Brain, FileCheck2, Activity,
+} from 'lucide-react';
 import { Logo } from './Logo';
 import { Modal } from './ui/Modal';
 import { HowItWorks3Steps } from './HowItWorks3Steps';
@@ -24,6 +27,9 @@ import { AIActPanel } from './panels/AIActPanel';
  *   - Hero (viewport-zentriert): Logo · Headline · Subline · CTAs ·
  *     Mid-Buttons · Trust-Leiste
  *   - Sektion „Zielgruppen": 3-Card-Grid für SaaS / Agenturen / lokale Betriebe
+ *   - Sektion „So funktioniert": 3-Step-Erklärer + CTA
+ *   - Sektion „Leistungen" (Was Sie bekommen): 4-Card-Grid mit Icons
+ *   - Sektion „Gründe" (Warum Firmen uns nutzen): 3 Pain-Point-Cards + Beta-Hinweis
  *   - Sektion „FAQ": 3 details-summary Q&A-Pairs + Schluss-CTA
  *   - Footer: Legal- + Free-Tool-Links
  *
@@ -163,6 +169,153 @@ export function HeroOnly() {
                 <p className="text-sm text-silver-300 leading-relaxed">{item.body}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: So funktioniert (3 Steps) ─────────────────── */}
+      <section
+        id="so-funktioniert"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 sm:mb-12">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              So funktioniert
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              In drei Schritten zu einem klaren Compliance-Bild
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              {
+                title: 'Domain und KI-Usecases eingeben',
+                body: 'Sie geben Ihre Website-URL und — wenn vorhanden — Ihre genutzten KI-Tools an (z. B. Chatbots, Automatisierung, Analysen).',
+              },
+              {
+                title: 'Automatischer Scan & Risk-Score',
+                body: 'Wir analysieren Tracking, Cookies, Formulare, Third-Party-Dienste und KI-Workflows und stufen die Risiken nach Priorität ein.',
+              },
+              {
+                title: 'Konkrete Maßnahmen für Ihr Team',
+                body: 'Sie erhalten eine sortierte To-do-Liste mit klaren Fix-Empfehlungen für Marketing, IT und Datenschutz — inklusive Reports für Management und Prüfer.',
+              },
+            ].map((step, idx) => (
+              <div
+                key={step.title}
+                className="relative p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+              >
+                <div className="absolute -top-3 left-5 inline-flex items-center justify-center w-8 h-8 bg-gold-400 text-obsidian-950 font-display font-bold text-sm tabular-nums">
+                  {idx + 1}
+                </div>
+                <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 mt-2 leading-snug">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-silver-300 leading-relaxed">{step.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              to="/audit?source=hero-steps"
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              Website jetzt scannen <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: Was Sie bekommen (4 Bullets) ───────────────── */}
+      <section
+        id="leistungen"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 sm:mb-12">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              Leistungen
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              Mehr als ein Cookie-Scanner
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            {[
+              {
+                Icon: Cookie,
+                title: 'Vollständiger Website-Audit',
+                body: 'Tracking, Cookies, Einbettungen, Formulare, Scripts und Tools — technisch analysiert und rechtlich eingeordnet.',
+              },
+              {
+                Icon: Brain,
+                title: 'KI-Workflow-Check',
+                body: 'Wir dokumentieren Ihre KI-Usecases und helfen, sie in die Kategorien des EU AI Act einzuordnen.',
+              },
+              {
+                Icon: FileCheck2,
+                title: 'Audit-fähige Reports',
+                body: 'Exportierbare Reports für interne Richtlinien, Datenschutzdokumentation und externe Prüfungen.',
+              },
+              {
+                Icon: Activity,
+                title: 'Kontinuierliches Monitoring',
+                body: 'Auf Wunsch überwachen wir dauerhaft Änderungen an Ihrer Website und warnen, wenn neue Risiken auftauchen.',
+              },
+            ].map((feat) => (
+              <div
+                key={feat.title}
+                className="p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors"
+              >
+                <feat.Icon className="h-5 w-5 text-gold-400 mb-3" />
+                <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
+                  {feat.title}
+                </h3>
+                <p className="text-sm text-silver-300 leading-relaxed">{feat.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: Warum Firmen uns nutzen ────────────────────── */}
+      <section
+        id="warum-uns"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 sm:mb-12">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              Gründe
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              Typische Gründe, warum Firmen RealSyncDynamics.AI einsetzen
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              'Sie wollen Bußgelder und Abmahnungen vermeiden, ohne ein eigenes Datenschutz-Team aufzubauen.',
+              'Sie nutzen KI im Marketing oder Service und wissen nicht, ob das mit DSGVO und AI Act sauber abgedeckt ist.',
+              'Sie brauchen eine verständliche Übersicht, die Geschäftsführung, IT und Marketing gleichzeitig verstehen.',
+            ].map((reason) => (
+              <div
+                key={reason}
+                className="p-5 sm:p-6 bg-obsidian-900/60 border-l-2 border-l-gold-400 border-y border-r border-silver-700/30 rounded-none"
+              >
+                <p className="text-sm sm:text-[15px] text-silver-200 leading-relaxed">{reason}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-silver-500">
+              Aktuell im Beta-Programm · Erste Referenzkunden 2026 Q3
+            </p>
           </div>
         </div>
       </section>

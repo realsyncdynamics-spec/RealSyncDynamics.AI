@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E for the Landing (Hero + Zielgruppen + FAQ sections).
+ * Smoke-E2E for the Landing (Hero + Zielgruppen + So-funktioniert +
+ * Leistungen + Gründe + FAQ sections).
  *
  * Asserts the Firmen-Pivot copy: H1 verspricht „DSGVO-sicher in 30 Sekunden",
- * Primary-CTA „Compliance-Check starten" → /audit, neue Trust-Leiste mit
+ * Primary-CTA „Compliance-Check starten" → /audit, Trust-Leiste mit
  * Datenresidenz/AVV/Audit-Log/Made-in-Germany, Beispiel-Report-Modal
- * öffnet GA4-Finding, neue Sektionen Zielgruppen + FAQ rendern.
+ * öffnet GA4-Finding, alle 5 Long-Form-Sektionen rendern.
  */
-test('Landing renders Firmen-Pivot Hero + Zielgruppen + FAQ + example-report modal', async ({ page }) => {
+test('Landing renders Firmen-Pivot Hero + 5 sections + example-report modal', async ({ page }) => {
   await page.goto('/');
 
   await expect(
@@ -28,6 +29,20 @@ test('Landing renders Firmen-Pivot Hero + Zielgruppen + FAQ + example-report mod
     page.getByRole('heading', { name: /Ideal für Unternehmen mit eigener Website und KI-Einsatz/i }),
   ).toBeVisible();
   await expect(page.getByRole('heading', { name: /Online-Unternehmen & SaaS/i })).toBeVisible();
+
+  // Sektion „So funktioniert"
+  await expect(
+    page.getByRole('heading', { name: /In drei Schritten zu einem klaren Compliance-Bild/i }),
+  ).toBeVisible();
+
+  // Sektion „Leistungen"
+  await expect(page.getByRole('heading', { name: /^Mehr als ein Cookie-Scanner$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^KI-Workflow-Check$/i })).toBeVisible();
+
+  // Sektion „Gründe"
+  await expect(
+    page.getByRole('heading', { name: /Typische Gründe, warum Firmen RealSyncDynamics.AI einsetzen/i }),
+  ).toBeVisible();
 
   // Sektion „FAQ"
   await expect(page.getByRole('heading', { name: /^Häufige Fragen$/i })).toBeVisible();

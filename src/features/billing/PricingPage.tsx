@@ -241,6 +241,115 @@ function Tiles() {
         Preise zzgl. MwSt. Auto-renew nach 30 Tagen. Du kannst jederzeit
         kündigen oder den Plan wechseln. Zahlungsabwicklung über Stripe.
       </p>
+
+      <WebsiteServiceSection />
     </>
+  );
+}
+
+/**
+ * WebsiteServiceSection — die 3 DSGVO-Website-as-a-Service-Tier:
+ * Audit (one-off) · Rebuild (one-off) · Managed (recurring). Diese
+ * Tier sind absichtlich NICHT in der PlanKey-Union — Rebuild hat
+ * variable Pricing (1.5–4 k€), Audit reuse die /audit-Engine.
+ * Self-Service-Checkout läuft über /dsgvo-website (eigene Stripe-
+ * Configuration siehe docs/runbooks/stripe-rebuild-managed-setup.md).
+ */
+function WebsiteServiceSection() {
+  const tiles = [
+    {
+      eyebrow: 'Audit',
+      name: 'Quick-Scan',
+      price: 'ab 249 €',
+      period: 'einmalig',
+      body: 'Voll-Scan auf 12+ DSGVO/TTDSG-Befunde, PDF-Report mit Paragraph-Refs, 30-Min-Befund-Call.',
+      to: '/audit?source=pricing-website',
+      cta: 'Quick-Scan starten',
+    },
+    {
+      eyebrow: 'Rebuild',
+      name: 'Site-Neuaufbau',
+      price: '1.500 – 4.000 €',
+      period: 'einmalig',
+      body: 'Audit + Befund-Behebung, modernes Layout, lokale Fonts, Consent-Banner, Übergabe oder Übergang in Managed.',
+      to: '/dsgvo-website#rebuild',
+      cta: 'Beratung anfragen',
+      highlight: true,
+    },
+    {
+      eyebrow: 'Managed',
+      name: 'Betrieb',
+      price: 'ab 99 € / Monat',
+      period: 'recurring',
+      body: 'EU-Hosting, TLS, Header-Pflege, Consent-Updates, 2× Re-Audit pro Jahr, Audit-Trail.',
+      to: '/dsgvo-website#managed',
+      cta: 'Tarif anfragen',
+    },
+  ];
+
+  return (
+    <section className="mt-20 pt-12 border-t border-titanium-900">
+      <div className="text-center mb-10">
+        <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-brass-400 mb-2">
+          DSGVO-Website-as-a-Service
+        </div>
+        <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-titanium-50 mb-2">
+          Audit. Rebuild. Managed.
+        </h2>
+        <p className="text-sm text-titanium-400 max-w-2xl mx-auto">
+          Drei Pakete für KMU, die ihre Site nicht selbst pflegen, sondern betreiben lassen.
+          Variable Rebuild-Pricing nach Scope, Managed mit fester Monatspauschale.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-titanium-900 max-w-5xl mx-auto">
+        {tiles.map((t) => (
+          <div
+            key={t.eyebrow}
+            className={`flex flex-col p-6 ${
+              t.highlight ? 'bg-obsidian-900 ring-1 ring-brass-500/40' : 'bg-obsidian-950'
+            }`}
+          >
+            {t.highlight && (
+              <span className="self-start mb-3 inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.18em] surface-brass text-obsidian-950 font-bold">
+                Komplett-Service
+              </span>
+            )}
+            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-brass-400 mb-1.5">
+              {t.eyebrow}
+            </div>
+            <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">
+              {t.name}
+            </div>
+            <div className="mt-2 mb-1">
+              <span className="font-mono text-base text-titanium-50">{t.price}</span>
+              <span className="text-xs text-titanium-500 ml-2">· {t.period}</span>
+            </div>
+            <p className="text-sm text-titanium-400 leading-relaxed mt-3 mb-6 flex-1">
+              {t.body}
+            </p>
+            <Link
+              to={t.to}
+              className={`inline-flex w-full items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-none transition-colors ${
+                t.highlight
+                  ? 'bg-brass-500 text-obsidian-950 hover:bg-brass-400'
+                  : 'border border-titanium-700 text-titanium-100 hover:border-titanium-500'
+              }`}
+            >
+              {t.cta} <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-center text-xs text-titanium-500 mt-6 max-w-xl mx-auto">
+        Variable Rebuild-Pricing wird im Erstgespräch festgelegt. Stripe-Setup für direkten
+        Self-Service-Checkout in Vorbereitung — siehe{' '}
+        <Link to="/dsgvo-website" className="text-titanium-400 hover:text-titanium-200 underline-offset-4 hover:underline">
+          /dsgvo-website
+        </Link>
+        .
+      </p>
+    </section>
   );
 }

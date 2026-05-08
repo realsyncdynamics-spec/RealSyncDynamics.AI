@@ -125,6 +125,7 @@ export function HeroOnly() {
             <span>© 2026 RealSync Dynamics · Made in Germany</span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-gold-400">Cookie-Scanner · Free</Link>
             <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
             <Link to="/legal/sub-processors"  className="hover:text-titanium-50">Sub-Processors</Link>

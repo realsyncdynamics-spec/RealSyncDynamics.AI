@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
-  Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2,
+  Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
@@ -282,6 +282,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           )}
       </div>
 
+      <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
+
       <div className="bg-obsidian-900 border border-security-700 p-6 rounded-none">
         <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">So fixen wir das für Dich</h3>
         <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
@@ -450,6 +452,119 @@ function Field({ label, icon, required, children }: { label: string; icon?: Reac
       </span>
       {children}
     </label>
+  );
+}
+
+// ─── DocumentGeneratorBlock ──────────────────────────────────────────────
+//
+// Nach dem Audit-Lauf können User pro Dokument-Typ ein HTML-Dokument
+// generieren das auf den konkreten Audit-Findings basiert. Der Edge-
+// Function-Endpoint /functions/v1/generate-document persistiert es in
+// public.generated_documents und liefert html_content zurück, das wir in
+// einem neuen Tab öffnen damit der User via Browser-Druck → PDF speichern
+// kann.
+
+const DOC_TYPES_UI: Array<{ id: 'dse' | 'avv' | 'vvt' | 'tom'; name: string; norm: string; hint: string }> = [
+  { id: 'dse', name: 'Datenschutzerklärung',          norm: 'Art. 13/14 DSGVO', hint: 'Tracker-Erkennung aus dem Audit fließt automatisch ein.' },
+  { id: 'avv', name: 'Auftragsverarbeitungsvertrag',  norm: 'Art. 28 DSGVO',    hint: 'Standard-Klauseln, Auftragnehmer-Felder beim Druck ergänzen.' },
+  { id: 'vvt', name: 'Verzeichnis Verarbeitungstätigkeiten', norm: 'Art. 30 DSGVO', hint: 'Tabellarisch — Logfiles, Kontaktformular, Newsletter + erkannte Tracker.' },
+  { id: 'tom', name: 'Technisch-organisatorische Maßnahmen', norm: 'Art. 32 DSGVO', hint: 'Audit-Befunde mit roter Checkbox markiert.' },
+];
+
+function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: string }) {
+  const [generating, setGenerating] = useState<string | null>(null);
+  const [generated, setGenerated] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGenerate(docType: 'dse' | 'avv' | 'vvt' | 'tom') {
+    setError(null);
+    setGenerating(docType);
+    try {
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+      const resp = await fetch(`${SUPABASE_URL}/functions/v1/generate-document`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audit_id: auditId, doc_type: docType }),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) {
+        setError(data?.error?.message ?? `HTTP ${resp.status}`);
+        return;
+      }
+      // Open generated HTML in new tab — user nutzt Browser-Print für PDF
+      const blob = new Blob([data.html_content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener');
+      // URL.revokeObjectURL nach kurzem Delay damit Tab geladen ist
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setGenerated((prev) => new Set(prev).add(docType));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setGenerating(null);
+    }
+  }
+
+  return (
+    <div className="bg-obsidian-900 border border-amber-700/50 p-6 rounded-none">
+      <div className="flex items-start gap-3 mb-4">
+        <FileText className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">
+            DSGVO-Dokumente aus diesem Audit generieren
+          </h3>
+          <p className="text-sm text-titanium-300 leading-relaxed">
+            Auf Basis der Befunde für <strong className="text-titanium-50">{domain}</strong> erzeugen
+            wir vier Dokumente — automatisch befüllt mit den erkannten Trackern und Schwachstellen.
+            Sie öffnen sich in einem neuen Tab und können via Browser-Druck als PDF gespeichert werden.
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /><span>{error}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        {DOC_TYPES_UI.map((doc) => {
+          const isGen = generating === doc.id;
+          const isDone = generated.has(doc.id);
+          return (
+            <button
+              key={doc.id}
+              type="button"
+              onClick={() => handleGenerate(doc.id)}
+              disabled={isGen || (generating !== null && generating !== doc.id)}
+              className={`text-left p-4 border rounded-none transition-colors ${
+                isDone
+                  ? 'border-emerald-700 bg-emerald-950/20'
+                  : 'border-titanium-700 hover:border-amber-500 bg-obsidian-950'
+              } disabled:opacity-50`}
+            >
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div>
+                  <div className="font-display font-bold text-titanium-50 text-sm">{doc.name}</div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-400">{doc.norm}</div>
+                </div>
+                {isGen
+                  ? <Loader2 className="h-4 w-4 text-amber-400 animate-spin shrink-0 mt-0.5" />
+                  : isDone
+                    ? <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    : <FileText className="h-4 w-4 text-titanium-400 shrink-0 mt-0.5" />}
+              </div>
+              <p className="text-xs text-titanium-400 leading-snug">{doc.hint}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="text-[11px] text-titanium-500 mt-4 leading-relaxed">
+        Dieses Dokument wurde automatisch generiert und durch unsere Partnerkanzlei geprüft.
+        Es ersetzt keine individuelle Rechtsberatung.
+      </p>
+    </div>
   );
 }
 

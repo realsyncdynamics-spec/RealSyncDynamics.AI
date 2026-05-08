@@ -66,6 +66,7 @@ import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
+import { DsgvoWebsiteDanke } from './pages/DsgvoWebsiteDanke';
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -201,6 +202,7 @@ function RoutesWithTracking() {
       <Route path="/steuerberater" element={<SteuerberaterLanding />} />
       <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
       <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
+      <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
       <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
       <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
       {/* SEO Doorways — Framework-spezifisch */}

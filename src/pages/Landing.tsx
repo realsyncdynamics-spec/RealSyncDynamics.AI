@@ -782,13 +782,15 @@ function PricingPreview() {
 
   return (
     <section className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-obsidian-900/30">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <SectionHeader
           eyebrow="Pricing Preview"
           title={<>Skalierbar von Einzelprüfung bis Enterprise-Governance.</>}
         />
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
+        {/* 2×2-Grid statt 4×1 — Karten haben mehr Atemraum, Features
+            besser lesbar, Preis-Vergleich liest sich wie eine Matrix. */}
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-px bg-titanium-900">
           {tiers.map((t) => (
             <div
               key={t.name}

@@ -1,0 +1,94 @@
+name: E2E
+
+# Playwright Smoke-Tests gegen den dev-server. Separater Workflow, damit
+# das `build`-job in ci.yml nicht durch den Browser-Install-Overhead
+# (~30 s) und Server-Boot (~5 s) verlangsamt wird.
+#
+# Triggers nur auf relevante Pfade — Doku-only-Änderungen sollen den
+# E2E-Job nicht laufen lassen.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'playwright.config.ts'
+      - 'e2e/**'
+      - '.github/workflows/e2e.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'playwright.config.ts'
+      - 'e2e/**'
+      - '.github/workflows/e2e.yml'
+
+concurrency:
+  # Cancel in-progress runs on the same branch when a new commit lands.
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Pre-baked browsers + matching deps in the official image — skips the
+    # `playwright install --with-deps` step (~30 s) on every run.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Start preview server in background
+        env:
+          # `npm run preview` defaults to :4173, but our playwright.config.ts
+          # baseURL points at :3000. Override via E2E_BASE_URL so we don't
+          # need to ship dual configs.
+          PORT: 3000
+        run: |
+          npx vite preview --port=3000 --host=0.0.0.0 &
+          # Poll until the server answers — usually <2 s. Bail after 30 s.
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/ > /dev/null; then
+              echo "preview server up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::preview server did not come up in 30s"
+          exit 1
+
+      - name: Run Playwright tests
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          CI: 'true'
+        run: npx playwright test
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

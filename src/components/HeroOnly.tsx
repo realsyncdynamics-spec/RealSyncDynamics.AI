@@ -5,6 +5,9 @@ import { Logo } from './Logo';
 import { Modal } from './ui/Modal';
 import { HowItWorks3Steps } from './HowItWorks3Steps';
 import { WebsiteRebuildOffer } from './WebsiteRebuildOffer';
+import { ProTeamsPanel } from './panels/ProTeamsPanel';
+import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
+import { EnterprisePanel } from './panels/EnterprisePanel';
 
 /**
  * HeroOnly — Single-viewport Landing-Experience.
@@ -25,7 +28,14 @@ import { WebsiteRebuildOffer } from './WebsiteRebuildOffer';
  * Component und Children — Welcome/Audit/Admin behalten ihr bestehendes
  * obsidian/titanium-Theme).
  */
-type ModalKey = null | 'check' | 'pricing' | 'example';
+type ModalKey =
+  | null
+  | 'check'         // HowItWorks3Steps + WebsiteRebuildOffer
+  | 'pricing'       // PricingShortPanel (4-Kachel)
+  | 'example'       // ExampleReportPanel (GA4-Demo)
+  | 'pro'           // ProTeamsPanel (Watchmaker-3-Pillars + AuditEngine-Tri-Layer)
+  | 'compliance'    // ComplianceCenterPanel (Methodik / Grenzen / Sub-Processors / AVV)
+  | 'enterprise';   // EnterprisePanel (Multi-Tenant / SLA / Procurement)
 
 export function HeroOnly() {
   const [openModal, setOpenModal] = useState<ModalKey>(null);
@@ -36,16 +46,13 @@ export function HeroOnly() {
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <nav className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm">
           <NavButton onClick={() => setOpenModal('check')}>Produkt</NavButton>
-          <NavButton onClick={() => setOpenModal('example')} className="hidden sm:inline-flex">
+          <NavButton onClick={() => setOpenModal('compliance')} className="hidden sm:inline-flex">
             Compliance-Center
           </NavButton>
           <NavButton onClick={() => setOpenModal('pricing')}>Preise</NavButton>
-          <Link
-            to="/contact-sales?intent=enterprise"
-            className="hidden md:inline-flex px-3 py-1.5 text-silver-300 hover:text-titanium-50 transition-colors"
-          >
+          <NavButton onClick={() => setOpenModal('enterprise')} className="hidden md:inline-flex">
             Enterprise
-          </Link>
+          </NavButton>
         </nav>
 
         <Link
@@ -99,7 +106,7 @@ export function HeroOnly() {
           {/* Drei Mid-Buttons */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-10 max-w-xl mx-auto">
             <MidButton icon={<FileSearch className="h-3.5 w-3.5" />} label="Website-Check"      onClick={() => setOpenModal('check')} />
-            <MidButton icon={<Layers     className="h-3.5 w-3.5" />} label="Für Profis & Teams" onClick={() => setOpenModal('check')} />
+            <MidButton icon={<Layers     className="h-3.5 w-3.5" />} label="Für Profis & Teams" onClick={() => setOpenModal('pro')} />
             <MidButton icon={<Tag        className="h-3.5 w-3.5" />} label="Preise"             onClick={() => setOpenModal('pricing')} />
           </div>
 
@@ -158,6 +165,36 @@ export function HeroOnly() {
         size="lg"
       >
         <ExampleReportPanel />
+      </Modal>
+
+      <Modal
+        open={openModal === 'pro'}
+        onClose={() => setOpenModal(null)}
+        title="Für Profis & Teams"
+        eyebrow="Decision-Layer · API · Multi-Tenant"
+        size="xl"
+      >
+        <ProTeamsPanel />
+      </Modal>
+
+      <Modal
+        open={openModal === 'compliance'}
+        onClose={() => setOpenModal(null)}
+        title="Compliance-Center"
+        eyebrow="Methodik · Grenzen · Sub-Processors · AVV"
+        size="xl"
+      >
+        <ComplianceCenterPanel />
+      </Modal>
+
+      <Modal
+        open={openModal === 'enterprise'}
+        onClose={() => setOpenModal(null)}
+        title="Enterprise"
+        eyebrow="Procurement-tauglich · ISO-anbindbar"
+        size="xl"
+      >
+        <EnterprisePanel />
       </Modal>
     </div>
   );

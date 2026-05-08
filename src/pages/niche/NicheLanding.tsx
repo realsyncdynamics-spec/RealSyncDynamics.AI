@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, type LucideIcon } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { PricingTeaserSection } from '../../components/sections/PricingTeaserSection';
 
 /**
  * Niche-Landing Template.
@@ -16,6 +17,7 @@ import { Logo } from '../../components/Logo';
  */
 export interface NicheConfig {
   segment: string;                  // Internal name, z. B. „SaaS"
+  sourceTag: string;                // Source-Tag für CTAs (z. B. „fuer-saas") — landet als ?source-Param
   eyebrow: string;                  // „FÜR SAAS-PLATTFORMEN"
   headline: string;                 // H1
   subline: string;                  // Lead-Paragraph
@@ -198,6 +200,9 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
           </div>
         </div>
       </section>
+
+      {/* Pricing-Teaser (gleiche Component wie HeroOnly) */}
+      <PricingTeaserSection sourceTag={config.sourceTag} />
 
       {/* Cross-niche footer */}
       <footer className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-8">

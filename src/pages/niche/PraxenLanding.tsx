@@ -3,6 +3,7 @@ import { NicheLanding, type NicheConfig } from './NicheLanding';
 
 const PRAXEN_CONFIG: NicheConfig = {
   segment: 'Praxis',
+  sourceTag: 'fuer-praxen',
   eyebrow: 'Für Arzt-, Zahnarzt-, Therapie-Praxen',
   headline: 'DSGVO + Patientendaten-Schutz für Praxis-Websites — versteckte Risiken sichtbar machen.',
   subline:

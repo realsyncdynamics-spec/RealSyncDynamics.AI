@@ -7,3 +7,6 @@ coverage/
 .env*
 !.env.example
 scans/
+test-results/
+playwright-report/
+playwright/.cache/

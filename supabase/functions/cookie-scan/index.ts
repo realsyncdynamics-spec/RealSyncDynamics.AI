@@ -50,6 +50,12 @@ interface Tracker {
   consent_compliant: boolean;      // false wenn vor irgendeinem Consent-Manager geladen
 }
 
+interface PrivacyAnalytics {
+  id: string;
+  name: string;
+  pattern_matched: string;
+}
+
 interface ScanResult {
   ok: true;
   url: string;
@@ -59,6 +65,7 @@ interface ScanResult {
   scanned_at: string;
   cookies: Cookie[];
   trackers: Tracker[];
+  privacy_analytics: PrivacyAnalytics[];
   consent_manager_detected: boolean;
   score: number;
   severity: 'pass' | 'low' | 'medium' | 'high' | 'critical';
@@ -70,24 +77,65 @@ interface ScanResult {
 // strict-includes/-pattern. Erweiterbar ohne Code-Änderung sobald die
 // scripts/audit-batch.mjs-Liste wächst.
 const TRACKER_PATTERNS: Array<{ id: string; name: string; category: Tracker['category']; needles: string[] }> = [
-  { id: 'google_analytics', name: 'Google Analytics (GA4)', category: 'analytics',     needles: ['googletagmanager.com/gtag/js', 'google-analytics.com/analytics.js', 'googletagmanager.com/gtm.js'] },
-  { id: 'meta_pixel',       name: 'Meta / Facebook Pixel', category: 'advertising',    needles: ['connect.facebook.net/en_US/fbevents.js', 'fbq(']          },
-  { id: 'linkedin_insight', name: 'LinkedIn Insight Tag',  category: 'advertising',    needles: ['snap.licdn.com/li.lms-analytics']                          },
-  { id: 'tiktok_pixel',     name: 'TikTok Pixel',          category: 'advertising',    needles: ['analytics.tiktok.com', 'sdk.tiktok-cn.com']               },
-  { id: 'hotjar',           name: 'Hotjar',                category: 'ux',             needles: ['static.hotjar.com', 'hotjar-']                            },
-  { id: 'clarity',          name: 'Microsoft Clarity',     category: 'ux',             needles: ['clarity.ms/tag', '(function(c,l,a,r,i,t,y)']             },
-  { id: 'matomo',           name: 'Matomo',                category: 'analytics',      needles: ['matomo.js', 'piwik.js']                                   },
+  // Analytics
+  { id: 'google_analytics', name: 'Google Analytics (GA4)',  category: 'analytics',   needles: ['googletagmanager.com/gtag/js', 'google-analytics.com/analytics.js', 'googletagmanager.com/gtm.js'] },
+  { id: 'matomo',           name: 'Matomo',                  category: 'analytics',   needles: ['matomo.js', 'piwik.js']                                   },
+  { id: 'mixpanel',         name: 'Mixpanel',                category: 'analytics',   needles: ['cdn.mxpnl.com', 'api.mixpanel.com']                       },
+  { id: 'amplitude',        name: 'Amplitude',               category: 'analytics',   needles: ['cdn.amplitude.com', 'api.amplitude.com']                  },
+  { id: 'segment',          name: 'Segment',                 category: 'analytics',   needles: ['cdn.segment.com/analytics.js', 'api.segment.io']          },
+  { id: 'posthog',          name: 'PostHog',                 category: 'analytics',   needles: ['app.posthog.com', 'eu.posthog.com', '/posthog.js']        },
+  // Advertising / Pixels
+  { id: 'meta_pixel',       name: 'Meta / Facebook Pixel',   category: 'advertising', needles: ['connect.facebook.net/en_US/fbevents.js', 'fbq(']          },
+  { id: 'linkedin_insight', name: 'LinkedIn Insight Tag',    category: 'advertising', needles: ['snap.licdn.com/li.lms-analytics']                          },
+  { id: 'tiktok_pixel',     name: 'TikTok Pixel',            category: 'advertising', needles: ['analytics.tiktok.com', 'sdk.tiktok-cn.com']               },
+  { id: 'pinterest_tag',    name: 'Pinterest Tag',           category: 'advertising', needles: ['s.pinimg.com/ct/core.js', 'pintrk(']                      },
+  { id: 'twitter_pixel',    name: 'Twitter / X Pixel',       category: 'advertising', needles: ['static.ads-twitter.com/uwt.js', 'twq(']                   },
+  { id: 'snapchat_pixel',   name: 'Snapchat Pixel',          category: 'advertising', needles: ['sc-static.net/scevent.min.js', 'snaptr(']                 },
+  { id: 'reddit_pixel',     name: 'Reddit Pixel',            category: 'advertising', needles: ['www.redditstatic.com/ads/pixel.js', 'rdt(']               },
+  { id: 'criteo',           name: 'Criteo',                  category: 'advertising', needles: ['static.criteo.net/js/']                                    },
+  { id: 'outbrain',         name: 'Outbrain',                category: 'advertising', needles: ['amplify.outbrain.com', 'widgets.outbrain.com']             },
+  { id: 'taboola',          name: 'Taboola',                 category: 'advertising', needles: ['cdn.taboola.com/libtrc']                                   },
+  { id: 'adform',           name: 'Adform',                  category: 'advertising', needles: ['s1.adform.net', 'track.adform.net']                       },
+  // UX / Heatmaps / Session-Replay
+  { id: 'hotjar',           name: 'Hotjar',                  category: 'ux',          needles: ['static.hotjar.com', 'hotjar-']                            },
+  { id: 'clarity',          name: 'Microsoft Clarity',       category: 'ux',          needles: ['clarity.ms/tag', '(function(c,l,a,r,i,t,y)']              },
+  { id: 'fullstory',        name: 'FullStory',               category: 'ux',          needles: ['edge.fullstory.com/s/fs.js', 'FS.identify']               },
+  { id: 'mouseflow',        name: 'Mouseflow',               category: 'ux',          needles: ['cdn.mouseflow.com']                                       },
+  { id: 'smartlook',        name: 'Smartlook',               category: 'ux',          needles: ['rec.smartlook.com', 'web-sdk.smartlook.com']              },
+  { id: 'lucky_orange',     name: 'Lucky Orange',            category: 'ux',          needles: ['cs.luckyorange.net', 'settings.luckyorange.net']          },
+  { id: 'crazy_egg',        name: 'Crazy Egg',               category: 'ux',          needles: ['script.crazyegg.com']                                     },
+];
+
+// Privacy-friendly-by-design Analytics — sind technisch trotzdem Tracker
+// (Set-Cookie / Network-Request) aber per default consent-frei betreibbar.
+// Werden separat reportiert damit User die Wahl hat, ob sie als Befund zählen.
+const PRIVACY_ANALYTICS_PATTERNS: Array<{ id: string; name: string; needles: string[] }> = [
+  { id: 'plausible',  name: 'Plausible (privacy-friendly)',  needles: ['plausible.io/js/'] },
+  { id: 'fathom',     name: 'Fathom Analytics (privacy-friendly)', needles: ['cdn.usefathom.com/script.js'] },
+  { id: 'simple_analytics', name: 'Simple Analytics (privacy-friendly)', needles: ['scripts.simpleanalyticscdn.com'] },
+  { id: 'umami',      name: 'Umami (privacy-friendly)',      needles: ['umami.is/script.js', '/umami.js'] },
 ];
 
 const CONSENT_PATTERNS: string[] = [
   'cookiebot.com', 'usercentrics.eu', 'borlabs-cookie', 'klaro', 'onetrust.com',
   'cookieyes.com', 'real-cookie-banner', 'iubenda.com',
+  // German-market additions
+  'consentmanager.net', 'ccm19', 'cookie-information.com', 'cookieinformation.com',
+  'cookielaw.org',                  // OneTrust CDN
+  'didomi.io',                      // FR/EU CMP, growing in DE
+  'trustarc.com',                   // US-heritage but EU-deployed
+  'sourcepoint',                    // Sourcepoint CMP
+  'osano.com',                      // Osano CMP
 ];
 
 const ESSENTIAL_COOKIE_NAMES = new Set([
   // Common framework / session cookies — heuristic only
   'sessionid', 'csrf', 'csrftoken', 'xsrf-token', 'phpsessid', 'jsessionid',
   'connect.sid', 'next-auth.csrf-token', 'cf_clearance', 'cf-bm',
+  '__host-next-auth.csrf-token', 'auth_session', 'authjs.session-token',
+  '__cf_bm',                        // Cloudflare bot management (essential)
+  '__stripe_mid', '__stripe_sid',   // Stripe checkout flow (essential, transactional)
+  '__hssrc',                        // Hubspot (technically session-bound but borderline)
 ]);
 
 const TRACKING_COOKIE_PATTERNS = [
@@ -95,9 +143,22 @@ const TRACKING_COOKIE_PATTERNS = [
   /^_fbp/, /^_fbc/,                          // Meta Pixel
   /^_li_/, /^bcookie/, /^lidc/,             // LinkedIn
   /^_tt_/, /^ttp/,                          // TikTok
-  /^_hj/,                                   // Hotjar
-  /^_clck/, /^_clsk/, /^MR/, /^MUID/,       // Microsoft Clarity / MS-Ads
-  /^_pk_/,                                  // Matomo
+  /^_pinterest_/, /^_pin_unauth/,            // Pinterest
+  /^personalization_id/, /^muc_ads/,         // Twitter/X
+  /^_scid/, /^sc_at/,                        // Snapchat
+  /^_rdt_/,                                  // Reddit
+  /^_hj/,                                    // Hotjar
+  /^_clck/, /^_clsk/, /^MR/, /^MUID/,        // Microsoft Clarity / MS-Ads
+  /^_pk_/,                                   // Matomo
+  /^mp_/,                                    // Mixpanel
+  /^amplitude_/, /^AMP_/,                    // Amplitude
+  /^_cfduid/,                                // Cloudflare (deprecated but seen)
+  /^IDE$/, /^DSID$/, /^id$/, /^FLC$/,        // DoubleClick / GA-Ads
+  /^uetsid/, /^uetvid/,                      // Bing UET (Microsoft-Ads)
+  /^_uetsid/, /^_uetvid/,
+  /^crto_/, /^cto_/,                         // Criteo
+  /^obuid/,                                  // Outbrain
+  /^t_gid/,                                  // Taboola
 ];
 
 // Per-IP rate-limit: simple Map cleared per cold-start
@@ -184,7 +245,11 @@ function parseSetCookie(header: string, siteDomain: string): Cookie | null {
   return cookie;
 }
 
-function detectTrackers(html: string): { trackers: Tracker[]; consent_manager_detected: boolean } {
+function detectTrackers(html: string): {
+  trackers: Tracker[];
+  privacy_analytics: PrivacyAnalytics[];
+  consent_manager_detected: boolean;
+} {
   const trackers: Tracker[] = [];
   for (const t of TRACKER_PATTERNS) {
     const hit = t.needles.find((needle) => html.includes(needle));
@@ -198,13 +263,22 @@ function detectTrackers(html: string): { trackers: Tracker[]; consent_manager_de
       });
     }
   }
+
+  const privacy_analytics: PrivacyAnalytics[] = [];
+  for (const p of PRIVACY_ANALYTICS_PATTERNS) {
+    const hit = p.needles.find((needle) => html.includes(needle));
+    if (hit) {
+      privacy_analytics.push({ id: p.id, name: p.name, pattern_matched: hit });
+    }
+  }
+
   const consent_manager_detected = CONSENT_PATTERNS.some((p) => html.includes(p));
   if (consent_manager_detected) {
     // Cannot prove pre-consent loading from server-side scan alone —
     // mark all trackers as „needs manual verification" rather than auto-flag.
     for (const t of trackers) t.consent_compliant = false; // still false: fetch was without consent
   }
-  return { trackers, consent_manager_detected };
+  return { trackers, privacy_analytics, consent_manager_detected };
 }
 
 function scoreScan(cookies: Cookie[], trackers: Tracker[], consentManager: boolean): { score: number; severity: ScanResult['severity']; summary: string } {
@@ -326,7 +400,7 @@ Deno.serve(async (req) => {
     .map((h) => parseSetCookie(h, domain))
     .filter((c): c is Cookie => c != null);
 
-  const { trackers, consent_manager_detected } = detectTrackers(html);
+  const { trackers, privacy_analytics, consent_manager_detected } = detectTrackers(html);
   const { score, severity, summary } = scoreScan(cookies, trackers, consent_manager_detected);
 
   const result: ScanResult = {
@@ -338,6 +412,7 @@ Deno.serve(async (req) => {
     scanned_at: new Date().toISOString(),
     cookies,
     trackers,
+    privacy_analytics,
     consent_manager_detected,
     score,
     severity,

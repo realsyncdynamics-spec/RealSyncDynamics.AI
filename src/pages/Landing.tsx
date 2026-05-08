@@ -34,6 +34,7 @@ import { Logo } from '../components/Logo';
 import { LiveProductDemo } from '../components/LiveProductDemo';
 import { IdealCustomers } from '../components/IdealCustomers';
 import { ThreeStepDsgvoSection } from '../components/ThreeStepDsgvoSection';
+import { ServiceLaunchpad } from '../components/ServiceLaunchpad';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
 
@@ -48,6 +49,7 @@ export function Landing() {
             ggf. dedizierte Pages): Problem, HowItWorks, UspDecisionLayer,
             TrustSection, ProofStats, IdealCustomers, ThreeStepDsgvoSection. */}
         <Hero />
+        <ServiceLaunchpad />
         <WatchmakerShowcase />
         <ExampleReport />
         <SectionDivider label="Audit Engine" spacing="md" />
@@ -415,42 +417,31 @@ function Problem() {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 function AuditEngine() {
+  // Vorher: 12 Bullets inline. Jetzt: 1-Zeilen-Pitch pro Layer + ein
+  // gemeinsamer "Methodik einsehen"-Link unten (statt 3× pro Layer).
+  // Wer Tiefe will, klickt auf /legal/methodology — wer scannt, sieht
+  // die drei Layers und das war's.
   const layers = [
     {
       Icon: Activity,
       eyebrow: 'Tracking Layer',
       title: 'Detection',
       iconClass: 'text-ai-cyan-400',
-      arrowClass: 'text-ai-cyan-400',
-      items: [
-        'Google Analytics / Meta Pixel / LinkedIn / TikTok',
-        'Consent-Status-Validierung pro Tag',
-        'Third-Party-Request-Mapping (Pre/Post-Consent)',
-      ],
+      summary: 'GA / Meta / LinkedIn / TikTok mit Consent-Status pro Tag und Pre/Post-Consent-Request-Map.',
     },
     {
       Icon: Lock,
       eyebrow: 'Security Layer',
-      title: 'Headers &amp; Hardening',
+      title: 'Headers & Hardening',
       iconClass: 'text-brass-400',
-      arrowClass: 'text-brass-400',
-      items: [
-        'CSP-Direktive parsen + Schwächen flaggen',
-        'HSTS · X-Frame-Options · Referrer-Policy',
-        'HTTPS-Enforcement + TLS-Version',
-      ],
+      summary: 'CSP / HSTS / X-Frame-Options / Referrer-Policy + TLS-Version + HTTPS-Enforcement.',
     },
     {
       Icon: ShieldCheck,
       eyebrow: 'Compliance Layer',
       title: 'Norm-Mapping',
       iconClass: 'text-security-400',
-      arrowClass: 'text-security-400',
-      items: [
-        'DSGVO Art. 5 / 6 / 28 / 32 / 35',
-        'TTDSG § 25 (technische Cookies vs. Tracker)',
-        'Drittlandtransfer (SCCs · Schrems-II · DPF)',
-      ],
+      summary: 'DSGVO Art. 5/6/28/32/35 · § 25 TTDSG · Drittlandtransfer (SCCs · Schrems-II · DPF).',
     },
   ];
   return (
@@ -473,16 +464,20 @@ function AuditEngine() {
               <h3 className="mt-1 font-display font-bold text-xl tracking-tight text-titanium-50">
                 {layer.title}
               </h3>
-              <ul className="mt-5 space-y-2 text-sm text-titanium-400">
-                {layer.items.map((it) => (
-                  <li key={it} className="flex items-start gap-2">
-                    <span className={`${layer.arrowClass} mt-1`}>→</span>
-                    <span dangerouslySetInnerHTML={{ __html: it }} />
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-3 text-sm text-titanium-400 leading-relaxed">
+                {layer.summary}
+              </p>
             </div>
           ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            to="/legal/methodology"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-titanium-300 hover:text-titanium-50 underline-offset-4 hover:underline"
+          >
+            Methodik im Detail ansehen
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </div>
     </section>

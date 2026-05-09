@@ -6,8 +6,9 @@ import { test, expect } from '@playwright/test';
  *
  * Asserts the Firmen-Pivot copy: H1 verspricht „DSGVO-sicher in 30 Sekunden",
  * Primary-CTA „Compliance-Check starten" → /audit, Trust-Leiste mit
- * Datenresidenz/AVV/Audit-Log/Made-in-Germany, Beispiel-Report-Modal
- * öffnet GA4-Finding, alle 6 Long-Form-Sektionen rendern.
+ * Frankfurt-Hosting + 14 Tage Pilot + Made-in-Germany, Beispiel-Report-Modal
+ * öffnet GA4-Finding, alle 6 Long-Form-Sektionen rendern (Pricing-Section
+ * mit Bronze/Silver/Gold).
  */
 test('Landing renders Firmen-Pivot Hero + 6 sections + example-report modal', async ({ page }) => {
   await page.goto('/');
@@ -21,7 +22,7 @@ test('Landing renders Firmen-Pivot Hero + 6 sections + example-report modal', as
   await expect(primary).toHaveAttribute('href', /\/audit/);
 
   await expect(
-    page.getByText(/EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany/i),
+    page.getByText(/EU-Datenresidenz · Frankfurt-Hosting · Audit-Trail · Ab 29 €\/M · 14 Tage Pilot kostenlos · Made in Germany/i),
   ).toBeVisible();
 
   // Sektion „Zielgruppen"
@@ -41,12 +42,12 @@ test('Landing renders Firmen-Pivot Hero + 6 sections + example-report modal', as
 
   // Sektion „Gründe"
   await expect(
-    page.getByRole('heading', { name: /Typische Gründe, warum Firmen RealSyncDynamics.AI einsetzen/i }),
+    page.getByRole('heading', { name: /Typische Gründe — DSGVO · AI Act · BAIT · DORA/i }),
   ).toBeVisible();
 
   // Sektion „Preise"
   await expect(
-    page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
+    page.getByRole('heading', { name: /Bronze · Silver · Gold — Fair\. Transparent\. Kündbar\./i }),
   ).toBeVisible();
   await expect(page.getByText(/99 € \/ Monat/).first()).toBeVisible();
 

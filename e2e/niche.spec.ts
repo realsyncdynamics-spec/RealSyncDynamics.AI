@@ -83,7 +83,7 @@ for (const n of NICHES) {
 
     // Pricing-Teaser-Section (geteilte Component aus #111-Refactor)
     await expect(
-      page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
+      page.getByRole('heading', { name: /Bronze · Silver · Gold — Fair\. Transparent\. Kündbar\./i }),
     ).toBeVisible();
     await expect(page.getByText(/99 € \/ Monat/).first()).toBeVisible();
   });

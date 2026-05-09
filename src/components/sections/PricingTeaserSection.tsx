@@ -16,22 +16,22 @@ export interface PricingTeaserProps {
 
 const TIERS = [
   {
-    name: 'Scan',
-    price: 'Kostenlos',
-    tagline: 'Schneller DSGVO-Check',
-    bullets: ['Einmaliger Domain-Scan', 'Risk-Score + Top-3-Findings', 'Kein Account nötig'],
+    name: 'Bronze',
+    price: '29 € / Monat',
+    tagline: 'Einstieg · Single-Domain',
+    bullets: ['Vollständiger Domain-Scan', 'Risk-Score + Findings mit Paragraphen', '14 Tage kostenlos testen'],
     highlight: false,
   },
   {
-    name: 'Protect',
+    name: 'Silver',
     price: '99 € / Monat',
     tagline: 'Compliance-Standard · 1 Domain',
     bullets: ['Vollständiger Audit + Paragraphenbezug', 'DSE + AVV automatisch generiert', 'Wöchentlicher Re-Audit + Alerts'],
     highlight: true,
   },
   {
-    name: 'Comply',
-    price: '249 € / Monat',
+    name: 'Gold',
+    price: '299 € / Monat',
     tagline: 'AI-Act + Multi-Domain',
     bullets: ['VVT + TOM + AI-Act-Risk', 'Bis zu 5 Domains', 'API + Signierte PDF-Exports'],
     highlight: false,
@@ -52,7 +52,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-            Plan für jede Unternehmensgröße
+            Bronze · Silver · Gold — Fair. Transparent. Kündbar.
           </h2>
         </div>
 
@@ -108,7 +108,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
         </div>
 
         <p className="mt-4 text-center text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-          Free-Tier verfügbar · Monatlich kündbar · Keine Kreditkarte für Trial
+          14 Tage Pilot kostenlos · Monatlich kündbar · Keine Setup-Fees
         </p>
       </div>
     </section>

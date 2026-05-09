@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getSupabase } from '../lib/supabase';
+import { RebuildBeforeAfter, metricsFromSteps } from '../components/RebuildBeforeAfter';
 
 const supabase = getSupabase();
 
@@ -25,6 +26,7 @@ interface RebuildStep {
     duration_ms: number | null;
     summary: string | null;
     error_detail: string | null;
+    metadata: Record<string, unknown> | null;
 }
 
 interface WebsiteRebuild {
@@ -488,6 +490,17 @@ export function WebsiteRebuildStatus() {
                         ))}
                                   </div>
                         </div>
+
+                  {/* ── Vorher / Nachher (nur wenn Rebuild abgeschlossen) ── */}
+                  {(rebuild.status === 'preview_ready' || rebuild.status === 'live') && steps.length > 0 && (
+                    <div style={{ marginTop: '24px' }}>
+                      <RebuildBeforeAfter
+                        metrics={metricsFromSteps(steps)}
+                        sourceDomain={rebuild.source_domain}
+                        previewUrl={rebuild.preview_url}
+                      />
+                    </div>
+                  )}
                 
                   {/* ── Rebuild-Info Footer ── */}
                         <div style={{

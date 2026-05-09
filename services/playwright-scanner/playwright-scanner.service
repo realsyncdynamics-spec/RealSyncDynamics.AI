@@ -1,0 +1,77 @@
+# systemd unit für direkten Node-Run (ohne Docker).
+# Alternative zum Container — wenn der VPS keinen Docker hat oder du Headless
+# Chromium direkt auf dem Host willst.
+#
+# Install:
+#   1. Code nach /opt/realsync-playwright-scanner/ kopieren
+#   2. cd /opt/realsync-playwright-scanner && npm ci --omit=dev && npm run build
+#   3. npx playwright install chromium --with-deps
+#   4. cp services/playwright-scanner/playwright-scanner.service /etc/systemd/system/
+#   5. systemctl daemon-reload
+#   6. echo "SCANNER_SECRET=$(openssl rand -hex 32)" > /etc/realsync-playwright-scanner.env
+#   7. chmod 600 /etc/realsync-playwright-scanner.env
+#   8. systemctl enable --now playwright-scanner
+#
+# Status: systemctl status playwright-scanner
+# Logs:   journalctl -u playwright-scanner -f
+
+[Unit]
+Description=RealSync Playwright-Scanner Microservice
+Documentation=https://github.com/realsyncdynamics-spec/realsyncdynamics.ai
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=scanner
+Group=scanner
+WorkingDirectory=/opt/realsync-playwright-scanner
+
+# Env aus Datei (NICHT in unit-file inline — sonst sichtbar via systemctl show)
+EnvironmentFile=/etc/realsync-playwright-scanner.env
+
+# Defaults (überschreibbar via EnvironmentFile)
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+Environment="MAX_CONCURRENT=10"
+
+ExecStart=/usr/bin/node dist/index.js
+
+# Restart-Policy
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=60s
+StartLimitBurst=3
+
+# Graceful Shutdown — SIGTERM, dann max 15s warten, dann SIGKILL
+KillSignal=SIGTERM
+TimeoutStopSec=15s
+SendSIGKILL=yes
+
+# Resource Limits
+LimitNOFILE=65536
+MemoryMax=2G
+CPUQuota=150%
+
+# Security Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=false
+ReadWritePaths=/opt/realsync-playwright-scanner /home/scanner/.cache
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+LockPersonality=true
+RestrictRealtime=true
+SystemCallArchitectures=native
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=playwright-scanner
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,79 @@
+# Playwright-Scanner-Microservice — Compose-Setup für VPS-Deployment.
+#
+# Default: nur Scanner-Service.
+# Optional: Redis für Job-Queue (Profile 'queue', via `docker compose --profile queue up`)
+#
+# Ports:
+#   3000 — Scanner-API (intern; Traefik macht TLS-Termination + BasicAuth)
+#
+# Env (siehe .env.example):
+#   SCANNER_SECRET=...           Bearer-Token den Edge-Functions senden
+#   MAX_CONCURRENT=10            Concurrent scans limit
+#   PORT=3000                    container-internal port
+
+services:
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: realsync/playwright-scanner:latest
+    container_name: realsync-playwright-scanner
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"          # nur localhost — Traefik nimmt extern
+    environment:
+      - PORT=3000
+      - SCANNER_SECRET=${SCANNER_SECRET:?SCANNER_SECRET required}
+      - MAX_CONCURRENT=${MAX_CONCURRENT:-10}
+      - NODE_ENV=production
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.5'
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Traefik-Labels (optional — nur wenn Traefik im selben Netzwerk läuft)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scanner.rule=Host(`scanner.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.scanner.entrypoints=websecure"
+      - "traefik.http.routers.scanner.tls=true"
+      - "traefik.http.routers.scanner.tls.certresolver=letsencrypt"
+      - "traefik.http.services.scanner.loadbalancer.server.port=3000"
+      # BasicAuth als zusätzliche Schutzschicht (Edge Function liefert beides)
+      - "traefik.http.middlewares.scanner-auth.basicauth.users=${TRAEFIK_BASIC_AUTH:-}"
+      - "traefik.http.routers.scanner.middlewares=scanner-auth@docker"
+
+  # ─── Optional: Redis für Job-Queue (Profile 'queue') ──────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: realsync-scanner-redis
+    restart: unless-stopped
+    profiles: ["queue"]
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  default:
+    name: realsync-scanner-net

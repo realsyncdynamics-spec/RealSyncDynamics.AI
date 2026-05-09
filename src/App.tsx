@@ -103,6 +103,7 @@ const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
+const UnknownTrackersView = lazy(() => import('./features/admin/UnknownTrackersView').then((m) => ({ default: m.UnknownTrackersView })));
 import { Limits } from './pages/Limits';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
@@ -259,6 +260,7 @@ function RoutesWithTracking() {
         <Route path="/admin/customers" element={<CustomersView />} />
         <Route path="/admin/onboarding" element={<OnboardingView />} />
         <Route path="/admin/rebuilds" element={<RebuildsView />} />
+        <Route path="/admin/unknown-trackers" element={<UnknownTrackersView />} />
         {/* Legal */}
         <Route path="/legal/privacy" element={<PrivacyPolicy />} />
         <Route path="/legal/sub-processors" element={<SubProcessors />} />

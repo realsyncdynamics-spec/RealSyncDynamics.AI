@@ -7,7 +7,8 @@
     <meta name="description" content="EU-konforme KI-Infrastruktur für regulierte Branchen: EU-Datenresidenz, lückenloser Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). DSGVO Art. 32 · AI Act · BAIT · MaRisk konform." />
     <meta name="theme-color" content="#0A0A0B" />
     <meta property="og:title" content="RealSyncDynamics.AI — DSGVO-konforme KI für regulierte Branchen" />
-    <meta property="og:description" content="KI nutzen ohne DSGVO-Bußgeld zu riskieren. Audit-Log, EU-Datenresidenz, AVV inklusive. Pakete ab 29 €/Monat." />
+    <meta property="og:description" content="KI nutzen ohne DSGVO-Bußgeld zu riskieren. Audit-Log, EU-Datenresidenz, AVV inklusive. Pakete ab 49 €/Monat." />
+    <meta property="og:site_name" content="RealSyncDynamics.AI" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
     <meta property="og:url" content="https://realsyncdynamicsai.de/" />
@@ -50,9 +51,32 @@
           "@type": "Organization",
           "@id": "https://realsyncdynamicsai.de/#org",
           "name": "RealSync Dynamics",
+          "alternateName": "RealSyncDynamics.AI",
           "url": "https://realsyncdynamicsai.de/",
+          "logo": "https://realsyncdynamicsai.de/og-image.png",
           "description": "EU-konforme KI-Compliance-Plattform für regulierte Branchen (HealthTech, Legal, FinTech, Behörden).",
-          "areaServed": "DE"
+          "areaServed": "DE",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Schwarzburger Str. 31",
+            "postalCode": "98724",
+            "addressLocality": "Neuhaus am Rennweg",
+            "addressCountry": "DE"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "email": "hello@realsyncdynamicsai.de",
+            "availableLanguage": ["de", "en"]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://realsyncdynamicsai.de/#website",
+          "url": "https://realsyncdynamicsai.de/",
+          "name": "RealSyncDynamics.AI",
+          "publisher": {"@id": "https://realsyncdynamicsai.de/#org"},
+          "inLanguage": "de-DE"
         },
         {
           "@type": "SoftwareApplication",
@@ -61,9 +85,11 @@
           "operatingSystem": "Web",
           "description": "DSGVO-konforme KI-Plattform mit EU-Datenresidenz, lückenlosem Audit-Trail und automatisierter DSGVO-Selfservice (Art. 15 + 17). Konform mit DSGVO Art. 32, AI Act, BAIT, MaRisk.",
           "offers": [
-            {"@type": "Offer", "name": "Bronze", "price": "29", "priceCurrency": "EUR"},
-            {"@type": "Offer", "name": "Silver", "price": "99", "priceCurrency": "EUR"},
-            {"@type": "Offer", "name": "Gold", "price": "299", "priceCurrency": "EUR"}
+            {"@type": "Offer", "name": "Free Audit", "price": "0", "priceCurrency": "EUR", "description": "Sofortiger DSGVO-Check ohne Account"},
+            {"@type": "Offer", "name": "Starter", "price": "49", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "49", "priceCurrency": "EUR", "billingDuration": "P1M"}},
+            {"@type": "Offer", "name": "Growth", "price": "199", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "199", "priceCurrency": "EUR", "billingDuration": "P1M"}},
+            {"@type": "Offer", "name": "Agency Suite", "price": "799", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "799", "priceCurrency": "EUR", "billingDuration": "P1M"}},
+            {"@type": "Offer", "name": "Enterprise", "priceCurrency": "EUR", "description": "Auf Anfrage — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault"}
           ],
           "publisher": {"@id": "https://realsyncdynamicsai.de/#org"}
         },
@@ -84,6 +110,16 @@
               "@type": "Question",
               "name": "Werden Daten in die USA übertragen?",
               "acceptedAnswer": {"@type": "Answer", "text": "Standardmäßig nein. EU-Datenresidenz ist Default; Schrems-II-Konformität durch EU-Hosting (Frankfurt) und optional self-hosted Ollama für vollständige Datenhoheit."}
+            },
+            {
+              "@type": "Question",
+              "name": "Was kostet RealSyncDynamics.AI?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Free Audit (0 €, kein Account), Starter (49 €/Monat, 1 Domain), Growth (199 €/Monat, 3 Domains, Continuous Monitoring), Agency Suite (799 €/Monat, White-Label + 20 Domains), Enterprise (Anfrage, SLA + DSB)."}
+            },
+            {
+              "@type": "Question",
+              "name": "Wo werden die Server gehostet?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Frankfurt am Main (Hostinger DE / Hetzner Falkenstein). Supabase-Postgres in eu-central-1. Kein US-Cloud-Default. Vollständige AVV nach Art. 28 DSGVO."}
             }
           ]
         }

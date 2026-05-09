@@ -36,6 +36,12 @@ interface QuestionDef {
   prohibited?: { norm: string; rationale: string };
   /** Art. 50 Transparenz-Trigger ohne High-Risk-Use-Case (z.B. Chatbot, Deepfake) */
   limited?: { norm: string; rationale: string };
+  /**
+   * Transversale Frage — wird unabhängig von Kategorie-Auswahl immer gestellt.
+   * Für Chatbot, synthetische Medien, Art-5-Verbots-Praktiken die Sektor-übergreifend
+   * relevant sind.
+   */
+  transversal?: true;
 }
 
 // 14 Fragen die alle 8 Annex-III-Kategorien abfragen + 3 reine Limited-/Prohibited-Trigger.
@@ -110,11 +116,12 @@ const QUESTIONS: QuestionDef[] = [
     text: 'Unterstützt das System Justizbehörden bei Urteilsfindung — oder wird es zur Beeinflussung von Wahlen oder Wähler-Verhalten eingesetzt?',
     matchUseCases: ['justice_judicial_assistance'],
   },
-  // Reine Limited-Risk- bzw. Prohibited-Trigger (kein Annex-III-Use-Case erforderlich)
+  // Transversale Trigger — Kategorie-übergreifend, immer abgefragt.
   {
     id: 'q_chatbot',
     text: 'Interagiert das System direkt mit Endnutzern (Chatbot, Voice-Assistant, AI-Avatar)?',
     matchUseCases: [],
+    transversal: true,
     limited: {
       norm: 'AI Act Art. 50 Abs. 1',
       rationale: 'User müssen wissen dass sie mit einer KI interagieren — Disclosure-Pflicht.',
@@ -124,6 +131,7 @@ const QUESTIONS: QuestionDef[] = [
     id: 'q_synthetic_media',
     text: 'Generiert das System synthetische Bilder, Audio, Video oder Text (Deepfakes, AI-generated content)?',
     matchUseCases: [],
+    transversal: true,
     limited: {
       norm: 'AI Act Art. 50 Abs. 2 + 4',
       rationale: 'Output muss als KI-erzeugt markiert werden (machine-readable + sichtbar bei Deepfakes).',
@@ -133,12 +141,39 @@ const QUESTIONS: QuestionDef[] = [
     id: 'q_prohibited_manipulation',
     text: 'Nutzt das System unterschwellige Manipulation, ausnutzt Schwachstellen vulnerabler Gruppen, oder macht Social Scoring durch öffentliche Stellen?',
     matchUseCases: [],
+    transversal: true,
     prohibited: {
       norm: 'AI Act Art. 5 Abs. 1 lit. a-c',
       rationale: 'Vollständig verbotene KI-Praktiken — Einsatz in EU untersagt seit 2. Februar 2025.',
     },
   },
 ];
+
+/**
+ * Welche Annex-III-Kategorien adressiert eine Frage?
+ * Aus der Registry abgeleitet via matchUseCases → use_case.category.
+ */
+function categoriesForQuestion(q: QuestionDef): string[] {
+  if (q.transversal) return [];
+  const cats = new Set<string>();
+  for (const ucId of q.matchUseCases) {
+    const uc = getUseCase(ucId);
+    if (uc) cats.add(uc.category);
+  }
+  return [...cats];
+}
+
+/**
+ * Filtert Fragen nach gewählten Kategorien.
+ * Transversale Fragen werden immer eingeschlossen.
+ */
+function filterQuestions(selectedCats: Set<string>): QuestionDef[] {
+  return QUESTIONS.filter((q) => {
+    if (q.transversal) return true;
+    const qCats = categoriesForQuestion(q);
+    return qCats.some((c) => selectedCats.has(c));
+  });
+}
 
 interface ClassificationResult {
   severity: Severity;
@@ -205,16 +240,45 @@ const STYLE = {
   btn: { padding: '1rem', border: '1px solid #374151', borderRadius: 4, background: 'transparent', color: '#e5e7eb', fontSize: '1rem', cursor: 'pointer', fontWeight: 600 },
 };
 
+type Stage = 'category_select' | 'questions';
+
 export function AiActClassifier() {
+  const [stage, setStage] = useState<Stage>('category_select');
+  const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [step, setStep] = useState(0);
   const [system, setSystem] = useState('');
   const [done, setDone] = useState(false);
 
+  // Frage-Liste neu berechnen wenn Kategorien wechseln (auch wenn man später
+  // zurückgeht und Auswahl ändert).
+  const filteredQuestions = filterQuestions(selectedCats);
+
+  function toggleCategory(catId: string) {
+    setSelectedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      return next;
+    });
+  }
+
+  function startQuestions() {
+    setStep(0);
+    setAnswers({});
+    setStage('questions');
+  }
+
+  function backToCategories() {
+    setStage('category_select');
+    setStep(0);
+    setAnswers({});
+  }
+
   function answer(id: string, val: boolean) {
     const next = { ...answers, [id]: val };
     setAnswers(next);
-    if (step < QUESTIONS.length - 1) setStep(step + 1);
+    if (step < filteredQuestions.length - 1) setStep(step + 1);
     else setDone(true);
   }
 
@@ -230,16 +294,12 @@ export function AiActClassifier() {
     );
   }
 
-  const q = QUESTIONS[step];
-  const progress = Math.round((step / QUESTIONS.length) * 100);
-
-  return (
-    <div style={STYLE.page}>
-      <div style={STYLE.container}>
-        <Header />
-
-        <div style={STYLE.card}>
-          {step === 0 && (
+  if (stage === 'category_select') {
+    return (
+      <div style={STYLE.page}>
+        <div style={STYLE.container}>
+          <Header />
+          <div style={STYLE.card}>
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={STYLE.label}>Ihr KI-System (optional)</label>
               <input
@@ -249,11 +309,122 @@ export function AiActClassifier() {
                 style={STYLE.input}
               />
             </div>
-          )}
 
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem', lineHeight: 1.5 }}>
+              In welchen Bereichen wird Ihr KI-System eingesetzt?
+            </h2>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Mehrfachauswahl möglich. Wir zeigen anschließend nur die für diese Bereiche relevanten Fragen.
+              Querschnittsfragen (Chatbot, Deepfakes, Verbots-Praktiken) werden unabhängig davon abgefragt.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              {REGISTRY.categories.map((cat) => {
+                const selected = selectedCats.has(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => toggleCategory(cat.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: '1rem',
+                      border: `1px solid ${selected ? '#3b82f6' : '#374151'}`,
+                      borderRadius: 4,
+                      background: selected ? 'rgba(59,130,246,0.08)' : 'transparent',
+                      color: '#e5e7eb',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s, background 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'monospace' }}>
+                        {cat.annex_section}
+                      </div>
+                      <div style={{ width: 16, height: 16, border: `1px solid ${selected ? '#3b82f6' : '#4b5563'}`, background: selected ? '#3b82f6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                        {selected ? '✓' : ''}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>{cat.label}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', lineHeight: 1.4 }}>{cat.intro}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                {selectedCats.size === 0 ? (
+                  <span>Keine Kategorie gewählt — nur Querschnittsfragen werden gestellt (3 Fragen).</span>
+                ) : (
+                  <span>
+                    <strong style={{ color: '#e5e7eb' }}>{filteredQuestions.length}</strong> Fragen ({selectedCats.size} {selectedCats.size === 1 ? 'Kategorie' : 'Kategorien'} + Querschnitt)
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={startQuestions}
+                style={{
+                  padding: '0.75rem 1.25rem',
+                  border: '1px solid #3b82f6',
+                  background: '#3b82f6',
+                  color: '#fff',
+                  borderRadius: 4,
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Fragen starten →
+              </button>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: '#6b7280', textAlign: 'center' }}>
+              Annex-III-Registry v{REGISTRY.version} · {REGISTRY.use_cases.length} Use-Cases · {REGISTRY.categories.length} Kategorien
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // stage === 'questions'
+  const q = filteredQuestions[step];
+  if (!q) {
+    // Edge-case: keine Fragen (sollte nicht passieren da Querschnitt immer 3 Q's hat)
+    return (
+      <div style={STYLE.page}>
+        <div style={STYLE.container}>
+          <Header />
+          <div style={STYLE.card}>
+            <p style={{ color: '#9ca3af' }}>Keine Fragen für die Auswahl. <button onClick={backToCategories} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Zurück zur Kategorie-Auswahl</button></p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const progress = Math.round((step / filteredQuestions.length) * 100);
+
+  return (
+    <div style={STYLE.page}>
+      <div style={STYLE.container}>
+        <Header />
+
+        <div style={STYLE.card}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.4rem' }}>
-              <span>Frage {step + 1} von {QUESTIONS.length}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.4rem' }}>
+              <span>
+                <button
+                  type="button"
+                  onClick={backToCategories}
+                  style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '0.5rem', fontSize: '0.75rem' }}
+                  title="Zurück zur Kategorie-Auswahl"
+                >
+                  ← Kategorien
+                </button>
+                <span>· Frage {step + 1} von {filteredQuestions.length}</span>
+              </span>
               <span>{progress}%</span>
             </div>
             <div style={{ height: 4, background: '#374151', borderRadius: 2 }}>
@@ -261,15 +432,17 @@ export function AiActClassifier() {
             </div>
           </div>
 
+          {q.transversal && (
+            <div style={{ display: 'inline-block', fontSize: '0.65rem', padding: '0.15rem 0.5rem', border: '1px solid #4b5563', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem', fontFamily: 'monospace' }}>
+              Querschnittsfrage
+            </div>
+          )}
+
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '2rem', lineHeight: 1.55 }}>{q.text}</h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <button onClick={() => answer(q.id, true)} style={STYLE.btn}>✓ Ja</button>
             <button onClick={() => answer(q.id, false)} style={STYLE.btn}>✗ Nein</button>
-          </div>
-
-          <div style={{ marginTop: '1rem', fontSize: '0.7rem', color: '#6b7280', textAlign: 'center' }}>
-            Annex-III-Registry v{REGISTRY.version} · {REGISTRY.use_cases.length} Use-Cases · {REGISTRY.categories.length} Kategorien
           </div>
         </div>
       </div>

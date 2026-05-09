@@ -68,6 +68,7 @@ import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
 import { DsgvoWebsiteDanke } from './pages/DsgvoWebsiteDanke';
 import { WebsiteRebuildStatus } from './pages/WebsiteRebuildStatus';
+import { RiskDashboard } from './pages/RiskDashboard';
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -207,6 +208,8 @@ function RoutesWithTracking() {
         <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
         {/* Rebuild-Status: öffentlich via token-param, kein Auth erforderlich */}
         <Route path="/dsgvo-website/rebuild/:rebuild_id" element={<WebsiteRebuildStatus />} />
+        {/* Risk Dashboard — Continuous Compliance Monitoring (Growth/Business+) */}
+        <Route path="/risk-dashboard" element={<RiskDashboard />} />
         <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
         <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
         {/* SEO Doorways — Framework-spezifisch */}

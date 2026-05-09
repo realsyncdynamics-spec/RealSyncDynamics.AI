@@ -349,9 +349,9 @@ export function RiskDashboard() {
     return (
       <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4">
         <div className="max-w-md text-center">
-          <h1 className="font-display font-bold text-xl text-titanium-50 mb-3">Risk Dashboard: Konfiguration fehlt</h1>
+          <h1 className="font-display font-bold text-xl text-titanium-50 mb-3">Dashboard nicht verfügbar</h1>
           <p className="text-sm text-titanium-400">
-            Supabase-Konfiguration fehlt. Erforderliche Umgebungsvariablen: <code className="font-mono">VITE_SUPABASE_URL</code>, <code className="font-mono">VITE_SUPABASE_ANON_KEY</code>.
+            Supabase-Zugangsdaten fehlen. Erforderliche Umgebungsvariablen: <code className="font-mono">VITE_SUPABASE_URL</code>, <code className="font-mono">VITE_SUPABASE_ANON_KEY</code>.
           </p>
         </div>
       </div>

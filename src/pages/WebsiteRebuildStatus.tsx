@@ -215,7 +215,7 @@ export function WebsiteRebuildStatus() {
   useEffect(() => {
         if (!rebuild_id) return;
         if (!supabase) {
-          setError('Rebuild-Status nicht verfügbar: Supabase-Konfiguration fehlt.');
+          setError('Rebuild-Status nicht verfügbar: Supabase-Zugangsdaten fehlen.');
           setLoading(false);
           return;
         }

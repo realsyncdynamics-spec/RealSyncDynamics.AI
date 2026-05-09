@@ -295,17 +295,47 @@ async function executeStep(
     }
 
     case 'package_deploy': {
-      // Bundle: index.html + llms.txt + api/ai-info.json + assets/
-      // Storage-Pfad: rebuilds/{rebuild_id}/...
-      // Preview-URL: signed-URL aus Storage (24h gültig) oder Cloudflare-Pages-Deploy.
-      // V1: nur Storage-Pfad, Cloudflare-Pages-Deploy kommt in Phase 2.
-      const bundlePath = `rebuilds/${ctx.rebuildId}/index.html`;
-      state.bundlePath = bundlePath;
-      state.previewUrl = `https://preview.realsyncdynamics.ai/${ctx.rebuildId}`;
-      // TODO Phase 2: Upload zu Storage + Cloudflare-Pages-Deploy.
+      // Upload Bundle (HTML + llms.txt + ai-info.json) zum public Storage-Bucket
+      // 'website-rebuilds'. UUID-Pfad ist unguessable; HTML mit relativen
+      // Asset-Pfaden rendert konsistent unter dem öffentlichen Storage-URL.
+      //
+      // V2 stops here — Cloudflare-Pages-Deploy für eigene Domain ist V3.
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+      const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const storage = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } }).storage;
+      const bucket = storage.from('website-rebuilds');
+
+      const html = state.html as string;
+      const llmsTxt = (state.llmsTxt as string) ?? '';
+      const aiInfoJson = (state.aiInfoJson as string) ?? '';
+
+      const htmlPath = `${ctx.rebuildId}/index.html`;
+      const llmsPath = `${ctx.rebuildId}/llms.txt`;
+      const aiPath   = `${ctx.rebuildId}/api/ai-info.json`;
+
+      const uploads = await Promise.all([
+        bucket.upload(htmlPath, new Blob([html], { type: 'text/html; charset=utf-8' }), { upsert: true, contentType: 'text/html; charset=utf-8' }),
+        bucket.upload(llmsPath, new Blob([llmsTxt], { type: 'text/plain; charset=utf-8' }), { upsert: true, contentType: 'text/plain; charset=utf-8' }),
+        bucket.upload(aiPath,   new Blob([aiInfoJson], { type: 'application/json' }),       { upsert: true, contentType: 'application/json' }),
+      ]);
+
+      const errors = uploads.filter((u) => u.error).map((u) => u.error!.message);
+      if (errors.length > 0) {
+        throw new Error(`storage_upload_failed: ${errors.join('; ')}`);
+      }
+
+      const previewUrl = `${SUPABASE_URL}/storage/v1/object/public/website-rebuilds/${htmlPath}`;
+      state.bundlePath = htmlPath;
+      state.previewUrl = previewUrl;
+
       return {
-        summary: `Bundle gepackt (${bundlePath}); Preview pending Storage-Upload`,
-        metadata: { bundlePath, previewUrl: state.previewUrl },
+        summary: `Bundle deployed: ${(html.length / 1024).toFixed(1)}KB HTML + llms.txt + ai-info.json`,
+        metadata: {
+          htmlPath, llmsPath, aiPath, previewUrl,
+          htmlBytes: html.length,
+          llmsBytes: llmsTxt.length,
+          aiInfoBytes: aiInfoJson.length,
+        },
       };
     }
   }

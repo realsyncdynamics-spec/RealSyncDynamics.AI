@@ -1,31 +1,29 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 
 /**
- * /pricing — public Pricing-Page mit 3 Paketen.
+ * /pricing — public Pricing-Page mit 5 Paketen.
  *
- * Bewusst KEIN useTenant()/AuthGate-Aufruf, damit die Route public ohne
- * Login zugänglich ist. Die Route ist zwar innerhalb des TenantProvider-
- * Trees (siehe App.tsx), das ist aber kein hartes Gate solange wir die
- * Tenant-Hooks nicht aufrufen.
+ * Strategie: "Automated Digital Compliance Infrastructure für Webseiten"
  *
- * Style: gleiche Schwarz/Gold/Silber-Bühne wie HeroOnly + Niche-Landings.
+ * 5-Tier-Struktur (Stand 2026-05):
+ * 1. Free Audit        0 €         Lead-Funnel / Freemium
+ * 2. Starter           49 €/Monat  Einzelunternehmer / kleine Firmen
+ * 3. Growth/Business  199 €/Monat  KMU mit Monitoring-Bedarf (HIGHLIGHT)
+ * 4. Agency Suite     799 €/Monat  Agenturen / White-Label / Multi-Tenant
+ * 5. Enterprise      Anfrage       SLA / AI-Act-Modul / DSB / Evidence Vault
  *
- * Drei Pakete (Stand 2026-05):
- *   1. Scan     —  0 € / einmalig         · Lead-Funnel
- *   2. Protect  — 99 € / Monat (EMPFOHLEN)· Standard-KMU
- *   3. Comply   — 249 € / Monat           · Multi-Domain + AI-Act + API
- *
- * Keine Stripe-Anbindung in dieser PR — CTAs gehen auf /audit (Free-Scan)
- * bzw. /contact-sales?intent=… (Buchung manuell durch Sales-Team bis
- * Stripe-Setup steht).
+ * Bewusst KEIN "100 % rechtssicher" — klarer Disclaimer.
+ * CTAs gehen auf /audit (Free), /contact-sales (alle kostenpflichtigen Tiers).
  */
 
+type TierID = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise';
+
 interface Tier {
-  id: 'scan' | 'protect' | 'comply';
+  id: TierID;
   name: string;
   price: string;
   priceSuffix: string;
@@ -39,66 +37,110 @@ interface Tier {
 
 const TIERS: Tier[] = [
   {
-    id: 'scan',
-    name: 'Scan',
-    price: 'Kostenlos',
-    priceSuffix: 'einmalig',
-    tagline: 'Schneller DSGVO-Check ohne Verpflichtung',
+    id: 'free',
+    name: 'Free Audit',
+    price: '0 €',
+    priceSuffix: 'einmalig · kein Account',
+    tagline: 'Sofortiger DSGVO-Check — ohne Verpflichtung',
     bullets: [
-      'Einmaliger DSGVO-Scan der Domain',
-      'Risk-Score + Top-3-Findings',
-      'Kein Account nötig',
+      'URL-Scan mit Compliance-Score',
+      '3 kritische Risiken sichtbar',
+      'Mini-PDF-Report',
+      'Kein Account, kein Setup',
     ],
-    ctaLabel: 'Jetzt kostenlos scannen',
-    ctaHref: '/audit?source=pricing-scan',
+    ctaLabel: 'Kostenlos scannen',
+    ctaHref: '/audit?source=pricing-free',
     highlight: false,
   },
   {
-    id: 'protect',
-    name: 'Protect',
-    price: '99 €',
+    id: 'starter',
+    name: 'Starter',
+    price: '49 €',
     priceSuffix: '/ Monat',
-    tagline: 'Compliance-Standard für eine Domain',
+    tagline: 'Vollständige Compliance-Basis für eine Domain',
     bullets: [
-      'Vollständiger Audit-Report (alle Findings mit Paragraphenbezug)',
-      'Datenschutzerklärung automatisch generiert',
-      'AVV als PDF',
-      'Cookie-Banner-Konfiguration geliefert',
-      'Wöchentlicher Re-Audit + Alert bei neuen Verstößen',
+      'Vollständiger DSGVO-Scan (alle Findings)',
+      'Datenschutzerklärung (DSE) automatisch generiert',
+      'Impressum-Generator',
+      'Monatlicher Re-Scan + E-Mail-Alert',
       '1 Domain',
     ],
-    badges: ['Geprüft durch Partnerkanzlei'],
-    ctaLabel: 'Jetzt starten',
-    ctaHref: '/contact-sales?intent=protect&source=pricing',
+    ctaLabel: 'Starter buchen',
+    ctaHref: '/contact-sales?intent=starter&source=pricing',
+    highlight: false,
+  },
+  {
+    id: 'growth',
+    name: 'Growth / Business',
+    price: '199 €',
+    priceSuffix: '/ Monat',
+    tagline: 'Continuous Monitoring + Auto-Fix-Engine (EMPFOHLEN)',
+    bullets: [
+      'Alles aus Starter',
+      'Tägliches Monitoring + Drift-Detection',
+      'Consent-Timing-Analyse (pre-consent requests)',
+      'Auto-Fix-Empfehlungen mit Code-Snippets',
+      'PDF-Reports mit Before/After-Vergleich',
+      'Risk-Dashboard im Browser',
+      'Bis zu 3 Domains',
+    ],
+    badges: ['Kern-Differenzierer'],
+    ctaLabel: 'Growth buchen',
+    ctaHref: '/contact-sales?intent=growth&source=pricing',
     highlight: true,
   },
   {
-    id: 'comply',
-    name: 'Comply',
-    price: '249 €',
+    id: 'agency',
+    name: 'Agency Suite',
+    price: '799 €',
     priceSuffix: '/ Monat',
-    tagline: 'Mittelstand mit AI-Act-Pflichten',
+    tagline: 'White-Label · Multi-Tenant · API-Zugriff für Agenturen',
     bullets: [
-      'Alles aus Protect',
-      'Verzeichnis der Verarbeitungstätigkeiten (VVT)',
-      'TOM-Dokumentation',
-      'KI-Risikoabschätzung (EU AI Act)',
-      'Sub-Processor-Liste (automatisch gepflegt)',
-      'Bis zu 5 Domains',
-      'API-Zugriff + CI-Integration',
-      'Signierte PDF-Exports',
-      'Externer DSB buchbar (Add-on)',
+      'Alles aus Growth',
+      'White-Label-Report mit eigenem Logo',
+      'Multi-Tenant-Dashboard (unbegrenzte Kunden)',
+      'Vollständiger API-Zugriff + Webhooks',
+      'CI/CD-Integration (GitHub Actions, GitLab)',
+      'Bis zu 20 Domains inklusive',
+      'Priority-Support',
     ],
-    ctaLabel: 'Jetzt starten',
-    ctaHref: '/contact-sales?intent=comply&source=pricing',
+    ctaLabel: 'Agency buchen',
+    ctaHref: '/contact-sales?intent=agency&source=pricing',
+    highlight: false,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Anfrage',
+    priceSuffix: '3.000 – 50.000 € / Jahr',
+    tagline: 'SLA · AI-Act-Modul · DSB-Integration · Evidence Vault',
+    bullets: [
+      'Alle Agency-Funktionen',
+      'SLA-Garantie + dedizierter Account-Manager',
+      'EU AI Act Compliance-Modul',
+      'DSB-Integration (interner oder externer DSB)',
+      'Evidence Vault (unveränderliche Audit-Trails)',
+      'Unlimitierte Domains',
+      'Individuelle Vertragsgestaltung / DPA',
+    ],
+    ctaLabel: 'Enterprise anfragen',
+    ctaHref: '/contact-sales?intent=enterprise&source=pricing',
     highlight: false,
   },
 ];
 
+const TIER_ICONS: Record<TierID, typeof Cookie> = {
+  free: Cookie,
+  starter: ShieldCheck,
+  growth: Zap,
+  agency: Globe,
+  enterprise: Building2,
+};
+
 export function PricingPage() {
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      {/* Top bar — gleicher Stil wie HeroOnly */}
+      {/* Top bar */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
           <Sparkles className="h-3.5 w-3.5 text-titanium-100" />
@@ -123,23 +165,28 @@ export function PricingPage() {
               Preise · Public
             </div>
           </div>
-
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Drei Pakete. Klare Preise. Kein Account.
+            Automated Compliance Infrastructure.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Vom kostenlosen Schnell-Check bis zum Multi-Domain-Compliance-Setup mit AI-Act-Layer
-            und API-Zugriff. Sie wählen das Paket, das zu Ihrem Risiko und Ihrer Org-Größe passt —
-            wir liefern.
+            Nicht "KI baut Websites". Sondern: strukturierte Erkennung → Regelengine → automatische Remediation.
+            Vom kostenlosen Schnell-Check bis zum Enterprise-Evidence-Vault mit SLA.
           </p>
         </div>
       </section>
 
-      {/* Tier-Cards */}
+      {/* Tier-Cards — 2-spaltig auf Desktop (3 oben, 2 unten) */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-            {TIERS.map((tier) => (
+        <div className="max-w-7xl mx-auto">
+          {/* Row 1: Free / Starter / Growth */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch mb-4 sm:mb-5">
+            {TIERS.slice(0, 3).map((tier) => (
+              <TierCard key={tier.id} tier={tier} />
+            ))}
+          </div>
+          {/* Row 2: Agency / Enterprise */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+            {TIERS.slice(3).map((tier) => (
               <TierCard key={tier.id} tier={tier} />
             ))}
           </div>
@@ -155,50 +202,84 @@ export function PricingPage() {
             <div className="flex items-start gap-3">
               <Award className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
               <p className="text-sm text-silver-300 leading-relaxed">
-                Dokumente werden automatisch generiert und durch unsere Partnerkanzlei geprüft.
-                <strong className="text-titanium-200"> Kein Rechtsberatungsersatz.</strong>
+                Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung.
+                <strong className="text-titanium-200"> Wir versprechen kein "100 % rechtssicher"</strong>, weil das niemand seriös kann.
+                Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.
               </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Differenzierer */}
+      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
+              Kritische Differenzierer
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              Was uns von anderen Tools unterscheidet
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-titanium-900">
+            {[
+              {
+                title: 'Consent-Timing-Analyse',
+                body: 'Wir messen exakt, welche Requests VOR dem ersten Nutzer-Klick feuern. Das ist der Kern-DSGVO-Verstoß — und den erkennen nur wir mit echtem Playwright-Headless-Browser.',
+              },
+              {
+                title: 'Auto-Remediation (nicht nur Audit)',
+                body: 'Nicht nur "hier ist das Problem". Sondern: hier ist der Fix-Code, den Sie einfügen können. Script-Blocking, Consent-Injection, Font-Self-Hosting — alles automatisiert.',
+              },
+              {
+                title: 'Continuous Monitoring (SaaS-Kern)',
+                body: 'Compliance ist kein einmaliger Zustand. Websites ändern sich. Wir monitoren täglich und alarmieren bei Drift — damit Sie nicht nach dem Audit wieder unsicher werden.',
+              },
+              {
+                title: 'Nachweisbarkeit (Audit-Trails)',
+                body: 'PDFs, Logs, Zeitstempel, Evidence Vault. Wenn der Datenschutzbeauftragte oder die Aufsichtsbehörde fragt: Sie können beweisen, was wann geprüft wurde.',
+              },
+            ].map((d) => (
+              <div key={d.title} className="bg-obsidian-950 p-6 sm:p-7">
+                <h3 className="font-display font-bold text-titanium-50 text-base mb-2">{d.title}</h3>
+                <p className="text-sm text-titanium-400 leading-relaxed">{d.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
-      <section
-        id="pricing-faq"
-        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
-      >
+      <section id="pricing-faq" className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8 sm:mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
-              FAQ
-            </div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">FAQ</div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
               Häufige Fragen zu den Preisen
             </h2>
           </div>
-
           <div className="space-y-3">
             {[
               {
                 q: 'Brauche ich einen Account um zu starten?',
-                a: 'Für „Scan" nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für Protect und Comply legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
+                a: 'Für Free Audit nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für alle kostenpflichtigen Tiers legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
               },
               {
-                q: 'Wie kündige ich, wenn es nicht passt?',
-                a: 'Monatlich, formlos per E-Mail. Keine Mindestlaufzeit, kein Trick mit „Nur in den ersten 14 Tagen". Daten und Reports bleiben Ihnen für 90 Tage exportierbar erhalten.',
+                q: 'Was ist Consent-Timing-Analyse?',
+                a: 'Unsere Playwright-Engine lädt Ihre Website im echten Headless-Browser und protokolliert jeden Netzwerk-Request mit präzisem Timestamp — vor und nach dem ersten Klick. So sehen wir, ob Google Analytics, Meta Pixel oder andere Tracker geladen werden, bevor der Nutzer eingewilligt hat. Das ist der häufigste und gravierendste DSGVO-Verstoß.',
               },
               {
-                q: 'Was ist „Geprüft durch Partnerkanzlei"?',
-                a: 'Ihre automatisch generierten Dokumente (DSE, AVV, VVT) durchlaufen einen Review unserer DSGVO-spezialisierten Partnerkanzlei. Das ersetzt keine individuelle Rechtsberatung — bringt aber Ihre Doku auf einen Standard, der dem juristischen Mainstream entspricht.',
+                q: 'Was ist "Auto-Remediation" genau?',
+                a: 'Für erkannte Probleme liefern wir konkrete technische Fixes: Script-Tags mit type="text/plain" und data-consent-Attribut, Consent-Banner-Code-Snippets, Google-Fonts-Self-Hosting-Script, YouTube-NoCookie-Umstellung. Kein LLM-generiertes "schreib eine Datenschutzerklärung", sondern strukturierte Regel-Engine → Template-System.',
               },
               {
-                q: 'Muss ich für Comply schon API/CI nutzen?',
-                a: 'Nein. API + CI-Integration sind im Paket enthalten, aber optional. Sie können Comply auch nur wegen VVT/TOM/AI-Act buchen und API später aktivieren — kein Up- oder Downgrade nötig.',
+                q: 'Wie kündige ich?',
+                a: 'Monatlich, formlos per E-Mail. Keine Mindestlaufzeit. Daten und Reports bleiben Ihnen 90 Tage exportierbar erhalten.',
               },
               {
-                q: 'Was ist der externe DSB-Add-on?',
-                a: 'Auf Wunsch vermitteln wir einen externen Datenschutzbeauftragten unserer Partnerkanzlei. Stundenkontingent oder Pauschale, separate Vereinbarung.',
+                q: 'Was ist der Enterprise Evidence Vault?',
+                a: 'Ein unveränderliches Archiv aller Scans, Findings, Fix-Bestätigungen und Dokumente — mit kryptografischen Zeitstempeln. Wenn Sie einer Aufsichtsbehörde nachweisen müssen, dass Sie zu einem bestimmten Datum compliant waren, liefert der Vault den Beweis.',
               },
             ].map((item) => (
               <details
@@ -206,12 +287,8 @@ export function PricingPage() {
                 className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-titanium-200/60 rounded-none transition-colors"
               >
                 <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
-                  <span className="font-display font-bold text-titanium-50 text-base leading-snug">
-                    {item.q}
-                  </span>
-                  <span className="text-titanium-100 text-xl leading-none transition-transform group-open:rotate-45 select-none">
-                    +
-                  </span>
+                  <span className="font-display font-bold text-titanium-50 text-base leading-snug">{item.q}</span>
+                  <span className="text-titanium-100 text-xl leading-none transition-transform group-open:rotate-45 select-none">+</span>
                 </summary>
                 <p className="text-sm text-silver-300 leading-relaxed mt-3">{item.a}</p>
               </details>
@@ -220,7 +297,7 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Footer — gleiche Struktur wie HeroOnly */}
+      {/* Footer */}
       <footer className="border-t border-silver-700/40 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-silver-500">
           <div className="flex items-center gap-1">
@@ -228,14 +305,14 @@ export function PricingPage() {
             <span>© 2026 RealSync Dynamics · Made in Germany</span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-titanium-100">Cookie-Scanner · Free</Link>
-            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
-            <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
-            <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
-            <Link to="/legal/sub-processors"  className="hover:text-titanium-50">Sub-Processors</Link>
-            <Link to="/legal/methodology"     className="hover:text-titanium-50">Methodik</Link>
-            <Link to="/security"              className="hover:text-titanium-50">Security</Link>
-            <Link to="/status"                className="hover:text-titanium-50">Status</Link>
+            <Link to="/cookie-scanner" className="hover:text-titanium-50 text-titanium-100">Cookie-Scanner · Free</Link>
+            <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
+            <Link to="/legal/privacy" className="hover:text-titanium-50">Datenschutz</Link>
+            <Link to="/impressum" className="hover:text-titanium-50">Impressum</Link>
+            <Link to="/legal/sub-processors" className="hover:text-titanium-50">Sub-Processors</Link>
+            <Link to="/legal/methodology" className="hover:text-titanium-50">Methodik</Link>
+            <Link to="/security" className="hover:text-titanium-50">Security</Link>
+            <Link to="/status" className="hover:text-titanium-50">Status</Link>
           </div>
         </div>
       </footer>
@@ -244,7 +321,7 @@ export function PricingPage() {
 }
 
 function TierCard({ tier }: { tier: Tier }) {
-  const TierIcon = tier.id === 'scan' ? Cookie : tier.id === 'protect' ? ShieldCheck : Building2;
+  const TierIcon = TIER_ICONS[tier.id];
 
   return (
     <div
@@ -262,23 +339,15 @@ function TierCard({ tier }: { tier: Tier }) {
 
       <div className="flex items-center gap-2 mb-2 mt-1">
         <TierIcon className="h-4 w-4 text-titanium-100" />
-        <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">
-          {tier.name}
-        </div>
+        <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">{tier.name}</div>
       </div>
 
       <div className="flex items-baseline gap-1.5 mb-1.5">
-        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">
-          {tier.price}
-        </div>
-        <div className="text-xs font-mono uppercase tracking-wider text-silver-400">
-          {tier.priceSuffix}
-        </div>
+        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">{tier.price}</div>
+        <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.priceSuffix}</div>
       </div>
 
-      <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-4">
-        {tier.tagline}
-      </div>
+      <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-4">{tier.tagline}</div>
 
       {tier.badges && tier.badges.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">

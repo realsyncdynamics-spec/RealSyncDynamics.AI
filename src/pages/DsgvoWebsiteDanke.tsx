@@ -1,31 +1,32 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Globe, Mail, Clock,
-  ShieldCheck, FileText, Sparkles,
+  ShieldCheck, FileText, Sparkles, Activity,
 } from 'lucide-react';
 
 /**
  * /dsgvo-website/danke — Confirmation-Page nach erfolgreichem Stripe-Checkout
  * für den DSGVO-Website-Rebuild-Tier.
  *
- * URL: /dsgvo-website/danke?session_id=cs_...
+ * URL: /dsgvo-website/danke?session_id=cs_...&rebuild_id=uuid&token=sha256hex
  *
  * Was hier passiert:
- *   - Kunde ist gerade von Stripe redirected, Zahlung ist bestätigt.
- *   - stripe-webhook hat (asynchron, ~1-3s nach Stripe-Confirm) bereits
- *     den website_rebuilds-Job mit status='queued' angelegt und
- *     rebuild-website Edge-Function via waitUntil getriggert.
- *   - Der 8-Step-Workflow läuft im Hintergrund (typisch 30-90s).
- *   - Diese Page kommuniziert: "Wir haben deine Bezahlung, Workflow läuft,
- *     du bekommst eine E-Mail mit dem Preview-Link."
- *
- * Bewusst KEINE Live-Status-Polling — Customer ist Cold-Lead ohne Auth,
- * RLS auf website_rebuilds erlaubt keinen anonymen SELECT. Email-basiertes
- * Notify ist der einfachere & verlässlichere Pfad.
+ * - Kunde ist gerade von Stripe redirected, Zahlung ist bestätigt.
+ * - stripe-webhook hat (asynchron, ~1-3s nach Stripe-Confirm) bereits
+ *   den website_rebuilds-Job mit status='queued' angelegt und
+ *   rebuild-website Edge-Function via waitUntil getriggert.
+ * - Der 8-Step-Workflow läuft im Hintergrund (typisch 30-90s).
+ * - Falls rebuild_id + token in der URL vorhanden → Live-Status-Button sichtbar.
  */
 export function DsgvoWebsiteDanke() {
   const [params] = useSearchParams();
   const sessionId = params.get('session_id');
+  const rebuildId = params.get('rebuild_id');
+  const token     = params.get('token');
+
+  const statusUrl = rebuildId
+    ? `/dsgvo-website/rebuild/${rebuildId}${token ? '?token=' + token : ''}`
+    : null;
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -61,6 +62,23 @@ export function DsgvoWebsiteDanke() {
               bis zur ersten Preview: <strong className="text-titanium-100">30 bis 90 Sekunden</strong>.
             </p>
           </div>
+
+          {/* Live-Status CTA — nur sichtbar wenn rebuild_id übergeben wurde */}
+          {statusUrl && (
+            <div className="bg-gradient-to-r from-fuchsia-950/40 to-obsidian-900 border border-fuchsia-800/60 p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <Activity className="h-6 w-6 text-fuchsia-400 shrink-0" />
+              <div className="flex-1">
+                <div className="font-semibold text-titanium-50 text-sm mb-0.5">Rebuild läuft gerade — Live verfolgen</div>
+                <div className="text-xs text-titanium-400">Echtzeit-Status aller 8 Workflow-Schritte direkt im Browser.</div>
+              </div>
+              <Link
+                to={statusUrl}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm font-bold rounded-none transition-colors shrink-0"
+              >
+                <Activity className="h-3.5 w-3.5" /> Live-Status öffnen
+              </Link>
+            </div>
+          )}
 
           <section className="bg-obsidian-900 border border-titanium-900 p-6 sm:p-7">
             <h2 className="font-display font-bold text-titanium-50 text-lg mb-4 flex items-center gap-2">

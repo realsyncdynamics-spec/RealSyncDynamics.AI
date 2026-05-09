@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { getSupabase } from '../lib/supabase';
+
+const supabase = getSupabase();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,9 +108,9 @@ function StatusBadge({ status }: { status: RebuildStatus }) {
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
           }}>
-            {status === 'running' && <span style={{ animation: 'pulse 1.5s infinite' }}>●</span>span>}
+            {status === 'running' && <span style={{ animation: 'pulse 1.5s infinite' }}>●</span>}
             {label}
-          </span>span>
+          </span>
         );
 }
 
@@ -158,25 +160,25 @@ function StepRow({ meta, stepData, completedSteps, currentStep }: {
                   animation: status === 'running' ? 'pulse 1.5s infinite' : 'none',
         }}>
                   {cfg.icon}
-                </div>div>
+                </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                      <span style={{ fontSize: '0.9rem' }}>{meta.icon}</span>span>
-                                      <strong style={{ color: '#E2E2E2', fontSize: '0.95rem' }}>{meta.label}</strong>strong>
+                                      <span style={{ fontSize: '0.9rem' }}>{meta.icon}</span>
+                                      <strong style={{ color: '#E2E2E2', fontSize: '0.95rem' }}>{meta.label}</strong>
                             {row?.duration_ms && (
                       <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>
                         {formatDuration(row.duration_ms)}
-                      </span>span>
+                      </span>
                     )}
-                          </div>div>
+                          </div>
                           <p style={{ margin: '4px 0 0', color: '#9CA3AF', fontSize: '0.82rem' }}>
                             {meta.description}
-                          </p>p>
+                          </p>
                   {row?.summary && (
                     <p style={{ margin: '6px 0 0', color: '#D1D5DB', fontSize: '0.82rem', fontStyle: 'italic' }}>
                       {row.summary}
-                    </p>p>
+                    </p>
                   )}
                   {row?.error_detail && (
                     <pre style={{
@@ -191,16 +193,16 @@ function StepRow({ meta, stepData, completedSteps, currentStep }: {
                                   wordBreak: 'break-all',
                     }}>
                       {row.error_detail}
-                    </pre>pre>
+                    </pre>
                   )}
-                </div>div>
-        </div>div>
+                </div>
+        </div>
       );
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function WebsiteRebuildStatus() {
+export function WebsiteRebuildStatus() {
     const { rebuild_id } = useParams<{ rebuild_id: string }>();
     const [rebuild, setRebuild] = useState<WebsiteRebuild | null>(null);
     const [steps, setSteps] = useState<RebuildStep[]>([]);
@@ -315,10 +317,10 @@ export default function WebsiteRebuildStatus() {
         return (
                 <div style={{ minHeight: '100vh', background: '#0A0A0F', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E2E2E2', fontFamily: 'monospace' }}>
                           <div style={{ textAlign: 'center' }}>
-                                      <div style={{ fontSize: '2rem', marginBottom: '16px', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⟳</div>div>
-                                      <p>Lade Rebuild-Status…</p>p>
-                          </div>div>
-                </div>div>
+                                      <div style={{ fontSize: '2rem', marginBottom: '16px', animation: 'spin 2s linear infinite', display: 'inline-block' }}>⟳</div>
+                                      <p>Lade Rebuild-Status…</p>
+                          </div>
+                </div>
               );
   }
   
@@ -326,14 +328,14 @@ export default function WebsiteRebuildStatus() {
           return (
                   <div style={{ minHeight: '100vh', background: '#0A0A0F', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
                           <div style={{ maxWidth: '480px', textAlign: 'center', color: '#E2E2E2' }}>
-                                    <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>div>
-                                    <h2 style={{ marginBottom: '12px' }}>Rebuild nicht gefunden</h2>h2>
-                                    <p style={{ color: '#9CA3AF', marginBottom: '24px' }}>{error}</p>p>
+                                    <div style={{ fontSize: '3rem', marginBottom: '16px' }}>⚠️</div>
+                                    <h2 style={{ marginBottom: '12px' }}>Rebuild nicht gefunden</h2>
+                                    <p style={{ color: '#9CA3AF', marginBottom: '24px' }}>{error}</p>
                                     <Link to="/dsgvo-website" style={{ color: '#FFB800', textDecoration: 'none', border: '1px solid #FFB800', padding: '10px 24px', borderRadius: '6px' }}>
                                 ← Zurück zur Übersicht
-                                    </Link>Link>
-                          </div>div>
-                  </div>div>
+                                    </Link>
+                          </div>
+                  </div>
                 );
     }
   
@@ -343,12 +345,12 @@ export default function WebsiteRebuildStatus() {
             {/* ── Header ── */}
                 <div style={{ borderBottom: '1px solid #1E1E28', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                  <Link to="/dsgvo-website" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '0.85rem' }}>← DSGVO-Website</Link>Link>
-                                  <span style={{ color: '#374151' }}>|</span>span>
-                                  <span style={{ fontSize: '0.85rem', color: '#6B7280', letterSpacing: '0.08em' }}>REBUILD-STATUS</span>span>
-                        </div>div>
+                                  <Link to="/dsgvo-website" style={{ color: '#9CA3AF', textDecoration: 'none', fontSize: '0.85rem' }}>← DSGVO-Website</Link>
+                                  <span style={{ color: '#374151' }}>|</span>
+                                  <span style={{ fontSize: '0.85rem', color: '#6B7280', letterSpacing: '0.08em' }}>REBUILD-STATUS</span>
+                        </div>
                         <StatusBadge status={rebuild.status} />
-                </div>div>
+                </div>
           
                 <div style={{ maxWidth: '860px', margin: '0 auto', padding: '32px 24px' }}>
                 
@@ -356,27 +358,27 @@ export default function WebsiteRebuildStatus() {
                         <div style={{ marginBottom: '32px' }}>
                                   <h1 style={{ fontSize: '1.6rem', fontWeight: 700, marginBottom: '8px', color: '#F9FAFB' }}>
                                     {rebuild.source_domain}
-                                  </h1>h1>
+                                  </h1>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', color: '#9CA3AF', fontSize: '0.82rem' }}>
-                                              <span>Tier: <strong style={{ color: '#E2E2E2', textTransform: 'capitalize' }}>{rebuild.tier}</strong>strong></span>span>
-                                              <span>Gestartet: <strong style={{ color: '#E2E2E2' }}>{formatDate(rebuild.started_at ?? rebuild.created_at)}</strong>strong></span>span>
+                                              <span>Tier: <strong style={{ color: '#E2E2E2', textTransform: 'capitalize' }}>{rebuild.tier}</strong></span>
+                                              <span>Gestartet: <strong style={{ color: '#E2E2E2' }}>{formatDate(rebuild.started_at ?? rebuild.created_at)}</strong></span>
                                     {rebuild.status === 'running' && (
-                          <span>Laufzeit: <strong style={{ color: '#F59E0B' }}>{elapsed}s</strong>strong></span>span>
+                          <span>Laufzeit: <strong style={{ color: '#F59E0B' }}>{elapsed}s</strong></span>
                                               )}
                                     {rebuild.completed_at && (
-                          <span>Abgeschlossen: <strong style={{ color: '#E2E2E2' }}>{formatDate(rebuild.completed_at)}</strong>strong></span>span>
+                          <span>Abgeschlossen: <strong style={{ color: '#E2E2E2' }}>{formatDate(rebuild.completed_at)}</strong></span>
                                               )}
-                                              <span>Engine: <strong style={{ color: '#E2E2E2' }}>{rebuild.workflow_version}</strong>strong></span>span>
-                                  </div>div>
-                        </div>div>
+                                              <span>Engine: <strong style={{ color: '#E2E2E2' }}>{rebuild.workflow_version}</strong></span>
+                                  </div>
+                        </div>
                 
                   {/* ── Progress Bar ── */}
                   {rebuild.status !== 'failed' && rebuild.status !== 'cancelled' && (
                       <div style={{ marginBottom: '32px' }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.82rem', color: '#9CA3AF' }}>
-                                                <span>Fortschritt</span>span>
-                                                <span style={{ color: progressPct === 100 ? '#10B981' : '#E2E2E2', fontWeight: 600 }}>{progressPct}%</span>span>
-                                  </div>div>
+                                                <span>Fortschritt</span>
+                                                <span style={{ color: progressPct === 100 ? '#10B981' : '#E2E2E2', fontWeight: 600 }}>{progressPct}%</span>
+                                  </div>
                                   <div style={{ height: '6px', background: '#1E1E28', borderRadius: '3px', overflow: 'hidden' }}>
                                                 <div style={{
                                         height: '100%',
@@ -385,11 +387,11 @@ export default function WebsiteRebuildStatus() {
                                         borderRadius: '3px',
                                         transition: 'width 0.6s ease',
                       }} />
-                                  </div>div>
+                                  </div>
                                   <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#6B7280' }}>
                                     {completedCount} von {PIPELINE_STEPS.length} Schritten abgeschlossen
-                                  </div>div>
-                      </div>div>
+                                  </div>
+                      </div>
                         )}
                 
                   {/* ── Preview-URL CTA ── */}
@@ -409,11 +411,11 @@ export default function WebsiteRebuildStatus() {
                                   <div>
                                                 <div style={{ color: '#10B981', fontWeight: 700, marginBottom: '4px', fontSize: '0.9rem' }}>
                                                                 ✓ DSGVO-konforme Version bereit
-                                                </div>div>
+                                                </div>
                                                 <div style={{ color: '#9CA3AF', fontSize: '0.82rem' }}>
                                                                 Deine neue Website ist verfügbar — prüfe sie, bevor sie live geht.
-                                                </div>div>
-                                  </div>div>
+                                                </div>
+                                  </div>
                                   <a
                                                   href={rebuild.preview_url}
                                                   target="_blank"
@@ -433,8 +435,8 @@ export default function WebsiteRebuildStatus() {
                                                   }}
                                                 >
                                                 Preview öffnen →
-                                  </a>a>
-                      </div>div>
+                                  </a>
+                      </div>
                         )}
                 
                   {/* ── Error Banner ── */}
@@ -448,32 +450,32 @@ export default function WebsiteRebuildStatus() {
                       }}>
                                   <div style={{ color: '#EF4444', fontWeight: 700, marginBottom: '8px' }}>
                                                 ✗ Fehler im Rebuild-Prozess
-                                  </div>div>
+                                  </div>
                         {rebuild.error_code && (
                                       <div style={{ color: '#FCA5A5', fontSize: '0.82rem', marginBottom: '4px' }}>
-                                                      Code: <code style={{ background: '#EF444422', padding: '2px 6px', borderRadius: '3px' }}>{rebuild.error_code}</code>code>
-                                      </div>div>
+                                                      Code: <code style={{ background: '#EF444422', padding: '2px 6px', borderRadius: '3px' }}>{rebuild.error_code}</code>
+                                      </div>
                                   )}
                         {rebuild.error_detail && (
                                       <pre style={{ color: '#FCA5A5', fontSize: '0.78rem', whiteSpace: 'pre-wrap', margin: '8px 0 0' }}>
                                         {rebuild.error_detail}
-                                      </pre>pre>
+                                      </pre>
                                   )}
                                   <p style={{ color: '#9CA3AF', fontSize: '0.82rem', marginTop: '12px', marginBottom: 0 }}>
                                                 Unser Team wurde automatisch benachrichtigt. Kontaktiere{' '}
                                                 <a href="mailto:support@realsyncdynamicsai.de" style={{ color: '#FFB800' }}>
                                                                 support@realsyncdynamicsai.de
-                                                </a>a>{' '}
-                                                mit deiner Rebuild-ID: <code style={{ color: '#E2E2E2' }}>{rebuild.id}</code>code>
-                                  </p>p>
-                      </div>div>
+                                                </a>{' '}
+                                                mit deiner Rebuild-ID: <code style={{ color: '#E2E2E2' }}>{rebuild.id}</code>
+                                  </p>
+                      </div>
                         )}
                 
                   {/* ── Pipeline Steps ── */}
                         <div style={{ marginBottom: '32px' }}>
                                   <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '16px' }}>
                                               Pipeline-Status
-                                  </h2>h2>
+                                  </h2>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     {PIPELINE_STEPS.map((meta) => (
                           <StepRow
@@ -484,8 +486,8 @@ export default function WebsiteRebuildStatus() {
                                             currentStep={rebuild.current_step}
                                           />
                         ))}
-                                  </div>div>
-                        </div>div>
+                                  </div>
+                        </div>
                 
                   {/* ── Rebuild-Info Footer ── */}
                         <div style={{
@@ -497,17 +499,17 @@ export default function WebsiteRebuildStatus() {
                       color: '#6B7280',
           }}>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-                                              <span>Rebuild-ID: <code style={{ color: '#9CA3AF' }}>{rebuild.id}</code>code></span>span>
-                                              <span>URL: <code style={{ color: '#9CA3AF' }}>{rebuild.source_url}</code>code></span>span>
-                                    {rebuild.company && <span>Firma: <code style={{ color: '#9CA3AF' }}>{rebuild.company}</code>code></span>span>}
-                                  </div>div>
+                                              <span>Rebuild-ID: <code style={{ color: '#9CA3AF' }}>{rebuild.id}</code></span>
+                                              <span>URL: <code style={{ color: '#9CA3AF' }}>{rebuild.source_url}</code></span>
+                                    {rebuild.company && <span>Firma: <code style={{ color: '#9CA3AF' }}>{rebuild.company}</code></span>}
+                                  </div>
                                   <div style={{ marginTop: '8px' }}>
                                               Diese Seite aktualisiert sich automatisch in Echtzeit via Supabase Realtime.
                                               Kein Reload nötig.
-                                  </div>div>
-                        </div>div>
+                                  </div>
+                        </div>
                 
-                </div>div>
+                </div>
           
                 <style>{`
                         @keyframes pulse {
@@ -518,7 +520,7 @@ export default function WebsiteRebuildStatus() {
                                                                       from { transform: rotate(0deg); }
                                                                                 to { transform: rotate(360deg); }
                                                                                         }
-                                                                                              `}</style>style>
-          </div>div>
+                                                                                              `}</style>
+          </div>
         );
-}</p>
+}

@@ -4,7 +4,7 @@ import {
   ArrowLeft, Activity, AlertCircle, CheckCircle2, Clock, Globe,
   ShieldCheck, TrendingDown, TrendingUp, Plus, RefreshCw, Bell, BellOff,
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 /**
  * /risk-dashboard — Compliance Monitoring Dashboard
@@ -20,10 +20,7 @@ import { createClient } from '@supabase/supabase-js';
  * Route: /risk-dashboard
  */
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const supabase = isSupabaseConfigured() ? getSupabase() : null;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -142,9 +139,9 @@ function DomainCard({
   useEffect(() => {
     async function loadTimeline() {
       setLoading(true);
-      const { data } = await supabase.rpc('get_compliance_timeline', {
+      const { data } = await supabase!.rpc('get_compliance_timeline', {
         p_domain: domain.domain,
-        p_tenant_id: (await supabase.auth.getUser()).data.user?.id ?? '',
+        p_tenant_id: (await supabase!.auth.getUser()).data.user?.id ?? '',
         p_limit: 30,
       });
       setTimeline(data ?? []);
@@ -272,11 +269,11 @@ function AddDomainModal({
   async function handleAdd() {
     if (!domain.trim()) { setErr('Domain erforderlich'); return; }
     setLoading(true); setErr('');
-    const user = await supabase.auth.getUser();
-    const { data: tenant } = await supabase
+    const user = await supabase!.auth.getUser();
+    const { data: tenant } = await supabase!
       .from('tenant_users').select('tenant_id').eq('user_id', user.data.user?.id ?? '').single();
 
-    const { error } = await supabase.from('monitored_domains').insert({
+    const { error } = await supabase!.from('monitored_domains').insert({
       tenant_id: tenant?.tenant_id,
       domain: domain.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''),
       alert_email: email.trim() || null,
@@ -345,6 +342,19 @@ export function RiskDashboard() {
   const [domains, setDomains] = useState<MonitoredDomain[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+
+  if (!supabase) {
+    return (
+      <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4">
+        <div className="max-w-md text-center">
+          <h1 className="font-display font-bold text-xl text-titanium-50 mb-3">Risk Dashboard nicht verfügbar</h1>
+          <p className="text-sm text-titanium-400">
+            Die Supabase-Konfiguration fehlt. Setze <code className="font-mono">VITE_SUPABASE_URL</code> und <code className="font-mono">VITE_SUPABASE_ANON_KEY</code>, um das Dashboard zu nutzen.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   async function loadDomains() {
     setLoading(true);

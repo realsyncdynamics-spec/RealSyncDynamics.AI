@@ -197,14 +197,19 @@ async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Sessio
 
 // Trigger den Website-Rebuild-Workflow wenn der Checkout den
 // Managed-Website-Tier gekauft hat. Stripe-Checkout-Session muss in metadata:
-//   product_type: 'managed_website'
-//   source_url:   'https://kunde.de'
-//   tier?:        'managed' | 'premium' | 'enterprise'   (default: 'managed')
-//   tenant_id?:   uuid
-//   audit_id?:    uuid    (verlinkt vorhandenen DSGVO-Audit)
-//   company?:     'ACME GmbH'
-// gesetzt haben. Insert ist synchron (sichtbar im Admin sofort), Workflow-Run
-// läuft via EdgeRuntime.waitUntil im Hintergrund — Webhook acked sofort.
+// product_type: 'managed_website'
+// source_url: 'https://kunde.de'
+// tier?: 'managed' | 'premium' | 'enterprise' (default: 'managed')
+// tenant_id?: uuid
+// audit_id?: uuid (verlinkt vorhandenen DSGVO-Audit)
+// company?: 'ACME GmbH'
+// rebuild_id?: uuid (pre-created row by checkout-website-rebuild function)
+// gesetzt haben.
+//
+// V2-Flow: checkout-website-rebuild pre-creates the website_rebuilds row with
+// status='pending_payment' and embeds rebuild_id in the Stripe success_url.
+// This webhook then UPDATEs that row to status='queued' and fills in the email.
+// V1-Flow (backward compat): no rebuild_id in metadata → INSERT as before.
 //
 // deno-lint-ignore no-explicit-any
 async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Checkout.Session): Promise<void> {
@@ -228,26 +233,62 @@ async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Che
   const tier = (['managed', 'premium', 'enterprise'].includes(meta.tier ?? '') ? meta.tier : 'managed') as
     'managed' | 'premium' | 'enterprise';
 
-  // Insert queued row — Admin sieht ihn sofort, auch wenn waitUntil-Trigger
-  // verloren geht ist der Job sichtbar und manuell resumebar.
-  const { data: rebuild, error } = await admin
-    .from('website_rebuilds')
-    .insert({
-      tenant_id:      meta.tenant_id ?? null,
-      audit_id:       meta.audit_id ?? null,
-      source_url:     sourceUrl,
-      source_domain:  domain,
-      customer_email: String(email).toLowerCase(),
-      company:        meta.company ?? null,
-      tier,
-      status:         'queued',
-    })
-    .select('id')
-    .single();
+  let rebuildId: string | null = null;
 
-  if (error || !rebuild) {
-    console.error(`[stripe-webhook] failed to queue website_rebuild for ${session.id}: ${error?.message}`);
-    return;
+  if (meta.rebuild_id) {
+    // ------------------------------------------------------------------
+    // V2-Flow: update the pre-created row — checkout-website-rebuild
+    // already inserted it with status='pending_payment'.
+    // ------------------------------------------------------------------
+    const { data: updated, error: updateErr } = await admin
+      .from('website_rebuilds')
+      .update({
+        status: 'queued',
+        customer_email: String(email).toLowerCase(),
+        stripe_session_id: session.id,
+        // Fill source_domain in case it was stored under 'domain' column only
+        source_domain: domain,
+      })
+      .eq('id', meta.rebuild_id)
+      .select('id')
+      .single();
+
+    if (updateErr || !updated) {
+      console.warn(`[stripe-webhook] failed to update pre-created rebuild ${meta.rebuild_id}: ${updateErr?.message} — falling back to INSERT`);
+      // Fall through to V1 INSERT below
+    } else {
+      rebuildId = updated.id;
+      console.log(`[stripe-webhook] updated pre-created rebuild ${rebuildId} to queued for ${domain}`);
+    }
+  }
+
+  if (!rebuildId) {
+    // ------------------------------------------------------------------
+    // V1-Flow (backward compat): no pre-created row — INSERT fresh.
+    // ------------------------------------------------------------------
+    const { data: rebuild, error } = await admin
+      .from('website_rebuilds')
+      .insert({
+        tenant_id: meta.tenant_id ?? null,
+        audit_id: meta.audit_id ?? null,
+        source_url: sourceUrl,
+        source_domain: domain,
+        customer_email: String(email).toLowerCase(),
+        company: meta.company ?? null,
+        tier,
+        status: 'queued',
+        stripe_session_id: session.id,
+        plan_key: meta.plan_key ?? null,
+      })
+      .select('id')
+      .single();
+
+    if (error || !rebuild) {
+      console.error(`[stripe-webhook] failed to queue website_rebuild for ${session.id}: ${error?.message}`);
+      return;
+    }
+    rebuildId = rebuild.id;
+    console.log(`[stripe-webhook] inserted new rebuild ${rebuildId} (queued) for ${domain}`);
   }
 
   // Fire-and-forget — Webhook muss in <30s acken, Workflow läuft im Hintergrund.
@@ -257,16 +298,16 @@ async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Che
       authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ rebuild_id: rebuild.id }),
+    body: JSON.stringify({ rebuild_id: rebuildId }),
   }).then(async (r) => {
     if (!r.ok) {
       const txt = await r.text().catch(() => '');
-      console.error(`[stripe-webhook] rebuild-website trigger ${rebuild.id} failed: ${r.status} ${txt}`);
+      console.error(`[stripe-webhook] rebuild-website trigger ${rebuildId} failed: ${r.status} ${txt}`);
     } else {
-      console.log(`[stripe-webhook] rebuild-website ${rebuild.id} triggered for ${domain}`);
+      console.log(`[stripe-webhook] rebuild-website ${rebuildId} triggered for ${domain}`);
     }
   }).catch((e) => {
-    console.error(`[stripe-webhook] rebuild-website trigger ${rebuild.id} threw: ${(e as Error).message}`);
+    console.error(`[stripe-webhook] rebuild-website trigger ${rebuildId} threw: ${(e as Error).message}`);
   });
 
   // @ts-ignore — EdgeRuntime is provided by Supabase Edge Runtime

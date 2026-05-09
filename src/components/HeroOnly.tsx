@@ -56,14 +56,24 @@ export function HeroOnly() {
       {/* ─── 1) Top Bar ─────────────────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <nav className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm">
-          <NavButton onClick={() => setOpenModal('check')}>Produkt</NavButton>
+          <Link
+            to="/features"
+            className="px-2 sm:px-3 py-1.5 text-silver-300 hover:text-titanium-50 font-semibold transition-colors"
+          >
+            Funktionen
+          </Link>
           <NavButton onClick={() => setOpenModal('aiact')} className="hidden sm:inline-flex">
             AI-Act
           </NavButton>
           <NavButton onClick={() => setOpenModal('compliance')} className="hidden md:inline-flex">
             Compliance-Center
           </NavButton>
-          <NavButton onClick={() => setOpenModal('pricing')}>Preise</NavButton>
+          <Link
+            to="/pricing"
+            className="px-2 sm:px-3 py-1.5 text-silver-300 hover:text-titanium-50 font-semibold transition-colors"
+          >
+            Preise
+          </Link>
           <NavButton onClick={() => setOpenModal('enterprise')} className="hidden md:inline-flex">
             Enterprise
           </NavButton>

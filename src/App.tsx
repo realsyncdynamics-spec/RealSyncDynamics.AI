@@ -15,6 +15,7 @@ import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
 import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
+import { Features } from './pages/Features';
 import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
@@ -240,6 +241,8 @@ function RoutesWithTracking() {
         <Route path="/kodee/connections" element={<ConnectionsView />} />
         <Route path="/billing/usage" element={<UsageView />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/funktionen" element={<Features />} />
         <Route path="/tenant/invites" element={<InvitesView />} />
         <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
         <Route path="/settings" element={<SettingsView />} />

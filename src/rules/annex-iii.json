@@ -471,19 +471,123 @@
     }
   ],
   "obligations_glossary": {
-    "risk_management": "Risikomanagement-System nach Art. 9 — kontinuierlicher Prozess über den gesamten Lebenszyklus",
-    "data_governance": "Daten-Governance nach Art. 10 — Trainings-/Test-Daten qualitätsgesichert, repräsentativ, fehlerfrei, mit Bias-Auditing",
-    "technical_documentation": "Technische Dokumentation nach Art. 11 + Annex IV — vor Inverkehrbringen, laufend aktuell zu halten",
-    "logging": "Automatisches Event-Logging nach Art. 12 — Rückverfolgbarkeit über die gesamte Betriebsdauer",
-    "transparency_to_deployers": "Transparenz für Deployer nach Art. 13 — Anweisungen, Capabilities, Limitationen, Genauigkeit",
-    "transparency_disclosure_art50": "Disclosure-Pflicht nach Art. 50 — User wissen dass sie mit KI / KI-erzeugtem Content interagieren",
-    "human_oversight": "Human Oversight nach Art. 14 — Mensch kann eingreifen, übersteuern, ablehnen",
-    "accuracy_robustness_cybersecurity": "Accuracy, Robustness, Cybersecurity nach Art. 15 — Performance-Metriken, Adversarial-Resistance",
-    "conformity_assessment": "Conformity Assessment nach Art. 43 — meist Notified-Body-Prüfung vor Inverkehrbringen",
-    "fundamental_rights_impact_assessment": "FRIA nach Art. 27 — Pflicht für öffentl. Stellen + bestimmte private Deployer (z.B. Banken bei Credit-Scoring)",
-    "transparency_art22_dsgvo": "Auskunfts-, Erklärungs- und Anfechtungs-Recht nach DSGVO Art. 22 (automatisierte Einzelfallentscheidung)",
-    "betriebsrat_consultation_de": "Mitbestimmung des Betriebsrats nach BetrVG § 87 Abs. 1 Nr. 6 (technische Überwachung) + § 90/95 bei Auswahl-Richtlinien",
-    "bafin_notification_de": "BaFin-Notifikation falls wesentliche Auslagerung nach KWG § 25b / MaRisk AT 9",
-    "vait_compliance_de": "VAIT-Konformität (Versicherungsaufsichtliche Anforderungen IT) — analog BAIT für Banken"
+    "risk_management": {
+      "label": "Risikomanagement-System",
+      "description": "Kontinuierlicher Prozess über den gesamten Lebenszyklus — Identifikation, Analyse, Mitigation, Monitoring der KI-Risiken.",
+      "ai_act_article": "Art. 9",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "20-40"
+    },
+    "data_governance": {
+      "label": "Daten-Governance",
+      "description": "Trainings-/Test-Daten qualitätsgesichert, repräsentativ, fehlerfrei, mit Bias-Auditing dokumentiert.",
+      "ai_act_article": "Art. 10",
+      "phase": 1,
+      "effort": "high",
+      "estimated_days": "15-30"
+    },
+    "technical_documentation": {
+      "label": "Technische Dokumentation",
+      "description": "Vor Inverkehrbringen erstellen, laufend aktuell halten. Annex IV gibt die Mindest-Inhalte vor.",
+      "ai_act_article": "Art. 11 + Annex IV",
+      "phase": 1,
+      "effort": "medium",
+      "estimated_days": "10-20"
+    },
+    "logging": {
+      "label": "Automatisches Event-Logging",
+      "description": "Rückverfolgbarkeit über die gesamte Betriebsdauer — alle KI-Entscheidungen mit Eingabe, Output, User-Context.",
+      "ai_act_article": "Art. 12",
+      "phase": 3,
+      "effort": "medium",
+      "estimated_days": "5-15"
+    },
+    "transparency_to_deployers": {
+      "label": "Transparenz für Deployer",
+      "description": "Anweisungen, Capabilities, Limitationen, Genauigkeits-Metriken zur Verfügung stellen.",
+      "ai_act_article": "Art. 13",
+      "phase": 1,
+      "effort": "low",
+      "estimated_days": "2-5"
+    },
+    "transparency_disclosure_art50": {
+      "label": "Art-50 Disclosure-Pflicht",
+      "description": "User wissen dass sie mit KI interagieren; KI-generierter Content ist als solcher markiert (Deepfakes machine-readable).",
+      "ai_act_article": "Art. 50",
+      "phase": 1,
+      "effort": "low",
+      "estimated_days": "1-3"
+    },
+    "human_oversight": {
+      "label": "Human Oversight",
+      "description": "Mensch kann eingreifen, übersteuern, ablehnen. UI + Prozess + Schulung der Operatoren.",
+      "ai_act_article": "Art. 14",
+      "phase": 2,
+      "effort": "medium",
+      "estimated_days": "10-20"
+    },
+    "accuracy_robustness_cybersecurity": {
+      "label": "Accuracy, Robustness, Cybersecurity",
+      "description": "Performance-Metriken, Adversarial-Resistance, Resilience gegen Datenmanipulation.",
+      "ai_act_article": "Art. 15",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "15-30"
+    },
+    "conformity_assessment": {
+      "label": "Conformity Assessment",
+      "description": "Meist Notified-Body-Prüfung vor Inverkehrbringen — formaler Audit der erfüllten Pflichten.",
+      "ai_act_article": "Art. 43",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "30-60"
+    },
+    "fundamental_rights_impact_assessment": {
+      "label": "Fundamental Rights Impact Assessment (FRIA)",
+      "description": "Pflicht für öffentliche Stellen + bestimmte private Deployer (z.B. Banken bei Credit-Scoring).",
+      "ai_act_article": "Art. 27",
+      "phase": 1,
+      "effort": "medium",
+      "estimated_days": "5-15"
+    },
+    "transparency_art22_dsgvo": {
+      "label": "DSGVO Art-22 Transparenz",
+      "description": "Auskunfts-, Erklärungs- und Anfechtungsrecht des Betroffenen bei automatisierter Einzelfallentscheidung.",
+      "ai_act_article": "DSGVO Art. 22",
+      "phase": 2,
+      "effort": "medium",
+      "estimated_days": "5-10"
+    },
+    "betriebsrat_consultation_de": {
+      "label": "Betriebsrats-Mitbestimmung",
+      "description": "BetrVG § 87 Abs. 1 Nr. 6 (technische Überwachung) + § 90/95 bei Auswahl-Richtlinien — Mitbestimmung VOR Einführung.",
+      "ai_act_article": "BetrVG § 87 / § 90",
+      "phase": 2,
+      "effort": "medium",
+      "estimated_days": "10-30"
+    },
+    "bafin_notification_de": {
+      "label": "BaFin-Notifikation",
+      "description": "Falls wesentliche Auslagerung nach KWG § 25b / MaRisk AT 9 — Anzeige bei BaFin.",
+      "ai_act_article": "KWG § 25b · MaRisk AT 9",
+      "phase": 1,
+      "effort": "medium",
+      "estimated_days": "5-15"
+    },
+    "vait_compliance_de": {
+      "label": "VAIT-Konformität",
+      "description": "Versicherungsaufsichtliche Anforderungen an IT — analog BAIT für Banken, mit branchen-spezifischen Anpassungen.",
+      "ai_act_article": "VAIT (BaFin-Rundschreiben)",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "30-60"
+    }
+  },
+  "phase_meta": {
+    "1": { "label": "Dokumentation & Assessment", "description": "Was schriftlich existieren muss bevor das System live geht." },
+    "2": { "label": "Human-in-the-Loop", "description": "Prozesse + Stakeholder-Einbindung — Mensch behält Kontrolle." },
+    "3": { "label": "Logging & Monitoring", "description": "Operative Beobachtbarkeit — was lief wie, mit welchem Ergebnis." },
+    "4": { "label": "Governance & Conformity", "description": "Formales Risikomanagement + externe Prüfung. Höchster Aufwand, letzter Schritt." }
   }
 }

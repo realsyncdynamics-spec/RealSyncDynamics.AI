@@ -5,11 +5,14 @@ import {
   REGISTRY,
   getUseCase,
   getCategory,
-  getObligationLabel,
+  getObligation,
+  getPhase,
+  obligationsByPhase,
   aggregateObligations,
   aggregateSeverity,
   type AnnexIIIUseCase,
   type Severity,
+  type Effort,
 } from '../lib/ai-act/registry';
 
 /**
@@ -574,17 +577,40 @@ function ResultPanel({ system, result, answeredCount }: {
         </Section>
       )}
 
-      {/* Aggregated Obligations */}
+      {/* Aggregated Obligations als 4-Phasen-Roadmap */}
       {obligations.length > 0 && (
-        <Section title={`Pflichten (${obligations.length})`}>
-          <ol style={{ paddingLeft: '1.25rem', color: '#cbd5e1', lineHeight: 1.7 }}>
-            {obligations.map((o) => (
-              <li key={o} style={{ marginBottom: '0.5rem' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#94a3b8', marginRight: '0.4rem' }}>{o}</span>
-                — {getObligationLabel(o)}
-              </li>
-            ))}
-          </ol>
+        <Section title={`Compliance-Roadmap (${obligations.length} Pflichten · ${[...obligationsByPhase(obligations).keys()].length} Phasen)`}>
+          {[...obligationsByPhase(obligations).entries()].map(([phase, items]) => {
+            const phaseMeta = getPhase(phase);
+            return (
+              <div key={phase} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #374151', borderLeftWidth: 3, borderLeftColor: phaseColor(phase), background: '#0f172a' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: phaseColor(phase), fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Phase {phase}
+                  </span>
+                  <span style={{ fontWeight: 700, color: '#f1f5f9', fontSize: '0.95rem' }}>{phaseMeta?.label ?? `Phase ${phase}`}</span>
+                </div>
+                {phaseMeta && (
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.75rem', lineHeight: 1.5 }}>{phaseMeta.description}</p>
+                )}
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {items.map(({ key, meta }) => (
+                    <li key={key} style={{ padding: '0.6rem 0', borderTop: '1px solid #1e293b' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{meta.label}</span>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', flexShrink: 0 }}>
+                          <EffortBadge effort={meta.effort} />
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'monospace' }}>~{meta.estimated_days}d</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.5, marginBottom: '0.25rem' }}>{meta.description}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', fontFamily: 'monospace' }}>{meta.ai_act_article}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </Section>
       )}
 
@@ -601,6 +627,27 @@ function ResultPanel({ system, result, answeredCount }: {
       )}
 
     </div>
+  );
+}
+
+function phaseColor(phase: number): string {
+  const map: Record<number, string> = {
+    1: '#3b82f6', // blue — Doku
+    2: '#a855f7', // purple — Human-in-Loop
+    3: '#10b981', // emerald — Logging
+    4: '#f59e0b', // amber — Governance
+  };
+  return map[phase] ?? '#6b7280';
+}
+
+function EffortBadge({ effort }: { effort: Effort }) {
+  const cfg = effort === 'high' ? { label: 'Hoch', color: '#fca5a5', bg: '#7f1d1d' }
+    : effort === 'medium' ? { label: 'Mittel', color: '#fde68a', bg: '#854d0e' }
+    : { label: 'Niedrig', color: '#bbf7d0', bg: '#166534' };
+  return (
+    <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.1rem 0.4rem', border: `1px solid ${cfg.bg}`, color: cfg.color, background: 'transparent', borderRadius: 2 }}>
+      {cfg.label}
+    </span>
   );
 }
 

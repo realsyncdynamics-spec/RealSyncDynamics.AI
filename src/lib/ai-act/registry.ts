@@ -45,13 +45,31 @@ export interface AnnexIIIUseCase {
   examples_de?: string[];
 }
 
+export type Effort = 'low' | 'medium' | 'high';
+export type Phase = 1 | 2 | 3 | 4;
+
+export interface ObligationMeta {
+  label: string;
+  description: string;
+  ai_act_article: string;
+  phase: Phase;
+  effort: Effort;
+  estimated_days: string;
+}
+
+export interface PhaseMeta {
+  label: string;
+  description: string;
+}
+
 export interface AnnexRegistry {
   version: string;
   source: string;
   updated_at: string;
   categories: AnnexCategory[];
   use_cases: AnnexIIIUseCase[];
-  obligations_glossary: Record<ObligationKey, string>;
+  obligations_glossary: Record<ObligationKey, ObligationMeta>;
+  phase_meta: Record<string, PhaseMeta>;
 }
 
 export const REGISTRY: AnnexRegistry = registryData as unknown as AnnexRegistry;
@@ -68,8 +86,34 @@ export function getUseCasesByCategory(categoryId: string): AnnexIIIUseCase[] {
   return REGISTRY.use_cases.filter((uc) => uc.category === categoryId);
 }
 
+export function getObligation(key: ObligationKey): ObligationMeta | undefined {
+  return REGISTRY.obligations_glossary[key];
+}
+
 export function getObligationLabel(key: ObligationKey): string {
-  return REGISTRY.obligations_glossary[key] ?? key;
+  const meta = REGISTRY.obligations_glossary[key];
+  return meta ? meta.label : key;
+}
+
+export function getPhase(phase: Phase): PhaseMeta | undefined {
+  return REGISTRY.phase_meta[String(phase)];
+}
+
+/**
+ * Gruppiert die aggregierten Pflichten nach Phasen — liefert eine Roadmap-
+ * artige Struktur für das Result-Panel ("Phase 1: was machen wir zuerst").
+ */
+export function obligationsByPhase(keys: ObligationKey[]): Map<Phase, { key: ObligationKey; meta: ObligationMeta }[]> {
+  const map = new Map<Phase, { key: ObligationKey; meta: ObligationMeta }[]>();
+  for (const k of keys) {
+    const meta = REGISTRY.obligations_glossary[k];
+    if (!meta) continue;
+    const arr = map.get(meta.phase) ?? [];
+    arr.push({ key: k, meta });
+    map.set(meta.phase, arr);
+  }
+  // Phase-Reihenfolge garantieren
+  return new Map([...map.entries()].sort((a, b) => a[0] - b[0]));
 }
 
 /**

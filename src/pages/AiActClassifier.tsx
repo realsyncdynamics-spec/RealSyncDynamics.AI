@@ -5,12 +5,22 @@ import {
   REGISTRY,
   getUseCase,
   getCategory,
-  getObligationLabel,
+  getObligation,
+  getPhase,
+  obligationsByPhase,
   aggregateObligations,
   aggregateSeverity,
   type AnnexIIIUseCase,
   type Severity,
+  type Effort,
 } from '../lib/ai-act/registry';
+import { downloadMarkdown } from '../lib/ai-act/export';
+import {
+  extractSignalsLocal,
+  extractSignalsLLM,
+  matchedUseCases as matchedFromSignals,
+  type ExtractionResult,
+} from '../lib/ai-act/signal-extraction';
 
 /**
  * /ai-act-klassifikator — registry-backed EU-AI-Act-Risiko-Klassifikator.
@@ -36,6 +46,12 @@ interface QuestionDef {
   prohibited?: { norm: string; rationale: string };
   /** Art. 50 Transparenz-Trigger ohne High-Risk-Use-Case (z.B. Chatbot, Deepfake) */
   limited?: { norm: string; rationale: string };
+  /**
+   * Transversale Frage — wird unabhängig von Kategorie-Auswahl immer gestellt.
+   * Für Chatbot, synthetische Medien, Art-5-Verbots-Praktiken die Sektor-übergreifend
+   * relevant sind.
+   */
+  transversal?: true;
 }
 
 // 14 Fragen die alle 8 Annex-III-Kategorien abfragen + 3 reine Limited-/Prohibited-Trigger.
@@ -110,11 +126,12 @@ const QUESTIONS: QuestionDef[] = [
     text: 'Unterstützt das System Justizbehörden bei Urteilsfindung — oder wird es zur Beeinflussung von Wahlen oder Wähler-Verhalten eingesetzt?',
     matchUseCases: ['justice_judicial_assistance'],
   },
-  // Reine Limited-Risk- bzw. Prohibited-Trigger (kein Annex-III-Use-Case erforderlich)
+  // Transversale Trigger — Kategorie-übergreifend, immer abgefragt.
   {
     id: 'q_chatbot',
     text: 'Interagiert das System direkt mit Endnutzern (Chatbot, Voice-Assistant, AI-Avatar)?',
     matchUseCases: [],
+    transversal: true,
     limited: {
       norm: 'AI Act Art. 50 Abs. 1',
       rationale: 'User müssen wissen dass sie mit einer KI interagieren — Disclosure-Pflicht.',
@@ -124,6 +141,7 @@ const QUESTIONS: QuestionDef[] = [
     id: 'q_synthetic_media',
     text: 'Generiert das System synthetische Bilder, Audio, Video oder Text (Deepfakes, AI-generated content)?',
     matchUseCases: [],
+    transversal: true,
     limited: {
       norm: 'AI Act Art. 50 Abs. 2 + 4',
       rationale: 'Output muss als KI-erzeugt markiert werden (machine-readable + sichtbar bei Deepfakes).',
@@ -133,12 +151,39 @@ const QUESTIONS: QuestionDef[] = [
     id: 'q_prohibited_manipulation',
     text: 'Nutzt das System unterschwellige Manipulation, ausnutzt Schwachstellen vulnerabler Gruppen, oder macht Social Scoring durch öffentliche Stellen?',
     matchUseCases: [],
+    transversal: true,
     prohibited: {
       norm: 'AI Act Art. 5 Abs. 1 lit. a-c',
       rationale: 'Vollständig verbotene KI-Praktiken — Einsatz in EU untersagt seit 2. Februar 2025.',
     },
   },
 ];
+
+/**
+ * Welche Annex-III-Kategorien adressiert eine Frage?
+ * Aus der Registry abgeleitet via matchUseCases → use_case.category.
+ */
+function categoriesForQuestion(q: QuestionDef): string[] {
+  if (q.transversal) return [];
+  const cats = new Set<string>();
+  for (const ucId of q.matchUseCases) {
+    const uc = getUseCase(ucId);
+    if (uc) cats.add(uc.category);
+  }
+  return [...cats];
+}
+
+/**
+ * Filtert Fragen nach gewählten Kategorien.
+ * Transversale Fragen werden immer eingeschlossen.
+ */
+function filterQuestions(selectedCats: Set<string>): QuestionDef[] {
+  return QUESTIONS.filter((q) => {
+    if (q.transversal) return true;
+    const qCats = categoriesForQuestion(q);
+    return qCats.some((c) => selectedCats.has(c));
+  });
+}
 
 interface ClassificationResult {
   severity: Severity;
@@ -205,16 +250,66 @@ const STYLE = {
   btn: { padding: '1rem', border: '1px solid #374151', borderRadius: 4, background: 'transparent', color: '#e5e7eb', fontSize: '1rem', cursor: 'pointer', fontWeight: 600 },
 };
 
+type Stage = 'category_select' | 'questions';
+
 export function AiActClassifier() {
+  const [stage, setStage] = useState<Stage>('category_select');
+  const [selectedCats, setSelectedCats] = useState<Set<string>>(new Set());
   const [answers, setAnswers] = useState<Record<string, boolean>>({});
   const [step, setStep] = useState(0);
   const [system, setSystem] = useState('');
   const [done, setDone] = useState(false);
+  const [description, setDescription] = useState('');
+  const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
+  const [extracting, setExtracting] = useState(false);
+
+  async function runExtraction() {
+    if (!description.trim()) return;
+    setExtracting(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const result = supabaseUrl
+        ? await extractSignalsLLM(description, supabaseUrl)
+        : extractSignalsLocal(description);
+      setExtractionResult(result);
+      // Pre-select suggested categories
+      if (result.suggestedCategories.length > 0) {
+        setSelectedCats(new Set(result.suggestedCategories));
+      }
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  // Frage-Liste neu berechnen wenn Kategorien wechseln (auch wenn man später
+  // zurückgeht und Auswahl ändert).
+  const filteredQuestions = filterQuestions(selectedCats);
+
+  function toggleCategory(catId: string) {
+    setSelectedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      return next;
+    });
+  }
+
+  function startQuestions() {
+    setStep(0);
+    setAnswers({});
+    setStage('questions');
+  }
+
+  function backToCategories() {
+    setStage('category_select');
+    setStep(0);
+    setAnswers({});
+  }
 
   function answer(id: string, val: boolean) {
     const next = { ...answers, [id]: val };
     setAnswers(next);
-    if (step < QUESTIONS.length - 1) setStep(step + 1);
+    if (step < filteredQuestions.length - 1) setStep(step + 1);
     else setDone(true);
   }
 
@@ -230,16 +325,12 @@ export function AiActClassifier() {
     );
   }
 
-  const q = QUESTIONS[step];
-  const progress = Math.round((step / QUESTIONS.length) * 100);
-
-  return (
-    <div style={STYLE.page}>
-      <div style={STYLE.container}>
-        <Header />
-
-        <div style={STYLE.card}>
-          {step === 0 && (
+  if (stage === 'category_select') {
+    return (
+      <div style={STYLE.page}>
+        <div style={STYLE.container}>
+          <Header />
+          <div style={STYLE.card}>
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={STYLE.label}>Ihr KI-System (optional)</label>
               <input
@@ -249,11 +340,182 @@ export function AiActClassifier() {
                 style={STYLE.input}
               />
             </div>
-          )}
 
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={STYLE.label}>System-Beschreibung (optional, für automatische Vorauswahl)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="z.B. 'Wir betreiben ein ATS das Bewerbungen mit ML rankt und Empfehlungen für HR-Manager liefert.'"
+                rows={3}
+                style={{ ...STYLE.input, fontFamily: 'inherit', resize: 'vertical', minHeight: 70 }}
+              />
+              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                <button
+                  type="button"
+                  onClick={() => void runExtraction()}
+                  disabled={extracting || description.trim().length < 10}
+                  style={{
+                    padding: '0.4rem 0.9rem',
+                    background: 'transparent',
+                    border: '1px solid #4b5563',
+                    color: extracting || description.trim().length < 10 ? '#6b7280' : '#cbd5e1',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: extracting || description.trim().length < 10 ? 'not-allowed' : 'pointer',
+                    borderRadius: 2,
+                  }}
+                >
+                  {extracting ? '⏳ Analysiere…' : '🔍 Kategorien vorschlagen'}
+                </button>
+                {extractionResult && (
+                  <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>
+                    {extractionResult.matches.length} Use-Case{extractionResult.matches.length === 1 ? '' : 's'} matched · Quelle: <code>{extractionResult.source}</code>
+                  </span>
+                )}
+              </div>
+              {extractionResult?.hint && (
+                <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: '#1e293b', border: '1px solid #334155', fontSize: '0.75rem', color: '#cbd5e1', borderRadius: 2 }}>
+                  ℹ {extractionResult.hint}
+                </div>
+              )}
+              {extractionResult && extractionResult.matches.length > 0 && (
+                <details style={{ marginTop: '0.5rem' }}>
+                  <summary style={{ fontSize: '0.75rem', color: '#9ca3af', cursor: 'pointer' }}>
+                    {extractionResult.matches.length} Trigger-Match{extractionResult.matches.length === 1 ? '' : 'es'} anzeigen
+                  </summary>
+                  <ul style={{ marginTop: '0.4rem', paddingLeft: '1rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                    {matchedFromSignals(extractionResult.matches).map((uc, i) => (
+                      <li key={uc.id} style={{ marginBottom: '0.3rem' }}>
+                        <strong>{uc.title}</strong>{' '}
+                        <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                          ({extractionResult.matches[i]?.confidence})
+                        </span>
+                        <div style={{ color: '#94a3b8', fontSize: '0.7rem', marginTop: '0.1rem' }}>
+                          Trigger: {extractionResult.matches[i]?.matchedTriggers.join(', ')}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </div>
+
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem', lineHeight: 1.5 }}>
+              In welchen Bereichen wird Ihr KI-System eingesetzt?
+            </h2>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Mehrfachauswahl möglich. Wir zeigen anschließend nur die für diese Bereiche relevanten Fragen.
+              Querschnittsfragen (Chatbot, Deepfakes, Verbots-Praktiken) werden unabhängig davon abgefragt.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              {REGISTRY.categories.map((cat) => {
+                const selected = selectedCats.has(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => toggleCategory(cat.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: '1rem',
+                      border: `1px solid ${selected ? '#3b82f6' : '#374151'}`,
+                      borderRadius: 4,
+                      background: selected ? 'rgba(59,130,246,0.08)' : 'transparent',
+                      color: '#e5e7eb',
+                      cursor: 'pointer',
+                      transition: 'border-color 0.15s, background 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: 'monospace' }}>
+                        {cat.annex_section}
+                      </div>
+                      <div style={{ width: 16, height: 16, border: `1px solid ${selected ? '#3b82f6' : '#4b5563'}`, background: selected ? '#3b82f6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
+                        {selected ? '✓' : ''}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem' }}>{cat.label}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#9ca3af', lineHeight: 1.4 }}>{cat.intro}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
+                {selectedCats.size === 0 ? (
+                  <span>Keine Kategorie gewählt — nur Querschnittsfragen werden gestellt (3 Fragen).</span>
+                ) : (
+                  <span>
+                    <strong style={{ color: '#e5e7eb' }}>{filteredQuestions.length}</strong> Fragen ({selectedCats.size} {selectedCats.size === 1 ? 'Kategorie' : 'Kategorien'} + Querschnitt)
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={startQuestions}
+                style={{
+                  padding: '0.75rem 1.25rem',
+                  border: '1px solid #3b82f6',
+                  background: '#3b82f6',
+                  color: '#fff',
+                  borderRadius: 4,
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Fragen starten →
+              </button>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', fontSize: '0.7rem', color: '#6b7280', textAlign: 'center' }}>
+              Annex-III-Registry v{REGISTRY.version} · {REGISTRY.use_cases.length} Use-Cases · {REGISTRY.categories.length} Kategorien
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // stage === 'questions'
+  const q = filteredQuestions[step];
+  if (!q) {
+    // Edge-case: keine Fragen (sollte nicht passieren da Querschnitt immer 3 Q's hat)
+    return (
+      <div style={STYLE.page}>
+        <div style={STYLE.container}>
+          <Header />
+          <div style={STYLE.card}>
+            <p style={{ color: '#9ca3af' }}>Keine Fragen für die Auswahl. <button onClick={backToCategories} style={{ color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Zurück zur Kategorie-Auswahl</button></p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const progress = Math.round((step / filteredQuestions.length) * 100);
+
+  return (
+    <div style={STYLE.page}>
+      <div style={STYLE.container}>
+        <Header />
+
+        <div style={STYLE.card}>
           <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.4rem' }}>
-              <span>Frage {step + 1} von {QUESTIONS.length}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.4rem' }}>
+              <span>
+                <button
+                  type="button"
+                  onClick={backToCategories}
+                  style={{ color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '0.5rem', fontSize: '0.75rem' }}
+                  title="Zurück zur Kategorie-Auswahl"
+                >
+                  ← Kategorien
+                </button>
+                <span>· Frage {step + 1} von {filteredQuestions.length}</span>
+              </span>
               <span>{progress}%</span>
             </div>
             <div style={{ height: 4, background: '#374151', borderRadius: 2 }}>
@@ -261,15 +523,17 @@ export function AiActClassifier() {
             </div>
           </div>
 
+          {q.transversal && (
+            <div style={{ display: 'inline-block', fontSize: '0.65rem', padding: '0.15rem 0.5rem', border: '1px solid #4b5563', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem', fontFamily: 'monospace' }}>
+              Querschnittsfrage
+            </div>
+          )}
+
           <h2 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '2rem', lineHeight: 1.55 }}>{q.text}</h2>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <button onClick={() => answer(q.id, true)} style={STYLE.btn}>✓ Ja</button>
             <button onClick={() => answer(q.id, false)} style={STYLE.btn}>✗ Nein</button>
-          </div>
-
-          <div style={{ marginTop: '1rem', fontSize: '0.7rem', color: '#6b7280', textAlign: 'center' }}>
-            Annex-III-Registry v{REGISTRY.version} · {REGISTRY.use_cases.length} Use-Cases · {REGISTRY.categories.length} Kategorien
           </div>
         </div>
       </div>
@@ -328,6 +592,49 @@ function ResultPanel({ system, result, answeredCount }: {
         <p style={{ color: '#e5e7eb', lineHeight: 1.6, marginBottom: 0 }}>{cfg.desc}</p>
         <div style={{ marginTop: '1rem' }}>
           <ConfidenceScore score={confidence} flags={[]} />
+        </div>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => downloadMarkdown({
+              system,
+              severity: result.severity,
+              isMinimal,
+              matchedUseCases: result.matchedUseCases,
+              prohibitedTriggers: result.prohibitedTriggers,
+              limitedTriggers: result.limitedTriggers,
+              obligations,
+              confidence,
+            })}
+            style={{
+              padding: '0.5rem 0.9rem',
+              background: '#3b82f6',
+              border: '1px solid #3b82f6',
+              color: '#fff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              borderRadius: 2,
+            }}
+          >
+            ⤓ Klassifikations-Doku als Markdown
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            style={{
+              padding: '0.5rem 0.9rem',
+              background: 'transparent',
+              border: '1px solid #4b5563',
+              color: '#cbd5e1',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              borderRadius: 2,
+            }}
+          >
+            ⎙ Drucken / als PDF speichern
+          </button>
         </div>
       </div>
 
@@ -401,17 +708,40 @@ function ResultPanel({ system, result, answeredCount }: {
         </Section>
       )}
 
-      {/* Aggregated Obligations */}
+      {/* Aggregated Obligations als 4-Phasen-Roadmap */}
       {obligations.length > 0 && (
-        <Section title={`Pflichten (${obligations.length})`}>
-          <ol style={{ paddingLeft: '1.25rem', color: '#cbd5e1', lineHeight: 1.7 }}>
-            {obligations.map((o) => (
-              <li key={o} style={{ marginBottom: '0.5rem' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#94a3b8', marginRight: '0.4rem' }}>{o}</span>
-                — {getObligationLabel(o)}
-              </li>
-            ))}
-          </ol>
+        <Section title={`Compliance-Roadmap (${obligations.length} Pflichten · ${[...obligationsByPhase(obligations).keys()].length} Phasen)`}>
+          {[...obligationsByPhase(obligations).entries()].map(([phase, items]) => {
+            const phaseMeta = getPhase(phase);
+            return (
+              <div key={phase} style={{ marginBottom: '1rem', padding: '1rem', border: '1px solid #374151', borderLeftWidth: 3, borderLeftColor: phaseColor(phase), background: '#0f172a' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: phaseColor(phase), fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Phase {phase}
+                  </span>
+                  <span style={{ fontWeight: 700, color: '#f1f5f9', fontSize: '0.95rem' }}>{phaseMeta?.label ?? `Phase ${phase}`}</span>
+                </div>
+                {phaseMeta && (
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.75rem', lineHeight: 1.5 }}>{phaseMeta.description}</p>
+                )}
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {items.map(({ key, meta }) => (
+                    <li key={key} style={{ padding: '0.6rem 0', borderTop: '1px solid #1e293b' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: 600, color: '#e5e7eb', fontSize: '0.875rem' }}>{meta.label}</span>
+                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'baseline', flexShrink: 0 }}>
+                          <EffortBadge effort={meta.effort} />
+                          <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontFamily: 'monospace' }}>~{meta.estimated_days}d</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.5, marginBottom: '0.25rem' }}>{meta.description}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748b', fontFamily: 'monospace' }}>{meta.ai_act_article}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </Section>
       )}
 
@@ -428,6 +758,27 @@ function ResultPanel({ system, result, answeredCount }: {
       )}
 
     </div>
+  );
+}
+
+function phaseColor(phase: number): string {
+  const map: Record<number, string> = {
+    1: '#3b82f6', // blue — Doku
+    2: '#a855f7', // purple — Human-in-Loop
+    3: '#10b981', // emerald — Logging
+    4: '#f59e0b', // amber — Governance
+  };
+  return map[phase] ?? '#6b7280';
+}
+
+function EffortBadge({ effort }: { effort: Effort }) {
+  const cfg = effort === 'high' ? { label: 'Hoch', color: '#fca5a5', bg: '#7f1d1d' }
+    : effort === 'medium' ? { label: 'Mittel', color: '#fde68a', bg: '#854d0e' }
+    : { label: 'Niedrig', color: '#bbf7d0', bg: '#166534' };
+  return (
+    <span style={{ fontSize: '0.65rem', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0.1rem 0.4rem', border: `1px solid ${cfg.bg}`, color: cfg.color, background: 'transparent', borderRadius: 2 }}>
+      {cfg.label}
+    </span>
   );
 }
 

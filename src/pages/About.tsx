@@ -77,7 +77,7 @@ export function About() {
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong className="text-titanium-50">Tools statt Beratung</strong>: 8 kostenlose Self-Service-Tools (AVV, VVT, DSFA, AI-Act-Klassifikator, Bußgeld-Rechner, …) statt PowerPoint-Audits.</span>
+                <span><strong className="text-titanium-50">Tools statt Beratung</strong>: 10 kostenlose Self-Service-Tools (AVV, VVT, DSFA, AI-Act-Klassifikator, Bußgeld-Rechner, …) statt PowerPoint-Audits.</span>
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />

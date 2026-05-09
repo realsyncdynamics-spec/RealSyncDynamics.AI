@@ -124,7 +124,7 @@ export function ToolsHub() {
         <div style={{ maxWidth: 1000, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#1a1a2e', border: '1px solid #374151', borderRadius: 20, padding: '6px 16px', marginBottom: 24 }}>
             <span style={{ width: 6, height: 6, background: '#16a34a', borderRadius: '50%', display: 'inline-block' }} />
-            <span style={{ color: '#9ca3af', fontSize: 13 }}>8 kostenlose Tools — kein Account erforderlich</span>
+            <span style={{ color: '#9ca3af', fontSize: 13 }}>10 kostenlose Tools — kein Account erforderlich</span>
           </div>
           <h1 style={{ fontSize: 42, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.2 }}>
             DSGVO-Compliance<br />

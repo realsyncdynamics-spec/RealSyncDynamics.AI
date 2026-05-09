@@ -91,7 +91,7 @@ export function Resources() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <BookOpen className="h-3 w-3" /> 8 kostenlose Tools + Guides
+              <BookOpen className="h-3 w-3" /> 10 kostenlose Tools + Guides
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
               DSGVO + AI Act Wissens-Hub

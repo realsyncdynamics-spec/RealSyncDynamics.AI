@@ -15,17 +15,17 @@ import { Logo } from '../../components/Logo';
  * Style: gleiche Schwarz/Gold/Silber-Bühne wie HeroOnly + Niche-Landings.
  *
  * Drei Pakete (Stand 2026-05):
- *   1. Scan     —  0 € / einmalig         · Lead-Funnel
- *   2. Protect  — 99 € / Monat (EMPFOHLEN)· Standard-KMU
- *   3. Comply   — 249 € / Monat           · Multi-Domain + AI-Act + API
+ *   1. Bronze   —  29 € / Monat                · Einstieg / Single-Domain
+ *   2. Silver   —  99 € / Monat (EMPFOHLEN)    · Standard-KMU
+ *   3. Gold     — 299 € / Monat                · Multi-Domain + AI-Act + API
  *
- * Keine Stripe-Anbindung in dieser PR — CTAs gehen auf /audit (Free-Scan)
- * bzw. /contact-sales?intent=… (Buchung manuell durch Sales-Team bis
- * Stripe-Setup steht).
+ * Alle drei mit 14 Tage Pilot-Trial. Keine Stripe-Anbindung in dieser PR —
+ * CTAs gehen auf /audit (Free-Scan) bzw. /contact-sales?intent=… (Buchung
+ * manuell durch Sales-Team bis Stripe-Setup steht).
  */
 
 interface Tier {
-  id: 'scan' | 'protect' | 'comply';
+  id: 'bronze' | 'silver' | 'gold';
   name: string;
   price: string;
   priceSuffix: string;
@@ -39,23 +39,24 @@ interface Tier {
 
 const TIERS: Tier[] = [
   {
-    id: 'scan',
-    name: 'Scan',
-    price: 'Kostenlos',
-    priceSuffix: 'einmalig',
-    tagline: 'Schneller DSGVO-Check ohne Verpflichtung',
+    id: 'bronze',
+    name: 'Bronze',
+    price: '29 €',
+    priceSuffix: '/ Monat',
+    tagline: 'Einstieg für Solo-Selbstständige & Single-Domain',
     bullets: [
-      'Einmaliger DSGVO-Scan der Domain',
-      'Risk-Score + Top-3-Findings',
-      'Kein Account nötig',
+      'Vollständiger DSGVO-Scan der Domain',
+      'Risk-Score + Top-Findings mit Paragraphenbezug',
+      'Wöchentlicher Re-Audit + Alert',
+      '14 Tage kostenlos testen',
     ],
-    ctaLabel: 'Jetzt kostenlos scannen',
-    ctaHref: '/audit?source=pricing-scan',
+    ctaLabel: 'Jetzt 14 Tage testen',
+    ctaHref: '/contact-sales?intent=bronze&source=pricing',
     highlight: false,
   },
   {
-    id: 'protect',
-    name: 'Protect',
+    id: 'silver',
+    name: 'Silver',
     price: '99 €',
     priceSuffix: '/ Monat',
     tagline: 'Compliance-Standard für eine Domain',
@@ -68,18 +69,18 @@ const TIERS: Tier[] = [
       '1 Domain',
     ],
     badges: ['Geprüft durch Partnerkanzlei'],
-    ctaLabel: 'Jetzt starten',
-    ctaHref: '/contact-sales?intent=protect&source=pricing',
+    ctaLabel: 'Jetzt 14 Tage testen',
+    ctaHref: '/contact-sales?intent=silver&source=pricing',
     highlight: true,
   },
   {
-    id: 'comply',
-    name: 'Comply',
-    price: '249 €',
+    id: 'gold',
+    name: 'Gold',
+    price: '299 €',
     priceSuffix: '/ Monat',
     tagline: 'Mittelstand mit AI-Act-Pflichten',
     bullets: [
-      'Alles aus Protect',
+      'Alles aus Silver',
       'Verzeichnis der Verarbeitungstätigkeiten (VVT)',
       'TOM-Dokumentation',
       'KI-Risikoabschätzung (EU AI Act)',
@@ -89,8 +90,8 @@ const TIERS: Tier[] = [
       'Signierte PDF-Exports',
       'Externer DSB buchbar (Add-on)',
     ],
-    ctaLabel: 'Jetzt starten',
-    ctaHref: '/contact-sales?intent=comply&source=pricing',
+    ctaLabel: 'Jetzt 14 Tage testen',
+    ctaHref: '/contact-sales?intent=gold&source=pricing',
     highlight: false,
   },
 ];
@@ -125,12 +126,12 @@ export function PricingPage() {
           </div>
 
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Drei Pakete. Klare Preise. Kein Account.
+            Bronze · Silver · Gold — Fair. Transparent. Kündbar.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Vom kostenlosen Schnell-Check bis zum Multi-Domain-Compliance-Setup mit AI-Act-Layer
-            und API-Zugriff. Sie wählen das Paket, das zu Ihrem Risiko und Ihrer Org-Größe passt —
-            wir liefern.
+            Vom Einsteiger-Plan bis zum Multi-Domain-Compliance-Setup mit AI-Act-Layer und
+            API-Zugriff. Alle drei Pakete mit 14 Tage Pilot kostenlos. Sie wählen das Paket,
+            das zu Ihrem Risiko und Ihrer Org-Größe passt — wir liefern.
           </p>
         </div>
       </section>
@@ -146,7 +147,7 @@ export function PricingPage() {
 
           <div className="mt-8 text-center">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-              EU-Datenresidenz · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany
+              Bronze 29€ · Silver 99€ · Gold 299€ · 14 Tage Pilot · Keine Setup-Fees · Monatlich kündbar
             </p>
           </div>
 
@@ -182,7 +183,7 @@ export function PricingPage() {
             {[
               {
                 q: 'Brauche ich einen Account um zu starten?',
-                a: 'Für „Scan" nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für Protect und Comply legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
+                a: 'Alle drei Pakete starten mit 14 Tage Pilot kostenlos. Wir legen nach Buchung gemeinsam einen Account für Ihr Team an. Wenn der Pilot nicht passt, können Sie ohne Begründung in den 14 Tagen kündigen.',
               },
               {
                 q: 'Wie kündige ich, wenn es nicht passt?',
@@ -193,8 +194,8 @@ export function PricingPage() {
                 a: 'Ihre automatisch generierten Dokumente (DSE, AVV, VVT) durchlaufen einen Review unserer DSGVO-spezialisierten Partnerkanzlei. Das ersetzt keine individuelle Rechtsberatung — bringt aber Ihre Doku auf einen Standard, der dem juristischen Mainstream entspricht.',
               },
               {
-                q: 'Muss ich für Comply schon API/CI nutzen?',
-                a: 'Nein. API + CI-Integration sind im Paket enthalten, aber optional. Sie können Comply auch nur wegen VVT/TOM/AI-Act buchen und API später aktivieren — kein Up- oder Downgrade nötig.',
+                q: 'Muss ich für Gold schon API/CI nutzen?',
+                a: 'Nein. API + CI-Integration sind im Paket enthalten, aber optional. Sie können Gold auch nur wegen VVT/TOM/AI-Act buchen und API später aktivieren — kein Up- oder Downgrade nötig.',
               },
               {
                 q: 'Was ist der externe DSB-Add-on?',
@@ -244,7 +245,7 @@ export function PricingPage() {
 }
 
 function TierCard({ tier }: { tier: Tier }) {
-  const TierIcon = tier.id === 'scan' ? Cookie : tier.id === 'protect' ? ShieldCheck : Building2;
+  const TierIcon = tier.id === 'bronze' ? Cookie : tier.id === 'silver' ? ShieldCheck : Building2;
 
   return (
     <div

@@ -48,7 +48,7 @@ const ENTRIES: Entry[] = [
   {
     date: '2026-05-06',
     type: 'feat',
-    title: '/tools Hub + 8 kostenlose Compliance-Tools',
+    title: '/tools Hub + 10 kostenlose Compliance-Tools',
     body: 'AVV-Generator, VVT-Wizard, DSFA-Wizard, TOM-Generator, AI-Act-Klassifikator, Datenschutz-Generator, 72h-Meldepflicht-Timer, Bußgeld-Rechner.',
   },
   {

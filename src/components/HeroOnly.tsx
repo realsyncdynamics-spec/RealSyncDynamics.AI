@@ -97,7 +97,8 @@ export function HeroOnly() {
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
             RealSyncDynamics.AI scannt Ihre Website, Tracking-Tools und KI-Workflows und zeigt Ihnen konkret,
-            wo Sie gegen DSGVO, TTDSG und EU AI Act verstoßen — inklusive To-do-Liste für Ihr Team.
+            wo Sie gegen <strong className="text-titanium-100">DSGVO · TTDSG · EU AI Act · BAIT · DORA</strong>{' '}
+            verstoßen — inklusive To-do-Liste für Ihr Team. Frankfurt-Hosting, kein US-Drittlandtransfer.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -126,7 +127,7 @@ export function HeroOnly() {
 
           {/* Trust-Leiste */}
           <div className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-silver-500">
-            EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany
+            EU-Datenresidenz · Frankfurt-Hosting · Audit-Trail · Ab 29 €/M · 14 Tage Pilot kostenlos · Made in Germany
           </div>
         </div>
       </main>
@@ -261,22 +262,22 @@ export function HeroOnly() {
               {
                 Icon: Cookie,
                 title: 'Vollständiger Website-Audit',
-                body: 'Tracking, Cookies, Einbettungen, Formulare, Scripts und Tools — technisch analysiert und rechtlich eingeordnet.',
+                body: 'Tracking, Cookies, Einbettungen, Formulare, Scripts und Tools — technisch analysiert und rechtlich eingeordnet. Frankfurt-Hosting, kein US-Drittlandtransfer.',
               },
               {
                 Icon: Brain,
                 title: 'KI-Workflow-Check',
-                body: 'Wir dokumentieren Ihre KI-Usecases und helfen, sie in die Kategorien des EU AI Act einzuordnen.',
+                body: 'Wir dokumentieren Ihre KI-Usecases und helfen, sie in die Kategorien des EU AI Act einzuordnen. Optionaler Ollama-Fallback (Llama/Mistral local) für Air-Gap-Szenarien.',
               },
               {
                 Icon: FileCheck2,
                 title: 'Audit-fähige Reports',
-                body: 'Exportierbare Reports für interne Richtlinien, Datenschutzdokumentation und externe Prüfungen.',
+                body: 'Exportierbare Reports für interne Richtlinien, Datenschutzdokumentation und externe Prüfungen. Industrial Design: 90°-Kanten, hard-edge UI — kein Marketing-Glanz.',
               },
               {
                 Icon: Activity,
                 title: 'Kontinuierliches Monitoring',
-                body: 'Auf Wunsch überwachen wir dauerhaft Änderungen an Ihrer Website und warnen, wenn neue Risiken auftauchen.',
+                body: 'Auf Wunsch überwachen wir dauerhaft Änderungen an Ihrer Website und warnen, wenn neue Risiken auftauchen. Audit-Trail über jeden KI-Call — Pflicht AI Act High-Risk.',
               },
             ].map((feat) => (
               <div
@@ -305,7 +306,7 @@ export function HeroOnly() {
               Gründe
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-              Typische Gründe, warum Firmen RealSyncDynamics.AI einsetzen
+              Typische Gründe — DSGVO · AI Act · BAIT · DORA
             </h2>
           </div>
 
@@ -326,7 +327,7 @@ export function HeroOnly() {
 
           <div className="mt-8 text-center">
             <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-silver-500">
-              Aktuell im Beta-Programm · Erste Referenzkunden 2026 Q3
+              Launch 2026 Q2 · 10 kostenlose Tools · Bronze ab 29 €/M · 14 Tage Pilot kostenlos
             </p>
           </div>
         </div>

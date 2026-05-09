@@ -14,6 +14,7 @@ import {
   type Severity,
   type Effort,
 } from '../lib/ai-act/registry';
+import { downloadMarkdown } from '../lib/ai-act/export';
 
 /**
  * /ai-act-klassifikator — registry-backed EU-AI-Act-Risiko-Klassifikator.
@@ -504,6 +505,49 @@ function ResultPanel({ system, result, answeredCount }: {
         <p style={{ color: '#e5e7eb', lineHeight: 1.6, marginBottom: 0 }}>{cfg.desc}</p>
         <div style={{ marginTop: '1rem' }}>
           <ConfidenceScore score={confidence} flags={[]} />
+        </div>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => downloadMarkdown({
+              system,
+              severity: result.severity,
+              isMinimal,
+              matchedUseCases: result.matchedUseCases,
+              prohibitedTriggers: result.prohibitedTriggers,
+              limitedTriggers: result.limitedTriggers,
+              obligations,
+              confidence,
+            })}
+            style={{
+              padding: '0.5rem 0.9rem',
+              background: '#3b82f6',
+              border: '1px solid #3b82f6',
+              color: '#fff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              borderRadius: 2,
+            }}
+          >
+            ⤓ Klassifikations-Doku als Markdown
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            style={{
+              padding: '0.5rem 0.9rem',
+              background: 'transparent',
+              border: '1px solid #4b5563',
+              color: '#cbd5e1',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              borderRadius: 2,
+            }}
+          >
+            ⎙ Drucken / als PDF speichern
+          </button>
         </div>
       </div>
 

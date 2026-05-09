@@ -7,9 +7,6 @@ name: Deploy
 #   SUPABASE_ACCESS_TOKEN    personal access token (account -> Access Tokens)
 #   SUPABASE_PROJECT_ID      project ref (the xxxx in xxxx.supabase.co)
 #   SUPABASE_DB_PASSWORD     the linked project's DB password
-#
-# If any of these secrets is unset, the job fails fast - that's intentional;
-# we'd rather not silently no-op a deploy.
 
 on:
   push:
@@ -42,7 +39,6 @@ jobs:
           [ -z "${{ secrets.SUPABASE_DB_PASSWORD }}"  ] && missing="$missing SUPABASE_DB_PASSWORD"
           if [ -n "$missing" ]; then
             echo "missing secrets:$missing"
-            echo "set them under repo Settings -> Secrets and variables -> Actions"
             exit 1
           fi
 
@@ -55,18 +51,28 @@ jobs:
 
       - name: Repair remote-only migrations
         run: |
-          supabase migration list --linked 2>&1 | grep -E "^[[:space:]]*[0-9]{14}" | while IFS= read -r line; do
-            version=$(echo "$line" | grep -oE '[0-9]{14}' | head -1)
-            if echo "$line" | grep -qi "REMOTE"; then
-              if [ -n "$version" ] && ! ls supabase/migrations/${version}_*.sql 2>/dev/null | grep -q .; then
-                echo "Marking remote-only migration $version as reverted"
-                supabase migration repair --status reverted "$version" || true
-              fi
-            fi
-          done || true
-
-      - name: Diff against remote (informational)
-        run: supabase db diff --linked --schema public || true
+          # Get list of remote-only migrations and mark them as reverted
+          python3 - << 'PYEOF'
+          import subprocess, os, re
+          result = subprocess.run(['supabase', 'migration', 'list', '--linked'], 
+                                  capture_output=True, text=True)
+          output = result.stdout + result.stderr
+          print("Migration list output:")
+          print(output)
+          for line in output.splitlines():
+            # Match lines with version number that indicate remote-only state
+            m = re.search(r'(\d{14})', line)
+            if m and ('REMOTE' in line.upper() or ('YES' in line.upper() and 'NO' in line.upper())):
+              version = m.group(1)
+              # Check if local file exists
+              local_files = [f for f in os.listdir('supabase/migrations') 
+                            if f.startswith(version)] if os.path.exists('supabase/migrations') else []
+              if not local_files:
+                print(f"Marking remote-only migration {version} as reverted")
+                subprocess.run(['supabase', 'migration', 'repair', '--status', 'reverted', version],
+                               check=False)
+          PYEOF
+          echo "Repair step complete"
 
       - name: Push pending migrations
         run: supabase db push

@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getSupabase } from '../lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { RebuildBeforeAfter, metricsFromSteps } from '../components/RebuildBeforeAfter';
-
-const supabase = getSupabase();
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -206,6 +204,7 @@ function StepRow({ meta, stepData, completedSteps, currentStep }: {
 
 export function WebsiteRebuildStatus() {
     const { rebuild_id } = useParams<{ rebuild_id: string }>();
+    const supabase = isSupabaseConfigured() ? getSupabase() : null;
     const [rebuild, setRebuild] = useState<WebsiteRebuild | null>(null);
     const [steps, setSteps] = useState<RebuildStep[]>([]);
     const [loading, setLoading] = useState(true);
@@ -215,6 +214,11 @@ export function WebsiteRebuildStatus() {
   // ── Initial load ──
   useEffect(() => {
         if (!rebuild_id) return;
+        if (!supabase) {
+          setError('Rebuild-Status ist aktuell nicht verfügbar, weil die Supabase-Konfiguration fehlt.');
+          setLoading(false);
+          return;
+        }
 
                 async function load() {
                         setLoading(true);
@@ -245,11 +249,11 @@ export function WebsiteRebuildStatus() {
                 }
 
                 load();
-  }, [rebuild_id]);
+  }, [rebuild_id, supabase]);
 
   // ── Realtime subscription ──
   useEffect(() => {
-        if (!rebuild_id) return;
+        if (!rebuild_id || !supabase) return;
 
                 const rebuildChannel = supabase
           .channel(`rebuild:${rebuild_id}`)
@@ -293,7 +297,7 @@ export function WebsiteRebuildStatus() {
                 return () => {
                         supabase.removeChannel(rebuildChannel);
                 };
-  }, [rebuild_id]);
+  }, [rebuild_id, supabase]);
 
   // ── Elapsed time counter (only while running) ──
   useEffect(() => {

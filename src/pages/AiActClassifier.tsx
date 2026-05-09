@@ -15,6 +15,12 @@ import {
   type Effort,
 } from '../lib/ai-act/registry';
 import { downloadMarkdown } from '../lib/ai-act/export';
+import {
+  extractSignalsLocal,
+  extractSignalsLLM,
+  matchedUseCases as matchedFromSignals,
+  type ExtractionResult,
+} from '../lib/ai-act/signal-extraction';
 
 /**
  * /ai-act-klassifikator — registry-backed EU-AI-Act-Risiko-Klassifikator.
@@ -253,6 +259,27 @@ export function AiActClassifier() {
   const [step, setStep] = useState(0);
   const [system, setSystem] = useState('');
   const [done, setDone] = useState(false);
+  const [description, setDescription] = useState('');
+  const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
+  const [extracting, setExtracting] = useState(false);
+
+  async function runExtraction() {
+    if (!description.trim()) return;
+    setExtracting(true);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+      const result = supabaseUrl
+        ? await extractSignalsLLM(description, supabaseUrl)
+        : extractSignalsLocal(description);
+      setExtractionResult(result);
+      // Pre-select suggested categories
+      if (result.suggestedCategories.length > 0) {
+        setSelectedCats(new Set(result.suggestedCategories));
+      }
+    } finally {
+      setExtracting(false);
+    }
+  }
 
   // Frage-Liste neu berechnen wenn Kategorien wechseln (auch wenn man später
   // zurückgeht und Auswahl ändert).
@@ -312,6 +339,66 @@ export function AiActClassifier() {
                 placeholder="z.B. ATS mit ML-CV-Ranking"
                 style={STYLE.input}
               />
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={STYLE.label}>System-Beschreibung (optional, für automatische Vorauswahl)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="z.B. 'Wir betreiben ein ATS das Bewerbungen mit ML rankt und Empfehlungen für HR-Manager liefert.'"
+                rows={3}
+                style={{ ...STYLE.input, fontFamily: 'inherit', resize: 'vertical', minHeight: 70 }}
+              />
+              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                <button
+                  type="button"
+                  onClick={() => void runExtraction()}
+                  disabled={extracting || description.trim().length < 10}
+                  style={{
+                    padding: '0.4rem 0.9rem',
+                    background: 'transparent',
+                    border: '1px solid #4b5563',
+                    color: extracting || description.trim().length < 10 ? '#6b7280' : '#cbd5e1',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: extracting || description.trim().length < 10 ? 'not-allowed' : 'pointer',
+                    borderRadius: 2,
+                  }}
+                >
+                  {extracting ? '⏳ Analysiere…' : '🔍 Kategorien vorschlagen'}
+                </button>
+                {extractionResult && (
+                  <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>
+                    {extractionResult.matches.length} Use-Case{extractionResult.matches.length === 1 ? '' : 's'} matched · Quelle: <code>{extractionResult.source}</code>
+                  </span>
+                )}
+              </div>
+              {extractionResult?.hint && (
+                <div style={{ marginTop: '0.5rem', padding: '0.5rem 0.75rem', background: '#1e293b', border: '1px solid #334155', fontSize: '0.75rem', color: '#cbd5e1', borderRadius: 2 }}>
+                  ℹ {extractionResult.hint}
+                </div>
+              )}
+              {extractionResult && extractionResult.matches.length > 0 && (
+                <details style={{ marginTop: '0.5rem' }}>
+                  <summary style={{ fontSize: '0.75rem', color: '#9ca3af', cursor: 'pointer' }}>
+                    {extractionResult.matches.length} Trigger-Match{extractionResult.matches.length === 1 ? '' : 'es'} anzeigen
+                  </summary>
+                  <ul style={{ marginTop: '0.4rem', paddingLeft: '1rem', fontSize: '0.75rem', color: '#cbd5e1' }}>
+                    {matchedFromSignals(extractionResult.matches).map((uc, i) => (
+                      <li key={uc.id} style={{ marginBottom: '0.3rem' }}>
+                        <strong>{uc.title}</strong>{' '}
+                        <span style={{ color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                          ({extractionResult.matches[i]?.confidence})
+                        </span>
+                        <div style={{ color: '#94a3b8', fontSize: '0.7rem', marginTop: '0.1rem' }}>
+                          Trigger: {extractionResult.matches[i]?.matchedTriggers.join(', ')}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
             </div>
 
             <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.5rem', lineHeight: 1.5 }}>

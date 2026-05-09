@@ -51,28 +51,7 @@ jobs:
 
       - name: Repair remote-only migrations
         run: |
-          # Get list of remote-only migrations and mark them as reverted
-          python3 - << 'PYEOF'
-          import subprocess, os, re
-          result = subprocess.run(['supabase', 'migration', 'list', '--linked'], 
-                                  capture_output=True, text=True)
-          output = result.stdout + result.stderr
-          print("Migration list output:")
-          print(output)
-          for line in output.splitlines():
-            # Match lines with version number that indicate remote-only state
-            m = re.search(r'(\d{14})', line)
-            if m and ('REMOTE' in line.upper() or ('YES' in line.upper() and 'NO' in line.upper())):
-              version = m.group(1)
-              # Check if local file exists
-              local_files = [f for f in os.listdir('supabase/migrations') 
-                            if f.startswith(version)] if os.path.exists('supabase/migrations') else []
-              if not local_files:
-                print(f"Marking remote-only migration {version} as reverted")
-                subprocess.run(['supabase', 'migration', 'repair', '--status', 'reverted', version],
-                               check=False)
-          PYEOF
-          echo "Repair step complete"
+          supabase migration repair --status reverted 20260422140529 20260422140552 20260422140623 20260422140828 20260422140856 20260422140909 20260422140948 20260422141015 20260422141047 20260422141104 20260422141153 20260422141359 20260422141506 20260423080019 20260423080057 20260423081638 20260423081835 20260423082542 20260423085307 20260423090616 20260423172301 20260423172319 20260423204431 20260429051242 20260429051307 20260501185910 20260501185937 20260501185957 20260501190009 20260501190028 20260501190107 20260501190130 20260501190206 20260501190224 20260501190240 20260501190245 20260501190303 20260501190308 20260502082257 20260504103530 20260504103834 20260505013625 20260505045840 20260505053115 20260505053852 20260505100218 20260505100813 20260505172704 20260505174543 20260506090556 20260506090924 20260506093015 20260506093532 20260506102804 20260506102815 20260506112727 20260506114208 20260506114245 20260506120736 20260506121503 20260506155833 20260506163942 20260506164522 20260506172539 20260506173023 20260506181013 20260506215930 20260506220948 20260506221014 20260506222411 20260508194458 20260508220446 || true
 
       - name: Push pending migrations
         run: supabase db push

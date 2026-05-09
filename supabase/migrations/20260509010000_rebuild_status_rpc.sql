@@ -1,4 +1,4 @@
-———───────────────────────────────────────────────────────────────────────────────────────────────—───────────────────────────────-- Migration: get_rebuild_status_by_token RPC
+-- Migration: get_rebuild_status_by_token RPC
 -- Ermoeglicht Public-Status-Check ohne Auth fuer Kunden ohne Account.
 -- Token = rebuild_id + sha256(lower(customer_email)) als Hex.
 

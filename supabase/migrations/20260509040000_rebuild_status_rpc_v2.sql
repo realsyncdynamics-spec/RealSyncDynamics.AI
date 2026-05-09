@@ -16,6 +16,11 @@
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- V1 hatte die Signatur (uuid, text) mit Parameter-Name p_email_hash.
+-- CREATE OR REPLACE erlaubt keine Aenderung des Parameter-Namens — daher
+-- erst DROP, dann neu CREATE.
+DROP FUNCTION IF EXISTS public.get_rebuild_status_by_token(uuid, text);
+
 CREATE OR REPLACE FUNCTION public.get_rebuild_status_by_token(
   p_rebuild_id uuid,
   p_token      text   -- hex string: sha256(email) or sha256(rebuild_id:source_url)

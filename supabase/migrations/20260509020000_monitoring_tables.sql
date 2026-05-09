@@ -27,8 +27,8 @@ CREATE POLICY "tenant_owns_monitored_domain"
   ON public.monitored_domains
   FOR ALL
   USING (tenant_id = (
-    SELECT id FROM public.tenants
-    WHERE owner_id = auth.uid()
+    SELECT tenant_id FROM public.memberships
+    WHERE user_id = auth.uid()
     LIMIT 1
   ));
 
@@ -91,8 +91,8 @@ CREATE POLICY "tenant_reads_own_monitor_results"
   ON public.audit_monitor_results
   FOR SELECT
   USING (tenant_id = (
-    SELECT id FROM public.tenants
-    WHERE owner_id = auth.uid()
+    SELECT tenant_id FROM public.memberships
+    WHERE user_id = auth.uid()
     LIMIT 1
   ));
 

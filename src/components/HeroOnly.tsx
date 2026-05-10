@@ -16,6 +16,7 @@ import { PricingTeaserSection } from './sections/PricingTeaserSection';
 import { LiveFindingsSection } from './sections/LiveFindingsSection';
 import { ReportPreviewSection } from './sections/ReportPreviewSection';
 import { ScannerTechStackSection } from './sections/ScannerTechStackSection';
+import { ProductDifferentiationSection } from './sections/ProductDifferentiationSection';
 
 /**
  * HeroOnly — Hero-Bühne + zwei Long-Form-Sections.
@@ -90,8 +91,8 @@ export function HeroOnly() {
         </Link>
       </div>
 
-      {/* ─── 2-6) Center Stage ──────────────────────────────────── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      {/* ─── 2-6) Hero — kein justify-center mehr (substance peek for scroll) */}
+      <main className="px-4 sm:px-6 lg:px-8 py-10 sm:py-14 flex flex-col items-center">
         <div className="max-w-3xl w-full text-center">
 
           {/* Logo + Brand-Claim */}
@@ -142,8 +143,30 @@ export function HeroOnly() {
           <div className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-silver-500">
             EU-Datenresidenz · AVV inklusive · Continuous Monitoring · Made in Germany
           </div>
+
+          {/* Stat-Bar — konkrete Zahlen, kein Marketing-Fluff */}
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-px bg-silver-700/30 max-w-2xl mx-auto">
+            {[
+              { num: '18', label: 'Tracker-Klassen' },
+              { num: '5', label: 'AI-Vendoren überwacht' },
+              { num: '62', label: 'SEO-Routes audited' },
+              { num: '< 30s', label: 'Scan-Zeit' },
+            ].map((s) => (
+              <div key={s.label} className="bg-obsidian-950/80 px-2 py-3 text-center">
+                <div className="font-display font-bold text-titanium-50 text-base sm:text-xl tabular-nums">
+                  {s.num}
+                </div>
+                <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-silver-400 mt-0.5 leading-tight">
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
+
+      {/* ─── Welches Produkt — 3-Karten-Differenzierung ─────────── */}
+      <ProductDifferentiationSection />
 
       {/* ─── Live-Findings: Produktrealität sichtbar machen ─────── */}
       <LiveFindingsSection />

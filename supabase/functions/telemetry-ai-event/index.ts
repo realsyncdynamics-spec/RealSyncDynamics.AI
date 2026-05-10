@@ -16,6 +16,11 @@
 // Folge-PR: HMAC-Signing + Replay-Protection.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  evaluatePolicies,
+  type PolicyRule,
+  type RuntimeEventInput,
+} from '../_shared/policy-engine.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,6 +154,40 @@ Deno.serve(async (req) => {
 
   const p = payload as TelemetryPayload;
 
+  // ─── Policy-Evaluation ─────────────────────────────────────────────────
+  // Laedt enabled Policies fuer diesen Tenant (oder global, tenant_id IS NULL)
+  // und ueberschreibt das policy_status-Feld mit dem Engine-Verdict.
+  // Bei Fehler beim Policy-Laden: gracefully fallback auf event-incoming oder
+  // 'logged' — Telemetry darf nicht failen, weil Policies temp. nicht erreichbar.
+  let enginePolicyStatus: string = p.policy_status ?? 'logged';
+  let enginePolicyId: string | undefined;
+  try {
+    const { data: policiesData } = await admin
+      .from('ai_policies')
+      .select('id, name, rule_type, action, enabled, condition')
+      .eq('enabled', true)
+      .or(`tenant_id.eq.${tenantId},tenant_id.is.null`);
+
+    if (policiesData && policiesData.length > 0) {
+      const policies = policiesData as unknown as PolicyRule[];
+      const eventForEngine: RuntimeEventInput = {
+        vendor: p.vendor,
+        model: p.model,
+        event_type: p.event_type as RuntimeEventInput['event_type'],
+        prompt_category: p.prompt_category as RuntimeEventInput['prompt_category'],
+        data_class: p.data_class as RuntimeEventInput['data_class'],
+        risk_level: p.risk_level as RuntimeEventInput['risk_level'],
+        ai_system_id: p.ai_system_id,
+      };
+      const verdict = evaluatePolicies(eventForEngine, policies);
+      enginePolicyStatus = verdict.status;
+      enginePolicyId = verdict.matched_policy_id;
+    }
+  } catch (e) {
+    console.error('[telemetry-ai-event] policy-engine error', e);
+    // weiter mit eingehendem policy_status oder 'logged' default
+  }
+
   const { data: insertedEvent, error: insertErr } = await admin
     .from('ai_runtime_events')
     .insert({
@@ -162,8 +201,8 @@ Deno.serve(async (req) => {
       prompt_category: p.prompt_category ?? 'unknown',
       data_class: p.data_class ?? 'unknown',
       risk_level: p.risk_level ?? 'info',
-      policy_status: p.policy_status ?? 'logged',
-      policy_id: p.policy_id ?? null,
+      policy_status: enginePolicyStatus,
+      policy_id: enginePolicyId ?? p.policy_id ?? null,
       prompt_tokens: p.prompt_tokens ?? null,
       response_tokens: p.response_tokens ?? null,
       latency_ms: p.latency_ms ?? null,
@@ -203,7 +242,12 @@ Deno.serve(async (req) => {
   }
 
   return new Response(
-    JSON.stringify({ ok: true, event_id: insertedEvent.id }),
+    JSON.stringify({
+      ok: true,
+      event_id: insertedEvent.id,
+      policy_status: enginePolicyStatus,
+      policy_id: enginePolicyId ?? null,
+    }),
     { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } },
   );
 });

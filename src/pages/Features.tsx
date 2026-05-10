@@ -7,6 +7,7 @@ import {
 import { LiveFindingsSection } from '../components/sections/LiveFindingsSection';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { ScannerTechStackSection } from '../components/sections/ScannerTechStackSection';
+import { AiGovernanceDashboard } from '../features/ai-governance/AiGovernanceDashboard';
 
 /**
  * /features — echte Plattform-Story.
@@ -111,6 +112,9 @@ export function Features() {
       <LiveFindingsSection />
       <ReportPreviewSection />
       <ScannerTechStackSection />
+
+      {/* AI Governance OS — Inventar / Policies / Evidence Vault Preview */}
+      <AiGovernanceDashboard />
 
       {/* Zielgruppen */}
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">

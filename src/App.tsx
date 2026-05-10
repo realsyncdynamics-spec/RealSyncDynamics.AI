@@ -106,6 +106,7 @@ const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
 const UnknownTrackersView = lazy(() => import('./features/admin/UnknownTrackersView').then((m) => ({ default: m.UnknownTrackersView })));
 import { Limits } from './pages/Limits';
+import { AiGovernancePage } from './pages/AiGovernancePage';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 import { useTrackPageview } from './lib/track';
@@ -277,6 +278,7 @@ function RoutesWithTracking() {
         <Route path="/methodik" element={<LegalMethodology />} />
         <Route path="/grenzen" element={<Limits />} />
         <Route path="/limits" element={<Limits />} />
+        <Route path="/ai-governance" element={<AiGovernancePage />} />
         </Routes>
       </Suspense>
     </>

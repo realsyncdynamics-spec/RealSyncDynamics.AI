@@ -260,6 +260,19 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       ]),
     ],
   },
+  '/ai-governance': {
+    title: 'AI Governance OS für DSGVO und EU AI Act | RealSyncDynamicsAI',
+    description:
+      'Inventarisieren, klassifizieren und überwachen Sie AI-Systeme, Policies und Audit-Trails mit RealSyncDynamicsAI. Inventory · Policy Engine · Evidence Vault — Audit-ready für EU AI Act.',
+    canonical: `${SITE_URL}/ai-governance`,
+    ogTitle: 'AI Governance OS für Unternehmen',
+    ogDescription:
+      'AI-Systeme inventarisieren, EU-AI-Act-Risiken klassifizieren, Policies definieren und Audit-Trails erzeugen.',
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AI Governance OS', url: '/ai-governance' },
+    ]),
+  },
   '/ai-act-faq': {
     title: 'EU AI Act FAQ für Unternehmen',
     description:

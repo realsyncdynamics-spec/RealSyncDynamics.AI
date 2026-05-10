@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, X, Minus, Cookie, Globe, Code } from 'lucide-react';
+import { CompetitorComparisonSection } from '../components/CompetitorComparisonSection';
+import { ConsentLimitsSection } from '../components/sections/ConsentLimitsSection';
+import { COOKIEBOT_COMPARISON } from '../config/competitor-comparisons';
 
 export function CookiebotAlternative() {
   return (
@@ -39,6 +42,21 @@ export function CookiebotAlternative() {
               EU-Hosting-Optionen ergänzt. Der Punkt: Du musst bei Cookiebot aktiv darauf achten, EU-only zu konfigurieren —
               bei uns ist EU-Hosting Default ohne Wahl.
             </p>
+          </div>
+
+          {/* Strategischer 9-Capability-Vergleich (PR #134) */}
+          <CompetitorComparisonSection {...COOKIEBOT_COMPARISON} />
+
+          {/* Cookie Banner lösen nur einen Teil — Positionierungs-Section */}
+          <ConsentLimitsSection />
+
+          <div className="text-center pt-4">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-silver-400 mb-3">
+              Detail-Vergleich · Feature-Matrix
+            </div>
+            <h2 className="font-display font-bold text-titanium-50 text-2xl sm:text-3xl tracking-tight leading-tight">
+              17 konkrete Features im Direktvergleich
+            </h2>
           </div>
 
           <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">

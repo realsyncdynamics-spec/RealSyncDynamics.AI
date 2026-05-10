@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, X, Minus, ShieldCheck, Euro, Code } from 'lucide-react';
+import { CompetitorComparisonSection } from '../components/CompetitorComparisonSection';
+import { ConsentLimitsSection } from '../components/sections/ConsentLimitsSection';
+import { DATAGUARD_COMPARISON } from '../config/competitor-comparisons';
 
 export function DataGuardAlternative() {
   return (
@@ -39,6 +42,12 @@ export function DataGuardAlternative() {
               effizient nutzen kann. Für Firmen ohne DSB-Ressource → DataGuard. Für alle anderen → wir.
             </p>
           </div>
+
+          {/* Strategischer 9-Capability-Vergleich (PR #134) */}
+          <CompetitorComparisonSection {...DATAGUARD_COMPARISON} />
+
+          {/* Cookie Banner lösen nur einen Teil — Positionierungs-Section */}
+          <ConsentLimitsSection />
 
           <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">
             <table className="w-full text-sm">

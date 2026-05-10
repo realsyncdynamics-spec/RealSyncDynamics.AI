@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide
 import { getSupabase } from '../../lib/supabase';
 import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
+import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -120,14 +121,13 @@ export function CheckoutPage() {
   }
 
   if (auth.status === 'no_user') {
+    const checkoutPath = `/checkout/${validPlan}`;
     return (
-      <ShellWithMessage
+      <NoUserShell
         title={`Anmelden, um ${tier.name} zu buchen`}
-        body="Sie brauchen einen RealSyncDynamicsAI-Account, bevor Sie ein Paket buchen koennen. Magic-Link-Login ist passwordless — keine 2FA noetig."
-        cta={{
-          label: 'Mit Magic-Link anmelden',
-          to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,
-        }}
+        body="Wählen Sie einen Login-Weg. Nach Anmeldung sind Sie sofort wieder hier — der Checkout startet automatisch."
+        oauthRedirect={checkoutPath}
+        magicLinkHref={`/welcome?next=${encodeURIComponent(checkoutPath)}`}
       />
     );
   }
@@ -230,6 +230,71 @@ function ShellWithMessage({
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500">
             <AlertCircle className="h-3 w-3" />
             <span>Stripe-Hosted-Checkout · Monatlich kuendbar · Keine Setup-Gebuehren</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ─── NoUserShell — Login-Optionen mit OAuth + Magic-Link-Fallback ──────────
+
+function NoUserShell({
+  title,
+  body,
+  oauthRedirect,
+  magicLinkHref,
+}: {
+  title: string;
+  body: string;
+  oauthRedirect: string;
+  magicLinkHref: string;
+}) {
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
+        <Link
+          to="/pricing"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span className="font-display font-bold">RealSyncDynamics.AI</span>
+        </Link>
+        <Link to="/legal/privacy" className="text-xs text-silver-500 hover:text-titanium-200">
+          Datenschutz
+        </Link>
+      </header>
+
+      <main className="flex flex-col items-center justify-center px-4 py-16">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-6">
+            <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-4" />
+            <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-3">
+              {title}
+            </h1>
+            <p className="text-sm sm:text-base text-silver-300 leading-relaxed">{body}</p>
+          </div>
+
+          <OAuthProviderButtons redirectAfterAuthTo={oauthRedirect} />
+
+          <div className="mt-5 flex items-center gap-3">
+            <div className="flex-1 h-px bg-silver-700/40" />
+            <span className="text-[10px] font-mono uppercase tracking-wider text-silver-500">
+              oder
+            </span>
+            <div className="flex-1 h-px bg-silver-700/40" />
+          </div>
+
+          <Link
+            to={magicLinkHref}
+            className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+          >
+            Mit Magic-Link (Email) anmelden
+          </Link>
+
+          <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">
+            <AlertCircle className="h-3 w-3" />
+            <span>OAuth · Magic-Link · Stripe-Hosted-Checkout</span>
           </div>
         </div>
       </main>

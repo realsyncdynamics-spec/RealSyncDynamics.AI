@@ -1,50 +1,61 @@
--- Stripe-Real-Price-IDs fuer die 4 Pricing-Tiers (Free / Starter / Growth / Enterprise).
+-- Stripe-Real-Price-IDs fuer die 4 Pricing-Tiers (Free / Starter / Growth / Agency / Enterprise).
 --
 -- IMPORTANT: Vor Apply die echten Stripe-Price-IDs aus dem Stripe-Dashboard
--- (Products) eintragen. Die internal_default_* Sentinels sind der Defacto-
--- Wechsel-Pattern aus 20260508050000_website_rebuild_product_placeholders.sql:
--- der stripe-checkout-Endpoint laeuft fuer Tiers mit Sentinel-IDs in einen
--- INTERNAL_FALLBACK statt Stripe-Checkout zu erstellen.
+-- (Products) eintragen. Free + Enterprise brauchen keine Stripe-Price (Free
+-- = Kein Charge, Enterprise = manual invoicing via /contact-sales).
 --
--- Anwendungsweg auf Production:
---   1. Stripe-Dashboard: Products + Prices anlegen, Price-IDs kopieren
---   2. Diese Migration kopieren -> Sentinels durch echte IDs ersetzen
---   3. Datei mit neuem Datum (heute+1) als 20260511_stripe_pricing_seed.sql
---      committen + deploy
---   4. Per supabase db push anwenden
+-- Schema-Stand 2026-05-10 (verifiziert via Supabase MCP):
+--   public.products columns: id (uuid), stripe_price_id (text),
+--                            name (text), default_for_plan_key (text),
+--                            created_at (timestamptz)
+--   KEINE Spalten: currency, is_active, recurring, etc.
 --
--- Optional: stattdessen direkt im SQL-Editor (Supabase Dashboard) ausfuehren.
--- Idempotent dank ON CONFLICT DO NOTHING.
+-- Anwendungsweg:
+--   1. Stripe-Dashboard (Test-Mode oder Live): 3 Products + Prices anlegen
+--      - Starter: 79 € / Monat recurring
+--      - Growth:  249 € / Monat recurring
+--      - Agency:  699 € / Monat recurring
+--   2. Diese Datei kopieren -> price_REPLACE_*_ID durch echte IDs ersetzen
+--   3. Im Supabase-SQL-Editor ausfuehren (oder als Migration committen)
+--
+-- Idempotent dank ON CONFLICT (stripe_price_id) DO NOTHING.
 
--- Sentinels (REPLACE_ME im finalen Migration-File):
--- price_FREE_REPLACE_ME      → Stripe-Price-ID fuer Free Audit (0 € one-time)
--- price_STARTER_REPLACE_ME   → 49 €/Monat recurring
--- price_GROWTH_REPLACE_ME    → 199 €/Monat recurring
--- price_ENT_REPLACE_ME       → Enterprise (custom, evtl. NULL fuer manual invoicing)
+-- ─── Starter (79 €/Monat) ────────────────────────────────────────────────────
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+VALUES ('price_REPLACE_STARTER_ID', 'Starter', 'starter')
+ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- Free Audit
-insert into public.products (stripe_price_id, name, default_for_plan_key, currency)
-values ('price_FREE_REPLACE_ME', 'Free Audit', 'free_audit', 'eur')
-on conflict (stripe_price_id) do nothing;
+-- ─── Growth (249 €/Monat) ────────────────────────────────────────────────────
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+VALUES ('price_REPLACE_GROWTH_ID', 'Growth', 'growth')
+ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- Starter
-insert into public.products (stripe_price_id, name, default_for_plan_key, currency)
-values ('price_STARTER_REPLACE_ME', 'Starter', 'starter', 'eur')
-on conflict (stripe_price_id) do nothing;
+-- ─── Agency (699 €/Monat) ────────────────────────────────────────────────────
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+VALUES ('price_REPLACE_AGENCY_ID', 'Agency', 'agency')
+ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- Growth
-insert into public.products (stripe_price_id, name, default_for_plan_key, currency)
-values ('price_GROWTH_REPLACE_ME', 'Growth', 'growth', 'eur')
-on conflict (stripe_price_id) do nothing;
+-- ─── Free (kein Stripe-Charge, Sentinel) ─────────────────────────────────────
+-- Wenn 'free' Plan-Key im Code-Pfad genutzt wird, sorgt der Sentinel-Eintrag
+-- dafuer dass die Edge-Function NICHT in Stripe-API-Call laeuft.
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+VALUES ('internal_default_free_audit', 'Free Audit (sentinel)', 'free')
+ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- Enterprise — entweder echte Price-ID oder weglassen (manual invoicing)
-insert into public.products (stripe_price_id, name, default_for_plan_key, currency)
-values ('price_ENT_REPLACE_ME', 'Enterprise', 'enterprise', 'eur')
-on conflict (stripe_price_id) do nothing;
+-- ─── Enterprise (manual invoicing, Sentinel) ─────────────────────────────────
+INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
+VALUES ('internal_default_enterprise', 'Enterprise (sentinel · manual invoicing)', 'enterprise')
+ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- Cleanup: ggf. veraltete internal_default_* fuer dieselben plan_keys deaktivieren
--- (statt loeschen wegen FK-Integritaet auf subscriptions)
-update public.products
-set    is_active = false
-where  default_for_plan_key in ('free_audit', 'starter', 'growth', 'enterprise')
-  and  stripe_price_id like 'internal_default_%';
+-- ─── Verifikation nach dem Insert ────────────────────────────────────────────
+-- SELECT default_for_plan_key, stripe_price_id, name
+-- FROM public.products
+-- WHERE default_for_plan_key IN ('free','starter','growth','agency','enterprise')
+-- ORDER BY default_for_plan_key;
+--
+-- Erwartete 5 Rows:
+--   agency      price_1...
+--   enterprise  internal_default_enterprise
+--   free        internal_default_free_audit
+--   growth      price_1...
+--   starter     price_1...

@@ -5,7 +5,6 @@ import {
   Cookie, Brain, FileCheck2, Activity,
 } from 'lucide-react';
 import { Logo } from './Logo';
-import { SEOHead } from './SEOHead';
 import { Modal } from './ui/Modal';
 import { HowItWorks3Steps } from './HowItWorks3Steps';
 import { WebsiteRebuildOffer } from './WebsiteRebuildOffer';
@@ -54,11 +53,6 @@ export function HeroOnly() {
 
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      <SEOHead
-        title="DSGVO + AI-Act Compliance-Plattform für Websites & KI-Workflows"
-        description="EU-konforme Compliance-Infrastruktur: DSGVO-Audit in 30 Sek, automatisierte Rechtsdokumente, AI-Act Annex-III-Klassifikator, kontinuierliches Monitoring. EU-Hosting Frankfurt. Ab 49 €/Monat."
-        canonical="/"
-      />
       {/* ─── 1) Top Bar ─────────────────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <nav className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm">

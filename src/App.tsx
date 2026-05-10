@@ -4,6 +4,7 @@
  */
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
@@ -123,8 +124,10 @@ function LazyFallback() {
 function RoutesWithTracking() {
   useTrackPageview();
   return (
-    <Suspense fallback={<LazyFallback />}>
-      <Routes>
+    <>
+      <SEOHead />
+      <Suspense fallback={<LazyFallback />}>
+        <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
         <Route path="/agencies" element={<AgenciesLanding />} />
@@ -274,8 +277,9 @@ function RoutesWithTracking() {
         <Route path="/methodik" element={<LegalMethodology />} />
         <Route path="/grenzen" element={<Limits />} />
         <Route path="/limits" element={<Limits />} />
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

@@ -4,6 +4,7 @@ import { AiGovernanceDashboard } from '../features/ai-governance/AiGovernanceDas
 import { RuntimeDashboard } from '../features/ai-governance/RuntimeDashboard';
 import { BrowserExtensionSection } from '../components/sections/BrowserExtensionSection';
 import { PolicyEngineSection } from '../components/sections/PolicyEngineSection';
+import { EnterpriseEvidenceVaultSection } from '../components/sections/EnterpriseEvidenceVaultSection';
 
 /**
  * /ai-governance — Public Marketing-Page fuer die AI-Governance-OS-Capability.
@@ -98,6 +99,9 @@ export function AiGovernancePage() {
 
       {/* Policy Engine — Verdicts pro Event */}
       <PolicyEngineSection />
+
+      {/* Enterprise Evidence Vault — Tamper-Evident-Audit-Trail */}
+      <EnterpriseEvidenceVaultSection />
 
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">

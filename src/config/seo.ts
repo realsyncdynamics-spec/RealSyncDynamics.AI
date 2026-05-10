@@ -209,9 +209,9 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'RealSyncDynamicsAI – DSGVO- & AI-Act-Compliance für Websites',
+    title: 'Continuous DSGVO- & AI-Act-Compliance für Websites | RealSyncDynamicsAI',
     description:
-      'Automatisierte DSGVO- und AI-Act-Compliance für Websites, KI-Systeme und digitale Prozesse. Scannen, dokumentieren und laufend überwachen.',
+      'Continuous Compliance Monitoring für Websites, KI-Systeme und digitale Prozesse. Tagesgenaue Überwachung gegen DSGVO- und EU-AI-Act-Drift — Free Audit als Einstieg, Drift-Alerts im Abo.',
     canonical: `${SITE_URL}/`,
   },
   '/pricing': {

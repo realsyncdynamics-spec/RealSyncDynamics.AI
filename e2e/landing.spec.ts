@@ -25,9 +25,9 @@ test('Landing renders HeroOnly Hero + long-form sections + example-report modal'
     await expect(primary).toBeVisible();
     await expect(primary).toHaveAttribute('href', /\/audit/);
 
-       // Trust-Leiste
+       // Trust-Leiste (post-#135 Messaging-Shift: Vollständiges Audit-Log -> Continuous Monitoring)
        await expect(
-             page.getByText(/EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany/i),
+             page.getByText(/EU-Datenresidenz · AVV inklusive · Continuous Monitoring · Made in Germany/i),
            ).toBeVisible();
 
        // Sektion „Zielgruppen"

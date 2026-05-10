@@ -91,8 +91,9 @@ export function AuditLanding() {
                   Wo verstößt Deine Website gegen die DSGVO?
                 </h1>
                 <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
-                  Wir scannen Deine Site auf 12 typische Compliance-Fallen — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern.
-                  Du bekommst sofort einen Score und eine konkrete Fix-Liste.
+                  Der Free Audit ist Dein Einstieg in unsere Compliance-Plattform: 12 typische Compliance-Fallen
+                  geprüft — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern. Score und Fix-Liste sofort,
+                  Continuous Monitoring optional ab Starter.
                 </p>
                 <AuditMethodologyTags />
                 <div className="max-w-xl mx-auto text-left mt-4">

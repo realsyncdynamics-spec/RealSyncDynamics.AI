@@ -45,31 +45,43 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
-      - name: SPA fallback + pre-render routes for HTTP 200 (SEO + social-bots)
+      - name: Install Playwright Chromium for prerender
+        run: npx playwright install --with-deps chromium
+      - name: Real prerender (Playwright) for high-priority routes
+        # Verwendet scripts/prerender.mjs (PR #131) — startet vite preview,
+        # rendert jede sitemap-Route mit priority >= 0.6 in Headless-Chromium
+        # und schreibt das vollstaendig hydrierte HTML als dist/<route>/index.html.
+        # Crawler / Social-Bots / Slack-Preview sehen damit den echten
+        # Section-Content statt nur des SPA-Shells.
+        run: npm run prerender
+      - name: SPA-fallback fuer Routes ohne Prerender + .nojekyll
         run: |
-          # 404.html für SPA-fallback (browser-only — liefert weiterhin 404-status)
+          # 404.html fuer SPA-fallback bei dynamischen Routes (z.B. /audit/share/:token)
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
-          # Pre-render: für jede sitemap-URL eine eigene <route>/index.html anlegen,
-          # damit GH-Pages HTTP 200 für SEO-Crawler / Social-Bots / Monitoring liefert.
-          # Dynamische Routes (z.B. /audit/share/:token) sind in der sitemap nicht
-          # gelistet und bleiben wie bisher SPA-fallback (404 + JS-routing).
+          # Routes mit priority < 0.6 sind nicht prerendered. Damit sie nicht
+          # 404 liefern, bekommen sie eine Kopie des SPA-Shells (HTTP 200 +
+          # client-side React-Hydration). Existierende prerendered Files werden
+          # NICHT ueberschrieben — sie behalten ihren Real-Content.
           python3 - <<'PY'
           import os, re, shutil
           with open('public/sitemap.xml', 'r', encoding='utf-8') as f:
               xml = f.read()
-          # Extrahiere alle apex-Pfade (alles nach realsyncdynamicsai.de/)
           paths = re.findall(r'https?://realsyncdynamicsai\.de(/[^<\s]*)', xml)
-          # Sortiere unique, ohne leeren Apex-Pfad
           paths = sorted(set(p.rstrip('/') for p in paths if p and p != '/'))
           src = 'dist/index.html'
+          filled, skipped = 0, 0
           for p in paths:
               dest_dir = 'dist' + p
               dest_file = os.path.join(dest_dir, 'index.html')
+              if os.path.exists(dest_file):
+                  skipped += 1   # Real-prerendered, nicht anfassen
+                  continue
               os.makedirs(dest_dir, exist_ok=True)
               shutil.copyfile(src, dest_file)
-              print(f'pre-rendered {p}')
-          print(f'total routes pre-rendered: {len(paths)}')
+              filled += 1
+              print(f'spa-fallback {p}')
+          print(f'spa-fallback: {filled} filled · {skipped} kept-prerendered')
           PY
           ls -la dist/
       - uses: actions/upload-pages-artifact@v3

@@ -3,6 +3,7 @@ import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { SEOHead } from '../../components/SEOHead';
 
 /**
  * /pricing — public Pricing-Page mit 5 Paketen.
@@ -140,6 +141,11 @@ const TIER_ICONS: Record<TierID, typeof Cookie> = {
 export function PricingPage() {
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
+      <SEOHead
+        title="Preise — Free Audit, Starter 49€, Growth 199€, Agency 799€, Enterprise"
+        description="5 Tarife für DSGVO + AI-Act Compliance. Free Audit (0€, kein Account), Starter 49€/Monat (1 Domain), Growth 199€/Monat (Auto-Fix), Agency 799€/Monat (White-Label), Enterprise auf Anfrage."
+        canonical="/pricing"
+      />
       {/* Top bar */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">

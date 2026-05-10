@@ -4,6 +4,7 @@ import {
   ArrowLeft, ArrowRight, Globe, AlertTriangle, CheckCircle2, ShieldCheck,
   Search, Wrench, Activity, Loader2, Send, RefreshCw, ExternalLink,
 } from 'lucide-react';
+import { SEOHead } from '../components/SEOHead';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -75,6 +76,11 @@ export function DsgvoWebsiteLanding() {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <SEOHead
+        title="DSGVO-Website-as-a-Service — wir bauen Ihre Site rechtssicher neu auf"
+        description="Audit, Rebuild und Managed-Hosting in einem Service. Wir entfernen Tracker, lokalisieren Google Fonts, betten Cookie-Consent (opt-in) und Rechtsdokumente ein. EU-Hosting Frankfurt, AVV inklusive."
+        canonical="/dsgvo-website"
+      />
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
         <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
           <ArrowLeft className="h-4 w-4" />

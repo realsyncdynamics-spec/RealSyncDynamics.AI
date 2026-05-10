@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ShieldCheck, Activity } from 'lucide-react';
 import { AiGovernanceDashboard } from '../features/ai-governance/AiGovernanceDashboard';
+import { RuntimeDashboard } from '../features/ai-governance/RuntimeDashboard';
 
 /**
  * /ai-governance — Public Marketing-Page fuer die AI-Governance-OS-Capability.
@@ -69,6 +70,26 @@ export function AiGovernancePage() {
       </section>
 
       <AiGovernanceDashboard />
+
+      {/* Runtime Telemetry — der zweite Layer: was tatsaechlich passiert */}
+      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-950/50">
+        <div className="max-w-5xl mx-auto text-center">
+          <Activity className="mx-auto h-10 w-10 text-gold-400 mb-5" />
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            Vom Inventar zur Runtime
+          </div>
+          <h2 className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight">
+            Von AI-Inventar zu Runtime Governance.
+          </h2>
+          <p className="mt-4 text-silver-300 leading-relaxed max-w-3xl mx-auto">
+            Inventory zeigt was Sie haben. Runtime zeigt was tatsächlich passiert — pro Mitarbeiter,
+            pro Agent, pro Vendor. Telemetrie aus SDK, Browser-Extension und Agent-Connectors
+            landet im Evidence Vault, kritische Events triggern Policies automatisch.
+          </p>
+        </div>
+      </section>
+
+      <RuntimeDashboard />
 
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16">
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">

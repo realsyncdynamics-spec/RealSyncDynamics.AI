@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pitch Deck – RealSyncDynamicsAI Compliance Infrastructure</title>
+  <meta name="description" content="Investor Pitch Deck von RealSyncDynamicsAI: Automated Compliance Infrastructure für DSGVO, EU AI Act, Monitoring und Auditability." />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <link rel="canonical" href="https://realsyncdynamicsai.de/pitch-deck" />
+
+  <meta property="og:title" content="RealSyncDynamicsAI Pitch Deck" />
+  <meta property="og:description" content="Automated Compliance Infrastructure for the AI Era – DSGVO, EU AI Act und Continuous Monitoring." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://realsyncdynamicsai.de/pitch-deck" />
+  <meta property="og:image" content="https://realsyncdynamicsai.de/og-image.png" />
+  <meta property="og:site_name" content="RealSyncDynamics.AI" />
+  <meta property="og:locale" content="de_DE" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="RealSyncDynamicsAI Pitch Deck" />
+  <meta name="twitter:description" content="Automated Compliance Infrastructure for the AI Era." />
+  <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "RealSyncDynamicsAI Pitch Deck",
+    "description": "Investor Pitch Deck von RealSyncDynamicsAI: Automated Compliance Infrastructure für DSGVO, EU AI Act, Monitoring und Auditability.",
+    "url": "https://realsyncdynamicsai.de/pitch-deck",
+    "publisher": {
+      "@type": "Organization",
+      "name": "RealSyncDynamicsAI",
+      "url": "https://realsyncdynamicsai.de"
+    },
+    "about": [
+      "DSGVO Compliance",
+      "EU AI Act",
+      "Continuous Compliance Monitoring",
+      "Audit Trail",
+      "Website Compliance"
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #050510;
+      --panel: rgba(255,255,255,0.045);
+      --panel-strong: rgba(255,255,255,0.075);
+      --line: rgba(255,255,255,0.12);
+      --line-gold: rgba(212,175,55,0.38);
+      --text: #f6f2e8;
+      --muted: rgba(246,242,232,0.68);
+      --faint: rgba(246,242,232,0.46);
+      --gold: #d4af37;
+      --cyan: #67e8f9;
+      --green: #34d399;
+      --red: #fb7185;
+      --shadow: 0 28px 80px rgba(0,0,0,0.42);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 12% 4%, rgba(212,175,55,0.18), transparent 34rem),
+        radial-gradient(circle at 82% 8%, rgba(103,232,249,0.10), transparent 30rem),
+        linear-gradient(180deg, #050510 0%, #080812 42%, #050510 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(18px);
+      background: rgba(5,5,16,0.72);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 760; letter-spacing: -0.03em; }
+    .brand-mark {
+      width: 34px; height: 34px; border: 1px solid var(--line-gold); border-radius: 12px;
+      display: grid; place-items: center; color: var(--gold); background: rgba(212,175,55,0.08);
+    }
+    .nav-links { display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 14px; }
+    .nav-links a:hover { color: var(--text); }
+
+    .btns { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 44px; padding: 0 18px; border-radius: 16px;
+      font-weight: 720; font-size: 14px; border: 1px solid var(--line);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: var(--gold); color: #09080a; border-color: var(--gold); }
+    .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text); }
+
+    .hero { padding: 94px 0 54px; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
+      border: 1px solid var(--line-gold); border-radius: 999px;
+      background: rgba(212,175,55,0.09); color: var(--gold);
+      font-size: 12px; font-weight: 760; letter-spacing: .08em; text-transform: uppercase;
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.05; letter-spacing: -0.055em; }
+    h1 { margin-top: 24px; font-size: clamp(46px, 8vw, 92px); max-width: 980px; }
+    .hero-sub { margin-top: 24px; max-width: 760px; color: var(--muted); font-size: clamp(18px, 2vw, 24px); }
+    .hero-meta { margin-top: 18px; color: var(--faint); font-size: 15px; }
+    .hero .btns { margin-top: 34px; }
+
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 34px 0 64px; }
+    .metric, .card, .slide, .matrix, .cta-box {
+      border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow);
+    }
+    .metric { border-radius: 26px; padding: 24px; }
+    .metric .label { color: var(--faint); font-size: 13px; }
+    .metric .value { margin-top: 10px; color: var(--gold); font-size: 34px; font-weight: 800; letter-spacing: -0.05em; }
+    .metric .note { margin-top: 6px; color: var(--muted); font-size: 13px; }
+
+    section { padding: 54px 0; }
+    .section-head { max-width: 760px; margin-bottom: 28px; }
+    .kicker { color: var(--gold); text-transform: uppercase; letter-spacing: .24em; font-size: 12px; font-weight: 780; }
+    h2 { margin-top: 14px; font-size: clamp(34px, 5vw, 56px); }
+    .lead { margin-top: 16px; color: var(--muted); font-size: 18px; }
+
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .card { border-radius: 28px; padding: 24px; }
+    .icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 15px; background: rgba(212,175,55,0.08); border: 1px solid var(--line-gold); color: var(--gold); font-size: 20px; }
+    .card h3 { margin-top: 16px; font-size: 21px; }
+    .card p { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+
+    .matrix { border-radius: 28px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 16px 18px; border-bottom: 1px solid var(--line); text-align: left; font-size: 14px; }
+    th { color: var(--gold); background: rgba(212,175,55,0.08); }
+    td { color: var(--muted); }
+    tr:last-child td { border-bottom: 0; }
+    .yes { color: var(--green); font-weight: 800; }
+    .no { color: var(--red); font-weight: 800; }
+
+    .slides { display: grid; gap: 22px; }
+    .slide {
+      border-radius: 34px;
+      padding: clamp(24px, 5vw, 48px);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.085), rgba(255,255,255,0.025)),
+        radial-gradient(circle at 90% 0%, rgba(212,175,55,0.10), transparent 22rem);
+    }
+    .slide-top { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 24px; }
+    .badge { color: var(--gold); background: rgba(212,175,55,0.08); border: 1px solid var(--line-gold); padding: 6px 11px; border-radius: 999px; font-size: 12px; font-weight: 750; }
+    .slide-brand { color: var(--faint); font-size: 13px; }
+    .slide h3 { margin-top: 10px; font-size: clamp(28px, 4vw, 50px); }
+    .slide-sub { color: var(--faint); text-transform: uppercase; letter-spacing: .18em; font-size: 12px; font-weight: 760; }
+    .slide-body { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 28px; }
+    .bullet { border: 1px solid var(--line); border-radius: 20px; padding: 18px; background: rgba(0,0,0,0.22); color: var(--muted); }
+
+    .cta-box { border-radius: 34px; padding: clamp(28px, 5vw, 52px); text-align: center; background: rgba(212,175,55,0.08); border-color: var(--line-gold); }
+    .cta-box h2 { max-width: 800px; margin-left: auto; margin-right: auto; }
+    .cta-box p { max-width: 720px; margin: 18px auto 0; color: var(--muted); font-size: 18px; }
+    .cta-box .btns { justify-content: center; margin-top: 28px; }
+
+    .footer { border-top: 1px solid var(--line); padding: 32px 0; color: var(--faint); font-size: 13px; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    @media (max-width: 900px) {
+      .metrics, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .slide-body { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 1180px); }
+      .hero { padding-top: 64px; }
+      .metrics, .grid-4 { grid-template-columns: 1fr; }
+      th, td { padding: 12px; font-size: 12px; }
+      .nav-inner { min-height: 62px; }
+      .brand span:last-child { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="/" aria-label="RealSyncDynamicsAI Home">
+        <span class="brand-mark">◆</span>
+        <span>RealSyncDynamicsAI</span>
+      </a>
+      <div class="nav-links">
+        <a href="#deck">Deck</a>
+        <a href="#model">Business Model</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/contact-sales">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Investor & Strategic Partner Pitch Deck — 2026</div>
+        <h1>Automated Compliance Infrastructure for the AI Era.</h1>
+        <p class="hero-sub">RealSyncDynamicsAI verbindet DSGVO, EU AI Act, Consent Monitoring, Audit Trails und kontinuierliche Compliance-Automatisierung für europäische digitale Systeme.</p>
+        <p class="hero-meta">Made in Germany 🇩🇪 · EU-first · Privacy-focused · Audit-ready</p>
+        <div class="btns">
+          <a class="btn btn-primary" href="#deck">Pitch Deck ansehen →</a>
+          <a class="btn btn-secondary" href="/contact-sales">Partnergespräch anfragen</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap metrics" aria-label="Key metrics">
+      <div class="metric"><div class="label">Pricing Entry</div><div class="value">49 €</div><div class="note">Starter SaaS tier</div></div>
+      <div class="metric"><div class="label">Growth Tier</div><div class="value">199 €</div><div class="note">Monitoring revenue</div></div>
+      <div class="metric"><div class="label">SEO Base</div><div class="value">58+</div><div class="note">Prerendered public routes</div></div>
+      <div class="metric"><div class="label">Markets</div><div class="value">6</div><div class="note">GDPR, AI Act, Consent, Audit, Vendor, Governance</div></div>
+    </div>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Positioning</div>
+          <h2>Not a cookie banner. A compliance infrastructure layer.</h2>
+          <p class="lead">RealSyncDynamicsAI kombiniert Website-Scanning, Consent-Analyse, DSGVO-Dokumentation, Monitoring und AI Governance in einer kontinuierlichen Compliance-Plattform.</p>
+        </div>
+        <div class="grid-4">
+          <article class="card"><div class="icon">⌕</div><h3>Technical Detection</h3><p>Real scanning for cookies, trackers, scripts, third-party requests and consent behavior.</p></article>
+          <article class="card"><div class="icon">✓</div><h3>Auditability</h3><p>Evidence, reports and historical monitoring create proof instead of static assumptions.</p></article>
+          <article class="card"><div class="icon">AI</div><h3>AI Act Readiness</h3><p>Built for AI systems, governance, classification and traceability.</p></article>
+          <article class="card"><div class="icon">EU</div><h3>EU-first</h3><p>Positioned for European companies requiring data residency, privacy and regulatory trust.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Why We Win</div>
+          <h2>Existing market tools are fragmented.</h2>
+        </div>
+        <div class="matrix">
+          <table>
+            <thead><tr><th>Capability</th><th>Existing Tools</th><th>RealSyncDynamicsAI</th></tr></thead>
+            <tbody>
+              <tr><td>Cookie banner only</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+              <tr><td>Technical compliance scanning</td><td>Partial</td><td class="yes">✓</td></tr>
+              <tr><td>Consent timing analysis</td><td>Rare</td><td class="yes">✓</td></tr>
+              <tr><td>Continuous monitoring</td><td>Limited</td><td class="yes">✓</td></tr>
+              <tr><td>AI Act readiness</td><td class="no">×</td><td class="yes">✓</td></tr>
+              <tr><td>Audit trail generation</td><td>Limited</td><td class="yes">✓</td></tr>
+              <tr><td>Unified compliance layer</td><td class="no">×</td><td class="yes">✓</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="deck">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="kicker">Deck</div>
+          <h2>Investor Pitch Deck</h2>
+          <p class="lead">17 Slides als Web-Pitch-Deck — crawlbar, teilbar und sofort für Partnergespräche nutzbar.</p>
+        </div>
+        <div class="slides">
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 1</span><span class="slide-brand">RealSyncDynamicsAI</span></div><div class="slide-sub">Cover</div><h3>RealSyncDynamicsAI</h3><div class="slide-body"><p class="bullet">Automated Compliance Infrastructure for the AI Era.</p><p class="bullet">DSGVO • EU AI Act • Continuous Monitoring • Made in Germany.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 2</span><span class="slide-brand">Problem</span></div><div class="slide-sub">The Problem</div><h3>Compliance is breaking modern digital infrastructure.</h3><div class="slide-body"><p class="bullet">European companies face GDPR, TDDDG, EU AI Act, third-country transfer and vendor-sprawl pressure.</p><p class="bullet">Most companies cannot prove what runs on their websites and digital systems.</p><p class="bullet">The result: legal exposure, reputational risk, operational overhead and enterprise friction.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 3</span><span class="slide-brand">Timing</span></div><div class="slide-sub">Market Timing</div><h3>Why now?</h3><div class="slide-body"><p class="bullet">The EU AI Act creates a new compliance category for AI systems.</p><p class="bullet">GDPR enforcement and cookie scrutiny continue while enterprises demand EU-hosted infrastructure.</p><p class="bullet">Compliance moves from static legal documents to continuous technical monitoring.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 4</span><span class="slide-brand">Solution</span></div><div class="slide-sub">The Solution</div><h3>Automated Compliance Infrastructure.</h3><div class="slide-body"><p class="bullet">We scan websites and digital systems, detect trackers, cookies and third-party risks.</p><p class="bullet">We analyze consent timing, create audit-ready documentation and monitor compliance drift.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 5</span><span class="slide-brand">Product</span></div><div class="slide-sub">Product Overview</div><h3>Core platform capabilities.</h3><div class="slide-body"><p class="bullet">Website & Tracking Analysis: cookie detection, third-party discovery, consent timing and risk scoring.</p><p class="bullet">Compliance Automation: DSGVO reporting, audit documentation, sub-processor visibility and alerts.</p><p class="bullet">AI Governance: AI Act readiness, AI system classification and governance workflows.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 6</span><span class="slide-brand">Flow</span></div><div class="slide-sub">Product Flow</div><h3>Scan. Detect. Evaluate. Generate. Monitor.</h3><div class="slide-body"><p class="bullet">Customers enter a URL. The platform analyzes cookies, trackers, scripts, forms and consent behavior.</p><p class="bullet">The rules engine maps findings against DSGVO, TDDDG and AI Act requirements.</p><p class="bullet">Continuous re-scans detect future compliance drift.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 7</span><span class="slide-brand">Why We Win</span></div><div class="slide-sub">Differentiation</div><h3>Existing market tools are fragmented.</h3><div class="slide-body"><p class="bullet">Most tools focus on consent banners, static legal documents or isolated workflows.</p><p class="bullet">RealSyncDynamicsAI combines detection, monitoring, governance, auditability and AI regulation.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 8</span><span class="slide-brand">Architecture</span></div><div class="slide-sub">Technical Architecture</div><h3>Infrastructure-first approach.</h3><div class="slide-body"><p class="bullet">Scanner Layer: Playwright-based rendering, request analysis, third-party detection and cookie classification.</p><p class="bullet">Compliance Engine: rule-based evaluation, jurisdiction-aware logic and continuous updates.</p><p class="bullet">Audit Layer: evidence generation, compliance history, reporting and monitoring logs.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 9</span><span class="slide-brand">Market</span></div><div class="slide-sub">Market Opportunity</div><h3>A large and expanding market.</h3><div class="slide-body"><p class="bullet">GDPR compliance, consent management, AI governance, website compliance, security and vendor monitoring converge.</p><p class="bullet">The long-term trend: compliance becomes continuous infrastructure.</p></div></article>
+          <article class="slide" id="model"><div class="slide-top"><span class="badge">Slide 10</span><span class="slide-brand">Business Model</span></div><div class="slide-sub">SaaS + Monitoring Revenue</div><h3>Clear recurring revenue model.</h3><div class="slide-body"><p class="bullet">Free Audit: lead generation.</p><p class="bullet">Starter: 49 €/month. Growth: 199 €/month. Enterprise: custom pricing.</p><p class="bullet">Expansion: API access, white-label agency plans, AI Act modules and enterprise governance.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 11</span><span class="slide-brand">GTM</span></div><div class="slide-sub">Go-To-Market</div><h3>SEO-driven compliance acquisition.</h3><div class="slide-body"><p class="bullet">High-intent searches: cookiebot alternative, DSGVO website scan, AI Act compliance and GDPR audit tool.</p><p class="bullet">Distribution through SEO landing pages, compliance content, agency partnerships and enterprise outreach.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 12</span><span class="slide-brand">Positioning</span></div><div class="slide-sub">Competitive Positioning</div><h3>We are not another cookie tool.</h3><div class="slide-body"><p class="bullet">Current competitors focus on banners, documents and fragmented workflows.</p><p class="bullet">RealSyncDynamicsAI focuses on automated technical compliance infrastructure.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 13</span><span class="slide-brand">Progress</span></div><div class="slide-sub">Current Progress</div><h3>Platform status.</h3><div class="slide-body"><p class="bullet">Completed: live SaaS platform, DSGVO positioning, AI Act content infrastructure, SEO architecture and legal pages.</p><p class="bullet">Completed: monitoring foundation, prerendered SEO deployment and scalable route structure.</p><p class="bullet">In progress: route-specific SEO, findings visualization, monitoring engine and report previews.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 14</span><span class="slide-brand">Vision</span></div><div class="slide-sub">Strategic Vision</div><h3>The compliance layer for European digital infrastructure.</h3><div class="slide-body"><p class="bullet">Operating layer for website compliance, AI governance, vendor monitoring, auditability and regulatory automation.</p><p class="bullet">Future expansion: AI governance dashboards, enterprise policy automation, vendor scoring, APIs and audit vaults.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 15</span><span class="slide-brand">Why It Matters</span></div><div class="slide-sub">Market Change</div><h3>The compliance market is structurally changing.</h3><div class="slide-body"><p class="bullet">From static PDFs, manual legal processes and isolated tools.</p><p class="bullet">To real-time monitoring, technical enforcement, continuous governance and automated evidence generation.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 16</span><span class="slide-brand">Opportunity</span></div><div class="slide-sub">Investment / Partnership</div><h3>Automated Compliance Infrastructure for the AI Era.</h3><div class="slide-body"><p class="bullet">Seeking strategic partners, enterprise pilots, agency integrations, early customers and long-term infrastructure investors.</p></div></article>
+          <article class="slide"><div class="slide-top"><span class="badge">Slide 17</span><span class="slide-brand">Closing</span></div><div class="slide-sub">Closing</div><h3>Compliance Infrastructure for Modern Digital Systems.</h3><div class="slide-body"><p class="bullet">EU-first. Privacy-focused. Automated. Audit-ready. AI-governance capable.</p><p class="bullet">Website: realsyncdynamicsai.de · Contact: contact@realsyncdynamicsai.de</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="cta-box">
+          <div class="icon" style="margin:0 auto;">✓</div>
+          <h2>Build the compliance layer for the AI era.</h2>
+          <p>RealSyncDynamicsAI is positioned to serve companies that need continuous proof, monitoring and governance — not another static compliance document.</p>
+          <div class="btns">
+            <a class="btn btn-primary" href="/contact-sales">Partnergespräch anfragen</a>
+            <a class="btn btn-secondary" href="/pricing">Pricing ansehen</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div>© 2026 RealSyncDynamicsAI · Automated Compliance Infrastructure</div>
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/legal/privacy">Datenschutz</a>
+        <a href="/impressum">Impressum</a>
+        <a href="/contact-sales">Kontakt</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -40,6 +40,10 @@ export interface SEOConfig {
   ogImage?: string;
   /** OG-Type. Default: "website" */
   ogType?: 'website' | 'article' | 'product';
+  /** Twitter-Card-Title — kann separat von OG. Default: ogTitle */
+  twitterTitle?: string;
+  /** Twitter-Card-Description — kann separat von OG. Default: ogDescription */
+  twitterDescription?: string;
   /** noindex,nofollow — nur fuer interne Pages oder Beta */
   noIndex?: boolean;
   /** Route-spezifisches JSON-LD. Wird unter <script type="application/ld+json" data-seo-id="route"> gerendert. */
@@ -137,48 +141,51 @@ const DSGVO_WEBSITE_WEBAPP_JSONLD = {
     'Kostenloser DSGVO-Scan Ihrer Website. Tracker, fehlende Rechtsdokumente, Consent-Probleme und Security-Header werden automatisch erkannt.',
 };
 
+// Q+A sind 1:1 aus src/pages/AiActFaq.tsx (siehe FAQ_ENTRIES) uebernommen.
+// Google bestraft Schema-Inhalt der nicht sichtbar auf der Seite steht —
+// daher Wort-fuer-Wort identisch mit dem was der User im Akkordeon sieht.
 const AI_ACT_FAQ_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
     {
       '@type': 'Question',
-      name: 'Ab wann gilt der EU AI Act?',
+      name: 'Was ist der EU AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Verbote treten ab 02.02.2025 in Kraft, GPAI-Pflichten ab 02.08.2025, die meisten Hochrisiko-Pflichten ab 02.08.2026, einige Annex-II-Hochrisiko-Systeme erst ab 02.08.2027.',
+        text: 'Der AI Act (Verordnung (EU) 2024/1689) ist die weltweit erste umfassende Regulierung von KI-Systemen. Er trat im August 2024 in Kraft und gilt EU-weit unmittelbar — wie die DSGVO. Anders als die DSGVO regelt er nicht primär Daten, sondern KI-Systeme als Produkt.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Was ist ein Hochrisiko-KI-System nach Annex III?',
+      name: 'Wer ist betroffen?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Annex III listet KI-Systeme in 8 Bereichen, u.a. Beschäftigung (Recruiting-Filter), Bildung, kritische Infrastruktur, Strafverfolgung, Migration und biometrische Identifikation.',
+        text: 'Alle Anbieter, Importeure, Händler und Betreiber von KI-Systemen, die in der EU Wirkung entfalten — auch ohne EU-Sitz (Marktortprinzip). Kanzleien, Krankenhäuser, Banken, HR-Abteilungen und Behörden, die KI einsetzen, sind als „Betreiber" verantwortlich.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Brauche ich einen DSB für den AI Act?',
+      name: 'Welche Risiko-Klassen gibt es?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Nicht zwingend — der AI Act fordert keinen DSB, aber für Hochrisiko-Systeme einen Compliance-Officer mit klar dokumentierten Verantwortlichkeiten und einen Quality-Management-Prozess (Art. 17).',
+        text: 'Vier Stufen: (1) Unacceptable Risk — verboten (Social Scoring, Realtime-Biometrie im öffentlichen Raum). (2) High-Risk — strenge Auflagen (Medizin, Verkehr, HR, Bonität, Strafverfolgung). (3) Limited Risk — Transparenzpflichten (Chatbots, Deepfakes). (4) Minimal Risk — keine Auflagen (Spam-Filter, Spielhilfen).',
       },
     },
     {
       '@type': 'Question',
-      name: 'Müssen wir GPAI-Modelle (z.B. ChatGPT) registrieren?',
+      name: 'Wann gilt der AI Act?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Als Anwender nicht. Als Anbieter eines GPAI-Modells mit systemischem Risiko (FLOPs >= 10^25): ja, EU-Datenbank-Eintrag und technische Dokumentation nach Art. 53/55.',
+        text: 'Stufenweise: (1) Verbotene Praktiken: 2. Februar 2025. (2) GPAI-Pflichten: 2. August 2025. (3) High-Risk-Systeme + Sanktionsregime: 2. August 2026. (4) Bereits in Verkehr gebrachte High-Risk-Systeme bekommen bis 2. August 2027 Zeit zur Anpassung.',
       },
     },
     {
       '@type': 'Question',
-      name: 'Wie hoch sind die Strafen?',
+      name: 'Wie hoch sind die Bußgelder?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Bis zu 35 Mio. € oder 7% des weltweiten Jahresumsatzes für verbotene Praktiken (Art. 5), bis 15 Mio. € / 3% für Hochrisiko-Pflichtverstösse, bis 7,5 Mio. € / 1,5% für Falschangaben.',
+        text: 'Drei Stufen: (1) Verstoß gegen verbotene Praktiken: bis 35 Mio. € oder 7 % des weltweiten Jahresumsatzes. (2) Sonstige Pflichten (High-Risk): bis 15 Mio. € oder 3 %. (3) Falschangaben gegenüber Behörden: bis 7,5 Mio. € oder 1 %.',
       },
     },
   ],
@@ -202,15 +209,15 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'DSGVO & AI-Act Compliance für Websites automatisch prüfen | RealSyncDynamics.AI',
+    title: 'RealSyncDynamicsAI – DSGVO- & AI-Act-Compliance für Websites',
     description:
-      'Scannen Sie Ihre Website in 30 Sekunden auf DSGVO-, TTDSG- und EU-AI-Act-Verstöße. Tracker, Consent-Timing, Rechtsdokumente — automatisch erkannt und behoben.',
+      'Automatisierte DSGVO- und AI-Act-Compliance für Websites, KI-Systeme und digitale Prozesse. Scannen, dokumentieren und laufend überwachen.',
     canonical: `${SITE_URL}/`,
   },
   '/pricing': {
-    title: 'Preise & Pläne — DSGVO Compliance ab 0€ | RealSyncDynamics.AI',
+    title: 'Preise – RealSyncDynamicsAI Compliance-Plattform',
     description:
-      'Kostenloser DSGVO-Scan ohne Account. Starter ab 49€/Monat für kontinuierliches Monitoring. Growth ab 199€ für Multi-Domain. Enterprise auf Anfrage.',
+      'Wählen Sie zwischen Free Audit, Starter, Growth und Enterprise für automatisierte DSGVO- und AI-Act-Compliance.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -241,9 +248,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/cookie-scanner': {
-    title: 'Kostenloser Cookie-Scanner — Tracker vor Consent erkennen | RealSyncDynamics.AI',
+    title: 'Kostenloser Cookie-Scanner für DSGVO-Websites',
     description:
-      'Welche Cookies und Tracker lädt Ihre Website VOR dem ersten Klick? Kostenloser DSGVO-Check ohne Account. Ergebnis in 15 Sekunden.',
+      'Prüfen Sie, ob Ihre Website Cookies, Tracker oder externe Dienste vor Einwilligung lädt. Kostenloser DSGVO-Cookie-Scan ohne Account.',
     canonical: `${SITE_URL}/cookie-scanner`,
     jsonLd: [
       COOKIE_SCANNER_WEBAPP_JSONLD,
@@ -254,9 +261,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/ai-act-faq': {
-    title: 'EU AI Act FAQ — 20 Fragen für Entscheider und DSBs | RealSyncDynamics.AI',
+    title: 'EU AI Act FAQ für Unternehmen',
     description:
-      'Was gilt ab August 2026? Alle wichtigen Fragen zum EU AI Act für Unternehmen, Datenschutzbeauftragte und Compliance-Teams — mit Artikel-Verweisen.',
+      'Die wichtigsten Fragen zum EU AI Act für Unternehmen, Datenschutzbeauftragte und regulierte Branchen verständlich erklärt.',
     canonical: `${SITE_URL}/ai-act-faq`,
     jsonLd: [
       AI_ACT_FAQ_JSONLD,
@@ -568,6 +575,28 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'Tools', url: '/tools' },
+    ]),
+  },
+  '/dsfa-wizard': {
+    title: 'DSFA-Wizard — Datenschutz-Folgenabschätzung nach Art. 35 DSGVO | RealSyncDynamics.AI',
+    description:
+      'Strukturierte Datenschutz-Folgenabschätzung Schritt für Schritt: Verarbeitungsbeschreibung, Risiko-Bewertung, Maßnahmen. Konform mit Art. 35 DSGVO.',
+    canonical: `${SITE_URL}/dsfa-wizard`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'DSFA-Wizard', url: '/dsfa-wizard' },
+    ]),
+  },
+  '/busseld-rechner': {
+    title: 'DSGVO-Bußgeld-Rechner — Risiko-Schätzung nach Art. 83 | RealSyncDynamics.AI',
+    description:
+      'Schätzen Sie Ihr DSGVO-Bußgeld-Risiko: Branchen-Faktor, Verstoß-Kategorie (Art. 83 Abs. 4/5), Umsatz und Schweregrad — mit Behörden-Praxis von 2024-2026.',
+    canonical: `${SITE_URL}/busseld-rechner`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Tools', url: '/tools' },
+      { name: 'Bußgeld-Rechner', url: '/busseld-rechner' },
     ]),
   },
   '/ressourcen': {

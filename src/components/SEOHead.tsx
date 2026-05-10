@@ -51,6 +51,17 @@ const SITE_URL = 'https://realsyncdynamicsai.de';
 const DEFAULT_OG_IMAGE = '/og-image.png';
 const TITLE_SUFFIX = ' — RealSyncDynamics.AI';
 
+/**
+ * Sollen wir den Brand-Suffix anhaengen? Nur wenn der Title nicht bereits
+ * den Brandnamen enthaelt — dabei toleriert werden beide Schreibweisen
+ * "RealSyncDynamics.AI" und "RealSyncDynamicsAI" (Marketing-Title-Strings
+ * lassen den Punkt manchmal weg).
+ */
+function hasBrandMention(s: string): boolean {
+  const lower = s.toLowerCase();
+  return lower.includes('realsyncdynamics.ai') || lower.includes('realsyncdynamicsai');
+}
+
 export function SEOHead(props: SEOHeadProps = {}): null {
   const location = useLocation();
   const config: SEOConfig = getSeoForPath(location.pathname);
@@ -60,6 +71,8 @@ export function SEOHead(props: SEOHeadProps = {}): null {
   const canonical = props.canonical ?? config.canonical ?? location.pathname;
   const ogTitle = config.ogTitle ?? title;
   const ogDescription = config.ogDescription ?? description;
+  const twitterTitle = config.twitterTitle ?? ogTitle;
+  const twitterDescription = config.twitterDescription ?? ogDescription;
   const ogImage = props.ogImage ?? config.ogImage ?? DEFAULT_OG_IMAGE;
   const ogType = props.ogType ?? config.ogType ?? 'website';
   const noIndex = props.noIndex ?? config.noIndex ?? false;
@@ -68,8 +81,11 @@ export function SEOHead(props: SEOHeadProps = {}): null {
   const jsonLdSerialized = jsonLd ? JSON.stringify(jsonLd) : '';
 
   useEffect(() => {
-    const fullTitle = title.endsWith(SITE_NAME) ? title : title + TITLE_SUFFIX;
-    const fullOgTitle = ogTitle.endsWith(SITE_NAME) ? ogTitle : ogTitle + TITLE_SUFFIX;
+    const fullTitle = hasBrandMention(title) ? title : title + TITLE_SUFFIX;
+    const fullOgTitle = hasBrandMention(ogTitle) ? ogTitle : ogTitle + TITLE_SUFFIX;
+    const fullTwitterTitle = hasBrandMention(twitterTitle)
+      ? twitterTitle
+      : twitterTitle + TITLE_SUFFIX;
     const path = canonical.startsWith('http')
       ? canonical
       : SITE_URL + (canonical.startsWith('/') ? canonical : '/' + canonical);
@@ -88,8 +104,8 @@ export function SEOHead(props: SEOHeadProps = {}): null {
     setMeta('property', 'og:locale', 'de_DE');
 
     setMeta('name', 'twitter:card', 'summary_large_image');
-    setMeta('name', 'twitter:title', fullOgTitle);
-    setMeta('name', 'twitter:description', ogDescription);
+    setMeta('name', 'twitter:title', fullTwitterTitle);
+    setMeta('name', 'twitter:description', twitterDescription);
     setMeta('name', 'twitter:image', fullOgImage);
 
     if (noIndex) {
@@ -123,6 +139,8 @@ export function SEOHead(props: SEOHeadProps = {}): null {
     canonical,
     ogTitle,
     ogDescription,
+    twitterTitle,
+    twitterDescription,
     ogImage,
     ogType,
     noIndex,

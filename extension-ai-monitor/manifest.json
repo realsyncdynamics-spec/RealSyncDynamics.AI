@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "RealSyncDynamicsAI — AI Usage Monitor",
+  "short_name": "RSD AI Monitor",
+  "version": "0.1.0",
+  "description": "Erkennt AI-Nutzung (ChatGPT, Claude, Copilot, Gemini, Perplexity), warnt bei sensiblen Daten im Prompt und protokolliert Events ans Compliance-OS — log-only, kein Blocking in v0.",
+  "author": "RealSync Dynamics",
+  "homepage_url": "https://realsyncdynamicsai.de/ai-governance",
+
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://copilot.microsoft.com/*",
+    "https://m365.cloud.microsoft/*",
+    "https://gemini.google.com/*",
+    "https://www.perplexity.ai/*",
+    "https://perplexity.ai/*"
+  ],
+
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://copilot.microsoft.com/*",
+        "https://m365.cloud.microsoft/*",
+        "https://gemini.google.com/*",
+        "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*"
+      ],
+      "js": ["src/content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "RealSyncDynamicsAI — AI Monitor"
+  },
+
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  }
+}

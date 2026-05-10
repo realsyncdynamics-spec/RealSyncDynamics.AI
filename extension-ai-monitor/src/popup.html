@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RSD AI Monitor</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html, body {
+        margin: 0; padding: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #0A0A0B;
+        color: #F1F1F4;
+        min-width: 280px;
+      }
+      header {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        display: flex; align-items: center; gap: 8px;
+      }
+      header .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #D4AF37;
+      }
+      header .title {
+        font-weight: 700; font-size: 13px;
+        letter-spacing: 0.02em;
+      }
+      header .subtitle {
+        margin-left: auto;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #888;
+      }
+      main { padding: 12px 14px; }
+      .total {
+        display: flex; align-items: baseline; gap: 6px;
+        margin-bottom: 12px;
+      }
+      .total .num {
+        font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums;
+      }
+      .total .label {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #888;
+      }
+      ul.vendors { list-style: none; padding: 0; margin: 0; }
+      ul.vendors li {
+        display: flex; justify-content: space-between;
+        font-size: 12px; padding: 4px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+      }
+      ul.vendors li:last-child { border-bottom: none; }
+      ul.vendors li .vendor { text-transform: capitalize; color: #ccc; }
+      ul.vendors li .count { font-variant-numeric: tabular-nums; color: #888; }
+      footer {
+        padding: 10px 14px;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        font-size: 11px;
+        display: flex; justify-content: space-between; align-items: center;
+      }
+      footer a {
+        color: #D4AF37; text-decoration: none;
+      }
+      footer a:hover { text-decoration: underline; }
+      .empty {
+        font-size: 12px; color: #888; padding: 8px 0;
+      }
+      .warn {
+        margin-top: 8px;
+        font-size: 11px; padding: 8px 10px;
+        background: rgba(212, 175, 55, 0.08);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        color: #E5C77B;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="dot"></span>
+      <span class="title">RSD AI Monitor</span>
+      <span class="subtitle">v0.1</span>
+    </header>
+    <main>
+      <div class="total">
+        <span class="num" id="total">0</span>
+        <span class="label">Events heute</span>
+      </div>
+      <ul class="vendors" id="vendors">
+        <li class="empty">Noch keine AI-Nutzung erkannt heute.</li>
+      </ul>
+      <div class="warn" id="no-tenant" style="display:none">
+        Kein Tenant-Key konfiguriert — Events werden nur lokal gezaehlt.
+        <a href="#" id="open-options">Konfigurieren →</a>
+      </div>
+    </main>
+    <footer>
+      <a href="https://realsyncdynamicsai.de/ai-governance" target="_blank">Dashboard</a>
+      <a href="#" id="open-options-2">Einstellungen</a>
+    </footer>
+    <script src="popup.js"></script>
+  </body>
+</html>

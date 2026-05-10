@@ -8,6 +8,7 @@ import {
 import { getAffiliateRef } from '../lib/affiliate';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
+import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -153,6 +154,12 @@ export function AuditLanding() {
           {report && <ReportView report={report} onRetry={() => setReport(null)} />}
         </div>
       </main>
+
+      <ReportPreviewSection
+        eyebrow="Beispiel-Report · Was Sie nach dem Scan bekommen"
+        headline="Ihr eigener Audit sieht genauso aus."
+        subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
+      />
 
       <Footer />
     </div>

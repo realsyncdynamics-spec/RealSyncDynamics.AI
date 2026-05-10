@@ -13,6 +13,9 @@ import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
 import { EnterprisePanel } from './panels/EnterprisePanel';
 import { AIActPanel } from './panels/AIActPanel';
 import { PricingTeaserSection } from './sections/PricingTeaserSection';
+import { LiveFindingsSection } from './sections/LiveFindingsSection';
+import { ReportPreviewSection } from './sections/ReportPreviewSection';
+import { ScannerTechStackSection } from './sections/ScannerTechStackSection';
 
 /**
  * HeroOnly — Hero-Bühne + zwei Long-Form-Sections.
@@ -140,6 +143,15 @@ export function HeroOnly() {
           </div>
         </div>
       </main>
+
+      {/* ─── Live-Findings: Produktrealität sichtbar machen ─────── */}
+      <LiveFindingsSection />
+
+      {/* ─── Report-Preview: strukturierter Audit-Output ────────── */}
+      <ReportPreviewSection />
+
+      {/* ─── Scanner-Tech-Stack: technische Glaubwürdigkeit ─────── */}
+      <ScannerTechStackSection />
 
       {/* ─── Sektion: Für welche Firmen ist das? ─────────────────── */}
       <section

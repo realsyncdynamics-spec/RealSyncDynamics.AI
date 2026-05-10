@@ -23,17 +23,17 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
       id="preise"
       className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-10 sm:mb-12">
           <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-            Free Audit · Starter · Growth · Enterprise
+            Free Audit · Starter · Growth · Agency · Enterprise
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {PRICING_TIERS.map((tier) => (
             <div
               key={tier.id}

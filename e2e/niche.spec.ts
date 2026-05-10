@@ -86,6 +86,6 @@ for (const n of NICHES) {
     await expect(
       page.getByRole('heading', { name: /Free Audit · Starter · Growth · Enterprise/i }),
     ).toBeVisible();
-    await expect(page.getByText(/49 €/).first()).toBeVisible();
+    await expect(page.getByText(/79 €/).first()).toBeVisible();
   });
 }

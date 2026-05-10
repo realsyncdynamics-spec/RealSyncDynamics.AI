@@ -217,7 +217,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – RealSyncDynamicsAI Compliance-Plattform',
     description:
-      'Wählen Sie zwischen Free Audit, Starter, Growth und Enterprise für automatisierte DSGVO- und AI-Act-Compliance.',
+      'Wählen Sie zwischen Free Audit, Starter (79€), Growth (249€), Agency (699€) und Enterprise (ab 1.500€) für automatisierte DSGVO- und AI-Act-Compliance.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -527,7 +527,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/fuer-saas': {
     title: 'Für SaaS-Teams — DSGVO-Compliance als Infrastruktur | RealSyncDynamics.AI',
     description:
-      'Compliance-Layer für SaaS-Teams: API-First, Multi-Tenant, BYOK, Webhooks. Mechanical Input + AI Orchestration + Digital Output. Pilot ab 199 €/Monat.',
+      'Compliance-Layer für SaaS-Teams: API-First, Multi-Tenant, BYOK, Webhooks. Mechanical Input + AI Orchestration + Digital Output. Pilot ab 249 €/Monat.',
     canonical: `${SITE_URL}/fuer-saas`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

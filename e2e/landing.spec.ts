@@ -54,7 +54,7 @@ test('Landing renders HeroOnly Hero + long-form sections + example-report modal'
        await expect(
              page.getByRole('heading', { name: /Free Audit · Starter · Growth · Enterprise/i }),
            ).toBeVisible();
-    await expect(page.getByText(/49 €/).first()).toBeVisible();
+    await expect(page.getByText(/79 €/).first()).toBeVisible();
 
        // Sektion „FAQ"
        await expect(page.getByRole('heading', { name: /^Häufige Fragen$/i })).toBeVisible();

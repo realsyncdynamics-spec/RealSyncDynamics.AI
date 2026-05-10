@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
@@ -13,8 +13,10 @@ import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from
  *
  * 4-Tier-Struktur (Stand 2026-05):
  *   Free Audit  0 €         Lead-Funnel
- *   Starter     49 €/Monat  Einzeldomain
- *   Growth     199 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Starter     79 €/Monat  Einzeldomain
+ *   Growth    249 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Agency    699 €/Monat  White-Label, 10 Kunden-Sites, API
+ *   Enterprise ab 1.500 €/Monat — SLA, AI Act, Evidence Vault
  *   Enterprise individuell  SLA / AI-Act / DSB / Evidence Vault
  */
 
@@ -22,6 +24,7 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
   free: Cookie,
   starter: ShieldCheck,
   growth: Zap,
+  agency: Globe,
   enterprise: Building2,
 };
 
@@ -66,7 +69,7 @@ export function PricingPage() {
       {/* Tier-Cards — 4-spaltig auf Desktop */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 items-stretch">
             {PRICING_TIERS.map((tier) => (
               <TierCard key={tier.id} tier={tier} />
             ))}

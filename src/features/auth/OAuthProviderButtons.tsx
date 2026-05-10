@@ -20,7 +20,7 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
  * ergaenzt es, ersetzt es nicht.
  */
 
-type Provider = 'google' | 'linkedin_oidc' | 'github';
+type Provider = 'google' | 'azure' | 'linkedin_oidc' | 'github';
 
 interface ProviderConfig {
   id: Provider;
@@ -53,6 +53,19 @@ const PROVIDERS: ProviderConfig[] = [
           fill="#EA4335"
           d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
         />
+      </svg>
+    ),
+  },
+  {
+    id: 'azure',
+    label: 'Mit Microsoft fortfahren',
+    description: 'Microsoft 365 · Azure AD · Entra ID',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+        <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+        <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+        <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
       </svg>
     ),
   },

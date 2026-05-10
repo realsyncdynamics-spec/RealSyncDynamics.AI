@@ -1,0 +1,59 @@
+{
+  "name": "RealSyncDynamicsAI — AI Telemetry Send",
+  "description": "Sendet ein AI-Runtime-Event ans RealSyncDynamicsAI Compliance-OS via HTTP. Connection-fertig fuer den Make-HTTP-Module.",
+  "flow": [
+    {
+      "id": 1,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {
+        "handleErrors": false,
+        "useNewZLibDeCompress": true
+      },
+      "mapper": {
+        "url": "{{rsd_endpoint}}",
+        "method": "post",
+        "headers": [
+          { "name": "content-type", "value": "application/json" },
+          { "name": "x-rsd-tenant-key", "value": "{{rsd_tenant_key}}" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "authPass": "",
+        "authUser": "",
+        "timeout": "10",
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false,
+        "contentType": "application/json",
+        "data": "{\n  \"vendor\": \"{{vendor}}\",\n  \"model\": \"{{model}}\",\n  \"event_type\": \"{{event_type}}\",\n  \"prompt_category\": \"{{prompt_category}}\",\n  \"data_class\": \"{{data_class}}\",\n  \"risk_level\": \"{{risk_level}}\",\n  \"team\": \"{{team}}\",\n  \"user_id\": \"{{user_id}}\",\n  \"prompt_tokens\": {{prompt_tokens}},\n  \"response_tokens\": {{response_tokens}},\n  \"latency_ms\": {{latency_ms}},\n  \"metadata\": {{metadata}},\n  \"occurred_at\": \"{{now}}\"\n}",
+        "followAllRedirects": false
+      },
+      "metadata": {
+        "designer": { "x": 0, "y": 0 },
+        "restore": { "expect": { "method": { "label": "POST" } } }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  }
+}

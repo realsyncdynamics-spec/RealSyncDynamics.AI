@@ -4,6 +4,7 @@ import {
   Users, Building2, Cog, AlertTriangle, CheckCircle2, Globe, Database,
   GitBranch, Bell, FileText,
 } from 'lucide-react';
+import { SEOHead } from '../components/SEOHead';
 
 /**
  * /features — echte Plattform-Story.
@@ -15,6 +16,11 @@ import {
 export function Features() {
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
+      <SEOHead
+        title="Funktionen — DSGVO + AI-Act Compliance-Plattform"
+        description="Website-Scan, Vendor-Mapping, automatische DSE/AVV/VVT/TOM, AI-Act Annex-III-Klassifikator, kontinuierliches Monitoring, API/CI-Integration. Eine Plattform für Compliance in regulierten Branchen."
+        canonical="/features"
+      />
       {/* Top bar */}
       <header className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between border-b border-silver-700/30">
         <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">

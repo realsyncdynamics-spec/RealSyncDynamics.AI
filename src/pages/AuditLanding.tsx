@@ -8,6 +8,7 @@ import {
 import { getAffiliateRef } from '../lib/affiliate';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
+import { SEOHead } from '../components/SEOHead';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -75,6 +76,11 @@ export function AuditLanding() {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <SEOHead
+        title="DSGVO-Audit für Ihre Website — kostenloser Sofort-Scan"
+        description="In 30 Sekunden: Tracker, Cookies, Drittanbieter, Schrems-II-Risiken auf Ihrer Domain. Risk-Score 0-100, Befunde mit Paragraphenbezug. Kostenlos, ohne Account."
+        canonical="/audit"
+      />
       <Header />
 
       <main className="px-4 sm:px-6 py-12 sm:py-16">

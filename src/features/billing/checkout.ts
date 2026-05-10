@@ -1,6 +1,12 @@
 import { getSupabase } from '../../lib/supabase';
 
-export type PlanKey = 'free' | 'bronze' | 'silver' | 'gold' | 'enterprise_public';
+/**
+ * PlanKey-Werte muessen mit:
+ *   - PRICING_TIERS[i].planKey aus src/config/pricing.ts
+ *   - public.products.default_for_plan_key in der DB
+ * uebereinstimmen. 5-Tier seit PR #145.
+ */
+export type PlanKey = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise';
 
 export interface CheckoutResult {
   ok: boolean;

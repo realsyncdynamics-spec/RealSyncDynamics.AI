@@ -207,11 +207,20 @@ export function Welcome() {
   const isCookieSdk = product.includes('Cookie-SDK');
 
   // Final "Setup abschließen" CTA — mark wizard complete, then navigate to
-  // the product-specific landing. Persists step=4 for both Cookie-SDK and
-  // Audit-Pro paths (Audit-Pro path also writes step=4 on domain submit;
-  // calling here is idempotent — the RPC's COALESCE keeps fields stable).
+  // the product-specific landing.
+  // Wenn ein ?next=<safe-path> URL-Parameter gesetzt ist (z.B. von der
+  // CheckoutPage bei Buy-Button-Klick ohne Auth), hat dieser Vorrang vor
+  // dem product-spezifischen Default. Damit landet der User direkt im
+  // Checkout-Flow weiter, statt im Cookie-SDK / Audit-Pro Default.
+  // Sicherheits-Whitelist: nur Pfade die mit / starten und KEIN //
+  // (Open-Redirect-Schutz) werden akzeptiert.
   const finalizeAndNavigate = async () => {
-    const target = isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro';
+    const nextParam = new URLSearchParams(window.location.search).get('next');
+    const safeNext =
+      nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+        ? nextParam
+        : null;
+    const target = safeNext ?? (isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro');
     if (isSupabaseConfigured()) {
       try {
         const sb = getSupabase();

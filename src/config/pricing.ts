@@ -89,7 +89,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Starter buchen', href: '/contact-sales?intent=starter&source=pricing' },
+    cta: { label: 'Starter buchen', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -110,7 +110,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Growth buchen', href: '/contact-sales?intent=growth&source=pricing' },
+    cta: { label: 'Growth buchen', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -131,7 +131,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Agency buchen', href: '/contact-sales?intent=agency&source=pricing' },
+    cta: { label: 'Agency buchen', href: '/checkout/agency?source=pricing' },
   },
   {
     id: 'enterprise',

@@ -107,6 +107,7 @@ const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m)
 const UnknownTrackersView = lazy(() => import('./features/admin/UnknownTrackersView').then((m) => ({ default: m.UnknownTrackersView })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
+import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 import { useTrackPageview } from './lib/track';
@@ -279,6 +280,7 @@ function RoutesWithTracking() {
         <Route path="/grenzen" element={<Limits />} />
         <Route path="/limits" element={<Limits />} />
         <Route path="/ai-governance" element={<AiGovernancePage />} />
+        <Route path="/checkout/:planKey" element={<CheckoutPage />} />
         </Routes>
       </Suspense>
     </>

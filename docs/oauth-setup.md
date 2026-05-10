@@ -1,6 +1,6 @@
-# OAuth-Provider-Setup (Google · LinkedIn · GitHub)
+# OAuth-Provider-Setup (Google · Microsoft · LinkedIn · GitHub)
 
-Code-Seite ist mit PR #147 verkabelt. Damit der Login tatsächlich funktioniert,
+Code-Seite ist mit PR #147 + #148 verkabelt. Damit der Login tatsächlich funktioniert,
 müssen pro Provider 3 Schritte ausgeführt werden:
 
 1. **OAuth-App** beim Provider anlegen + Client-ID + Secret bekommen
@@ -41,7 +41,40 @@ https://<dein-supabase-project>.supabase.co/auth/v1/callback
 
 ---
 
-## 2️⃣ LinkedIn
+## 2️⃣ Microsoft / Azure AD / Entra ID
+
+**Pflicht für BaFin-/MaRisk-Enterprise-Kunden** (Banken, Versicherer, Behörden). Microsoft-365-Tenants wollen sich mit ihrem Firmen-Azure-AD-Konto einloggen, nicht mit privatem Gmail.
+
+Provider-ID in Supabase: `azure`.
+
+### A) Azure-Portal — App-Registrierung
+1. https://portal.azure.com → **Microsoft Entra ID → App registrations → New registration**
+2. Name: `RealSyncDynamicsAI`
+3. **Supported account types:** `Accounts in any organizational directory (Multitenant) and personal Microsoft accounts` (für Workforce + B2C)
+4. **Redirect URI** → Web → `https://<supabase>.supabase.co/auth/v1/callback`
+5. Register → Application (client) ID kopieren
+6. **Certificates & secrets → New client secret → Add** → Wert sofort kopieren (wird nur 1× gezeigt)
+7. **API permissions → Add permission → Microsoft Graph → Delegated permissions:**
+   - `email`
+   - `openid`
+   - `profile`
+   - `User.Read`
+8. **Grant admin consent** für die Permissions
+
+### B) Supabase Dashboard
+- Authentication → Providers → **Azure** → Enable
+- Client ID + Client Secret einsetzen
+- **Tenant URL:** `https://login.microsoftonline.com/common/v2.0` (für Multi-Tenant)
+  - Falls nur eigener Tenant: `https://login.microsoftonline.com/<tenant-id>/v2.0`
+- Save
+
+**Verifikation:** auf `/welcome` "Mit Microsoft fortfahren" → Microsoft-Login → Consent → zurück mit Session. Email + Name aus Microsoft-Profil sind in `auth.users` verfügbar.
+
+**Enterprise-Hinweis:** Wenn ein Kunde Conditional-Access-Policies hat (MFA-Pflicht, IP-Restriktion etc.), greifen die automatisch — Supabase muss nichts dafür konfigurieren.
+
+---
+
+## 3️⃣ LinkedIn
 
 ⚠️ LinkedIn-OAuth braucht **OpenID-Connect** (nicht das alte LinkedIn v2). Provider-ID in Supabase: `linkedin_oidc`.
 
@@ -62,7 +95,7 @@ https://<dein-supabase-project>.supabase.co/auth/v1/callback
 
 ---
 
-## 3️⃣ GitHub
+## 4️⃣ GitHub
 
 ### A) GitHub
 1. https://github.com/settings/developers → **OAuth Apps → New OAuth App**
@@ -80,7 +113,7 @@ https://<dein-supabase-project>.supabase.co/auth/v1/callback
 
 ---
 
-## 4️⃣ Site-URL + Redirect-URLs in Supabase global
+## 5️⃣ Site-URL + Redirect-URLs in Supabase global
 
 Nicht-pro-Provider, aber Pflicht:
 

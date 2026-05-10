@@ -106,11 +106,12 @@ export function HeroOnly() {
 
           {/* Headline + Subline */}
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
-            Ihre Website & KI-Prozesse DSGVO-sicher – in 30 Sekunden geprüft.
+            Ihre Website & KI-Prozesse DSGVO-sicher — kontinuierlich überwacht statt einmalig geprüft.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
-            RealSyncDynamics.AI scannt Ihre Website, Tracking-Tools und KI-Workflows und zeigt Ihnen konkret,
-            wo Sie gegen DSGVO, TTDSG und EU AI Act verstoßen — inklusive To-do-Liste für Ihr Team.
+            RealSyncDynamicsAI überwacht Ihre Website, Tracking-Stack und KI-Workflows tagesgenau auf
+            DSGVO-, TTDSG- und EU-AI-Act-Risiken — mit Drift-Alerts, Auto-Fix-Empfehlungen und
+            revisionssicherem Audit-Trail. Der kostenlose Audit ist Ihr Einstieg, nicht das Ergebnis.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -139,7 +140,7 @@ export function HeroOnly() {
 
           {/* Trust-Leiste */}
           <div className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-silver-500">
-            EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany
+            EU-Datenresidenz · AVV inklusive · Continuous Monitoring · Made in Germany
           </div>
         </div>
       </main>

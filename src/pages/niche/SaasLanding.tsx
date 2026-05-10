@@ -7,7 +7,7 @@ const SAAS_CONFIG: NicheConfig = {
   eyebrow: 'Für SaaS-Plattformen',
   headline: 'DSGVO + EU AI Act für SaaS — Plattform, Marketing-Site und KI-Features in einem Audit.',
   subline:
-    'Wir prüfen Ihre Marketing-Domain, Ihre App-Domain und Ihre KI-Features (Recommendation, Lead-Scoring, GenAI-Integrationen) — von Tracker-Loading vor Consent bis Annex-III-Klassifikation. Mit klarer To-do-Liste für Produkt, Marketing und Datenschutz.',
+    'Wir überwachen Ihre Marketing-Domain, App-Domain und KI-Features (Recommendation, Lead-Scoring, GenAI-Integrationen) kontinuierlich auf DSGVO- und AI-Act-Drift — von Tracker-Loading vor Consent bis Annex-III-Klassifikation. Free Audit als Einstieg, tagesgenaue Re-Scans + Drift-Alerts als Daily-Routine.',
   primaryCtaHref: '/audit?source=fuer-saas',
   painCards: [
     {

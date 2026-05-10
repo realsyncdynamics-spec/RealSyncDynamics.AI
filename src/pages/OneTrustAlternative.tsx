@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, ArrowRight, Check, X, Minus, Euro, Globe, Award } from 'lucide-react';
+import { CompetitorComparisonSection } from '../components/CompetitorComparisonSection';
+import { ConsentLimitsSection } from '../components/sections/ConsentLimitsSection';
+import { ONETRUST_COMPARISON } from '../config/competitor-comparisons';
 
 export function OneTrustAlternative() {
   return (
@@ -30,6 +33,12 @@ export function OneTrustAlternative() {
               Wir liefern die KI-spezifische Compliance-Schicht ab 49 €/M.
             </p>
           </div>
+
+          {/* Strategischer 9-Capability-Vergleich (PR #134) */}
+          <CompetitorComparisonSection {...ONETRUST_COMPARISON} />
+
+          {/* Cookie Banner lösen nur einen Teil — Positionierungs-Section */}
+          <ConsentLimitsSection />
 
           <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">
             <table className="w-full text-sm">

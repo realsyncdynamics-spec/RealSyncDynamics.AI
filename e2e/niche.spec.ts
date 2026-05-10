@@ -81,10 +81,11 @@ for (const n of NICHES) {
       ).toBeVisible();
     }
 
-    // Pricing-Teaser-Section (geteilte Component aus #111-Refactor)
+    // Pricing-Teaser-Section (geteilte Component aus #111-Refactor,
+    // 4-Tier-Modell seit #131: Free Audit / Starter 49€ / Growth 199€ / Enterprise)
     await expect(
-      page.getByRole('heading', { name: /Plan für jede Unternehmensgröße/i }),
+      page.getByRole('heading', { name: /Free Audit · Starter · Growth · Enterprise/i }),
     ).toBeVisible();
-    await expect(page.getByText(/99 € \/ Monat/).first()).toBeVisible();
+    await expect(page.getByText(/49 €/).first()).toBeVisible();
   });
 }

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { LiveFindingsSection } from '../components/sections/LiveFindingsSection';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
+import { ScannerTechStackSection } from '../components/sections/ScannerTechStackSection';
 
 /**
  * /features — echte Plattform-Story.
@@ -106,9 +107,10 @@ export function Features() {
         </div>
       </section>
 
-      {/* Live-Findings + Report-Preview — Produktrealitaet zeigen */}
+      {/* Live-Findings + Report-Preview + Tech-Stack — Produktrealitaet zeigen */}
       <LiveFindingsSection />
       <ReportPreviewSection />
+      <ScannerTechStackSection />
 
       {/* Zielgruppen */}
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">

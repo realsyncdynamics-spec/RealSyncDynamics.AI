@@ -1,0 +1,40 @@
+[Unit]
+Description=OpenClaw Compliance-Agent
+Documentation=https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI/tree/main/services/openclaw-agent
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10s
+TimeoutStopSec=20s
+
+# /etc/openclaw-agent/env enthaelt:
+#   OPENAI_API_KEY=sk-...
+#   OPENCLAW_SECRET=...
+#   OPENCLAW_CORS_ORIGINS=https://realsyncdynamicsai.de,https://www.realsyncdynamicsai.de
+#   OPENCLAW_RATE_LIMIT_PER_MIN=10
+#   OPENCLAW_DAILY_TOKEN_CAP=2000000
+#   SENTRY_DSN=https://...   (optional)
+#   PORT=3001
+EnvironmentFile=/etc/openclaw-agent/env
+
+ExecStartPre=-/usr/bin/docker stop openclaw-agent
+ExecStartPre=-/usr/bin/docker rm openclaw-agent
+ExecStartPre=/usr/bin/docker pull realsync/openclaw-agent:latest
+
+ExecStart=/usr/bin/docker run --rm --name openclaw-agent \
+  -p 127.0.0.1:3001:3001 \
+  --env-file /etc/openclaw-agent/env \
+  --memory=512m \
+  --cpus=1.0 \
+  --read-only \
+  --tmpfs /tmp:rw,size=64m \
+  realsync/openclaw-agent:latest
+
+ExecStop=/usr/bin/docker stop openclaw-agent
+
+[Install]
+WantedBy=multi-user.target

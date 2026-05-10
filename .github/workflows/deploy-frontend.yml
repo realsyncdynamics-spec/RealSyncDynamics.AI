@@ -71,6 +71,25 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      - name: Install Playwright Chromium for prerender
+        run: npx playwright install chromium --with-deps
+
+      - name: Pre-render top routes (priority >= 0.6)
+        # Erzeugt static HTML pro Route in dist/<route>/index.html, damit
+        # nicht-JS-rendering Crawler (LinkedIn, Slack, archive.org) den
+        # vollständigen hydrierten Content sehen statt nur den SPA-Shell.
+        # SKIP_PRERENDER=1 wenn schnell deploy ohne Prerender nötig.
+        run: npm run prerender
+        env:
+          PRERENDER_PRIORITY_MIN: '0.6'
+          PRERENDER_CONCURRENCY: '3'
+          # Fail wenn rendered routes < expected — verhindert silent SEO-Regression
+          PRERENDER_STRICT: '1'
+          # Vite preview braucht die Supabase-Keys zur Laufzeit (auch wenn
+          # nicht alle Routes Supabase-Calls machen — Hydration evaluiert die env)
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh

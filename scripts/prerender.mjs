@@ -98,18 +98,8 @@ async function renderRoute(browser, route) {
     // Wait for React hydration + lazy components to finish
     await page.waitForLoadState('networkidle', { timeout: TIMEOUT }).catch(() => { /* tolerant */ });
 
-    // Inject canonical meta if missing
-    await page.evaluate((canonicalPath) => {
-      const existing = document.querySelector('link[rel="canonical"]');
-      const url = `https://realsyncdynamicsai.de${canonicalPath === '/' ? '/' : canonicalPath}`;
-      if (existing) existing.setAttribute('href', url);
-      else {
-        const link = document.createElement('link');
-        link.rel = 'canonical';
-        link.href = url;
-        document.head.appendChild(link);
-      }
-    }, route);
+    // Canonical wird vom SEOHead-Component aus src/config/seo.ts gesetzt
+    // (auch fuer Alias-Routes auf die Primary-URL). Hier nicht ueberschreiben.
 
     const html = await page.content();
     return html;

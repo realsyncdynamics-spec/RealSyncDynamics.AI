@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { getSeoForPath, type SEOConfig } from '../config/seo';
 
 /**
  * SEOHead — per-route Meta-Tag-Manager fuer die Vite-SPA.
@@ -13,13 +15,16 @@ import { useEffect } from 'react';
  * einen schlanken useEffect-Hook der die Tags direkt in <head> einfuegt
  * bzw. updated. React 19 batches die Effects sauber, kein Flicker.
  *
+ * Config-driven: Ohne Props zieht der Hook automatisch den Eintrag aus
+ * src/config/seo.ts via useLocation().pathname. Props ueberschreiben
+ * Config-Werte (z.B. fuer dynamische Detail-Pages oder Pricing-Tier-A/B-Tests).
+ *
  * Verwendung:
- *   <SEOHead
- *     title="Cookiebot Alternative — DSGVO-konforme Compliance"
- *     description="Automatisierte DSGVO-Compliance statt nur Cookie-Banner..."
- *     canonical="/cookiebot-alternative"
- *     ogImage="/og-image.png"
- *   />
+ *   // Config-driven (default fuer alle pre-rendered Routes):
+ *   <SEOHead />
+ *
+ *   // Explizit (z.B. fuer dynamische Detail-Pages):
+ *   <SEOHead title="Custom" description="..." canonical="/x" />
  *
  * Defaults aus index.html werden nicht zurueckgesetzt — der Hook ueberschreibt
  * nur die Tags die er kennt. Wenn man eine Route ohne <SEOHead> rendert,
@@ -28,9 +33,9 @@ import { useEffect } from 'react';
 
 export interface SEOHeadProps {
   /** Page-Title — wird zu "{title} — RealSyncDynamics.AI" gesetzt */
-  title: string;
+  title?: string;
   /** Meta-Description — Soll 130-160 Zeichen sein */
-  description: string;
+  description?: string;
   /** Canonical-Pfad relativ zur Domain (z.B. "/features"). Default: aktueller Pfad. */
   canonical?: string;
   /** OG-Image-Pfad. Default: /og-image.png */
@@ -46,25 +51,52 @@ const SITE_URL = 'https://realsyncdynamicsai.de';
 const DEFAULT_OG_IMAGE = '/og-image.png';
 const TITLE_SUFFIX = ' — RealSyncDynamics.AI';
 
-export function SEOHead({
-  title,
-  description,
-  canonical,
-  ogImage = DEFAULT_OG_IMAGE,
-  ogType = 'website',
-  noIndex = false,
-}: SEOHeadProps): null {
+/**
+ * Sollen wir den Brand-Suffix anhaengen? Nur wenn der Title nicht bereits
+ * den Brandnamen enthaelt — dabei toleriert werden beide Schreibweisen
+ * "RealSyncDynamics.AI" und "RealSyncDynamicsAI" (Marketing-Title-Strings
+ * lassen den Punkt manchmal weg).
+ */
+function hasBrandMention(s: string): boolean {
+  const lower = s.toLowerCase();
+  return lower.includes('realsyncdynamics.ai') || lower.includes('realsyncdynamicsai');
+}
+
+export function SEOHead(props: SEOHeadProps = {}): null {
+  const location = useLocation();
+  const config: SEOConfig = getSeoForPath(location.pathname);
+
+  const title = props.title ?? config.title;
+  const description = props.description ?? config.description;
+  const canonical = props.canonical ?? config.canonical ?? location.pathname;
+  const ogTitle = config.ogTitle ?? title;
+  const ogDescription = config.ogDescription ?? description;
+  const twitterTitle = config.twitterTitle ?? ogTitle;
+  const twitterDescription = config.twitterDescription ?? ogDescription;
+  const ogImage = props.ogImage ?? config.ogImage ?? DEFAULT_OG_IMAGE;
+  const ogType = props.ogType ?? config.ogType ?? 'website';
+  const noIndex = props.noIndex ?? config.noIndex ?? false;
+  const jsonLd = config.jsonLd;
+  // Stable serialization fuer den useEffect-Dependency-Array.
+  const jsonLdSerialized = jsonLd ? JSON.stringify(jsonLd) : '';
+
   useEffect(() => {
-    const fullTitle = title.endsWith(SITE_NAME) ? title : title + TITLE_SUFFIX;
-    const path = canonical ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
-    const fullCanonical = SITE_URL + (path.startsWith('/') ? path : '/' + path);
+    const fullTitle = hasBrandMention(title) ? title : title + TITLE_SUFFIX;
+    const fullOgTitle = hasBrandMention(ogTitle) ? ogTitle : ogTitle + TITLE_SUFFIX;
+    const fullTwitterTitle = hasBrandMention(twitterTitle)
+      ? twitterTitle
+      : twitterTitle + TITLE_SUFFIX;
+    const path = canonical.startsWith('http')
+      ? canonical
+      : SITE_URL + (canonical.startsWith('/') ? canonical : '/' + canonical);
+    const fullCanonical = path;
     const fullOgImage = ogImage.startsWith('http') ? ogImage : SITE_URL + ogImage;
 
     document.title = fullTitle;
 
     setMeta('name', 'description', description);
-    setMeta('property', 'og:title', fullTitle);
-    setMeta('property', 'og:description', description);
+    setMeta('property', 'og:title', fullOgTitle);
+    setMeta('property', 'og:description', ogDescription);
     setMeta('property', 'og:url', fullCanonical);
     setMeta('property', 'og:type', ogType);
     setMeta('property', 'og:image', fullOgImage);
@@ -72,8 +104,8 @@ export function SEOHead({
     setMeta('property', 'og:locale', 'de_DE');
 
     setMeta('name', 'twitter:card', 'summary_large_image');
-    setMeta('name', 'twitter:title', fullTitle);
-    setMeta('name', 'twitter:description', description);
+    setMeta('name', 'twitter:title', fullTwitterTitle);
+    setMeta('name', 'twitter:description', twitterDescription);
     setMeta('name', 'twitter:image', fullOgImage);
 
     if (noIndex) {
@@ -84,9 +116,46 @@ export function SEOHead({
     }
 
     setLink('canonical', fullCanonical);
-  }, [title, description, canonical, ogImage, ogType, noIndex]);
+
+    // Route-spezifisches JSON-LD: alle Eintraege unter data-seo-id="route"
+    // einfuegen / updaten / removen. Stale-Eintraege aus vorherigen Routes
+    // werden vor dem Schreiben entfernt, damit kein Schema "haengen" bleibt.
+    if (jsonLdSerialized) {
+      removeRouteJsonLd();
+      const entries = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+      entries.forEach((entry, idx) => {
+        const el = document.createElement('script');
+        el.setAttribute('type', 'application/ld+json');
+        el.setAttribute('data-seo-route', String(idx));
+        el.textContent = JSON.stringify(entry);
+        document.head.appendChild(el);
+      });
+    } else {
+      removeRouteJsonLd();
+    }
+  }, [
+    title,
+    description,
+    canonical,
+    ogTitle,
+    ogDescription,
+    twitterTitle,
+    twitterDescription,
+    ogImage,
+    ogType,
+    noIndex,
+    jsonLdSerialized,
+    jsonLd,
+  ]);
 
   return null;
+}
+
+function removeRouteJsonLd(): void {
+  if (typeof document === 'undefined') return;
+  document
+    .querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"][data-seo-route]')
+    .forEach((el) => el.remove());
 }
 
 /**

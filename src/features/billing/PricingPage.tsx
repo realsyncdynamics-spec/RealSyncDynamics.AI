@@ -1,140 +1,28 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
+import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
 
 /**
- * /pricing — public Pricing-Page mit 5 Paketen.
+ * /pricing — public Pricing-Page mit 4 Paketen.
  *
- * Strategie: "Automated Digital Compliance Infrastructure für Webseiten"
+ * Tier-Daten kommen ausschliesslich aus src/config/pricing.ts
+ * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
- * 5-Tier-Struktur (Stand 2026-05):
- * 1. Free Audit        0 €         Lead-Funnel / Freemium
- * 2. Starter           49 €/Monat  Einzelunternehmer / kleine Firmen
- * 3. Growth/Business  199 €/Monat  KMU mit Monitoring-Bedarf (HIGHLIGHT)
- * 4. Agency Suite     799 €/Monat  Agenturen / White-Label / Multi-Tenant
- * 5. Enterprise      Anfrage       SLA / AI-Act-Modul / DSB / Evidence Vault
- *
- * Bewusst KEIN "100 % rechtssicher" — klarer Disclaimer.
- * CTAs gehen auf /audit (Free), /contact-sales (alle kostenpflichtigen Tiers).
+ * 4-Tier-Struktur (Stand 2026-05):
+ *   Free Audit  0 €         Lead-Funnel
+ *   Starter     49 €/Monat  Einzeldomain
+ *   Growth     199 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Enterprise individuell  SLA / AI-Act / DSB / Evidence Vault
  */
 
-type TierID = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise';
-
-interface Tier {
-  id: TierID;
-  name: string;
-  price: string;
-  priceSuffix: string;
-  tagline: string;
-  bullets: string[];
-  badges?: string[];
-  ctaLabel: string;
-  ctaHref: string;
-  highlight: boolean;
-}
-
-const TIERS: Tier[] = [
-  {
-    id: 'free',
-    name: 'Free Audit',
-    price: '0 €',
-    priceSuffix: 'einmalig · kein Account',
-    tagline: 'Sofortiger DSGVO-Check — ohne Verpflichtung',
-    bullets: [
-      'URL-Scan mit Compliance-Score',
-      '3 kritische Risiken sichtbar',
-      'Mini-PDF-Report',
-      'Kein Account, kein Setup',
-    ],
-    ctaLabel: 'Kostenlos scannen',
-    ctaHref: '/audit?source=pricing-free',
-    highlight: false,
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: '49 €',
-    priceSuffix: '/ Monat',
-    tagline: 'Vollständige Compliance-Basis für eine Domain',
-    bullets: [
-      'Vollständiger DSGVO-Scan (alle Findings)',
-      'Datenschutzerklärung (DSE) automatisch generiert',
-      'Impressum-Generator',
-      'Monatlicher Re-Scan + E-Mail-Alert',
-      '1 Domain',
-    ],
-    ctaLabel: 'Starter buchen',
-    ctaHref: '/contact-sales?intent=starter&source=pricing',
-    highlight: false,
-  },
-  {
-    id: 'growth',
-    name: 'Growth / Business',
-    price: '199 €',
-    priceSuffix: '/ Monat',
-    tagline: 'Continuous Monitoring + Auto-Fix-Engine (EMPFOHLEN)',
-    bullets: [
-      'Alles aus Starter',
-      'Tägliches Monitoring + Drift-Detection',
-      'Consent-Timing-Analyse (pre-consent requests)',
-      'Auto-Fix-Empfehlungen mit Code-Snippets',
-      'PDF-Reports mit Before/After-Vergleich',
-      'Risk-Dashboard im Browser',
-      'Bis zu 3 Domains',
-    ],
-    badges: ['Kern-Differenzierer'],
-    ctaLabel: 'Growth buchen',
-    ctaHref: '/contact-sales?intent=growth&source=pricing',
-    highlight: true,
-  },
-  {
-    id: 'agency',
-    name: 'Agency Suite',
-    price: '799 €',
-    priceSuffix: '/ Monat',
-    tagline: 'White-Label · Multi-Tenant · API-Zugriff für Agenturen',
-    bullets: [
-      'Alles aus Growth',
-      'White-Label-Report mit eigenem Logo',
-      'Multi-Tenant-Dashboard (unbegrenzte Kunden)',
-      'Vollständiger API-Zugriff + Webhooks',
-      'CI/CD-Integration (GitHub Actions, GitLab)',
-      'Bis zu 20 Domains inklusive',
-      'Priority-Support',
-    ],
-    ctaLabel: 'Agency buchen',
-    ctaHref: '/contact-sales?intent=agency&source=pricing',
-    highlight: false,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 'Anfrage',
-    priceSuffix: '3.000 – 50.000 € / Jahr',
-    tagline: 'SLA · AI-Act-Modul · DSB-Integration · Evidence Vault',
-    bullets: [
-      'Alle Agency-Funktionen',
-      'SLA-Garantie + dedizierter Account-Manager',
-      'EU AI Act Compliance-Modul',
-      'DSB-Integration (interner oder externer DSB)',
-      'Evidence Vault (unveränderliche Audit-Trails)',
-      'Unlimitierte Domains',
-      'Individuelle Vertragsgestaltung / DPA',
-    ],
-    ctaLabel: 'Enterprise anfragen',
-    ctaHref: '/contact-sales?intent=enterprise&source=pricing',
-    highlight: false,
-  },
-];
-
-const TIER_ICONS: Record<TierID, typeof Cookie> = {
+const TIER_ICONS: Record<TierId, typeof Cookie> = {
   free: Cookie,
   starter: ShieldCheck,
   growth: Zap,
-  agency: Globe,
   enterprise: Building2,
 };
 
@@ -142,8 +30,8 @@ export function PricingPage() {
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       <SEOHead
-        title="Preise — Free Audit, Starter 49€, Growth 199€, Agency 799€, Enterprise"
-        description="5 Tarife für DSGVO + AI-Act Compliance. Free Audit (0€, kein Account), Starter 49€/Monat (1 Domain), Growth 199€/Monat (Auto-Fix), Agency 799€/Monat (White-Label), Enterprise auf Anfrage."
+        title="Preise — Free Audit, Starter 49€, Growth 199€, Enterprise"
+        description="4 Tarife für DSGVO + AI-Act Compliance. Free Audit (0€, kein Account), Starter 49€/Monat (1 Domain), Growth 199€/Monat (Auto-Fix + Monitoring, bis 3 Domains), Enterprise individuell (SLA, AI-Act-Modul, Evidence Vault)."
         canonical="/pricing"
       />
       {/* Top bar */}
@@ -181,25 +69,18 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Tier-Cards — 2-spaltig auf Desktop (3 oben, 2 unten) */}
+      {/* Tier-Cards — 4-spaltig auf Desktop */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
-          {/* Row 1: Free / Starter / Growth */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch mb-4 sm:mb-5">
-            {TIERS.slice(0, 3).map((tier) => (
-              <TierCard key={tier.id} tier={tier} />
-            ))}
-          </div>
-          {/* Row 2: Agency / Enterprise */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
-            {TIERS.slice(3).map((tier) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 items-stretch">
+            {PRICING_TIERS.map((tier) => (
               <TierCard key={tier.id} tier={tier} />
             ))}
           </div>
 
           <div className="mt-8 text-center">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-              EU-Datenresidenz · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany
+              {PRICING_TRUST_NOTE}
             </p>
           </div>
 
@@ -326,8 +207,10 @@ export function PricingPage() {
   );
 }
 
-function TierCard({ tier }: { tier: Tier }) {
+function TierCard({ tier }: { tier: PricingTier }) {
   const TierIcon = TIER_ICONS[tier.id];
+  const priceDisplay =
+    tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
 
   return (
     <div
@@ -349,7 +232,7 @@ function TierCard({ tier }: { tier: Tier }) {
       </div>
 
       <div className="flex items-baseline gap-1.5 mb-1.5">
-        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">{tier.price}</div>
+        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">{priceDisplay}</div>
         <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.priceSuffix}</div>
       </div>
 
@@ -378,14 +261,14 @@ function TierCard({ tier }: { tier: Tier }) {
       </ul>
 
       <Link
-        to={tier.ctaHref}
+        to={tier.cta.href}
         className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
           tier.highlight
             ? 'surface-mono'
             : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
         }`}
       >
-        {tier.ctaLabel} <ArrowRight className="h-4 w-4" />
+        {tier.cta.label} <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );

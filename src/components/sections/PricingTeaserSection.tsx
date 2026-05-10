@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
+import { PRICING_TIERS, PRICING_TRUST_NOTE } from '../../config/pricing';
 
 /**
- * PricingTeaserSection — wiederverwendbarer 3-Tier-Preis-Teaser für Long-
- * Form-Landings (Hero + Niche-Pages). Preis-Daten sind hartcodiert auf
- * den kanonischen Tier-Stand der /pricing-Page (PricingPage.tsx).
+ * PricingTeaserSection — wiederverwendbarer Preis-Teaser für Long-Form-
+ * Landings (Hero + Niche-Pages). Konsumiert das zentrale src/config/pricing.ts
+ * — kein hardcoded Tier-Daten mehr.
  *
  * Source-Tag landet als ?source-Param am Sales-CTA, damit Lead-Inbox
  * sehen kann, ob die Conversion aus Hero / Niche-SaaS / Niche-Praxen /
@@ -13,30 +14,6 @@ import { ArrowRight } from 'lucide-react';
 export interface PricingTeaserProps {
   sourceTag: string;            // 'hero' | 'fuer-saas' | 'fuer-agenturen' | 'fuer-praxen'
 }
-
-const TIERS = [
-  {
-    name: 'Scan',
-    price: 'Kostenlos',
-    tagline: 'Schneller DSGVO-Check',
-    bullets: ['Einmaliger Domain-Scan', 'Risk-Score + Top-3-Findings', 'Kein Account nötig'],
-    highlight: false,
-  },
-  {
-    name: 'Protect',
-    price: '99 € / Monat',
-    tagline: 'Compliance-Standard · 1 Domain',
-    bullets: ['Vollständiger Audit + Paragraphenbezug', 'DSE + AVV automatisch generiert', 'Wöchentlicher Re-Audit + Alerts'],
-    highlight: true,
-  },
-  {
-    name: 'Comply',
-    price: '249 € / Monat',
-    tagline: 'AI-Act + Multi-Domain',
-    bullets: ['VVT + TOM + AI-Act-Risk', 'Bis zu 5 Domains', 'API + Signierte PDF-Exports'],
-    highlight: false,
-  },
-];
 
 export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
   const contactHref = `/contact-sales?intent=pricing&source=${encodeURIComponent(sourceTag)}`;
@@ -52,36 +29,41 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-            Plan für jede Unternehmensgröße
+            Free Audit · Starter · Growth · Enterprise
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-          {TIERS.map((tier) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          {PRICING_TIERS.map((tier) => (
             <div
-              key={tier.name}
+              key={tier.id}
               className={`relative p-5 sm:p-6 bg-obsidian-900/60 border rounded-none transition-colors ${
                 tier.highlight
                   ? 'border-gold-400/80'
                   : 'border-silver-700/30 hover:border-gold-400/60'
               }`}
             >
-              {tier.highlight && (
+              {tier.badges?.[0] && (
                 <div className="absolute -top-3 left-5 px-2 py-0.5 bg-gold-400 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
-                  Empfohlen
+                  {tier.badges[0]}
                 </div>
               )}
               <div className="font-display font-bold text-titanium-50 text-base sm:text-lg mt-1 mb-1">
                 {tier.name}
               </div>
-              <div className="text-2xl font-display font-bold text-gold-400 mb-1.5 tabular-nums">
-                {tier.price}
+              <div className="mb-1.5">
+                <span className="text-2xl font-display font-bold text-gold-400 tabular-nums">
+                  {tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage')}
+                </span>
+                {tier.recurring && tier.priceEur > 0 && (
+                  <span className="ml-1 text-xs font-mono text-silver-400">/ Monat</span>
+                )}
               </div>
               <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-3">
                 {tier.tagline}
               </div>
               <ul className="space-y-1.5 text-sm text-silver-300">
-                {tier.bullets.map((b) => (
+                {tier.bullets.slice(0, 4).map((b) => (
                   <li key={b} className="flex items-start gap-2">
                     <span className="text-gold-400 shrink-0 leading-relaxed">+</span>
                     <span className="leading-relaxed">{b}</span>
@@ -108,7 +90,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
         </div>
 
         <p className="mt-4 text-center text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-          Free-Tier verfügbar · Monatlich kündbar · Keine Kreditkarte für Trial
+          {PRICING_TRUST_NOTE}
         </p>
       </div>
     </section>

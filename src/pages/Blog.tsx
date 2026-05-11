@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileText } from 'lucide-react';
+import { usePageMeta } from '../lib/usePageMeta';
 
 /**
  * /blog — minimal placeholder index.
@@ -56,13 +56,12 @@ const TOPICS: Topic[] = [
 ];
 
 export function Blog() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'RealSyncDynamics.AI Blog — DSGVO, TTDSG & AI Act Monitoring';
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  usePageMeta({
+    title: 'RealSyncDynamics.AI Blog — DSGVO, TTDSG & AI Act Monitoring',
+    description:
+      'Praxisnahe Beiträge zu Continuous Compliance, Pre-Consent Tracking, AI Act Readiness und technischer Datenschutzprüfung.',
+    url: 'https://realsyncdynamicsai.de/blog',
+  });
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">

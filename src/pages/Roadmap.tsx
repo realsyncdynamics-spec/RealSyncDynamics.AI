@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Compass } from 'lucide-react';
 import { RoadmapSection } from '../components/sections/RoadmapSection';
+import { usePageMeta } from '../lib/usePageMeta';
 
 /**
  * /roadmap — public roadmap page.
@@ -10,13 +10,12 @@ import { RoadmapSection } from '../components/sections/RoadmapSection';
  * re-used as a teaser on the landing page later if we want one.
  */
 export function Roadmap() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = 'Roadmap · RealSyncDynamics.AI';
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  usePageMeta({
+    title: 'Roadmap — RealSyncDynamics.AI',
+    description:
+      'Geplante und in Entwicklung befindliche Funktionen für Continuous Compliance Monitoring, Audit-Trails und AI-Act-Readiness.',
+    url: 'https://realsyncdynamicsai.de/roadmap',
+  });
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">

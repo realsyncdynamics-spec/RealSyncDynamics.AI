@@ -1,8 +1,25 @@
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Activity,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+
+// Maps the plan hint coming from the audit-result upgrade CTAs to the
+// existing SaaS-tier IDs. Existing tier IDs deliberately untouched (no
+// rename, no schema drift, no Stripe Price-ID change).
+//
+// TODO(stripe-checkout): wire bestehende Stripe Checkout Route an Protect
+// und Comply, ohne Secrets im Frontend offenzulegen — heute landen die
+// CTAs auf /contact-sales (manuelle Aktivierung durch Sales-Team).
+const PLAN_TO_TIER: Record<string, 'scan' | 'protect' | 'comply'> = {
+  starter: 'protect',
+  growth: 'comply',
+};
+
+const PLAN_LABEL: Record<string, string> = {
+  starter: 'Starter',
+  growth: 'Growth',
+};
 
 /**
  * /pricing — public Pricing-Page mit 3 Paketen.
@@ -96,6 +113,12 @@ const TIERS: Tier[] = [
 ];
 
 export function PricingPage() {
+  const [params] = useSearchParams();
+  const planParam = (params.get('plan') ?? '').toLowerCase();
+  const auditIdParam = params.get('audit_id') ?? '';
+  const recommendedTier = PLAN_TO_TIER[planParam] ?? null;
+  const recommendedLabel = PLAN_LABEL[planParam] ?? null;
+
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar — gleicher Stil wie HeroOnly */}
@@ -138,9 +161,26 @@ export function PricingPage() {
       {/* Tier-Cards */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-6xl mx-auto">
+          {recommendedTier && recommendedLabel && (
+            <div className="max-w-3xl mx-auto mb-6 p-4 bg-obsidian-900/60 border border-titanium-700 border-l-2 border-l-gold-400 rounded-none">
+              <div className="flex items-start gap-3">
+                <Activity className="h-4 w-4 text-gold-400 mt-0.5 shrink-0" />
+                <p className="text-sm text-silver-200 leading-relaxed">
+                  Aus Ihrem Audit empfohlen: <strong className="text-titanium-50">{recommendedLabel}</strong>.
+                  Die markierte Karte zeigt den passenden Tarif für kontinuierliches Monitoring.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
             {TIERS.map((tier) => (
-              <TierCard key={tier.id} tier={tier} />
+              <TierCard
+                key={tier.id}
+                tier={tier}
+                isRecommended={tier.id === recommendedTier}
+                auditId={auditIdParam || undefined}
+                planLabel={tier.id === recommendedTier ? recommendedLabel ?? undefined : undefined}
+              />
             ))}
           </div>
 
@@ -316,18 +356,38 @@ export function PricingPage() {
   );
 }
 
-function TierCard({ tier }: { tier: Tier }) {
+function TierCard({
+  tier,
+  isRecommended,
+  auditId,
+  planLabel,
+}: {
+  tier: Tier;
+  isRecommended?: boolean;
+  auditId?: string;
+  planLabel?: string;
+}) {
   const TierIcon = tier.id === 'scan' ? Cookie : tier.id === 'protect' ? ShieldCheck : Building2;
+  const ctaLabel = planLabel ? `${planLabel} aktivieren` : tier.ctaLabel;
+  const ctaHref = auditId
+    ? `${tier.ctaHref}${tier.ctaHref.includes('?') ? '&' : '?'}audit=${encodeURIComponent(auditId)}`
+    : tier.ctaHref;
 
   return (
     <div
       className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border rounded-none transition-colors ${
-        tier.highlight
-          ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
-          : 'border-silver-700/30 hover:border-titanium-200/60'
+        isRecommended
+          ? 'border-gold-400 shadow-[0_0_0_2px_rgba(217,162,74,0.25)]'
+          : tier.highlight
+            ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
+            : 'border-silver-700/30 hover:border-titanium-200/60'
       }`}
     >
-      {tier.highlight && (
+      {isRecommended ? (
+        <div className="absolute -top-3 left-5 px-2 py-0.5 bg-gold-400 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
+          Aus Audit empfohlen
+        </div>
+      ) : tier.highlight && (
         <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
           Empfohlen
         </div>
@@ -376,14 +436,14 @@ function TierCard({ tier }: { tier: Tier }) {
       </ul>
 
       <Link
-        to={tier.ctaHref}
+        to={ctaHref}
         className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-          tier.highlight
+          isRecommended || tier.highlight
             ? 'surface-mono'
             : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
         }`}
       >
-        {tier.ctaLabel} <ArrowRight className="h-4 w-4" />
+        {ctaLabel} <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );

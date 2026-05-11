@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
+  Activity,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
+import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 
@@ -282,6 +284,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           )}
       </div>
 
+      <MonitoringActivationBlock report={report} />
+
       <NextStepBlock report={report} />
 
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
@@ -476,6 +480,57 @@ const DOC_TYPES_UI: Array<{ id: 'dse' | 'avv' | 'vvt' | 'tom'; name: string; nor
   { id: 'vvt', name: 'Verzeichnis Verarbeitungstätigkeiten', norm: 'Art. 30 DSGVO', hint: 'Tabellarisch — Logfiles, Kontaktformular, Newsletter + erkannte Tracker.' },
   { id: 'tom', name: 'Technisch-organisatorische Maßnahmen', norm: 'Art. 32 DSGVO', hint: 'Audit-Befunde mit roter Checkbox markiert.' },
 ];
+
+/**
+ * Primary monetisation block right under the score+findings. Two CTAs
+ * that funnel into the existing pricing page with a plan hint and the
+ * audit_id pre-filled, so the operator can attribute checkouts to
+ * audits when the Stripe surface gets wired up later. trackUpgradeClick
+ * is fire-and-forget — failures never block the navigation.
+ */
+function MonitoringActivationBlock({ report }: { report: Report }) {
+  function onClickPlan(plan: 'starter' | 'growth') {
+    trackUpgradeClick(plan, { auditId: report.audit_id, source: 'audit_report_view' });
+  }
+  const starterHref = `/pricing?plan=starter&audit_id=${encodeURIComponent(report.audit_id)}`;
+  const growthHref = `/pricing?plan=growth&audit_id=${encodeURIComponent(report.audit_id)}`;
+  return (
+    <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
+      <div className="flex items-start gap-3 mb-3">
+        <Activity className="h-5 w-5 text-titanium-100 shrink-0 mt-0.5" strokeWidth={1.5} />
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">
+            Continuous Compliance
+          </div>
+          <h3 className="font-display font-bold text-titanium-50 text-lg">
+            Monitoring aktivieren
+          </h3>
+        </div>
+      </div>
+      <p className="text-sm text-titanium-300 mb-5 leading-relaxed">
+        Die technische Analyse hat mögliche DSGVO-, TTDSG- oder Tracking-Risiken identifiziert.
+        Mit kontinuierlichem Monitoring bleiben Änderungen an Tracking, externen Diensten und möglichen
+        Compliance-Risiken nachvollziehbar.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Link
+          to={starterHref}
+          onClick={() => onClickPlan('starter')}
+          className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
+        >
+          Starter aktivieren <ArrowRight className="h-4 w-4" />
+        </Link>
+        <Link
+          to={growthHref}
+          onClick={() => onClickPlan('growth')}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none"
+        >
+          Growth aktivieren <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Risk-tiered next-step CTAs. Neutral copy, no panic / "Bußgeld droht"

@@ -129,8 +129,9 @@ function renderEmail(a: AuditRow): string {
   `).join('');
 
   const greeting = a.company ? `Hallo Team ${escapeHtml(a.company)},` : 'Hallo,';
-  const auditUrl = `https://realsyncdynamicsai.de/audit`;
-  const contactUrl = `https://realsyncdynamicsai.de/contact-sales?audit=${a.id}&source=audit_email`;
+  const siteUrl = (Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de').replace(/\/+$/, '');
+  const auditUrl = `${siteUrl}/audit`;
+  const contactUrl = `${siteUrl}/contact-sales?audit=${a.id}&source=audit_email`;
 
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DSGVO-Audit Report</title></head>
@@ -168,10 +169,16 @@ function renderEmail(a: AuditRow): string {
             </tr>
           </table>
         </div>
-        <div style="margin:24px 0 0 0;padding:20px 24px;background:#0a0a0b;color:#fafafa;text-align:center;">
-          <h3 style="margin:0 0 8px 0;font-size:16px;color:#ffffff;">Continuous Compliance Monitoring</h3>
-          <p style="margin:0 0 14px 0;font-size:13px;color:#a1a1aa;line-height:1.6;">RealSyncDynamics.AI prüft Tracking-Stacks und KI-Workflows laufend — mit nachvollziehbarem Audit-Trail.</p>
-          <a href="${contactUrl}" style="display:inline-block;padding:10px 20px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Demo buchen →</a>
+        <div style="margin:24px 0 0 0;padding:20px 24px;background:#0a0a0b;color:#fafafa;">
+          <div style="font-size:11px;color:#a1a1aa;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Kontinuierliches Monitoring</div>
+          <h3 style="margin:0 0 8px 0;font-size:16px;color:#ffffff;">Mit einem Monitoring-Plan bleiben Änderungen nachvollziehbar</h3>
+          <p style="margin:0 0 14px 0;font-size:13px;color:#a1a1aa;line-height:1.6;">Änderungen an Tracking, externen Diensten und möglichen Compliance-Risiken können regelmäßig überprüft werden — mit nachvollziehbarer Audit-Historie.</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding-right:8px;"><a href="${siteUrl}/pricing?plan=starter&audit_id=${a.id}" style="display:inline-block;padding:10px 18px;background:#ffffff;color:#0a0a0b;text-decoration:none;font-weight:700;font-size:13px;">Starter aktivieren</a></td>
+              <td><a href="${siteUrl}/pricing?plan=growth&audit_id=${a.id}" style="display:inline-block;padding:10px 18px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Growth aktivieren</a></td>
+            </tr>
+          </table>
         </div>
       </td></tr>
       <tr><td style="padding:20px 32px;background:#fef3c7;border-top:1px solid #fcd34d;font-size:12px;color:#78350f;line-height:1.5;">

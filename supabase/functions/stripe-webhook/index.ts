@@ -10,12 +10,22 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
-const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
+// Vault-first, env-fallback. Lets an operator rotate a secret via
+//   select public.set_app_secret('stripe_secret_key', 'sk_test_...');
+// without a function redeploy, and overrides a stale placeholder env var.
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
+  try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+    const { data } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+    if (typeof data === 'string' && data.length > 0) return data;
+  } catch { /* RPC missing or vault empty — fall through to env */ }
+  return Deno.env.get(envVar) ?? null;
+}
 
 Deno.serve(async (req) => {
   if (req.method !== 'POST') {
@@ -23,6 +33,13 @@ Deno.serve(async (req) => {
   }
   const sig = req.headers.get('stripe-signature');
   if (!sig) return new Response('missing signature', { status: 400 });
+
+  const STRIPE_SECRET = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  const WEBHOOK_SECRET = await getSecret('STRIPE_WEBHOOK_SECRET', 'stripe_webhook_secret');
+  if (!STRIPE_SECRET || !WEBHOOK_SECRET) {
+    return new Response('stripe secrets not configured (neither vault nor env)', { status: 500 });
+  }
+  const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
 
   const raw = await req.text();
   let event: Stripe.Event;
@@ -127,7 +144,7 @@ async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Sessio
     return;
   }
 
-  const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
+  const RESEND_KEY = await getSecret('RESEND_API_KEY', 'resend_api_key');
   const FROM = Deno.env.get("RESEND_FROM") ?? "RealSync Dynamics <hello@realsyncdynamicsai.de>";
   const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://realsyncdynamicsai.de";
 

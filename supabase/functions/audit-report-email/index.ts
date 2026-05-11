@@ -156,11 +156,26 @@ function renderEmail(a: AuditRow): string {
           </tr>
         </table>
         ${issuesHtml ? `<h2 style="margin:0 0 12px 0;font-size:14px;color:#18181b;letter-spacing:0.05em;text-transform:uppercase;">Befunde</h2><table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="border:1px solid #e4e4e7;">${issuesHtml}</table>` : '<div style="padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:14px;">Keine Befunde — Deine Site ist sauber.</div>'}
-        <div style="margin:32px 0 0 0;padding:24px;background:#0a0a0b;color:#fafafa;text-align:center;">
-          <h3 style="margin:0 0 8px 0;font-size:18px;color:#ffffff;">In 14 Tagen rechtssicher</h3>
-          <p style="margin:0 0 16px 0;font-size:14px;color:#a1a1aa;line-height:1.6;">RealSync Dynamics liefert die fehlenden DSGVO-Bausteine als SaaS — EU-Datenresidenz, Audit-Log, AVV/DPA-Generator, DSGVO-Selfservice.</p>
-          <a href="${contactUrl}" style="display:inline-block;padding:12px 24px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">Demo buchen →</a>
+        <div style="margin:32px 0 0 0;padding:20px 24px;background:#fafafa;border:1px solid #e4e4e7;">
+          <div style="font-size:11px;color:#71717a;letter-spacing:0.15em;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Weitere Unterstützung</div>
+          <h3 style="margin:0 0 8px 0;font-size:16px;color:#18181b;">Wenn Sie Unterstützung bei Priorisierung oder technischer Umsetzung wünschen</h3>
+          <p style="margin:0 0 14px 0;font-size:14px;color:#52525b;line-height:1.6;">Sie können einen Fix-Call buchen, ein DSGVO-Fix-Paket anfragen oder kontinuierliches Monitoring starten.</p>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding-right:8px;"><a href="https://realsyncdynamicsai.de/contact-sales?intent=fix-call&source=audit_email&audit=${a.id}" style="display:inline-block;padding:10px 16px;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;font-size:13px;">Fix-Call buchen</a></td>
+              <td style="padding-right:8px;"><a href="https://realsyncdynamicsai.de/fix-paket?source=audit_email&audit=${a.id}" style="display:inline-block;padding:10px 16px;background:#ffffff;color:#18181b;border:1px solid #18181b;text-decoration:none;font-weight:600;font-size:13px;">Fix-Paket anfragen</a></td>
+              <td><a href="https://realsyncdynamicsai.de/contact-sales?intent=monitoring&source=audit_email&audit=${a.id}" style="display:inline-block;padding:10px 16px;background:#ffffff;color:#18181b;border:1px solid #18181b;text-decoration:none;font-weight:600;font-size:13px;">Monitoring anfragen</a></td>
+            </tr>
+          </table>
         </div>
+        <div style="margin:24px 0 0 0;padding:20px 24px;background:#0a0a0b;color:#fafafa;text-align:center;">
+          <h3 style="margin:0 0 8px 0;font-size:16px;color:#ffffff;">Continuous Compliance Monitoring</h3>
+          <p style="margin:0 0 14px 0;font-size:13px;color:#a1a1aa;line-height:1.6;">RealSyncDynamics.AI prüft Tracking-Stacks und KI-Workflows laufend — mit nachvollziehbarem Audit-Trail.</p>
+          <a href="${contactUrl}" style="display:inline-block;padding:10px 20px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;font-size:13px;">Demo buchen →</a>
+        </div>
+      </td></tr>
+      <tr><td style="padding:20px 32px;background:#fef3c7;border-top:1px solid #fcd34d;font-size:12px;color:#78350f;line-height:1.5;">
+        <strong>Hinweis:</strong> Der Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
       </td></tr>
       <tr><td style="padding:24px 32px;border-top:1px solid #e4e4e7;font-size:12px;color:#71717a;line-height:1.6;">
         <p style="margin:0 0 8px 0;">Automatisch generiert · <a href="${auditUrl}" style="color:#0284c7;">Andere URL prüfen</a> · <a href="https://realsyncdynamicsai.de/legal/privacy" style="color:#0284c7;">Datenschutz</a></p>

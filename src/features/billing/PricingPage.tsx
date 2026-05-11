@@ -163,6 +163,79 @@ export function PricingPage() {
         </div>
       </section>
 
+      {/* Zusätzliche Dienste — On-Top zu den 3 SaaS-Tarifen */}
+      <section
+        id="add-ons"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
+              Zusätzliche Dienste
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
+              Audit Pro, Fix-Call, DSGVO-Fix-Paket
+            </h2>
+            <p className="mt-3 text-sm text-silver-400 max-w-2xl mx-auto leading-relaxed">
+              Einmalige Leistungen ergänzend zu den monatlichen Tarifen — für Teams, die priorisierte
+              technische Unterstützung suchen.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+            {[
+              {
+                name: 'Audit Pro',
+                price: '149 €',
+                priceSuffix: 'einmalig',
+                body: 'Vertiefter Audit-Report mit priorisierten Risiken und konkreten technischen Handlungsempfehlungen.',
+                ctaLabel: 'Audit Pro anfragen',
+                ctaHref: '/contact-sales?intent=audit-pro&source=pricing-add-on',
+              },
+              {
+                name: 'Fix-Call',
+                price: '149 €',
+                priceSuffix: '60-Minuten 1:1',
+                body: '60-minütiger 1:1 Call zur Priorisierung und technischen Einordnung der wichtigsten Risiken aus dem Audit.',
+                ctaLabel: 'Fix-Call buchen',
+                ctaHref: '/contact-sales?intent=fix-call&source=pricing-add-on',
+              },
+              {
+                name: 'DSGVO-Fix-Paket Light',
+                price: 'ab 490 €',
+                priceSuffix: 'projektbasiert',
+                body: 'Technische Unterstützung bei typischen DSGVO-/TTDSG-Risiken wie Consent, externe Dienste, Fonts, Tracking und Datenschutzhinweise.',
+                ctaLabel: 'Fix-Paket anfragen',
+                ctaHref: '/fix-paket?source=pricing-add-on',
+              },
+            ].map((it) => (
+              <div
+                key={it.name}
+                className="flex flex-col p-6 bg-obsidian-900/60 border border-silver-700/30 rounded-none"
+              >
+                <div className="font-display font-bold text-titanium-50 text-lg mb-1">{it.name}</div>
+                <div className="font-display font-bold text-titanium-50 text-2xl">{it.price}</div>
+                <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500 mb-3">
+                  {it.priceSuffix}
+                </div>
+                <p className="text-sm text-silver-300 leading-relaxed mb-5 flex-1">{it.body}</p>
+                <Link
+                  to={it.ctaHref}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-titanium-200 text-titanium-100 hover:bg-titanium-100 hover:text-obsidian-950 text-sm font-semibold rounded-none transition-colors"
+                >
+                  {it.ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-8 text-center text-[11px] text-silver-500 max-w-2xl mx-auto leading-relaxed">
+            Diese Leistungen sind technische Vorprüfung bzw. Unterstützung bei Priorisierung und Umsetzung.
+            Sie ersetzen keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+          </p>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section
         id="pricing-faq"

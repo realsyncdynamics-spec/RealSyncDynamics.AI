@@ -282,6 +282,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           )}
       </div>
 
+      <NextStepBlock report={report} />
+
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
 
       <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
@@ -474,6 +476,57 @@ const DOC_TYPES_UI: Array<{ id: 'dse' | 'avv' | 'vvt' | 'tom'; name: string; nor
   { id: 'vvt', name: 'Verzeichnis Verarbeitungstätigkeiten', norm: 'Art. 30 DSGVO', hint: 'Tabellarisch — Logfiles, Kontaktformular, Newsletter + erkannte Tracker.' },
   { id: 'tom', name: 'Technisch-organisatorische Maßnahmen', norm: 'Art. 32 DSGVO', hint: 'Audit-Befunde mit roter Checkbox markiert.' },
 ];
+
+/**
+ * Risk-tiered next-step CTAs. Neutral copy, no panic / "Bußgeld droht"
+ * language. High-risk audits get fix-call + fix-package + monitoring;
+ * low-risk audits get audit-pro + monitoring. The disclaimer line is
+ * shown unconditionally.
+ */
+function NextStepBlock({ report }: { report: Report }) {
+  const highRisk = report.severity === 'critical' || report.severity === 'high' || report.score < 60;
+  const ctas = highRisk
+    ? [
+        { label: 'Fix-Call buchen',     to: `/contact-sales?intent=fix-call&source=audit_report&audit=${report.audit_id}` },
+        { label: 'Fix-Paket anfragen',  to: `/fix-paket?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring anfragen', to: `/contact-sales?intent=monitoring&source=audit_report&audit=${report.audit_id}` },
+      ]
+    : [
+        { label: 'Audit Pro anfragen',  to: `/contact-sales?intent=audit-pro&source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring aktivieren', to: `/contact-sales?intent=monitoring&source=audit_report&audit=${report.audit_id}` },
+      ];
+  return (
+    <div className="bg-obsidian-900 border border-titanium-800 p-6 rounded-none">
+      <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">
+        Nächster Schritt · {highRisk ? 'priorisierte Umsetzung' : 'optionale Vertiefung'}
+      </div>
+      <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">
+        Nächster sinnvoller Schritt
+      </h3>
+      <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
+        Die technische Auswertung zeigt mögliche Risiken, die priorisiert geprüft und umgesetzt werden sollten.
+      </p>
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+        {ctas.map((c, i) => (
+          <Link
+            key={c.to}
+            to={c.to}
+            className={
+              i === 0
+                ? 'surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none'
+                : 'inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none'
+            }
+          >
+            {c.label} <ArrowRight className="h-4 w-4" />
+          </Link>
+        ))}
+      </div>
+      <p className="text-[11px] text-titanium-500 leading-relaxed">
+        Der Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+      </p>
+    </div>
+  );
+}
 
 function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: string }) {
   const [generating, setGenerating] = useState<string | null>(null);

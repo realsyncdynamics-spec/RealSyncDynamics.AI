@@ -15,6 +15,8 @@ import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
 import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
+import { Blog } from './pages/Blog';
+import { Roadmap } from './pages/Roadmap';
 import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
@@ -143,6 +145,8 @@ function RoutesWithTracking() {
       <Route path="/case-studies" element={<CaseStudies />} />
       <Route path="/ressourcen" element={<Resources />} />
       <Route path="/resources" element={<Resources />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/roadmap" element={<Roadmap />} />
       <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />

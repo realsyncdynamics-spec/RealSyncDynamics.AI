@@ -13,6 +13,8 @@ import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
 import { EnterprisePanel } from './panels/EnterprisePanel';
 import { AIActPanel } from './panels/AIActPanel';
 import { PricingTeaserSection } from './sections/PricingTeaserSection';
+import { PilotPartnersPlaceholder } from './sections/PilotPartnersPlaceholder';
+import { RoadmapSection } from './sections/RoadmapSection';
 
 /**
  * HeroOnly — Hero-Bühne + zwei Long-Form-Sections.
@@ -96,8 +98,8 @@ export function HeroOnly() {
             Continuous Compliance Monitoring für Websites, Tracking-Stacks und KI-Systeme.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
-            RealSyncDynamics.AI prüft Ihre Website, Tracking-Tools und KI-Workflows technisch auf DSGVO-, TTDSG- und EU-AI-Act-Risiken
-            — mit Verweisen auf relevante Rechtsgrundlagen und einer priorisierten To-do-Liste für Ihr Team.
+            Erkennen Sie DSGVO-, TTDSG- und AI-Act-Risiken frühzeitig — mit technischer Risikoanalyse,
+            laufender Überwachung und nachvollziehbaren Audit-Trails.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -128,10 +130,15 @@ export function HeroOnly() {
           <div className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-silver-500">
             EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany
           </div>
+
+          {/* Pflicht-Disclaimer zum kostenlosen Audit */}
+          <p className="mt-5 text-[11px] sm:text-xs text-silver-500 max-w-xl mx-auto leading-relaxed">
+            Der kostenlose Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+          </p>
         </div>
       </main>
 
-      {/* ─── Sektion: Für welche Firmen ist das? ─────────────────── */}
+      {/* ─── Sektion: Für wen RealSyncDynamics.AI gebaut ist ──────── */}
       <section
         id="zielgruppen"
         className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
@@ -142,29 +149,36 @@ export function HeroOnly() {
               Zielgruppen
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-2xl mx-auto">
-              Ideal für Unternehmen mit eigener Website und KI-Einsatz
+              Für wen RealSyncDynamics.AI gebaut ist
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
               {
-                title: 'Online-Unternehmen & SaaS',
-                body: 'Sie erfassen Leads, nutzen Analytics, Chatbots oder Recommendation-Engines — wir identifizieren potenzielle Risiken in Ihren Datenflüssen mit Verweisen auf relevante DSGVO-, TTDSG- und Rechtsprechungsgrundlagen.',
-                href: '/fuer-saas',
-                cta: 'Niche-Landing für SaaS',
+                title: 'Datenschutz-Kanzleien',
+                body: 'Mandanten-Sites technisch vorscannen und Befunde mit Rechtsgrundlagen-Verweisen als White-Label-Brief an Mandanten weitergeben.',
+                href: '/legal-tech',
               },
               {
-                title: 'Dienstleister & Agenturen',
-                body: 'Sie betreuen viele Kundenseiten und KI-Kampagnen — wir liefern Ihnen den technischen Compliance-Überblick für alle Projekte.',
+                title: 'Externe Datenschutzbeauftragte',
+                body: 'Kontinuierliche technische Überprüfung mehrerer Mandanten-Websites mit konsolidierter Audit-Historie statt jährlichen Stichproben.',
+                href: '/contact-sales?source=zielgruppe-edsb',
+              },
+              {
+                title: 'Webagenturen',
+                body: 'Compliance-Check bei jeder Site-Auslieferung und laufendes Monitoring der Kunden-Sites — ohne eigenen Scanner-Stack.',
                 href: '/fuer-agenturen',
-                cta: 'Niche-Landing für Agenturen',
               },
               {
-                title: 'Praxen, Kanzleien, lokale Betriebe',
-                body: 'Sie verarbeiten sensible Daten über Formulare und Terminbuchungen — wir decken versteckte Risiken in Formularen, Scripts und Plugins auf.',
-                href: '/fuer-praxen',
-                cta: 'Niche-Landing für Praxen',
+                title: 'AI- und SaaS-Unternehmen',
+                body: 'Tracking-Stack, Datenflüsse und AI-Use-Cases technisch prüfen lassen; Drift-Alerts bei jedem deploybedingten Risiko.',
+                href: '/fuer-saas',
+              },
+              {
+                title: 'Regulierte Branchen',
+                body: 'FinTech / HealthTech / EdTech: Audit-Trail mit nachvollziehbarer Methodik unterstützt interne Compliance-Prozesse.',
+                href: '/branchen',
               },
             ].map((item) => (
               <Link
@@ -177,7 +191,7 @@ export function HeroOnly() {
                 </h3>
                 <p className="text-sm text-silver-300 leading-relaxed">{item.body}</p>
                 <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-gold-400 group-hover:text-gold-300">
-                  {item.cta} <ArrowRight className="h-3 w-3" />
+                  Mehr erfahren <ArrowRight className="h-3 w-3" />
                 </span>
               </Link>
             ))}
@@ -371,19 +385,40 @@ export function HeroOnly() {
         id="white-label"
         className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
       >
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
-            Für Kanzleien & DSB
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              Für Kanzleien & DSB
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-5">
+              White-Label Audits für Kanzleien und Datenschutzberater
+            </h2>
+            <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
+              RealSyncDynamics.AI unterstützt Datenschutz-Kanzleien, externe Datenschutzbeauftragte und
+              Agenturen dabei, Mandanten-Websites technisch vorzuscannen, Risiken zu priorisieren und
+              verständliche Executive-Briefs vorzubereiten — ohne eigene Scanner-Infrastruktur.
+            </p>
           </div>
-          <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-5">
-            White-Label Audits für Kanzleien und Datenschutzberater
-          </h2>
-          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Datenschutz-Kanzleien und externe Datenschutzbeauftragte können RealSyncDynamics.AI nutzen, um
-            Mandanten-Websites technisch vorzuscannen, Risiken zu priorisieren und verständliche
-            Executive-Briefs vorzubereiten – ohne eine eigene Scanner-Infrastruktur aufzubauen.
-          </p>
-          <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
+
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-8 max-w-xl mx-auto">
+            {[
+              'Technische Risikoanalyse',
+              'Executive Briefs',
+              'Audit-Historie',
+              'Kontinuierliches Monitoring',
+              'Mandantenfähige Reports',
+            ].map((b) => (
+              <li
+                key={b}
+                className="flex items-center gap-2 text-sm text-silver-200 bg-obsidian-900/60 border border-silver-700/30 px-3 py-2 rounded-none"
+              >
+                <span className="text-gold-400 text-xs">▸</span>
+                {b}
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/contact-sales?source=white-label-pilot"
               className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
@@ -399,6 +434,10 @@ export function HeroOnly() {
           </div>
         </div>
       </section>
+
+      <PilotPartnersPlaceholder />
+
+      <RoadmapSection />
 
       <PricingTeaserSection sourceTag="hero" />
 

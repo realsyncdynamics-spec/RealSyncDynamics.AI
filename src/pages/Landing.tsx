@@ -927,6 +927,10 @@ function FooterMinimal() {
             <Link to="/status" className="hover:text-titanium-300">Status</Link>
             <Link to="/blog" className="hover:text-titanium-300">Blog</Link>
             <Link to="/roadmap" className="hover:text-titanium-300">Roadmap</Link>
+            <Link to="/continuous-compliance" className="hover:text-titanium-300">Continuous Compliance</Link>
+            <Link to="/pre-consent-tracking" className="hover:text-titanium-300">Pre-Consent Tracking</Link>
+            <Link to="/google-analytics-consent" className="hover:text-titanium-300">GA Consent</Link>
+            <Link to="/ai-act-readiness" className="hover:text-titanium-300">AI Act Readiness</Link>
             <Link to="/branchen" className="hover:text-titanium-300">Branchen</Link>
             <Link to="/dsgvo-website" className="hover:text-titanium-300">Website-Service</Link>
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>

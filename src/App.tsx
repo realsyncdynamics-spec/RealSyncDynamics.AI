@@ -18,6 +18,11 @@ import { Resources } from './pages/Resources';
 import { Blog } from './pages/Blog';
 import { Roadmap } from './pages/Roadmap';
 import { FixPaket } from './pages/FixPaket';
+import { PreConsentTracking } from './pages/seo/PreConsentTracking';
+import { GoogleAnalyticsConsent } from './pages/seo/GoogleAnalyticsConsent';
+import { ContinuousCompliance } from './pages/seo/ContinuousCompliance';
+import { AiActReadiness } from './pages/seo/AiActReadiness';
+import { MatomoDsgvoKonfiguration } from './pages/seo/MatomoDsgvoKonfiguration';
 import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
@@ -149,6 +154,11 @@ function RoutesWithTracking() {
       <Route path="/blog" element={<Blog />} />
       <Route path="/roadmap" element={<Roadmap />} />
       <Route path="/fix-paket" element={<FixPaket />} />
+      <Route path="/pre-consent-tracking" element={<PreConsentTracking />} />
+      <Route path="/google-analytics-consent" element={<GoogleAnalyticsConsent />} />
+      <Route path="/continuous-compliance" element={<ContinuousCompliance />} />
+      <Route path="/ai-act-readiness" element={<AiActReadiness />} />
+      <Route path="/resources/matomo-dsgvo-konfiguration" element={<MatomoDsgvoKonfiguration />} />
       <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />

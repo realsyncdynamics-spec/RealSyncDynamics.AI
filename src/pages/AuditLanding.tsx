@@ -8,6 +8,7 @@ import {
 
 import { getAffiliateRef } from '../lib/affiliate';
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
+import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 
@@ -35,6 +36,12 @@ interface Report {
 }
 
 export function AuditLanding() {
+  usePageMeta({
+    title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
+    description:
+      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TTDSG-Risiken analysieren.',
+    url: 'https://realsyncdynamicsai.de/audit',
+  });
   const [url, setUrl] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -89,7 +96,7 @@ export function AuditLanding() {
                   <ShieldCheck className="h-3 w-3" /> Kostenlos · Kein Account · 30 Sekunden
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-                  Wo verstößt Deine Website gegen die DSGVO?
+                  Kostenloser DSGVO- und Tracking-Audit
                 </h1>
                 <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
                   Wir scannen Deine Site auf 12 typische Compliance-Fallen — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern.
@@ -147,6 +154,7 @@ export function AuditLanding() {
                 </p>
               </form>
 
+              <WhatGetsChecked />
               <Pillars />
               <AuditToWebsiteNote source="audit-pre" />
             </>
@@ -208,6 +216,40 @@ function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+// ─── WhatGetsChecked — SEO-friendly summary of audit scope ──────────────
+
+function WhatGetsChecked() {
+  const items = [
+    'Consent- und Tracking-Verhalten',
+    'Externe Dienste und Drittanbieter-Skripte',
+    'Mögliche Pre-Consent-Risiken',
+    'Technische Datenschutzindikatoren',
+    'AI-Act-relevante Hinweise, sofern anwendbar',
+    'Pflichtangaben: Impressum und Datenschutz',
+  ];
+  return (
+    <section aria-label="Was geprüft wird" className="mt-10">
+      <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-4 text-center">
+        Was geprüft wird
+      </h2>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto">
+        {items.map((b) => (
+          <li
+            key={b}
+            className="flex items-center gap-2 text-sm text-titanium-300 bg-obsidian-900/60 border border-titanium-900 px-3 py-2 rounded-none"
+          >
+            <span className="text-titanium-100 text-xs">▸</span>
+            {b}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 text-[11px] text-titanium-500 text-center max-w-xl mx-auto leading-relaxed">
+        Der Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+      </p>
+    </section>
   );
 }
 

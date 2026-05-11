@@ -71,6 +71,13 @@ const RESOURCES: Resource[] = [
     badge: 'Stories',
     icon: <BookOpen className="h-5 w-5" />,
   },
+  {
+    href: '/resources/matomo-dsgvo-konfiguration',
+    title: 'Matomo DSGVO-freundlich konfigurieren',
+    description: 'Cookieless Tracking, IP-Masking, Datenminimierung, Opt-out und Datenschutzhinweise — praxisnahe technische Hinweise.',
+    badge: 'Guide · Matomo',
+    icon: <FileText className="h-5 w-5" />,
+  },
 ];
 
 export function Resources() {

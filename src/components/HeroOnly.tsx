@@ -93,11 +93,11 @@ export function HeroOnly() {
 
           {/* Headline + Subline */}
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
-            Ihre Website & KI-Prozesse DSGVO-sicher – in 30 Sekunden geprüft.
+            Continuous Compliance Monitoring für Websites, Tracking-Stacks und KI-Systeme.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
-            RealSyncDynamics.AI scannt Ihre Website, Tracking-Tools und KI-Workflows und zeigt Ihnen konkret,
-            wo Sie gegen DSGVO, TTDSG und EU AI Act verstoßen — inklusive To-do-Liste für Ihr Team.
+            RealSyncDynamics.AI prüft Ihre Website, Tracking-Tools und KI-Workflows technisch auf DSGVO-, TTDSG- und EU-AI-Act-Risiken
+            — mit Verweisen auf relevante Rechtsgrundlagen und einer priorisierten To-do-Liste für Ihr Team.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -150,7 +150,7 @@ export function HeroOnly() {
             {[
               {
                 title: 'Online-Unternehmen & SaaS',
-                body: 'Sie erfassen Leads, nutzen Analytics, Chatbots oder Recommendation-Engines — wir prüfen, ob Ihre Datenflüsse wirklich DSGVO-konform sind.',
+                body: 'Sie erfassen Leads, nutzen Analytics, Chatbots oder Recommendation-Engines — wir identifizieren potenzielle Risiken in Ihren Datenflüssen mit Verweisen auf relevante DSGVO-, TTDSG- und Rechtsprechungsgrundlagen.',
                 href: '/fuer-saas',
                 cta: 'Niche-Landing für SaaS',
               },
@@ -328,6 +328,74 @@ export function HeroOnly() {
             <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-silver-500">
               Aktuell im Beta-Programm · Erste Referenzkunden 2026 Q3
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: Vom Scan zum Monitoring ─────────────────────── */}
+      <section
+        id="vom-scan-zum-monitoring"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            Vom Einstieg zur Dauer-Überwachung
+          </div>
+          <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-5">
+            Vom einmaligen Scan zum laufenden Compliance-Monitoring
+          </h2>
+          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
+            Der kostenlose Audit zeigt erste Risiken. RealSyncDynamics.AI geht weiter: laufende Überwachung
+            von Tracking-Änderungen, Consent-Risiken, Drittanbieter-Skripten und AI-Act-relevanten Workflows
+            – mit nachvollziehbarem Audit-Trail.
+          </p>
+          <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/audit?source=monitoring-section"
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              Kostenlosen Audit starten <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/contact-sales?source=monitoring-anfrage"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            >
+              Monitoring anfragen
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: White-Label für Kanzleien ──────────────────── */}
+      <section
+        id="white-label"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            Für Kanzleien & DSB
+          </div>
+          <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-5">
+            White-Label Audits für Kanzleien und Datenschutzberater
+          </h2>
+          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
+            Datenschutz-Kanzleien und externe Datenschutzbeauftragte können RealSyncDynamics.AI nutzen, um
+            Mandanten-Websites technisch vorzuscannen, Risiken zu priorisieren und verständliche
+            Executive-Briefs vorzubereiten – ohne eine eigene Scanner-Infrastruktur aufzubauen.
+          </p>
+          <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/contact-sales?source=white-label-pilot"
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              White-Label Pilot anfragen <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/audit?source=mandanten-website"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            >
+              Mandanten-Website prüfen
+            </Link>
           </div>
         </div>
       </section>

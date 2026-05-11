@@ -321,7 +321,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Alternative · Komplett-Service</div>
             <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Lieber kein Tool, sondern jemand der's macht?</h3>
             <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
-              Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site DSGVO-konform neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
+              Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site nach aktuellen DSGVO-, TTDSG- und AI-Act-Anforderungen neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
               <strong className="text-titanium-50"> Ab 99 €/Monat</strong> nach einmaligem Rebuild.
             </p>
             <Link

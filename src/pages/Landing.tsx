@@ -244,7 +244,7 @@ function Hero() {
                 marginBottom: '20px',
               }}
             >
-              Ist Ihre Website wirklich DSGVO-konform?
+              Wo steht Ihre Website bei DSGVO, TTDSG und EU AI Act?
             </h1>
 
             <p
@@ -257,7 +257,7 @@ function Hero() {
                 maxWidth: '520px',
               }}
             >
-              In 30 Sekunden sehen Sie, welche Risiken Ihre Website bei Tracking, Cookies und Sicherheit hat — mit klaren Handlungsempfehlungen in Klartext.
+              In 30 Sekunden sehen Sie potenzielle Risiken bei Tracking, Cookies und Sicherheit — mit Verweisen auf relevante DSGVO-, TTDSG- und Rechtsprechungsgrundlagen und priorisierten Handlungsempfehlungen. Kostenloser Einstieg in kontinuierliche Compliance-Überwachung.
             </p>
 
             <Link
@@ -384,7 +384,7 @@ function Problem() {
       <div className="max-w-5xl mx-auto">
         <SectionHeader
           eyebrow="Beobachtungen aus der Praxis"
-          title={<>Warum moderne Websites häufig nicht DSGVO-konform sind.</>}
+          title={<>Wo moderne Websites häufig DSGVO-, TTDSG- und AI-Act-Risiken haben.</>}
         />
         <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-px bg-titanium-900">
           {items.map((it) => (

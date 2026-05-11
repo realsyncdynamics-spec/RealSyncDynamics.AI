@@ -108,7 +108,7 @@ async function getResendKey(supa: ReturnType<typeof createClient>): Promise<stri
   const env = Deno.env.get('RESEND_API_KEY');
   if (env && env.startsWith('re_')) return env;
   try {
-    const { data } = await supa.rpc('get_app_secret', { name: 'resend_api_key' });
+    const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
     if (typeof data === 'string' && data.startsWith('re_')) return data;
   } catch { /* RPC may not exist; fall through */ }
   return null;

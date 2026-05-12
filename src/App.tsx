@@ -66,6 +66,7 @@ import { About } from './pages/About';
 import { Press } from './pages/Press';
 import { Security } from './pages/Security';
 import { Trust } from './pages/Trust';
+import { PilotReadiness } from './pages/PilotReadiness';
 import { Status } from './pages/Status';
 import { Faq } from './pages/Faq';
 import { Changelog } from './pages/Changelog';
@@ -220,6 +221,7 @@ function RoutesWithTracking() {
       <Route path="/presse" element={<Press />} />
       <Route path="/security" element={<Security />} />
       <Route path="/trust" element={<Trust />} />
+      <Route path="/pilot-readiness" element={<PilotReadiness />} />
       <Route path="/status" element={<Status />} />
       <Route path="/sicherheit" element={<Security />} />
       <Route path="/faq" element={<Faq />} />

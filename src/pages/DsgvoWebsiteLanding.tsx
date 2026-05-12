@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Globe, AlertTriangle, CheckCircle2, ShieldCheck,
-  Search, Wrench, Activity, Loader2,
+  Search, Wrench, Activity, Loader2, Send, RefreshCw, ExternalLink,
 } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -504,58 +504,10 @@ interface PackageCardProps {
   bullets: string[];
   cta: { to: string; label: string };
   accent?: boolean;
-  /**
-   * Wenn gesetzt, zeigt zusätzlich einen "Direkt buchen"-Button, der die
-   * checkout-website-rebuild Edge-Function triggert. Customer wird zum
-   * Stripe Checkout weitergeleitet — Sales-Call entfällt.
-   */
   directCheckoutTier?: 'managed' | 'premium' | 'enterprise';
 }
 
 function PackageCard({ icon, badge, title, price, priceNote, bullets, cta, accent, directCheckoutTier }: PackageCardProps) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function startDirectCheckout() {
-    if (!directCheckoutTier) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const sourceUrl = window.prompt('Welche Domain soll gerebuildet werden?\n(z.B. https://ihre-firma.de)');
-      if (!sourceUrl) { setBusy(false); return; }
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-      if (!supabaseUrl) {
-        setError('Checkout nicht konfiguriert');
-        setBusy(false);
-        return;
-      }
-
-      const r = await fetch(`${supabaseUrl}/functions/v1/checkout-website-rebuild`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          source_url: sourceUrl,
-          tier: directCheckoutTier,
-          return_url: window.location.origin,
-        }),
-      });
-      const json = await r.json();
-      if (!r.ok || !json.url) {
-        const code = json?.error?.code ?? 'UNKNOWN';
-        setError(code === 'PRICE_NOT_CONFIGURED'
-          ? 'Tarif noch nicht freigeschaltet — bitte Beratung anfragen.'
-          : `Checkout fehlgeschlagen (${code})`);
-        setBusy(false);
-        return;
-      }
-      window.location.href = json.url;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'unbekannter Fehler');
-      setBusy(false);
-    }
-  }
-
   return (
     <div className={`p-4 bg-obsidian-900 border ${accent ? 'border-amber-700' : 'border-titanium-900'} rounded-none flex flex-col`}>
       <div className="flex items-center gap-2 mb-2">
@@ -576,19 +528,11 @@ function PackageCard({ icon, badge, title, price, priceNote, bullets, cta, accen
         ))}
       </ul>
       {directCheckoutTier && (
-        <>
-          <button
-            type="button"
-            onClick={startDirectCheckout}
-            disabled={busy}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 mb-2 text-xs font-bold rounded-none bg-emerald-600 hover:bg-emerald-500 text-obsidian-950 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {busy ? (<><Loader2 className="h-3 w-3 animate-spin" /> Stripe lädt…</>) : (<>Direkt buchen <ArrowRight className="h-3 w-3" /></>)}
-          </button>
-          {error && (
-            <p className="text-[10px] text-red-400 mb-2 leading-tight">{error}</p>
-          )}
-        </>
+        <DirectCheckoutButton
+          sourceUrl=""
+          label="Direkt buchen"
+          tier={directCheckoutTier}
+        />
       )}
       <Link
         to={cta.to}

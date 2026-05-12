@@ -1,26 +1,9 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Activity,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
-
-// Maps the plan hint coming from the audit-result upgrade CTAs to the
-// existing SaaS-tier IDs. Existing tier IDs deliberately untouched (no
-// rename, no schema drift, no Stripe Price-ID change).
-//
-// TODO(stripe-checkout): wire bestehende Stripe Checkout Route an Protect
-// und Comply, ohne Secrets im Frontend offenzulegen — heute landen die
-// CTAs auf /contact-sales (manuelle Aktivierung durch Sales-Team).
-const PLAN_TO_TIER: Record<string, 'scan' | 'protect' | 'comply'> = {
-  starter: 'protect',
-  growth: 'comply',
-};
-
-const PLAN_LABEL: Record<string, string> = {
-  starter: 'Starter',
-  growth: 'Growth',
-};
 
 /**
  * /pricing — public Pricing-Page mit 4 Paketen.
@@ -46,12 +29,6 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
 };
 
 export function PricingPage() {
-  const [params] = useSearchParams();
-  const planParam = (params.get('plan') ?? '').toLowerCase();
-  const auditIdParam = params.get('audit_id') ?? '';
-  const recommendedTier = PLAN_TO_TIER[planParam] ?? null;
-  const recommendedLabel = PLAN_LABEL[planParam] ?? null;
-
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar */}
@@ -91,27 +68,10 @@ export function PricingPage() {
 
       {/* Tier-Cards — 4-spaltig auf Desktop */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
-        <div className="max-w-6xl mx-auto">
-          {recommendedTier && recommendedLabel && (
-            <div className="max-w-3xl mx-auto mb-6 p-4 bg-obsidian-900/60 border border-titanium-700 border-l-2 border-l-gold-400 rounded-none">
-              <div className="flex items-start gap-3">
-                <Activity className="h-4 w-4 text-gold-400 mt-0.5 shrink-0" />
-                <p className="text-sm text-silver-200 leading-relaxed">
-                  Aus Ihrem Audit empfohlen: <strong className="text-titanium-50">{recommendedLabel}</strong>.
-                  Die markierte Karte zeigt den passenden Tarif für kontinuierliches Monitoring.
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 items-stretch">
-            {TIERS.map((tier) => (
-              <TierCard
-                key={tier.id}
-                tier={tier}
-                isRecommended={tier.id === recommendedTier}
-                auditId={auditIdParam || undefined}
-                planLabel={tier.id === recommendedTier ? recommendedLabel ?? undefined : undefined}
-              />
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 items-stretch">
+            {PRICING_TIERS.map((tier) => (
+              <TierCard key={tier.id} tier={tier} />
             ))}
           </div>
 
@@ -135,76 +95,42 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Zusätzliche Dienste — On-Top zu den 3 SaaS-Tarifen */}
-      <section
-        id="add-ons"
-        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
-      >
-        <div className="max-w-5xl mx-auto">
+      {/* Differenzierer */}
+      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
-              Zusätzliche Dienste
+              Kritische Differenzierer
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-              Audit Pro, Fix-Call, DSGVO-Fix-Paket
+              Was uns von anderen Tools unterscheidet
             </h2>
-            <p className="mt-3 text-sm text-silver-400 max-w-2xl mx-auto leading-relaxed">
-              Einmalige Leistungen ergänzend zu den monatlichen Tarifen — für Teams, die priorisierte
-              technische Unterstützung suchen.
-            </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-titanium-900">
             {[
               {
-                name: 'Audit Pro',
-                price: '149 €',
-                priceSuffix: 'einmalig',
-                body: 'Vertiefter Audit-Report mit priorisierten Risiken und konkreten technischen Handlungsempfehlungen.',
-                ctaLabel: 'Audit Pro anfragen',
-                ctaHref: '/contact-sales?intent=audit-pro&source=pricing-add-on',
+                title: 'Consent-Timing-Analyse',
+                body: 'Wir messen exakt, welche Requests VOR dem ersten Nutzer-Klick feuern. Das ist der Kern-DSGVO-Verstoß — und den erkennen nur wir mit echtem Playwright-Headless-Browser.',
               },
               {
-                name: 'Fix-Call',
-                price: '149 €',
-                priceSuffix: '60-Minuten 1:1',
-                body: '60-minütiger 1:1 Call zur Priorisierung und technischen Einordnung der wichtigsten Risiken aus dem Audit.',
-                ctaLabel: 'Fix-Call buchen',
-                ctaHref: '/contact-sales?intent=fix-call&source=pricing-add-on',
+                title: 'Auto-Remediation (nicht nur Audit)',
+                body: 'Nicht nur "hier ist das Problem". Sondern: hier ist der Fix-Code, den Sie einfügen können. Script-Blocking, Consent-Injection, Font-Self-Hosting — alles automatisiert.',
               },
               {
-                name: 'DSGVO-Fix-Paket Light',
-                price: 'ab 490 €',
-                priceSuffix: 'projektbasiert',
-                body: 'Technische Unterstützung bei typischen DSGVO-/TTDSG-Risiken wie Consent, externe Dienste, Fonts, Tracking und Datenschutzhinweise.',
-                ctaLabel: 'Fix-Paket anfragen',
-                ctaHref: '/fix-paket?source=pricing-add-on',
+                title: 'Continuous Monitoring (SaaS-Kern)',
+                body: 'Compliance ist kein einmaliger Zustand. Websites ändern sich. Wir monitoren täglich und alarmieren bei Drift — damit Sie nicht nach dem Audit wieder unsicher werden.',
               },
-            ].map((it) => (
-              <div
-                key={it.name}
-                className="flex flex-col p-6 bg-obsidian-900/60 border border-silver-700/30 rounded-none"
-              >
-                <div className="font-display font-bold text-titanium-50 text-lg mb-1">{it.name}</div>
-                <div className="font-display font-bold text-titanium-50 text-2xl">{it.price}</div>
-                <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500 mb-3">
-                  {it.priceSuffix}
-                </div>
-                <p className="text-sm text-silver-300 leading-relaxed mb-5 flex-1">{it.body}</p>
-                <Link
-                  to={it.ctaHref}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-titanium-200 text-titanium-100 hover:bg-titanium-100 hover:text-obsidian-950 text-sm font-semibold rounded-none transition-colors"
-                >
-                  {it.ctaLabel} <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+              {
+                title: 'Nachweisbarkeit (Audit-Trails)',
+                body: 'PDFs, Logs, Zeitstempel, Evidence Vault. Wenn der Datenschutzbeauftragte oder die Aufsichtsbehörde fragt: Sie können beweisen, was wann geprüft wurde.',
+              },
+            ].map((d) => (
+              <div key={d.title} className="bg-obsidian-950 p-6 sm:p-7">
+                <h3 className="font-display font-bold text-titanium-50 text-base mb-2">{d.title}</h3>
+                <p className="text-sm text-titanium-400 leading-relaxed">{d.body}</p>
               </div>
             ))}
           </div>
-
-          <p className="mt-8 text-center text-[11px] text-silver-500 max-w-2xl mx-auto leading-relaxed">
-            Diese Leistungen sind technische Vorprüfung bzw. Unterstützung bei Priorisierung und Umsetzung.
-            Sie ersetzen keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
-          </p>
         </div>
       </section>
 
@@ -278,38 +204,20 @@ export function PricingPage() {
   );
 }
 
-function TierCard({
-  tier,
-  isRecommended,
-  auditId,
-  planLabel,
-}: {
-  tier: Tier;
-  isRecommended?: boolean;
-  auditId?: string;
-  planLabel?: string;
-}) {
-  const TierIcon = tier.id === 'scan' ? Cookie : tier.id === 'protect' ? ShieldCheck : Building2;
-  const ctaLabel = planLabel ? `${planLabel} aktivieren` : tier.ctaLabel;
-  const ctaHref = auditId
-    ? `${tier.ctaHref}${tier.ctaHref.includes('?') ? '&' : '?'}audit=${encodeURIComponent(auditId)}`
-    : tier.ctaHref;
+function TierCard({ tier }: { tier: PricingTier }) {
+  const TierIcon = TIER_ICONS[tier.id];
+  const priceDisplay =
+    tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
 
   return (
     <div
       className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border rounded-none transition-colors ${
-        isRecommended
-          ? 'border-gold-400 shadow-[0_0_0_2px_rgba(217,162,74,0.25)]'
-          : tier.highlight
-            ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
-            : 'border-silver-700/30 hover:border-titanium-200/60'
+        tier.highlight
+          ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
+          : 'border-silver-700/30 hover:border-titanium-200/60'
       }`}
     >
-      {isRecommended ? (
-        <div className="absolute -top-3 left-5 px-2 py-0.5 bg-gold-400 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
-          Aus Audit empfohlen
-        </div>
-      ) : tier.highlight && (
+      {tier.highlight && (
         <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
           Empfohlen
         </div>
@@ -350,14 +258,14 @@ function TierCard({
       </ul>
 
       <Link
-        to={ctaHref}
+        to={tier.cta.href}
         className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-          isRecommended || tier.highlight
+          tier.highlight
             ? 'surface-mono'
             : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
         }`}
       >
-        {ctaLabel} <ArrowRight className="h-4 w-4" />
+        {tier.cta.label} <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );

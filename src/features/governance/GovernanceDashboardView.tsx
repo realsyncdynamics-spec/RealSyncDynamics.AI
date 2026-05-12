@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
-  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch,
+  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -12,6 +12,8 @@ import {
   type DbGovernanceEvent, type DbGovernanceAsset, type DbGovernancePolicy,
   type DbFrameworkControl,
 } from './governanceApi';
+import { archiveAsset, togglePolicy } from './resourcesApi';
+import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -33,8 +35,10 @@ function Inner() {
   const [policies, setPolicies] = useState<DbGovernancePolicy[] | null>(null);
   const [controls, setControls] = useState<DbFrameworkControl[] | null>(null);
   const [error, setError]       = useState<string | null>(null);
+  const [creatingAsset, setCreatingAsset]   = useState(false);
+  const [creatingPolicy, setCreatingPolicy] = useState(false);
 
-  useEffect(() => {
+  const reload = () => {
     if (!activeTenantId) return;
     setError(null);
     setEvents(null); setAssets(null); setPolicies(null); setControls(null);
@@ -46,7 +50,9 @@ function Inner() {
     ])
       .then(([e, a, p, c]) => { setEvents(e); setAssets(a); setPolicies(p); setControls(c); })
       .catch((err: Error) => setError(err.message));
-  }, [activeTenantId]);
+  };
+
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [activeTenantId]);
 
   const empty =
     activeTenantId &&
@@ -82,14 +88,43 @@ function Inner() {
               ))}
             </select>
           )}
+          <button
+            onClick={() => setCreatingAsset(true)}
+            disabled={!activeTenantId}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Asset
+          </button>
+          <button
+            onClick={() => setCreatingPolicy(true)}
+            disabled={!activeTenantId}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Policy
+          </button>
           <Link
             to="/governance/keys"
             className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
           >
-            <KeyRound className="h-4 w-4" /> Ingest Keys
+            <KeyRound className="h-4 w-4" /> Keys
           </Link>
         </div>
       </header>
+
+      {creatingAsset && activeTenantId && (
+        <CreateAssetModal
+          tenantId={activeTenantId}
+          onClose={() => setCreatingAsset(false)}
+          onCreated={() => { setCreatingAsset(false); reload(); }}
+        />
+      )}
+      {creatingPolicy && activeTenantId && (
+        <CreatePolicyModal
+          tenantId={activeTenantId}
+          onClose={() => setCreatingPolicy(false)}
+          onCreated={() => { setCreatingPolicy(false); reload(); }}
+        />
+      )}
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {error && (
@@ -106,13 +141,14 @@ function Inner() {
             <Loader2 className="h-4 w-4 animate-spin" /> Lade Tenant-Daten…
           </div>
         ) : empty ? (
-          <EmptyState />
+          <EmptyState onAddAsset={() => setCreatingAsset(true)} />
         ) : (
           <Body
             events={events!}
             assets={assets!}
             policies={policies!}
             controls={controls ?? []}
+            onChange={reload}
           />
         )}
       </main>
@@ -120,23 +156,29 @@ function Inner() {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
   return (
     <div className="text-center py-16">
       <div className="w-14 h-14 mx-auto rounded-none bg-obsidian-900 border border-titanium-900 flex items-center justify-center mb-4">
         <Activity className="h-6 w-6 text-titanium-600" />
       </div>
-      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch keine Events erfasst</h2>
+      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch leer</h2>
       <p className="text-sm text-titanium-400 mb-6 max-w-md mx-auto leading-relaxed">
-        Generiere einen Ingest-Key, lade die Browser-Extension oder rufe das SDK auf, um die ersten
+        Lege ein Asset an, generiere einen Ingest-Key oder lade die Browser-Extension, um die ersten
         Governance-Events einzuspeisen.
       </p>
       <div className="flex items-center justify-center gap-2">
-        <Link
-          to="/governance/keys"
+        <button
+          onClick={onAddAsset}
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-amber-400"
         >
-          <KeyRound className="h-4 w-4" /> Ersten Key erstellen
+          <Plus className="h-4 w-4" /> Erstes Asset
+        </button>
+        <Link
+          to="/governance/keys"
+          className="inline-flex items-center gap-1.5 px-4 py-2 border border-titanium-900 hover:border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none"
+        >
+          <KeyRound className="h-4 w-4" /> Key erstellen
         </Link>
         <Link
           to="/governance-runtime"
@@ -150,12 +192,13 @@ function EmptyState() {
 }
 
 function Body({
-  events, assets, policies, controls,
+  events, assets, policies, controls, onChange,
 }: {
   events: DbGovernanceEvent[];
   assets: DbGovernanceAsset[];
   policies: DbGovernancePolicy[];
   controls: DbFrameworkControl[];
+  onChange: () => void;
 }) {
   const criticalEvents = events.filter((e) => e.risk_level === 'critical' || e.risk_level === 'high').length;
   const highRiskAssets = assets.filter((a) => a.risk_score >= 70).length;
@@ -206,46 +249,15 @@ function Body({
         {assets.length > 0 && (
           <Panel icon={<Bot className="h-4 w-4" />} title="Governance Assets">
             <ul className="space-y-2">
-              {assets.map((a) => (
-                <li key={a.id} className="border border-titanium-900 bg-obsidian-950/60 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-titanium-50 text-sm">{a.name}</div>
-                      <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-400 mt-0.5">
-                        {a.asset_type} · {a.ai_act_class}
-                      </div>
-                    </div>
-                    <span className={`font-mono text-sm font-bold ${scoreClass(a.risk_score)}`}>
-                      {a.risk_score}/100
-                    </span>
-                  </div>
-                </li>
-              ))}
+              {assets.map((a) => <AssetRow key={a.id} asset={a} onChange={onChange} />)}
             </ul>
           </Panel>
         )}
 
         {policies.length > 0 && (
-          <Panel icon={<ShieldCheck className="h-4 w-4" />} title="Active Policies">
+          <Panel icon={<ShieldCheck className="h-4 w-4" />} title="Policies">
             <ul className="space-y-2">
-              {policies.map((p) => (
-                <li key={p.id} className="border border-titanium-900 bg-obsidian-950/60 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-titanium-50 text-sm">{p.name}</div>
-                      {p.description && (
-                        <div className="text-[12px] text-titanium-300 mt-1 leading-relaxed">{p.description}</div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <RiskBadge level={p.severity} />
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-400">
-                        {p.action}
-                      </span>
-                    </div>
-                  </div>
-                </li>
-              ))}
+              {policies.map((p) => <PolicyRow key={p.id} policy={p} onChange={onChange} />)}
             </ul>
           </Panel>
         )}
@@ -336,4 +348,83 @@ function scoreClass(score: number) {
   if (score >= 60) return 'text-amber-300';
   if (score >= 40) return 'text-yellow-300';
   return 'text-emerald-300';
+}
+
+function AssetRow({ asset, onChange }: { asset: DbGovernanceAsset; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const isArchived = asset.status === 'archived';
+  return (
+    <li className="border border-titanium-900 bg-obsidian-950/60 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold text-titanium-50 text-sm">{asset.name}</div>
+          <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-400 mt-0.5">
+            {asset.asset_type} · {asset.ai_act_class} · {asset.status}
+          </div>
+          {asset.vendor && (
+            <div className="text-[11px] text-titanium-500 mt-0.5">Vendor: {asset.vendor}</div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`font-mono text-sm font-bold ${scoreClass(asset.risk_score)}`}>
+            {asset.risk_score}/100
+          </span>
+          {!isArchived && (
+            <button
+              onClick={async () => {
+                if (!confirm(`Asset "${asset.name}" archivieren?`)) return;
+                setBusy(true);
+                await archiveAsset(asset.id);
+                setBusy(false);
+                onChange();
+              }}
+              disabled={busy}
+              className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none disabled:opacity-50"
+              aria-label="Archivieren"
+            >
+              <Archive className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function PolicyRow({ policy, onChange }: { policy: DbGovernancePolicy; onChange: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <li className="border border-titanium-900 bg-obsidian-950/60 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="font-semibold text-titanium-50 text-sm">{policy.name}</div>
+          {policy.description && (
+            <div className="text-[12px] text-titanium-300 mt-1 leading-relaxed">{policy.description}</div>
+          )}
+          <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-500 mt-1">
+            {policy.policy_type} · {policy.action}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <RiskBadge level={policy.severity} />
+          <button
+            onClick={async () => {
+              setBusy(true);
+              await togglePolicy(policy.id, !policy.enabled);
+              setBusy(false);
+              onChange();
+            }}
+            disabled={busy}
+            className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 border rounded-none disabled:opacity-50 ${
+              policy.enabled
+                ? 'border-emerald-700 text-emerald-300 hover:bg-emerald-950/50'
+                : 'border-titanium-700 text-titanium-400 hover:bg-titanium-900/50'
+            }`}
+          >
+            {policy.enabled ? '● aktiv' : '○ pausiert'}
+          </button>
+        </div>
+      </div>
+    </li>
+  );
 }

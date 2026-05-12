@@ -1,14 +1,18 @@
-// RealSyncDynamics Governance — Content Script
+// RealSyncDynamics Governance — Content Script (ISOLATED world)
 //
-// Runs at document_start on every page. Detects:
+// Two responsibilities:
 //
-//   1. <script> insertions from new origins (potential trackers)
-//   2. outbound fetch / XHR calls to known AI-vendor hostnames
-//   3. cookies set before a recognised consent signal
+//   1. DOM-based detection: new <script> tags from tracker / AI-vendor
+//      hosts. Works fine from ISOLATED because the DOM is shared.
 //
-// For each finding it emits a structured event to the
-// extension's service-worker via chrome.runtime.sendMessage. The
-// worker batches + ships them to /functions/v1/governance-ingest.
+//   2. Bridge: forwards events from the MAIN-world injected.js script
+//      (which hooks fetch / XHR / document.cookie — those hooks only
+//      observe page-script activity when set in the same world as the
+//      page) to the extension's service worker via chrome.runtime.
+//
+// Hooks like window.fetch must run in MAIN world to see the page's
+// own calls; the previous in-this-file hooks only saw isolated-world
+// fetches, which is empty in practice. See injected.js + manifest.json.
 
 (() => {
   'use strict';
@@ -38,7 +42,6 @@
   const pageUrl = location.href;
   const pageOrigin = location.origin;
 
-  /** Send a fire-and-forget event to the service worker. */
   function emit(event) {
     try {
       chrome.runtime.sendMessage({ type: 'rsd:event', event });
@@ -93,91 +96,19 @@
   // Initial scan for scripts already in the DOM at document_start
   document.querySelectorAll('script[src]').forEach(inspectScript);
 
-  // ── 2) fetch / XHR to AI-vendor hosts ──────────────────────
-  const origFetch = window.fetch;
-  window.fetch = function (input, init) {
-    try {
-      const url = typeof input === 'string' ? input : input.url;
-      const host = hostFromUrl(url);
-      if (host && classifyHost(host) === 'ai_vendor') {
-        emit({
-          event_type: 'agent.runtime.call',
-          event_source: 'browser_extension',
-          title: `Outbound AI call: ${host}`,
-          summary: `Page ${pageOrigin} called ${host} from in-browser fetch.`,
-          risk_level: 'high',
-          vendor: host,
-          data_types: ['prompt_text'],
-          policy_action: 'warn',
-          payload: { url, method: (init?.method ?? 'GET').toUpperCase() },
-        });
-      }
-    } catch { /* ignore */ }
-    return origFetch.apply(this, arguments);
-  };
-
-  const origOpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function (method, url) {
-    try {
-      const host = hostFromUrl(url);
-      if (host && classifyHost(host) === 'ai_vendor') {
-        emit({
-          event_type: 'agent.runtime.call',
-          event_source: 'browser_extension',
-          title: `Outbound AI call (XHR): ${host}`,
-          summary: `Page ${pageOrigin} called ${host} from in-browser XHR.`,
-          risk_level: 'high',
-          vendor: host,
-          data_types: ['prompt_text'],
-          policy_action: 'warn',
-          payload: { url, method },
-        });
-      }
-    } catch { /* ignore */ }
-    return origOpen.apply(this, arguments);
-  };
-
-  // ── 3) Cookies set without recognised consent ──────────────
-  // Heuristic: if a non-essential cookie is written and no
-  // recognised consent cookie / window flag is present, flag it.
-  // Recognised consent signals:
-  //   - cookie named CookieConsent / OptanonConsent / borlabs-cookie
-  //   - window.__cmpapi / __tcfapi
-  const CONSENT_COOKIES = /(CookieConsent|OptanonConsent|borlabs-cookie|cookie_consent)/i;
-  function hasConsentSignal() {
-    if (CONSENT_COOKIES.test(document.cookie)) return true;
-    if (typeof window.__tcfapi === 'function')  return true;
-    if (typeof window.__cmpapi === 'function')  return true;
-    return false;
-  }
-  const cookieDesc = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
-  if (cookieDesc?.set) {
-    const origSet = cookieDesc.set;
-    Object.defineProperty(document, 'cookie', {
-      configurable: true,
-      get: cookieDesc.get,
-      set(value) {
-        try {
-          if (!hasConsentSignal() && /=/.test(value)) {
-            const name = String(value).split('=')[0];
-            // Only flag what looks like tracking / analytics cookies
-            if (/^(_ga|_gid|_gcl|_fbp|_hjid|hubspot|_mkto)/i.test(name)) {
-              emit({
-                event_type: 'cookie.before_consent',
-                event_source: 'browser_extension',
-                title: `Cookie set before consent: ${name}`,
-                summary: `Page ${pageOrigin} set ${name} without a recognised consent signal.`,
-                risk_level: 'high',
-                vendor: null,
-                data_types: ['cookie_ids', 'ip_address'],
-                policy_action: 'warn',
-                payload: { cookie_name: name, url: pageUrl },
-              });
-            }
-          }
-        } catch { /* ignore */ }
-        return origSet.call(this, value);
-      },
-    });
-  }
+  // ── 2) Bridge: receive events from injected.js (MAIN world) ──
+  // injected.js posts `{ __rsdGovernance: true, event }` via
+  // window.postMessage to its own origin. Validate strictly: the
+  // postMessage event.origin must match this page's origin AND the
+  // payload must carry the magic marker. This prevents arbitrary
+  // pages from poisoning the bridge.
+  window.addEventListener('message', (e) => {
+    if (e.source !== window) return;
+    if (e.origin !== pageOrigin) return;
+    const data = e.data;
+    if (!data || data.__rsdGovernance !== true) return;
+    const event = data.event;
+    if (!event || typeof event !== 'object') return;
+    emit(event);
+  });
 })();

@@ -1,4 +1,4 @@
-// Governance Telemetry Ingestion API + Policy Engine.
+// Governance Telemetry Ingestion API + Policy Engine + Webhooks.
 //
 // POST /functions/v1/governance-ingest
 // Authorization: Bearer rsd_gov_<token>
@@ -20,6 +20,9 @@
 //   6. Insert caller-supplied evidence + auto `policy_snapshot` evidence for every
 //      event that the engine matched
 //   7. Stamp `last_used_at` on the API key
+//   8. Fire enabled tenant webhooks whose `min_risk_level` is matched by the
+//      event (HMAC-SHA256 signed payload, 3s timeout, last_status persisted).
+//      Best-effort: never blocks the API response on webhook failure.
 //
 // Verify_jwt is false on this function — auth is API-key based.
 
@@ -287,13 +290,124 @@ Deno.serve(async (req) => {
     return d ? { event_id: ev.id, policy_id: d.policy_id, action: d.action } : null;
   }).filter((x): x is { event_id: string; policy_id: string; action: PolicyAction } => x !== null);
 
+  // Best-effort outbound webhooks. We await so the cross-tenant
+  // guarantees hold, but each delivery is independently bounded
+  // by a 3 s timeout and any failure is recorded on the row.
+  let webhook_deliveries = 0;
+  try {
+    webhook_deliveries = await fireWebhooks(admin, keyRow.tenant_id, items, insertedEvents!, decisions);
+  } catch {
+    /* swallow — webhook errors must not fail ingest */
+  }
+
   return json({
     ok: true,
     event_ids: insertedEvents!.map((e) => e.id),
     evidence_ids: insertedEvidence.map((e) => e.id),
     policy_decisions: policyDecisions,
+    webhook_deliveries,
   });
 });
+
+const RISK_RANK: Record<string, number> = {
+  info: 0, low: 1, medium: 2, high: 3, critical: 4,
+};
+
+interface WebhookRow {
+  id: string;
+  target_url: string;
+  secret_hash: string;
+  min_risk_level: string;
+}
+
+// deno-lint-ignore no-explicit-any
+async function fireWebhooks(
+  admin: any,
+  tenantId: string,
+  items: IngestItem[],
+  insertedEvents: Array<{ id: string }>,
+  decisions: Array<PolicyDecision | null>,
+): Promise<number> {
+  const { data: hooks, error } = await admin
+    .from('governance_webhooks')
+    .select('id, target_url, secret_hash, min_risk_level')
+    .eq('tenant_id', tenantId)
+    .eq('enabled', true)
+    .is('revoked_at', null);
+  if (error || !hooks || hooks.length === 0) return 0;
+
+  const deliveries: Array<Promise<unknown>> = [];
+  for (const hook of hooks as WebhookRow[]) {
+    const minRank = RISK_RANK[hook.min_risk_level] ?? 3;
+    for (let i = 0; i < items.length; i++) {
+      const event = items[i].event;
+      const eventRank = RISK_RANK[event.risk_level ?? 'info'] ?? 0;
+      if (eventRank < minRank) continue;
+      const decision = decisions[i];
+      const payload = {
+        event_id: insertedEvents[i].id,
+        tenant_id: tenantId,
+        event,
+        decision,
+      };
+      deliveries.push(deliverOne(admin, hook, payload));
+    }
+  }
+  if (deliveries.length === 0) return 0;
+  await Promise.allSettled(deliveries);
+  return deliveries.length;
+}
+
+// deno-lint-ignore no-explicit-any
+async function deliverOne(admin: any, hook: WebhookRow, payload: Record<string, unknown>): Promise<void> {
+  const bodyText = JSON.stringify(payload);
+  const signature = await hmacSha256Hex(hook.secret_hash, bodyText);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+
+  let status: number | null = null;
+  let errorMsg: string | null = null;
+  try {
+    const res = await fetch(hook.target_url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-RSD-Signature': `sha256=${signature}`,
+        'X-RSD-Event-Id': String(payload.event_id),
+        'User-Agent': 'RealSyncDynamics-Governance/1.0',
+      },
+      body: bodyText,
+      signal: controller.signal,
+    });
+    status = res.status;
+    if (!res.ok) {
+      errorMsg = (await res.text().catch(() => '')).slice(0, 500) || `HTTP ${res.status}`;
+    }
+  } catch (e) {
+    errorMsg = (e instanceof Error ? e.message : String(e)).slice(0, 500);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  await admin.from('governance_webhooks').update({
+    last_called_at: new Date().toISOString(),
+    last_status: status,
+    last_error: errorMsg,
+  }).eq('id', hook.id);
+}
+
+async function hmacSha256Hex(keyHex: string, message: string): Promise<string> {
+  const keyBytes = new TextEncoder().encode(keyHex);
+  const key = await crypto.subtle.importKey(
+    'raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  const bytes = new Uint8Array(sig);
+  let out = '';
+  for (const b of bytes) out += b.toString(16).padStart(2, '0');
+  return out;
+}
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 

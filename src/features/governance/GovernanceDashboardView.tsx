@@ -373,9 +373,9 @@ function AssetRow({ asset, onChange }: { asset: DbGovernanceAsset; onChange: () 
   const [busy, setBusy] = useState(false);
   const isArchived = asset.status === 'archived';
   return (
-    <li className="border border-titanium-900 bg-obsidian-950/60 p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <li className="border border-titanium-900 bg-obsidian-950/60 hover:border-amber-500/40 transition-colors">
+      <div className="flex items-stretch">
+        <Link to={`/governance/assets/${asset.id}`} className="flex-1 min-w-0 p-3 block">
           <div className="font-semibold text-titanium-50 text-sm">{asset.name}</div>
           <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-400 mt-0.5">
             {asset.asset_type} · {asset.ai_act_class} · {asset.status}
@@ -383,8 +383,8 @@ function AssetRow({ asset, onChange }: { asset: DbGovernanceAsset; onChange: () 
           {asset.vendor && (
             <div className="text-[11px] text-titanium-500 mt-0.5">Vendor: {asset.vendor}</div>
           )}
-        </div>
-        <div className="flex items-center gap-2">
+        </Link>
+        <div className="flex items-center gap-2 p-3 shrink-0">
           <span className={`font-mono text-sm font-bold ${scoreClass(asset.risk_score)}`}>
             {asset.risk_score}/100
           </span>

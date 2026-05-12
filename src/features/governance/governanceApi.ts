@@ -173,6 +173,28 @@ export async function fetchEvidenceForEvent(eventId: string): Promise<DbGovernan
   return (data ?? []) as DbGovernanceEvidence[];
 }
 
+export async function fetchEventsForAsset(assetId: string, limit = 100): Promise<DbGovernanceEvent[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_events')
+    .select('*')
+    .eq('asset_id', assetId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbGovernanceEvent[];
+}
+
+export async function fetchMappingsForAsset(assetId: string): Promise<DbAssetControlMapping[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('asset_control_mappings')
+    .select('*')
+    .eq('asset_id', assetId);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbAssetControlMapping[];
+}
+
 export async function fetchAssetById(assetId: string): Promise<DbGovernanceAsset | null> {
   const sb = getSupabase();
   const { data, error } = await sb

@@ -12,6 +12,7 @@ import { ProTeamsPanel } from './panels/ProTeamsPanel';
 import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
 import { EnterprisePanel } from './panels/EnterprisePanel';
 import { AIActPanel } from './panels/AIActPanel';
+import { GovernanceRuntimePanel } from './panels/GovernanceRuntimePanel';
 import { PricingTeaserSection } from './sections/PricingTeaserSection';
 import { PilotPartnersPlaceholder } from './sections/PilotPartnersPlaceholder';
 import { RoadmapSection } from './sections/RoadmapSection';
@@ -48,7 +49,8 @@ type ModalKey =
   | 'pro'           // ProTeamsPanel (Watchmaker-3-Pillars + AuditEngine-Tri-Layer)
   | 'compliance'    // ComplianceCenterPanel (Methodik / Grenzen / Sub-Processors / AVV)
   | 'enterprise'    // EnterprisePanel (Multi-Tenant / SLA / Procurement)
-  | 'aiact';        // AIActPanel (Klassifikator + Workflow-Inventory + Doku-Pflichten)
+  | 'aiact'         // AIActPanel (Klassifikator + Workflow-Inventory + Doku-Pflichten)
+  | 'runtime';      // GovernanceRuntimePanel (Event-driven Compliance Runtime)
 
 export function HeroOnly() {
   const [openModal, setOpenModal] = useState<ModalKey>(null);
@@ -59,6 +61,9 @@ export function HeroOnly() {
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <nav className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm">
           <NavButton onClick={() => setOpenModal('check')}>Produkt</NavButton>
+          <NavButton onClick={() => setOpenModal('runtime')} className="hidden sm:inline-flex">
+            Runtime
+          </NavButton>
           <NavButton onClick={() => setOpenModal('aiact')} className="hidden sm:inline-flex">
             AI-Act
           </NavButton>
@@ -590,6 +595,16 @@ export function HeroOnly() {
         size="xl"
       >
         <AIActPanel />
+      </Modal>
+
+      <Modal
+        open={openModal === 'runtime'}
+        onClose={() => setOpenModal(null)}
+        title="Governance Runtime"
+        eyebrow="Event-driven Compliance · API · Browser-Extension"
+        size="xl"
+      >
+        <GovernanceRuntimePanel />
       </Modal>
     </div>
   );

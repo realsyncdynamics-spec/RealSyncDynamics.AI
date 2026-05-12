@@ -14,6 +14,7 @@ import {
 } from './governanceApi';
 import { archiveAsset, togglePolicy } from './resourcesApi';
 import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
+import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -225,6 +226,8 @@ function Body({
         <Metric icon={<ShieldCheck />} label="Aktive Policies" value={activePolicies} />
         <Metric icon={<Lock />}      label="Blockiert" value={blockedActions} tone="warn" />
       </div>
+
+      <GovernanceTrendsPanel events={events} />
 
       {events.length > 0 && (
         <Panel icon={<Activity className="h-4 w-4" />} title="Runtime Event Stream">

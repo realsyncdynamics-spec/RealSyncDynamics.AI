@@ -17,6 +17,7 @@ import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
 import { Blog } from './pages/Blog';
 import { Roadmap } from './pages/Roadmap';
+import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
 import { FixPaket } from './pages/FixPaket';
 import { PreConsentTracking } from './pages/seo/PreConsentTracking';
 import { GoogleAnalyticsConsent } from './pages/seo/GoogleAnalyticsConsent';
@@ -153,6 +154,7 @@ function RoutesWithTracking() {
       <Route path="/resources" element={<Resources />} />
       <Route path="/blog" element={<Blog />} />
       <Route path="/roadmap" element={<Roadmap />} />
+      <Route path="/governance-runtime" element={<GovernanceRuntimePage />} />
       <Route path="/fix-paket" element={<FixPaket />} />
       <Route path="/pre-consent-tracking" element={<PreConsentTracking />} />
       <Route path="/google-analytics-consent" element={<GoogleAnalyticsConsent />} />

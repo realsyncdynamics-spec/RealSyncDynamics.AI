@@ -34,6 +34,11 @@ import {
   type PolicyDecision,
   type PolicyRow,
 } from '../_shared/policyEngine.ts';
+import {
+  detectFormat,
+  formatPayload,
+  type WebhookEnvelope,
+} from '../_shared/webhookFormat.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -344,13 +349,24 @@ async function fireWebhooks(
       const eventRank = RISK_RANK[event.risk_level ?? 'info'] ?? 0;
       if (eventRank < minRank) continue;
       const decision = decisions[i];
-      const payload = {
+      const envelope: WebhookEnvelope = {
         event_id: insertedEvents[i].id,
         tenant_id: tenantId,
-        event,
-        decision,
+        event: {
+          event_type: event.event_type,
+          event_source: event.event_source,
+          title: event.title,
+          summary: event.summary,
+          risk_level: event.risk_level,
+          vendor: event.vendor,
+          model_name: event.model_name,
+          data_types: event.data_types,
+          policy_action: event.policy_action,
+          payload: event.payload,
+        },
+        decision: decision ?? null,
       };
-      deliveries.push(deliverOne(admin, hook, payload));
+      deliveries.push(deliverOne(admin, hook, envelope));
     }
   }
   if (deliveries.length === 0) return 0;
@@ -359,8 +375,9 @@ async function fireWebhooks(
 }
 
 // deno-lint-ignore no-explicit-any
-async function deliverOne(admin: any, hook: WebhookRow, payload: Record<string, unknown>): Promise<void> {
-  const bodyText = JSON.stringify(payload);
+async function deliverOne(admin: any, hook: WebhookRow, envelope: WebhookEnvelope): Promise<void> {
+  const format = detectFormat(hook.target_url);
+  const bodyText = formatPayload(envelope, format);
   const signature = await hmacSha256Hex(hook.secret_hash, bodyText);
 
   const controller = new AbortController();
@@ -374,7 +391,8 @@ async function deliverOne(admin: any, hook: WebhookRow, payload: Record<string, 
       headers: {
         'Content-Type': 'application/json',
         'X-RSD-Signature': `sha256=${signature}`,
-        'X-RSD-Event-Id': String(payload.event_id),
+        'X-RSD-Event-Id': envelope.event_id,
+        'X-RSD-Format': format,
         'User-Agent': 'RealSyncDynamics-Governance/1.0',
       },
       body: bodyText,

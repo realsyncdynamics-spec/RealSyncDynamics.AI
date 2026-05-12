@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
-  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library,
+  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -143,6 +143,12 @@ function Inner() {
             className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
           >
             <ScrollText className="h-4 w-4" /> Log
+          </Link>
+          <Link
+            to="/governance/reports"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
+          >
+            <FileDown className="h-4 w-4" /> Report
           </Link>
           <Link
             to="/governance/webhooks"

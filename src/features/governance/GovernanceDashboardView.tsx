@@ -20,6 +20,7 @@ import { countOpenDpias } from './dpiasApi';
 import { countOpenDsrs } from './dsrApi';
 import { countOpenIncidents } from './incidentsApi';
 import { EnvironmentSwitcher, EnvironmentBanner } from './EnvironmentSwitcher';
+import { AgentWidget } from './AgentWidget/AgentWidget';
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -248,6 +249,7 @@ function Inner() {
           />
         )}
       </main>
+      <AgentWidget />
     </div>
   );
 }

@@ -47,6 +47,8 @@ import { SystemLevelGovernanceSection } from '../components/sections/SystemLevel
 import { TechSecuritySixtySecondsSection } from '../components/sections/TechSecuritySixtySecondsSection';
 import { GovernanceMiniCasesSection } from '../components/sections/GovernanceMiniCasesSection';
 import { InfrastructureIntegrationsStrip } from '../components/sections/InfrastructureIntegrationsStrip';
+import { GovernanceArchitectureSection } from '../components/sections/GovernanceArchitectureSection';
+import { RuntimeActivityFeedSection } from '../components/sections/RuntimeActivityFeedSection';
 
 /**
  * Landing — Hero-only-Pivot.
@@ -64,7 +66,9 @@ export function Landing() {
   return (
     <>
       <HeroOnly />
+      <RuntimeActivityFeedSection />
       <AgenticComplianceAgentsSection />
+      <GovernanceArchitectureSection />
       <SystemLevelGovernanceSection />
       <AiActGovernanceBetaSection />
       <GovernanceMiniCasesSection />

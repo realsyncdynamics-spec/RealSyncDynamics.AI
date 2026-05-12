@@ -133,6 +133,17 @@ export function HeroOnly() {
             </button>
           </div>
 
+          {/* Tertiary: Live Demo */}
+          <div className="mb-9 -mt-3">
+            <Link
+              to="/governance-runtime"
+              className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.18em] text-silver-400 hover:text-amber-300 transition-colors"
+            >
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Live Governance-Runtime Demo öffnen <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
           {/* Drei Mid-Buttons */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-10 max-w-xl mx-auto">
             <MidButton icon={<FileSearch className="h-3.5 w-3.5" />} label="Website-Check"      onClick={() => setOpenModal('check')} />

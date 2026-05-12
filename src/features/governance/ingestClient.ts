@@ -82,10 +82,24 @@ export interface IngestClientOptions {
   fetch?: typeof fetch;
 }
 
+export interface PolicyDecision {
+  event_id: string;
+  policy_id: string;
+  action: IngestPolicyAction;
+}
+
 export interface IngestResponseOk {
   ok: true;
   event_ids: string[];
   evidence_ids: string[];
+  /**
+   * One entry per event that the server-side Policy Engine matched.
+   * The `action` value reflects the strictest matched policy
+   * (block > require_approval > warn > log > allow) and is the
+   * authoritative outcome — any `policy_id` / `policy_action` hint
+   * the caller sent is overridden.
+   */
+  policy_decisions: PolicyDecision[];
 }
 
 export interface IngestResponseErr {

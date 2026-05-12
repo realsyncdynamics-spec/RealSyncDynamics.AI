@@ -1,4 +1,4 @@
-// Governance Telemetry Ingestion API.
+// Governance Telemetry Ingestion API + Policy Engine.
 //
 // POST /functions/v1/governance-ingest
 // Authorization: Bearer rsd_gov_<token>
@@ -8,18 +8,29 @@
 //   Single:  { event: EventInput, evidence?: EvidenceInput[] }
 //   Batch:   { events: Array<{ event: EventInput, evidence?: EvidenceInput[] }> }
 //
-// The API-key is looked up by sha256 hash against
-// public.governance_ingest_keys; an inactive (revoked_at != null)
-// or unknown key returns 401. The key's tenant_id is then used to
-// stamp every inserted event + evidence row.
-//
-// Cross-tenant references are rejected: any `asset_id` or `policy_id`
-// in the request must belong to the same tenant as the key.
+// Flow:
+//   1. API-key lookup (sha256 of `rsd_gov_…` against governance_ingest_keys)
+//   2. Validate every event + evidence input
+//   3. Cross-tenant guard on asset_id / policy_id
+//   4. Policy evaluation (v1: minimal condition matcher in _shared/policyEngine.ts)
+//      — caller's `policy_id` + `policy_action` hints get OVERRIDDEN by the engine
+//        when a policy matches the event. Engine choice = source of truth.
+//      — strictest action wins: block > require_approval > warn > log > allow
+//   5. Insert events
+//   6. Insert caller-supplied evidence + auto `policy_snapshot` evidence for every
+//      event that the engine matched
+//   7. Stamp `last_used_at` on the API key
 //
 // Verify_jwt is false on this function — auth is API-key based.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex } from '../_shared/hash.ts';
+import {
+  evaluatePolicies,
+  type AssetForEval,
+  type PolicyDecision,
+  type PolicyRow,
+} from '../_shared/policyEngine.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -126,22 +137,32 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Cross-tenant guard for asset_id / policy_id references
+  // Cross-tenant guard + fetch full asset rows for policy evaluation
   const assetIds = uniq(items.map((i) => i.event.asset_id).filter((x): x is string => !!x));
   const policyIds = uniq(items.map((i) => i.event.policy_id).filter((x): x is string => !!x));
+  const assetsById = new Map<string, AssetForEval>();
 
   if (assetIds.length > 0) {
     const { data: assets, error } = await admin
       .from('governance_assets')
-      .select('id, tenant_id')
+      .select('id, tenant_id, asset_type, ai_act_class, data_types, vendor')
       .in('id', assetIds);
     if (error) return jsonError(500, 'INTERNAL', error.message);
     const wrong = (assets ?? []).find((a) => a.tenant_id !== keyRow.tenant_id);
     if (wrong) return jsonError(403, 'CROSS_TENANT', `asset ${wrong.id} belongs to another tenant`);
-    const found = new Set((assets ?? []).map((a) => a.id));
-    const missing = assetIds.find((id) => !found.has(id));
+    for (const a of assets ?? []) {
+      assetsById.set(a.id, {
+        id: a.id,
+        asset_type: a.asset_type,
+        ai_act_class: a.ai_act_class,
+        data_types: a.data_types ?? [],
+        vendor: a.vendor,
+      });
+    }
+    const missing = assetIds.find((id) => !assetsById.has(id));
     if (missing) return jsonError(404, 'NOT_FOUND', `asset ${missing} not found`);
   }
+
   if (policyIds.length > 0) {
     const { data: policies, error } = await admin
       .from('governance_policies')
@@ -155,23 +176,53 @@ Deno.serve(async (req) => {
     if (missing) return jsonError(404, 'NOT_FOUND', `policy ${missing} not found`);
   }
 
-  // Insert events
-  const eventRows = items.map((i) => ({
-    tenant_id: keyRow.tenant_id,
-    asset_id: i.event.asset_id ?? null,
-    policy_id: i.event.policy_id ?? null,
-    event_type: i.event.event_type,
-    event_source: i.event.event_source,
-    title: i.event.title,
-    summary: i.event.summary ?? null,
-    risk_level: i.event.risk_level ?? 'info',
-    actor_email: i.event.actor_email ?? null,
-    vendor: i.event.vendor ?? null,
-    model_name: i.event.model_name ?? null,
-    data_types: i.event.data_types ?? [],
-    policy_action: i.event.policy_action ?? null,
-    payload: i.event.payload ?? {},
-  }));
+  // Policy engine: fetch all enabled tenant policies and evaluate per event
+  const { data: tenantPolicies, error: polErr } = await admin
+    .from('governance_policies')
+    .select('id, tenant_id, policy_type, severity, action, condition, enabled')
+    .eq('tenant_id', keyRow.tenant_id)
+    .eq('enabled', true);
+  if (polErr) return jsonError(500, 'INTERNAL', polErr.message);
+
+  const policiesForEval = (tenantPolicies ?? []) as PolicyRow[];
+  const decisions: Array<PolicyDecision | null> = items.map((i) => {
+    const asset = i.event.asset_id ? assetsById.get(i.event.asset_id) ?? null : null;
+    return evaluatePolicies(
+      {
+        event_type: i.event.event_type,
+        event_source: i.event.event_source,
+        vendor: i.event.vendor ?? null,
+        model_name: i.event.model_name ?? null,
+        data_types: i.event.data_types ?? [],
+        risk_level: i.event.risk_level ?? 'info',
+        payload: i.event.payload ?? {},
+      },
+      asset,
+      policiesForEval,
+    );
+  });
+
+  // Stamp policy_id + policy_action from the engine's decision when one matches;
+  // otherwise leave caller-supplied hint values intact.
+  const eventRows = items.map((i, idx) => {
+    const decision = decisions[idx];
+    return {
+      tenant_id: keyRow.tenant_id,
+      asset_id: i.event.asset_id ?? null,
+      policy_id: decision?.policy_id ?? i.event.policy_id ?? null,
+      event_type: i.event.event_type,
+      event_source: i.event.event_source,
+      title: i.event.title,
+      summary: i.event.summary ?? null,
+      risk_level: i.event.risk_level ?? 'info',
+      actor_email: i.event.actor_email ?? null,
+      vendor: i.event.vendor ?? null,
+      model_name: i.event.model_name ?? null,
+      data_types: i.event.data_types ?? [],
+      policy_action: decision?.action ?? i.event.policy_action ?? null,
+      payload: i.event.payload ?? {},
+    };
+  });
 
   const { data: insertedEvents, error: insertErr } = await admin
     .from('governance_events')
@@ -179,11 +230,11 @@ Deno.serve(async (req) => {
     .select('id');
   if (insertErr) return jsonError(500, 'INSERT_FAILED', insertErr.message);
 
-  // Insert evidence (linked to its parent event by position)
+  // Caller-supplied evidence + auto policy_snapshot for every engine-matched event
   const evidenceRows: Array<Record<string, unknown>> = [];
   insertedEvents!.forEach((ev, idx) => {
-    const evidence = items[idx].evidence ?? [];
-    for (const e of evidence) {
+    const caller = items[idx].evidence ?? [];
+    for (const e of caller) {
       evidenceRows.push({
         tenant_id: keyRow.tenant_id,
         event_id: ev.id,
@@ -194,6 +245,24 @@ Deno.serve(async (req) => {
         content_hash: e.content_hash ?? null,
         previous_hash: e.previous_hash ?? null,
         metadata: e.metadata ?? {},
+      });
+    }
+    const decision = decisions[idx];
+    if (decision) {
+      evidenceRows.push({
+        tenant_id: keyRow.tenant_id,
+        event_id: ev.id,
+        asset_id: items[idx].event.asset_id ?? null,
+        evidence_type: 'policy_snapshot',
+        title: `Policy decision: ${decision.action}`,
+        storage_path: null,
+        content_hash: null,
+        previous_hash: null,
+        metadata: {
+          policy_id: decision.policy_id,
+          action: decision.action,
+          engine_version: 1,
+        },
       });
     }
   });
@@ -208,16 +277,21 @@ Deno.serve(async (req) => {
     insertedEvidence = ev ?? [];
   }
 
-  // Stamp last_used_at (fire-and-forget; ignore failure)
   await admin
     .from('governance_ingest_keys')
     .update({ last_used_at: new Date().toISOString() })
     .eq('id', keyRow.id);
 
+  const policyDecisions = insertedEvents!.map((ev, idx) => {
+    const d = decisions[idx];
+    return d ? { event_id: ev.id, policy_id: d.policy_id, action: d.action } : null;
+  }).filter((x): x is { event_id: string; policy_id: string; action: PolicyAction } => x !== null);
+
   return json({
     ok: true,
     event_ids: insertedEvents!.map((e) => e.id),
     evidence_ids: insertedEvidence.map((e) => e.id),
+    policy_decisions: policyDecisions,
   });
 });
 

@@ -106,6 +106,7 @@ const GovernanceEventDetailView = lazy(() => import('./features/governance/Event
 const GovernanceAssetDetailView = lazy(() => import('./features/governance/AssetDetailView').then((m) => ({ default: m.AssetDetailView })));
 const GovernanceApprovalsView = lazy(() => import('./features/governance/ApprovalsView').then((m) => ({ default: m.ApprovalsView })));
 const GovernanceAdminLogView = lazy(() => import('./features/governance/AdminLogView').then((m) => ({ default: m.AdminLogView })));
+const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -274,6 +275,7 @@ function RoutesWithTracking() {
       <Route path="/governance/assets/:assetId" element={<GovernanceAssetDetailView />} />
       <Route path="/governance/approvals" element={<GovernanceApprovalsView />} />
       <Route path="/governance/admin-log" element={<GovernanceAdminLogView />} />
+      <Route path="/governance/policies/templates" element={<GovernancePolicyTemplatesView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />

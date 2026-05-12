@@ -73,7 +73,7 @@ export function LiveProductDemo() {
           <span className="w-2 h-2 rounded-full bg-red-500/60" />
           <span className="w-2 h-2 rounded-full bg-amber-500/60" />
           <span className="w-2 h-2 rounded-full bg-emerald-500/60" />
-          <span className="ml-3 truncate">app.realsyncdynamicsai.de · audit · live</span>
+          <span className="ml-3 truncate">app.RealSyncDynamicsAI.de · audit · live</span>
         </div>
 
         {/* Tabs */}

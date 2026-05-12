@@ -25,7 +25,7 @@ const ENTRIES: Entry[] = [
     date: '2026-05-07',
     type: 'fix',
     title: 'Apex-Domain in Meta-Tags + Sitemap',
-    body: 'Stale GH-Pages-Project-URLs in canonical/OG/Twitter/JSON-LD führten Crawler und Tester zu falschen 404-Diagnosen. Alle Meta-Tags auf realsyncdynamicsai.de umgebogen. Plus /impressum + /datenschutz Route-Aliase.',
+    body: 'Stale GH-Pages-Project-URLs in canonical/OG/Twitter/JSON-LD führten Crawler und Tester zu falschen 404-Diagnosen. Alle Meta-Tags auf RealSyncDynamicsAI.de umgebogen. Plus /impressum + /datenschutz Route-Aliase.',
   },
   {
     date: '2026-05-07',

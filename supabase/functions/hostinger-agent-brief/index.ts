@@ -158,7 +158,7 @@ Tone: nüchtern, peer-zu-peer, keine Marketing-Worte. Subject < 50 chars.`;
 }
 
 function buildQuill(auditCount: number): string {
-  return `Du bist Quill. Conversion-Copywriter Landingpage realsyncdynamicsai.de. Sprache: Deutsch.
+  return `Du bist Quill. Conversion-Copywriter Landingpage RealSyncDynamicsAI.de. Sprache: Deutsch.
 
 HERO:
 H1: "DSGVO + AI-Act: jede Sekunde compliance-konform"

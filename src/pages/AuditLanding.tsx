@@ -40,7 +40,7 @@ export function AuditLanding() {
     title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
     description:
       'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TTDSG-Risiken analysieren.',
-    url: 'https://realsyncdynamicsai.de/audit',
+    url: 'https://RealSyncDynamicsAI.de/audit',
   });
   const [url, setUrl] = useState('');
   const [email, setEmail] = useState('');

@@ -4,7 +4,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-const SNIPPET = `<script src="https://realsyncdynamicsai.de/sdk/cookie-consent.js"
+const SNIPPET = `<script src="https://RealSyncDynamicsAI.de/sdk/cookie-consent.js"
         data-rsd-key="rsd_DEIN_API_KEY"
         defer></script>`;
 

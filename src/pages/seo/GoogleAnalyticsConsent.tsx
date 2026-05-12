@@ -27,14 +27,14 @@ export function GoogleAnalyticsConsent() {
     title: 'Google Analytics Consent prüfen — Tracking vor Einwilligung erkennen',
     description:
       'Prüfen Sie technische Hinweise darauf, ob Google Analytics oder ähnliche Tracking-Dienste vor wirksamer Einwilligung geladen werden.',
-    url: 'https://realsyncdynamicsai.de/google-analytics-consent',
+    url: 'https://RealSyncDynamicsAI.de/google-analytics-consent',
   });
   useJsonLd('jsonld-faq-ga-consent', faqPageLd(FAQS));
   useJsonLd(
     'jsonld-bc-ga-consent',
     breadcrumbLd([
-      { name: 'Home', url: 'https://realsyncdynamicsai.de/' },
-      { name: 'Google Analytics Consent', url: 'https://realsyncdynamicsai.de/google-analytics-consent' },
+      { name: 'Home', url: 'https://RealSyncDynamicsAI.de/' },
+      { name: 'Google Analytics Consent', url: 'https://RealSyncDynamicsAI.de/google-analytics-consent' },
     ]),
   );
 

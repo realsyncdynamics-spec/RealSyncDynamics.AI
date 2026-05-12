@@ -27,14 +27,14 @@ export function PreConsentTracking() {
     title: 'Pre-Consent Tracking prüfen — DSGVO- und TTDSG-Risiken erkennen',
     description:
       'Erkennen Sie mögliche Tracking-Risiken vor Einwilligung: Cookies, Pixel, externe Skripte und Consent-Verhalten technisch vorprüfen.',
-    url: 'https://realsyncdynamicsai.de/pre-consent-tracking',
+    url: 'https://RealSyncDynamicsAI.de/pre-consent-tracking',
   });
   useJsonLd('jsonld-faq-pre-consent', faqPageLd(FAQS));
   useJsonLd(
     'jsonld-bc-pre-consent',
     breadcrumbLd([
-      { name: 'Home', url: 'https://realsyncdynamicsai.de/' },
-      { name: 'Pre-Consent Tracking', url: 'https://realsyncdynamicsai.de/pre-consent-tracking' },
+      { name: 'Home', url: 'https://RealSyncDynamicsAI.de/' },
+      { name: 'Pre-Consent Tracking', url: 'https://RealSyncDynamicsAI.de/pre-consent-tracking' },
     ]),
   );
 

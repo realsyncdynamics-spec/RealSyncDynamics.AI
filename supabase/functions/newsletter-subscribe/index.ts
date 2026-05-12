@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   const apiKey = await getResendKey(supa);
   if (apiKey) {
     const fromAddr = Deno.env.get('NEWSLETTER_EMAIL_FROM') ?? 'newsletter@realsyncdynamicsai.de';
-    const confirmUrl = `https://realsyncdynamicsai.de/newsletter/confirm?token=${confirmToken}`;
+    const confirmUrl = `https://RealSyncDynamicsAI.de/newsletter/confirm?token=${confirmToken}`;
     const html = renderDoiEmail(email, confirmUrl);
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -131,7 +131,7 @@ function renderDoiEmail(email: string, confirmUrl: string): string {
       </td></tr>
       <tr><td style="padding:24px 32px;border-top:1px solid #e4e4e7;font-size:11px;color:#71717a;line-height:1.6;">
         <p style="margin:0 0 6px;">Diese Email ist Teil des Double-Opt-In-Verfahrens nach § 7 UWG.</p>
-        <p style="margin:0;">RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt) · <a href="https://realsyncdynamicsai.de/legal/privacy" style="color:#0284c7;">Datenschutz</a></p>
+        <p style="margin:0;">RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt) · <a href="https://RealSyncDynamicsAI.de/legal/privacy" style="color:#0284c7;">Datenschutz</a></p>
       </td></tr>
     </table>
   </td></tr>

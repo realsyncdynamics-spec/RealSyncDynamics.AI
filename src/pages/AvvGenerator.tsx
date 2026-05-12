@@ -141,7 +141,7 @@ export function AvvGenerator() {
               <p>Der AN verarbeitet personenbezogene Daten ausschließlich auf dokumentierte Weisung des AG (Art. 28 Abs. 3 lit. a). Der AN stellt sicher, dass alle Personen, die mit der Verarbeitung befasst sind, zur Vertraulichkeit verpflichtet sind (Art. 28 Abs. 3 lit. b). Der AN ergreift alle erforderlichen technischen und organisatorischen Maßnahmen nach Art. 32 DSGVO (Art. 28 Abs. 3 lit. c). Bei Verdacht auf Datenpanne informiert der AN den AG unverzüglich, spätestens innerhalb von 24 Stunden.</p>
 
               <h2 style={{ fontWeight: 700, marginTop: '1.5rem', fontSize: '1rem' }}>§ 4 Unterauftragnehmer</h2>
-              <p>Der Einsatz von Unterauftragnehmern ist mit schriftlicher Genehmigung des AG gestattet. Aktuelle Sub-Prozessoren-Liste: https://realsyncdynamicsai.de/legal/sub-processors. Der AG wird über neue Unterauftragnehmer mindestens 14 Tage vorab informiert.</p>
+              <p>Der Einsatz von Unterauftragnehmern ist mit schriftlicher Genehmigung des AG gestattet. Aktuelle Sub-Prozessoren-Liste: https://RealSyncDynamicsAI.de/legal/sub-processors. Der AG wird über neue Unterauftragnehmer mindestens 14 Tage vorab informiert.</p>
 
               <h2 style={{ fontWeight: 700, marginTop: '1.5rem', fontSize: '1rem' }}>§ 5 Betroffenenrechte</h2>
               <p>Der AN unterstützt den AG bei der Erfüllung von Anfragen nach Art. 15–22 DSGVO (Auskunft, Berichtigung, Löschung, Einschränkung, Datenportabilität, Widerspruch) und leitet eingehende Anfragen unverzüglich weiter.</p>

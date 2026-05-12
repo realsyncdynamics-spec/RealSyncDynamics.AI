@@ -148,7 +148,7 @@ export function DsfaWizard() {
     ${e.notes ? `<p><strong>Anmerkungen:</strong> ${e.notes}</p>` : ''}
     ${e.consultationRequired ? '<div class="warn">Diese Verarbeitung erfordert möglicherweise eine Konsultation der Aufsichtsbehörde (Art. 36 DSGVO).</div>' : ''}
     `).join('')}
-    <p style="margin-top:40px;color:#888;font-size:12px">Erstellt mit RealSync Dynamics AI — DSGVO-Compliance-Plattform | realsyncdynamicsai.de</p>
+    <p style="margin-top:40px;color:#888;font-size:12px">Erstellt mit RealSync Dynamics AI — DSGVO-Compliance-Plattform | RealSyncDynamicsAI.de</p>
     </body></html>`);
     win.document.close();
     win.print();

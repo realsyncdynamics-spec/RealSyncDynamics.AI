@@ -27,14 +27,14 @@ export function AiActReadiness() {
     title: 'AI Act Readiness — technische Vorprüfung für KI- und Website-Risiken',
     description:
       'Strukturierte technische Vorprüfung für AI-Act-relevante Systeme, Website-Risiken und dokumentierbare Compliance-Prozesse.',
-    url: 'https://realsyncdynamicsai.de/ai-act-readiness',
+    url: 'https://RealSyncDynamicsAI.de/ai-act-readiness',
   });
   useJsonLd('jsonld-faq-ai-act', faqPageLd(FAQS));
   useJsonLd(
     'jsonld-bc-ai-act',
     breadcrumbLd([
-      { name: 'Home', url: 'https://realsyncdynamicsai.de/' },
-      { name: 'AI Act Readiness', url: 'https://realsyncdynamicsai.de/ai-act-readiness' },
+      { name: 'Home', url: 'https://RealSyncDynamicsAI.de/' },
+      { name: 'AI Act Readiness', url: 'https://RealSyncDynamicsAI.de/ai-act-readiness' },
     ]),
   );
 

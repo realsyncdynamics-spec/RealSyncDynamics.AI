@@ -146,7 +146,7 @@ async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Sessio
 
   const RESEND_KEY = await getSecret('RESEND_API_KEY', 'resend_api_key');
   const FROM = Deno.env.get("RESEND_FROM") ?? "RealSync Dynamics <hello@realsyncdynamicsai.de>";
-  const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://realsyncdynamicsai.de";
+  const SITE = Deno.env.get("PUBLIC_SITE_URL") ?? "https://RealSyncDynamicsAI.de";
 
   // Plan-Key + Produkt aus Line-Items für Email-Personalisierung.
   // Verwende eine einfache Detection: amount_total + currency + first line description.

@@ -138,7 +138,7 @@ function renderEmail(displayName: string | null, email: string): string {
           <li><strong>Erstes AI-Tool aufrufen</strong> — Audit-Log läuft ab dem ersten Call</li>
         </ol>
         <div style="margin:24px 0 0 0;text-align:center;">
-          <a href="https://realsyncdynamicsai.de/dashboard" style="display:inline-block;padding:12px 28px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">
+          <a href="https://RealSyncDynamicsAI.de/dashboard" style="display:inline-block;padding:12px 28px;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">
             Zum Dashboard →
           </a>
         </div>
@@ -147,7 +147,7 @@ function renderEmail(displayName: string | null, email: string): string {
         </p>
       </td></tr>
       <tr><td style="padding:24px 32px;border-top:1px solid #e4e4e7;font-size:12px;color:#71717a;line-height:1.6;">
-        <p style="margin:0 0 8px 0;">Account: ${escapeHtml(email)} · <a href="https://realsyncdynamicsai.de/settings/account" style="color:#0284c7;">Einstellungen</a> · <a href="https://realsyncdynamicsai.de/legal/privacy" style="color:#0284c7;">Datenschutz</a></p>
+        <p style="margin:0 0 8px 0;">Account: ${escapeHtml(email)} · <a href="https://RealSyncDynamicsAI.de/settings/account" style="color:#0284c7;">Einstellungen</a> · <a href="https://RealSyncDynamicsAI.de/legal/privacy" style="color:#0284c7;">Datenschutz</a></p>
         <p style="margin:0;">RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</p>
       </td></tr>
     </table>

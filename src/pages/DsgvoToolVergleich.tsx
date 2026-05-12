@@ -21,7 +21,7 @@ const TOOLS: Tool[] = [
   {
     name: 'RealSyncDynamics.AI',
     vendor: 'RealSync Dynamics',
-    url: 'https://realsyncdynamicsai.de',
+    url: 'https://RealSyncDynamicsAI.de',
     origin: 'EU',
     pricingFrom: '29 €/M',
     category: ['Cookie-Consent', 'AVV', 'Audit-Log', 'AI-Act', 'DSFA'],

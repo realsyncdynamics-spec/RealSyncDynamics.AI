@@ -41,7 +41,7 @@ interface WorkflowRun {
   finished_at: string | null;
 }
 
-const N8N_BASE = 'https://n8n.realsyncdynamicsai.de';
+const N8N_BASE = 'https://n8n.RealSyncDynamicsAI.de';
 
 type Tab = 'list' | 'history';
 

@@ -52,15 +52,15 @@ export function MatomoDsgvoKonfiguration() {
     title: 'Matomo DSGVO-freundlich konfigurieren — Cookieless Tracking, IP-Anonymisierung & Datenschutz',
     description:
       'Praxisnahe technische Hinweise für Matomo: cookieless Tracking, IP-Masking, Datenminimierung, Opt-out und Datenschutzhinweise.',
-    url: 'https://realsyncdynamicsai.de/resources/matomo-dsgvo-konfiguration',
+    url: 'https://RealSyncDynamicsAI.de/resources/matomo-dsgvo-konfiguration',
   });
   useJsonLd('jsonld-faq-matomo', faqPageLd(FAQS));
   useJsonLd(
     'jsonld-bc-matomo',
     breadcrumbLd([
-      { name: 'Home', url: 'https://realsyncdynamicsai.de/' },
-      { name: 'Ressourcen', url: 'https://realsyncdynamicsai.de/resources' },
-      { name: 'Matomo DSGVO-freundlich konfigurieren', url: 'https://realsyncdynamicsai.de/resources/matomo-dsgvo-konfiguration' },
+      { name: 'Home', url: 'https://RealSyncDynamicsAI.de/' },
+      { name: 'Ressourcen', url: 'https://RealSyncDynamicsAI.de/resources' },
+      { name: 'Matomo DSGVO-freundlich konfigurieren', url: 'https://RealSyncDynamicsAI.de/resources/matomo-dsgvo-konfiguration' },
     ]),
   );
 

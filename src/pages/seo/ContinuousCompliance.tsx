@@ -29,14 +29,14 @@ export function ContinuousCompliance() {
     title: 'Continuous Compliance Monitoring — DSGVO, TTDSG und AI Act laufend überwachen',
     description:
       'Laufende technische Überwachung von Websites, Tracking-Stacks und Compliance-Risiken mit nachvollziehbarer Audit-Historie.',
-    url: 'https://realsyncdynamicsai.de/continuous-compliance',
+    url: 'https://RealSyncDynamicsAI.de/continuous-compliance',
   });
   useJsonLd('jsonld-faq-continuous', faqPageLd(FAQ_FOR_LD));
   useJsonLd(
     'jsonld-bc-continuous',
     breadcrumbLd([
-      { name: 'Home', url: 'https://realsyncdynamicsai.de/' },
-      { name: 'Continuous Compliance', url: 'https://realsyncdynamicsai.de/continuous-compliance' },
+      { name: 'Home', url: 'https://RealSyncDynamicsAI.de/' },
+      { name: 'Continuous Compliance', url: 'https://RealSyncDynamicsAI.de/continuous-compliance' },
     ]),
   );
   useJsonLd('jsonld-app-continuous', softwareApplicationLd());

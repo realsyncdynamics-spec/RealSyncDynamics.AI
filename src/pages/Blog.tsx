@@ -60,7 +60,7 @@ export function Blog() {
     title: 'RealSyncDynamics.AI Blog — DSGVO, TTDSG & AI Act Monitoring',
     description:
       'Praxisnahe Beiträge zu Continuous Compliance, Pre-Consent Tracking, AI Act Readiness und technischer Datenschutzprüfung.',
-    url: 'https://realsyncdynamicsai.de/blog',
+    url: 'https://RealSyncDynamicsAI.de/blog',
   });
 
   return (

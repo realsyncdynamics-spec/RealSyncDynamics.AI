@@ -124,7 +124,7 @@ export function DataGuardAlternative() {
             <div className="p-3 bg-obsidian-950 border border-titanium-700 rounded-none flex items-start gap-3">
               <Code className="h-4 w-4 text-emerald-400 shrink-0 mt-1" />
               <code className="text-emerald-300 text-xs font-mono break-all leading-relaxed">
-                {'<script src="https://realsyncdynamicsai.de/sdk/cookie-consent.js" data-rsd-key="YOUR_KEY"></script>'}
+                {'<script src="https://RealSyncDynamicsAI.de/sdk/cookie-consent.js" data-rsd-key="YOUR_KEY"></script>'}
               </code>
             </div>
           </Section>

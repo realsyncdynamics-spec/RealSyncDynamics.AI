@@ -485,7 +485,7 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
       redirect: 'follow',
       headers: {
         // realistic UA so sites with bot-blocks behave normally
-        'User-Agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAuditBot/1.0; +https://realsyncdynamicsai.de)',
+        'User-Agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAuditBot/1.0; +https://RealSyncDynamicsAI.de)',
       },
     });
   } finally {

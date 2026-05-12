@@ -54,7 +54,7 @@ export function Impressum() {
             Telefon: <a className="text-security-400" href="tel:+4917640132161">+49 176 4013 2161</a><br />
             E-Mail: <a className="text-security-400" href="mailto:hello@realsyncdynamicsai.de">hello@realsyncdynamicsai.de</a><br />
             Datenschutz: <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a><br />
-            Web: <a className="text-security-400" href="https://realsyncdynamicsai.de">realsyncdynamicsai.de</a>
+            Web: <a className="text-security-400" href="https://RealSyncDynamicsAI.de">RealSyncDynamicsAI.de</a>
           </p>
         </Section>
 

@@ -14,7 +14,7 @@ export function Roadmap() {
     title: 'Roadmap — RealSyncDynamics.AI',
     description:
       'Geplante und in Entwicklung befindliche Funktionen für Continuous Compliance Monitoring, Audit-Trails und AI-Act-Readiness.',
-    url: 'https://realsyncdynamicsai.de/roadmap',
+    url: 'https://RealSyncDynamicsAI.de/roadmap',
   });
 
   return (

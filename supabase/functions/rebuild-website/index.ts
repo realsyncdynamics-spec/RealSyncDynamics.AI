@@ -155,7 +155,7 @@ async function sendPreviewReadyEmail(ctx: RebuildContext, previewUrl: string | n
     return;
   }
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
-  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
+  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';
 
   const subject = `Ihre DSGVO-Website-Preview ist bereit — ${ctx.sourceDomain}`;
   const previewLink = previewUrl ?? `${SITE}/dsgvo-website/danke`;

@@ -173,6 +173,81 @@ export interface AssetControlMapping {
   notes?: string;
 }
 
+export type IncidentSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type IncidentStatus = 'open' | 'investigating' | 'contained' | 'resolved' | 'reported_to_authority';
+
+export interface IncidentTimelineEntry {
+  timestamp: string;
+  actor: string;
+  action: string;
+  note?: string | null;
+}
+
+export interface Incident {
+  id: string;
+  tenantId: string | null;
+  triggeringEventId: string | null;
+  assetId: string | null;
+  title: string;
+  description: string | null;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  breachConfirmed: boolean;
+  personalDataAffected: boolean;
+  affectedDataTypes: string[];
+  estimatedAffectedSubjects: number | null;
+  detectedAt: string;
+  notificationDeadlineAt: string;
+  containedAt: string | null;
+  resolvedAt: string | null;
+  reportedToAuthorityAt: string | null;
+  authorityReference: string | null;
+  timeline: IncidentTimelineEntry[];
+  assignedTo: string | null;
+}
+
+export type DsrRequestType = 'access' | 'erasure' | 'portability' | 'rectification' | 'restriction' | 'objection';
+export type DsrStatus = 'received' | 'in_progress' | 'pending_verification' | 'completed' | 'rejected' | 'overdue';
+
+export interface DsrRequest {
+  id: string;
+  tenantId: string | null;
+  requestType: DsrRequestType;
+  status: DsrStatus;
+  requesterName: string | null;
+  requesterEmail: string;
+  subjectDescription: string | null;
+  affectedAssets: string[];
+  receivedAt: string;
+  deadlineAt: string;
+  completedAt: string | null;
+  responseNotes: string | null;
+  assignedTo: string | null;
+  createdAt: string;
+}
+
+export type DpiaStatus = 'draft' | 'in_review' | 'approved' | 'rejected';
+
+export interface Dpia {
+  id: string;
+  tenantId: string | null;
+  assetId: string | null;
+  title: string;
+  status: DpiaStatus;
+  necessityAssessment: string | null;
+  proportionalityAssessment: string | null;
+  riskDescription: string | null;
+  mitigationMeasures: string | null;
+  dpoConsulted: boolean;
+  dpoEmail: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  reviewDueAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  asset?: { id: string; name: string; asset_type: string; ai_act_class: string } | null;
+}
+
 export interface AssetRiskHistory {
   id: string;
   assetId: string;

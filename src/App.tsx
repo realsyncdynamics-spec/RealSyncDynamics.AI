@@ -108,6 +108,12 @@ const GovernanceApprovalsView = lazy(() => import('./features/governance/Approva
 const GovernanceAdminLogView = lazy(() => import('./features/governance/AdminLogView').then((m) => ({ default: m.AdminLogView })));
 const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
 const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
+const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
+const GovernanceDsrTrackerView = lazy(() => import('./features/governance/DsrTrackerView').then((m) => ({ default: m.DsrTrackerView })));
+const GovernanceIncidentsView = lazy(() => import('./features/governance/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
+const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
+const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -124,6 +130,7 @@ const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m)
 import { Limits } from './pages/Limits';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
+import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
 import { initMarketingPixels } from './lib/pixels';
 
@@ -278,6 +285,12 @@ function RoutesWithTracking() {
       <Route path="/governance/admin-log" element={<GovernanceAdminLogView />} />
       <Route path="/governance/policies/templates" element={<GovernancePolicyTemplatesView />} />
       <Route path="/governance/reports" element={<GovernanceComplianceReportView />} />
+      <Route path="/governance/dpias" element={<GovernanceDpiasView />} />
+      <Route path="/governance/dsr" element={<GovernanceDsrTrackerView />} />
+      <Route path="/governance/incidents" element={<GovernanceIncidentsView />} />
+      <Route path="/governance/connectors" element={<GovernanceConnectorsView />} />
+      <Route path="/governance/vendors" element={<GovernanceVendorInventoryView />} />
+      <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />
@@ -314,10 +327,12 @@ export default function App() {
   useEffect(() => { initMarketingPixels(); }, []);
   return (
     <TenantProvider>
-      <BrowserRouter basename={ROUTER_BASENAME}>
-        <RoutesWithTracking />
-        <CookieConsent />
-      </BrowserRouter>
+      <EnvironmentProvider>
+        <BrowserRouter basename={ROUTER_BASENAME}>
+          <RoutesWithTracking />
+          <CookieConsent />
+        </BrowserRouter>
+      </EnvironmentProvider>
     </TenantProvider>
   );
 }

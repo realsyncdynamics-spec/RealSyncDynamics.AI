@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
-  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown,
+  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -16,6 +16,10 @@ import { archiveAsset, togglePolicy } from './resourcesApi';
 import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
 import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
 import { countPendingApprovals } from './approvalsApi';
+import { countOpenDpias } from './dpiasApi';
+import { countOpenDsrs } from './dsrApi';
+import { countOpenIncidents } from './incidentsApi';
+import { EnvironmentSwitcher, EnvironmentBanner } from './EnvironmentSwitcher';
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -37,6 +41,9 @@ function Inner() {
   const [policies, setPolicies] = useState<DbGovernancePolicy[] | null>(null);
   const [controls, setControls] = useState<DbFrameworkControl[] | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [openDpias, setOpenDpias] = useState(0);
+  const [openDsrs, setOpenDsrs] = useState({ total: 0, overdue: 0 });
+  const [openIncidents, setOpenIncidents] = useState(0);
   const [error, setError]       = useState<string | null>(null);
   const [creatingAsset, setCreatingAsset]   = useState(false);
   const [creatingPolicy, setCreatingPolicy] = useState(false);
@@ -51,10 +58,13 @@ function Inner() {
       fetchTenantPolicies(activeTenantId),
       fetchFrameworkControls(),
       countPendingApprovals(activeTenantId),
+      countOpenDpias(activeTenantId),
+      countOpenDsrs(activeTenantId),
+      countOpenIncidents(activeTenantId),
     ])
-      .then(([e, a, p, c, pa]) => {
+      .then(([e, a, p, c, pa, od, ds, oi]) => {
         setEvents(e); setAssets(a); setPolicies(p); setControls(c);
-        setPendingApprovals(pa);
+        setPendingApprovals(pa); setOpenDpias(od); setOpenDsrs(ds); setOpenIncidents(oi);
       })
       .catch((err: Error) => setError(err.message));
   };
@@ -95,6 +105,7 @@ function Inner() {
               ))}
             </select>
           )}
+          <EnvironmentSwitcher />
           <button
             onClick={() => setCreatingAsset(true)}
             disabled={!activeTenantId}
@@ -133,6 +144,42 @@ function Inner() {
             )}
           </Link>
           <Link
+            to="/governance/dpias"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
+          >
+            <FileCheck2 className="h-4 w-4" /> DPIAs
+            {openDpias > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-amber-500 text-obsidian-950 text-[10px] font-bold rounded-none">{openDpias}</span>
+            )}
+          </Link>
+          <Link
+            to="/governance/dsr"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
+          >
+            <UserCheck className="h-4 w-4" /> DSR
+            {openDsrs.overdue > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-none">{openDsrs.overdue}</span>
+            )}
+          </Link>
+          <Link
+            to="/governance/incidents"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
+          >
+            <ShieldAlert className="h-4 w-4" /> Incidents
+            {openIncidents > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-none">{openIncidents}</span>
+            )}
+          </Link>
+          <Link to="/governance/vendors" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
+            <Building2 className="h-4 w-4" /> Vendors
+          </Link>
+          <Link to="/governance/connectors" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
+            <Plug className="h-4 w-4" /> Connectors
+          </Link>
+          <Link to="/governance/costs" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
+            <DollarSign className="h-4 w-4" /> Costs
+          </Link>
+          <Link
             to="/governance/mappings"
             className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
           >
@@ -158,6 +205,7 @@ function Inner() {
           </Link>
         </div>
       </header>
+      <EnvironmentBanner />
 
       {creatingAsset && activeTenantId && (
         <CreateAssetModal

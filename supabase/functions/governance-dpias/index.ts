@@ -59,8 +59,23 @@ async function handleCreate(admin: any, userId: string, userEmail: string | null
   const title = (body.title as string ?? '').trim();
   if (!tenant_id || !title) return jsonError(400, 'BAD_REQUEST', 'tenant_id and title required');
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+
+  // Cross-tenant guard: if an asset_id is supplied, it MUST belong to
+  // the same tenant as the DPIA. Without this check an owner/admin of
+  // tenant A could attach an asset from tenant B and leak metadata
+  // via the asset:governance_assets(...) join in handleList.
+  const asset_id = body.asset_id as string | undefined;
+  if (asset_id) {
+    const { data: asset } = await admin.from('governance_assets')
+      .select('tenant_id').eq('id', asset_id).maybeSingle();
+    if (!asset) return jsonError(404, 'NOT_FOUND', 'asset not found');
+    if (asset.tenant_id !== tenant_id) {
+      return jsonError(403, 'CROSS_TENANT', 'asset belongs to another tenant');
+    }
+  }
+
   const { data, error } = await admin.from('dpias').insert({
-    tenant_id, asset_id: body.asset_id ?? null, title: title.slice(0, 200),
+    tenant_id, asset_id: asset_id ?? null, title: title.slice(0, 200),
     status: 'draft',
     risk_description: (body.risk_description as string ?? null)?.toString().slice(0, 5000) ?? null,
     mitigation_measures: (body.mitigation_measures as string ?? null)?.toString().slice(0, 5000) ?? null,

@@ -12,7 +12,11 @@ CREATE TABLE IF NOT EXISTS public.incidents (
   affected_data_types TEXT[] DEFAULT '{}',
   estimated_affected_subjects INT,
   detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  notification_deadline_at TIMESTAMPTZ GENERATED ALWAYS AS (detected_at + INTERVAL '72 hours') STORED,
+  -- 72h breach-notification deadline. Cannot be a GENERATED column because
+  -- `detected_at + INTERVAL` is not IMMUTABLE under all session timezones;
+  -- the trigger below keeps it in sync on every INSERT / UPDATE of
+  -- detected_at.
+  notification_deadline_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '72 hours'),
   contained_at TIMESTAMPTZ,
   resolved_at TIMESTAMPTZ,
   reported_to_authority_at TIMESTAMPTZ,
@@ -31,3 +35,17 @@ CREATE POLICY "incidents_tenant_read" ON public.incidents FOR SELECT TO authenti
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 DROP TRIGGER IF EXISTS trg_incidents_updated_at ON public.incidents;
 CREATE TRIGGER trg_incidents_updated_at BEFORE UPDATE ON public.incidents FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE OR REPLACE FUNCTION public.incidents_set_deadline()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.detected_at IS NOT NULL THEN
+    NEW.notification_deadline_at = NEW.detected_at + INTERVAL '72 hours';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_incidents_set_deadline ON public.incidents;
+CREATE TRIGGER trg_incidents_set_deadline BEFORE INSERT OR UPDATE OF detected_at ON public.incidents
+  FOR EACH ROW EXECUTE FUNCTION public.incidents_set_deadline();

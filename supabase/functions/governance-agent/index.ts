@@ -1,0 +1,326 @@
+// Governance Agent — conversational compliance assistant.
+//
+// POST /functions/v1/governance-agent
+// Authorization: Bearer <user JWT>
+// Body: { op: 'chat',  tenant_id, message, session_id? }
+//       { op: 'reset', tenant_id, session_id }
+//       { op: 'history', tenant_id, session_id, limit? }
+//
+// Runs a multi-turn Anthropic tool-use loop against the EU/governance
+// tool catalogue defined in `_shared/agent-tools.ts`. Tools dispatch to
+// the existing governance-* Edge Functions (resources, dpias, dsr,
+// incidents, vendors, …) — the agent does not duplicate their logic.
+//
+// State:
+//   - Session history persisted in `public.agent_sessions`.
+//   - Per-turn trace + token cost persisted in `public.agent_runs`.
+//   - Each tool call also writes to `governance_admin_audit_log` via
+//     the existing `_shared/auditLog.ts` helper.
+//
+// LLM provider:
+//   - Default `anthropic`. Override via env `AGENT_LLM_PROVIDER`.
+//   - Default model `claude-sonnet-4-6`. Override via `AGENT_LLM_MODEL`.
+//   - API key resolved from env first, then Vault (`anthropic_api_key`)
+//     via the get_app_secret() RPC — matching `_shared/providers.ts`.
+//   - EU residency note: until we wire Mistral La Plateforme / Bedrock EU,
+//     Anthropic-direct routes through US. The function will not start
+//     a run without an explicit `acknowledge_us_routing: true` per call
+//     unless `AGENT_ALLOW_US_ROUTING=true` is set.
+
+import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { audit } from '../_shared/auditLog.ts';
+import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+const MAX_ITERATIONS = 8;
+const MAX_HISTORY_TURNS = 20;
+const MAX_TOKENS_PER_TURN = 4096;
+
+const LLM_PROVIDER = Deno.env.get('AGENT_LLM_PROVIDER') ?? 'anthropic';
+const LLM_MODEL = Deno.env.get('AGENT_LLM_MODEL') ?? 'claude-sonnet-4-6';
+const ALLOW_US_ROUTING = Deno.env.get('AGENT_ALLOW_US_ROUTING') === 'true';
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
+
+  const auth = req.headers.get('Authorization');
+  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: auth } },
+    auth: { persistSession: false },
+  });
+  const { data: userResp, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
+  const userId = userResp.user.id;
+  const userEmail = userResp.user.email ?? null;
+
+  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError(400, 'BAD_REQUEST', 'invalid json');
+  }
+
+  try {
+    switch (body.op) {
+      case 'chat':    return await handleChat(admin, userId, userEmail, auth, body);
+      case 'reset':   return await handleReset(admin, userId, body);
+      case 'history': return await handleHistory(admin, userId, body);
+      default:        return jsonError(400, 'BAD_REQUEST', 'unknown op');
+    }
+  } catch (e) {
+    return jsonError(500, 'INTERNAL', (e as Error).message);
+  }
+});
+
+// deno-lint-ignore no-explicit-any
+async function handleChat(
+  admin: any,
+  userId: string,
+  userEmail: string | null,
+  bearerAuth: string,
+  body: Record<string, unknown>,
+): Promise<Response> {
+  const tenant_id = body.tenant_id as string;
+  const message = (body.message as string ?? '').trim();
+  if (!tenant_id || !message) return jsonError(400, 'BAD_REQUEST', 'tenant_id and message required');
+
+  // Membership check — agent only serves tenants the user belongs to.
+  const { data: mem } = await admin.from('memberships')
+    .select('role').eq('tenant_id', tenant_id).eq('user_id', userId).maybeSingle();
+  if (!mem) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
+
+  // EU-routing guard.
+  if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
+    return jsonError(412, 'US_ROUTING_NOT_ACKNOWLEDGED',
+      'LLM_PROVIDER=anthropic routes through US. Set AGENT_ALLOW_US_ROUTING=true or pass acknowledge_us_routing=true per call. ' +
+      'For EU residency switch to mistral or anthropic-via-bedrock-eu (not yet wired).');
+  }
+
+  const apiKey = await getLlmApiKey(admin);
+  if (!apiKey) {
+    return jsonError(503, 'LLM_NOT_CONFIGURED',
+      `${LLM_PROVIDER}_api_key missing from env and vault. Provision via vault-set-secret.`);
+  }
+
+  // Load or create session.
+  const sessionId = (body.session_id as string) || crypto.randomUUID();
+  let history: Anthropic.MessageParam[] = [];
+  if (body.session_id) {
+    const { data: existing } = await admin.from('agent_sessions')
+      .select('history').eq('id', sessionId).eq('user_id', userId).eq('tenant_id', tenant_id).maybeSingle();
+    if (existing?.history) history = existing.history as Anthropic.MessageParam[];
+  }
+
+  // Token-guard: trim history to last N turns.
+  if (history.length > MAX_HISTORY_TURNS * 2) {
+    history = history.slice(-(MAX_HISTORY_TURNS * 2));
+  }
+  history.push({ role: 'user', content: message });
+
+  const client = new Anthropic({ apiKey });
+  const toolCallsLog: Array<{ tool: string; input: unknown; output: unknown; iter: number }> = [];
+  let totalIn = 0;
+  let totalOut = 0;
+  let finalText = '';
+  let outcome: 'success' | 'tool_error' | 'llm_error' | 'budget_exceeded' | 'timeout' = 'success';
+  let errorMessage: string | null = null;
+  const startedAt = Date.now();
+
+  try {
+    for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+      const resp = await client.messages.create({
+        model: LLM_MODEL,
+        max_tokens: MAX_TOKENS_PER_TURN,
+        system: SYSTEM_PROMPT,
+        tools: AGENT_TOOLS,
+        messages: history,
+      });
+      totalIn += resp.usage.input_tokens;
+      totalOut += resp.usage.output_tokens;
+
+      if (resp.stop_reason === 'end_turn') {
+        finalText = resp.content
+          .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+          .map((b) => b.text)
+          .join('\n');
+        history.push({ role: 'assistant', content: resp.content });
+        break;
+      }
+
+      if (resp.stop_reason === 'tool_use') {
+        history.push({ role: 'assistant', content: resp.content });
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        for (const block of resp.content) {
+          if (block.type !== 'tool_use') continue;
+          const result = await dispatchTool({
+            name: block.name,
+            input: block.input as Record<string, unknown>,
+            admin,
+            bearerAuth,
+            tenantId: tenant_id,
+            userId,
+            userEmail,
+          });
+          toolCallsLog.push({ tool: block.name, input: block.input, output: result, iter });
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: block.id,
+            content: JSON.stringify(result),
+            is_error: !!(result as { error?: unknown }).error,
+          });
+        }
+        history.push({ role: 'user', content: toolResults });
+        continue;
+      }
+
+      outcome = 'llm_error';
+      errorMessage = `unexpected stop_reason: ${resp.stop_reason}`;
+      break;
+    }
+
+    if (!finalText && outcome === 'success') {
+      outcome = 'budget_exceeded';
+      errorMessage = `MAX_ITERATIONS (${MAX_ITERATIONS}) reached without end_turn`;
+    }
+  } catch (e) {
+    outcome = 'llm_error';
+    errorMessage = (e as Error).message;
+  }
+
+  const durationMs = Date.now() - startedAt;
+
+  // Persist session.
+  await admin.from('agent_sessions').upsert({
+    id: sessionId,
+    tenant_id,
+    user_id: userId,
+    history,
+    last_turn_at: new Date().toISOString(),
+  });
+
+  // Persist run trace.
+  await admin.from('agent_runs').insert({
+    session_id: sessionId,
+    tenant_id,
+    actor_user_id: userId,
+    actor_email: userEmail,
+    user_message: message.slice(0, 4000),
+    final_response: finalText.slice(0, 8000),
+    tool_calls: toolCallsLog,
+    iterations: toolCallsLog.length > 0 ? Math.max(...toolCallsLog.map((t) => t.iter)) + 1 : 1,
+    llm_provider: LLM_PROVIDER,
+    llm_model: LLM_MODEL,
+    input_tokens: totalIn,
+    output_tokens: totalOut,
+    cost_usd: estimateCostUsd(LLM_MODEL, totalIn, totalOut),
+    duration_ms: durationMs,
+    outcome,
+    error_message: errorMessage,
+  });
+
+  // Audit log per chat turn (skip the full transcript — refer to run_id).
+  await audit(admin, {
+    tenant_id,
+    actor_user_id: userId,
+    actor_email: userEmail,
+    action: 'agent.chat',
+    target_type: 'agent_session',
+    target_id: sessionId,
+    payload: { iterations: toolCallsLog.length, outcome, tools: toolCallsLog.map((t) => t.tool) },
+  });
+
+  return json({
+    ok: outcome === 'success',
+    session_id: sessionId,
+    response: finalText,
+    tool_calls: toolCallsLog.length,
+    actions_taken: toolCallsLog.map((t) => t.tool),
+    outcome,
+    error: errorMessage,
+    tokens: { input: totalIn, output: totalOut },
+    duration_ms: durationMs,
+  });
+}
+
+// deno-lint-ignore no-explicit-any
+async function handleReset(admin: any, userId: string, body: Record<string, unknown>): Promise<Response> {
+  const session_id = body.session_id as string;
+  const tenant_id = body.tenant_id as string;
+  if (!session_id || !tenant_id) return jsonError(400, 'BAD_REQUEST', 'session_id and tenant_id required');
+  const { error } = await admin.from('agent_sessions')
+    .update({ history: [], last_turn_at: new Date().toISOString() })
+    .eq('id', session_id).eq('user_id', userId).eq('tenant_id', tenant_id);
+  if (error) throw error;
+  return json({ ok: true });
+}
+
+// deno-lint-ignore no-explicit-any
+async function handleHistory(admin: any, userId: string, body: Record<string, unknown>): Promise<Response> {
+  const tenant_id = body.tenant_id as string;
+  const session_id = body.session_id as string | undefined;
+  const limit = Math.min((body.limit as number | undefined) ?? 20, 100);
+
+  if (session_id) {
+    const { data } = await admin.from('agent_sessions')
+      .select('id, history, last_turn_at, created_at')
+      .eq('id', session_id).eq('user_id', userId).eq('tenant_id', tenant_id).maybeSingle();
+    return json({ ok: true, session: data ?? null });
+  }
+
+  const { data } = await admin.from('agent_runs')
+    .select('id, session_id, user_message, final_response, outcome, tool_calls, input_tokens, output_tokens, cost_usd, created_at')
+    .eq('tenant_id', tenant_id).eq('actor_user_id', userId)
+    .order('created_at', { ascending: false }).limit(limit);
+  return json({ ok: true, runs: data ?? [] });
+}
+
+// deno-lint-ignore no-explicit-any
+async function getLlmApiKey(admin: any): Promise<string | null> {
+  const envVar = LLM_PROVIDER === 'anthropic' ? 'ANTHROPIC_API_KEY'
+               : LLM_PROVIDER === 'openai'    ? 'OPENAI_API_KEY'
+               : LLM_PROVIDER === 'mistral'   ? 'MISTRAL_API_KEY'
+               : null;
+  if (!envVar) return null;
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const vaultName = `${LLM_PROVIDER}_api_key`;
+  const { data } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  return typeof data === 'string' ? data : null;
+}
+
+function estimateCostUsd(model: string, inTok: number, outTok: number): number {
+  // Rough Anthropic pricing as of 2026-05. Reporting is best-effort; the
+  // canonical cost lives in `token_usage` once we wire that pipeline.
+  const m = model.toLowerCase();
+  const [inRate, outRate] = m.includes('opus')   ? [15, 75]
+                          : m.includes('sonnet') ? [3, 15]
+                          : m.includes('haiku')  ? [0.8, 4]
+                          : [3, 15];
+  return +(inTok / 1_000_000 * inRate + outTok / 1_000_000 * outRate).toFixed(6);
+}
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'content-type': 'application/json' },
+  });
+}
+
+function jsonError(status: number, code: string, message: string): Response {
+  return json({ ok: false, error: { code, message } }, status);
+}

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>RSD Governance</title>
+    <style>
+      :root {
+        --bg: #0a0a0b;
+        --surface: #18181b;
+        --border: #27272a;
+        --text: #fafafa;
+        --muted: #a1a1aa;
+        --gold: #f59e0b;
+        --critical: #f43f5e;
+        --high: #fb923c;
+        --medium: #fcd34d;
+        --low: #38bdf8;
+        --info: #d4d4d8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        width: 360px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 13px;
+      }
+      header {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      h1 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; }
+      .eyebrow {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      main { padding: 12px 14px; }
+      label {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 10px 0 4px;
+      }
+      input[type="text"], input[type="url"] {
+        width: 100%;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 7px 9px;
+        font-family: ui-monospace, SF Mono, Menlo, monospace;
+        font-size: 12px;
+      }
+      button {
+        cursor: pointer;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 7px 12px;
+        border: 1px solid var(--gold);
+        background: var(--gold);
+        color: #0a0a0b;
+      }
+      button.secondary {
+        background: transparent;
+        color: var(--text);
+        border-color: var(--border);
+      }
+      .row { display: flex; gap: 6px; margin-top: 10px; }
+      .meta {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .event {
+        border: 1px solid var(--border);
+        padding: 8px 10px;
+        margin-bottom: 6px;
+      }
+      .event .badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border: 1px solid currentColor;
+        margin-right: 4px;
+      }
+      .critical { color: var(--critical); }
+      .high     { color: var(--high); }
+      .medium   { color: var(--medium); }
+      .low      { color: var(--low); }
+      .info     { color: var(--info); }
+      .title { font-weight: 700; font-size: 12px; margin-top: 3px; line-height: 1.35; }
+      .summary { color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; }
+      .empty {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+        padding: 16px 0;
+        border: 1px dashed var(--border);
+      }
+      .footer {
+        padding: 10px 14px;
+        border-top: 1px solid var(--border);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+      }
+      .footer a { color: var(--gold); text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="eyebrow">RealSyncDynamics</div>
+      <h1>Governance Runtime</h1>
+    </header>
+
+    <main>
+      <label for="url">Ingest URL</label>
+      <input
+        id="url"
+        type="url"
+        placeholder="https://&lt;project&gt;.supabase.co/functions/v1/governance-ingest"
+      />
+
+      <label for="token">Ingest Token</label>
+      <input id="token" type="text" placeholder="rsd_gov_…" autocomplete="off" />
+
+      <div class="row">
+        <button id="save">Speichern</button>
+        <button id="flush" class="secondary">Buffer senden</button>
+        <button id="clear" class="secondary">Buffer leeren</button>
+      </div>
+      <div id="status" class="meta"></div>
+
+      <label style="margin-top: 16px;">Letzte gepufferte Events</label>
+      <div id="events"></div>
+    </main>
+
+    <div class="footer">
+      Hosted in EU · <a id="dash" href="#" target="_blank" rel="noreferrer">Governance Runtime öffnen</a>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

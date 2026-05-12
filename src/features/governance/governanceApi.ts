@@ -237,6 +237,48 @@ export async function fetchTenantMappings(tenantId: string): Promise<DbAssetCont
   return (data ?? []) as DbAssetControlMapping[];
 }
 
+export interface DbAssetRiskHistory {
+  id: string;
+  asset_id: string;
+  tenant_id: string | null;
+  risk_score: number;
+  previous_score: number | null;
+  score_delta: number | null;
+  reason: string | null;
+  contributing_events: string[];
+  calculated_at: string;
+}
+
+export async function fetchAssetRiskHistory(assetId: string, limit = 30): Promise<DbAssetRiskHistory[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('asset_risk_history')
+    .select('*')
+    .eq('asset_id', assetId)
+    .order('calculated_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbAssetRiskHistory[];
+}
+
+export interface RiskScoreResult {
+  ok: boolean;
+  score?: number;
+  previous?: number;
+  delta?: number;
+  reason?: string;
+  error?: { code: string; message: string };
+}
+
+export async function recalculateRiskScore(assetId: string): Promise<RiskScoreResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-risk-score', {
+    body: { asset_id: assetId },
+  });
+  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } };
+  return data as RiskScoreResult;
+}
+
 export async function fetchFrameworkControls(): Promise<DbFrameworkControl[]> {
   const sb = getSupabase();
   const { data, error } = await sb

@@ -172,3 +172,15 @@ export interface AssetControlMapping {
   evidenceId?: string;
   notes?: string;
 }
+
+export interface AssetRiskHistory {
+  id: string;
+  assetId: string;
+  tenantId: string | null;
+  riskScore: number;
+  previousScore: number | null;
+  scoreDelta: number | null;
+  reason: string | null;
+  contributingEvents: string[];
+  calculatedAt: string;
+}

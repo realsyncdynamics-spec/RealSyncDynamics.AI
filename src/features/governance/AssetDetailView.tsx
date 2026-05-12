@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Bot, AlertTriangle, Loader2, Activity, Network,
-  Mail, Globe, Archive, FileCheck2,
+  Mail, Globe, Archive, FileCheck2, TrendingUp, RefreshCcw,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import {
   fetchAssetById, fetchEventsForAsset, fetchMappingsForAsset, fetchFrameworkControls,
+  fetchAssetRiskHistory, recalculateRiskScore,
   type DbGovernanceAsset, type DbGovernanceEvent,
   type DbFrameworkControl, type DbAssetControlMapping,
+  type DbAssetRiskHistory,
 } from './governanceApi';
 import { archiveAsset } from './resourcesApi';
 import type { GovernanceRiskLevel, GovernanceControlStatus } from './types';
@@ -45,8 +47,10 @@ function Inner() {
   const [events, setEvents] = useState<DbGovernanceEvent[]>([]);
   const [mappings, setMappings] = useState<DbAssetControlMapping[]>([]);
   const [controls, setControls] = useState<DbFrameworkControl[]>([]);
+  const [riskHistory, setRiskHistory] = useState<DbAssetRiskHistory[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
 
   const reload = async () => {
     if (!assetId) return;
@@ -55,18 +59,28 @@ function Inner() {
       const a = await fetchAssetById(assetId);
       setAsset(a);
       if (!a) return;
-      const [e, m, c] = await Promise.all([
+      const [e, m, c, rh] = await Promise.all([
         fetchEventsForAsset(assetId),
         fetchMappingsForAsset(assetId),
         fetchFrameworkControls(),
+        fetchAssetRiskHistory(assetId),
       ]);
-      setEvents(e); setMappings(m); setControls(c);
+      setEvents(e); setMappings(m); setControls(c); setRiskHistory(rh);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Laden fehlgeschlagen');
     }
   };
 
   useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [assetId]);
+
+  const recalc = async () => {
+    if (!assetId) return;
+    setRecalculating(true);
+    const r = await recalculateRiskScore(assetId);
+    setRecalculating(false);
+    if (!r.ok) { setError(r.error?.message ?? 'Recalc fehlgeschlagen'); return; }
+    await reload();
+  };
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -123,6 +137,9 @@ function Inner() {
             events={events}
             mappings={mappings}
             controls={controls}
+            riskHistory={riskHistory}
+            onRecalculate={recalc}
+            recalculating={recalculating}
           />
         )}
       </main>
@@ -146,12 +163,15 @@ function NotFound() {
 }
 
 function Body({
-  asset, events, mappings, controls,
+  asset, events, mappings, controls, riskHistory, onRecalculate, recalculating,
 }: {
   asset: DbGovernanceAsset;
   events: DbGovernanceEvent[];
   mappings: DbAssetControlMapping[];
   controls: DbFrameworkControl[];
+  riskHistory: DbAssetRiskHistory[];
+  onRecalculate: () => void;
+  recalculating: boolean;
 }) {
   const criticalEvents = events.filter((e) => e.risk_level === 'critical').length;
   const highEvents = events.filter((e) => e.risk_level === 'high').length;
@@ -244,6 +264,30 @@ function Body({
               );
             })}
           </ul>
+        )}
+      </Section>
+
+      {/* Risk Score History */}
+      <Section
+        icon={<TrendingUp className="h-4 w-4" />}
+        title={`Risk Score History (${riskHistory.length})`}
+        actions={
+          <button
+            onClick={onRecalculate}
+            disabled={recalculating}
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold text-amber-300 border border-amber-500/40 hover:bg-amber-500/10 rounded-none disabled:opacity-50"
+          >
+            <RefreshCcw className={`h-3 w-3 ${recalculating ? 'animate-spin' : ''}`} />
+            {recalculating ? 'Recalc…' : 'Score neu berechnen'}
+          </button>
+        }
+      >
+        {riskHistory.length === 0 ? (
+          <div className="text-sm text-titanium-500">
+            Noch keine Score-Berechnung erfasst. Sende ein Event oder klicke „Score neu berechnen".
+          </div>
+        ) : (
+          <RiskSparkline history={riskHistory} />
         )}
       </Section>
 
@@ -347,4 +391,64 @@ function scoreClass(score: number) {
   if (score >= 60) return 'text-amber-300';
   if (score >= 40) return 'text-yellow-300';
   return 'text-emerald-300';
+}
+
+function RiskSparkline({ history }: { history: DbAssetRiskHistory[] }) {
+  // Sort chronologically for the sparkline (oldest left → newest right).
+  const chrono = [...history].sort((a, b) => a.calculated_at.localeCompare(b.calculated_at));
+  const w = 300;
+  const h = 60;
+  const max = Math.max(100, ...chrono.map((r) => r.risk_score));
+  const min = Math.min(0,   ...chrono.map((r) => r.risk_score));
+  const dx = chrono.length > 1 ? w / (chrono.length - 1) : 0;
+  const points = chrono.map((r, i) => {
+    const y = h - ((r.risk_score - min) / (max - min || 1)) * h;
+    return `${i * dx},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="space-y-3">
+      {chrono.length > 1 && (
+        <div className="border border-titanium-900 bg-obsidian-950/60 p-3">
+          <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" width="100%" height={h} className="overflow-visible">
+            <polyline fill="none" stroke="#f59e0b" strokeWidth="2" points={points} />
+            {chrono.map((r, i) => {
+              const cy = h - ((r.risk_score - min) / (max - min || 1)) * h;
+              return <circle key={r.id} cx={i * dx} cy={cy} r="2.5" fill="#f59e0b" />;
+            })}
+          </svg>
+          <div className="mt-1 flex justify-between text-[10px] font-mono text-titanium-500">
+            <span>{new Date(chrono[0].calculated_at).toLocaleDateString('de-DE')}</span>
+            <span>{new Date(chrono[chrono.length - 1].calculated_at).toLocaleDateString('de-DE')}</span>
+          </div>
+        </div>
+      )}
+
+      <ul className="space-y-1.5">
+        {history.slice(0, 10).map((r) => {
+          const delta = r.score_delta ?? 0;
+          const deltaCls = delta > 0 ? 'text-red-300' : delta < 0 ? 'text-emerald-300' : 'text-titanium-400';
+          const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '·';
+          return (
+            <li key={r.id} className="border border-titanium-900 bg-obsidian-950/60 p-2.5">
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-titanium-400 text-[12px] font-mono">
+                  {new Date(r.calculated_at).toLocaleString('de-DE')}
+                </span>
+                <span className={`font-mono tabular-nums font-bold ${scoreClass(r.risk_score)}`}>
+                  Score {r.risk_score}/100
+                </span>
+                <span className={`font-mono text-[12px] font-bold ${deltaCls}`}>
+                  {arrow} {delta > 0 ? '+' : ''}{delta}
+                </span>
+              </div>
+              {r.reason && (
+                <div className="mt-1 text-[12px] text-titanium-300 leading-relaxed">{r.reason}</div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }

@@ -331,6 +331,32 @@ Deno.serve(async (req) => {
     /* swallow — webhook errors must not fail ingest */
   }
 
+  // Fire-and-forget risk-score recalculation for every distinct asset
+  // touched by this batch. EdgeRuntime.waitUntil lets the worker run
+  // the request after the response is sent.
+  try {
+    const touched = uniq(items.map((i) => i.event.asset_id).filter((x): x is string => !!x));
+    if (touched.length > 0) {
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+      const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      // deno-lint-ignore no-explicit-any
+      const er = (globalThis as any).EdgeRuntime;
+      for (const asset_id of touched) {
+        const p = fetch(`${SUPABASE_URL}/functions/v1/governance-risk-score`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${SRK}`,
+          },
+          body: JSON.stringify({ asset_id }),
+        }).catch(() => { /* ignore */ });
+        if (er?.waitUntil) er.waitUntil(p);
+      }
+    }
+  } catch {
+    /* swallow */
+  }
+
   return json({
     ok: true,
     event_ids: insertedEvents!.map((e) => e.id),

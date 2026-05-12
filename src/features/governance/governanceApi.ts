@@ -151,6 +151,50 @@ export interface DbAssetControlMapping {
   updated_at: string;
 }
 
+export async function fetchEventById(eventId: string): Promise<DbGovernanceEvent | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_events')
+    .select('*')
+    .eq('id', eventId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data ?? null) as DbGovernanceEvent | null;
+}
+
+export async function fetchEvidenceForEvent(eventId: string): Promise<DbGovernanceEvidence[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_evidence')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbGovernanceEvidence[];
+}
+
+export async function fetchAssetById(assetId: string): Promise<DbGovernanceAsset | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_assets')
+    .select('*')
+    .eq('id', assetId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data ?? null) as DbGovernanceAsset | null;
+}
+
+export async function fetchPolicyById(policyId: string): Promise<DbGovernancePolicy | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('governance_policies')
+    .select('*')
+    .eq('id', policyId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data ?? null) as DbGovernancePolicy | null;
+}
+
 export async function fetchTenantMappings(tenantId: string): Promise<DbAssetControlMapping[]> {
   const sb = getSupabase();
   // RLS scopes via asset → tenant. We additionally filter via asset_id

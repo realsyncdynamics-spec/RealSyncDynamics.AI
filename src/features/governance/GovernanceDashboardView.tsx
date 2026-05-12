@@ -233,26 +233,31 @@ function Body({
         <Panel icon={<Activity className="h-4 w-4" />} title="Runtime Event Stream">
           <ul className="space-y-2">
             {events.slice(0, 25).map((ev) => (
-              <li key={ev.id} className="border border-titanium-900 bg-obsidian-950/60 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-titanium-50 text-sm leading-snug">{ev.title}</div>
-                    <div className="text-[11px] font-mono text-titanium-400 mt-1">
-                      {ev.event_type} · {ev.event_source}{ev.vendor ? ` · ${ev.vendor}` : ''}
+              <li key={ev.id}>
+                <Link
+                  to={`/governance/events/${ev.id}`}
+                  className="block border border-titanium-900 bg-obsidian-950/60 p-3 hover:border-amber-500/40 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-titanium-50 text-sm leading-snug">{ev.title}</div>
+                      <div className="text-[11px] font-mono text-titanium-400 mt-1">
+                        {ev.event_type} · {ev.event_source}{ev.vendor ? ` · ${ev.vendor}` : ''}
+                      </div>
+                      {ev.summary && (
+                        <div className="text-[13px] text-titanium-300 mt-1.5 leading-relaxed">{ev.summary}</div>
+                      )}
                     </div>
-                    {ev.summary && (
-                      <div className="text-[13px] text-titanium-300 mt-1.5 leading-relaxed">{ev.summary}</div>
-                    )}
+                    <RiskBadge level={ev.risk_level} />
                   </div>
-                  <RiskBadge level={ev.risk_level} />
-                </div>
-                {ev.policy_action && (
-                  <div className="mt-2 text-[11px] font-mono uppercase tracking-wider">
-                    <span className={ev.policy_action === 'block' ? 'text-red-300' : ev.policy_action === 'warn' ? 'text-amber-300' : 'text-titanium-400'}>
-                      policy · {ev.policy_action}
-                    </span>
-                  </div>
-                )}
+                  {ev.policy_action && (
+                    <div className="mt-2 text-[11px] font-mono uppercase tracking-wider">
+                      <span className={ev.policy_action === 'block' ? 'text-red-300' : ev.policy_action === 'warn' ? 'text-amber-300' : 'text-titanium-400'}>
+                        policy · {ev.policy_action}
+                      </span>
+                    </div>
+                  )}
+                </Link>
               </li>
             ))}
           </ul>

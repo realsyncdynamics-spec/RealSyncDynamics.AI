@@ -141,6 +141,36 @@ export async function fetchTenantEvidence(tenantId: string, limit = 50): Promise
   return (data ?? []) as DbGovernanceEvidence[];
 }
 
+export interface DbAssetControlMapping {
+  id: string;
+  asset_id: string;
+  control_id: string;
+  status: 'not_started' | 'in_progress' | 'implemented' | 'gap' | 'not_applicable';
+  evidence_id: string | null;
+  notes: string | null;
+  updated_at: string;
+}
+
+export async function fetchTenantMappings(tenantId: string): Promise<DbAssetControlMapping[]> {
+  const sb = getSupabase();
+  // RLS scopes via asset → tenant. We additionally filter via asset_id
+  // join (Supabase doesn't let us simply eq('tenant_id', …) here since
+  // the column lives on the parent asset).
+  const { data: assets, error: aErr } = await sb
+    .from('governance_assets')
+    .select('id')
+    .eq('tenant_id', tenantId);
+  if (aErr) throw new Error(aErr.message);
+  const ids = (assets ?? []).map((a) => a.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await sb
+    .from('asset_control_mappings')
+    .select('*')
+    .in('asset_id', ids);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DbAssetControlMapping[];
+}
+
 export async function fetchFrameworkControls(): Promise<DbFrameworkControl[]> {
   const sb = getSupabase();
   const { data, error } = await sb

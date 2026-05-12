@@ -3,7 +3,20 @@ import type {
   GovernanceAssetType, AiActClass,
   GovernancePolicyType, GovernancePolicyAction, GovernanceRiskLevel,
 } from './types';
+import type {
+  GovernanceControlStatus,
+} from './types';
 import type { DbGovernanceAsset, DbGovernancePolicy } from './governanceApi';
+
+export interface DbAssetControlMapping {
+  id: string;
+  asset_id: string;
+  control_id: string;
+  status: GovernanceControlStatus;
+  evidence_id: string | null;
+  notes: string | null;
+  updated_at: string;
+}
 
 export interface CreateAssetInput {
   tenant_id: string;
@@ -59,3 +72,20 @@ export const archiveAsset = (asset_id: string)         => call<BareResult>({ op:
 export const createPolicy = (input: CreatePolicyInput) => call<PolicyResult>({ op: 'create_policy', ...input });
 export const togglePolicy = (policy_id: string, enabled: boolean) =>
   call<BareResult>({ op: 'toggle_policy', policy_id, enabled });
+
+export interface MappingResult {
+  ok: boolean;
+  mapping?: DbAssetControlMapping;
+  error?: { code: string; message: string };
+}
+
+export const upsertMapping = (
+  asset_id: string,
+  control_id: string,
+  status: GovernanceControlStatus,
+  notes?: string,
+  evidence_id?: string,
+) => call<MappingResult>({ op: 'upsert_mapping', asset_id, control_id, status, notes, evidence_id });
+
+export const deleteMapping = (mapping_id: string) =>
+  call<BareResult>({ op: 'delete_mapping', mapping_id });

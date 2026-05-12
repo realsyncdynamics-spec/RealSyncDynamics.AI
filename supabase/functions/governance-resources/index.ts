@@ -3,10 +3,12 @@
 // POST /functions/v1/governance-resources
 // Authorization: Bearer <user JWT>
 // Body shapes:
-//   { op: 'create_asset',   tenant_id, asset_type, name, ... }
-//   { op: 'archive_asset',  asset_id }
-//   { op: 'create_policy',  tenant_id, name, policy_type, severity, action, condition, ... }
-//   { op: 'toggle_policy',  policy_id, enabled }
+//   { op: 'create_asset',     tenant_id, asset_type, name, ... }
+//   { op: 'archive_asset',    asset_id }
+//   { op: 'create_policy',    tenant_id, name, policy_type, severity, action, condition, ... }
+//   { op: 'toggle_policy',    policy_id, enabled }
+//   { op: 'upsert_mapping',   asset_id, control_id, status, notes?, evidence_id? }
+//   { op: 'delete_mapping',   mapping_id }
 //
 // Owner / admin gated against `public.memberships`. Reads are
 // handled directly by the frontend via Supabase + tenant-RLS
@@ -27,6 +29,7 @@ const AI_ACT_CLASSES = ['minimal', 'limited', 'high', 'prohibited', 'unknown'];
 const POLICY_TYPES = ['data_transfer', 'model_usage', 'human_review', 'logging_required', 'vendor_restriction', 'retention', 'security', 'ai_act', 'gdpr'];
 const SEVERITIES = ['info', 'low', 'medium', 'high', 'critical'];
 const ACTIONS = ['allow', 'log', 'warn', 'block', 'require_approval'];
+const CONTROL_STATUSES = ['not_started', 'in_progress', 'implemented', 'gap', 'not_applicable'];
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -54,10 +57,12 @@ Deno.serve(async (req) => {
 
   try {
     switch (body.op) {
-      case 'create_asset':  return await createAsset(admin, userId, body);
-      case 'archive_asset': return await archiveAsset(admin, userId, body);
-      case 'create_policy': return await createPolicy(admin, userId, body);
-      case 'toggle_policy': return await togglePolicy(admin, userId, body);
+      case 'create_asset':    return await createAsset(admin, userId, body);
+      case 'archive_asset':   return await archiveAsset(admin, userId, body);
+      case 'create_policy':   return await createPolicy(admin, userId, body);
+      case 'toggle_policy':   return await togglePolicy(admin, userId, body);
+      case 'upsert_mapping':  return await upsertMapping(admin, userId, body);
+      case 'delete_mapping':  return await deleteMapping(admin, userId, body);
       default: return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {
@@ -157,6 +162,65 @@ async function togglePolicy(admin: any, userId: string, b: Record<string, unknow
   const { error } = await admin.from('governance_policies').update({ enabled }).eq('id', policy_id);
   if (error) throw error;
   return json({ ok: true, enabled });
+}
+
+// deno-lint-ignore no-explicit-any
+async function upsertMapping(admin: any, userId: string, b: Record<string, unknown>) {
+  const asset_id = b.asset_id as string;
+  const control_id = b.control_id as string;
+  const status = (b.status as string) ?? 'not_started';
+  const notes = (b.notes as string ?? null)?.toString().slice(0, 2000) ?? null;
+  const evidence_id = (b.evidence_id as string) ?? null;
+
+  if (!asset_id || !control_id) return jsonError(400, 'BAD_REQUEST', 'asset_id and control_id required');
+  if (!CONTROL_STATUSES.includes(status)) {
+    return jsonError(400, 'BAD_REQUEST', `status must be one of ${CONTROL_STATUSES.join('|')}`);
+  }
+
+  const { data: asset } = await admin.from('governance_assets')
+    .select('tenant_id').eq('id', asset_id).maybeSingle();
+  if (!asset) return jsonError(404, 'NOT_FOUND', 'asset not found');
+  if (!(await isOwnerOrAdmin(admin, userId, asset.tenant_id))) {
+    return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+
+  const { data: ctrl } = await admin.from('framework_controls')
+    .select('id').eq('id', control_id).maybeSingle();
+  if (!ctrl) return jsonError(404, 'NOT_FOUND', 'control not found');
+
+  if (evidence_id) {
+    const { data: ev } = await admin.from('governance_evidence')
+      .select('tenant_id').eq('id', evidence_id).maybeSingle();
+    if (!ev) return jsonError(404, 'NOT_FOUND', 'evidence not found');
+    if (ev.tenant_id !== asset.tenant_id) return jsonError(403, 'CROSS_TENANT', 'evidence belongs to another tenant');
+  }
+
+  const { data, error } = await admin.from('asset_control_mappings')
+    .upsert({ asset_id, control_id, status, notes, evidence_id }, { onConflict: 'asset_id,control_id' })
+    .select('*').single();
+  if (error) throw error;
+  return json({ ok: true, mapping: data });
+}
+
+// deno-lint-ignore no-explicit-any
+async function deleteMapping(admin: any, userId: string, b: Record<string, unknown>) {
+  const mapping_id = b.mapping_id as string;
+  if (!mapping_id) return jsonError(400, 'BAD_REQUEST', 'mapping_id required');
+
+  const { data: row } = await admin.from('asset_control_mappings')
+    .select('asset_id').eq('id', mapping_id).maybeSingle();
+  if (!row) return jsonError(404, 'NOT_FOUND', 'mapping not found');
+
+  const { data: asset } = await admin.from('governance_assets')
+    .select('tenant_id').eq('id', row.asset_id).maybeSingle();
+  if (!asset) return jsonError(404, 'NOT_FOUND', 'asset not found');
+  if (!(await isOwnerOrAdmin(admin, userId, asset.tenant_id))) {
+    return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+
+  const { error } = await admin.from('asset_control_mappings').delete().eq('id', mapping_id);
+  if (error) throw error;
+  return json({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any

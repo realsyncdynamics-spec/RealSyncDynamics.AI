@@ -82,9 +82,12 @@ for (const n of NICHES) {
     }
 
     // Pricing-Teaser-Section (geteilte Component aus #111-Refactor,
-    // 4-Tier-Modell seit #131: Free Audit / Starter 49€ / Growth 199€ / Enterprise)
+    // 5-Tier-Modell seit #145: Free Audit / Starter 79€ / Growth 249€ /
+    // Agency 699€ / Enterprise)
     await expect(
-      page.getByRole('heading', { name: /Free Audit · Starter · Growth · Enterprise/i }),
+      page.getByRole('heading', {
+        name: /Free Audit · Starter · Growth · Agency · Enterprise/i,
+      }),
     ).toBeVisible();
     await expect(page.getByText(/79 €/).first()).toBeVisible();
   });

@@ -41,6 +41,12 @@ import { WebsiteRebuildOffer } from '../components/WebsiteRebuildOffer';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
 import { HeroOnly } from '../components/HeroOnly';
+import { AgenticComplianceAgentsSection } from '../components/sections/AgenticComplianceAgentsSection';
+import { AiActGovernanceBetaSection } from '../components/sections/AiActGovernanceBetaSection';
+import { SystemLevelGovernanceSection } from '../components/sections/SystemLevelGovernanceSection';
+import { TechSecuritySixtySecondsSection } from '../components/sections/TechSecuritySixtySecondsSection';
+import { GovernanceMiniCasesSection } from '../components/sections/GovernanceMiniCasesSection';
+import { InfrastructureIntegrationsStrip } from '../components/sections/InfrastructureIntegrationsStrip';
 
 /**
  * Landing — Hero-only-Pivot.
@@ -55,7 +61,17 @@ import { HeroOnly } from '../components/HeroOnly';
  * werden können — ohne Code-Verlust beim Pivot.
  */
 export function Landing() {
-  return <HeroOnly />;
+  return (
+    <>
+      <HeroOnly />
+      <AgenticComplianceAgentsSection />
+      <SystemLevelGovernanceSection />
+      <AiActGovernanceBetaSection />
+      <GovernanceMiniCasesSection />
+      <TechSecuritySixtySecondsSection />
+      <InfrastructureIntegrationsStrip />
+    </>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */

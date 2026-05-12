@@ -107,9 +107,13 @@ export function HeroOnly() {
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
             Continuous Compliance Monitoring für Websites, Tracking-Stacks und KI-Systeme.
           </h1>
-          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
-            Erkennen Sie DSGVO-, TTDSG- und AI-Act-Risiken frühzeitig — mit technischer Risikoanalyse,
-            laufender Überwachung und nachvollziehbaren Audit-Trails.
+          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-3">
+            Damit Sie DSGVO-, TTDSG- und EU-AI-Act-Pflichten technisch nachweisbar erfüllen können —
+            mit Risikoanalyse, laufender Überwachung und Audit-Trails.
+          </p>
+          <p className="text-sm text-silver-400 leading-relaxed max-w-2xl mx-auto mb-9">
+            RealSyncDynamics.AI hilft, KI-Usecases zu inventarisieren, AI-Act-Risiken einzuordnen und die
+            geforderten Logs, Kontrollen und Audit-Trails aufzubauen.
           </p>
 
           {/* Primary + Secondary CTA */}

@@ -10,7 +10,7 @@
  * Add/move items as engineering reality changes; do NOT promote
  * "Geplant" → "Verfügbar" without an actual release.
  */
-import { Wrench, ShoppingBag, MessagesSquare, Code2, BrainCircuit, type LucideIcon } from 'lucide-react';
+import { Wrench, ShoppingBag, MessagesSquare, Code2, BrainCircuit, Bot, GitMerge, type LucideIcon } from 'lucide-react';
 
 type Status = 'Geplant' | 'In Entwicklung' | 'Verfügbar';
 
@@ -50,6 +50,18 @@ const ITEMS: RoadmapItem[] = [
     Icon: BrainCircuit,
     title: 'AI-Act Governance Features',
     body: 'AI-Use-Case-Inventar, Annex-III-Klassifizierung, Hochrisiko-Kontrollen mit Audit-Trail.',
+    status: 'Geplant',
+  },
+  {
+    Icon: Bot,
+    title: 'Agenten-Galerie (Beta)',
+    body: 'Erste vordefinierte Compliance-Agenten wie Website-Drift, AI-Usecase und Evidence können aktiviert und konfiguriert werden.',
+    status: 'In Entwicklung',
+  },
+  {
+    Icon: GitMerge,
+    title: 'CI/CD-Integrationen',
+    body: 'GitHub Actions sowie Vercel-/Netlify-Hooks lösen nach jedem Deploy automatisch Scans aus und erzeugen Alerts bei Compliance-Drift.',
     status: 'Geplant',
   },
 ];

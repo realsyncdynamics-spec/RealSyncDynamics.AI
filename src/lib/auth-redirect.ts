@@ -14,7 +14,7 @@
  * dass Query-Strings/Hashes in den Magic-Link-Redirect rutschen.
  */
 
-const APEX_DOMAIN = 'https://realsyncdynamicsai.de';
+const APEX_DOMAIN = 'https://RealSyncDynamicsAI.de';
 
 export function getAuthRedirectUrl(path = '/'): string {
   // Production-Build: immer Apex-Domain. window.location wird ignoriert

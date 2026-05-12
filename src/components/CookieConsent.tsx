@@ -79,7 +79,7 @@ export function CookieConsent() {
           <div className="flex-1 min-w-0">
             {!showCustom ? (
               <>
-                <h2 className="font-display font-bold text-titanium-50 mb-1.5">Datenschutz auf realsyncdynamicsai.de</h2>
+                <h2 className="font-display font-bold text-titanium-50 mb-1.5">Datenschutz auf RealSyncDynamicsAI.de</h2>
                 <p className="text-xs text-titanium-300 leading-relaxed mb-3">
                   Wir setzen technisch notwendige Cookies für Login + Session.
                   Optional können wir mit Deiner Einwilligung anonyme Statistik-

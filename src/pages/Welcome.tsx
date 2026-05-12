@@ -435,7 +435,7 @@ export function Welcome() {
                   </p>
                   <div className="p-4 bg-obsidian-950 border border-titanium-700 rounded-none">
                     <code className="font-mono text-xs text-emerald-300 break-all leading-relaxed">
-                      {`<script src="https://realsyncdynamicsai.de/sdk/cookie-consent.js" data-rsd-key="${apiKey ?? 'YOUR_KEY'}"></script>`}
+                      {`<script src="https://RealSyncDynamicsAI.de/sdk/cookie-consent.js" data-rsd-key="${apiKey ?? 'YOUR_KEY'}"></script>`}
                     </code>
                   </div>
                   <p className="text-xs text-titanium-500">

@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "RealSyncDynamics Governance",
+  "short_name": "RSD Governance",
+  "version": "0.1.0",
+  "description": "Continuous Compliance Monitoring — captures tracker insertions, AI-vendor calls and consent-state events and ships them to your tenant's Governance Runtime.",
+  "permissions": ["storage", "webNavigation"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["injected.js"],
+      "run_at": "document_start",
+      "all_frames": false,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "RealSyncDynamics Governance"
+  }
+}

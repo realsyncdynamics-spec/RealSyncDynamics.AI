@@ -46,7 +46,7 @@ export function Status() {
 
           <Section title="Komponenten">
             <ul className="space-y-2">
-              <Component name="Frontend (realsyncdynamicsai.de)" status="operational" detail="Static SPA, served from Hostinger DE VPS" />
+              <Component name="Frontend (RealSyncDynamicsAI.de)" status="operational" detail="Static SPA, served from Hostinger DE VPS" />
               <Component name="API / Edge Functions" status="operational" detail="Supabase Edge (eu-central-1)" />
               <Component name="Datenbank (Postgres + RLS)" status="operational" detail="Supabase Managed Postgres (eu-central-1)" />
               <Component name="Auth (Magic-Link)" status="operational" detail="Supabase Auth via Email-OTP" />

@@ -6,24 +6,24 @@
 // verify_jwt = false (öffentlich, Public-Pricing-Page-CTA)
 //
 // Body:
-// source_url: https://kunde.de (required)
-// tier?: 'managed' | 'premium' | 'enterprise' default 'managed'
-// audit_id?: uuid (verlinkt vorhandenen DSGVO-Audit)
-// tenant_id?: uuid (für eingeloggte Customer mit bereits vorhandenem Tenant)
-// company?: 'ACME GmbH'
-// return_url?: z.B. window.location.origin
+//   source_url:    https://kunde.de              (required)
+//   tier?:         'managed' | 'premium' | 'enterprise'   default 'managed'
+//   audit_id?:     uuid (verlinkt vorhandenen DSGVO-Audit)
+//   tenant_id?:    uuid (für eingeloggte Customer mit bereits vorhandenem Tenant)
+//   company?:      'ACME GmbH'
+//   return_url?:   z.B. window.location.origin
 //
 // Response:
-// { ok: true, url: 'https://checkout.stripe.com/...', session_id: 'cs_...' }
+//   { ok: true, url: 'https://checkout.stripe.com/...', session_id: 'cs_...' }
 //
 // Die Session bekommt metadata.product_type='managed_website' + source_url +
 // tier — der stripe-webhook erkennt das und queued den Rebuild-Job sobald
 // checkout.session.completed reinkommt.
 //
 // Preisresolution: Stripe-Price-ID via products-Tabelle, plan_key:
-// - tier=managed → 'website_rebuild_managed'
-// - tier=premium → 'website_rebuild_premium'
-// - tier=enterprise → 'website_rebuild_enterprise'
+//   - tier=managed     → 'website_rebuild_managed'
+//   - tier=premium     → 'website_rebuild_premium'
+//   - tier=enterprise  → 'website_rebuild_enterprise'
 // Wenn kein Price konfiguriert ist, antwortet die Function mit
 // PRICE_NOT_CONFIGURED — das Frontend kann auf Contact-Sales fallback.
 
@@ -44,22 +44,14 @@ const corsHeaders = {
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const TIER_PLAN_KEY: Record<string, string> = {
-  managed: 'website_rebuild_managed',
-  premium: 'website_rebuild_premium',
+  managed:    'website_rebuild_managed',
+  premium:    'website_rebuild_premium',
   enterprise: 'website_rebuild_enterprise',
 };
 
-/** SHA-256 hex of a string — used as a stable, non-guessable token for
- *  anonymous status-page links so unauthenticated users can track their
- *  rebuild without logging in. */
-async function sha256hex(input: string): Promise<string> {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
+  if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: {
     source_url?: string;
@@ -97,50 +89,9 @@ Deno.serve(async (req) => {
       `no Stripe Price for plan_key=${planKey}; insert price_xxx into public.products with default_for_plan_key=${planKey}`);
   }
 
-  // ------------------------------------------------------------------
-  // Pre-create the rebuild row with status 'pending_payment' so we can
-  // embed the rebuild_id in the Stripe success_url *before* we know
-  // whether payment succeeds. The stripe-webhook sets status='queued'
-  // once checkout.session.completed fires.
-  // ------------------------------------------------------------------
-  const { data: rebuildRow, error: insertErr } = await admin
-    .from('website_rebuilds')
-    .insert({
-      source_url: sourceUrl,
-      domain,
-      tier,
-      plan_key: planKey,
-      status: 'pending_payment',
-      audit_id: body.audit_id ?? null,
-      tenant_id: body.tenant_id ?? null,
-      company: body.company ?? null,
-    })
-    .select('id')
-    .single();
-
-  if (insertErr || !rebuildRow?.id) {
-    // Non-blocking: if the table doesn't exist yet or insert fails, fall back
-    // to session_id-only flow. The danke-page will degrade gracefully.
-    console.warn('website_rebuilds insert failed:', insertErr?.message);
-  }
-
-  const rebuildId: string | null = rebuildRow?.id ?? null;
-
-  // Token = SHA-256(rebuild_id + source_url) — stateless auth for status page.
-  const token = rebuildId
-    ? await sha256hex(`${rebuildId}:${sourceUrl}`)
-    : null;
-
   const origin = req.headers.get('origin') ?? body.return_url ?? '';
-
-  // Build success_url: always include session_id; if we have a rebuild_id
-  // also append it + token so DsgvoWebsiteDanke can show the Live-Status-CTA.
-  const successUrlBase = `${origin}/dsgvo-website/danke?session_id={CHECKOUT_SESSION_ID}`;
-  const successUrl = rebuildId
-    ? `${successUrlBase}&rebuild_id=${rebuildId}&token=${token}`
-    : successUrlBase;
-
-  const cancelUrl = `${origin}/dsgvo-website?checkout=cancelled`;
+  const successUrl = `${origin}/dsgvo-website/danke?session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl  = `${origin}/dsgvo-website?checkout=cancelled`;
 
   // Mode: managed-tier ist Subscription (laufendes Hosting), V1 nutzt
   // dasselbe Schema. Wenn das eingespielte Stripe-Price recurring ist,
@@ -153,13 +104,12 @@ Deno.serve(async (req) => {
   // Metadata-Vertrag — stripe-webhook liest exakt diese Keys.
   const meta: Record<string, string> = {
     product_type: 'managed_website',
-    source_url: sourceUrl,
+    source_url:   sourceUrl,
     tier,
   };
-  if (body.audit_id) meta.audit_id = body.audit_id;
+  if (body.audit_id)  meta.audit_id  = body.audit_id;
   if (body.tenant_id) meta.tenant_id = body.tenant_id;
-  if (body.company) meta.company = body.company;
-  if (rebuildId) meta.rebuild_id = rebuildId; // stripe-webhook can update the row directly
+  if (body.company)   meta.company   = body.company;
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode,
@@ -187,20 +137,10 @@ Deno.serve(async (req) => {
     return jsonError(500, 'STRIPE_CREATE_FAILED', (e as Error).message);
   }
 
-  // Link the Stripe session_id back to the rebuild row so the webhook
-  // can correlate checkout.session.completed → website_rebuilds.
-  if (rebuildId) {
-    await admin
-      .from('website_rebuilds')
-      .update({ stripe_session_id: session.id })
-      .eq('id', rebuildId);
-  }
-
   return json({
     ok: true,
     url: session.url,
     session_id: session.id,
-    rebuild_id: rebuildId,
     tier,
     mode,
     domain,

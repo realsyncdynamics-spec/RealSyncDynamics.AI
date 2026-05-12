@@ -268,6 +268,14 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
   const hasMeta = /connect\.facebook\.net|fbq\(/i.test(html);
   const hasLI = /snap\.licdn\.com|lintrk\(/i.test(html);
   const hasHotjar = /static\.hotjar\.com|hotjar/i.test(html);
+  // Matomo / Piwik signature. We pick up explicit script paths (matomo.js,
+  // piwik.js, matomo.php) and the runtime _paq global to catch self-hosted
+  // installations behind custom domains.
+  const hasMatomo = /matomo\.js|piwik\.js|matomo\.php|_paq\b/i.test(html);
+  // Heuristic: visible client-side trace of Matomo cookies (pk_id / pk_ses
+  // / pk_ref) in the HTML payload, which indicates the cookies are likely
+  // being set without the cookieless `disableCookies` configuration.
+  const hasMatomoCookieHint = /\bpk_id\b|\bpk_ses\b|\bpk_ref\b/i.test(html);
   const hasConsent = /(cookie[\s-]?banner|cookieconsent|cookieyes|usercentrics|borlabs|cookiebot|onetrust|klaro|tarteaucitron)/i.test(html);
 
   if ((hasGA || hasMeta || hasLI || hasHotjar) && !hasConsent) {
@@ -279,6 +287,25 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
       detail: 'EuGH (C-673/17) + BGH-Urteil „Cookie II" (2020): Tracker, die nicht technisch notwendig sind, brauchen aktives Opt-In. Verstoß = bis 4% Jahresumsatz.',
       paragraph_ref: 'DSGVO Art. 6 Abs. 1, § 25 TTDSG',
     });
+  }
+
+  if (hasMatomo) {
+    if (hasMatomoCookieHint) {
+      issues.push({
+        id: 'matomo_cookies_pre_consent',
+        severity: 'medium',
+        title: 'Matomo-Cookies vor Einwilligung erkannt',
+        detail: 'Matomo-Cookies oder Tracking-Indikatoren (pk_id / pk_ses / pk_ref) wurden vor einer erkennbaren Einwilligung gefunden. Prüfen Sie, ob Consent erforderlich ist oder ob cookieless Tracking (disableCookies vor trackPageView) korrekt konfiguriert wurde.',
+        paragraph_ref: 'DSGVO Art. 6 Abs. 1, § 25 TTDSG',
+      });
+    } else {
+      issues.push({
+        id: 'matomo_detected',
+        severity: 'info',
+        title: 'Matomo Analytics erkannt',
+        detail: 'Matomo kann datenschutzfreundlich betrieben werden. Prüfen Sie, ob IP-Masking, Cookie-Deaktivierung, Datenminimierung, Opt-out und Datenschutzhinweis korrekt konfiguriert sind. Siehe /resources/matomo-dsgvo-konfiguration für einen Konfigurations-Leitfaden.',
+      });
+    }
   }
   if (hasGA && !/anonymizeip|gtag.*anonymize_ip/i.test(html)) {
     issues.push({
@@ -458,7 +485,7 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
       redirect: 'follow',
       headers: {
         // realistic UA so sites with bot-blocks behave normally
-        'User-Agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAuditBot/1.0; +https://realsyncdynamicsai.de)',
+        'User-Agent': 'Mozilla/5.0 (compatible; RealSyncDynamicsAuditBot/1.0; +https://RealSyncDynamicsAI.de)',
       },
     });
   } finally {

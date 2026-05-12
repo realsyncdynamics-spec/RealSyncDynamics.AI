@@ -144,7 +144,7 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
 }
 
 // ─── Ollama (self-hosted, EU-local) ─────────────────────────────────────────
-// Routed via Traefik with a BasicAuth middleware on ollama.realsyncdynamicsai.de.
+// Routed via Traefik with a BasicAuth middleware on ollama.RealSyncDynamicsAI.de.
 // Traefik can't natively validate Bearer tokens, so we stand on BasicAuth which
 // is server-agnostic and supported by every reverse-proxy out of the box.
 //

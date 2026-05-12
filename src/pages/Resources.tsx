@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, ArrowRight, BookOpen, Globe, Building2, FileText, Layers,
@@ -70,9 +71,24 @@ const RESOURCES: Resource[] = [
     badge: 'Stories',
     icon: <BookOpen className="h-5 w-5" />,
   },
+  {
+    href: '/resources/matomo-dsgvo-konfiguration',
+    title: 'Matomo DSGVO-freundlich konfigurieren',
+    description: 'Cookieless Tracking, IP-Masking, Datenminimierung, Opt-out und Datenschutzhinweise — praxisnahe technische Hinweise.',
+    badge: 'Guide · Matomo',
+    icon: <FileText className="h-5 w-5" />,
+  },
 ];
 
 export function Resources() {
+  useEffect(() => {
+    const prev = document.title;
+    document.title = 'Ressourcen — Compliance Checklisten, Audit Guides & AI Act Readiness';
+    return () => {
+      document.title = prev;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">

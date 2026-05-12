@@ -16,7 +16,16 @@ import { BaitMaRiskGuide } from './pages/BaitMaRiskGuide';
 import { NewsletterConfirm } from './pages/NewsletterConfirm';
 import { CaseStudies } from './pages/CaseStudies';
 import { Resources } from './pages/Resources';
-import { Features } from './pages/Features';
+import { Blog } from './pages/Blog';
+import { Roadmap } from './pages/Roadmap';
+import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
+import { GovernanceDocs } from './pages/GovernanceDocs';
+import { FixPaket } from './pages/FixPaket';
+import { PreConsentTracking } from './pages/seo/PreConsentTracking';
+import { GoogleAnalyticsConsent } from './pages/seo/GoogleAnalyticsConsent';
+import { ContinuousCompliance } from './pages/seo/ContinuousCompliance';
+import { AiActReadiness } from './pages/seo/AiActReadiness';
+import { MatomoDsgvoKonfiguration } from './pages/seo/MatomoDsgvoKonfiguration';
 import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
@@ -69,8 +78,6 @@ import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
 import { DsgvoWebsiteDanke } from './pages/DsgvoWebsiteDanke';
-import { WebsiteRebuildStatus } from './pages/WebsiteRebuildStatus';
-import { RiskDashboard } from './pages/RiskDashboard';
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -91,6 +98,23 @@ const ConnectionsView = lazy(() => import('./features/kodee/connections/Connecti
 const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => ({ default: m.UsageView })));
 const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
 const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
+const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').then((m) => ({ default: m.KeysView })));
+const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
+const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
+const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
+const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
+const GovernanceEventDetailView = lazy(() => import('./features/governance/EventDetailView').then((m) => ({ default: m.EventDetailView })));
+const GovernanceAssetDetailView = lazy(() => import('./features/governance/AssetDetailView').then((m) => ({ default: m.AssetDetailView })));
+const GovernanceApprovalsView = lazy(() => import('./features/governance/ApprovalsView').then((m) => ({ default: m.ApprovalsView })));
+const GovernanceAdminLogView = lazy(() => import('./features/governance/AdminLogView').then((m) => ({ default: m.AdminLogView })));
+const GovernancePolicyTemplatesView = lazy(() => import('./features/governance/PolicyTemplatesView').then((m) => ({ default: m.PolicyTemplatesView })));
+const GovernanceComplianceReportView = lazy(() => import('./features/governance/ComplianceReportView').then((m) => ({ default: m.ComplianceReportView })));
+const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
+const GovernanceDsrTrackerView = lazy(() => import('./features/governance/DsrTrackerView').then((m) => ({ default: m.DsrTrackerView })));
+const GovernanceIncidentsView = lazy(() => import('./features/governance/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
+const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
+const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -104,12 +128,12 @@ const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
-const UnknownTrackersView = lazy(() => import('./features/admin/UnknownTrackersView').then((m) => ({ default: m.UnknownTrackersView })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
+import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
 import { initMarketingPixels } from './lib/pixels';
 
@@ -126,164 +150,179 @@ function LazyFallback() {
 function RoutesWithTracking() {
   useTrackPageview();
   return (
-    <>
-      <SEOHead />
-      <Suspense fallback={<LazyFallback />}>
-        <Routes>
-        {/* Public */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/agencies" element={<AgenciesLanding />} />
-        <Route path="/audit" element={<AuditLanding />} />
-        <Route path="/cookie-scanner" element={<CookieScanner />} />
-        <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
-        <Route path="/dokumente-bundle" element={<DokumenteBundle />} />
-        <Route path="/tools/dokumente-bundle" element={<DokumenteBundle />} />
-        <Route path="/ai-act-workflows" element={<AiActWorkflows />} />
-        <Route path="/tools/ai-act-workflows" element={<AiActWorkflows />} />
-        <Route path="/fuer-saas" element={<SaasLanding />} />
-        <Route path="/fuer-agenturen" element={<AgenturenLanding />} />
-        <Route path="/fuer-praxen" element={<PraxenLanding />} />
-        <Route path="/audit/share/:token" element={<AuditShare />} />
-        <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
-        <Route path="/ai-act-faq" element={<AiActFaq />} />
-        <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
-        <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
-        <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
-        <Route path="/case-studies" element={<CaseStudies />} />
-        <Route path="/ressourcen" element={<Resources />} />
-        <Route path="/resources" element={<Resources />} />
-        <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
-        <Route path="/audit-pro" element={<AuditPro />} />
-        <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
-        <Route path="/contact-sales" element={<ContactSales />} />
-        {/* Onboarding nach Stripe-Checkout */}
-        <Route path="/welcome" element={<Welcome />} />
-        <Route path="/setup" element={<Welcome />} />
-        {/* Tools Hub */}
-        <Route path="/tools" element={<ToolsHub />} />
-        {/* Industry-Doorways */}
-        <Route path="/branchen" element={<Branchen />} />
-        <Route path="/healthtech" element={<HealthTechLanding />} />
-        <Route path="/legal-tech" element={<LegalTechLanding />} />
-        {/* Competitor-Alternative-Doorways */}
-        <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />
-        <Route path="/fintech" element={<FinTechLanding />} />
-        <Route path="/oeffentliche-verwaltung" element={<PublicSectorLanding />} />
-        <Route path="/behoerden" element={<PublicSectorLanding />} />
-        <Route path="/usercentrics-alternative" element={<UsercentricsAlternative />} />
-        <Route path="/dataguard-alternative" element={<DataGuardAlternative />} />
-        <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
-        <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
-        <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
-        {/* More Industry-Doorways */}
-        <Route path="/versicherungen" element={<InsuranceLanding />} />
-        <Route path="/insurance" element={<InsuranceLanding />} />
-        <Route path="/ecommerce" element={<EcommerceLanding />} />
-        <Route path="/online-shops" element={<EcommerceLanding />} />
-        {/* Trust / Press / Security */}
-        <Route path="/about" element={<About />} />
-        <Route path="/ueber-uns" element={<About />} />
-        <Route path="/press" element={<Press />} />
-        <Route path="/presse" element={<Press />} />
-        <Route path="/security" element={<Security />} />
-        <Route path="/status" element={<Status />} />
-        <Route path="/sicherheit" element={<Security />} />
-        <Route path="/faq" element={<Faq />} />
-        <Route path="/haeufige-fragen" element={<Faq />} />
-        <Route path="/changelog" element={<Changelog />} />
-        <Route path="/release-notes" element={<Changelog />} />
-        <Route path="/saas-anbieter" element={<SaasAnbieterLanding />} />
-        <Route path="/saas-providers" element={<SaasAnbieterLanding />} />
-        <Route path="/marktanalyse" element={<Marktanalyse />} />
-        <Route path="/market-analysis" element={<Marktanalyse />} />
-        {/* Education + HR Doorways */}
-        <Route path="/bildung" element={<EducationLanding />} />
-        <Route path="/education" element={<EducationLanding />} />
-        <Route path="/schulen" element={<EducationLanding />} />
-        <Route path="/hr-software" element={<HrSoftwareLanding />} />
-        <Route path="/personalwesen" element={<HrSoftwareLanding />} />
-        {/* More Competitor-Alternatives */}
-        <Route path="/iubenda-alternative" element={<IubendaAlternative />} />
-        {/* API + Integrations + Niche */}
-        <Route path="/api" element={<ApiDocs />} />
-        <Route path="/api-docs" element={<ApiDocs />} />
-        <Route path="/integrations" element={<Integrations />} />
-        <Route path="/integrationen" element={<Integrations />} />
-        <Route path="/steuerberater" element={<SteuerberaterLanding />} />
-        <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
-        <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
-        <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
-        {/* Rebuild-Status: öffentlich via token-param, kein Auth erforderlich */}
-        <Route path="/dsgvo-website/rebuild/:rebuild_id" element={<WebsiteRebuildStatus />} />
-        {/* Risk Dashboard — Continuous Compliance Monitoring (Growth/Business+) */}
-        <Route path="/risk-dashboard" element={<RiskDashboard />} />
-        <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
-        <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
-        {/* SEO Doorways — Framework-spezifisch */}
-        <Route path="/bait-compliance" element={<BaitCompliance />} />
-        <Route path="/marisk-audit" element={<MariskAudit />} />
-        <Route path="/eu-ai-act-check" element={<EuAiActCheck />} />
-        <Route path="/cookie-compliance" element={<CookieCompliance />} />
-        {/* Compliance Tools (Free) */}
-        <Route path="/avv-generator" element={<AvvGenerator />} />
-        <Route path="/tools/avv-generator" element={<AvvGenerator />} />
-        <Route path="/vvt-wizard" element={<VvtWizard />} />
-        <Route path="/tools/vvt-wizard" element={<VvtWizard />} />
-        <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
-        <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
-        <Route path="/tom-generator" element={<TomGenerator />} />
-        <Route path="/tools/tom-generator" element={<TomGenerator />} />
-        <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
-        <Route path="/tools/meldepflicht-timer" element={<MeldepflichtTimer />} />
-        <Route path="/datenschutz-generator" element={<DatenschutzGenerator />} />
-        <Route path="/tools/datenschutz-generator" element={<DatenschutzGenerator />} />
-        <Route path="/dsfa-wizard" element={<DsfaWizard />} />
-        <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
-        <Route path="/busseld-rechner" element={<BusseldRechner />} />
-        <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
-        {/* Dashboard */}
-        <Route path="/dashboard" element={<CreatorDashboard />} />
-        <Route path="/kodee" element={<KodeeView />} />
-        <Route path="/kodee/connections" element={<ConnectionsView />} />
-        <Route path="/billing/usage" element={<UsageView />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/funktionen" element={<Features />} />
-        <Route path="/tenant/invites" element={<InvitesView />} />
-        <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
-        <Route path="/settings" element={<SettingsView />} />
-        <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
-        <Route path="/settings/account" element={<AccountSettings />} />
-        <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
-        <Route path="/workflows" element={<WorkflowsView />} />
-        <Route path="/market-gaps" element={<MarketGapsView />} />
-        <Route path="/outreach" element={<OutreachView />} />
-        {/* Admin */}
-        <Route path="/admin/analytics" element={<AnalyticsView />} />
-        <Route path="/admin/leads" element={<LeadsView />} />
-        <Route path="/admin/system" element={<SystemHealthView />} />
-        <Route path="/admin/customers" element={<CustomersView />} />
-        <Route path="/admin/onboarding" element={<OnboardingView />} />
-        <Route path="/admin/rebuilds" element={<RebuildsView />} />
-        <Route path="/admin/unknown-trackers" element={<UnknownTrackersView />} />
-        {/* Legal */}
-        <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-        <Route path="/legal/sub-processors" element={<SubProcessors />} />
-        <Route path="/impressum" element={<Impressum />} />
-        <Route path="/legal/impressum" element={<Impressum />} />
-        <Route path="/datenschutz" element={<PrivacyPolicy />} />
-        <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
-        <Route path="/legal/avv" element={<AVVTemplate />} />
-        <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
-        <Route path="/legal/methodology" element={<LegalMethodology />} />
-        <Route path="/methodik" element={<LegalMethodology />} />
-        <Route path="/grenzen" element={<Limits />} />
-        <Route path="/limits" element={<Limits />} />
-        <Route path="/ai-governance" element={<AiGovernancePage />} />
-        <Route path="/checkout/:planKey" element={<CheckoutPage />} />
-        </Routes>
-      </Suspense>
-    </>
+    <Suspense fallback={<LazyFallback />}>
+    <Routes>
+      {/* Public */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/agencies" element={<AgenciesLanding />} />
+      <Route path="/audit" element={<AuditLanding />} />
+      <Route path="/cookie-scanner" element={<CookieScanner />} />
+      <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
+      <Route path="/dokumente-bundle" element={<DokumenteBundle />} />
+      <Route path="/tools/dokumente-bundle" element={<DokumenteBundle />} />
+      <Route path="/ai-act-workflows" element={<AiActWorkflows />} />
+      <Route path="/tools/ai-act-workflows" element={<AiActWorkflows />} />
+      <Route path="/fuer-saas"      element={<SaasLanding />} />
+      <Route path="/fuer-agenturen" element={<AgenturenLanding />} />
+      <Route path="/fuer-praxen"    element={<PraxenLanding />} />
+      <Route path="/audit/share/:token" element={<AuditShare />} />
+      <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
+      <Route path="/ai-act-faq" element={<AiActFaq />} />
+      <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
+      <Route path="/bait-marisk-compliance-guide" element={<BaitMaRiskGuide />} />
+      <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
+      <Route path="/case-studies" element={<CaseStudies />} />
+      <Route path="/ressourcen" element={<Resources />} />
+      <Route path="/resources" element={<Resources />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/roadmap" element={<Roadmap />} />
+      <Route path="/governance-runtime" element={<GovernanceRuntimePage />} />
+      <Route path="/docs/governance" element={<GovernanceDocs />} />
+      <Route path="/fix-paket" element={<FixPaket />} />
+      <Route path="/pre-consent-tracking" element={<PreConsentTracking />} />
+      <Route path="/google-analytics-consent" element={<GoogleAnalyticsConsent />} />
+      <Route path="/continuous-compliance" element={<ContinuousCompliance />} />
+      <Route path="/ai-act-readiness" element={<AiActReadiness />} />
+      <Route path="/resources/matomo-dsgvo-konfiguration" element={<MatomoDsgvoKonfiguration />} />
+      <Route path="/cookie-consent-sdk" element={<CookieConsentSdk />} />
+      <Route path="/audit-pro" element={<AuditPro />} />
+      <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
+      <Route path="/contact-sales" element={<ContactSales />} />
+      {/* Onboarding nach Stripe-Checkout */}
+      <Route path="/welcome" element={<Welcome />} />
+      <Route path="/setup" element={<Welcome />} />
+      {/* Tools Hub */}
+      <Route path="/tools" element={<ToolsHub />} />
+      {/* Industry-Doorways */}
+      <Route path="/branchen" element={<Branchen />} />
+      <Route path="/healthtech" element={<HealthTechLanding />} />
+      <Route path="/legal-tech" element={<LegalTechLanding />} />
+      {/* Competitor-Alternative-Doorways */}
+      <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />
+      <Route path="/fintech" element={<FinTechLanding />} />
+      <Route path="/oeffentliche-verwaltung" element={<PublicSectorLanding />} />
+      <Route path="/behoerden" element={<PublicSectorLanding />} />
+      <Route path="/usercentrics-alternative" element={<UsercentricsAlternative />} />
+      <Route path="/dataguard-alternative" element={<DataGuardAlternative />} />
+      <Route path="/borlabs-alternative" element={<BorlabsAlternative />} />
+      <Route path="/cookiebot-alternative" element={<CookiebotAlternative />} />
+      <Route path="/proliance-alternative" element={<ProlianceAlternative />} />
+      {/* More Industry-Doorways */}
+      <Route path="/versicherungen" element={<InsuranceLanding />} />
+      <Route path="/insurance" element={<InsuranceLanding />} />
+      <Route path="/ecommerce" element={<EcommerceLanding />} />
+      <Route path="/online-shops" element={<EcommerceLanding />} />
+      {/* Trust / Press / Security */}
+      <Route path="/about" element={<About />} />
+      <Route path="/ueber-uns" element={<About />} />
+      <Route path="/press" element={<Press />} />
+      <Route path="/presse" element={<Press />} />
+      <Route path="/security" element={<Security />} />
+      <Route path="/status" element={<Status />} />
+      <Route path="/sicherheit" element={<Security />} />
+      <Route path="/faq" element={<Faq />} />
+      <Route path="/haeufige-fragen" element={<Faq />} />
+      <Route path="/changelog" element={<Changelog />} />
+      <Route path="/release-notes" element={<Changelog />} />
+      <Route path="/saas-anbieter" element={<SaasAnbieterLanding />} />
+      <Route path="/saas-providers" element={<SaasAnbieterLanding />} />
+      <Route path="/marktanalyse" element={<Marktanalyse />} />
+      <Route path="/market-analysis" element={<Marktanalyse />} />
+      {/* Education + HR Doorways */}
+      <Route path="/bildung" element={<EducationLanding />} />
+      <Route path="/education" element={<EducationLanding />} />
+      <Route path="/schulen" element={<EducationLanding />} />
+      <Route path="/hr-software" element={<HrSoftwareLanding />} />
+      <Route path="/personalwesen" element={<HrSoftwareLanding />} />
+      {/* More Competitor-Alternatives */}
+      <Route path="/iubenda-alternative" element={<IubendaAlternative />} />
+      {/* API + Integrations + Niche */}
+      <Route path="/api" element={<ApiDocs />} />
+      <Route path="/api-docs" element={<ApiDocs />} />
+      <Route path="/integrations" element={<Integrations />} />
+      <Route path="/integrationen" element={<Integrations />} />
+      <Route path="/steuerberater" element={<SteuerberaterLanding />} />
+      <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
+      <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
+      <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
+      <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
+      <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
+      {/* SEO Doorways — Framework-spezifisch */}
+      <Route path="/bait-compliance" element={<BaitCompliance />} />
+      <Route path="/marisk-audit" element={<MariskAudit />} />
+      <Route path="/eu-ai-act-check" element={<EuAiActCheck />} />
+      <Route path="/cookie-compliance" element={<CookieCompliance />} />
+      {/* Compliance Tools (Free) */}
+      <Route path="/avv-generator" element={<AvvGenerator />} />
+      <Route path="/tools/avv-generator" element={<AvvGenerator />} />
+      <Route path="/vvt-wizard" element={<VvtWizard />} />
+      <Route path="/tools/vvt-wizard" element={<VvtWizard />} />
+      <Route path="/ai-act-klassifikator" element={<AiActClassifier />} />
+      <Route path="/tools/ai-act-classifier" element={<AiActClassifier />} />
+      <Route path="/tom-generator" element={<TomGenerator />} />
+      <Route path="/tools/tom-generator" element={<TomGenerator />} />
+      <Route path="/datenpanne-meldung" element={<MeldepflichtTimer />} />
+      <Route path="/tools/meldepflicht-timer" element={<MeldepflichtTimer />} />
+      <Route path="/datenschutz-generator" element={<DatenschutzGenerator />} />
+      <Route path="/tools/datenschutz-generator" element={<DatenschutzGenerator />} />
+      <Route path="/dsfa-wizard" element={<DsfaWizard />} />
+      <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
+      <Route path="/busseld-rechner" element={<BusseldRechner />} />
+      <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
+      {/* Dashboard */}
+      <Route path="/dashboard" element={<CreatorDashboard />} />
+      <Route path="/kodee" element={<KodeeView />} />
+      <Route path="/kodee/connections" element={<ConnectionsView />} />
+      <Route path="/billing/usage" element={<UsageView />} />
+      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/tenant/invites" element={<InvitesView />} />
+      <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
+      <Route path="/governance" element={<GovernanceDashboardView />} />
+      <Route path="/governance/keys" element={<GovernanceKeysView />} />
+      <Route path="/governance/webhooks" element={<GovernanceWebhooksView />} />
+      <Route path="/governance/onboarding" element={<GovernanceOnboardingView />} />
+      <Route path="/governance/mappings" element={<GovernanceMappingsView />} />
+      <Route path="/governance/events/:eventId" element={<GovernanceEventDetailView />} />
+      <Route path="/governance/assets/:assetId" element={<GovernanceAssetDetailView />} />
+      <Route path="/governance/approvals" element={<GovernanceApprovalsView />} />
+      <Route path="/governance/admin-log" element={<GovernanceAdminLogView />} />
+      <Route path="/governance/policies/templates" element={<GovernancePolicyTemplatesView />} />
+      <Route path="/governance/reports" element={<GovernanceComplianceReportView />} />
+      <Route path="/governance/dpias" element={<GovernanceDpiasView />} />
+      <Route path="/governance/dsr" element={<GovernanceDsrTrackerView />} />
+      <Route path="/governance/incidents" element={<GovernanceIncidentsView />} />
+      <Route path="/governance/connectors" element={<GovernanceConnectorsView />} />
+      <Route path="/governance/vendors" element={<GovernanceVendorInventoryView />} />
+      <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
+      <Route path="/settings" element={<SettingsView />} />
+      <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
+      <Route path="/settings/account" element={<AccountSettings />} />
+      <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
+      <Route path="/workflows" element={<WorkflowsView />} />
+      <Route path="/market-gaps" element={<MarketGapsView />} />
+      <Route path="/outreach" element={<OutreachView />} />
+      {/* Admin */}
+      <Route path="/admin/analytics" element={<AnalyticsView />} />
+      <Route path="/admin/leads" element={<LeadsView />} />
+      <Route path="/admin/system" element={<SystemHealthView />} />
+      <Route path="/admin/customers" element={<CustomersView />} />
+      <Route path="/admin/onboarding" element={<OnboardingView />} />
+      <Route path="/admin/rebuilds" element={<RebuildsView />} />
+      {/* Legal */}
+      <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+      <Route path="/legal/sub-processors" element={<SubProcessors />} />
+      <Route path="/impressum" element={<Impressum />} />
+      <Route path="/legal/impressum" element={<Impressum />} />
+      <Route path="/datenschutz" element={<PrivacyPolicy />} />
+      <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
+      <Route path="/legal/avv" element={<AVVTemplate />} />
+      <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
+      <Route path="/legal/methodology" element={<LegalMethodology />} />
+      <Route path="/methodik" element={<LegalMethodology />} />
+      <Route path="/grenzen" element={<Limits />} />
+      <Route path="/limits" element={<Limits />} />
+    </Routes>
+    </Suspense>
   );
 }
 
@@ -291,10 +330,12 @@ export default function App() {
   useEffect(() => { initMarketingPixels(); }, []);
   return (
     <TenantProvider>
-      <BrowserRouter basename={ROUTER_BASENAME}>
-        <RoutesWithTracking />
-        <CookieConsent />
-      </BrowserRouter>
+      <EnvironmentProvider>
+        <BrowserRouter basename={ROUTER_BASENAME}>
+          <RoutesWithTracking />
+          <CookieConsent />
+        </BrowserRouter>
+      </EnvironmentProvider>
     </TenantProvider>
   );
 }

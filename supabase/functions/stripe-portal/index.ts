@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: sub.stripe_customer_id,
-      return_url: body.return_url ?? 'https://realsyncdynamicsai.de/billing/usage',
+      return_url: body.return_url ?? 'https://RealSyncDynamicsAI.de/billing/usage',
     });
     return json({ url: session.url });
   } catch (e) {

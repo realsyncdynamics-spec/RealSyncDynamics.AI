@@ -12,11 +12,10 @@ import { ProTeamsPanel } from './panels/ProTeamsPanel';
 import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
 import { EnterprisePanel } from './panels/EnterprisePanel';
 import { AIActPanel } from './panels/AIActPanel';
+import { GovernanceRuntimePanel } from './panels/GovernanceRuntimePanel';
 import { PricingTeaserSection } from './sections/PricingTeaserSection';
-import { LiveFindingsSection } from './sections/LiveFindingsSection';
-import { ReportPreviewSection } from './sections/ReportPreviewSection';
-import { ScannerTechStackSection } from './sections/ScannerTechStackSection';
-import { ProductDifferentiationSection } from './sections/ProductDifferentiationSection';
+import { PilotPartnersPlaceholder } from './sections/PilotPartnersPlaceholder';
+import { RoadmapSection } from './sections/RoadmapSection';
 
 /**
  * HeroOnly — Hero-Bühne + zwei Long-Form-Sections.
@@ -50,7 +49,8 @@ type ModalKey =
   | 'pro'           // ProTeamsPanel (Watchmaker-3-Pillars + AuditEngine-Tri-Layer)
   | 'compliance'    // ComplianceCenterPanel (Methodik / Grenzen / Sub-Processors / AVV)
   | 'enterprise'    // EnterprisePanel (Multi-Tenant / SLA / Procurement)
-  | 'aiact';        // AIActPanel (Klassifikator + Workflow-Inventory + Doku-Pflichten)
+  | 'aiact'         // AIActPanel (Klassifikator + Workflow-Inventory + Doku-Pflichten)
+  | 'runtime';      // GovernanceRuntimePanel (Event-driven Compliance Runtime)
 
 export function HeroOnly() {
   const [openModal, setOpenModal] = useState<ModalKey>(null);
@@ -60,12 +60,10 @@ export function HeroOnly() {
       {/* ─── 1) Top Bar ─────────────────────────────────────────── */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <nav className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm">
-          <Link
-            to="/features"
-            className="px-2 sm:px-3 py-1.5 text-silver-300 hover:text-titanium-50 font-semibold transition-colors"
-          >
-            Funktionen
-          </Link>
+          <NavButton onClick={() => setOpenModal('check')}>Produkt</NavButton>
+          <NavButton onClick={() => setOpenModal('runtime')} className="hidden sm:inline-flex">
+            Runtime
+          </NavButton>
           <NavButton onClick={() => setOpenModal('aiact')} className="hidden sm:inline-flex">
             AI-Act
           </NavButton>
@@ -107,12 +105,11 @@ export function HeroOnly() {
 
           {/* Headline + Subline */}
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
-            Ihre Website & KI-Prozesse DSGVO-sicher — kontinuierlich überwacht statt einmalig geprüft.
+            Continuous Compliance Monitoring für Websites, Tracking-Stacks und KI-Systeme.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-9">
-            RealSyncDynamicsAI überwacht Ihre Website, Tracking-Stack und KI-Workflows tagesgenau auf
-            DSGVO-, TTDSG- und EU-AI-Act-Risiken — mit Drift-Alerts, Auto-Fix-Empfehlungen und
-            revisionssicherem Audit-Trail. Der kostenlose Audit ist Ihr Einstieg, nicht das Ergebnis.
+            Erkennen Sie DSGVO-, TTDSG- und AI-Act-Risiken frühzeitig — mit technischer Risikoanalyse,
+            laufender Überwachung und nachvollziehbaren Audit-Trails.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -162,22 +159,15 @@ export function HeroOnly() {
               </div>
             ))}
           </div>
+
+          {/* Pflicht-Disclaimer zum kostenlosen Audit */}
+          <p className="mt-5 text-[11px] sm:text-xs text-silver-500 max-w-xl mx-auto leading-relaxed">
+            Der kostenlose Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+          </p>
         </div>
       </main>
 
-      {/* ─── Welches Produkt — 3-Karten-Differenzierung ─────────── */}
-      <ProductDifferentiationSection />
-
-      {/* ─── Live-Findings: Produktrealität sichtbar machen ─────── */}
-      <LiveFindingsSection />
-
-      {/* ─── Report-Preview: strukturierter Audit-Output ────────── */}
-      <ReportPreviewSection />
-
-      {/* ─── Scanner-Tech-Stack: technische Glaubwürdigkeit ─────── */}
-      <ScannerTechStackSection />
-
-      {/* ─── Sektion: Für welche Firmen ist das? ─────────────────── */}
+      {/* ─── Sektion: Für wen RealSyncDynamics.AI gebaut ist ──────── */}
       <section
         id="zielgruppen"
         className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
@@ -188,29 +178,36 @@ export function HeroOnly() {
               Zielgruppen
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-2xl mx-auto">
-              Ideal für Unternehmen mit eigener Website und KI-Einsatz
+              Für wen RealSyncDynamics.AI gebaut ist
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
               {
-                title: 'Online-Unternehmen & SaaS',
-                body: 'Sie erfassen Leads, nutzen Analytics, Chatbots oder Recommendation-Engines — wir prüfen, ob Ihre Datenflüsse wirklich DSGVO-konform sind.',
-                href: '/fuer-saas',
-                cta: 'Niche-Landing für SaaS',
+                title: 'Datenschutz-Kanzleien',
+                body: 'Mandanten-Sites technisch vorscannen und Befunde mit Rechtsgrundlagen-Verweisen als White-Label-Brief an Mandanten weitergeben.',
+                href: '/legal-tech',
               },
               {
-                title: 'Dienstleister & Agenturen',
-                body: 'Sie betreuen viele Kundenseiten und KI-Kampagnen — wir liefern Ihnen den technischen Compliance-Überblick für alle Projekte.',
+                title: 'Externe Datenschutzbeauftragte',
+                body: 'Kontinuierliche technische Überprüfung mehrerer Mandanten-Websites mit konsolidierter Audit-Historie statt jährlichen Stichproben.',
+                href: '/contact-sales?source=zielgruppe-edsb',
+              },
+              {
+                title: 'Webagenturen',
+                body: 'Compliance-Check bei jeder Site-Auslieferung und laufendes Monitoring der Kunden-Sites — ohne eigenen Scanner-Stack.',
                 href: '/fuer-agenturen',
-                cta: 'Niche-Landing für Agenturen',
               },
               {
-                title: 'Praxen, Kanzleien, lokale Betriebe',
-                body: 'Sie verarbeiten sensible Daten über Formulare und Terminbuchungen — wir decken versteckte Risiken in Formularen, Scripts und Plugins auf.',
-                href: '/fuer-praxen',
-                cta: 'Niche-Landing für Praxen',
+                title: 'AI- und SaaS-Unternehmen',
+                body: 'Tracking-Stack, Datenflüsse und AI-Use-Cases technisch prüfen lassen; Drift-Alerts bei jedem deploybedingten Risiko.',
+                href: '/fuer-saas',
+              },
+              {
+                title: 'Regulierte Branchen',
+                body: 'FinTech / HealthTech / EdTech: Audit-Trail mit nachvollziehbarer Methodik unterstützt interne Compliance-Prozesse.',
+                href: '/branchen',
               },
             ].map((item) => (
               <Link
@@ -223,7 +220,7 @@ export function HeroOnly() {
                 </h3>
                 <p className="text-sm text-silver-300 leading-relaxed">{item.body}</p>
                 <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-gold-400 group-hover:text-gold-300">
-                  {item.cta} <ArrowRight className="h-3 w-3" />
+                  Mehr erfahren <ArrowRight className="h-3 w-3" />
                 </span>
               </Link>
             ))}
@@ -378,6 +375,99 @@ export function HeroOnly() {
         </div>
       </section>
 
+      {/* ─── Sektion: Vom Scan zum Monitoring ─────────────────────── */}
+      <section
+        id="vom-scan-zum-monitoring"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+            Vom Einstieg zur Dauer-Überwachung
+          </div>
+          <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-5">
+            Vom einmaligen Scan zum laufenden Compliance-Monitoring
+          </h2>
+          <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
+            Der kostenlose Audit zeigt erste Risiken. RealSyncDynamics.AI geht weiter: laufende Überwachung
+            von Tracking-Änderungen, Consent-Risiken, Drittanbieter-Skripten und AI-Act-relevanten Workflows
+            – mit nachvollziehbarem Audit-Trail.
+          </p>
+          <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/audit?source=monitoring-section"
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              Kostenlosen Audit starten <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/contact-sales?source=monitoring-anfrage"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            >
+              Monitoring anfragen
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Sektion: White-Label für Kanzleien ──────────────────── */}
+      <section
+        id="white-label"
+        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
+      >
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-6">
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
+              Für Kanzleien & DSB
+            </div>
+            <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight mb-5">
+              White-Label Audits für Kanzleien und Datenschutzberater
+            </h2>
+            <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
+              RealSyncDynamics.AI unterstützt Datenschutz-Kanzleien, externe Datenschutzbeauftragte und
+              Agenturen dabei, Mandanten-Websites technisch vorzuscannen, Risiken zu priorisieren und
+              verständliche Executive-Briefs vorzubereiten — ohne eigene Scanner-Infrastruktur.
+            </p>
+          </div>
+
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-8 max-w-xl mx-auto">
+            {[
+              'Technische Risikoanalyse',
+              'Executive Briefs',
+              'Audit-Historie',
+              'Kontinuierliches Monitoring',
+              'Mandantenfähige Reports',
+            ].map((b) => (
+              <li
+                key={b}
+                className="flex items-center gap-2 text-sm text-silver-200 bg-obsidian-900/60 border border-silver-700/30 px-3 py-2 rounded-none"
+              >
+                <span className="text-gold-400 text-xs">▸</span>
+                {b}
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/contact-sales?source=white-label-pilot"
+              className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
+            >
+              White-Label Pilot anfragen <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/audit?source=mandanten-website"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
+            >
+              Mandanten-Website prüfen
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <PilotPartnersPlaceholder />
+
+      <RoadmapSection />
+
       <PricingTeaserSection sourceTag="hero" />
 
       {/* ─── Sektion: FAQ ─────────────────────────────────────────── */}
@@ -529,6 +619,16 @@ export function HeroOnly() {
         size="xl"
       >
         <AIActPanel />
+      </Modal>
+
+      <Modal
+        open={openModal === 'runtime'}
+        onClose={() => setOpenModal(null)}
+        title="Governance Runtime"
+        eyebrow="Event-driven Compliance · API · Browser-Extension"
+        size="xl"
+      >
+        <GovernanceRuntimePanel />
       </Modal>
     </div>
   );

@@ -331,7 +331,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
       signal: ctrl.signal,
       redirect: 'follow',
       headers: {
-        'User-Agent': 'RealSyncDynamics-CookieScanner/1.0 (+https://realsyncdynamicsai.de/cookie-scanner)',
+        'User-Agent': 'RealSyncDynamics-CookieScanner/1.0 (+https://RealSyncDynamicsAI.de/cookie-scanner)',
         'Accept': 'text/html,application/xhtml+xml',
       },
     });

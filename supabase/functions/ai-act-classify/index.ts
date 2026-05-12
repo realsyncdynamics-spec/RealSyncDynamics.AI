@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
 async function getSecret(admin: ReturnType<typeof createClient>, name: string): Promise<string | null> {
   // Versuche Vault, dann Env
   try {
-    const { data, error } = await admin.rpc('get_app_secret', { p_name: name });
+    const { data, error } = await admin.rpc('get_app_secret', { secret_name: name });
     if (!error && typeof data === 'string' && data.length > 0) return data;
   } catch (_) { /* fallthrough */ }
   return Deno.env.get(name) ?? null;

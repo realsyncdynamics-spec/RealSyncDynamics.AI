@@ -233,7 +233,7 @@ function Inner({ session: _session }: { session: Session }) {
             </p>
             <div className="bg-obsidian-950 p-3 font-mono text-[11px] overflow-x-auto">
               <div className="text-titanium-500 mb-1"># Audit programmatisch ausführen (Curl-Beispiel)</div>
-              <div className="text-emerald-300">curl -X POST https://realsyncdynamicsai.de/api/audit \</div>
+              <div className="text-emerald-300">curl -X POST https://RealSyncDynamicsAI.de/api/audit \</div>
               <div className="text-emerald-300 pl-4">-H "x-api-key: rsd_..." \</div>
               <div className="text-emerald-300 pl-4">-H "Content-Type: application/json" \</div>
               <div className="text-emerald-300 pl-4">-d {`'{"url":"https://example.de"}'`}</div>

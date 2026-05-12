@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
+  Activity,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
+import { trackUpgradeClick } from '../lib/trackUpgradeClick';
+import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
@@ -34,6 +37,12 @@ interface Report {
 }
 
 export function AuditLanding() {
+  usePageMeta({
+    title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
+    description:
+      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TTDSG-Risiken analysieren.',
+    url: 'https://RealSyncDynamicsAI.de/audit',
+  });
   const [url, setUrl] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
@@ -88,7 +97,7 @@ export function AuditLanding() {
                   <ShieldCheck className="h-3 w-3" /> Kostenlos · Kein Account · 30 Sekunden
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-                  Wo verstößt Deine Website gegen die DSGVO?
+                  Kostenloser DSGVO- und Tracking-Audit
                 </h1>
                 <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
                   Der Free Audit ist Dein Einstieg in unsere Compliance-Plattform: 12 typische Compliance-Fallen
@@ -147,6 +156,7 @@ export function AuditLanding() {
                 </p>
               </form>
 
+              <WhatGetsChecked />
               <Pillars />
               <AuditToWebsiteNote source="audit-pre" />
             </>
@@ -214,6 +224,40 @@ function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+// ─── WhatGetsChecked — SEO-friendly summary of audit scope ──────────────
+
+function WhatGetsChecked() {
+  const items = [
+    'Consent- und Tracking-Verhalten',
+    'Externe Dienste und Drittanbieter-Skripte',
+    'Mögliche Pre-Consent-Risiken',
+    'Technische Datenschutzindikatoren',
+    'AI-Act-relevante Hinweise, sofern anwendbar',
+    'Pflichtangaben: Impressum und Datenschutz',
+  ];
+  return (
+    <section aria-label="Was geprüft wird" className="mt-10">
+      <h2 className="text-xs font-bold text-titanium-500 uppercase tracking-[0.2em] mb-4 text-center">
+        Was geprüft wird
+      </h2>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-xl mx-auto">
+        {items.map((b) => (
+          <li
+            key={b}
+            className="flex items-center gap-2 text-sm text-titanium-300 bg-obsidian-900/60 border border-titanium-900 px-3 py-2 rounded-none"
+          >
+            <span className="text-titanium-100 text-xs">▸</span>
+            {b}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-5 text-[11px] text-titanium-500 text-center max-w-xl mx-auto leading-relaxed">
+        Der Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+      </p>
+    </section>
   );
 }
 
@@ -290,6 +334,10 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           )}
       </div>
 
+      <MonitoringActivationBlock report={report} />
+
+      <NextStepBlock report={report} />
+
       <DocumentGeneratorBlock auditId={report.audit_id} domain={report.domain} />
 
       <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
@@ -329,7 +377,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Alternative · Komplett-Service</div>
             <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Lieber kein Tool, sondern jemand der's macht?</h3>
             <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
-              Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site DSGVO-konform neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
+              Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site nach aktuellen DSGVO-, TTDSG- und AI-Act-Anforderungen neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
               <strong className="text-titanium-50"> Ab 99 €/Monat</strong> nach einmaligem Rebuild.
             </p>
             <Link
@@ -482,6 +530,108 @@ const DOC_TYPES_UI: Array<{ id: 'dse' | 'avv' | 'vvt' | 'tom'; name: string; nor
   { id: 'vvt', name: 'Verzeichnis Verarbeitungstätigkeiten', norm: 'Art. 30 DSGVO', hint: 'Tabellarisch — Logfiles, Kontaktformular, Newsletter + erkannte Tracker.' },
   { id: 'tom', name: 'Technisch-organisatorische Maßnahmen', norm: 'Art. 32 DSGVO', hint: 'Audit-Befunde mit roter Checkbox markiert.' },
 ];
+
+/**
+ * Primary monetisation block right under the score+findings. Two CTAs
+ * that funnel into the existing pricing page with a plan hint and the
+ * audit_id pre-filled, so the operator can attribute checkouts to
+ * audits when the Stripe surface gets wired up later. trackUpgradeClick
+ * is fire-and-forget — failures never block the navigation.
+ */
+function MonitoringActivationBlock({ report }: { report: Report }) {
+  function onClickPlan(plan: 'starter' | 'growth') {
+    trackUpgradeClick(plan, { auditId: report.audit_id, source: 'audit_report_view' });
+  }
+  const starterHref = `/pricing?plan=starter&audit_id=${encodeURIComponent(report.audit_id)}`;
+  const growthHref = `/pricing?plan=growth&audit_id=${encodeURIComponent(report.audit_id)}`;
+  return (
+    <div className="bg-obsidian-900 border border-titanium-700 p-6 rounded-none">
+      <div className="flex items-start gap-3 mb-3">
+        <Activity className="h-5 w-5 text-titanium-100 shrink-0 mt-0.5" strokeWidth={1.5} />
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">
+            Continuous Compliance
+          </div>
+          <h3 className="font-display font-bold text-titanium-50 text-lg">
+            Monitoring aktivieren
+          </h3>
+        </div>
+      </div>
+      <p className="text-sm text-titanium-300 mb-5 leading-relaxed">
+        Die technische Analyse hat mögliche DSGVO-, TTDSG- oder Tracking-Risiken identifiziert.
+        Mit kontinuierlichem Monitoring bleiben Änderungen an Tracking, externen Diensten und möglichen
+        Compliance-Risiken nachvollziehbar.
+      </p>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Link
+          to={starterHref}
+          onClick={() => onClickPlan('starter')}
+          className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
+        >
+          Starter aktivieren <ArrowRight className="h-4 w-4" />
+        </Link>
+        <Link
+          to={growthHref}
+          onClick={() => onClickPlan('growth')}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none"
+        >
+          Growth aktivieren <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Risk-tiered next-step CTAs. Neutral copy, no panic / "Bußgeld droht"
+ * language. High-risk audits get fix-call + fix-package + monitoring;
+ * low-risk audits get audit-pro + monitoring. The disclaimer line is
+ * shown unconditionally.
+ */
+function NextStepBlock({ report }: { report: Report }) {
+  const highRisk = report.severity === 'critical' || report.severity === 'high' || report.score < 60;
+  const ctas = highRisk
+    ? [
+        { label: 'Fix-Call buchen',     to: `/contact-sales?intent=fix-call&source=audit_report&audit=${report.audit_id}` },
+        { label: 'Fix-Paket anfragen',  to: `/fix-paket?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring anfragen', to: `/contact-sales?intent=monitoring&source=audit_report&audit=${report.audit_id}` },
+      ]
+    : [
+        { label: 'Audit Pro anfragen',  to: `/contact-sales?intent=audit-pro&source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring aktivieren', to: `/contact-sales?intent=monitoring&source=audit_report&audit=${report.audit_id}` },
+      ];
+  return (
+    <div className="bg-obsidian-900 border border-titanium-800 p-6 rounded-none">
+      <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">
+        Nächster Schritt · {highRisk ? 'priorisierte Umsetzung' : 'optionale Vertiefung'}
+      </div>
+      <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">
+        Nächster sinnvoller Schritt
+      </h3>
+      <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
+        Die technische Auswertung zeigt mögliche Risiken, die priorisiert geprüft und umgesetzt werden sollten.
+      </p>
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
+        {ctas.map((c, i) => (
+          <Link
+            key={c.to}
+            to={c.to}
+            className={
+              i === 0
+                ? 'surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none'
+                : 'inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none'
+            }
+          >
+            {c.label} <ArrowRight className="h-4 w-4" />
+          </Link>
+        ))}
+      </div>
+      <p className="text-[11px] text-titanium-500 leading-relaxed">
+        Der Audit ersetzt keine individuelle Rechtsberatung und keine vollständige technische Prüfung.
+      </p>
+    </div>
+  );
+}
 
 function DocumentGeneratorBlock({ auditId, domain }: { auditId: string; domain: string }) {
   const [generating, setGenerating] = useState<string | null>(null);

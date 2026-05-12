@@ -99,7 +99,7 @@ async function getResendKey(supa: ReturnType<typeof createClient>): Promise<stri
   const env = Deno.env.get('RESEND_API_KEY');
   if (env && env.startsWith('re_')) return env;
   try {
-    const { data } = await supa.rpc('get_app_secret', { name: 'resend_api_key' });
+    const { data } = await supa.rpc('get_app_secret', { secret_name: 'resend_api_key' });
     if (typeof data === 'string' && data.startsWith('re_')) return data;
   } catch { /* RPC may not exist */ }
   return null;
@@ -166,7 +166,7 @@ function renderEmail(stats: any): string {
         </table>
 
         <div style="margin:24px 0 0;text-align:center;">
-          <a href="https://realsyncdynamicsai.de/admin/system" style="display:inline-block;padding:12px 28px;background:#0284c7;color:#fff;text-decoration:none;font-weight:700;font-size:14px;">Health Dashboard öffnen →</a>
+          <a href="https://RealSyncDynamicsAI.de/admin/system" style="display:inline-block;padding:12px 28px;background:#0284c7;color:#fff;text-decoration:none;font-weight:700;font-size:14px;">Health Dashboard öffnen →</a>
         </div>
       </td></tr>
       <tr><td style="padding:24px 32px;border-top:1px solid #e4e4e7;font-size:11px;color:#71717a;line-height:1.6;">

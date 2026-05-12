@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
   const FROM = Deno.env.get('RESEND_FROM') ?? 'RealSync Dynamics <hello@realsyncdynamicsai.de>';
-  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
+  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://RealSyncDynamicsAI.de';
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 

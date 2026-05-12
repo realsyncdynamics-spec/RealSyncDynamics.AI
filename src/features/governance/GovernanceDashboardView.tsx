@@ -170,22 +170,21 @@ function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
       </div>
       <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch leer</h2>
       <p className="text-sm text-titanium-400 mb-6 max-w-md mx-auto leading-relaxed">
-        Lege ein Asset an, generiere einen Ingest-Key oder lade die Browser-Extension, um die ersten
-        Governance-Events einzuspeisen.
+        4 geführte Schritte zur produktiven Runtime — oder direkt eigenes Asset anlegen.
       </p>
-      <div className="flex items-center justify-center gap-2">
-        <button
-          onClick={onAddAsset}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        <Link
+          to="/governance/onboarding"
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-amber-400"
         >
-          <Plus className="h-4 w-4" /> Erstes Asset
-        </button>
-        <Link
-          to="/governance/keys"
+          <Plus className="h-4 w-4" /> Onboarding starten
+        </Link>
+        <button
+          onClick={onAddAsset}
           className="inline-flex items-center gap-1.5 px-4 py-2 border border-titanium-900 hover:border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none"
         >
-          <KeyRound className="h-4 w-4" /> Key erstellen
-        </Link>
+          Nur Asset anlegen
+        </button>
         <Link
           to="/governance-runtime"
           className="inline-flex items-center gap-1.5 px-4 py-2 border border-titanium-900 hover:border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none"

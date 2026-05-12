@@ -236,6 +236,12 @@ function PolicyStep({
       title="Erste Policy"
       subtitle="Lege eine Regel an, die bei Verstößen automatisch greift. Beispiel: PII darf nicht an externe LLMs."
     >
+      <div className="mb-4 border border-amber-500/30 bg-amber-500/5 p-3 text-[12px] text-amber-200 leading-relaxed">
+        <strong className="text-amber-100">Tipp:</strong> 10 fertige Best-Practice-Policies (GDPR · AI Act · SOC 2 · Schrems) gibt's in der{' '}
+        <Link to="/governance/policies/templates" className="font-semibold underline underline-offset-2 hover:text-amber-100">
+          Template-Library
+        </Link>{' '}— ein Klick installiert.
+      </div>
       <form onSubmit={submit} className="space-y-3">
         <Field label="Name">
           <input

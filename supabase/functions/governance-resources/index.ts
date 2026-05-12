@@ -17,6 +17,7 @@
 // editing in-place.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { audit } from '../_shared/auditLog.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,6 +50,7 @@ Deno.serve(async (req) => {
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
   const userId = userResp.user.id;
+  const userEmail = userResp.user.email ?? null;
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
@@ -57,12 +59,12 @@ Deno.serve(async (req) => {
 
   try {
     switch (body.op) {
-      case 'create_asset':    return await createAsset(admin, userId, body);
-      case 'archive_asset':   return await archiveAsset(admin, userId, body);
-      case 'create_policy':   return await createPolicy(admin, userId, body);
-      case 'toggle_policy':   return await togglePolicy(admin, userId, body);
-      case 'upsert_mapping':  return await upsertMapping(admin, userId, body);
-      case 'delete_mapping':  return await deleteMapping(admin, userId, body);
+      case 'create_asset':    return await createAsset(admin, userId, userEmail, body);
+      case 'archive_asset':   return await archiveAsset(admin, userId, userEmail, body);
+      case 'create_policy':   return await createPolicy(admin, userId, userEmail, body);
+      case 'toggle_policy':   return await togglePolicy(admin, userId, userEmail, body);
+      case 'upsert_mapping':  return await upsertMapping(admin, userId, userEmail, body);
+      case 'delete_mapping':  return await deleteMapping(admin, userId, userEmail, body);
       default: return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {
@@ -71,7 +73,7 @@ Deno.serve(async (req) => {
 });
 
 // deno-lint-ignore no-explicit-any
-async function createAsset(admin: any, userId: string, b: Record<string, unknown>) {
+async function createAsset(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const tenant_id = b.tenant_id as string;
   const asset_type = b.asset_type as string;
   const name = (b.name as string ?? '').trim();
@@ -100,11 +102,12 @@ async function createAsset(admin: any, userId: string, b: Record<string, unknown
     metadata: (b.metadata && typeof b.metadata === 'object') ? b.metadata : {},
   }).select('*').single();
   if (error) throw error;
+  await audit(admin, { tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'asset.create', target_type: 'governance_asset', target_id: data.id, payload: { name: data.name, asset_type, ai_act_class } });
   return json({ ok: true, asset: data });
 }
 
 // deno-lint-ignore no-explicit-any
-async function archiveAsset(admin: any, userId: string, b: Record<string, unknown>) {
+async function archiveAsset(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
   if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required');
 
@@ -116,11 +119,12 @@ async function archiveAsset(admin: any, userId: string, b: Record<string, unknow
 
   const { error } = await admin.from('governance_assets').update({ status: 'archived' }).eq('id', asset_id);
   if (error) throw error;
+  await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'asset.archive', target_type: 'governance_asset', target_id: asset_id, payload: {} });
   return json({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
-async function createPolicy(admin: any, userId: string, b: Record<string, unknown>) {
+async function createPolicy(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const tenant_id = b.tenant_id as string;
   const name = (b.name as string ?? '').trim();
   const policy_type = b.policy_type as string;
@@ -145,11 +149,12 @@ async function createPolicy(admin: any, userId: string, b: Record<string, unknow
     enabled: b.enabled === false ? false : true,
   }).select('*').single();
   if (error) throw error;
+  await audit(admin, { tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'policy.create', target_type: 'governance_policy', target_id: data.id, payload: { name: data.name, policy_type, severity, action } });
   return json({ ok: true, policy: data });
 }
 
 // deno-lint-ignore no-explicit-any
-async function togglePolicy(admin: any, userId: string, b: Record<string, unknown>) {
+async function togglePolicy(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const policy_id = b.policy_id as string;
   const enabled = b.enabled !== false;
   if (!policy_id) return jsonError(400, 'BAD_REQUEST', 'policy_id required');
@@ -161,11 +166,12 @@ async function togglePolicy(admin: any, userId: string, b: Record<string, unknow
 
   const { error } = await admin.from('governance_policies').update({ enabled }).eq('id', policy_id);
   if (error) throw error;
+  await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: enabled ? 'policy.enable' : 'policy.disable', target_type: 'governance_policy', target_id: policy_id, payload: { enabled } });
   return json({ ok: true, enabled });
 }
 
 // deno-lint-ignore no-explicit-any
-async function upsertMapping(admin: any, userId: string, b: Record<string, unknown>) {
+async function upsertMapping(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
   const control_id = b.control_id as string;
   const status = (b.status as string) ?? 'not_started';
@@ -199,11 +205,12 @@ async function upsertMapping(admin: any, userId: string, b: Record<string, unkno
     .upsert({ asset_id, control_id, status, notes, evidence_id }, { onConflict: 'asset_id,control_id' })
     .select('*').single();
   if (error) throw error;
+  await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.upsert', target_type: 'asset_control_mapping', target_id: data.id, payload: { asset_id, control_id, status } });
   return json({ ok: true, mapping: data });
 }
 
 // deno-lint-ignore no-explicit-any
-async function deleteMapping(admin: any, userId: string, b: Record<string, unknown>) {
+async function deleteMapping(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const mapping_id = b.mapping_id as string;
   if (!mapping_id) return jsonError(400, 'BAD_REQUEST', 'mapping_id required');
 
@@ -220,6 +227,7 @@ async function deleteMapping(admin: any, userId: string, b: Record<string, unkno
 
   const { error } = await admin.from('asset_control_mappings').delete().eq('id', mapping_id);
   if (error) throw error;
+  await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.delete', target_type: 'asset_control_mapping', target_id: mapping_id, payload: {} });
   return json({ ok: true });
 }
 

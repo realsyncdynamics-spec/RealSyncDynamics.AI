@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
-  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network,
+  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -15,6 +15,7 @@ import {
 import { archiveAsset, togglePolicy } from './resourcesApi';
 import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
 import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
+import { countPendingApprovals } from './approvalsApi';
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -35,6 +36,7 @@ function Inner() {
   const [assets, setAssets]     = useState<DbGovernanceAsset[] | null>(null);
   const [policies, setPolicies] = useState<DbGovernancePolicy[] | null>(null);
   const [controls, setControls] = useState<DbFrameworkControl[] | null>(null);
+  const [pendingApprovals, setPendingApprovals] = useState(0);
   const [error, setError]       = useState<string | null>(null);
   const [creatingAsset, setCreatingAsset]   = useState(false);
   const [creatingPolicy, setCreatingPolicy] = useState(false);
@@ -48,8 +50,12 @@ function Inner() {
       fetchTenantAssets(activeTenantId),
       fetchTenantPolicies(activeTenantId),
       fetchFrameworkControls(),
+      countPendingApprovals(activeTenantId),
     ])
-      .then(([e, a, p, c]) => { setEvents(e); setAssets(a); setPolicies(p); setControls(c); })
+      .then(([e, a, p, c, pa]) => {
+        setEvents(e); setAssets(a); setPolicies(p); setControls(c);
+        setPendingApprovals(pa);
+      })
       .catch((err: Error) => setError(err.message));
   };
 
@@ -108,6 +114,17 @@ function Inner() {
             className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
           >
             <KeyRound className="h-4 w-4" /> Keys
+          </Link>
+          <Link
+            to="/governance/approvals"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
+          >
+            <Gavel className="h-4 w-4" /> Approvals
+            {pendingApprovals > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-amber-500 text-obsidian-950 text-[10px] font-bold rounded-none">
+                {pendingApprovals}
+              </span>
+            )}
           </Link>
           <Link
             to="/governance/mappings"

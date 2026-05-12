@@ -295,9 +295,35 @@ Deno.serve(async (req) => {
     return d ? { event_id: ev.id, policy_id: d.policy_id, action: d.action } : null;
   }).filter((x): x is { event_id: string; policy_id: string; action: PolicyAction } => x !== null);
 
-  // Best-effort outbound webhooks. We await so the cross-tenant
-  // guarantees hold, but each delivery is independently bounded
-  // by a 3 s timeout and any failure is recorded on the row.
+  // Auto-create approval rows for every engine decision whose action
+  // is 'require_approval'. Caller-supplied policy_action hints never
+  // trigger an approval row — only the engine has authority here.
+  let approvals_created = 0;
+  try {
+    const approvalRows: Array<Record<string, unknown>> = [];
+    insertedEvents!.forEach((ev, idx) => {
+      const decision = decisions[idx];
+      if (decision && decision.action === 'require_approval') {
+        approvalRows.push({
+          tenant_id: keyRow.tenant_id,
+          event_id: ev.id,
+          policy_id: decision.policy_id,
+          asset_id: items[idx].event.asset_id ?? null,
+          status: 'pending',
+          requested_action: decision.action,
+        });
+      }
+    });
+    if (approvalRows.length > 0) {
+      const { error } = await admin
+        .from('governance_approvals')
+        .insert(approvalRows);
+      if (!error) approvals_created = approvalRows.length;
+    }
+  } catch {
+    /* swallow — approval row creation must not fail ingest */
+  }
+
   let webhook_deliveries = 0;
   try {
     webhook_deliveries = await fireWebhooks(admin, keyRow.tenant_id, items, insertedEvents!, decisions);
@@ -310,6 +336,7 @@ Deno.serve(async (req) => {
     event_ids: insertedEvents!.map((e) => e.id),
     evidence_ids: insertedEvidence.map((e) => e.id),
     policy_decisions: policyDecisions,
+    approvals_created,
     webhook_deliveries,
   });
 });

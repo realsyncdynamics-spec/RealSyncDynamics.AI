@@ -1,22 +1,19 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Network } from 'lucide-react';
-import {
-  GovernanceRuntimeDashboard,
-  GovernanceRuntimeDisclaimer,
-} from '../features/governance/GovernanceRuntimeDashboard';
+import { GovernanceRuntimeDashboard } from '../features/governance/GovernanceRuntimeDashboard';
 import { usePageMeta } from '../lib/usePageMeta';
 
 /**
  * /governance-runtime — public preview of the Operational AI Governance
- * Infrastructure. Renders the dashboard shell with demo data so prospects
- * can see the four pillars (Runtime Telemetry · Policy Engine ·
- * Evidence Vault · AI Governance Graph) before a pilot starts.
+ * Infrastructure. The dashboard component already brings its own section
+ * wrapper, eyebrow, headline and CTA — this page only adds the route
+ * chrome (back-link header + footer) and head meta.
  */
 export function GovernanceRuntimePage() {
   usePageMeta({
     title: 'Governance Runtime — RealSyncDynamics.AI',
     description:
-      'Operational AI Governance Infrastructure: Runtime Telemetry, Policy Engine, Evidence Vault und AI Governance Graph für regulierte Unternehmen — Demo-Ansicht.',
+      'Operational AI Governance Infrastructure: Event-driven Compliance für AI-Systeme, Websites und Agents — Demo-Ansicht der Produktstruktur.',
     url: 'https://RealSyncDynamicsAI.de/governance-runtime',
   });
 
@@ -40,26 +37,8 @@ export function GovernanceRuntimePage() {
         </div>
       </header>
 
-      <main className="px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-8 sm:mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
-              Operational AI Governance Infrastructure
-            </div>
-            <h1 className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl">
-              Event-driven Compliance Runtime für Websites, AI-Systeme und Lieferketten
-            </h1>
-            <p className="mt-4 max-w-3xl text-base sm:text-lg text-silver-300 leading-relaxed">
-              Vier Pillars in einem Datenmodell: Runtime Telemetry, Policy Engine, Evidence Vault
-              und AI Governance Graph. Browser-Extension, SDK, GitHub-Webhooks und Agent-Connectors
-              speisen einen gemeinsamen Event-Stream — DSGVO-, TTDSG- und AI-Act-relevante
-              Ereignisse werden auditierbar.
-            </p>
-          </div>
-
-          <GovernanceRuntimeDashboard />
-          <GovernanceRuntimeDisclaimer />
-        </div>
+      <main>
+        <GovernanceRuntimeDashboard />
       </main>
 
       <footer className="border-t border-titanium-900 px-4 sm:px-6 py-8">

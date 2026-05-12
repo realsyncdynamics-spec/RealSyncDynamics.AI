@@ -27,14 +27,16 @@ export function Impressum() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 text-titanium-300 text-sm leading-relaxed">
-        <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
-          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-          <span className="text-amber-200">
-            <strong>Status: Pre-Launch.</strong> Anbieter, Anschrift, Telefon, Vertretungsberechtigter und Aufsichtsbehörde sind eingetragen.
-            Ausstehend: USt-IdNr. (kommt nach Finanzamt-Fragebogen) · HR-Eintrag (nur falls spätere UG/GmbH-Umwandlung).
-            Vor Live-Schaltung Empfehlung: Anwalt-Review für individuelle Verarbeitungsprozesse.
-          </span>
-        </div>
+        {import.meta.env.DEV && (
+          <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <span className="text-amber-200">
+              <strong>Status: Pre-Launch.</strong> Anbieter, Anschrift, Telefon, Vertretungsberechtigter und Aufsichtsbehörde sind eingetragen.
+              Ausstehend: USt-IdNr. (kommt nach Finanzamt-Fragebogen) · HR-Eintrag (nur falls spätere UG/GmbH-Umwandlung).
+              Vor Live-Schaltung Empfehlung: Anwalt-Review für individuelle Verarbeitungsprozesse.
+            </span>
+          </div>
+        )}
 
         <Section title="Anbieter / Verantwortlicher i. S. d. § 5 TMG">
           <p>

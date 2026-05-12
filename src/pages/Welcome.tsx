@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   CheckCircle2, ArrowRight, Copy, Check, AlertTriangle, ArrowLeft, Loader2, Mail,
 } from 'lucide-react';
+import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -207,11 +208,20 @@ export function Welcome() {
   const isCookieSdk = product.includes('Cookie-SDK');
 
   // Final "Setup abschließen" CTA — mark wizard complete, then navigate to
-  // the product-specific landing. Persists step=4 for both Cookie-SDK and
-  // Audit-Pro paths (Audit-Pro path also writes step=4 on domain submit;
-  // calling here is idempotent — the RPC's COALESCE keeps fields stable).
+  // the product-specific landing.
+  // Wenn ein ?next=<safe-path> URL-Parameter gesetzt ist (z.B. von der
+  // CheckoutPage bei Buy-Button-Klick ohne Auth), hat dieser Vorrang vor
+  // dem product-spezifischen Default. Damit landet der User direkt im
+  // Checkout-Flow weiter, statt im Cookie-SDK / Audit-Pro Default.
+  // Sicherheits-Whitelist: nur Pfade die mit / starten und KEIN //
+  // (Open-Redirect-Schutz) werden akzeptiert.
   const finalizeAndNavigate = async () => {
-    const target = isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro';
+    const nextParam = new URLSearchParams(window.location.search).get('next');
+    const safeNext =
+      nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
+        ? nextParam
+        : null;
+    const target = safeNext ?? (isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro');
     if (isSupabaseConfigured()) {
       try {
         const sb = getSupabase();
@@ -282,9 +292,20 @@ export function Welcome() {
             </div>
           )}
 
-          {/* Step 1 — Account / Magic-Link */}
+          {/* Step 1 — Account: OAuth-Provider zuerst, Magic-Link als Fallback */}
           {step === 1 && !magicSent && (
-            <form onSubmit={submitAccount} className="space-y-5">
+            <div className="space-y-5">
+              <OAuthProviderButtons
+                redirectAfterAuthTo={params.get('next') ?? undefined}
+              />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-titanium-700/40" />
+                <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">
+                  oder mit Email-Magic-Link
+                </span>
+                <div className="flex-1 h-px bg-titanium-700/40" />
+              </div>
+              <form onSubmit={submitAccount} className="space-y-5">
               <div>
                 <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-titanium-500">
                   E-Mail (für Magic-Link-Login)
@@ -320,6 +341,7 @@ export function Welcome() {
                   : (<>Magic-Link senden <ArrowRight className="h-4 w-4" /></>)}
               </button>
             </form>
+            </div>
           )}
 
           {step === 1 && magicSent && (

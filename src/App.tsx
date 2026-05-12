@@ -4,6 +4,7 @@
  */
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
@@ -128,6 +129,8 @@ const CustomersView = lazy(() => import('./features/admin/CustomersView').then((
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
 import { Limits } from './pages/Limits';
+import { AiGovernancePage } from './pages/AiGovernancePage';
+import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CookieConsent } from './components/CookieConsent';
 import { TenantProvider } from './core/access/TenantProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';

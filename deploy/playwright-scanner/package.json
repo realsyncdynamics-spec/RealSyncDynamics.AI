@@ -1,0 +1,23 @@
+{
+  "name": "playwright-scanner",
+  "version": "1.0.0",
+  "description": "Headless Chromium microservice for DSGVO compliance scanning",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "esbuild src/server.ts --bundle --platform=node --outfile=dist/server.js --external:playwright",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.21.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

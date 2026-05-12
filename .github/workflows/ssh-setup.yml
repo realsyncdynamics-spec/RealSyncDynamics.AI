@@ -1,0 +1,17 @@
+name: SSH Setup Helper
+on:
+  workflow_dispatch:
+jobs:
+  generate-ssh-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate key and scan
+        run: |
+          ssh-keygen -t ed25519 -C deploy -f /tmp/dk -N ''
+          echo '## Results' >> $GITHUB_STEP_SUMMARY
+          echo '### KNOWN_HOST' >> $GITHUB_STEP_SUMMARY
+          ssh-keyscan -t ed25519 187.77.89.1 2>/dev/null >> $GITHUB_STEP_SUMMARY
+          echo '### PRIVATE KEY' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/dk >> $GITHUB_STEP_SUMMARY
+          echo '### PUBLIC KEY' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/dk.pub >> $GITHUB_STEP_SUMMARY

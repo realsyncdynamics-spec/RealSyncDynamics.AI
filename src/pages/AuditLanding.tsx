@@ -11,6 +11,7 @@ import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
+import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -99,8 +100,9 @@ export function AuditLanding() {
                   Kostenloser DSGVO- und Tracking-Audit
                 </h1>
                 <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
-                  Wir scannen Deine Site auf 12 typische Compliance-Fallen — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern.
-                  Du bekommst sofort einen Score und eine konkrete Fix-Liste.
+                  Der Free Audit ist Dein Einstieg in unsere Compliance-Plattform: 12 typische Compliance-Fallen
+                  geprüft — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern. Score und Fix-Liste sofort,
+                  Continuous Monitoring optional ab Starter.
                 </p>
                 <AuditMethodologyTags />
                 <div className="max-w-xl mx-auto text-left mt-4">
@@ -163,6 +165,12 @@ export function AuditLanding() {
           {report && <ReportView report={report} onRetry={() => setReport(null)} />}
         </div>
       </main>
+
+      <ReportPreviewSection
+        eyebrow="Beispiel-Report · Was Sie nach dem Scan bekommen"
+        headline="Ihr eigener Audit sieht genauso aus."
+        subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
+      />
 
       <Footer />
     </div>

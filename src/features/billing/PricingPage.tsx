@@ -3,6 +3,7 @@ import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Activity,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
 
 // Maps the plan hint coming from the audit-result upgrade CTAs to the
 // existing SaaS-tier IDs. Existing tier IDs deliberately untouched (no
@@ -22,95 +23,27 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 /**
- * /pricing — public Pricing-Page mit 3 Paketen.
+ * /pricing — public Pricing-Page mit 4 Paketen.
  *
- * Bewusst KEIN useTenant()/AuthGate-Aufruf, damit die Route public ohne
- * Login zugänglich ist. Die Route ist zwar innerhalb des TenantProvider-
- * Trees (siehe App.tsx), das ist aber kein hartes Gate solange wir die
- * Tenant-Hooks nicht aufrufen.
+ * Tier-Daten kommen ausschliesslich aus src/config/pricing.ts
+ * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
- * Style: gleiche Schwarz/Gold/Silber-Bühne wie HeroOnly + Niche-Landings.
- *
- * Drei Pakete (Stand 2026-05):
- *   1. Scan     —  0 € / einmalig         · Lead-Funnel
- *   2. Protect  — 99 € / Monat (EMPFOHLEN)· Standard-KMU
- *   3. Comply   — 249 € / Monat           · Multi-Domain + AI-Act + API
- *
- * Keine Stripe-Anbindung in dieser PR — CTAs gehen auf /audit (Free-Scan)
- * bzw. /contact-sales?intent=… (Buchung manuell durch Sales-Team bis
- * Stripe-Setup steht).
+ * 4-Tier-Struktur (Stand 2026-05):
+ *   Free Audit  0 €         Lead-Funnel
+ *   Starter     79 €/Monat  Einzeldomain
+ *   Growth    249 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Agency    699 €/Monat  White-Label, 10 Kunden-Sites, API
+ *   Enterprise ab 1.500 €/Monat — SLA, AI Act, Evidence Vault
+ *   Enterprise individuell  SLA / AI-Act / DSB / Evidence Vault
  */
 
-interface Tier {
-  id: 'scan' | 'protect' | 'comply';
-  name: string;
-  price: string;
-  priceSuffix: string;
-  tagline: string;
-  bullets: string[];
-  badges?: string[];
-  ctaLabel: string;
-  ctaHref: string;
-  highlight: boolean;
-}
-
-const TIERS: Tier[] = [
-  {
-    id: 'scan',
-    name: 'Scan',
-    price: 'Kostenlos',
-    priceSuffix: 'einmalig',
-    tagline: 'Schneller DSGVO-Check ohne Verpflichtung',
-    bullets: [
-      'Einmaliger DSGVO-Scan der Domain',
-      'Risk-Score + Top-3-Findings',
-      'Kein Account nötig',
-    ],
-    ctaLabel: 'Jetzt kostenlos scannen',
-    ctaHref: '/audit?source=pricing-scan',
-    highlight: false,
-  },
-  {
-    id: 'protect',
-    name: 'Protect',
-    price: '99 €',
-    priceSuffix: '/ Monat',
-    tagline: 'Compliance-Standard für eine Domain',
-    bullets: [
-      'Vollständiger Audit-Report (alle Findings mit Paragraphenbezug)',
-      'Datenschutzerklärung automatisch generiert',
-      'AVV als PDF',
-      'Cookie-Banner-Konfiguration geliefert',
-      'Wöchentlicher Re-Audit + Alert bei neuen Verstößen',
-      '1 Domain',
-    ],
-    badges: ['Geprüft durch Partnerkanzlei'],
-    ctaLabel: 'Jetzt starten',
-    ctaHref: '/contact-sales?intent=protect&source=pricing',
-    highlight: true,
-  },
-  {
-    id: 'comply',
-    name: 'Comply',
-    price: '249 €',
-    priceSuffix: '/ Monat',
-    tagline: 'Mittelstand mit AI-Act-Pflichten',
-    bullets: [
-      'Alles aus Protect',
-      'Verzeichnis der Verarbeitungstätigkeiten (VVT)',
-      'TOM-Dokumentation',
-      'KI-Risikoabschätzung (EU AI Act)',
-      'Sub-Processor-Liste (automatisch gepflegt)',
-      'Bis zu 5 Domains',
-      'API-Zugriff + CI-Integration',
-      'Signierte PDF-Exports',
-      'Externer DSB buchbar (Add-on)',
-    ],
-    ctaLabel: 'Jetzt starten',
-    ctaHref: '/contact-sales?intent=comply&source=pricing',
-    highlight: false,
-  },
-];
+const TIER_ICONS: Record<TierId, typeof Cookie> = {
+  free: Cookie,
+  starter: ShieldCheck,
+  growth: Zap,
+  agency: Globe,
+  enterprise: Building2,
+};
 
 export function PricingPage() {
   const [params] = useSearchParams();
@@ -121,7 +54,7 @@ export function PricingPage() {
 
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
-      {/* Top bar — gleicher Stil wie HeroOnly */}
+      {/* Top bar */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
           <Sparkles className="h-3.5 w-3.5 text-titanium-100" />
@@ -146,19 +79,17 @@ export function PricingPage() {
               Preise · Public
             </div>
           </div>
-
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Drei Pakete. Klare Preise. Kein Account.
+            Automated Compliance Infrastructure.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Vom kostenlosen Schnell-Check bis zum Multi-Domain-Compliance-Setup mit AI-Act-Layer
-            und API-Zugriff. Sie wählen das Paket, das zu Ihrem Risiko und Ihrer Org-Größe passt —
-            wir liefern.
+            Nicht "KI baut Websites". Sondern: strukturierte Erkennung → Regelengine → automatische Remediation.
+            Vom kostenlosen Schnell-Check bis zum Enterprise-Evidence-Vault mit SLA.
           </p>
         </div>
       </section>
 
-      {/* Tier-Cards */}
+      {/* Tier-Cards — 4-spaltig auf Desktop */}
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-6xl mx-auto">
           {recommendedTier && recommendedLabel && (
@@ -186,7 +117,7 @@ export function PricingPage() {
 
           <div className="mt-8 text-center">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
-              EU-Datenresidenz · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany
+              {PRICING_TRUST_NOTE}
             </p>
           </div>
 
@@ -195,8 +126,9 @@ export function PricingPage() {
             <div className="flex items-start gap-3">
               <Award className="h-4 w-4 text-titanium-100 mt-0.5 shrink-0" />
               <p className="text-sm text-silver-300 leading-relaxed">
-                Dokumente werden automatisch generiert und durch unsere Partnerkanzlei geprüft.
-                <strong className="text-titanium-200"> Kein Rechtsberatungsersatz.</strong>
+                Unsere Outputs sind methodisch und technisch fundiert — aber kein Ersatz für individuelle Rechtsberatung.
+                <strong className="text-titanium-200"> Wir versprechen kein "100 % rechtssicher"</strong>, weil das niemand seriös kann.
+                Generierte Dokumente empfehlen wir anwaltlich prüfen zu lassen.
               </p>
             </div>
           </div>
@@ -277,41 +209,35 @@ export function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section
-        id="pricing-faq"
-        className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20"
-      >
+      <section id="pricing-faq" className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8 sm:mb-10">
-            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
-              FAQ
-            </div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">FAQ</div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
               Häufige Fragen zu den Preisen
             </h2>
           </div>
-
           <div className="space-y-3">
             {[
               {
                 q: 'Brauche ich einen Account um zu starten?',
-                a: 'Für „Scan" nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für Protect und Comply legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
+                a: 'Für Free Audit nicht — Sie geben nur die Domain ein und bekommen sofort den Risk-Score. Für alle kostenpflichtigen Tiers legen wir nach Buchung gemeinsam einen Account für Ihr Team an.',
               },
               {
-                q: 'Wie kündige ich, wenn es nicht passt?',
-                a: 'Monatlich, formlos per E-Mail. Keine Mindestlaufzeit, kein Trick mit „Nur in den ersten 14 Tagen". Daten und Reports bleiben Ihnen für 90 Tage exportierbar erhalten.',
+                q: 'Was ist Consent-Timing-Analyse?',
+                a: 'Unsere Playwright-Engine lädt Ihre Website im echten Headless-Browser und protokolliert jeden Netzwerk-Request mit präzisem Timestamp — vor und nach dem ersten Klick. So sehen wir, ob Google Analytics, Meta Pixel oder andere Tracker geladen werden, bevor der Nutzer eingewilligt hat. Das ist der häufigste und gravierendste DSGVO-Verstoß.',
               },
               {
-                q: 'Was ist „Geprüft durch Partnerkanzlei"?',
-                a: 'Ihre automatisch generierten Dokumente (DSE, AVV, VVT) durchlaufen einen Review unserer DSGVO-spezialisierten Partnerkanzlei. Das ersetzt keine individuelle Rechtsberatung — bringt aber Ihre Doku auf einen Standard, der dem juristischen Mainstream entspricht.',
+                q: 'Was ist "Auto-Remediation" genau?',
+                a: 'Für erkannte Probleme liefern wir konkrete technische Fixes: Script-Tags mit type="text/plain" und data-consent-Attribut, Consent-Banner-Code-Snippets, Google-Fonts-Self-Hosting-Script, YouTube-NoCookie-Umstellung. Kein LLM-generiertes "schreib eine Datenschutzerklärung", sondern strukturierte Regel-Engine → Template-System.',
               },
               {
-                q: 'Muss ich für Comply schon API/CI nutzen?',
-                a: 'Nein. API + CI-Integration sind im Paket enthalten, aber optional. Sie können Comply auch nur wegen VVT/TOM/AI-Act buchen und API später aktivieren — kein Up- oder Downgrade nötig.',
+                q: 'Wie kündige ich?',
+                a: 'Monatlich, formlos per E-Mail. Keine Mindestlaufzeit. Daten und Reports bleiben Ihnen 90 Tage exportierbar erhalten.',
               },
               {
-                q: 'Was ist der externe DSB-Add-on?',
-                a: 'Auf Wunsch vermitteln wir einen externen Datenschutzbeauftragten unserer Partnerkanzlei. Stundenkontingent oder Pauschale, separate Vereinbarung.',
+                q: 'Was ist der Enterprise Evidence Vault?',
+                a: 'Ein unveränderliches Archiv aller Scans, Findings, Fix-Bestätigungen und Dokumente — mit kryptografischen Zeitstempeln. Wenn Sie einer Aufsichtsbehörde nachweisen müssen, dass Sie zu einem bestimmten Datum compliant waren, liefert der Vault den Beweis.',
               },
             ].map((item) => (
               <details
@@ -319,12 +245,8 @@ export function PricingPage() {
                 className="group p-5 bg-obsidian-900/60 border border-silver-700/30 hover:border-titanium-200/60 rounded-none transition-colors"
               >
                 <summary className="flex items-center justify-between gap-3 cursor-pointer list-none">
-                  <span className="font-display font-bold text-titanium-50 text-base leading-snug">
-                    {item.q}
-                  </span>
-                  <span className="text-titanium-100 text-xl leading-none transition-transform group-open:rotate-45 select-none">
-                    +
-                  </span>
+                  <span className="font-display font-bold text-titanium-50 text-base leading-snug">{item.q}</span>
+                  <span className="text-titanium-100 text-xl leading-none transition-transform group-open:rotate-45 select-none">+</span>
                 </summary>
                 <p className="text-sm text-silver-300 leading-relaxed mt-3">{item.a}</p>
               </details>
@@ -333,7 +255,7 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* Footer — gleiche Struktur wie HeroOnly */}
+      {/* Footer */}
       <footer className="border-t border-silver-700/40 px-4 sm:px-6 lg:px-8 py-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-silver-500">
           <div className="flex items-center gap-1">
@@ -341,14 +263,14 @@ export function PricingPage() {
             <span>© 2026 RealSync Dynamics · Made in Germany</span>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link to="/cookie-scanner"        className="hover:text-titanium-50 text-titanium-100">Cookie-Scanner · Free</Link>
-            <Link to="/ai-act-workflows"      className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
-            <Link to="/legal/privacy"         className="hover:text-titanium-50">Datenschutz</Link>
-            <Link to="/impressum"             className="hover:text-titanium-50">Impressum</Link>
-            <Link to="/legal/sub-processors"  className="hover:text-titanium-50">Sub-Processors</Link>
-            <Link to="/legal/methodology"     className="hover:text-titanium-50">Methodik</Link>
-            <Link to="/security"              className="hover:text-titanium-50">Security</Link>
-            <Link to="/status"                className="hover:text-titanium-50">Status</Link>
+            <Link to="/cookie-scanner" className="hover:text-titanium-50 text-titanium-100">Cookie-Scanner · Free</Link>
+            <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
+            <Link to="/legal/privacy" className="hover:text-titanium-50">Datenschutz</Link>
+            <Link to="/impressum" className="hover:text-titanium-50">Impressum</Link>
+            <Link to="/legal/sub-processors" className="hover:text-titanium-50">Sub-Processors</Link>
+            <Link to="/legal/methodology" className="hover:text-titanium-50">Methodik</Link>
+            <Link to="/security" className="hover:text-titanium-50">Security</Link>
+            <Link to="/status" className="hover:text-titanium-50">Status</Link>
           </div>
         </div>
       </footer>
@@ -395,23 +317,15 @@ function TierCard({
 
       <div className="flex items-center gap-2 mb-2 mt-1">
         <TierIcon className="h-4 w-4 text-titanium-100" />
-        <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">
-          {tier.name}
-        </div>
+        <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">{tier.name}</div>
       </div>
 
       <div className="flex items-baseline gap-1.5 mb-1.5">
-        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">
-          {tier.price}
-        </div>
-        <div className="text-xs font-mono uppercase tracking-wider text-silver-400">
-          {tier.priceSuffix}
-        </div>
+        <div className="text-3xl font-display font-bold text-titanium-100 tabular-nums">{priceDisplay}</div>
+        <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.priceSuffix}</div>
       </div>
 
-      <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-4">
-        {tier.tagline}
-      </div>
+      <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-4">{tier.tagline}</div>
 
       {tier.badges && tier.badges.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">

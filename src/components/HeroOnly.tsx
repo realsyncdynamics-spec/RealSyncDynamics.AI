@@ -70,7 +70,12 @@ export function HeroOnly() {
           <NavButton onClick={() => setOpenModal('compliance')} className="hidden md:inline-flex">
             Compliance-Center
           </NavButton>
-          <NavButton onClick={() => setOpenModal('pricing')}>Preise</NavButton>
+          <Link
+            to="/pricing"
+            className="px-2 sm:px-3 py-1.5 text-silver-300 hover:text-titanium-50 font-semibold transition-colors"
+          >
+            Preise
+          </Link>
           <NavButton onClick={() => setOpenModal('enterprise')} className="hidden md:inline-flex">
             Enterprise
           </NavButton>
@@ -84,8 +89,8 @@ export function HeroOnly() {
         </Link>
       </div>
 
-      {/* ─── 2-6) Center Stage ──────────────────────────────────── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      {/* ─── 2-6) Hero — kein justify-center mehr (substance peek for scroll) */}
+      <main className="px-4 sm:px-6 lg:px-8 py-10 sm:py-14 flex flex-col items-center">
         <div className="max-w-3xl w-full text-center">
 
           {/* Logo + Brand-Claim */}
@@ -133,7 +138,26 @@ export function HeroOnly() {
 
           {/* Trust-Leiste */}
           <div className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-silver-500">
-            EU-Datenresidenz · AVV inklusive · Vollständiges Audit-Log · Made in Germany
+            EU-Datenresidenz · AVV inklusive · Continuous Monitoring · Made in Germany
+          </div>
+
+          {/* Stat-Bar — konkrete Zahlen, kein Marketing-Fluff */}
+          <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-px bg-silver-700/30 max-w-2xl mx-auto">
+            {[
+              { num: '18', label: 'Tracker-Klassen' },
+              { num: '5', label: 'AI-Vendoren überwacht' },
+              { num: '62', label: 'SEO-Routes audited' },
+              { num: '< 30s', label: 'Scan-Zeit' },
+            ].map((s) => (
+              <div key={s.label} className="bg-obsidian-950/80 px-2 py-3 text-center">
+                <div className="font-display font-bold text-titanium-50 text-base sm:text-xl tabular-nums">
+                  {s.num}
+                </div>
+                <div className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-silver-400 mt-0.5 leading-tight">
+                  {s.label}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Pflicht-Disclaimer zum kostenlosen Audit */}

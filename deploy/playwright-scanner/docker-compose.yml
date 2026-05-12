@@ -1,0 +1,92 @@
+# Playwright Scanner Microservice — docker-compose.yml
+# Deployment auf Hostinger VPS hinter bestehendem Traefik-Stack
+#
+# Voraussetzungen:
+#   - Traefik laeuft bereits (ollama-traefik/ Setup)
+#   - External network 'proxy' existiert (docker network create proxy)
+#   - .env Datei mit SCANNER_API_KEY gesetzt
+#
+# Starten:
+#   cd deploy/playwright-scanner
+#   cp .env.example .env && nano .env  # SCANNER_API_KEY setzen
+#   docker compose up -d
+#
+# URL nach Deployment:
+#   https://scanner.realsyncdynamicsai.de/health
+#
+# Supabase Edge Functions nutzen dann:
+#   PLAYWRIGHT_SCANNER_URL=https://scanner.realsyncdynamicsai.de
+#   PLAYWRIGHT_SCANNER_KEY=<SCANNER_API_KEY>
+
+version: '3.9'
+
+services:
+  playwright-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: playwright-scanner
+    restart: unless-stopped
+
+    environment:
+      - PORT=3001
+      - SCANNER_API_KEY=${SCANNER_API_KEY:?SCANNER_API_KEY required}
+      - MAX_CONCURRENT=${MAX_CONCURRENT:-3}
+      - NODE_ENV=production
+
+    # Kein Port-Mapping nach aussen — nur via Traefik erreichbar
+    expose:
+      - "3001"
+
+    # Chromium braucht shared memory
+    shm_size: '1gb'
+
+    # Sicherheit: Kein root
+    security_opt:
+      - no-new-privileges:true
+
+    # Resource-Limits (Chromium ist speicherhungrig)
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    # Logs begrenzen
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+    # Traefik-Labels fuer automatisches Routing
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.playwright-scanner.rule=Host(`scanner.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.playwright-scanner.entrypoints=websecure"
+      - "traefik.http.routers.playwright-scanner.tls.certresolver=letsencrypt"
+      - "traefik.http.services.playwright-scanner.loadbalancer.server.port=3001"
+      # BasicAuth als erste Schutzschicht (zusaetzlich zum API-Key)
+      - "traefik.http.routers.playwright-scanner.middlewares=scanner-auth"
+      - "traefik.http.middlewares.scanner-auth.basicauth.users=${TRAEFIK_BASIC_AUTH:-realsyncdynamics:$$apr1$$placeholder}"
+      # Rate-Limiting: max 20 requests/min
+      - "traefik.http.middlewares.scanner-ratelimit.ratelimit.burst=5"
+      - "traefik.http.middlewares.scanner-ratelimit.ratelimit.average=20"
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: proxy

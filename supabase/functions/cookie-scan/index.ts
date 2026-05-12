@@ -70,6 +70,16 @@ interface ScanResult {
   score: number;
   severity: 'pass' | 'low' | 'medium' | 'high' | 'critical';
   summary: string;
+  forms?: {
+    total_forms: number;
+    has_email_field: boolean;
+    has_password_field: boolean;
+    has_phone_field: boolean;
+    contact_form_detected: boolean;
+    signup_form_detected: boolean;
+    visible_consent_link: boolean;
+  };
+  unknown_scripts_count?: number;
 }
 
 // Tracker-Patterns — abgeglichen mit den Hauptprüfregeln in
@@ -403,6 +413,18 @@ Deno.serve(async (req) => {
   const { trackers, privacy_analytics, consent_manager_detected } = detectTrackers(html);
   const { score, severity, summary } = scoreScan(cookies, trackers, consent_manager_detected);
 
+  // Auto-Discovery — fire-and-forget Report von unbekannten 3rd-party Scripts
+  // an die Datenbank. Blockiert nicht die Response.
+  const unknownScripts = extractUnknownThirdPartyScripts(html, domain, trackers);
+  if (unknownScripts.length > 0) {
+    void reportUnknownScripts(unknownScripts, domain).catch((e) => {
+      console.warn('[cookie-scan] report_unknown_tracker failed:', e instanceof Error ? e.message : String(e));
+    });
+  }
+
+  // Form-Detection — Email/Password-Felder ohne sichtbaren Consent-Hinweis
+  const formAnalysis = detectForms(html);
+
   const result: ScanResult = {
     ok: true,
     url,
@@ -417,7 +439,145 @@ Deno.serve(async (req) => {
     score,
     severity,
     summary,
+    forms: formAnalysis,
+    unknown_scripts_count: unknownScripts.length,
   };
 
   return jsonResponse(200, result as unknown as Record<string, unknown>);
 });
+
+/**
+ * Extrahiert alle <script src="..."> aus dem HTML, filtert auf 3rd-party
+ * (= andere Domain als die Site selbst) und entfernt jene die bereits durch
+ * detectTrackers() klassifiziert wurden.
+ */
+function extractUnknownThirdPartyScripts(
+  html: string,
+  siteDomain: string,
+  knownTrackers: Tracker[],
+): Array<{ host: string; sampleUrl: string }> {
+  const scriptSrcs = new Set<string>();
+  for (const m of html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)) {
+    if (m[1]) scriptSrcs.add(m[1].trim());
+  }
+
+  // Site-Domain inkl. ein-Level www-prefix-Variante
+  const siteApex = siteDomain.replace(/^www\./, '');
+
+  // Hosts die schon durch knownTrackers gematcht wurden — die nicht doppelt melden
+  const matchedNeedles = knownTrackers.map((t) => t.pattern_matched.toLowerCase());
+
+  const out: Array<{ host: string; sampleUrl: string }> = [];
+  const seenHosts = new Set<string>();
+
+  for (const src of scriptSrcs) {
+    let parsedHost: string;
+    try {
+      // Relative oder protokoll-relative URLs als first-party betrachten
+      if (!/^https?:/.test(src) && !src.startsWith('//')) continue;
+      const fullUrl = src.startsWith('//') ? `https:${src}` : src;
+      parsedHost = new URL(fullUrl).hostname.toLowerCase();
+    } catch {
+      continue;
+    }
+
+    const hostApex = parsedHost.replace(/^www\./, '');
+    if (hostApex === siteApex) continue;                 // first-party
+    if (hostApex.endsWith('.' + siteApex)) continue;     // subdomain der Site
+
+    // Bereits durch tracker-registry erkannt?
+    const lowerSrc = src.toLowerCase();
+    if (matchedNeedles.some((n) => lowerSrc.includes(n))) continue;
+
+    if (seenHosts.has(parsedHost)) continue;
+    seenHosts.add(parsedHost);
+
+    out.push({ host: parsedHost, sampleUrl: src.slice(0, 500) });
+    if (out.length >= 20) break;                         // Limit pro Scan
+  }
+
+  return out;
+}
+
+async function reportUnknownScripts(
+  scripts: Array<{ host: string; sampleUrl: string }>,
+  customerDomain: string,
+): Promise<void> {
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!SUPABASE_URL || !SRK) return;
+
+  // Direkte HTTP-Calls an PostgREST RPC-Endpoint — keine supabase-js Lib nötig.
+  await Promise.allSettled(scripts.map((s) =>
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/report_unknown_tracker`, {
+      method: 'POST',
+      headers: {
+        'apikey': SRK,
+        'authorization': `Bearer ${SRK}`,
+        'content-type': 'application/json',
+        'prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        p_script_host: s.host,
+        p_sample_url: s.sampleUrl,
+        p_customer_domain: customerDomain,
+      }),
+    })
+  ));
+}
+
+interface FormAnalysis {
+  total_forms: number;
+  has_email_field: boolean;
+  has_password_field: boolean;
+  has_phone_field: boolean;
+  contact_form_detected: boolean;        // Form mit email + (name|message)
+  signup_form_detected: boolean;         // Form mit email + password
+  visible_consent_link: boolean;         // Link zu /datenschutz oder /privacy in Form-Nähe
+}
+
+/**
+ * Heuristische Form-Detection:
+ *   - zählt <form>-Tags
+ *   - sucht in deren content nach email/password/phone-Inputs
+ *   - prüft ob ein Privacy-Link in der Nähe ist (= ground für Art-13-Hinweis)
+ */
+function detectForms(html: string): FormAnalysis {
+  const forms: string[] = [];
+  for (const m of html.matchAll(/<form[\s\S]*?<\/form>/gi)) {
+    forms.push(m[0]);
+  }
+  let hasEmail = false;
+  let hasPassword = false;
+  let hasPhone = false;
+  let signupDetected = false;
+  let contactDetected = false;
+  let privacyLink = false;
+
+  for (const f of forms) {
+    const lower = f.toLowerCase();
+    const fEmail = /type=["']email["']|name=["'][^"']*e[-_]?mail/i.test(f);
+    const fPassword = /type=["']password["']/i.test(lower);
+    const fPhone = /type=["']tel["']|name=["'][^"']*(phone|tel|mobil)/i.test(f);
+    const fMessage = /name=["'][^"']*(message|nachricht|comment)/i.test(f) || /<textarea/i.test(lower);
+
+    if (fEmail) hasEmail = true;
+    if (fPassword) hasPassword = true;
+    if (fPhone) hasPhone = true;
+    if (fEmail && fPassword) signupDetected = true;
+    if (fEmail && fMessage) contactDetected = true;
+
+    // Privacy-Link IM Formular oder direkt davor (~500 chars)
+    if (/href=["'][^"']*(datenschutz|privacy|policy)/i.test(f)) privacyLink = true;
+  }
+
+  return {
+    total_forms: forms.length,
+    has_email_field: hasEmail,
+    has_password_field: hasPassword,
+    has_phone_field: hasPhone,
+    contact_form_detected: contactDetected,
+    signup_form_detected: signupDetected,
+    visible_consent_link: privacyLink,
+  };
+}

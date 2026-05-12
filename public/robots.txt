@@ -1,10 +1,57 @@
 User-agent: *
 Allow: /
 
-# Block analytics/admin routes from indexing
+# Auth-gated views — kein SEO-Wert
 Disallow: /admin/
 Disallow: /settings/
 Disallow: /dashboard
 Disallow: /tenant/
+Disallow: /kodee
+Disallow: /kodee/
+Disallow: /billing/
+Disallow: /workflows
+Disallow: /market-gaps
+Disallow: /outreach
+Disallow: /risk-dashboard
+Disallow: /setup
+Disallow: /welcome
 
-Sitemap: https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI/sitemap.xml
+# Onboarding/Confirmation-Pages — Crawler haben keine valide Session
+Disallow: /dsgvo-website/danke
+Disallow: /dsgvo-website/rebuild/
+Disallow: /newsletter/confirm
+Disallow: /audit/share/
+
+# Tool-Aliase (Duplicate-Content vermeiden — Canonical ist /tools/$slug bzw. /$tool)
+Disallow: /tools/ai-act-classifier
+Disallow: /tools/ai-act-workflows
+Disallow: /tools/avv-generator
+Disallow: /tools/busseld-rechner
+Disallow: /tools/cookie-scanner
+Disallow: /tools/datenschutz-generator
+Disallow: /tools/dokumente-bundle
+Disallow: /tools/dsfa-wizard
+Disallow: /tools/meldepflicht-timer
+Disallow: /tools/tom-generator
+Disallow: /tools/vvt-wizard
+
+# Routen-Aliase
+Disallow: /funktionen
+Disallow: /datenschutz
+Disallow: /website-as-a-service
+Disallow: /website-rundum-service
+
+# AI-Crawler explizit erlauben (fuer AI-Discoverability bewusst nicht geblockt)
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://realsyncdynamicsai.de/sitemap.xml

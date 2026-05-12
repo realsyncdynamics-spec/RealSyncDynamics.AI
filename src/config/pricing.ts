@@ -1,0 +1,166 @@
+/**
+ * Single Source of Truth fuer alle Pricing-Tiers (5-Tier seit PR #145).
+ *
+ * Konsumenten:
+ *   - src/features/billing/PricingPage.tsx  (volle Pricing-Page)
+ *   - src/components/sections/PricingTeaserSection.tsx (Hero + Niche-Landings)
+ *   - index.html JSON-LD <script type=application/ld+json>
+ *   - Stripe-Webhook + Edge-Functions (plan_key Mapping in supabase/...)
+ *
+ * Aenderungen hier propagieren ueberall — niemals duplizieren.
+ *
+ * Pricing-Rebalance vom 2026-05-10 (Test-Kunde-Critique):
+ *   alt:  Free / Starter 49 / Growth 199 / Enterprise individuell  (4 Tier)
+ *   neu:  Free / Starter 79 / Growth 249 / Agency 699 / Enterprise ab 1500
+ *
+ * Reasoning:
+ *   - Starter 49 -> 79: 49 wirkt wie Hobby-Tool. 79 ist das DACH-Pflicht-
+ *     Compliance-Sweet-Spot (Cookiebot Premium ~110, Iubenda Plus ~280)
+ *   - Growth 199 -> 249: leichte Anhebung weil Auto-Fix + Daily-Monitoring
+ *     mehr wert ist als 199, und 249 markiert klar die Premium-Linie
+ *   - Agency 699 NEU: fehlte komplett. Agenturen sind in DACH der schnellste
+ *     Vertriebskanal — 1 Agency-Kunde = 5-15 End-Domains. Sweet-Spot 699:
+ *     OneTrust ab ~600, aber wir liefern White-Label + DACH-Pricing
+ *   - Enterprise jetzt mit Floor "ab 1500": signalisiert Niveau,
+ *     blockiert Tire-Kicker
+ */
+
+export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise';
+
+export interface PricingTier {
+  id: TierId;
+  /** Marketing-Label */
+  name: string;
+  /** Plan-Key fuer Stripe / DB (matcht public.products.default_for_plan_key) */
+  planKey: string;
+  /** Anzeige-Preis (Euro). Fuer Enterprise: priceEur=0, priceString='individuell' */
+  priceEur: number;
+  /** "0", "79", "249", "699" — als String fuer Stripe Offer-Schema */
+  priceString: string;
+  /** "/ Monat", "einmalig", "individuell ab 1.500 €" */
+  priceSuffix: string;
+  /** isRecurring → mode: subscription bei Stripe Checkout */
+  recurring: boolean;
+  /** Kurz-Tagline */
+  tagline: string;
+  /** 3-7 Bullets fuer Tier-Card */
+  bullets: string[];
+  /** Optionale Badges (z.B. "Empfohlen", "Neu") */
+  badges?: string[];
+  /** Highlight-Ring auf der Card */
+  highlight: boolean;
+  /** Primary-CTA-Label + Ziel */
+  cta: { label: string; href: string };
+}
+
+export const PRICING_TIERS: PricingTier[] = [
+  {
+    id: 'free',
+    name: 'Free Audit',
+    planKey: 'free_audit',
+    priceEur: 0,
+    priceString: '0',
+    priceSuffix: 'einmalig · kein Account',
+    recurring: false,
+    tagline: 'Sofortiger DSGVO-Check ohne Verpflichtung',
+    bullets: [
+      'URL-Scan mit Compliance-Score 0-100',
+      'Top-3-Risiken sichtbar',
+      'Mini-PDF-Report',
+      'Kein Account, kein Setup',
+    ],
+    highlight: false,
+    cta: { label: 'Kostenlos scannen', href: '/audit?source=pricing-free' },
+  },
+  {
+    id: 'starter',
+    name: 'Starter',
+    planKey: 'starter',
+    priceEur: 79,
+    priceString: '79',
+    priceSuffix: '/ Monat',
+    recurring: true,
+    tagline: 'Vollständige Compliance-Basis für eine Domain',
+    bullets: [
+      'Vollständiger DSGVO-Scan (alle Findings mit Paragraphenbezug)',
+      'Datenschutzerklärung (DSE) + Impressum-Generator',
+      'Cookie-Banner-Konfiguration geliefert',
+      'Monatlicher Re-Scan + Email-Alert bei neuen Verstößen',
+      '1 Domain',
+    ],
+    highlight: false,
+    cta: { label: 'Starter buchen', href: '/checkout/starter?source=pricing' },
+  },
+  {
+    id: 'growth',
+    name: 'Growth',
+    planKey: 'growth',
+    priceEur: 249,
+    priceString: '249',
+    priceSuffix: '/ Monat',
+    recurring: true,
+    tagline: 'Continuous Monitoring + Auto-Fix-Engine',
+    bullets: [
+      'Alles aus Starter',
+      'Tägliches Monitoring + Drift-Detection',
+      'Consent-Timing-Analyse (pre-consent requests)',
+      'Auto-Fix-Empfehlungen mit Code-Snippets',
+      'Risk-Dashboard im Browser',
+      'Bis zu 3 Domains',
+    ],
+    badges: ['Empfohlen'],
+    highlight: true,
+    cta: { label: 'Growth buchen', href: '/checkout/growth?source=pricing' },
+  },
+  {
+    id: 'agency',
+    name: 'Agency',
+    planKey: 'agency',
+    priceEur: 699,
+    priceString: '699',
+    priceSuffix: '/ Monat',
+    recurring: true,
+    tagline: 'White-Label · Multi-Tenant · API-Zugriff für Agenturen',
+    bullets: [
+      'Alles aus Growth',
+      'White-Label-Reports mit eigenem Logo',
+      'Multi-Tenant-Dashboard (10 Kundenseiten inklusive)',
+      'API + Webhooks für CI/CD-Integration',
+      'Bulk-Audit für Kundenportfolios',
+      'Priority-Support',
+    ],
+    badges: ['Neu'],
+    highlight: false,
+    cta: { label: 'Agency buchen', href: '/checkout/agency?source=pricing' },
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    planKey: 'enterprise',
+    priceEur: 0,
+    priceString: 'individuell',
+    priceSuffix: 'ab 1.500 € / Monat',
+    recurring: true,
+    tagline: 'SLA · AI-Act-Modul · DSB-Integration · Evidence Vault',
+    bullets: [
+      'Alle Agency-Funktionen',
+      'SLA-Garantie + dedizierter Account-Manager',
+      'EU AI Act Compliance-Modul',
+      'DSB-Integration (interner oder externer DSB)',
+      'Evidence Vault (Hash-Chain + HMAC-Signaturen)',
+      'Unlimitierte Domains + unlimitierte Mitarbeiter',
+      'Individuelle Vertragsgestaltung / DPA',
+    ],
+    highlight: false,
+    cta: { label: 'Enterprise anfragen', href: '/contact-sales?intent=enterprise&source=pricing' },
+  },
+];
+
+/** Quick-Lookup nach id */
+export function tierById(id: TierId): PricingTier | undefined {
+  return PRICING_TIERS.find((t) => t.id === id);
+}
+
+/** Trust-Note unter Pricing-Cards */
+export const PRICING_TRUST_NOTE =
+  'Free Audit kostenlos · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';

@@ -1,0 +1,593 @@
+{
+  "$schema": "https://schemas.realsyncdynamics.ai/annex-iii/v1.json",
+  "version": "2026.05.0",
+  "source": "EU AI Act Regulation 2024/1689, Annex III (in conjunction with Art. 6 + Recitals 49-66)",
+  "updated_at": "2026-05-09",
+  "categories": [
+    {
+      "id": "biometrics",
+      "label": "Biometrics",
+      "annex_section": "Annex III §1",
+      "intro": "Biometrische Systeme — soweit nicht durch Art. 5 verboten — sind als High-Risk eingestuft. Verboten gemäß Art. 5: Echtzeit-Fern-Biometrie im öffentlichen Raum durch Strafverfolgung (außer engen Ausnahmen), biometrische Kategorisierung nach geschützten Merkmalen, Emotion-Recognition am Arbeitsplatz/in Bildung."
+    },
+    {
+      "id": "critical_infrastructure",
+      "label": "Kritische Infrastruktur",
+      "annex_section": "Annex III §2",
+      "intro": "KI als Sicherheits-Komponente im Betrieb/Management kritischer digitaler Infrastruktur, Straßenverkehr, Versorgung mit Wasser, Gas, Heizung, Strom."
+    },
+    {
+      "id": "education",
+      "label": "Bildung & Berufsbildung",
+      "annex_section": "Annex III §3",
+      "intro": "KI in Bildungseinrichtungen, die über Zugang, Bewertung, Lernpfad oder Prüfungsverhalten entscheidet."
+    },
+    {
+      "id": "employment",
+      "label": "Beschäftigung & Workforce",
+      "annex_section": "Annex III §4",
+      "intro": "KI im Recruiting, Personalmanagement und für arbeitsrechtliche Entscheidungen."
+    },
+    {
+      "id": "essential_services",
+      "label": "Wesentliche Dienste & Leistungen",
+      "annex_section": "Annex III §5",
+      "intro": "KI für Zugang zu öffentlichen Sozialleistungen, Kreditwürdigkeit, Versicherungs-Risikobewertung, Notfall-Dispatch."
+    },
+    {
+      "id": "law_enforcement",
+      "label": "Strafverfolgung",
+      "annex_section": "Annex III §6",
+      "intro": "KI durch Strafverfolgungsbehörden — Profiling, Beweis-Bewertung, Crime-Analytics, Risiko-Prognose."
+    },
+    {
+      "id": "migration",
+      "label": "Migration, Asyl & Grenzkontrolle",
+      "annex_section": "Annex III §7",
+      "intro": "KI im Migrations- und Asyl-Verfahren, Visum-Prüfung, Grenzkontrollen."
+    },
+    {
+      "id": "justice_democracy",
+      "label": "Justiz & demokratische Prozesse",
+      "annex_section": "Annex III §8",
+      "intro": "KI zur Unterstützung von Justizbehörden + KI zur Beeinflussung von Wahl-/Abstimmungs-Ergebnissen."
+    }
+  ],
+  "use_cases": [
+    {
+      "id": "biometric_remote_identification",
+      "category": "biometrics",
+      "title": "Fern-biometrische Identifikation (Post-Hoc)",
+      "description": "KI-Systeme, die Personen aus der Distanz biometrisch identifizieren — z.B. Gesichtserkennung in Video-Aufnahmen, nachträgliche Auswertung. Echtzeit-RBI im öffentlichen Raum durch Strafverfolgung ist nach Art. 5 grundsätzlich verboten.",
+      "triggers": [
+        "Gesichtserkennung in Video-Streams",
+        "Identitätsabgleich gegen biometrische Datenbank",
+        "Wiedererkennung von Personen über mehrere Kamera-Standorte",
+        "Stimm-Identifikation aus Audio-Aufnahmen"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "transparency_to_deployers",
+        "human_oversight",
+        "accuracy_robustness_cybersecurity",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment"
+      ],
+      "norms": ["AI Act Annex III §1(a)", "AI Act Art. 6", "AI Act Art. 27", "DSGVO Art. 9 (besondere Kategorien)"],
+      "prohibited_overlay": "Real-time RBI im öffentlichen Raum durch Law Enforcement = Art. 5(1)(h) verboten — Ausnahmen eng begrenzt",
+      "examples_de": [
+        "Bahnhof-Überwachung mit Gesichtsabgleich",
+        "Marketing-Tracking via In-Store-Kamera + Face-DB",
+        "Stadion-Zutrittskontrolle mit Foto-Datenbank"
+      ]
+    },
+    {
+      "id": "biometric_categorisation",
+      "category": "biometrics",
+      "title": "Biometrische Kategorisierung",
+      "description": "KI, die Personen in Kategorien einteilt anhand biometrischer Merkmale — z.B. Alter, Geschlecht, ethnische Gruppe. Verboten nach Art. 5(1)(g) wenn nach geschützten Merkmalen (Rasse, Religion, sex. Orientierung, politische Meinung) — sonst High-Risk.",
+      "triggers": [
+        "Demografie-Analyse aus Gesichts-/Körpermerkmalen",
+        "Alters-Schätzung für Werbe-Targeting",
+        "Geschlechts-Klassifikation aus Audio/Video",
+        "Ethnische Zuordnung"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "human_oversight",
+        "conformity_assessment"
+      ],
+      "norms": ["AI Act Annex III §1(b)", "AI Act Art. 5(1)(g)"],
+      "prohibited_overlay": "Kategorisierung nach Rasse, politischer Meinung, Religion, sexueller Orientierung etc. = Art. 5(1)(g) verboten",
+      "examples_de": [
+        "Out-of-Home-Werbung mit Gesichts-Demografie",
+        "Smart-Mirror in Retail mit Alters/Geschlechts-Klassifikation"
+      ]
+    },
+    {
+      "id": "emotion_recognition",
+      "category": "biometrics",
+      "title": "Emotion Recognition",
+      "description": "KI zur Erkennung von Emotionen aus Mimik, Stimme, Körperhaltung. Am Arbeitsplatz und in Bildung verboten (Art. 5(1)(f)) — außer aus medizinischen oder Sicherheits-Gründen. In anderen Kontexten High-Risk.",
+      "triggers": [
+        "Stimmungs-Analyse von Mitarbeitern",
+        "Aufmerksamkeits-Tracking von Schülern",
+        "Customer-Service-Stimmungsanalyse",
+        "Emotion-Tagging in Video-Calls"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "transparency_disclosure_art50",
+        "human_oversight",
+        "conformity_assessment"
+      ],
+      "norms": ["AI Act Annex III §1(c)", "AI Act Art. 5(1)(f)", "AI Act Art. 50"],
+      "prohibited_overlay": "Workplace + Education = Art. 5(1)(f) verboten (außer medizinisch/sicherheits-relevant)",
+      "examples_de": [
+        "Call-Center-Tool das Kunden-Frustration markiert",
+        "Lern-Plattform die Schüler-Aufmerksamkeit misst",
+        "Retail-Analyse zur Kundenzufriedenheit am POS"
+      ]
+    },
+    {
+      "id": "critical_infrastructure_safety",
+      "category": "critical_infrastructure",
+      "title": "Sicherheitskomponente in kritischer Infrastruktur",
+      "description": "KI-Systeme die als Sicherheitskomponente in Betrieb/Management von kritischer Infrastruktur eingesetzt werden — Energie, Wasser, Gas, Heizung, Verkehr.",
+      "triggers": [
+        "Verkehrssteuerung mit ML-basierter Optimierung",
+        "Stromnetz-Lastprognose mit autonomer Steuerung",
+        "Wasser-Versorgungs-Anomaly-Detection",
+        "Eisenbahn-Signalsteuerung mit ML"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "human_oversight",
+        "accuracy_robustness_cybersecurity",
+        "conformity_assessment"
+      ],
+      "norms": ["AI Act Annex III §2", "NIS2-Richtlinie", "BSI-Kritis-Verordnung"],
+      "examples_de": [
+        "ML-gestützte Lastflusssteuerung im Übertragungsnetz",
+        "Verkehrsleitsystem mit autonomer Ampel-Optimierung",
+        "Anomalie-Erkennung in Trinkwasser-Aufbereitung"
+      ]
+    },
+    {
+      "id": "education_admission",
+      "category": "education",
+      "title": "Zugang & Auswahl in Bildung",
+      "description": "KI die über Zulassung, Aufnahme oder Zuweisung zu Bildungseinrichtungen entscheidet — Schulen, Hochschulen, Berufsbildung.",
+      "triggers": [
+        "Zulassungs-Algorithmus für Hochschule",
+        "Schulplatz-Vergabe via ML",
+        "Berufs-Eignungstests mit KI-Auswertung"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment"
+      ],
+      "norms": ["AI Act Annex III §3(a)", "DSGVO Art. 8 (Minderjährige)", "Landes-Schulgesetze"],
+      "examples_de": [
+        "Hochschul-NC-Vergabe mit ML-Scoring",
+        "Auswahlverfahren für duale Ausbildung"
+      ]
+    },
+    {
+      "id": "education_evaluation",
+      "category": "education",
+      "title": "Bewertung & Prüfungs-Aufsicht",
+      "description": "KI zur Bewertung von Lernergebnissen, Auto-Korrektur von Prüfungen, oder zur Aufsicht in Online-Prüfungen (Proctoring).",
+      "triggers": [
+        "Auto-Korrektur von Klausuren",
+        "Online-Proctoring (Webcam/Mikrofon-Überwachung)",
+        "Lernpfad-Empfehlung mit ML",
+        "Plagiats-Detektion"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "transparency_disclosure_art50",
+        "human_oversight",
+        "conformity_assessment"
+      ],
+      "norms": ["AI Act Annex III §3(b)-(d)", "DSGVO Art. 8", "Hochschul-Prüfungsordnungen"],
+      "examples_de": [
+        "Online-Klausur mit Webcam-Proctoring",
+        "Adaptive-Learning-Plattform die Lernpfade vorschreibt",
+        "Sprach-Test mit KI-Bewertung"
+      ]
+    },
+    {
+      "id": "employment_recruiting",
+      "category": "employment",
+      "title": "Recruiting & Bewerber-Auswahl",
+      "description": "KI zum Filtern, Ranking, Bewerten von Bewerbungen — auch automatisierte Job-Anzeigen-Targeting und CV-Analyse.",
+      "triggers": [
+        "CV-Screening mit ML-Ranking",
+        "Video-Interview-Analyse",
+        "Sprach-Tests mit KI-Auswertung",
+        "Targeted Job-Ads via algorithmischer Selektion"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment",
+        "betriebsrat_consultation_de"
+      ],
+      "norms": [
+        "AI Act Annex III §4(a)",
+        "DSGVO Art. 22 (automatisierte Einzelfallentscheidung)",
+        "BDSG § 26 (Beschäftigtendaten)",
+        "AGG (Antidiskriminierung)",
+        "BetrVG § 87 Abs. 1 Nr. 6 (Mitbestimmung)"
+      ],
+      "examples_de": [
+        "ATS mit ML-basiertem CV-Ranking",
+        "AI-Video-Interview-Tool (HireVue, MyInterview)",
+        "Skill-Matching-Plattform mit algorithmischer Vorauswahl"
+      ]
+    },
+    {
+      "id": "employment_workforce_management",
+      "category": "employment",
+      "title": "Workforce-Management & arbeitsrechtl. Entscheidungen",
+      "description": "KI für Beförderungs-, Kündigungs-, Aufgabenverteilungs-Entscheidungen oder Performance-Monitoring.",
+      "triggers": [
+        "Performance-Scoring von Mitarbeitern",
+        "Kündigungs-Empfehlungen via ML",
+        "Schicht-Planung mit individuellem Performance-Score",
+        "Bonus-Berechnung via algorithmischer Bewertung"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment",
+        "betriebsrat_consultation_de"
+      ],
+      "norms": [
+        "AI Act Annex III §4(b)",
+        "DSGVO Art. 22",
+        "BDSG § 26",
+        "BetrVG § 87",
+        "KSchG"
+      ],
+      "examples_de": [
+        "Lager-MA-Scoring nach Pick-Rate",
+        "Call-Center-Performance-KPI-Dashboard mit ML-Prognose",
+        "Sales-Team-Bonus-Algorithmus"
+      ]
+    },
+    {
+      "id": "essential_services_public_benefits",
+      "category": "essential_services",
+      "title": "Öffentliche Sozialleistungen-Vergabe",
+      "description": "KI durch öffentliche Stellen zur Entscheidung über Anspruch, Höhe oder Entzug von wesentlichen Sozialleistungen.",
+      "triggers": [
+        "Hartz-IV/Bürgergeld-Bewilligungs-Algorithmus",
+        "Wohngeld-Prüfung via ML",
+        "Sozial-Hilfe-Ranking",
+        "Arbeitslosen-Profiling"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment"
+      ],
+      "norms": ["AI Act Annex III §5(a)", "DSGVO Art. 22", "SGB II / SGB XII"],
+      "prohibited_overlay": "Social Scoring durch öffentliche Stellen über Zeit + breite Lebensbereiche = Art. 5(1)(c) verboten",
+      "examples_de": [
+        "Bundesagentur-für-Arbeit AMS-Algorithmus",
+        "Jobcenter-Profiling für Maßnahmen-Zuweisung"
+      ]
+    },
+    {
+      "id": "essential_services_credit_scoring",
+      "category": "essential_services",
+      "title": "Kreditwürdigkeit & Credit Scoring",
+      "description": "KI zur Bewertung der Kreditwürdigkeit oder Kredit-Score-Erstellung natürlicher Personen — Verbraucher- und KMU-Kredite.",
+      "triggers": [
+        "Konsumentenkredit-Scoring",
+        "Hypothekendarlehen-ML-Prüfung",
+        "Buy-Now-Pay-Later Risiko-Score",
+        "Geschäftskonto-Onboarding mit ML-Bonität"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "human_oversight",
+        "conformity_assessment",
+        "bafin_notification_de",
+        "transparency_art22_dsgvo"
+      ],
+      "norms": [
+        "AI Act Annex III §5(b)",
+        "DSGVO Art. 22",
+        "BAIT AT 4.5",
+        "MaRisk AT 7.2",
+        "BDSG § 31 (Scoring-Vorschriften)",
+        "KWG § 18 (Kreditwürdigkeitsprüfung)"
+      ],
+      "carve_out": "Reine Betrugserkennung (fraud detection) ist ausgenommen — Annex III §5(b) Halbsatz 2",
+      "examples_de": [
+        "Schufa-Score-ähnliche ML-Modelle",
+        "BNPL-Anbieter (Klarna, Ratepay)",
+        "Online-Bank-Dispo-Algorithmus"
+      ]
+    },
+    {
+      "id": "essential_services_insurance_risk",
+      "category": "essential_services",
+      "title": "Versicherungs-Risikobewertung & Pricing",
+      "description": "KI für Risiko-Bewertung und Preisgestaltung von Lebens- und Krankenversicherungen für natürliche Personen.",
+      "triggers": [
+        "Lebensversicherungs-Antrags-Prüfung mit ML",
+        "Krankenversicherungs-Underwriting via KI",
+        "Tarif-Personalisierung anhand Gesundheits-Daten"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "human_oversight",
+        "conformity_assessment",
+        "vait_compliance_de"
+      ],
+      "norms": [
+        "AI Act Annex III §5(c)",
+        "DSGVO Art. 9 (Gesundheitsdaten)",
+        "VAIT (Versicherungsaufsichtliche Anforderungen IT)",
+        "VAG (Versicherungsaufsichtsgesetz)"
+      ],
+      "examples_de": [
+        "Telematik-Tarife mit individuellem Health-Score",
+        "BU-Versicherungs-Antrag mit KI-Underwriting"
+      ]
+    },
+    {
+      "id": "law_enforcement_profiling",
+      "category": "law_enforcement",
+      "title": "Polizei-Profiling & Crime-Analytics",
+      "description": "KI durch Strafverfolgungsbehörden zur Risiko-Prognose für Straftaten oder Opfer-Wahrscheinlichkeit, Profiling, Beweis-Bewertung.",
+      "triggers": [
+        "Predictive-Policing-Software",
+        "Beweis-Authentizitäts-Bewertung",
+        "Lügendetektor-ähnliche Tools",
+        "Verdächtigen-Risiko-Score"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "logging",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment"
+      ],
+      "norms": [
+        "AI Act Annex III §6",
+        "JI-Richtlinie (EU 2016/680)",
+        "BKAG / Landespolizeigesetze"
+      ],
+      "prohibited_overlay": "Profiling zur Vorhersage individueller Straftaten ohne objektive Anhaltspunkte = Art. 5(1)(d) verboten",
+      "examples_de": [
+        "Predictive-Policing-Pilot in einzelnen Bundesländern",
+        "Lügendetektor in Vernehmungen"
+      ]
+    },
+    {
+      "id": "migration_visa_asylum",
+      "category": "migration",
+      "title": "Visum, Asyl- & Aufenthalts-Prüfung",
+      "description": "KI in Behörden zur Prüfung von Asyl-, Visum-, Aufenthaltsgenehmigungs-Anträgen oder Risiko-Bewertung von Migrationsbewegungen.",
+      "triggers": [
+        "Asyl-Antrag-Pre-Screening mit ML",
+        "Visum-Risiko-Scoring",
+        "Grenzkontroll-Risiko-Vorhersage",
+        "Sprach-/Dialekt-Analyse zur Herkunftsbestimmung"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "data_governance",
+        "technical_documentation",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment"
+      ],
+      "norms": ["AI Act Annex III §7", "AsylG", "AufenthG", "DSGVO Art. 9"],
+      "examples_de": [
+        "BAMF-Sprachanalyse zur Herkunftsbestimmung",
+        "Visa-Vorab-Screening durch Auswärtige Vertretungen"
+      ]
+    },
+    {
+      "id": "justice_judicial_assistance",
+      "category": "justice_democracy",
+      "title": "Justiz-Unterstützung & Wahl-Beeinflussung",
+      "description": "KI zur Unterstützung von Justizbehörden bei Tatsachen-Recherche, Urteilsfindung — oder KI zur Beeinflussung von Wahl-/Abstimmungs-Ergebnissen / Wähler-Verhalten.",
+      "triggers": [
+        "Urteils-Empfehlungs-System für Richter",
+        "Beweis-Auswertungs-KI",
+        "Mikro-Targeted-Wahl-Werbung",
+        "Deepfake-Wahlkampf-Material"
+      ],
+      "severity": "high",
+      "obligations": [
+        "risk_management",
+        "transparency_disclosure_art50",
+        "human_oversight",
+        "conformity_assessment",
+        "fundamental_rights_impact_assessment"
+      ],
+      "norms": [
+        "AI Act Annex III §8",
+        "Grundgesetz Art. 38 (Wahl-Grundsätze)",
+        "Digital Services Act (für Plattformen)",
+        "ParteienG"
+      ],
+      "carve_out": "Reine Verwaltungs-/Backoffice-Tools (z.B. E-Akte, Recherche) sind ausgenommen — nur Decision-Support fällt unter §8",
+      "examples_de": [
+        "ML-gestütztes Strafzumessungs-Tool",
+        "Wahlkampf-Microtargeting via Profiling-KI"
+      ]
+    }
+  ],
+  "obligations_glossary": {
+    "risk_management": {
+      "label": "Risikomanagement-System",
+      "description": "Kontinuierlicher Prozess über den gesamten Lebenszyklus — Identifikation, Analyse, Mitigation, Monitoring der KI-Risiken.",
+      "ai_act_article": "Art. 9",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "20-40"
+    },
+    "data_governance": {
+      "label": "Daten-Governance",
+      "description": "Trainings-/Test-Daten qualitätsgesichert, repräsentativ, fehlerfrei, mit Bias-Auditing dokumentiert.",
+      "ai_act_article": "Art. 10",
+      "phase": 1,
+      "effort": "high",
+      "estimated_days": "15-30"
+    },
+    "technical_documentation": {
+      "label": "Technische Dokumentation",
+      "description": "Vor Inverkehrbringen erstellen, laufend aktuell halten. Annex IV gibt die Mindest-Inhalte vor.",
+      "ai_act_article": "Art. 11 + Annex IV",
+      "phase": 1,
+      "effort": "medium",
+      "estimated_days": "10-20"
+    },
+    "logging": {
+      "label": "Automatisches Event-Logging",
+      "description": "Rückverfolgbarkeit über die gesamte Betriebsdauer — alle KI-Entscheidungen mit Eingabe, Output, User-Context.",
+      "ai_act_article": "Art. 12",
+      "phase": 3,
+      "effort": "medium",
+      "estimated_days": "5-15"
+    },
+    "transparency_to_deployers": {
+      "label": "Transparenz für Deployer",
+      "description": "Anweisungen, Capabilities, Limitationen, Genauigkeits-Metriken zur Verfügung stellen.",
+      "ai_act_article": "Art. 13",
+      "phase": 1,
+      "effort": "low",
+      "estimated_days": "2-5"
+    },
+    "transparency_disclosure_art50": {
+      "label": "Art-50 Disclosure-Pflicht",
+      "description": "User wissen dass sie mit KI interagieren; KI-generierter Content ist als solcher markiert (Deepfakes machine-readable).",
+      "ai_act_article": "Art. 50",
+      "phase": 1,
+      "effort": "low",
+      "estimated_days": "1-3"
+    },
+    "human_oversight": {
+      "label": "Human Oversight",
+      "description": "Mensch kann eingreifen, übersteuern, ablehnen. UI + Prozess + Schulung der Operatoren.",
+      "ai_act_article": "Art. 14",
+      "phase": 2,
+      "effort": "medium",
+      "estimated_days": "10-20"
+    },
+    "accuracy_robustness_cybersecurity": {
+      "label": "Accuracy, Robustness, Cybersecurity",
+      "description": "Performance-Metriken, Adversarial-Resistance, Resilience gegen Datenmanipulation.",
+      "ai_act_article": "Art. 15",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "15-30"
+    },
+    "conformity_assessment": {
+      "label": "Conformity Assessment",
+      "description": "Meist Notified-Body-Prüfung vor Inverkehrbringen — formaler Audit der erfüllten Pflichten.",
+      "ai_act_article": "Art. 43",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "30-60"
+    },
+    "fundamental_rights_impact_assessment": {
+      "label": "Fundamental Rights Impact Assessment (FRIA)",
+      "description": "Pflicht für öffentliche Stellen + bestimmte private Deployer (z.B. Banken bei Credit-Scoring).",
+      "ai_act_article": "Art. 27",
+      "phase": 1,
+      "effort": "medium",
+      "estimated_days": "5-15"
+    },
+    "transparency_art22_dsgvo": {
+      "label": "DSGVO Art-22 Transparenz",
+      "description": "Auskunfts-, Erklärungs- und Anfechtungsrecht des Betroffenen bei automatisierter Einzelfallentscheidung.",
+      "ai_act_article": "DSGVO Art. 22",
+      "phase": 2,
+      "effort": "medium",
+      "estimated_days": "5-10"
+    },
+    "betriebsrat_consultation_de": {
+      "label": "Betriebsrats-Mitbestimmung",
+      "description": "BetrVG § 87 Abs. 1 Nr. 6 (technische Überwachung) + § 90/95 bei Auswahl-Richtlinien — Mitbestimmung VOR Einführung.",
+      "ai_act_article": "BetrVG § 87 / § 90",
+      "phase": 2,
+      "effort": "medium",
+      "estimated_days": "10-30"
+    },
+    "bafin_notification_de": {
+      "label": "BaFin-Notifikation",
+      "description": "Falls wesentliche Auslagerung nach KWG § 25b / MaRisk AT 9 — Anzeige bei BaFin.",
+      "ai_act_article": "KWG § 25b · MaRisk AT 9",
+      "phase": 1,
+      "effort": "medium",
+      "estimated_days": "5-15"
+    },
+    "vait_compliance_de": {
+      "label": "VAIT-Konformität",
+      "description": "Versicherungsaufsichtliche Anforderungen an IT — analog BAIT für Banken, mit branchen-spezifischen Anpassungen.",
+      "ai_act_article": "VAIT (BaFin-Rundschreiben)",
+      "phase": 4,
+      "effort": "high",
+      "estimated_days": "30-60"
+    }
+  },
+  "phase_meta": {
+    "1": { "label": "Dokumentation & Assessment", "description": "Was schriftlich existieren muss bevor das System live geht." },
+    "2": { "label": "Human-in-the-Loop", "description": "Prozesse + Stakeholder-Einbindung — Mensch behält Kontrolle." },
+    "3": { "label": "Logging & Monitoring", "description": "Operative Beobachtbarkeit — was lief wie, mit welchem Ergebnis." },
+    "4": { "label": "Governance & Conformity", "description": "Formales Risikomanagement + externe Prüfung. Höchster Aufwand, letzter Schritt." }
+  }
+}

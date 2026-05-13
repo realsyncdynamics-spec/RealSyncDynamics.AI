@@ -12,7 +12,7 @@
  */
 import { Wrench, ShoppingBag, MessagesSquare, Code2, BrainCircuit, Bot, GitMerge, type LucideIcon } from 'lucide-react';
 
-type Status = 'Geplant' | 'In Entwicklung' | 'Verfügbar';
+type Status = 'Geplant' | 'In Entwicklung' | 'Verfügbar' | 'Beta';
 
 interface RoadmapItem {
   Icon: LucideIcon;
@@ -31,8 +31,8 @@ const ITEMS: RoadmapItem[] = [
   {
     Icon: ShoppingBag,
     title: 'Shopify Integration',
-    body: 'Continuous Scan für Shopify-Storefronts inklusive Pre-Checkout-Tracker-Detection.',
-    status: 'Geplant',
+    body: 'Storefront-Scan für Shopify-Shops mit Tracker-, Consent- und Header-Erkennung. Erkennt mögliche Pre-Consent-Risiken und erzeugt Drift-Events nach Theme-Änderungen. Keine automatischen Änderungen am Store ohne Freigabe.',
+    status: 'Beta',
   },
   {
     Icon: MessagesSquare,
@@ -74,6 +74,8 @@ function statusStyle(s: Status): string {
       return 'border-gold-400 text-gold-400';
     case 'Verfügbar':
       return 'border-emerald-400 text-emerald-300';
+    case 'Beta':
+      return 'border-violet-400 text-violet-300';
   }
 }
 

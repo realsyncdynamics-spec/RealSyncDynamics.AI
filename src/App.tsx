@@ -67,6 +67,9 @@ import { Press } from './pages/Press';
 import { Security } from './pages/Security';
 import { Trust } from './pages/Trust';
 import { PilotReadiness } from './pages/PilotReadiness';
+import { ShopifyIntegrationPage } from './pages/integrations/Shopify';
+import { ShopifySuccessPage } from './pages/integrations/ShopifySuccess';
+import { ShopifyErrorPage } from './pages/integrations/ShopifyError';
 import { Developers } from './pages/Developers';
 import { AiActGovernancePage } from './pages/content/AiActGovernancePage';
 import { AgentGovernancePage } from './pages/content/AgentGovernancePage';
@@ -229,6 +232,9 @@ function RoutesWithTracking() {
       <Route path="/security" element={<Security />} />
       <Route path="/trust" element={<Trust />} />
       <Route path="/pilot-readiness" element={<PilotReadiness />} />
+      <Route path="/integrations/shopify" element={<ShopifyIntegrationPage />} />
+      <Route path="/shopify/success" element={<ShopifySuccessPage />} />
+      <Route path="/shopify/error" element={<ShopifyErrorPage />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/ai-act-governance" element={<AiActGovernancePage />} />
       <Route path="/agent-governance" element={<AgentGovernancePage />} />

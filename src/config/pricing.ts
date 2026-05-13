@@ -64,7 +64,7 @@ export const PRICING_TIERS: PricingTier[] = [
     recurring: false,
     tagline: 'Sofortiger DSGVO-Check ohne Verpflichtung',
     bullets: [
-      'URL-Scan mit Compliance-Score 0-100',
+      'URL-Scan mit Compliance-Score 0–100',
       'Top-3-Risiken sichtbar',
       'Mini-PDF-Report',
       'Kein Account, kein Setup',
@@ -82,14 +82,15 @@ export const PRICING_TIERS: PricingTier[] = [
     recurring: true,
     tagline: 'Vollständige Compliance-Basis für eine Domain',
     bullets: [
-      'Vollständiger DSGVO-Scan (alle Findings mit Paragraphenbezug)',
-      'Datenschutzerklärung (DSE) + Impressum-Generator',
-      'Cookie-Banner-Konfiguration geliefert',
-      'Monatlicher Re-Scan + Email-Alert bei neuen Verstößen',
+      'Vollständiger DSGVO-Scan mit Paragraphenbezug',
+      'DSE- und Impressums-Generator',
+      'Technische Consent-Setup-Empfehlungen',
+      'Monatlicher Re-Scan',
+      'E-Mail-Alert bei neuen Findings',
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Starter buchen', href: '/checkout/starter?source=pricing' },
+    cta: { label: 'Starter aktivieren', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -99,7 +100,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '249',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Continuous Monitoring + konkrete Fix-Empfehlungen',
+    tagline: 'Continuous Monitoring mit konkreten Fix-Empfehlungen',
     bullets: [
       'Alles aus Starter',
       'Tägliches Monitoring + Drift-Detection',
@@ -110,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Growth buchen', href: '/checkout/growth?source=pricing' },
+    cta: { label: 'Growth aktivieren', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -131,7 +132,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Agency buchen', href: '/checkout/agency?source=pricing' },
+    cta: { label: 'Agency anfragen', href: '/contact-sales?intent=agency&source=pricing' },
   },
   {
     id: 'enterprise',
@@ -144,8 +145,8 @@ export const PRICING_TIERS: PricingTier[] = [
     tagline: 'SLA · AI-Act-Modul · DSB-Integration · Evidence Vault',
     bullets: [
       'Alle Agency-Funktionen',
-      'SLA-Garantie + dedizierter Account-Manager',
-      'EU AI Act Compliance-Modul',
+      'SLA und dedizierter Ansprechpartner',
+      'EU AI Act Governance-Modul',
       'DSB-Integration (interner oder externer DSB)',
       'Evidence Vault (Hash-Chain + HMAC-Signaturen)',
       'Unlimitierte Domains + unlimitierte Mitarbeiter',

@@ -34,18 +34,18 @@ const KIND_STYLE: Record<GraphNode['kind'], string> = {
 const BENEFITS = [
   {
     icon: GitBranch,
-    title: 'Beziehungen statt isolierter Findings',
-    body: 'Ein Befund am Tracker ist nicht nur ein Cookie-Issue, sondern ein Pfad zurück auf eine AI-Usecase, eine Regulierung und ein Audit-Paket.',
+    title: '22 Node-Types mit Provenance',
+    body: 'Website, Page, Script, Cookie, Vendor, AI-Usecase, Model, Dataset, Prompt, Agent, Policy, Control, Regulation, Risk, Evidence — jeder Node mit tenant_id als Partition-Key, jede Edge typisiert + zeitgestempelt.',
   },
   {
     icon: Layers,
-    title: 'Risikoausbreitung über Systeme sichtbar',
-    body: 'Verliert ein Vendor seinen Adequacy-Status, propagiert sich das Risiko durch die Datasets, Modelle und Usecases — nicht erst beim nächsten Audit.',
+    title: 'Risk-Propagation event-driven',
+    body: 'Score-Update am Vendor-Node fließt in unter einer Sekunde durch USES_VENDOR → Dataset → USES_MODEL → AiUsecase weiter. Keine Cron-Jobs, kein nightly-Refresh.',
   },
   {
     icon: FileCheck2,
-    title: 'Evidence automatisch mit Policies verknüpft',
-    body: 'Jeder Scan, jede Policy-Entscheidung, jede Agent-Aktion wird im Graph an die Controls + Regulationen geknüpft, die sie belegt.',
+    title: 'Evidence-Lineage statt freistehender Belege',
+    body: 'Jeder Evidence-Record verlinkt explizit auf den Control-Node, den er belegt. Pfad AiUsecase → GOVERNED_BY → Policy → IMPLEMENTS → Control → REQUIRED_BY → Regulation traversierbar in einer Query.',
   },
 ];
 

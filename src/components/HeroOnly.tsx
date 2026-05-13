@@ -197,31 +197,26 @@ export function HeroOnly() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             {[
               {
-                title: 'Datenschutz-Kanzleien',
-                body: 'Mandanten-Sites technisch vorscannen und Befunde mit Rechtsgrundlagen-Verweisen als White-Label-Brief an Mandanten weitergeben.',
+                title: 'Compliance-Profis · Kanzleien + externe DSBs',
+                body: 'Du verantwortest fremde Compliance. Mehr Mandanten ohne mehr Excel — eine Quelle der Wahrheit pro Mandat, monatlich Hash-verifiable.',
                 href: '/legal-tech',
               },
               {
-                title: 'Externe Datenschutzbeauftragte',
-                body: 'Kontinuierliche technische Überprüfung mehrerer Mandanten-Websites mit konsolidierter Audit-Historie statt jährlichen Stichproben.',
-                href: '/contact-sales?source=zielgruppe-edsb',
-              },
-              {
-                title: 'Webagenturen',
-                body: 'Compliance-Check bei jeder Site-Auslieferung und laufendes Monitoring der Kunden-Sites — ohne eigenen Scanner-Stack.',
+                title: 'Builder · Web- und Digital-Agenturen',
+                body: 'Du baust + betreibst Websites und Plattformen für andere. Compliance als Lieferleistung — Pre-Go-Live-Check, White-Label-Report, Multi-Tenant-Dashboard.',
                 href: '/fuer-agenturen',
               },
               {
-                title: 'AI- und SaaS-Unternehmen',
-                body: 'Tracking-Stack, Datenflüsse und AI-Use-Cases technisch prüfen lassen; Drift-Alerts bei jedem deploybedingten Risiko.',
+                title: 'Operators · AI- und SaaS-Unternehmen',
+                body: 'Du betreibst eigene Produkte mit KI-Features. KI ausrollen ohne Audit-Albtraum — Policy-Decisions inline, Annex-IV-Pack im Pipeline-Schritt, Drift-Alerts auf Production-Modelle.',
                 href: '/fuer-saas',
               },
               {
-                title: 'Regulierte Branchen',
-                body: 'FinTech / HealthTech / EdTech: Audit-Trail mit nachvollziehbarer Methodik unterstützt interne Compliance-Prozesse.',
+                title: 'Regulierte · FinTech / HealthTech / EdTech',
+                body: 'Du arbeitest unter Aufsicht. Audit-Readiness als Default — kontinuierlich, dokumentiert, verifiable, exportfähig in unter einer Stunde.',
                 href: '/branchen',
               },
             ].map((item) => (
@@ -254,23 +249,23 @@ export function HeroOnly() {
               So funktioniert
             </div>
             <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-              In drei Schritten zu einem klaren Compliance-Bild
+              Setup, Analyse, Output — in drei Schritten.
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             {[
               {
-                title: 'Domain und KI-Usecases eingeben',
-                body: 'Sie geben Ihre Website-URL und — wenn vorhanden — Ihre genutzten KI-Tools an (z. B. Chatbots, Automatisierung, Analysen).',
+                title: 'Setup in 5 Minuten',
+                body: 'Domain eintragen, Browser-Extension installieren oder Ingest-Key in deine API einbauen. Kein Agent auf deinem Server, kein Pull aus deinen Datenbanken — RealSync arbeitet mit dem, was im Browser oder Event-Stream sichtbar ist.',
               },
               {
-                title: 'Automatischer Scan & Risk-Score',
-                body: 'Wir analysieren Tracking, Cookies, Formulare, Third-Party-Dienste und KI-Workflows und stufen die Risiken nach Priorität ein.',
+                title: 'Tiefenanalyse über drei Ebenen',
+                body: 'Website-Layer (Tracker, Cookies, Consent-Timing), API-Layer (Vendor-Endpunkte, AI-Modell-Calls) und KI-Layer (Usecase-Klassifizierung nach AI Act). Findings werden als Beziehungen im Governance Graph gespeichert, nicht als isolierte Issues.',
               },
               {
-                title: 'Konkrete Maßnahmen für Ihr Team',
-                body: 'Sie erhalten eine sortierte To-do-Liste mit klaren Fix-Empfehlungen für Marketing, IT und Datenschutz — inklusive Reports für Management und Prüfer.',
+                title: 'Output zum Verarbeiten',
+                body: 'Du bekommst To-dos für dein Team, Code-Snippets für deine Codebase und Evidence-Pakete für deinen Auditor. Continuous statt einmalig — bei jeder Änderung läuft der Loop neu.',
               },
             ].map((step, idx) => (
               <div

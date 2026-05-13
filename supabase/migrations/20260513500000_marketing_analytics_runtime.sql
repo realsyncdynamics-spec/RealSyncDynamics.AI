@@ -42,7 +42,7 @@ CREATE POLICY "marketing_events tenant_read"
     ON public.marketing_events FOR SELECT
     USING (
       tenant_id IN (
-        SELECT tm.tenant_id FROM public.tenant_members tm WHERE tm.user_id = auth.uid()
+        SELECT m.tenant_id FROM public.memberships m WHERE m.user_id = auth.uid()
       )
       OR EXISTS (
         SELECT 1 FROM public.profiles p
@@ -76,7 +76,7 @@ CREATE POLICY "marketing_attribution tenant_read"
     ON public.marketing_attribution FOR SELECT
     USING (
       tenant_id IN (
-        SELECT tm.tenant_id FROM public.tenant_members tm WHERE tm.user_id = auth.uid()
+        SELECT m.tenant_id FROM public.memberships m WHERE m.user_id = auth.uid()
       )
       OR EXISTS (
         SELECT 1 FROM public.profiles p
@@ -112,7 +112,7 @@ CREATE POLICY "marketing_compliance_findings tenant_read"
     ON public.marketing_compliance_findings FOR SELECT
     USING (
       tenant_id IN (
-        SELECT tm.tenant_id FROM public.tenant_members tm WHERE tm.user_id = auth.uid()
+        SELECT m.tenant_id FROM public.memberships m WHERE m.user_id = auth.uid()
       )
       OR EXISTS (
         SELECT 1 FROM public.profiles p

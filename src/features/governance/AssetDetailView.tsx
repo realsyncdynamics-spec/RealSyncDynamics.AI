@@ -5,6 +5,7 @@ import {
   Mail, Globe, Archive, FileCheck2, TrendingUp, RefreshCcw,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { RemediationPanel } from './RemediationPanel';
 import {
   fetchAssetById, fetchEventsForAsset, fetchMappingsForAsset, fetchFrameworkControls,
   fetchAssetRiskHistory, recalculateRiskScore,
@@ -318,6 +319,8 @@ function Body({
           </ul>
         )}
       </Section>
+
+      <RemediationPanel tenantId={asset.tenant_id} assetId={asset.id} />
     </div>
   );
 }

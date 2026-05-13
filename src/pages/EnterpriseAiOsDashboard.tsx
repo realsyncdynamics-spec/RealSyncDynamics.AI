@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   mockAiSystems,
@@ -7,6 +8,39 @@ import {
 } from '../lib/enterprise-ai-os/mock-data';
 import { enterpriseAgents } from '../lib/enterprise-ai-os/agents/registry';
 import { EnterpriseFeedbackWidget } from '../components/enterprise-ai-os/FeedbackWidget';
+
+interface AgentRunRow {
+  id: string;
+  tenant_id: string | null;
+  agent_id: string;
+  actor: string;
+  status: string;
+  summary: string;
+  created_at: string;
+}
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+
+function useRecentAgentRuns(limit = 10) {
+  const [runs, setRuns] = useState<AgentRunRow[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!SUPABASE_URL) return;
+    let cancelled = false;
+    fetch(`${SUPABASE_URL}/functions/v1/enterprise-ai-os-agent-runs-list?limit=${limit}`)
+      .then((r) => r.json())
+      .then((body) => {
+        if (cancelled) return;
+        if (Array.isArray(body?.runs)) setRuns(body.runs as AgentRunRow[]);
+        else if (body?.error) setError(String(body.error));
+      })
+      .catch((e) => !cancelled && setError((e as Error).message));
+    return () => { cancelled = true; };
+  }, [limit]);
+
+  return { runs, error };
+}
 
 function StatusBadge({ value }: { value: string }) {
   return (
@@ -40,6 +74,7 @@ export function EnterpriseAiOsDashboard() {
     (s) => s.risk_level === 'high' || s.risk_level === 'prohibited',
   ).length;
   const openApprovals = mockAiSystems.filter((s) => !s.approved).length;
+  const { runs: recentRuns, error: runsError } = useRecentAgentRuns(10);
 
   return (
     <main className="min-h-screen bg-[#05070d] px-6 py-10 text-white">
@@ -206,6 +241,63 @@ export function EnterpriseAiOsDashboard() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Recent Agent Runs</h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                Letzte Dispatcher-Aufrufe ans Agent Control Layer. Ergebnisse sind revisionssicher
+                in <code className="text-zinc-300">enterprise_agent_runs</code> persistiert.
+              </p>
+            </div>
+          </div>
+
+          {runsError && (
+            <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {runsError}
+            </div>
+          )}
+
+          {recentRuns.length === 0 && !runsError && (
+            <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-zinc-500">
+              Noch keine Agent Runs persistiert. Sobald ein Agent über{' '}
+              <code className="text-zinc-300">/functions/v1/enterprise-ai-os-agents-run</code>{' '}
+              läuft, erscheint er hier.
+            </div>
+          )}
+
+          {recentRuns.length > 0 && (
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wider text-zinc-500">
+                    <th className="pb-3 text-left">Agent</th>
+                    <th className="pb-3 text-left">Status</th>
+                    <th className="pb-3 text-left">Summary</th>
+                    <th className="pb-3 text-left">Actor</th>
+                    <th className="pb-3 text-right">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentRuns.map((run) => (
+                    <tr key={run.id} className="border-t border-white/5">
+                      <td className="py-2.5 pr-3 text-zinc-200">{run.agent_id}</td>
+                      <td className="py-2.5 pr-3">
+                        <StatusBadge value={run.status} />
+                      </td>
+                      <td className="py-2.5 pr-3 text-zinc-400">{run.summary}</td>
+                      <td className="py-2.5 pr-3 text-zinc-500">{run.actor}</td>
+                      <td className="py-2.5 text-right text-xs text-zinc-500">
+                        {new Date(run.created_at).toLocaleString('de-DE')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         <p className="mt-10 text-xs text-zinc-500">

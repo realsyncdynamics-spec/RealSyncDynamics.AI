@@ -67,6 +67,13 @@ import { Press } from './pages/Press';
 import { Security } from './pages/Security';
 import { Trust } from './pages/Trust';
 import { PilotReadiness } from './pages/PilotReadiness';
+import { Developers } from './pages/Developers';
+import { AiActGovernancePage } from './pages/content/AiActGovernancePage';
+import { AgentGovernancePage } from './pages/content/AgentGovernancePage';
+import { GovernanceGraphPage } from './pages/content/GovernanceGraphPage';
+import { EvidenceVaultPage } from './pages/content/EvidenceVaultPage';
+import { PolicyEnginePage } from './pages/content/PolicyEnginePage';
+import { DeploymentGovernancePage } from './pages/content/DeploymentGovernancePage';
 import { Status } from './pages/Status';
 import { Faq } from './pages/Faq';
 import { Changelog } from './pages/Changelog';
@@ -222,6 +229,13 @@ function RoutesWithTracking() {
       <Route path="/security" element={<Security />} />
       <Route path="/trust" element={<Trust />} />
       <Route path="/pilot-readiness" element={<PilotReadiness />} />
+      <Route path="/developers" element={<Developers />} />
+      <Route path="/ai-act-governance" element={<AiActGovernancePage />} />
+      <Route path="/agent-governance" element={<AgentGovernancePage />} />
+      <Route path="/governance-graph" element={<GovernanceGraphPage />} />
+      <Route path="/evidence-vault" element={<EvidenceVaultPage />} />
+      <Route path="/policy-engine" element={<PolicyEnginePage />} />
+      <Route path="/deployment-governance" element={<DeploymentGovernancePage />} />
       <Route path="/status" element={<Status />} />
       <Route path="/sicherheit" element={<Security />} />
       <Route path="/faq" element={<Faq />} />

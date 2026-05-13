@@ -30,6 +30,9 @@ import { CookieConsentSdk } from './pages/CookieConsentSdk';
 import { AuditPro } from './pages/AuditPro';
 import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
+import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
+import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
+import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 // CreatorDashboard ist auth-gated → lazy
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
 // Compliance Tools (Free)
@@ -200,6 +203,10 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      {/* Enterprise AI OS — Founding Access + Dashboard */}
+      <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
+      <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
+      <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
       {/* Onboarding nach Stripe-Checkout */}
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/setup" element={<Welcome />} />

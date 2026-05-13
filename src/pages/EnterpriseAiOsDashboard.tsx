@@ -1,0 +1,156 @@
+import { Link } from 'react-router-dom';
+import {
+  mockAiSystems,
+  mockAuditEvents,
+  mockConnectors,
+  mockPolicies,
+} from '../lib/enterprise-ai-os/mock-data';
+import { EnterpriseFeedbackWidget } from '../components/enterprise-ai-os/FeedbackWidget';
+
+function StatusBadge({ value }: { value: string }) {
+  return (
+    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-zinc-300">
+      {value}
+    </span>
+  );
+}
+
+function KpiCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string | number;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+      <div className="text-sm text-zinc-400">{label}</div>
+      <div className="mt-3 text-3xl font-semibold text-white">{value}</div>
+      <div className="mt-2 text-xs text-zinc-500">{hint}</div>
+    </div>
+  );
+}
+
+export function EnterpriseAiOsDashboard() {
+  const connectedSystems = mockConnectors.filter((c) => c.status === 'connected').length;
+  const highRiskSystems = mockAiSystems.filter(
+    (s) => s.risk_level === 'high' || s.risk_level === 'prohibited',
+  ).length;
+  const openApprovals = mockAiSystems.filter((s) => !s.approved).length;
+
+  return (
+    <main className="min-h-screen bg-[#05070d] px-6 py-10 text-white">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div>
+            <div className="mb-4 inline-flex rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 px-4 py-2 text-sm text-[#d4af37]">
+              Enterprise AI OS
+            </div>
+            <h1 className="text-4xl font-semibold tracking-tight">AI Governance Control Center</h1>
+            <p className="mt-3 max-w-3xl text-zinc-400">
+              Zentrale Übersicht über KI-Systeme, Connectoren, Agent Policies, Risiken und Audit
+              Events.
+            </p>
+          </div>
+
+          <Link
+            to="/enterprise-ai-os/founding-access"
+            className="rounded-2xl bg-[#d4af37] px-5 py-3 text-center font-semibold text-black"
+          >
+            Founding Access aktivieren
+          </Link>
+        </div>
+
+        <section className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard label="Verbundene Systeme" value={connectedSystems} hint="Live Connector Status" />
+          <KpiCard label="Erkannte KI-Systeme" value={mockAiSystems.length} hint="AI Registry" />
+          <KpiCard label="Hochrisiko-Systeme" value={highRiskSystems} hint="EU AI Act Risk Mapping" />
+          <KpiCard label="Offene Freigaben" value={openApprovals} hint="Human Approval Required" />
+        </section>
+
+        <section className="mt-10 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <h2 className="text-xl font-semibold">AI System Registry</h2>
+            <div className="mt-5 space-y-4">
+              {mockAiSystems.map((system) => (
+                <div key={system.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-medium">{system.name}</div>
+                      <div className="text-sm text-zinc-500">
+                        {system.provider} · {system.model}
+                      </div>
+                    </div>
+                    <StatusBadge value={system.risk_level} />
+                  </div>
+                  <p className="mt-3 text-sm text-zinc-400">{system.usage_context}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <h2 className="text-xl font-semibold">Connector Status</h2>
+            <div className="mt-5 space-y-4">
+              {mockConnectors.map((connector) => (
+                <div
+                  key={connector.id}
+                  className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 p-4"
+                >
+                  <div>
+                    <div className="font-medium">{connector.name}</div>
+                    <div className="text-sm text-zinc-500">{connector.type}</div>
+                  </div>
+                  <StatusBadge value={connector.status} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <h2 className="text-xl font-semibold">Agent Policies</h2>
+            <div className="mt-5 space-y-4">
+              {mockPolicies.map((policy) => (
+                <div key={policy.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <div className="font-medium">{policy.name}</div>
+                  <p className="mt-2 text-sm text-zinc-400">{policy.description}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {policy.allowed_models.map((model) => (
+                      <StatusBadge key={model} value={model} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <h2 className="text-xl font-semibold">Audit Events</h2>
+            <div className="mt-5 space-y-4">
+              {mockAuditEvents.map((event) => (
+                <div key={event.id} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="font-medium">{event.action}</div>
+                    <StatusBadge value={event.risk_level || 'unknown'} />
+                  </div>
+                  <div className="mt-2 text-sm text-zinc-500">
+                    {event.actor} · {event.system_name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <p className="mt-10 text-xs text-zinc-500">
+          Hinweis: Dieses System unterstützt Governance, Dokumentation und Risikomanagement. Es
+          ersetzt keine individuelle Rechtsberatung.
+        </p>
+      </div>
+
+      <EnterpriseFeedbackWidget />
+    </main>
+  );
+}

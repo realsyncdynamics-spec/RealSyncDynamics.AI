@@ -5,6 +5,7 @@ import { getSupabase } from '../../lib/supabase';
 import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
+import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -87,6 +88,10 @@ export function CheckoutPage() {
   useEffect(() => {
     if (auth.status !== 'ready' || !validPlan || redirecting) return;
     setRedirecting(true);
+    trackMarketingEvent('checkout_started', {
+      plan_key: validPlan,
+      metadata: { tenant_id: auth.tenantId },
+    });
     (async () => {
       const result = await createCheckoutSession(auth.tenantId, validPlan);
       if (result.ok && result.url) {

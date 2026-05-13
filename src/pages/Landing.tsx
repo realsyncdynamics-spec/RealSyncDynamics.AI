@@ -51,6 +51,7 @@ import { GovernanceArchitectureSection } from '../components/sections/Governance
 import { RuntimeActivityFeedSection } from '../components/sections/RuntimeActivityFeedSection';
 import { GovernanceGraphCoreSection } from '../components/sections/GovernanceGraphCoreSection';
 import { AgentOversightSection } from '../components/sections/AgentOversightSection';
+import { AgenticComplianceRuntimeSection } from '../components/sections/AgenticComplianceRuntimeSection';
 import { DeploymentGovernanceSection } from '../components/sections/DeploymentGovernanceSection';
 import { ExecutiveCommandCenterSection } from '../components/sections/ExecutiveCommandCenterSection';
 
@@ -73,6 +74,7 @@ export function Landing() {
       <RuntimeActivityFeedSection />
       <GovernanceGraphCoreSection />
       <AgenticComplianceAgentsSection />
+      <AgenticComplianceRuntimeSection />
       <AgentOversightSection />
       <DeploymentGovernanceSection />
       <GovernanceArchitectureSection />

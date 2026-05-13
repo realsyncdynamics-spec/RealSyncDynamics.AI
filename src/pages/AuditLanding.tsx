@@ -378,7 +378,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
             <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Lieber kein Tool, sondern jemand der's macht?</h3>
             <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
               Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site nach aktuellen DSGVO-, TTDSG- und AI-Act-Anforderungen neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
-              <strong className="text-titanium-50"> Ab 99 €/Monat</strong> nach einmaligem Rebuild.
+              <strong className="text-titanium-50"> Managed-Betrieb nach Angebot</strong> nach einmaligem Rebuild.
             </p>
             <Link
               to={`/dsgvo-website?source=audit&audit=${report.audit_id}`}

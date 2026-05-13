@@ -100,7 +100,7 @@ function ValueProps() {
           <ValueCard
             icon={<Code />}
             title="Stripe-Subscription pro Tenant"
-            text="Bronze/Silver/Gold mit Per-Plan-Quotas in der DB. Stripe Customer Portal für Karten- und Rechnungs-Management. Pricing setzt Ihr für Eure Endkunden — wir liefern das Backend."
+            text="Starter/Growth/Agency mit Per-Plan-Quotas in der DB. Stripe Customer Portal für Karten- und Rechnungs-Management. Pricing setzt Ihr für Eure Endkunden — wir liefern das Backend."
           />
         </div>
       </div>

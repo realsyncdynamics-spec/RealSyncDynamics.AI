@@ -59,11 +59,13 @@ const ITEMS: Item[] = [
     q: 'Was kostet die Plattform?',
     a: (
       <>
-        <p>Drei Tiers + 14-Tage Pilot-Trial:</p>
+        <p>Fünf Tiers + 14-Tage Pilot-Trial:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li><strong className="text-titanium-50">Bronze</strong> 29 €/Monat — Self-Service, alle Free-Tools + Audit-Trail Basic</li>
-          <li><strong className="text-titanium-50">Silver</strong> 99 €/Monat — Multi-Tenant, API-Zugriff, Cookie-SDK Pro, Priority-Support</li>
-          <li><strong className="text-titanium-50">Gold</strong> 299 €/Monat — Unlimited Tenants, On-Premise-Option vorbereitet, dedicated Onboarding</li>
+          <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
+          <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
+          <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
+          <li><strong className="text-titanium-50">Agency</strong> 699 €/Monat — White-Label, Multi-Tenant (10 Sites), API + Webhooks</li>
+          <li><strong className="text-titanium-50">Enterprise</strong> ab 1.500 €/Monat — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>
@@ -99,7 +101,7 @@ const ITEMS: Item[] = [
     q: 'Habt ihr eine API?',
     a: (
       <p>
-        Ja, im Silver-Tier inklusive. API-Keys per Tenant, Rate-Limits, Audit-Log
+        Ja, ab Growth-Tier inklusive. API-Keys per Tenant, Rate-Limits, Audit-Log
         pro Aufruf. Dokumentation in Vorbereitung — bis dahin Endpoints siehe
         Sub-Processor-Liste oder Sales-Call buchen.
       </p>

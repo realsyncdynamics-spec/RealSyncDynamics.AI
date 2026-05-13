@@ -23,7 +23,7 @@ const TOOLS: Tool[] = [
     vendor: 'RealSync Dynamics',
     url: 'https://RealSyncDynamicsAI.de',
     origin: 'EU',
-    pricingFrom: '29 €/M',
+    pricingFrom: '79 €/M (Starter)',
     category: ['Cookie-Consent', 'AVV', 'Audit-Log', 'AI-Act', 'DSFA'],
     cookieConsent: 'yes', avvGenerator: 'yes', auditLog: 'yes', aiAct: 'yes', dsfaWizard: 'yes', euHosted: 'yes',
     notes: 'All-in-One für KI-First-Compliance · BAIT/MaRisk-tauglich · Made in Germany',

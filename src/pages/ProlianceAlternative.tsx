@@ -20,7 +20,7 @@ export function ProlianceAlternative() {
         <div className="max-w-4xl mx-auto space-y-10">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <Euro className="h-3 w-3" /> Tools-Stack statt DSB-Beratung · ab 29 €/M · Made in Germany
+              <Euro className="h-3 w-3" /> Tools-Stack statt DSB-Beratung · ab 79 €/M · Made in Germany
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
               Proliance-Alternative — <span className="text-security-400">die operative Tool-Schicht</span>
@@ -51,7 +51,7 @@ export function ProlianceAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing-Modell', o: '4.000–15.000 €/Jahr (DSB-Vertrag)', r: '29–299 €/M (Self-Service)' },
+                  { f: 'Pricing-Modell', o: '4.000–15.000 €/Jahr (DSB-Vertrag)', r: '79–699 €/M (Self-Service)' },
                   { f: 'Externer DSB stellen', o: 'yes', r: 'no' },
                   { f: 'Beratung im Preis enthalten', o: 'yes', r: 'no' },
                   { f: 'AVV-Generator (Self-Service)', o: 'partial', r: 'yes' },

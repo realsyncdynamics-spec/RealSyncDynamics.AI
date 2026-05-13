@@ -537,7 +537,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/fuer-praxen': {
     title: 'Für Arztpraxen + Zahnärzte — DSGVO ohne IT-Aufwand | RealSyncDynamics.AI',
     description:
-      'DSGVO-Komplettpaket für Arzt- und Zahnarztpraxen: Cookie-Banner, Datenschutzerklärung, AVV mit Praxisverwaltung, Patientendaten-Schutz. Festpreis 99 €/Monat.',
+      'DSGVO-Komplettpaket für Arzt- und Zahnarztpraxen: Cookie-Banner, Datenschutzerklärung, AVV mit Praxisverwaltung, Patientendaten-Schutz. Starter ab 79 €/Monat, Growth ab 249 €/Monat.',
     canonical: `${SITE_URL}/fuer-praxen`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

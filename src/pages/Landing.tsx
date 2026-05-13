@@ -775,8 +775,8 @@ function PricingPreview() {
     },
     {
       name: 'Managed Website',
-      price: 'ab € 99',
-      sub: 'pro Monat · Audit + Rebuild + Betrieb',
+      price: 'nach Angebot',
+      sub: 'Audit + Rebuild + Betrieb',
       features: [
         'Voller Audit Ihrer bestehenden Site',
         'Automatischer Neuaufbau auf EU-Infrastruktur',

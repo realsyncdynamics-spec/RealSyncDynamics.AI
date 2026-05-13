@@ -73,9 +73,9 @@ export function LegalTechLanding() {
 
           <Section title="Pricing für Kanzleien">
             <p>
-              <strong className="text-titanium-50">Bronze 29 €/M</strong> für Solo-Anwälte ·
-              <strong className="text-titanium-50"> Silver 99 €/M</strong> für Teams (10 Seats) ·
-              <strong className="text-titanium-50"> Gold 299 €/M</strong> für mittelgroße Kanzleien (BYOK + signed PDF-Reports).
+              <strong className="text-titanium-50">Starter 79 €/M</strong> für Solo-Anwälte ·
+              <strong className="text-titanium-50"> Growth 249 €/M</strong> für Teams (Multi-Tenant + API) ·
+              <strong className="text-titanium-50"> Agency 699 €/M</strong> für mittelgroße Kanzleien (10 Mandanten-Sites + White-Label-Reports).
               14 Tage Pilot kostenlos · Mandanten-Setup in einem Termin.
             </p>
           </Section>

@@ -300,13 +300,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ],
   },
   '/contact-sales': {
-    title: 'Demo buchen — 30 Minuten, kein Pitch | RealSyncDynamics.AI',
+    title: 'Founding Access — 14 Tage kostenlos | RealSyncDynamics.AI',
     description:
-      'Buchen Sie eine kostenlose 30-Minuten-Demo. Wir zeigen Ihnen live: EU-Modus, Audit-Log, n8n-Workflows, GDPR-Selfservice, Multi-Tenant-Setup.',
+      '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
-      { name: 'Demo buchen', url: '/contact-sales' },
+      { name: 'Founding Access', url: '/contact-sales' },
     ]),
   },
 

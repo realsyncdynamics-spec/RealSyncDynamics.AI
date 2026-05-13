@@ -13,8 +13,8 @@ export function EnterpriseAiOsFoundingAccess() {
         </h1>
 
         <p className="mt-5 text-zinc-300">
-          Für die ersten 100 Unternehmen oder bis spätestens 02.08.2026. Im Gegenzug bitten wir um
-          Feedback, Verbesserungsvorschläge und Screenshots von Fehlern.
+          Für 100 Unternehmen bis 02.08.2026. Im Gegenzug bitten wir um Feedback,
+          Verbesserungsvorschläge und Screenshots von Fehlern.
         </p>
 
         <FoundingAccessForm />

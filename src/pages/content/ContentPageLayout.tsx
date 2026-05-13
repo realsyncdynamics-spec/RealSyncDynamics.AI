@@ -63,14 +63,14 @@ export function ContentPageLayout(props: {
         <section className="mt-12 border border-titanium-100/20 bg-titanium-100/5 p-6">
           <h2 className="font-display font-bold text-xl text-titanium-50 mb-2">Live ausprobieren</h2>
           <p className="text-sm text-silver-300 mb-4">
-            Demo-Workspace mit Seed-Daten oder Compliance-Check für die eigene Domain.
+            Beispiel-Workspace mit Seed-Daten oder Compliance-Check für die eigene Domain.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
               to="/governance-runtime"
               className="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-titanium-100/30 hover:border-amber-400 text-titanium-100 hover:text-amber-300 text-sm font-medium transition-colors"
             >
-              Live Governance Runtime Demo <ArrowRight className="h-3.5 w-3.5" />
+              Live Governance Runtime öffnen <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to="/audit?source=content"

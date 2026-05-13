@@ -38,7 +38,7 @@ export function GovernanceDocs() {
           to="/governance-runtime"
           className="surface-mono inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
         >
-          Demo ansehen <ArrowRight className="h-3.5 w-3.5" />
+          Runtime ansehen <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </header>
 
@@ -322,7 +322,7 @@ if (!res.ok) {
         <div className="max-w-4xl mx-auto text-xs text-titanium-500 flex flex-wrap items-center justify-between gap-3">
           <span>© 2026 RealSync Dynamics · EU-Hosted (Frankfurt) · Made in Germany</span>
           <div className="flex gap-4">
-            <Link to="/governance-runtime" className="hover:text-titanium-300">Demo</Link>
+            <Link to="/governance-runtime" className="hover:text-titanium-300">Runtime</Link>
             <Link to="/legal/methodology"  className="hover:text-titanium-300">Methodik</Link>
             <Link to="/security"           className="hover:text-titanium-300">Security</Link>
           </div>

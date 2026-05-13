@@ -281,7 +281,7 @@ function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
           to="/governance-runtime"
           className="inline-flex items-center gap-1.5 px-4 py-2 border border-titanium-900 hover:border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none"
         >
-          Demo-Ansicht
+          Beispiel-Ansicht
         </Link>
       </div>
     </div>

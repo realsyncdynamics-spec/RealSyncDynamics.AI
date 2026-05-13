@@ -125,7 +125,7 @@ export function AgenticComplianceRuntimeSection() {
               to="/governance-runtime"
               className="inline-flex items-center justify-center gap-2 px-5 py-3 border border-titanium-100/30 hover:border-amber-400 text-titanium-100 hover:text-amber-300 text-sm font-medium transition-colors whitespace-nowrap"
             >
-              Live Demo öffnen
+              Live-Runtime öffnen
             </Link>
           </div>
         </div>

@@ -165,7 +165,7 @@ export function AvvGenerator() {
             />
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
-              <a href="/contact-sales" style={{ ...btnPrimary, background: '#0f766e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Demo buchen — AVV vollständig umsetzen</a>
+              <a href="/contact-sales" style={{ ...btnPrimary, background: '#0f766e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Founding Access starten — AVV vollständig umsetzen</a>
               <a href="/grenzen" style={{ ...btnSecondary, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Grenzen dieser Vorlage</a>
               <button onClick={() => { setStep(1); setGenerated(false); }} style={btnSecondary}>Neuen AVV erstellen</button>
             </div>

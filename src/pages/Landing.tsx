@@ -49,6 +49,10 @@ import { GovernanceMiniCasesSection } from '../components/sections/GovernanceMin
 import { InfrastructureIntegrationsStrip } from '../components/sections/InfrastructureIntegrationsStrip';
 import { GovernanceArchitectureSection } from '../components/sections/GovernanceArchitectureSection';
 import { RuntimeActivityFeedSection } from '../components/sections/RuntimeActivityFeedSection';
+import { GovernanceGraphCoreSection } from '../components/sections/GovernanceGraphCoreSection';
+import { AgentOversightSection } from '../components/sections/AgentOversightSection';
+import { DeploymentGovernanceSection } from '../components/sections/DeploymentGovernanceSection';
+import { ExecutiveCommandCenterSection } from '../components/sections/ExecutiveCommandCenterSection';
 
 /**
  * Landing — Hero-only-Pivot.
@@ -67,10 +71,14 @@ export function Landing() {
     <>
       <HeroOnly />
       <RuntimeActivityFeedSection />
+      <GovernanceGraphCoreSection />
       <AgenticComplianceAgentsSection />
+      <AgentOversightSection />
+      <DeploymentGovernanceSection />
       <GovernanceArchitectureSection />
       <SystemLevelGovernanceSection />
       <AiActGovernanceBetaSection />
+      <ExecutiveCommandCenterSection />
       <GovernanceMiniCasesSection />
       <TechSecuritySixtySecondsSection />
       <InfrastructureIntegrationsStrip />

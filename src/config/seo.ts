@@ -302,7 +302,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/contact-sales': {
     title: 'Founding Access — 14 Tage kostenlos | RealSyncDynamics.AI',
     description:
-      '14 Tage kostenloser Enterprise-Zugang für die ersten 100 Unternehmen oder bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots.',
+      '14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots.',
     canonical: `${SITE_URL}/contact-sales`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

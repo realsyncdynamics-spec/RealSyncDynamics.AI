@@ -113,7 +113,7 @@ export function ContactSales() {
           Founding Access anfragen
         </h1>
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
-          14 Tage kostenloser Enterprise-Zugang für die ersten 100 Unternehmen oder bis 02.08.2026.
+          14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026.
           Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Im Erstgespräch
           (30 Minuten, kein Pitch) gehen wir die für Dich relevanten Features live durch.
         </p>

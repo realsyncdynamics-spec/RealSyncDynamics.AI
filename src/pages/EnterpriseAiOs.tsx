@@ -32,7 +32,7 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 py-24">
         <div className="max-w-4xl">
           <div className="mb-6 inline-flex rounded-full border border-[#d4af37]/40 bg-[#d4af37]/10 px-4 py-2 text-sm text-[#d4af37]">
-            Founding Access · 14 Tage kostenlos · limitiert auf 100 Unternehmen
+            Founding Access · 14 Tage kostenlos · für 100 Unternehmen bis 02.08.2026
           </div>
 
           <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
@@ -62,8 +62,8 @@ export function EnterpriseAiOs() {
           </div>
 
           <p className="mt-4 text-sm text-zinc-500">
-            Kostenlos bis maximal 02.08.2026 oder bis die ersten 100 Unternehmen aktiviert wurden.
-            Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern.
+            Für 100 Unternehmen bis 02.08.2026. Gegenleistung: Feedback, Verbesserungsvorschläge
+            und Screenshots von Fehlern.
           </p>
         </div>
       </section>
@@ -109,7 +109,7 @@ export function EnterpriseAiOs() {
       <section className="mx-auto max-w-7xl px-6 pb-24">
         <div className="rounded-3xl border border-[#d4af37]/30 bg-[#d4af37]/10 p-8">
           <h2 className="text-2xl font-semibold text-[#d4af37]">
-            Founding Access für die ersten 100 Unternehmen
+            Founding Access für 100 Unternehmen bis 02.08.2026
           </h2>
           <p className="mt-4 max-w-3xl text-zinc-200">
             Erhalte 14 Tage Zugang zu allen Enterprise-Funktionen. Dafür hilfst du mit echtem

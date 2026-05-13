@@ -37,7 +37,7 @@ const STEPS = [
   {
     icon: <Key className="h-5 w-5" />,
     title: 'API-Key generieren',
-    detail: 'Programmatic /audit aus deiner CI-Pipeline oder n8n-Workflow. Bronze 100/M · Silver 1k · Gold 10k Aufrufe pro Monat.',
+    detail: 'Programmatic /audit aus deiner CI-Pipeline oder n8n-Workflow. Starter 100/M · Growth 1k · Agency 10k Aufrufe pro Monat.',
     cta: 'API-Keys verwalten',
     href: '/settings/api-keys',
   },

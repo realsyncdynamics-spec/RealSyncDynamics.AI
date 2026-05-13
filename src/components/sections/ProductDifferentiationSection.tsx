@@ -25,7 +25,7 @@ const PRODUCTS = [
       'Echter Headless-Browser-Scan mit Pre-Consent-Tracker-Detection, Risk-Score, Auto-Fix-Empfehlungen. Free Audit als Einstieg, Continuous Monitoring im Abo.',
     bullets: [
       'Free Audit (0 €, kein Account)',
-      'Starter ab 49 €/Monat',
+      'Starter ab 79 €/Monat',
       'Tagesgenaue Drift-Detection',
       'PDF-Reports mit Paragraphenbezug',
     ],
@@ -41,7 +41,7 @@ const PRODUCTS = [
     description:
       'Inventarisieren, klassifizieren, überwachen, nachweisen. Browser-Extension + Telemetry + Policy-Engine + Evidence-Vault. EU AI Act + BAIT + MaRisk audit-ready.',
     bullets: [
-      'Growth ab 199 €/Monat',
+      'Growth ab 249 €/Monat',
       'Enterprise ab Anfrage',
       'Browser-Extension für 5 Vendoren',
       'Hash-Chain + HMAC-Signaturen',

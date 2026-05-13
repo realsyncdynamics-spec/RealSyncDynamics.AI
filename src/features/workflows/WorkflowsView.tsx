@@ -479,9 +479,9 @@ function PlanLocked() {
   return (
     <div className="text-center py-16">
       <Lock className="h-10 w-10 text-amber-500 mx-auto mb-3" />
-      <h2 className="font-display text-lg font-bold text-titanium-50 mb-2">Workflows ab Silver</h2>
+      <h2 className="font-display text-lg font-bold text-titanium-50 mb-2">Workflows ab Growth</h2>
       <p className="text-sm text-titanium-400 max-w-md mx-auto leading-relaxed mb-4">
-        n8n-Workflow-Engine ist Teil der Silver- und Gold-Pakete.
+        n8n-Workflow-Engine ist Teil der Growth- und Agency-Pakete.
         Im aktuellen Plan ist <code className="text-amber-300">ai.tool.workflows</code> nicht freigeschaltet.
       </p>
       <Link to="/pricing" className="inline-block px-4 py-2 bg-security-500 text-white text-sm font-semibold rounded-none hover:bg-security-600">

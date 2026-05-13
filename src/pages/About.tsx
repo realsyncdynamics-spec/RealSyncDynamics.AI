@@ -39,7 +39,7 @@ export function About() {
             </p>
             <p>
               Unser Ziel: Bis Ende 2027 die Standard-Compliance-Plattform für DACH-Mittelstand und Behörden zu sein.
-              Keine 6-Monats-Implementierung. Keine 50.000 €/Jahr Enterprise-Verträge. Self-Service ab 29 €/Monat.
+              Keine 6-Monats-Implementierung. Keine 50.000 €/Jahr Enterprise-Verträge. Self-Service ab 79 €/Monat (Starter), Free Audit kostenlos.
             </p>
           </Section>
 
@@ -89,7 +89,7 @@ export function About() {
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong className="text-titanium-50">Faire Preise</strong>: Bronze 29 €/M · Silver 99 €/M · Gold 299 €/M. Keine Setup-Fees. 14 Tage Pilot kostenlos.</span>
+                <span><strong className="text-titanium-50">Faire Preise</strong>: Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Agency 699 €/M. Keine Setup-Fees. 14 Tage Pilot kostenlos.</span>
               </li>
             </ul>
           </Section>

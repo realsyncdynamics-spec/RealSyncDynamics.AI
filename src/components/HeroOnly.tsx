@@ -34,7 +34,7 @@ import { RoadmapSection } from './sections/RoadmapSection';
  *   - Sektion „So funktioniert": 3-Step-Erklärer + CTA
  *   - Sektion „Leistungen" (Was Sie bekommen): 4-Card-Grid mit Icons
  *   - Sektion „Gründe" (Warum Firmen uns nutzen): 3 Pain-Point-Cards + Beta-Hinweis
- *   - Sektion „Preise": 3-Tier-Teaser (Bronze/Silver/Gold) + Link zu /pricing
+ *   - Sektion „Preise": Tier-Teaser (Free Audit / Starter / Growth / Enterprise) + Link zu /pricing
  *   - Sektion „FAQ": 3 details-summary Q&A-Pairs + Schluss-CTA
  *   - Footer: Legal- + Free-Tool-Links
  *
@@ -727,11 +727,14 @@ function MidButton({
  * dort, das Modal ist nur die Sneak-Preview.
  */
 function PricingShortPanel() {
+  // Tier-Daten gespiegelt aus src/config/pricing.ts (SSOT) — bewusst hardcoded
+  // gehalten weil das Modal nur eine 4-Kachel-Sneak-Preview ist, nicht der
+  // Full-Tier-Stack. Wenn pricing.ts ändert, hier mit anpassen.
   const tiles = [
-    { name: 'Starter',     price: 'Kostenlos',     sub: 'Einzel-URLs',                  to: '/audit',                        cta: 'Starten' },
-    { name: 'Team',        price: '€ 149 / Mt.',   sub: 'Wiederkehrende Audits',        to: '/pricing?tier=team',            cta: 'Pilot starten' },
-    { name: 'Managed',     price: 'ab € 99 / Mt.', sub: 'Audit + Rebuild + Betrieb',    to: '/dsgvo-website',                cta: 'Komplett-Service' },
-    { name: 'Enterprise',  price: 'Anfrage',       sub: 'API · Multi-Tenant · SLA',     to: '/contact-sales?intent=enterprise', cta: 'Sales kontaktieren' },
+    { name: 'Free Audit',  price: 'Kostenlos',     sub: 'Einmaliger DSGVO-Check',       to: '/audit?source=hero-pricing',     cta: 'Scannen' },
+    { name: 'Starter',     price: '€ 79 / Mt.',    sub: 'Eine Domain · Monitoring',     to: '/checkout/starter?source=hero',  cta: 'Starter aktivieren' },
+    { name: 'Growth',      price: '€ 249 / Mt.',   sub: 'Bis zu 3 Domains · Drift',     to: '/checkout/growth?source=hero',   cta: 'Growth aktivieren' },
+    { name: 'Enterprise',  price: 'Anfrage',       sub: 'AI Act · SLA · DSB',           to: '/contact-sales?intent=enterprise', cta: 'Sales kontaktieren' },
   ];
   return (
     <>

@@ -23,12 +23,23 @@ interface Product {
   stripe_price_id: string;
 }
 
+// Display labels for plan_key values that may live in subscriptions table.
+// 5-tier public scheme (Free / Starter / Growth / Agency / Enterprise) is
+// canonical for new accounts — legacy keys (bronze/silver/gold) are kept
+// here only so historical subscriptions render correctly until a one-time
+// data migration renames them.
 const PLAN_LABELS: Record<string, string> = {
-  free: 'Free',
-  bronze: 'Bronze',
-  silver: 'Silver',
-  gold: 'Gold',
+  free: 'Free Audit',
+  free_audit: 'Free Audit',
+  starter: 'Starter',
+  growth: 'Growth',
+  agency: 'Agency',
+  enterprise: 'Enterprise',
   enterprise_public: 'Enterprise',
+  // legacy — historical subscriptions only
+  bronze: 'Bronze (legacy)',
+  silver: 'Silver (legacy)',
+  gold: 'Gold (legacy)',
 };
 
 export function BillingView() {

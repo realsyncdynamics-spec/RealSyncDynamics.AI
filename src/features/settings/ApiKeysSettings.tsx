@@ -240,7 +240,7 @@ function Inner({ session: _session }: { session: Session }) {
             </div>
             <p className="text-titanium-500">
               <strong className="text-titanium-300">Quotas pro Plan:</strong>{' '}
-              Bronze 100/Monat · Silver 1.000/Monat · Gold 10.000/Monat.
+              Starter 100/Monat · Growth 1.000/Monat · Agency 10.000/Monat.
               Bei Quota-Überschreitung HTTP 429.
             </p>
             <p className="text-titanium-500">

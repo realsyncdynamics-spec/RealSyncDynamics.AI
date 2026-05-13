@@ -23,14 +23,14 @@ export function DataGuardAlternative() {
         <div className="max-w-4xl mx-auto space-y-10">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <Euro className="h-3 w-3" /> Tools statt Beratung · Self-Service ab 29 €/M · Made in Germany
+              <Euro className="h-3 w-3" /> Tools statt Beratung · Self-Service ab 79 €/M · Made in Germany
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
               DataGuard-Alternative — <span className="text-security-400">Tools statt Beratungs-Verträge</span>
             </h1>
             <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
               DataGuard liefert externe Datenschutzbeauftragte und Compliance-Beratung im Abo (typisch 4.000–12.000 €/Jahr).
-              Wir liefern <strong className="text-titanium-50">Self-Service-Tools für die operative Umsetzung</strong> ab 29 €/Monat —
+              Wir liefern <strong className="text-titanium-50">Self-Service-Tools für die operative Umsetzung</strong> ab 79 €/Monat (Starter) —
               für Unternehmen, die intern bereits einen DSB haben oder selbst handeln wollen.
             </p>
           </div>
@@ -60,7 +60,7 @@ export function DataGuardAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing-Modell', o: '4.000–12.000 €/Jahr (Abo)', r: '29–299 €/Monat (Self-Service)' },
+                  { f: 'Pricing-Modell', o: '4.000–12.000 €/Jahr (Abo)', r: '79–699 €/Monat (Self-Service)' },
                   { f: 'Externer DSB stellen', o: 'yes', r: 'no' },
                   { f: 'AVV-Generator (Self-Service)', o: 'partial', r: 'yes' },
                   { f: 'VVT-Wizard (Art. 30)', o: 'partial', r: 'yes' },
@@ -102,7 +102,7 @@ export function DataGuardAlternative() {
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du hast bereits einen internen DSB oder einen Anwalt — und brauchst Tools, mit denen er/sie schneller arbeiten kann.</span></li>
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst KI einsetzen und brauchst dafür AI-Act-Klassifikation, Audit-Trail, DSFA — Tools, die DataGuard nicht hat.</span></li>
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du betreibst eine Agentur und willst Compliance-Workflows für mehrere Mandanten managen (Multi-Tenant).</span></li>
-              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst Self-Service ab 29 €/M statt Berater-Tagessätze.</span></li>
+              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst Self-Service ab 79 €/M statt Berater-Tagessätze.</span></li>
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst dein Cookie-Banner ohne Konfigurator-Hölle einbetten.</span></li>
             </ul>
           </Section>

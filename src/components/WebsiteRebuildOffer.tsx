@@ -77,7 +77,7 @@ export function WebsiteRebuildOffer() {
         </div>
 
         <p className="mt-6 text-center text-xs text-titanium-500 max-w-xl mx-auto">
-          Ab 99 €/Monat nach einmaligem Rebuild (1.500–4.000 €). Kündbar zum Monatsende, voller
+          Managed-Betrieb nach Angebot, einmaliger Rebuild ab 1.500 €. Kündbar zum Monatsende, voller
           Source-Code-Export bei Ende. Keine Knebelverträge.
         </p>
       </div>

@@ -35,7 +35,7 @@ const SERVICES: Service[] = [
     icon: <Globe className="h-5 w-5 text-brass-400" />,
     eyebrow: 'Website-Service',
     title: 'DSGVO-Rebuild + Managed',
-    body: 'Audit, Neuaufbau, EU-Hosting — als Pauschale ab 99 €/Monat.',
+    body: 'Audit, Neuaufbau, EU-Hosting — Managed-Betrieb nach Angebot.',
     to: '/dsgvo-website',
     cta: '3-Paket-Angebot',
   },

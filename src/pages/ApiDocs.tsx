@@ -120,7 +120,7 @@ export function ApiDocs() {
               API — programmatischer Zugriff
             </h1>
             <p className="text-lg text-titanium-300 leading-relaxed">
-              Im Silver-Tier inklusive. Tenant-scoped API-Keys, Rate-Limits, Audit-Log pro Aufruf.
+              Ab Growth-Tier inklusive. Tenant-scoped API-Keys, Rate-Limits, Audit-Log pro Aufruf.
               Base-URL: <code className="px-1 bg-obsidian-900 text-emerald-300 text-xs font-mono">https://&lt;project&gt;.supabase.co</code>
             </p>
           </div>
@@ -135,7 +135,7 @@ export function ApiDocs() {
             </div>
             <ul className="space-y-1.5 text-sm mt-3">
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Key ist tenant-scoped — kann nur Daten lesen/schreiben, die zum Tenant gehören</span></li>
-              <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Rate-Limits: Bronze 60/min, Silver 600/min, Gold 6000/min</span></li>
+              <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Rate-Limits: Starter 60/min, Growth 600/min, Agency 6000/min, Enterprise verhandelbar</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Bei 429: <code className="text-amber-300 text-xs">Retry-After</code>-Header wird gesetzt</span></li>
               <li className="flex items-start gap-2"><span className="text-emerald-400 mt-1">•</span><span>Public-Endpoints (audit, sales-lead, newsletter) brauchen keinen Key — IP-Rate-Limit greift</span></li>
             </ul>
@@ -187,14 +187,14 @@ export function ApiDocs() {
             </p>
             <p className="text-xs text-titanium-500">
               SLA für API-Verfügbarkeit aktuell informell (kein vertraglicher SLO).
-              Im Gold-/Enterprise-Tier ist 99,5 %/99,9 % SLA verhandelbar.
+              Im Agency-/Enterprise-Tier ist 99,5 %/99,9 % SLA verhandelbar.
             </p>
           </Section>
 
           <div className="mt-12 p-6 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">API-Key generieren</h2>
             <p className="text-titanium-300 text-sm mb-4">
-              Im Silver-Tier inklusive. Pilot-Trial 14 Tage, keine Kreditkarte.
+              Ab Growth-Tier inklusive. Pilot-Trial 14 Tage, keine Kreditkarte.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/pricing?source=api-docs" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">

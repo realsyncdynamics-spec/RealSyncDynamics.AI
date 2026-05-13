@@ -62,7 +62,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '0',
     priceSuffix: 'einmalig · kein Account',
     recurring: false,
-    tagline: 'Sofortiger DSGVO-Check ohne Verpflichtung',
+    tagline: 'Für Teams, die zuerst wissen wollen, was bei ihnen wirklich los ist',
     bullets: [
       'URL-Scan mit Compliance-Score 0-100',
       'Top-3-Risiken sichtbar',
@@ -80,7 +80,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '79',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Vollständige Compliance-Basis für eine Domain',
+    tagline: 'Für Solo-Founder und kleine SaaS-Teams mit einer Domain',
     bullets: [
       'Vollständiger DSGVO-Scan (alle Findings mit Paragraphenbezug)',
       'Datenschutzerklärung (DSE) + Impressum-Generator',
@@ -99,7 +99,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '249',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Continuous Monitoring + konkrete Fix-Empfehlungen',
+    tagline: 'Für wachsende Produkte mit bis zu drei Domains',
     bullets: [
       'Alles aus Starter',
       'Tägliches Monitoring + Drift-Detection',
@@ -120,7 +120,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '699',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'White-Label · Multi-Tenant · API-Zugriff für Agenturen',
+    tagline: 'Für Agenturen, die Compliance als Service ausliefern',
     bullets: [
       'Alles aus Growth',
       'White-Label-Reports mit eigenem Logo',
@@ -141,7 +141,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: 'individuell',
     priceSuffix: 'ab 1.500 € / Monat',
     recurring: true,
-    tagline: 'SLA · AI-Act-Modul · DSB-Integration · Evidence Vault',
+    tagline: 'Für regulierte Branchen und Konzern-Tenants mit Audit-Pflicht',
     bullets: [
       'Alle Agency-Funktionen',
       'SLA-Garantie + dedizierter Account-Manager',

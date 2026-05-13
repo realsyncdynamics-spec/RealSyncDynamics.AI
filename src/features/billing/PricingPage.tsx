@@ -57,11 +57,12 @@ export function PricingPage() {
             </div>
           </div>
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Automated Compliance Infrastructure.
+            Welcher Plan passt zu Ihrem Setup?
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Nicht "KI baut Websites". Sondern: strukturierte Erkennung → Regelengine → automatische Remediation.
-            Vom kostenlosen Schnell-Check bis zum Enterprise-Evidence-Vault mit SLA.
+            Vom kostenlosen Erst-Scan bis zur kompletten Governance-Runtime — alle Pläne sind EU-gehostet,
+            alle Pläne enthalten den AVV. Wählen Sie nach Anzahl der Domains und nach Tiefe der gewünschten
+            Continuous-Compliance-Schicht.
           </p>
         </div>
       </section>

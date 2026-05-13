@@ -40,7 +40,7 @@ test('Landing renders HeroOnly Hero + section headings + example-report modal', 
     page.getByRole('heading', { name: /Für wen RealSyncDynamics\.AI gebaut ist/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /In drei Schritten zu einem klaren Compliance-Bild/i }),
+    page.getByRole('heading', { name: /Setup, Analyse, Output — in drei Schritten/i }),
   ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: /^Mehr als ein Cookie-Scanner$/i }),

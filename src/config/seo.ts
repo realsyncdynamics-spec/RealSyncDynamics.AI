@@ -65,7 +65,7 @@ const PRICING_PRODUCT_JSONLD = {
   '@type': 'Product',
   name: 'RealSyncDynamics.AI Compliance Platform',
   description:
-    'Automatisierte DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Auto-Remediation und Continuous Monitoring.',
+    'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Continuous Monitoring.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
   offers: [
     {
@@ -364,7 +364,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/borlabs-alternative': {
     title: 'Borlabs Cookie Alternative — alle Stacks, nicht nur WordPress | RealSyncDynamics.AI',
     description:
-      'Borlabs ist ein WP-Plugin. RealSyncDynamics.AI ist Compliance-Infrastruktur für WordPress, Shopify, Webflow, custom — mit Pre-Consent-Audit + Auto-Fix.',
+      'Borlabs ist ein WP-Plugin. RealSyncDynamics.AI ist Compliance-Infrastruktur für WordPress, Shopify, Webflow, custom — mit Pre-Consent-Audit + Fix-Empfehlungen.',
     canonical: `${SITE_URL}/borlabs-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -374,7 +374,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/proliance-alternative': {
     title: 'Proliance Alternative — Web-Compliance-Automation | RealSyncDynamics.AI',
     description:
-      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf automatisierte Web-Compliance: Pre-Consent-Audit, Auto-Fix und Continuous Monitoring.',
+      'Proliance ist Compliance-Suite. RealSyncDynamics.AI fokussiert auf Web-Compliance: Pre-Consent-Audit, Fix-Empfehlungen und Continuous Monitoring.',
     canonical: `${SITE_URL}/proliance-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -641,7 +641,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/dsgvo-tool-vergleich': {
     title: 'DSGVO-Tool-Vergleich 2026 — Cookiebot vs Usercentrics vs OneTrust | RealSyncDynamics.AI',
     description:
-      'Direkter Feature-Vergleich der wichtigsten DSGVO-Tools. Pre-Consent-Detection, Auto-Fix, Evidence Vault, AI-Act-Module, Preise — was deckt welches Tool ab?',
+      'Direkter Feature-Vergleich der wichtigsten DSGVO-Tools. Pre-Consent-Detection, Fix-Empfehlungen, Evidence Vault, AI-Act-Module, Preise — was deckt welches Tool ab?',
     canonical: `${SITE_URL}/dsgvo-tool-vergleich`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

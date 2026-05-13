@@ -50,19 +50,19 @@ const ITEMS: RoadmapItem[] = [
     Icon: BrainCircuit,
     title: 'AI-Act Governance Features',
     body: 'AI-Use-Case-Inventar, Annex-III-Klassifizierung, Hochrisiko-Kontrollen mit Audit-Trail.',
-    status: 'Geplant',
+    status: 'Verfügbar',
   },
   {
     Icon: Bot,
-    title: 'Agenten-Galerie (Beta)',
-    body: 'Erste vordefinierte Compliance-Agenten wie Website-Drift, AI-Usecase und Evidence können aktiviert und konfiguriert werden.',
-    status: 'In Entwicklung',
+    title: 'Compliance-Agenten (Beta)',
+    body: 'Website-Drift-, AI-Usecase- und Evidence-Agent live für Beta-Tenants. Chat-Widget auf /governance, tool-use Loop mit Permissions + Approval-Gates.',
+    status: 'Verfügbar',
   },
   {
     Icon: GitMerge,
     title: 'CI/CD-Integrationen',
     body: 'GitHub Actions sowie Vercel-/Netlify-Hooks lösen nach jedem Deploy automatisch Scans aus und erzeugen Alerts bei Compliance-Drift.',
-    status: 'Geplant',
+    status: 'In Entwicklung',
   },
 ];
 

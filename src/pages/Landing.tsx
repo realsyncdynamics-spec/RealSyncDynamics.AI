@@ -54,6 +54,7 @@ import { AgentOversightSection } from '../components/sections/AgentOversightSect
 import { AgenticComplianceRuntimeSection } from '../components/sections/AgenticComplianceRuntimeSection';
 import { DeploymentGovernanceSection } from '../components/sections/DeploymentGovernanceSection';
 import { ExecutiveCommandCenterSection } from '../components/sections/ExecutiveCommandCenterSection';
+import { KleineUnternehmenSection } from '../components/sections/KleineUnternehmenSection';
 
 /**
  * Landing — Hero-only-Pivot.
@@ -71,6 +72,7 @@ export function Landing() {
   return (
     <>
       <HeroOnly />
+      <KleineUnternehmenSection />
       <RuntimeActivityFeedSection />
       <GovernanceGraphCoreSection />
       <AgenticComplianceAgentsSection />

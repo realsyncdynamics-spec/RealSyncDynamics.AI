@@ -17,7 +17,7 @@ test('Landing renders HeroOnly Hero + section headings + example-report modal', 
   // H1 (current HeroOnly headline)
   await expect(
     page.getByRole('heading', {
-      name: /Continuous Compliance Monitoring für Websites, Tracking-Stacks und KI-Systeme/i,
+      name: /Automatisierte DSGVO- und AI-Compliance für Websites, Shops und Unternehmen/i,
     }),
   ).toBeVisible();
 

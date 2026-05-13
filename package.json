@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "check:production": "node scripts/production-readiness-check.mjs"
+    "check:production": "node scripts/production-readiness-check.mjs",
+    "release:merge": "bash scripts/release-merge-deploy.sh",
+    "release:publish": "bash scripts/publish-release.sh"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

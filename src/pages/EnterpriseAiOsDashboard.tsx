@@ -5,6 +5,7 @@ import {
   mockConnectors,
   mockPolicies,
 } from '../lib/enterprise-ai-os/mock-data';
+import { enterpriseAgents } from '../lib/enterprise-ai-os/agents/registry';
 import { EnterpriseFeedbackWidget } from '../components/enterprise-ai-os/FeedbackWidget';
 
 function StatusBadge({ value }: { value: string }) {
@@ -141,6 +142,69 @@ export function EnterpriseAiOsDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Agent Control Layer</h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                Sieben kontrollierte Governance-Agenten. Keine autonomen externen Aktionen — alle
+                riskanten Schritte erfordern menschliche Freigabe oder werden nur empfohlen.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {enterpriseAgents.map((agent) => (
+              <div
+                key={agent.id}
+                className="rounded-2xl border border-white/10 bg-black/30 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium text-white">{agent.name}</div>
+                    <div className="text-xs text-zinc-500">
+                      Layer: {agent.position.layer} · Order {agent.position.order}
+                    </div>
+                  </div>
+                  <StatusBadge value={agent.autonomyLevel} />
+                </div>
+
+                <p className="mt-3 text-xs text-zinc-400">{agent.description}</p>
+
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {agent.capabilities.map((cap) => (
+                    <span
+                      key={cap.id}
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] text-zinc-300"
+                    >
+                      {cap.label}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] text-zinc-500">
+                  <div>
+                    <div className="text-zinc-400">Status</div>
+                    <div className="text-zinc-200">{agent.status}</div>
+                  </div>
+                  <div>
+                    <div className="text-zinc-400">Audit</div>
+                    <div className="text-zinc-200">{agent.auditRequired ? 'required' : 'optional'}</div>
+                  </div>
+                  <div>
+                    <div className="text-zinc-400">Human approval</div>
+                    <div className="text-zinc-200">{agent.humanApprovalRequired ? 'required' : 'optional'}</div>
+                  </div>
+                  <div>
+                    <div className="text-zinc-400">Forbidden</div>
+                    <div className="text-zinc-200">{agent.forbiddenActions.length} actions</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 

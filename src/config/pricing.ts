@@ -62,7 +62,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '0',
     priceSuffix: 'einmalig · kein Account',
     recurring: false,
-    tagline: 'Für Teams, die zuerst wissen wollen, was bei ihnen wirklich los ist',
+    tagline: 'Für alle, die zuerst wissen wollen, ob ihre Website offensichtliche DSGVO-Risiken hat',
     bullets: [
       'URL-Scan mit Compliance-Score 0–100',
       'Top-3-Risiken sichtbar',
@@ -80,7 +80,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '79',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für Solo-Founder und kleine SaaS-Teams mit einer Domain',
+    tagline: 'Für kleine Unternehmen, lokale Betriebe und Einzel-Domains, die laufend überwacht werden sollen',
     bullets: [
       'Vollständiger DSGVO-Scan mit Paragraphenbezug',
       'DSE- und Impressums-Generator',
@@ -100,7 +100,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '249',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Continuous Monitoring mit konkreten Fix-Empfehlungen',
+    tagline: 'Für wachsende Unternehmen, Shops und Mittelstand mit täglichem Monitoring und konkreten Fix-Hinweisen',
     bullets: [
       'Alles aus Starter',
       'Tägliches Monitoring + Drift-Detection',
@@ -121,7 +121,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '699',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für Agenturen, die Compliance als Service ausliefern',
+    tagline: 'Für Web-Agenturen und Dienstleister, die mehrere Kundenseiten betreuen',
     bullets: [
       'Alles aus Growth',
       'White-Label-Reports mit eigenem Logo',
@@ -142,7 +142,7 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: 'individuell',
     priceSuffix: 'ab 1.500 € / Monat',
     recurring: true,
-    tagline: 'Für regulierte Branchen und Konzern-Tenants mit Audit-Pflicht',
+    tagline: 'Für regulierte Unternehmen, größere Mittelständler und Organisationen mit SLA-, DSB- oder AI-Act-Anforderungen',
     bullets: [
       'Alle Agency-Funktionen',
       'SLA und dedizierter Ansprechpartner',

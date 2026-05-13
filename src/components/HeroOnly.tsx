@@ -105,15 +105,16 @@ export function HeroOnly() {
 
           {/* Headline + Subline */}
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
-            Continuous Compliance Monitoring für Websites, Tracking-Stacks und KI-Systeme.
+            Automatisierte DSGVO- und AI-Compliance für Websites, Shops und Unternehmen.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-3">
-            Damit Sie DSGVO-, TTDSG- und EU-AI-Act-Pflichten technisch nachweisbar erfüllen können —
-            mit Risikoanalyse, laufender Überwachung und Audit-Trails.
+            RealSyncDynamics.AI prüft Websites, Shops und digitale Prozesse auf Tracker,
+            Consent-Risiken, Security-Header, Rechtsdokumente und AI-Governance-Pflichten —
+            vom lokalen Betrieb bis zum Mittelstand.
           </p>
           <p className="text-sm text-silver-400 leading-relaxed max-w-2xl mx-auto mb-9">
-            RealSyncDynamics.AI hilft, KI-Usecases zu inventarisieren, AI-Act-Risiken einzuordnen und die
-            geforderten Logs, Kontrollen und Audit-Trails aufzubauen.
+            Continuous Monitoring statt jährlichem Audit. Klare To-dos statt juristischer Fachsprache.
+            EU-gehostet, monatlich kündbar, keine Rechtsberatung — sondern technische Compliance-Härtung.
           </p>
 
           {/* Primary + Secondary CTA */}
@@ -197,39 +198,84 @@ export function HeroOnly() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
               {
-                title: 'Compliance-Profis · Kanzleien + externe DSBs',
-                body: 'Du verantwortest fremde Compliance. Mehr Mandanten ohne mehr Excel — eine Quelle der Wahrheit pro Mandat, monatlich Hash-verifiable.',
-                href: '/legal-tech',
+                title: 'Kleine Unternehmen & lokale Betriebe',
+                subtitle: 'Praxen · Restaurants · Handwerk · Dienstleister · Vereine · Shops',
+                bullets: [
+                  'Website-Risiken ohne Fachwissen erkennen',
+                  'Klare To-dos statt juristischer Fachsprache',
+                  'Günstiger Einstieg mit Free Audit oder Starter',
+                  'Laufende Überwachung ohne eigene IT-Abteilung',
+                ],
+                href: '/audit?source=zielgruppe-smb',
               },
               {
-                title: 'Builder · Web- und Digital-Agenturen',
-                body: 'Du baust + betreibst Websites und Plattformen für andere. Compliance als Lieferleistung — Pre-Go-Live-Check, White-Label-Report, Multi-Tenant-Dashboard.',
+                title: 'Mittelständische Unternehmen',
+                subtitle: 'Mehrere Websites · Standorte · Tools · Dienstleister',
+                bullets: [
+                  'Zentrale Übersicht über Domains und Risiken',
+                  'Monitoring statt einmaliger Prüfung',
+                  'Audit-Trail für GF, IT und Datenschutzbeauftragte',
+                  'Klare Priorisierung nach Risiko',
+                ],
+                href: '/contact-sales?intent=mittelstand',
+              },
+              {
+                title: 'Agenturen & Web-Dienstleister',
+                subtitle: 'Compliance als Lieferleistung für Kundenseiten',
+                bullets: [
+                  'White-Label-Reports',
+                  'Multi-Tenant-Dashboard',
+                  'Pre-Go-Live-Checks',
+                  'Laufende Betreuung als Managed Service',
+                ],
                 href: '/fuer-agenturen',
               },
               {
-                title: 'Operators · AI- und SaaS-Unternehmen',
-                body: 'Du betreibst eigene Produkte mit KI-Features. KI ausrollen ohne Audit-Albtraum — Policy-Decisions inline, Annex-IV-Pack im Pipeline-Schritt, Drift-Alerts auf Production-Modelle.',
+                title: 'SaaS- und AI-Unternehmen',
+                subtitle: 'Tracking · APIs · KI-Funktionen · Modell-Calls',
+                bullets: [
+                  'AI-Usecase-Inventar',
+                  'AI-Act-Klassifizierung (Annex III)',
+                  'Drift-Detection für Production-Modelle',
+                  'Evidence Records mit Hash-Chain',
+                ],
                 href: '/fuer-saas',
               },
               {
-                title: 'Regulierte · FinTech / HealthTech / EdTech',
-                body: 'Du arbeitest unter Aufsicht. Audit-Readiness als Default — kontinuierlich, dokumentiert, verifiable, exportfähig in unter einer Stunde.',
-                href: '/branchen',
+                title: 'Datenschutz-Profis & regulierte Branchen',
+                subtitle: 'DSBs · Kanzleien · FinTech · HealthTech · EdTech',
+                bullets: [
+                  'Evidence Vault mit signierten Nachweisen',
+                  'Exportfähige Audit-Reports',
+                  'Governance Graph für Datenflüsse + Pflichten',
+                  'Kontinuierliche Re-Evaluation',
+                ],
+                href: '/legal-tech',
               },
             ].map((item) => (
               <Link
                 key={item.title}
                 to={item.href}
-                className="group p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors block"
+                className="group p-5 sm:p-6 bg-obsidian-900/60 border border-silver-700/30 hover:border-gold-400/60 rounded-none transition-colors block flex flex-col"
               >
-                <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-2 leading-snug">
+                <h3 className="font-display font-bold text-titanium-50 text-base sm:text-lg mb-1 leading-snug">
                   {item.title}
                 </h3>
-                <p className="text-sm text-silver-300 leading-relaxed">{item.body}</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-gold-400 group-hover:text-gold-300">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-3">
+                  {item.subtitle}
+                </p>
+                <ul className="space-y-1.5 mb-3 flex-1">
+                  {item.bullets.map((b) => (
+                    <li key={b} className="text-sm text-silver-300 leading-relaxed flex items-start gap-2">
+                      <span aria-hidden="true" className="text-gold-400 shrink-0 mt-1">▸</span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-wider text-gold-400 group-hover:text-gold-300">
                   Mehr erfahren <ArrowRight className="h-3 w-3" />
                 </span>
               </Link>

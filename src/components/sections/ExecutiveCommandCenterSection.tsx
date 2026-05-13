@@ -99,7 +99,7 @@ export function ExecutiveCommandCenterSection() {
           </div>
           <div className="mt-5 pt-4 border-t border-silver-700/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-xs text-silver-400">
-              Snapshot oben ist Demo-Daten. Live-Werte aus dem Tenant-Scope nach Onboarding.
+              Snapshot oben ist Beispieldaten. Live-Werte aus dem Tenant-Scope nach Onboarding.
             </p>
             <Link
               to="/executive"

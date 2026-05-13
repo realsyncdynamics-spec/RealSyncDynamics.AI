@@ -111,14 +111,14 @@ export function BaitMaRiskGuide() {
                     BaFin-ready bis Ende 2026 — wir machen das in 14 Tagen.
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
-                    Demo + Setup + erstes Audit-Log live in 14 Tagen. Pilot 14 Tage kostenlos,
+                    Setup + erstes Audit-Log live in 14 Tagen. Pilot 14 Tage kostenlos,
                     danach Growth 249 €/Monat (passt für KMU-FinTechs bis ~50 Mitarbeitende).
                   </p>
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Link to="/contact-sales?source=bait-marisk" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                  Demo buchen <ArrowRight className="h-4 w-4" />
+                  Founding Access starten <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                   Kostenloser Site-Audit

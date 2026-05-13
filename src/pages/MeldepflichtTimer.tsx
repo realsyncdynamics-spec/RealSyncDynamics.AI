@@ -207,7 +207,7 @@ export function MeldepflichtTimer() {
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/contact-sales?source=meldepflicht-timer" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Demo buchen
+                Founding Access starten
               </Link>
               <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Kostenloser DSGVO-Scan

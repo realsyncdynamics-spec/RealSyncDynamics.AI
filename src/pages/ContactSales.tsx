@@ -102,7 +102,7 @@ export function ContactSales() {
             <Mail className="h-4 w-4 text-white" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Demo / Kontakt</div>
+            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Founding Access / Kontakt</div>
             <div className="text-[11px] text-titanium-400 font-medium">Antwort innerhalb 24h</div>
           </div>
         </div>
@@ -110,12 +110,12 @@ export function ContactSales() {
 
       <main className="max-w-xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="font-display text-3xl font-bold text-titanium-50 tracking-tight mb-2">
-          Demo buchen
+          Founding Access anfragen
         </h1>
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
-          30 Minuten, kein Pitch — wir gehen die für Dich relevanten Features
-          live durch (eu_local-Modus, Audit-Log, n8n-Workflows, GDPR-Selfservice,
-          Multi-Tenant-Setup).
+          14 Tage kostenloser Enterprise-Zugang für die ersten 100 Unternehmen oder bis 02.08.2026.
+          Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Im Erstgespräch
+          (30 Minuten, kein Pitch) gehen wir die für Dich relevanten Features live durch.
         </p>
 
         <CalendlyBlock />
@@ -169,7 +169,7 @@ export function ContactSales() {
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-none">
             {loading
               ? (<><Loader2 className="h-4 w-4 animate-spin" /> Senden…</>)
-              : (<><Send className="h-4 w-4" /> Demo anfragen</>)}
+              : (<><Send className="h-4 w-4" /> Founding Access anfragen</>)}
           </button>
 
           <p className="text-[11px] text-titanium-500 text-center pt-2">

@@ -96,7 +96,7 @@ export function HealthTechLanding() {
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/contact-sales?source=healthtech" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Demo buchen <ArrowRight className="h-4 w-4" />
+                Founding Access starten <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Kostenloser DSGVO-Scan

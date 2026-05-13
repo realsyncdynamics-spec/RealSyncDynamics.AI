@@ -141,7 +141,7 @@ export function HeroOnly() {
               className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-[0.18em] text-silver-400 hover:text-amber-300 transition-colors"
             >
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              Live Governance-Runtime Demo öffnen <ArrowRight className="h-3 w-3" />
+              Live Governance-Runtime öffnen <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 

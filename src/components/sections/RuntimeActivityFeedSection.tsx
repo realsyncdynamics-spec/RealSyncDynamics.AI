@@ -67,7 +67,7 @@ export function RuntimeActivityFeedSection() {
             </h2>
             <p className="mt-4 text-silver-300 text-base sm:text-lg leading-relaxed">
               Kein Mockup. So sieht ein typischer Vormittag im Governance-Runtime aus — Agenten,
-              Policy-Decisions, Evidence-Sealings. Live-Demo unter{' '}
+              Policy-Decisions, Evidence-Sealings. Live-Runtime unter{' '}
               <Link to="/governance-runtime" className="text-amber-400 hover:text-amber-300">
                 /governance-runtime
               </Link>
@@ -78,7 +78,7 @@ export function RuntimeActivityFeedSection() {
             to="/governance-runtime"
             className="inline-flex items-center gap-2 px-4 py-2.5 border border-titanium-100/30 hover:border-amber-400 text-titanium-100 hover:text-amber-300 text-sm font-medium transition-colors"
           >
-            <Activity className="h-4 w-4" /> Live Demo öffnen <ExternalLink className="h-3.5 w-3.5" />
+            <Activity className="h-4 w-4" /> Live-Runtime öffnen <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
 
@@ -101,7 +101,7 @@ export function RuntimeActivityFeedSection() {
             <div className="flex items-center gap-2">
               <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-titanium-100">
-                Today · Demo Tenant
+                Today · Beispiel-Tenant
               </span>
             </div>
             <span className="font-mono text-[11px] text-silver-500">5 von 147 events</span>
@@ -157,7 +157,7 @@ export function RuntimeActivityFeedSection() {
               to="/governance-runtime"
               className="text-xs font-mono uppercase tracking-[0.18em] text-amber-400 hover:text-amber-300"
             >
-              → vollständigen Feed in der Demo öffnen
+              → vollständigen Feed in der Live-Runtime öffnen
             </Link>
           </div>
         </div>

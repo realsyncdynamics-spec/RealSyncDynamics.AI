@@ -61,7 +61,7 @@ export function GovernanceRuntimePanel() {
           to="/governance-runtime"
           className="surface-gold inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-bold rounded-none"
         >
-          Live-Demo ansehen <ArrowRight className="h-3.5 w-3.5" />
+          Live-Runtime ansehen <ArrowRight className="h-3.5 w-3.5" />
         </Link>
         <Link
           to="/docs/governance"

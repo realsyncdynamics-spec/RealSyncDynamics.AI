@@ -71,7 +71,7 @@ export function GovernanceGraphCoreSection() {
         <div className="bg-obsidian-900/60 border border-silver-700/30 p-6 sm:p-8 mb-10">
           <div className="flex items-center gap-2 mb-6">
             <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-100">
-              Graph-Excerpt · Demo Tenant
+              Graph-Excerpt · Beispiel-Tenant
             </span>
             <span className="font-mono text-[10px] text-silver-500">node_id: uc_a3f2…</span>
           </div>

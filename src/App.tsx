@@ -21,6 +21,9 @@ import { Roadmap } from './pages/Roadmap';
 import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
 import { GovernanceDocs } from './pages/GovernanceDocs';
 import { RuntimePage } from './pages/RuntimePage';
+import { MonitoringPage } from './pages/MonitoringPage';
+import { GovernancePage } from './pages/GovernancePage';
+import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
@@ -176,10 +179,13 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<Landing />} />
-      <Route path="/runtime"  element={<RuntimePage />} />
-      <Route path="/ai-act"   element={<AiActPage />} />
-      <Route path="/docs"     element={<DocsRuntimePage />} />
-      <Route path="/evidence" element={<EvidencePage />} />
+      <Route path="/runtime"    element={<RuntimePage />} />
+      <Route path="/monitoring" element={<MonitoringPage />} />
+      <Route path="/governance" element={<GovernancePage />} />
+      <Route path="/agents"     element={<AgentsPage />} />
+      <Route path="/evidence"   element={<EvidencePage />} />
+      <Route path="/ai-act"     element={<AiActPage />} />
+      <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
@@ -321,7 +327,10 @@ function RoutesWithTracking() {
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/tenant/invites" element={<InvitesView />} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
-      <Route path="/governance" element={<GovernanceDashboardView />} />
+      {/* Auth-gated tenant dashboard moved to /governance/admin so /governance
+          can be the public AI Governance OS surface. Back-links from feature
+          views (DpiasView, MappingsView, etc.) are updated accordingly. */}
+      <Route path="/governance/admin" element={<GovernanceDashboardView />} />
       <Route path="/governance/keys" element={<GovernanceKeysView />} />
       <Route path="/governance/webhooks" element={<GovernanceWebhooksView />} />
       <Route path="/governance/onboarding" element={<GovernanceOnboardingView />} />

@@ -40,6 +40,7 @@ import { ContactSales } from './pages/ContactSales';
 import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
+import { BusinessDashboard } from './pages/BusinessDashboard';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 // CreatorDashboard ist auth-gated → lazy
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
@@ -319,6 +320,8 @@ function RoutesWithTracking() {
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
+      <Route path="/dashboard/business" element={<BusinessDashboard />} />
+      <Route path="/business" element={<BusinessDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<UsageView />} />

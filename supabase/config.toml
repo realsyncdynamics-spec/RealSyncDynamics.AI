@@ -105,6 +105,13 @@ verify_jwt = false
 [functions.cookie-scan-deep]
 verify_jwt = false
 
+# AI Gateway — provider-neutral inference endpoint. Public per spec
+# (frontend talks to it directly without bearer tokens). The actual auth
+# + rate-limit + tenant-scope checks live inside the function once it
+# starts handling tenant-scoped traffic in a follow-up PR.
+[functions.ai-gateway]
+verify_jwt = false
+
 [functions.audit-report-pdf]
 verify_jwt = false
 

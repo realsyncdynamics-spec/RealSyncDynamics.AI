@@ -67,6 +67,7 @@ import { ProlianceAlternative } from './pages/ProlianceAlternative';
 import { InsuranceLanding } from './pages/InsuranceLanding';
 import { EcommerceLanding } from './pages/EcommerceLanding';
 import { About } from './pages/About';
+import { SkillsPage } from './pages/SkillsPage';
 import { Press } from './pages/Press';
 import { Security } from './pages/Security';
 import { Trust } from './pages/Trust';
@@ -235,6 +236,7 @@ function RoutesWithTracking() {
       <Route path="/online-shops" element={<EcommerceLanding />} />
       {/* Trust / Press / Security */}
       <Route path="/about" element={<About />} />
+      <Route path="/skills" element={<SkillsPage />} />
       <Route path="/ueber-uns" element={<About />} />
       <Route path="/press" element={<Press />} />
       <Route path="/presse" element={<Press />} />

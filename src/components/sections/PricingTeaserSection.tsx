@@ -85,7 +85,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             to={contactHref}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-silver-500 hover:border-gold-400 text-silver-100 hover:text-titanium-50 text-sm font-semibold rounded-none transition-colors"
           >
-            Beratungstermin vereinbaren
+            AI Agent fragen
           </Link>
         </div>
 

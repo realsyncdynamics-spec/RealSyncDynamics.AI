@@ -75,11 +75,12 @@ export function ContactSales() {
       <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-obsidian-900 border border-emerald-900 p-8 text-center rounded-none">
           <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — wir melden uns.</h1>
+          <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
           <p className="text-sm text-titanium-300 leading-relaxed mb-5">
-            Innerhalb von 24 Stunden mit konkretem Termin-Vorschlag.
-            Falls Du parallel die Architektur ansehen willst — alles ist
-            transparent dokumentiert.
+            Unser AI Agent verarbeitet Deine Anfrage sofort und schlägt passende
+            Slots vor. Fallback-Kanal:{' '}
+            <a href="mailto:support@realsyncdynamicsai.de" className="text-security-400 hover:underline">support@realsyncdynamicsai.de</a>.
+            Die Architektur ist parallel transparent dokumentiert.
           </p>
           <div className="flex flex-col gap-2">
             <Link to="/legal/sub-processors"
@@ -103,7 +104,7 @@ export function ContactSales() {
           </div>
           <div className="leading-tight">
             <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Founding Access / Kontakt</div>
-            <div className="text-[11px] text-titanium-400 font-medium">Antwort innerhalb 24h</div>
+            <div className="text-[11px] text-titanium-400 font-medium">AI Agent antwortet sofort</div>
           </div>
         </div>
       </header>
@@ -114,8 +115,9 @@ export function ContactSales() {
         </h1>
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
           14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026.
-          Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Im Erstgespräch
-          (30 Minuten, kein Pitch) gehen wir die für Dich relevanten Features live durch.
+          Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding
+          komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und
+          schaltet den Zugang automatisiert frei.
         </p>
 
         <CalendlyBlock />
@@ -196,7 +198,7 @@ function CalendlyBlock() {
         <div>
           <div className="font-display font-bold text-titanium-50 text-sm mb-1">Direkt buchen — schneller Termin</div>
           <div className="text-xs text-titanium-400 leading-relaxed">
-            30-Min-Slot direkt im Kalender wählen. Alternativ darunter Formular ausfüllen — wir melden uns innerhalb 24h.
+            30-Min-Slot direkt im Kalender wählen. Alternativ darunter Formular ausfüllen — unser AI Agent verarbeitet die Anfrage sofort.
           </div>
         </div>
       </div>

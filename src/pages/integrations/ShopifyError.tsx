@@ -67,6 +67,6 @@ const REASONS: Record<string, { title: string; body: string }> = {
   },
   unknown: {
     title: 'Unbekannter Fehler bei der Shopify-Verbindung',
-    body: 'Bitte versuche es erneut. Falls das Problem bleibt, kontaktiere uns über den Support-Link unten — wir können den genauen Grund in den Logs sehen.',
+    body: 'Bitte versuche es erneut. Falls das Problem bleibt, übernimmt unser AI Agent die Log-Analyse — Fallback-Kanal: support@realsyncdynamicsai.de.',
   },
 };

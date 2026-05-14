@@ -734,7 +734,7 @@ function PricingShortPanel() {
     { name: 'Free Audit',  price: 'Kostenlos',     sub: 'Einmaliger DSGVO-Check',       to: '/audit?source=hero-pricing',     cta: 'Scannen' },
     { name: 'Starter',     price: '€ 79 / Mt.',    sub: 'Eine Domain · Monitoring',     to: '/checkout/starter?source=hero',  cta: 'Starter aktivieren' },
     { name: 'Growth',      price: '€ 249 / Mt.',   sub: 'Bis zu 3 Domains · Drift',     to: '/checkout/growth?source=hero',   cta: 'Growth aktivieren' },
-    { name: 'Enterprise',  price: 'Anfrage',       sub: 'AI Act · SLA · DSB',           to: '/contact-sales?intent=enterprise', cta: 'Sales kontaktieren' },
+    { name: 'Enterprise',  price: 'Anfrage',       sub: 'AI Act · SLA · DSB',           to: '/contact-sales?intent=enterprise', cta: 'AI Agent fragen' },
   ];
   return (
     <>

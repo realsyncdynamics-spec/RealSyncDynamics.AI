@@ -795,7 +795,7 @@ function PricingPreview() {
       sub: 'API · Compliance Monitoring',
       features: ['Unlimited Systeme', 'SLA · DPA', 'Multi-Tenant für Agenturen'],
       to: '/contact-sales?intent=enterprise',
-      cta: 'Sales kontaktieren',
+      cta: 'AI Agent fragen',
       highlight: false,
       managed: false,
     },

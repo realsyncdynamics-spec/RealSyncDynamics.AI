@@ -142,7 +142,7 @@ export function FixPaket() {
               <div>
                 <div className="font-display font-bold text-titanium-50 mb-1">Anfrage erhalten</div>
                 <p className="text-sm text-titanium-300 leading-relaxed">
-                  Wir melden uns mit einem konkreten Umsetzungs-Vorschlag innerhalb von 2 Werktagen.
+                  Unser AI Agent erstellt sofort einen Umsetzungs-Vorschlag. Fallback-Kanal: <a href="mailto:support@realsyncdynamicsai.de" className="text-security-400 hover:underline">support@realsyncdynamicsai.de</a>.
                 </p>
               </div>
             </div>
@@ -225,8 +225,7 @@ export function FixPaket() {
               </button>
 
               <p className="text-[11px] text-titanium-500 leading-relaxed pt-1">
-                Wir melden uns innerhalb von 2 Werktagen mit einem konkreten Vorschlag.
-                Verarbeitung gemäß{' '}
+                Unser AI Agent erstellt sofort einen Vorschlag. Verarbeitung gemäß{' '}
                 <Link to="/legal/privacy" className="text-titanium-100 hover:underline">
                   Datenschutzerklärung
                 </Link>

@@ -59,7 +59,7 @@ export function EnterprisePanel() {
           to="/contact-sales?intent=enterprise"
           className="surface-gold inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-none"
         >
-          Sales kontaktieren <ArrowRight className="h-3.5 w-3.5" />
+          AI Agent fragen <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     </div>

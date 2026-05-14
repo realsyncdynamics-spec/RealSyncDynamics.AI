@@ -86,11 +86,15 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
           <Check className="h-6 w-6 text-emerald-400 shrink-0 mt-0.5" />
           <div>
             <h3 className="font-display font-bold text-titanium-50 text-base mb-1">
-              Anfrage erhalten — Bestätigung folgt per E-Mail
+              Anfrage erhalten — unser AI Agent übernimmt
             </h3>
             <p className="text-sm text-titanium-300 leading-relaxed">
-              Wir senden Dir innerhalb von 24h einen Terminvorschlag im gewünschten Zeitfenster
-              ({SLOT_LABEL[slot]}). 30-Min-Walkthrough via Video-Call, EU-DSGVO-konform.
+              Unser AI Agent schlägt sofort einen passenden Terminslot im Zeitfenster
+              ({SLOT_LABEL[slot]}) vor. 30-Min-Walkthrough via Video-Call, EU-DSGVO-konform.
+              Fallback-Kanal:{' '}
+              <a className="text-security-400" href="mailto:support@realsyncdynamicsai.de">
+                support@realsyncdynamicsai.de
+              </a>.
             </p>
             {topic && (
               <p className="text-xs text-titanium-500 mt-2">
@@ -110,8 +114,8 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
         <h3 className="font-display font-bold text-titanium-50 text-lg">Methodik-Walkthrough buchen</h3>
       </div>
       <p className="text-sm text-titanium-300 leading-relaxed">
-        30 Minuten Video-Call mit dem Founder. Wir gehen die Methodik durch (Datenquellen,
-        Confidence-Mapping, Update-Prozess), beantworten konkrete Fragen für deinen Use-Case.
+        30-Min-Walkthrough geführt durch unseren AI Agent. Methodik (Datenquellen,
+        Confidence-Mapping, Update-Prozess) wird auf deinen Use-Case zugeschnitten.
         Kostenlos, keine Kaufverpflichtung.
       </p>
 

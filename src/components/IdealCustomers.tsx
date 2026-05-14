@@ -59,7 +59,7 @@ export function IdealCustomers() {
         <p className="mt-8 text-center text-xs text-titanium-500">
           Pilot-Cohort 2026 onboarding · Pilot-Kunde werden über{' '}
           <Link to="/contact-sales?source=ideal-customers" className="text-titanium-300 hover:text-titanium-100 underline-offset-4 hover:underline">
-            Sales-Termin
+            AI-Agent-Onboarding
           </Link>
         </p>
       </div>

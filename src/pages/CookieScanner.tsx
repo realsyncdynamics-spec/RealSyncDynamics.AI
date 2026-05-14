@@ -549,8 +549,8 @@ function EmailCaptureCard({ result }: { result: ScanResult }) {
         <div>
           <div className="font-display font-bold text-titanium-50 mb-0.5">Report wird vorbereitet</div>
           <div className="text-sm text-titanium-300">
-            Wir senden den vollständigen PDF-Report an <strong className="text-titanium-100">{email}</strong>.
-            Im Schnitt innerhalb von 24 Stunden — bei Aufkommen-Spitzen länger.
+            Unser AI Agent generiert den vollständigen PDF-Report und schickt ihn automatisiert an{' '}
+            <strong className="text-titanium-100">{email}</strong>.
           </div>
         </div>
       </div>

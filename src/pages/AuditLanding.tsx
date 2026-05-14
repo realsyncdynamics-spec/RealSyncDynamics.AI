@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
-  Activity,
+  Activity, MessageSquare,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
@@ -13,6 +13,7 @@ import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
+import { AuditChatHero } from '../components/audit/AuditChatHero';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -50,6 +51,13 @@ export function AuditLanding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [classicForm, setClassicForm] = useState(false);
+  const [chatGen, setChatGen] = useState(0);
+
+  function resetForNewScan() {
+    setReport(null);
+    setChatGen((n) => n + 1);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,32 +106,64 @@ export function AuditLanding() {
         <div className="max-w-3xl mx-auto">
 
           {!report && (
-            <>
-              <div className="text-center mb-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 border border-titanium-700 bg-obsidian-900 text-titanium-200 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-                  <ShieldCheck className="h-3 w-3" /> Kostenlos · Kein Account · 30 Sekunden
-                </div>
-                <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-                  Kostenloser DSGVO- und Tracking-Audit
-                </h1>
-                <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
-                  Der Free Audit ist Dein Einstieg in unsere Compliance-Plattform: 12 typische Compliance-Fallen
-                  geprüft — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern. Score und Fix-Liste sofort,
-                  Continuous Monitoring optional ab Starter.
-                </p>
-                <AuditMethodologyTags />
-                <div className="max-w-xl mx-auto text-left mt-4">
-                  <LegalDisclaimer context="audit" />
-                </div>
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 border border-titanium-700 bg-obsidian-900 text-titanium-200 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
+                <ShieldCheck className="h-3 w-3" /> Kostenlos · Kein Account · 30 Sekunden
               </div>
+              <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
+                Kostenloser DSGVO- und Tracking-Audit
+              </h1>
+              <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed mb-4">
+                Der Free Audit ist Dein Einstieg in unsere Compliance-Plattform: 12 typische Compliance-Fallen
+                geprüft — von Tracking-ohne-Consent bis Cookie-Banner-Dark-Pattern. Score und Fix-Liste sofort,
+                Continuous Monitoring optional ab Starter.
+              </p>
+              <AuditMethodologyTags />
+              <div className="max-w-xl mx-auto text-left mt-4">
+                <LegalDisclaimer context="audit" />
+              </div>
+            </div>
+          )}
 
-              {error && (
-                <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
-                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" /><span>{error}</span>
+          {error && !report && (
+            <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" /><span>{error}</span>
+            </div>
+          )}
+
+          {/* Chat hero stays mounted across the scan transition so the in-chat
+              summary bubble (with #report CTA) remains visible. The full
+              ReportView renders below it once the scan completes. */}
+          {!classicForm && (
+            <>
+              <AuditChatHero key={chatGen} onScanComplete={setReport} />
+              {!report && (
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setClassicForm(true)}
+                    className="text-xs text-titanium-400 hover:text-titanium-200 underline transition-colors"
+                  >
+                    Lieber das klassische Formular?
+                  </button>
                 </div>
               )}
+            </>
+          )}
 
-              <form onSubmit={handleSubmit} className="bg-obsidian-900 border border-titanium-900 p-6 sm:p-8 rounded-none space-y-4">
+          {classicForm && !report && (
+            <>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-[11px] text-titanium-500 font-mono uppercase tracking-wider">Klassisches Formular</span>
+                    <button
+                      type="button"
+                      onClick={() => setClassicForm(false)}
+                      className="inline-flex items-center gap-1.5 text-xs text-titanium-400 hover:text-titanium-200 underline transition-colors"
+                    >
+                      <MessageSquare className="h-3 w-3" /> Zum Chat
+                    </button>
+                  </div>
+                  <form onSubmit={handleSubmit} className="bg-obsidian-900 border border-titanium-900 p-6 sm:p-8 rounded-none space-y-4">
                 <Field label="Deine Website-URL" icon={<Globe className="h-3.5 w-3.5" />} required>
                   <input
                     type="text" required value={url} onChange={(e) => setUrl(e.target.value)}
@@ -162,14 +202,18 @@ export function AuditLanding() {
                   Verarbeitung gemäß <Link to="/legal/privacy" className="text-titanium-100 hover:underline">Datenschutzerklärung</Link>.
                 </p>
               </form>
+            </>
+          )}
 
+          {!report && (
+            <>
               <WhatGetsChecked />
               <Pillars />
               <AuditToWebsiteNote source="audit-pre" />
             </>
           )}
 
-          {report && <ReportView report={report} onRetry={() => setReport(null)} />}
+          {report && <div id="report"><ReportView report={report} onRetry={resetForNewScan} /></div>}
         </div>
       </main>
 

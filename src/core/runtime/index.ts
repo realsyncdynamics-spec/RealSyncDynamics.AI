@@ -5,3 +5,6 @@ export * from './memory';
 export * from './events';
 export * from './observability';
 export * from './validate-agent';
+export * from './approvals';
+export * from './handlers';
+export * from './executor';

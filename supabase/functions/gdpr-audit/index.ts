@@ -1,4 +1,5 @@
 // DSGVO-Audit-Tool — Lead-Magnet auf /audit (Chat-Hero + Klassisches Formular).
+// Public endpoint — verify_jwt is disabled per-function via deploy.yml.
 //
 // POST /functions/v1/gdpr-audit   (verify_jwt = false; public endpoint)
 // Body: { url: string, email: string, company?: string, plan?: string, source?: string }

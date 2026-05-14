@@ -115,19 +115,28 @@ jobs:
       # Smoke-verify that public functions actually deployed with verify_jwt=false.
       # If this fails the workflow surface shows the regression instead of
       # leaving prod in a silent 401 state.
-      - name: Verify public endpoints
+      #
+      # IMPORTANT: invalid payloads only. The request must pass the JWT
+      # gateway (would be 401 if verify_jwt=true) and fail validation
+      # *before* the function performs any DB inserts — that keeps the
+      # smoke check non-mutating and rate-limit-free across many deploys.
+      - name: Verify public endpoints (non-mutating)
         run: |
           set -e
+          # gdpr-audit: invalid URL → 400 INVALID_URL before any DB write.
           gdpr_status=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/gdpr-audit" \
             -H 'content-type: application/json' \
-            -d '{"url":"https://example.de","email":"smoke@test.de"}' --max-time 15)
+            -d '{"url":"not-a-url","email":"smoke@example.invalid"}' --max-time 15)
+          # cookie-scan: invalid URL → 400 before any persistence.
           cookie_status=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/cookie-scan" \
             -H 'content-type: application/json' \
-            -d '{"url":"https://example.de"}' --max-time 15)
+            -d '{"url":"not-a-url"}' --max-time 15)
           echo "gdpr-audit no-auth: $gdpr_status"
           echo "cookie-scan no-auth: $cookie_status"
+          # 400 (validation rejected) = function reachable, verify_jwt=false applied.
+          # 401 = gateway rejection = config didn't apply.
           if [ "$gdpr_status" = "401" ] || [ "$cookie_status" = "401" ]; then
             echo "::error::Public function returned 401 after deploy — verify_jwt config didn't apply"
             exit 1

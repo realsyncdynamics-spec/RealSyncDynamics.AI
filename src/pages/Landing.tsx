@@ -41,6 +41,7 @@ import { WebsiteRebuildOffer } from '../components/WebsiteRebuildOffer';
 import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
 import { HeroOnly } from '../components/HeroOnly';
+import { RuntimeCanvasSection } from '../components/sections/RuntimeCanvasSection';
 import { AgenticComplianceAgentsSection } from '../components/sections/AgenticComplianceAgentsSection';
 import { AiActGovernanceBetaSection } from '../components/sections/AiActGovernanceBetaSection';
 import { SystemLevelGovernanceSection } from '../components/sections/SystemLevelGovernanceSection';
@@ -72,6 +73,7 @@ export function Landing() {
   return (
     <>
       <HeroOnly />
+      <RuntimeCanvasSection />
       <KleineUnternehmenSection />
       <RuntimeActivityFeedSection />
       <GovernanceGraphCoreSection />

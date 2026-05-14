@@ -88,10 +88,7 @@ export function CheckoutPage() {
   useEffect(() => {
     if (auth.status !== 'ready' || !validPlan || redirecting) return;
     setRedirecting(true);
-    trackMarketingEvent('checkout_started', {
-      plan_key: validPlan,
-      metadata: { tenant_id: auth.tenantId },
-    });
+    trackMarketingEvent('checkout_started', { plan_key: validPlan });
     (async () => {
       const result = await createCheckoutSession(auth.tenantId, validPlan);
       if (result.ok && result.url) {

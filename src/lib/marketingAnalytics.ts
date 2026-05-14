@@ -2,7 +2,12 @@
 //
 // Sendet sanitisierte Funnel-Events an die Supabase-Edge-Function
 // `marketing-event`. Fire-and-forget: niemals Rendering blockieren.
+//
+// Wichtig: tenant_id wird NIE im Body mitgeschickt. Das Backend leitet
+// sie aus dem Authorization-Header (User-JWT → memberships) ab; anonyme
+// Visitor-Events haben tenant_id = NULL.
 
+import { getSupabase } from './supabase';
 import { sanitizeMetadata } from '../core/marketing-analytics/sanitizeMetadata';
 import type {
   MarketingEvent,
@@ -11,7 +16,10 @@ import type {
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? '') as string;
 const ENDPOINT = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/marketing-event` : null;
-const ENABLED = Boolean(ENDPOINT) && import.meta.env.PROD;
+// PROD-only by default. Set VITE_MARKETING_ANALYTICS_ENABLED=1 to also collect
+// in staging/preview builds so funnel changes can be validated pre-prod.
+const FORCE_ON = String(import.meta.env.VITE_MARKETING_ANALYTICS_ENABLED ?? '') === '1';
+const ENABLED = Boolean(ENDPOINT) && (import.meta.env.PROD || FORCE_ON);
 
 const SESSION_KEY = 'realsync.marketing-session.v1';
 
@@ -59,23 +67,36 @@ export function trackMarketingEvent(
 ): void {
   if (!ENABLED || !ENDPOINT) return;
 
+  // Strip server-derived fields if a caller accidentally supplies them.
+  const { tenant_id: _t, user_id: _u, ...safeExtra } = extra;
+
   const payload: MarketingEvent = {
     event_name,
     session_hash: getOrCreateSession(),
     referrer_host: referrerHost(),
     ...readUtm(),
-    ...extra,
-    metadata: sanitizeMetadata(extra.metadata),
+    ...safeExtra,
+    metadata: sanitizeMetadata(safeExtra.metadata),
   };
 
+  void send(payload);
+}
+
+async function send(payload: MarketingEvent): Promise<void> {
+  if (!ENDPOINT) return;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
-    fetch(ENDPOINT, {
+    const { data } = await getSupabase().auth.getSession();
+    const token = data.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch { /* anon visitor — fine */ }
+
+  try {
+    await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
       keepalive: true,
-    }).catch(() => { /* swallow */ });
-  } catch {
-    /* swallow */
-  }
+    });
+  } catch { /* swallow — tracking must never break the app */ }
 }

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AudioLines, Loader2, AlertTriangle, ShieldCheck, ArrowRight, Send } from 'lucide-react';
+import { trackConversion } from '../../lib/pixels';
+import { getAffiliateRef } from '../../lib/affiliate';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -127,7 +129,13 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, email: trimmed, plan, source }),
+        body: JSON.stringify({
+          url,
+          email: trimmed,
+          referral_code: getAffiliateRef() || undefined,
+          plan,
+          source,
+        }),
       });
       const data = await resp.json();
       if (!resp.ok || !data.ok) throw new Error(data.error?.message ?? `HTTP ${resp.status}`);
@@ -142,6 +150,8 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
         },
       ]);
       setPhase('done');
+
+      trackConversion('Lead', { content_name: 'dsgvo_audit' });
 
       if (report.audit_id) {
         fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${report.audit_id}`, {

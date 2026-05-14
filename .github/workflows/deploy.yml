@@ -56,10 +56,15 @@ jobs:
       - name: Seed migration history (mark pre-existing migrations as applied)
         env:
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          DB_URL="postgresql://postgres.${SUPABASE_PROJECT_ID}:${SUPABASE_DB_PASSWORD}@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
-          psql -v ON_ERROR_STOP=1 "$DB_URL" <<'SQL'
+          psql \
+            -h "aws-0-eu-central-1.pooler.supabase.com" \
+            -p 6543 \
+            -U "postgres.${SUPABASE_PROJECT_ID}" \
+            -d postgres \
+            -v ON_ERROR_STOP=1 \
+            <<'SQL'
           INSERT INTO supabase_migrations.schema_migrations (version)
           VALUES
             ('00001'),('20260406000000'),('20260430120000'),('20260430160000'),

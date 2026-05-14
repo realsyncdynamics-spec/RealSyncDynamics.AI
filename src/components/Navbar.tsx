@@ -1,12 +1,14 @@
-import { Menu, X, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 
-// Single-product navigation. The platform is one runtime; the nav reflects
-// that. The KI-fragen pill is gone — that job is owned by the floating
-// AssistentChip. One primary CTA only: "Run Scan" → /audit.
+// Single-product navigation with a Hostinger-style "KI fragen" pill before
+// the primary CTA. The pill is intentionally amber/gold so it doesn't
+// compete visually with the cyan "Run Scan" CTA — it's a secondary entry
+// point for visitors who want to ask first. The floating AssistentChip
+// (bottom-center) is the persistent surface; this pill is the in-nav twin.
 const NAV_ITEMS = [
   { label: 'Runtime', to: '/runtime' },
   { label: 'AI Act',  to: '/ai-act' },
@@ -55,6 +57,14 @@ export function Navbar() {
               );
             })}
             <Link
+              to="/audit?source=ki-fragen"
+              data-ki-fragen-pill
+              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-amber-300 hover:text-amber-200 border border-amber-500/40 hover:border-amber-400/70 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              KI fragen
+            </Link>
+            <Link
               to="/audit?source=nav-activate"
               className="group inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
             >
@@ -86,6 +96,13 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              to="/audit?source=ki-fragen-mobile"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2 justify-center px-3 py-3 mt-2 text-base font-semibold rounded-full text-amber-300 border border-amber-500/40 bg-amber-950/20"
+            >
+              <Sparkles className="h-4 w-4" /> KI fragen
+            </Link>
             <Link
               to="/audit?source=nav-activate-mobile"
               onClick={() => setIsOpen(false)}

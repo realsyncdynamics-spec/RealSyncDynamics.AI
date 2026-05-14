@@ -30,7 +30,9 @@ CREATE INDEX IF NOT EXISTS idx_incidents_tenant ON public.incidents(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_incidents_status ON public.incidents(status);
 CREATE INDEX IF NOT EXISTS idx_incidents_deadline ON public.incidents(notification_deadline_at);
 ALTER TABLE public.incidents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "incidents_service_all" ON public.incidents;
 CREATE POLICY "incidents_service_all" ON public.incidents FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "incidents_tenant_read" ON public.incidents;
 CREATE POLICY "incidents_tenant_read" ON public.incidents FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 DROP TRIGGER IF EXISTS trg_incidents_updated_at ON public.incidents;

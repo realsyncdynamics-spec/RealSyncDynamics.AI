@@ -8,6 +8,7 @@
 -- framework_controls already has an authenticated-read-all policy
 -- from the foundation migration; not duplicated here.
 
+DROP POLICY IF EXISTS "governance_assets_tenant_read" ON public.governance_assets;
 CREATE POLICY "governance_assets_tenant_read"
 ON public.governance_assets
 FOR SELECT TO authenticated
@@ -17,6 +18,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "governance_policies_tenant_read" ON public.governance_policies;
 CREATE POLICY "governance_policies_tenant_read"
 ON public.governance_policies
 FOR SELECT TO authenticated
@@ -26,6 +28,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "governance_events_tenant_read" ON public.governance_events;
 CREATE POLICY "governance_events_tenant_read"
 ON public.governance_events
 FOR SELECT TO authenticated
@@ -35,6 +38,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "governance_evidence_tenant_read" ON public.governance_evidence;
 CREATE POLICY "governance_evidence_tenant_read"
 ON public.governance_evidence
 FOR SELECT TO authenticated
@@ -44,6 +48,7 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "asset_control_mappings_tenant_read" ON public.asset_control_mappings;
 CREATE POLICY "asset_control_mappings_tenant_read"
 ON public.asset_control_mappings
 FOR SELECT TO authenticated

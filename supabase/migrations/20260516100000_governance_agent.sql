@@ -51,12 +51,15 @@ ALTER TABLE public.agent_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.agent_runs     ENABLE ROW LEVEL SECURITY;
 
 -- service_role writes everything (Edge Function uses service-role client).
+DROP POLICY IF EXISTS "agent_sessions_service_all" ON public.agent_sessions;
 CREATE POLICY "agent_sessions_service_all" ON public.agent_sessions
   FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "agent_runs_service_all" ON public.agent_runs;
 CREATE POLICY "agent_runs_service_all" ON public.agent_runs
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- authenticated users can read their own sessions + their tenant's runs.
+DROP POLICY IF EXISTS "agent_sessions_self_read" ON public.agent_sessions;
 CREATE POLICY "agent_sessions_self_read" ON public.agent_sessions
   FOR SELECT TO authenticated
   USING (
@@ -64,6 +67,7 @@ CREATE POLICY "agent_sessions_self_read" ON public.agent_sessions
     AND tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid())
   );
 
+DROP POLICY IF EXISTS "agent_runs_tenant_read" ON public.agent_runs;
 CREATE POLICY "agent_runs_tenant_read" ON public.agent_runs
   FOR SELECT TO authenticated
   USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));

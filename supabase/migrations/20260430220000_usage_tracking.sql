@@ -112,14 +112,17 @@ DROP POLICY IF EXISTS "usage_events tenant-read"        ON public.usage_events;
 DROP POLICY IF EXISTS "usage_totals tenant-read"        ON public.usage_totals;
 DROP POLICY IF EXISTS "usage_limits_config read"        ON public.usage_limits_config;
 
+DROP POLICY IF EXISTS "usage_events tenant-read" ON public.usage_events;
 CREATE POLICY "usage_events tenant-read"
     ON public.usage_events FOR SELECT
     USING (public.is_tenant_member(tenant_id));
 
+DROP POLICY IF EXISTS "usage_totals tenant-read" ON public.usage_totals;
 CREATE POLICY "usage_totals tenant-read"
     ON public.usage_totals FOR SELECT
     USING (public.is_tenant_member(tenant_id));
 
+DROP POLICY IF EXISTS "usage_limits_config read" ON public.usage_limits_config;
 CREATE POLICY "usage_limits_config read"
     ON public.usage_limits_config FOR SELECT
     USING (auth.role() = 'authenticated');

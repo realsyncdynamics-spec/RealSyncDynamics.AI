@@ -56,14 +56,17 @@ DROP POLICY IF EXISTS "products read"             ON public.products;
 DROP POLICY IF EXISTS "entitlements read"         ON public.entitlements;
 DROP POLICY IF EXISTS "product_entitlements read" ON public.product_entitlements;
 
+DROP POLICY IF EXISTS "products read" ON public.products;
 CREATE POLICY "products read"
     ON public.products FOR SELECT
     USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "entitlements read" ON public.entitlements;
 CREATE POLICY "entitlements read"
     ON public.entitlements FOR SELECT
     USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "product_entitlements read" ON public.product_entitlements;
 CREATE POLICY "product_entitlements read"
     ON public.product_entitlements FOR SELECT
     USING (auth.role() = 'authenticated');

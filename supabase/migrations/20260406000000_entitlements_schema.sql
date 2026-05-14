@@ -107,14 +107,17 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_organizations_modtime ON organizations;
 CREATE TRIGGER update_organizations_modtime
     BEFORE UPDATE ON organizations
     FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 
+DROP TRIGGER IF EXISTS update_subscriptions_modtime ON subscriptions;
 CREATE TRIGGER update_subscriptions_modtime
     BEFORE UPDATE ON subscriptions
     FOR EACH ROW EXECUTE PROCEDURE update_modified_column();
 
+DROP TRIGGER IF EXISTS update_assets_modtime ON assets;
 CREATE TRIGGER update_assets_modtime
     BEFORE UPDATE ON assets
     FOR EACH ROW EXECUTE PROCEDURE update_modified_column();

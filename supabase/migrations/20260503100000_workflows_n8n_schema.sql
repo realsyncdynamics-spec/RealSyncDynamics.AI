@@ -33,10 +33,12 @@ UPDATE public.workflows w
 -- Bisherige owner-only RLS durch tenant-aware ersetzen.
 DROP POLICY IF EXISTS "Besitzer können ihre eigenen Workflows verwalten" ON public.workflows;
 
+DROP POLICY IF EXISTS "workflows tenant-member-read" ON public.workflows;
 CREATE POLICY "workflows tenant-member-read"
     ON public.workflows FOR SELECT
     USING (tenant_id IS NOT NULL AND public.is_tenant_member(tenant_id));
 
+DROP POLICY IF EXISTS "workflows tenant-owner-admin-write" ON public.workflows;
 CREATE POLICY "workflows tenant-owner-admin-write"
     ON public.workflows FOR ALL
     USING (

@@ -21,19 +21,23 @@ CREATE TABLE IF NOT EXISTS public.vps_connections (
 
 ALTER TABLE public.vps_connections ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Nutzer können eigene VPS-Verbindungen lesen" ON public.vps_connections;
 CREATE POLICY "Nutzer können eigene VPS-Verbindungen lesen"
     ON public.vps_connections FOR SELECT
     USING (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Nutzer können eigene VPS-Verbindungen anlegen" ON public.vps_connections;
 CREATE POLICY "Nutzer können eigene VPS-Verbindungen anlegen"
     ON public.vps_connections FOR INSERT
     WITH CHECK (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Nutzer können eigene VPS-Verbindungen ändern" ON public.vps_connections;
 CREATE POLICY "Nutzer können eigene VPS-Verbindungen ändern"
     ON public.vps_connections FOR UPDATE
     USING (auth.uid() = owner_id)
     WITH CHECK (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Nutzer können eigene VPS-Verbindungen löschen" ON public.vps_connections;
 CREATE POLICY "Nutzer können eigene VPS-Verbindungen löschen"
     ON public.vps_connections FOR DELETE
     USING (auth.uid() = owner_id);
@@ -41,6 +45,7 @@ CREATE POLICY "Nutzer können eigene VPS-Verbindungen löschen"
 CREATE INDEX IF NOT EXISTS idx_vps_connections_owner
     ON public.vps_connections(owner_id);
 
+DROP TRIGGER IF EXISTS trig_vps_connections_updated_at ON public.vps_connections;
 CREATE TRIGGER trig_vps_connections_updated_at
     BEFORE UPDATE ON public.vps_connections
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
@@ -66,6 +71,7 @@ ALTER TABLE public.vps_ssh_keys ENABLE ROW LEVEL SECURITY;
 
 -- Default-Deny: keine Policies = niemand außer Service-Role darf zugreifen.
 -- Wir setzen explizit eine Deny-Policy, damit auch Authenticated-Rolle nichts sieht.
+DROP POLICY IF EXISTS "vps_ssh_keys ist nur für Service-Role lesbar" ON public.vps_ssh_keys;
 CREATE POLICY "vps_ssh_keys ist nur für Service-Role lesbar"
     ON public.vps_ssh_keys FOR ALL
     USING (false)
@@ -90,6 +96,7 @@ CREATE TABLE IF NOT EXISTS public.vps_action_log (
 
 ALTER TABLE public.vps_action_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Nutzer können eigene Action-Logs lesen" ON public.vps_action_log;
 CREATE POLICY "Nutzer können eigene Action-Logs lesen"
     ON public.vps_action_log FOR SELECT
     USING (auth.uid() = owner_id);

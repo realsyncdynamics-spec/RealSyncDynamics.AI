@@ -25,7 +25,9 @@ CREATE INDEX IF NOT EXISTS idx_token_usage_asset ON public.token_usage(asset_id,
 CREATE INDEX IF NOT EXISTS idx_token_usage_vendor ON public.token_usage(vendor, recorded_at DESC);
 
 ALTER TABLE public.token_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "token_usage_service_all" ON public.token_usage;
 CREATE POLICY "token_usage_service_all" ON public.token_usage FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "token_usage_tenant_read" ON public.token_usage;
 CREATE POLICY "token_usage_tenant_read" ON public.token_usage FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 

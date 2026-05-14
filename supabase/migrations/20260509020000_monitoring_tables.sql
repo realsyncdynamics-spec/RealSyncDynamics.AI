@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.monitored_domains (
 ALTER TABLE public.monitored_domains ENABLE ROW LEVEL SECURITY;
 
 -- Tenant sieht nur eigene Domains
+DROP POLICY IF EXISTS "tenant_owns_monitored_domain" ON public.monitored_domains;
 CREATE POLICY "tenant_owns_monitored_domain"
   ON public.monitored_domains
   FOR ALL
@@ -33,6 +34,7 @@ CREATE POLICY "tenant_owns_monitored_domain"
   ));
 
 -- Service-Role kann alles (für Cron-Job)
+DROP POLICY IF EXISTS "service_role_full_access_monitored_domains" ON public.monitored_domains;
 CREATE POLICY "service_role_full_access_monitored_domains"
   ON public.monitored_domains
   FOR ALL
@@ -50,6 +52,7 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_monitored_domains_updated_at ON public.monitored_domains;
 CREATE TRIGGER trg_monitored_domains_updated_at
   BEFORE UPDATE ON public.monitored_domains
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -87,6 +90,7 @@ CREATE TABLE IF NOT EXISTS public.audit_monitor_results (
 
 ALTER TABLE public.audit_monitor_results ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "tenant_reads_own_monitor_results" ON public.audit_monitor_results;
 CREATE POLICY "tenant_reads_own_monitor_results"
   ON public.audit_monitor_results
   FOR SELECT
@@ -96,6 +100,7 @@ CREATE POLICY "tenant_reads_own_monitor_results"
     LIMIT 1
   ));
 
+DROP POLICY IF EXISTS "service_role_full_access_monitor_results" ON public.audit_monitor_results;
 CREATE POLICY "service_role_full_access_monitor_results"
   ON public.audit_monitor_results
   FOR ALL

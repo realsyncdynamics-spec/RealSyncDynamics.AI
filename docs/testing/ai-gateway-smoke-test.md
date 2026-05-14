@@ -2,6 +2,21 @@
 
 > **Gate-Regel:** Alle Tests müssen bestehen, bevor PR #234 (Governance-Agent Integration) gestartet wird.
 
+## API-Form
+
+Die Edge Function bietet zwei kompatible APIs auf dem gleichen Supabase-Endpoint. Dieser Smoke-Test testet die **OpenAI-kompatible Shell** — sie ist der externe Standard und gilt für den Test als kanonisch.
+
+| Route | Method | Zweck |
+|---|---|---|
+| `/functions/v1/ai-gateway/v1/models` | GET | Verfügbare Model-Profile auflisten |
+| `/functions/v1/ai-gateway/v1/chat/completions` | POST | Chat-Completion (mit optional `response_format: { type: "json_object" }` für strukturierte Ausgabe) |
+| `/functions/v1/ai-gateway` | POST | Native op-basierte API (`{op: "health" \| "generate" \| "extract_json" \| "embed", feature, task_type, model_profile, input, …}`). Wird vom Smoke-Test nicht direkt getestet — Integration-PRs (#234/#235/#236) nutzen sie. |
+
+`model` in OpenAI-Calls muss eines der **Model-Profile** sein:
+`fast-local · quality-local · strict-json · embed-default · cloud-fallback`.
+
+Die Edge Function mappt das Profil auf die konkrete LM-Studio-Model-ID und versteckt das vor dem Caller — Provider-Swap (LM Studio → Anthropic → EU-Mistral) erfolgt im Gateway, nicht im Client.
+
 ---
 
 ## Phase 0 – Vorbereitung

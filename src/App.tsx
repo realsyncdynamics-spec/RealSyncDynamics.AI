@@ -144,6 +144,13 @@ const OperationsSuppliersView   = lazy(() => import('./features/operations/Suppl
 const OperationsLocationsView   = lazy(() => import('./features/operations/LocationsView').then((m) => ({ default: m.LocationsView })));
 const OperationsBarcodesView    = lazy(() => import('./features/operations/BarcodesView').then((m) => ({ default: m.BarcodesView })));
 const OperationsReportsView     = lazy(() => import('./features/operations/OperationsReportsView').then((m) => ({ default: m.OperationsReportsView })));
+// Finance / Tax Evidence Runtime — auth-gated, prepares documentation only.
+const FinanceDashboard   = lazy(() => import('./features/finance/FinanceDashboard').then((m) => ({ default: m.FinanceDashboard })));
+const TaxEvidenceView    = lazy(() => import('./features/finance/TaxEvidenceView').then((m) => ({ default: m.TaxEvidenceView })));
+const TaxDocumentsView   = lazy(() => import('./features/finance/TaxDocumentsView').then((m) => ({ default: m.TaxDocumentsView })));
+const TaxYearView        = lazy(() => import('./features/finance/TaxYearView').then((m) => ({ default: m.TaxYearView })));
+const TaxExportsView     = lazy(() => import('./features/finance/TaxExportsView').then((m) => ({ default: m.TaxExportsView })));
+const TaxRemindersView   = lazy(() => import('./features/finance/TaxRemindersView').then((m) => ({ default: m.TaxRemindersView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -363,6 +370,15 @@ function RoutesWithTracking() {
       <Route path="/operations/locations" element={<OperationsLocationsView />} />
       <Route path="/operations/barcodes" element={<OperationsBarcodesView />} />
       <Route path="/operations/reports" element={<OperationsReportsView />} />
+      {/* Tax Evidence Runtime — auth-gated documentation prep.
+          NOT public, no Steuerberatung. Disclaimer is rendered inside
+          every /finance/* view. */}
+      <Route path="/finance" element={<FinanceDashboard />} />
+      <Route path="/finance/tax-evidence" element={<TaxEvidenceView />} />
+      <Route path="/finance/documents" element={<TaxDocumentsView />} />
+      <Route path="/finance/year/:year" element={<TaxYearView />} />
+      <Route path="/finance/exports" element={<TaxExportsView />} />
+      <Route path="/finance/reminders" element={<TaxRemindersView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />

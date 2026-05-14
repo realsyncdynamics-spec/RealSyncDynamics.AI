@@ -20,6 +20,10 @@ import { Blog } from './pages/Blog';
 import { Roadmap } from './pages/Roadmap';
 import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
 import { GovernanceDocs } from './pages/GovernanceDocs';
+import { RuntimePage } from './pages/RuntimePage';
+import { AiActPage } from './pages/AiActPage';
+import { DocsRuntimePage } from './pages/DocsRuntimePage';
+import { EvidencePage } from './pages/EvidencePage';
 import { FixPaket } from './pages/FixPaket';
 import { PreConsentTracking } from './pages/seo/PreConsentTracking';
 import { GoogleAnalyticsConsent } from './pages/seo/GoogleAnalyticsConsent';
@@ -172,6 +176,10 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<Landing />} />
+      <Route path="/runtime"  element={<RuntimePage />} />
+      <Route path="/ai-act"   element={<AiActPage />} />
+      <Route path="/docs"     element={<DocsRuntimePage />} />
+      <Route path="/evidence" element={<EvidencePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />

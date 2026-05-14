@@ -149,6 +149,7 @@ import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CookieConsent } from './components/CookieConsent';
+import { AssistentChip } from './components/AssistentChip';
 import { TenantProvider } from './core/access/TenantProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
@@ -369,6 +370,7 @@ export default function App() {
         <BrowserRouter basename={ROUTER_BASENAME}>
           <RoutesWithTracking />
           <CookieConsent />
+          <AssistentChip />
         </BrowserRouter>
       </EnvironmentProvider>
     </TenantProvider>

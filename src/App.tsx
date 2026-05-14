@@ -100,9 +100,6 @@ import { IubendaAlternative } from './pages/IubendaAlternative';
 import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
-// Service-sales pages intentionally not imported — see Product Clarity
-// Cleanup: DsgvoWebsiteLanding + DsgvoWebsiteDanke remain in src/pages/
-// for future re-purpose but are no longer routed.
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';

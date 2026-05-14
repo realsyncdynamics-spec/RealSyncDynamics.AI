@@ -1,11 +1,11 @@
 {
-  "version": "2026.05.0",
-  "updated_at": "2026-05-07",
+  "version": "2026.05.1",
+  "updated_at": "2026-05-14",
+  "easylist_last_modified": "Thu, 14 May 2026 08:23:07 GMT",
   "sources": [
     "EasyList",
     "Disconnect.me",
     "DACH-Custom"
   ],
-  "tracker_count": 5847,
-  "next_update": "2026-05-14"
+  "next_update": "2026-05-21"
 }

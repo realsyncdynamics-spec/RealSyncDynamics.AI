@@ -8,9 +8,10 @@ import { CTA } from '../content/runtimeVocab';
 // that. The KI-fragen pill is gone — that job is owned by the floating
 // AssistentChip. One primary CTA only: "Start Runtime" → /audit.
 const NAV_ITEMS = [
-  { label: 'Runtime', to: '/' },
+  { label: 'Runtime', to: '/runtime' },
+  { label: 'AI Act',  to: '/ai-act' },
   { label: 'Pricing', to: '/pricing' },
-  { label: 'Docs',    to: '/legal/methodology' },
+  { label: 'Docs',    to: '/docs' },
 ] as const;
 
 export function Navbar() {

@@ -55,6 +55,9 @@ export function AuditLanding() {
     setLoading(true); setError(null); setReport(null);
     try {
       const normalizedUrl = url.trim().match(/^https?:\/\//i) ? url.trim() : `https://${url.trim()}`;
+      const params = new URLSearchParams(window.location.search);
+      const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
+      const source = params.get('source')?.trim().slice(0, 200) || undefined;
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,6 +66,8 @@ export function AuditLanding() {
           email: email.trim(),
           company: company.trim() || undefined,
           referral_code: getAffiliateRef() || undefined,
+          plan,
+          source,
         }),
       });
       const data = await resp.json();

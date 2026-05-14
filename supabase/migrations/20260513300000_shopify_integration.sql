@@ -89,15 +89,24 @@ ALTER TABLE public.shopify_scan_runs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_drift_events  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_webhooks      ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "shopify_shops_service_all"    ON public.shopify_shops;
 CREATE POLICY "shopify_shops_service_all"    ON public.shopify_shops    FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "shopify_scans_service_all"    ON public.shopify_scan_runs;
 CREATE POLICY "shopify_scans_service_all"    ON public.shopify_scan_runs FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "shopify_drift_service_all"    ON public.shopify_drift_events;
 CREATE POLICY "shopify_drift_service_all"    ON public.shopify_drift_events FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "shopify_webhooks_service_all" ON public.shopify_webhooks;
 CREATE POLICY "shopify_webhooks_service_all" ON public.shopify_webhooks FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "shopify_shops_tenant_read" ON public.shopify_shops;
 CREATE POLICY "shopify_shops_tenant_read" ON public.shopify_shops
   FOR SELECT TO authenticated
   USING (tenant_id IS NOT NULL AND tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "shopify_scans_tenant_read" ON public.shopify_scan_runs;
 CREATE POLICY "shopify_scans_tenant_read" ON public.shopify_scan_runs
   FOR SELECT TO authenticated
   USING (shop_id IN (
@@ -105,6 +114,7 @@ CREATE POLICY "shopify_scans_tenant_read" ON public.shopify_scan_runs
     WHERE tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid())
   ));
 
+DROP POLICY IF EXISTS "shopify_drift_tenant_read" ON public.shopify_drift_events;
 CREATE POLICY "shopify_drift_tenant_read" ON public.shopify_drift_events
   FOR SELECT TO authenticated
   USING (shop_id IN (

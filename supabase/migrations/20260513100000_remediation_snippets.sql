@@ -62,10 +62,12 @@ CREATE TRIGGER trg_remediation_snippets_updated_at BEFORE UPDATE ON public.remed
 
 ALTER TABLE public.remediation_snippets ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "remediation_snippets_service_all" ON public.remediation_snippets;
 CREATE POLICY "remediation_snippets_service_all"
   ON public.remediation_snippets FOR ALL TO service_role
   USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "remediation_snippets_tenant_read" ON public.remediation_snippets;
 CREATE POLICY "remediation_snippets_tenant_read"
   ON public.remediation_snippets FOR SELECT TO authenticated
   USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));

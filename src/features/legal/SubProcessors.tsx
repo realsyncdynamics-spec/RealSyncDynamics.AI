@@ -54,8 +54,8 @@ const SUB_PROCESSORS: SubProcessor[] = [
   },
   {
     name: 'Hostinger International, Ltd.',
-    purpose: 'VPS-Hosting für EU-lokal-Stack (Ollama, n8n, Open WebUI)',
-    data_categories: ['User-Eingaben bei eu_local-Modus', 'AI-Output', 'Workflow-Daten'],
+    purpose: 'VPS-Hosting für EU-lokal-Stack (Ollama, n8n, Open WebUI) + AI Gateway Inference Runtime (LM Studio, OpenAI-kompatibel) hinter unserem Supabase-Edge-Gateway',
+    data_categories: ['User-Eingaben bei eu_local-Modus', 'AI-Prompt + Kontext (AI Gateway, fast-local / quality-local / strict-json Profile)', 'AI-Output', 'Workflow-Daten'],
     region: 'Frankfurt (Deutschland)',
     dpa_url: 'https://www.hostinger.com/legal/data-processing-agreement',
     status: 'available',

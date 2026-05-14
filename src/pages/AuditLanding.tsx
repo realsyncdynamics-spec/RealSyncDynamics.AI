@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
-  Activity, MessageSquare,
+  Activity, MessageSquare, Sparkles,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
@@ -14,6 +14,7 @@ import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { AuditChatHero } from '../components/audit/AuditChatHero';
+import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -344,6 +345,7 @@ function Pillars() {
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
   const config = severityConfig(report.severity);
+  const [explainIssue, setExplainIssue] = useState<Issue | null>(null);
   return (
     <div className="space-y-6">
       <div className={`p-6 sm:p-8 ${config.bg} border ${config.border} rounded-none`}>
@@ -380,7 +382,9 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           )
           : (
             <ul className="space-y-3">
-              {report.issues.map((iss) => <IssueCard key={iss.id} issue={iss} />)}
+              {report.issues.map((iss) => (
+                <IssueCard key={iss.id} issue={iss} onExplain={() => setExplainIssue(iss)} />
+              ))}
             </ul>
           )}
       </div>
@@ -442,6 +446,13 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       </div>
 
       <ShareBlock report={report} />
+
+      <AuditCopilotPanel
+        issue={explainIssue ?? { id: '', severity: 'info', title: '', detail: '' }}
+        domain={report.domain}
+        open={!!explainIssue}
+        onClose={() => setExplainIssue(null)}
+      />
     </div>
   );
 }
@@ -495,7 +506,7 @@ function ShareBlock({ report }: { report: Report }) {
   );
 }
 
-function IssueCard({ issue }: { issue: Issue }) {
+function IssueCard({ issue, onExplain }: { issue: Issue; onExplain?: () => void }) {
   // Mono-Enterprise: nur `critical` rot, restliche Severities via
   // Helligkeit und Border-Stärke differenziert (kein Bling-Bling).
   const sevColor: Record<Issue['severity'], string> = {
@@ -524,6 +535,16 @@ function IssueCard({ issue }: { issue: Issue }) {
       </div>
       <div className="font-display font-bold text-titanium-50 mb-1">{issue.title}</div>
       <div className="text-sm text-titanium-300 leading-relaxed">{issue.detail}</div>
+      {onExplain && (
+        <button
+          type="button"
+          onClick={onExplain}
+          className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold tracking-tight border border-titanium-800 hover:border-titanium-600 bg-obsidian-950 text-titanium-100 hover:text-titanium-50 transition-colors rounded-none"
+        >
+          <Sparkles className="h-3 w-3 text-violet-300" />
+          Erklären lassen
+        </button>
+      )}
     </li>
   );
 }

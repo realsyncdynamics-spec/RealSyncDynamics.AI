@@ -175,24 +175,34 @@ export async function scan(targetUrl: string, options: ScanOptions = {}): Promis
     const html = await page.content().catch(() => '');
     const cookies = await context.cookies().catch<PlaywrightCookie[]>(() => []);
     const localStorage = await page.evaluate(() => {
+      interface BrowserStorage {
+        readonly length: number;
+        key(index: number): string | null;
+        getItem(key: string): string | null;
+      }
+      const ls = (globalThis as unknown as { localStorage: BrowserStorage }).localStorage;
       const out: Record<string, string> = {};
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const k = window.localStorage.key(i);
+      for (let i = 0; i < ls.length; i++) {
+        const k = ls.key(i);
         if (k !== null) {
-          const v = window.localStorage.getItem(k) ?? '';
-          out[k] = v;
+          out[k] = ls.getItem(k) ?? '';
         }
       }
       return out;
     }).catch<Record<string, string>>(() => ({}));
 
     const sessionStorage = await page.evaluate(() => {
+      interface BrowserStorage {
+        readonly length: number;
+        key(index: number): string | null;
+        getItem(key: string): string | null;
+      }
+      const ss = (globalThis as unknown as { sessionStorage: BrowserStorage }).sessionStorage;
       const out: Record<string, string> = {};
-      for (let i = 0; i < window.sessionStorage.length; i++) {
-        const k = window.sessionStorage.key(i);
+      for (let i = 0; i < ss.length; i++) {
+        const k = ss.key(i);
         if (k !== null) {
-          const v = window.sessionStorage.getItem(k) ?? '';
-          out[k] = v;
+          out[k] = ss.getItem(k) ?? '';
         }
       }
       return out;

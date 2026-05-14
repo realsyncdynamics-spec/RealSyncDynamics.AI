@@ -1,4 +1,5 @@
 // Governance Agent — conversational compliance assistant.
+// Supports tenant-scoped chat (auth-required) and public `chat_anon` mode.
 //
 // POST /functions/v1/governance-agent
 // Authorization: Bearer <user JWT>

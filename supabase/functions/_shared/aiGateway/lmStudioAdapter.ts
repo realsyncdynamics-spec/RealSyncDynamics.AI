@@ -111,31 +111,43 @@ export class LMStudioAdapter implements AiProviderAdapter {
 
   async embed(request: AiGatewayRequest): Promise<AiGatewayResponse<number[]>> {
     const started = Date.now();
-    const model = await this.resolveModel();
+    // `embed-default` requires an embedding-capable model. Any other
+    // profile falls back to first-available (no harm in trying — LM
+    // Studio returns a clear error if the chosen model can't embed).
+    const selector: ModelSelector = request.model_profile === 'embed-default' ? 'embedding' : 'first';
+    const model = await this.resolveModel(selector);
 
-    const res = await this.fetchImpl(`${this.config.baseUrl}/embeddings`, {
-      method: 'POST',
-      headers: this.headers(),
-      body: JSON.stringify({ model, input: request.input }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), request.timeout_ms ?? 8_000);
 
-    const json = (await res.json()) as {
-      data?: Array<{ embedding?: number[] }>;
-      error?: { message?: string };
-    };
+    try {
+      const res = await this.fetchImpl(`${this.config.baseUrl}/embeddings`, {
+        method: 'POST',
+        headers: this.headers(),
+        signal: controller.signal,
+        body: JSON.stringify({ model, input: request.input }),
+      });
 
-    if (!res.ok) {
-      throw new Error(json?.error?.message ?? `LM Studio embeddings HTTP ${res.status}`);
+      const json = (await res.json()) as {
+        data?: Array<{ embedding?: number[] }>;
+        error?: { message?: string };
+      };
+
+      if (!res.ok) {
+        throw new Error(json?.error?.message ?? `LM Studio embeddings HTTP ${res.status}`);
+      }
+
+      return {
+        provider:   'lm_studio',
+        model,
+        profile:    request.model_profile,
+        output:     json?.data?.[0]?.embedding ?? [],
+        trace_id:   request.trace_id ?? crypto.randomUUID(),
+        latency_ms: Date.now() - started,
+      };
+    } finally {
+      clearTimeout(timeout);
     }
-
-    return {
-      provider:   'lm_studio',
-      model,
-      profile:    request.model_profile,
-      output:     json?.data?.[0]?.embedding ?? [],
-      trace_id:   request.trace_id ?? crypto.randomUUID(),
-      latency_ms: Date.now() - started,
-    };
   }
 
   private headers(): Record<string, string> {
@@ -145,12 +157,31 @@ export class LMStudioAdapter implements AiProviderAdapter {
     };
   }
 
-  private async resolveModel(): Promise<string> {
+  private async resolveModel(selector: ModelSelector = 'first'): Promise<string> {
     if (this.config.defaultModel) return this.config.defaultModel;
     const health = await this.health();
     if (!health.ok || !health.models?.length) {
       throw new Error('No LM Studio model available');
     }
+    if (selector === 'embedding') {
+      const embedModel = health.models.find(isEmbeddingModelId);
+      if (embedModel) return embedModel;
+      throw new Error('No LM Studio embedding model available');
+    }
     return health.models[0];
   }
+}
+
+type ModelSelector = 'first' | 'embedding';
+
+function isEmbeddingModelId(id: string): boolean {
+  const lower = id.toLowerCase();
+  return (
+    lower.includes('embed') ||
+    lower.startsWith('bge') || lower.includes('/bge') ||
+    lower.startsWith('e5-') || lower.includes('/e5-') ||
+    lower.startsWith('gte-') || lower.includes('/gte-') ||
+    lower.startsWith('mxbai') ||
+    lower.startsWith('snowflake-arctic-embed')
+  );
 }

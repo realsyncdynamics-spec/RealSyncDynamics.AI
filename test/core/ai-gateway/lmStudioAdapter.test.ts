@@ -109,4 +109,66 @@ describe('LMStudioAdapter', () => {
 
     await expect(adapter.generate(chatRequest())).rejects.toThrow(/No LM Studio model available/);
   });
+
+  it('embed() with embed-default profile picks an embedding-capable model, not the first chat model', async () => {
+    const requestedModels: string[] = [];
+    const fetchImpl = makeFetch((input, init) => {
+      if (String(input).endsWith('/models')) {
+        return { body: { data: [{ id: 'qwen2.5-7b-instruct' }, { id: 'nomic-embed-text-v1.5' }] } };
+      }
+      if (init?.body) {
+        try {
+          const parsed = JSON.parse(String(init.body)) as { model?: string };
+          if (parsed.model) requestedModels.push(parsed.model);
+        } catch { /* ignore */ }
+      }
+      return { body: { data: [{ embedding: [0.1, 0.2, 0.3] }] } };
+    });
+    const adapter = new LMStudioAdapter({ baseUrl: 'http://x:1234/v1', fetchImpl });
+
+    const response = await adapter.embed(chatRequest({ model_profile: 'embed-default', task_type: 'embed' }));
+
+    expect(requestedModels).toContain('nomic-embed-text-v1.5');
+    expect(requestedModels).not.toContain('qwen2.5-7b-instruct');
+    expect(response.model).toBe('nomic-embed-text-v1.5');
+    expect(response.output).toEqual([0.1, 0.2, 0.3]);
+  });
+
+  it('embed() throws cleanly if embed-default profile cannot find an embedding model', async () => {
+    const fetchImpl = makeFetch(() => ({
+      body: { data: [{ id: 'qwen2.5-7b-instruct' }, { id: 'llama-3-8b-chat' }] },
+    }));
+    const adapter = new LMStudioAdapter({ baseUrl: 'http://x:1234/v1', fetchImpl });
+
+    await expect(
+      adapter.embed(chatRequest({ model_profile: 'embed-default', task_type: 'embed' })),
+    ).rejects.toThrow(/No LM Studio embedding model available/);
+  });
+
+  it('embed() honours the request timeout via AbortSignal', async () => {
+    // Hang forever unless aborted — the AbortError should surface within
+    // the 50ms timeout passed in below.
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(_input).endsWith('/models')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ data: [{ id: 'nomic-embed-text-v1.5' }] }),
+        } as unknown as Response;
+      }
+      await new Promise<void>((resolve, reject) => {
+        const signal = init?.signal;
+        if (signal) {
+          signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+        }
+        // never resolve
+      });
+      throw new Error('unreachable');
+    });
+    const adapter = new LMStudioAdapter({ baseUrl: 'http://x:1234/v1', fetchImpl });
+
+    await expect(
+      adapter.embed(chatRequest({ model_profile: 'embed-default', task_type: 'embed', timeout_ms: 50 })),
+    ).rejects.toThrow(/abort/i);
+  });
 });

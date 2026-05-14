@@ -83,7 +83,7 @@ jobs:
         run: supabase migration list --linked
 
       - name: Push pending migrations
-        run: supabase db push
+        run: supabase db push --include-all
 
   functions-deploy:
     name: Deploy edge functions

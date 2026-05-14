@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AudioLines, Loader2, X, RotateCcw, Send, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AudioLines, Loader2, X, RotateCcw, Send, AlertTriangle, ShieldCheck, Code2 } from 'lucide-react';
 import { sendChatAnon, type SimpleMsg } from '../../features/governance/AgentWidget/agentApi';
+import {
+  generateFixSnippet,
+  AiGatewayEdgeError,
+  type AuditCmsTarget,
+  type FixSnippet,
+} from '../../features/audit/auditCopilotApi';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -20,6 +26,14 @@ interface AuditCopilotPanelProps {
 }
 
 type Phase = 'idle' | 'loading' | 'ready' | 'error' | 'rate_limited' | 'us_routing';
+
+const CMS_OPTIONS: Array<{ value: AuditCmsTarget; label: string }> = [
+  { value: 'wordpress',   label: 'WordPress' },
+  { value: 'shopify',     label: 'Shopify' },
+  { value: 'webflow',     label: 'Webflow' },
+  { value: 'custom-html', label: 'Eigenes HTML' },
+  { value: 'nginx',       label: 'nginx Config' },
+];
 
 interface Bubble {
   id: string;
@@ -61,6 +75,8 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
   const [history, setHistory] = useState<SimpleMsg[]>([]);
   const [input, setInput] = useState('');
   const [usRoutingAck, setUsRoutingAck] = useState(false);
+  const [snippetCms, setSnippetCms] = useState<AuditCmsTarget>('wordpress');
+  const [snippetLoading, setSnippetLoading] = useState(false);
   const sessionIdRef = useRef<string>(crypto.randomUUID());
   const bottomRef = useRef<HTMLDivElement>(null);
   const sendInProgress = useRef(false);
@@ -184,6 +200,40 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
     send(trimmed, false);
   }
 
+  async function onGenerateSnippet() {
+    if (snippetLoading) return;
+    setSnippetLoading(true);
+    const loadingId = crypto.randomUUID();
+    setBubbles((prev) => [
+      ...prev,
+      { id: loadingId, role: 'assistant', content: '', isLoading: true },
+    ]);
+    try {
+      const snippet = await generateFixSnippet(issue, snippetCms);
+      setBubbles((prev) =>
+        prev.filter((b) => b.id !== loadingId).concat({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: renderSnippetBubble(snippet),
+        }),
+      );
+    } catch (err) {
+      const msg = err instanceof AiGatewayEdgeError
+        ? `Snippet konnte nicht erzeugt werden: ${err.message}`
+        : 'Snippet konnte nicht erzeugt werden.';
+      setBubbles((prev) =>
+        prev.filter((b) => b.id !== loadingId).concat({
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: msg,
+          isError: true,
+        }),
+      );
+    } finally {
+      setSnippetLoading(false);
+    }
+  }
+
   function ackUsRouting() {
     setUsRoutingAck(true);
     setPhase('idle');
@@ -265,6 +315,30 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
         </div>
 
         <div className="border-t border-titanium-900 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <select
+              value={snippetCms}
+              onChange={(e) => setSnippetCms(e.target.value as AuditCmsTarget)}
+              disabled={snippetLoading}
+              aria-label="Plattform für Code-Snippet"
+              className="bg-obsidian-900 border border-titanium-900 text-titanium-200 px-2 py-1 text-[11px] rounded-none disabled:opacity-50"
+            >
+              {CMS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={onGenerateSnippet}
+              disabled={snippetLoading || phase === 'loading' || phase === 'us_routing'}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium border border-titanium-800 text-titanium-200 hover:border-titanium-600 hover:text-titanium-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-none"
+            >
+              {snippetLoading
+                ? <Loader2 className="h-3 w-3 animate-spin" />
+                : <Code2 className="h-3 w-3" />}
+              Code-Snippet
+            </button>
+          </div>
           <div className="flex items-end gap-2">
             <input
               type="text"
@@ -292,6 +366,15 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
       </div>
     </>
   );
+}
+
+function renderSnippetBubble(snippet: FixSnippet): string {
+  const header = `**Code-Snippet (${snippet.cms} · ${snippet.language})**`;
+  const code = snippet.snippet
+    ? '```' + snippet.language + '\n' + snippet.snippet + '\n```'
+    : '(Kein Snippet — siehe Hinweis.)';
+  const notes = snippet.notes ? `\n\n${snippet.notes}` : '';
+  return `${header}\n\n${code}${notes}`;
 }
 
 function BubbleView({ bubble }: { bubble: Bubble }) {

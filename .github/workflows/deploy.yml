@@ -108,9 +108,44 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
 
-      - name: Deploy all edge functions
+      # Deploy strategy:
+      # `supabase functions deploy` alone has historically been unreliable
+      # at applying per-function verify_jwt settings from supabase/config.toml
+      # on remote projects (config.toml is local-dev-first; remote-flag
+      # propagation depends on CLI version + project context). To
+      # guarantee correctness, parse config.toml and deploy each function
+      # individually with the explicit --no-verify-jwt flag where needed.
+      - name: Deploy edge functions (per-function, explicit JWT flag)
         run: |
-          supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" --debug
+          set -e
+          # Extract names of functions with verify_jwt = false from config.toml.
+          NO_JWT_FUNCS=$(awk '
+            /^\[functions\./ { name = $0; sub(/^\[functions\./, "", name); sub(/\]$/, "", name); next }
+            /^verify_jwt[[:space:]]*=[[:space:]]*false/ && name != "" { print name; name = "" }
+            /^\[/ && !/^\[functions\./ { name = "" }
+          ' supabase/config.toml | sort -u)
+
+          echo "::group::Functions with verify_jwt=false"
+          echo "$NO_JWT_FUNCS"
+          echo "::endgroup::"
+
+          # Deploy each function under supabase/functions/* with the correct flag.
+          # _shared, _internal, .ts/.md files are skipped (directories only).
+          for dir in supabase/functions/*/; do
+            fn=$(basename "$dir")
+            case "$fn" in
+              _*) continue ;;
+            esac
+            if [ ! -f "$dir/index.ts" ]; then continue; fi
+
+            if echo "$NO_JWT_FUNCS" | grep -qx "$fn"; then
+              echo "→ deploy $fn --no-verify-jwt"
+              supabase functions deploy "$fn" --no-verify-jwt --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+            else
+              echo "→ deploy $fn (verify_jwt=default)"
+              supabase functions deploy "$fn" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+            fi
+          done
 
       # Smoke-verify that public functions actually deployed with verify_jwt=false.
       # If this fails the workflow surface shows the regression instead of

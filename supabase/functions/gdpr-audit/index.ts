@@ -1,13 +1,16 @@
 // DSGVO-Audit-Tool — Lead-Magnet auf /audit.
 //
 // POST /functions/v1/gdpr-audit   (verify_jwt = false; public endpoint)
-// Body: { url: string, email: string, company?: string }
+// Body: { url: string, email: string, company?: string, plan?: string, source?: string }
 //
 // 1. Validate inputs + rate-limit (5/h per IP-hash, like sales-lead)
 // 2. Fetch target URL server-side (no CORS)
 // 3. Run heuristic checks against headers + HTML
 // 4. Score 0-100, classify severity
-// 5. Insert sales_leads row (source='audit_lp') + gdpr_audits row
+// 5. Insert sales_leads row (source='audit_lp' default, overridden when caller
+//    provides one — e.g. 'pricing' from /audit?plan=agency&source=pricing) +
+//    gdpr_audits row. Plan tag is appended to the lead message for downstream
+//    routing without requiring a schema change.
 // 6. Return report JSON for UI display
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -45,12 +48,18 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  let body: { url?: string; email?: string; company?: string };
+  let body: { url?: string; email?: string; company?: string; plan?: string; source?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   const url = (body.url ?? '').trim();
   const email = (body.email ?? '').trim().toLowerCase();
   const company = (body.company ?? '').trim().slice(0, 200) || null;
+
+  const ALLOWED_PLANS = new Set(['free', 'starter', 'growth', 'agency', 'enterprise']);
+  const planRaw = (body.plan ?? '').trim().toLowerCase();
+  const plan = ALLOWED_PLANS.has(planRaw) ? planRaw : null;
+  const sourceTag = (body.source ?? '').trim().slice(0, 200) || null;
+  const leadSource = sourceTag ?? 'audit_lp';
 
   if (!url || !URL_RE.test(url))     return jsonError(400, 'INVALID_URL', 'valid http(s) URL required');
   if (!email || !EMAIL_RE.test(email)) return jsonError(400, 'INVALID_EMAIL', 'valid email required');
@@ -134,14 +143,17 @@ Deno.serve(async (req) => {
 
   const { score, severity } = scoreReport(issues);
 
-  // Insert sales_lead
+  // Insert sales_lead — preserve plan/source attribution from caller
+  // (e.g. /audit?plan=agency&source=pricing) so /pricing-driven leads stay
+  // distinguishable from generic free-audit signups in the inbox.
+  const planTag = plan ? ` · plan=${plan}` : '';
   const { data: leadRow } = await admin.from('sales_leads').insert({
     name: null,
     email,
     company,
     use_case: 'compliance',
-    message: `Audit-LP: ${url} → score ${score}/100 (${severity})`,
-    source: 'audit_lp',
+    message: `Audit-LP: ${url} → score ${score}/100 (${severity})${planTag}`,
+    source: leadSource,
     path: '/audit',
     user_agent: req.headers.get('user-agent')?.slice(0, 500),
     ip_hash: ipHash,

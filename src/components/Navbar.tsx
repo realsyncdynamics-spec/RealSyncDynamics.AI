@@ -6,7 +6,7 @@ import { CTA } from '../content/runtimeVocab';
 
 // Single-product navigation. The platform is one runtime; the nav reflects
 // that. The KI-fragen pill is gone — that job is owned by the floating
-// AssistentChip. One primary CTA only: "Start Runtime" → /audit.
+// AssistentChip. One primary CTA only: "Run Scan" → /audit.
 const NAV_ITEMS = [
   { label: 'Runtime', to: '/runtime' },
   { label: 'AI Act',  to: '/ai-act' },
@@ -58,7 +58,7 @@ export function Navbar() {
               to="/audit?source=nav-activate"
               className="group inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
             >
-              {CTA.primary.activate}
+              {CTA.runScan}
               <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -91,7 +91,7 @@ export function Navbar() {
               onClick={() => setIsOpen(false)}
               className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold bg-cyan-400 text-obsidian-950 rounded-none"
             >
-              {CTA.primary.activate} <ArrowRight className="h-4 w-4" />
+              {CTA.runScan} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>

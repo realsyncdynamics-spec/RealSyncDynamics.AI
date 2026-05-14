@@ -87,47 +87,52 @@ export const PLANS = [
 ] as const;
 
 /**
- * Canonical CTA copy. New CTAs MUST come from this list.
+ * Canonical CTA copy. The ONLY 5 strings allowed on public CTAs after the
+ * Product Clarity Cleanup. New copy MUST be one of these — anything else
+ * is a regression.
  *
- * - Primary  → activate / scan / enable (one per page maximum)
- * - Secondary → open / view (demos, previews)
- * - Tertiary → docs / evidence / policies (links, not buttons)
+ *   Run Scan              → kick off a free audit
+ *   Open Runtime          → enterprise / contact-driven entry
+ *   Activate Monitoring   → Starter tier
+ *   Activate Governance   → Growth / Agency tier
+ *   View Evidence         → secondary nav into evidence vault / audit trail
  */
 export const CTA = {
-  primary: {
-    activate: 'Start Runtime',
-    scan: 'Run scan',
-    enableMonitoring: 'Enable monitoring',
-    enableGovernance: 'Enable governance',
-  },
-  secondary: {
-    openDemo: 'Open demo',
-    viewRuntime: 'View runtime',
-    seeFindings: 'See findings',
-  },
-  tertiary: {
-    docs: 'Docs',
-    evidence: 'Evidence',
-    policies: 'Policies',
-  },
+  runScan:            'Run Scan',
+  openRuntime:        'Open Runtime',
+  activateMonitoring: 'Activate Monitoring',
+  activateGovernance: 'Activate Governance',
+  viewEvidence:       'View Evidence',
 } as const;
 
+export type CtaLabel = (typeof CTA)[keyof typeof CTA];
+
 /**
- * Vocabulary that must NOT appear in any public-facing copy after this
- * refactor lands. Lint guidance for future PRs — not enforced at build
- * time yet.
+ * Vocabulary that must NOT appear in any public-facing copy. Enforce by
+ * grep before merging. Order matters for `replace_all` runs — longer
+ * substrings first.
  */
 export const FORBIDDEN_TERMS = [
-  'Rebuild',
-  'Done-for-you',
+  'Managed-Hosting',
   'Managed Service',
   'Managed-Service',
-  'Website-Service',
+  'Done-for-you',
+  '30 minute call',
+  '30-Minuten-Call',
+  'Book a call',
+  'Implementation Package',
+  'Request quote',
   'Tarif anfragen',
-  'Beratung',
-  'Consulting',
+  'Beratung anfragen',
+  'Beratungstermin',
   'Kontaktieren Sie uns',
   'Projekt anfragen',
-  'Übergabe',
+  'Website-Service',
+  'Agency Service',
   'Agentur',
+  'Rebuild',
+  'Consulting',
+  'Beratung',
+  'Projekt',
+  'Übergabe',
 ] as const;

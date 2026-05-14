@@ -70,7 +70,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kein Account, kein Setup',
     ],
     highlight: false,
-    cta: { label: 'Kostenlos scannen', href: '/audit?source=pricing-free' },
+    cta: { label: 'Run Scan', href: '/audit?source=pricing-free' },
   },
   {
     id: 'starter',
@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Starter aktivieren', href: '/checkout/starter?source=pricing' },
+    cta: { label: 'Activate Monitoring', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Growth aktivieren', href: '/checkout/growth?source=pricing' },
+    cta: { label: 'Activate Governance', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -121,18 +121,18 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '699',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für Web-Agenturen und Dienstleister, die mehrere Kundenseiten betreuen',
+    tagline: 'Für Multi-Domain-Teams und Plattformbetreiber, die mehrere Kundenseiten betreuen',
     bullets: [
       'Alles aus Growth',
       'White-Label-Reports mit eigenem Logo',
       'Multi-Tenant-Dashboard (10 Kundenseiten inklusive)',
       'API + Webhooks für CI/CD-Integration',
-      'Bulk-Audit für Kundenportfolios',
+      'Bulk-Audit für Domain-Portfolios',
       'Priority-Support',
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Agency starten', href: '/audit?plan=agency&source=pricing' },
+    cta: { label: 'Activate Governance', href: '/audit?plan=agency&source=pricing' },
   },
   {
     id: 'enterprise',
@@ -140,12 +140,12 @@ export const PRICING_TIERS: PricingTier[] = [
     planKey: 'enterprise',
     priceEur: 0,
     priceString: 'individuell',
-    priceSuffix: 'ab 1.500 € / Monat',
+    priceSuffix: 'Custom Runtime Environment',
     recurring: true,
     tagline: 'Für regulierte Unternehmen, größere Mittelständler und Organisationen mit SLA-, DSB- oder AI-Act-Anforderungen',
     bullets: [
       'Alle Agency-Funktionen',
-      'SLA und dedizierter Ansprechpartner',
+      'SLA und dedizierter Runtime-Kanal',
       'EU AI Act Governance-Modul',
       'DSB-Integration (interner oder externer DSB)',
       'Evidence Vault (Hash-Chain + HMAC-Signaturen)',
@@ -153,7 +153,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Individuelle Vertragsgestaltung / DPA',
     ],
     highlight: false,
-    cta: { label: 'Enterprise starten', href: '/audit?plan=enterprise&source=pricing' },
+    cta: { label: 'Open Runtime', href: '/audit?plan=enterprise&source=pricing' },
   },
 ];
 

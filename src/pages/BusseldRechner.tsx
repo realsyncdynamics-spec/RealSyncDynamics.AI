@@ -251,10 +251,10 @@ export function BusseldRechner() {
 
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, marginTop: 16 }}>
                 <a href="/audit" style={{ background: '#2563eb', color: '#fff', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-                  Kostenloser DSGVO-Audit
+                  Run Scan
                 </a>
-                <a href="/contact-sales" style={{ background: '#374151', color: '#e5e7eb', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-                  Beratung anfragen
+                <a href="/evidence" style={{ background: '#374151', color: '#e5e7eb', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                  View Evidence
                 </a>
                 <a href="/grenzen" style={{ background: 'transparent', color: '#9ca3af', borderRadius: 8, padding: '11px 20px', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
                   Grenzen dieser Simulation

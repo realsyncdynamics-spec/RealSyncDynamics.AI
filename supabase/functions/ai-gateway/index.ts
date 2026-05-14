@@ -13,19 +13,21 @@
 //      Body: { model, messages, max_tokens, temperature, response_format }
 //
 // Both routes funnel through the same ServerAiGateway / LMStudioAdapter
-// pipeline. The OpenAI shell is a thin translator — no extra inference
-// path, no extra adapters.
-//
-// Reads `LM_STUDIO_BASE_URL` + `LM_STUDIO_API_KEY` from Deno.env. The
-// LM Studio host is never reachable from the browser; the platform
-// talks to this endpoint only.
+// pipeline. The OpenAI shell is a thin translator built on the pure
+// functions in `_shared/aiGateway/openaiCompat.ts` (which is unit-tested
+// from the frontend side via its `src/core/ai-gateway/openaiCompat.ts`
+// mirror).
 
 import { ServerAiGateway } from '../_shared/aiGateway/router.ts';
-import type {
-  AiGatewayRequest,
-  AiGatewayResponse,
-  ModelProfile,
-} from '../_shared/aiGateway/types.ts';
+import type { AiGatewayRequest } from '../_shared/aiGateway/types.ts';
+import {
+  routeOf,
+  modelsResponse,
+  parseChatRequest,
+  formatChatResponse,
+  mapInferenceError,
+  type OpenAIChatRequest,
+} from '../_shared/aiGateway/openaiCompat.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -35,37 +37,29 @@ const corsHeaders = {
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed']);
 
-const KNOWN_PROFILES: readonly ModelProfile[] = [
-  'fast-local',
-  'quality-local',
-  'strict-json',
-  'embed-default',
-  'cloud-fallback',
-];
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const route = routeOf(req);
+  const route = routeOf(req.url);
 
   try {
-    // ── OpenAI-compatible shell ────────────────────────────────────
+    // OpenAI-compatible shell
     if (route === '/v1/models' && req.method === 'GET') {
-      return handleOpenAIModels();
+      return json(modelsResponse());
     }
     if (route === '/v1/chat/completions' && req.method === 'POST') {
       return await handleOpenAIChatCompletions(req);
     }
 
-    // ── Native op-based API ────────────────────────────────────────
+    // Native op-based API
     if ((route === '/' || route === '') && req.method === 'POST') {
       return await handleOpBased(req);
     }
 
     return jsonError(404, 'NOT_FOUND', `unknown route: ${req.method} ${route}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown error';
-    return jsonError(500, 'INFERENCE_ERROR', message);
+    const mapped = mapInferenceError(error);
+    return jsonError(mapped.status, mapped.code, mapped.message);
   }
 });
 
@@ -102,36 +96,7 @@ async function handleOpBased(req: Request): Promise<Response> {
   return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 }
 
-// ── OpenAI-compat: GET /v1/models ─────────────────────────────────
-
-function handleOpenAIModels(): Response {
-  // We surface model PROFILES (fast-local, quality-local, …) here, not
-  // the concrete LM Studio model id. The mapping profile → model is the
-  // gateway's responsibility and intentionally hidden from callers.
-  const data = KNOWN_PROFILES.map((id) => ({
-    id,
-    object:   'model',
-    owned_by: 'realsyncdynamics',
-    created:  Math.floor(Date.now() / 1000),
-  }));
-  return json({ object: 'list', data });
-}
-
 // ── OpenAI-compat: POST /v1/chat/completions ──────────────────────
-
-interface OpenAIMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string;
-}
-
-interface OpenAIChatRequest {
-  model?: string;
-  messages?: OpenAIMessage[];
-  max_tokens?: number;
-  temperature?: number;
-  response_format?: { type?: 'text' | 'json_object' };
-  user?: string;
-}
 
 async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
   let body: OpenAIChatRequest;
@@ -141,87 +106,21 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
     return jsonError(400, 'BAD_REQUEST', 'invalid json');
   }
 
-  const profile = body.model as ModelProfile | undefined;
-  if (!profile || !KNOWN_PROFILES.includes(profile)) {
-    return jsonError(400, 'BAD_REQUEST', `model must be one of: ${KNOWN_PROFILES.join(', ')}`);
-  }
-
-  if (!Array.isArray(body.messages) || body.messages.length === 0) {
-    return jsonError(400, 'BAD_REQUEST', 'messages[] required');
-  }
-
-  const systemPrompt = body.messages
-    .filter((m) => m.role === 'system' && typeof m.content === 'string')
-    .map((m) => m.content)
-    .join('\n\n');
-
-  // Use the last user message as `input`. Multi-turn history isn't a
-  // first-class concept of the native op-based API yet — that's a
-  // follow-up.
-  const lastUser = [...body.messages].reverse().find((m) => m.role === 'user' && typeof m.content === 'string');
-  if (!lastUser) return jsonError(400, 'BAD_REQUEST', 'no user message in messages[]');
-
-  const wantsJson = body.response_format?.type === 'json_object';
-
-  const internalRequest: AiGatewayRequest = {
-    feature:        'openai_compat',
-    task_type:      wantsJson ? 'extract_json' : 'chat',
-    model_profile:  profile,
-    input:          lastUser.content,
-    system_prompt:  systemPrompt || undefined,
-    max_tokens:     body.max_tokens,
-    temperature:    body.temperature,
-    user_id:        body.user ?? null,
-  };
+  const parsed = parseChatRequest(body);
+  if (!parsed.ok) return jsonError(parsed.status, parsed.code, parsed.message);
 
   const gateway = buildGateway();
   if (gateway instanceof Response) return gateway;
 
-  let response: AiGatewayResponse<unknown>;
   try {
-    response = wantsJson
-      ? await gateway.extractJson(internalRequest)
-      : await gateway.generate(internalRequest);
+    const response = parsed.wantsJson
+      ? await gateway.extractJson(parsed.request)
+      : await gateway.generate(parsed.request);
+    return json(formatChatResponse(response, parsed.request.model_profile));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown error';
-    // LM Studio unreachable / model resolve failures → 502.
-    if (/LM Studio|No LM Studio|fetch failed|HTTP 5\d\d/i.test(message)) {
-      return jsonError(502, 'UPSTREAM_UNAVAILABLE', message);
-    }
-    if (/invalid JSON/i.test(message)) {
-      return jsonError(502, 'UPSTREAM_BAD_OUTPUT', message);
-    }
-    throw error;
+    const mapped = mapInferenceError(error);
+    return jsonError(mapped.status, mapped.code, mapped.message);
   }
-
-  const content = typeof response.output === 'string'
-    ? response.output
-    : JSON.stringify(response.output);
-
-  return json({
-    id:      `chatcmpl-${response.trace_id}`,
-    object:  'chat.completion',
-    created: Math.floor(Date.now() / 1000),
-    model:   profile,
-    choices: [{
-      index:         0,
-      message:       { role: 'assistant', content },
-      finish_reason: 'stop',
-    }],
-    usage: {
-      prompt_tokens:     response.usage?.input_tokens     ?? 0,
-      completion_tokens: response.usage?.output_tokens    ?? 0,
-      total_tokens:      response.usage?.total_tokens     ?? 0,
-    },
-    // Custom field — useful for debugging without breaking OpenAI clients.
-    _gateway: {
-      provider:   response.provider,
-      profile:    response.profile,
-      model:      response.model,
-      trace_id:   response.trace_id,
-      latency_ms: response.latency_ms,
-    },
-  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -235,21 +134,6 @@ function buildGateway(): ServerAiGateway | Response {
     lmStudioBaseUrl: baseUrl,
     lmStudioApiKey:  Deno.env.get('LM_STUDIO_API_KEY') ?? 'lm-studio',
   });
-}
-
-/**
- * Returns the request path *relative to /functions/v1/ai-gateway*.
- *   `/functions/v1/ai-gateway`                       → '/'
- *   `/functions/v1/ai-gateway/`                      → '/'
- *   `/functions/v1/ai-gateway/v1/models`             → '/v1/models'
- *   `/functions/v1/ai-gateway/v1/chat/completions`   → '/v1/chat/completions'
- */
-function routeOf(req: Request): string {
-  const u = new URL(req.url);
-  const idx = u.pathname.indexOf('/ai-gateway');
-  if (idx < 0) return u.pathname;
-  const tail = u.pathname.slice(idx + '/ai-gateway'.length) || '/';
-  return tail;
 }
 
 function json(payload: unknown, status = 200): Response {

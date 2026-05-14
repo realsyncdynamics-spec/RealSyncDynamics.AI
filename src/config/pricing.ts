@@ -132,7 +132,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Agency anfragen', href: '/contact-sales?intent=agency&source=pricing' },
+    cta: { label: 'Agency starten', href: '/audit?plan=agency&source=pricing' },
   },
   {
     id: 'enterprise',
@@ -153,7 +153,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Individuelle Vertragsgestaltung / DPA',
     ],
     highlight: false,
-    cta: { label: 'Enterprise anfragen', href: '/contact-sales?intent=enterprise&source=pricing' },
+    cta: { label: 'Enterprise starten', href: '/audit?plan=enterprise&source=pricing' },
   },
 ];
 

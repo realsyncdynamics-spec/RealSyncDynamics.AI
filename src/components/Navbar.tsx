@@ -1,13 +1,16 @@
-import { Menu, X, ChevronRight, Sparkles } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
+import { CTA } from '../content/runtimeVocab';
 
+// Single-product navigation. The platform is one runtime; the nav reflects
+// that. The KI-fragen pill is gone — that job is owned by the floating
+// AssistentChip. One primary CTA only: "Start Runtime" → /audit.
 const NAV_ITEMS = [
-  { label: 'Produkt', to: '/tools' },
-  { label: 'Compliance-Center', to: '/legal/methodology' },
-  { label: 'Preise', to: '/pricing' },
-  { label: 'Enterprise', to: '/contact-sales?intent=enterprise' },
+  { label: 'Runtime', to: '/' },
+  { label: 'Pricing', to: '/pricing' },
+  { label: 'Docs',    to: '/legal/methodology' },
 ] as const;
 
 export function Navbar() {
@@ -51,25 +54,11 @@ export function Navbar() {
               );
             })}
             <Link
-              to="/audit?source=nav-ki-fragen"
-              data-ai-pill
-              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-titanium-50 bg-obsidian-900/60 border border-transparent [background-clip:padding-box] relative transition-colors hover:bg-obsidian-800/80"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(11,11,15,0.85), rgba(11,11,15,0.85)), linear-gradient(120deg, #a855f7 0%, #22d3ee 50%, #a855f7 100%)',
-                backgroundOrigin: 'border-box',
-                border: '1px solid transparent',
-              }}
+              to="/audit?source=nav-activate"
+              className="group inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
             >
-              <Sparkles className="h-3.5 w-3.5 text-violet-300" />
-              KI fragen
-            </Link>
-            <Link
-              to="/audit"
-              className="group inline-flex items-center gap-1.5 bg-white text-obsidian-950 hover:bg-titanium-200 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
-            >
-              Audit starten
-              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              {CTA.primary.activate}
+              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
 
@@ -97,24 +86,11 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              to="/audit?source=nav-ki-fragen-mobile"
+              to="/audit?source=nav-activate-mobile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 px-3 py-3 mt-2 text-base font-semibold text-titanium-50 rounded-full"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(11,11,15,0.9), rgba(11,11,15,0.9)), linear-gradient(120deg, #a855f7 0%, #22d3ee 50%, #a855f7 100%)',
-                backgroundOrigin: 'border-box',
-                border: '1px solid transparent',
-              }}
+              className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold bg-cyan-400 text-obsidian-950 rounded-none"
             >
-              <Sparkles className="h-4 w-4 text-violet-300" /> KI fragen
-            </Link>
-            <Link
-              to="/audit"
-              onClick={() => setIsOpen(false)}
-              className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold bg-white text-obsidian-950 rounded-none"
-            >
-              Audit starten <ChevronRight className="h-4 w-4" />
+              {CTA.primary.activate} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>

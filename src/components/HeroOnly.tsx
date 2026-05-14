@@ -104,7 +104,7 @@ export function HeroOnly() {
           </div>
 
           {/* Headline + Subline */}
-          <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-5">
+          <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.02] mb-5">
             Automatisierte DSGVO- und AI-Compliance für Websites, Shops und Unternehmen.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-3">
@@ -112,10 +112,32 @@ export function HeroOnly() {
             Consent-Risiken, Security-Header, Rechtsdokumente und AI-Governance-Pflichten —
             vom lokalen Betrieb bis zum Mittelstand.
           </p>
-          <p className="text-sm text-silver-400 leading-relaxed max-w-2xl mx-auto mb-9">
+          <p className="text-sm text-silver-400 leading-relaxed max-w-2xl mx-auto mb-7 sm:mb-8">
             Continuous Monitoring statt jährlichem Audit. Klare To-dos statt juristischer Fachsprache.
             EU-gehostet, monatlich kündbar, keine Rechtsberatung — sondern technische Compliance-Härtung.
           </p>
+
+          {/* Hostinger-Pattern: 2 big tappable rows (mobile-primary entry) */}
+          <div className="mb-9 max-w-2xl mx-auto text-left">
+            <Link
+              to="/audit?source=hero-scan"
+              className="group flex items-center justify-between gap-4 py-5 sm:py-6 border-t border-b border-silver-700/40 hover:border-amber-500/60 transition-colors"
+            >
+              <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
+                Website jetzt scannen
+              </span>
+              <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-silver-400 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+            <Link
+              to="/pricing?source=hero-plans"
+              className="group flex items-center justify-between gap-4 py-5 sm:py-6 border-b border-silver-700/40 hover:border-amber-500/60 transition-colors"
+            >
+              <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
+                Pläne &amp; Preise ansehen
+              </span>
+              <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-silver-400 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+          </div>
 
           {/* Primary + Secondary CTA */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-7">

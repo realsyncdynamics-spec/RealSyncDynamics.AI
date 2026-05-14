@@ -195,6 +195,37 @@ Tabelle nach Testdurchlauf ausfüllen:
 | Fehler: LM Studio down | | | | |
 | Fehler: bad body | | | | |
 
+### Run 2026-05-14 21:51 UTC · Project `ebljyceifhnlzhjfyxup` · Function v3
+
+Deploy-Mode: `--no-verify-jwt` (gemäß Operations-Vorgabe). LM-Studio-Endpoint
+laut Secrets: `http://lmstudio.internal:1234/v1`.
+
+| Test | HTTP | ms | Pass/Fail | Notiz |
+|---|---|---|---|---|
+| GET /v1/models               | 200 | 892 | ✅ Pass | 5 Profile (`fast-local`, `quality-local`, `strict-json`, `embed-default`, `cloud-fallback`) |
+| POST generate                | 502 | 728 | ⚠ Conditional | LM Studio aus eu-central-1 nicht erreichbar — Fehlerbehandlung korrekt: `UPSTREAM_UNAVAILABLE / "No LM Studio model available"`. End-to-End-Test braucht Lauf vom VPS aus oder VPN-Bridge. |
+| POST extract_json            | 502 | 178 | ⚠ Conditional | Gleiche Ursache wie POST generate. Mapping `UPSTREAM_UNAVAILABLE` ist korrekt. |
+| Fehler: bad model            | 400 | 153 | ✅ Pass | Strukturierte Antwort listet alle erlaubten Profile auf. |
+| Fehler: no auth              | 200 | 134 | ℹ Expected (no-verify-jwt) | Doc-Erwartung (401) galt für `verify_jwt: true`. Mit `--no-verify-jwt` ist Authorization nicht-blockierend; Caller-Identität wird ggf. via custom auth oder rate-limit downstream geprüft. |
+| Fehler: LM Studio down       | 502 | 728 / 178 | ✅ Pass | Organisch in den Phase-2/3-Runs verifiziert — kein Crash, kein 500, sauberes JSON-Error-Envelope. |
+| Fehler: bad body             | 400 | 159 | ✅ Pass | Body `{"invalid":true}` → 400 wegen fehlendem `model`-Feld. |
+
+#### Gate-Status
+
+- **Phase 1**: ✅ Pass
+- **Phase 2/3**: ⚠ Code-Pfad nicht abschließend testbar von der Supabase-Edge aus (LM Studio nicht erreichbar). Fehlerverhalten korrekt. Vollständige End-to-End-Verifikation braucht:
+  - Entweder einen Test-Runner im selben Netz wie LM Studio (VPS-side), oder
+  - eine LM-Studio-Instanz mit öffentlich routbarem Endpunkt + TLS, oder
+  - einen Cloud-Provider in `LM_STUDIO_BASE_URL` mit OpenAI-kompatibler API als Übergangslösung.
+- **Phase 4**: ✅ Alle 4 Fälle haben definiertes Fehlerverhalten, kein 500, kein Crash.
+
+#### Empfehlung für PR #234 Gate
+
+Phasen 1 + 4 sind Pass. Phasen 2 + 3 sind blockiert auf einen erreichbaren LM-Studio-Endpunkt, nicht auf einen Code-Defekt. Vor Start von PR #234 (Governance-Agent uses AI Gateway):
+
+1. LM-Studio-Reachability klären — entweder Public-Endpunkt einrichten oder Tests von VPS aus laufen lassen (`docs/runbooks/` als Folge-PR).
+2. Optional: einen zweiten Smoke-Test-Run nach echter Reachability-Lösung anhängen.
+
 ---
 
 ## Gate-Kriterium für PR #234

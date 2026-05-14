@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Plus, Package, Check, AlertCircle } from 'lucide-react';
+import { Plus, Package, Check, AlertCircle, Cog, Download, Loader2 } from 'lucide-react';
 import { FinanceShell, useFinanceTenant } from './FinanceShell';
 import { Loader } from './FinanceDashboard';
 import { Modal } from './TaxDocumentsView';
 import { TaxDisclaimer } from './TaxDisclaimer';
 import {
   listExports, createExport, markExportStatus, listTaxYears,
+  generateEvidenceExport, getExportDownloadUrl,
 } from './api';
 import {
   EXPORT_TYPE_LABELS, type TaxYear, type TaxEvidenceExport, type TaxExportType,
@@ -25,6 +26,7 @@ function Inner() {
   const [exports, setExports] = useState<TaxEvidenceExport[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [generating, setGenerating] = useState<Record<string, boolean>>({});
 
   const reload = () => {
     if (!activeTenantId) return;
@@ -48,6 +50,33 @@ function Inner() {
       reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fehler');
+    }
+  }
+
+  async function generate(id: string) {
+    if (!activeTenantId) return;
+    setGenerating((s) => ({ ...s, [id]: true }));
+    try {
+      await generateEvidenceExport(id);
+      reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Generierung fehlgeschlagen');
+    } finally {
+      setGenerating((s) => ({ ...s, [id]: false }));
+    }
+  }
+
+  async function download(ex: TaxEvidenceExport) {
+    if (!ex.export_path) return;
+    try {
+      const url = await getExportDownloadUrl(ex.export_path);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      if (ex.status === 'ready') {
+        await markExportStatus(activeTenantId!, ex.id, 'downloaded');
+        reload();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Download fehlgeschlagen');
     }
   }
 
@@ -91,16 +120,45 @@ function Inner() {
                   <Field label="Checksum (sha256)" value={ex.checksum ?? '—'} mono />
                 </dl>
                 <TaxDisclaimer variant="compact" />
-                {ex.status === 'ready' && (
-                  <div className="mt-3">
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {ex.status === 'preparing' && (
                     <button
-                      onClick={() => markDownloaded(ex.id)}
+                      onClick={() => generate(ex.id)}
+                      disabled={generating[ex.id]}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-cyan-400 disabled:opacity-50"
+                    >
+                      {generating[ex.id]
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Cog className="h-3.5 w-3.5" />}
+                      {generating[ex.id] ? 'Erzeuge ZIP …' : 'ZIP jetzt erzeugen'}
+                    </button>
+                  )}
+                  {(ex.status === 'ready' || ex.status === 'downloaded') && ex.export_path && (
+                    <button
+                      onClick={() => download(ex)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-emerald-400"
                     >
-                      <Check className="h-3.5 w-3.5" /> Als heruntergeladen markieren
+                      <Download className="h-3.5 w-3.5" /> ZIP herunterladen
                     </button>
-                  </div>
-                )}
+                  )}
+                  {ex.status === 'ready' && (
+                    <button
+                      onClick={() => markDownloaded(ex.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-titanium-700 text-titanium-300 hover:text-titanium-100 text-xs font-semibold rounded-none"
+                    >
+                      <Check className="h-3.5 w-3.5" /> Manuell als heruntergeladen markieren
+                    </button>
+                  )}
+                  {ex.status === 'failed' && (
+                    <button
+                      onClick={() => generate(ex.id)}
+                      disabled={generating[ex.id]}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-amber-700 text-amber-300 hover:bg-amber-950/40 text-xs font-semibold rounded-none disabled:opacity-50"
+                    >
+                      <Cog className="h-3.5 w-3.5" /> Erneut versuchen
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}

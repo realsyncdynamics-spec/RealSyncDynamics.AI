@@ -225,6 +225,60 @@ export async function createExport(tenantId: string, payload: {
   return data as TaxEvidenceExport;
 }
 
+/**
+ * Trigger ZIP generation for a `preparing` export row. Calls the
+ * `evidence-export` Edge Function, which reads the year's documents,
+ * builds the ZIP, uploads to storage, and flips the row to `ready`.
+ * Returns the updated row's metadata. On failure, the row is set to
+ * `failed` and the error is surfaced.
+ */
+export async function generateEvidenceExport(exportId: string): Promise<{
+  status: TaxExportStatus;
+  export_path: string;
+  checksum: string;
+  document_count: number;
+  total_amount: number;
+  bytes: number;
+}> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('evidence-export', {
+    body: { export_id: exportId },
+  });
+  if (error) {
+    throw new Error(error.message ?? 'evidence-export failed');
+  }
+  const body = data as { ok?: boolean; error?: { code: string; message: string } } & Record<string, unknown>;
+  if (body?.ok === false) {
+    const err = body.error;
+    throw new Error(err ? `${err.code}: ${err.message}` : 'evidence-export failed');
+  }
+  return {
+    status:         body.status as TaxExportStatus,
+    export_path:    body.export_path as string,
+    checksum:       body.checksum as string,
+    document_count: Number(body.document_count ?? 0),
+    total_amount:   Number(body.total_amount ?? 0),
+    bytes:          Number(body.bytes ?? 0),
+  };
+}
+
+/**
+ * Mint a signed download URL for the generated ZIP. The bucket is
+ * private; signed URLs are the only public read path.
+ */
+export async function getExportDownloadUrl(
+  exportPath: string, expiresInSeconds = 300,
+): Promise<string> {
+  const sb = getSupabase();
+  const { data, error } = await sb.storage
+    .from('tax-evidence-exports')
+    .createSignedUrl(exportPath, expiresInSeconds);
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message ?? 'could not sign export url');
+  }
+  return data.signedUrl;
+}
+
 export async function markExportStatus(
   tenantId: string, exportId: string, status: TaxExportStatus,
 ): Promise<void> {

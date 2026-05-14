@@ -68,10 +68,12 @@ ALTER TABLE public.ai_tool_runs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "ai_tools read"            ON public.ai_tools;
 DROP POLICY IF EXISTS "ai_tool_runs tenant-read" ON public.ai_tool_runs;
 
+DROP POLICY IF EXISTS "ai_tools read" ON public.ai_tools;
 CREATE POLICY "ai_tools read"
     ON public.ai_tools FOR SELECT
     USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "ai_tool_runs tenant-read" ON public.ai_tool_runs;
 CREATE POLICY "ai_tool_runs tenant-read"
     ON public.ai_tool_runs FOR SELECT
     USING (public.is_tenant_member(tenant_id));

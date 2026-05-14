@@ -22,7 +22,9 @@ CREATE INDEX IF NOT EXISTS idx_dpias_tenant ON public.dpias(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_dpias_asset ON public.dpias(asset_id);
 CREATE INDEX IF NOT EXISTS idx_dpias_status ON public.dpias(status);
 ALTER TABLE public.dpias ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "dpias_service_all" ON public.dpias;
 CREATE POLICY "dpias_service_all" ON public.dpias FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "dpias_tenant_read" ON public.dpias;
 CREATE POLICY "dpias_tenant_read" ON public.dpias FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 DROP TRIGGER IF EXISTS trg_dpias_updated_at ON public.dpias;

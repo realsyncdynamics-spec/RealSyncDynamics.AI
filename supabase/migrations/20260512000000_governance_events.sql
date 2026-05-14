@@ -231,41 +231,48 @@ ALTER TABLE public.asset_control_mappings ENABLE ROW LEVEL SECURITY;
 -- authenticated read-own placeholder
 -- tenant_id enforcement can later be connected to tenant membership table
 
+DROP POLICY IF EXISTS "governance_assets_service_all" ON public.governance_assets;
 CREATE POLICY "governance_assets_service_all"
 ON public.governance_assets
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "governance_policies_service_all" ON public.governance_policies;
 CREATE POLICY "governance_policies_service_all"
 ON public.governance_policies
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "governance_events_service_all" ON public.governance_events;
 CREATE POLICY "governance_events_service_all"
 ON public.governance_events
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "governance_evidence_service_all" ON public.governance_evidence;
 CREATE POLICY "governance_evidence_service_all"
 ON public.governance_evidence
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "framework_controls_read_all" ON public.framework_controls;
 CREATE POLICY "framework_controls_read_all"
 ON public.framework_controls
 FOR SELECT TO authenticated
 USING (true);
 
+DROP POLICY IF EXISTS "framework_controls_service_all" ON public.framework_controls;
 CREATE POLICY "framework_controls_service_all"
 ON public.framework_controls
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "asset_control_mappings_service_all" ON public.asset_control_mappings;
 CREATE POLICY "asset_control_mappings_service_all"
 ON public.asset_control_mappings
 FOR ALL TO service_role

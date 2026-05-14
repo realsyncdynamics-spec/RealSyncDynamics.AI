@@ -25,12 +25,14 @@ CREATE INDEX IF NOT EXISTS idx_governance_admin_log_actor
 
 ALTER TABLE public.governance_admin_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "governance_admin_log_service_all" ON public.governance_admin_log;
 CREATE POLICY "governance_admin_log_service_all"
 ON public.governance_admin_log
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "governance_admin_log_tenant_read" ON public.governance_admin_log;
 CREATE POLICY "governance_admin_log_tenant_read"
 ON public.governance_admin_log
 FOR SELECT TO authenticated

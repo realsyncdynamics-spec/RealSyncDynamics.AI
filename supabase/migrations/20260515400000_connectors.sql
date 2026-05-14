@@ -36,10 +36,14 @@ CREATE INDEX IF NOT EXISTS idx_remediation_actions_tenant ON public.remediation_
 ALTER TABLE public.integration_connectors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.remediation_actions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "connectors_service_all" ON public.integration_connectors;
 CREATE POLICY "connectors_service_all" ON public.integration_connectors FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "remediation_actions_service_all" ON public.remediation_actions;
 CREATE POLICY "remediation_actions_service_all" ON public.remediation_actions FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "connectors_tenant_read" ON public.integration_connectors;
 CREATE POLICY "connectors_tenant_read" ON public.integration_connectors FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
+DROP POLICY IF EXISTS "remediation_actions_tenant_read" ON public.remediation_actions;
 CREATE POLICY "remediation_actions_tenant_read" ON public.remediation_actions FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 

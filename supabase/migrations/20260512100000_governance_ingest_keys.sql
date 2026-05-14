@@ -35,6 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_governance_ingest_keys_active
 
 ALTER TABLE public.governance_ingest_keys ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "governance_ingest_keys_service_all" ON public.governance_ingest_keys;
 CREATE POLICY "governance_ingest_keys_service_all"
 ON public.governance_ingest_keys
 FOR ALL TO service_role

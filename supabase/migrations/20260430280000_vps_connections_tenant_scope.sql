@@ -40,6 +40,7 @@ DROP POLICY IF EXISTS "vps_connections owner insert"                    ON publi
 DROP POLICY IF EXISTS "vps_connections owner update"                    ON public.vps_connections;
 DROP POLICY IF EXISTS "vps_connections owner delete"                    ON public.vps_connections;
 
+DROP POLICY IF EXISTS "vps_connections owner-or-tenant select" ON public.vps_connections;
 CREATE POLICY "vps_connections owner-or-tenant select"
     ON public.vps_connections FOR SELECT
     USING (
@@ -48,6 +49,7 @@ CREATE POLICY "vps_connections owner-or-tenant select"
     );
 
 -- Writes always require ownership; tenant association does not grant write.
+DROP POLICY IF EXISTS "vps_connections owner insert" ON public.vps_connections;
 CREATE POLICY "vps_connections owner insert"
     ON public.vps_connections FOR INSERT
     WITH CHECK (
@@ -55,6 +57,7 @@ CREATE POLICY "vps_connections owner insert"
         AND (tenant_id IS NULL OR public.is_tenant_member(tenant_id))
     );
 
+DROP POLICY IF EXISTS "vps_connections owner update" ON public.vps_connections;
 CREATE POLICY "vps_connections owner update"
     ON public.vps_connections FOR UPDATE
     USING (owner_id = auth.uid())
@@ -63,6 +66,7 @@ CREATE POLICY "vps_connections owner update"
         AND (tenant_id IS NULL OR public.is_tenant_member(tenant_id))
     );
 
+DROP POLICY IF EXISTS "vps_connections owner delete" ON public.vps_connections;
 CREATE POLICY "vps_connections owner delete"
     ON public.vps_connections FOR DELETE
     USING (owner_id = auth.uid());

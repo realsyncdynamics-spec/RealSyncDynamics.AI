@@ -25,11 +25,13 @@ CREATE INDEX IF NOT EXISTS idx_asset_risk_history_tenant
 
 ALTER TABLE public.asset_risk_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "asset_risk_history_service_all" ON public.asset_risk_history;
 CREATE POLICY "asset_risk_history_service_all"
 ON public.asset_risk_history
 FOR ALL TO service_role
 USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "asset_risk_history_tenant_read" ON public.asset_risk_history;
 CREATE POLICY "asset_risk_history_tenant_read"
 ON public.asset_risk_history
 FOR SELECT TO authenticated

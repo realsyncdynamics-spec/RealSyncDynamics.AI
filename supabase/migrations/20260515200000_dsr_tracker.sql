@@ -20,7 +20,9 @@ CREATE INDEX IF NOT EXISTS idx_dsr_requests_tenant ON public.dsr_requests(tenant
 CREATE INDEX IF NOT EXISTS idx_dsr_requests_status ON public.dsr_requests(status);
 CREATE INDEX IF NOT EXISTS idx_dsr_requests_deadline ON public.dsr_requests(deadline_at);
 ALTER TABLE public.dsr_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "dsr_requests_service_all" ON public.dsr_requests;
 CREATE POLICY "dsr_requests_service_all" ON public.dsr_requests FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "dsr_requests_tenant_read" ON public.dsr_requests;
 CREATE POLICY "dsr_requests_tenant_read" ON public.dsr_requests FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
 DROP TRIGGER IF EXISTS trg_dsr_requests_updated_at ON public.dsr_requests;

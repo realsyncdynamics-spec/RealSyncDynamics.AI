@@ -55,6 +55,7 @@ ALTER TABLE public.market_gaps ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "market_gaps super_admin_read"  ON public.market_gaps;
 DROP POLICY IF EXISTS "market_gaps super_admin_write" ON public.market_gaps;
 
+DROP POLICY IF EXISTS "market_gaps super_admin_read" ON public.market_gaps;
 CREATE POLICY "market_gaps super_admin_read"
     ON public.market_gaps FOR SELECT
     USING (EXISTS (
@@ -62,6 +63,7 @@ CREATE POLICY "market_gaps super_admin_read"
          WHERE p.id = auth.uid() AND p.is_super_admin = true
     ));
 
+DROP POLICY IF EXISTS "market_gaps super_admin_write" ON public.market_gaps;
 CREATE POLICY "market_gaps super_admin_write"
     ON public.market_gaps FOR UPDATE
     USING (EXISTS (

@@ -36,12 +36,14 @@ CREATE INDEX IF NOT EXISTS idx_governance_approvals_pending
 
 ALTER TABLE public.governance_approvals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "governance_approvals_service_all" ON public.governance_approvals;
 CREATE POLICY "governance_approvals_service_all"
 ON public.governance_approvals
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "governance_approvals_tenant_read" ON public.governance_approvals;
 CREATE POLICY "governance_approvals_tenant_read"
 ON public.governance_approvals
 FOR SELECT TO authenticated

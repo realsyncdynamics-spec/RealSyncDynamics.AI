@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.webhook_events (
 ALTER TABLE public.webhook_events ENABLE ROW LEVEL SECURITY;
 
 -- Default-deny: only the service role (no JWT) sees / writes this table.
+DROP POLICY IF EXISTS "webhook_events service-role only" ON public.webhook_events;
 CREATE POLICY "webhook_events service-role only"
     ON public.webhook_events
     FOR ALL
@@ -57,10 +58,12 @@ DROP POLICY IF EXISTS "usage_counters tenant-read"   ON public.usage_counters;
 DROP POLICY IF EXISTS "audit_events tenant-read"     ON public.audit_events;
 DROP POLICY IF EXISTS "assets tenant-rw"             ON public.assets;
 
+DROP POLICY IF EXISTS "tenants member-read" ON public.tenants;
 CREATE POLICY "tenants member-read"
     ON public.tenants FOR SELECT
     USING (public.is_tenant_member(id));
 
+DROP POLICY IF EXISTS "tenants owner-update" ON public.tenants;
 CREATE POLICY "tenants owner-update"
     ON public.tenants FOR UPDATE
     USING (EXISTS (
@@ -77,6 +80,7 @@ CREATE POLICY "tenants owner-update"
     ));
 
 -- Membership: a user always sees their own row, plus all members of tenants they belong to.
+DROP POLICY IF EXISTS "memberships self-or-tenant" ON public.memberships;
 CREATE POLICY "memberships self-or-tenant"
     ON public.memberships FOR SELECT
     USING (
@@ -85,6 +89,7 @@ CREATE POLICY "memberships self-or-tenant"
     );
 
 -- Owners and admins manage memberships of their tenants.
+DROP POLICY IF EXISTS "memberships owner-write" ON public.memberships;
 CREATE POLICY "memberships owner-write"
     ON public.memberships FOR ALL
     USING (EXISTS (
@@ -101,21 +106,25 @@ CREATE POLICY "memberships owner-write"
     ));
 
 -- Subscriptions: read for any tenant member; writes happen only via service role.
+DROP POLICY IF EXISTS "subscriptions tenant-read" ON public.subscriptions;
 CREATE POLICY "subscriptions tenant-read"
     ON public.subscriptions FOR SELECT
     USING (public.is_tenant_member(tenant_id));
 
 -- Usage counters: read for any tenant member; writes happen only via service role.
+DROP POLICY IF EXISTS "usage_counters tenant-read" ON public.usage_counters;
 CREATE POLICY "usage_counters tenant-read"
     ON public.usage_counters FOR SELECT
     USING (public.is_tenant_member(tenant_id));
 
 -- Audit events: read for any tenant member; inserts only via service role.
+DROP POLICY IF EXISTS "audit_events tenant-read" ON public.audit_events;
 CREATE POLICY "audit_events tenant-read"
     ON public.audit_events FOR SELECT
     USING (public.is_tenant_member(tenant_id));
 
 -- Assets: full RW for tenant members (basic policy; tighten per-role later if needed).
+DROP POLICY IF EXISTS "assets tenant-rw" ON public.assets;
 CREATE POLICY "assets tenant-rw"
     ON public.assets FOR ALL
     USING (public.is_tenant_member(tenant_id))

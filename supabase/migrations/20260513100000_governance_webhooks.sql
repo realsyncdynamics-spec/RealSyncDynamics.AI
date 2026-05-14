@@ -35,12 +35,14 @@ CREATE INDEX IF NOT EXISTS idx_governance_webhooks_active
 
 ALTER TABLE public.governance_webhooks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "governance_webhooks_service_all" ON public.governance_webhooks;
 CREATE POLICY "governance_webhooks_service_all"
 ON public.governance_webhooks
 FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "governance_webhooks_tenant_read" ON public.governance_webhooks;
 CREATE POLICY "governance_webhooks_tenant_read"
 ON public.governance_webhooks
 FOR SELECT TO authenticated

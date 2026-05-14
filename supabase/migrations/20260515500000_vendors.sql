@@ -38,10 +38,14 @@ CREATE INDEX IF NOT EXISTS idx_vendors_dpa ON public.vendors(dpa_status);
 ALTER TABLE public.vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.asset_vendor_links ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "vendors_service_all" ON public.vendors;
 CREATE POLICY "vendors_service_all" ON public.vendors FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "asset_vendor_links_service_all" ON public.asset_vendor_links;
 CREATE POLICY "asset_vendor_links_service_all" ON public.asset_vendor_links FOR ALL TO service_role USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "vendors_tenant_read" ON public.vendors;
 CREATE POLICY "vendors_tenant_read" ON public.vendors FOR SELECT TO authenticated
 USING (tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()));
+DROP POLICY IF EXISTS "asset_vendor_links_tenant_read" ON public.asset_vendor_links;
 CREATE POLICY "asset_vendor_links_tenant_read" ON public.asset_vendor_links FOR SELECT TO authenticated
 USING (asset_id IN (SELECT id FROM public.governance_assets WHERE tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid())));
 

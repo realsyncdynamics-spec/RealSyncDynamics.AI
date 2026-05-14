@@ -24,14 +24,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Nutzer können ihr eigenes Profil lesen" ON public.profiles;
 CREATE POLICY "Nutzer können ihr eigenes Profil lesen"
     ON public.profiles FOR SELECT
     USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Nutzer können ihr eigenes Profil aktualisieren" ON public.profiles;
 CREATE POLICY "Nutzer können ihr eigenes Profil aktualisieren"
     ON public.profiles FOR UPDATE
     USING (auth.uid() = id);
 
+DROP TRIGGER IF EXISTS trig_profiles_updated_at ON public.profiles;
 CREATE TRIGGER trig_profiles_updated_at
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
@@ -53,10 +56,12 @@ CREATE TABLE IF NOT EXISTS public.c2pa_assets (
 
 ALTER TABLE public.c2pa_assets ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Besitzer können ihre eigenen Assets verwalten" ON public.c2pa_assets;
 CREATE POLICY "Besitzer können ihre eigenen Assets verwalten"
     ON public.c2pa_assets FOR ALL
     USING (auth.uid() = owner_id);
 
+DROP TRIGGER IF EXISTS trig_assets_updated_at ON public.c2pa_assets;
 CREATE TRIGGER trig_assets_updated_at
     BEFORE UPDATE ON public.c2pa_assets
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
@@ -78,10 +83,12 @@ CREATE TABLE IF NOT EXISTS public.workflows (
 
 ALTER TABLE public.workflows ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Besitzer können ihre eigenen Workflows verwalten" ON public.workflows;
 CREATE POLICY "Besitzer können ihre eigenen Workflows verwalten"
     ON public.workflows FOR ALL
     USING (auth.uid() = owner_id);
 
+DROP TRIGGER IF EXISTS trig_workflows_updated_at ON public.workflows;
 CREATE TRIGGER trig_workflows_updated_at
     BEFORE UPDATE ON public.workflows
     FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
@@ -102,6 +109,7 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
 
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Nutzer können ihren eigenen Prüfpfad einsehen" ON public.audit_logs;
 CREATE POLICY "Nutzer können ihren eigenen Prüfpfad einsehen"
     ON public.audit_logs FOR SELECT
     USING (auth.uid() = actor_id);

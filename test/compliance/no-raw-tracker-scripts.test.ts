@@ -30,12 +30,19 @@ const ALLOWED_RELATIVE_PATHS: ReadonlyArray<string> = [
 ];
 
 // Match an *injection vector* + its src attribute / assignment value.
-// Three cases:
-//   1. HTML / JSX  `<script ... src="<URL>" ...>`
-//   2. JS attribute assignment  `script.src = "<URL>"`  (after createElement)
-//   3. JS attribute assignment  `.setAttribute('src', "<URL>")`
+// Four cases:
+//   1. HTML / JSX with literal:    `<script ... src="<URL>" ...>`
+//   2. JSX with expression literal: `<script ... src={"<URL>"} ...>`
+//   3. JS attribute assignment:    `script.src = "<URL>"`  (after createElement)
+//   4. JS setAttribute:            `.setAttribute('src', "<URL>")`
+//
+// Variable / template-literal interpolation (e.g. `src={`https://${host}`}`)
+// can't be resolved statically — out of scope. Match the inner literal
+// only when there is one. This keeps false-positives low while catching
+// the obvious injection forms.
 const INJECTION_MATCHERS: ReadonlyArray<{ name: string; re: RegExp }> = [
   { name: '<script src="…">',          re: /<script\b[^>]*\bsrc\s*=\s*["'`]([^"'`]+)["'`]/gi },
+  { name: '<script src={"…"}>',        re: /<script\b[^>]*\bsrc\s*=\s*\{\s*["'`]([^"'`]+)["'`]\s*\}/gi },
   { name: 'script.src = "…"',          re: /\bscript(?:Tag)?\.src\s*=\s*["'`]([^"'`]+)["'`]/gi },
   { name: '.setAttribute("src", "…")', re: /\.setAttribute\(\s*["'`]src["'`]\s*,\s*["'`]([^"'`]+)["'`]\s*\)/gi },
 ];
@@ -118,5 +125,40 @@ describe('compliance: no raw tracker scripts outside src/lib/pixels.ts', () => {
       );
     }
     expect(violations).toEqual([]);
+  });
+
+  // Self-check: every documented injection vector hits the matcher against a
+  // contrived fixture. Failing here means the regex regressed even before
+  // running against the real tree.
+  it('matchers fire on every documented injection vector', () => {
+    const fixtures: ReadonlyArray<{ snippet: string; expectedMatcher: string }> = [
+      {
+        snippet:        '<script src="https://www.googletagmanager.com/gtag/js?id=GA-X"></script>',
+        expectedMatcher: '<script src="…">',
+      },
+      {
+        snippet:        '<script src={"https://www.googletagmanager.com/gtag/js?id=GA-X"} />',
+        expectedMatcher: '<script src={"…"}>',
+      },
+      {
+        snippet:        "const script = document.createElement('script'); script.src = 'https://connect.facebook.net/en_US/fbevents.js';",
+        expectedMatcher: 'script.src = "…"',
+      },
+      {
+        snippet:        "el.setAttribute('src', 'https://snap.licdn.com/li.lms-analytics/insight.min.js')",
+        expectedMatcher: '.setAttribute("src", "…")',
+      },
+    ];
+
+    for (const { snippet, expectedMatcher } of fixtures) {
+      const hits = INJECTION_MATCHERS
+        .map((m) => {
+          m.re.lastIndex = 0;
+          const match = m.re.exec(snippet);
+          return match && TRACKER_HOST_PATTERN.test(match[1]) ? m.name : null;
+        })
+        .filter((x): x is string => x !== null);
+      expect(hits).toContain(expectedMatcher);
+    }
   });
 });

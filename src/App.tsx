@@ -137,6 +137,13 @@ const GovernanceIncidentsView = lazy(() => import('./features/governance/Inciden
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
+const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
+const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
+const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
+const OperationsSuppliersView   = lazy(() => import('./features/operations/SuppliersView').then((m) => ({ default: m.SuppliersView })));
+const OperationsLocationsView   = lazy(() => import('./features/operations/LocationsView').then((m) => ({ default: m.LocationsView })));
+const OperationsBarcodesView    = lazy(() => import('./features/operations/BarcodesView').then((m) => ({ default: m.BarcodesView })));
+const OperationsReportsView     = lazy(() => import('./features/operations/OperationsReportsView').then((m) => ({ default: m.OperationsReportsView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -345,6 +352,17 @@ function RoutesWithTracking() {
       <Route path="/governance/connectors" element={<GovernanceConnectorsView />} />
       <Route path="/governance/vendors" element={<GovernanceVendorInventoryView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
+      {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
+          NOT linked from the public navbar; tenants reach it from the
+          authenticated dashboard or directly via URL. */}
+      <Route path="/operations" element={<OperationsDashboardView />} />
+      <Route path="/operations/inventory" element={<OperationsItemsView />} />
+      <Route path="/operations/items" element={<OperationsItemsView />} />
+      <Route path="/operations/stock-movements" element={<OperationsStockMovements />} />
+      <Route path="/operations/suppliers" element={<OperationsSuppliersView />} />
+      <Route path="/operations/locations" element={<OperationsLocationsView />} />
+      <Route path="/operations/barcodes" element={<OperationsBarcodesView />} />
+      <Route path="/operations/reports" element={<OperationsReportsView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />

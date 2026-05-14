@@ -14,6 +14,7 @@ on:
     paths:
       - 'supabase/migrations/**'
       - 'supabase/functions/**'
+      - 'supabase/config.toml'
   workflow_dispatch:
     inputs:
       deploy_functions:

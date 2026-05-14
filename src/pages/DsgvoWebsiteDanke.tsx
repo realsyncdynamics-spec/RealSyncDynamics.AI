@@ -54,7 +54,7 @@ export function DsgvoWebsiteDanke() {
               <Sparkles className="h-3 w-3" /> Bezahlung bestätigt · Rebuild läuft
             </div>
             <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-              Danke — wir bauen Ihre Website jetzt rechtssicher neu auf.
+              Danke — wir bauen Ihre Website jetzt DSGVO-konform neu auf.
             </h1>
             <p className="text-base sm:text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
               Ihr Auftrag ist bestätigt. Der DSGVO-Rebuild-Workflow läuft im Hintergrund — typische Dauer

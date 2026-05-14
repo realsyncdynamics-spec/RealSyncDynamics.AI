@@ -48,7 +48,7 @@ export function ThreeStepDsgvoSection() {
             In 3 Schritten zur DSGVO-konformen Website — voll automatisch.
           </h2>
           <p className="mt-4 text-base text-titanium-400 max-w-2xl mx-auto leading-relaxed">
-            Von der bestehenden Seite zur modernen, rechtssicheren EU-Website — ohne Agentur-Briefing, ohne manuelle Übergaben.
+            Von der bestehenden Seite zur modernen, DSGVO-konformen EU-Website — ohne Agentur-Briefing, ohne manuelle Übergaben.
           </p>
         </div>
 

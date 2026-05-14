@@ -27,7 +27,7 @@ export function CookieCompliance() {
               <Cookie className="h-3 w-3" /> TTDSG § 25 · BfDI 2024 · DSGVO Art. 6 lit. a
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-              Cookie-Compliance prüfen — <span className="text-security-400">DACH-rechtssicher</span>
+              Cookie-Compliance prüfen — <span className="text-security-400">TTDSG-konform</span>
             </h1>
             <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
               Drei gleichberechtigte Buttons. Reject vor Tracking-Load. AVV mit allen Anbietern.

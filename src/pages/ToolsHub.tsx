@@ -31,7 +31,7 @@ export function ToolsHub() {
       icon: '📝',
       title: 'AVV-Generator',
       subtitle: 'Auftragsverarbeitungsvertrag nach Art. 28 DSGVO',
-      desc: 'Rechtssichere AVV-Verträge in 3 Schritten — mit allen Pflichtklauseln, TOMs und Anlagen.',
+      desc: 'AVV-Verträge nach Art. 28 DSGVO in 3 Schritten — mit allen Pflichtklauseln, TOMs und Anlagen.',
       href: '/avv-generator',
       badge: 'Art. 28 DSGVO',
       badgeColor: '#1e3a5f',

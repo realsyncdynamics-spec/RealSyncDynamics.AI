@@ -1,0 +1,747 @@
+import { useMemo, useState } from 'react';
+import {
+  Activity,
+  AlertTriangle,
+  Bot,
+  CheckCircle2,
+  ChevronDown,
+  CircleDot,
+  Cpu,
+  Eye,
+  GitBranch,
+  Layers,
+  LayoutGrid,
+  Loader2,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  Settings,
+  Sparkles,
+  Square,
+  Terminal,
+  Workflow,
+  Zap,
+} from 'lucide-react';
+
+type RunStatus = 'idle' | 'running' | 'blocked' | 'review' | 'done';
+
+interface Model {
+  id: string;
+  label: string;
+  provider: string;
+  contextK: number;
+  tag?: string;
+}
+
+interface WorkflowItem {
+  id: string;
+  name: string;
+  description: string;
+  status: RunStatus;
+  lastRun: string;
+  steps: number;
+  tag: string;
+}
+
+interface RunStep {
+  id: string;
+  name: string;
+  agent: string;
+  status: RunStatus;
+  durationMs?: number;
+  tokens?: number;
+  output?: string;
+}
+
+interface LogLine {
+  ts: string;
+  level: 'info' | 'warn' | 'error' | 'agent';
+  source: string;
+  message: string;
+}
+
+const MODELS: Model[] = [
+  { id: 'opus-4-7', label: 'Claude Opus 4.7', provider: 'Anthropic', contextK: 1000, tag: 'reasoning' },
+  { id: 'sonnet-4-6', label: 'Claude Sonnet 4.6', provider: 'Anthropic', contextK: 200, tag: 'balanced' },
+  { id: 'haiku-4-5', label: 'Claude Haiku 4.5', provider: 'Anthropic', contextK: 200, tag: 'fast' },
+  { id: 'gpt-5', label: 'GPT-5', provider: 'OpenAI', contextK: 256, tag: 'reasoning' },
+  { id: 'gemini-2-5-pro', label: 'Gemini 2.5 Pro', provider: 'Google', contextK: 2000, tag: 'long-context' },
+];
+
+const WORKFLOWS: WorkflowItem[] = [
+  {
+    id: 'wf-content-pipeline',
+    name: 'Content Pipeline',
+    description: 'Idee → Draft → Review → Publish über alle Kanäle',
+    status: 'running',
+    lastRun: 'vor 2 min',
+    steps: 6,
+    tag: 'Creator',
+  },
+  {
+    id: 'wf-leadgen',
+    name: 'Lead-Gen Sweep',
+    description: 'ICP-Scoring + Outreach-Sequenz via LinkedIn & Mail',
+    status: 'review',
+    lastRun: 'vor 18 min',
+    steps: 4,
+    tag: 'Business',
+  },
+  {
+    id: 'wf-compliance',
+    name: 'Compliance Daily',
+    description: 'Audit-Logs, AI-Act-Checks, Drift-Alerts',
+    status: 'done',
+    lastRun: 'vor 1 h',
+    steps: 5,
+    tag: 'Ops',
+  },
+  {
+    id: 'wf-research',
+    name: 'Deep Research',
+    description: 'Multi-Agent-Brief + Quellen-Cross-Check',
+    status: 'blocked',
+    lastRun: 'vor 4 h',
+    steps: 7,
+    tag: 'Knowledge',
+  },
+  {
+    id: 'wf-newsletter',
+    name: 'Weekly Newsletter',
+    description: 'Top-Picks → Entwurf → Schedule',
+    status: 'idle',
+    lastRun: 'gestern',
+    steps: 3,
+    tag: 'Creator',
+  },
+];
+
+const STEPS: Record<string, RunStep[]> = {
+  'wf-content-pipeline': [
+    { id: 's1', name: 'Recherche-Brief', agent: 'researcher', status: 'done', durationMs: 4200, tokens: 12400 },
+    { id: 's2', name: 'Outline', agent: 'writer', status: 'done', durationMs: 1800, tokens: 3100 },
+    { id: 's3', name: 'Draft v1', agent: 'writer', status: 'running', tokens: 2100 },
+    { id: 's4', name: 'Fact-Check', agent: 'critic', status: 'idle' },
+    { id: 's5', name: 'SEO-Pass', agent: 'seo', status: 'idle' },
+    { id: 's6', name: 'Publish', agent: 'publisher', status: 'idle' },
+  ],
+  'wf-leadgen': [
+    { id: 's1', name: 'ICP-Filter', agent: 'researcher', status: 'done', durationMs: 2800, tokens: 800 },
+    { id: 's2', name: 'Personalize', agent: 'writer', status: 'done', durationMs: 5600, tokens: 4200 },
+    { id: 's3', name: 'Human Review', agent: 'human', status: 'review' },
+    { id: 's4', name: 'Send Sequence', agent: 'publisher', status: 'idle' },
+  ],
+  'wf-compliance': [
+    { id: 's1', name: 'Collect Logs', agent: 'ops', status: 'done' },
+    { id: 's2', name: 'AI-Act Classify', agent: 'classifier', status: 'done' },
+    { id: 's3', name: 'Drift-Scan', agent: 'monitor', status: 'done' },
+    { id: 's4', name: 'Report', agent: 'writer', status: 'done' },
+    { id: 's5', name: 'Notify', agent: 'publisher', status: 'done' },
+  ],
+  'wf-research': [
+    { id: 's1', name: 'Query Expansion', agent: 'researcher', status: 'done' },
+    { id: 's2', name: 'Source Fetch', agent: 'fetcher', status: 'done' },
+    { id: 's3', name: 'Summarize', agent: 'writer', status: 'done' },
+    { id: 's4', name: 'Cross-Check', agent: 'critic', status: 'blocked' },
+    { id: 's5', name: 'Synthesize', agent: 'writer', status: 'idle' },
+    { id: 's6', name: 'Brief PDF', agent: 'publisher', status: 'idle' },
+    { id: 's7', name: 'Deliver', agent: 'ops', status: 'idle' },
+  ],
+  'wf-newsletter': [
+    { id: 's1', name: 'Pick Stories', agent: 'curator', status: 'idle' },
+    { id: 's2', name: 'Draft', agent: 'writer', status: 'idle' },
+    { id: 's3', name: 'Schedule', agent: 'publisher', status: 'idle' },
+  ],
+};
+
+const LOGS: LogLine[] = [
+  { ts: '14:32:08', level: 'agent', source: 'researcher', message: 'Brief fertig — 14 Quellen, 12.4k Tokens.' },
+  { ts: '14:32:12', level: 'info', source: 'orchestrator', message: 'Step 2 (Outline) gestartet.' },
+  { ts: '14:32:19', level: 'agent', source: 'writer', message: 'Outline mit 6 Sektionen erzeugt.' },
+  { ts: '14:32:21', level: 'info', source: 'orchestrator', message: 'Step 3 (Draft v1) gestartet.' },
+  { ts: '14:32:34', level: 'agent', source: 'writer', message: 'Streaming … (2.1k Tokens)' },
+  { ts: '14:32:35', level: 'warn', source: 'guardrails', message: 'PII-Heuristik: Platzhalter [EMAIL] in Output.' },
+];
+
+function StatusDot({ value }: { value: RunStatus }) {
+  const map: Record<RunStatus, string> = {
+    idle: 'bg-titanium-600',
+    running: 'bg-ai-cyan-400 animate-pulse',
+    blocked: 'bg-amber-400',
+    review: 'bg-brass-400',
+    done: 'bg-emerald-500',
+  };
+  return <span className={`inline-block h-2 w-2 rounded-full ${map[value]}`} aria-hidden />;
+}
+
+function StatusChip({ value }: { value: RunStatus }) {
+  const map: Record<RunStatus, { label: string; cls: string; Icon: typeof Activity }> = {
+    idle: {
+      label: 'idle',
+      cls: 'border-titanium-800 bg-titanium-900/60 text-titanium-400',
+      Icon: CircleDot,
+    },
+    running: {
+      label: 'running',
+      cls: 'border-ai-cyan-700/60 bg-ai-cyan-900/40 text-ai-cyan-300',
+      Icon: Loader2,
+    },
+    blocked: {
+      label: 'blocked',
+      cls: 'border-amber-700/60 bg-amber-950/40 text-amber-300',
+      Icon: AlertTriangle,
+    },
+    review: {
+      label: 'review',
+      cls: 'border-brass-700/60 bg-brass-900/40 text-brass-200',
+      Icon: Eye,
+    },
+    done: {
+      label: 'done',
+      cls: 'border-emerald-800/60 bg-emerald-950/40 text-emerald-300',
+      Icon: CheckCircle2,
+    },
+  };
+  const { label, cls, Icon } = map[value];
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider ${cls}`}
+    >
+      <Icon className={`h-3 w-3 ${value === 'running' ? 'animate-spin' : ''}`} />
+      {label}
+    </span>
+  );
+}
+
+type NavKey = 'workflows' | 'agents' | 'runs' | 'library' | 'connectors' | 'settings';
+
+const NAV: Array<{ key: NavKey; label: string; Icon: typeof Activity; count?: number }> = [
+  { key: 'workflows', label: 'Workflows', Icon: Workflow, count: WORKFLOWS.length },
+  { key: 'agents', label: 'Agents', Icon: Bot, count: 8 },
+  { key: 'runs', label: 'Runs', Icon: Activity, count: 124 },
+  { key: 'library', label: 'Library', Icon: Layers },
+  { key: 'connectors', label: 'Connectors', Icon: GitBranch, count: 12 },
+  { key: 'settings', label: 'Settings', Icon: Settings },
+];
+
+type TabKey = 'canvas' | 'logs' | 'output' | 'config';
+
+function ModelSelector({ value, onChange }: { value: Model; onChange: (m: Model) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-2 rounded-md border border-titanium-800 bg-obsidian-700/80 px-3 py-1.5 text-sm text-titanium-100 hover:border-titanium-700 hover:bg-obsidian-600"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <Cpu className="h-4 w-4 text-ai-cyan-400" />
+        <span className="font-medium">{value.label}</span>
+        <span className="text-titanium-500 text-xs">{value.contextK}k</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-titanium-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 z-30 mt-1.5 w-72 overflow-hidden rounded-md border border-titanium-800 bg-obsidian-800 shadow-2xl shadow-black/60"
+          role="listbox"
+        >
+          {MODELS.map((m) => {
+            const active = m.id === value.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  onChange(m);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-start gap-3 px-3 py-2.5 text-left text-sm transition ${
+                  active ? 'bg-security-900/40 text-titanium-50' : 'text-titanium-200 hover:bg-obsidian-700'
+                }`}
+                role="option"
+                aria-selected={active}
+              >
+                <Cpu className={`mt-0.5 h-4 w-4 ${active ? 'text-ai-cyan-400' : 'text-titanium-500'}`} />
+                <span className="flex-1">
+                  <span className="block font-medium">{m.label}</span>
+                  <span className="block text-[11px] text-titanium-500">
+                    {m.provider} · {m.contextK}k ctx
+                    {m.tag ? ` · ${m.tag}` : ''}
+                  </span>
+                </span>
+                {active && <CheckCircle2 className="h-4 w-4 text-ai-cyan-400" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Sidebar({
+  active,
+  onSelect,
+  query,
+  setQuery,
+}: {
+  active: NavKey;
+  onSelect: (k: NavKey) => void;
+  query: string;
+  setQuery: (q: string) => void;
+}) {
+  return (
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900">
+      <div className="flex items-center gap-2 px-4 py-4">
+        <div className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-security-500 to-ai-cyan-500 shadow-inner shadow-black/40">
+          <Sparkles className="h-4 w-4 text-white" />
+        </div>
+        <div className="leading-tight">
+          <div className="font-display text-sm font-semibold text-titanium-50">Command Center</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-titanium-500">AI · Operating Layer</div>
+        </div>
+      </div>
+
+      <div className="px-3 pb-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-titanium-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suchen … (⌘K)"
+            className="w-full rounded-md border border-titanium-900 bg-obsidian-800 py-1.5 pl-8 pr-2 text-xs text-titanium-100 placeholder-titanium-600 outline-none focus:border-security-700"
+          />
+        </div>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-2">
+        <div className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-titanium-600">
+          Operate
+        </div>
+        {NAV.map(({ key, label, Icon, count }) => {
+          const isActive = key === active;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelect(key)}
+              className={`group flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition ${
+                isActive
+                  ? 'bg-security-900/40 text-titanium-50'
+                  : 'text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-100'
+              }`}
+            >
+              <Icon
+                className={`h-4 w-4 ${
+                  isActive ? 'text-ai-cyan-400' : 'text-titanium-500 group-hover:text-titanium-300'
+                }`}
+              />
+              <span className="flex-1 text-left">{label}</span>
+              {typeof count === 'number' && (
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                    isActive ? 'bg-security-800 text-titanium-100' : 'bg-obsidian-700 text-titanium-400'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-titanium-900 p-3">
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-titanium-600">
+          <span>Runtime</span>
+          <span className="inline-flex items-center gap-1.5">
+            <StatusDot value="running" />
+            <span className="text-ai-cyan-300">live</span>
+          </span>
+        </div>
+        <div className="mt-2 text-xs text-titanium-300">
+          <div className="flex justify-between">
+            <span className="text-titanium-500">Active Runs</span>
+            <span className="font-mono">3</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-titanium-500">Today Tokens</span>
+            <span className="font-mono">412k</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function Topbar({
+  workflow,
+  model,
+  setModel,
+  status,
+  onRun,
+  onPause,
+  onStop,
+}: {
+  workflow: WorkflowItem;
+  model: Model;
+  setModel: (m: Model) => void;
+  status: RunStatus;
+  onRun: () => void;
+  onPause: () => void;
+  onStop: () => void;
+}) {
+  return (
+    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-titanium-900 bg-obsidian-900/80 px-4 backdrop-blur">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="grid h-8 w-8 place-items-center rounded-md border border-titanium-800 bg-obsidian-700">
+          <Workflow className="h-4 w-4 text-ai-cyan-400" />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-titanium-50">{workflow.name}</div>
+          <div className="truncate text-[11px] text-titanium-500">
+            {workflow.tag} · {workflow.steps} Schritte · {workflow.lastRun}
+          </div>
+        </div>
+        <StatusChip value={status} />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <ModelSelector value={model} onChange={setModel} />
+
+        <div className="mx-1 h-6 w-px bg-titanium-900" />
+
+        <button
+          type="button"
+          onClick={onRun}
+          className="inline-flex items-center gap-1.5 rounded-md bg-security-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm shadow-security-900/50 hover:bg-security-500"
+        >
+          <Play className="h-3.5 w-3.5" />
+          Run
+        </button>
+        <button
+          type="button"
+          onClick={onPause}
+          className="inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-2.5 py-1.5 text-sm text-titanium-200 hover:border-titanium-700 hover:bg-obsidian-600"
+          aria-label="Pause"
+        >
+          <Pause className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onStop}
+          className="inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-2.5 py-1.5 text-sm text-titanium-200 hover:border-rose-800 hover:bg-rose-950/30 hover:text-rose-200"
+          aria-label="Stop"
+        >
+          <Square className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function WorkflowList({
+  workflows,
+  selectedId,
+  onSelect,
+  query,
+}: {
+  workflows: WorkflowItem[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  query: string;
+}) {
+  const filtered = workflows.filter((w) =>
+    query ? (w.name + ' ' + w.description + ' ' + w.tag).toLowerCase().includes(query.toLowerCase()) : true,
+  );
+  return (
+    <div className="flex h-full w-80 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900/40">
+      <div className="flex items-center justify-between border-b border-titanium-900 px-4 py-3">
+        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-titanium-500">Workflows</div>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded border border-titanium-800 bg-obsidian-700 px-1.5 py-1 text-[11px] text-titanium-200 hover:bg-obsidian-600"
+        >
+          <Plus className="h-3 w-3" /> Neu
+        </button>
+      </div>
+      <ul className="flex-1 overflow-y-auto p-2">
+        {filtered.map((w) => {
+          const active = w.id === selectedId;
+          return (
+            <li key={w.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(w.id)}
+                className={`mb-1 block w-full rounded-md border p-3 text-left transition ${
+                  active
+                    ? 'border-security-700/60 bg-security-900/30'
+                    : 'border-transparent hover:border-titanium-800 hover:bg-obsidian-800'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium text-titanium-50">{w.name}</span>
+                  <StatusDot value={w.status} />
+                </div>
+                <p className="mt-1 line-clamp-2 text-[12px] text-titanium-400">{w.description}</p>
+                <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-wider text-titanium-600">
+                  <span>{w.tag}</span>
+                  <span>{w.lastRun}</span>
+                </div>
+              </button>
+            </li>
+          );
+        })}
+        {filtered.length === 0 && (
+          <li className="px-3 py-6 text-center text-xs text-titanium-500">Keine Treffer.</li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
+function Tabs({ value, onChange }: { value: TabKey; onChange: (k: TabKey) => void }) {
+  const tabs: Array<{ key: TabKey; label: string; Icon: typeof Activity }> = [
+    { key: 'canvas', label: 'Canvas', Icon: LayoutGrid },
+    { key: 'logs', label: 'Logs', Icon: Terminal },
+    { key: 'output', label: 'Output', Icon: Sparkles },
+    { key: 'config', label: 'Config', Icon: Settings },
+  ];
+  return (
+    <div className="flex items-center gap-1 border-b border-titanium-900 bg-obsidian-900/40 px-3 pt-2">
+      {tabs.map(({ key, label, Icon }) => {
+        const active = key === value;
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onChange(key)}
+            className={`relative inline-flex items-center gap-1.5 rounded-t-md border border-b-0 px-3 py-1.5 text-xs font-medium transition ${
+              active
+                ? 'border-titanium-900 bg-obsidian-800 text-titanium-50'
+                : 'border-transparent text-titanium-400 hover:text-titanium-100'
+            }`}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {label}
+            {active && (
+              <span className="absolute inset-x-2 -bottom-px h-px bg-gradient-to-r from-security-500 to-ai-cyan-500" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CanvasView({ steps }: { steps: RunStep[] }) {
+  return (
+    <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+      {steps.map((s, i) => (
+        <article
+          key={s.id}
+          className="group relative rounded-lg border border-titanium-900 bg-obsidian-800/60 p-3 transition hover:border-titanium-800"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="grid h-6 w-6 place-items-center rounded-md border border-titanium-800 bg-obsidian-700 font-mono text-[10px] text-titanium-300">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span className="text-sm font-medium text-titanium-50">{s.name}</span>
+            </div>
+            <StatusChip value={s.status} />
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-titanium-500">
+            <Bot className="h-3 w-3" />
+            <span className="font-mono">{s.agent}</span>
+            {typeof s.tokens === 'number' && (
+              <>
+                <span className="text-titanium-700">·</span>
+                <span>{s.tokens.toLocaleString('de-DE')} tok</span>
+              </>
+            )}
+            {typeof s.durationMs === 'number' && (
+              <>
+                <span className="text-titanium-700">·</span>
+                <span>{(s.durationMs / 1000).toFixed(1)}s</span>
+              </>
+            )}
+          </div>
+          {s.status === 'running' && (
+            <div className="mt-3 h-1 overflow-hidden rounded bg-obsidian-700">
+              <div className="h-full w-2/3 animate-pulse bg-gradient-to-r from-security-500 to-ai-cyan-400" />
+            </div>
+          )}
+          {s.status === 'review' && (
+            <div className="mt-3 rounded border border-brass-800/50 bg-brass-900/20 p-2 text-[11px] text-brass-200">
+              Wartet auf Human-Approval.
+            </div>
+          )}
+          {s.status === 'blocked' && (
+            <div className="mt-3 rounded border border-amber-800/50 bg-amber-950/30 p-2 text-[11px] text-amber-200">
+              Quelle nicht erreichbar — Retry erforderlich.
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function LogsView({ logs }: { logs: LogLine[] }) {
+  const color: Record<LogLine['level'], string> = {
+    info: 'text-titanium-300',
+    warn: 'text-amber-300',
+    error: 'text-rose-300',
+    agent: 'text-ai-cyan-300',
+  };
+  return (
+    <div className="h-full overflow-y-auto p-4">
+      <div className="rounded-md border border-titanium-900 bg-obsidian-950 p-3 font-mono text-[12px] leading-relaxed">
+        {logs.map((l, i) => (
+          <div key={i} className="flex gap-2">
+            <span className="text-titanium-600">{l.ts}</span>
+            <span className={`w-12 shrink-0 uppercase ${color[l.level]}`}>{l.level}</span>
+            <span className="w-28 shrink-0 truncate text-titanium-500">{l.source}</span>
+            <span className="text-titanium-200">{l.message}</span>
+          </div>
+        ))}
+        <div className="mt-2 flex gap-2 text-titanium-600">
+          <span className="text-ai-cyan-400">▍</span>
+          <span>stream live …</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OutputView({ workflow }: { workflow: WorkflowItem }) {
+  return (
+    <div className="grid gap-4 p-4 lg:grid-cols-3">
+      <div className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-4 lg:col-span-2">
+        <div className="text-xs uppercase tracking-[0.18em] text-titanium-500">Letzter Output</div>
+        <h3 className="mt-1 text-lg font-semibold text-titanium-50">{workflow.name} — Draft v1</h3>
+        <article className="prose prose-invert prose-sm mt-3 max-w-none text-titanium-200">
+          <p>
+            Dies ist ein automatisch generierter Entwurf basierend auf dem letzten Recherche-Brief.
+            Der Output kann via <em>Tab „Canvas"</em> Schritt für Schritt nachverfolgt werden.
+          </p>
+          <ul>
+            <li>3 Kernthesen extrahiert</li>
+            <li>14 Primärquellen verifiziert</li>
+            <li>1 Human-Review-Gate aktiv</li>
+          </ul>
+        </article>
+      </div>
+      <aside className="space-y-3">
+        <div className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-4">
+          <div className="text-xs uppercase tracking-[0.18em] text-titanium-500">Kosten</div>
+          <div className="mt-1 font-display text-2xl text-titanium-50">€ 0,42</div>
+          <div className="text-[11px] text-titanium-500">412.000 Tokens · 6 Schritte</div>
+        </div>
+        <div className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-4">
+          <div className="text-xs uppercase tracking-[0.18em] text-titanium-500">Artefakte</div>
+          <ul className="mt-2 space-y-1.5 text-sm text-titanium-200">
+            <li className="flex items-center gap-2"><Zap className="h-3.5 w-3.5 text-ai-cyan-400" /> brief.md</li>
+            <li className="flex items-center gap-2"><Zap className="h-3.5 w-3.5 text-ai-cyan-400" /> outline.json</li>
+            <li className="flex items-center gap-2"><Zap className="h-3.5 w-3.5 text-ai-cyan-400" /> draft-v1.md</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function ConfigView({ workflow, model }: { workflow: WorkflowItem; model: Model }) {
+  return (
+    <div className="grid gap-4 p-4 lg:grid-cols-2">
+      <section className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-4">
+        <div className="text-xs uppercase tracking-[0.18em] text-titanium-500">Workflow</div>
+        <dl className="mt-2 space-y-2 text-sm">
+          <Row k="ID" v={workflow.id} mono />
+          <Row k="Name" v={workflow.name} />
+          <Row k="Schritte" v={String(workflow.steps)} />
+          <Row k="Tag" v={workflow.tag} />
+        </dl>
+      </section>
+      <section className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-4">
+        <div className="text-xs uppercase tracking-[0.18em] text-titanium-500">Runtime</div>
+        <dl className="mt-2 space-y-2 text-sm">
+          <Row k="Model" v={`${model.label} (${model.provider})`} />
+          <Row k="Context" v={`${model.contextK}k`} />
+          <Row k="Mode" v={model.tag ?? '—'} />
+          <Row k="Guardrails" v="PII · Toxicity · License" />
+        </dl>
+      </section>
+    </div>
+  );
+}
+
+function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-titanium-900/60 py-1.5 last:border-0">
+      <dt className="text-titanium-500">{k}</dt>
+      <dd className={`text-titanium-100 ${mono ? 'font-mono text-xs' : ''}`}>{v}</dd>
+    </div>
+  );
+}
+
+export function AiCommandCenter() {
+  const [nav, setNav] = useState<NavKey>('workflows');
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState<string>(WORKFLOWS[0].id);
+  const [tab, setTab] = useState<TabKey>('canvas');
+  const [model, setModel] = useState<Model>(MODELS[0]);
+  const [runStatus, setRunStatus] = useState<RunStatus>('running');
+
+  const workflow = useMemo(
+    () => WORKFLOWS.find((w) => w.id === selectedId) ?? WORKFLOWS[0],
+    [selectedId],
+  );
+  const steps = STEPS[workflow.id] ?? [];
+
+  return (
+    <div className="dark flex h-screen w-screen overflow-hidden bg-obsidian-950 text-titanium-100">
+      <Sidebar active={nav} onSelect={setNav} query={query} setQuery={setQuery} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar
+          workflow={workflow}
+          model={model}
+          setModel={setModel}
+          status={runStatus}
+          onRun={() => setRunStatus('running')}
+          onPause={() => setRunStatus('idle')}
+          onStop={() => setRunStatus('idle')}
+        />
+
+        <div className="flex min-h-0 flex-1">
+          <WorkflowList
+            workflows={WORKFLOWS}
+            selectedId={selectedId}
+            onSelect={(id) => {
+              setSelectedId(id);
+              setRunStatus(WORKFLOWS.find((w) => w.id === id)?.status ?? 'idle');
+            }}
+            query={query}
+          />
+
+          <main className="flex min-w-0 flex-1 flex-col">
+            <Tabs value={tab} onChange={setTab} />
+            <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
+              {tab === 'canvas' && <CanvasView steps={steps} />}
+              {tab === 'logs' && <LogsView logs={LOGS} />}
+              {tab === 'output' && <OutputView workflow={workflow} />}
+              {tab === 'config' && <ConfigView workflow={workflow} model={model} />}
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AiCommandCenter;

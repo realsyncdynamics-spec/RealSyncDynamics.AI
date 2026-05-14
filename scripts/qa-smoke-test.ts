@@ -40,8 +40,8 @@ const probes: Probe[] = [
     run: async () => fetchAndExpect(`${BASE_URL}/integrations/shopify`, (r) => r.ok),
   },
   {
-    name: 'gdpr-audit · valid domain returns audit_id + score',
-    run: async () => postFn('gdpr-audit', { domain: 'example.de', email: 'test@example.com' }, (status, body) => {
+    name: 'gdpr-audit · valid URL returns audit_id + score',
+    run: async () => postFn('gdpr-audit', { url: 'https://example.de', email: 'test@example.com' }, (status, body) => {
       if (status !== 200) return { ok: false, detail: `HTTP ${status}` };
       if (typeof body !== 'object' || body == null) return { ok: false, detail: 'response not an object' };
       const b = body as Record<string, unknown>;
@@ -53,12 +53,12 @@ const probes: Probe[] = [
   },
   {
     name: 'gdpr-audit · empty URL returns 400',
-    run: async () => postFn('gdpr-audit', { domain: '', email: 'test@example.com' }, (status) =>
+    run: async () => postFn('gdpr-audit', { url: '', email: 'test@example.com' }, (status) =>
       ({ ok: status === 400, detail: `expected 400, got ${status}` })),
   },
   {
     name: 'gdpr-audit · invalid email returns 400',
-    run: async () => postFn('gdpr-audit', { domain: 'example.de', email: 'not-an-email' }, (status) =>
+    run: async () => postFn('gdpr-audit', { url: 'https://example.de', email: 'not-an-email' }, (status) =>
       ({ ok: status === 400, detail: `expected 400, got ${status}` })),
   },
   {

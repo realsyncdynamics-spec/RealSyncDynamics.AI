@@ -103,7 +103,7 @@ export function HeroOnly() {
           </div>
 
           {/* Headline + Subline */}
-          <h1 className="font-display font-bold text-4xl sm:text-6xl text-titanium-50 tracking-tight leading-[1.02] mb-5">
+          <h1 className="font-display font-bold text-5xl sm:text-7xl text-titanium-50 tracking-[-0.02em] leading-[1.02] mb-5">
             Automatisierte DSGVO- und AI-Compliance für Websites, Shops und Unternehmen.
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto mb-3">
@@ -116,14 +116,31 @@ export function HeroOnly() {
             EU-gehostet, monatlich kündbar, keine Rechtsberatung — sondern technische Compliance-Härtung.
           </p>
 
-          {/* Hostinger-Pattern: 2 big tappable rows (mobile-primary entry) */}
+          {/* Hostinger-Pattern: 3 big tappable runtime rows (mobile-primary entry).
+              Each row is a layer of the runtime — scan, monitor, govern. Same
+              Pattern wie Hostinger, aber Sprache aus dem Runtime-System. */}
           <div className="mb-9 max-w-2xl mx-auto text-left">
             <Link
               to="/audit?source=hero-scan"
               className="group flex items-center justify-between gap-4 py-5 sm:py-6 border-t border-b border-silver-700/40 hover:border-amber-500/60 transition-colors"
             >
-              <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
-                Website jetzt scannen
+              <span className="flex flex-col">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-amber-400/80 mb-1">detect</span>
+                <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
+                  Website jetzt scannen
+                </span>
+              </span>
+              <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-silver-400 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+            <Link
+              to="/runtime?source=hero-runtime"
+              className="group flex items-center justify-between gap-4 py-5 sm:py-6 border-b border-silver-700/40 hover:border-amber-500/60 transition-colors"
+            >
+              <span className="flex flex-col">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-400/80 mb-1">monitor</span>
+                <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
+                  Runtime-Dashboard ansehen
+                </span>
               </span>
               <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-silver-400 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0" />
             </Link>
@@ -131,8 +148,11 @@ export function HeroOnly() {
               to="/pricing?source=hero-plans"
               className="group flex items-center justify-between gap-4 py-5 sm:py-6 border-b border-silver-700/40 hover:border-amber-500/60 transition-colors"
             >
-              <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
-                Pläne &amp; Preise ansehen
+              <span className="flex flex-col">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-400/80 mb-1">activate</span>
+                <span className="text-xl sm:text-2xl font-display font-bold text-titanium-50 tracking-tight">
+                  Pläne &amp; Preise ansehen
+                </span>
               </span>
               <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-silver-400 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all shrink-0" />
             </Link>

@@ -8,6 +8,7 @@ import {
 
 import { getAffiliateRef } from '../lib/affiliate';
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
+import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
@@ -73,6 +74,7 @@ export function AuditLanding() {
       const data = await resp.json();
       if (!resp.ok || !data.ok) throw new Error(data.error?.message ?? `HTTP ${resp.status}`);
       setReport(data as Report);
+      trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
         // Failures are intentionally swallowed — report is already shown in-browser.

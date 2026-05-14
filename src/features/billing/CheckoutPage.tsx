@@ -6,6 +6,7 @@ import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
+import { trackConversion } from '../../lib/pixels';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -89,6 +90,11 @@ export function CheckoutPage() {
     if (auth.status !== 'ready' || !validPlan || redirecting) return;
     setRedirecting(true);
     trackMarketingEvent('checkout_started', { plan_key: validPlan });
+    trackConversion('InitiateCheckout', {
+      content_name: validPlan,
+      value: tier?.priceEur ?? 0,
+      currency: 'EUR',
+    });
     (async () => {
       const result = await createCheckoutSession(auth.tenantId, validPlan);
       if (result.ok && result.url) {

@@ -13,13 +13,19 @@ import { Sparkles } from 'lucide-react';
 
 const HIDDEN_PREFIXES = [
   '/dashboard',
-  '/governance/admin',
   '/checkout',
   '/audit',
 ];
 
 function shouldHide(pathname: string): boolean {
-  return HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+  // /governance is the public OS surface — chip shows there.
+  // /governance/* (admin, keys, webhooks, mappings, events, assets, …)
+  // is the auth-gated tenant dashboard which already mounts its own
+  // scoped AgentWidget — chip hides to avoid two competing assistant
+  // entries on the same page.
+  if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;
+  return false;
 }
 
 export function AssistentChip() {

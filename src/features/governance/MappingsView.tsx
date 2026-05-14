@@ -73,7 +73,7 @@ function Inner() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <Link to="/governance" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
+          <Link to="/governance/admin" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">
@@ -117,7 +117,7 @@ function Inner() {
             <p className="text-sm text-titanium-400">
               Keine Assets vorhanden. Lege erst ein Asset an, dann kannst Du Framework-Controls zuordnen.
             </p>
-            <Link to="/governance" className="mt-4 inline-block text-amber-300 hover:text-amber-200 text-sm font-semibold">
+            <Link to="/governance/admin" className="mt-4 inline-block text-amber-300 hover:text-amber-200 text-sm font-semibold">
               → Zum Dashboard
             </Link>
           </div>

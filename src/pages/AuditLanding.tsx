@@ -344,7 +344,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         <h3 className="font-display font-bold text-titanium-50 text-lg mb-2">So fixen wir das für Dich</h3>
         <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
           RealSync Dynamics liefert die fehlenden DSGVO-Bausteine als SaaS — EU-Datenresidenz, Audit-Log, AVV/DPA-Generator,
-          DSGVO-Selfservice. <strong className="text-titanium-50">In 14 Tagen rechtssicher</strong>, nicht in 6 Monaten.
+          DSGVO-Selfservice. <strong className="text-titanium-50">In 14 Tagen DSGVO-ready</strong>, nicht in 6 Monaten.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
           <Link

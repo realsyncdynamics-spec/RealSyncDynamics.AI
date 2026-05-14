@@ -83,7 +83,7 @@ export const PRICING_TIERS: PricingTier[] = [
     tagline: 'Für kleine Unternehmen, lokale Betriebe und Einzel-Domains, die laufend überwacht werden sollen',
     bullets: [
       'Vollständiger DSGVO-Scan mit Paragraphenbezug',
-      'DSE- und Impressums-Generator',
+      'DSE-Generator',
       'Technische Consent-Setup-Empfehlungen',
       'Monatlicher Re-Scan',
       'E-Mail-Alert bei neuen Findings',

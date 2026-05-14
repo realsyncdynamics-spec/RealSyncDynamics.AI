@@ -112,7 +112,7 @@ export function DsgvoKiChecklist() {
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
                     RealSync Dynamics liefert die Bausteine als SaaS — EU-Datenresidenz, Audit-Log, AVV-Generator,
-                    DSGVO-Selfservice (Art. 15 + 17). <strong className="text-titanium-50">In 14 Tagen rechtssicher.</strong>
+                    DSGVO-Selfservice (Art. 15 + 17). <strong className="text-titanium-50">In 14 Tagen DSGVO-ready.</strong>
                   </p>
                 </div>
               </div>

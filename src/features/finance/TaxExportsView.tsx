@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Package, Check, AlertCircle, Cog, Download, Loader2 } from 'lucide-react';
+import { Plus, Package, Check, AlertCircle, Cog, Download, Loader2, Stamp } from 'lucide-react';
 import { FinanceShell, useFinanceTenant } from './FinanceShell';
 import { Loader } from './FinanceDashboard';
 import { Modal } from './TaxDocumentsView';
@@ -8,6 +8,7 @@ import {
   listExports, createExport, markExportStatus, listTaxYears,
   generateEvidenceExport, getExportDownloadUrl,
 } from './api';
+import { createReview } from './reviewApi';
 import {
   EXPORT_TYPE_LABELS, type TaxYear, type TaxEvidenceExport, type TaxExportType,
 } from './types';
@@ -63,6 +64,24 @@ function Inner() {
       setError(err instanceof Error ? err.message : 'Generierung fehlgeschlagen');
     } finally {
       setGenerating((s) => ({ ...s, [id]: false }));
+    }
+  }
+
+  async function requestReview(ex: TaxEvidenceExport) {
+    if (!activeTenantId) return;
+    try {
+      const year = yearMap.get(ex.tax_year_id);
+      await createReview(activeTenantId, {
+        subject_type: 'tax_evidence_export',
+        subject_id: ex.id,
+        title: `Review Exportpaket ${year?.year ?? ''} (${ex.export_type})`.trim(),
+        notes: ex.checksum
+          ? `Paket-Checksumme: ${ex.checksum}. Download-URL bitte aus dem Exporte-Tab abrufen.`
+          : undefined,
+      });
+      window.location.href = '/finance/reviews';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Review konnte nicht angelegt werden');
     }
   }
 
@@ -134,12 +153,20 @@ function Inner() {
                     </button>
                   )}
                   {(ex.status === 'ready' || ex.status === 'downloaded') && ex.export_path && (
-                    <button
-                      onClick={() => download(ex)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-emerald-400"
-                    >
-                      <Download className="h-3.5 w-3.5" /> ZIP herunterladen
-                    </button>
+                    <>
+                      <button
+                        onClick={() => download(ex)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-emerald-400"
+                      >
+                        <Download className="h-3.5 w-3.5" /> ZIP herunterladen
+                      </button>
+                      <button
+                        onClick={() => requestReview(ex)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-cyan-700 text-cyan-300 hover:bg-cyan-950/40 text-xs font-semibold rounded-none"
+                      >
+                        <Stamp className="h-3.5 w-3.5" /> Zum Steuerberater-Review
+                      </button>
+                    </>
                   )}
                   {ex.status === 'ready' && (
                     <button

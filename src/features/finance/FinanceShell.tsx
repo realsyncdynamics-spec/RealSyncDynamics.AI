@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   ArrowLeft, LayoutDashboard, FolderOpen, FileStack,
-  Package, Bell, Receipt,
+  Package, Bell, Receipt, Stamp,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -20,6 +20,7 @@ const NAV: NavItem[] = [
   { to: '/finance/documents',     label: 'Dokumente',       icon: FileStack },
   { to: '/finance/exports',       label: 'Exporte',         icon: Package },
   { to: '/finance/reminders',     label: 'Erinnerungen',    icon: Bell },
+  { to: '/finance/reviews',       label: 'Reviews',         icon: Stamp },
 ];
 
 /**

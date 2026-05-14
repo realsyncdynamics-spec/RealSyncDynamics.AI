@@ -151,6 +151,7 @@ const TaxDocumentsView   = lazy(() => import('./features/finance/TaxDocumentsVie
 const TaxYearView        = lazy(() => import('./features/finance/TaxYearView').then((m) => ({ default: m.TaxYearView })));
 const TaxExportsView     = lazy(() => import('./features/finance/TaxExportsView').then((m) => ({ default: m.TaxExportsView })));
 const TaxRemindersView   = lazy(() => import('./features/finance/TaxRemindersView').then((m) => ({ default: m.TaxRemindersView })));
+const TaxReviewsView     = lazy(() => import('./features/finance/TaxReviewsView').then((m) => ({ default: m.TaxReviewsView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -379,6 +380,7 @@ function RoutesWithTracking() {
       <Route path="/finance/year/:year" element={<TaxYearView />} />
       <Route path="/finance/exports" element={<TaxExportsView />} />
       <Route path="/finance/reminders" element={<TaxRemindersView />} />
+      <Route path="/finance/reviews" element={<TaxReviewsView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />

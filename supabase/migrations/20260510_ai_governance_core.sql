@@ -141,7 +141,7 @@ create table if not exists ai_runtime_events (
     'analysis', 'qa', 'unknown'
   )) default 'unknown',
   data_class text check (data_class in (
-    'public', 'internal', 'confidential', 'personal_data', 'special_category'
+    'public', 'internal', 'confidential', 'personal_data', 'special_category', 'unknown'
   )) default 'unknown',
 
   risk_level text not null check (risk_level in (
@@ -163,6 +163,18 @@ create table if not exists ai_runtime_events (
 );
 
 alter table ai_runtime_events enable row level security;
+
+-- Patch CHECK constraint for tables created before 'unknown' was added to the
+-- allowed data_class set. The Edge Function telemetry-ai-event defaults
+-- missing data_class to 'unknown' (and clients pass it explicitly), so the
+-- pre-existing constraint rejected real-world inserts.
+alter table ai_runtime_events
+  drop constraint if exists ai_runtime_events_data_class_check;
+alter table ai_runtime_events
+  add constraint ai_runtime_events_data_class_check
+  check (data_class in (
+    'public', 'internal', 'confidential', 'personal_data', 'special_category', 'unknown'
+  ));
 
 create index if not exists ai_runtime_events_tenant_idx
   on ai_runtime_events (tenant_id, occurred_at desc);

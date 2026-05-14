@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
-  Activity,
+  Activity, MessageSquare,
 } from 'lucide-react';
 
 import { getAffiliateRef } from '../lib/affiliate';
@@ -13,6 +13,7 @@ import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
+import { AuditChatHero } from '../components/audit/AuditChatHero';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
@@ -50,6 +51,7 @@ export function AuditLanding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const [classicForm, setClassicForm] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -123,7 +125,34 @@ export function AuditLanding() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="bg-obsidian-900 border border-titanium-900 p-6 sm:p-8 rounded-none space-y-4">
+              {!classicForm && (
+                <>
+                  <AuditChatHero onScanComplete={setReport} />
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setClassicForm(true)}
+                      className="text-xs text-titanium-400 hover:text-titanium-200 underline transition-colors"
+                    >
+                      Lieber das klassische Formular?
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {classicForm && (
+                <>
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-[11px] text-titanium-500 font-mono uppercase tracking-wider">Klassisches Formular</span>
+                    <button
+                      type="button"
+                      onClick={() => setClassicForm(false)}
+                      className="inline-flex items-center gap-1.5 text-xs text-titanium-400 hover:text-titanium-200 underline transition-colors"
+                    >
+                      <MessageSquare className="h-3 w-3" /> Zum Chat
+                    </button>
+                  </div>
+                  <form onSubmit={handleSubmit} className="bg-obsidian-900 border border-titanium-900 p-6 sm:p-8 rounded-none space-y-4">
                 <Field label="Deine Website-URL" icon={<Globe className="h-3.5 w-3.5" />} required>
                   <input
                     type="text" required value={url} onChange={(e) => setUrl(e.target.value)}
@@ -161,7 +190,9 @@ export function AuditLanding() {
                   Wir scannen Deine Site nur einmalig und speichern keine Inhalte. Email landet in unserem CRM für späteren Outreach.
                   Verarbeitung gemäß <Link to="/legal/privacy" className="text-titanium-100 hover:underline">Datenschutzerklärung</Link>.
                 </p>
-              </form>
+                  </form>
+                </>
+              )}
 
               <WhatGetsChecked />
               <Pillars />
@@ -169,7 +200,7 @@ export function AuditLanding() {
             </>
           )}
 
-          {report && <ReportView report={report} onRetry={() => setReport(null)} />}
+          {report && <div id="report"><ReportView report={report} onRetry={() => setReport(null)} /></div>}
         </div>
       </main>
 

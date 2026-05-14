@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Wand2 } from 'lucide-react';
 import { FinanceShell, useFinanceTenant } from './FinanceShell';
 import { Loader } from './FinanceDashboard';
 import {
@@ -10,6 +10,11 @@ import {
   SOURCE_TYPE_ORDER, SOURCE_TYPE_LABELS,
   type TaxYear, type TaxDocument, type TaxSourceType, type TaxClassificationStatus,
 } from './types';
+import {
+  classifyDocument,
+  CATEGORY_LABELS,
+  type ClassificationResult,
+} from './classifyDocumentApi';
 
 export function TaxDocumentsView() {
   return (
@@ -27,6 +32,7 @@ function Inner() {
   const [filterYear, setFilterYear] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [classifying, setClassifying] = useState(false);
 
   const reload = () => {
     if (!activeTenantId) return;
@@ -82,13 +88,22 @@ function Inner() {
           </select>
           <span className="text-[11px] text-titanium-400">{docs.length} Dokumente</span>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          disabled={years.length === 0}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-emerald-400 disabled:opacity-50"
-        >
-          <Plus className="h-4 w-4" /> Beleg erfassen
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setClassifying(true)}
+            disabled={years.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-cyan-700 text-cyan-300 hover:bg-cyan-950/40 text-sm font-semibold rounded-none disabled:opacity-50"
+          >
+            <Wand2 className="h-4 w-4" /> Beleg klassifizieren
+          </button>
+          <button
+            onClick={() => setCreating(true)}
+            disabled={years.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-emerald-400 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Beleg erfassen
+          </button>
+        </div>
       </div>
 
       {docs.length === 0 ? (
@@ -148,7 +163,171 @@ function Inner() {
           onCreated={() => { setCreating(false); reload(); }}
         />
       )}
+
+      {classifying && (
+        <ClassifyDocModal
+          tenantId={activeTenantId}
+          years={years}
+          onClose={() => setClassifying(false)}
+          onCreated={() => { setClassifying(false); reload(); }}
+        />
+      )}
     </div>
+  );
+}
+
+function ClassifyDocModal({
+  tenantId, years, onClose, onCreated,
+}: {
+  tenantId: string;
+  years: TaxYear[];
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [text, setText] = useState('');
+  const [hint, setHint] = useState('');
+  const [taxYearId, setTaxYearId] = useState(years[0]?.id ?? '');
+  const [result, setResult] = useState<ClassificationResult | null>(null);
+  const [running, setRunning] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function runClassify() {
+    if (!text.trim()) return;
+    setRunning(true); setError(null); setResult(null);
+    try {
+      const r = await classifyDocument({ text, hint: hint.trim() || undefined, tenant_id: tenantId });
+      setResult(r);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Klassifikation fehlgeschlagen');
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  async function importDoc() {
+    if (!result || !taxYearId) return;
+    setImporting(true); setError(null);
+    try {
+      await createTaxDocument(tenantId, {
+        tax_year_id:   taxYearId,
+        source_type:   result.suggested_source_type,
+        document_date: result.metadata.document_date ?? new Date().toISOString().slice(0, 10),
+        file_name:     hint.trim() || `Klassifiziert · ${CATEGORY_LABELS[result.category]}`,
+        counterparty_name: result.metadata.counterparty,
+        amount_gross:  result.metadata.amount_gross,
+        currency:      result.metadata.currency ?? 'EUR',
+        ai_summary:    result.metadata.ai_summary,
+      });
+      onCreated();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Import fehlgeschlagen');
+      setImporting(false);
+    }
+  }
+
+  const input = 'w-full bg-obsidian-950 border border-titanium-800 text-titanium-100 px-2 py-1.5 text-sm rounded-none focus:border-emerald-500 outline-none';
+  const confidencePct = result ? Math.round(result.confidence * 100) : 0;
+  const needsReview = result && (result.category === 'UNKNOWN' || result.confidence < 0.6);
+
+  return (
+    <Modal onClose={onClose} title="Beleg klassifizieren">
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs text-titanium-400 mb-1">Dokumenttext (OCR / Copy-Paste) *</label>
+          <textarea
+            required value={text} onChange={(e) => setText(e.target.value)} rows={6}
+            className={input}
+            placeholder="Text des Belegs hier einfügen. Z. B. Inhalt einer eingescannten Rechnung."
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-titanium-400 mb-1">Hinweis (Dateiname o. ä.)</label>
+            <input value={hint} onChange={(e) => setHint(e.target.value)} className={input} placeholder="ER-2026-0001.pdf" />
+          </div>
+          <div>
+            <label className="block text-xs text-titanium-400 mb-1">Jahresordner</label>
+            <select value={taxYearId} onChange={(e) => setTaxYearId(e.target.value)} className={input}>
+              {years.map((y) => <option key={y.id} value={y.id}>{y.year}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {!result && (
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-titanium-300 hover:text-titanium-100">Abbrechen</button>
+            <button
+              type="button"
+              onClick={runClassify}
+              disabled={running || !text.trim()}
+              className="px-3 py-1.5 bg-cyan-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-cyan-400 disabled:opacity-50"
+            >
+              {running ? 'Klassifiziere …' : 'Klassifizieren'}
+            </button>
+          </div>
+        )}
+
+        {result && (
+          <div className="space-y-3">
+            <div className="bg-obsidian-950 border border-titanium-800 p-3 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-display font-bold text-titanium-50">{CATEGORY_LABELS[result.category]}</span>
+                <span className={`font-mono text-[11px] ${confidencePct >= 60 ? 'text-emerald-300' : 'text-amber-300'}`}>
+                  {confidencePct}% Konfidenz
+                </span>
+              </div>
+              <div className="text-titanium-400">
+                Zugeordnet als <code className="text-titanium-200">{result.suggested_source_type}</code>
+              </div>
+              {result.metadata.document_date && (
+                <div className="text-titanium-400">Belegdatum: <span className="text-titanium-200">{result.metadata.document_date}</span></div>
+              )}
+              {result.metadata.counterparty && (
+                <div className="text-titanium-400">Gegenüber: <span className="text-titanium-200">{result.metadata.counterparty}</span></div>
+              )}
+              {result.metadata.amount_gross != null && (
+                <div className="text-titanium-400">
+                  Brutto: <span className="text-titanium-200">{result.metadata.amount_gross.toFixed(2)} {result.metadata.currency ?? 'EUR'}</span>
+                </div>
+              )}
+              {result.metadata.ai_summary && (
+                <div className="text-titanium-500 italic mt-1">{result.metadata.ai_summary}</div>
+              )}
+              {result.fallback && (
+                <div className="text-amber-300 mt-1.5 text-[11px]">
+                  Fallback aktiv: {result.fallback.reason}. Klassifikation manuell prüfen.
+                </div>
+              )}
+            </div>
+
+            {needsReview && (
+              <p className="text-[11px] text-amber-300">
+                Niedrige Konfidenz oder UNKNOWN — der Import wird mit <code>needs_review</code> markiert,
+                damit du den Beleg manuell prüfst.
+              </p>
+            )}
+
+            <div className="flex justify-between gap-2">
+              <button type="button" onClick={() => setResult(null)} className="px-3 py-1.5 text-xs text-titanium-300 hover:text-titanium-100">Erneut klassifizieren</button>
+              <div className="flex gap-2">
+                <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-titanium-300 hover:text-titanium-100">Abbrechen</button>
+                <button
+                  type="button"
+                  onClick={importDoc}
+                  disabled={importing || !taxYearId}
+                  className="px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-emerald-400 disabled:opacity-50"
+                >
+                  {importing ? 'Importiere …' : 'Übernehmen + Importieren'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && <p className="text-xs text-red-300">{error}</p>}
+      </div>
+    </Modal>
   );
 }
 

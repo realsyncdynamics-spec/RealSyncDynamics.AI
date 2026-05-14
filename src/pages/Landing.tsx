@@ -42,6 +42,9 @@ import { WatchmakerShowcase } from '../components/visual/WatchmakerShowcase';
 import { SectionDivider } from '../components/visual/SectionDivider';
 import { HeroOnly } from '../components/HeroOnly';
 import { RuntimeCanvasSection } from '../components/sections/RuntimeCanvasSection';
+import { FourLayersSection } from '../components/sections/FourLayersSection';
+import { PricingPreviewSection } from '../components/sections/PricingPreviewSection';
+import { ActivationSection } from '../components/sections/ActivationSection';
 import { AgenticComplianceAgentsSection } from '../components/sections/AgenticComplianceAgentsSection';
 import { AiActGovernanceBetaSection } from '../components/sections/AiActGovernanceBetaSection';
 import { SystemLevelGovernanceSection } from '../components/sections/SystemLevelGovernanceSection';
@@ -69,25 +72,24 @@ import { KleineUnternehmenSection } from '../components/sections/KleineUnternehm
  * PRs auf dedizierte Routen (/produkt, /tools, /enterprise) ausgelagert
  * werden können — ohne Code-Verlust beim Pivot.
  */
+/**
+ * Landing — Runtime narrative (5 sections, one mental model).
+ *
+ * The legacy sections (KleineUnternehmen, GovernanceGraphCore, AgenticAgents,
+ * AgentOversight, DeploymentGovernance, GovernanceArchitecture, SystemLevel,
+ * AiActBeta, ExecutiveCommandCenter, MiniCases, TechSecurity, Infrastructure
+ * etc.) are *deliberately not rendered here*. They remain defined below so
+ * the next phases can route them to dedicated pages (/runtime, /ai-act,
+ * /docs) without re-implementing them.
+ */
 export function Landing() {
   return (
     <>
       <HeroOnly />
       <RuntimeCanvasSection />
-      <KleineUnternehmenSection />
-      <RuntimeActivityFeedSection />
-      <GovernanceGraphCoreSection />
-      <AgenticComplianceAgentsSection />
-      <AgenticComplianceRuntimeSection />
-      <AgentOversightSection />
-      <DeploymentGovernanceSection />
-      <GovernanceArchitectureSection />
-      <SystemLevelGovernanceSection />
-      <AiActGovernanceBetaSection />
-      <ExecutiveCommandCenterSection />
-      <GovernanceMiniCasesSection />
-      <TechSecuritySixtySecondsSection />
-      <InfrastructureIntegrationsStrip />
+      <FourLayersSection />
+      <PricingPreviewSection />
+      <ActivationSection />
     </>
   );
 }

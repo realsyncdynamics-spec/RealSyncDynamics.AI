@@ -189,6 +189,18 @@ describe('SkillRegistry', () => {
     ).toThrow(/risk_level/);
   });
 
+  it('treats auto_approve as opt-in (truthy, non-true values are NOT auto-approved)', () => {
+    const reg = new SkillRegistry();
+    // Simulates an externally loaded manifest with auto_approve omitted /
+    // truthy-but-not-true. Must not bypass write/PII guards.
+    const externalManifest = {
+      ...shopifyConsentInject,
+      id: 'shopify.from_external',
+      auto_approve: undefined as unknown as boolean,
+    };
+    expect(() => reg.register(externalManifest)).not.toThrow();
+  });
+
   it('rejects malformed skill ids', () => {
     const reg = new SkillRegistry();
     expect(() =>

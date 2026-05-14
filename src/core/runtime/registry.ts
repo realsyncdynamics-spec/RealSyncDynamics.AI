@@ -47,7 +47,7 @@ function validateManifestShape(m: SkillManifest): string[] {
   if (!m.title?.trim()) issues.push('title is required');
   if (!m.description?.trim()) issues.push('description is required');
   if (!Array.isArray(m.capabilities)) issues.push('capabilities must be an array');
-  if (m.auto_approve) {
+  if (m.auto_approve === true) {
     const writes = m.capabilities.some((c) =>
       c.startsWith('write:') || c.startsWith('consent:write') || c.startsWith('pii:'),
     );

@@ -51,3 +51,173 @@ enabled = false
 
 [analytics]
 enabled = false
+
+# ──────────────────────────────────────────────────────────────────────────
+# Per-function verify_jwt config.
+#
+# `supabase functions deploy` reads this for each function. Default is true.
+# Anything listed here as false bypasses the platform JWT gateway — the
+# function itself is responsible for its own auth (HMAC signature, signed
+# tokens, public free-tool semantics, cron-triggered, etc.).
+#
+# CRITICAL: webhook receivers (stripe-webhook, shopify-webhooks,
+# governance-ingest, governance-webhooks, workflow-callback,
+# newsletter-confirm) MUST stay false — external callers cannot send a
+# Supabase JWT. Same goes for OAuth callbacks (shopify-callback) and
+# Stripe-redirect handoffs (checkout-website-rebuild).
+# ──────────────────────────────────────────────────────────────────────────
+
+# ── External webhooks (no JWT possible) ──
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.stripe-webhook-fixer]
+verify_jwt = false
+
+[functions.shopify-webhooks]
+verify_jwt = false
+
+[functions.shopify-callback]
+verify_jwt = false
+
+[functions.workflow-callback]
+verify_jwt = false
+
+[functions.governance-ingest]
+verify_jwt = false
+
+[functions.governance-webhooks]
+verify_jwt = false
+
+[functions.newsletter-confirm]
+verify_jwt = false
+
+[functions.checkout-website-rebuild]
+verify_jwt = false
+
+# ── Public free tools / anonymous ingress ──
+[functions.gdpr-audit]
+verify_jwt = false
+
+[functions.cookie-scan]
+verify_jwt = false
+
+[functions.cookie-scan-deep]
+verify_jwt = false
+
+[functions.audit-report-pdf]
+verify_jwt = false
+
+[functions.sales-lead]
+verify_jwt = false
+
+[functions.newsletter-subscribe]
+verify_jwt = false
+
+[functions.track-pageview]
+verify_jwt = false
+
+[functions.marketing-event]
+verify_jwt = false
+
+[functions.telemetry-ai-event]
+verify_jwt = false
+
+[functions.welcome-email]
+verify_jwt = false
+
+[functions.shopify-install]
+verify_jwt = false
+
+[functions.rebuild-website]
+verify_jwt = false
+
+[functions.market-scanner]
+verify_jwt = false
+
+[functions.ai-act-classify]
+verify_jwt = false
+
+# ── Cron-triggered (pg_cron / GitHub Actions) ──
+[functions.daily-digest]
+verify_jwt = false
+
+[functions.audit-drip-cron]
+verify_jwt = false
+
+[functions.audit-monitor-cron]
+verify_jwt = false
+
+[functions.audit-recheck-weekly]
+verify_jwt = false
+
+# ── Enterprise AI OS public surfaces ──
+[functions.enterprise-ai-os-discovery-intake]
+verify_jwt = false
+
+[functions.enterprise-ai-os-discovery-pending]
+verify_jwt = false
+
+[functions.enterprise-ai-os-agents-list]
+verify_jwt = false
+
+[functions.enterprise-ai-os-agents-run]
+verify_jwt = false
+
+[functions.enterprise-ai-os-evaluate]
+verify_jwt = false
+
+[functions.enterprise-ai-os-feedback]
+verify_jwt = false
+
+[functions.enterprise-ai-os-founding-access]
+verify_jwt = false
+
+[functions.enterprise-ai-os-agent-runs-list]
+verify_jwt = false
+
+# ── Governance public surfaces (were verify_jwt=false before the CI race) ──
+[functions.governance-keys]
+verify_jwt = false
+
+[functions.governance-resources]
+verify_jwt = false
+
+[functions.governance-approvals]
+verify_jwt = false
+
+[functions.governance-risk-score]
+verify_jwt = false
+
+[functions.governance-dpias]
+verify_jwt = false
+
+[functions.governance-dsr]
+verify_jwt = false
+
+[functions.governance-incidents]
+verify_jwt = false
+
+[functions.governance-connectors]
+verify_jwt = false
+
+[functions.governance-vendors]
+verify_jwt = false
+
+# ── Legacy debug/setup helpers ──
+[functions.debug-secret-shape]
+verify_jwt = false
+
+[functions.vault-set-secret]
+verify_jwt = false
+
+[functions.vault-key-setter]
+verify_jwt = false
+
+# All other functions (stripe-checkout, stripe-portal, ai-invoke,
+# workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
+# stripe-meter-sync, governance-agent, governance-remediate,
+# hostinger-agent-brief, kodee*, audit-report-email, generate-document,
+# shopify-scan, skills, sub-processor-notify, evidence-vault-export,
+# usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
+# verify_jwt = true — they require an authenticated user session.

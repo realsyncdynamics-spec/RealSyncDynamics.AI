@@ -1,19 +1,41 @@
 import { useEffect, useState } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { ChatInput } from './ChatInput';
+import { ChatInput, ANON_QUICK } from './ChatInput';
 import { ChatMessageView } from './ChatMessageView';
 import { useAgentChat } from './useAgentChat';
+import { useAnonChat } from './useAgentChat';
 
-// Floating compliance-assistant widget, scoped to the current tenant.
-// Calls the `governance-agent` Edge Function (PR #154). Renders only
-// inside an authenticated /governance route via the GovernanceShell.
+// Floating compliance-assistant widget.
+//
+// mode="tenant" (default): scoped to the current tenant, auth-gated, renders
+//   its own FAB trigger button. Used inside /governance routes.
+//
+// mode="anon": public, rate-limited, no tenant data access. The panel is
+//   controlled externally (open/onClose props from AssistentChip). No FAB.
 
-export function AgentWidget() {
+type AgentWidgetMode = 'tenant' | 'anon';
+
+interface AgentWidgetProps {
+  mode?: AgentWidgetMode;
+  // Required in anon mode: controlled open/close from AssistentChip.
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function AgentWidget({ mode = 'tenant', open: controlledOpen, onClose }: AgentWidgetProps) {
+  if (mode === 'anon') {
+    return <AnonWidget open={controlledOpen ?? false} onClose={onClose ?? (() => {})} />;
+  }
+  return <TenantWidget />;
+}
+
+// ── Tenant widget (unchanged behaviour) ──────────────────────────────────────
+
+function TenantWidget() {
   const { activeTenantId } = useTenant();
   const [open, setOpen] = useState(false);
   const chat = useAgentChat(activeTenantId);
 
-  // Close on Escape.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -34,55 +56,15 @@ export function AgentWidget() {
         role="dialog"
         aria-label="Compliance-Assistent"
       >
-        <header className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
-              RS
-            </div>
-            <div>
-              <p className="text-sm font-semibold leading-none text-white">Compliance-Assistent</p>
-              <p className="mt-0.5 flex items-center gap-1 text-[10px] text-emerald-400">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                {activeTenantId ? 'tenant-scoped · auditierbar' : 'kein Tenant aktiv'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={chat.reset}
-              title="Konversation zurücksetzen"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
-            >
-              ↺
-            </button>
-            <button
-              onClick={() => setOpen(false)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
-              aria-label="Schliessen"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </header>
+        <WidgetHeader
+          label="Compliance-Assistent"
+          badge={activeTenantId ? 'tenant-scoped · auditierbar' : 'kein Tenant aktiv'}
+          onReset={chat.reset}
+          onClose={() => setOpen(false)}
+        />
 
         {chat.usRoutingRequired && (
-          <div className="border-b border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-200">
-            <p className="font-semibold">Hinweis zur LLM-Routing-Geografie</p>
-            <p className="mt-1 text-amber-100/80">
-              Anthropic-direkt routet aktuell durch die USA. Mistral La Plateforme / Anthropic via Bedrock EU folgt in einer
-              Folge-PR. Bestätige einmalig, um diese Session weiterzuführen.
-            </p>
-            <div className="mt-2 flex justify-end">
-              <button
-                onClick={chat.acknowledgeUsRouting}
-                className="rounded-lg bg-amber-400 px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-amber-300"
-              >
-                Verstanden, fortfahren
-              </button>
-            </div>
-          </div>
+          <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
         )}
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
@@ -122,5 +104,133 @@ export function AgentWidget() {
         )}
       </button>
     </>
+  );
+}
+
+// ── Anon widget (public, controlled by AssistentChip) ────────────────────────
+
+function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const chat = useAnonChat();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  return (
+    <div
+      className={[
+        'fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-titanium-800 bg-obsidian-950 shadow-2xl transition-all duration-200',
+        open ? 'pointer-events-auto opacity-100 translate-y-0' : 'pointer-events-none translate-y-3 opacity-0',
+      ].join(' ')}
+      style={{ height: 500 }}
+      role="dialog"
+      aria-label="Compliance-Assistent"
+      aria-hidden={!open}
+    >
+      <WidgetHeader
+        label="KI-Assistent"
+        badge="Öffentlich · EU · keine Rechtsberatung"
+        onReset={chat.reset}
+        onClose={onClose}
+      />
+
+      {chat.rateLimited && (
+        <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-[12px] text-orange-200">
+          Anfrage-Limit erreicht (5/min). Bitte in einer Minute erneut versuchen.
+        </div>
+      )}
+
+      {chat.usRoutingRequired && (
+        <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
+      )}
+
+      <div className="flex-1 space-y-4 overflow-y-auto p-4 scroll-smooth">
+        {chat.messages.map((m) => (
+          <ChatMessageView key={m.id} message={m} />
+        ))}
+        <div ref={chat.bottomRef} />
+      </div>
+
+      <ChatInput
+        onSend={chat.send}
+        isLoading={chat.isLoading}
+        showQuickActions={chat.showQuickActions}
+        quickActions={ANON_QUICK}
+        placeholder="DSGVO-Frage stellen…"
+      />
+    </div>
+  );
+}
+
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+function WidgetHeader({
+  label,
+  badge,
+  onReset,
+  onClose,
+}: {
+  label: string;
+  badge: string;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <header className="flex items-center justify-between border-b border-white/10 bg-black/40 px-4 py-3">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-black">
+          RS
+        </div>
+        <div>
+          <p className="text-sm font-semibold leading-none text-white">{label}</p>
+          <p className="mt-0.5 flex items-center gap-1 text-[10px] text-emerald-400">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            {badge}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onReset}
+          title="Konversation zurücksetzen"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+        >
+          ↺
+        </button>
+        <button
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-white/5 hover:text-zinc-200"
+          aria-label="Schliessen"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function UsRoutingBanner({ onAck }: { onAck: () => void }) {
+  return (
+    <div className="border-b border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-200">
+      <p className="font-semibold">Hinweis zur LLM-Routing-Geografie</p>
+      <p className="mt-1 text-amber-100/80">
+        Anthropic-direkt routet aktuell durch die USA. Bestätige einmalig, um fortzufahren.
+      </p>
+      <div className="mt-2 flex justify-end">
+        <button
+          onClick={onAck}
+          className="rounded-lg bg-amber-400 px-3 py-1 text-[12px] font-medium text-black transition-colors hover:bg-amber-300"
+        >
+          Verstanden, fortfahren
+        </button>
+      </div>
+    </div>
   );
 }

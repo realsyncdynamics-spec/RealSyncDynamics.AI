@@ -93,3 +93,48 @@ export async function fetchAgentRuns(tenant_id: string, limit = 20): Promise<Age
   const body = data as { ok: boolean; runs?: AgentRun[] };
   return body.runs ?? [];
 }
+
+// ── Anon (public) chat ────────────────────────────────────────────────────────
+
+export type SimpleMsg = { role: 'user' | 'assistant'; content: string };
+
+export interface AnonChatResponse {
+  ok: boolean;
+  session_id: string;
+  response: string;
+  history: SimpleMsg[];
+  tokens?: { input: number; output: number };
+}
+
+export type AnonChatResult =
+  | { kind: 'ok'; data: AnonChatResponse }
+  | { kind: 'rate_limited' }
+  | { kind: 'us_routing_required' }
+  | { kind: 'llm_not_configured' }
+  | { kind: 'error'; error: AgentError };
+
+export async function sendChatAnon(args: {
+  session_id: string;
+  message: string;
+  history: SimpleMsg[];
+  acknowledge_us_routing?: boolean;
+}): Promise<AnonChatResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-agent', {
+    body: { op: 'chat_anon', ...args },
+  });
+
+  if (error) {
+    const status = (error as { context?: { status?: number } }).context?.status;
+    if (status === 429) return { kind: 'rate_limited' };
+    if (status === 412) return { kind: 'us_routing_required' };
+    if (status === 503) return { kind: 'llm_not_configured' };
+    return { kind: 'error', error: { code: 'NETWORK', message: error.message ?? 'network error' } };
+  }
+
+  const body = data as AnonChatResponse | { ok: false; error: AgentError };
+  if (body.ok === false && 'error' in body && body.error) {
+    return { kind: 'error', error: (body as { ok: false; error: AgentError }).error };
+  }
+  return { kind: 'ok', data: body as AnonChatResponse };
+}

@@ -1,10 +1,17 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 
-const QUICK = [
+const TENANT_QUICK = [
   { label: 'Risiko-Übersicht', text: 'Gib mir die aktuelle Risiko-Übersicht über alle meine Assets.' },
   { label: 'Offene Incidents', text: 'Welche Incidents sind aktuell offen und wie weit bin ich noch von der 72h-Frist entfernt?' },
   { label: 'DPIAs Status', text: 'Welche DPIAs sind im Draft und brauchen Aufmerksamkeit?' },
   { label: 'Vendoren ohne DPA', text: 'Welche Vendoren haben noch keinen signed DPA?' },
+];
+
+export const ANON_QUICK = [
+  { label: 'DSGVO Art. 6', text: 'Welche Rechtsgrundlagen gibt es nach DSGVO Art. 6 für die Verarbeitung personenbezogener Daten?' },
+  { label: 'Cookie-Pflichten', text: 'Welche Cookie-Pflichten gelten in Deutschland nach TTDSG und DSGVO?' },
+  { label: 'EU AI Act', text: 'Was sind die wichtigsten Pflichten für KI-Systeme unter dem EU AI Act?' },
+  { label: 'Website-Audit', text: 'Was sollte ich bei einem DSGVO-Audit meiner Website prüfen?' },
 ];
 
 export function ChatInput(props: {
@@ -12,6 +19,8 @@ export function ChatInput(props: {
   isLoading: boolean;
   showQuickActions: boolean;
   disabled?: boolean;
+  quickActions?: { label: string; text: string }[];
+  placeholder?: string;
 }) {
   const [value, setValue] = useState('');
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -37,11 +46,13 @@ export function ChatInput(props: {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   };
 
+  const quickActions = props.quickActions ?? TENANT_QUICK;
+
   return (
     <div className="space-y-2 border-t border-white/10 p-3">
       {props.showQuickActions && (
         <div className="flex flex-wrap gap-1.5">
-          {QUICK.map((q) => (
+          {quickActions.map((q) => (
             <button
               key={q.label}
               onClick={() => props.onSend(q.text)}
@@ -61,7 +72,7 @@ export function ChatInput(props: {
           onKeyDown={handleKey}
           onInput={grow}
           rows={1}
-          placeholder={props.disabled ? 'Tenant auswählen…' : 'Nachricht (Enter zum Senden)'}
+          placeholder={props.placeholder ?? (props.disabled ? 'Tenant auswählen…' : 'Nachricht (Enter zum Senden)')}
           disabled={props.isLoading || props.disabled}
           className="flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[13px] leading-relaxed text-zinc-100 placeholder-zinc-500 transition-colors focus:border-amber-400/50 focus:outline-none disabled:opacity-50"
         />

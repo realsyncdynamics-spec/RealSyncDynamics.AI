@@ -31,6 +31,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
+import { sha256Hex } from '../_shared/hash.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,15 +42,69 @@ const corsHeaders = {
 const MAX_ITERATIONS = 8;
 const MAX_HISTORY_TURNS = 20;
 const MAX_TOKENS_PER_TURN = 4096;
+const ANON_MAX_TOKENS = 1024;
+const ANON_MAX_HISTORY = 10;
 
 const LLM_PROVIDER = Deno.env.get('AGENT_LLM_PROVIDER') ?? 'anthropic';
 const LLM_MODEL = Deno.env.get('AGENT_LLM_MODEL') ?? 'claude-sonnet-4-6';
 const ALLOW_US_ROUTING = Deno.env.get('AGENT_ALLOW_US_ROUTING') === 'true';
 
+// Per-IP rate-limit for anon chat — cleared per cold-start (in-memory).
+const ANON_RATE = new Map<string, { count: number; reset: number }>();
+const ANON_RATE_MAX = 5;
+const ANON_RATE_WINDOW_MS = 60_000;
+
+function checkAnonRateLimit(ipHash: string): boolean {
+  const now = Date.now();
+  const rec = ANON_RATE.get(ipHash);
+  if (!rec || now > rec.reset) {
+    ANON_RATE.set(ipHash, { count: 1, reset: now + ANON_RATE_WINDOW_MS });
+    return true;
+  }
+  if (rec.count >= ANON_RATE_MAX) return false;
+  rec.count++;
+  return true;
+}
+
+const ANON_SYSTEM_PROMPT = `Du bist der öffentliche KI-Compliance-Assistent von RealSyncDynamics.AI.
+
+ROLLE
+Du beantwortest allgemeine Fragen zu DSGVO, TTDSG, EU AI Act und verwandten EU-Datenschutz- und KI-Regularien.
+Du hast keinen Zugriff auf Tenant-Daten oder interne Systeme — nur auf dein Trainingswissen.
+
+LEITPLANKEN
+1. Keine individuelle Rechtsberatung. Verweise bei konkreten Rechtsfragen auf einen Fachanwalt oder DSB.
+2. Nenne immer den konkreten DSGVO-Artikel, TTDSG-Paragraphen oder AI-Act-Artikel, auf den du dich beziehst.
+3. Trenne technische Erklärung von rechtlicher Bewertung.
+4. Wenn du unsicher bist oder eine Frage über allgemeines Compliance-Wissen hinausgeht, sag es klar.
+5. Weise am Ende auf die kostenlosen Audit-Tools und die Plattform hin, wenn es zum Kontext passt.
+
+STIL
+Direkt, klar, handlungsorientiert. Keine Floskeln. Antworte auf Deutsch, außer der Nutzer schreibt in einer anderen Sprache.`;
+
+type SimpleMsg = { role: 'user' | 'assistant'; content: string };
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError(400, 'BAD_REQUEST', 'invalid json');
+  }
+
+  // Anon chat — no user JWT required, rate-limited per IP.
+  if (body.op === 'chat_anon') {
+    try {
+      return await handleChatAnon(req, body);
+    } catch (e) {
+      return jsonError(500, 'INTERNAL', (e as Error).message);
+    }
+  }
+
+  // All other ops require a valid user JWT.
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
 
@@ -67,13 +122,6 @@ Deno.serve(async (req) => {
   const userEmail = userResp.user.email ?? null;
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
-
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return jsonError(400, 'BAD_REQUEST', 'invalid json');
-  }
 
   try {
     switch (body.op) {
@@ -287,6 +335,69 @@ async function handleHistory(admin: any, userId: string, body: Record<string, un
     .eq('tenant_id', tenant_id).eq('actor_user_id', userId)
     .order('created_at', { ascending: false }).limit(limit);
   return json({ ok: true, runs: data ?? [] });
+}
+
+async function handleChatAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ipHash = await sha256Hex(ip);
+  if (!checkAnonRateLimit(ipHash)) {
+    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
+  }
+
+  const message = (body.message as string ?? '').trim();
+  if (!message) return jsonError(400, 'BAD_REQUEST', 'message required');
+
+  const sessionId = (body.session_id as string) || crypto.randomUUID();
+  const clientHistory = Array.isArray(body.history) ? (body.history as SimpleMsg[]) : [];
+
+  // EU-routing guard (same as tenant mode).
+  if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
+    return jsonError(412, 'US_ROUTING_NOT_ACKNOWLEDGED',
+      'LLM_PROVIDER=anthropic routes through US. Pass acknowledge_us_routing=true to proceed.');
+  }
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+  const apiKey = await getLlmApiKey(admin);
+  if (!apiKey) {
+    return jsonError(503, 'LLM_NOT_CONFIGURED',
+      `${LLM_PROVIDER}_api_key missing from env and vault.`);
+  }
+
+  const messages: Anthropic.MessageParam[] = clientHistory
+    .slice(-ANON_MAX_HISTORY)
+    .map((m) => ({ role: m.role, content: m.content }));
+  messages.push({ role: 'user', content: message });
+
+  const client = new Anthropic({ apiKey });
+  let finalText = '';
+
+  const resp = await client.messages.create({
+    model: LLM_MODEL,
+    max_tokens: ANON_MAX_TOKENS,
+    system: ANON_SYSTEM_PROMPT,
+    messages,
+  });
+
+  finalText = resp.content
+    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .map((b) => b.text)
+    .join('\n');
+
+  const updatedHistory: SimpleMsg[] = [
+    ...clientHistory.slice(-ANON_MAX_HISTORY),
+    { role: 'user', content: message },
+    { role: 'assistant', content: finalText },
+  ];
+
+  return json({
+    ok: true,
+    session_id: sessionId,
+    response: finalText,
+    history: updatedHistory,
+    tokens: { input: resp.usage.input_tokens, output: resp.usage.output_tokens },
+  });
 }
 
 // deno-lint-ignore no-explicit-any

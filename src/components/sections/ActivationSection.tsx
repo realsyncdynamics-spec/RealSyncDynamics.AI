@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Cpu, Activity } from 'lucide-react';
 
 // ActivationSection — single conversion moment at the end of the landing.
-// One primary CTA ("Start Runtime"), one input, no alternatives.
+// One primary CTA ("Run Scan"), one input, no alternatives.
 // All other "talk to us" / "request" patterns are intentionally absent.
 
 export function ActivationSection() {
@@ -39,7 +39,7 @@ export function ActivationSection() {
 
       <div className="relative max-w-3xl mx-auto text-center">
         <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-          05 · Activate
+          04 · Activate
         </div>
         <h2 className="text-3xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-4">
           Activate the runtime.
@@ -66,7 +66,7 @@ export function ActivationSection() {
             type="submit"
             className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors"
           >
-            Start Runtime
+            Run Scan
             <ArrowRight className="h-4 w-4" />
           </button>
         </form>

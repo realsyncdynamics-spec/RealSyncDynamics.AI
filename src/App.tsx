@@ -97,8 +97,9 @@ import { IubendaAlternative } from './pages/IubendaAlternative';
 import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
-import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
-import { DsgvoWebsiteDanke } from './pages/DsgvoWebsiteDanke';
+// Service-sales pages intentionally not imported — see Product Clarity
+// Cleanup: DsgvoWebsiteLanding + DsgvoWebsiteDanke remain in src/pages/
+// for future re-purpose but are no longer routed.
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -287,10 +288,10 @@ function RoutesWithTracking() {
       <Route path="/integrationen" element={<Integrations />} />
       <Route path="/steuerberater" element={<SteuerberaterLanding />} />
       <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
-      <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
-      <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
-      <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
-      <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
+      {/* Service-sales doorways (dsgvo-website, website-as-a-service, danke) are
+          intentionally unrouted as part of the Product Clarity Cleanup. The
+          page components remain in src/pages/ for future re-purpose, but are
+          no longer reachable from the public site. */}
       {/* SEO Doorways — Framework-spezifisch */}
       <Route path="/bait-compliance" element={<BaitCompliance />} />
       <Route path="/marisk-audit" element={<MariskAudit />} />

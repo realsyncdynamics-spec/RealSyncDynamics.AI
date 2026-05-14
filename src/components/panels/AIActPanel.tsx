@@ -98,7 +98,7 @@ export function AIActPanel() {
           to="/contact-sales?intent=firmen_aiact"
           className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-obsidian-950 text-sm font-bold rounded-none"
         >
-          Beratungstermin vereinbaren <ArrowRight className="h-4 w-4" />
+          Activate Governance <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 

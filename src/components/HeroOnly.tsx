@@ -7,7 +7,6 @@ import {
 import { Logo } from './Logo';
 import { Modal } from './ui/Modal';
 import { HowItWorks3Steps } from './HowItWorks3Steps';
-import { WebsiteRebuildOffer } from './WebsiteRebuildOffer';
 import { ProTeamsPanel } from './panels/ProTeamsPanel';
 import { ComplianceCenterPanel } from './panels/ComplianceCenterPanel';
 import { EnterprisePanel } from './panels/EnterprisePanel';
@@ -245,13 +244,13 @@ export function HeroOnly() {
                 href: '/contact-sales?intent=mittelstand',
               },
               {
-                title: 'Agenturen & Web-Dienstleister',
-                subtitle: 'Compliance als Lieferleistung für Kundenseiten',
+                title: 'Multi-Domain-Teams',
+                subtitle: 'Continuous Runtime über mehrere Kundenseiten',
                 bullets: [
                   'White-Label-Reports',
                   'Multi-Tenant-Dashboard',
                   'Pre-Go-Live-Checks',
-                  'Laufende Betreuung als Managed Service',
+                  'Continuous Monitoring + Evidence-Chain',
                 ],
                 href: '/fuer-agenturen',
               },
@@ -636,7 +635,6 @@ export function HeroOnly() {
         size="xl"
       >
         <HowItWorks3Steps />
-        <WebsiteRebuildOffer />
       </Modal>
 
       <Modal
@@ -753,10 +751,10 @@ function PricingShortPanel() {
   // gehalten weil das Modal nur eine 4-Kachel-Sneak-Preview ist, nicht der
   // Full-Tier-Stack. Wenn pricing.ts ändert, hier mit anpassen.
   const tiles = [
-    { name: 'Free Audit',  price: 'Kostenlos',     sub: 'Einmaliger DSGVO-Check',       to: '/audit?source=hero-pricing',     cta: 'Scannen' },
-    { name: 'Starter',     price: '€ 79 / Mt.',    sub: 'Eine Domain · Monitoring',     to: '/checkout/starter?source=hero',  cta: 'Starter aktivieren' },
-    { name: 'Growth',      price: '€ 249 / Mt.',   sub: 'Bis zu 3 Domains · Drift',     to: '/checkout/growth?source=hero',   cta: 'Growth aktivieren' },
-    { name: 'Enterprise',  price: 'Anfrage',       sub: 'AI Act · SLA · DSB',           to: '/contact-sales?intent=enterprise', cta: 'AI Agent fragen' },
+    { name: 'Free Audit',  price: 'Kostenlos',     sub: 'Einmaliger DSGVO-Check',       to: '/audit?source=hero-pricing',     cta: 'Run Scan' },
+    { name: 'Starter',     price: '€ 79 / Mt.',    sub: 'Eine Domain · Monitoring',     to: '/checkout/starter?source=hero',  cta: 'Activate Monitoring' },
+    { name: 'Growth',      price: '€ 249 / Mt.',   sub: 'Bis zu 3 Domains · Drift',     to: '/checkout/growth?source=hero',   cta: 'Activate Governance' },
+    { name: 'Enterprise',  price: 'Custom',        sub: 'AI Act · SLA · DSB',           to: '/contact-sales?intent=enterprise', cta: 'Open Runtime' },
   ];
   return (
     <>

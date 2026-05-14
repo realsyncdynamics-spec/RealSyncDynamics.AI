@@ -43,7 +43,7 @@ export function FourLayersSection() {
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
             Alles in der Plattform fällt in genau eine dieser Schichten. Keine separaten Tools,
-            keine Beratungs-Pakete, kein Audit-Service neben dem Monitoring. Eine Runtime.
+            kein Add-on-Stack neben dem Monitoring. Eine Runtime.
           </p>
         </div>
 

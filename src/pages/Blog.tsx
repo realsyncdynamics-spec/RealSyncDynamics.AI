@@ -116,7 +116,7 @@ export function Blog() {
           </div>
 
           <p className="mt-10 text-center text-xs text-titanium-500">
-            Vorschläge für Themen? <Link to="/contact-sales?source=blog" className="text-titanium-300 hover:text-titanium-100 underline-offset-4 hover:underline">Schreib uns.</Link>
+            Vorschläge für Themen? <Link to="/contact-sales?source=blog" className="text-titanium-300 hover:text-titanium-100 underline-offset-4 hover:underline">Frag unseren AI Agent.</Link>
           </p>
         </div>
       </main>

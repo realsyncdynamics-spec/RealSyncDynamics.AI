@@ -158,7 +158,7 @@ export function DsgvoWebsiteDanke() {
               to="/contact-sales?source=dsgvo-website-danke"
               className="inline-flex items-center gap-2 px-4 py-2.5 border border-titanium-700 hover:border-brass-500 text-titanium-200 text-sm font-semibold rounded-none transition-colors"
             >
-              Frühzeitig Kontakt aufnehmen <ArrowRight className="h-3.5 w-3.5" />
+              AI Agent kontaktieren <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </section>
 

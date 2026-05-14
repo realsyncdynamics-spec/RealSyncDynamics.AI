@@ -162,8 +162,8 @@ function UseCases() {
 
 function Onboarding() {
   const steps = [
-    { n: '01', title: 'Partner-Gespräch (30 Min)', body: 'Wir gehen Eure Use-Cases + 2-3 Pilot-Endkunden durch. Klärung Tech-Fit, Pricing, AVV.' },
-    { n: '02', title: 'Pilot-Tenant (1-2 Wochen)', body: 'Wir setzen einen Test-Tenant für Euch + einen Eurer Endkunden auf. Ihr testet eu_local, Workflows, GDPR-Selfservice end-to-end.' },
+    { n: '01', title: 'AI-Agent-Onboarding (30 Min)', body: 'Unser AI Agent erfasst Eure Use-Cases + 2-3 Pilot-Endkunden und prüft Tech-Fit, Pricing-Optionen und AVV automatisiert.' },
+    { n: '02', title: 'Pilot-Tenant (1-2 Wochen)', body: 'Der Agent provisioniert einen Test-Tenant für Euch + einen Eurer Endkunden. Ihr testet eu_local, Workflows, GDPR-Selfservice end-to-end.' },
     { n: '03', title: 'Live mit Production-Tenant', body: 'Bei grünem Pilot: eigene Domain (white-label optional), Stripe-Subscription für Euch, Eure Endkunden buchen über Euch.' },
   ];
   return (

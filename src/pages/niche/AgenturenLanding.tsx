@@ -44,7 +44,7 @@ const AGENTUREN_CONFIG: NicheConfig = {
   faqs: [
     {
       q: 'Können wir das Tool unter unserem Logo verkaufen?',
-      a: 'White-Label-Reports und Multi-Mandanten-Dashboards sind im Pro/Business-Plan vorgesehen. Aktuell im Beta-Programm — Sales-Termin liefert die genaue Roadmap.',
+      a: 'White-Label-Reports und Multi-Mandanten-Dashboards sind im Pro/Business-Plan vorgesehen. Aktuell im Beta-Programm — der AI Agent liefert auf Anfrage die genaue Roadmap.',
     },
     {
       q: 'Wie sieht das Pricing für Agenturen aus?',

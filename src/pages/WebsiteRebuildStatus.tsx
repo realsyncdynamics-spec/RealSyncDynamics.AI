@@ -464,11 +464,12 @@ export function WebsiteRebuildStatus() {
                                       </pre>
                                   )}
                                   <p style={{ color: '#9CA3AF', fontSize: '0.82rem', marginTop: '12px', marginBottom: 0 }}>
-                                                Unser Team wurde automatisch benachrichtigt. Kontaktiere{' '}
+                                                Unser AI Agent wurde automatisch benachrichtigt und übernimmt die Analyse.
+                                                Fallback-Kanal:{' '}
                                                 <a href="mailto:support@realsyncdynamicsai.de" style={{ color: '#FFB800' }}>
                                                                 support@realsyncdynamicsai.de
                                                 </a>{' '}
-                                                mit deiner Rebuild-ID: <code style={{ color: '#E2E2E2' }}>{rebuild.id}</code>
+                                                mit Rebuild-ID: <code style={{ color: '#E2E2E2' }}>{rebuild.id}</code>
                                   </p>
                       </div>
                         )}

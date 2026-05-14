@@ -89,10 +89,13 @@ jobs:
   functions-deploy:
     name: Deploy edge functions
     runs-on: ubuntu-latest
-    needs: db-push
+    # Decoupled from db-push so a failing migration-repair step can't block
+    # the function deploy. Functions never depend on a successful migration
+    # at deploy time — they validate schema at runtime.
     if: github.event_name == 'push' || inputs.deploy_functions == true
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -100,6 +103,32 @@ jobs:
         with:
           version: latest
 
+      # supabase link is required so the CLI can resolve the project context
+      # when reading per-function flags from supabase/config.toml.
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+
       - name: Deploy all edge functions
         run: |
-          supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+          supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" --debug
+
+      # Smoke-verify that public functions actually deployed with verify_jwt=false.
+      # If this fails the workflow surface shows the regression instead of
+      # leaving prod in a silent 401 state.
+      - name: Verify public endpoints
+        run: |
+          set -e
+          gdpr_status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/gdpr-audit" \
+            -H 'content-type: application/json' \
+            -d '{"url":"https://example.de","email":"smoke@test.de"}' --max-time 15)
+          cookie_status=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/cookie-scan" \
+            -H 'content-type: application/json' \
+            -d '{"url":"https://example.de"}' --max-time 15)
+          echo "gdpr-audit no-auth: $gdpr_status"
+          echo "cookie-scan no-auth: $cookie_status"
+          if [ "$gdpr_status" = "401" ] || [ "$cookie_status" = "401" ]; then
+            echo "::error::Public function returned 401 after deploy — verify_jwt config didn't apply"
+            exit 1
+          fi

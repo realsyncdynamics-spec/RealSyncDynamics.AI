@@ -1,4 +1,4 @@
-// DSGVO-Audit-Tool — Lead-Magnet auf /audit.
+// DSGVO-Audit-Tool — Lead-Magnet auf /audit (Chat-Hero + Klassisches Formular).
 //
 // POST /functions/v1/gdpr-audit   (verify_jwt = false; public endpoint)
 // Body: { url: string, email: string, company?: string, plan?: string, source?: string }

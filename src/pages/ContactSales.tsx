@@ -77,10 +77,9 @@ export function ContactSales() {
           <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
           <h1 className="font-display text-2xl font-bold text-titanium-50 mb-2">Danke — unser AI Agent übernimmt.</h1>
           <p className="text-sm text-titanium-300 leading-relaxed mb-5">
-            Unser AI Agent verarbeitet Deine Anfrage sofort und schlägt passende
-            Slots vor. Fallback-Kanal:{' '}
-            <a href="mailto:support@realsyncdynamicsai.de" className="text-security-400 hover:underline">support@realsyncdynamicsai.de</a>.
-            Die Architektur ist parallel transparent dokumentiert.
+            Unser AI Agent verarbeitet Deine Anfrage sofort und antwortet
+            automatisiert per E-Mail. Die Architektur ist parallel transparent
+            dokumentiert.
           </p>
           <div className="flex flex-col gap-2">
             <Link to="/legal/sub-processors"
@@ -119,8 +118,6 @@ export function ContactSales() {
           komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und
           schaltet den Zugang automatisiert frei.
         </p>
-
-        <CalendlyBlock />
 
         {error && (
           <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3 mb-4">
@@ -181,35 +178,6 @@ export function ContactSales() {
           </p>
         </form>
       </main>
-    </div>
-  );
-}
-
-function CalendlyBlock() {
-  // Fallback to live Calendly link when no env-var is set, so the block
-  // renders without needing GitHub Secrets. Override via VITE_CALENDLY_URL
-  // if the slug or handle changes.
-  const calendlyUrl = (import.meta.env.VITE_CALENDLY_URL as string | undefined)
-    ?? 'https://calendly.com/realsyncdynamics/30min';
-  return (
-    <div className="bg-obsidian-900 border border-emerald-900 p-5 rounded-none mb-8">
-      <div className="flex items-start gap-3 mb-3">
-        <CheckCircle2 className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
-        <div>
-          <div className="font-display font-bold text-titanium-50 text-sm mb-1">Direkt buchen — schneller Termin</div>
-          <div className="text-xs text-titanium-400 leading-relaxed">
-            30-Min-Slot direkt im Kalender wählen. Alternativ darunter Formular ausfüllen — unser AI Agent verarbeitet die Anfrage sofort.
-          </div>
-        </div>
-      </div>
-      <a
-        href={calendlyUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-none"
-      >
-        Termin im Kalender wählen →
-      </a>
     </div>
   );
 }

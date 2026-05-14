@@ -1,3 +1,5 @@
+import { getDomain } from 'tldts';
+
 // Risk engine — turns a raw scan result (requests + cookies + consent
 // state) into a deterministic score + findings list. Mirrors the rule
 // vocabulary of the parent platform's `_shared/rules/` but specialised
@@ -139,13 +141,24 @@ export function calculateRisk(scan: ScanResult): RiskReport {
     matched.add(rule.finding.id);
   }
 
-  const preConsentRequests = scan.requests.filter((r) => r.preConsent === true);
-  if (preConsentRequests.length > 0) {
+  // Only THIRD-PARTY pre-consent requests trigger the finding. The worker
+  // marks every request before the accept-click as preConsent, including
+  // the top-level document and same-site assets — those are fine. The
+  // TTDSG §25 risk is loading another company's tracker before the user
+  // says yes.
+  const siteDomain = getDomain(scan.url);
+  const preConsentThirdParty = scan.requests.filter((r) => {
+    if (r.preConsent !== true) return false;
+    const reqDomain = getDomain(r.url);
+    return !!reqDomain && !!siteDomain && reqDomain !== siteDomain;
+  });
+
+  if (preConsentThirdParty.length > 0) {
     score += 25;
     findings.push({
       id: 'pre_consent_traffic',
       severity: 'critical',
-      issue: `${preConsentRequests.length} third-party requests fired before consent`,
+      issue: `${preConsentThirdParty.length} third-party requests fired before consent`,
       detail: 'Any third-party request before the user accepts consent is a TTDSG §25 violation.',
       paragraph_ref: 'TTDSG §25',
     });
@@ -172,7 +185,7 @@ export function calculateRisk(scan: ScanResult): RiskReport {
     findings,
     stats: {
       total_requests:        scan.requests.length,
-      pre_consent_requests:  preConsentRequests.length,
+      pre_consent_requests:  preConsentThirdParty.length,
       third_party_hosts:     thirdPartyHosts.size,
     },
   };

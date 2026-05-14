@@ -6,6 +6,8 @@
 // types and naming aligned with that boundary.
 
 export type TaxYearStatus = 'open' | 'locked' | 'exported' | 'archived';
+export type UstCadence    = 'monthly' | 'quarterly' | 'none';
+export type LegalForm     = 'einzelunternehmer' | 'gbr' | 'ug' | 'gmbh' | 'ag' | 'other';
 
 export interface TaxYear {
   id: string;
@@ -13,6 +15,9 @@ export interface TaxYear {
   year: number;
   status: TaxYearStatus;
   notes: string | null;
+  ust_cadence: UstCadence;
+  has_tax_advisor: boolean;
+  legal_form: LegalForm;
   created_at: string;
   updated_at: string;
 }
@@ -76,7 +81,13 @@ export interface TaxEvidenceExport {
 }
 
 export type TaxReminderType =
-  | 'monthly_review' | 'quarterly_review' | 'year_end' | 'export_ready';
+  // legacy (PR #238)
+  | 'monthly_review' | 'quarterly_review' | 'year_end' | 'export_ready'
+  // deadline catalog
+  | 'ust_advance' | 'ust_annual'
+  | 'income_tax_annual' | 'corporate_tax_annual' | 'trade_tax_annual'
+  | 'payroll_filing' | 'annual_financials' | 'custom';
+
 export type TaxReminderStatus = 'open' | 'sent' | 'dismissed' | 'completed';
 
 export interface TaxReminder {
@@ -87,6 +98,8 @@ export interface TaxReminder {
   title: string;
   due_at: string;
   status: TaxReminderStatus;
+  catalog_key: string | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -126,8 +139,16 @@ export const EXPORT_TYPE_LABELS: Record<TaxExportType, string> = {
 };
 
 export const REMINDER_TYPE_LABELS: Record<TaxReminderType, string> = {
-  monthly_review:    'Monats-Review',
-  quarterly_review:  'Quartals-Review',
-  year_end:          'Jahresabschluss-Vorbereitung',
-  export_ready:      'Exportpaket bereit',
+  monthly_review:       'Monats-Review',
+  quarterly_review:     'Quartals-Review',
+  year_end:             'Jahresabschluss-Vorbereitung',
+  export_ready:         'Exportpaket bereit',
+  ust_advance:          'USt-Voranmeldung',
+  ust_annual:           'USt-Jahreserklärung',
+  income_tax_annual:    'Einkommensteuererklärung',
+  corporate_tax_annual: 'Körperschaftsteuererklärung',
+  trade_tax_annual:     'Gewerbesteuererklärung',
+  payroll_filing:       'Lohnsteueranmeldung',
+  annual_financials:    'Jahresabschluss',
+  custom:               'Eigene Erinnerung',
 };

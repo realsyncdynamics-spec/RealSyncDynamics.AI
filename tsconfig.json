@@ -29,8 +29,7 @@
     "node_modules",
     "dist",
     "supabase/functions",
-    "services/playwright-scanner",
-    "services/openclaw-agent",
+    "services",
     "worker"
   ]
 }

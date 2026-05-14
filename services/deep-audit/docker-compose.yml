@@ -1,0 +1,70 @@
+version: "3.9"
+
+# Deep DSGVO Audit Platform — Playwright-based browser scanner, BullMQ
+# queue, Fastify API, Postgres + Redis. Designed to coexist with the
+# parent platform's Supabase Edge Functions (fetch-based quick scan).
+#
+# Usage (local dev):
+#   cp .env.example .env  # fill in OPENAI_API_KEY etc.
+#   docker compose up -d --build
+#   curl -X POST http://localhost:3000/scan -H content-type:application/json -d '{"url":"https://example.com"}'
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - audit-net
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    volumes:
+      - ./screenshots:/app/screenshots
+      - ./reports:/app/reports
+    deploy:
+      replicas: 5
+    networks:
+      - audit-net
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - audit-net
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: audit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-securepassword}
+      POSTGRES_DB: gdpr_audit
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - audit-net
+
+volumes:
+  pgdata:
+
+networks:
+  audit-net:
+    driver: bridge

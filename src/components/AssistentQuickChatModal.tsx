@@ -40,6 +40,9 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
+  // Bumped every time the modal closes so any awaited fetch
+  // continuation can detect "I'm stale, drop my reply".
+  const sessionToken = useRef(0);
 
   const reset = useCallback(() => {
     setBubbles([WELCOME_BUBBLE]);
@@ -61,8 +64,13 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
   }, [bubbles]);
 
   // Soft-reset when re-opened to keep the chat short-lived per intent.
+  // Bumping the session token here ensures any in-flight send() resolves
+  // into a no-op instead of appending a stale reply after reopen.
   useEffect(() => {
-    if (!open) reset();
+    if (!open) {
+      sessionToken.current += 1;
+      reset();
+    }
   }, [open, reset]);
 
   async function onSend() {
@@ -71,6 +79,7 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
     inFlight.current = true;
     setLoading(true);
 
+    const myToken = sessionToken.current;
     const loadingId = crypto.randomUUID();
     setBubbles((prev) => [
       ...prev,
@@ -81,6 +90,10 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
 
     const result = await sendQuickChat({ message, history });
     inFlight.current = false;
+    // If the modal was closed during the request, drop the reply — the
+    // chat has already been reset and the new open() promised a fresh
+    // thread, not the leftover answer.
+    if (myToken !== sessionToken.current) return;
     setLoading(false);
 
     setBubbles((prev) => prev.filter((b) => b.id !== loadingId));

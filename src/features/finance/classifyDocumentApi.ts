@@ -83,10 +83,20 @@ export function normalizeOutput(raw: unknown): ClassificationResult {
     ? Math.max(0, Math.min(1, rawConf))
     : (category === 'UNKNOWN' ? 0 : 0.5);
 
+  // amount_gross: only adopt if the field is actually present and
+  // numeric. `Number(null)` is 0 and `Number('')` is 0 too, so we
+  // can't rely on `Number.isFinite` alone — that would coerce absent
+  // values to 0.00 and corrupt downstream amount fields for documents
+  // (contracts, statements, low-confidence extracts) that have no
+  // monetary total.
+  const rawAmount: unknown = obj.amount_gross;
+  const amountIsPresent = rawAmount != null && rawAmount !== ''
+                       && Number.isFinite(Number(rawAmount));
+
   const metadata: ClassificationMetadata = {
     document_date: typeof obj.document_date === 'string' ? obj.document_date : undefined,
     counterparty:  typeof obj.counterparty  === 'string' ? obj.counterparty  : undefined,
-    amount_gross:  Number.isFinite(Number(obj.amount_gross)) ? Number(obj.amount_gross) : undefined,
+    amount_gross:  amountIsPresent ? Number(rawAmount) : undefined,
     currency:      typeof obj.currency      === 'string' ? obj.currency      : undefined,
     ai_summary:    typeof obj.ai_summary    === 'string' ? obj.ai_summary    : undefined,
   };

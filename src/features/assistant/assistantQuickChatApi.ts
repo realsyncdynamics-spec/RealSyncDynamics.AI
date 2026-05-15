@@ -30,8 +30,17 @@ export const QUICK_CHAT_LIMITS = {
 const PII_PATTERNS: Array<{ name: string; re: RegExp }> = [
   // Email — broad. False-positives are OK; we just refuse the send.
   { name: 'email',        re: /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/i },
-  // International phone — 7+ digits with optional separators.
-  { name: 'phone',        re: /(?:\+?\d[\s\-./]?){7,}\d/ },
+  // Phone — must look phone-like, not like an AI-Act / DSGVO
+  // citation. Two accepted shapes:
+  //   1. International format starting with `+` and 10+ digits
+  //      across separators: "+49 176 4013 2161"
+  //   2. Domestic German format starting with `0` followed by
+  //      10+ digits: "0176 4013 2161"
+  // Pure digit groups like "2024/1689" (AI-Act Verordnungs-ID) or
+  // "Art. 6 Abs. 1 lit. a" (DSGVO references) intentionally do NOT
+  // match because they neither start with `+` nor `0` and don't
+  // reach the digit-count threshold.
+  { name: 'phone',        re: /(?:\+\d[\s\-./]?(?:\d[\s\-./]?){9,}\d|\b0(?:\d[\s\-./]?){9,}\d)/ },
   // Credit-card-like 13-19 digit run.
   { name: 'card_number',  re: /\b(?:\d[\s-]?){13,19}\b/ },
   // German IBAN (DE + 20 digits).

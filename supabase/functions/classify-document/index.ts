@@ -191,10 +191,17 @@ export function normalizeOutput(raw: unknown): ClassificationResult {
     ? Math.max(0, Math.min(1, rawConf))
     : (category === 'UNKNOWN' ? 0 : 0.5);
 
+  // Only adopt amount_gross when actually present + numeric — see
+  // the matching mirror in src/features/finance/classifyDocumentApi.ts
+  // for the rationale (null/empty would otherwise coerce to 0.00).
+  const rawAmount = obj.amount_gross;
+  const amountIsPresent = rawAmount != null && (rawAmount as unknown) !== ''
+                       && Number.isFinite(Number(rawAmount));
+
   const metadata = {
     document_date: typeof obj.document_date === 'string' ? obj.document_date : undefined,
     counterparty:  typeof obj.counterparty  === 'string' ? obj.counterparty  : undefined,
-    amount_gross:  Number.isFinite(Number(obj.amount_gross)) ? Number(obj.amount_gross) : undefined,
+    amount_gross:  amountIsPresent ? Number(rawAmount) : undefined,
     currency:      typeof obj.currency      === 'string' ? obj.currency      : undefined,
     ai_summary:    typeof obj.ai_summary    === 'string' ? obj.ai_summary    : undefined,
   };

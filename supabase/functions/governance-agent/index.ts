@@ -161,10 +161,13 @@ async function handleChat(
     .select('role').eq('tenant_id', tenant_id).eq('user_id', userId).maybeSingle();
   if (!mem) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
 
-  // EU-routing guard.
-  if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
+  // EU-routing guard. Tenant chat always uses Anthropic (the
+  // ai_gateway switch only flips anon-mode), so the guard must also
+  // trigger when LLM_PROVIDER is set to ai_gateway.
+  const tenantEffectiveProvider = LLM_PROVIDER === 'ai_gateway' ? 'anthropic' : LLM_PROVIDER;
+  if (tenantEffectiveProvider === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
     return jsonError(412, 'US_ROUTING_NOT_ACKNOWLEDGED',
-      'LLM_PROVIDER=anthropic routes through US. Set AGENT_ALLOW_US_ROUTING=true or pass acknowledge_us_routing=true per call. ' +
+      'Tenant chat uses Anthropic, which routes through US. Set AGENT_ALLOW_US_ROUTING=true or pass acknowledge_us_routing=true per call. ' +
       'For EU residency switch to mistral or anthropic-via-bedrock-eu (not yet wired).');
   }
 
@@ -476,16 +479,22 @@ async function runAnonViaAiGateway(
   }
 }
 
+// Tenant chat path needs Anthropic tool-use. The ai_gateway provider
+// switch (PR #240) only flips the anon-mode path; for tenant chat we
+// always fall through to Anthropic regardless of the env value. Without
+// this fix, setting AGENT_LLM_PROVIDER=ai_gateway would brick tenant
+// chat with 503 LLM_NOT_CONFIGURED.
 // deno-lint-ignore no-explicit-any
 async function getLlmApiKey(admin: any): Promise<string | null> {
-  const envVar = LLM_PROVIDER === 'anthropic' ? 'ANTHROPIC_API_KEY'
-               : LLM_PROVIDER === 'openai'    ? 'OPENAI_API_KEY'
-               : LLM_PROVIDER === 'mistral'   ? 'MISTRAL_API_KEY'
+  const effectiveProvider = LLM_PROVIDER === 'ai_gateway' ? 'anthropic' : LLM_PROVIDER;
+  const envVar = effectiveProvider === 'anthropic' ? 'ANTHROPIC_API_KEY'
+               : effectiveProvider === 'openai'    ? 'OPENAI_API_KEY'
+               : effectiveProvider === 'mistral'   ? 'MISTRAL_API_KEY'
                : null;
   if (!envVar) return null;
   const fromEnv = Deno.env.get(envVar);
   if (fromEnv) return fromEnv;
-  const vaultName = `${LLM_PROVIDER}_api_key`;
+  const vaultName = `${effectiveProvider}_api_key`;
   const { data } = await admin.rpc('get_app_secret', { secret_name: vaultName });
   return typeof data === 'string' ? data : null;
 }

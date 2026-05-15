@@ -168,10 +168,13 @@ function ustAdvanceFilings(taxYear: number, profile: FilingProfile): CatalogRemi
 }
 
 function payrollFilings(taxYear: number, profile: FilingProfile): CatalogReminder[] {
-  // Vereinfachung: nur Kapitalgesellschaften + UG bekommen Lohn-Reminders
-  // (Einzelunternehmer haben oft keine Angestellten). User kann den
-  // ganzen Block via Filter-Filtern verwerfen.
-  if (profile.legal_form === 'einzelunternehmer' || profile.legal_form === 'gbr') return [];
+  // Allow-list, not deny-list: only Kapitalgesellschaften (UG, GmbH, AG)
+  // get the 12 Lohnsteueranmeldungen by default. Einzel/GbR/other are
+  // skipped because they often have no employees. Users who DO run
+  // payroll under a non-Kapitalgesellschaft form can still create the
+  // reminders manually via the "Neue Erinnerung"-Modal.
+  const PAYROLL_FORMS: ReadonlyArray<FilingProfile['legal_form']> = ['ug', 'gmbh', 'ag'];
+  if (!PAYROLL_FORMS.includes(profile.legal_form)) return [];
 
   const out: CatalogReminder[] = [];
   for (let m = 0; m < 12; m++) {
@@ -206,9 +209,18 @@ export type ReminderUrgency = 'overdue' | 'due_soon' | 'upcoming';
 export function urgencyOf(
   due_at: string, now: number = Date.now(),
 ): ReminderUrgency {
-  const due = new Date(due_at).getTime();
-  if (Number.isNaN(due)) return 'upcoming';
-  const diff = due - now;
+  const dueDate = new Date(due_at);
+  if (Number.isNaN(dueDate.getTime())) return 'upcoming';
+  // Catalog entries store 09:00 UTC for visual stability, but tax
+  // deadlines are all-day — a 10. April filing isn't actually
+  // overdue at 09:00 UTC on the 10th. Compare against the END of the
+  // due date's calendar day so the badge flips to "Überfällig" only
+  // when the filing day has fully passed.
+  const cutoff = Date.UTC(
+    dueDate.getUTCFullYear(), dueDate.getUTCMonth(), dueDate.getUTCDate(),
+    23, 59, 59, 999,
+  );
+  const diff = cutoff - now;
   if (diff < 0) return 'overdue';
   if (diff < 7 * 24 * 60 * 60 * 1000) return 'due_soon';
   return 'upcoming';

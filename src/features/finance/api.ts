@@ -108,6 +108,13 @@ export async function createTaxDocument(tenantId: string, payload: {
   currency?: string;
   counterparty_name?: string | null;
   ai_summary?: string | null;
+  /**
+   * Initial classification status. Defaults to 'pending' for manual
+   * entries; AI imports pass 'needs_review' when confidence is low,
+   * or 'classified' when confidence is high — so review queues stay
+   * filterable.
+   */
+  classification_status?: TaxClassificationStatus;
 }): Promise<TaxDocument> {
   const sb = getSupabase();
   const { data, error } = await sb.from('tax_documents').insert({
@@ -123,7 +130,7 @@ export async function createTaxDocument(tenantId: string, payload: {
     currency:              payload.currency ?? 'EUR',
     counterparty_name:     payload.counterparty_name ?? null,
     ai_summary:            payload.ai_summary ?? null,
-    classification_status: 'pending',
+    classification_status: payload.classification_status ?? 'pending',
   }).select('*').single();
   if (error) throw new Error(error.message);
   await logAudit({

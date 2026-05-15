@@ -212,14 +212,13 @@ verify_jwt = false
 verify_jwt = false
 
 # ── Legacy debug/setup helpers ──
-[functions.debug-secret-shape]
-verify_jwt = false
-
-[functions.vault-set-secret]
-verify_jwt = false
-
-[functions.vault-key-setter]
-verify_jwt = false
+# Previously held `verify_jwt = false` entries for `debug-secret-shape`,
+# `vault-set-secret` and `vault-key-setter` — none of those functions
+# exist in `supabase/functions/` any more. Leaving the per-function
+# stanzas in place would auto-deploy a future re-add (or accidental
+# rename) as a public endpoint, so the entries are removed entirely.
+# Provision secrets directly via `supabase secrets set` or the Vault
+# dashboard.
 
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,

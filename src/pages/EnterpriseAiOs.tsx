@@ -59,6 +59,13 @@ export function EnterpriseAiOs() {
             >
               Dashboard ansehen
             </Link>
+
+            <Link
+              to="/command-center"
+              className="rounded-2xl border border-cyan-400/40 bg-cyan-400/10 px-6 py-4 text-center font-semibold text-cyan-200 hover:bg-cyan-400/15"
+            >
+              Command Center öffnen
+            </Link>
           </div>
 
           <p className="mt-4 text-sm text-zinc-500">

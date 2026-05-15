@@ -49,13 +49,21 @@ export function PageShell({
             <p className="text-titanium-400 text-sm sm:text-base leading-relaxed mb-6">
               URL eingeben. Die Runtime scannt, klassifiziert, monitort. Kein Onboarding-Call.
             </p>
-            <Link
-              to="/audit?source=page-footer-activate"
-              className="inline-flex items-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors"
-            >
-              {CTA.runScan}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                to="/audit?source=page-footer-activate"
+                className="inline-flex items-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors"
+              >
+                {CTA.runScan}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/command-center"
+                className="inline-flex items-center gap-2 px-5 py-3 border border-cyan-400/40 bg-transparent text-cyan-200 font-semibold text-sm tracking-tight hover:bg-cyan-400/10 transition-colors"
+              >
+                Command Center öffnen
+              </Link>
+            </div>
           </div>
         </section>
       </main>

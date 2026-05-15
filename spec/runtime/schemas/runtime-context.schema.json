@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/runtime-context.schema.json",
+  "title": "RealSync Runtime Context (RCS v1.0)",
+  "description": "Tenant- and request-scoped envelope every handler receives. See spec/runtime/runtime-context.md.",
+  "type": "object",
+  "required": ["spec_version", "tenant", "governance", "correlation", "issued_at", "expires_at"],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+
+    "tenant": {
+      "type": "object",
+      "required": ["tenant_id", "slug", "region", "plan", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": { "type": "string", "minLength": 1 },
+        "slug":      { "type": "string", "pattern": "^[a-z0-9-]{3,64}$" },
+        "region":    { "type": "string", "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$" },
+        "plan":      { "type": "string", "enum": ["free", "starter", "pro", "enterprise"] },
+        "status":    { "type": "string", "enum": ["active", "trial", "suspended"] }
+      }
+    },
+
+    "user": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["user_id", "role"],
+          "additionalProperties": false,
+          "properties": {
+            "user_id":    { "type": "string", "minLength": 1 },
+            "role":       { "type": "string", "enum": ["owner", "admin", "member", "viewer"] },
+            "email_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        }
+      ]
+    },
+
+    "governance": {
+      "type": "object",
+      "required": ["gdpr_mode", "ai_act_profile", "dpo_present", "retention_default_years"],
+      "additionalProperties": false,
+      "properties": {
+        "gdpr_mode":               { "type": "string", "enum": ["strict", "standard", "minimal"] },
+        "ai_act_profile":          { "type": "string", "enum": ["annex_iii", "limited_risk", "minimal_risk", "excluded"] },
+        "dpo_present":             { "type": "boolean" },
+        "retention_default_years": { "type": "integer", "minimum": 0, "maximum": 30 }
+      }
+    },
+
+    "finance": {
+      "type": "object",
+      "required": ["tax_year", "ust_cadence", "legal_form"],
+      "additionalProperties": false,
+      "properties": {
+        "tax_year":    { "type": "integer", "minimum": 2000, "maximum": 2100 },
+        "ust_cadence": { "type": "string", "enum": ["monthly", "quarterly", "none"] },
+        "legal_form":  { "type": "string", "enum": ["einzelunternehmer", "gbr", "gmbh", "ug", "ag", "other"] }
+      }
+    },
+
+    "inventory": {
+      "type": "object",
+      "required": ["unit_system", "multi_location"],
+      "additionalProperties": false,
+      "properties": {
+        "unit_system":    { "type": "string", "enum": ["metric", "imperial"] },
+        "multi_location": { "type": "boolean" }
+      }
+    },
+
+    "correlation": {
+      "type": "object",
+      "required": ["trace_id", "request_id"],
+      "additionalProperties": false,
+      "properties": {
+        "trace_id":   { "type": "string", "pattern": "^trace_[0-9A-Za-z]{26}$" },
+        "request_id": { "type": "string", "pattern": "^req_[0-9A-Za-z]{26}$" }
+      }
+    },
+
+    "issued_at":  { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  }
+}

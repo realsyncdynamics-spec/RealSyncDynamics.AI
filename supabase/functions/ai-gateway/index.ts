@@ -28,6 +28,12 @@ import {
   mapInferenceError,
   type OpenAIChatRequest,
 } from '../_shared/aiGateway/openaiCompat.ts';
+import {
+  decideRateLimit,
+  clientIp,
+  type WindowState,
+} from '../_shared/aiGateway/rateLimit.ts';
+import { sha256Hex } from '../_shared/hash.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -36,6 +42,50 @@ const corsHeaders = {
 };
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed']);
+
+// Per-instance rate-limit windows. Cleared on cold-start which is fine:
+// a bad actor has no cheap way to trigger a cold-start.
+const MINUTE_WINDOWS = new Map<string, WindowState>();
+const HOUR_WINDOWS   = new Map<string, WindowState>();
+
+// Salt mixes into the IP hash so the stored keys aren't trivially
+// derivable from the raw IP. Optional — falls back to a constant when
+// not configured, which is still acceptable because the hash is only
+// used as a Map key, never persisted or logged.
+const IP_HASH_SALT = Deno.env.get('AI_GATEWAY_IP_HASH_SALT') ?? 'ai-gateway-default-salt';
+
+async function enforceRateLimit(req: Request, feature: string): Promise<Response | null> {
+  const ip = clientIp(req.headers);
+  const ipHash = await sha256Hex(ip + ':' + IP_HASH_SALT);
+  const decision = decideRateLimit({
+    key: `${ipHash}:${feature}`,
+    feature,
+    now: Date.now(),
+    minuteWindows: MINUTE_WINDOWS,
+    hourWindows:   HOUR_WINDOWS,
+  });
+  if (decision.ok) return null;
+  const retryAfterSec = Math.max(1, Math.ceil(decision.retryAfterMs / 1000));
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      error: {
+        code: 'RATE_LIMITED',
+        message: `Rate limit exceeded (${decision.scope}). Retry after ${retryAfterSec}s.`,
+        scope: decision.scope,
+        retry_after_ms: decision.retryAfterMs,
+      },
+    }),
+    {
+      status: 429,
+      headers: {
+        ...corsHeaders,
+        'content-type': 'application/json',
+        'retry-after': String(retryAfterSec),
+      },
+    },
+  );
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -89,6 +139,9 @@ async function handleOpBased(req: Request): Promise<Response> {
     return jsonError(400, 'BAD_REQUEST', 'feature, task_type, model_profile and input are required');
   }
 
+  const limited = await enforceRateLimit(req, request.feature);
+  if (limited) return limited;
+
   if (op === 'generate')     return json({ ok: true, ...(await gateway.generate(request)) });
   if (op === 'extract_json') return json({ ok: true, ...(await gateway.extractJson(request)) });
   if (op === 'embed')        return json({ ok: true, ...(await gateway.embed(request)) });
@@ -108,6 +161,9 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
 
   const parsed = parseChatRequest(body);
   if (!parsed.ok) return jsonError(parsed.status, parsed.code, parsed.message);
+
+  const limited = await enforceRateLimit(req, parsed.request.feature);
+  if (limited) return limited;
 
   const gateway = buildGateway();
   if (gateway instanceof Response) return gateway;

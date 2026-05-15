@@ -1,4 +1,5 @@
 // Governance Agent — conversational compliance assistant.
+// Supports tenant-scoped chat (auth-required) and public `chat_anon` mode.
 //
 // POST /functions/v1/governance-agent
 // Authorization: Bearer <user JWT>
@@ -32,6 +33,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
 import { sha256Hex } from '../_shared/hash.ts';
+import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
+import type { ModelProfile } from '../_shared/aiGateway/types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,6 +50,12 @@ const ANON_MAX_HISTORY = 10;
 
 const LLM_PROVIDER = Deno.env.get('AGENT_LLM_PROVIDER') ?? 'anthropic';
 const LLM_MODEL = Deno.env.get('AGENT_LLM_MODEL') ?? 'claude-sonnet-4-6';
+
+// When LLM_PROVIDER=ai_gateway, anon-mode inference routes through the
+// ai-gateway Edge Function. Tenant-mode tool-use still uses Anthropic
+// SDK directly (gateway does not expose tool-use yet — covered by a
+// follow-up PR).
+const AGENT_LLM_MODEL_PROFILE = (Deno.env.get('AGENT_LLM_MODEL_PROFILE') ?? 'fast-local') as ModelProfile;
 const ALLOW_US_ROUTING = Deno.env.get('AGENT_ALLOW_US_ROUTING') === 'true';
 
 // Per-IP rate-limit for anon chat — cleared per cold-start (in-memory).
@@ -152,17 +161,20 @@ async function handleChat(
     .select('role').eq('tenant_id', tenant_id).eq('user_id', userId).maybeSingle();
   if (!mem) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
 
-  // EU-routing guard.
-  if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
+  // EU-routing guard. Tenant chat always uses Anthropic (the
+  // ai_gateway switch only flips anon-mode), so the guard must also
+  // trigger when LLM_PROVIDER is set to ai_gateway.
+  const tenantEffectiveProvider = LLM_PROVIDER === 'ai_gateway' ? 'anthropic' : LLM_PROVIDER;
+  if (tenantEffectiveProvider === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
     return jsonError(412, 'US_ROUTING_NOT_ACKNOWLEDGED',
-      'LLM_PROVIDER=anthropic routes through US. Set AGENT_ALLOW_US_ROUTING=true or pass acknowledge_us_routing=true per call. ' +
+      'Tenant chat uses Anthropic, which routes through US. Set AGENT_ALLOW_US_ROUTING=true or pass acknowledge_us_routing=true per call. ' +
       'For EU residency switch to mistral or anthropic-via-bedrock-eu (not yet wired).');
   }
 
   const apiKey = await getLlmApiKey(admin);
   if (!apiKey) {
     return jsonError(503, 'LLM_NOT_CONFIGURED',
-      `${LLM_PROVIDER}_api_key missing from env and vault. Provision via vault-set-secret.`);
+      `${LLM_PROVIDER}_api_key missing from env and vault. Provision via supabase secrets set or the Vault dashboard.`);
   }
 
   // Load or create session.
@@ -350,7 +362,8 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
   const sessionId = (body.session_id as string) || crypto.randomUUID();
   const clientHistory = Array.isArray(body.history) ? (body.history as SimpleMsg[]) : [];
 
-  // EU-routing guard (same as tenant mode).
+  // EU-routing guard. ai_gateway provider routes via LM Studio (EU-local)
+  // by default, so the US-routing acknowledgement is not required.
   if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
     return jsonError(412, 'US_ROUTING_NOT_ACKNOWLEDGED',
       'LLM_PROVIDER=anthropic routes through US. Pass acknowledge_us_routing=true to proceed.');
@@ -359,35 +372,36 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
-  const apiKey = await getLlmApiKey(admin);
-  if (!apiKey) {
-    return jsonError(503, 'LLM_NOT_CONFIGURED',
-      `${LLM_PROVIDER}_api_key missing from env and vault.`);
-  }
 
-  const messages: Anthropic.MessageParam[] = clientHistory
-    .slice(-ANON_MAX_HISTORY)
-    .map((m) => ({ role: m.role, content: m.content }));
-  messages.push({ role: 'user', content: message });
-
-  const client = new Anthropic({ apiKey });
-  let finalText = '';
-
-  const resp = await client.messages.create({
-    model: LLM_MODEL,
-    max_tokens: ANON_MAX_TOKENS,
-    system: ANON_SYSTEM_PROMPT,
-    messages,
-  });
-
-  finalText = resp.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n');
-
-  const updatedHistory: SimpleMsg[] = [
+  const transcript: SimpleMsg[] = [
     ...clientHistory.slice(-ANON_MAX_HISTORY),
     { role: 'user', content: message },
+  ];
+
+  let finalText: string;
+  let inputTokens  = 0;
+  let outputTokens = 0;
+
+  if (LLM_PROVIDER === 'ai_gateway') {
+    const result = await runAnonViaAiGateway(transcript);
+    if (result instanceof Response) return result;
+    finalText    = result.text;
+    inputTokens  = result.inputTokens;
+    outputTokens = result.outputTokens;
+  } else {
+    const apiKey = await getLlmApiKey(admin);
+    if (!apiKey) {
+      return jsonError(503, 'LLM_NOT_CONFIGURED',
+        `${LLM_PROVIDER}_api_key missing from env and vault.`);
+    }
+    const result = await runAnonViaAnthropic(apiKey, transcript);
+    finalText    = result.text;
+    inputTokens  = result.inputTokens;
+    outputTokens = result.outputTokens;
+  }
+
+  const updatedHistory: SimpleMsg[] = [
+    ...transcript,
     { role: 'assistant', content: finalText },
   ];
 
@@ -396,20 +410,91 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     session_id: sessionId,
     response: finalText,
     history: updatedHistory,
-    tokens: { input: resp.usage.input_tokens, output: resp.usage.output_tokens },
+    tokens: { input: inputTokens, output: outputTokens },
   });
 }
 
+async function runAnonViaAnthropic(
+  apiKey: string, transcript: SimpleMsg[],
+): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
+  const client = new Anthropic({ apiKey });
+  const resp = await client.messages.create({
+    model: LLM_MODEL,
+    max_tokens: ANON_MAX_TOKENS,
+    system: ANON_SYSTEM_PROMPT,
+    messages: transcript.map((m) => ({ role: m.role, content: m.content })),
+  });
+  const text = resp.content
+    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+    .map((b) => b.text)
+    .join('\n');
+  return {
+    text,
+    inputTokens:  resp.usage.input_tokens,
+    outputTokens: resp.usage.output_tokens,
+  };
+}
+
+async function runAnonViaAiGateway(
+  transcript: SimpleMsg[],
+): Promise<{ text: string; inputTokens: number; outputTokens: number } | Response> {
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  // Prefer anon key for cross-function calls; service role would also
+  // work but anon matches the public/anon trust boundary of this path.
+  const apiKey = Deno.env.get('SUPABASE_ANON_KEY')
+              ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!SUPABASE_URL || !apiKey) {
+    return jsonError(503, 'AI_GATEWAY_NOT_CONFIGURED',
+      'SUPABASE_URL or SUPABASE_ANON_KEY missing for ai_gateway provider.');
+  }
+
+  // The native op API takes a single `input` string. Fold the
+  // conversation transcript into one user-prompt block so the gateway
+  // doesn't need multi-turn awareness on this path.
+  const folded = transcript
+    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
+    .join('\n\n');
+
+  const client = new AiGatewayEdgeClient({ supabaseUrl: SUPABASE_URL, apiKey });
+  try {
+    const resp = await client.generate({
+      feature:       'governance_agent_anon',
+      task_type:     'chat',
+      model_profile: AGENT_LLM_MODEL_PROFILE,
+      input:         folded,
+      system_prompt: ANON_SYSTEM_PROMPT,
+      max_tokens:    ANON_MAX_TOKENS,
+      temperature:   0.3,
+    });
+    return {
+      text:         resp.output,
+      inputTokens:  resp.usage?.input_tokens  ?? 0,
+      outputTokens: resp.usage?.output_tokens ?? 0,
+    };
+  } catch (err) {
+    if (err instanceof AiGatewayEdgeError) {
+      return jsonError(err.status === 200 ? 502 : err.status, err.code, err.message);
+    }
+    throw err;
+  }
+}
+
+// Tenant chat path needs Anthropic tool-use. The ai_gateway provider
+// switch (PR #240) only flips the anon-mode path; for tenant chat we
+// always fall through to Anthropic regardless of the env value. Without
+// this fix, setting AGENT_LLM_PROVIDER=ai_gateway would brick tenant
+// chat with 503 LLM_NOT_CONFIGURED.
 // deno-lint-ignore no-explicit-any
 async function getLlmApiKey(admin: any): Promise<string | null> {
-  const envVar = LLM_PROVIDER === 'anthropic' ? 'ANTHROPIC_API_KEY'
-               : LLM_PROVIDER === 'openai'    ? 'OPENAI_API_KEY'
-               : LLM_PROVIDER === 'mistral'   ? 'MISTRAL_API_KEY'
+  const effectiveProvider = LLM_PROVIDER === 'ai_gateway' ? 'anthropic' : LLM_PROVIDER;
+  const envVar = effectiveProvider === 'anthropic' ? 'ANTHROPIC_API_KEY'
+               : effectiveProvider === 'openai'    ? 'OPENAI_API_KEY'
+               : effectiveProvider === 'mistral'   ? 'MISTRAL_API_KEY'
                : null;
   if (!envVar) return null;
   const fromEnv = Deno.env.get(envVar);
   if (fromEnv) return fromEnv;
-  const vaultName = `${LLM_PROVIDER}_api_key`;
+  const vaultName = `${effectiveProvider}_api_key`;
   const { data } = await admin.rpc('get_app_secret', { secret_name: vaultName });
   return typeof data === 'string' ? data : null;
 }

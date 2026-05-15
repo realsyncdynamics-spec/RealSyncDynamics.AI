@@ -20,6 +20,13 @@ import { Blog } from './pages/Blog';
 import { Roadmap } from './pages/Roadmap';
 import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
 import { GovernanceDocs } from './pages/GovernanceDocs';
+import { RuntimePage } from './pages/RuntimePage';
+import { MonitoringPage } from './pages/MonitoringPage';
+import { GovernancePage } from './pages/GovernancePage';
+import { AgentsPage } from './pages/AgentsPage';
+import { AiActPage } from './pages/AiActPage';
+import { DocsRuntimePage } from './pages/DocsRuntimePage';
+import { EvidencePage } from './pages/EvidencePage';
 import { FixPaket } from './pages/FixPaket';
 import { PreConsentTracking } from './pages/seo/PreConsentTracking';
 import { GoogleAnalyticsConsent } from './pages/seo/GoogleAnalyticsConsent';
@@ -34,6 +41,7 @@ import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenter } from './pages/AiCommandCenter';
+import { BusinessDashboard } from './pages/BusinessDashboard';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 // CreatorDashboard ist auth-gated → lazy
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
@@ -94,8 +102,6 @@ import { IubendaAlternative } from './pages/IubendaAlternative';
 import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
-import { DsgvoWebsiteLanding } from './pages/DsgvoWebsiteLanding';
-import { DsgvoWebsiteDanke } from './pages/DsgvoWebsiteDanke';
 import { Welcome } from './pages/Welcome';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -133,6 +139,21 @@ const GovernanceIncidentsView = lazy(() => import('./features/governance/Inciden
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
+const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
+const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
+const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
+const OperationsSuppliersView   = lazy(() => import('./features/operations/SuppliersView').then((m) => ({ default: m.SuppliersView })));
+const OperationsLocationsView   = lazy(() => import('./features/operations/LocationsView').then((m) => ({ default: m.LocationsView })));
+const OperationsBarcodesView    = lazy(() => import('./features/operations/BarcodesView').then((m) => ({ default: m.BarcodesView })));
+const OperationsReportsView     = lazy(() => import('./features/operations/OperationsReportsView').then((m) => ({ default: m.OperationsReportsView })));
+// Finance / Tax Evidence Runtime — auth-gated, prepares documentation only.
+const FinanceDashboard   = lazy(() => import('./features/finance/FinanceDashboard').then((m) => ({ default: m.FinanceDashboard })));
+const TaxEvidenceView    = lazy(() => import('./features/finance/TaxEvidenceView').then((m) => ({ default: m.TaxEvidenceView })));
+const TaxDocumentsView   = lazy(() => import('./features/finance/TaxDocumentsView').then((m) => ({ default: m.TaxDocumentsView })));
+const TaxYearView        = lazy(() => import('./features/finance/TaxYearView').then((m) => ({ default: m.TaxYearView })));
+const TaxExportsView     = lazy(() => import('./features/finance/TaxExportsView').then((m) => ({ default: m.TaxExportsView })));
+const TaxRemindersView   = lazy(() => import('./features/finance/TaxRemindersView').then((m) => ({ default: m.TaxRemindersView })));
+const TaxReviewsView     = lazy(() => import('./features/finance/TaxReviewsView').then((m) => ({ default: m.TaxReviewsView })));
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
@@ -173,6 +194,13 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<Landing />} />
+      <Route path="/runtime"    element={<RuntimePage />} />
+      <Route path="/monitoring" element={<MonitoringPage />} />
+      <Route path="/governance" element={<GovernancePage />} />
+      <Route path="/agents"     element={<AgentsPage />} />
+      <Route path="/evidence"   element={<EvidencePage />} />
+      <Route path="/ai-act"     element={<AiActPage />} />
+      <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
@@ -283,10 +311,10 @@ function RoutesWithTracking() {
       <Route path="/integrationen" element={<Integrations />} />
       <Route path="/steuerberater" element={<SteuerberaterLanding />} />
       <Route path="/steuerkanzlei" element={<SteuerberaterLanding />} />
-      <Route path="/dsgvo-website" element={<DsgvoWebsiteLanding />} />
-      <Route path="/dsgvo-website/danke" element={<DsgvoWebsiteDanke />} />
-      <Route path="/website-as-a-service" element={<DsgvoWebsiteLanding />} />
-      <Route path="/website-rundum-service" element={<DsgvoWebsiteLanding />} />
+      {/* Service-sales doorways (dsgvo-website, website-as-a-service, danke) are
+          intentionally unrouted as part of the Product Clarity Cleanup. The
+          page components remain in src/pages/ for future re-purpose, but are
+          no longer reachable from the public site. */}
       {/* SEO Doorways — Framework-spezifisch */}
       <Route path="/bait-compliance" element={<BaitCompliance />} />
       <Route path="/marisk-audit" element={<MariskAudit />} />
@@ -311,13 +339,18 @@ function RoutesWithTracking() {
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
+      <Route path="/dashboard/business" element={<BusinessDashboard />} />
+      <Route path="/business" element={<BusinessDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<UsageView />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/tenant/invites" element={<InvitesView />} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
-      <Route path="/governance" element={<GovernanceDashboardView />} />
+      {/* Auth-gated tenant dashboard moved to /governance/admin so /governance
+          can be the public AI Governance OS surface. Back-links from feature
+          views (DpiasView, MappingsView, etc.) are updated accordingly. */}
+      <Route path="/governance/admin" element={<GovernanceDashboardView />} />
       <Route path="/governance/keys" element={<GovernanceKeysView />} />
       <Route path="/governance/webhooks" element={<GovernanceWebhooksView />} />
       <Route path="/governance/onboarding" element={<GovernanceOnboardingView />} />
@@ -334,6 +367,27 @@ function RoutesWithTracking() {
       <Route path="/governance/connectors" element={<GovernanceConnectorsView />} />
       <Route path="/governance/vendors" element={<GovernanceVendorInventoryView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
+      {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
+          NOT linked from the public navbar; tenants reach it from the
+          authenticated dashboard or directly via URL. */}
+      <Route path="/operations" element={<OperationsDashboardView />} />
+      <Route path="/operations/inventory" element={<OperationsItemsView />} />
+      <Route path="/operations/items" element={<OperationsItemsView />} />
+      <Route path="/operations/stock-movements" element={<OperationsStockMovements />} />
+      <Route path="/operations/suppliers" element={<OperationsSuppliersView />} />
+      <Route path="/operations/locations" element={<OperationsLocationsView />} />
+      <Route path="/operations/barcodes" element={<OperationsBarcodesView />} />
+      <Route path="/operations/reports" element={<OperationsReportsView />} />
+      {/* Tax Evidence Runtime — auth-gated documentation prep.
+          NOT public, no Steuerberatung. Disclaimer is rendered inside
+          every /finance/* view. */}
+      <Route path="/finance" element={<FinanceDashboard />} />
+      <Route path="/finance/tax-evidence" element={<TaxEvidenceView />} />
+      <Route path="/finance/documents" element={<TaxDocumentsView />} />
+      <Route path="/finance/year/:year" element={<TaxYearView />} />
+      <Route path="/finance/exports" element={<TaxExportsView />} />
+      <Route path="/finance/reminders" element={<TaxRemindersView />} />
+      <Route path="/finance/reviews" element={<TaxReviewsView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />

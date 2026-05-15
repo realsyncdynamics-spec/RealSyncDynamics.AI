@@ -1,0 +1,25 @@
+-- Fix SECURITY DEFINER on public.ai_evidence_retention_status.
+--
+-- The view was created in 20260510_ai_governance_core.sql without
+-- an explicit security mode. On Supabase that defaults to
+-- SECURITY DEFINER, so the view runs with the owner's privileges
+-- and bypasses RLS on the underlying tables.
+--
+-- Combined with the default Supabase grants (anon + authenticated
+-- both have SELECT on the view) and the fact that
+-- ai_evidence_events / ai_evidence_retention have RLS enabled with
+-- zero policies (service-role-only by intent), this means an
+-- unauthenticated client can today hit
+-- /rest/v1/ai_evidence_retention_status and read evidence rows
+-- across all tenants — the DEFINER mode silently bypasses the
+-- tenant isolation the underlying tables were configured for.
+--
+-- Flip the view to SECURITY INVOKER so it honours the caller's
+-- RLS. After the change, anon/authenticated queries against the
+-- view return empty (the underlying tables have RLS enabled with
+-- no policies). service_role queries continue to work
+-- unaffected because service_role bypasses RLS. The view is not
+-- referenced by any client code or edge function in the
+-- repository, so no callers break.
+
+ALTER VIEW public.ai_evidence_retention_status SET (security_invoker = true);

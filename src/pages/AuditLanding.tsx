@@ -11,7 +11,6 @@ import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
-import { AuditToWebsiteNote } from '../components/AuditToWebsiteNote';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { AuditChatHero } from '../components/audit/AuditChatHero';
 import { AuditCopilotPanel } from '../components/audit/AuditCopilotPanel';
@@ -210,7 +209,6 @@ export function AuditLanding() {
             <>
               <WhatGetsChecked />
               <Pillars />
-              <AuditToWebsiteNote source="audit-pre" />
             </>
           )}
 
@@ -426,20 +424,21 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       <div className="bg-obsidian-900 border border-titanium-800 p-5 sm:p-6 rounded-none">
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-10 h-10 rounded-none bg-obsidian-950 border border-titanium-700 flex items-center justify-center mt-0.5">
-            <Globe className="h-5 w-5 text-titanium-100" />
+            <Activity className="h-5 w-5 text-cyan-300" />
           </div>
           <div className="flex-1">
-            <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Alternative · Komplett-Service</div>
-            <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Lieber kein Tool, sondern jemand der's macht?</h3>
+            <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">Continuous Runtime</div>
+            <h3 className="font-display font-bold text-titanium-50 text-lg mb-1">Drift verhindern statt einmalig aufräumen.</h3>
             <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
-              Audit · Rebuild · Managed-Hosting im Paket. Wir bauen Ihre Site nach aktuellen DSGVO-, TTDSG- und AI-Act-Anforderungen neu auf und betreiben sie monatlich — keine Selbst-Pflege, kein Tool-Stack.
-              <strong className="text-titanium-50"> Managed-Betrieb nach Angebot</strong> nach einmaligem Rebuild.
+              Der Free-Scan zeigt einen Snapshot. Ein neuer Tracker, ein Tag-Manager-Push oder ein vergessenes Plugin
+              kann den Score in einer Woche wieder kippen. Die RealSync Runtime monitort kontinuierlich, alertet bei
+              Drift und schreibt jeden Befund in die Evidence-Chain.
             </p>
             <Link
-              to={`/dsgvo-website?source=audit&audit=${report.audit_id}`}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-100 text-xs font-bold rounded-none"
+              to={`/audit?plan=starter&source=audit-followup&audit=${report.audit_id}`}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 text-xs font-bold rounded-none"
             >
-              3-Paket-Angebot ansehen <ArrowRight className="h-3 w-3" />
+              Activate Monitoring <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </div>

@@ -45,6 +45,10 @@ export function Impressum() {
             98724 Neuhaus am Rennweg<br />
             Thüringen, Deutschland
           </p>
+          <p>
+            <strong className="text-titanium-50">Rechtsform:</strong> Einzelunternehmen,
+            vertreten durch den Inhaber Dominik Steiner.
+          </p>
           <p className="text-xs text-titanium-500">
             Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI" — finaler
             Eintrag bei Gewerbeanmeldung (Gewerbeamt Neuhaus am Rennweg, Landkreis Sonneberg).

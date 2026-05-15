@@ -1,0 +1,21 @@
+-- Tighten website-rebuilds bucket — drop the broad SELECT policy on
+-- storage.objects that today allows clients to LIST every object in
+-- the bucket.
+--
+-- Per Supabase advisor 0025_public_bucket_allows_listing: public
+-- buckets do not need a SELECT policy for object-URL access.
+-- /storage/v1/object/public/{bucket}/{path} reads any object as
+-- long as the bucket has public=true. The SELECT policy is only
+-- consulted by the LIST endpoint and authenticated read paths.
+-- Removing it disables LIST without breaking direct-URL preview
+-- reads.
+--
+-- Today the bucket is empty in practice — the package_deploy step
+-- in supabase/functions/rebuild-website/index.ts is still a TODO
+-- (Phase 2). Tightening pre-emptively closes listing before that
+-- step ships real bundle uploads.
+--
+-- The bucket itself stays public=true so preview URLs continue to
+-- work for customers without authentication.
+
+DROP POLICY IF EXISTS "website-rebuilds public read" ON storage.objects;

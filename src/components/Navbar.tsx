@@ -1,13 +1,19 @@
-import { Menu, X, ChevronRight, Sparkles } from 'lucide-react';
+import { Menu, X, ArrowRight, Sparkles } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
+import { CTA } from '../content/runtimeVocab';
 
+// Single-product navigation with a Hostinger-style "KI fragen" pill before
+// the primary CTA. The pill is intentionally amber/gold so it doesn't
+// compete visually with the cyan "Run Scan" CTA — it's a secondary entry
+// point for visitors who want to ask first. The floating AssistentChip
+// (bottom-center) is the persistent surface; this pill is the in-nav twin.
 const NAV_ITEMS = [
-  { label: 'Produkt', to: '/tools' },
-  { label: 'Compliance-Center', to: '/legal/methodology' },
-  { label: 'Preise', to: '/pricing' },
-  { label: 'Enterprise', to: '/contact-sales?intent=enterprise' },
+  { label: 'Runtime', to: '/runtime' },
+  { label: 'AI Act',  to: '/ai-act' },
+  { label: 'Pricing', to: '/pricing' },
+  { label: 'Docs',    to: '/docs' },
 ] as const;
 
 export function Navbar() {
@@ -51,25 +57,19 @@ export function Navbar() {
               );
             })}
             <Link
-              to="/audit?source=nav-ki-fragen"
-              data-ai-pill
-              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-titanium-50 bg-obsidian-900/60 border border-transparent [background-clip:padding-box] relative transition-colors hover:bg-obsidian-800/80"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(11,11,15,0.85), rgba(11,11,15,0.85)), linear-gradient(120deg, #a855f7 0%, #22d3ee 50%, #a855f7 100%)',
-                backgroundOrigin: 'border-box',
-                border: '1px solid transparent',
-              }}
+              to="/audit?source=ki-fragen"
+              data-ki-fragen-pill
+              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-amber-300 hover:text-amber-200 border border-amber-500/40 hover:border-amber-400/70 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
             >
-              <Sparkles className="h-3.5 w-3.5 text-violet-300" />
+              <Sparkles className="h-3.5 w-3.5" />
               KI fragen
             </Link>
             <Link
-              to="/audit"
-              className="group inline-flex items-center gap-1.5 bg-white text-obsidian-950 hover:bg-titanium-200 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
+              to="/audit?source=nav-activate"
+              className="group inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
             >
-              Audit starten
-              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              {CTA.runScan}
+              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
 
@@ -97,24 +97,18 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              to="/audit?source=nav-ki-fragen-mobile"
+              to="/audit?source=ki-fragen-mobile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 px-3 py-3 mt-2 text-base font-semibold text-titanium-50 rounded-full"
-              style={{
-                backgroundImage:
-                  'linear-gradient(rgba(11,11,15,0.9), rgba(11,11,15,0.9)), linear-gradient(120deg, #a855f7 0%, #22d3ee 50%, #a855f7 100%)',
-                backgroundOrigin: 'border-box',
-                border: '1px solid transparent',
-              }}
+              className="flex items-center gap-2 justify-center px-3 py-3 mt-2 text-base font-semibold rounded-full text-amber-300 border border-amber-500/40 bg-amber-950/20"
             >
-              <Sparkles className="h-4 w-4 text-violet-300" /> KI fragen
+              <Sparkles className="h-4 w-4" /> KI fragen
             </Link>
             <Link
-              to="/audit"
+              to="/audit?source=nav-activate-mobile"
               onClick={() => setIsOpen(false)}
-              className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold bg-white text-obsidian-950 rounded-none"
+              className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold bg-cyan-400 text-obsidian-950 rounded-none"
             >
-              Audit starten <ChevronRight className="h-4 w-4" />
+              {CTA.runScan} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>

@@ -40,6 +40,7 @@ import { ContactSales } from './pages/ContactSales';
 import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
+import { AiCommandCenter } from './pages/AiCommandCenter';
 import { BusinessDashboard } from './pages/BusinessDashboard';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 // CreatorDashboard ist auth-gated → lazy
@@ -238,6 +239,9 @@ function RoutesWithTracking() {
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
+      {/* AI Command Center — kompakte Operating-Layer-UI (frontend-only, no backend) */}
+      <Route path="/command-center" element={<AiCommandCenter />} />
+      <Route path="/ai-command-center" element={<AiCommandCenter />} />
       <Route path="/dashboard/enterprise-ai-os/discovery" element={<EnterpriseAiOsDiscovery />} />
       {/* Onboarding nach Stripe-Checkout */}
       <Route path="/welcome" element={<Welcome />} />

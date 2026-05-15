@@ -174,7 +174,7 @@ async function handleChat(
   const apiKey = await getLlmApiKey(admin);
   if (!apiKey) {
     return jsonError(503, 'LLM_NOT_CONFIGURED',
-      `${LLM_PROVIDER}_api_key missing from env and vault. Provision via vault-set-secret.`);
+      `${LLM_PROVIDER}_api_key missing from env and vault. Provision via supabase secrets set or the Vault dashboard.`);
   }
 
   // Load or create session.

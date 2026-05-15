@@ -70,7 +70,11 @@ export class AiGatewayEdgeClient {
   private readonly endpoint: string;
 
   constructor(private readonly config: EdgeClientConfig) {
-    this.fetchImpl = config.fetchImpl ?? fetch;
+    // Bind to globalThis: browsers throw "Illegal invocation" if fetch
+    // is called with `this` set to anything other than the Window /
+    // ServiceWorkerGlobalScope. Storing it as an instance property
+    // would otherwise re-bind `this` to the class instance.
+    this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
     this.endpoint = `${config.supabaseUrl.replace(/\/$/, '')}/functions/v1/ai-gateway`;
   }
 

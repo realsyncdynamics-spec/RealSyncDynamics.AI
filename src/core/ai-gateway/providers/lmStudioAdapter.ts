@@ -41,7 +41,9 @@ export class LMStudioAdapter implements AiProviderAdapter {
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly config: LmStudioConfig) {
-    this.fetchImpl = config.fetchImpl ?? fetch;
+    // See comment in edgeClient.ts: native fetch must stay `this`-
+    // bound to globalThis or the browser throws "Illegal invocation".
+    this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
   }
 
   async health(): Promise<AiProviderHealth> {

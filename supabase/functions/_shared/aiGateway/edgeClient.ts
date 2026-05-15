@@ -55,7 +55,10 @@ export class AiGatewayEdgeClient {
   private readonly endpoint: string;
 
   constructor(private readonly config: EdgeClientConfig) {
-    this.fetchImpl = config.fetchImpl ?? fetch;
+    // Bind to globalThis to mirror the frontend fix: even in Deno,
+    // a stored fetch reference may pick up the wrong `this`. Keep
+    // both runtimes consistent.
+    this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
     this.endpoint = `${config.supabaseUrl.replace(/\/$/, '')}/functions/v1/ai-gateway`;
   }
 

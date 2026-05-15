@@ -192,4 +192,38 @@ describe('AiGatewayEdgeClient', () => {
       }
     });
   });
+
+  // Regression: production crashed with "Failed to execute 'fetch' on
+  // 'Window': Illegal invocation" because the default fetch reference
+  // was stored as an instance property, which re-bound `this` to the
+  // class instance instead of globalThis. The fix binds to globalThis;
+  // this test pins that behaviour by spying on globalThis.fetch and
+  // verifying it gets called when no fetchImpl is injected.
+  describe('regression — default fetch must not lose its this-binding', () => {
+    it('uses globalThis.fetch when no fetchImpl is provided', async () => {
+      const original = globalThis.fetch;
+      const stub = vi.fn(async () => jsonResponse({
+        ok: true, provider: 'lm_studio', model: 'm', profile: 'fast-local',
+        output: 'pong', trace_id: 't', latency_ms: 1,
+      }));
+      globalThis.fetch = stub as unknown as typeof fetch;
+      try {
+        const client = new AiGatewayEdgeClient({
+          supabaseUrl: 'https://example.supabase.co',
+          apiKey: 'anon-test',
+          // intentionally no fetchImpl — exercises the bind path
+        });
+        const resp = await client.generate({
+          feature: 'regression',
+          task_type: 'chat',
+          model_profile: 'fast-local',
+          input: 'ping',
+        });
+        expect(resp.output).toBe('pong');
+        expect(stub).toHaveBeenCalledOnce();
+      } finally {
+        globalThis.fetch = original;
+      }
+    });
+  });
 });

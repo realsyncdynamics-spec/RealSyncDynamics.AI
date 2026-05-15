@@ -6,7 +6,7 @@ import {
   LayoutPanelLeft, CheckCircle2, Shield, Plus,
   MessageSquare, FolderKanban, Star, Copy, Save,
   AlertTriangle, X, Search, Globe, Library, UploadCloud,
-  Server
+  Server, Receipt,
 } from 'lucide-react';
 import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gateway';
 import Markdown from 'react-markdown';
@@ -142,6 +142,12 @@ export function CreatorDashboard() {
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
               >
                 <Server className="h-4 w-4 text-emerald-400" /> Kodee · VPS Sidekick
+              </Link>
+              <Link
+                to="/finance"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
+              >
+                <Receipt className="h-4 w-4 text-amber-400" /> Finanzen · Steuern
               </Link>
             </nav>
 

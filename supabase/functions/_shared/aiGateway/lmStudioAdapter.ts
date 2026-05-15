@@ -21,7 +21,8 @@ export class LMStudioAdapter implements AiProviderAdapter {
   private readonly fetchImpl: typeof fetch;
 
   constructor(private readonly config: LmStudioConfig) {
-    this.fetchImpl = config.fetchImpl ?? fetch;
+    // Bind to globalThis for parity with the frontend mirror.
+    this.fetchImpl = config.fetchImpl ?? fetch.bind(globalThis);
   }
 
   async health(): Promise<AiProviderHealth> {

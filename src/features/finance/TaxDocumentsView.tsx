@@ -208,6 +208,10 @@ function ClassifyDocModal({
   async function importDoc() {
     if (!result || !taxYearId) return;
     setImporting(true); setError(null);
+    // Propagate the classification confidence into the persisted row
+    // so filtered review queues actually see the flagged docs. UI copy
+    // promised `needs_review`; previously the API hardcoded `pending`.
+    const lowConfidence = result.category === 'UNKNOWN' || result.confidence < 0.6;
     try {
       await createTaxDocument(tenantId, {
         tax_year_id:   taxYearId,
@@ -218,6 +222,7 @@ function ClassifyDocModal({
         amount_gross:  result.metadata.amount_gross,
         currency:      result.metadata.currency ?? 'EUR',
         ai_summary:    result.metadata.ai_summary,
+        classification_status: lowConfidence ? 'needs_review' : 'classified',
       });
       onCreated();
     } catch (err) {

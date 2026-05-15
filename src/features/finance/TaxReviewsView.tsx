@@ -161,9 +161,18 @@ function CreateReviewModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [subjectType, setSubjectType] = useState<ReviewSubjectType>('tax_evidence_export');
   const readyExports = exports.filter((e) => e.status === 'ready' || e.status === 'downloaded');
-  const [subjectId, setSubjectId] = useState<string>(readyExports[0]?.id ?? years[0]?.id ?? '');
+  // Default to whichever subject type has a usable option, so the
+  // initial subjectId can never be a tax-year UUID while subject_type
+  // is still on 'tax_evidence_export' (and vice versa).
+  const initialType: ReviewSubjectType = readyExports.length > 0
+    ? 'tax_evidence_export'
+    : years.length > 0 ? 'tax_year' : 'tax_evidence_export';
+  const initialSubjectId = initialType === 'tax_evidence_export'
+    ? (readyExports[0]?.id ?? '')
+    : initialType === 'tax_year' ? (years[0]?.id ?? '') : '';
+  const [subjectType, setSubjectType] = useState<ReviewSubjectType>(initialType);
+  const [subjectId, setSubjectId] = useState<string>(initialSubjectId);
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [advisorName, setAdvisorName] = useState('');
@@ -250,7 +259,7 @@ function CreateReviewModal({
           <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-titanium-300 hover:text-titanium-100">Abbrechen</button>
           <button
             type="submit"
-            disabled={submitting || !subjectId}
+            disabled={submitting || !subjectId || subjectOptions.length === 0}
             className="px-3 py-1.5 bg-emerald-500 text-obsidian-950 text-xs font-semibold rounded-none hover:bg-emerald-400 disabled:opacity-50"
           >
             {submitting ? 'Lege an …' : 'Review anlegen'}

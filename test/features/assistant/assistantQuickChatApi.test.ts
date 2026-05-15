@@ -128,6 +128,34 @@ describe('sendQuickChat — abuse guards', () => {
     expect(result.kind).toBe('pii_blocked');
   });
 
+  it('blocks a domestic German phone (leading 0)', async () => {
+    const result = await sendQuickChat(
+      { message: 'Telefon 0176 4013 2161 anrufen.', history: [] },
+      { client: successClient('ignored') },
+    );
+    expect(result.kind).toBe('pii_blocked');
+  });
+
+  // Regression: the previous phone heuristic matched any 8-digit run
+  // with optional separators, so AI-Act regulation references like
+  // `2024/1689` were rejected before reaching the gateway. These ARE
+  // expected user prompts, so they must pass through.
+  it('does NOT block AI Act regulation citations', async () => {
+    const result = await sendQuickChat(
+      { message: 'Was bedeutet Verordnung (EU) 2024/1689?', history: [] },
+      { client: successClient('Antwort zur AI-Act-Verordnung.') },
+    );
+    expect(result.kind).toBe('ok');
+  });
+
+  it('does NOT block paragraph references like Art. 6 Abs. 1', async () => {
+    const result = await sendQuickChat(
+      { message: 'Erklär mir Art. 6 Abs. 1 lit. a DSGVO.', history: [] },
+      { client: successClient('Antwort zu DSGVO Art. 6.') },
+    );
+    expect(result.kind).toBe('ok');
+  });
+
   it('rate-limits after configured number of sends in a 60 s window', async () => {
     const client = successClient('ok');
     let t = 1_000_000;

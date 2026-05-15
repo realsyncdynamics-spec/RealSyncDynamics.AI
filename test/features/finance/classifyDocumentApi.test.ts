@@ -41,6 +41,18 @@ describe('normalizeOutput', () => {
     expect(normalizeOutput({ category: 'contract', confidence: 0.8 }).category).toBe('CONTRACT');
   });
 
+  // Regression: prior `Number.isFinite(Number(amount_gross))` coerced
+  // `null` and `''` to 0 because `Number(null) === 0`, so docs without
+  // a total (contracts, statements) ended up with amount_gross=0.00.
+  it('keeps amount_gross undefined when source is null or empty', () => {
+    const r1 = normalizeOutput({ category: 'CONTRACT', confidence: 0.8, amount_gross: null });
+    expect(r1.metadata.amount_gross).toBeUndefined();
+    const r2 = normalizeOutput({ category: 'CONTRACT', confidence: 0.8, amount_gross: '' });
+    expect(r2.metadata.amount_gross).toBeUndefined();
+    const r3 = normalizeOutput({ category: 'CONTRACT', confidence: 0.8 /* absent */ });
+    expect(r3.metadata.amount_gross).toBeUndefined();
+  });
+
   it('drops non-string metadata fields silently', () => {
     const r = normalizeOutput({
       category: 'RECEIPT',

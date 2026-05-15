@@ -129,6 +129,22 @@ describe('buildAnnualDeadlines — payroll', () => {
     expect(buildAnnualDeadlines(2026, { ...MONTHLY_EINZEL, legal_form: 'gbr' })
       .filter((c) => c.reminder_type === 'payroll_filing')).toHaveLength(0);
   });
+
+  // Regression: prior to PR #248 the deny-list version of the helper
+  // emitted 12 payroll reminders for `legal_form='other'` (and for any
+  // future-added form), because the guard only excluded einzel/gbr.
+  // Allow-list-only behaviour pins this to Kapitalgesellschaften.
+  it('omits payroll filings for legal_form=other (unknown form)', () => {
+    expect(buildAnnualDeadlines(2026, { ...QUARTERLY_GMBH, legal_form: 'other' })
+      .filter((c) => c.reminder_type === 'payroll_filing')).toHaveLength(0);
+  });
+
+  it('emits payroll filings for UG + AG (Kapitalgesellschaften)', () => {
+    for (const form of ['ug', 'ag'] as const) {
+      expect(buildAnnualDeadlines(2026, { ...QUARTERLY_GMBH, legal_form: form })
+        .filter((c) => c.reminder_type === 'payroll_filing')).toHaveLength(12);
+    }
+  });
 });
 
 describe('buildAnnualDeadlines — Jahresabschluss', () => {
@@ -184,5 +200,21 @@ describe('urgencyOf', () => {
 
   it('falls back to upcoming on invalid input', () => {
     expect(urgencyOf('not-a-date')).toBe('upcoming');
+  });
+
+  // Regression: catalog entries stamp 09:00 UTC for visual stability;
+  // checking diff against THAT timestamp would flip the badge to
+  // "Überfällig" at noon Berlin on the actual filing day even though
+  // the deadline runs until end-of-day. Cutoff now = end of due day.
+  it('is NOT overdue at 10:00 UTC on the statutory due date', () => {
+    const due  = '2026-04-10T09:00:00Z';                   // catalog stamp
+    const now  = new Date('2026-04-10T10:00:00Z').getTime(); // 1h after stamp
+    expect(urgencyOf(due, now)).toBe('due_soon');
+  });
+
+  it('flips to overdue once the calendar day has fully passed', () => {
+    const due  = '2026-04-10T09:00:00Z';
+    const now  = new Date('2026-04-11T00:00:00.001Z').getTime();
+    expect(urgencyOf(due, now)).toBe('overdue');
   });
 });

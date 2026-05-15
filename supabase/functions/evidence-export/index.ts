@@ -83,23 +83,36 @@ Deno.serve(async (req) => {
   if (exportErr || !exportRow) {
     return jsonError(404, 'NOT_FOUND', exportErr?.message ?? 'export not found');
   }
-  if (exportRow.status !== 'preparing') {
+  // Allow re-running from `preparing` (initial) AND `failed` (retry).
+  // Block once the row is already `ready` / `downloaded` so we don't
+  // accidentally overwrite a sealed package + its checksum.
+  if (exportRow.status !== 'preparing' && exportRow.status !== 'failed') {
     return jsonError(409, 'WRONG_STATE', `export already in status ${exportRow.status}`);
   }
 
+  // SECURITY: a member of multiple tenants could otherwise craft a
+  // tax_evidence_exports row in tenant A pointing at tenant B's
+  // tax_year_id. RLS lets the user read both rows individually, but
+  // the export must stay single-tenant. We pin every downstream read
+  // to exportRow.tenant_id and verify the year matches.
+  const expectedTenantId = exportRow.tenant_id;
+
   const { data: yearRow, error: yearErr } = await caller
     .from('tax_years')
-    .select('year')
+    .select('year, tenant_id')
     .eq('id', exportRow.tax_year_id)
+    .eq('tenant_id', expectedTenantId)
     .single();
   if (yearErr || !yearRow) {
-    return jsonError(404, 'NOT_FOUND', yearErr?.message ?? 'tax_year not found');
+    return jsonError(404, 'NOT_FOUND', yearErr?.message ?? 'tax_year not found for tenant');
   }
 
-  // 2. Load all tax_documents for that year (RLS).
+  // 2. Load all tax_documents for that year — pinned to the export's
+  // tenant_id so cross-tenant year-IDs cannot pull in foreign docs.
   const { data: docsRaw, error: docsErr } = await caller
     .from('tax_documents')
     .select('*')
+    .eq('tenant_id', expectedTenantId)
     .eq('tax_year_id', exportRow.tax_year_id)
     .order('document_date', { ascending: true });
   if (docsErr) {
@@ -148,7 +161,8 @@ Deno.serve(async (req) => {
     return jsonError(500, 'UPLOAD_FAILED', uploadErr.message);
   }
 
-  // 6. Mark row ready.
+  // 6. Mark row ready. `notes` is cleared in case this was a retry
+  // from `failed` where markFailed() left an error reason there.
   const totalGross = manifest.total_gross;
   const { error: updErr } = await admin
     .from('tax_evidence_exports')
@@ -159,6 +173,7 @@ Deno.serve(async (req) => {
       document_count: manifest.document_count,
       total_amount:   totalGross,
       ready_at:       generatedAt,
+      notes:          null,
     })
     .eq('id', exportId);
   if (updErr) {

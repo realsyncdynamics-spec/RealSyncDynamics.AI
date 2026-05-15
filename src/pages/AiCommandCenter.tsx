@@ -1,26 +1,33 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
+  ArrowRight,
   Bot,
   CheckCircle2,
   ChevronDown,
   CircleDot,
+  Command as CommandIcon,
+  CornerDownLeft,
   Cpu,
   Eye,
+  Filter,
   GitBranch,
+  History,
   Layers,
   LayoutGrid,
   Loader2,
   Pause,
   Play,
   Plus,
+  RotateCcw,
   Search,
   Settings,
   Sparkles,
   Square,
   Terminal,
   Workflow,
+  Wrench,
   Zap,
 } from 'lucide-react';
 
@@ -155,6 +162,125 @@ const STEPS: Record<string, RunStep[]> = {
   ],
 };
 
+interface AgentEntry {
+  id: string;
+  label: string;
+  description: string;
+  systemPrompt: string;
+  tools: string[];
+  totalRuns: number;
+  lastRun: string;
+  status: RunStatus;
+}
+
+const AGENTS: AgentEntry[] = [
+  {
+    id: 'researcher',
+    label: 'Researcher',
+    description: 'Sammelt Primärquellen, gewichtet nach Reputabilität.',
+    systemPrompt: 'Du bist ein Recherche-Agent. Strukturiere Briefs mit Zitaten.',
+    tools: ['web.search', 'web.fetch', 'memory.read'],
+    totalRuns: 312,
+    lastRun: 'vor 2 min',
+    status: 'done',
+  },
+  {
+    id: 'writer',
+    label: 'Writer',
+    description: 'Lang-Form-Drafts in Markenstimme, mit Fact-Markup.',
+    systemPrompt: 'Halte Outline ein, markiere Faktenbehauptungen für Cross-Check.',
+    tools: ['markdown.render', 'memory.read', 'style.guide'],
+    totalRuns: 487,
+    lastRun: 'vor 1 min',
+    status: 'running',
+  },
+  {
+    id: 'critic',
+    label: 'Critic',
+    description: 'Verifiziert Behauptungen gegen Quellen, schreibt Diffs.',
+    systemPrompt: 'Flagge Halluzinationen, prüfe jede Behauptung gegen Quellen.',
+    tools: ['web.fetch', 'diff.compute'],
+    totalRuns: 198,
+    lastRun: 'vor 12 min',
+    status: 'idle',
+  },
+  {
+    id: 'seo',
+    label: 'SEO',
+    description: 'E-E-A-T-Pass, Entity-Coverage, kein Keyword-Stuffing.',
+    systemPrompt: 'Optimiere für semantic clusters und entity-coverage.',
+    tools: ['serp.fetch', 'keyword.expand'],
+    totalRuns: 144,
+    lastRun: 'vor 1 h',
+    status: 'idle',
+  },
+  {
+    id: 'publisher',
+    label: 'Publisher',
+    description: 'Verteilt Content an freigegebene Kanäle, setzt UTM.',
+    systemPrompt: 'Halte Schedule, setze UTM, fail-fast bei API-Fehlern.',
+    tools: ['cms.publish', 'mail.send', 'social.schedule'],
+    totalRuns: 221,
+    lastRun: 'vor 18 min',
+    status: 'idle',
+  },
+  {
+    id: 'classifier',
+    label: 'AI-Act Classifier',
+    description: 'Klassifiziert Use-Cases nach AI-Act-Risikoklassen.',
+    systemPrompt: 'Mappe Use-Case auf minimal/limited/high/prohibited.',
+    tools: ['policy.match', 'memory.read'],
+    totalRuns: 76,
+    lastRun: 'vor 1 h',
+    status: 'done',
+  },
+  {
+    id: 'monitor',
+    label: 'Drift-Monitor',
+    description: 'Vergleicht Output-Verteilungen gegen Baseline.',
+    systemPrompt: 'Warne bei Drift > 2σ. Sende Alert.',
+    tools: ['metrics.read', 'alert.send'],
+    totalRuns: 1248,
+    lastRun: 'vor 4 min',
+    status: 'done',
+  },
+  {
+    id: 'ops',
+    label: 'Ops',
+    description: 'Sammelt Logs, deliver Artefakte, eskaliert bei Fehlern.',
+    systemPrompt: 'Robust, idempotent, eskalations-bewusst.',
+    tools: ['logs.fetch', 'webhook.send'],
+    totalRuns: 542,
+    lastRun: 'vor 7 min',
+    status: 'idle',
+  },
+];
+
+interface RunHistoryEntry {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  modelId: string;
+  modelLabel: string;
+  status: RunStatus;
+  startedAt: string;
+  durationMs: number;
+  tokens: number;
+  costEur: number;
+  trigger: 'manual' | 'schedule' | 'webhook';
+}
+
+const RUNS_HISTORY: RunHistoryEntry[] = [
+  { id: 'run-3142', workflowId: 'wf-content-pipeline', workflowName: 'Content Pipeline', modelId: 'opus-4-7', modelLabel: 'Opus 4.7', status: 'running', startedAt: 'heute · 14:32', durationMs: 412_000, tokens: 41200, costEur: 0.42, trigger: 'manual' },
+  { id: 'run-3141', workflowId: 'wf-leadgen', workflowName: 'Lead-Gen Sweep', modelId: 'sonnet-4-6', modelLabel: 'Sonnet 4.6', status: 'review', startedAt: 'heute · 14:14', durationMs: 188_000, tokens: 18900, costEur: 0.09, trigger: 'schedule' },
+  { id: 'run-3140', workflowId: 'wf-compliance', workflowName: 'Compliance Daily', modelId: 'haiku-4-5', modelLabel: 'Haiku 4.5', status: 'done', startedAt: 'heute · 13:00', durationMs: 92_000, tokens: 7400, costEur: 0.01, trigger: 'schedule' },
+  { id: 'run-3139', workflowId: 'wf-research', workflowName: 'Deep Research', modelId: 'opus-4-7', modelLabel: 'Opus 4.7', status: 'blocked', startedAt: 'heute · 10:21', durationMs: 612_000, tokens: 84000, costEur: 0.84, trigger: 'manual' },
+  { id: 'run-3138', workflowId: 'wf-newsletter', workflowName: 'Weekly Newsletter', modelId: 'sonnet-4-6', modelLabel: 'Sonnet 4.6', status: 'done', startedAt: 'gestern · 19:00', durationMs: 124_000, tokens: 12100, costEur: 0.06, trigger: 'schedule' },
+  { id: 'run-3137', workflowId: 'wf-content-pipeline', workflowName: 'Content Pipeline', modelId: 'opus-4-7', modelLabel: 'Opus 4.7', status: 'done', startedAt: 'gestern · 16:42', durationMs: 388_000, tokens: 39800, costEur: 0.40, trigger: 'manual' },
+  { id: 'run-3136', workflowId: 'wf-leadgen', workflowName: 'Lead-Gen Sweep', modelId: 'sonnet-4-6', modelLabel: 'Sonnet 4.6', status: 'done', startedAt: 'gestern · 12:00', durationMs: 162_000, tokens: 16400, costEur: 0.08, trigger: 'webhook' },
+  { id: 'run-3135', workflowId: 'wf-compliance', workflowName: 'Compliance Daily', modelId: 'haiku-4-5', modelLabel: 'Haiku 4.5', status: 'done', startedAt: 'gestern · 09:00', durationMs: 88_000, tokens: 7100, costEur: 0.01, trigger: 'schedule' },
+];
+
 const LOGS: LogLine[] = [
   { ts: '14:32:08', level: 'agent', source: 'researcher', message: 'Brief fertig — 14 Quellen, 12.4k Tokens.' },
   { ts: '14:32:12', level: 'info', source: 'orchestrator', message: 'Step 2 (Outline) gestartet.' },
@@ -218,8 +344,8 @@ type NavKey = 'workflows' | 'agents' | 'runs' | 'library' | 'connectors' | 'sett
 
 const NAV: Array<{ key: NavKey; label: string; Icon: typeof Activity; count?: number }> = [
   { key: 'workflows', label: 'Workflows', Icon: Workflow, count: WORKFLOWS.length },
-  { key: 'agents', label: 'Agents', Icon: Bot, count: 8 },
-  { key: 'runs', label: 'Runs', Icon: Activity, count: 124 },
+  { key: 'agents', label: 'Agents', Icon: Bot, count: AGENTS.length },
+  { key: 'runs', label: 'Runs', Icon: Activity, count: RUNS_HISTORY.length },
   { key: 'library', label: 'Library', Icon: Layers },
   { key: 'connectors', label: 'Connectors', Icon: GitBranch, count: 12 },
   { key: 'settings', label: 'Settings', Icon: Settings },
@@ -287,11 +413,13 @@ function Sidebar({
   onSelect,
   query,
   setQuery,
+  onOpenPalette,
 }: {
   active: NavKey;
   onSelect: (k: NavKey) => void;
   query: string;
   setQuery: (q: string) => void;
+  onOpenPalette: () => void;
 }) {
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900">
@@ -306,13 +434,25 @@ function Sidebar({
       </div>
 
       <div className="px-3 pb-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-titanium-500" />
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          className="group flex w-full items-center gap-2 rounded-md border border-titanium-900 bg-obsidian-800 py-1.5 pl-2 pr-2 text-left text-xs text-titanium-500 transition hover:border-titanium-800 hover:bg-obsidian-700/80 hover:text-titanium-300"
+          aria-label="Command Palette öffnen"
+        >
+          <Search className="h-3.5 w-3.5 text-titanium-500 group-hover:text-titanium-300" />
+          <span className="flex-1 truncate">Befehl ausführen …</span>
+          <kbd className="rounded border border-titanium-800 bg-obsidian-900 px-1.5 py-0.5 font-mono text-[10px]">
+            ⌘K
+          </kbd>
+        </button>
+        <div className="relative mt-2">
+          <Filter className="pointer-events-none absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-titanium-600" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen … (⌘K)"
-            className="w-full rounded-md border border-titanium-900 bg-obsidian-800 py-1.5 pl-8 pr-2 text-xs text-titanium-100 placeholder-titanium-600 outline-none focus:border-security-700"
+            placeholder="Filter …"
+            className="w-full rounded-md border border-titanium-900 bg-obsidian-800 py-1.5 pl-7 pr-2 text-xs text-titanium-100 placeholder-titanium-600 outline-none focus:border-security-700"
           />
         </div>
       </div>
@@ -680,11 +820,356 @@ function ConfigView({ workflow, model }: { workflow: WorkflowItem; model: Model 
   );
 }
 
+function AgentsView({ query }: { query: string }) {
+  const filtered = AGENTS.filter((a) =>
+    query
+      ? (a.label + ' ' + a.description + ' ' + a.tools.join(' ') + ' ' + a.id)
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      : true,
+  );
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between border-b border-titanium-900 bg-obsidian-900/40 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold text-titanium-50">Agents</h2>
+          <p className="text-[11px] text-titanium-500">
+            {filtered.length} aktiv · System-Prompts + Tool-Mappings
+          </p>
+        </div>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded border border-titanium-800 bg-obsidian-700 px-2 py-1 text-[11px] text-titanium-200 hover:bg-obsidian-600"
+        >
+          <Plus className="h-3 w-3" /> Neuer Agent
+        </button>
+      </header>
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((a) => (
+            <article
+              key={a.id}
+              className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-3 transition hover:border-titanium-800"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-titanium-800 bg-obsidian-700">
+                    <Bot className="h-4 w-4 text-ai-cyan-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-titanium-50">{a.label}</div>
+                    <div className="truncate font-mono text-[10px] text-titanium-500">{a.id}</div>
+                  </div>
+                </div>
+                <StatusChip value={a.status} />
+              </div>
+              <p className="mt-2 line-clamp-2 text-[12px] text-titanium-400">{a.description}</p>
+              <div className="mt-2.5 flex items-center gap-1 text-[10px] text-titanium-500">
+                <Wrench className="h-3 w-3" />
+                {a.tools.slice(0, 3).map((t, i) => (
+                  <span key={i} className="rounded border border-titanium-800 bg-obsidian-900 px-1.5 py-0.5 font-mono">
+                    {t}
+                  </span>
+                ))}
+                {a.tools.length > 3 && (
+                  <span className="text-titanium-600">+{a.tools.length - 3}</span>
+                )}
+              </div>
+              <div className="mt-2 flex items-center justify-between border-t border-titanium-900/60 pt-2 text-[10px] uppercase tracking-wider text-titanium-600">
+                <span>{a.totalRuns} Runs</span>
+                <span>{a.lastRun}</span>
+              </div>
+            </article>
+          ))}
+          {filtered.length === 0 && (
+            <div className="col-span-full rounded-md border border-dashed border-titanium-800 p-8 text-center text-xs text-titanium-500">
+              Keine Agents für „{query}".
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RunsView({ query }: { query: string }) {
+  const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
+  const filtered = RUNS_HISTORY.filter((r) => {
+    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+    if (!query) return true;
+    return (
+      r.workflowName.toLowerCase().includes(query.toLowerCase()) ||
+      r.id.toLowerCase().includes(query.toLowerCase()) ||
+      r.modelLabel.toLowerCase().includes(query.toLowerCase())
+    );
+  });
+  const statuses: Array<RunStatus | 'all'> = ['all', 'running', 'review', 'blocked', 'done', 'idle'];
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between border-b border-titanium-900 bg-obsidian-900/40 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold text-titanium-50">Runs</h2>
+          <p className="text-[11px] text-titanium-500">{filtered.length} von {RUNS_HISTORY.length}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Filter className="h-3.5 w-3.5 text-titanium-500" />
+          {statuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatusFilter(s)}
+              className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider transition ${
+                statusFilter === s
+                  ? 'border-ai-cyan-700/60 bg-ai-cyan-900/40 text-ai-cyan-300'
+                  : 'border-titanium-800 bg-obsidian-800 text-titanium-400 hover:bg-obsidian-700'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </header>
+      <div className="flex-1 overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-obsidian-900/90 backdrop-blur">
+            <tr className="border-b border-titanium-900 text-left text-[10px] uppercase tracking-[0.18em] text-titanium-500">
+              <th className="px-4 py-2 font-medium">Run</th>
+              <th className="px-2 py-2 font-medium">Workflow</th>
+              <th className="px-2 py-2 font-medium">Model</th>
+              <th className="px-2 py-2 font-medium">Trigger</th>
+              <th className="px-2 py-2 font-medium">Status</th>
+              <th className="px-2 py-2 text-right font-medium">Tokens</th>
+              <th className="px-2 py-2 text-right font-medium">Kosten</th>
+              <th className="px-2 py-2 text-right font-medium">Dauer</th>
+              <th className="px-2 py-2 font-medium">Start</th>
+              <th className="px-4 py-2 text-right font-medium" />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr
+                key={r.id}
+                className="border-b border-titanium-900/60 transition hover:bg-obsidian-800/60"
+              >
+                <td className="px-4 py-2 font-mono text-[11px] text-titanium-300">{r.id}</td>
+                <td className="px-2 py-2 text-titanium-100">{r.workflowName}</td>
+                <td className="px-2 py-2 text-titanium-300">{r.modelLabel}</td>
+                <td className="px-2 py-2 text-[11px] text-titanium-500">{r.trigger}</td>
+                <td className="px-2 py-2"><StatusChip value={r.status} /></td>
+                <td className="px-2 py-2 text-right font-mono text-[11px] text-titanium-200">
+                  {r.tokens.toLocaleString('de-DE')}
+                </td>
+                <td className="px-2 py-2 text-right font-mono text-[11px] text-titanium-200">
+                  € {r.costEur.toFixed(2)}
+                </td>
+                <td className="px-2 py-2 text-right font-mono text-[11px] text-titanium-400">
+                  {(r.durationMs / 1000).toFixed(0)}s
+                </td>
+                <td className="px-2 py-2 text-[11px] text-titanium-500">{r.startedAt}</td>
+                <td className="px-4 py-2 text-right">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded border border-titanium-800 bg-obsidian-700 px-2 py-0.5 text-[10px] text-titanium-200 hover:border-ai-cyan-700 hover:bg-ai-cyan-900/30 hover:text-ai-cyan-300"
+                  >
+                    <RotateCcw className="h-3 w-3" /> Re-Run
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-xs text-titanium-500">
+                  Keine Runs für diesen Filter.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+interface PaletteAction {
+  id: string;
+  group: 'Run' | 'Navigate' | 'Model' | 'Workflow';
+  label: string;
+  hint?: string;
+  Icon: typeof Activity;
+  run: () => void;
+}
+
+function CommandPalette({
+  open,
+  onClose,
+  actions,
+}: {
+  open: boolean;
+  onClose: () => void;
+  actions: PaletteAction[];
+}) {
+  const [q, setQ] = useState('');
+  const [idx, setIdx] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setQ('');
+      setIdx(0);
+      window.setTimeout(() => inputRef.current?.focus(), 10);
+    }
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    if (!q) return actions;
+    const needle = q.toLowerCase();
+    return actions.filter(
+      (a) => a.label.toLowerCase().includes(needle) || a.group.toLowerCase().includes(needle),
+    );
+  }, [q, actions]);
+
+  useEffect(() => {
+    if (idx >= filtered.length) setIdx(0);
+  }, [filtered.length, idx]);
+
+  const groups = useMemo(() => {
+    const map = new Map<PaletteAction['group'], PaletteAction[]>();
+    filtered.forEach((a) => {
+      if (!map.has(a.group)) map.set(a.group, []);
+      map.get(a.group)!.push(a);
+    });
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  const flat = filtered;
+
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setIdx((i) => Math.min(i + 1, flat.length - 1));
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setIdx((i) => Math.max(i - 1, 0));
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const a = flat[idx];
+          if (a) {
+            a.run();
+            onClose();
+          }
+        }
+      }}
+    >
+      <div
+        className="mt-[12vh] w-full max-w-xl overflow-hidden rounded-lg border border-titanium-800 bg-obsidian-900 shadow-2xl shadow-black/70"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Command Palette"
+      >
+        <div className="flex items-center gap-2 border-b border-titanium-900 px-3 py-2">
+          <CommandIcon className="h-4 w-4 text-ai-cyan-400" />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setIdx(0);
+            }}
+            placeholder="Befehl, Workflow oder Model …"
+            className="flex-1 bg-transparent text-sm text-titanium-50 placeholder-titanium-600 outline-none"
+          />
+          <kbd className="rounded border border-titanium-800 bg-obsidian-800 px-1.5 py-0.5 text-[10px] text-titanium-400">
+            esc
+          </kbd>
+        </div>
+        <div className="max-h-[55vh] overflow-y-auto py-1">
+          {flat.length === 0 && (
+            <div className="px-4 py-8 text-center text-xs text-titanium-500">Nichts gefunden.</div>
+          )}
+          {groups.map(([group, list]) => (
+            <div key={group}>
+              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-titanium-600">
+                {group}
+              </div>
+              {list.map((a) => {
+                const flatIdx = flat.indexOf(a);
+                const active = flatIdx === idx;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onMouseEnter={() => setIdx(flatIdx)}
+                    onClick={() => {
+                      a.run();
+                      onClose();
+                    }}
+                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition ${
+                      active ? 'bg-security-900/40 text-titanium-50' : 'text-titanium-200'
+                    }`}
+                  >
+                    <a.Icon
+                      className={`h-3.5 w-3.5 ${active ? 'text-ai-cyan-400' : 'text-titanium-500'}`}
+                    />
+                    <span className="flex-1 truncate">{a.label}</span>
+                    {a.hint && (
+                      <span className="font-mono text-[10px] text-titanium-500">{a.hint}</span>
+                    )}
+                    {active && <ArrowRight className="h-3 w-3 text-ai-cyan-400" />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <footer className="flex items-center justify-between border-t border-titanium-900 px-3 py-1.5 text-[10px] text-titanium-500">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <kbd className="rounded border border-titanium-800 bg-obsidian-800 px-1 py-0 text-[10px]">↑↓</kbd>
+              navigieren
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <kbd className="rounded border border-titanium-800 bg-obsidian-800 px-1 py-0 text-[10px]">
+                <CornerDownLeft className="inline h-2.5 w-2.5" />
+              </kbd>
+              ausführen
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1">
+            <CommandIcon className="h-3 w-3" />
+            <span>K</span>
+          </span>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-titanium-900/60 py-1.5 last:border-0">
       <dt className="text-titanium-500">{k}</dt>
       <dd className={`text-titanium-100 ${mono ? 'font-mono text-xs' : ''}`}>{v}</dd>
+    </div>
+  );
+}
+
+function PlaceholderView({ title, hint, Icon }: { title: string; hint: string; Icon: typeof Activity }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+      <Icon className="h-8 w-8 text-titanium-700" />
+      <div className="text-sm font-semibold text-titanium-200">{title}</div>
+      <div className="max-w-sm text-[12px] text-titanium-500">{hint}</div>
     </div>
   );
 }
@@ -696,6 +1181,7 @@ export function AiCommandCenter() {
   const [tab, setTab] = useState<TabKey>('canvas');
   const [model, setModel] = useState<Model>(MODELS[0]);
   const [runStatus, setRunStatus] = useState<RunStatus>('running');
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   const workflow = useMemo(
     () => WORKFLOWS.find((w) => w.id === selectedId) ?? WORKFLOWS[0],
@@ -703,43 +1189,157 @@ export function AiCommandCenter() {
   );
   const steps = STEPS[workflow.id] ?? [];
 
+  // Global ⌘K / Ctrl+K to open palette
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const paletteActions: PaletteAction[] = useMemo(() => {
+    const acts: PaletteAction[] = [
+      { id: 'run', group: 'Run', label: 'Aktuellen Workflow starten', hint: 'Run', Icon: Play, run: () => setRunStatus('running') },
+      { id: 'pause', group: 'Run', label: 'Workflow pausieren', hint: 'Pause', Icon: Pause, run: () => setRunStatus('idle') },
+      { id: 'stop', group: 'Run', label: 'Workflow stoppen', hint: 'Stop', Icon: Square, run: () => setRunStatus('idle') },
+    ];
+    (['workflows', 'agents', 'runs', 'library', 'connectors', 'settings'] as NavKey[]).forEach((k) => {
+      const item = NAV.find((n) => n.key === k);
+      if (!item) return;
+      acts.push({
+        id: `nav-${k}`,
+        group: 'Navigate',
+        label: `Wechsle zu ${item.label}`,
+        Icon: item.Icon,
+        run: () => setNav(k),
+      });
+    });
+    MODELS.forEach((m) => {
+      acts.push({
+        id: `model-${m.id}`,
+        group: 'Model',
+        label: `Wechsle Model auf ${m.label}`,
+        hint: `${m.contextK}k`,
+        Icon: Cpu,
+        run: () => setModel(m),
+      });
+    });
+    WORKFLOWS.forEach((w) => {
+      acts.push({
+        id: `wf-${w.id}`,
+        group: 'Workflow',
+        label: `Öffne „${w.name}"`,
+        hint: w.tag,
+        Icon: Workflow,
+        run: () => {
+          setNav('workflows');
+          setSelectedId(w.id);
+          setRunStatus(w.status);
+        },
+      });
+    });
+    return acts;
+  }, []);
+
+  const showWorkflowsView = nav === 'workflows';
+
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-obsidian-950 text-titanium-100">
-      <Sidebar active={nav} onSelect={setNav} query={query} setQuery={setQuery} />
+      <Sidebar
+        active={nav}
+        onSelect={setNav}
+        query={query}
+        setQuery={setQuery}
+        onOpenPalette={() => setPaletteOpen(true)}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar
-          workflow={workflow}
-          model={model}
-          setModel={setModel}
-          status={runStatus}
-          onRun={() => setRunStatus('running')}
-          onPause={() => setRunStatus('idle')}
-          onStop={() => setRunStatus('idle')}
-        />
+        {showWorkflowsView && (
+          <Topbar
+            workflow={workflow}
+            model={model}
+            setModel={setModel}
+            status={runStatus}
+            onRun={() => setRunStatus('running')}
+            onPause={() => setRunStatus('idle')}
+            onStop={() => setRunStatus('idle')}
+          />
+        )}
 
         <div className="flex min-h-0 flex-1">
-          <WorkflowList
-            workflows={WORKFLOWS}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setRunStatus(WORKFLOWS.find((w) => w.id === id)?.status ?? 'idle');
-            }}
-            query={query}
-          />
+          {showWorkflowsView && (
+            <>
+              <WorkflowList
+                workflows={WORKFLOWS}
+                selectedId={selectedId}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  setRunStatus(WORKFLOWS.find((w) => w.id === id)?.status ?? 'idle');
+                }}
+                query={query}
+              />
 
-          <main className="flex min-w-0 flex-1 flex-col">
-            <Tabs value={tab} onChange={setTab} />
-            <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
-              {tab === 'canvas' && <CanvasView steps={steps} />}
-              {tab === 'logs' && <LogsView logs={LOGS} />}
-              {tab === 'output' && <OutputView workflow={workflow} />}
-              {tab === 'config' && <ConfigView workflow={workflow} model={model} />}
-            </div>
-          </main>
+              <main className="flex min-w-0 flex-1 flex-col">
+                <Tabs value={tab} onChange={setTab} />
+                <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
+                  {tab === 'canvas' && <CanvasView steps={steps} />}
+                  {tab === 'logs' && <LogsView logs={LOGS} />}
+                  {tab === 'output' && <OutputView workflow={workflow} />}
+                  {tab === 'config' && <ConfigView workflow={workflow} model={model} />}
+                </div>
+              </main>
+            </>
+          )}
+
+          {nav === 'agents' && (
+            <main className="flex min-w-0 flex-1 flex-col">
+              <AgentsView query={query} />
+            </main>
+          )}
+          {nav === 'runs' && (
+            <main className="flex min-w-0 flex-1 flex-col">
+              <RunsView query={query} />
+            </main>
+          )}
+          {nav === 'library' && (
+            <main className="flex min-w-0 flex-1 flex-col">
+              <PlaceholderView
+                title="Library"
+                hint="Wiederverwendbare Prompts, Skills und Snippets — kommt als nächstes."
+                Icon={Layers}
+              />
+            </main>
+          )}
+          {nav === 'connectors' && (
+            <main className="flex min-w-0 flex-1 flex-col">
+              <PlaceholderView
+                title="Connectors"
+                hint="Slack · Notion · GitHub · Google · Stripe — Integrations-Layer."
+                Icon={GitBranch}
+              />
+            </main>
+          )}
+          {nav === 'settings' && (
+            <main className="flex min-w-0 flex-1 flex-col">
+              <PlaceholderView
+                title="Settings"
+                hint="Org · Members · API Keys · Billing · Audit-Log."
+                Icon={Settings}
+              />
+            </main>
+          )}
         </div>
       </div>
+
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        actions={paletteActions}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import Markdown from 'react-markdown';
 import { PromptsView } from '../features/workspace/PromptsView';
 import { BillingView } from '../features/billing/BillingView';
 import { OnboardingTour } from '../components/OnboardingTour';
+import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 
 type Message = { role: 'user' | 'ai', text: string, status?: 'loading' | 'error' | 'success' };
 type ThreadMode = 'chat' | 'research' | 'policy' | 'roi';
@@ -552,6 +553,7 @@ export function CreatorDashboard() {
           </div>
         )}
       </div>
+      <AgentWidget />
     </div>
   );
 }

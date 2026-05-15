@@ -18,12 +18,26 @@
 // durch die Q&A im Frontend.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  decideRateLimit,
+  clientIp,
+  type WindowState,
+} from '../_shared/aiGateway/rateLimit.ts';
+import { sha256Hex } from '../_shared/hash.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+// Per-instance rate-limit windows. Same pattern as ai-gateway: this
+// endpoint is verify_jwt=false and called from the browser, every call
+// triggers a paid OpenAI/Anthropic completion. Without a server-side
+// throttle a single visitor can run up an unbounded LLM bill.
+const MINUTE_WINDOWS = new Map<string, WindowState>();
+const HOUR_WINDOWS   = new Map<string, WindowState>();
+const IP_HASH_SALT = Deno.env.get('AI_GATEWAY_IP_HASH_SALT') ?? 'ai-gateway-default-salt';
 
 interface SignalMatch {
   useCaseId: string;
@@ -45,6 +59,38 @@ Deno.serve(async (req) => {
   }
   if (description.length > 4000) {
     return jsonError(400, 'DESCRIPTION_TOO_LONG', 'max 4000 Zeichen');
+  }
+
+  const ip = clientIp(req.headers);
+  const ipHash = await sha256Hex(ip + ':' + IP_HASH_SALT);
+  const decision = decideRateLimit({
+    key: `${ipHash}:ai_act_classify`,
+    feature: 'ai_act_classify',
+    now: Date.now(),
+    minuteWindows: MINUTE_WINDOWS,
+    hourWindows:   HOUR_WINDOWS,
+  });
+  if (!decision.ok) {
+    const retryAfterSec = Math.max(1, Math.ceil(decision.retryAfterMs / 1000));
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: {
+          code: 'RATE_LIMITED',
+          message: `Rate limit exceeded (${decision.scope}). Retry after ${retryAfterSec}s.`,
+          scope: decision.scope,
+          retry_after_ms: decision.retryAfterMs,
+        },
+      }),
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'content-type': 'application/json',
+          'retry-after': String(retryAfterSec),
+        },
+      },
+    );
   }
 
   // Registry laden — wir kopieren sie hier inline statt sie aus dem Frontend

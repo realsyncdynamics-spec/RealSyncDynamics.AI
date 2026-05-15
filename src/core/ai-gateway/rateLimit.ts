@@ -28,6 +28,7 @@ export const FEATURE_LIMITS: Record<string, RateLimitConfig> = {
   audit_copilot_remediation_plan:  { perMinute: 3,  perHour: 20  },
   kodee_vps_advisor:               { perMinute: 6,  perHour: 50  },
   openai_compat:                   { perMinute: 8,  perHour: 80  },
+  ai_act_classify:                 { perMinute: 4,  perHour: 30  },
 };
 
 export interface WindowState {

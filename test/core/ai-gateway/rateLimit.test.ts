@@ -100,6 +100,8 @@ describe('decideRateLimit — feature-specific limits', () => {
   it('reads from FEATURE_LIMITS when no override is provided', () => {
     expect(FEATURE_LIMITS.assistant_chip_quick_chat).toBeDefined();
     expect(FEATURE_LIMITS.audit_copilot_remediation_plan?.perMinute).toBe(3);
+    expect(FEATURE_LIMITS.ai_act_classify?.perMinute).toBe(4);
+    expect(FEATURE_LIMITS.ai_act_classify?.perHour).toBe(30);
   });
 
   it('falls back to DEFAULT_LIMITS for unknown features', () => {

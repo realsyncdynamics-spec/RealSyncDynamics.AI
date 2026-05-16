@@ -1,6 +1,6 @@
 # ACS — Agent Contract Standard
 
-**Version:** 1.0
+**Version:** 1.1 (introduced v1.0; v1.1 adds three optional manifest blocks — see §9)
 **Status:** Draft
 **Schema:** [`schemas/agent-contract.schema.json`](schemas/agent-contract.schema.json)
 
@@ -159,7 +159,7 @@ A manifest update **MUST** be a new registration with a bumped `agent.version`. 
 
 An agent is ACS-conformant at v1.0 if and only if:
 
-- [ ] It declares `spec_version = "1.0"`.
+- [ ] It declares `spec_version = "1.0"` (or `"1.1"` for the new optional blocks in §9).
 - [ ] `agent.name` is unique within its tenant scope and matches `/^[a-z][a-z0-9-]{1,62}$/`.
 - [ ] `agent.type` is one of the enum values in §2.
 - [ ] `agent.version` is a valid SemVer string.
@@ -172,3 +172,51 @@ An agent is ACS-conformant at v1.0 if and only if:
 - [ ] At runtime, the agent never invokes a permission not in `permissions[]`.
 
 Two failing checks on the same agent within a 24 h window **SHOULD** trigger an operator alert; three **MUST** auto-disable the agent.
+
+---
+
+## 9. v1.1 — three additional optional manifest blocks
+
+ACS v1.1 introduces three blocks that an agent **MAY** declare in its manifest. Each is specified in its own dedicated standard; this section registers them as part of the agent contract and defines how the registry validates them.
+
+```yaml
+# any v1.1 agent MAY include zero, one, or all of these blocks:
+
+evidence_coupling:    { mode: ..., ... }   # see EVC — evidence-coupling.md
+escalation_matrix:    { sev_low: ..., sev_high: ..., ... }   # see EM — escalation-matrix.md
+output_constraints:   { format: ..., schema_validation: ..., ... }   # see OC — output-constraints.md
+```
+
+### 9a. Why these are optional
+
+A v1.0 manifest remains conformant under v1.1: the new blocks default to safe, conservative behaviour when omitted. Specifically:
+
+| Omitted block | Default applied by the runtime |
+|---|---|
+| `evidence_coupling` | `mode: optional` — agent decides per call via `event.evidence.required` (ESS §2). |
+| `escalation_matrix` | The conservative default in EM §3 (`sev_high`, `sev_critical` → human review required). |
+| `output_constraints` | `format: text`, all validation off — agent's outputs are treated as free-form. |
+
+Agents that need stricter behaviour **MUST** declare the corresponding block. Agents whose contract goal is "as strict as possible" **SHOULD** declare all three.
+
+### 9b. Cross-block consistency the registry MUST verify
+
+At registration time the registry **MUST** refuse manifests that combine these blocks inconsistently:
+
+- `evidence_coupling.mode = mandatory` requires `permissions[]` to include both `evidence.create` and `chain.append`.
+- `evidence_coupling.mode = forbidden` requires `permissions[]` to **NOT** include `evidence.create`.
+- `escalation_matrix.<tier>.human_review_required = true` requires at least one `returns[]` entry with `requires_human_review = true`.
+- `output_constraints.template_locked = true` requires `permissions[]` to include `tenant.read` (template loading).
+- `output_constraints.confidence_score = mandatory` requires `output_constraints.format` to be `strict_json` or `json` (otherwise the field has nowhere to live).
+
+A v1.1-aware registry that fails these cross-checks **MUST** emit `policy.violation` and refuse the registration.
+
+### 9c. Conformance checklist (v1.1 additions)
+
+An agent is ACS v1.1-conformant if and only if:
+
+- [ ] It satisfies the v1.0 conformance checklist (§8).
+- [ ] If `evidence_coupling` is present: it conforms to EVC v1.0 (`evidence-coupling.md` §5).
+- [ ] If `escalation_matrix` is present: it conforms to EM v1.0 (`escalation-matrix.md` §8).
+- [ ] If `output_constraints` is present: it conforms to OC v1.0 (`output-constraints.md` §5).
+- [ ] All cross-block consistency checks in §9b pass.

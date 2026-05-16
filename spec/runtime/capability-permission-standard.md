@@ -1,6 +1,6 @@
 # CPS — Capability & Permission Standard
 
-**Version:** 1.0
+**Version:** 1.1 (introduced v1.0; v1.1 extends the `isolation` block — see §9)
 **Status:** Draft
 **Schema:** [`schemas/capability.schema.json`](schemas/capability.schema.json)
 
@@ -303,3 +303,65 @@ An agent is CPS-conformant at v1.0 if and only if:
 - [ ] At runtime, the agent never opens an outbound connection to a host not in `egress_hosts` (if `egress_allowlist`).
 - [ ] At runtime, the agent never reads a secret not in `secret_scope`.
 - [ ] Trust level changes only via a new manifest registration with a bumped `agent.version`.
+
+---
+
+## 9. v1.1 — `isolation` block extension
+
+CPS v1.1 adds two fields to the `isolation` block, refining the trust boundary along axes the v1.0 block did not address:
+
+```yaml
+capability:
+  isolation:
+    network:        "egress_allowlist"
+    egress_hosts:   [ "api.example.com" ]
+    fs_writes:      "scoped_volume"
+    secret_scope:   [ "elster_certificate" ]
+    pii_access:             "none" | "minimised" | "scoped" | "full"   # NEW v1.1
+    cross_tenant_visibility: "forbidden" | "aggregate_only" | "full"   # NEW v1.1
+```
+
+### 9a. `pii_access`
+
+Bounds the agent's exposure to personally-identifiable information regardless of which tenant data passes through it.
+
+| Value | Behaviour |
+|---|---|
+| `none` | The agent **MUST NOT** receive any field flagged as PII. The runtime **MUST** strip such fields before invocation. |
+| `minimised` | The agent receives PII only after one-way transformation: emails as SHA-256 hashes, names as initials, IPs as `/24` masks. The runtime applies the transformation. |
+| `scoped` | The agent receives PII in cleartext but only for the records it explicitly requests (e.g., one tenant user, one document). Bulk PII reads are refused. |
+| `full` | The agent receives PII in cleartext without scope limits. Reserved for legal-export and DSR-fulfilment agents. **MUST** be paired with `decides: false` and HRP gating per HRP §3 (personal-data egress). |
+
+The default for omitted `pii_access` at v1.1 is `minimised` — the most defensible posture for an agent that has not declared its needs.
+
+### 9b. `cross_tenant_visibility`
+
+Bounds the agent's view across tenants — independent of how many tenants the agent serves.
+
+| Value | Behaviour |
+|---|---|
+| `forbidden` | The agent operates strictly within the dispatching tenant. Any cross-tenant query, even read-only, is refused at the boundary. The default. |
+| `aggregate_only` | The agent **MAY** read **aggregated** statistics across tenants (counts, percentiles, anomaly baselines), never per-tenant rows. The runtime enforces this by routing the agent's queries through aggregation views, not the base tables. |
+| `full` | The agent **MAY** read raw data across tenants. Reserved for platform-operator agents (incident triage, capacity planning). **MUST** be paired with `trust_level: observe_only` or `annotate`, never `prepare` or higher. |
+
+The default for omitted `cross_tenant_visibility` at v1.1 is `forbidden` — tenant isolation remains the runtime's primary security boundary (ESS §7).
+
+### 9c. Cross-block consistency the registry MUST verify (v1.1 additions)
+
+- `pii_access = full` requires `compliance.decides = false` AND at least one `returns[]` entry with `requires_human_review = true`.
+- `cross_tenant_visibility in (aggregate_only, full)` requires `trust_level in (observe_only, annotate)` — never `prepare` or higher.
+- `cross_tenant_visibility = full` requires the manifest's `agent.owner` to be `realsync-platform` (not a tenant-installed agent).
+
+A v1.1-aware registry that fails these cross-checks **MUST** emit `policy.violation` and refuse the registration.
+
+### 9d. Conformance checklist (v1.1 additions)
+
+An agent is CPS v1.1-conformant if and only if:
+
+- [ ] It satisfies the v1.0 conformance checklist (§8).
+- [ ] If `isolation.pii_access` is present: it is one of `none | minimised | scoped | full`.
+- [ ] If `isolation.cross_tenant_visibility` is present: it is one of `forbidden | aggregate_only | full`.
+- [ ] All cross-block consistency checks in §9c pass.
+- [ ] At runtime, the agent never receives PII fields when `pii_access = none`.
+- [ ] At runtime, the agent never reads cross-tenant data when `cross_tenant_visibility = forbidden`.
+- [ ] At runtime, the agent receives only aggregated views when `cross_tenant_visibility = aggregate_only`.

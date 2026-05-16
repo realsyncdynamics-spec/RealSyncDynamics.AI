@@ -51,6 +51,31 @@ A logical isolation unit. All non-system events **MUST** carry a `tenant_id` and
 
 ---
 
+## v1.1 additions
+
+### Evidence Coupling
+The four-mode declaration on an agent's manifest (`mandatory | optional | linked | forbidden`) that specifies whether the agent **MUST**, **MAY**, **MUST link to**, or **MUST NOT** produce evidence. Defined by EVC.
+
+### Escalation Matrix
+The per-severity-tier behaviour declaration on an agent's manifest. Each tier (`sev_info` … `sev_critical`) specifies whether the agent auto-continues, requires triage, or requires human review. Defined by EM.
+
+### Output Constraints
+The output-shape declaration on an agent's manifest — `format`, `schema_validation`, `confidence_score`, `template_locked`, `hallucination_sensitive`. Pins the agent's response surface so downstream consumers can rely on it. Defined by OC.
+
+### Triage
+A pre-review human gate distinct from HRP review. A triager (role: `admin`+) groups, prioritises, dismisses, or escalates events to review. The triager **MAY** also be the eventual reviewer; HRP §4 (no self-review) only constrains the escalator-to-reviewer step.
+
+### PII Access (`pii_access`)
+The four-level declaration on a CPS `isolation` block specifying the agent's exposure to personally-identifiable information: `none` (PII fields stripped before invocation), `minimised` (one-way transformations), `scoped` (cleartext for explicitly requested records only), `full` (cleartext, requires HRP gating).
+
+### Cross-Tenant Visibility (`cross_tenant_visibility`)
+The three-level declaration on a CPS `isolation` block specifying the agent's view across tenants: `forbidden` (default; tenant isolation strict), `aggregate_only` (statistics only, never per-tenant rows), `full` (raw cross-tenant reads — operator agents only).
+
+### Runtime Freeze
+The `frozen` agent state. Triggered by the runtime when an agent emits repeated `sev_critical` events AND its manifest carries `escalation_matrix.sev_critical.runtime_freeze_possible = true`. Bus deliveries pause until an operator clears the state via `frozen.unfreeze`.
+
+---
+
 ## Deprecated / non-preferred terms
 
 | Don't use | Use instead | Why |

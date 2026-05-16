@@ -12,6 +12,56 @@ Nothing yet.
 
 ---
 
+## v1.1 — 2026-05-16
+
+Backwards-compatible MINOR bump. Adds three optional manifest blocks on the agent contract and two optional fields on the CPS isolation block. A v1.0 manifest remains conformant under v1.1; the new fields default to safe behaviour when omitted.
+
+### Standards introduced at v1.1
+
+| Spec | File | Version | Purpose |
+|---|---|---|---|
+| Evidence Coupling | [`evidence-coupling.md`](evidence-coupling.md) | 1.0 | Per-agent evidence obligation (`mandatory` / `optional` / `linked` / `forbidden`) |
+| Escalation Matrix | [`escalation-matrix.md`](escalation-matrix.md) | 1.0 | Per-severity-tier behaviour (`auto_continue` / `triage_required` / `human_review_required`, `runtime_freeze_possible` for critical) |
+| Output Constraints | [`output-constraints.md`](output-constraints.md) | 1.0 | Per-agent output shape + validation (`format`, `schema_validation`, `confidence_score`, `template_locked`, `hallucination_sensitive`) |
+
+### Existing standards revised at v1.1
+
+| Spec | File | Old → New | Change |
+|---|---|---|---|
+| Agent Contract | [`agent-contract.md`](agent-contract.md) | 1.0 → 1.1 | New §9 — registers the three v1.1 blocks above as optional manifest fields. v1.1 also defines cross-block consistency rules the registry MUST enforce at registration. |
+| Capability & Permission | [`capability-permission-standard.md`](capability-permission-standard.md) | 1.0 → 1.1 | New §9 — extends `isolation` block with `pii_access` (`none` / `minimised` / `scoped` / `full`) and `cross_tenant_visibility` (`forbidden` / `aggregate_only` / `full`). |
+
+### JSON Schemas added at v1.1
+
+- `schemas/evidence-coupling.schema.json`
+- `schemas/escalation-matrix.schema.json`
+- `schemas/output-constraints.schema.json`
+
+### JSON Schemas updated at v1.1 (backwards-compatible additive changes)
+
+- `schemas/agent-contract.schema.json` — adds optional `evidence_coupling`, `escalation_matrix`, `output_constraints` (each via `$ref` to its dedicated schema).
+- `schemas/capability.schema.json` — adds optional `isolation.pii_access`, `isolation.cross_tenant_visibility`.
+
+### Reference implementation status at v1.1
+
+| Spec | Implemented in | Conformance |
+|---|---|---|
+| EVC | `src/runtime/agents/developerRemediationAgent.contract.ts` (PR #264) declares `evidence_coupling: { mode: 'linked' }` | partial (declaration only; runtime enforcement Phase B) |
+| EM  | Same contract declares `escalation_matrix` per-tier | partial (declaration only) |
+| OC  | Same contract declares `output_constraints: { format: 'strict_json', ... }` | partial (declaration only) |
+| ACS v1.1 | Same contract declares `spec_version: '1.1'` and the three new blocks | declaration-conformant |
+| CPS v1.1 | None yet — `pii_access` and `cross_tenant_visibility` need to be added to existing agent manifests as a follow-up | not yet |
+
+### Backwards-compatibility guarantee
+
+A consumer that reads only the v1.0 fields **MUST** continue to function correctly when reading a v1.1 manifest. The MINOR bump enforces that:
+
+- All v1.1 additions are **optional** at the schema level.
+- Defaults for omitted v1.1 fields are documented in the respective spec sections (ACS §9a, CPS §9a/§9b).
+- A v1.0 consumer reading a v1.1 manifest **MUST** ignore unknown fields (per ESS §6 / README §Versioning).
+
+---
+
 ## v1.0 — 2026-05-15
 
 Initial publication of the seven-standard suite.

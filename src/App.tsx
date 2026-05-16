@@ -170,6 +170,7 @@ const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
+// CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
 import { CookieConsent } from './components/CookieConsent';
 import { AssistentChip } from './components/AssistentChip';
 import { TenantProvider } from './core/access/TenantProvider';

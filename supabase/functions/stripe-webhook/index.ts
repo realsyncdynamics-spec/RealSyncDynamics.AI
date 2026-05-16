@@ -9,6 +9,7 @@
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { reportServerConversion } from '../_shared/conversions-api.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -85,6 +86,7 @@ Deno.serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
+        await reportPurchaseToAdPlatforms(session, req);
         break;
       }
       // Add more handlers as the billing surface grows; ignore unknown types.
@@ -290,5 +292,42 @@ async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Che
   if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
     // @ts-ignore
     EdgeRuntime.waitUntil(triggerPromise);
+  }
+}
+
+/**
+ * Server-side Purchase fan-out to ad platforms. Uses Stripe `session.id` as
+ * the dedup eventId so a corresponding client-side pixel (if it ever fires
+ * from a /success page) is merged by Meta instead of double-counted.
+ *
+ * Failures are intentionally swallowed — ad attribution loss must not roll
+ * back the subscription write, since Stripe will retry the webhook on 500.
+ */
+async function reportPurchaseToAdPlatforms(
+  session: Stripe.Checkout.Session,
+  req: Request,
+): Promise<void> {
+  const amount = session.amount_total ?? 0;
+  if (amount <= 0) return;
+
+  try {
+    await reportServerConversion({
+      eventName: session.mode === 'subscription' ? 'Subscribe' : 'Purchase',
+      eventId: session.id,
+      eventTime: Math.floor(Date.now() / 1000),
+      value: amount / 100,
+      currency: (session.currency ?? 'eur').toUpperCase(),
+      user: {
+        email: session.customer_details?.email ?? session.customer_email ?? undefined,
+        phone: session.customer_details?.phone ?? undefined,
+        city: session.customer_details?.address?.city ?? undefined,
+        country: session.customer_details?.address?.country ?? undefined,
+        clientIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+        userAgent: req.headers.get('user-agent') ?? undefined,
+      },
+      sourceUrl: session.success_url ?? undefined,
+    });
+  } catch (err) {
+    console.warn('[stripe-webhook] purchase fan-out failed:', (err as Error).message);
   }
 }

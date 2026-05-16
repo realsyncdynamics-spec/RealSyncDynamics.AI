@@ -136,7 +136,13 @@ export function AuditLanding() {
               ReportView renders below it once the scan completes. */}
           {!classicForm && (
             <>
-              <AuditChatHero key={chatGen} onScanComplete={setReport} />
+              <AuditChatHero
+                key={chatGen}
+                onScanComplete={(r) => {
+                  setReport(r);
+                  trackConversion('Lead', { content_name: 'dsgvo_audit' });
+                }}
+              />
               {!report && (
                 <div className="mt-4 text-center">
                   <button

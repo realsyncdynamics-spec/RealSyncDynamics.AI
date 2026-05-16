@@ -17,37 +17,39 @@
 
 ## Preisstruktur
 
+> **Single Source of Truth:** `src/config/pricing.ts`. Diese Tabelle nur Marketing-Erlaeuterung.
+
 | Plan | Preis | Zielgruppe |
 |---|---|---|
 | Free Audit | 0 EUR | Lead-Generierung, SEO, virale Verbreitung |
-| Starter | 49 EUR/Monat | Kleine Unternehmen, Freelancer, lokale Businesses |
-| Growth / Business | 199 EUR/Monat | KMU, E-Commerce, SaaS — **Hauptprodukt** |
-| Agency Suite | 799 EUR/Monat | Webagenturen, Datenschutzberater, IT-Dienstleister |
-| Enterprise | 3.000–50.000 EUR/Jahr | Konzerne, Oeffentliche Stellen, Healthcare, Banken |
+| Starter | 79 EUR/Monat | Kleine Unternehmen, Freelancer, lokale Businesses |
+| Growth / Business | 249 EUR/Monat | KMU, E-Commerce, SaaS — **Hauptprodukt** |
+| Agency Suite | 699 EUR/Monat | Webagenturen, Datenschutzberater, IT-Dienstleister |
+| Enterprise | ab 1.500 EUR/Monat | Konzerne, Oeffentliche Stellen, Healthcare, Banken |
 
 ### Free Audit
 - URL Scan + Compliance Score
 - Cookie Detection + Tracker Detection
 - 3 kritische Risiken + Mini PDF Report
 
-### Starter (49 EUR/Monat)
+### Starter (79 EUR/Monat)
 - Vollstaendiger DSGVO-Scan + Consent-Analyse
 - Datenschutzerklaerung Generator + Impressum Generator
 - Monatlicher Re-Scan + E-Mail Alerts
 
-### Growth / Business (199 EUR/Monat)
+### Growth / Business (249 EUR/Monat)
 - Taeglisches Monitoring + Third-Party Detection
 - **Consent Timing Analyse** (welche Tracker laden VOR Consent?)
 - Auto-Fix Empfehlungen + PDF Audit Reports
 - Teamzugaenge + Verlauf & Historie + Risk Dashboard
 - Security Header Analyse + Form Validation
 
-### Agency Suite (799 EUR/Monat)
+### Agency Suite (699 EUR/Monat)
 - White Label + Multi-Tenant + mehrere Kundendomains
 - API-Zugriff + Kundenverwaltung
 - Automatische Reports + Prioritaets-Scans
 
-### Enterprise (3.000–50.000 EUR/Jahr)
+### Enterprise (ab 1.500 EUR/Monat)
 - Individuelle Regeln + SLA + Hosting-Optionen
 - Compliance API + AI Act Module + DSB Integration
 - Continuous Compliance + Evidence Vault + Audit Trails

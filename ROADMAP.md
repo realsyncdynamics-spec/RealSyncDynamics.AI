@@ -2,6 +2,23 @@
 
 > **Positionierung:** Automated Digital Compliance Infrastructure — nicht "KI baut Websites", sondern strukturierte Datenschutz-, Consent- und Website-Compliance-Infrastruktur fuer Unternehmen und Agenturen.
 
+> **Scope-Disziplin:** Was im Kern liegt und was bewusst draußen bleibt, ist in [`docs/PRODUCT_FOCUS.md`](docs/PRODUCT_FOCUS.md) festgelegt. Phase A (siehe unten) ist Voraussetzung für Phase 2–4.
+
+---
+
+## Phase A — Runtime härten (aktuell)
+
+**Ziel:** Bevor neue Features dazukommen, ist der Kern stabil. Vier Bausteine:
+
+| Baustein | Quelle | Status |
+|---|---|---|
+| Event-Schema (Governance Signals) | `src/core/runtime/governanceEvents.ts` | ✅ eingefroren |
+| Evidence-Hashing (kanonisches JSON + SHA-256) | `src/core/runtime/evidence.ts` | ✅ implementiert |
+| Agent-Contracts | `src/core/runtime/types.ts` + `src/lib/enterprise-ai-os/agents/` | ✅ definiert |
+| Remediation-Layer (typisiert) | `src/core/runtime/remediation.ts` | ✅ Skelett |
+
+Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-System, vollständiges Evidence-Vault mit Ledger-Anchoring, AI-Act-Vollumfang. Siehe `docs/PRODUCT_FOCUS.md`.
+
 ---
 
 ## Produkt-Struktur

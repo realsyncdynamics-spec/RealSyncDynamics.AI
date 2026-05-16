@@ -1,9 +1,10 @@
 # RealSyncDynamics.AI
 
-EU-souveräne SaaS-Plattform für Creator und Agenturen.
+EU-souveräne Compliance-Infrastruktur für Unternehmen und Agenturen.
 
-Provenienz, AI-Workflows, VPS-Operations — Multi-Tenant, opt-in
-EU-lokale AI-Inferenz, transparentes Billing.
+Automatisiertes DSGVO- und EU-AI-Act-Audit, kontinuierliches Monitoring,
+Evidence-Vault mit Hash-Chain — Multi-Tenant, opt-in EU-lokale
+AI-Inferenz, transparentes Billing.
 
 **Live:** https://realsyncdynamicsai.de · **Backend:** Supabase
 (EU-Region) · **AI-Stack:** Anthropic / Google / OpenAI für Cloud-Pfad,
@@ -15,12 +16,11 @@ EU-lokale AI-Inferenz, transparentes Billing.
 
 | Säule | Pfad | Status |
 |---|---|---|
-| **CreatorSeal (C2PA)** Provenance + Herkunftsnachweis für digitale Assets | `/dashboard` → C2PA Assets | implementiert |
 | **AI-Tools** mit Per-Plan-Quotas, Audit-Log, Cost-Tracking, opt-in EU-lokal-Routing | `ai-invoke` Edge Function | live |
 | **Kodee · VPS-Sidekick** Conversational Assistant für SSH-Diagnose, Service-Restart, etc. | `/kodee` | implementiert |
 | **n8n Workflow-Engine** Per-Tenant-Workflows mit Audit-Log + Cost-Tracking | `/workflows` | implementiert |
 | **Multi-Tenant-Workspaces** mit Owner/Admin/Editor/Viewer-Rollen + Invites | `/tenant/invites` | implementiert |
-| **Stripe-Billing** Bronze/Silver/Gold/Enterprise · metered usage + entitlements | `/pricing` · `/billing/usage` | implementiert |
+| **Stripe-Billing** Free / Starter / Growth / Agency / Enterprise · metered usage + entitlements | `/pricing` · `/billing/usage` | implementiert |
 | **DSGVO-Rechte** Datenexport (Art. 15) + Löschung (Art. 17) | `/settings/account` | implementiert |
 | **Datenresidenz-Wahl** Per-User-Toggle und Per-Tenant-Policy für `cloud` vs `eu_local` | `/settings/ai-residency` | implementiert |
 
@@ -44,7 +44,7 @@ EU-lokale AI-Inferenz, transparentes Billing.
    │     kodee-onboard / kodee-diagnose / kodee-advise
    │     tenant-invite / usage-increment
    │     ai-invoke
-   └── Storage (C2PA-Asset-Files)
+   └── Storage (audit-evidence + tax-evidence-exports)
    │
    ▼ residency=cloud
 [Anthropic / Google / OpenAI]
@@ -91,13 +91,10 @@ npm run dev    # http://localhost:3000
 
 ## Plans
 
-| Plan | Monatlich | AI-Calls | Workflow-Runs | Team-Seats |
-|---|---|---|---|---|
-| Free | 0 € | 0 | 0 | 1 |
-| Bronze | 29 € | 50 | 0 | 1 |
-| Silver | 99 € | 250 | 100 | 10 |
-| Gold | 299 € | 2500 | 1000 | unbegrenzt |
-| Enterprise | individuell | unbegrenzt | unbegrenzt | unbegrenzt |
+Single Source of Truth: [`src/config/pricing.ts`](src/config/pricing.ts).
+Live unter `/pricing`. Aktuelle Tiers: Free Audit · Starter (79 €) ·
+Growth (249 €) · Agency (699 €) · Enterprise (ab 1.500 €). Details +
+Feature-Listen pro Tier siehe [`ROADMAP.md`](ROADMAP.md).
 
 Plans werden in Stripe verwaltet, gemappt via `public.products`.
 

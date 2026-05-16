@@ -139,6 +139,7 @@ const GovernanceIncidentsView = lazy(() => import('./features/governance/Inciden
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
+const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
 const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
@@ -399,6 +400,7 @@ function RoutesWithTracking() {
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />
+      <Route path="/admin/social" element={<AdminSocialPreviewPage />} />
       <Route path="/admin/customers" element={<CustomersView />} />
       <Route path="/admin/onboarding" element={<OnboardingView />} />
       <Route path="/admin/rebuilds" element={<RebuildsView />} />

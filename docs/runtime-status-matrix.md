@@ -60,8 +60,8 @@ Wenn ein 🟢-Modul mit einem offenen Finding verbunden ist, **muss** der Caveat
 | Cookie / Tracker Scan (server-side fetch) | 🟢 | produktiv | append-only `gdpr_audits` | `cookie-scan` Edge Function live |
 | Deep Cookie Scan (Playwright) | 🟡 | beta | partial | `cookie-scan-deep` + `services/playwright-scanner` — Deployment ausstehend laut ROADMAP |
 | Browser Detection (Extension) | 🟢 | produktiv | client-side telemetry | drei parallele Extensions (`extension/`, `extension-governance/`, `extension-ai-monitor/`) — **Caveat:** Konsolidierung auf eine kanonische Extension empfohlen, bevor Enterprise-Sales |
-| Consent Detection / Reject-Equivalence | 🟢 | produktiv | UI + telemetry | **Caveat:** Findings #3 (`docs/compliance/findings-2026-05-14.md`) muss vor externer Kommunikation als geschlossen markiert werden (UX-Validierung + Playwright-Test) |
-| Vendor / Sub-Processor Inventory | 🟢 | produktiv | inventory table | **Caveat:** Findings #6 (AI Gateway / LM Studio) muss in `SubProcessors.tsx` ergänzt werden, sonst nicht in Enterprise-Kommunikation referenzierbar |
+| Consent Detection / Reject-Equivalence | 🟢 | produktiv | UI + telemetry + e2e | Findings #3 geschlossen — `e2e/cookie-consent.spec.ts` verifiziert UI-Parität (Bounding-Box ±10 %, identischer font-weight, kein Mehr-Klick-Versteck) |
+| Vendor / Sub-Processor Inventory | 🟢 | produktiv | inventory page | Findings #6 geschlossen — AI Gateway / LM Studio / EU-lokal-Profile in `SubProcessors.tsx` ergänzt |
 | Vendor Drift Detection | 🔴 | roadmap | – | im Blueprint spezifiziert, noch nicht implementiert |
 | AI Asset Discovery (Cloud Connectors / CI Hooks) | 🔴 | roadmap | – | Blueprint §2.1 DISCOVER, noch nicht gebaut |
 
@@ -127,7 +127,7 @@ Wenn ein 🟢-Modul mit einem offenen Finding verbunden ist, **muss** der Caveat
 | Auth / RBAC | 🟢 | produktiv | – | Supabase Auth, Owner/Admin/Editor/Viewer |
 | EU-Hosting (Supabase eu-central) | 🟢 | produktiv | – | Primärregion EU |
 | EU-lokale AI-Inferenz (opt-in) | 🟢 | produktiv | residency routing | Ollama qwen3:4b auf Hostinger DE — **Caveat:** opt-in pro Tenant/User, Cloud-Pfad bleibt Standard |
-| Security Headers (HSTS, X-Frame, CSP) | 🟡 | beta | partial | **Caveat:** Findings #1, #2, #4 (`docs/compliance/findings-2026-05-14.md`) offen — Härtung in Arbeit |
+| Security Headers (HSTS, X-Frame, CSP) | 🟡 | beta | partial | Code geschlossen: `infra/nginx/security-headers.conf` (HSTS, X-Frame, Permissions-Policy, Referrer-Policy) und CSP-CI-Guard `test/compliance/no-raw-tracker-scripts.test.ts`. **Caveat:** Deployment auf Hostinger ausstehend → bis Header live + per `curl -I` verifiziert sind, bleibt 🟡. CSP-Nonce-Umstellung weiterhin als Folge-PR offen. |
 | Externe Sicherheits-Auditierung | 🔴 | roadmap | – | noch keine externe Pentest-/Compliance-Auditierung |
 | SOC 2 / ISO 27001 | 🔴 | roadmap | – | – |
 | AI-Act Konformitätsbewertung (extern) | 🔴 | roadmap | – | – |
@@ -185,8 +185,9 @@ Diese Liste ist nicht abschließend. Im Zweifel gilt: **unterstützt** statt **g
 
 ## Offene Folgearbeiten aus dieser Validierung
 
-1. **Findings #1, #2, #3, #4, #6** in `docs/compliance/findings-2026-05-14.md` schließen oder klar als Vorbehalt zu den entsprechenden 🟢-Modulen markieren.
-2. **Browser-Extension-Konsolidierung** auf eine kanonische Variante (`extension/` vs `extension-governance/` vs `extension-ai-monitor/`).
-3. **Governance Spec v1.0** anlegen (ESS / ACS / RCS / Evidence-Hash-Chain / Replay / Human Review / Retention / Redaction / Remediation Lifecycle).
-4. **README + ROADMAP + Blueprint** auf die Matrix-Bewertungen ausrichten — Status-Aussagen in diesen Dokumenten durch Matrix-Referenz ersetzen.
-5. **Sprach-Audit** der öffentlichen Website / Landingpages / Sales-Material gegen die verbotenen Formulierungen.
+1. **Security-Header-Deployment auf Hostinger** (`infra/nginx/security-headers.conf`) — Snippet in `/etc/nginx/snippets/` einbauen, `nginx -t`, `systemctl reload nginx`, mit `curl -I https://realsyncdynamicsai.de` verifizieren. Solange dieser Schritt fehlt, bleibt Security Headers 🟡.
+2. **CSP-Nonce-Umstellung** (Folge-PR zu Befund #2) — Build-time-Plugin oder SSR, damit Tracker-Origins aus `script-src` entfernt werden können.
+3. **Browser-Extension-Konsolidierung** auf eine kanonische Variante (`extension/` vs `extension-governance/` vs `extension-ai-monitor/`).
+4. **Governance Spec v1.0** anlegen (ESS / ACS / RCS / Evidence-Hash-Chain / Replay / Human Review / Retention / Redaction / Remediation Lifecycle).
+5. **README + ROADMAP + Blueprint** auf die Matrix-Bewertungen ausrichten — Status-Aussagen in diesen Dokumenten durch Matrix-Referenz ersetzen.
+6. **Sprach-Audit** der öffentlichen Website / Landingpages / Sales-Material gegen die verbotenen Formulierungen.

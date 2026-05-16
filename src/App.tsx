@@ -109,7 +109,6 @@ import { EuAiActCheck } from './pages/seo/EuAiActCheck';
 import { CookieCompliance } from './pages/seo/CookieCompliance';
 // Public Legal-Pages bleiben eager (SEO + small bundle)
 import { PricingPage } from './features/billing/PricingPage';
-import { CheckoutPage } from './features/billing/CheckoutPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
@@ -346,7 +345,7 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<UsageView />} />
       <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/checkout/:planKey" element={<CheckoutPage />} />
+      <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       <Route path="/tenant/invites" element={<InvitesView />} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
       {/* Auth-gated tenant dashboard moved to /governance/admin so /governance

@@ -85,32 +85,35 @@ export interface CapabilityBlock {
   };
 }
 
-// ── v1.1 forward-declarations (specs follow in a separate PR) ──────
-//
-// These three blocks are not yet in a published spec; they prefigure
-// the v1.1 hardening additions ("Trust Boundaries refinement",
-// "Escalation Matrix", "Evidence Coupling Rules", "Deterministic
-// Output Constraints"). They are declared here so the first agent
-// shipping them is self-documenting; the spec itself will catch up
-// in spec/runtime/ v1.1.
+// ── v1.1 blocks (normative — spec landed in #265) ──────────────────
 
 export type EvidenceMode = 'mandatory' | 'optional' | 'linked' | 'forbidden';
 
 export interface EvidenceCoupling {
-  /** Whether the agent's outputs MUST/MAY/MUST NOT produce evidence. */
+  /** Whether the agent's outputs MUST / MAY / MUST link to / MUST NOT
+   *  produce evidence. */
   mode: EvidenceMode;
-  /** When mode = 'mandatory', a hash MUST be computed and persisted. */
+  /** Only valid when mode='mandatory'. */
   hash_required?: boolean;
-  /** When mode = 'mandatory', the entry MUST also append to the chain. */
+  /** Only valid when mode='mandatory'. */
   ledger_required?: boolean;
+  /** Only valid when mode='linked'. Glob-allowed subject pattern that
+   *  the linked evidence record's event_type MUST match. */
+  linked_subject?: string;
 }
 
 export interface EscalationMatrix {
-  sev_info?:     { auto_continue: boolean };
-  sev_low?:      { auto_continue: boolean };
-  sev_medium?:   { triage_required?: boolean; auto_continue?: boolean };
-  sev_high?:     { human_review_required: boolean };
-  sev_critical?: { runtime_freeze_possible: boolean; human_review_required?: boolean };
+  sev_info?:     { auto_continue?: boolean; triage_required?: boolean; human_review_required?: boolean };
+  sev_low?:      { auto_continue?: boolean; triage_required?: boolean; human_review_required?: boolean };
+  sev_medium?:   { auto_continue?: boolean; triage_required?: boolean; human_review_required?: boolean };
+  sev_high?:     { auto_continue?: boolean; triage_required?: boolean; human_review_required?: boolean };
+  sev_critical?: {
+    auto_continue?: boolean;
+    triage_required?: boolean;
+    human_review_required?: boolean;
+    runtime_freeze_possible?: boolean;
+  };
+  triage_timeout_action?: 'dismiss' | 'process' | 'escalate_to_review';
 }
 
 export interface OutputConstraints {
@@ -124,20 +127,27 @@ export interface OutputConstraints {
 }
 
 // ── The full agent manifest ────────────────────────────────────────
+//
+// Conforms to agent-contract.schema.json. The schema is the spec;
+// this type is a TS mirror so contracts type-check at compile time.
 
 export interface AgentContract {
   spec_version: '1.0' | '1.1';
+
   agent: {
-    id: string;                    // canonical, kebab-case
-    name: string;                  // human label
-    type: AgentType;
-    version: string;               // SemVer
-    description: string;
-    owner: string;
+    /** Canonical kebab-case identifier — the registry's primary key.
+     *  Pattern: ^[a-z][a-z0-9-]{1,62}$ */
+    name:        string;
+    type:        AgentType;
+    version:     string;            // SemVer
+    description: string;            // Human label / free-text
+    owner:       string;            // 'realsync-platform' or tenant-installed
   };
-  ai_act_role: AiActRole;
-  decides: boolean;                // ACS §6
-  capability: CapabilityBlock;
+
+  /** ACS root-level permissions allow-list (closed set per CPS §3).
+   *  When `capability` is also present, the two lists complement each
+   *  other — the consistency validator unions them. */
+  permissions: string[];
 
   accepts: Array<{ subject: string; min_severity?: EventSeverity }>;
   returns: Array<{ subject: string; requires_human_review?: boolean }>;
@@ -147,13 +157,17 @@ export interface AgentContract {
     optional?: string[];
   };
 
-  // v1.1 forward-declarations — see comment block above.
-  evidence_coupling?: EvidenceCoupling;
-  escalation_matrix?: EscalationMatrix;
-  output_constraints?: OutputConstraints;
-
-  human_review?: {
-    required: boolean;
-    reviewer_roles: Array<'owner' | 'admin' | 'developer' | 'technical_owner' | 'dpo'>;
+  compliance: {
+    ai_act_role: AiActRole;
+    decides:     boolean;            // ACS §6
   };
+
+  /** Optional CPS capability block. CPS-conformant agents declare one;
+   *  pure ACS v1.0 agents can omit it. */
+  capability?: CapabilityBlock;
+
+  // v1.1 normative additions
+  evidence_coupling?:  EvidenceCoupling;
+  escalation_matrix?:  EscalationMatrix;
+  output_constraints?: OutputConstraints;
 }

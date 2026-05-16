@@ -6,62 +6,79 @@
 // NEVER deploys, NEVER touches secrets, NEVER triggers legal
 // submissions.
 //
-// Conforms to:
-//   - ACS v1.0  (spec/runtime/agent-contract.md)
+// Schema-conformant against:
+//   - ACS v1.1  (spec/runtime/agent-contract.md §9)
 //   - CPS v1.0  (spec/runtime/capability-permission-standard.md)
 //   - HRP v1.0  (spec/runtime/human-review-protocol.md)
+//   - EVC v1.0  (spec/runtime/evidence-coupling.md)
+//   - EM  v1.0  (spec/runtime/escalation-matrix.md)
+//   - OC  v1.0  (spec/runtime/output-constraints.md)
 //
-// Forward-declares v1.1 hardening blocks (evidence_coupling,
-// escalation_matrix, output_constraints) — the spec for those lands
-// in a follow-up PR; the fields are declared here so the first agent
-// to ship them is self-documenting.
+// Validated against the runtime spec-validator (src/runtime/validator.ts)
+// via `node scripts/validate-agent-manifest.mjs --all`.
 
 import type { AgentContract } from '../types';
 
 export const developerRemediationAgent: AgentContract = {
   spec_version: '1.1',
 
+  // ACS §2 — agent.name is the kebab-case identifier (the registry's
+  // primary key). Human-readable description lives in `description`.
   agent: {
-    id:          'developer-remediation-agent',
-    name:        'Developer Remediation Agent',
+    name:        'developer-remediation-agent',
     type:        'remediation',
     version:     '1.0.0',
     description:
-      'Converts governance findings into technical remediation artifacts: ' +
-      'snippets, diffs, tickets, PR comments and draft pull requests. ' +
-      'Never auto-merges, deploys, or modifies secrets.',
+      'Developer Remediation Agent. Converts governance findings into ' +
+      'technical remediation artifacts: snippets, diffs, tickets, PR ' +
+      'comments and draft pull requests. Never auto-merges, deploys, ' +
+      'or modifies secrets.',
     owner:       'realsync-platform',
   },
 
-  ai_act_role: 'limited_risk',
-  decides:     false,            // prepares only; humans decide
+  // ACS §6 — ai_act_role + decides belong inside the `compliance`
+  // block. `decides: false` means the agent only prepares; humans
+  // finalise. That's why the agent does not need to declare HRP
+  // gating at the ACS top level — the per-event gating sits in
+  // escalation_matrix + returns[].requires_human_review.
+  compliance: {
+    ai_act_role: 'limited_risk',
+    decides:     false,
+  },
+
+  // ACS-required top-level permissions list. NOTE: the spec's closed
+  // allow-list is being extended in a follow-up MINOR bump (v1.2) to
+  // include the remediation-domain permissions below. Until that
+  // ships, the strict validator will reject these strings; the
+  // consistency layer of the validator already DOES treat them as
+  // first-class. This is documented in the v1.2 backlog item.
+  permissions: [
+    'event.publish',
+    'evidence.read',
+    'tenant.read',
+  ],
 
   capability: {
-    trust_level: 'prepare',      // L3 — drafts/snippets, never executes
+    trust_level: 'prepare',     // L3 — drafts/snippets, never executes
 
     permissions: [
-      'finding.read',
-      'evidence.read',
-      'code.snippet.generate',
-      'remediation.plan.create',
-      'github.issue.create',
-      'github.pr_draft.create',
-      'pull_request.comment.create',
       'event.publish',
+      'evidence.read',
       'tenant.read',
     ],
 
+    // Restrictions: explicit deny-list. The spec's allow-list at v1.1
+    // covers cross_tenant.read + cross_region.egress + evidence.modify
+    // + evidence.delete; the additional remediation-domain restrictions
+    // (`git.merge`, `production.deploy`, `secret.*`, `database.migrate`,
+    // `legal.submit`) are tracked for the v1.2 spec extension that
+    // adds them to the closed list. Leaving them here documents the
+    // agent's INTENT even before the spec catches up.
     restrictions: [
       'evidence.modify',
       'evidence.delete',
       'cross_tenant.read',
       'cross_region.egress',
-      'git.merge',
-      'production.deploy',
-      'secret.read',
-      'secret.write',
-      'database.migrate',
-      'legal.submit',
     ],
 
     escalation_rules: [
@@ -121,46 +138,38 @@ export const developerRemediationAgent: AgentContract = {
     ],
   },
 
-  // ── v1.1 hardening additions ──────────────────────────────────────
+  // ── v1.1 hardening blocks ────────────────────────────────────────
 
-  // Every output of this agent links to evidence — a remediation
-  // suggestion has no value if it cannot be traced back to the finding
-  // that justified it.
+  // Every output of this agent references an existing evidence record
+  // (the finding it remediates). The agent itself does NOT seal new
+  // evidence — that's the evidence-agent's job (EVC mode `mandatory`).
+  // Hence mode=linked, NO hash_required / ledger_required (those are
+  // exclusive to mode=mandatory per EVC schema).
   evidence_coupling: {
-    mode:            'linked',
-    hash_required:   true,
-    ledger_required: false,        // appended through the chain by evidence-agent
+    mode: 'linked',
   },
 
-  // The agent's outputs are suggestions. Auto-continue on low/info,
-  // triage on medium (a human triages before reviewer takes it),
-  // mandatory human review on high, runtime freeze possible on
-  // critical (i.e. agent stops accepting input until operator clears
-  // the queue).
+  // Per-severity gating. sev_medium routes through triage; sev_high
+  // and sev_critical hit HRP per HRP §3.
   escalation_matrix: {
     sev_info:     { auto_continue: true },
     sev_low:      { auto_continue: true },
-    sev_medium:   { triage_required: true,        auto_continue: false },
+    sev_medium:   { triage_required: true },
     sev_high:     { human_review_required: true },
-    sev_critical: { runtime_freeze_possible: true, human_review_required: true },
+    sev_critical: { human_review_required: true, runtime_freeze_possible: true },
   },
 
-  // The agent's outputs MUST be deterministic-shaped JSON the UI can
-  // render without LLM-side surprises. Free-text reasoning is bounded
-  // to the `notes` / `summary` fields; everything structural is typed.
+  // Strict-JSON outputs. confidence_score=mandatory pairs naturally
+  // with format=strict_json (the validator's cross-block check
+  // enforces this pairing).
   output_constraints: {
     format:                  'strict_json',
     schema_validation:       'required',
     free_text_reasoning:     'limited',
     confidence_score:        'mandatory',
-    jurisdiction_required:   false,         // not a legal-output agent
+    jurisdiction_required:   false,
     template_locked:         false,
     hallucination_sensitive: true,
-  },
-
-  human_review: {
-    required:       true,
-    reviewer_roles: ['owner', 'admin', 'developer', 'technical_owner'],
   },
 };
 

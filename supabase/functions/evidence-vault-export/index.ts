@@ -22,6 +22,11 @@
 // pro Tenant via tenant_signing_keys-Tabelle (Folge-PR). Aktuell global.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
+
+// Diese Funktion exportiert fuer Aufsichtsbehoerden / externe Auditoren.
+// Empfaenger sind Dritte — Klartext-PII darf nicht raus. Policy hart.
+const REDACTION_POLICY: RedactionPolicy = 'always';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -124,6 +129,10 @@ Deno.serve(async (req) => {
   const signingKey = new TextEncoder().encode(signingKeyText);
 
   const enriched: Array<Record<string, unknown>> = [];
+  const totalHits = {
+    email: 0, phone_de: 0, phone_intl: 0, iban: 0, credit_card: 0,
+    german_tax_id: 0, german_ssn: 0, date_of_birth: 0, ipv4: 0, ipv6: 0,
+  };
   for (const r of rows ?? []) {
     // Cast: .select-aliasing liefert die Strings direkt im Hex-Format,
     // supabase-js kann bytea als '\xHEX' liefern, je nach driver. Wir
@@ -141,16 +150,29 @@ Deno.serve(async (req) => {
       `${eventHashHex}:${(r as Record<string, unknown>).chain_index}`,
     );
 
+    // PII-Redaction: Bundle geht an Dritte. event_summary + evidence
+    // werden geschwaerzt, IDs/Hashes/Zeitstempel bleiben strukturell.
+    // event_hash + chain stehen ueber Klartext — die Chain bleibt
+    // verifizierbar (Hash war vor Redaction berechnet).
+    const rec = r as Record<string, unknown>;
+    const { redacted: summaryR, hits: summaryHits } = applyPolicy(
+      rec.event_summary, REDACTION_POLICY);
+    const { redacted: evidenceR, hits: evidenceHits } = applyPolicy(
+      rec.evidence, REDACTION_POLICY);
+    for (const k of Object.keys(totalHits) as Array<keyof typeof totalHits>) {
+      totalHits[k] += summaryHits[k] + evidenceHits[k];
+    }
+
     enriched.push({
-      id: (r as Record<string, unknown>).id,
-      ai_system_id: (r as Record<string, unknown>).ai_system_id,
-      policy_id: (r as Record<string, unknown>).policy_id,
-      event_type: (r as Record<string, unknown>).event_type,
-      event_summary: (r as Record<string, unknown>).event_summary,
-      risk_level: (r as Record<string, unknown>).risk_level,
-      evidence: (r as Record<string, unknown>).evidence,
-      created_at: (r as Record<string, unknown>).created_at,
-      chain_index: (r as Record<string, unknown>).chain_index,
+      id: rec.id,
+      ai_system_id: rec.ai_system_id,
+      policy_id: rec.policy_id,
+      event_type: rec.event_type,
+      event_summary: summaryR,
+      risk_level: rec.risk_level,
+      evidence: evidenceR,
+      created_at: rec.created_at,
+      chain_index: rec.chain_index,
       prev_hash: prevHashHex,
       event_hash: eventHashHex,
       signature,
@@ -159,11 +181,19 @@ Deno.serve(async (req) => {
 
   const tip = enriched.length > 0 ? enriched[enriched.length - 1] : null;
 
+  const hitsTotal = Object.values(totalHits).reduce((a, b) => a + b, 0);
+
   const bundle = {
     tenant_id: tenantId,
     exported_at: new Date().toISOString(),
     range: { from: from.toISOString(), to: to.toISOString() },
     count: enriched.length,
+    redaction: {
+      policy: REDACTION_POLICY,
+      hits_total: hitsTotal,
+      hits_by_category: totalHits,
+      note: 'event_summary + evidence wurden PII-redactiert. event_hash und chain_index sind ueber Klartext berechnet — Verifikation funktioniert nur out-of-band gegen den Originalspeicher des Tenants.',
+    },
     events: enriched,
     tip: tip
       ? {
@@ -183,11 +213,23 @@ Deno.serve(async (req) => {
         '3. prev_hash[i] muss event_hash[i-1] sein (oder null fuer i=1).',
         '4. signature = HMAC-SHA256(KEY, event_hash + ":" + chain_index) — mit dem Tenant-Key out-of-band verifizieren.',
         '5. tip ist der schaerfste Anchor — eine eigene Signatur des tips reicht zum Beweis dass kein Event NACH tip-Erzeugung manipuliert wurde.',
+        '6. event_summary und evidence sind PII-redactiert. Zur Hash-Verifikation muss der Original-Klartext aus dem Tenant-Speicher gezogen werden (out-of-band).',
       ],
       key_handover:
         'Signing-Key wird out-of-band ausgehaendigt (DPA-Anhang). Aufsichtsbehoerden-Verifier braucht Key + Bundle.',
     },
   };
+
+  // Audit-Log: jedes Bundle wird in pii_redaction_log protokolliert.
+  await admin.from('pii_redaction_log').insert({
+    tenant_id: tenantId,
+    function_name: 'evidence-vault-export',
+    policy_applied: REDACTION_POLICY,
+    correlation_id: `${from.toISOString()}..${to.toISOString()}`,
+    hits_total: hitsTotal,
+    hits_by_category: totalHits,
+    payload_bytes: JSON.stringify(bundle).length,
+  });
 
   return new Response(JSON.stringify({ ok: true, bundle }), {
     status: 200,

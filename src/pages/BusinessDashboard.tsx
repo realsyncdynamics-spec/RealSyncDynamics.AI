@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -15,6 +16,8 @@ import {
   Legend,
 } from 'recharts';
 import { SEOHead } from '../components/SEOHead';
+import { AuthGate } from '../features/kodee/connections/AuthGate';
+import { getSupabase } from '../lib/supabase';
 
 type Range = '7d' | '30d' | '90d';
 
@@ -174,6 +177,90 @@ function RangeTabs({ value, onChange }: { value: Range; onChange: (r: Range) => 
 }
 
 export function BusinessDashboard() {
+  return (
+    <>
+      <SEOHead
+        title="Business Dashboard | RealSync Dynamics"
+        description="Business overview: MRR, ARR, net new revenue, customer health, plan mix and recent activity."
+        canonical="/dashboard/business"
+        noIndex
+      />
+      <AuthGate>{(session) => <AdminGate session={session} />}</AuthGate>
+    </>
+  );
+}
+
+function AdminGate({ session }: { session: Session }) {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const sb = getSupabase();
+        const { data: prof, error: err } = await sb
+          .from('profiles')
+          .select('is_super_admin')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (err) {
+          setError(err.message);
+          setAllowed(false);
+          return;
+        }
+        setAllowed(!!prof?.is_super_admin);
+      } catch (e) {
+        if (cancelled) return;
+        setError((e as Error).message);
+        setAllowed(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session.user.id]);
+
+  if (allowed === null) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#05070d] text-sm text-zinc-400">
+        Berechtigungen werden geprüft…
+      </main>
+    );
+  }
+
+  if (allowed === false) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#05070d] px-4 text-white">
+        <div className="max-w-md rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
+          <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300">
+            403
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">Zugriff verweigert</h1>
+          <p className="mt-3 text-sm text-zinc-400">
+            <code className="text-zinc-300">/dashboard/business</code> erfordert
+            super_admin-Rechte. Wende dich an einen Workspace-Administrator,
+            wenn du Zugriff benötigst.
+          </p>
+          {error && (
+            <p className="mt-3 break-words text-xs text-rose-400">{error}</p>
+          )}
+          <Link
+            to="/"
+            className="mt-6 inline-block text-sm text-[#d4af37] hover:underline"
+          >
+            ← Zurück zur Startseite
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  return <BusinessDashboardContent />;
+}
+
+function BusinessDashboardContent() {
   const [range, setRange] = useState<Range>('30d');
   const series = useMemo(() => generateRevenueSeries(range), [range]);
 
@@ -189,14 +276,7 @@ export function BusinessDashboard() {
   const grossChurnRate = (churnMrr / Math.max(startMrr, 1)) * 100;
 
   return (
-    <>
-      <SEOHead
-        title="Business Dashboard | RealSync Dynamics"
-        description="Business overview: MRR, ARR, net new revenue, customer health, plan mix and recent activity."
-        canonical="/dashboard/business"
-        noIndex
-      />
-      <main className="min-h-screen bg-[#05070d] px-6 py-10 text-white">
+    <main className="min-h-screen bg-[#05070d] px-6 py-10 text-white">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
@@ -467,7 +547,6 @@ export function BusinessDashboard() {
           </section>
         </div>
       </main>
-    </>
   );
 }
 

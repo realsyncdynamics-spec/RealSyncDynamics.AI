@@ -84,12 +84,12 @@ const PRICING_PRODUCT_JSONLD = {
     {
       '@type': 'Offer',
       name: 'Starter',
-      price: '49',
+      price: '79',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/pricing`,
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
-        price: '49',
+        price: '79',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
       },
@@ -97,12 +97,25 @@ const PRICING_PRODUCT_JSONLD = {
     {
       '@type': 'Offer',
       name: 'Growth',
-      price: '199',
+      price: '249',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/pricing`,
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
-        price: '199',
+        price: '249',
+        priceCurrency: 'EUR',
+        billingDuration: 'P1M',
+      },
+    },
+    {
+      '@type': 'Offer',
+      name: 'Agency',
+      price: '699',
+      priceCurrency: 'EUR',
+      url: `${SITE_URL}/pricing`,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: '699',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
       },
@@ -112,7 +125,7 @@ const PRICING_PRODUCT_JSONLD = {
       name: 'Enterprise',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      description: 'Auf Anfrage — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      description: 'Auf Anfrage — ab 1.500 €/Monat, SLA, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };

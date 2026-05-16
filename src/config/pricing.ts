@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Activate Monitoring', href: '/checkout/starter?source=pricing' },
+    cta: { label: 'Activate Monitoring', href: '/contact-sales?intent=plan-starter&source=pricing' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Activate Governance', href: '/checkout/growth?source=pricing' },
+    cta: { label: 'Activate Governance', href: '/contact-sales?intent=plan-growth&source=pricing' },
   },
   {
     id: 'agency',

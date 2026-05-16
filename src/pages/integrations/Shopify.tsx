@@ -148,7 +148,7 @@ export function ShopifyIntegrationPage() {
             <strong> Agency</strong> für mehrere Kundenshops mit White-Label-Reports.
           </p>
           <div className="mt-4 flex flex-col sm:flex-row gap-3">
-            <Link to="/checkout/growth?source=shopify" className="inline-flex items-center gap-2 px-4 py-2 surface-gold text-sm font-bold rounded-none">
+            <Link to="/contact-sales?intent=plan-growth&source=shopify" className="inline-flex items-center gap-2 px-4 py-2 surface-gold text-sm font-bold rounded-none">
               Growth aktivieren <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link to="/contact-sales?intent=agency-shopify" className="inline-flex items-center gap-2 px-4 py-2 border border-titanium-100/30 hover:border-amber-400 text-titanium-100 hover:text-amber-300 text-sm font-medium transition-colors">

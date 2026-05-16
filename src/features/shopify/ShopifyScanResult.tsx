@@ -145,7 +145,7 @@ export function ShopifyScanResultView({ result }: { result: ShopifyScanResultVie
         </div>
         <div className="flex gap-2">
           <Link
-            to="/checkout/growth?source=shopify-scan"
+            to="/contact-sales?intent=plan-growth&source=shopify-scan"
             className="inline-flex items-center gap-2 px-4 py-2 surface-gold text-sm font-bold rounded-none whitespace-nowrap"
           >
             Growth aktivieren <ArrowRight className="h-3 w-3" />

@@ -1,5 +1,22 @@
 name: Deploy to GitHub Pages
 
+# ─────────────────────────────────────────────────────────────────
+# STATUS: CANONICAL FRONTEND PIPELINE (verified 2026-05-16)
+# ─────────────────────────────────────────────────────────────────
+# This workflow ships the production frontend.
+#
+# `realsyncdynamicsai.de` resolves to the Hostinger VPS, where
+# Traefik 301-redirects every Host(realsyncdynamicsai.de) request to
+# `realsyncdynamics-spec.github.io/RealSyncDynamics.AI/$path`. So the
+# bytes the user sees come from GitHub Pages, served via Fastly CDN.
+#
+# Verify:    curl -sI https://realsyncdynamicsai.de/ | grep server
+#            → server: GitHub.com
+#
+# ADR:       docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md
+# Topology:  docs/runtime/production-runtime.md
+# ─────────────────────────────────────────────────────────────────
+#
 # Builds the Vite SPA and publishes to GitHub Pages.
 # With custom domain realsyncdynamicsai.de, VITE_BASE must be /
 # Supabase secrets are optional -- if missing the app builds fine

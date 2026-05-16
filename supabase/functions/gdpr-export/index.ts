@@ -17,6 +17,13 @@
 // Filename: gdpr-export-<user_id>-<YYYYMMDD>.json
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import type { RedactionPolicy } from '../_shared/redact.ts';
+
+// DSGVO Art. 15 garantiert dem Betroffenen Auskunft ueber SEINE eigenen
+// Daten im Klartext. Eine Redaction wuerde dieses Recht aushebeln.
+// Wir protokollieren die Entscheidung trotzdem, damit der DSB-Audit
+// zeigt, dass 'never' bewusst gewaehlt wurde.
+const REDACTION_POLICY: RedactionPolicy = 'never';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -106,7 +113,22 @@ Deno.serve(async (req) => {
   };
 
   const filename = `gdpr-export-${userId}-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.json`;
-  return new Response(JSON.stringify(bundle, null, 2), {
+  const payload = JSON.stringify(bundle, null, 2);
+
+  // Audit-Spur: bewusster Klartext-Export nach Art. 15. Tenant-Spalte
+  // bleibt null — der Auskunftsanspruch ist user-skopiert, nicht tenant-skopiert.
+  await admin.from('pii_redaction_log').insert({
+    function_name: 'gdpr-export',
+    policy_applied: REDACTION_POLICY,
+    correlation_id: userId,
+    hits_total: 0,
+    hits_by_category: {},
+    payload_bytes: payload.length,
+    applied_by: userId,
+    notes: 'Art. 15 DSGVO — Klartext-Pflicht gegenueber dem Betroffenen.',
+  });
+
+  return new Response(payload, {
     status: 200,
     headers: {
       ...corsHeaders,

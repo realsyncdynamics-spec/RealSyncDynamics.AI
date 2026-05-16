@@ -3,6 +3,13 @@
 // Auth: Bearer JWT (eigener Audit) oder ohne (Super-Admin via SRK)
 // Output: HTML-Report in Storage + 24h Signed-URL
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
+
+// Owner-Daten (email/company/domain des Audit-Anforderers) bleiben Klartext.
+// Geschwaerzt werden NUR die issues[].title/detail/paragraph_ref — dort
+// koennen URLs/Form-Inhalte/Cookie-Werte fremder Domains stecken, die der
+// Scanner einsammelt und die nicht in einem geteilten Report landen sollen.
+const REDACTION_POLICY: RedactionPolicy = 'third_party_only';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -112,9 +119,14 @@ Deno.serve(async (req) => {
       .eq('id', (await admin.auth.admin.getUserByEmail(callerEmail)).data.user?.id ?? '').single();
     if (!profile?.is_super_admin) return errorJson(403, 'FORBIDDEN', 'not your audit');
   }
+  // PII-Redaction nur auf den issues-Teilbaum. Owner-Felder (email, company,
+  // domain) bleiben Klartext — der Bericht ist fuer den Owner selbst.
+  const { redacted: redactedIssues, hits: issueHits } = applyPolicy(
+    audit.issues as Issue[], REDACTION_POLICY);
+  const redactedAudit = { ...audit, issues: redactedIssues } as AuditRow;
   const storagePath = `audit-reports/${auditId}.html`;
   const { data: existing } = await admin.storage.from('documents').list('audit-reports', { search: `${auditId}.html` });
-  const htmlBytes = new TextEncoder().encode(buildHtml(audit as AuditRow, `https://realsyncdynamicsai.de/audit/report/${auditId}`));
+  const htmlBytes = new TextEncoder().encode(buildHtml(redactedAudit, `https://realsyncdynamicsai.de/audit/report/${auditId}`));
   const { error: upErr } = await admin.storage.from('documents')
     .upload(storagePath, htmlBytes, { contentType: 'text/html; charset=utf-8', upsert: true, cacheControl: '3600' });
   if (upErr) return errorJson(500, 'UPLOAD_FAILED', upErr.message);
@@ -123,6 +135,15 @@ Deno.serve(async (req) => {
   await admin.from('gdpr_audits').update({
     methodology: { audit_engine: '2026.05.0', report_generated_at: new Date().toISOString(), report_storage_path: storagePath },
   }).eq('id', auditId);
+  // Redaction-Audit: pro Report eine Zeile, auch bei 0 Treffern.
+  await admin.from('pii_redaction_log').insert({
+    function_name: 'audit-report-pdf',
+    policy_applied: REDACTION_POLICY,
+    correlation_id: auditId,
+    hits_total: sumHits(issueHits),
+    hits_by_category: issueHits,
+    payload_bytes: htmlBytes.byteLength,
+  });
   const issueStats = (audit.issues as Issue[]).reduce((acc, i) => { acc[i.severity] = (acc[i.severity] ?? 0) + 1; return acc; }, {} as Record<string, number>);
   return okJson({
     ok: true,

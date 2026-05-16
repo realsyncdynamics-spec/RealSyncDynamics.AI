@@ -36,6 +36,13 @@ import {
   zipPathFor,
   type TaxDocument,
 } from '../_shared/evidenceExport/index.ts';
+import type { RedactionPolicy } from '../_shared/redact.ts';
+
+// Steuerberater muessen Beleg-Inhalte im Klartext sehen (Betraege,
+// Rechnungsadressen, IBANs). Eine PII-Redaction wuerde die berufsrechtliche
+// Pruefung nach § 32 StBerG unmoeglich machen. Wir protokollieren die
+// 'never'-Entscheidung trotzdem fuer den DSB-Audit.
+const REDACTION_POLICY: RedactionPolicy = 'never';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin':  '*',
@@ -193,6 +200,18 @@ Deno.serve(async (req) => {
       total_amount: totalGross,
     },
     source: 'agent',
+  });
+  // PII-Redaction-Audit: 'never' fuer Steuerberater-Bundle. Wichtig fuer
+  // den DSB-Nachweis, dass die Klartext-Entscheidung bewusst getroffen wurde.
+  await admin.from('pii_redaction_log').insert({
+    tenant_id:       exportRow.tenant_id,
+    function_name:   'evidence-export',
+    policy_applied:  REDACTION_POLICY,
+    correlation_id:  exportRow.id,
+    hits_total:      0,
+    hits_by_category: {},
+    payload_bytes:   zipBytes.byteLength,
+    notes:           '§ 32 StBerG — Steuerberater-Bundle benoetigt Klartext.',
   });
 
   return jsonOk({

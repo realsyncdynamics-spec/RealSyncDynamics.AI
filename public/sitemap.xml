@@ -307,6 +307,18 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://realsyncdynamicsai.de/integrations/shopify</loc>
+    <lastmod>2026-05-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/dashboard/business</loc>
+    <lastmod>2026-05-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://realsyncdynamicsai.de/iubenda-alternative</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>

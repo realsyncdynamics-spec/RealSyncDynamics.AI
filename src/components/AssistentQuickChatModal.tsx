@@ -202,7 +202,7 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
             type="button"
             onClick={onClose}
             aria-label="Schließen"
-            className="text-titanium-400 hover:text-titanium-100 shrink-0"
+            className="-mr-2 -mt-1 p-2 text-titanium-400 hover:text-titanium-100 shrink-0"
           >
             <X className="h-4 w-4" />
           </button>
@@ -223,7 +223,7 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
               onKeyDown={(e) => { if (e.key === 'Enter') onSend(); }}
               placeholder={loading ? 'Antwort wird generiert …' : 'Kurze Frage …'}
               disabled={loading}
-              className="flex-1 bg-obsidian-900 border border-titanium-900 px-3 py-2 text-sm rounded-none outline-none focus:border-amber-400 disabled:opacity-50 placeholder:text-titanium-600"
+              className="flex-1 bg-obsidian-900 border border-titanium-900 px-3 py-2 text-base sm:text-sm rounded-none outline-none focus:border-amber-400 disabled:opacity-50 placeholder:text-titanium-600"
             />
             <button
               type="button"

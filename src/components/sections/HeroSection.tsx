@@ -96,7 +96,7 @@ export function HeroSection() {
                 placeholder="your-company.com"
                 autoComplete="off"
                 spellCheck={false}
-                className="flex-1 bg-transparent px-2 py-3.5 text-sm sm:text-base outline-none text-titanium-50 placeholder:text-titanium-600 font-mono"
+                className="flex-1 bg-transparent px-2 py-3.5 text-base outline-none text-titanium-50 placeholder:text-titanium-600 font-mono"
               />
             </div>
             <button

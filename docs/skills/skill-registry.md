@@ -131,7 +131,63 @@ Benchmarks-Guardrail.
 ## Spaetere Erweiterung zur Agent-Runtime
 
 Diese Registry ist absichtlich Daten + reine Funktionen + Routing. Die
-spaetere Agent-Runtime (siehe Phase 1.1, PR #190) bindet Skills ueber den
+Agent-Runtime (siehe Phase 1.1, PR #190) bindet Skills ueber den
 Executor an Approval-Gates: Risiko `high` → automatisch Approval-Gate;
 `requiresUserData` → Audit-Trail-Pflicht; `reviewRequired` → Output landet
 zuerst im Draft-State, nie direkt im Versand.
+
+### Status: Runtime-Bindings aktiv
+
+`src/core/runtime/bindings/` haengt die 7 Skills nun in die Runtime ein:
+
+- `buildSkillManifest(skill)` mappt `SkillDef` → `SkillManifest`
+  (capabilities, risk_level, pii_class, auto_approve, idempotent).
+- `runtimeSkillId(key)` uebersetzt kebab-case-Keys in das von der Runtime
+  geforderte dot-namespaced snake_case (`marketing-performance-analytics`
+  → `skills.marketing_performance_analytics`).
+- `makeDispatchHandler(actions)` baut aus einer Action-Map den
+  Runtime-Handler. Jede Action ist ein duenner Wrapper um eine pure
+  Funktion aus `src/lib/skills/<key>.ts`.
+- `registerSkillBindings({ registry, handlers, only? })` ist der einzige
+  Einstiegspunkt — wird beim Runtime-Boot aufgerufen.
+
+#### Approval-Invariante (durch Tests gesichert)
+
+- Risiko `high` ⇒ `auto_approve: false`
+- `reviewRequired: true` ⇒ `auto_approve: false`
+- Capabilities mit `write:`/`pii:`/`consent:write` ⇒ `auto_approve: false`
+- `sales-draft-outreach` bekommt einen Risk-Override auf `high`, weil ein
+  versehentlicher Versand fachlich schwerer reversibel ist als das
+  lib-`medium` widerspiegelt.
+
+#### Beispiel-Aufruf
+
+```ts
+import {
+  Executor, HandlerRegistry, SkillRegistry, InMemoryEventBus,
+} from 'src/core/runtime';
+import {
+  registerSkillBindings, runtimeSkillId,
+} from 'src/core/runtime/bindings';
+
+const registry = new SkillRegistry();
+const handlers = new HandlerRegistry();
+registerSkillBindings({ registry, handlers });
+
+const exec = new Executor({ registry, handlers, /* permissions/tracer/events/gates */ });
+
+await exec.execute({
+  tenant_id: 't1',
+  agent_id: 'agent-1',
+  skill_id: runtimeSkillId('marketing-performance-analytics'),
+  args: { action: 'calculate_conversion_rate', numerator: 50, denominator: 1000 },
+});
+// → { status: 'completed', output: 5, output_hash, execution_id }
+```
+
+#### Was die Bindings NICHT tun
+
+- Keine eigene Executor-/Permission-/Approval-Logik.
+- Keine Persistenz (geht durch `ExecutionTracer` der Runtime).
+- Kein Versand und kein autonomes Trigger. Skills bleiben reine
+  Aktions-Endpunkte; Mensch-Review-Grenzen bleiben durchsetzbar.

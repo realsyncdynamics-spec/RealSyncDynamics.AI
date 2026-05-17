@@ -170,6 +170,7 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'audit-drip-cron',
   'audit-monitor-cron',
   'audit-recheck-weekly',
+  'agent-os-runner',
 
   // Enterprise AI OS public surfaces.
   'enterprise-ai-os-discovery-intake',

@@ -155,6 +155,9 @@ verify_jwt = false
 [functions.audit-recheck-weekly]
 verify_jwt = false
 
+[functions.agent-os-runner]
+verify_jwt = false
+
 # ── Enterprise AI OS public surfaces ──
 [functions.enterprise-ai-os-discovery-intake]
 verify_jwt = false

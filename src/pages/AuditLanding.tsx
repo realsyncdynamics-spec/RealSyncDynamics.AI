@@ -136,7 +136,13 @@ export function AuditLanding() {
               ReportView renders below it once the scan completes. */}
           {!classicForm && (
             <>
-              <AuditChatHero key={chatGen} onScanComplete={setReport} />
+              <AuditChatHero
+                key={chatGen}
+                onScanComplete={(r) => {
+                  setReport(r);
+                  trackConversion('Lead', { content_name: 'dsgvo_audit' });
+                }}
+              />
               {!report && (
                 <div className="mt-4 text-center">
                   <button
@@ -168,7 +174,7 @@ export function AuditLanding() {
                   <input
                     type="text" required value={url} onChange={(e) => setUrl(e.target.value)}
                     placeholder="kanzlei-mueller.de"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-titanium-100"
+                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-base sm:text-sm rounded-none outline-none focus:border-titanium-100"
                   />
                 </Field>
 
@@ -176,7 +182,7 @@ export function AuditLanding() {
                   <input
                     type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="dein@kanzlei.de" autoComplete="email"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-titanium-100"
+                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-base sm:text-sm rounded-none outline-none focus:border-titanium-100"
                   />
                 </Field>
 
@@ -184,7 +190,7 @@ export function AuditLanding() {
                   <input
                     type="text" value={company} onChange={(e) => setCompany(e.target.value)}
                     placeholder="Kanzlei Müller & Partner"
-                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-sm rounded-none outline-none focus:border-titanium-100"
+                    className="w-full bg-obsidian-950 border border-titanium-900 px-3 py-2.5 text-base sm:text-sm rounded-none outline-none focus:border-titanium-100"
                   />
                 </Field>
 

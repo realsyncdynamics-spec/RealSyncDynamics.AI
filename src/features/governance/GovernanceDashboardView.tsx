@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
-  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign,
+  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign, Wrench,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -179,6 +179,9 @@ function Inner() {
           </Link>
           <Link to="/governance/costs" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
             <DollarSign className="h-4 w-4" /> Costs
+          </Link>
+          <Link to="/governance/remediation" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
+            <Wrench className="h-4 w-4" /> Remediation
           </Link>
           <Link
             to="/governance/mappings"

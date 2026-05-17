@@ -38,6 +38,12 @@ interface Issue {
           confidence: number;
           scanner_engine: string;
     };
+    /** Fix-Snippets vom Backend oder aus LiveFindingsSection-Definitionen */
+    fix_snippets?: Array<{
+          label: string;
+          language: string;
+          code: string;
+    }>;
 }
 
 interface Report {

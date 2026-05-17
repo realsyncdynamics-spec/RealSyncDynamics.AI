@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   Cpu,
   Eye,
   GitBranch,
+  Keyboard,
   Layers,
   LayoutGrid,
   Loader2,
@@ -21,6 +22,7 @@ import {
   Square,
   Terminal,
   Workflow,
+  X,
   Zap,
 } from 'lucide-react';
 
@@ -538,6 +540,15 @@ function Tabs({ value, onChange }: { value: TabKey; onChange: (k: TabKey) => voi
 }
 
 function CanvasView({ steps }: { steps: RunStep[] }) {
+  if (steps.length === 0) {
+    return (
+      <EmptyState
+        Icon={LayoutGrid}
+        title="Noch keine Schritte"
+        hint="Füge den ersten Schritt zu diesem Workflow hinzu, um den Canvas zu sehen."
+      />
+    );
+  }
   return (
     <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
       {steps.map((s, i) => (
@@ -598,6 +609,15 @@ function LogsView({ logs }: { logs: LogLine[] }) {
     error: 'text-rose-300',
     agent: 'text-ai-cyan-300',
   };
+  if (logs.length === 0) {
+    return (
+      <EmptyState
+        Icon={Terminal}
+        title="Noch keine Logs"
+        hint="Sobald ein Run startet, erscheinen hier Streaming-Events von Orchestrator und Agents."
+      />
+    );
+  }
   return (
     <div className="h-full overflow-y-auto p-4">
       <div className="rounded-md border border-titanium-900 bg-obsidian-950 p-3 font-mono text-[12px] leading-relaxed">
@@ -680,6 +700,101 @@ function ConfigView({ workflow, model }: { workflow: WorkflowItem; model: Model 
   );
 }
 
+function EmptyState({
+  Icon,
+  title,
+  hint,
+  action,
+}: {
+  Icon: typeof Activity;
+  title: string;
+  hint: string;
+  action?: { label: string; onClick: () => void };
+}) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+      <div className="grid h-14 w-14 place-items-center rounded-full border border-titanium-900 bg-obsidian-800/60">
+        <Icon className="h-6 w-6 text-titanium-600" />
+      </div>
+      <div className="text-sm font-semibold text-titanium-200">{title}</div>
+      <div className="max-w-xs text-[12px] leading-relaxed text-titanium-500">{hint}</div>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-3 py-1.5 text-xs text-titanium-200 hover:border-ai-cyan-700 hover:bg-ai-cyan-900/30 hover:text-ai-cyan-300"
+        >
+          {action.label}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const SHORTCUTS: Array<{ keys: string[]; label: string }> = [
+  { keys: ['R'], label: 'Run starten' },
+  { keys: ['P'], label: 'Pausieren' },
+  { keys: ['S'], label: 'Stoppen' },
+  { keys: ['1'], label: 'Tab: Canvas' },
+  { keys: ['2'], label: 'Tab: Logs' },
+  { keys: ['3'], label: 'Tab: Output' },
+  { keys: ['4'], label: 'Tab: Config' },
+  { keys: ['?'], label: 'Diese Hilfe zeigen' },
+  { keys: ['Esc'], label: 'Overlay schließen' },
+];
+
+function KeyboardHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[55] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-label="Keyboard-Shortcuts"
+    >
+      <div
+        className="w-full max-w-sm overflow-hidden rounded-lg border border-titanium-800 bg-obsidian-900 shadow-2xl shadow-black/70"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-titanium-900 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Keyboard className="h-4 w-4 text-ai-cyan-400" />
+            <h3 className="text-sm font-semibold text-titanium-50">Shortcuts</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded border border-titanium-800 bg-obsidian-700 p-1 text-titanium-300 hover:bg-obsidian-600"
+            aria-label="Schließen"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </header>
+        <ul className="divide-y divide-titanium-900/60">
+          {SHORTCUTS.map((s, i) => (
+            <li key={i} className="flex items-center justify-between px-4 py-2 text-sm">
+              <span className="text-titanium-300">{s.label}</span>
+              <span className="flex items-center gap-1">
+                {s.keys.map((k) => (
+                  <kbd
+                    key={k}
+                    className="rounded border border-titanium-800 bg-obsidian-800 px-1.5 py-0.5 font-mono text-[11px] text-titanium-200"
+                  >
+                    {k}
+                  </kbd>
+                ))}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <footer className="border-t border-titanium-900 px-4 py-2 text-[11px] text-titanium-500">
+          Shortcuts greifen nicht in Inputs/Textareas.
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b border-titanium-900/60 py-1.5 last:border-0">
@@ -689,6 +804,12 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   );
 }
 
+function isTypingTarget(t: EventTarget | null): boolean {
+  if (!(t instanceof HTMLElement)) return false;
+  const tag = t.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable;
+}
+
 export function AiCommandCenter() {
   const [nav, setNav] = useState<NavKey>('workflows');
   const [query, setQuery] = useState('');
@@ -696,12 +817,57 @@ export function AiCommandCenter() {
   const [tab, setTab] = useState<TabKey>('canvas');
   const [model, setModel] = useState<Model>(MODELS[0]);
   const [runStatus, setRunStatus] = useState<RunStatus>('running');
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const workflow = useMemo(
     () => WORKFLOWS.find((w) => w.id === selectedId) ?? WORKFLOWS[0],
     [selectedId],
   );
   const steps = STEPS[workflow.id] ?? [];
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (helpOpen) {
+          e.preventDefault();
+          setHelpOpen(false);
+        }
+        return;
+      }
+      if (isTypingTarget(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        setHelpOpen((v) => !v);
+        return;
+      }
+      if (k === 'r') {
+        e.preventDefault();
+        setRunStatus('running');
+      } else if (k === 'p') {
+        e.preventDefault();
+        setRunStatus('idle');
+      } else if (k === 's') {
+        e.preventDefault();
+        setRunStatus('idle');
+      } else if (k === '1') {
+        e.preventDefault();
+        setTab('canvas');
+      } else if (k === '2') {
+        e.preventDefault();
+        setTab('logs');
+      } else if (k === '3') {
+        e.preventDefault();
+        setTab('output');
+      } else if (k === '4') {
+        e.preventDefault();
+        setTab('config');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [helpOpen]);
 
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-obsidian-950 text-titanium-100">
@@ -740,6 +906,18 @@ export function AiCommandCenter() {
           </main>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => setHelpOpen(true)}
+        title="Shortcuts (?)"
+        aria-label="Keyboard-Shortcuts anzeigen"
+        className="fixed bottom-3 right-3 z-30 inline-flex items-center gap-1.5 rounded-full border border-titanium-800 bg-obsidian-800/90 px-2.5 py-1.5 text-[11px] text-titanium-300 shadow-lg shadow-black/40 hover:border-titanium-700 hover:text-titanium-100"
+      >
+        <Keyboard className="h-3.5 w-3.5" />
+        <kbd className="font-mono">?</kbd>
+      </button>
+      <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

@@ -124,6 +124,7 @@ const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => 
 const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
 const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
 const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').then((m) => ({ default: m.KeysView })));
+const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
@@ -344,6 +345,7 @@ function RoutesWithTracking() {
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
+      <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
       <Route path="/business" element={<BusinessDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />

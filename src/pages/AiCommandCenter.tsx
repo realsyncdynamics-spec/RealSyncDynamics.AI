@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Bot,
   CheckCircle2,
   ChevronDown,
@@ -15,6 +17,7 @@ import {
   Loader2,
   Menu,
   Pause,
+  Pencil,
   Play,
   Plus,
   Radio,
@@ -23,6 +26,7 @@ import {
   Sparkles,
   Square,
   Terminal,
+  Trash2,
   Workflow,
   X,
   Zap,
@@ -459,6 +463,8 @@ function Topbar({
   model,
   setModel,
   status,
+  editing,
+  onToggleEdit,
   onRun,
   onPause,
   onStop,
@@ -468,6 +474,8 @@ function Topbar({
   model: Model;
   setModel: (m: Model) => void;
   status: RunStatus;
+  editing: boolean;
+  onToggleEdit: () => void;
   onRun: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -504,6 +512,20 @@ function Topbar({
         </div>
 
         <div className="mx-1 hidden h-6 w-px bg-titanium-900 lg:block" />
+
+        <button
+          type="button"
+          onClick={onToggleEdit}
+          aria-pressed={editing}
+          className={`hidden items-center gap-1.5 rounded-md border px-2 py-1.5 text-sm transition sm:inline-flex ${
+            editing
+              ? 'border-ai-cyan-700 bg-ai-cyan-900/30 text-ai-cyan-200'
+              : 'border-titanium-800 bg-obsidian-700 text-titanium-200 hover:border-titanium-700 hover:bg-obsidian-600'
+          }`}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          <span>{editing ? 'Bearbeiten an' : 'Bearbeiten'}</span>
+        </button>
 
         <button
           type="button"
@@ -628,8 +650,24 @@ function Tabs({ value, onChange }: { value: TabKey; onChange: (k: TabKey) => voi
   );
 }
 
-function CanvasView({ steps }: { steps: RunStep[] }) {
-  if (steps.length === 0) {
+function CanvasView({
+  steps,
+  editing,
+  onRenameStep,
+  onChangeAgent,
+  onMoveStep,
+  onRemoveStep,
+  onAddStep,
+}: {
+  steps: RunStep[];
+  editing: boolean;
+  onRenameStep: (id: string, name: string) => void;
+  onChangeAgent: (id: string, agent: string) => void;
+  onMoveStep: (id: string, dir: -1 | 1) => void;
+  onRemoveStep: (id: string) => void;
+  onAddStep: () => void;
+}) {
+  if (steps.length === 0 && !editing) {
     return (
       <EmptyState
         Icon={LayoutGrid}
@@ -645,48 +683,114 @@ function CanvasView({ steps }: { steps: RunStep[] }) {
           key={s.id}
           className="group relative rounded-lg border border-titanium-900 bg-obsidian-800/60 p-3 transition hover:border-titanium-800"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center rounded-md border border-titanium-800 bg-obsidian-700 font-mono text-[10px] text-titanium-300">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-titanium-800 bg-obsidian-700 font-mono text-[10px] text-titanium-300">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span className="text-sm font-medium text-titanium-50">{s.name}</span>
+              {editing ? (
+                <input
+                  type="text"
+                  value={s.name}
+                  onChange={(e) => onRenameStep(s.id, e.target.value)}
+                  className="min-w-0 flex-1 rounded border border-titanium-800 bg-obsidian-900 px-1.5 py-0.5 text-sm text-titanium-50 focus:border-ai-cyan-700 focus:outline-none"
+                  aria-label="Step-Name"
+                />
+              ) : (
+                <span className="truncate text-sm font-medium text-titanium-50">{s.name}</span>
+              )}
             </div>
-            <StatusChip value={s.status} />
+            {editing ? (
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onMoveStep(s.id, -1)}
+                  disabled={i === 0}
+                  className="rounded border border-titanium-800 bg-obsidian-700 p-1 text-titanium-300 enabled:hover:border-titanium-700 enabled:hover:bg-obsidian-600 disabled:opacity-40"
+                  aria-label="nach oben"
+                >
+                  <ArrowUp className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMoveStep(s.id, 1)}
+                  disabled={i === steps.length - 1}
+                  className="rounded border border-titanium-800 bg-obsidian-700 p-1 text-titanium-300 enabled:hover:border-titanium-700 enabled:hover:bg-obsidian-600 disabled:opacity-40"
+                  aria-label="nach unten"
+                >
+                  <ArrowDown className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveStep(s.id)}
+                  className="rounded border border-titanium-800 bg-obsidian-700 p-1 text-titanium-300 hover:border-rose-800 hover:bg-rose-950/30 hover:text-rose-200"
+                  aria-label="Schritt entfernen"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <StatusChip value={s.status} />
+            )}
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-[11px] text-titanium-500">
             <Bot className="h-3 w-3" />
-            <span className="font-mono">{s.agent}</span>
-            {typeof s.tokens === 'number' && (
+            {editing ? (
+              <select
+                value={s.agent}
+                onChange={(e) => onChangeAgent(s.id, e.target.value)}
+                className="rounded border border-titanium-800 bg-obsidian-900 px-1.5 py-0.5 font-mono text-[11px] text-titanium-200 focus:border-ai-cyan-700 focus:outline-none"
+                aria-label="Agent"
+              >
+                {KNOWN_AGENTS.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="font-mono">{s.agent}</span>
+            )}
+            {!editing && typeof s.tokens === 'number' && (
               <>
                 <span className="text-titanium-700">·</span>
                 <span>{s.tokens.toLocaleString('de-DE')} tok</span>
               </>
             )}
-            {typeof s.durationMs === 'number' && (
+            {!editing && typeof s.durationMs === 'number' && (
               <>
                 <span className="text-titanium-700">·</span>
                 <span>{(s.durationMs / 1000).toFixed(1)}s</span>
               </>
             )}
           </div>
-          {s.status === 'running' && (
+          {!editing && s.status === 'running' && (
             <div className="mt-3 h-1 overflow-hidden rounded bg-obsidian-700">
               <div className="h-full w-2/3 animate-pulse bg-gradient-to-r from-security-500 to-ai-cyan-400" />
             </div>
           )}
-          {s.status === 'review' && (
+          {!editing && s.status === 'review' && (
             <div className="mt-3 rounded border border-brass-800/50 bg-brass-900/20 p-2 text-[11px] text-brass-200">
               Wartet auf Human-Approval.
             </div>
           )}
-          {s.status === 'blocked' && (
+          {!editing && s.status === 'blocked' && (
             <div className="mt-3 rounded border border-amber-800/50 bg-amber-950/30 p-2 text-[11px] text-amber-200">
               Quelle nicht erreichbar — Retry erforderlich.
             </div>
           )}
         </article>
       ))}
+      {editing && (
+        <button
+          type="button"
+          onClick={onAddStep}
+          className="flex min-h-[6rem] items-center justify-center gap-2 rounded-lg border border-dashed border-titanium-800 bg-obsidian-900/40 p-3 text-sm text-titanium-400 transition hover:border-ai-cyan-700 hover:bg-ai-cyan-900/10 hover:text-ai-cyan-300"
+        >
+          <Plus className="h-4 w-4" />
+          Schritt hinzufügen
+        </button>
+      )}
     </div>
   );
 }
@@ -908,6 +1012,20 @@ const STREAM_TICK_MS = 1400;
 const STREAM_TOKENS_PER_TICK = 850;
 const STREAM_COMPLETE_AT = 6000;
 
+const KNOWN_AGENTS = [
+  'researcher',
+  'writer',
+  'critic',
+  'seo',
+  'publisher',
+  'classifier',
+  'monitor',
+  'ops',
+  'human',
+  'curator',
+  'fetcher',
+];
+
 export function AiCommandCenter() {
   const [nav, setNav] = useState<NavKey>('workflows');
   const [query, setQuery] = useState('');
@@ -917,10 +1035,12 @@ export function AiCommandCenter() {
   const [runStatus, setRunStatus] = useState<RunStatus>('running');
   const [helpOpen, setHelpOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [stepsByWf, setStepsByWf] = useState<Record<string, RunStep[]>>(() =>
     JSON.parse(JSON.stringify(STEPS)),
   );
   const [logs, setLogs] = useState<LogLine[]>(LOGS);
+  const stepCounter = useRef(100);
 
   const { runs: liveRuns, live: liveData } = useRecentAgentRuns(20);
 
@@ -1031,21 +1151,56 @@ export function AiCommandCenter() {
     return () => window.clearInterval(id);
   }, [runStatus, workflow.id, workflow.name]);
 
+  const updateSteps = (mut: (list: RunStep[]) => RunStep[]) => {
+    setStepsByWf((prev) => ({ ...prev, [workflow.id]: mut(prev[workflow.id] ?? []) }));
+  };
+
   const handleRun = () => {
-    setStepsByWf((prev) => ({
-      ...prev,
-      [workflow.id]: (prev[workflow.id] ?? []).map((s, i) => ({
+    updateSteps((list) =>
+      list.map((s, i) => ({
         ...s,
         status: i === 0 ? ('running' as RunStatus) : ('idle' as RunStatus),
         tokens: i === 0 ? 0 : undefined,
         durationMs: undefined,
       })),
-    }));
+    );
     setLogs((l) => [
       ...l,
       { ts: nowTime(), level: 'info', source: 'orchestrator', message: `Run gestartet — Model: ${model.label}.` },
     ]);
     setRunStatus('running');
+  };
+
+  const handleAddStep = () => {
+    const id = `s-new-${stepCounter.current++}`;
+    updateSteps((list) => [
+      ...list,
+      { id, name: 'Neuer Schritt', agent: KNOWN_AGENTS[0], status: 'idle' },
+    ]);
+  };
+
+  const handleRenameStep = (id: string, name: string) => {
+    updateSteps((list) => list.map((s) => (s.id === id ? { ...s, name } : s)));
+  };
+
+  const handleChangeAgent = (id: string, agent: string) => {
+    updateSteps((list) => list.map((s) => (s.id === id ? { ...s, agent } : s)));
+  };
+
+  const handleRemoveStep = (id: string) => {
+    updateSteps((list) => list.filter((s) => s.id !== id));
+  };
+
+  const handleMoveStep = (id: string, dir: -1 | 1) => {
+    updateSteps((list) => {
+      const idx = list.findIndex((s) => s.id === id);
+      if (idx < 0) return list;
+      const next = idx + dir;
+      if (next < 0 || next >= list.length) return list;
+      const copy = list.slice();
+      [copy[idx], copy[next]] = [copy[next], copy[idx]];
+      return copy;
+    });
   };
 
   const activeRuns = useMemo(() => {
@@ -1077,6 +1232,8 @@ export function AiCommandCenter() {
           model={model}
           setModel={setModel}
           status={runStatus}
+          editing={editing}
+          onToggleEdit={() => setEditing((v) => !v)}
           onRun={handleRun}
           onPause={() => setRunStatus('idle')}
           onStop={() => setRunStatus('idle')}
@@ -1097,7 +1254,17 @@ export function AiCommandCenter() {
           <main className="flex min-w-0 flex-1 flex-col">
             <Tabs value={tab} onChange={setTab} />
             <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
-              {tab === 'canvas' && <CanvasView steps={steps} />}
+              {tab === 'canvas' && (
+                <CanvasView
+                  steps={steps}
+                  editing={editing}
+                  onRenameStep={handleRenameStep}
+                  onChangeAgent={handleChangeAgent}
+                  onMoveStep={handleMoveStep}
+                  onRemoveStep={handleRemoveStep}
+                  onAddStep={handleAddStep}
+                />
+              )}
               {tab === 'logs' && <LogsView logs={logs} />}
               {tab === 'output' && <OutputView workflow={workflow} />}
               {tab === 'config' && <ConfigView workflow={workflow} model={model} />}

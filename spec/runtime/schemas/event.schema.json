@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/event.schema.json",
+  "title": "RealSync Runtime Event (ESS v1.0)",
+  "description": "Normative wire format for every event on the RealSync runtime. See spec/runtime/event-specification.md.",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "id",
+    "subject",
+    "category",
+    "severity",
+    "occurred_at",
+    "source",
+    "correlation",
+    "payload",
+    "compliance",
+    "evidence"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$",
+      "description": "MAJOR.MINOR; ESS major v1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^evt_[0-9A-Za-z]{26}$",
+      "description": "ULID-prefixed unique event id."
+    },
+    "subject": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "description": "Dotted-name subject from the ESS taxonomy."
+    },
+    "category": {
+      "type": "string",
+      "enum": ["finance", "governance", "inventory", "ai", "platform", "agent", "evidence", "tax", "runtime"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 UTC."
+    },
+    "source": {
+      "type": "object",
+      "required": ["agent", "runtime", "spec_version"],
+      "additionalProperties": false,
+      "properties": {
+        "agent":        { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$" },
+        "runtime":      { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$" },
+        "spec_version": { "type": "string", "pattern": "^1\\.[0-9]+$" }
+      }
+    },
+    "tenant": {
+      "type": "object",
+      "required": ["tenant_id", "region"],
+      "additionalProperties": false,
+      "properties": {
+        "tenant_id": { "type": "string", "minLength": 1 },
+        "region":    { "type": "string", "pattern": "^[a-z]{2}-[a-z]+-[0-9]+$" }
+      },
+      "description": "MUST be present for all non-`platform.*` events."
+    },
+    "correlation": {
+      "type": "object",
+      "required": ["trace_id"],
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": { "type": "string", "pattern": "^trace_[0-9A-Za-z]{26}$" },
+        "parent_id": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^evt_[0-9A-Za-z]{26}$" }
+          ]
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "description": "Opaque to the spec. Shape is constrained by `subject`."
+    },
+    "compliance": {
+      "type": "object",
+      "required": ["gdpr", "ai_act", "retention_years"],
+      "additionalProperties": false,
+      "properties": {
+        "gdpr":            { "type": "boolean" },
+        "ai_act":          { "type": "boolean" },
+        "retention_years": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "human_review": {
+          "type": "object",
+          "required": ["required"],
+          "additionalProperties": false,
+          "properties": {
+            "required": { "type": "boolean" },
+            "reason": {
+              "oneOf": [
+                { "type": "null" },
+                { "type": "string", "maxLength": 512 }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["required", "immutable"],
+      "additionalProperties": false,
+      "properties": {
+        "required":  { "type": "boolean" },
+        "immutable": { "type": "boolean", "const": true },
+        "sha256": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          ],
+          "description": "Set by the evidence runtime, NOT by the producer."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "subject": { "pattern": "^platform\\." } }
+      },
+      "then": {
+        "not": { "required": ["tenant"] }
+      },
+      "else": {
+        "required": ["tenant"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/agent-contract.schema.json",
+  "title": "RealSync Agent Contract (ACS v1.0)",
+  "description": "Declarative manifest every agent ships with. See spec/runtime/agent-contract.md.",
+  "type": "object",
+  "required": ["spec_version", "agent", "permissions", "accepts", "returns", "runtime_context", "compliance"],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": { "type": "string", "pattern": "^1\\.[0-9]+$" },
+    "agent": {
+      "type": "object",
+      "required": ["name", "type", "version", "owner"],
+      "additionalProperties": false,
+      "properties": {
+        "name":        { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$" },
+        "type":        { "type": "string", "enum": ["ocr", "tax", "inventory", "compliance", "evidence", "detection", "risk", "custom"] },
+        "version":     { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[A-Za-z0-9.-]+)?$" },
+        "description": { "type": "string", "maxLength": 512 },
+        "owner":       { "type": "string", "minLength": 1, "maxLength": 128 }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(event\\.publish|evidence\\.(create|read)|chain\\.append|hash\\.generate|policy\\.evaluate|agent\\.dispatch|tenant\\.read|secret\\.read\\.[a-z][a-z0-9_]*)$"
+      }
+    },
+    "accepts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subject"],
+        "additionalProperties": false,
+        "properties": {
+          "subject":      { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_*]*)+$" },
+          "min_severity": { "type": "string", "enum": ["info", "low", "medium", "high", "critical"] }
+        }
+      }
+    },
+    "returns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["subject"],
+        "additionalProperties": false,
+        "properties": {
+          "subject":               { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" },
+          "requires_human_review": { "type": "boolean" }
+        }
+      }
+    },
+    "runtime_context": {
+      "type": "object",
+      "required": ["required"],
+      "additionalProperties": false,
+      "properties": {
+        "required": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$" }
+        },
+        "optional": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$" }
+        }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint":    { "oneOf": [ { "type": "null" }, { "type": "string", "format": "uri" } ] },
+        "health_path": { "type": "string", "pattern": "^/[a-z0-9/_-]*$" },
+        "concurrency": { "type": "integer", "minimum": 1, "maximum": 1024 }
+      }
+    },
+    "compliance": {
+      "type": "object",
+      "required": ["ai_act_role", "decides"],
+      "additionalProperties": false,
+      "properties": {
+        "ai_act_role": { "type": "string", "enum": ["high_risk", "limited_risk", "minimal_risk", "excluded"] },
+        "decides":     { "type": "boolean" }
+      }
+    }
+  }
+}

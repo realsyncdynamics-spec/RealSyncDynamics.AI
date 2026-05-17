@@ -191,3 +191,25 @@ This PR is the foundation per the user's bottom-up build order:
 ```
 
 `TrainerAgent` (#304) and the SocialOrchestrator (#272) already exist and can plug into this substrate via a small wrapper handler.
+
+## Phase B: Postgres persistence
+
+`postgres-adapter.ts` exposes `createPostgresPersistHook(client, opts?)` that turns a `@supabase/supabase-js` client into an `AgentOsPersistHook`. Wire it in once at process start:
+
+```ts
+import { createClient }              from '@supabase/supabase-js';
+import { AgentOsStore }              from '@/src/core/agent-os/store';
+import { createPostgresPersistHook } from '@/src/core/agent-os/postgres-adapter';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const store    = new AgentOsStore();
+store.setPersistHook(createPostgresPersistHook(supabase));
+```
+
+Design constraints:
+
+- **Best-effort writes.** Persistence failures are reported via `opts.onError` (default `console.error`); they never throw. The in-memory store remains authoritative — agents keep running even when Postgres is briefly unreachable.
+- **id divergence.** In-memory ids (e.g. `mem_lq3y_1a`) differ from Postgres UUIDs (default `gen_random_uuid()`). Phase A: in-memory ids are the cross-record reference. Phase C: swap to UUID generation at the agent layer.
+- **agent_events** uses `BIGSERIAL` — the adapter strips the in-memory id so Postgres auto-assigns per tenant.
+
+The adapter is Node + Deno compatible (no DOM, no Vite-specific imports) — usable from the agent-os-runner Edge Function (#312), background workers, and SPA service-role contexts.

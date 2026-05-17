@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://realsyncdynamicsai.de/spec/runtime/capability.schema.json",
-  "title": "RealSync Agent Capability & Permission Block (CPS v1.0)",
-  "description": "The `capability` block of an agent manifest. Extends the ACS manifest. See spec/runtime/capability-permission-standard.md.",
+  "title": "RealSync Agent Capability & Permission Block (CPS v1.1)",
+  "description": "The `capability` block of an agent manifest. Extends the ACS manifest. v1.1 adds isolation.pii_access and isolation.cross_tenant_visibility. See spec/runtime/capability-permission-standard.md.",
   "type": "object",
   "required": ["trust_level", "permissions", "restrictions", "isolation"],
   "additionalProperties": false,
@@ -78,6 +78,16 @@
           "type": "array",
           "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
           "uniqueItems": true
+        },
+        "pii_access": {
+          "type": "string",
+          "enum": ["none", "minimised", "scoped", "full"],
+          "description": "v1.1 — see CPS §9a. Default if omitted: minimised."
+        },
+        "cross_tenant_visibility": {
+          "type": "string",
+          "enum": ["forbidden", "aggregate_only", "full"],
+          "description": "v1.1 — see CPS §9b. Default if omitted: forbidden."
         }
       },
       "allOf": [

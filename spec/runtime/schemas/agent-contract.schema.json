@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://realsyncdynamicsai.de/spec/runtime/agent-contract.schema.json",
-  "title": "RealSync Agent Contract (ACS v1.0)",
-  "description": "Declarative manifest every agent ships with. See spec/runtime/agent-contract.md.",
+  "title": "RealSync Agent Contract (ACS v1.1)",
+  "description": "Declarative manifest every agent ships with. v1.0 + v1.1 optional blocks (evidence_coupling, escalation_matrix, output_constraints). See spec/runtime/agent-contract.md.",
   "type": "object",
   "required": ["spec_version", "agent", "permissions", "accepts", "returns", "runtime_context", "compliance"],
   "additionalProperties": false,
@@ -86,6 +86,19 @@
         "ai_act_role": { "type": "string", "enum": ["high_risk", "limited_risk", "minimal_risk", "excluded"] },
         "decides":     { "type": "boolean" }
       }
+    },
+
+    "evidence_coupling": {
+      "$ref": "evidence-coupling.schema.json",
+      "description": "v1.1 — see EVC. Optional. Default behaviour: mode=optional."
+    },
+    "escalation_matrix": {
+      "$ref": "escalation-matrix.schema.json",
+      "description": "v1.1 — see EM. Optional. Default behaviour: see EM §3."
+    },
+    "output_constraints": {
+      "$ref": "output-constraints.schema.json",
+      "description": "v1.1 — see OC. Optional. Default behaviour: format=text, all checks off."
     }
   }
 }

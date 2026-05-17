@@ -1,6 +1,6 @@
 # RealSync Runtime — Specification Suite
 
-**Status:** Draft v1.0 — published 2026-05-15
+**Status:** Draft v1.1 — published 2026-05-16 (extends v1.0 of 2026-05-15)
 **Audience:** Platform engineers, integrators, agencies, auditors, certifiers, investors.
 
 This directory defines the **formal contracts** that govern how every component of the RealSync runtime communicates. Anything that produces or consumes a runtime event — whether it lives inside the platform (`realsync-runtime-core`, `realsync-evidence-runtime`, the Supabase Edge Function fleet) or outside of it (DATEV connectors, OCR pipelines, customer-owned agents) — is bound by these standards.
@@ -11,17 +11,27 @@ The premise:
 
 ---
 
-## The seven standards
+## The ten standards
+
+Core (v1.0):
 
 | | Standard | Abbrev | Purpose |
 |---|---|---|---|
 | 1 | [Event Specification](event-specification.md) | **ESS** | Wire format of every event on the runtime. |
-| 2 | [Agent Contract](agent-contract.md) | **ACS** | Declarative manifest every agent ships with — inputs, outputs, permissions, runtime context. |
+| 2 | [Agent Contract](agent-contract.md) | **ACS** | Declarative manifest every agent ships with — inputs, outputs, permissions, runtime context. (v1.1: three additional optional manifest blocks — see §9 of ACS.) |
 | 3 | [Runtime Context](runtime-context.md) | **RCS** | The tenant- and request-scoped envelope a handler always sees. Closes hallucination, leak and mis-routing classes. |
 | 4 | [Evidence Chain](evidence-chain.md) | **ECS** | Hash-chained, append-only audit substrate. Defines `previous_hash` / `current_hash` semantics. |
 | 5 | [Human Review Protocol](human-review-protocol.md) | **HRP** | When AI may decide, when it may only prepare, when a human reviewer is mandatory. AI Act-relevant. |
-| 6 | [Capability & Permission](capability-permission-standard.md) | **CPS** | Per-agent allow-list, deny-list, escalation rules, runtime isolation, and the six Trust Levels (L0–L5). Security backbone. |
+| 6 | [Capability & Permission](capability-permission-standard.md) | **CPS** | Per-agent allow-list, deny-list, escalation rules, runtime isolation, and the six Trust Levels (L0–L5). Security backbone. (v1.1: `pii_access` + `cross_tenant_visibility` extensions to `isolation` — see §9 of CPS.) |
 | 7 | [Runtime Policy](policy-specification.md) | **RPS** | Machine-readable governance policies — `guard`, `retention`, `classification`, `escalation`. Tenant-scoped, versioned, evaluable. |
+
+v1.1 additions (referenced from ACS §9):
+
+| | Standard | Abbrev | Purpose |
+|---|---|---|---|
+| 8  | [Evidence Coupling](evidence-coupling.md) | **EVC** | Per-agent declaration of evidence obligation — `mandatory`, `optional`, `linked`, `forbidden`. |
+| 9  | [Escalation Matrix](escalation-matrix.md) | **EM**  | Per-agent severity-tier behaviour — `auto_continue`, `triage_required`, `human_review_required`, `runtime_freeze_possible`. |
+| 10 | [Output Constraints](output-constraints.md) | **OC**  | Per-agent output shape and validation — `format`, `schema_validation`, `confidence_score`, `template_locked`, etc. |
 
 Machine-readable JSON Schemas live in [`schemas/`](schemas/). Versioning is documented in [`CHANGELOG.md`](CHANGELOG.md). Terminology — and only the terminology — is fixed in [`glossary.md`](glossary.md).
 
@@ -136,5 +146,8 @@ For a first pass, read in this order:
 4. **Evidence Chain (ECS)** — why a hash matters.
 5. **Agent Contract (ACS)** — how a producer or consumer declares itself.
 6. **Capability & Permission (CPS)** — what each agent can and cannot do, plus the six Trust Levels.
-7. **Runtime Policy (RPS)** — machine-readable governance policies.
-8. **Human Review Protocol (HRP)** — the AI Act boundary.
+7. **Evidence Coupling (EVC)** — which agents must seal, which may, which must not.
+8. **Escalation Matrix (EM)** — per-severity behaviour: continue / triage / review / freeze.
+9. **Output Constraints (OC)** — output shape, schema validation, confidence, template-lock.
+10. **Runtime Policy (RPS)** — machine-readable governance policies.
+11. **Human Review Protocol (HRP)** — the AI Act boundary.

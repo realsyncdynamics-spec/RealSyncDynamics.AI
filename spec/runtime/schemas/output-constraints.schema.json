@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/output-constraints.schema.json",
+  "title": "RealSync Output Constraints block (OC v1.0)",
+  "description": "Per-agent output shape and validation. See spec/runtime/output-constraints.md.",
+  "type": "object",
+  "required": ["format"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "type": "string",
+      "enum": ["strict_json", "json", "markdown", "text"]
+    },
+    "schema_validation": {
+      "type": "string",
+      "enum": ["required", "optional", "none"],
+      "default": "none"
+    },
+    "free_text_reasoning": {
+      "type": "string",
+      "enum": ["forbidden", "limited", "allowed"],
+      "default": "allowed"
+    },
+    "confidence_score": {
+      "type": "string",
+      "enum": ["mandatory", "optional", "forbidden"],
+      "default": "optional"
+    },
+    "jurisdiction_required":   { "type": "boolean", "default": false },
+    "template_locked":         { "type": "boolean", "default": false },
+    "hallucination_sensitive": { "type": "boolean", "default": false }
+  }
+}

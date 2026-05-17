@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/escalation-matrix.schema.json",
+  "title": "RealSync Escalation Matrix block (EM v1.0)",
+  "description": "Per-agent severity-tier behaviour. See spec/runtime/escalation-matrix.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sev_info":     { "$ref": "#/$defs/tier" },
+    "sev_low":      { "$ref": "#/$defs/tier" },
+    "sev_medium":   { "$ref": "#/$defs/tier" },
+    "sev_high":     { "$ref": "#/$defs/tier" },
+    "sev_critical": { "$ref": "#/$defs/critical_tier" },
+    "triage_timeout_action": {
+      "type": "string",
+      "enum": ["dismiss", "process", "escalate_to_review"],
+      "description": "What happens when a triage_required tier's queue entry exceeds triage_window_ms. Default: escalate_to_review."
+    }
+  },
+  "$defs": {
+    "tier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "auto_continue":         { "type": "boolean" },
+        "triage_required":       { "type": "boolean" },
+        "human_review_required": { "type": "boolean" }
+      },
+      "anyOf": [
+        { "required": ["auto_continue"] },
+        { "required": ["triage_required"] },
+        { "required": ["human_review_required"] }
+      ],
+      "description": "Exactly one of { auto_continue, triage_required, human_review_required } MUST be true. The runtime validates this; this schema accepts the looser shape so that explicit-false values are permitted."
+    },
+    "critical_tier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "auto_continue":           { "type": "boolean" },
+        "triage_required":         { "type": "boolean" },
+        "human_review_required":   { "type": "boolean" },
+        "runtime_freeze_possible": { "type": "boolean" }
+      },
+      "anyOf": [
+        { "required": ["auto_continue"] },
+        { "required": ["triage_required"] },
+        { "required": ["human_review_required"] }
+      ]
+    }
+  }
+}

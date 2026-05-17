@@ -141,6 +141,8 @@ const GovernanceConnectorsView = lazy(() => import('./features/governance/Connec
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
+const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
+const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
 const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
 const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
@@ -369,6 +371,8 @@ function RoutesWithTracking() {
       <Route path="/governance/incidents" element={<GovernanceIncidentsView />} />
       <Route path="/governance/connectors" element={<GovernanceConnectorsView />} />
       <Route path="/governance/vendors" element={<GovernanceVendorInventoryView />} />
+      <Route path="/governance/remediation" element={<RemediationPlansView />} />
+      <Route path="/governance/remediation/:planId" element={<RemediationPlanDetailView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
       {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
           NOT linked from the public navbar; tenants reach it from the

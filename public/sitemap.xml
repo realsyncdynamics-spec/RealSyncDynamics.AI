@@ -499,6 +499,18 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://realsyncdynamicsai.de/trust</loc>
+    <lastmod>2026-05-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/pilot-readiness</loc>
+    <lastmod>2026-05-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://realsyncdynamicsai.de/status</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>weekly</changefreq>

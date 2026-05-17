@@ -3,11 +3,14 @@ import {
   Activity,
   AlertTriangle,
   ArrowDown,
+  ArrowRight,
   ArrowUp,
   Bot,
   CheckCircle2,
   ChevronDown,
   CircleDot,
+  Command as CommandIcon,
+  CornerDownLeft,
   Cpu,
   Eye,
   Filter,
@@ -1186,6 +1189,171 @@ function AgentsView({ query }: { query: string }) {
   );
 }
 
+interface PaletteAction {
+  id: string;
+  group: 'Run' | 'Navigate' | 'Model' | 'Workflow';
+  label: string;
+  hint?: string;
+  Icon: typeof Activity;
+  run: () => void;
+}
+
+function CommandPalette({
+  open,
+  onClose,
+  actions,
+}: {
+  open: boolean;
+  onClose: () => void;
+  actions: PaletteAction[];
+}) {
+  const [q, setQ] = useState('');
+  const [idx, setIdx] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setQ('');
+      setIdx(0);
+      window.setTimeout(() => inputRef.current?.focus(), 10);
+    }
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    if (!q) return actions;
+    const needle = q.toLowerCase();
+    return actions.filter(
+      (a) => a.label.toLowerCase().includes(needle) || a.group.toLowerCase().includes(needle),
+    );
+  }, [q, actions]);
+
+  useEffect(() => {
+    if (idx >= filtered.length) setIdx(0);
+  }, [filtered.length, idx]);
+
+  const groups = useMemo(() => {
+    const map = new Map<PaletteAction['group'], PaletteAction[]>();
+    filtered.forEach((a) => {
+      if (!map.has(a.group)) map.set(a.group, []);
+      map.get(a.group)!.push(a);
+    });
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  const flat = filtered;
+
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          onClose();
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setIdx((i) => Math.min(i + 1, flat.length - 1));
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setIdx((i) => Math.max(i - 1, 0));
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const a = flat[idx];
+          if (a) {
+            a.run();
+            onClose();
+          }
+        }
+      }}
+    >
+      <div
+        className="mt-[12vh] w-full max-w-xl overflow-hidden rounded-lg border border-titanium-800 bg-obsidian-900 shadow-2xl shadow-black/70"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Command Palette"
+      >
+        <div className="flex items-center gap-2 border-b border-titanium-900 px-3 py-2">
+          <CommandIcon className="h-4 w-4 text-ai-cyan-400" />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setIdx(0);
+            }}
+            placeholder="Befehl, Workflow oder Model …"
+            className="flex-1 bg-transparent text-sm text-titanium-50 placeholder-titanium-600 outline-none"
+          />
+          <kbd className="rounded border border-titanium-800 bg-obsidian-800 px-1.5 py-0.5 text-[10px] text-titanium-400">
+            esc
+          </kbd>
+        </div>
+        <div className="max-h-[55vh] overflow-y-auto py-1">
+          {flat.length === 0 && (
+            <div className="px-4 py-8 text-center text-xs text-titanium-500">Nichts gefunden.</div>
+          )}
+          {groups.map(([group, list]) => (
+            <div key={group}>
+              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-titanium-600">
+                {group}
+              </div>
+              {list.map((a) => {
+                const flatIdx = flat.indexOf(a);
+                const active = flatIdx === idx;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onMouseEnter={() => setIdx(flatIdx)}
+                    onClick={() => {
+                      a.run();
+                      onClose();
+                    }}
+                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition ${
+                      active ? 'bg-security-900/40 text-titanium-50' : 'text-titanium-200'
+                    }`}
+                  >
+                    <a.Icon
+                      className={`h-3.5 w-3.5 ${active ? 'text-ai-cyan-400' : 'text-titanium-500'}`}
+                    />
+                    <span className="flex-1 truncate">{a.label}</span>
+                    {a.hint && (
+                      <span className="font-mono text-[10px] text-titanium-500">{a.hint}</span>
+                    )}
+                    {active && <ArrowRight className="h-3 w-3 text-ai-cyan-400" />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <footer className="flex items-center justify-between border-t border-titanium-900 px-3 py-1.5 text-[10px] text-titanium-500">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1">
+              <kbd className="rounded border border-titanium-800 bg-obsidian-800 px-1 py-0 text-[10px]">↑↓</kbd>
+              navigieren
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <kbd className="rounded border border-titanium-800 bg-obsidian-800 px-1 py-0 text-[10px]">
+                <CornerDownLeft className="inline h-2.5 w-2.5" />
+              </kbd>
+              ausführen
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1">
+            <CommandIcon className="h-3 w-3" />
+            <span>K</span>
+          </span>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 function RunsView({ query }: { query: string }) {
   const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
   const filtered = RUNS_HISTORY.filter((r) => {
@@ -1485,6 +1653,7 @@ export function AiCommandCenter() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [openStepId, setOpenStepId] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [stepsByWf, setStepsByWf] = useState<Record<string, RunStep[]>>(() =>
     JSON.parse(JSON.stringify(STEPS)),
   );
@@ -1546,6 +1715,61 @@ export function AiCommandCenter() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [helpOpen]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const paletteActions: PaletteAction[] = useMemo(() => {
+    const acts: PaletteAction[] = [
+      { id: 'run', group: 'Run', label: 'Aktuellen Workflow starten', hint: 'Run', Icon: Play, run: () => setRunStatus('running') },
+      { id: 'pause', group: 'Run', label: 'Workflow pausieren', hint: 'Pause', Icon: Pause, run: () => setRunStatus('idle') },
+      { id: 'stop', group: 'Run', label: 'Workflow stoppen', hint: 'Stop', Icon: Square, run: () => setRunStatus('idle') },
+    ];
+    (['workflows', 'agents', 'runs', 'library', 'connectors', 'settings'] as NavKey[]).forEach((k) => {
+      const item = NAV.find((n) => n.key === k);
+      if (!item) return;
+      acts.push({
+        id: `nav-${k}`,
+        group: 'Navigate',
+        label: `Wechsle zu ${item.label}`,
+        Icon: item.Icon,
+        run: () => setNav(k),
+      });
+    });
+    MODELS.forEach((m) => {
+      acts.push({
+        id: `model-${m.id}`,
+        group: 'Model',
+        label: `Wechsle Model auf ${m.label}`,
+        hint: `${m.contextK}k`,
+        Icon: Cpu,
+        run: () => setModel(m),
+      });
+    });
+    WORKFLOWS.forEach((w) => {
+      acts.push({
+        id: `wf-${w.id}`,
+        group: 'Workflow',
+        label: `Öffne „${w.name}"`,
+        hint: w.tag,
+        Icon: Workflow,
+        run: () => {
+          setNav('workflows');
+          setSelectedId(w.id);
+          setRunStatus(w.status);
+        },
+      });
+    });
+    return acts;
+  }, []);
 
   // Live-Streaming-Simulation: tickt jeden running-Step weiter, schaltet bei
   // STREAM_COMPLETE_AT auf done und startet den nächsten idle-Step. Stoppt,
@@ -1755,6 +1979,11 @@ export function AiCommandCenter() {
       </button>
       <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <AgentDrawer step={openStep} model={model} onClose={() => setOpenStepId(null)} />
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        actions={paletteActions}
+      />
     </div>
   );
 }

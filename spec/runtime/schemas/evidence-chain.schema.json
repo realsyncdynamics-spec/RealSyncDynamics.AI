@@ -55,8 +55,18 @@
   },
   "allOf": [
     {
-      "if": { "properties": { "seq": { "const": 1 } } },
-      "then": { "properties": { "previous_hash": { "const": "" } } }
+      "if": {
+        "properties": { "seq": { "const": 1 } },
+        "required":   ["seq"]
+      },
+      "then": {
+        "properties": { "previous_hash": { "const": "" } }
+      },
+      "else": {
+        "properties": {
+          "previous_hash": { "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
     }
   ]
 }

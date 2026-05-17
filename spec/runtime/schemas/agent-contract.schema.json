@@ -88,6 +88,11 @@
       }
     },
 
+    "capability": {
+      "$ref": "capability.schema.json",
+      "description": "v1.0 — see CPS. Optional in the schema, but a CPS-conformant agent MUST declare it. When present, capability.permissions complements (or replaces) the top-level permissions[]."
+    },
+
     "evidence_coupling": {
       "$ref": "evidence-coupling.schema.json",
       "description": "v1.1 — see EVC. Optional. Default behaviour: mode=optional."

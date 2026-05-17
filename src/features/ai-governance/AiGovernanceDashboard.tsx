@@ -8,11 +8,7 @@ import {
   Lock,
   ShieldCheck,
 } from 'lucide-react';
-import {
-  demoAiSystems,
-  demoEvidenceEvents,
-  demoPolicies,
-} from './demoData';
+import { useAiGovernanceData } from './useAiGovernanceData';
 
 /**
  * AiGovernanceDashboard — wiederverwendbare Section auf /ai-governance
@@ -47,13 +43,15 @@ function classLabel(value: string): string {
 }
 
 export function AiGovernanceDashboard() {
-  const highRiskCount = demoAiSystems.filter(
+  const { aiSystems, policies, evidenceEvents, live, loading } = useAiGovernanceData();
+
+  const highRiskCount = aiSystems.filter(
     (system) => system.aiActClass === 'high',
   ).length;
 
-  const activePolicies = demoPolicies.filter((policy) => policy.enabled).length;
+  const activePolicies = policies.filter((policy) => policy.enabled).length;
 
-  const criticalEvents = demoEvidenceEvents.filter(
+  const criticalEvents = evidenceEvents.filter(
     (event) => event.riskLevel === 'critical' || event.riskLevel === 'high',
   ).length;
 
@@ -64,8 +62,19 @@ export function AiGovernanceDashboard() {
     >
       <div className="max-w-6xl mx-auto">
         <div className="mb-10">
-          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
-            AI Governance OS
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3 flex items-center gap-2">
+            <span>AI Governance OS</span>
+            {loading && <span className="text-titanium-500 normal-case tracking-normal">· lädt …</span>}
+            {!loading && live && (
+              <span className="inline-flex items-center gap-1 rounded border border-emerald-700/50 bg-emerald-950/40 px-1.5 py-0.5 text-[9px] tracking-wider text-emerald-300">
+                LIVE
+              </span>
+            )}
+            {!loading && !live && (
+              <span className="inline-flex items-center gap-1 rounded border border-titanium-700 bg-titanium-900/40 px-1.5 py-0.5 text-[9px] tracking-wider text-titanium-400">
+                DEMO
+              </span>
+            )}
           </div>
           <h2 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-tight">
             Inventarisieren. Klassifizieren. Überwachen. Nachweisen.
@@ -77,7 +86,7 @@ export function AiGovernanceDashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <MetricCard icon={<Bot />} label="AI Systeme" value={demoAiSystems.length.toString()} />
+          <MetricCard icon={<Bot />} label="AI Systeme" value={aiSystems.length.toString()} />
           <MetricCard icon={<AlertTriangle />} label="High Risk" value={highRiskCount.toString()} />
           <MetricCard icon={<Lock />} label="Aktive Policies" value={activePolicies.toString()} />
           <MetricCard
@@ -97,7 +106,7 @@ export function AiGovernanceDashboard() {
             </div>
 
             <div className="space-y-3">
-              {demoAiSystems.map((system) => (
+              {aiSystems.map((system) => (
                 <div
                   key={system.id}
                   className="border border-silver-700/30 bg-obsidian-950/60 p-4"
@@ -141,7 +150,7 @@ export function AiGovernanceDashboard() {
             </div>
 
             <div className="space-y-3">
-              {demoPolicies.map((policy) => (
+              {policies.map((policy) => (
                 <div
                   key={policy.id}
                   className="border border-silver-700/30 bg-obsidian-950/60 p-4"
@@ -173,7 +182,7 @@ export function AiGovernanceDashboard() {
           </div>
 
           <div className="space-y-3">
-            {demoEvidenceEvents.map((event) => (
+            {evidenceEvents.map((event) => (
               <div
                 key={event.id}
                 className="grid grid-cols-1 md:grid-cols-[160px_1fr_120px] gap-3 border border-silver-700/30 bg-obsidian-950/60 p-4"

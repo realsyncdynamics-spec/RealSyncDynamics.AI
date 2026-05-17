@@ -248,7 +248,7 @@ export function Faq() {
           <div className="mt-12 p-6 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">Frage nicht dabei?</h2>
             <p className="text-titanium-300 text-sm mb-4">
-              Stell die Frage an unseren AI Agent — er antwortet sofort. Fallback-Kanal: <a href="mailto:support@realsyncdynamicsai.de" className="text-security-400 hover:underline">support@realsyncdynamicsai.de</a>.
+              Schreib uns dein Anliegen — unser Team antwortet innerhalb von 24 Std. Direkter Kanal: <a href="mailto:support@realsyncdynamicsai.de" className="text-security-400 hover:underline">support@realsyncdynamicsai.de</a>.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/contact-sales?source=faq" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">

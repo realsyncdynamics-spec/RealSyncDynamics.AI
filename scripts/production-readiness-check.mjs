@@ -222,12 +222,34 @@ async function runOne(c) {
 
 // ── Filter + run ───────────────────────────────────────────────────
 
+// Validate RSD_ONLY first — a typo silently filtering out every check
+// is the worst possible UX for a CI gate (the script would exit 0
+// "all 0 checks passed" and the gate would silently pass).
+if (ONLY.length > 0) {
+  const known = new Set(CHECKS.map(c => c.id));
+  const unknown = ONLY.filter(id => !known.has(id));
+  if (unknown.length > 0) {
+    const knownList = [...known].sort().join(', ');
+    console.error(`RSD_ONLY contains unknown check id(s): ${unknown.join(', ')}`);
+    console.error(`Known ids: ${knownList}`);
+    process.exit(2);
+  }
+}
+
 const filtered = CHECKS.filter(c => {
   if (c.kind === 'edge-public' && SKIP_EDGE)   return false;
   if (c.kind === 'sentry'      && SKIP_SENTRY) return false;
   if (ONLY.length > 0 && !ONLY.includes(c.id)) return false;
   return true;
 });
+
+// Defence in depth: if after all filters NOTHING remains to run,
+// that's also a misconfiguration. Exit 2 rather than silently
+// reporting success.
+if (filtered.length === 0) {
+  console.error('No checks remain after applying filters. Adjust RSD_ONLY / RSD_SKIP_EDGE / RSD_SKIP_SENTRY.');
+  process.exit(2);
+}
 
 if (!JSON_OUT) {
   console.log(`\nProduction readiness check v2 against ${BASE_URL}`);

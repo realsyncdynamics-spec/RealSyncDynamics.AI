@@ -19,7 +19,7 @@ export function AiActPage() {
     <PageShell
       eyebrow="Governance · AI Act"
       title="AI Act compliance without a consulting engagement."
-      sub="Automatische Klassifikation (minimal / limited / high / prohibited), Agent-Oversight, Policy-Engine — alle Findings in der Evidence-Chain."
+      sub="Agent-gestützte Klassifikation (minimal / limited / high / prohibited) mit menschlicher Freigabe, Agent-Oversight, Policy-Engine — alle Findings in der Evidence-Chain."
     >
       <AiActGovernanceBetaSection />
       <AgentOversightSection />

@@ -9,6 +9,7 @@
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { reportServerConversion } from '../_shared/conversions-api.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -80,11 +81,35 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
         await syncSubscription(admin, event.data.object as Stripe.Subscription);
+        if (event.type === 'customer.subscription.created') {
+          await recordTrialEventIfApplicable(admin, event, 'trial_started');
+        }
+        if (event.type === 'customer.subscription.deleted') {
+          await recordTrialEventIfApplicable(admin, event, 'canceled');
+        }
+        break;
+      case 'customer.subscription.trial_will_end':
+        await syncSubscription(admin, event.data.object as Stripe.Subscription);
+        await recordTrialEventIfApplicable(admin, event, 'trial_will_end');
+        break;
+      case 'invoice.paid':
+      case 'invoice.finalized':
+      case 'invoice.created':
+      case 'invoice.payment_failed':
+        await syncInvoice(admin, event.data.object as Stripe.Invoice);
+        if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
+          await recordPaymentEvent(admin, event);
+        }
+        break;
+      case 'charge.failed':
+      case 'charge.refunded':
+        await recordPaymentEvent(admin, event);
         break;
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
+        await reportPurchaseToAdPlatforms(session, req);
         break;
       }
       // Add more handlers as the billing surface grows; ignore unknown types.
@@ -128,12 +153,180 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
     current_period_end: sub.current_period_end
       ? new Date(sub.current_period_end * 1000).toISOString()
       : null,
+    unit_amount_cents: item?.price?.unit_amount ?? null,
+    currency: item?.price?.currency ?? null,
+    trial_start: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : null,
+    trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+    canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+    started_at: sub.start_date ? new Date(sub.start_date * 1000).toISOString() : null,
   };
 
   const { error } = await admin
     .from('subscriptions')
     .upsert(row, { onConflict: 'stripe_subscription_id' });
   if (error) throw error;
+}
+
+// deno-lint-ignore no-explicit-any
+async function syncInvoice(admin: any, inv: Stripe.Invoice): Promise<void> {
+  const customerId = typeof inv.customer === 'string' ? inv.customer : inv.customer?.id ?? null;
+  const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id ?? null;
+
+  // Best-effort tenant lookup via subscriptions table — keeps invoices joinable.
+  let tenantId: string | null = null;
+  if (subId) {
+    const { data } = await admin
+      .from('subscriptions')
+      .select('tenant_id')
+      .eq('stripe_subscription_id', subId)
+      .maybeSingle();
+    tenantId = data?.tenant_id ?? null;
+  }
+
+  const row = {
+    stripe_invoice_id: inv.id,
+    stripe_customer_id: customerId,
+    stripe_subscription_id: subId,
+    tenant_id: tenantId,
+    amount_due_cents: inv.amount_due ?? 0,
+    amount_paid_cents: inv.amount_paid ?? 0,
+    amount_remaining_cents: inv.amount_remaining ?? 0,
+    currency: (inv.currency ?? 'eur').toLowerCase(),
+    status: inv.status ?? 'open',
+    billing_reason: inv.billing_reason ?? null,
+    attempt_count: inv.attempt_count ?? 0,
+    hosted_invoice_url: inv.hosted_invoice_url ?? null,
+    invoice_pdf: inv.invoice_pdf ?? null,
+    period_start: inv.period_start ? new Date(inv.period_start * 1000).toISOString() : null,
+    period_end: inv.period_end ? new Date(inv.period_end * 1000).toISOString() : null,
+    paid_at: inv.status_transitions?.paid_at
+      ? new Date(inv.status_transitions.paid_at * 1000).toISOString()
+      : null,
+    updated_at: new Date().toISOString(),
+    raw: inv as unknown as object,
+  };
+
+  const { error } = await admin
+    .from('stripe_invoices')
+    .upsert(row, { onConflict: 'stripe_invoice_id' });
+  if (error) throw error;
+}
+
+// deno-lint-ignore no-explicit-any
+async function recordPaymentEvent(admin: any, event: Stripe.Event): Promise<void> {
+  const occurredAt = new Date(event.created * 1000).toISOString();
+
+  let amount = 0;
+  let currency = 'eur';
+  let status: 'succeeded' | 'failed' | 'pending' = 'pending';
+  let failureCode: string | null = null;
+  let failureMessage: string | null = null;
+  let invoiceId: string | null = null;
+  let customerId: string | null = null;
+  let chargeId: string | null = null;
+  let paymentIntentId: string | null = null;
+
+  if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
+    const inv = event.data.object as Stripe.Invoice;
+    amount = (event.type === 'invoice.paid' ? inv.amount_paid : inv.amount_due) ?? 0;
+    currency = (inv.currency ?? 'eur').toLowerCase();
+    status = event.type === 'invoice.paid' ? 'succeeded' : 'failed';
+    invoiceId = inv.id;
+    customerId = typeof inv.customer === 'string' ? inv.customer : inv.customer?.id ?? null;
+    if (event.type === 'invoice.payment_failed') {
+      const lastErr = (inv as unknown as { last_finalization_error?: { code?: string; message?: string } }).last_finalization_error;
+      failureCode = lastErr?.code ?? null;
+      failureMessage = lastErr?.message ?? null;
+    }
+  } else if (event.type === 'charge.failed' || event.type === 'charge.refunded') {
+    const charge = event.data.object as Stripe.Charge;
+    amount = charge.amount ?? 0;
+    currency = (charge.currency ?? 'eur').toLowerCase();
+    status = event.type === 'charge.failed' ? 'failed' : 'succeeded';
+    failureCode = charge.failure_code ?? null;
+    failureMessage = charge.failure_message ?? null;
+    chargeId = charge.id;
+    customerId = typeof charge.customer === 'string' ? charge.customer : charge.customer?.id ?? null;
+    paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id ?? null;
+  }
+
+  // tenant lookup via customer
+  let tenantId: string | null = null;
+  if (customerId) {
+    const { data } = await admin
+      .from('subscriptions')
+      .select('tenant_id')
+      .eq('stripe_customer_id', customerId)
+      .limit(1)
+      .maybeSingle();
+    tenantId = data?.tenant_id ?? null;
+  }
+
+  const { error } = await admin
+    .from('stripe_payment_events')
+    .insert({
+      stripe_event_id: event.id,
+      event_type: event.type,
+      stripe_invoice_id: invoiceId,
+      stripe_customer_id: customerId,
+      stripe_payment_intent_id: paymentIntentId,
+      stripe_charge_id: chargeId,
+      tenant_id: tenantId,
+      status,
+      amount_cents: amount,
+      currency,
+      failure_code: failureCode,
+      failure_message: failureMessage,
+      occurred_at: occurredAt,
+      raw: event as unknown as object,
+    });
+
+  // unique-conflict means duplicate webhook delivery → silently ok
+  if (error && !/duplicate key/i.test(error.message)) throw error;
+}
+
+// deno-lint-ignore no-explicit-any
+async function recordTrialEventIfApplicable(
+  admin: any,
+  event: Stripe.Event,
+  kind: 'trial_started' | 'trial_will_end' | 'converted' | 'canceled',
+): Promise<void> {
+  const sub = event.data.object as Stripe.Subscription;
+  // Only persist a trial-row if the subscription actually has trial fields,
+  // otherwise we'd record `canceled` for every non-trial cancel — noise.
+  if (kind !== 'canceled' && !sub.trial_start && !sub.trial_end) return;
+
+  const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id ?? null;
+
+  let tenantId: string | null = null;
+  if (sub.metadata?.tenant_id) tenantId = sub.metadata.tenant_id;
+  else if (customerId) {
+    const { data } = await admin
+      .from('subscriptions')
+      .select('tenant_id')
+      .eq('stripe_customer_id', customerId)
+      .limit(1)
+      .maybeSingle();
+    tenantId = data?.tenant_id ?? null;
+  }
+
+  const { error } = await admin
+    .from('stripe_trial_events')
+    .insert({
+      stripe_event_id: event.id,
+      stripe_subscription_id: sub.id,
+      stripe_customer_id: customerId,
+      tenant_id: tenantId,
+      kind,
+      trial_start: sub.trial_start ? new Date(sub.trial_start * 1000).toISOString() : null,
+      trial_end: sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
+      occurred_at: new Date(event.created * 1000).toISOString(),
+      raw: event as unknown as object,
+    });
+
+  if (error && !/duplicate key/i.test(error.message)) {
+    console.warn('[stripe-webhook] trial event insert:', error.message);
+  }
 }
 
 // deno-lint-ignore no-explicit-any
@@ -290,5 +483,42 @@ async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Che
   if (typeof EdgeRuntime !== 'undefined' && typeof EdgeRuntime.waitUntil === 'function') {
     // @ts-ignore
     EdgeRuntime.waitUntil(triggerPromise);
+  }
+}
+
+/**
+ * Server-side Purchase fan-out to ad platforms. Uses Stripe `session.id` as
+ * the dedup eventId so a corresponding client-side pixel (if it ever fires
+ * from a /success page) is merged by Meta instead of double-counted.
+ *
+ * Failures are intentionally swallowed — ad attribution loss must not roll
+ * back the subscription write, since Stripe will retry the webhook on 500.
+ */
+async function reportPurchaseToAdPlatforms(
+  session: Stripe.Checkout.Session,
+  req: Request,
+): Promise<void> {
+  const amount = session.amount_total ?? 0;
+  if (amount <= 0) return;
+
+  try {
+    await reportServerConversion({
+      eventName: session.mode === 'subscription' ? 'Subscribe' : 'Purchase',
+      eventId: session.id,
+      eventTime: Math.floor(Date.now() / 1000),
+      value: amount / 100,
+      currency: (session.currency ?? 'eur').toUpperCase(),
+      user: {
+        email: session.customer_details?.email ?? session.customer_email ?? undefined,
+        phone: session.customer_details?.phone ?? undefined,
+        city: session.customer_details?.address?.city ?? undefined,
+        country: session.customer_details?.address?.country ?? undefined,
+        clientIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
+        userAgent: req.headers.get('user-agent') ?? undefined,
+      },
+      sourceUrl: session.success_url ?? undefined,
+    });
+  } catch (err) {
+    console.warn('[stripe-webhook] purchase fan-out failed:', (err as Error).message);
   }
 }

@@ -87,19 +87,24 @@ export function CookieConsent() {
                   in der <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link>.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {/* BfDI-Leitlinie 2024: Accept + Reject müssen visuell gleichberechtigt sein.
-                      Beide Buttons gleiche Größe, gleiches Padding, gleicher Font-Weight —
-                      nur unterschiedliche Farbe (security vs. titanium) als rein semantisches Cue. */}
+                  {/* BfDI-Leitlinie + DSGVO Art. 7 III + TTDSG §25: Accept und Reject
+                      müssen UI-gleichwertig sein. Beide Buttons: gleiche min-width
+                      (Bounding-Box-Parität), gleiches Padding, gleicher Font-Weight.
+                      Color-Differenzierung bleibt als semantisches Cue, Volumen ist
+                      gleich. Verifiziert in e2e/cookie-consent.spec.ts. */}
                   <button onClick={acceptAll}
-                    className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-xs font-bold rounded-none">
+                    className="px-4 py-2 min-w-[10rem] bg-security-500 hover:bg-security-600 text-white text-xs font-bold rounded-none"
+                    data-testid="consent-accept-all">
                     Alles akzeptieren
                   </button>
                   <button onClick={acceptNecessary}
-                    className="px-4 py-2 bg-titanium-700 hover:bg-titanium-600 text-white text-xs font-bold rounded-none">
+                    className="px-4 py-2 min-w-[10rem] bg-titanium-700 hover:bg-titanium-600 text-white text-xs font-bold rounded-none"
+                    data-testid="consent-reject-all">
                     Alle ablehnen
                   </button>
                   <button onClick={() => setShowCustom(true)}
-                    className="px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-bold rounded-none">
+                    className="px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-bold rounded-none"
+                    data-testid="consent-settings">
                     Einstellungen
                   </button>
                 </div>

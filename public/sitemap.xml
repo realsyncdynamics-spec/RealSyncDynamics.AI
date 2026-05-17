@@ -499,6 +499,18 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://realsyncdynamicsai.de/trust</loc>
+    <lastmod>2026-05-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/pilot-readiness</loc>
+    <lastmod>2026-05-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://realsyncdynamicsai.de/status</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>weekly</changefreq>
@@ -563,5 +575,23 @@
     <lastmod>2026-05-12</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/runtime</loc>
+    <lastmod>2026-05-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/ai-act</loc>
+    <lastmod>2026-05-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/docs</loc>
+    <lastmod>2026-05-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

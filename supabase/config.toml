@@ -71,9 +71,6 @@ enabled = false
 [functions.stripe-webhook]
 verify_jwt = false
 
-[functions.stripe-webhook-fixer]
-verify_jwt = false
-
 [functions.shopify-webhooks]
 verify_jwt = false
 
@@ -156,6 +153,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.audit-recheck-weekly]
+verify_jwt = false
+
+[functions.agent-os-runner]
 verify_jwt = false
 
 # ── Enterprise AI OS public surfaces ──

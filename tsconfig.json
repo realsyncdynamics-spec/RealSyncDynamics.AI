@@ -31,6 +31,8 @@
     "supabase/functions",
     "services/playwright-scanner",
     "services/openclaw-agent",
+    "services/realsync-runtime-core",
+    "services/realsync-evidence-runtime",
     "worker"
   ]
 }

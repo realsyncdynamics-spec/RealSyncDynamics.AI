@@ -105,10 +105,89 @@ Prompt-Vorschau. Die UI fuehrt keine Skills aus.
 - `scripts/qa-skills-smoke.ts` — End-to-End-Smoke der oberen Schichten,
   ausfuehrbar via `npm run qa:skills`.
 
+## Marketing-Runtime-Binding
+
+Der Skill `marketing-performance-analytics` haengt nicht nur an reinen
+KPI-Formeln, sondern bindet die Marketing-Analytics-Runtime
+(`src/core/marketing-analytics/`) direkt ein:
+
+- `prepareMarketingEvent(event)` — wendet `sanitizeMetadata` an und setzt
+  Defaults (Currency, occurred_at) bevor ein Event in die Agents fliesst.
+- `detectKpiAnomaly(values)` — duenne Bruecke auf `detectAnomaly`, fuer
+  Tagesmetriken im Skill-Kontext.
+- `runComplianceDrift(events)` — `ComplianceDriftAgent` mit auto-sanitisierten
+  Events; ergaenzt die Standard-Skill-Guardrail (`BENCHMARKS_ORIENTATION`).
+- `runRevenueAttribution(events, model, from, to)` — `RevenueAttributionAgent`
+  mit defensiv validiertem Modell.
+- `buildMarketingAnalyticsReport(events, model, from, to, optimizations)` —
+  high-level Orchestrator: Attribution + Compliance-Drift + priorisierte
+  Optimierungen + Skill-Guardrail in einem Aufruf.
+
+Der `ComplianceDriftAgent` liefert weiterhin sein eigenes
+`COMPLIANCE_DISCLAIMER` ("Keine Rechtsberatung"). Das Skill-Binding
+ueberschreibt es nicht und ergaenzt nur die marketing-spezifische
+Benchmarks-Guardrail.
+
 ## Spaetere Erweiterung zur Agent-Runtime
 
 Diese Registry ist absichtlich Daten + reine Funktionen + Routing. Die
-spaetere Agent-Runtime (siehe Phase 1.1, PR #190) bindet Skills ueber den
+Agent-Runtime (siehe Phase 1.1, PR #190) bindet Skills ueber den
 Executor an Approval-Gates: Risiko `high` → automatisch Approval-Gate;
 `requiresUserData` → Audit-Trail-Pflicht; `reviewRequired` → Output landet
 zuerst im Draft-State, nie direkt im Versand.
+
+### Status: Runtime-Bindings aktiv
+
+`src/core/runtime/bindings/` haengt die 7 Skills nun in die Runtime ein:
+
+- `buildSkillManifest(skill)` mappt `SkillDef` → `SkillManifest`
+  (capabilities, risk_level, pii_class, auto_approve, idempotent).
+- `runtimeSkillId(key)` uebersetzt kebab-case-Keys in das von der Runtime
+  geforderte dot-namespaced snake_case (`marketing-performance-analytics`
+  → `skills.marketing_performance_analytics`).
+- `makeDispatchHandler(actions)` baut aus einer Action-Map den
+  Runtime-Handler. Jede Action ist ein duenner Wrapper um eine pure
+  Funktion aus `src/lib/skills/<key>.ts`.
+- `registerSkillBindings({ registry, handlers, only? })` ist der einzige
+  Einstiegspunkt — wird beim Runtime-Boot aufgerufen.
+
+#### Approval-Invariante (durch Tests gesichert)
+
+- Risiko `high` ⇒ `auto_approve: false`
+- `reviewRequired: true` ⇒ `auto_approve: false`
+- Capabilities mit `write:`/`pii:`/`consent:write` ⇒ `auto_approve: false`
+- `sales-draft-outreach` bekommt einen Risk-Override auf `high`, weil ein
+  versehentlicher Versand fachlich schwerer reversibel ist als das
+  lib-`medium` widerspiegelt.
+
+#### Beispiel-Aufruf
+
+```ts
+import {
+  Executor, HandlerRegistry, SkillRegistry, InMemoryEventBus,
+} from 'src/core/runtime';
+import {
+  registerSkillBindings, runtimeSkillId,
+} from 'src/core/runtime/bindings';
+
+const registry = new SkillRegistry();
+const handlers = new HandlerRegistry();
+registerSkillBindings({ registry, handlers });
+
+const exec = new Executor({ registry, handlers, /* permissions/tracer/events/gates */ });
+
+await exec.execute({
+  tenant_id: 't1',
+  agent_id: 'agent-1',
+  skill_id: runtimeSkillId('marketing-performance-analytics'),
+  args: { action: 'calculate_conversion_rate', numerator: 50, denominator: 1000 },
+});
+// → { status: 'completed', output: 5, output_hash, execution_id }
+```
+
+#### Was die Bindings NICHT tun
+
+- Keine eigene Executor-/Permission-/Approval-Logik.
+- Keine Persistenz (geht durch `ExecutionTracer` der Runtime).
+- Kein Versand und kein autonomes Trigger. Skills bleiben reine
+  Aktions-Endpunkte; Mensch-Review-Grenzen bleiben durchsetzbar.

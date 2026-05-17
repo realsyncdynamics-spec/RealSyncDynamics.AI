@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/capability.schema.json",
+  "title": "RealSync Agent Capability & Permission Block (CPS v1.1)",
+  "description": "The `capability` block of an agent manifest. Extends the ACS manifest. v1.1 adds isolation.pii_access and isolation.cross_tenant_visibility. See spec/runtime/capability-permission-standard.md.",
+  "type": "object",
+  "required": ["trust_level", "permissions", "restrictions", "isolation"],
+  "additionalProperties": false,
+  "properties": {
+    "trust_level": {
+      "type": "string",
+      "enum": ["observe_only", "annotate", "recommend", "prepare", "execute_with_review", "autonomous_runtime"]
+    },
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(event\\.publish|evidence\\.(create|read|append)|chain\\.append|hash\\.generate|policy\\.evaluate|agent\\.dispatch|tenant\\.read|secret\\.read\\.[a-z][a-z0-9_]*)$"
+      }
+    },
+    "restrictions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "evidence.modify",
+          "evidence.delete",
+          "tenant.delete",
+          "policy.delete",
+          "finance.export.unattended",
+          "cross_tenant.read",
+          "cross_region.egress"
+        ]
+      }
+    },
+    "escalation_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "requires"],
+        "additionalProperties": false,
+        "properties": {
+          "action": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" },
+          "requires": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "minProperties": 1,
+              "maxProperties": 1,
+              "description": "One clause: { key: value }. Supported keys are documented in CPS §4."
+            }
+          }
+        }
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "required": ["network", "fs_writes", "secret_scope"],
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "type": "string",
+          "enum": ["none", "egress_allowlist", "egress_off"]
+        },
+        "egress_hosts": {
+          "type": "array",
+          "items": { "type": "string", "format": "hostname" },
+          "uniqueItems": true
+        },
+        "fs_writes": {
+          "type": "string",
+          "enum": ["none", "tmp_only", "scoped_volume"]
+        },
+        "secret_scope": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "uniqueItems": true
+        },
+        "pii_access": {
+          "type": "string",
+          "enum": ["none", "minimised", "scoped", "full"],
+          "description": "v1.1 — see CPS §9a. Default if omitted: minimised."
+        },
+        "cross_tenant_visibility": {
+          "type": "string",
+          "enum": ["forbidden", "aggregate_only", "full"],
+          "description": "v1.1 — see CPS §9b. Default if omitted: forbidden."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "network": { "const": "egress_allowlist" } } },
+          "then": { "required": ["egress_hosts"] }
+        }
+      ]
+    }
+  }
+}

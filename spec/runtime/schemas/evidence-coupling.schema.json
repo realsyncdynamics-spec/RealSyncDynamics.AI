@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/evidence-coupling.schema.json",
+  "title": "RealSync Evidence Coupling block (EVC v1.0)",
+  "description": "Per-agent evidence coupling declaration. See spec/runtime/evidence-coupling.md.",
+  "type": "object",
+  "required": ["mode"],
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["mandatory", "optional", "linked", "forbidden"]
+    },
+    "hash_required":   { "type": "boolean" },
+    "ledger_required": { "type": "boolean" },
+    "linked_subject": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_*]*(\\.[a-z][a-z0-9_*]*)*$",
+      "description": "Glob-allowed subject pattern; only valid when mode = linked."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "mandatory" } } },
+      "then": {},
+      "else": {
+        "not": {
+          "anyOf": [
+            { "required": ["hash_required"] },
+            { "required": ["ledger_required"] }
+          ]
+        }
+      }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "linked" } } },
+      "then": {},
+      "else": {
+        "not": { "required": ["linked_subject"] }
+      }
+    }
+  ]
+}

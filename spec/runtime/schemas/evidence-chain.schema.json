@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realsyncdynamicsai.de/spec/runtime/evidence-chain.schema.json",
+  "title": "RealSync Evidence Chain Link (ECS v1.0)",
+  "description": "Append-only, hash-linked, tenant-scoped audit substrate. See spec/runtime/evidence-chain.md.",
+  "type": "object",
+  "required": ["seq", "tenant_id", "event_id", "event_type", "source", "previous_hash", "current_hash", "sealed_at", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotonic, gap-free per tenant chain."
+    },
+    "tenant_id": {
+      "oneOf": [
+        { "type": "null", "description": "Only allowed on the platform chain." },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
+    "event_id": { "type": "string", "pattern": "^evt_[0-9A-Za-z]{26}$" },
+    "event_type": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" },
+    "source": {
+      "type": "object",
+      "required": ["agent", "runtime"],
+      "additionalProperties": false,
+      "properties": {
+        "agent":   { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$" },
+        "runtime": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$" }
+      }
+    },
+    "previous_hash": {
+      "oneOf": [
+        { "type": "string", "const": "", "description": "Empty string for seq=1 only." },
+        { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      ]
+    },
+    "current_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "sealed_at":    { "type": "string", "format": "date-time" },
+    "payload":      { "type": "object", "description": "Verbatim ESS event copy." },
+    "replaces_id": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^evt_[0-9A-Za-z]{26}$" }
+      ],
+      "description": "Set when this link supersedes an earlier one (rectification)."
+    },
+    "redacted_at": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "format": "date-time" }
+      ],
+      "description": "Set when payload was redacted for retention compliance. Hash chain still verifies."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "seq": { "const": 1 } },
+        "required":   ["seq"]
+      },
+      "then": {
+        "properties": { "previous_hash": { "const": "" } }
+      },
+      "else": {
+        "properties": {
+          "previous_hash": { "pattern": "^sha256:[0-9a-f]{64}$" }
+        }
+      }
+    }
+  ]
+}

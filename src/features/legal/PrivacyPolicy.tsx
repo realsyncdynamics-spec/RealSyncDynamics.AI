@@ -144,7 +144,87 @@ export function PrivacyPolicy() {
           </p>
         </Section>
 
-        <Section title="10. Änderungen">
+        <Section title="10. Tracking-Pixel & Marketing-Cookies (Detail)">
+          <p>
+            Mit Deiner Einwilligung über das Cookie-Banner setzen wir folgende
+            Tracking-Pixel ein. Rechtsgrundlage ist in allen Fällen Art. 6 Abs. 1
+            lit. a DSGVO (Einwilligung) i. V. m. § 25 Abs. 1 TTDSG. Du kannst die
+            Einwilligung jederzeit über das Cookie-Banner widerrufen.
+          </p>
+          <p className="text-xs text-titanium-500">
+            Hinweis Drittstaat-Transfer (Schrems II): Die unten genannten Anbieter
+            mit Sitz in den USA verarbeiten Daten teilweise in den USA. Wir stützen
+            den Transfer auf EU-Standardvertragsklauseln (SCCs, Art. 46 Abs. 2 lit. c
+            DSGVO) sowie auf die Angemessenheitsentscheidung im Rahmen des
+            EU-US Data Privacy Framework, soweit der Anbieter zertifiziert ist.
+          </p>
+          <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-obsidian-950 text-[10px] font-bold text-titanium-400 uppercase tracking-wider">
+                <tr>
+                  <th className="text-left px-2 py-2">Pixel</th>
+                  <th className="text-left px-2 py-2">Empfänger / Drittstaat</th>
+                  <th className="text-left px-2 py-2 hidden md:table-cell">Zweck</th>
+                  <th className="text-left px-2 py-2">Speicherdauer</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-titanium-900 text-titanium-300">
+                <tr>
+                  <td className="px-2 py-2 align-top">
+                    <div className="font-bold text-titanium-50">Meta Pixel</div>
+                    <div className="text-[10px] text-titanium-500">fbevents.js</div>
+                  </td>
+                  <td className="px-2 py-2 align-top">Meta Platforms Ireland Ltd. (EU) / Meta Platforms, Inc. (USA) — SCCs + DPF</td>
+                  <td className="px-2 py-2 align-top hidden md:table-cell">Conversion-Tracking, Re-Marketing, Audience-Aufbau für Werbeanzeigen auf Facebook / Instagram</td>
+                  <td className="px-2 py-2 align-top">bis zu 180 Tage (Meta-Cookies)</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 align-top">
+                    <div className="font-bold text-titanium-50">TikTok Pixel</div>
+                    <div className="text-[10px] text-titanium-500">tiktok.com/pixel</div>
+                  </td>
+                  <td className="px-2 py-2 align-top">TikTok Information Technologies UK Ltd. / TikTok Inc. (USA) — SCCs</td>
+                  <td className="px-2 py-2 align-top hidden md:table-cell">Conversion-Tracking und Re-Marketing für Werbeanzeigen auf TikTok</td>
+                  <td className="px-2 py-2 align-top">bis zu 13 Monate</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 align-top">
+                    <div className="font-bold text-titanium-50">Google Analytics 4</div>
+                    <div className="text-[10px] text-titanium-500">gtag.js / GA4</div>
+                  </td>
+                  <td className="px-2 py-2 align-top">Google Ireland Ltd. (EU) / Google LLC (USA) — SCCs + DPF; IP-Anonymisierung aktiv</td>
+                  <td className="px-2 py-2 align-top hidden md:table-cell">Reichweitenmessung und Nutzungsanalyse (anonymisiert)</td>
+                  <td className="px-2 py-2 align-top">bis zu 14 Monate (Default-Retention)</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 align-top">
+                    <div className="font-bold text-titanium-50">Google Ads</div>
+                    <div className="text-[10px] text-titanium-500">gtag.js / AW</div>
+                  </td>
+                  <td className="px-2 py-2 align-top">Google Ireland Ltd. (EU) / Google LLC (USA) — SCCs + DPF</td>
+                  <td className="px-2 py-2 align-top hidden md:table-cell">Conversion-Tracking und Re-Marketing für Werbeanzeigen im Google-Netzwerk</td>
+                  <td className="px-2 py-2 align-top">bis zu 540 Tage</td>
+                </tr>
+                <tr>
+                  <td className="px-2 py-2 align-top">
+                    <div className="font-bold text-titanium-50">LinkedIn Insight Tag</div>
+                    <div className="text-[10px] text-titanium-500">snap.licdn.com</div>
+                  </td>
+                  <td className="px-2 py-2 align-top">LinkedIn Ireland Unlimited Company (EU) / LinkedIn Corporation (USA) — SCCs + DPF</td>
+                  <td className="px-2 py-2 align-top hidden md:table-cell">Conversion-Tracking und Audience-Aufbau für B2B-Werbeanzeigen auf LinkedIn</td>
+                  <td className="px-2 py-2 align-top">bis zu 180 Tage</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-titanium-500">
+            Konkrete Cookie-Namen und technische Parameter pro Anbieter findest Du in
+            der Cookie-Übersicht des jeweiligen Anbieters; verlinkt ist
+            jeder Anbieter unter <Link to="/legal/sub-processors" className="text-security-400">Sub-Prozessoren</Link>.
+          </p>
+        </Section>
+
+        <Section title="11. Änderungen">
           <p>
             Wir passen diese Datenschutzerklärung an, wenn sich die rechtliche
             Grundlage oder unsere Verarbeitungstätigkeiten ändern. Wesentliche

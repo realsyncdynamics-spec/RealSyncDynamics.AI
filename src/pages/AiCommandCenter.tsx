@@ -13,9 +13,11 @@ import {
   Layers,
   LayoutGrid,
   Loader2,
+  Menu,
   Pause,
   Play,
   Plus,
+  Radio,
   Search,
   Settings,
   Sparkles,
@@ -25,6 +27,43 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+
+interface AgentRunRow {
+  id: string;
+  tenant_id: string | null;
+  agent_id: string;
+  actor: string;
+  status: string;
+  summary: string;
+  created_at: string;
+}
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+
+function useRecentAgentRuns(limit = 10) {
+  const [runs, setRuns] = useState<AgentRunRow[]>([]);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    if (!SUPABASE_URL) return;
+    let cancelled = false;
+    fetch(`${SUPABASE_URL}/functions/v1/enterprise-ai-os-agent-runs-list?limit=${limit}`)
+      .then((r) => r.json())
+      .then((body) => {
+        if (cancelled) return;
+        if (Array.isArray(body?.runs)) {
+          setRuns(body.runs as AgentRunRow[]);
+          setLive(true);
+        }
+      })
+      .catch(() => {
+        /* swallow — fallback to mocks */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [limit]);
+  return { runs, live };
+}
 
 type RunStatus = 'idle' | 'running' | 'blocked' | 'review' | 'done';
 
@@ -289,14 +328,34 @@ function Sidebar({
   onSelect,
   query,
   setQuery,
+  mobileOpen,
+  onCloseMobile,
+  activeRuns,
+  liveData,
 }: {
   active: NavKey;
   onSelect: (k: NavKey) => void;
   query: string;
   setQuery: (q: string) => void;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
+  activeRuns: number;
+  liveData: boolean;
 }) {
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900">
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={onCloseMobile}
+          aria-hidden
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900 transition-transform md:static md:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
       <div className="flex items-center gap-2 px-4 py-4">
         <div className="grid h-8 w-8 place-items-center rounded-md bg-gradient-to-br from-security-500 to-ai-cyan-500 shadow-inner shadow-black/40">
           <Sparkles className="h-4 w-4 text-white" />
@@ -305,6 +364,14 @@ function Sidebar({
           <div className="font-display text-sm font-semibold text-titanium-50">Command Center</div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-titanium-500">AI · Operating Layer</div>
         </div>
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          className="ml-auto rounded border border-titanium-800 bg-obsidian-700 p-1 text-titanium-300 md:hidden"
+          aria-label="Sidebar schließen"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       <div className="px-3 pb-3">
@@ -359,15 +426,22 @@ function Sidebar({
       <div className="border-t border-titanium-900 p-3">
         <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-titanium-600">
           <span>Runtime</span>
-          <span className="inline-flex items-center gap-1.5">
-            <StatusDot value="running" />
-            <span className="text-ai-cyan-300">live</span>
-          </span>
+          {liveData ? (
+            <span className="inline-flex items-center gap-1.5 rounded border border-ai-cyan-700/60 bg-ai-cyan-900/30 px-1.5 py-0.5 text-ai-cyan-300">
+              <Radio className="h-2.5 w-2.5 animate-pulse" />
+              live data
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-titanium-500">
+              <StatusDot value="idle" />
+              mock
+            </span>
+          )}
         </div>
         <div className="mt-2 text-xs text-titanium-300">
           <div className="flex justify-between">
             <span className="text-titanium-500">Active Runs</span>
-            <span className="font-mono">3</span>
+            <span className="font-mono">{activeRuns}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-titanium-500">Today Tokens</span>
@@ -375,7 +449,8 @@ function Sidebar({
           </div>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -387,6 +462,7 @@ function Topbar({
   onRun,
   onPause,
   onStop,
+  onOpenMobileNav,
 }: {
   workflow: WorkflowItem;
   model: Model;
@@ -395,39 +471,52 @@ function Topbar({
   onRun: () => void;
   onPause: () => void;
   onStop: () => void;
+  onOpenMobileNav: () => void;
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-titanium-900 bg-obsidian-900/80 px-4 backdrop-blur">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="grid h-8 w-8 place-items-center rounded-md border border-titanium-800 bg-obsidian-700">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-titanium-900 bg-obsidian-900/80 px-3 backdrop-blur sm:px-4">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <button
+          type="button"
+          onClick={onOpenMobileNav}
+          className="rounded-md border border-titanium-800 bg-obsidian-700 p-1.5 text-titanium-200 hover:bg-obsidian-600 md:hidden"
+          aria-label="Navigation öffnen"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
+        <div className="hidden h-8 w-8 shrink-0 place-items-center rounded-md border border-titanium-800 bg-obsidian-700 sm:grid">
           <Workflow className="h-4 w-4 text-ai-cyan-400" />
         </div>
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold text-titanium-50">{workflow.name}</div>
-          <div className="truncate text-[11px] text-titanium-500">
+          <div className="hidden truncate text-[11px] text-titanium-500 sm:block">
             {workflow.tag} · {workflow.steps} Schritte · {workflow.lastRun}
           </div>
         </div>
-        <StatusChip value={status} />
+        <div className="hidden sm:block">
+          <StatusChip value={status} />
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <ModelSelector value={model} onChange={setModel} />
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="hidden lg:block">
+          <ModelSelector value={model} onChange={setModel} />
+        </div>
 
-        <div className="mx-1 h-6 w-px bg-titanium-900" />
+        <div className="mx-1 hidden h-6 w-px bg-titanium-900 lg:block" />
 
         <button
           type="button"
           onClick={onRun}
-          className="inline-flex items-center gap-1.5 rounded-md bg-security-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm shadow-security-900/50 hover:bg-security-500"
+          className="inline-flex items-center gap-1.5 rounded-md bg-security-600 px-2.5 py-1.5 text-sm font-medium text-white shadow-sm shadow-security-900/50 hover:bg-security-500 sm:px-3"
         >
           <Play className="h-3.5 w-3.5" />
-          Run
+          <span className="hidden sm:inline">Run</span>
         </button>
         <button
           type="button"
           onClick={onPause}
-          className="inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-2.5 py-1.5 text-sm text-titanium-200 hover:border-titanium-700 hover:bg-obsidian-600"
+          className="inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-2 py-1.5 text-sm text-titanium-200 hover:border-titanium-700 hover:bg-obsidian-600"
           aria-label="Pause"
         >
           <Pause className="h-3.5 w-3.5" />
@@ -435,7 +524,7 @@ function Topbar({
         <button
           type="button"
           onClick={onStop}
-          className="inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-2.5 py-1.5 text-sm text-titanium-200 hover:border-rose-800 hover:bg-rose-950/30 hover:text-rose-200"
+          className="inline-flex items-center gap-1.5 rounded-md border border-titanium-800 bg-obsidian-700 px-2 py-1.5 text-sm text-titanium-200 hover:border-rose-800 hover:bg-rose-950/30 hover:text-rose-200"
           aria-label="Stop"
         >
           <Square className="h-3.5 w-3.5" />
@@ -460,7 +549,7 @@ function WorkflowList({
     query ? (w.name + ' ' + w.description + ' ' + w.tag).toLowerCase().includes(query.toLowerCase()) : true,
   );
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900/40">
+    <div className="hidden h-full w-80 shrink-0 flex-col border-r border-titanium-900 bg-obsidian-900/40 lg:flex">
       <div className="flex items-center justify-between border-b border-titanium-900 px-4 py-3">
         <div className="text-xs font-semibold uppercase tracking-[0.18em] text-titanium-500">Workflows</div>
         <button
@@ -550,7 +639,7 @@ function CanvasView({ steps }: { steps: RunStep[] }) {
     );
   }
   return (
-    <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-3 p-3 sm:p-4 sm:grid-cols-2 xl:grid-cols-3">
       {steps.map((s, i) => (
         <article
           key={s.id}
@@ -818,6 +907,9 @@ export function AiCommandCenter() {
   const [model, setModel] = useState<Model>(MODELS[0]);
   const [runStatus, setRunStatus] = useState<RunStatus>('running');
   const [helpOpen, setHelpOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const { runs: liveRuns, live: liveData } = useRecentAgentRuns(20);
 
   const workflow = useMemo(
     () => WORKFLOWS.find((w) => w.id === selectedId) ?? WORKFLOWS[0],
@@ -869,9 +961,28 @@ export function AiCommandCenter() {
     return () => window.removeEventListener('keydown', handler);
   }, [helpOpen]);
 
+  const activeRuns = useMemo(() => {
+    if (liveData) {
+      return liveRuns.filter((r) => r.status === 'running' || r.status === 'pending').length;
+    }
+    return WORKFLOWS.filter((w) => w.status === 'running').length;
+  }, [liveData, liveRuns]);
+
   return (
     <div className="dark flex h-screen w-screen overflow-hidden bg-obsidian-950 text-titanium-100">
-      <Sidebar active={nav} onSelect={setNav} query={query} setQuery={setQuery} />
+      <Sidebar
+        active={nav}
+        onSelect={(k) => {
+          setNav(k);
+          setMobileNavOpen(false);
+        }}
+        query={query}
+        setQuery={setQuery}
+        mobileOpen={mobileNavOpen}
+        onCloseMobile={() => setMobileNavOpen(false)}
+        activeRuns={activeRuns}
+        liveData={liveData}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
@@ -882,6 +993,7 @@ export function AiCommandCenter() {
           onRun={() => setRunStatus('running')}
           onPause={() => setRunStatus('idle')}
           onStop={() => setRunStatus('idle')}
+          onOpenMobileNav={() => setMobileNavOpen(true)}
         />
 
         <div className="flex min-h-0 flex-1">

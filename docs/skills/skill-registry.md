@@ -105,6 +105,29 @@ Prompt-Vorschau. Die UI fuehrt keine Skills aus.
 - `scripts/qa-skills-smoke.ts` — End-to-End-Smoke der oberen Schichten,
   ausfuehrbar via `npm run qa:skills`.
 
+## Marketing-Runtime-Binding
+
+Der Skill `marketing-performance-analytics` haengt nicht nur an reinen
+KPI-Formeln, sondern bindet die Marketing-Analytics-Runtime
+(`src/core/marketing-analytics/`) direkt ein:
+
+- `prepareMarketingEvent(event)` — wendet `sanitizeMetadata` an und setzt
+  Defaults (Currency, occurred_at) bevor ein Event in die Agents fliesst.
+- `detectKpiAnomaly(values)` — duenne Bruecke auf `detectAnomaly`, fuer
+  Tagesmetriken im Skill-Kontext.
+- `runComplianceDrift(events)` — `ComplianceDriftAgent` mit auto-sanitisierten
+  Events; ergaenzt die Standard-Skill-Guardrail (`BENCHMARKS_ORIENTATION`).
+- `runRevenueAttribution(events, model, from, to)` — `RevenueAttributionAgent`
+  mit defensiv validiertem Modell.
+- `buildMarketingAnalyticsReport(events, model, from, to, optimizations)` —
+  high-level Orchestrator: Attribution + Compliance-Drift + priorisierte
+  Optimierungen + Skill-Guardrail in einem Aufruf.
+
+Der `ComplianceDriftAgent` liefert weiterhin sein eigenes
+`COMPLIANCE_DISCLAIMER` ("Keine Rechtsberatung"). Das Skill-Binding
+ueberschreibt es nicht und ergaenzt nur die marketing-spezifische
+Benchmarks-Guardrail.
+
 ## Spaetere Erweiterung zur Agent-Runtime
 
 Diese Registry ist absichtlich Daten + reine Funktionen + Routing. Die

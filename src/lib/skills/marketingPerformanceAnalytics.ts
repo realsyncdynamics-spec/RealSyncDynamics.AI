@@ -1,5 +1,20 @@
-// Marketing-Performance Skill — pure Math + Priorisierung. Benchmarks im
-// Aufruf-Context sind nur Orientierung.
+// Marketing-Performance Skill — pure Math + Priorisierung + Brueckenschicht
+// zur Marketing-Analytics-Runtime (src/core/marketing-analytics).
+//
+// Die Helper hier sind reine Funktionen ohne IO. Sie kapseln die Runtime-
+// Agents (Compliance-Drift, Revenue-Attribution, Anomaly) hinter einer
+// Skill-Oberflaeche und tragen die Standard-Guardrail durch.
+
+import { ComplianceDriftAgent, type ComplianceDriftReport } from '../../core/marketing-analytics/complianceDriftAgent';
+import { RevenueAttributionAgent } from '../../core/marketing-analytics/revenueAttributionAgent';
+import { detectAnomaly } from '../../core/marketing-analytics/detectAnomaly';
+import { sanitizeMetadata } from '../../core/marketing-analytics/sanitizeMetadata';
+import type {
+  AnomalyResult,
+  AttributionModel,
+  AttributionSnapshot,
+  MarketingEvent,
+} from '../../core/marketing-analytics/types';
 
 export interface OptimizationItem {
   id: string;
@@ -52,4 +67,96 @@ function round(v: number, digits: number): number {
 function validatePair(num: number, den: number): void {
   if (!Number.isFinite(num) || !Number.isFinite(den)) throw new Error('values must be finite');
   if (num < 0 || den < 0) throw new Error('values must be non-negative');
+}
+
+// ─── Marketing-Runtime-Bindings ────────────────────────────────────────────
+//
+// Hinweis: Benchmarks und Heuristiken sind nur Orientierung — keine Garantie.
+
+export const MARKETING_SKILL_GUARDRAIL =
+  'Branchen-Benchmarks dienen nur zur Orientierung und ersetzen keine eigene Datenanalyse.';
+
+/**
+ * Bereinigt ein Marketing-Event fuer die weitere Verarbeitung im Skill-Layer.
+ * Wendet sanitizeMetadata an und setzt sichere Defaults — niemals Roh-Events
+ * in die Agents geben.
+ */
+export function prepareMarketingEvent(event: MarketingEvent): MarketingEvent {
+  if (!event || typeof event !== 'object') throw new Error('event required');
+  return {
+    ...event,
+    currency: event.currency?.toUpperCase().slice(0, 3) ?? 'EUR',
+    occurred_at: event.occurred_at ?? new Date().toISOString(),
+    metadata: sanitizeMetadata(event.metadata),
+  };
+}
+
+/**
+ * Pruefung einer Tagesmetrik auf Outlier. Sinnvoll ist eine Historie von
+ * mindestens 6 Werten (5 history + aktueller Wert) — sonst `isAnomaly=false`.
+ */
+export function detectKpiAnomaly(values: readonly number[]): AnomalyResult {
+  return detectAnomaly(values);
+}
+
+/**
+ * Ruft den ComplianceDriftAgent auf einer Liste sanitisierter Events auf.
+ * Erweitert das Ergebnis um die Skill-Guardrail (Benchmarks-Orientation).
+ */
+export function runComplianceDrift(events: MarketingEvent[]): ComplianceDriftReport & {
+  skillGuardrails: string[];
+} {
+  if (!Array.isArray(events)) throw new Error('events must be array');
+  const sanitized = events.map(prepareMarketingEvent);
+  const agent = new ComplianceDriftAgent();
+  return { ...agent.analyze(sanitized), skillGuardrails: [MARKETING_SKILL_GUARDRAIL] };
+}
+
+/**
+ * Ruft den RevenueAttributionAgent auf. Validiert das Modell defensiv.
+ */
+export function runRevenueAttribution(
+  events: MarketingEvent[],
+  model: AttributionModel,
+  window_start: string,
+  window_end: string,
+): AttributionSnapshot {
+  if (!Array.isArray(events)) throw new Error('events must be array');
+  const allowed: AttributionModel[] = ['last_touch', 'first_touch', 'linear'];
+  if (!allowed.includes(model)) throw new Error(`unknown attribution model: ${model}`);
+  const sanitized = events.map(prepareMarketingEvent);
+  const agent = new RevenueAttributionAgent();
+  return agent.attribute(sanitized, model, window_start, window_end);
+}
+
+export interface MarketingAnalyticsReport {
+  attribution: AttributionSnapshot;
+  compliance: ComplianceDriftReport;
+  topOptimizations: OptimizationItem[];
+  skillGuardrails: string[];
+}
+
+/**
+ * High-Level-Report: laeuft Attribution + Compliance-Drift in einem Schritt,
+ * priorisiert die Optimierungs-Hypothesen und haengt die Skill-Guardrail an.
+ *
+ * Stellt KEINE Rechtsberatung dar; das Compliance-Disclaimer kommt aus dem
+ * Agent-Output.
+ */
+export function buildMarketingAnalyticsReport(
+  events: MarketingEvent[],
+  model: AttributionModel,
+  window_start: string,
+  window_end: string,
+  optimizations: readonly OptimizationItem[] = [],
+): MarketingAnalyticsReport {
+  const attribution = runRevenueAttribution(events, model, window_start, window_end);
+  const compliance = runComplianceDrift(events);
+  const topOptimizations = prioritizeOptimization(optimizations).slice(0, 5);
+  return {
+    attribution,
+    compliance,
+    topOptimizations,
+    skillGuardrails: [MARKETING_SKILL_GUARDRAIL],
+  };
 }

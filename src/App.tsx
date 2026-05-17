@@ -167,6 +167,7 @@ const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').th
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
 const AnalyticsView = lazy(() => import('./features/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
+const AuditDashboardView = lazy(() => import('./features/audit/AuditDashboardView').then((m) => ({ default: m.AuditDashboardView })));
 const LeadsView = lazy(() => import('./features/admin/LeadsView').then((m) => ({ default: m.LeadsView })));
 const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').then((m) => ({ default: m.SystemHealthView })));
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
@@ -345,6 +346,7 @@ function RoutesWithTracking() {
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
+      <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
       <Route path="/business" element={<BusinessDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />

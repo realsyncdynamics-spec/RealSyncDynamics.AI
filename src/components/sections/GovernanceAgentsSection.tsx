@@ -105,7 +105,7 @@ export function GovernanceAgentsSection() {
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
             Four agents share the same runtime: detection, classification, evidence and policy.
-            They run continuously, write to the audit-trail and never stop to ask a human.
+            They run continuously, write to the audit-trail and escalate high-risk decisions for human review per governance policy.
           </p>
         </div>
 

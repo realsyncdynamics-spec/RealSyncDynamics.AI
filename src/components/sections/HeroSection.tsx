@@ -84,8 +84,10 @@ export function HeroSection() {
           monitoring, governance, automation — one operational plane, zero setup.
         </p>
 
-        {/* URL launch input */}
-        <form onSubmit={onSubmit} className="max-w-2xl mx-auto" role="search">
+        {/* URL launch input — data-hero-cta lets AssistentChip hide while
+            this form is in the viewport (avoids the bottom-center overlap
+            on short mobile viewports). */}
+        <form onSubmit={onSubmit} className="max-w-2xl mx-auto" role="search" data-hero-cta>
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1 flex items-center bg-obsidian-900 border border-titanium-800 focus-within:border-cyan-400/60 transition-colors">
               <span className="pl-3 font-mono text-[12px] text-titanium-500 select-none">https://</span>

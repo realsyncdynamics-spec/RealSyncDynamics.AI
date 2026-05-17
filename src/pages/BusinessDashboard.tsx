@@ -228,12 +228,20 @@ function Header({
         </div>
         <div className="flex flex-col items-start gap-3 md:items-end">
           <RangeTabs value={range} onChange={onRangeChange} />
-          <Link
-            to="/billing/usage"
-            className="rounded-2xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:text-white"
-          >
-            Zur Usage &amp; Billing
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/dashboard/agents"
+              className="rounded-2xl border border-violet-700/50 px-4 py-2 text-sm text-violet-200 hover:text-white hover:border-violet-500/80"
+            >
+              Agent OS · Live
+            </Link>
+            <Link
+              to="/billing/usage"
+              className="rounded-2xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:text-white"
+            >
+              Zur Usage &amp; Billing
+            </Link>
+          </div>
         </div>
       </div>
       {error && (

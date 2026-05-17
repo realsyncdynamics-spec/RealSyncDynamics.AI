@@ -156,6 +156,12 @@ export function CreatorDashboard() {
               >
                 <Boxes className="h-4 w-4 text-security-400" /> Operations · Bestand
               </Link>
+              <Link
+                to="/dashboard/agents"
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
+              >
+                <Bot className="h-4 w-4 text-violet-400" /> Agent OS · Live
+              </Link>
             </nav>
 
             <div className="px-4 mb-2 text-xs font-bold text-titanium-500 uppercase tracking-wider flex items-center justify-between">

@@ -103,15 +103,91 @@ function lintFunctionsConfig() {
     }
   }
 
-  // Check: live function with NO config entry. Info-only — default
-  // verify_jwt=true is the safe path.
+  // Check: live function with NO config entry.
+  //
+  // For MOST functions, missing config = default verify_jwt=true =
+  // safe (info-only).
+  //
+  // For KNOWN-PUBLIC functions (webhooks, public free tools, the AI
+  // gateway), missing config is a CRITICAL silent regression — the
+  // function would re-default to JWT-gated auth, breaking webhook
+  // receivers and public tools. Codex flagged this exact case in the
+  // #301 review. Maintain REQUIRED_PUBLIC_FUNCTIONS alongside the
+  // [functions.X] verify_jwt=false declarations in supabase/config.toml.
   for (const name of onDisk) {
-    if (!declared.has(name)) {
+    if (declared.has(name)) continue;
+    if (REQUIRED_PUBLIC_FUNCTIONS.has(name)) {
+      push('error', 'missing-required-public-config',
+        `supabase/functions/${name}/ exists but [functions.${name}] is missing from config.toml — this function MUST have verify_jwt=false (webhook / public free tool / AI gateway / cron); without the stanza Supabase defaults to verify_jwt=true and external callers will be locked out.`,
+        'supabase/config.toml');
+    } else {
       push('info', 'no-config-entry',
         `supabase/functions/${name}/ has no per-function config entry (default verify_jwt=true assumed)`);
     }
   }
 }
+
+// Functions that MUST have `verify_jwt = false` in config.toml.
+// Deleting the stanza of any of these — while the function dir
+// remains on disk — silently breaks the function: Supabase would
+// re-default to JWT-gated auth and external callers (Stripe,
+// Shopify, browser anon) would be locked out.
+//
+// Keep this set in sync with the [functions.X] verify_jwt=false
+// declarations in supabase/config.toml.
+const REQUIRED_PUBLIC_FUNCTIONS = new Set([
+  // External webhooks (no JWT possible).
+  'stripe-webhook',
+  'shopify-webhooks',
+  'shopify-callback',
+  'workflow-callback',
+  'governance-ingest',
+  'governance-webhooks',
+  'newsletter-confirm',
+  'checkout-website-rebuild',
+
+  // Public free-tool surfaces (anonymous ingress).
+  'gdpr-audit',
+  'cookie-scan',
+  'cookie-scan-deep',
+  'audit-report-pdf',
+  'sales-lead',
+  'newsletter-subscribe',
+  'track-pageview',
+  'marketing-event',
+  'telemetry-ai-event',
+  'welcome-email',
+  'shopify-install',
+  'rebuild-website',
+  'market-scanner',
+  'ai-act-classify',
+
+  // AI gateway — browser calls it directly with bundled anon key.
+  'ai-gateway',
+
+  // Cron-triggered (GitHub Actions / pg_cron call anonymously).
+  'daily-digest',
+  'audit-drip-cron',
+  'audit-monitor-cron',
+  'audit-recheck-weekly',
+
+  // Enterprise AI OS public surfaces.
+  'enterprise-ai-os-discovery-intake',
+  'enterprise-ai-os-discovery-pending',
+  'enterprise-ai-os-agents-list',
+  'enterprise-ai-os-agents-run',
+  'enterprise-ai-os-evaluate',
+  'enterprise-ai-os-feedback',
+  'enterprise-ai-os-founding-access',
+  'enterprise-ai-os-agent-runs-list',
+
+  // Governance public surfaces.
+  'governance-keys',
+  'governance-resources',
+  'governance-approvals',
+  'governance-risk-score',
+  'governance-dpias',
+]);
 
 // Walk src/ shallowly for grep-style references to "functions/v1/NAME"
 // or `invoke('NAME'`. Avoids actually executing TS — pure string scan.

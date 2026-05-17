@@ -71,9 +71,6 @@ enabled = false
 [functions.stripe-webhook]
 verify_jwt = false
 
-[functions.stripe-webhook-fixer]
-verify_jwt = false
-
 [functions.shopify-webhooks]
 verify_jwt = false
 

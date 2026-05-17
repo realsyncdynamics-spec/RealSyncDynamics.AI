@@ -1,0 +1,101 @@
+name: Pre-Deploy Check
+
+# Lints deploy infrastructure on PRs that touch it. Catches the
+# silent-regression classes that the v1 deploy pipeline could not
+# detect:
+#
+#   - dead [functions.X] config entries (PR #250 cleanup pattern)
+#   - migration timestamps out of order
+#   - migration filenames not matching YYYYMMDDHHMMSS_*.sql
+#   - functions on disk with no per-function config entry
+#   - noisy verify_jwt=true that re-states the default
+#   - agent contract filename violations
+#
+# Runs only on PRs (not on push to main) — the deploy workflow itself
+# is the source of truth for what ships; this is the pre-deploy
+# gate that surfaces issues BEFORE merge.
+#
+# Status header companion: docs/runtime/production-runtime.md
+# Manual run on a branch: `node scripts/pre-deploy-lint.mjs`
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+      - 'src/runtime/agents/**'
+      - 'src/runtime/validator.ts'
+      - '.github/workflows/deploy*.yml'
+      - '.github/workflows/pre-deploy-check.yml'
+      - 'scripts/pre-deploy-lint.mjs'
+  # Allow manual trigger on any branch for one-off audits.
+  workflow_dispatch:
+
+# Cancel in-progress lint runs on the same PR when a new commit lands.
+concurrency:
+  group: pre-deploy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint deploy infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Lint script is pure Node — no install required.
+      - name: Run pre-deploy-lint
+        id: lint
+        run: |
+          node scripts/pre-deploy-lint.mjs --json > pre-deploy-lint.json
+          # Print human view to the log too (the JSON is for the artifact).
+          node scripts/pre-deploy-lint.mjs || true
+
+      - name: Surface issue summary as PR step summary
+        if: always()
+        run: |
+          if [ ! -f pre-deploy-lint.json ]; then
+            echo "::warning::pre-deploy-lint produced no JSON output"
+            exit 0
+          fi
+          ERRORS=$(jq -r '.summary.errors // 0' pre-deploy-lint.json)
+          WARNS=$(jq -r '.summary.warnings // 0' pre-deploy-lint.json)
+          INFO=$(jq -r '.summary.info // 0' pre-deploy-lint.json)
+          {
+            echo "## Pre-Deploy Lint"
+            echo ""
+            echo "| Severity | Count |"
+            echo "|---|---|"
+            echo "| Errors   | $ERRORS |"
+            echo "| Warnings | $WARNS |"
+            echo "| Info     | $INFO |"
+            echo ""
+            if [ "$ERRORS" != "0" ] || [ "$WARNS" != "0" ]; then
+              echo "### Issues"
+              echo ""
+              echo "| Severity | Check | File | Message |"
+              echo "|---|---|---|---|"
+              jq -r '.issues[] | select(.severity != "info") | "| \(.severity) | \(.check) | \(.file // "—") | \(.message) |"' pre-deploy-lint.json
+            else
+              echo "✓ No errors or warnings."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload lint result as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-deploy-lint-${{ github.event.pull_request.number || github.run_id }}
+          path: pre-deploy-lint.json
+          retention-days: 14
+
+      # Re-run to set the exit code authoritatively. The first run
+      # always succeeded (|| true above) so we could collect the JSON.
+      - name: Fail the job on errors
+        run: node scripts/pre-deploy-lint.mjs

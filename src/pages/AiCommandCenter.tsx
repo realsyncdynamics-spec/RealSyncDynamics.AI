@@ -899,6 +899,15 @@ function isTypingTarget(t: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable;
 }
 
+function nowTime(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+}
+
+const STREAM_TICK_MS = 1400;
+const STREAM_TOKENS_PER_TICK = 850;
+const STREAM_COMPLETE_AT = 6000;
+
 export function AiCommandCenter() {
   const [nav, setNav] = useState<NavKey>('workflows');
   const [query, setQuery] = useState('');
@@ -908,6 +917,10 @@ export function AiCommandCenter() {
   const [runStatus, setRunStatus] = useState<RunStatus>('running');
   const [helpOpen, setHelpOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [stepsByWf, setStepsByWf] = useState<Record<string, RunStep[]>>(() =>
+    JSON.parse(JSON.stringify(STEPS)),
+  );
+  const [logs, setLogs] = useState<LogLine[]>(LOGS);
 
   const { runs: liveRuns, live: liveData } = useRecentAgentRuns(20);
 
@@ -915,7 +928,7 @@ export function AiCommandCenter() {
     () => WORKFLOWS.find((w) => w.id === selectedId) ?? WORKFLOWS[0],
     [selectedId],
   );
-  const steps = STEPS[workflow.id] ?? [];
+  const steps = stepsByWf[workflow.id] ?? [];
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -961,6 +974,80 @@ export function AiCommandCenter() {
     return () => window.removeEventListener('keydown', handler);
   }, [helpOpen]);
 
+  // Live-Streaming-Simulation: tickt jeden running-Step weiter, schaltet bei
+  // STREAM_COMPLETE_AT auf done und startet den nächsten idle-Step. Stoppt,
+  // sobald keine Schritte mehr offen sind.
+  useEffect(() => {
+    if (runStatus !== 'running') return;
+    const id = window.setInterval(() => {
+      setStepsByWf((prev) => {
+        const next = { ...prev };
+        const list = [...(next[workflow.id] ?? [])];
+        if (list.length === 0) return prev;
+
+        const runningIdx = list.findIndex((s) => s.status === 'running');
+        if (runningIdx >= 0) {
+          const s = { ...list[runningIdx] };
+          s.tokens = (s.tokens ?? 0) + STREAM_TOKENS_PER_TICK;
+          if ((s.tokens ?? 0) >= STREAM_COMPLETE_AT) {
+            s.status = 'done';
+            s.durationMs = (s.durationMs ?? 0) + STREAM_TICK_MS * 3;
+            setLogs((l) => [
+              ...l,
+              { ts: nowTime(), level: 'agent', source: s.agent, message: `${s.name}: fertig (${s.tokens?.toLocaleString('de-DE')} tok).` },
+            ]);
+          } else if (Math.random() < 0.4) {
+            setLogs((l) => [
+              ...l,
+              { ts: nowTime(), level: 'agent', source: s.agent, message: `Streaming … (${s.tokens?.toLocaleString('de-DE')} tok)` },
+            ]);
+          }
+          list[runningIdx] = s;
+        }
+
+        const stillRunning = list.some((s) => s.status === 'running');
+        if (!stillRunning) {
+          const nextIdleIdx = list.findIndex((s) => s.status === 'idle');
+          if (nextIdleIdx >= 0) {
+            const s = { ...list[nextIdleIdx], status: 'running' as RunStatus, tokens: 0 };
+            list[nextIdleIdx] = s;
+            setLogs((l) => [
+              ...l,
+              { ts: nowTime(), level: 'info', source: 'orchestrator', message: `Step ${nextIdleIdx + 1} (${s.name}) gestartet.` },
+            ]);
+          } else if (list.every((s) => s.status === 'done')) {
+            setRunStatus('done');
+            setLogs((l) => [
+              ...l,
+              { ts: nowTime(), level: 'info', source: 'orchestrator', message: `Workflow „${workflow.name}" abgeschlossen.` },
+            ]);
+          }
+        }
+
+        next[workflow.id] = list;
+        return next;
+      });
+    }, STREAM_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [runStatus, workflow.id, workflow.name]);
+
+  const handleRun = () => {
+    setStepsByWf((prev) => ({
+      ...prev,
+      [workflow.id]: (prev[workflow.id] ?? []).map((s, i) => ({
+        ...s,
+        status: i === 0 ? ('running' as RunStatus) : ('idle' as RunStatus),
+        tokens: i === 0 ? 0 : undefined,
+        durationMs: undefined,
+      })),
+    }));
+    setLogs((l) => [
+      ...l,
+      { ts: nowTime(), level: 'info', source: 'orchestrator', message: `Run gestartet — Model: ${model.label}.` },
+    ]);
+    setRunStatus('running');
+  };
+
   const activeRuns = useMemo(() => {
     if (liveData) {
       return liveRuns.filter((r) => r.status === 'running' || r.status === 'pending').length;
@@ -990,7 +1077,7 @@ export function AiCommandCenter() {
           model={model}
           setModel={setModel}
           status={runStatus}
-          onRun={() => setRunStatus('running')}
+          onRun={handleRun}
           onPause={() => setRunStatus('idle')}
           onStop={() => setRunStatus('idle')}
           onOpenMobileNav={() => setMobileNavOpen(true)}
@@ -1011,7 +1098,7 @@ export function AiCommandCenter() {
             <Tabs value={tab} onChange={setTab} />
             <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
               {tab === 'canvas' && <CanvasView steps={steps} />}
-              {tab === 'logs' && <LogsView logs={LOGS} />}
+              {tab === 'logs' && <LogsView logs={logs} />}
               {tab === 'output' && <OutputView workflow={workflow} />}
               {tab === 'config' && <ConfigView workflow={workflow} model={model} />}
             </div>

@@ -22,10 +22,18 @@ export function RemediationPlanDetailView() {
 
   useEffect(() => {
     if (!activeTenantId || !planId) return;
+    // Clear stale state BEFORE fetching so a tenant or planId switch
+    // never briefly renders the previous tenant's plan / snippets /
+    // GitHub drafts (multi-tenant leak risk — codex P2 #264).
+    setPlan(null);
+    setIssueDraft(null);
+    setCommentDraft(null);
     setError(null);
+    let cancelled = false;
     getRemediationPlan(activeTenantId, planId)
-      .then(setPlan)
-      .catch((err: Error) => setError(err.message));
+      .then((p) => { if (!cancelled) setPlan(p); })
+      .catch((err: Error) => { if (!cancelled) setError(err.message); });
+    return () => { cancelled = true; };
   }, [activeTenantId, planId]);
 
   const onPrepareIssue = async () => {

@@ -29,10 +29,17 @@ export function RemediationPlansView() {
 
   useEffect(() => {
     if (!activeTenantId) { setPlans([]); return; }
+    // Clear stale plans BEFORE the new tenant fetch so a tenant
+    // switch never briefly renders the previous tenant's rows
+    // (multi-tenant leak risk — codex P2 #264). `null` = loading;
+    // distinct from `[]` = no plans for this tenant.
+    setPlans(null);
     setError(null);
+    let cancelled = false;
     listRemediationPlans(activeTenantId)
-      .then(setPlans)
-      .catch((err: Error) => setError(err.message));
+      .then((p) => { if (!cancelled) setPlans(p); })
+      .catch((err: Error) => { if (!cancelled) setError(err.message); });
+    return () => { cancelled = true; };
   }, [activeTenantId]);
 
   return (

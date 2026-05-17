@@ -1118,6 +1118,72 @@ function isTypingTarget(t: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable;
 }
 
+function AgentsView({ query }: { query: string }) {
+  const filtered = AGENTS_OVERVIEW.filter((a) =>
+    query
+      ? (a.label + ' ' + a.description + ' ' + a.tools.join(' ') + ' ' + a.id)
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      : true,
+  );
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between border-b border-titanium-900 bg-obsidian-900/40 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold text-titanium-50">Agents</h2>
+          <p className="text-[11px] text-titanium-500">
+            {filtered.length} aktiv · System-Prompts + Tool-Mappings
+          </p>
+        </div>
+      </header>
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((a) => (
+            <article
+              key={a.id}
+              className="rounded-lg border border-titanium-900 bg-obsidian-800/60 p-3 transition hover:border-titanium-800"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-titanium-800 bg-obsidian-700">
+                    <Bot className="h-4 w-4 text-ai-cyan-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-titanium-50">{a.label}</div>
+                    <div className="truncate font-mono text-[10px] text-titanium-500">{a.id}</div>
+                  </div>
+                </div>
+                <StatusChip value={a.status} />
+              </div>
+              <p className="mt-2 line-clamp-2 text-[12px] text-titanium-400">{a.description}</p>
+              <div className="mt-2.5 flex items-center gap-1 text-[10px] text-titanium-500">
+                <Wrench className="h-3 w-3" />
+                {a.tools.slice(0, 3).map((t, i) => (
+                  <span key={i} className="rounded border border-titanium-800 bg-obsidian-900 px-1.5 py-0.5 font-mono">
+                    {t}
+                  </span>
+                ))}
+                {a.tools.length > 3 && (
+                  <span className="text-titanium-600">+{a.tools.length - 3}</span>
+                )}
+              </div>
+              <div className="mt-2 flex items-center justify-between border-t border-titanium-900/60 pt-2 text-[10px] uppercase tracking-wider text-titanium-600">
+                <span>{a.totalRuns} Runs</span>
+                <span>{a.lastRun}</span>
+              </div>
+            </article>
+          ))}
+          {filtered.length === 0 && (
+            <div className="col-span-full rounded-md border border-dashed border-titanium-800 p-8 text-center text-xs text-titanium-500">
+              Keine Agents für „{query}".
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AgentDrawer({
   step,
   model,
@@ -1261,6 +1327,27 @@ const STREAM_TOKENS_PER_TICK = 850;
 const STREAM_COMPLETE_AT = 6000;
 
 const KNOWN_AGENTS = Object.keys(AGENT_PROFILES);
+
+interface AgentOverviewEntry {
+  id: string;
+  label: string;
+  description: string;
+  tools: string[];
+  totalRuns: number;
+  lastRun: string;
+  status: RunStatus;
+}
+
+const AGENTS_OVERVIEW: AgentOverviewEntry[] = [
+  { id: 'researcher', label: 'Researcher', description: 'Sammelt Primärquellen, gewichtet nach Reputabilität.', tools: AGENT_PROFILES.researcher.tools, totalRuns: 312, lastRun: 'vor 2 min', status: 'done' },
+  { id: 'writer', label: 'Writer', description: 'Lang-Form-Drafts in Markenstimme, mit Fact-Markup.', tools: AGENT_PROFILES.writer.tools, totalRuns: 487, lastRun: 'vor 1 min', status: 'running' },
+  { id: 'critic', label: 'Critic', description: 'Verifiziert Behauptungen gegen Quellen, schreibt Diffs.', tools: AGENT_PROFILES.critic.tools, totalRuns: 198, lastRun: 'vor 12 min', status: 'idle' },
+  { id: 'seo', label: 'SEO', description: 'E-E-A-T-Pass, Entity-Coverage, kein Keyword-Stuffing.', tools: AGENT_PROFILES.seo.tools, totalRuns: 144, lastRun: 'vor 1 h', status: 'idle' },
+  { id: 'publisher', label: 'Publisher', description: 'Verteilt Content an freigegebene Kanäle, setzt UTM.', tools: AGENT_PROFILES.publisher.tools, totalRuns: 221, lastRun: 'vor 18 min', status: 'idle' },
+  { id: 'classifier', label: 'AI-Act Classifier', description: 'Klassifiziert Use-Cases nach AI-Act-Risikoklassen.', tools: AGENT_PROFILES.classifier.tools, totalRuns: 76, lastRun: 'vor 1 h', status: 'done' },
+  { id: 'monitor', label: 'Drift-Monitor', description: 'Vergleicht Output-Verteilungen gegen Baseline.', tools: AGENT_PROFILES.monitor.tools, totalRuns: 1248, lastRun: 'vor 4 min', status: 'done' },
+  { id: 'ops', label: 'Ops', description: 'Sammelt Logs, deliver Artefakte, eskaliert bei Fehlern.', tools: AGENT_PROFILES.ops.tools, totalRuns: 542, lastRun: 'vor 7 min', status: 'idle' },
+];
 
 export function AiCommandCenter() {
   const [nav, setNav] = useState<NavKey>('workflows');
@@ -1482,35 +1569,50 @@ export function AiCommandCenter() {
         />
 
         <div className="flex min-h-0 flex-1">
-          <WorkflowList
-            workflows={WORKFLOWS}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              setRunStatus(WORKFLOWS.find((w) => w.id === id)?.status ?? 'idle');
-            }}
-            query={query}
-          />
+          {nav === 'workflows' && (
+            <WorkflowList
+              workflows={WORKFLOWS}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                setRunStatus(WORKFLOWS.find((w) => w.id === id)?.status ?? 'idle');
+              }}
+              query={query}
+            />
+          )}
 
           <main className="flex min-w-0 flex-1 flex-col">
-            <Tabs value={tab} onChange={setTab} />
-            <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
-              {tab === 'canvas' && (
-                <CanvasView
-                  steps={steps}
-                  editing={editing}
-                  onSelectStep={setOpenStepId}
-                  onRenameStep={handleRenameStep}
-                  onChangeAgent={handleChangeAgent}
-                  onMoveStep={handleMoveStep}
-                  onRemoveStep={handleRemoveStep}
-                  onAddStep={handleAddStep}
-                />
-              )}
-              {tab === 'logs' && <LogsView logs={logs} />}
-              {tab === 'output' && <OutputView workflow={workflow} />}
-              {tab === 'config' && <ConfigView workflow={workflow} model={model} />}
-            </div>
+            {nav === 'workflows' && (
+              <>
+                <Tabs value={tab} onChange={setTab} />
+                <div className="min-h-0 flex-1 overflow-y-auto bg-obsidian-950">
+                  {tab === 'canvas' && (
+                    <CanvasView
+                      steps={steps}
+                      editing={editing}
+                      onSelectStep={setOpenStepId}
+                      onRenameStep={handleRenameStep}
+                      onChangeAgent={handleChangeAgent}
+                      onMoveStep={handleMoveStep}
+                      onRemoveStep={handleRemoveStep}
+                      onAddStep={handleAddStep}
+                    />
+                  )}
+                  {tab === 'logs' && <LogsView logs={logs} />}
+                  {tab === 'output' && <OutputView workflow={workflow} />}
+                  {tab === 'config' && <ConfigView workflow={workflow} model={model} />}
+                </div>
+              </>
+            )}
+            {nav === 'agents' && <AgentsView query={query} />}
+            {nav !== 'workflows' && nav !== 'agents' && (
+              <div className="grid flex-1 place-items-center bg-obsidian-950 p-8 text-center text-xs text-titanium-500">
+                <div>
+                  <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-titanium-600">{nav}</div>
+                  Diese Sektion ist noch nicht implementiert.
+                </div>
+              </div>
+            )}
           </main>
         </div>
       </div>

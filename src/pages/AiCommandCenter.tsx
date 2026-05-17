@@ -442,6 +442,7 @@ function Sidebar({
   onCloseMobile,
   activeRuns,
   liveData,
+  tokensToday,
 }: {
   active: NavKey;
   onSelect: (k: NavKey) => void;
@@ -451,6 +452,7 @@ function Sidebar({
   onCloseMobile: () => void;
   activeRuns: number;
   liveData: boolean;
+  tokensToday: number;
 }) {
   return (
     <>
@@ -555,7 +557,11 @@ function Sidebar({
           </div>
           <div className="flex justify-between">
             <span className="text-titanium-500">Today Tokens</span>
-            <span className="font-mono">412k</span>
+            <span className="font-mono">
+              {tokensToday >= 1000
+                ? `${(tokensToday / 1000).toFixed(1)}k`
+                : tokensToday.toLocaleString('de-DE')}
+            </span>
           </div>
         </div>
       </div>
@@ -1654,6 +1660,7 @@ export function AiCommandCenter() {
   const [editing, setEditing] = useState(false);
   const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [tokensToday, setTokensToday] = useState(412_000);
   const [stepsByWf, setStepsByWf] = useState<Record<string, RunStep[]>>(() =>
     JSON.parse(JSON.stringify(STEPS)),
   );
@@ -1786,6 +1793,7 @@ export function AiCommandCenter() {
         if (runningIdx >= 0) {
           const s = { ...list[runningIdx] };
           s.tokens = (s.tokens ?? 0) + STREAM_TOKENS_PER_TICK;
+          setTokensToday((t) => t + STREAM_TOKENS_PER_TICK);
           if ((s.tokens ?? 0) >= STREAM_COMPLETE_AT) {
             s.status = 'done';
             s.durationMs = (s.durationMs ?? 0) + STREAM_TICK_MS * 3;
@@ -1901,6 +1909,7 @@ export function AiCommandCenter() {
         onCloseMobile={() => setMobileNavOpen(false)}
         activeRuns={activeRuns}
         liveData={liveData}
+        tokensToday={tokensToday}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

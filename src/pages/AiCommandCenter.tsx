@@ -11,6 +11,7 @@ import {
   Cpu,
   Eye,
   GitBranch,
+  History,
   Keyboard,
   Layers,
   LayoutGrid,
@@ -28,6 +29,7 @@ import {
   Terminal,
   Trash2,
   Workflow,
+  Wrench,
   X,
   Zap,
 } from 'lucide-react';
@@ -105,6 +107,105 @@ interface LogLine {
   source: string;
   message: string;
 }
+
+interface AgentProfile {
+  id: string;
+  label: string;
+  systemPrompt: string;
+  tools: string[];
+  recentRuns: Array<{ at: string; status: RunStatus; summary: string }>;
+}
+
+const AGENT_PROFILES: Record<string, AgentProfile> = {
+  researcher: {
+    id: 'researcher',
+    label: 'Researcher',
+    systemPrompt:
+      'Du bist ein Recherche-Agent. Sammle Primärquellen, gewichte nach Reputabilität, und liefere strukturierte Briefs mit Zitaten.',
+    tools: ['web.search', 'web.fetch', 'memory.read'],
+    recentRuns: [
+      { at: 'heute · 14:32', status: 'done', summary: '14 Quellen verifiziert' },
+      { at: 'heute · 11:08', status: 'done', summary: 'Wettbewerbs-Scan EU/DE' },
+      { at: 'gestern · 18:44', status: 'blocked', summary: 'Rate-Limit auf arxiv' },
+    ],
+  },
+  writer: {
+    id: 'writer',
+    label: 'Writer',
+    systemPrompt:
+      'Du bist ein Lang-Form-Writer. Schreibe in der Stimme der Marke, halte dich an die Outline, und markiere Faktenbehauptungen für Cross-Check.',
+    tools: ['markdown.render', 'memory.read', 'style.guide'],
+    recentRuns: [
+      { at: 'heute · 14:33', status: 'running', summary: 'Draft v1 (2.1k tok)' },
+      { at: 'gestern · 09:12', status: 'done', summary: 'Newsletter #41' },
+    ],
+  },
+  critic: {
+    id: 'critic',
+    label: 'Critic',
+    systemPrompt:
+      'Du bist ein Fact-Checker. Verifiziere jede markierte Behauptung gegen die Quellen-Liste, flagge Halluzinationen, und schreibe Diffs.',
+    tools: ['web.fetch', 'diff.compute'],
+    recentRuns: [{ at: 'heute · 13:50', status: 'done', summary: '3 Korrekturen vorgeschlagen' }],
+  },
+  seo: {
+    id: 'seo',
+    label: 'SEO',
+    systemPrompt: 'Optimiere für E-E-A-T, semantic clusters und entity-coverage. Kein keyword stuffing.',
+    tools: ['serp.fetch', 'keyword.expand'],
+    recentRuns: [{ at: 'heute · 12:20', status: 'done', summary: 'Title + Meta + H2-Pass' }],
+  },
+  publisher: {
+    id: 'publisher',
+    label: 'Publisher',
+    systemPrompt:
+      'Verteile Content an die freigegebenen Kanäle (CMS, Newsletter, Social). Setze UTM, halte Schedule.',
+    tools: ['cms.publish', 'mail.send', 'social.schedule'],
+    recentRuns: [{ at: 'gestern · 20:00', status: 'done', summary: 'Newsletter #41 versendet' }],
+  },
+  human: {
+    id: 'human',
+    label: 'Human Reviewer',
+    systemPrompt: 'Manuelle Approval erforderlich. Outputs landen in der Review-Queue.',
+    tools: ['queue.notify'],
+    recentRuns: [{ at: 'heute · 14:18', status: 'review', summary: '1 Item in Queue' }],
+  },
+  ops: {
+    id: 'ops',
+    label: 'Ops',
+    systemPrompt: 'Sammle Logs, deliver Artefakte, eskaliere bei Fehlern.',
+    tools: ['logs.fetch', 'webhook.send'],
+    recentRuns: [{ at: 'heute · 09:00', status: 'done', summary: 'Daily compliance bundle' }],
+  },
+  classifier: {
+    id: 'classifier',
+    label: 'AI-Act Classifier',
+    systemPrompt: 'Klassifiziere Use-Cases nach AI-Act-Risikoklassen (minimal/limited/high/prohibited).',
+    tools: ['policy.match', 'memory.read'],
+    recentRuns: [{ at: 'heute · 09:05', status: 'done', summary: '12 Systeme klassifiziert' }],
+  },
+  monitor: {
+    id: 'monitor',
+    label: 'Drift-Monitor',
+    systemPrompt: 'Vergleiche Output-Verteilungen gegen Baseline, warne bei Drift > 2σ.',
+    tools: ['metrics.read', 'alert.send'],
+    recentRuns: [{ at: 'heute · 09:10', status: 'done', summary: 'Kein Drift erkannt' }],
+  },
+  fetcher: {
+    id: 'fetcher',
+    label: 'Source Fetcher',
+    systemPrompt: 'Lade Quellen, normalisiere zu Markdown, speichere in Memory.',
+    tools: ['web.fetch', 'memory.write'],
+    recentRuns: [{ at: 'heute · 08:30', status: 'done', summary: '42 URLs fetched' }],
+  },
+  curator: {
+    id: 'curator',
+    label: 'Curator',
+    systemPrompt: 'Picke Top-Stories aus Memory + RSS, ranke nach Relevanz für ICP.',
+    tools: ['rss.read', 'memory.read'],
+    recentRuns: [{ at: 'gestern · 19:00', status: 'done', summary: 'Top 7 Stories' }],
+  },
+};
 
 const MODELS: Model[] = [
   { id: 'opus-4-7', label: 'Claude Opus 4.7', provider: 'Anthropic', contextK: 1000, tag: 'reasoning' },
@@ -653,6 +754,7 @@ function Tabs({ value, onChange }: { value: TabKey; onChange: (k: TabKey) => voi
 function CanvasView({
   steps,
   editing,
+  onSelectStep,
   onRenameStep,
   onChangeAgent,
   onMoveStep,
@@ -661,6 +763,7 @@ function CanvasView({
 }: {
   steps: RunStep[];
   editing: boolean;
+  onSelectStep: (id: string) => void;
   onRenameStep: (id: string, name: string) => void;
   onChangeAgent: (id: string, agent: string) => void;
   onMoveStep: (id: string, dir: -1 | 1) => void;
@@ -697,7 +800,13 @@ function CanvasView({
                   aria-label="Step-Name"
                 />
               ) : (
-                <span className="truncate text-sm font-medium text-titanium-50">{s.name}</span>
+                <button
+                  type="button"
+                  onClick={() => onSelectStep(s.id)}
+                  className="min-w-0 truncate text-left text-sm font-medium text-titanium-50 hover:text-ai-cyan-300 focus:outline-none focus-visible:text-ai-cyan-300"
+                >
+                  {s.name}
+                </button>
               )}
             </div>
             {editing ? (
@@ -749,7 +858,13 @@ function CanvasView({
                 ))}
               </select>
             ) : (
-              <span className="font-mono">{s.agent}</span>
+              <button
+                type="button"
+                onClick={() => onSelectStep(s.id)}
+                className="font-mono hover:text-ai-cyan-300 focus:outline-none focus-visible:text-ai-cyan-300"
+              >
+                {s.agent}
+              </button>
             )}
             {!editing && typeof s.tokens === 'number' && (
               <>
@@ -1003,6 +1118,139 @@ function isTypingTarget(t: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable;
 }
 
+function AgentDrawer({
+  step,
+  model,
+  onClose,
+}: {
+  step: RunStep | null;
+  model: Model;
+  onClose: () => void;
+}) {
+  if (!step) return null;
+  const profile =
+    AGENT_PROFILES[step.agent] ?? {
+      id: step.agent,
+      label: step.agent,
+      systemPrompt: 'Kein Profil hinterlegt.',
+      tools: [],
+      recentRuns: [],
+    };
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      <aside
+        role="dialog"
+        aria-label={`Agent ${profile.label}`}
+        className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-titanium-900 bg-obsidian-900 shadow-2xl shadow-black/70"
+      >
+        <header className="flex items-center justify-between gap-3 border-b border-titanium-900 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="grid h-8 w-8 place-items-center rounded-md border border-titanium-800 bg-obsidian-700">
+              <Bot className="h-4 w-4 text-ai-cyan-400" />
+            </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold text-titanium-50">{profile.label}</div>
+              <div className="truncate text-[11px] text-titanium-500">
+                Step <span className="font-mono">{step.name}</span> · {model.label}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded border border-titanium-800 bg-obsidian-700 p-1 text-titanium-300 hover:bg-obsidian-600"
+            aria-label="Schließen"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex items-center justify-between">
+            <StatusChip value={step.status} />
+            <div className="text-[11px] text-titanium-500">
+              {typeof step.tokens === 'number' && <>{step.tokens.toLocaleString('de-DE')} tok</>}
+              {typeof step.durationMs === 'number' && (
+                <> · {(step.durationMs / 1000).toFixed(1)}s</>
+              )}
+            </div>
+          </div>
+
+          <section className="mt-4">
+            <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-titanium-500">
+              <Sparkles className="h-3 w-3" /> System-Prompt
+            </h4>
+            <p className="mt-1.5 rounded-md border border-titanium-900 bg-obsidian-800/60 p-3 text-[12px] leading-relaxed text-titanium-200">
+              {profile.systemPrompt}
+            </p>
+          </section>
+
+          <section className="mt-4">
+            <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-titanium-500">
+              <Wrench className="h-3 w-3" /> Tools
+            </h4>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {profile.tools.length === 0 ? (
+                <li className="text-[12px] text-titanium-500">Keine Tools.</li>
+              ) : (
+                profile.tools.map((t) => (
+                  <li
+                    key={t}
+                    className="rounded-full border border-titanium-800 bg-obsidian-800 px-2 py-0.5 font-mono text-[11px] text-titanium-200"
+                  >
+                    {t}
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+
+          <section className="mt-4">
+            <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-titanium-500">
+              <History className="h-3 w-3" /> Letzte Runs
+            </h4>
+            <ul className="mt-1.5 space-y-1.5">
+              {profile.recentRuns.length === 0 ? (
+                <li className="text-[12px] text-titanium-500">Noch keine Historie.</li>
+              ) : (
+                profile.recentRuns.map((r, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 rounded-md border border-titanium-900 bg-obsidian-800/60 px-2.5 py-1.5 text-[12px]"
+                  >
+                    <span className="text-titanium-300">{r.summary}</span>
+                    <span className="flex items-center gap-2 text-titanium-500">
+                      <StatusDot value={r.status} />
+                      <span className="text-[10px] uppercase tracking-wider">{r.at}</span>
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </section>
+
+          {step.output && (
+            <section className="mt-4">
+              <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-titanium-500">
+                Aktueller Output
+              </h4>
+              <pre className="mt-1.5 max-h-48 overflow-auto rounded-md border border-titanium-900 bg-obsidian-950 p-3 font-mono text-[11px] text-titanium-200">
+                {step.output}
+              </pre>
+            </section>
+          )}
+        </div>
+      </aside>
+    </>
+  );
+}
+
 function nowTime(): string {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
@@ -1012,19 +1260,7 @@ const STREAM_TICK_MS = 1400;
 const STREAM_TOKENS_PER_TICK = 850;
 const STREAM_COMPLETE_AT = 6000;
 
-const KNOWN_AGENTS = [
-  'researcher',
-  'writer',
-  'critic',
-  'seo',
-  'publisher',
-  'classifier',
-  'monitor',
-  'ops',
-  'human',
-  'curator',
-  'fetcher',
-];
+const KNOWN_AGENTS = Object.keys(AGENT_PROFILES);
 
 export function AiCommandCenter() {
   const [nav, setNav] = useState<NavKey>('workflows');
@@ -1036,6 +1272,7 @@ export function AiCommandCenter() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [openStepId, setOpenStepId] = useState<string | null>(null);
   const [stepsByWf, setStepsByWf] = useState<Record<string, RunStep[]>>(() =>
     JSON.parse(JSON.stringify(STEPS)),
   );
@@ -1049,6 +1286,10 @@ export function AiCommandCenter() {
     [selectedId],
   );
   const steps = stepsByWf[workflow.id] ?? [];
+  const openStep = useMemo(
+    () => (openStepId ? steps.find((s) => s.id === openStepId) ?? null : null),
+    [openStepId, steps],
+  );
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1258,6 +1499,7 @@ export function AiCommandCenter() {
                 <CanvasView
                   steps={steps}
                   editing={editing}
+                  onSelectStep={setOpenStepId}
                   onRenameStep={handleRenameStep}
                   onChangeAgent={handleChangeAgent}
                   onMoveStep={handleMoveStep}
@@ -1284,6 +1526,7 @@ export function AiCommandCenter() {
         <kbd className="font-mono">?</kbd>
       </button>
       <KeyboardHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <AgentDrawer step={openStep} model={model} onClose={() => setOpenStepId(null)} />
     </div>
   );
 }

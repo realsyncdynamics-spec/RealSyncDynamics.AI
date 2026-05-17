@@ -928,6 +928,11 @@ function LogsView({ logs }: { logs: LogLine[] }) {
     error: 'text-rose-300',
     agent: 'text-ai-cyan-300',
   };
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [logs.length]);
   if (logs.length === 0) {
     return (
       <EmptyState
@@ -938,7 +943,7 @@ function LogsView({ logs }: { logs: LogLine[] }) {
     );
   }
   return (
-    <div className="h-full overflow-y-auto p-4">
+    <div ref={scrollRef} className="h-full overflow-y-auto p-4">
       <div className="rounded-md border border-titanium-900 bg-obsidian-950 p-3 font-mono text-[12px] leading-relaxed">
         {logs.map((l, i) => (
           <div key={i} className="flex gap-2">

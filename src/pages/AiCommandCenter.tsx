@@ -10,6 +10,7 @@ import {
   CircleDot,
   Cpu,
   Eye,
+  Filter,
   GitBranch,
   History,
   Keyboard,
@@ -22,6 +23,7 @@ import {
   Play,
   Plus,
   Radio,
+  RotateCcw,
   Search,
   Settings,
   Sparkles,
@@ -1184,6 +1186,104 @@ function AgentsView({ query }: { query: string }) {
   );
 }
 
+function RunsView({ query }: { query: string }) {
+  const [statusFilter, setStatusFilter] = useState<RunStatus | 'all'>('all');
+  const filtered = RUNS_HISTORY.filter((r) => {
+    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+    if (!query) return true;
+    return (
+      r.workflowName.toLowerCase().includes(query.toLowerCase()) ||
+      r.id.toLowerCase().includes(query.toLowerCase()) ||
+      r.modelLabel.toLowerCase().includes(query.toLowerCase())
+    );
+  });
+  const statuses: Array<RunStatus | 'all'> = ['all', 'running', 'review', 'blocked', 'done', 'idle'];
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-titanium-900 bg-obsidian-900/40 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold text-titanium-50">Runs</h2>
+          <p className="text-[11px] text-titanium-500">{filtered.length} von {RUNS_HISTORY.length}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Filter className="h-3.5 w-3.5 text-titanium-500" />
+          {statuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatusFilter(s)}
+              className={`rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider transition ${
+                statusFilter === s
+                  ? 'border-ai-cyan-700/60 bg-ai-cyan-900/40 text-ai-cyan-300'
+                  : 'border-titanium-800 bg-obsidian-800 text-titanium-400 hover:bg-obsidian-700'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </header>
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-obsidian-900/90 backdrop-blur">
+            <tr className="border-b border-titanium-900 text-left text-[10px] uppercase tracking-[0.18em] text-titanium-500">
+              <th className="px-4 py-2 font-medium">Run</th>
+              <th className="px-2 py-2 font-medium">Workflow</th>
+              <th className="px-2 py-2 font-medium">Model</th>
+              <th className="px-2 py-2 font-medium">Trigger</th>
+              <th className="px-2 py-2 font-medium">Status</th>
+              <th className="px-2 py-2 text-right font-medium">Tokens</th>
+              <th className="px-2 py-2 text-right font-medium">Kosten</th>
+              <th className="px-2 py-2 text-right font-medium">Dauer</th>
+              <th className="px-2 py-2 font-medium">Start</th>
+              <th className="px-4 py-2 text-right font-medium" />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr
+                key={r.id}
+                className="border-b border-titanium-900/60 transition hover:bg-obsidian-800/60"
+              >
+                <td className="px-4 py-2 font-mono text-[11px] text-titanium-300">{r.id}</td>
+                <td className="px-2 py-2 text-titanium-100">{r.workflowName}</td>
+                <td className="px-2 py-2 text-titanium-300">{r.modelLabel}</td>
+                <td className="px-2 py-2 text-[11px] text-titanium-500">{r.trigger}</td>
+                <td className="px-2 py-2"><StatusChip value={r.status} /></td>
+                <td className="px-2 py-2 text-right font-mono text-[11px] text-titanium-200">
+                  {r.tokens.toLocaleString('de-DE')}
+                </td>
+                <td className="px-2 py-2 text-right font-mono text-[11px] text-titanium-200">
+                  € {r.costEur.toFixed(2)}
+                </td>
+                <td className="px-2 py-2 text-right font-mono text-[11px] text-titanium-400">
+                  {(r.durationMs / 1000).toFixed(0)}s
+                </td>
+                <td className="px-2 py-2 text-[11px] text-titanium-500">{r.startedAt}</td>
+                <td className="px-4 py-2 text-right">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded border border-titanium-800 bg-obsidian-700 px-2 py-0.5 text-[10px] text-titanium-200 hover:border-ai-cyan-700 hover:bg-ai-cyan-900/30 hover:text-ai-cyan-300"
+                  >
+                    <RotateCcw className="h-3 w-3" /> Re-Run
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-xs text-titanium-500">
+                  Keine Runs für diesen Filter.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function AgentDrawer({
   step,
   model,
@@ -1347,6 +1447,31 @@ const AGENTS_OVERVIEW: AgentOverviewEntry[] = [
   { id: 'classifier', label: 'AI-Act Classifier', description: 'Klassifiziert Use-Cases nach AI-Act-Risikoklassen.', tools: AGENT_PROFILES.classifier.tools, totalRuns: 76, lastRun: 'vor 1 h', status: 'done' },
   { id: 'monitor', label: 'Drift-Monitor', description: 'Vergleicht Output-Verteilungen gegen Baseline.', tools: AGENT_PROFILES.monitor.tools, totalRuns: 1248, lastRun: 'vor 4 min', status: 'done' },
   { id: 'ops', label: 'Ops', description: 'Sammelt Logs, deliver Artefakte, eskaliert bei Fehlern.', tools: AGENT_PROFILES.ops.tools, totalRuns: 542, lastRun: 'vor 7 min', status: 'idle' },
+];
+
+interface RunHistoryEntry {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  modelId: string;
+  modelLabel: string;
+  status: RunStatus;
+  startedAt: string;
+  durationMs: number;
+  tokens: number;
+  costEur: number;
+  trigger: 'manual' | 'schedule' | 'webhook';
+}
+
+const RUNS_HISTORY: RunHistoryEntry[] = [
+  { id: 'run-3142', workflowId: 'wf-content-pipeline', workflowName: 'Content Pipeline', modelId: 'opus-4-7', modelLabel: 'Opus 4.7', status: 'running', startedAt: 'heute · 14:32', durationMs: 412_000, tokens: 41200, costEur: 0.42, trigger: 'manual' },
+  { id: 'run-3141', workflowId: 'wf-leadgen', workflowName: 'Lead-Gen Sweep', modelId: 'sonnet-4-6', modelLabel: 'Sonnet 4.6', status: 'review', startedAt: 'heute · 14:14', durationMs: 188_000, tokens: 18900, costEur: 0.09, trigger: 'schedule' },
+  { id: 'run-3140', workflowId: 'wf-compliance', workflowName: 'Compliance Daily', modelId: 'haiku-4-5', modelLabel: 'Haiku 4.5', status: 'done', startedAt: 'heute · 13:00', durationMs: 92_000, tokens: 7400, costEur: 0.01, trigger: 'schedule' },
+  { id: 'run-3139', workflowId: 'wf-research', workflowName: 'Deep Research', modelId: 'opus-4-7', modelLabel: 'Opus 4.7', status: 'blocked', startedAt: 'heute · 10:21', durationMs: 612_000, tokens: 84000, costEur: 0.84, trigger: 'manual' },
+  { id: 'run-3138', workflowId: 'wf-newsletter', workflowName: 'Weekly Newsletter', modelId: 'sonnet-4-6', modelLabel: 'Sonnet 4.6', status: 'done', startedAt: 'gestern · 19:00', durationMs: 124_000, tokens: 12100, costEur: 0.06, trigger: 'schedule' },
+  { id: 'run-3137', workflowId: 'wf-content-pipeline', workflowName: 'Content Pipeline', modelId: 'opus-4-7', modelLabel: 'Opus 4.7', status: 'done', startedAt: 'gestern · 16:42', durationMs: 388_000, tokens: 39800, costEur: 0.40, trigger: 'manual' },
+  { id: 'run-3136', workflowId: 'wf-leadgen', workflowName: 'Lead-Gen Sweep', modelId: 'sonnet-4-6', modelLabel: 'Sonnet 4.6', status: 'done', startedAt: 'gestern · 12:00', durationMs: 162_000, tokens: 16400, costEur: 0.08, trigger: 'webhook' },
+  { id: 'run-3135', workflowId: 'wf-compliance', workflowName: 'Compliance Daily', modelId: 'haiku-4-5', modelLabel: 'Haiku 4.5', status: 'done', startedAt: 'gestern · 09:00', durationMs: 88_000, tokens: 7100, costEur: 0.01, trigger: 'schedule' },
 ];
 
 export function AiCommandCenter() {
@@ -1605,7 +1730,8 @@ export function AiCommandCenter() {
               </>
             )}
             {nav === 'agents' && <AgentsView query={query} />}
-            {nav !== 'workflows' && nav !== 'agents' && (
+            {nav === 'runs' && <RunsView query={query} />}
+            {nav !== 'workflows' && nav !== 'agents' && nav !== 'runs' && (
               <div className="grid flex-1 place-items-center bg-obsidian-950 p-8 text-center text-xs text-titanium-500">
                 <div>
                   <div className="mb-1 font-mono text-[10px] uppercase tracking-wider text-titanium-600">{nav}</div>

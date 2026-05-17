@@ -4,18 +4,21 @@ import { Sparkles } from 'lucide-react';
 import { AssistentQuickChatModal } from './AssistentQuickChatModal';
 
 // AssistentChip — persistent floating entry to the AI assistant.
-// Bottom-center on every public page. Opens AssistentQuickChatModal,
+// Bottom-RIGHT corner on every public page. Opens AssistentQuickChatModal,
 // which talks to the ai-gateway Edge Function directly (PR #233 + #240)
 // with client-side rate-limit + abuse guards. The chip is the single
 // public-facing surface for ad-hoc "ask the AI a quick question" — the
 // full audit flow with URL + email collection still lives on /audit.
 //
-// Hide-while-hero-CTA-visible: on short mobile viewports the centered
-// chip was overlapping the hero's "Run Scan" CTA (cyan submit button
-// at the bottom of the URL form). When any element with [data-hero-cta]
-// is in the viewport, the chip hides so it doesn't compete with — or
-// physically cover — the primary conversion mechanism. Once the user
-// scrolls past the hero, the chip fades back in.
+// Positioning history:
+// - v1: bottom-center → overlapped the Hero "Run Scan" CTA on mobile (#314)
+// - v2: bottom-center + hide-on-hero-CTA → still overlapped sections below
+//       the hero (Outcomes / Personas / Runtime Feed) because centered chip
+//       sits on top of body copy when scrolled. User screenshots 2026-05-17.
+// - v3 (this file): bottom-RIGHT corner. Never overlaps centered content.
+//   Hero-CTA hide stays as defense-in-depth — on a very short Landscape
+//   viewport the chip can still encroach on the URL form, and hiding while
+//   the primary CTA is visible removes any competing attention.
 
 const HIDDEN_PREFIXES = [
   '/dashboard',
@@ -74,7 +77,7 @@ export function AssistentChip() {
         aria-expanded={open}
         aria-hidden={heroVisible ? true : undefined}
         tabIndex={heroVisible ? -1 : 0}
-        className={`fixed left-1/2 -translate-x-1/2 bottom-4 z-40 inline-flex items-center gap-2 pl-4 pr-2 py-2 bg-obsidian-950 text-titanium-50 rounded-full shadow-2xl border border-amber-500/40 hover:border-amber-400/80 transition-all duration-200 motion-reduce:transition-none ${
+        className={`fixed right-4 bottom-4 z-40 inline-flex items-center gap-2 pl-4 pr-2 py-2 bg-obsidian-950 text-titanium-50 rounded-full shadow-2xl border border-amber-500/40 hover:border-amber-400/80 transition-all duration-200 motion-reduce:transition-none ${
           heroVisible
             ? 'opacity-0 translate-y-2 pointer-events-none'
             : 'opacity-100 translate-y-0'

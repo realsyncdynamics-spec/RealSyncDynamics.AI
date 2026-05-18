@@ -56,8 +56,8 @@ unserer Chain liegen hat, hat einen prüffähigen Audit-Trail, den keine
 Migration auf ein Konkurrenzprodukt rekonstruieren kann.
 
 **Tier-Struktur** (Single Source of Truth: `src/config/pricing.ts`):
-Free Audit (€0, einmalig) → Starter (€79/Mo) → Growth (€249/Mo) →
-Agency (€699/Mo) → Enterprise (ab €1.500/Mo, individuell) —
+Free Audit (€0, einmalig) → Starter (€49/Mo) → Growth (€179/Mo) →
+Agency (€499/Mo) → Enterprise (ab €998/Mo, individuell) —
 gestaffelt nach Scan-Volumen, Evidence-Retention, Agent-Konfiguration
 und Multi-Domain-Skalierung.
 

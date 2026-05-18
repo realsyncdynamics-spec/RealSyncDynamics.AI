@@ -28,7 +28,7 @@ export function BorlabsAlternative() {
             <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
               Borlabs Cookie ist der DACH-Standard für WordPress (~99 €/Jahr).
               Wir liefern dasselbe für <strong className="text-titanium-50">jeden Stack</strong> (React, Vue, Next, Astro, statische Sites)
-              plus AVV, VVT, AI-Act-Tools — ab 79 €/Monat (Starter), Free Audit kostenlos.
+              plus AVV, VVT, AI-Act-Tools — ab 49 €/Monat (Starter), Free Audit kostenlos.
             </p>
           </div>
 
@@ -43,7 +43,7 @@ export function BorlabsAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing', o: '99 €/Jahr (Single-Site)', r: '79 €/M (Starter) · Free Audit kostenlos' },
+                  { f: 'Pricing', o: '99 €/Jahr (Single-Site)', r: '49 €/M (Starter) · Free Audit kostenlos' },
                   { f: 'Plattform-Support', o: 'WordPress only', r: 'Jeder Stack (React, Vue, Next, Astro, statisch, PHP, …)' },
                   { f: 'BfDI 2024 konform (3 gleichberechtigte Buttons)', o: 'yes', r: 'yes' },
                   { f: '1-Zeile-Embed (Snippet)', o: 'no', r: 'yes' },

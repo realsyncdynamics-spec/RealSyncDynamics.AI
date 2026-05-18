@@ -112,7 +112,7 @@ export function BaitMaRiskGuide() {
                   </h2>
                   <p className="text-sm text-titanium-300 leading-relaxed">
                     Setup + erstes Audit-Log live in 14 Tagen. Pilot 14 Tage kostenlos,
-                    danach Growth 249 €/Monat (passt für KMU-FinTechs bis ~50 Mitarbeitende).
+                    danach Growth 179 €/Monat (passt für KMU-FinTechs bis ~50 Mitarbeitende).
                   </p>
                 </div>
               </div>

@@ -189,11 +189,11 @@ def build_tier_economics(ws, refs):
     cost_per_scan = f"({refs['vps_cost']}/{refs['max_scans_month']})"
 
     tiers = [
-        ("Free Audit",  0,    1,                  1,        "One-time. Wird nur 1x pro Lead gerechnet."),
-        ("Starter",     79,   1,                  1,        "Monatlicher Re-Scan, 1 Domain."),
-        ("Growth",      249,  3,                  90,       "3 Domains * 30 Tage Monitoring = 90 Scans."),
-        ("Agency",      699,  10,                 300,      "10 Kundenseiten * 30 Tage = 300 Scans."),
-        ("Enterprise",  1500, f"={refs['fairuse_enterprise']}", None, "Fair-Use Cap aus Assumptions. Preis-Floor 1500 (ADR-001)."),
+        ("Free Audit",  0,   1,                  1,        "One-time. Wird nur 1x pro Lead gerechnet."),
+        ("Starter",     49,  1,                  1,        "Monatlicher Re-Scan, 1 Domain."),
+        ("Growth",      179, 3,                  90,       "3 Domains * 30 Tage Monitoring = 90 Scans."),
+        ("Agency",      499, 10,                 300,      "10 Kundenseiten * 30 Tage = 300 Scans."),
+        ("Enterprise",  998, f"={refs['fairuse_enterprise']}", None, "Fair-Use Cap aus Assumptions. Preis-Floor 998 (pricing.ts)."),
     ]
 
     for i, (name, price, domains, scans, note) in enumerate(tiers, start=4):
@@ -392,15 +392,15 @@ def build_recommendations(ws):
         ),
         (
             "Starter-Marge taeglich validieren",
-            "EUR 79 mit 1 Domain + monatlichem Re-Scan ist enges Sweet-Spot. Stripe + Cost-per-Scan duerfen nicht > 25% des Tier-Preises kommen. Sheet 2 Zelle H5 wachhalten.",
+            "EUR 49 mit 1 Domain + monatlichem Re-Scan ist nach dem Rebalance vom 18.05. enges Sweet-Spot. Stripe + Cost-per-Scan duerfen nicht > 25% des Tier-Preises kommen. Sheet 2 Zelle H5 wachhalten.",
         ),
         (
             "Growth ist das Profit-Center",
-            "EUR 249 mit 3 Domains taeglich ist das Tier mit hoechster absoluter Marge. Sales-Fokus: Starter -> Growth-Upgrade nach 30 Tagen.",
+            "EUR 179 mit 3 Domains taeglich ist das Tier mit hoechster absoluter Marge. Sales-Fokus: Starter -> Growth-Upgrade nach 30 Tagen.",
         ),
         (
             "Agency-Quota an White-Label binden",
-            "EUR 699 fuer 10 Kundenseiten. Wenn ein Agency-Kunde via API > 10 Domains pushed, automatische Quota-Warnung. Overage-Pricing oder Upgrade-Flow.",
+            "EUR 499 fuer 10 Kundenseiten. Wenn ein Agency-Kunde via API > 10 Domains pushed, automatische Quota-Warnung. Overage-Pricing oder Upgrade-Flow.",
         ),
         (
             "Enterprise: 'unlimited' braucht Fair-Use",
@@ -416,7 +416,7 @@ def build_recommendations(ws):
         ),
         (
             "Stripe-SEPA fuer DE-Kunden anbieten",
-            "Bei EUR 79 / 249 sind 1.4% + 0.25 EUR Karten-Fee schmerzhaft. SEPA Direct Debit: 0.8% + 0.25 EUR. Margen-Effekt auf Starter sichtbar in Sheet 2.",
+            "Bei EUR 49 / 179 sind 1.4% + 0.25 EUR Karten-Fee schmerzhaft (besonders fuer Starter). SEPA Direct Debit: 0.8% + 0.25 EUR. Margen-Effekt auf Starter sichtbar in Sheet 2.",
         ),
     ]
 

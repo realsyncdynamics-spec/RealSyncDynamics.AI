@@ -46,19 +46,19 @@ export const PLAN_CONFIG: Record<string, PlanConfigEntry> = {
     mode: 'free',
   },
   starter: {
-    price: 79,
+    price: 49,
     interval: 'month',
     stripePriceId: env.VITE_STRIPE_PRICE_STARTER ?? null,
     mode: 'checkout',
   },
   growth: {
-    price: 249,
+    price: 179,
     interval: 'month',
     stripePriceId: env.VITE_STRIPE_PRICE_GROWTH ?? null,
     mode: 'checkout',
   },
   agency: {
-    price: 699,
+    price: 499,
     interval: 'month',
     stripePriceId: env.VITE_STRIPE_PRICE_AGENCY ?? null,
     mode: 'inquiry',

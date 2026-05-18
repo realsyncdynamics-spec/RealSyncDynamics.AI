@@ -52,7 +52,7 @@ export function HeroSection() {
       <div className="relative max-w-5xl mx-auto">
         <div className="flex justify-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-titanium-800 bg-obsidian-900/70 font-mono text-[10px] uppercase tracking-[0.18em] text-titanium-400">
-            <span className="inline-block h-2 w-2 bg-emerald-400" aria-hidden />
+            <span className="inline-block h-2 w-2 bg-emerald-400" aria-hidden="true" />
             Runtime-Status: Live · t+{String(tick).padStart(2, '0')}s
           </div>
         </div>
@@ -120,12 +120,11 @@ export function HeroSection() {
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           {LIVE_PILL_LABELS.map((label, idx) => (
-            <span
-              key={label}
-              className="inline-flex items-center gap-2 px-2 py-0.5 border border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-300"
-            >
-              {label}
-              {idx < LIVE_PILL_LABELS.length - 1 && <span className="text-titanium-500">·</span>}
+            <span key={label} className="inline-flex items-center gap-2">
+              <span className="px-2 py-0.5 border border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-300">
+                {label}
+              </span>
+              {idx < LIVE_PILL_LABELS.length - 1 && <span className="text-titanium-500 font-mono">·</span>}
             </span>
           ))}
         </div>

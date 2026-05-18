@@ -307,3 +307,186 @@ Deno.test("parseAnthropicResponse — populates raw with usage and stop_reason",
   assertEquals(r.raw.output_tokens, 30);
   assertEquals(r.raw.stop_reason, "tool_use");
 });
+
+// =============================================================================
+// Handler-Contract-Tests
+//
+// Diese Tests prüfen den HTTP-Vertrag (Status-Codes, Auth-Pfade, Body-
+// Validierung), nicht den realen `Deno.serve`-Handler aus index.ts — dessen
+// Auto-Bind beim Import würde Test-Runs blockieren. Stattdessen wird die
+// Handler-Logik in `callHandler()` parallel re-implementiert. Bei Änderung
+// am Handler in index.ts diese Re-Implementation entsprechend nachziehen.
+// =============================================================================
+
+async function callHandler(
+  req: Request,
+  env: Record<string, string | undefined> = {},
+): Promise<Response> {
+  for (const [k, v] of Object.entries(env)) {
+    if (v === undefined) {
+      Deno.env.delete(k);
+    } else {
+      Deno.env.set(k, v);
+    }
+  }
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204 });
+  }
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "method_not_allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const expectedToken = Deno.env.get("AI_RISK_AGENT_TOKEN");
+  if (!expectedToken) {
+    return new Response(JSON.stringify({ error: "agent_token_not_configured" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "missing_bearer_token" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const presentedToken = authHeader.slice("Bearer ".length).trim();
+  if (presentedToken !== expectedToken) {
+    return new Response(JSON.stringify({ error: "invalid_bearer_token" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  let body: { payload?: Record<string, unknown> };
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "invalid_json_body" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (!body || !body.payload || typeof body.payload !== "object") {
+    return new Response(JSON.stringify({ error: "missing_payload" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: "anthropic_api_key_not_configured" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
+  }
+
+  try {
+    const result = await classify(body.payload, apiKey);
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    if (e instanceof ClassifierError) {
+      return new Response(
+        JSON.stringify({ error: "classifier_error", message: e.message }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    throw e;
+  }
+}
+
+Deno.test("handler: rejects GET", async () => {
+  const res = await callHandler(new Request("http://x/", { method: "GET" }), {
+    AI_RISK_AGENT_TOKEN: "secret",
+    ANTHROPIC_API_KEY: "key",
+  });
+  assertEquals(res.status, 405);
+});
+
+Deno.test("handler: rejects missing bearer", async () => {
+  const res = await callHandler(
+    new Request("http://x/", {
+      method: "POST",
+      body: JSON.stringify({ payload: {} }),
+    }),
+    { AI_RISK_AGENT_TOKEN: "secret", ANTHROPIC_API_KEY: "key" },
+  );
+  assertEquals(res.status, 401);
+  const body = await res.json();
+  assertEquals(body.error, "missing_bearer_token");
+});
+
+Deno.test("handler: rejects wrong bearer", async () => {
+  const res = await callHandler(
+    new Request("http://x/", {
+      method: "POST",
+      headers: { Authorization: "Bearer wrong" },
+      body: JSON.stringify({ payload: {} }),
+    }),
+    { AI_RISK_AGENT_TOKEN: "secret", ANTHROPIC_API_KEY: "key" },
+  );
+  assertEquals(res.status, 401);
+  const body = await res.json();
+  assertEquals(body.error, "invalid_bearer_token");
+});
+
+Deno.test("handler: 503 when AI_RISK_AGENT_TOKEN unset", async () => {
+  const res = await callHandler(
+    new Request("http://x/", {
+      method: "POST",
+      headers: { Authorization: "Bearer x" },
+      body: JSON.stringify({ payload: {} }),
+    }),
+    { AI_RISK_AGENT_TOKEN: undefined, ANTHROPIC_API_KEY: "key" },
+  );
+  assertEquals(res.status, 503);
+});
+
+Deno.test("handler: 400 on invalid JSON", async () => {
+  const res = await callHandler(
+    new Request("http://x/", {
+      method: "POST",
+      headers: { Authorization: "Bearer secret" },
+      body: "not-json",
+    }),
+    { AI_RISK_AGENT_TOKEN: "secret", ANTHROPIC_API_KEY: "key" },
+  );
+  assertEquals(res.status, 400);
+});
+
+Deno.test("handler: 400 on missing payload", async () => {
+  const res = await callHandler(
+    new Request("http://x/", {
+      method: "POST",
+      headers: { Authorization: "Bearer secret" },
+      body: JSON.stringify({ wrong_key: "x" }),
+    }),
+    { AI_RISK_AGENT_TOKEN: "secret", ANTHROPIC_API_KEY: "key" },
+  );
+  assertEquals(res.status, 400);
+  const body = await res.json();
+  assertEquals(body.error, "missing_payload");
+});
+
+Deno.test("handler: 200 on valid request with healthcheck payload", async () => {
+  const res = await callHandler(
+    new Request("http://x/", {
+      method: "POST",
+      headers: { Authorization: "Bearer secret" },
+      body: JSON.stringify({ payload: { _healthcheck: true } }),
+    }),
+    { AI_RISK_AGENT_TOKEN: "secret", ANTHROPIC_API_KEY: "key" },
+  );
+  assertEquals(res.status, 200);
+  const body = await res.json();
+  assertEquals(body.risk_tier, "minimal");
+});

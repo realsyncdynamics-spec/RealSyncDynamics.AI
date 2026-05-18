@@ -5,6 +5,10 @@
     "check": "deno check index.ts classifier.ts prompt.ts index.test.ts",
     "fmt": "deno fmt index.ts classifier.ts prompt.ts index.test.ts"
   },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns"],
+    "strict": true
+  },
   "fmt": {
     "lineWidth": 100,
     "indentWidth": 2,

@@ -6,7 +6,7 @@ import {
   Activity, MessageSquare, Sparkles,
 } from 'lucide-react';
 
-import { getAffiliateRef } from '../lib/affiliate';h
+import { getAffiliateRef } from '../lib/affiliate';
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';

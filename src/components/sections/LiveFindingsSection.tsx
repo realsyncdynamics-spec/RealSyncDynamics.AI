@@ -179,20 +179,20 @@ function EvidenceLayer({ evidence }: { evidence: FindingEvidence }) {
                               >
                         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                           <Eye className="h-3 w-3" />
-                          <span>Evidence</span>span>
-                          <span className="text-silver-600 group-hover:text-cyan-500 truncate max-w-[140px]">{evidence.rule_id}</span>span>
-                  </button>button>
+                          <span>Evidence</span>
+                          <span className="text-silver-600 group-hover:text-cyan-500 truncate max-w-[140px]">{evidence.rule_id}</span>
+                  </button>
                   {open && (
                           <div className="mt-2 border border-silver-800/30 bg-obsidian-950/60 divide-y divide-silver-900/40 text-[10px]">
                                 {rows.map(([label, value]) => (
                                             <div key={label} className="flex hover:bg-silver-900/20 transition-colors">
-                                                          <span className="shrink-0 w-28 px-2 py-1 font-mono text-silver-600 bg-obsidian-900/40 border-r border-silver-800/30">{label}</span>span>
-                                                          <span className="px-2 py-1 font-mono text-silver-300 break-all min-w-0">{value}</span>span>
-                                            </div>div>
+                                                          <span className="shrink-0 w-28 px-2 py-1 font-mono text-silver-600 bg-obsidian-900/40 border-r border-silver-800/30">{label}</span>
+                                                          <span className="px-2 py-1 font-mono text-silver-300 break-all min-w-0">{value}</span>
+                                            </div>
                                           ))}
-                          </div>div>
+                          </div>
                   )}
-            </div>div>
+            </div>
           );
 }
 
@@ -218,26 +218,26 @@ function FixSnippetLayer({ snippets }: { snippets: FixSnippet[] }) {
                               {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                                 <Wrench className="h-3 w-3" />
                                 Fix{snippets.length > 1 ? ` · ${snippets.length}` : ''}
-                        </button>button>
+                        </button>
                         {open && (
                                 <div className="mt-2 space-y-2">
                                       {snippets.map((s, idx) => (
                                                   <div key={idx} className="border border-emerald-900/30 bg-obsidian-950/80 overflow-hidden">
                                                                 <div className="flex items-center justify-between px-2.5 py-1.5 bg-emerald-950/30 border-b border-emerald-900/30">
-                                                                                <span className="font-mono text-[10px] text-emerald-300/80 truncate pr-2">{s.label}</span>span>
+                                                                                <span className="font-mono text-[10px] text-emerald-300/80 truncate pr-2">{s.label}</span>
                                                                                 <div className="flex items-center gap-2 shrink-0">
-                                                                                                  <span className="font-mono text-[9px] uppercase text-emerald-700 bg-emerald-950/60 border border-emerald-900/50 px-1.5 py-0.5 rounded-sm">{s.language}</span>span>
+                                                                                                  <span className="font-mono text-[9px] uppercase text-emerald-700 bg-emerald-950/60 border border-emerald-900/50 px-1.5 py-0.5 rounded-sm">{s.language}</span>
                                                                                                   <button type="button" onClick={() => copy(s.code, idx)} className="p-0.5 text-silver-500 hover:text-silver-200 transition-colors" aria-label="Kopieren">
                                                                                                         {copied === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                                                                                                        </button>button>
-                                                                                </div>div>
-                                                                </div>div>
-                                                                <pre className="overflow-x-auto px-3 py-2.5 text-[10px] sm:text-[11px] font-mono text-silver-300 leading-[1.6] whitespace-pre"><code>{s.code}</code>code></pre>pre>
-                                                  </div>div>
+                                                                                                        </button>
+                                                                                </div>
+                                                                </div>
+                                                                <pre className="overflow-x-auto px-3 py-2.5 text-[10px] sm:text-[11px] font-mono text-silver-300 leading-[1.6] whitespace-pre"><code>{s.code}</code></pre>
+                                                  </div>
                                                 ))}
-                                </div>div>
+                                </div>
                         )}
-                  </div>div>
+                  </div>
                 );
 }
 
@@ -259,10 +259,10 @@ export function LiveFindingsSection({
                         <div className="max-w-6xl mx-auto">
                         
                                 <div className="text-center mb-10 sm:mb-14">
-                                          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">{eyebrow}</div>div>
-                                          <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">{headline}</h2>h2>
-                                          <p className="mt-4 text-sm sm:text-base text-silver-400 leading-relaxed max-w-2xl mx-auto">{subline}</p>p>
-                                </div>div>
+                                          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">{eyebrow}</div>
+                                          <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-3xl mx-auto">{headline}</h2>
+                                          <p className="mt-4 text-sm sm:text-base text-silver-400 leading-relaxed max-w-2xl mx-auto">{subline}</p>
+                                </div>
                         
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                       {findings.map((f, idx) => {
@@ -277,29 +277,29 @@ export function LiveFindingsSection({
                                                                         <header className="flex items-center gap-2 mb-2.5 flex-wrap">
                                                                                           <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm ${s.bg} ${s.text} font-mono text-[10px] uppercase tracking-wider font-semibold`}>
                                                                                                               <Icon className="h-3 w-3 shrink-0" />{s.label}
-                                                                                                </span>span>
-                                                                                          <span className="font-mono text-[10px] text-silver-600 truncate min-w-0">{f.rule}</span>span>
-                                                                        </header>header>
-                                                                        <h3 className="font-display font-bold text-titanium-50 text-sm sm:text-base mb-1.5 leading-snug">{f.title}</h3>h3>
-                                                                        <p className="text-xs sm:text-sm text-silver-400 leading-relaxed mb-3 flex-1">{f.detail}</p>p>
+                                                                                                </span>
+                                                                                          <span className="font-mono text-[10px] text-silver-600 truncate min-w-0">{f.rule}</span>
+                                                                        </header>
+                                                                        <h3 className="font-display font-bold text-titanium-50 text-sm sm:text-base mb-1.5 leading-snug">{f.title}</h3>
+                                                                        <p className="text-xs sm:text-sm text-silver-400 leading-relaxed mb-3 flex-1">{f.detail}</p>
                                                                         <code className="flex items-start gap-1.5 font-mono text-[10px] sm:text-[11px] text-silver-500 bg-obsidian-950/70 border border-silver-800/40 px-2.5 py-1.5">
                                                                                           <ExternalLink className="h-2.5 w-2.5 mt-0.5 shrink-0 text-silver-600" />
-                                                                                          <span className="break-all">{f.ref}</span>span>
-                                                                        </code>code>
+                                                                                          <span className="break-all">{f.ref}</span>
+                                                                        </code>
                                                                         <EvidenceLayer evidence={evidence} />
                                                               {f.fix_snippets && f.fix_snippets.length > 0 && <FixSnippetLayer snippets={f.fix_snippets} />}
-                                                        </article>article>
+                                                        </article>
                                                       );
                   })}
-                                </div>div>
+                                </div>
                         
                                 <div className="mt-10 flex items-center gap-4 justify-center">
                                           <div className="h-px flex-1 max-w-[80px] bg-silver-800/40" />
-                                          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-silver-600">Audit-Engine · 18 Tracker-Klassen · Methodik 2026.05.0</p>p>
+                                          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-silver-600">Audit-Engine · 18 Tracker-Klassen · Methodik 2026.05.0</p>
                                           <div className="h-px flex-1 max-w-[80px] bg-silver-800/40" />
-                                </div>div>
+                                </div>
                         
-                        </div>div>
-                  </section>section>
+                        </div>
+                  </section>
                 );
 }</div>

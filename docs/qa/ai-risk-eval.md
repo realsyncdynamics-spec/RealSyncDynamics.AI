@@ -95,11 +95,40 @@ Zusätzlich als **Supabase Function-Secrets** (nicht GitHub-Secrets):
 ```bash
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase secrets set AI_RISK_AGENT_TOKEN=$(openssl rand -hex 32)
-supabase functions deploy ai-risk --no-verify-jwt
+supabase functions deploy ai-risk
 ```
 
-`--no-verify-jwt` ist beim Deploy nicht zwingend, weil `supabase/config.toml`
-bereits `verify_jwt = false` für `[functions.ai-risk]` gesetzt hat.
+`supabase/config.toml` enthält bereits `verify_jwt = false` für
+`[functions.ai-risk]`, deshalb ist `--no-verify-jwt` am Deploy-Befehl
+nicht nötig.
+
+### Smoke-Test in zwei Schritten
+
+Vor dem ersten Eval-Run beide Endpunkte einzeln verifizieren:
+
+```bash
+# 1. Healthcheck — sollte ohne ANTHROPIC_API_KEY-Konsum durchlaufen.
+curl -sS -X POST "https://<project>.supabase.co/functions/v1/ai-risk" \
+  -H "Authorization: Bearer $AI_RISK_AGENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"payload":{"_healthcheck":true}}' | jq .
+
+# 2. Echter Call gegen einen high-risk-Case — verifiziert Anthropic-Pfad live.
+curl -sS -X POST "https://<project>.supabase.co/functions/v1/ai-risk" \
+  -H "Authorization: Bearer $AI_RISK_AGENT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"payload":{"system_name":"Recruitment AI Screener","sector":"hr","context":"employment_access","decisions_affect_persons":true}}' | jq .
+```
+
+Diagnose nach den beiden Calls:
+
+- Test 1 grün, Test 2 rot → `ANTHROPIC_API_KEY` nicht korrekt gesetzt
+  oder Anthropic-Konto ohne Guthaben.
+- Test 1 grün, Test 2 grün mit `risk_tier: "high"` → bereit für
+  Baseline-Eval.
+- Test 2 grün aber `risk_tier ≠ "high"` → semantisches Signal,
+  kein Bug. Trotzdem das Goldset laufen lassen und am Ende die
+  Confusion Matrix prüfen.
 
 ### 3. Lokal ausführen
 

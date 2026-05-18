@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
@@ -108,6 +109,75 @@ jobs:
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: payload });
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
+            }
+
+      - name: Open or update regression issue on failure
+        if: steps.secrets.outputs.skip != 'true' && steps.eval.outcome != 'success' && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const label = 'agent-regression';
+
+            // Ensure label exists (idempotent — ignore "already_exists" errors).
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo,
+                name: label,
+                color: 'b60205',
+                description: 'ai-risk-agent eval threshold violation',
+              });
+            } catch (e) {
+              if (!String(e.message).includes('already_exists')) throw e;
+            }
+
+            // Try to load the latest report for the issue body; fall back to
+            // a minimal description if the report did not land on disk.
+            const reportPath = '${{ steps.report.outputs.path }}';
+            let bodyTail = '';
+            try {
+              if (reportPath && fs.existsSync(reportPath)) {
+                const full = fs.readFileSync(reportPath, 'utf8');
+                bodyTail = full.length > 50000 ? full.slice(0, 50000) + '\n\n_(truncated — full report in workflow artifact)_' : full;
+              }
+            } catch (_) { /* report missing — keep bodyTail empty */ }
+
+            const title = `ai-risk-agent eval failure — ${context.payload.schedule ? 'nightly' : 'manual'} run ${context.runId}`;
+            const body = [
+              `**Run:** ${runUrl}`,
+              `**SHA:** \`${context.sha}\``,
+              `**Event:** ${context.eventName}`,
+              ``,
+              `The ai-risk-agent goldset evaluation did not pass its acceptance`,
+              `thresholds. See the report below (and the full artifact attached`,
+              `to the workflow run) for which metrics regressed.`,
+              ``,
+              `---`,
+              ``,
+              bodyTail || '_Report file missing — open the workflow run for logs._',
+            ].join('\n');
+
+            // De-dup: if an open issue with the same title-prefix exists, comment
+            // on it instead of opening a new one. Title-prefix dedup keys on the
+            // run-type (nightly vs manual), not on every single run id.
+            const titlePrefix = title.split(' — ')[0];
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: label, per_page: 50,
+            });
+            const dupe = existing.find(i => i.title.startsWith(titlePrefix));
+
+            if (dupe) {
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: dupe.number,
+                body: `Another failed run: ${runUrl} (\`${context.sha.slice(0,8)}\`)`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: [label],
+              });
             }
 
       - name: Fail job if eval failed

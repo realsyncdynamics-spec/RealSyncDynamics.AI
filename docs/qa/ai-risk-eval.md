@@ -207,7 +207,9 @@ Content-Type: application/json
 
 Dominik Steiner — bis Hire eines Quality/ML-Engineers.
 
-Bei jedem failed Run: Issue im Repo
-`realsyncdynamics-spec/RealSyncDynamics.AI` mit Label `agent-regression`
-automatisch erstellen (TODO: in Workflow ergänzen, sobald GitHub-Token
-mit `issues:write` Scope verfügbar ist).
+Bei jedem failed Run (Nightly oder manuell, **nicht** auf PRs) öffnet
+`.github/workflows/risk-agent-eval.yml` automatisch ein Issue mit Label
+`agent-regression`. De-Dup: existiert bereits ein offenes Issue mit
+demselben Titel-Prefix, wird stattdessen kommentiert. Auf PR-Runs
+bleibt das PR-Kommentar mit dem Report die einzige Reaktion — Issue-
+Lärm wäre dort nicht hilfreich.

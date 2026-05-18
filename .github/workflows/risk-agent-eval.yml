@@ -1,0 +1,92 @@
+name: ai-risk-agent Eval
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/ai-risk/**'
+      - 'supabase/migrations/*_ai_risk_goldset.sql'
+      - 'scripts/eval-ai-risk-agent.ts'
+      - '.github/workflows/risk-agent-eval.yml'
+  schedule:
+    # Nightly 02:30 UTC — fängt Regression durch externe Modell-Updates.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  eval:
+    name: Goldset evaluation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run eval
+        id: eval
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AI_RISK_AGENT_URL: ${{ secrets.AI_RISK_AGENT_URL }}
+          AI_RISK_AGENT_TOKEN: ${{ secrets.AI_RISK_AGENT_TOKEN }}
+          AGENT_VERSION: ${{ github.event.pull_request.head.sha || github.sha }}
+          GIT_SHA: ${{ github.sha }}
+          CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVAL_REPORT_DIR: ${{ github.workspace }}/eval-reports
+        run: npx tsx scripts/eval-ai-risk-agent.ts
+        continue-on-error: true
+
+      - name: Locate report
+        id: report
+        if: always()
+        run: |
+          report_path=$(ls -1t eval-reports/*.md 2>/dev/null | head -1 || true)
+          if [ -n "$report_path" ]; then
+            echo "path=$report_path" >> "$GITHUB_OUTPUT"
+            echo "exists=true"      >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload report artifact
+        if: always() && steps.report.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-risk-eval-report
+          path: ${{ steps.report.outputs.path }}
+          retention-days: 90
+
+      - name: Comment report on PR
+        if: github.event_name == 'pull_request' && steps.report.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('${{ steps.report.outputs.path }}', 'utf8');
+            const marker = '<!-- ai-risk-agent-eval-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            const payload = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: payload });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
+            }
+
+      - name: Fail job if eval failed
+        if: steps.eval.outcome != 'success'
+        run: |
+          echo "ai-risk-agent eval did not pass — see report artifact above."
+          exit 1

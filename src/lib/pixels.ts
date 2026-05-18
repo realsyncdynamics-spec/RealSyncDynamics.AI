@@ -248,13 +248,14 @@ export function trackConversion(event: StandardEvent, payload: EventPayload = {}
 export function initMarketingPixels(): void {
   if (typeof window === 'undefined') return;
   applyConsent();
+  captureClickIds();
 
   // Storage-Event feuert in anderen Tabs. Custom-Event triggern wir aus
   // dem Consent-Banner (siehe CookieConsent.tsx — emitConsentChanged()).
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY) applyConsent();
   });
-  window.addEventListener(CONSENT_EVENT, () => applyConsent());
+  window.addEventListener(CONSENT_EVENT, () => { applyConsent(); captureClickIds(); });
 }
 
 /**
@@ -265,3 +266,91 @@ export function emitConsentChanged(): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent(CONSENT_EVENT));
 }
+
+// ---------- Click-ID-Capture + Enhanced Conversions ----------
+
+const CLICK_ID_KEY = 'realsync.click-ids.v1';
+const CLICK_ID_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+
+type ClickIds = { gclid?: string; fbclid?: string; ttclid?: string; t: number };
+
+/**
+ * Persistiert `gclid`/`fbclid`/`ttclid` aus der URL für spätere
+ * Server-Side-Click-Conversion-Uploads. Nur mit Marketing-Consent.
+ * Idempotent — überschreibt nur, wenn neue ID vorhanden ist.
+ */
+function captureClickIds(): void {
+  const consent = readConsent();
+  if (!consent?.marketing) return;
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  const gclid = params.get('gclid') ?? undefined;
+  const fbclid = params.get('fbclid') ?? undefined;
+  const ttclid = params.get('ttclid') ?? undefined;
+  if (!gclid && !fbclid && !ttclid) return;
+  try {
+    const prev = readClickIdsRaw() ?? { t: Date.now() } as ClickIds;
+    const next: ClickIds = {
+      gclid: gclid ?? prev.gclid,
+      fbclid: fbclid ?? prev.fbclid,
+      ttclid: ttclid ?? prev.ttclid,
+      t: Date.now(),
+    };
+    localStorage.setItem(CLICK_ID_KEY, JSON.stringify(next));
+  } catch { /* ignore */ }
+}
+
+function readClickIdsRaw(): ClickIds | null {
+  try {
+    const raw = localStorage.getItem(CLICK_ID_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ClickIds;
+    if (Date.now() - parsed.t > CLICK_ID_MAX_AGE_MS) {
+      localStorage.removeItem(CLICK_ID_KEY);
+      return null;
+    }
+    return parsed;
+  } catch { return null; }
+}
+
+/**
+ * Aktuelle Click-IDs für Übergabe an Stripe-Checkout-Metadata oder
+ * andere Server-Side-Attribution-Calls. Leeres Objekt wenn ohne Consent
+ * oder keine ID gesammelt.
+ */
+export function getClickIds(): { gclid?: string; fbclid?: string; ttclid?: string } {
+  const v = readClickIdsRaw();
+  if (!v) return {};
+  const { gclid, fbclid, ttclid } = v;
+  return { gclid, fbclid, ttclid };
+}
+
+async function sha256Hex(v: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v.trim().toLowerCase()));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Google Ads Enhanced Conversions for Web — muss VOR dem Conversion-Event
+ * aufgerufen werden. Hashed PII wird an gtag übergeben; Google matched
+ * intern gegen eingeloggte Google-Accounts.
+ *
+ * Signifikant höhere Match-Rate post iOS 14.5 / Ad-Blocker.
+ *
+ * @example
+ *   await setEnhancedConversionData({ email });
+ *   trackConversion('InitiateCheckout', { value: 79, currency: 'EUR' });
+ */
+export async function setEnhancedConversionData(user: { email?: string; phone?: string }): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const consent = readConsent();
+  if (!consent?.marketing) return;
+  const gtag = window.gtag;
+  if (!gtag) return;
+  const user_data: Record<string, string> = {};
+  if (user.email) user_data.sha256_email_address = await sha256Hex(user.email);
+  if (user.phone) user_data.sha256_phone_number = await sha256Hex(user.phone);
+  if (Object.keys(user_data).length === 0) return;
+  gtag('set', 'user_data', user_data);
+}
+

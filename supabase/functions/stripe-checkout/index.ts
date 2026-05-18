@@ -48,7 +48,13 @@ Deno.serve(async (req) => {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
 
-  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean };
+  let body: {
+    tenant_id?: string;
+    plan_key?: string;
+    return_url?: string;
+    pilot?: boolean;
+    click_ids?: { gclid?: string; fbclid?: string; ttclid?: string };
+  };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.plan_key) {
@@ -117,11 +123,24 @@ Deno.serve(async (req) => {
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 
+  // Click-IDs aus Marketing-Funnel an Session-Metadata anhängen — der
+  // stripe-webhook liest sie für Server-Side-Attribution (Meta CAPI fbc,
+  // Google Ads Click-Conversion-Upload).
+  const clickIdMeta: Record<string, string> = {};
+  if (body.click_ids?.gclid) clickIdMeta.gclid = body.click_ids.gclid.slice(0, 200);
+  if (body.click_ids?.fbclid) clickIdMeta.fbclid = body.click_ids.fbclid.slice(0, 200);
+  if (body.click_ids?.ttclid) clickIdMeta.ttclid = body.click_ids.ttclid.slice(0, 200);
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer: stripeCustomerId!,
     line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
-    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
+    metadata: {
+      tenant_id: body.tenant_id,
+      plan_key: body.plan_key,
+      pilot: body.pilot ? 'true' : 'false',
+      ...clickIdMeta,
+    },
     subscription_data: subscriptionData,
     success_url: successUrl,
     cancel_url: cancelUrl,

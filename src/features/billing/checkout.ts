@@ -1,4 +1,5 @@
 import { getSupabase } from '../../lib/supabase';
+import { getClickIds } from '../../lib/pixels';
 
 /**
  * PlanKey-Werte muessen mit:
@@ -33,8 +34,15 @@ export async function createCheckoutSession(
   }
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
   const sb = getSupabase();
+  const click_ids = getClickIds();
   const { data, error } = await sb.functions.invoke('stripe-checkout', {
-    body: { tenant_id: tenantId, plan_key: planKey, return_url: window.location.origin, pilot: isPilot },
+    body: {
+      tenant_id: tenantId,
+      plan_key: planKey,
+      return_url: window.location.origin,
+      pilot: isPilot,
+      click_ids,
+    },
   });
   if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } };
   return data as CheckoutResult;

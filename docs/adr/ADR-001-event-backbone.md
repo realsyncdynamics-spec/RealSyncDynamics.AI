@@ -1,142 +1,204 @@
-# ADR-001 — Event-Backbone: Supabase-Lean statt Hyperscale-Stack
+# ADR-001: Event-Backbone, Graph-Layer und Tenancy-Modell
 
-**Status:** Accepted
-**Date:** 2026-05-18
-**Author:** Dominik Steiner (Solo-Founder, RealSync Dynamics)
-**Related:** [`docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md`](./0001-stay-on-supabase-gh-pages-for-v1.md) (Hosting-Entscheidung) · [`docs/adr/0003-governance-bus-postgres-outbox.md`](./0003-governance-bus-postgres-outbox.md) (Outbox-Mechanik im Detail)
-
-> Diese ADR dokumentiert die Stack-Wahl für die **AI-Governance-Runtime** insgesamt — Event-Backbone, Graph-Layer, Tenant-Isolierung. ADR-0001 begründete *Hosting* (Supabase + GitHub Pages), ADR-0003 löste die *Outbox-vs-Topic*-Frage. ADR-001 macht die Migrations-Trigger numerisch verbindlich.
-
----
-
-## Context
-
-Zwei unabhängige externe Architektur-Reviews haben die Plattform als **„AI Governance Runtime mit Event-Feed + Evidence-Layer"** kategorisiert (nicht als DSGVO-Banner-Tool). Damit ist die Daten-Plane das Produkt — Events, Risiko-Bewertung, Drift, Policy-Gates, Evidence-Bundles. Jede Architektur-Entscheidung in der Daten-Plane ist deshalb produktkritisch.
-
-Die naheliegende „Lehrbuch-Architektur" für eine Governance-Runtime wäre:
-
-| Funktion | Lehrbuch-Stack |
-|---|---|
-| Event-Bus | Apache Kafka / Redpanda / NATS JetStream |
-| Graph-Queries (Asset/Policy/Evidence-Beziehungen) | Neo4j / Apache AGE als dedizierter Cluster |
-| Tenant-Isolation bei Hochskalierung | Schema-per-Tenant oder Database-per-Tenant |
-| Worker-Orchestrierung | Kubernetes + Argo Workflows |
-| Observability | Prometheus + Loki + Tempo |
-
-**Ist-Stack heute (verifiziert gegen `package.json`, `supabase/`, `deploy/`):**
-
-- **Frontend:** Vite 6 + React 19 + TypeScript + Tailwind 4 (SPA, GitHub-Pages-deployt)
-- **Backend:** Supabase (Postgres + RLS + Edge Functions Deno + Storage), Region eu-central-1 (Frankfurt)
-- **Event-Layer:** `runtime_events` (append-only), `ai_runtime_events`, `governance_events` — Postgres-Tabellen mit `pg_notify` für niedrigvolumigen Trigger-Fan-out (`supabase/migrations/20260507110000_audit_jobs_queue.sql`)
-- **Worker:** `worker/` (Node-Prozess) + Edge-Function-Cron (`supabase/functions/*-cron`) + VPS `srv1622293` für Playwright-Browser-Fleet
-- **Graph-Queries:** Heute reines relationales JOIN-Schema (keine `apache-age`-Extension installiert)
-- **Tenant-Isolation:** Shared-Schema mit RLS via `public.is_tenant_member(uuid)`
-- **Multi-Tenancy:** 1 Postgres, alle Tenants in denselben Tabellen, isoliert per RLS
-
-Solo-Founder-Realität: 1 Person, GmbH pending, kein Ops-Team. Jede Komponente, die nicht zwingend nötig ist, ist ein Liability — nicht ein Asset.
+- **Status:** Accepted
+- **Date:** 2026-05-18
+- **Author:** Dominik Steiner
+- **Scope:** RealSync Dynamics AI — Governance Runtime (realsyncdynamicsai.de)
+- **Repository:** `realsyncdynamics-spec/RealSyncDynamics.AI`
+- **Related:** [`0001-stay-on-supabase-gh-pages-for-v1.md`](./0001-stay-on-supabase-gh-pages-for-v1.md) · [`0003-governance-bus-postgres-outbox.md`](./0003-governance-bus-postgres-outbox.md)
+- **Supersedes:** —
 
 ---
 
-## Decision
+## 1. Context
 
-**Wir bleiben auf dem Supabase-Lean-Stack, bis ein quantitativer Migrations-Trigger feuert.**
+Zwei unabhängige externe Architektur-Analysen (Reverse-Engineering der öffentlichen
+Positionierung von realsyncdynamicsai.de) kategorisieren die Plattform als
+"AI Governance Runtime mit Event-Feed + Evidence-Layer".
 
-Konkret:
+Eine der beiden Analysen empfiehlt explizit einen Hyperscale-Stack:
+Kafka als Event-Backbone, Neo4j als dedizierte Graph-DB, Kubernetes als
+Compute-Orchestrierung, Keycloak/Auth0 für Identity.
 
-1. **Event-Bus = Postgres-Outbox + LISTEN/NOTIFY**, nicht NATS/Kafka. Outbox-Mechanik gemäß [ADR-0003](./0003-governance-bus-postgres-outbox.md).
-2. **Graph-Queries = relationales SQL** über `ai_systems` / `ai_policies` / `runtime_events` / `ai_evidence_events` mit gezielten Indices und Materialized Views. Keine separate Graph-DB, keine `apache-age`-Extension.
-3. **Tenant-Isolation = Shared-Schema + RLS**, nicht Schema-per-Tenant. Cross-Tenant-Membership (Agency-Use-Case) wird durch `tenant_members(role)` abgebildet.
-4. **Worker = Node-Prozess (`worker/`) + Edge-Function-Cron + 1 VPS** für Browser-Fleet, kein Kubernetes.
-5. **Observability = Sentry + Supabase-Logs + selbst-gebauter `business-metrics-cron`**, kein Prometheus/Loki/Tempo.
+Realität:
+- Solo-Founder-Setup, sole proprietorship, GmbH pending.
+- Aktueller Stack: **Vite 6 + React 19 (SPA)** + Supabase (Frankfurt, eu-central-1)
+  + GitHub-Pages-Deploy + Supabase Edge Functions (Deno) + Hostinger VPS `srv1622293`
+  (PM2 + systemd) + Playwright + Ollama. **Kein Next.js, kein Turborepo.** Eine
+  zukünftige Migration auf Fastify/Next-Monorepo + Coolify ist in [ADR-0002](./0002-future-monorepo-migration.md) als Deferred dokumentiert.
+- Cash-Lage erlaubt keine permanente Infrastruktur-Ops-Last (Kafka-Cluster,
+  Neo4j-Lizenz, K8s-Control-Plane).
+- Erste Enterprise-Konversationen laufen, aber Tenant-Anzahl < 50.
 
-Diese Entscheidung wird in 90 Tagen (2026-08-18) und danach quartalsweise gegen die unten genannten Trigger geprüft.
+Risiko bei voreiliger Hyperscale-Migration: Operative Last frisst Produktentwicklung
+auf, Burn-Rate steigt ohne korrelierte Revenue, technische Schulden durch
+schlechte K8s-Konfig sind teurer als technische Schulden durch Lean-Stack.
 
----
+Risiko bei zu langem Verbleib auf Lean-Stack: Event-Konsistenz-Probleme bei
+> 100 Tenants, Graph-Query-Latenz tötet UX, RLS-Performance degradiert bei
+großen Tenants.
 
-## Consequences
+## 2. Decision
+
+### 2.1 Event-Backbone
+
+**Heute:** Postgres `LISTEN` / `NOTIFY` (siehe `supabase/migrations/20260507110000_audit_jobs_queue.sql`) +
+Supabase Edge Functions als Worker-Trigger + `worker/` (Node) für Long-Running-Jobs.
+Append-only Event-Tabellen `runtime_events`, `ai_runtime_events` und `governance_events`
+in Postgres als Source of Truth. Outbox-Mechanik laut [ADR-0003](./0003-governance-bus-postgres-outbox.md).
+
+**Nicht heute:** Kafka, NATS, Redis Streams, RabbitMQ.
+
+**Begründung:** Postgres als Event-Store ist bei < 10.000 Events/Tag pro Tenant
+ausreichend, transactional konsistent mit dem Domain-State, und vermeidet
+Two-Phase-Commit-Probleme zwischen Event-Bus und Datenbank.
+
+### 2.2 Graph-Layer
+
+**Heute:** Hybrid Graph Model in Postgres — geplante `runtime_edges` Tabelle
+(`source_id`, `target_id`, `edge_type`, `tenant_id`, `properties jsonb`),
+abgefragt via recursive CTEs. Optional Apache AGE Extension wenn Cypher-Syntax
+benötigt wird.
+
+> **Hinweis:** Heute werden Governance-Beziehungen über JOINs zwischen
+> `ai_systems`, `ai_policies`, `ai_evidence_events` und `runtime_events`
+> abgebildet. Eine dedizierte `runtime_edges`-Tabelle ist Folge-PR.
+
+**Nicht heute:** Neo4j, ArangoDB, JanusGraph.
+
+**Begründung:** Governance-Graph hat in der aktuellen Domäne ≤ 5 Hops
+(Agent → Modell → Endpunkt → Tenant → Policy → Evidence). Recursive CTEs auf
+indizierten Edges sind bis ~10⁶ Edges performant genug.
+
+### 2.3 Compute & Worker
+
+**Heute:** GitHub Pages für SPA-Hosting + Supabase Edge Functions
+für leichte Worker, Hostinger VPS `srv1622293` mit PM2 + systemd für
+Long-Running Playwright-Worker (`worker/` Verzeichnis) und Ollama
+(`deploy/ollama-traefik`).
+
+**Nicht heute:** Kubernetes, Temporal Cloud, Celery, Airflow.
+
+**Begründung:** Workflow-Orchestrierung läuft heute über Postgres-State-Machines
+(`workflow_runs` mit Triggern, `agent_os_substrate`). Temporal lohnt sich erst bei
+> 1.000 parallelen Long-Running-Workflows.
+
+### 2.4 Tenancy
+
+**Heute:** Single Postgres + Row-Level Security (RLS) Policies pro Tabelle,
+`tenant_id` als verpflichtende Spalte, Helper `public.is_tenant_member(uuid)`
+gegen `memberships` (siehe `supabase/migrations/20260430180000_tenant_rls_and_webhook_events.sql`).
+
+**Nicht heute:** Schema-per-Tenant, Database-per-Tenant.
+
+**Begründung:** RLS skaliert linear bis ~500 Tenants bei aktueller Query-Last.
+Schema-per-Tenant erhöht Migrations-Komplexität um Faktor N.
+
+### 2.5 Identity
+
+**Heute:** Supabase Auth (Email + OAuth + Magic Link). SAML/SSO via Supabase
+Pro-Tier wenn Enterprise-Tenant es anfragt.
+
+**Nicht heute:** Keycloak, Auth0, eigener OIDC-Provider.
+
+## 3. Consequences
 
 ### Positiv
+- Operative Last bleibt bei einer Person tragbar.
+- Burn-Rate für Infrastruktur < €200/Monat (Supabase Pro + Hostinger VPS + Domains;
+  GitHub Pages kostet nichts).
+- Transactional Konsistenz zwischen Domain-State und Event-Stream — keine
+  Race Conditions zwischen Bus und DB.
+- Stack ist über `pg_dump` migrierbar — kein Vendor-Lock-in jenseits Postgres.
 
-- **Wartungsaufwand für 1 Person leistbar:** Eine Datenbank, ein Hosting-Anbieter, ein Authentifizierungsmodell. Kein Cluster-Ops.
-- **EU-Datenraum garantiert:** Supabase Frankfurt + Hostinger DACH-VPS — Sub-Processor-Liste bleibt einseitig.
-- **Auditierbarkeit out-of-the-box:** `runtime_events` ist via `revoke update, delete` append-only (siehe `supabase/migrations/20260516300000_runtime_core.sql`). SHA-256-Hash-Kette auf `ai_evidence_events` (Trigger `tg_evidence_event_chain`) liefert die Evidence-Chain ohne externe Komponente.
-- **RLS = einheitliches Auth-Modell:** Edge Functions, SPA-Direktzugriff und Worker nutzen dasselbe `is_tenant_member`-Prädikat. Keine Doppelimplementierung.
-- **Compliance-Story einfach erzählbar:** „Alles in einer EU-Postgres-Instanz mit RLS" ist ein verständlicher Satz für DAX-Procurement; „Kafka-Cluster über drei AZs mit Schema-Registry" nicht.
+### Negativ
+- Postgres ist Single Point of Failure. Mitigation: Supabase Point-in-Time
+  Recovery aktiv, tägliche Off-Site-Backups nach S3-kompatiblem Storage.
+- Event-Throughput durch Postgres-Write-Performance begrenzt.
+  Bei aktueller Hardware: ~2.000 Events/sec sustained.
+- Graph-Queries > 5 Hops werden langsam. Mitigation: Materialized Views für
+  häufige Pfade.
+- Keine native Stream-Processing-Semantik (Windowing, Watermarks).
+  Wird heute nicht benötigt.
 
-### Negativ / Akzeptierte Risiken
+## 4. Migration Triggers
 
-- **Postgres-Throughput-Decke:** `pg_notify` skaliert nicht auf > 10⁴ Events/sec sustained. LISTEN-Clients sehen Latenz-Spikes bei großem Fan-out.
-- **Relationaler Graph ist umständlich:** Mehrhop-Queries (z. B. „welche Policies blocken welche AI-Systeme, deren Evidence-Hash in den letzten 7 Tagen wechselte") werden mit Tiefe stetig teurer.
-- **Single-DB-Failure-Domain:** Ein langer Postgres-Lock kann gleichzeitig SPA, Edge Functions und Worker treffen.
-- **Noisy-Neighbor bei großen Tenants:** Shared-Schema mit RLS bedeutet, dass ein Enterprise-Tenant mit 10⁷ Events Query-Pläne für alle Tenants beeinflussen kann.
+Migration wird **automatisch ausgelöst**, sobald **einer** der folgenden
+Schwellwerte über 14 aufeinanderfolgende Tage überschritten wird. Messung
+über `monitoring.daily_metrics` (Cron, 00:05 UTC) — diese Tabelle wird
+in einer Folge-PR ergänzt; bis dahin manuelle Messung gegen Supabase-Logs
+und `business_metrics`.
 
-Diese Risiken sind **bewusst akzeptiert**, weil die Migrations-Trigger unten sie quantifizieren und auslösen, *bevor* sie produktionsrelevant werden.
+### Trigger A — Event-Backbone: Postgres → NATS (nicht Kafka)
+
+| Metrik | Schwelle | Aktion |
+|---|---|---|
+| Events/Tag (alle Tenants) | > 5.000.000 | Migration einleiten |
+| `pg_stat_activity` waiting queries auf `runtime_events` | > 50 sustained | Migration einleiten |
+| p95 LISTEN-Latency | > 500 ms | Migration einleiten |
+
+**Migrationspfad:** NATS JetStream auf `srv1622293` oder dediziertem VPS,
+Dual-Write 14 Tage (Postgres + NATS), dann Cutover. Postgres bleibt
+Source of Truth für Domain-State, NATS übernimmt Fan-Out.
+
+**Kafka nicht vor:** > 50.000.000 Events/Tag UND > 5 dedizierte Stream-Processing-Use-Cases.
+
+### Trigger B — Graph: Postgres CTEs → Apache AGE → Neo4j
+
+| Metrik | Schwelle | Aktion |
+|---|---|---|
+| Edges in `runtime_edges` | > 1.000.000 | AGE-Extension aktivieren |
+| p95 Graph-Query-Latency (≤ 5 Hops) | > 800 ms | AGE-Extension aktivieren |
+| Edges in `runtime_edges` | > 10.000.000 | Neo4j evaluieren |
+| Required Hops in Production-Queries | > 7 | Neo4j evaluieren |
+
+**Migrationspfad AGE:** In-Place Extension-Install in Supabase Postgres
+(falls Supabase es zulässt — sonst dedizierte Postgres-Instanz auf
+`srv1622293`). Cypher-Queries parallel zu CTEs, A/B-Latency-Vergleich
+4 Wochen.
+
+**Neo4j nicht vor:** Beide Schwellen oben gleichzeitig erfüllt UND
+> €30k MRR (operative Last rechtfertigt zweite DB).
+
+### Trigger C — Tenancy: RLS → Schema-per-Tenant → DB-per-Tenant
+
+| Metrik | Schwelle | Aktion |
+|---|---|---|
+| Aktive Tenants | > 200 | Schema-per-Tenant evaluieren |
+| p95 Query-Latency auf RLS-Tabellen | > 300 ms | Schema-per-Tenant evaluieren |
+| Aktive Tenants | > 1.000 | DB-per-Tenant für Enterprise-Tier |
+| Enterprise-Kunde fordert vertraglich Datenisolation | sofort | DB-per-Tenant für diesen Kunden |
+
+**Migrationspfad Schema-per-Tenant:** Neue Tenants ab Cutover-Datum erhalten
+eigenes Schema. Bestehende Tenants migrieren via `pg_dump --schema` in
+geplanten Wartungsfenstern.
+
+### Trigger D — Compute: PM2 → Docker Compose → Kubernetes
+
+| Metrik | Schwelle | Aktion |
+|---|---|---|
+| Parallele Playwright-Worker auf `srv1622293` | > 8 sustained | Zweiten VPS hinzufügen + Docker Compose |
+| VPS-Anzahl im Worker-Pool | > 4 | K8s evaluieren (managed: Hetzner / OVH) |
+
+**K8s nicht vor:** > 4 Worker-VPS UND dedizierter DevOps-Headcount eingestellt.
+
+## 5. Review-Kadenz
+
+Dieser ADR wird **monatlich** gegen die Metriken in `monitoring.daily_metrics`
+reviewed. Bei Trigger-Hit wird ein Folge-ADR (`ADR-002-*`) erstellt, der den
+konkreten Migrationsplan dokumentiert.
+
+Letztes Review: 2026-05-18 (Initial)
+Nächstes Review: 2026-06-18
+
+## 6. References
+
+- Externe Analyse 1: Event-Sourcing-nahe Governance, Supabase als Lean-Infra-Hebel
+- Externe Analyse 2: Hyperscale-Stack (Kafka/Neo4j/K8s) als Vision-Architektur
+- EU AI Act Annex III (Risk Classification)
+- Supabase Realtime Documentation: postgres_changes, broadcast
+- Apache AGE: github.com/apache/age
 
 ---
 
-## Migration Triggers
-
-Jeder Trigger besteht aus: **Metrik · Schwellwert · Messquelle · Auslöse-Aktion**. Schwellwert gilt als gerissen, wenn er **14 Kalendertage in Folge** überschritten wird (Schutz gegen Lastspitzen).
-
-### Trigger A — Event-Bus: Postgres-Outbox + LISTEN/NOTIFY → NATS JetStream
-
-| Item | Wert |
-|---|---|
-| **Metrik 1** | Sustained Insert-Rate in `runtime_events` + `ai_runtime_events` + `governance_events`, gemessen als 1-Minuten-Mittelwert über die letzten 14 Tage |
-| **Schwellwert 1** | **> 500 Events/sec** (entspricht **~43 Mio Events/Tag**) |
-| **Metrik 2** | p95-Latenz zwischen `INSERT INTO runtime_events` und Delivery an Subscriber (Edge Function / Worker) |
-| **Schwellwert 2** | **> 2.000 ms** über 14 Tage |
-| **Metrik 3** | Anzahl `pg_notify`-Slow-Consumer-Drops pro 24h (sichtbar in Supabase-Logs) |
-| **Schwellwert 3** | **> 50 Drops/Tag** |
-| **Messquelle** | `business_metrics`-Tabelle, ergänzt durch neue View `event_backbone_health` (siehe Folge-PR) |
-| **Auslöse-Aktion** | Migration auf NATS JetStream als Transport-Layer. Subscriber-Code unverändert (Outbox bleibt SoT, NATS ist nur Fan-out). Migration laut ADR-0003 §Migration-Path. |
-
-**Begründung der Zahlen:** Supabase Postgres (db.m5.large-Klasse) liefert ~1.000–2.000 INSERTs/sec auf gut indizierte Tabellen. 500 events/sec lässt 2× Headroom für Spitzen. 43 Mio Events/Tag korrespondieren mit ~10.000 aktiven Domains × 100 Tracker-Loads/Tag × 43 Events/Load — also DACH-Marktposition mit ~10k zahlenden Customer-Sites.
-
-### Trigger B — Graph-Queries: Relationales SQL → Apache AGE (in-DB) oder Neo4j
-
-| Item | Wert |
-|---|---|
-| **Metrik 1** | p95-Latenz der drei kritischen Governance-Graph-Queries: (i) Asset → Policy → Violation in 7d, (ii) Evidence-Chain-Tip-Traversal pro Tenant, (iii) Drift-Cascade across AI-Systems |
-| **Schwellwert 1** | **> 800 ms p95** bei Result-Sets mit > 1.000 Knoten |
-| **Metrik 2** | Anzahl Joins in den heißesten 5 Governance-Queries (statisch gemessen) |
-| **Schwellwert 2** | **> 6 Joins** in einer Query, die häufiger als 100×/Stunde ausgeführt wird |
-| **Messquelle** | `pg_stat_statements` + neuer Cron-Job `governance-query-profile-cron` (Folge-PR) |
-| **Auslöse-Aktion** | **Stufe 1:** `CREATE EXTENSION age` in derselben Supabase-Instanz, Migration der drei Hot-Queries auf Cypher-via-AGE. **Stufe 2 (nur falls AGE-Latenz ebenfalls > 800ms):** Neo4j-Aura in Frankfurt, async-Replikation aus Postgres-Outbox |
-
-**Begründung der Zahlen:** 800ms p95 ist die Wahrnehmungsgrenze für „interaktiv langsam" in einem Governance-Dashboard. 6 Joins ist die Schwelle, bei der EXPLAIN-Pläne in Supabase-Postgres typischerweise auf Hash-Join+Materialize umschalten und die Cache-Lokalität verlieren.
-
-### Trigger C — Tenant-Isolation: Shared-Schema + RLS → Schema-per-Tenant
-
-| Item | Wert |
-|---|---|
-| **Metrik 1** | Anzahl aktive Tenants (≥ 1 Event in den letzten 30 Tagen) |
-| **Schwellwert 1** | **> 500 aktive Tenants** |
-| **Metrik 2** | p95-Latenz von `is_tenant_member()`-RLS-Check unter Concurrent-Load |
-| **Schwellwert 2** | **> 50 ms p95** auf den drei größten Tabellen (`runtime_events`, `ai_runtime_events`, `ai_evidence_events`) |
-| **Metrik 3** | Datenvolumen des größten Einzel-Tenant |
-| **Schwellwert 3** | **> 50 GB** in `runtime_events` + `ai_runtime_events` |
-| **Messquelle** | `business_metrics`-Tabelle (`tenant_active_30d`-Counter) + `pg_stat_user_tables` |
-| **Auslöse-Aktion** | Migration der Top-20-Enterprise-Tenants auf eigene Schemas (`tenant_<uuid>.runtime_events`). Long-Tail bleibt im Shared-Schema. RLS-Helper wird zu Schema-Resolver erweitert. Migration läuft tenantweise mit Online-Backfill (logical replication slot). |
-
-**Begründung der Zahlen:** 500 aktive Tenants × ~5 Mio Events/Tenant/Jahr = ~2,5 Mrd Events in einer Tabelle — der Punkt, an dem partial Indices und Partitionierung an Wirkung verlieren. 50ms p95 für einen RLS-Check ist die Schwelle, ab der zusammengesetzte Queries (mehrere RLS-geschützte Joins) > 200ms überschreiten. 50 GB pro Tenant entspricht der Größe, ab der Tenant-isolierte Backup-/Wartungs-Fenster operativ verlangt werden.
-
----
-
-## Nicht-Trigger (bewusst kein Migrationsgrund)
-
-- **„Externer Sales-Investor fragt nach Kafka in der Architektur"** — Trigger ist Last, nicht Optik. Antwort: ADR-001 zeigen.
-- **„Konkurrent X nutzt Neo4j"** — Konkurrent-Stack ist kein Migrations-Argument. Wettbewerbsvorteil entsteht aus Geschwindigkeit, nicht Lehrbuch-Architektur.
-- **„Wir könnten irgendwann mehr Tenants haben"** — Hypothetik ist kein Trigger. Erst messen.
-
----
-
-## Re-Evaluierung
-
-- **Erste Re-Evaluierung:** 2026-08-18 (90 Tage nach Accept).
-- **Danach:** quartalsweise (mit Quarterly-Review-Doku in `docs/runbooks/`).
-- **Außer-der-Reihe:** sofort, wenn ein Schwellwert > 70 % erreicht ist (Frühwarnung).
-
----
-
-**Nächster Schritt für Dominik:** ADR review (5 min lesen, Trigger-Zahlen gegen Bauchgefühl prüfen), dann `git checkout claude/review-project-status-umBWS` und PR mergen, sobald CI grün ist.
+**Nächster Schritt für Dominik:** ADR lesen (5 min), Trigger-Schwellen gegen Bauchgefühl prüfen, dann diesen Branch in PR #331 mergen, sobald CI grün ist. Folge-PRs für die heute noch fehlenden Mess-Bausteine: `runtime_edges`-Tabelle, `monitoring.daily_metrics`-View, `tenant_active_30d`-Counter in `business_metrics`.

@@ -25,6 +25,8 @@
  *   Organization bleibt auf der Homepage in index.html (statisch)
  */
 
+import { PRICING_TIERS, type PricingTier } from './pricing';
+
 export interface SEOConfig {
   /** Page-Title — sollte mit "| RealSyncDynamics.AI" enden, sonst haengt der Hook " — RealSyncDynamics.AI" an. */
   title: string;
@@ -60,6 +62,64 @@ export const DEFAULT_SEO: SEOConfig = {
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
 
+// Pricing-Offers fuer JSON-LD werden aus pricing.ts (SSoT) abgeleitet —
+// jeder Preis steht nur an einer Stelle im Repo. Mapping: kanonische
+// Landing-URL pro Tier, billing-cycle aus tier.recurring, Enterprise
+// bekommt eine reine description statt price (Custom Pricing).
+
+function tierOfferUrl(tierId: PricingTier['id']): string {
+  if (tierId === 'free') return `${SITE_URL}/audit`;
+  if (tierId === 'enterprise') return `${SITE_URL}/contact-sales?intent=enterprise`;
+  return `${SITE_URL}/pricing`;
+}
+
+function tierToOffer(tier: PricingTier): Record<string, unknown> {
+  const url = tierOfferUrl(tier.id);
+
+  // Enterprise: Custom Pricing — kein price-Feld, nur description.
+  if (tier.priceString === 'individuell') {
+    return {
+      '@type': 'Offer',
+      name: tier.name,
+      priceCurrency: 'EUR',
+      url,
+      description: `Auf Anfrage — ${tier.priceSuffix} · SLA, AI-Act-Modul, DSB-Integration, Evidence Vault`,
+    };
+  }
+
+  // Free / Einmal-Angebote (kein Abo).
+  if (!tier.recurring) {
+    return {
+      '@type': 'Offer',
+      name: tier.name,
+      price: tier.priceString,
+      priceCurrency: 'EUR',
+      url,
+      priceSpecification: {
+        '@type': 'UnitPriceSpecification',
+        price: tier.priceString,
+        priceCurrency: 'EUR',
+        priceType: 'https://schema.org/InvoicePrice',
+      },
+    };
+  }
+
+  // Monatlich wiederkehrend.
+  return {
+    '@type': 'Offer',
+    name: tier.name,
+    price: tier.priceString,
+    priceCurrency: 'EUR',
+    url,
+    priceSpecification: {
+      '@type': 'UnitPriceSpecification',
+      price: tier.priceString,
+      priceCurrency: 'EUR',
+      billingDuration: 'P1M',
+    },
+  };
+}
+
 const PRICING_PRODUCT_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -67,67 +127,7 @@ const PRICING_PRODUCT_JSONLD = {
   description:
     'EU-native DSGVO- und EU-AI-Act-Compliance-Infrastruktur mit Website-Audit, Consent-Timing-Analyse, Fix-Empfehlungen und Continuous Monitoring.',
   brand: { '@type': 'Brand', name: 'RealSyncDynamics.AI' },
-  offers: [
-    {
-      '@type': 'Offer',
-      name: 'Free Audit',
-      price: '0',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/audit`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '0',
-        priceCurrency: 'EUR',
-        priceType: 'https://schema.org/InvoicePrice',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Starter',
-      price: '79',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '79',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Growth',
-      price: '249',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '249',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Agency',
-      price: '699',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/pricing`,
-      priceSpecification: {
-        '@type': 'UnitPriceSpecification',
-        price: '699',
-        priceCurrency: 'EUR',
-        billingDuration: 'P1M',
-      },
-    },
-    {
-      '@type': 'Offer',
-      name: 'Enterprise',
-      priceCurrency: 'EUR',
-      url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      description: 'Auf Anfrage — ab 1.500 €/Monat, SLA, AI-Act-Modul, DSB-Integration, Evidence Vault',
-    },
-  ],
+  offers: PRICING_TIERS.map(tierToOffer),
 };
 
 const COOKIE_SCANNER_WEBAPP_JSONLD = {

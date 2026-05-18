@@ -11,6 +11,7 @@ import { chromium, type Browser, type Request, type Response } from 'playwright'
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { detectTrackers } from './detectors/trackers';
 import { detectConsent } from './detectors/consent';
+import { detectLegalPages } from './detectors/legalPages';
 
 const PLAYWRIGHT_TIMEOUT_MS = Number(process.env.PLAYWRIGHT_TIMEOUT_MS || 30000);
 
@@ -71,14 +72,12 @@ export async function runAudit(input: RunAuditInput): Promise<RunAuditResult> {
     // Detector-Layer aufrufen (Stubs — in echter Impl. mehr Heuristiken)
     const trackerFacts = await detectTrackers(page, networkLog);
     const consentFacts = await detectConsent(page);
+    const legalPageFacts = await detectLegalPages(page);
 
     const facts: Record<string, unknown> = {
       ...trackerFacts,
       ...consentFacts,
-      page: {
-        privacy_policy: { url_found: false }, // TODO: Subpage-Crawl
-        impressum: { url_found: false },
-      },
+      page: legalPageFacts,
     };
 
     // Rule Engine: importiere via dynamic import damit Worker und Frontend

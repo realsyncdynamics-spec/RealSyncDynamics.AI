@@ -70,6 +70,19 @@ export const KIND_LABEL: Record<RuntimeEventKind, string> = {
     agent:    'agent',
 };
 
+// 2-letter badge per kind (compact display in terminal-style feeds).
+// Re-added after the Evidence-Layer refactor dropped the per-row
+// `short` field from RuntimeEvent — consumers now derive it from kind.
+export const KIND_SHORT: Record<RuntimeEventKind, string> = {
+    scan:     'SC',
+    drift:    'DR',
+    ai:       'AI',
+    consent:  'CN',
+    evidence: 'EV',
+    incident: 'IN',
+    agent:    'AG',
+};
+
 export const KIND_COLOR: Record<RuntimeEventKind, string> = {
     scan:     'text-cyan-300',
     drift:    'text-amber-300',

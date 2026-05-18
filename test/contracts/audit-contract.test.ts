@@ -14,16 +14,16 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
     expect(ids).toEqual(['agency', 'enterprise', 'free', 'growth', 'starter']);
   });
 
-  it('Starter price is 79 €', () => {
-    expect(tierById('starter')?.priceEur).toBe(79);
+  it('Starter price is 49 €', () => {
+    expect(tierById('starter')?.priceEur).toBe(49);
   });
 
-  it('Growth price is 249 €', () => {
-    expect(tierById('growth')?.priceEur).toBe(249);
+  it('Growth price is 179 €', () => {
+    expect(tierById('growth')?.priceEur).toBe(179);
   });
 
-  it('Agency price is 699 €', () => {
-    expect(tierById('agency')?.priceEur).toBe(699);
+  it('Agency price is 499 €', () => {
+    expect(tierById('agency')?.priceEur).toBe(499);
   });
 
   it('Free tier has priceEur=0 and recurring=false', () => {

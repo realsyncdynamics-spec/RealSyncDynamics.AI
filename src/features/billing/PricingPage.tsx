@@ -13,10 +13,10 @@ import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from
  *
  * 4-Tier-Struktur (Stand 2026-05):
  *   Free Audit  0 €         Lead-Funnel
- *   Starter     79 €/Monat  Einzeldomain
- *   Growth    249 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
- *   Agency    699 €/Monat  White-Label, 10 Kunden-Sites, API
- *   Enterprise ab 1.500 €/Monat — SLA, AI Act, Evidence Vault
+ *   Starter     49 €/Monat  Einzeldomain
+ *   Growth    179 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Agency    499 €/Monat  White-Label, 10 Kunden-Sites, API
+ *   Enterprise ab 998 €/Monat — SLA, AI Act, Evidence Vault
  *   Enterprise individuell  SLA / AI-Act / DSB / Evidence Vault
  */
 

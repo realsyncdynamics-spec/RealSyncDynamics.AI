@@ -8,7 +8,7 @@ const FACTS = [
   { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
   { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
-  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Enterprise ab 1.500 €/M' },
+  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 49 €/M · Growth 179 €/M · Agency 499 €/M · Enterprise ab 998 €/M' },
 ];
 
 const QUOTES = [
@@ -58,7 +58,7 @@ export function Press() {
                 <strong className="text-titanium-50">RealSync Dynamics</strong> ist eine EU-souveräne KI-Compliance-Plattform
                 für DACH-Mittelstand und Behörden. Sitz: Frankfurt am Main. Hosting: ausschließlich EU.
                 Produkt: AVV-Generator, VVT-Wizard, DSFA-Wizard, AI-Act-Klassifikator, Cookie-Consent-SDK,
-                72h-Meldepflicht-Timer, Bußgeld-Rechner — auf einer Plattform ab 79 €/Monat (Starter), Free Audit kostenlos.
+                72h-Meldepflicht-Timer, Bußgeld-Rechner — auf einer Plattform ab 49 €/Monat (Starter), Free Audit kostenlos.
                 Made in Germany. DSGVO-by-Design. AI Act-ready.
               </p>
             </div>

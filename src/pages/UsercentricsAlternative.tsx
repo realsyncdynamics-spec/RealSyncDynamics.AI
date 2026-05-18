@@ -26,7 +26,7 @@ export function UsercentricsAlternative() {
               Usercentrics-Alternative — <span className="text-security-400">deutlich mehr als Cookie-Banner</span>
             </h1>
             <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
-              Usercentrics ist DACH-Marktführer für Cookie-Consent (~150 €/M). Wir bieten dasselbe ab 79 €/M (Starter) —
+              Usercentrics ist DACH-Marktführer für Cookie-Consent (~150 €/M). Wir bieten dasselbe ab 49 €/M (Starter) —
               <strong className="text-titanium-50"> plus AVV, VVT, AI-Act-Tools, Audit-Log</strong>.
             </p>
           </div>
@@ -42,7 +42,7 @@ export function UsercentricsAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing ab', o: '~150 €/M', r: '79 €/M (Starter) · ab Free Audit kostenlos' },
+                  { f: 'Pricing ab', o: '~150 €/M', r: '49 €/M (Starter) · ab Free Audit kostenlos' },
                   { f: 'Cookie-Consent-Banner BfDI 2024', o: 'yes', r: 'yes' },
                   { f: 'i18n DE/EN', o: 'yes', r: 'yes' },
                   { f: '3 gleichberechtigte Buttons (kein Dark-Pattern)', o: 'yes', r: 'yes' },
@@ -85,7 +85,7 @@ export function UsercentricsAlternative() {
                 <Euro className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-titanium-50">3× günstiger</strong> bei gleichen Features. Plus 8 weitere
-                  Compliance-Tools inklusive ab 79 €/M (Starter).
+                  Compliance-Tools inklusive ab 49 €/M (Starter).
                 </div>
               </li>
               <li className="flex items-start gap-3">

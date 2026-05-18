@@ -73,7 +73,7 @@ export function CookieCompliance() {
           <Section title="Was wir liefern">
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Cookie-Audit-Tool</strong> scannt deine Site auf 7 typische Verstöße (3-Button-Pattern, Pre-Check, Tracker-vor-Consent, Google-Fonts-dynamic, Meta-Pixel, GA4, Hotjar)</span></li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Cookie-Consent-SDK</strong> (1-Zeile-Embed) BfDI-2024-konform, ab 79 €/Monat (Starter) — Alternative zu OneTrust 24k €/Jahr</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Cookie-Consent-SDK</strong> (1-Zeile-Embed) BfDI-2024-konform, ab 49 €/Monat (Starter) — Alternative zu OneTrust 24k €/Jahr</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Audit-Log-Endpoint</strong> für nachweisbare Consent-Speicherung (Beweislast-fähig)</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Datenschutzerklärung-Generator</strong> mit automatischer Tool-Erkennung (GA4 / Pixel / Hotjar)</span></li>
             </ul>

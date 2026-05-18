@@ -62,10 +62,10 @@ const ITEMS: Item[] = [
         <p>Fünf Tiers + 14-Tage Pilot-Trial:</p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
           <li><strong className="text-titanium-50">Free Audit</strong> kostenlos — einmaliger Compliance-Snapshot, kein Account</li>
-          <li><strong className="text-titanium-50">Starter</strong> 79 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
-          <li><strong className="text-titanium-50">Growth</strong> 249 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
-          <li><strong className="text-titanium-50">Agency</strong> 699 €/Monat — White-Label, Multi-Tenant (10 Sites), API + Webhooks</li>
-          <li><strong className="text-titanium-50">Enterprise</strong> ab 1.500 €/Monat — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
+          <li><strong className="text-titanium-50">Starter</strong> 49 €/Monat — eine Domain, Audit-Trail, monatlicher Re-Scan</li>
+          <li><strong className="text-titanium-50">Growth</strong> 179 €/Monat — bis 3 Domains, tägliches Monitoring + Drift-Detection</li>
+          <li><strong className="text-titanium-50">Agency</strong> 499 €/Monat — White-Label, Multi-Tenant (10 Sites), API + Webhooks</li>
+          <li><strong className="text-titanium-50">Enterprise</strong> ab 998 €/Monat — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault</li>
         </ul>
         <p className="mt-2">
           Volle Feature-Matrix: <Link to="/pricing" className="text-security-400">/pricing</Link>

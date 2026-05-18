@@ -76,8 +76,8 @@ export function HealthTechLanding() {
 
           <Section title="Pricing für HealthTech">
             <p className="mb-4">
-              Standard-Tiers ab Starter 79 €/M. <strong className="text-titanium-50">HealthTech-Bundle</strong> (Growth + Patientendaten-Zusatz)
-              ab 249 €/M empfohlen, beinhaltet:
+              Standard-Tiers ab Starter 49 €/M. <strong className="text-titanium-50">HealthTech-Bundle</strong> (Growth + Patientendaten-Zusatz)
+              ab 179 €/M empfohlen, beinhaltet:
             </p>
             <ul className="space-y-1.5 text-sm">
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50">14 Tage Pilot kostenlos</strong></li>

@@ -53,7 +53,7 @@ const PERSONAS: readonly Persona[] = [
       'White-Label-Reports im eigenen Branding, eigene Domain.',
       'Stripe-Subscription für Euch; Eure Endkunden buchen über Euch — eu_local-Toggle pro Tenant.',
     ],
-    cta:     { label: 'Agency-Tier ab 699 €/Mo', to: '/agencies' },
+    cta:     { label: 'Agency-Tier ab 499 €/Mo', to: '/agencies' },
     accent:  'text-emerald-300',
   },
 ];

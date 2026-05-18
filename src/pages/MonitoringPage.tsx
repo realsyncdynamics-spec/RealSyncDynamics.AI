@@ -111,11 +111,11 @@ export function MonitoringPage() {
                     className="flex items-start gap-3 py-0.5 border-b border-titanium-900/40 last:border-b-0"
                   >
                     <span className="text-titanium-600 shrink-0 tabular-nums w-12">{e.ts}</span>
-                    <span className={`shrink-0 font-bold w-6 ${KIND_COLOR[e.kind]}`}>{e.short}</span>
+                    <span className={`shrink-0 font-bold w-6 ${KIND_COLOR[e.kind]}`}>{KIND_LABEL[e.kind]}</span>
                     <span className="text-titanium-200 min-w-0 flex-1">
                       <span className={`mr-1 ${KIND_COLOR[e.kind]}`}>{KIND_LABEL[e.kind]}</span>
-                      · {e.text}
-                      {e.target && <span className="ml-1.5 text-titanium-500">→ {e.target}</span>}
+                      · {e.rule_id}
+                      {e.detail && <span className="ml-1.5 text-titanium-500">→ {e.detail}</span>}
                     </span>
                   </div>
                 ))}

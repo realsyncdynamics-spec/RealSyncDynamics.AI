@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Activity, Cpu, ShieldCheck } from 'lucide-react';
-import { RUNTIME_MOCK_EVENTS, KIND_COLOR, KIND_LABEL } from '../../lib/runtimeMockEvents';
+import { RUNTIME_MOCK_EVENTS, KIND_COLOR, KIND_LABEL, SEVERITY_COLOR } from '../../lib/runtimeMockEvents';
 
 // Interactive runtime canvas — homepage second-fold "the system is already
 // running" moment. SVG governance-graph on the left, counters + scrolling
@@ -247,13 +247,12 @@ function TerminalPane({ active, reduce }: { active: boolean; reduce: boolean }) 
             className="flex items-start gap-3 py-0.5 border-b border-titanium-900/40 last:border-b-0"
           >
             <span className="text-titanium-600 shrink-0 tabular-nums">{e.ts}</span>
-            <span className={`shrink-0 font-bold ${KIND_COLOR[e.kind]}`}>{e.short}</span>
+            <span className={`shrink-0 font-bold ${KIND_COLOR[e.kind]}`}>{KIND_LABEL[e.kind]}</span>
             <span className="text-titanium-200 min-w-0">
-              <span className={`mr-1 ${KIND_COLOR[e.kind]}`}>{KIND_LABEL[e.kind]}</span>
-              · {e.text}
-              {e.target && (
-                <span className="ml-1.5 text-titanium-500">→ {e.target}</span>
-              )}
+              <span className="text-titanium-100">{e.rule_id}</span>
+              <span className="mx-1 text-titanium-600">→</span>
+              <span className={SEVERITY_COLOR[e.severity]}>{e.severity}</span>
+              {e.detail && <span className="ml-1.5 text-titanium-500">· {e.detail}</span>}
             </span>
           </motion.div>
         ))}

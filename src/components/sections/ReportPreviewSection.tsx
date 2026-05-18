@@ -353,4 +353,4 @@ export function ReportPreviewSection({
                 </div>
           </section>
         );
-}</div>
+}

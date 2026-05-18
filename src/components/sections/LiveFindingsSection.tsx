@@ -302,4 +302,4 @@ export function LiveFindingsSection({
                         </div>
                   </section>
                 );
-}</div>
+}

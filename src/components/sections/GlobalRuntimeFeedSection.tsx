@@ -106,7 +106,7 @@ export function GlobalRuntimeFeedSection() {
                                                                           <span className="ml-1.5 text-titanium-500">· {e.detail}</span>
                                                                       )}
                                                   </span>
-                                </motion.div>motion.div>
+                                </motion.div>
                               ))}
                                                           <div ref={bottomRef} />
                                               {!reduce && shown.length < RUNTIME_MOCK_EVENTS.length && (
@@ -147,4 +147,4 @@ function CounterRow({ label, value, color }: { label: string; value: number; col
                 <span className={`font-display font-semibold text-2xl tabular-nums ${color}`}>{value}</span>
           </div>
         );
-}</section>
+}

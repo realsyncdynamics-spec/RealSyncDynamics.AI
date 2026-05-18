@@ -50,6 +50,18 @@ const SITE_NAME = 'RealSyncDynamics.AI';
 const SITE_URL = 'https://realsyncdynamicsai.de';
 const DEFAULT_OG_IMAGE = '/og-image.png';
 const TITLE_SUFFIX = ' — RealSyncDynamics.AI';
+const LANGUAGE_ROUTE_PAIRS = [
+  { de: '/ressourcen', en: '/resources' },
+  { de: '/haeufige-fragen', en: '/faq' },
+  { de: '/sicherheit', en: '/security' },
+  { de: '/ueber-uns', en: '/about' },
+  { de: '/marktanalyse', en: '/market-analysis' },
+  { de: '/integrationen', en: '/integrations' },
+  { de: '/bildung', en: '/education' },
+  { de: '/versicherungen', en: '/insurance' },
+  { de: '/oeffentliche-verwaltung', en: '/behoerden' },
+  { de: '/saas-anbieter', en: '/saas-providers' },
+] as const;
 
 /**
  * Sollen wir den Brand-Suffix anhaengen? Nur wenn der Title nicht bereits
@@ -116,6 +128,14 @@ export function SEOHead(props: SEOHeadProps = {}): null {
     }
 
     setLink('canonical', fullCanonical);
+    const alternates = getHreflangAlternates(fullCanonical);
+    if (alternates) {
+      setHreflangLink('de', alternates.de);
+      setHreflangLink('en', alternates.en);
+      setHreflangLink('x-default', alternates.de);
+    } else {
+      removeHreflangLinks();
+    }
 
     // Route-spezifisches JSON-LD: alle Eintraege unter data-seo-id="route"
     // einfuegen / updaten / removen. Stale-Eintraege aus vorherigen Routes
@@ -149,6 +169,40 @@ export function SEOHead(props: SEOHeadProps = {}): null {
   ]);
 
   return null;
+}
+
+function getHreflangAlternates(canonicalUrl: string): { de: string; en: string } | null {
+  let path = '/';
+  try {
+    path = new URL(canonicalUrl).pathname;
+  } catch {
+    path = canonicalUrl;
+  }
+  const normalized = path === '/' ? '/' : path.replace(/\/$/, '');
+  const pair = LANGUAGE_ROUTE_PAIRS.find(({ de, en }) => normalized === de || normalized === en);
+  if (!pair) return null;
+  return { de: `${SITE_URL}${pair.de}`, en: `${SITE_URL}${pair.en}` };
+}
+
+function removeHreflangLinks(): void {
+  if (typeof document === 'undefined') return;
+  document
+    .querySelectorAll<HTMLLinkElement>('link[rel="alternate"][data-seo-hreflang]')
+    .forEach((el) => el.remove());
+}
+
+function setHreflangLink(hreflang: string, href: string): void {
+  if (typeof document === 'undefined') return;
+  const selector = `link[rel="alternate"][hreflang="${hreflang}"][data-seo-hreflang]`;
+  let el = document.querySelector<HTMLLinkElement>(selector);
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', 'alternate');
+    el.setAttribute('hreflang', hreflang);
+    el.setAttribute('data-seo-hreflang', 'true');
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
 }
 
 function removeRouteJsonLd(): void {

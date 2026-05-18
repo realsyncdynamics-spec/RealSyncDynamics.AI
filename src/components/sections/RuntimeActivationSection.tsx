@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import { PRICING_TIERS } from '../../config/pricing';
 
-// RuntimeActivationSection — "Activate your runtime."
+// RuntimeActivationSection — Aktivierung des laufenden Prüfpfads.
 // Pricing-as-activation. Reads PRICING_TIERS from src/config/pricing.ts so
 // the homepage and /pricing page never disagree. A small URL launcher sits
 // above the plan grid so visitors who arrive at the end of the page can
@@ -42,15 +42,15 @@ export function RuntimeActivationSection() {
       <div className="relative max-w-7xl mx-auto">
         <div className="max-w-3xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-            05 · activate
+            05 · aktivierung
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            Activate your runtime.
+            Aktivieren Sie Ihren Prüfpfad.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Free Audit is the no-card entry. Starter unlocks continuous monitoring.
-            Growth adds the AI Act governance layer. Agency adds multi-domain whitelabel.
-            Enterprise is a dedicated runtime environment.
+            Der Free Audit ist der Einstieg ohne Kreditkarte. Starter aktiviert kontinuierliches Monitoring.
+            Growth ergänzt die EU-AI-Act-Governance-Ebene. Agency erweitert auf Multi-Domain-Whitelabel.
+            Enterprise bietet eine dedizierte Laufzeitumgebung.
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export function RuntimeActivationSection() {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="your-company.com"
+                placeholder="ihre-domain.de"
                 autoComplete="off"
                 spellCheck={false}
                 className="flex-1 bg-transparent px-2 py-3 text-sm outline-none text-titanium-50 placeholder:text-titanium-600 font-mono"
@@ -73,7 +73,7 @@ export function RuntimeActivationSection() {
               type="submit"
               className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors"
             >
-              Run Scan
+              Audit starten
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
@@ -91,7 +91,7 @@ export function RuntimeActivationSection() {
             >
               {tier.highlight && (
                 <span className="absolute -top-2 right-3 px-1.5 py-0.5 bg-cyan-400 text-obsidian-950 font-mono text-[9px] uppercase tracking-wider">
-                  recommended
+                  empfohlen
                 </span>
               )}
 
@@ -102,7 +102,7 @@ export function RuntimeActivationSection() {
 
               <div>
                 <div className="font-display font-semibold text-3xl tabular-nums text-titanium-50">
-                  {tier.priceString === 'individuell' ? 'Custom' : `€ ${tier.priceString}`}
+                  {tier.priceString === 'individuell' ? 'Individuell' : `€ ${tier.priceString}`}
                 </div>
                 <div className="font-mono text-[10px] text-titanium-500 mt-1">{tier.priceSuffix}</div>
               </div>
@@ -133,9 +133,9 @@ export function RuntimeActivationSection() {
         </div>
 
         <div className="mt-6 text-center font-mono text-[10px] text-titanium-500">
-          <Link to="/pricing" className="hover:text-titanium-200 underline underline-offset-4">
-            full plan comparison →
-          </Link>
+            <Link to="/pricing" className="hover:text-titanium-200 underline underline-offset-4">
+            Vollständiger Tarifvergleich →
+            </Link>
         </div>
       </div>
     </section>

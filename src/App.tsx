@@ -117,6 +117,7 @@ import { Impressum } from './features/legal/Impressum';
 import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { LegalMethodology } from './features/legal/LegalMethodology';
+import { Terms } from './features/legal/Terms';
 
 // Auth-gated Features → lazy. Reduzieren Initial-Bundle für public Audit-Page.
 const KodeeView = lazy(() => import('./features/kodee/KodeeView').then((m) => ({ default: m.KodeeView })));
@@ -424,6 +425,8 @@ function RoutesWithTracking() {
       <Route path="/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
+      <Route path="/legal/terms" element={<Terms />} />
+      <Route path="/terms" element={<Terms />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
       <Route path="/legal/methodology" element={<LegalMethodology />} />
       <Route path="/methodik" element={<LegalMethodology />} />

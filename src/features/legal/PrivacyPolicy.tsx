@@ -55,10 +55,14 @@ export function PrivacyPolicy() {
 
         <Section title="2. Datenschutzbeauftragter">
           <p>
-            Falls bestellungspflichtig nach § 38 BDSG: Kontaktdaten des DSB
-            hier ergänzen. Andernfalls: <em>„Ein Datenschutzbeauftragter ist
-            gesetzlich nicht vorgeschrieben; Anfragen richten Sie bitte an
-            die unter Ziffer 1 genannte Adresse."</em>
+            Aktuell ist für unser Unternehmen kein Datenschutzbeauftragter benannt,
+            da nach derzeitigem Betriebsumfang keine gesetzliche Benennungspflicht
+            nach Art. 37 DSGVO i. V. m. § 38 BDSG besteht.
+          </p>
+          <p>
+            Datenschutzanfragen richten Sie bitte direkt an die unter Ziffer 1
+            genannte Kontaktadresse:
+            <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de"> privacy@realsyncdynamicsai.de</a>.
           </p>
         </Section>
 
@@ -234,6 +238,7 @@ export function PrivacyPolicy() {
 
         <div className="flex flex-wrap items-center gap-4 text-xs text-titanium-400 pt-6 border-t border-titanium-900">
           <Link to="/legal/sub-processors" className="hover:text-titanium-200">Sub-Prozessoren</Link>
+          <Link to="/legal/terms" className="hover:text-titanium-200">Nutzungsbedingungen</Link>
           <Link to="/settings/account" className="hover:text-titanium-200">Mein Account</Link>
           <a href="mailto:privacy@realsyncdynamicsai.de" className="hover:text-titanium-200">privacy@realsyncdynamicsai.de</a>
         </div>

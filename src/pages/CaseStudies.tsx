@@ -45,13 +45,15 @@ export function CaseStudies() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <Building2 className="h-3 w-3" /> DACH-Customer-Cases
+              <Building2 className="h-3 w-3" /> Referenzen & Prüfpfad-Ergebnisse
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-              Wie unsere Kunden in <span className="text-security-400">14 Tagen</span> compliance-ready werden
+              Pilotphase: Veröffentlichung der ersten Case-Studies nach Kundenfreigabe
             </h1>
             <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
-              Konkrete Cases aus regulierten Branchen — was die Probleme waren, was wir geliefert haben, was rauskam.
+              Transparenz statt Marketing-Lücke: Diese Seite zeigt den aktuellen Stand.
+              Sobald Kunden die Freigabe erteilen, ergänzen wir belastbare Fallbeispiele
+              mit messbaren Ergebnissen.
             </p>
           </div>
 
@@ -68,10 +70,12 @@ export function CaseStudies() {
               <ShieldCheck className="h-6 w-6 text-security-400 shrink-0 mt-0.5" />
               <div>
                 <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-                  Werde unsere nächste Case-Study.
+                  Werden Sie unsere nächste verifizierte Case-Study.
                 </h2>
                 <p className="text-sm text-titanium-300 leading-relaxed">
-                  Pilot-Tier 14 Tage kostenlos. Wenn's passt, danach Growth 249 €/M (oder Starter 79 €/M). Bei Erfolg veröffentlichen wir Deinen Case (anonym oder named — Deine Wahl).
+                  Pilotphase mit transparentem Übergang: erst kostenloser Audit, dann
+                  optional kontinuierlicher Betrieb. Eine Veröffentlichung erfolgt nur
+                  mit Ihrer expliziten Freigabe (anonym oder namentlich).
                 </p>
               </div>
             </div>
@@ -97,11 +101,11 @@ function PlaceholderState() {
     <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-8 sm:p-10 text-center">
       <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto mb-4 opacity-60" />
       <h2 className="font-display font-bold text-titanium-50 text-lg mb-2">
-        Erste Case-Studies in Vorbereitung
+        Erste verifizierte Case-Studies in Vorbereitung
       </h2>
       <p className="text-sm text-titanium-300 mb-6 max-w-lg mx-auto leading-relaxed">
-        Wir sind seit Kurzem live und finalisieren gerade die ersten Customer-Cases. Schau in 4-6 Wochen
-        wieder rein — oder werde selbst Reference-Account.
+        Wir sind in der Pilotphase und finalisieren gerade die ersten Referenzen.
+        Bis zur Freigabe veröffentlichen wir bewusst keine geschönten Erfolgsversprechen.
       </p>
       <div className="grid sm:grid-cols-2 gap-3 max-w-lg mx-auto text-left">
         {(Object.entries(INDUSTRY_META) as [CaseStudy['industry'], typeof INDUSTRY_META[CaseStudy['industry']]][]).map(([key, meta]) => (
@@ -145,13 +149,13 @@ function StudyCard({ study }: { study: CaseStudy }) {
 function Footer() {
   return (
     <footer className="border-t border-titanium-900 mt-12 py-6 px-4">
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
-        <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</div>
-        <div className="flex flex-wrap gap-3">
-          <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-          <Link to="/legal/sub-processors" className="hover:text-titanium-300">Impressum</Link>
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 sm:justify-between text-xs text-titanium-500">
+          <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</div>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
+            <Link to="/legal/impressum" className="hover:text-titanium-300">Impressum</Link>
+          </div>
         </div>
-      </div>
-    </footer>
+      </footer>
   );
 }

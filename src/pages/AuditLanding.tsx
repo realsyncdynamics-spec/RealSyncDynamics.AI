@@ -6,7 +6,7 @@ import {
   Activity, MessageSquare, Sparkles,
 } from 'lucide-react';
 
-import { getAffiliateRef } from '../lib/affiliate';h
+import { getAffiliateRef } from '../lib/affiliate';
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
@@ -246,6 +246,23 @@ export function AuditLanding() {
         headline="Ihr eigener Audit sieht genauso aus."
         subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
       />
+      <section className="px-4 sm:px-6 pb-10">
+        <div className="max-w-3xl mx-auto border border-titanium-900 bg-obsidian-900 p-4 sm:p-5 rounded-none text-sm text-titanium-300 leading-relaxed">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-titanium-500 mb-2">
+            Demo vs. Live-Report
+          </p>
+          <p>
+            Der Beispielblock mit <span className="font-mono">beispiel-shop.de</span> ist eine Demo zur
+            Darstellung des Report-Formats. Ihr tatsächlicher Report wird direkt aus Ihrer
+            eingegebenen URL erzeugt und oberhalb angezeigt.
+          </p>
+          <p className="mt-2">
+            Übergang in den Echtbetrieb: <span className="font-mono">Free Audit</span> = einmalige
+            Vorprüfung, <span className="font-mono">Starter/Growth</span> = kontinuierlicher Prüfpfad
+            mit laufendem Monitoring und wiederholten Scans.
+          </p>
+        </div>
+      </section>
 
       <Footer />
     </div>

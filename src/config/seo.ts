@@ -807,6 +807,23 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Sub-Prozessoren', url: '/legal/sub-processors' },
     ]),
   },
+  '/legal/terms': {
+    title: 'Nutzungsbedingungen | RealSyncDynamics.AI',
+    description:
+      'Nutzungsbedingungen für RealSyncDynamics.AI: Geltungsbereich, Leistungsumfang, Haftung, Vergütung und Vertragsgrundlagen für die Plattformnutzung.',
+    canonical: `${SITE_URL}/legal/terms`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Legal', url: '/legal/sub-processors' },
+      { name: 'Nutzungsbedingungen', url: '/legal/terms' },
+    ]),
+  },
+  '/terms': {
+    title: 'Nutzungsbedingungen | RealSyncDynamics.AI',
+    description:
+      'Nutzungsbedingungen für RealSyncDynamics.AI: Geltungsbereich, Leistungsumfang, Haftung, Vergütung und Vertragsgrundlagen für die Plattformnutzung.',
+    canonical: `${SITE_URL}/legal/terms`,
+  },
   '/legal/avv': {
     title: 'AVV-Vorlage (Art. 28 DSGVO) | RealSyncDynamics.AI',
     description:

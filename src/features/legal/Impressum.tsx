@@ -96,11 +96,13 @@ export function Impressum() {
 
         <Section title="Umsatzsteuer-Identifikationsnummer">
           <p>
-            USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="text-titanium-500">[wird nach Finanzamt-Fragebogen vergeben]</span>
+            Hinweis zum Steuerstatus: Wir führen den Geschäftsbetrieb derzeit als
+            Kleinunternehmer gemäß § 19 UStG. Daher wird aktuell keine Umsatzsteuer
+            ausgewiesen.
           </p>
-          <p className="text-xs text-titanium-500">
-            Falls Kleinunternehmer-Regelung (§ 19 UStG) bei Anmeldung gewählt wird: Diesen Block ersetzen durch
-            „Hinweis: Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen."
+          <p>
+            Eine USt-IdNr. nach § 27a UStG wird veröffentlicht, sobald sie durch das
+            Finanzamt zugeteilt wurde.
           </p>
         </Section>
 
@@ -178,6 +180,7 @@ export function Impressum() {
 
         <div className="flex flex-wrap items-center gap-4 text-xs text-titanium-400 pt-6 border-t border-titanium-900">
           <Link to="/legal/privacy" className="hover:text-titanium-200">Datenschutzerklärung</Link>
+          <Link to="/legal/terms" className="hover:text-titanium-200">Nutzungsbedingungen</Link>
           <Link to="/legal/sub-processors" className="hover:text-titanium-200">Sub-Prozessoren</Link>
           <Link to="/legal/avv" className="hover:text-titanium-200">AVV-Vorlage</Link>
         </div>

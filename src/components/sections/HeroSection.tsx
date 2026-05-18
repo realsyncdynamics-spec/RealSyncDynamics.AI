@@ -52,7 +52,10 @@ export function HeroSection() {
       <div className="relative max-w-5xl mx-auto">
         <div className="flex justify-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-titanium-800 bg-obsidian-900/70 font-mono text-[10px] uppercase tracking-[0.18em] text-titanium-400">
-            <span className="inline-block h-2 w-2 bg-emerald-400" aria-hidden="true" />
+            <span className="relative inline-flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inset-0 bg-emerald-400 opacity-60 animate-ping" />
+              <span className="relative inline-block h-2 w-2 bg-emerald-400" />
+            </span>
             Runtime-Status: Live · t+{String(tick).padStart(2, '0')}s
           </div>
         </div>

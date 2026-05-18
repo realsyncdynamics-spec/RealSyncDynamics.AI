@@ -1,13 +1,11 @@
-// Pre-rendered "live" governance runtime events for the homepage canvas
-// section. Static (no real backend) — but reads like a realistic stream of
-// what the platform actually does: discovery scans, drift detection,
-// AI classification, consent compliance, evidence anchoring.
-//
-// The terminal feed in RuntimeCanvasSection reveals these one-by-one
+// runtimeMockEvents.ts — Step 3: Runtime-Feed with real rule-event format
+// Events now use wall-clock HH:MM:SS timestamps and real rule_id notation
+// matching the scanner's actual rule identifiers (rule.*, evidence.*, policy.*).
+// The terminal feed in GlobalRuntimeFeedSection reveals these one-by-one
 // with a stagger so the visitor sees a "live system" on first paint.
 
 export type RuntimeEventKind =
-  | 'scan'
+    | 'scan'
   | 'drift'
   | 'ai'
   | 'consent'
@@ -16,52 +14,82 @@ export type RuntimeEventKind =
   | 'agent';
 
 export interface RuntimeEvent {
-  /** Monotonic time-since-load label, e.g. "T+02s" */
+    /** Wall-clock timestamp in HH:MM:SS format, e.g. "07:14:22" */
   ts: string;
-  kind: RuntimeEventKind;
-  /** Two-character tag rendered in the terminal column. */
-  short: string;
-  /** Main one-line message. */
-  text: string;
-  /** Optional target/host string rendered in mono. */
-  target?: string;
+    kind: RuntimeEventKind;
+    /** Dot-notation rule identifier, e.g. "rule.cookie.reject_button" */
+  rule_id: string;
+    /** Severity / status emitted by the rule engine */
+  severity: 'info' | 'warning' | 'error' | 'sealed' | 'generated' | 'ok';
+    /** Optional secondary detail (target host, hash, etc.) */
+  detail?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Real rule-event log — 24 entries covering a realistic morning scan window
+// Each rule_id mirrors the scanner rule identifiers surfaced in LiveFindingsSection
+// ---------------------------------------------------------------------------
 export const RUNTIME_MOCK_EVENTS: readonly RuntimeEvent[] = [
-  { ts: 'T+00s', kind: 'scan',     short: 'SC', text: 'header fetch · TLS 1.3 · HSTS-on',                target: 'kunde-1.de' },
-  { ts: 'T+01s', kind: 'consent',  short: 'CN', text: 'consent-banner detected · v2.4 IAB-TCF',          target: 'kunde-1.de' },
-  { ts: 'T+02s', kind: 'drift',    short: 'DR', text: 'tracker added · googletagmanager · pre-consent', target: 'kunde-1.de' },
-  { ts: 'T+02s', kind: 'ai',       short: 'AI', text: 'classify widget · chat-bot · AI-Act class: limited', target: 'kunde-2.io' },
-  { ts: 'T+03s', kind: 'evidence', short: 'EV', text: 'sealed hash · sha256:9f2c…b81 · ledger-anchor ✓',  target: 'evidence-chain' },
-  { ts: 'T+04s', kind: 'agent',    short: 'AG', text: 'dpo-agent → drafted §13 update · 14 lines',       target: 'kunde-1.de' },
-  { ts: 'T+05s', kind: 'incident', short: 'IN', text: 'drift · pre-consent tracker · sev=high · open',  target: 'kunde-1.de' },
-  { ts: 'T+06s', kind: 'scan',     short: 'SC', text: 'subpage crawl · /impressum · /datenschutz · OK',  target: 'kunde-3.com' },
-  { ts: 'T+07s', kind: 'ai',       short: 'AI', text: 'detect · LLM-Endpoint · provider=openai · region=us-east', target: 'kunde-2.io' },
-  { ts: 'T+08s', kind: 'consent',  short: 'CN', text: 'reject-all path missing · TTDSG §25 risk',        target: 'kunde-4.shop' },
-  { ts: 'T+09s', kind: 'agent',    short: 'AG', text: 'triage-agent → owner=daniel · sla=72h',           target: 'kunde-1.de' },
-  { ts: 'T+10s', kind: 'evidence', short: 'EV', text: 'audit-bundle 04-26 · 1,248 events · anchored',   target: 'evidence-chain' },
-  { ts: 'T+11s', kind: 'drift',    short: 'DR', text: 'vendor added · plausible.io · no DPA on file',    target: 'kunde-3.com' },
-  { ts: 'T+12s', kind: 'scan',     short: 'SC', text: 'header re-check · X-Frame-Options absent',        target: 'kunde-4.shop' },
-  { ts: 'T+13s', kind: 'ai',       short: 'AI', text: 'register · openai/gpt-4o · classification: high', target: 'kunde-2.io' },
-  { ts: 'T+14s', kind: 'evidence', short: 'EV', text: 'rolling backup · supabase-eu-west · 24 GB',       target: 'evidence-chain' },
-];
+  { ts: '07:14:18', kind: 'scan',     rule_id: 'rule.header.hsts',                severity: 'ok',        detail: 'kunde-1.de' },
+  { ts: '07:14:20', kind: 'scan',     rule_id: 'rule.header.x_frame_options',      severity: 'warning',   detail: 'kunde-1.de' },
+  { ts: '07:14:22', kind: 'consent',  rule_id: 'rule.cookie.reject_button',        severity: 'warning',   detail: 'kunde-1.de' },
+  { ts: '07:14:23', kind: 'consent',  rule_id: 'rule.cookie.consent_mode_v2',      severity: 'error',     detail: 'kunde-1.de' },
+  { ts: '07:14:24', kind: 'evidence', rule_id: 'evidence.sha256.sealed',           severity: 'sealed',    detail: 'sha256:9f2c…b81' },
+  { ts: '07:14:25', kind: 'drift',    rule_id: 'rule.tracker.pre_consent',         severity: 'error',     detail: 'kunde-1.de' },
+  { ts: '07:14:26', kind: 'consent',  rule_id: 'rule.meta.pixel_fire',             severity: 'warning',   detail: 'kunde-2.io' },
+  { ts: '07:14:27', kind: 'scan',     rule_id: 'rule.fonts.google_cdn',            severity: 'error',     detail: 'kunde-2.io' },
+  { ts: '07:14:28', kind: 'agent',    rule_id: 'policy.snippet.generated',         severity: 'generated', detail: 'fix: self-host fonts' },
+  { ts: '07:14:29', kind: 'ai',       rule_id: 'rule.ai_act.llm_endpoint',         severity: 'warning',   detail: 'gpt-4o · us-east' },
+  { ts: '07:14:30', kind: 'consent',  rule_id: 'rule.cookie.sub_processor_table',  severity: 'warning',   detail: 'kunde-3.com' },
+  { ts: '07:14:31', kind: 'scan',     rule_id: 'rule.page.datenschutz_route',      severity: 'error',     detail: 'kunde-3.com' },
+  { ts: '07:14:32', kind: 'agent',    rule_id: 'policy.snippet.generated',         severity: 'generated', detail: 'fix: /datenschutz route' },
+  { ts: '07:14:33', kind: 'evidence', rule_id: 'evidence.sha256.sealed',           severity: 'sealed',    detail: 'sha256:a7f1…c44' },
+  { ts: '07:14:34', kind: 'drift',    rule_id: 'rule.vendor.dpa_missing',          severity: 'error',     detail: 'plausible.io' },
+  { ts: '07:14:35', kind: 'ai',       rule_id: 'rule.ai_act.classify_widget',      severity: 'info',      detail: 'chat-bot → limited risk' },
+  { ts: '07:14:36', kind: 'incident', rule_id: 'rule.tracker.pre_consent',         severity: 'error',     detail: 'sev=high · open' },
+  { ts: '07:14:37', kind: 'agent',    rule_id: 'policy.dpo.notice_drafted',        severity: 'generated', detail: '§13 update · 14 lines' },
+  { ts: '07:14:38', kind: 'consent',  rule_id: 'rule.cookie.reject_button',        severity: 'ok',        detail: 'kunde-4.shop · fixed' },
+  { ts: '07:14:39', kind: 'scan',     rule_id: 'rule.header.csp',                  severity: 'warning',   detail: 'kunde-4.shop' },
+  { ts: '07:14:40', kind: 'evidence', rule_id: 'evidence.audit_bundle.anchored',   severity: 'sealed',    detail: '1,248 events · 04-26' },
+  { ts: '07:14:41', kind: 'ai',       rule_id: 'rule.ai_act.register_model',       severity: 'info',      detail: 'openai/gpt-4o · high-risk' },
+  { ts: '07:14:42', kind: 'agent',    rule_id: 'policy.snippet.generated',         severity: 'generated', detail: 'fix: consent-mode v2' },
+  { ts: '07:14:43', kind: 'evidence', rule_id: 'evidence.backup.supabase',         severity: 'sealed',    detail: 'eu-west · 24 GB' },
+  ];
+
+// ---------------------------------------------------------------------------
+// Display helpers
+// ---------------------------------------------------------------------------
 
 export const KIND_LABEL: Record<RuntimeEventKind, string> = {
-  scan: 'scan',
-  drift: 'drift',
-  ai: 'ai',
-  consent: 'consent',
-  evidence: 'evidence',
-  incident: 'incident',
-  agent: 'agent',
+    scan:     'scan',
+    drift:    'drift',
+    ai:       'ai',
+    consent:  'consent',
+    evidence: 'evidence',
+    incident: 'incident',
+    agent:    'agent',
 };
 
 export const KIND_COLOR: Record<RuntimeEventKind, string> = {
-  scan:     'text-cyan-300',
-  drift:    'text-amber-300',
-  ai:       'text-violet-300',
-  consent:  'text-yellow-300',
-  evidence: 'text-emerald-300',
-  incident: 'text-red-300',
-  agent:    'text-titanium-100',
+    scan:     'text-cyan-300',
+    drift:    'text-amber-300',
+    ai:       'text-violet-300',
+    consent:  'text-yellow-300',
+    evidence: 'text-emerald-300',
+    incident: 'text-red-300',
+    agent:    'text-titanium-100',
 };
+
+export const SEVERITY_COLOR: Record<RuntimeEvent['severity'], string> = {
+    ok:        'text-emerald-400',
+    info:      'text-cyan-400',
+    warning:   'text-amber-400',
+    error:     'text-red-400',
+    sealed:    'text-emerald-300',
+    generated: 'text-violet-300',
+};
+
+/** Arrow suffix rendered after the rule_id, e.g. "rule.cookie.reject_button → warning" */
+export function formatEventLine(e: RuntimeEvent): string {
+    return `${e.rule_id} \u2192 ${e.severity}${e.detail ? ' · ' + e.detail : ''}`;
+}

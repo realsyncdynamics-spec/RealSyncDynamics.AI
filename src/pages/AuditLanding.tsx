@@ -6,7 +6,7 @@ import {
   Activity, MessageSquare, Sparkles,
 } from 'lucide-react';
 
-import { getAffiliateRef } from '../lib/affiliate';
+import { getAffiliateRef } from '../lib/affiliate';h
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
@@ -25,6 +25,25 @@ interface Issue {
   title: string;
   detail: string;
   paragraph_ref?: string;
+    /** Evidence-Metadaten — vom Backend oder Mock-Fallback (Phase Evidence-Layer) */
+    evidence?: {
+          rule_id: string;
+          rule_version: string;
+          detected_at: string;
+          source_url: string;
+          evidence_type: 'dom' | 'network' | 'header' | 'cookie' | 'redirect';
+          selector?: string;
+          request_url?: string;
+          sha256: string;
+          confidence: number;
+          scanner_engine: string;
+    };
+    /** Fix-Snippets vom Backend oder aus LiveFindingsSection-Definitionen */
+    fix_snippets?: Array<{
+          label: string;
+          language: string;
+          code: string;
+    }>;
 }
 
 interface Report {

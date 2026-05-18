@@ -73,26 +73,26 @@ export function HeroSection() {
                                             <span className="relative inline-flex h-2 w-2">
                                                           <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-75 animate-ping" />
                                                           <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-400" />
-                                            </span>span>
+                                            </span>
                                             runtime status: live · t+{String(tick).padStart(2, '0')}s
-                                </div>div>
-                      </div>div>
+                                </div>
+                      </div>
               
                       <h1 className="text-center text-5xl sm:text-7xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.05] mb-5">
                                 This system is{' '}
-                                <span className="text-cyan-300">already running.</span>span>
-                      </h1>h1>
+                                <span className="text-cyan-300">already running.</span>
+                      </h1>
               
                       <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10">
                                 AI Governance Runtime for EU privacy and AI Act. Continuous detection,
                                 monitoring, governance, automation — one operational plane, zero setup.
-                      </p>p>
+                      </p>
               
                 {/* URL launch input */}
                       <form onSubmit={onSubmit} className="max-w-2xl mx-auto" role="search" data-hero-cta>
                                 <div className="flex flex-col sm:flex-row gap-2">
                                             <div className="flex-1 flex items-center bg-obsidian-900 border border-titanium-800 focus-within:border-cyan-400/60 transition-colors">
-                                                          <span className="pl-3 font-mono text-[12px] text-titanium-500 select-none">https://</span>span>
+                                                          <span className="pl-3 font-mono text-[12px] text-titanium-500 select-none">https://</span>
                                                           <input
                                                                             type="text"
                                                                             value={url}
@@ -102,29 +102,29 @@ export function HeroSection() {
                                                                             spellCheck={false}
                                                                             className="flex-1 bg-transparent px-2 py-3.5 text-base outline-none text-titanium-50 placeholder:text-titanium-600 font-mono"
                                                                           />
-                                            </div>div>
+                                            </div>
                                             <button
                                                             type="submit"
                                                             className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 text-obsidian-950 font-semibold text-sm sm:text-base tracking-tight hover:bg-cyan-300 transition-colors"
                                                           >
                                                           Run Scan
                                                           <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                                            </button>button>
-                                </div>div>
-                      </form>form>
+                                            </button>
+                                </div>
+                      </form>
               
                 {/* Hint row */}
                       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-mono text-titanium-500">
                                 <span className="inline-flex items-center gap-1.5">
                                             <Zap className="h-3 w-3 text-cyan-300" /> first signal in 30 s
-                                </span>span>
+                                </span>
                                 <span className="inline-flex items-center gap-1.5">
                                             <ShieldCheck className="h-3 w-3 text-emerald-400" /> zero setup
-                                </span>span>
+                                </span>
                                 <span className="inline-flex items-center gap-1.5">
                                             <Cpu className="h-3 w-3 text-violet-300" /> EU edge · audit-grade
-                                </span>span>
-                      </div>div>
+                                </span>
+                      </div>
               
                 {/* Demo metric strip — fix(#280): persistent label prevents UWG §5 risk */}
                       <div className="mt-14 sm:mt-20 border border-titanium-900/60">
@@ -133,15 +133,15 @@ export function HeroSection() {
                                             <FlaskConical className="h-3 w-3 text-titanium-500 shrink-0" aria-hidden="true" />
                                             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500 select-none">
                                                           demo runtime · simulated events · not live customer data
-                                            </span>span>
-                                </div>div>
+                                            </span>
+                                </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-titanium-900 divide-x divide-titanium-900/60">
                                             <Metric icon={<Activity className="h-3.5 w-3.5 text-cyan-300" />}    label="scans / 24h" value="1,248" delta="example" deltaColor="text-titanium-600" />
                                             <Metric icon={<Activity className="h-3.5 w-3.5 text-amber-300" />}   label="drift events" value="93"   delta="simulated" deltaColor="text-titanium-600" />
                                             <Metric icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />}       label="AI systems"   value="17"   delta="example"   deltaColor="text-titanium-600" />
                                             <Metric icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} label="evidence"  value="4,128" delta="simulated" deltaColor="text-titanium-600" />
-                                </div>div>
-                      </div>div>
+                                </div>
+                      </div>
               
                 {/* Layer pills */}
                       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
@@ -152,11 +152,11 @@ export function HeroSection() {
                                           >
                                           <span className="inline-block w-1 h-1 rounded-full bg-current" />
                               {p.label}
-                            </span>span>
+                            </span>
                           ))}
-                      </div>div>
-              </div>div>
-        </section>section>
+                      </div>
+              </div>
+        </section>
       );
 }
 
@@ -178,11 +178,11 @@ function Metric({
                 <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-2">
                   {icon}
                   {label}
-                </div>div>
+                </div>
                 <div className="font-display font-semibold text-2xl sm:text-3xl text-titanium-50 tabular-nums">
                   {value}
-                </div>div>
-                <div className={`mt-0.5 font-mono text-[10px] ${deltaColor}`}>{delta}</div>div>
-          </div>div>
+                </div>
+                <div className={`mt-0.5 font-mono text-[10px] ${deltaColor}`}>{delta}</div>
+          </div>
         );
-}</section>
+}

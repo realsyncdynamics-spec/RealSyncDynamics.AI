@@ -24,16 +24,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check required secrets
+        id: secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AI_RISK_AGENT_URL: ${{ secrets.AI_RISK_AGENT_URL }}
+          AI_RISK_AGENT_TOKEN: ${{ secrets.AI_RISK_AGENT_TOKEN }}
+        run: |
+          missing=()
+          [ -z "$SUPABASE_URL" ]         && missing+=(SUPABASE_URL)
+          [ -z "$SUPABASE_SERVICE_KEY" ] && missing+=(SUPABASE_SERVICE_KEY)
+          [ -z "$AI_RISK_AGENT_URL" ]    && missing+=(AI_RISK_AGENT_URL)
+          [ -z "$AI_RISK_AGENT_TOKEN" ]  && missing+=(AI_RISK_AGENT_TOKEN)
+          if [ ${#missing[@]} -gt 0 ]; then
+            joined="${missing[*]}"
+            echo "::notice title=ai-risk-agent eval skipped::Required secrets not configured. Set ${joined} in repo Settings → Secrets and variables → Actions to enable eval. See docs/qa/ai-risk-eval.md."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "missing=${joined}" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.skip != 'true'
         with:
           node-version: '20'
           cache: npm
 
       - name: Install deps
+        if: steps.secrets.outputs.skip != 'true'
         run: npm ci
 
       - name: Run eval
         id: eval
+        if: steps.secrets.outputs.skip != 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -48,7 +73,7 @@ jobs:
 
       - name: Locate report
         id: report
-        if: always()
+        if: always() && steps.secrets.outputs.skip != 'true'
         run: |
           report_path=$(ls -1t eval-reports/*.md 2>/dev/null | head -1 || true)
           if [ -n "$report_path" ]; then
@@ -86,7 +111,7 @@ jobs:
             }
 
       - name: Fail job if eval failed
-        if: steps.eval.outcome != 'success'
+        if: steps.secrets.outputs.skip != 'true' && steps.eval.outcome != 'success'
         run: |
           echo "ai-risk-agent eval did not pass — see report artifact above."
           exit 1

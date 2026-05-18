@@ -1,0 +1,19 @@
+{
+  "tasks": {
+    "test": "deno test --allow-env index.test.ts",
+    "test:integration": "deno test --allow-env --allow-net=api.anthropic.com integration.test.ts",
+    "check": "deno check index.ts classifier.ts prompt.ts index.test.ts",
+    "fmt": "deno fmt index.ts classifier.ts prompt.ts index.test.ts"
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "singleQuote": false,
+    "semiColons": true
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}

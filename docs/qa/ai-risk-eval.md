@@ -5,10 +5,13 @@ Klassifikation des Agents nicht messbar — und damit sind die
 Compliance-Claims der Plattform nicht verteidigbar.
 
 > **Stand 2026-05-18:** Migration + Goldset + Eval-Skript + CI-Workflow
-> liegen im Repo. Der `ai-risk-agent` selbst ist noch eine
-> Edge-Function-Lücke (`supabase/functions/ai-risk/`). Erste
-> Eval-Runs werden gegen einen Stub oder gegen `governance-risk-score`
-> mit Adapter durchgeführt — Owner-Entscheidung beim ersten Lauf.
+> + Edge Function liegen im Repo. Klassifikator ist **Anthropic
+> Haiku 4.5 mit Tool-Use** (siehe `supabase/functions/ai-risk/classifier.ts`).
+> Entgegen der ursprünglichen Rule-Based-Vereinbarung wurde direkt auf
+> LLM-Variante gegangen — die fünf Production-Review-Punkte
+> (Tool-Name-Check, `reasons`-Validierung, AbortError-Mapping,
+> Healthcheck-Shortcut, getrennte Deno-Tasks) sind eingebaut.
+> ADR-003 zur LLM-Wahl + Bedrock-Migrationspfad ist Folge-PR.
 
 ## Warum das existiert
 
@@ -80,8 +83,23 @@ In Settings → Secrets and variables → Actions des Repos
 
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_KEY` (Service-Role, nicht Anon)
-- `AI_RISK_AGENT_URL` (siehe Hinweis unten)
-- `AI_RISK_AGENT_TOKEN`
+- `AI_RISK_AGENT_URL` (Form: `https://<project>.supabase.co/functions/v1/ai-risk`)
+- `AI_RISK_AGENT_TOKEN` (selbst generiert, z. B. `openssl rand -hex 32`;
+  derselbe Wert auch in Supabase Function-Secrets)
+
+Zusätzlich als **Supabase Function-Secrets** (nicht GitHub-Secrets):
+
+- `ANTHROPIC_API_KEY` — Anthropic-API-Key mit Zugriff auf Haiku 4.5
+- `AI_RISK_AGENT_TOKEN` — derselbe Wert wie oben
+
+```bash
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase secrets set AI_RISK_AGENT_TOKEN=$(openssl rand -hex 32)
+supabase functions deploy ai-risk --no-verify-jwt
+```
+
+`--no-verify-jwt` ist beim Deploy nicht zwingend, weil `supabase/config.toml`
+bereits `verify_jwt = false` für `[functions.ai-risk]` gesetzt hat.
 
 ### 3. Lokal ausführen
 

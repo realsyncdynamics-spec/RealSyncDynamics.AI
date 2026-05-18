@@ -83,6 +83,12 @@ verify_jwt = false
 [functions.governance-ingest]
 verify_jwt = false
 
+# Custom bearer-auth (AI_RISK_AGENT_TOKEN). Eval-callers are machines, not
+# Supabase users — JWT wrapper would interfere. Token check happens inside
+# the function (timing-safe compare against AI_RISK_AGENT_TOKEN env).
+[functions.ai-risk]
+verify_jwt = false
+
 [functions.governance-webhooks]
 verify_jwt = false
 

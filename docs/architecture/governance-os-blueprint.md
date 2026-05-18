@@ -4,6 +4,7 @@
 > **Author**: Architecture working group (Principal AI Governance Architect + Distributed Systems + Agent Runtime).
 > **Scope**: Multi-year evolution from the current pilot (PR #134–#160, governance runtime live on `ebljyceifhnlzhjfyxup`) into a category-defining EU-native AI Governance Operating System.
 > **Audience**: Engineers building the platform; investors evaluating the technical thesis; regulators reviewing the control model.
+> **Reifegrad-Quelle**: Dieses Dokument beschreibt Zielarchitektur und Phasen-Roadmap. Audit-fester Ist-Stand der Module steht in [`docs/runtime-status-matrix.md`](../runtime-status-matrix.md). Bei Widerspruch gewinnt die Matrix.
 
 This blueprint is the technical thesis for the next 24 months. It is not a roadmap PowerPoint — it is the system specification that engineering, product and compliance teams operate against. Every section is intended to be directly implementable.
 
@@ -1279,14 +1280,14 @@ Five phases. Each phase ships in 4–8 months.
 | Features | Onboarding, asset/policy CRUD, ingest keys, browser extension, telemetry ingest, policy engine, audit log, webhooks, approvals, DPIA, DSR, incidents (72h), connectors (Jira/GitHub/Slack), vendors, multi-env, cost tracking, compliance export |
 | Integrations | Jira, GitHub, Linear, ServiceNow, Slack, Teams (write-only) |
 | Data model | 22 governance tables + materialised views |
-| Agents | 0 production agents; Risk Engine runs as a scheduled batch |
+| Agents | Governance Agent v1 (Ingest + Routing) produktiv (`governance-agent`, `governance-ingest`, `services/openclaw-agent`). Risk Engine läuft als scheduled batch. Autonome Remediation-Agents folgen ab Phase 2 — Reifegrad-Detail in [`docs/runtime-status-matrix.md`](../runtime-status-matrix.md). |
 | Target customers | 5 pilot enterprises, EU-only, governance-led design partner program |
 | Monetization | Tier pricing (Starter €79, Growth €249, Agency €699, Enterprise €1500+) |
 | Hiring | Founding eng team (4 FTE), 1 compliance counsel, 1 design partner success |
 
 **Where the pilot leaves gaps**: 
 - Single-DB multi-tenancy (RLS only, no schema-per-tenant)
-- No agent runtime, no graph DB
+- Agent runtime nur für Ingest + Routing — kein autonomer Remediation- oder Approval-Driver-Agent, keine Graph-DB
 - Token-usage payload not yet piped end-to-end
 - No JIRA/GitHub remediation executor (only manual flow)
 

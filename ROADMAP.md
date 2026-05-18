@@ -4,6 +4,13 @@
 
 > **Scope-Disziplin:** Was im Kern liegt und was bewusst draußen bleibt, ist in [`docs/PRODUCT_FOCUS.md`](docs/PRODUCT_FOCUS.md) festgelegt. Phase A (siehe unten) ist Voraussetzung für Phase 2–4.
 
+> **Reifegrad-Quelle:** Die Status-Icons (✅ / [x] / [ ]) in diesem Dokument
+> markieren Entwicklungs-Meilensteine, **nicht** audit-festen Reifegrad. Für
+> jede externe Kommunikation (Website, Deck, Sales) gilt
+> [`docs/runtime-status-matrix.md`](docs/runtime-status-matrix.md) als
+> verbindliche Quelle. Ein [x] hier bedeutet „Code existiert", nicht
+> automatisch 🟢 produktiv.
+
 ---
 
 ## Phase A — Runtime härten (aktuell)

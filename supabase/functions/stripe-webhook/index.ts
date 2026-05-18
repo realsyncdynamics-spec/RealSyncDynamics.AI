@@ -501,6 +501,14 @@ async function reportPurchaseToAdPlatforms(
   const amount = session.amount_total ?? 0;
   if (amount <= 0) return;
 
+  // Meta erwartet `fbc` im Format `fb.<subdomain>.<timestamp>.<fbclid>` — wenn
+  // wir das auf der Landing-Page nicht erfasst haben, rekonstruieren wir es
+  // hier aus dem fbclid in den Session-Metadata. Stripe-Session-Created-Time
+  // ist näher am Click als jetzt.
+  const fbclid = session.metadata?.fbclid;
+  const sessionCreatedSec = session.created ?? Math.floor(Date.now() / 1000);
+  const fbc = fbclid ? `fb.1.${sessionCreatedSec * 1000}.${fbclid}` : undefined;
+
   try {
     await reportServerConversion({
       eventName: session.mode === 'subscription' ? 'Subscribe' : 'Purchase',
@@ -515,6 +523,7 @@ async function reportPurchaseToAdPlatforms(
         country: session.customer_details?.address?.country ?? undefined,
         clientIp: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim(),
         userAgent: req.headers.get('user-agent') ?? undefined,
+        fbc,
       },
       sourceUrl: session.success_url ?? undefined,
     });

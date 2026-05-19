@@ -16,6 +16,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
+import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -267,13 +268,30 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
     });
   }
   if (!/impressum|imprint/i.test(html)) {
-    issues.push({
-      id: 'no_imprint_link',
-      severity: 'critical',
-      title: 'Kein Impressum-Link gefunden',
-      detail: 'Impressum ist nach § 5 TMG / § 18 MStV Pflicht für gewerbliche Websites in Deutschland.',
-      paragraph_ref: '§ 5 TMG / § 18 MStV',
-    });
+    // § 5 TMG / § 18 MStV sind deutsches Recht — gilt nur für Anbieter in
+    // DE/AT/CH (oder mit DE-Niederlassung). Bei ausländischen Sites
+    // melden wir den fehlenden Link informativ, ohne den Compliance-Score
+    // zu drücken und ohne abmahnbare Schein-Aussage. Für extraterritorial
+    // wirkendes EU-Recht (DSGVO Art. 13) bleiben die Privacy-Checks
+    // unverändert hart.
+    const deJurisdiction = isLikelyGermanJurisdiction(url, html);
+    issues.push(
+      deJurisdiction
+        ? {
+            id: 'no_imprint_link',
+            severity: 'critical',
+            title: 'Kein Impressum-Link gefunden',
+            detail: 'Impressum ist nach § 5 TMG / § 18 MStV Pflicht für gewerbliche Websites in Deutschland.',
+            paragraph_ref: '§ 5 TMG / § 18 MStV',
+          }
+        : {
+            id: 'no_imprint_link_non_de',
+            severity: 'info',
+            title: 'Kein Impressum-Link (DE-spezifisch)',
+            detail: 'Die Site weist keine deutschen Anbieter-Signale auf (TLD, lang-Attribut, Rechtsform). § 5 TMG / § 18 MStV gilt nur für Anbieter in Deutschland — dieser Befund ist daher informativ.',
+            paragraph_ref: '§ 5 TMG / § 18 MStV',
+          },
+    );
   }
 
   // ── Tracker ohne sichtbares Consent-Banner ──

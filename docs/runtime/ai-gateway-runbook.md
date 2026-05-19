@@ -157,9 +157,9 @@ Rollback path: re-deploy the previous known-good `ai-gateway/index.ts` via `supa
 
 ---
 
-## Verifying the fallback chain is wired (post-#344)
+## Verifying the fallback chain is wired (post-#344 / #346)
 
-After PR #344 merges + Vault key is set, this single curl tells you the full picture:
+After PR #344 (Anthropic) and optionally #346 (OpenAI as 2nd step) merge + Vault keys are set, this single curl tells you the full picture:
 
 ```bash
 curl -X POST https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/ai-gateway \
@@ -167,17 +167,47 @@ curl -X POST https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/ai-gateway \
   -d '{"op":"health"}' | jq
 ```
 
-Healthy fallback-active response:
+Healthy chain response (LM Studio down, both cloud links healthy):
 
 ```json
 {
   "ok":       true,
   "primary":  { "ok": false, "error": "dns error: ..." },
-  "fallback": { "ok": true,  "models": ["claude-haiku-4-5-20251001"] }
+  "fallback": [
+    { "id": "anthropic", "health": { "ok": true, "models": ["claude-haiku-4-5-20251001"] } },
+    { "id": "openai",    "health": { "ok": true, "models": ["gpt-4.1-mini", "text-embedding-3-small"] } }
+  ]
 }
 ```
 
-Reading: `primary` (LM Studio) is down. `fallback` (Anthropic) is up. `ok:true` overall because the gateway has at least one working provider.
+Reading:
+- `primary` (LM Studio) is down.
+- `fallback[]` is **the chain in attempt order**. Anthropic is tried first; if it also fails with a transport/5xx/rate-limit error, OpenAI is tried next.
+- `ok:true` overall because at least one provider can answer.
+
+Chain shapes per Vault config:
+
+| `anthropic_api_key` | `openai_api_key` | `fallback[]` shape | Behavior |
+|---|---|---|---|
+| set | set | `[anthropic, openai]` | Full chain — Chat survives both LM Studio + Anthropic outages |
+| set | unset | `[anthropic]` | EU-friendly default — Chat survives LM Studio outages only |
+| unset | set | `[openai]` | OpenAI-only fallback (unusual; #346 supports it) |
+| unset | unset | `[]` | Pre-#344 behavior — LM Studio errors propagate |
+
+---
+
+## Setting the OpenAI key (optional, post-#346)
+
+Only if you want the second fallback step. SQL:
+
+```sql
+INSERT INTO vault.secrets (name, secret)
+VALUES ('openai_api_key', 'sk-proj-...');
+```
+
+Default model: `gpt-4.1-mini` (override via env `AI_GATEWAY_OPENAI_MODEL`). For embeddings: `text-embedding-3-small` (override `AI_GATEWAY_OPENAI_EMBEDDING_MODEL`).
+
+**EU-data-locality note:** Anthropic offers stricter EU region pinning than OpenAI. The chain tries Anthropic first deliberately. Operators with the strictest EU-only constraints should leave `openai_api_key` unset.
 
 ---
 
@@ -206,12 +236,19 @@ ServerAiGateway.generate(req)                ← _shared/aiGateway/router.ts
    ├── LM Studio (primary)
    │     ├── ok       → return text
    │     └── failure  → isTransportLevelFailure(err)?
-   │                       ├── yes → ▼
+   │                       ├── yes → walk fallbackChain[]
    │                       └── no  → throw (4xx, validation, etc.)
    │
-   └── Anthropic Messages API (fallback)      ← only if anthropic_api_key in Vault
-         ├── ok       → return text with provider='anthropic'
-         └── failure  → throw to caller
+   └── fallbackChain[] in order:               ← built from Vault keys
+         │
+         ├── Anthropic Messages API           ← only if anthropic_api_key
+         │     ├── ok       → return provider='anthropic'
+         │     └── 5xx/429  → try next link
+         │     └── 4xx      → throw (don't continue)
+         │
+         └── OpenAI /v1/chat/completions      ← only if openai_api_key (#346)
+               ├── ok       → return provider='openai'
+               └── failure  → throw last error to caller
 ```
 
 If either step throws → frontend renders:
@@ -225,9 +262,10 @@ If either step throws → frontend renders:
 ## Cost model
 
 - **LM Studio**: $0 per request (self-hosted on Hostinger VPS, EU-lokal)
-- **Anthropic fallback** (claude-haiku-4-5): ≈ $0.80/MTok input · $4/MTok output. A typical chip-question is ~200 input + 300 output tokens = **~$0.0014 per question**. 10,000 fallback-requests/month ≈ €13/mo.
+- **Anthropic fallback** (claude-haiku-4-5): ≈ $0.80/MTok input · $4/MTok output. A typical chip-question (~200 input + 300 output tokens) ≈ **$0.0014 per question**. 10,000 fallback-requests/month ≈ €13/mo.
+- **OpenAI second fallback** (gpt-4.1-mini, #346): ≈ $0.40/MTok input · $1.60/MTok output. Same chip-question ≈ **$0.00056 per question**. Cheaper than Anthropic, but lower EU-locality guarantees — that's why it's the SECOND step, not the first.
 
-The fallback only fires when primary fails, so the steady-state cost is dominated by LM Studio (free). Anthropic is the safety net, not the daily driver.
+The chain only fires when LM Studio fails, so steady-state cost is dominated by LM Studio (free). Cloud providers are the safety net, not the daily driver. If Anthropic AND OpenAI BOTH have to be hit on the same request (very rare — would require LM Studio down AND Anthropic 5xx within the same second), cost is additive but bounded by per-call timeouts.
 
 ---
 

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
@@ -25,6 +25,7 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
   starter: ShieldCheck,
   growth: Zap,
   agency: Globe,
+  scale: Briefcase,
   enterprise: Building2,
 };
 

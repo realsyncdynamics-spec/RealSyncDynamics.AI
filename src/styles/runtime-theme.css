@@ -1,0 +1,105 @@
+/* Runtime-Theme — Leitstand-spezifische Visual Tokens und Keyframes.
+ *
+ * Die Basis-Tokens (obsidian, titanium, security, ai-cyan) leben in
+ * src/index.css als @theme-Block. Hier ergänzen wir nur:
+ *  - die Live-Dot-Animation (pulse für „läuft gerade")
+ *  - die Scanline-Animation (subtiles Leitstand-Bewegungsgefühl)
+ *  - Grid-Background-Utility (cyber/industrial Hintergrund)
+ *  - KPI-Card-Corner-Accent (Ecken-Marker für Dashboard-Karten)
+ *
+ * Importiert via src/main.tsx -> aktiviert die Utilities global.
+ * Respektiert prefers-reduced-motion (in src/index.css zentral geregelt).
+ */
+
+@keyframes rt-live-dot {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(1.18); }
+}
+
+@keyframes rt-scanline {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 0.45; }
+  90%  { opacity: 0.45; }
+  100% { transform: translateY(100%);  opacity: 0; }
+}
+
+@keyframes rt-stream-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.rt-live-dot {
+  animation: rt-live-dot 1.4s ease-in-out infinite;
+}
+
+.rt-stream-row {
+  animation: rt-stream-fade 220ms ease-out;
+}
+
+/* Scanline-Overlay — als ::after eingesetzt, GPU-only transform. */
+.rt-scanline {
+  position: relative;
+  overflow: hidden;
+}
+.rt-scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 196, 179, 0)    0%,
+    rgba(20, 196, 179, 0.12) 50%,
+    rgba(20, 196, 179, 0)    100%
+  );
+  height: 36%;
+  animation: rt-scanline 7.5s linear infinite;
+}
+
+/* Cyber/Industrial Grid Background — leichte Linien, kein visueller Lärm. */
+.rt-grid-bg {
+  background-image:
+    linear-gradient(rgba(226, 226, 226, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 226, 226, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+}
+
+.rt-grid-bg-dense {
+  background-image:
+    linear-gradient(rgba(20, 196, 179, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 196, 179, 0.06) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: -1px -1px;
+}
+
+/* KPI-Card-Corner-Accent — Eckenmarker oben links und unten rechts. */
+.rt-corner-frame {
+  position: relative;
+}
+.rt-corner-frame::before,
+.rt-corner-frame::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--color-ai-cyan-500);
+  border-style: solid;
+}
+.rt-corner-frame::before {
+  top: -1px; left: -1px;
+  border-width: 1px 0 0 1px;
+}
+.rt-corner-frame::after {
+  bottom: -1px; right: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+/* Schmaler Telemetrie-Balken — z. B. Header-Ticker. */
+.rt-telemetry-track {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(20, 196, 179, 0.16) 0 2px,
+    transparent              2px 6px
+  );
+}

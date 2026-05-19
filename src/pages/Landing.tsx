@@ -23,6 +23,7 @@ import { OutcomeBulletsSection } from '../components/sections/OutcomeBulletsSect
 import { PersonaCardsSection } from '../components/sections/PersonaCardsSection';
 import { LiveScanCanvasSection } from '../components/sections/LiveScanCanvasSection';
 import { GlobalRuntimeFeedSection } from '../components/sections/GlobalRuntimeFeedSection';
+import { LeitstandPreviewSection } from '../components/sections/LeitstandPreviewSection';
 import { AiActSequenceSection } from '../components/sections/AiActSequenceSection';
 import { GovernanceAgentsSection } from '../components/sections/GovernanceAgentsSection';
 import { ComparisonTableSection } from '../components/sections/ComparisonTableSection';
@@ -39,6 +40,7 @@ export function Landing() {
       <PersonaCardsSection />
       <LiveScanCanvasSection />
       <GlobalRuntimeFeedSection />
+      <LeitstandPreviewSection />
       <AiActSequenceSection />
       <GovernanceAgentsSection />
       <ComparisonTableSection />

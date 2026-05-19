@@ -46,6 +46,7 @@ import { BusinessDashboard } from './pages/BusinessDashboard';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 // CreatorDashboard ist auth-gated → lazy
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
+const Leitstand        = lazy(() => import('./pages/Leitstand').then((m) => ({ default: m.Leitstand })));
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
@@ -203,6 +204,7 @@ function RoutesWithTracking() {
       {/* Public */}
       <Route path="/" element={<Landing />} />
       <Route path="/runtime"    element={<RuntimePage />} />
+      <Route path="/leitstand"  element={<Leitstand />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<GovernancePage />} />
       <Route path="/agents"     element={<AgentsPage />} />

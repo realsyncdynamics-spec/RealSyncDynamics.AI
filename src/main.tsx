@@ -2,6 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './styles/runtime-theme.css';
 import { validateGeminiConfig } from './lib/gemini.ts';
 import { initSentry } from './lib/sentry.ts';
 import { captureAffiliateRef } from './lib/affiliate.ts';

@@ -345,6 +345,18 @@ function RoutesWithTracking() {
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/busseld-rechner" element={<BusseldRechner />} />
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
+      {/* Bußgeld-Rechner: aliases for the obvious correct-spelling URLs.
+          The original route is /busseld-rechner (typo: "busseld" instead
+          of "bußgeld"). Visitors who google "DSGVO Bußgeldrechner" land
+          on the no-hyphen or correctly-spelled variants, so route them
+          all to the same component. SEO canonical stays /busseld-rechner
+          via seo.ts to avoid duplicate-content downgrades. */}
+      <Route path="/bussgeld-rechner"  element={<BusseldRechner />} />
+      <Route path="/bussgeldrechner"   element={<BusseldRechner />} />
+      {/* Meldepflicht-Timer: bare /meldepflicht-timer was advertised in
+          FAQ but only mounted at /datenpanne-meldung + /tools/meldepflicht-timer.
+          Alias the bare path so the FAQ-described route works. */}
+      <Route path="/meldepflicht-timer" element={<MeldepflichtTimer />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />

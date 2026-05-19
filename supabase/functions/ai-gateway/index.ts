@@ -196,8 +196,17 @@ async function buildGateway(): Promise<ServerAiGateway | Response> {
   // LM-Studio transport failures (DNS error, 5xx, timeout). Without the
   // key the router behaves exactly as before (no fallback, errors
   // propagate).
+  //
+  // Vault-key name lookup: try BOTH uppercase ('ANTHROPIC_API_KEY' — the
+  // env-var-style name used by ai-act-classify) AND lowercase
+  // ('anthropic_api_key' — the convention in _shared/providers.ts). This
+  // dual lookup is intentional: existing deployments may have the secret
+  // under either name. Future deploys should use uppercase to match the
+  // env-var convention from ai-act-classify.
   const anthropicKey =
-    Deno.env.get('ANTHROPIC_API_KEY') ?? (await readVaultSecret('anthropic_api_key'));
+    Deno.env.get('ANTHROPIC_API_KEY')
+    ?? (await readVaultSecret('ANTHROPIC_API_KEY'))
+    ?? (await readVaultSecret('anthropic_api_key'));
   return new ServerAiGateway({
     lmStudioBaseUrl: baseUrl,
     lmStudioApiKey:  Deno.env.get('LM_STUDIO_API_KEY') ?? 'lm-studio',

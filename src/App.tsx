@@ -146,6 +146,7 @@ const GovernanceCostTrackingView = lazy(() => import('./features/governance/Cost
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
+const RuntimeVvtView            = lazy(() => import('./features/governance/vvt/RuntimeVvtView').then((m) => ({ default: m.RuntimeVvtView })));
 const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
 const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
@@ -399,6 +400,7 @@ function RoutesWithTracking() {
       <Route path="/governance/remediation" element={<RemediationPlansView />} />
       <Route path="/governance/remediation/:planId" element={<RemediationPlanDetailView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
+      <Route path="/governance/vvt" element={<RuntimeVvtView />} />
       {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
           NOT linked from the public navbar; tenants reach it from the
           authenticated dashboard or directly via URL. */}

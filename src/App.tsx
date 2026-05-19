@@ -112,6 +112,8 @@ import { CookieCompliance } from './pages/seo/CookieCompliance';
 // Public Legal-Pages bleiben eager (SEO + small bundle)
 import { PricingPage } from './features/billing/PricingPage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
+import { CheckoutSuccessPage } from './features/billing/CheckoutSuccessPage';
+import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
@@ -374,6 +376,8 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<UsageView />} />
       <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+                <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
                 <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       <Route path="/tenant/invites" element={<InvitesView />} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />

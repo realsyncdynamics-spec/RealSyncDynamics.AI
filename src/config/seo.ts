@@ -335,7 +335,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/dataguard-alternative': {
-    title: 'DataGuard Alternative — automatisierte Compliance ab 49€ | RealSyncDynamics.AI',
+    title: 'DataGuard Alternative — automatisierte Compliance ab 79 € | RealSyncDynamics.AI',
     description:
       'Günstigere DataGuard Alternative mit automatischem Website-Scan, Consent-Timing und AI-Act-Compliance. Kein Setup, kein Berater erforderlich.',
     canonical: `${SITE_URL}/dataguard-alternative`,
@@ -347,7 +347,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/onetrust-alternative': {
     title: 'OneTrust Alternative für KMU und Agenturen | RealSyncDynamics.AI',
     description:
-      'OneTrust ist für Enterprise. RealSyncDynamics.AI ist für KMU: automatischer DSGVO-Scan, Consent-Management und AI-Act-Inventar — ab 49€/Monat.',
+      'OneTrust ist für Enterprise. RealSyncDynamics.AI ist für KMU: automatischer DSGVO-Scan, Consent-Management und AI-Act-Inventar — ab 79 €/Monat.',
     canonical: `${SITE_URL}/onetrust-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

@@ -1,0 +1,37 @@
+# RealSync Agent Runtime — kontrollierter Gateway-MVP.
+#
+# Standardmäßig nicht öffentlich exponiert. Der Gateway sitzt hinter
+# einem internen Docker-Netz; Frontend/Backend rufen ihn via
+# Service-Token auf. Traefik-Labels sind als Vorbereitung enthalten,
+# aber bewusst auskommentiert.
+
+services:
+  agent-runtime:
+    build: .
+    image: realsync-agent-runtime:0.1.0
+    container_name: realsync-agent-runtime
+    restart: unless-stopped
+    expose:
+      - "8787"
+    # Kein "ports:"-Mapping per Default — internes Netz only.
+    # Aktivieren nur, wenn explizit gewünscht und durch Reverse-Proxy gesichert.
+    environment:
+      NODE_ENV: production
+      PORT: 8787
+      AGENT_RUNTIME_API_TOKEN: ${AGENT_RUNTIME_API_TOKEN:?AGENT_RUNTIME_API_TOKEN must be set}
+      OLLAMA_URL: http://ollama:11434
+      OPENCLAW_URL: http://openclaw:3000
+      N8N_URL: http://n8n:5678
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    # Traefik-Anbindung — bewusst auskommentiert. Aktivieren nur,
+    # wenn der Reverse-Proxy zusätzlichen Header-/IP-Schutz erzwingt.
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.agent-runtime.rule=Host(`runtime.realsyncdynamicsai.de`)"
+    #   - "traefik.http.routers.agent-runtime.entrypoints=websecure"
+    #   - "traefik.http.routers.agent-runtime.tls.certresolver=letsencrypt"
+    #   - "traefik.http.services.agent-runtime.loadbalancer.server.port=8787"

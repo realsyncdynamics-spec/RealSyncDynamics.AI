@@ -205,6 +205,107 @@ describe('AiGateway', () => {
     // Anthropic adapter is NOT consulted at all for embed.
     expect(anthropic.generate).not.toHaveBeenCalled();
   });
+
+  // ── Fallback CHAIN (Anthropic → OpenAI) ───────────────────────────
+
+  function openaiStub(over: { generate?: AiProviderAdapter['generate']; throws?: string } = {}): AiProviderAdapter {
+    const gen: AiProviderAdapter['generate'] = over.generate ?? (async (req) => {
+      if (over.throws) throw new Error(over.throws);
+      return {
+        provider: 'openai' as const,
+        model:    'gpt-4.1-mini',
+        profile:  req.model_profile,
+        output:   'openai-output',
+        trace_id: req.trace_id ?? 't',
+        latency_ms: 1,
+      };
+    });
+    return {
+      id: 'openai',
+      health:      vi.fn(async () => ({ ok: true, models: ['gpt-4.1-mini'] })),
+      generate:    vi.fn(gen),
+      extractJson: vi.fn(async <T,>(req: AiGatewayRequest): Promise<AiGatewayResponse<T>> => ({
+        provider: 'openai' as const,
+        model:    'gpt-4.1-mini',
+        profile:  req.model_profile,
+        output:   ({ ok: true } as unknown) as T,
+        trace_id: req.trace_id ?? 't',
+        latency_ms: 1,
+      })) as unknown as AiProviderAdapter['extractJson'],
+      embed: vi.fn(async () => { throw new Error('OpenAI embed stub not impl'); }),
+    };
+  }
+
+  it('reports the chain order via fallbackChainIds()', () => {
+    const gateway = new AiGateway({
+      lmStudio: stubAdapter(),
+      anthropic: anthropicStub(),
+      openai: openaiStub(),
+    });
+    expect(gateway.fallbackChainIds()).toEqual(['anthropic', 'openai']);
+  });
+
+  it('chain stops at first OK — Anthropic answers, OpenAI not consulted', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub();
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const result = await gateway.generate(chatRequest());
+
+    expect(result.provider).toBe('anthropic');
+    expect(anthropic.generate).toHaveBeenCalledTimes(1);
+    expect(openai.generate).not.toHaveBeenCalled();
+  });
+
+  it('chain advances to OpenAI when Anthropic also fails with transport error', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('Anthropic HTTP 503'); }) });
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const result = await gateway.generate(chatRequest());
+
+    expect(result.provider).toBe('openai');
+    expect(anthropic.generate).toHaveBeenCalledTimes(1);
+    expect(openai.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it('all chain links fail → last error propagates', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('Anthropic HTTP 503'); }) });
+    const openai = openaiStub({ throws: 'OpenAI HTTP 503' });
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    await expect(gateway.generate(chatRequest())).rejects.toThrow(/OpenAI HTTP 503/);
+  });
+
+  it('chain stops if a link throws a 4xx-shaped error (no continue)', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    // Anthropic returns 401 (invalid key) — this is NOT a transport
+    // error, so the chain should propagate it without trying OpenAI.
+    const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('invalid x-api-key'); }) });
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    await expect(gateway.generate(chatRequest())).rejects.toThrow(/invalid x-api-key/);
+    expect(openai.generate).not.toHaveBeenCalled();
+  });
+
+  it('works with only OpenAI configured (no Anthropic)', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, openai });
+    expect(gateway.fallbackChainIds()).toEqual(['openai']);
+    const result = await gateway.generate(chatRequest());
+    expect(result.provider).toBe('openai');
+  });
 });
 
 // ── isTransportLevelFailure pure-fn coverage ──────────────────────

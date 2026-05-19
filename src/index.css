@@ -95,6 +95,19 @@
   --color-silver-700: #4a4f57;
   --color-silver-900: #1a1d22;
 
+  /* Hard-Edge Industrial — kill all rounded-corner utilities except
+     -full (legitim für Kreise: Avatare, Status-Dots, Ping-Animationen).
+     CLAUDE.md schreibt „keine abgerundeten Ecken" vor. Overriden hier
+     in @theme zwingt Tailwind, alle rounded-{xs..3xl} auf 0 zu mappen. */
+  --radius-xs:  0;
+  --radius-sm:  0;
+  --radius-md:  0;
+  --radius-lg:  0;
+  --radius-xl:  0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+
   /* Animations — subtle, performant, GPU-accelerated where possible */
   --animate-glow-pulse:    glow-pulse 2.6s ease-in-out infinite;
   --animate-brass-shimmer: brass-shimmer 6s linear infinite;

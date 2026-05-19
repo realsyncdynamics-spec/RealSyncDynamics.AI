@@ -181,37 +181,52 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-// Anthropic fallback model — kept here (not in config.ts) because config.ts
+// Cloud fallback models — kept here (not in config.ts) because config.ts
 // is browser-shared and must not hint at a default cloud model.
 const ANTHROPIC_FALLBACK_MODEL =
   Deno.env.get('AI_GATEWAY_ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001';
+const OPENAI_FALLBACK_MODEL =
+  Deno.env.get('AI_GATEWAY_OPENAI_MODEL') ?? 'gpt-4.1-mini';
+const OPENAI_EMBEDDING_MODEL =
+  Deno.env.get('AI_GATEWAY_OPENAI_EMBEDDING_MODEL') ?? 'text-embedding-3-small';
 
 async function buildGateway(): Promise<ServerAiGateway | Response> {
   const baseUrl = Deno.env.get('LM_STUDIO_BASE_URL');
   if (!baseUrl) {
     return jsonError(503, 'LM_STUDIO_NOT_CONFIGURED', 'LM_STUDIO_BASE_URL not set');
   }
-  // Cloud fallback: optional. If ANTHROPIC_API_KEY is in Vault or env,
-  // we wire the AnthropicAdapter so the router can recover from
-  // LM-Studio transport failures (DNS error, 5xx, timeout). Without the
-  // key the router behaves exactly as before (no fallback, errors
+  // Cloud fallback chain: LM Studio → Anthropic → OpenAI. Each step is
+  // wired ONLY when its API key is available (env or Vault). Operators
+  // with strict EU-locality requirements may set ANTHROPIC_API_KEY but
+  // omit OPENAI_API_KEY — the chain shortens accordingly. Without any
+  // key, the gateway behaves as in pre-#344 (LM Studio only, errors
   // propagate).
   //
-  // Vault-key name lookup: try BOTH uppercase ('ANTHROPIC_API_KEY' — the
-  // env-var-style name used by ai-act-classify) AND lowercase
-  // ('anthropic_api_key' — the convention in _shared/providers.ts). This
-  // dual lookup is intentional: existing deployments may have the secret
-  // under either name. Future deploys should use uppercase to match the
-  // env-var convention from ai-act-classify.
-  const anthropicKey =
-    Deno.env.get('ANTHROPIC_API_KEY')
-    ?? (await readVaultSecret('ANTHROPIC_API_KEY'))
-    ?? (await readVaultSecret('anthropic_api_key'));
+  // Vault-key name lookup: try BOTH uppercase (env-var-style, used by
+  // ai-act-classify) AND lowercase (convention in _shared/providers.ts).
+  // Existing deployments may store the secret under either name.
+  const [anthropicKey, openaiKey] = await Promise.all([
+    (async () =>
+      Deno.env.get('ANTHROPIC_API_KEY')
+      ?? (await readVaultSecret('ANTHROPIC_API_KEY'))
+      ?? (await readVaultSecret('anthropic_api_key')))(),
+    (async () =>
+      Deno.env.get('OPENAI_API_KEY')
+      ?? (await readVaultSecret('OPENAI_API_KEY'))
+      ?? (await readVaultSecret('openai_api_key')))(),
+  ]);
   return new ServerAiGateway({
     lmStudioBaseUrl: baseUrl,
     lmStudioApiKey:  Deno.env.get('LM_STUDIO_API_KEY') ?? 'lm-studio',
     anthropicConfig: anthropicKey
       ? { apiKey: anthropicKey, model: ANTHROPIC_FALLBACK_MODEL }
+      : undefined,
+    openaiConfig: openaiKey
+      ? {
+          apiKey:         openaiKey,
+          model:          OPENAI_FALLBACK_MODEL,
+          embeddingModel: OPENAI_EMBEDDING_MODEL,
+        }
       : undefined,
   });
 }

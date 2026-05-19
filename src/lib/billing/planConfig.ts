@@ -63,6 +63,15 @@ export const PLAN_CONFIG: Record<string, PlanConfigEntry> = {
     stripePriceId: env.VITE_STRIPE_PRICE_AGENCY ?? null,
     mode: 'inquiry',
   },
+  scale: {
+    price: 1999,
+    interval: 'month',
+    stripePriceId: env.VITE_STRIPE_PRICE_SCALE ?? null,
+    // 'inquiry' until the 50-tenant quota is enforced backend-side AND a
+    // Stripe price ID exists. The pricing-page CTA routes interested
+    // customers to /contact-sales for manual onboarding (see pricing.ts).
+    mode: 'inquiry',
+  },
   enterprise: {
     price: null,
     interval: 'month',

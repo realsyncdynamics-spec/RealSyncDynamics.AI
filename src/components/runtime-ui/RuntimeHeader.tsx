@@ -1,5 +1,5 @@
-import { Activity } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { RealSyncMark } from '../branding/RealSyncLogo';
 import { RuntimeStatusBadge } from './RuntimeStatusBadge';
 
 export interface RuntimeHeaderProps {
@@ -16,8 +16,8 @@ export function RuntimeHeader({ title, subtitle, state, actions }: RuntimeHeader
   return (
     <header className="border-b border-titanium-800 bg-obsidian-900/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
-        <div className="border border-titanium-800 bg-obsidian-950 p-2">
-          <Activity className="h-4 w-4 text-ai-cyan-400" />
+        <div className="flex items-center justify-center border border-titanium-800 bg-obsidian-950 p-1.5">
+          <RealSyncMark size={22} />
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="font-display text-lg font-bold tracking-tight text-titanium-50 sm:text-xl">

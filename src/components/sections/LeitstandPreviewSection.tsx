@@ -6,6 +6,7 @@ import {
   RuntimeSectionHeader,
   RuntimeTelemetryBar,
 } from '../runtime-ui';
+import { RealSyncLogo } from '../branding/RealSyncLogo';
 import { RUNTIME_DEMO_OVERVIEW } from '../../lib/runtime/runtimeDemoData';
 
 /**
@@ -24,6 +25,9 @@ export function LeitstandPreviewSection() {
   return (
     <section className="border-y border-titanium-900 bg-obsidian-950 py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mb-6 hidden sm:block">
+          <RealSyncLogo variant="full" size={28} />
+        </div>
         <RuntimeSectionHeader
           eyebrow="Leitstand · Preview"
           title="So sieht die Governance-Runtime in Betrieb aus."

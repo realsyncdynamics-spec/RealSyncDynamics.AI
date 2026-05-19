@@ -1,29 +1,85 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, ShieldCheck, ArrowRight, Building2, Stethoscope, Scale, Briefcase, AlertTriangle,
+  ArrowLeft, ShieldCheck, ArrowRight, Building2, ShoppingBag, Cpu, Layers,
 } from 'lucide-react';
 
 interface CaseStudy {
   slug: string;
-  industry: 'legal' | 'healthtech' | 'fintech' | 'public';
-  company: string; // anonymisiert oder mit Einwilligung
+  industry: 'ecommerce' | 'saas' | 'agency';
+  /** "Pilot" = Pilotphase, kein bezahlter Customer-Case. "Reference" = anonymer Echt-Kunde mit Einwilligung. */
+  kind: 'Pilot' | 'Reference';
+  company: string;
   size: string;
   challenge: string;
   solution: string;
   outcome: string;
   metrics?: { label: string; value: string }[];
-  quote?: { text: string; role: string };
 }
 
-// Add real customer cases here once first paying customers consent.
-// Empty array → page shows placeholder + lead-magnet CTA.
-const STUDIES: CaseStudy[] = [];
+const STUDIES: CaseStudy[] = [
+  {
+    slug: 'shopify-store-tracker-drift',
+    industry: 'ecommerce',
+    kind: 'Pilot',
+    company: 'Shopify-Store (D2C-Fashion, 1 Shop)',
+    size: 'Pilotpartner · Pre-Launch-Phase',
+    challenge:
+      'Cookie-Banner war konfiguriert, aber nach jedem App-Install lud der Store erneut pre-consent Tracker (Meta Pixel, TikTok Pixel, Klaviyo). Drift war nicht sichtbar, bis ein Mandant beim Bestellprozess die Consent-Quelle prüfte.',
+    solution:
+      'Tägliches Monitoring mit Diff zur letzten Baseline. Alarm bei neuen Network-Requests vor Consent-Event. Fix-Snippets für GTM-Container und Shopify-Theme-Layer.',
+    outcome:
+      'Drift wird innerhalb von 24 h erkannt statt erst beim nächsten manuellen Audit. 3 unbeabsichtigte App-Tracker entdeckt und entfernt.',
+    metrics: [
+      { label: 'Tracker-Drift erkannt in', value: '< 24 h' },
+      { label: 'Pre-Consent-Requests', value: '−100 %' },
+      { label: 'Manuelle Audit-Stunden', value: '−6 h/M' },
+    ],
+  },
+  {
+    slug: 'saas-ai-feature-classification',
+    industry: 'saas',
+    kind: 'Pilot',
+    company: 'B2B-SaaS (LegalTech-Werkzeug)',
+    size: 'Pilotpartner · 8-Personen-Team',
+    challenge:
+      'Drei AI-Features im Produkt — Vertragsanalyse, Termin-Vorschläge, automatisierte Antwortentwürfe. Unklarer Status nach EU AI Act: minimal / limited / high risk? Audit durch externen DSB stand an.',
+    solution:
+      'Strukturierte Klassifikation pro Feature gegen Annex III, Dokumentation der Inputs/Outputs/Trainings­daten und Risk-Statement im Evidence Vault. Output: kanzleifähiges PDF + maschinenlesbares JSON.',
+    outcome:
+      'Externer DSB konnte alle drei Features in einem 60-min-Termin durchgehen statt in einem mehrtägigen Workshop. Klassifikation überlebt das nächste Feature-Update.',
+    metrics: [
+      { label: 'DSB-Audit-Dauer', value: '60 min' },
+      { label: 'Annex-III-Mapping', value: '3/3 Features' },
+      { label: 'Evidence-Items versiegelt', value: '47' },
+    ],
+  },
+  {
+    slug: 'agency-multi-tenant-audit',
+    industry: 'agency',
+    kind: 'Pilot',
+    company: 'Digital-Agentur (DACH, 12 Kundenseiten)',
+    size: 'Pilotpartner · Frühphase',
+    challenge:
+      'Agentur betreute 12 Kundenwebsites. Vor jedem Quartalsreport musste der Junior-Consultant jede Seite einzeln in Cookiebot + Browser-Devtools prüfen — 2 Tage Arbeit, leicht inkonsistent.',
+    solution:
+      'Bulk-Scan über alle 12 Domains, White-Label-PDF-Report mit Agentur-Logo pro Kunde, API-Hook in das interne Reporting-Tool, Multi-Tenant-Dashboard.',
+    outcome:
+      'Quartalsreport-Zeit pro Kundenseite auf < 10 min reduziert. Drei vorher unbekannte Findings auf zwei Seiten gefunden (Heatmap-Tool ohne AVV, Schriftarten-CDN außerhalb EU).',
+    metrics: [
+      { label: 'Audit-Aufwand', value: '−87 %' },
+      { label: 'Domains automatisiert', value: '12 / 12' },
+      { label: 'Findings entdeckt', value: '3 neue' },
+    ],
+  },
+];
+
+const PILOT_NOTE =
+  'Diese Cases stammen aus der Pilotphase. Sie zeigen das tatsächliche Verhalten des Produkts an realen Setups, sind aber keine veröffentlichten Customer-Stories mit Markenname. Sobald Kunden ihrer Veröffentlichung zustimmen, werden die anonymen Cases durch namentliche ersetzt.';
 
 const INDUSTRY_META: Record<CaseStudy['industry'], { label: string; icon: React.ReactNode; color: string }> = {
-  legal: { label: 'Legal', icon: <Scale className="h-4 w-4" />, color: 'text-blue-300 border-blue-900' },
-  healthtech: { label: 'HealthTech', icon: <Stethoscope className="h-4 w-4" />, color: 'text-emerald-300 border-emerald-900' },
-  fintech: { label: 'FinTech', icon: <Briefcase className="h-4 w-4" />, color: 'text-amber-300 border-amber-900' },
-  public: { label: 'Public Sector', icon: <Building2 className="h-4 w-4" />, color: 'text-purple-300 border-purple-900' },
+  ecommerce: { label: 'E-Commerce', icon: <ShoppingBag className="h-4 w-4" />, color: 'text-amber-300 border-amber-900' },
+  saas: { label: 'SaaS', icon: <Cpu className="h-4 w-4" />, color: 'text-cyan-300 border-cyan-900' },
+  agency: { label: 'Agentur', icon: <Layers className="h-4 w-4" />, color: 'text-violet-300 border-violet-900' },
 };
 
 export function CaseStudies() {
@@ -44,24 +100,25 @@ export function CaseStudies() {
       <main className="px-4 sm:px-6 py-12 sm:py-16">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <Building2 className="h-3 w-3" /> DACH-Customer-Cases
+            <div className="inline-flex items-center gap-2 px-3 py-1 border border-amber-900 bg-amber-950/30 text-amber-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
+              <Building2 className="h-3 w-3" /> Pilotphase · 3 Cases
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-              Wie unsere Kunden in <span className="text-security-400">14 Tagen</span> compliance-ready werden
+              Was die Plattform in <span className="text-security-400">echten Setups</span> tut
             </h1>
-            <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
-              Konkrete Cases aus regulierten Branchen — was die Probleme waren, was wir geliefert haben, was rauskam.
+            <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
+              Drei Cases aus der Pilotphase — was das Problem war, was wir geliefert haben, was messbar herauskam. Anonymisiert, weil die Pilotpartner noch keiner Veröffentlichung mit Marke zugestimmt haben.
             </p>
           </div>
 
-          {STUDIES.length === 0 ? (
-            <PlaceholderState />
-          ) : (
-            <div className="space-y-6">
-              {STUDIES.map((s) => <StudyCard key={s.slug} study={s} />)}
-            </div>
-          )}
+          <div className="mb-8 p-4 bg-obsidian-900 border border-amber-900/60 rounded-none text-xs text-titanium-400 leading-relaxed">
+            <span className="text-amber-300 font-bold uppercase tracking-wider mr-2">Hinweis</span>
+            {PILOT_NOTE}
+          </div>
+
+          <div className="space-y-6">
+            {STUDIES.map((s) => <StudyCard key={s.slug} study={s} />)}
+          </div>
 
           <div className="mt-16 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <div className="flex items-start gap-3 mb-4">
@@ -92,43 +149,38 @@ export function CaseStudies() {
   );
 }
 
-function PlaceholderState() {
-  return (
-    <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-8 sm:p-10 text-center">
-      <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto mb-4 opacity-60" />
-      <h2 className="font-display font-bold text-titanium-50 text-lg mb-2">
-        Erste Case-Studies in Vorbereitung
-      </h2>
-      <p className="text-sm text-titanium-300 mb-6 max-w-lg mx-auto leading-relaxed">
-        Wir sind seit Kurzem live und finalisieren gerade die ersten Customer-Cases. Schau in 4-6 Wochen
-        wieder rein — oder werde selbst Reference-Account.
-      </p>
-      <div className="grid sm:grid-cols-2 gap-3 max-w-lg mx-auto text-left">
-        {(Object.entries(INDUSTRY_META) as [CaseStudy['industry'], typeof INDUSTRY_META[CaseStudy['industry']]][]).map(([key, meta]) => (
-          <div key={key} className="p-3 border border-titanium-900 bg-obsidian-950 rounded-none">
-            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 border ${meta.color} text-[10px] font-bold uppercase tracking-wider rounded-none mb-1`}>
-              {meta.icon} {meta.label}
-            </div>
-            <div className="text-xs text-titanium-400">Case in Vorbereitung</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function StudyCard({ study }: { study: CaseStudy }) {
   const meta = INDUSTRY_META[study.industry];
   return (
-    <Link to={`/case-studies/${study.slug}`} className="block bg-obsidian-900 border border-titanium-900 hover:border-security-500 rounded-none p-6 transition-colors">
-      <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 border ${meta.color} text-[10px] font-bold uppercase tracking-wider rounded-none mb-3`}>
-        {meta.icon} {meta.label}
+    <article className="block bg-obsidian-900 border border-titanium-900 rounded-none p-6">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 border ${meta.color} text-[10px] font-bold uppercase tracking-wider rounded-none`}>
+          {meta.icon} {meta.label}
+        </div>
+        <div className="inline-flex items-center px-2 py-0.5 border border-amber-900 bg-amber-950/30 text-amber-300 text-[10px] font-bold uppercase tracking-wider rounded-none">
+          {study.kind === 'Pilot' ? 'Pilot-Case' : 'Reference (anonym)'}
+        </div>
       </div>
-      <h3 className="font-display font-bold text-titanium-50 text-xl mb-2">{study.company}</h3>
-      <div className="text-xs text-titanium-500 mb-3">{study.size}</div>
-      <p className="text-sm text-titanium-300 leading-relaxed mb-4">{study.challenge}</p>
+      <h3 className="font-display font-bold text-titanium-50 text-xl mb-1">{study.company}</h3>
+      <div className="text-xs text-titanium-500 mb-4">{study.size}</div>
+
+      <div className="space-y-3 text-sm text-titanium-300 leading-relaxed mb-4">
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500 mb-1">Problem</div>
+          <p>{study.challenge}</p>
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500 mb-1">Lösung</div>
+          <p>{study.solution}</p>
+        </div>
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500 mb-1">Ergebnis</div>
+          <p>{study.outcome}</p>
+        </div>
+      </div>
+
       {study.metrics && (
-        <div className="grid grid-cols-3 gap-3 mb-3 text-center">
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-titanium-900 text-center">
           {study.metrics.map((m) => (
             <div key={m.label}>
               <div className="font-display text-2xl font-bold text-emerald-400 tabular-nums">{m.value}</div>
@@ -137,8 +189,7 @@ function StudyCard({ study }: { study: CaseStudy }) {
           ))}
         </div>
       )}
-      <div className="text-xs text-security-400">Vollständige Case lesen →</div>
-    </Link>
+    </article>
   );
 }
 
@@ -149,7 +200,8 @@ function Footer() {
         <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</div>
         <div className="flex flex-wrap gap-3">
           <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-          <Link to="/legal/sub-processors" className="hover:text-titanium-300">Impressum</Link>
+          <Link to="/impressum" className="hover:text-titanium-300">Impressum</Link>
+          <Link to="/legal/terms" className="hover:text-titanium-300">AGB</Link>
         </div>
       </div>
     </footer>

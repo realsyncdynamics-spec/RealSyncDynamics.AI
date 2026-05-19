@@ -3,6 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "redirects": [
+    { "source": "/agb",                "destination": "/legal/terms",   "permanent": true },
+    { "source": "/datenschutz",        "destination": "/legal/privacy", "permanent": true },
+    { "source": "/legal/datenschutz",  "destination": "/legal/privacy", "permanent": true },
+    { "source": "/legal/impressum",    "destination": "/impressum",     "permanent": true },
+    { "source": "/legal/imprint",      "destination": "/impressum",     "permanent": true }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]

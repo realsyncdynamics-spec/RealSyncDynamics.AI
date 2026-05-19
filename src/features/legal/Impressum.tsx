@@ -94,19 +94,12 @@ export function Impressum() {
           </p>
         </Section>
 
-        <Section title="Umsatzsteuer-Identifikationsnummer">
+        <Section title="Umsatzsteuer">
           <p>
-            USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="text-titanium-500">[wird nach Finanzamt-Fragebogen vergeben]</span>
-          </p>
-          <p className="text-xs text-titanium-500">
-            Falls Kleinunternehmer-Regelung (§ 19 UStG) bei Anmeldung gewählt wird: Diesen Block ersetzen durch
-            „Hinweis: Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen."
-          </p>
-        </Section>
-
-        <Section title="Wirtschafts-ID (sobald vergeben)">
-          <p className="text-titanium-500">
-            Wirtschafts-Identifikationsnummer (§ 139c AO): [noch nicht vergeben]
+            <strong className="text-titanium-50">Kleinunternehmer i. S. v. § 19 UStG.</strong>{' '}
+            Es wird keine Umsatzsteuer ausgewiesen, Rechnungen erfolgen netto =
+            brutto ohne USt-Ausweis. Alle auf dieser Website genannten Preise
+            sind Endpreise und enthalten keine Umsatzsteuer.
           </p>
         </Section>
 

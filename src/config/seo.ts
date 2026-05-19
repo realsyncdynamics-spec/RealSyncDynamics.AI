@@ -48,6 +48,13 @@ export interface SEOConfig {
   noIndex?: boolean;
   /** Route-spezifisches JSON-LD. Wird unter <script type="application/ld+json" data-seo-id="route"> gerendert. */
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /**
+   * hreflang-Alternates fuer DE/EN-Paare. Wenn gesetzt, rendert SEOHead
+   * <link rel="alternate" hreflang="..."> Tags in <head>. Format: { 'de': '/agencies/de-url', 'en': '/agencies/en-url', 'x-default': '/de-url' }.
+   * Pfade werden mit SITE_URL absolut gemacht. Reflexive Eintrage sind erlaubt
+   * (jede Sprach-Version listet sich selbst — Google fordert das).
+   */
+  alternates?: Record<string, string>;
 }
 
 const SITE_URL = 'https://realsyncdynamicsai.de';
@@ -760,28 +767,27 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Datenschutz', url: '/legal/privacy' },
     ]),
   },
-  '/legal/datenschutz': {
-    title: 'Datenschutzerklärung | RealSyncDynamics.AI',
-    description:
-      'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
-    canonical: `${SITE_URL}/legal/privacy`,
-  },
-  '/legal/impressum': {
-    title: 'Impressum | RealSyncDynamics.AI',
-    description:
-      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 TMG.',
-    canonical: `${SITE_URL}/legal/impressum`,
-    jsonLd: breadcrumbs([
-      { name: 'Home', url: '/' },
-      { name: 'Legal', url: '/legal/sub-processors' },
-      { name: 'Impressum', url: '/legal/impressum' },
-    ]),
-  },
   '/impressum': {
     title: 'Impressum | RealSyncDynamics.AI',
     description:
       'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 TMG.',
-    canonical: `${SITE_URL}/legal/impressum`,
+    canonical: `${SITE_URL}/impressum`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Legal', url: '/legal/sub-processors' },
+      { name: 'Impressum', url: '/impressum' },
+    ]),
+  },
+  '/legal/terms': {
+    title: 'Allgemeine Geschäftsbedingungen (AGB) | RealSyncDynamics.AI',
+    description:
+      'AGB von RealSyncDynamics.AI: Vertragsschluss, Laufzeit, Kündigung, Widerrufsrecht, Preise (§ 19 UStG), Haftung, Gerichtsstand. Stand 2026-05-19.',
+    canonical: `${SITE_URL}/legal/terms`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Legal', url: '/legal/sub-processors' },
+      { name: 'AGB', url: '/legal/terms' },
+    ]),
   },
   '/legal/sub-processors': {
     title: 'Sub-Prozessoren & Auftragsverarbeiter (DSGVO Art. 28) | RealSyncDynamics.AI',
@@ -823,7 +829,46 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
  * auf DEFAULT_SEO zurück, wenn keine Map-Eintrag existiert (z.B. Auth-Pages
  * oder neue Routes ohne Eintrag).
  */
+/**
+ * DE/EN-Paare fuer hreflang. Erste Spalte = DE-Pfad, zweite = EN-Pfad,
+ * dritte = canonical (meist die DE-Version, weil unsere Primaersprache DE ist).
+ * SEOHead leitet daraus die <link rel="alternate" hreflang> Tags ab.
+ */
+const LOCALE_PAIRS: Array<{ de: string; en: string; canonical: string }> = [
+  { de: '/bildung',                  en: '/education',         canonical: '/schulen' },
+  { de: '/schulen',                  en: '/education',         canonical: '/schulen' },
+  { de: '/fuer-agenturen',           en: '/agencies',          canonical: '/fuer-agenturen' },
+  { de: '/presse',                   en: '/press',             canonical: '/presse' },
+  { de: '/ressourcen',               en: '/resources',         canonical: '/ressourcen' },
+  { de: '/integrationen',            en: '/integrations',      canonical: '/integrationen' },
+  { de: '/saas-anbieter',            en: '/saas-providers',    canonical: '/saas-anbieter' },
+  { de: '/marktanalyse',             en: '/market-analysis',   canonical: '/marktanalyse' },
+  { de: '/personalwesen',            en: '/hr-software',       canonical: '/personalwesen' },
+  { de: '/versicherungen',           en: '/insurance',         canonical: '/versicherungen' },
+  { de: '/online-shops',             en: '/ecommerce',         canonical: '/online-shops' },
+  { de: '/oeffentliche-verwaltung',  en: '/behoerden',         canonical: '/oeffentliche-verwaltung' },
+];
+
+function findLocalePair(path: string): typeof LOCALE_PAIRS[number] | undefined {
+  return LOCALE_PAIRS.find((p) => p.de === path || p.en === path);
+}
+
 export function getSeoForPath(pathname: string): SEOConfig {
   const path = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
-  return SEO_CONFIG[path] ?? DEFAULT_SEO;
+  const base = SEO_CONFIG[path] ?? DEFAULT_SEO;
+  // Wenn der Pfad Teil eines DE/EN-Paares ist, alternates automatisch ergaenzen.
+  if (!base.alternates) {
+    const pair = findLocalePair(path);
+    if (pair) {
+      return {
+        ...base,
+        alternates: {
+          'de':        `${SITE_URL}${pair.de}`,
+          'en':        `${SITE_URL}${pair.en}`,
+          'x-default': `${SITE_URL}${pair.canonical}`,
+        },
+      };
+    }
+  }
+  return base;
 }

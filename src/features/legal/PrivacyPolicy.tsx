@@ -55,10 +55,17 @@ export function PrivacyPolicy() {
 
         <Section title="2. Datenschutzbeauftragter">
           <p>
-            Falls bestellungspflichtig nach § 38 BDSG: Kontaktdaten des DSB
-            hier ergänzen. Andernfalls: <em>„Ein Datenschutzbeauftragter ist
-            gesetzlich nicht vorgeschrieben; Anfragen richten Sie bitte an
-            die unter Ziffer 1 genannte Adresse."</em>
+            Ein Datenschutzbeauftragter ist nach § 38 BDSG nicht erforderlich:
+            RealSync Dynamics ist ein Einzelunternehmen und erreicht weder die
+            Schwelle von 20 Personen mit regelmäßiger Verarbeitung
+            personenbezogener Daten noch liegt eine Verarbeitungstätigkeit nach
+            § 38 Abs. 1 Satz 2 BDSG i. V. m. Art. 35 DSGVO vor, die eine
+            verpflichtende Datenschutz-Folgenabschätzung auslöst.
+          </p>
+          <p>
+            Datenschutzanfragen (Art. 15–22 DSGVO) richten Sie bitte an:{' '}
+            <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">privacy@realsyncdynamicsai.de</a>.
+            Bei Bestellung eines DSB wird dieser Abschnitt aktualisiert.
           </p>
         </Section>
 

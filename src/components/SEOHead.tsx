@@ -77,8 +77,10 @@ export function SEOHead(props: SEOHeadProps = {}): null {
   const ogType = props.ogType ?? config.ogType ?? 'website';
   const noIndex = props.noIndex ?? config.noIndex ?? false;
   const jsonLd = config.jsonLd;
+  const alternates = config.alternates;
   // Stable serialization fuer den useEffect-Dependency-Array.
   const jsonLdSerialized = jsonLd ? JSON.stringify(jsonLd) : '';
+  const alternatesSerialized = alternates ? JSON.stringify(alternates) : '';
 
   useEffect(() => {
     const fullTitle = hasBrandMention(title) ? title : title + TITLE_SUFFIX;
@@ -117,6 +119,21 @@ export function SEOHead(props: SEOHeadProps = {}): null {
 
     setLink('canonical', fullCanonical);
 
+    // hreflang-Alternates: stale Eintraege entfernen, dann neu setzen.
+    document
+      .querySelectorAll<HTMLLinkElement>('link[rel="alternate"][data-seo-hreflang]')
+      .forEach((el) => el.remove());
+    if (alternates) {
+      for (const [lang, href] of Object.entries(alternates)) {
+        const el = document.createElement('link');
+        el.setAttribute('rel', 'alternate');
+        el.setAttribute('hreflang', lang);
+        el.setAttribute('href', href);
+        el.setAttribute('data-seo-hreflang', lang);
+        document.head.appendChild(el);
+      }
+    }
+
     // Route-spezifisches JSON-LD: alle Eintraege unter data-seo-id="route"
     // einfuegen / updaten / removen. Stale-Eintraege aus vorherigen Routes
     // werden vor dem Schreiben entfernt, damit kein Schema "haengen" bleibt.
@@ -146,6 +163,8 @@ export function SEOHead(props: SEOHeadProps = {}): null {
     noIndex,
     jsonLdSerialized,
     jsonLd,
+    alternatesSerialized,
+    alternates,
   ]);
 
   return null;

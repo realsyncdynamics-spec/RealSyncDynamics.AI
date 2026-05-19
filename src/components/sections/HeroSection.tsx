@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, Fragment, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Activity, Cpu, ShieldCheck, Zap } from 'lucide-react';
 
@@ -75,13 +75,13 @@ export function HeroSection() {
         </div>
 
         <h1 className="text-center text-5xl sm:text-7xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.05] mb-5">
-          This system is{' '}
-          <span className="text-cyan-300">already running.</span>
+          Diese Runtime{' '}
+          <span className="text-cyan-300">läuft schon.</span>
         </h1>
 
         <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10">
-          AI Governance Runtime for EU privacy and AI Act. Continuous detection,
-          monitoring, governance, automation — one operational plane, zero setup.
+          AI Governance Runtime für DSGVO und EU AI Act. Kontinuierliches Detect,
+          Monitor, Govern, Automate — eine Operations-Ebene, kein Setup.
         </p>
 
         {/* URL launch input */}
@@ -112,13 +112,13 @@ export function HeroSection() {
         {/* Hint row */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-mono text-titanium-500">
           <span className="inline-flex items-center gap-1.5">
-            <Zap className="h-3 w-3 text-cyan-300" /> first signal in 30 s
+            <Zap className="h-3 w-3 text-cyan-300" /> erstes Signal in 30 s
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-3 w-3 text-emerald-400" /> zero setup
+            <ShieldCheck className="h-3 w-3 text-emerald-400" /> kein Setup nötig
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <Cpu className="h-3 w-3 text-violet-300" /> EU edge · audit-grade
+            <Cpu className="h-3 w-3 text-violet-300" /> EU-Edge · Audit-grade
           </span>
         </div>
 
@@ -130,16 +130,19 @@ export function HeroSection() {
           <Metric icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} label="evidence"  value="4,128" delta="synced" deltaColor="text-emerald-400" />
         </div>
 
-        {/* Layer pills */}
+        {/* Layer pills — separators kept in the DOM text so the labels stay
+            readable even when CSS is stripped (prerender snapshots, SERP, RSS). */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
-          {LIVE_PILL_LABELS.map((p) => (
-            <span
-              key={p.label}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 border border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider ${p.color}`}
-            >
-              <span className="inline-block w-1 h-1 rounded-full bg-current" />
-              {p.label}
-            </span>
+          {LIVE_PILL_LABELS.map((p, i) => (
+            <Fragment key={p.label}>
+              {i > 0 && <span aria-hidden="true" className="text-titanium-700 font-mono text-[10px] select-none"> · </span>}
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 border border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider ${p.color}`}
+              >
+                <span className="inline-block w-1 h-1 rounded-full bg-current" />
+                {p.label}
+              </span>
+            </Fragment>
           ))}
         </div>
       </div>

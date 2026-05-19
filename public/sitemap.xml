@@ -331,26 +331,20 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://realsyncdynamicsai.de/legal/datenschutz</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://realsyncdynamicsai.de/legal/impressum</loc>
-    <lastmod>2026-05-09</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://realsyncdynamicsai.de/legal/methodology</loc>
-    <lastmod>2026-05-09</lastmod>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/legal/privacy</loc>
-    <lastmod>2026-05-09</lastmod>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/legal/terms</loc>
+    <lastmod>2026-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

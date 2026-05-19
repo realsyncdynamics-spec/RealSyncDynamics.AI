@@ -104,6 +104,7 @@ import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { Welcome } from './pages/Welcome';
+import { PartnersPage } from './pages/PartnersPage';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
 import { EuAiActCheck } from './pages/seo/EuAiActCheck';
@@ -354,18 +355,15 @@ function RoutesWithTracking() {
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/busseld-rechner" element={<BusseldRechner />} />
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
-      {/* Bußgeld-Rechner: aliases for the obvious correct-spelling URLs.
-          The original route is /busseld-rechner (typo: "busseld" instead
-          of "bußgeld"). Visitors who google "DSGVO Bußgeldrechner" land
-          on the no-hyphen or correctly-spelled variants, so route them
-          all to the same component. SEO canonical stays /busseld-rechner
-          via seo.ts to avoid duplicate-content downgrades. */}
+      {/* Bußgeld-Rechner: aliases for the correct-spelling URLs.
+          Canonical /busseld-rechner stays the SEO target. */}
       <Route path="/bussgeld-rechner"  element={<BusseldRechner />} />
       <Route path="/bussgeldrechner"   element={<BusseldRechner />} />
-      {/* Meldepflicht-Timer: bare /meldepflicht-timer was advertised in
-          FAQ but only mounted at /datenpanne-meldung + /tools/meldepflicht-timer.
-          Alias the bare path so the FAQ-described route works. */}
       <Route path="/meldepflicht-timer" element={<MeldepflichtTimer />} />
+      {/* DSB-Kanzlei Partner-Programm */}
+      <Route path="/partners"         element={<PartnersPage />} />
+      <Route path="/partner-programm" element={<PartnersPage />} />
+      <Route path="/dsb-partner"      element={<PartnersPage />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />

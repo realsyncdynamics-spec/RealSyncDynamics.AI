@@ -28,6 +28,7 @@ import { GovernanceAgentsSection } from '../components/sections/GovernanceAgents
 import { ComparisonTableSection } from '../components/sections/ComparisonTableSection';
 import { TrustCertificationsSection } from '../components/sections/TrustCertificationsSection';
 import { RuntimeActivationSection } from '../components/sections/RuntimeActivationSection';
+import { BrandMarkSection } from '../components/sections/BrandMarkSection';
 
 export function Landing() {
   return (
@@ -43,6 +44,7 @@ export function Landing() {
       <ComparisonTableSection />
       <TrustCertificationsSection />
       <RuntimeActivationSection />
+      <BrandMarkSection />
     </>
   );
 }

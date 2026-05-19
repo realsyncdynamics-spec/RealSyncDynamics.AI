@@ -4,7 +4,7 @@ const MODULES = [
   'AI Inventory',
   'Shadow AI Detection',
   'Agent Policies',
-  'Audit Trail',
+  'Prüfpfad',
   'Data Flow Mapping',
   'Risk Classification',
   'DSGVO Governance',

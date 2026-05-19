@@ -50,7 +50,7 @@ export function AgentOversightSection() {
             Agent Oversight
           </div>
           <h2 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-tight">
-            Agenten mit Aufsicht, Scope und Audit Trail.
+            Agenten mit Aufsicht, Scope und Prüfpfad.
           </h2>
           <p className="mt-4 text-silver-300 text-base sm:text-lg leading-relaxed">
             Jeder Governance-Agent hat klare Berechtigungen, Approval-Gates, Risk-Budgets und

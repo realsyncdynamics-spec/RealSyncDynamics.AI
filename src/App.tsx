@@ -310,6 +310,15 @@ function RoutesWithTracking() {
       <Route path="/schulen" element={<EducationLanding />} />
       <Route path="/hr-software" element={<HrSoftwareLanding />} />
       <Route path="/personalwesen" element={<HrSoftwareLanding />} />
+      {/* Industry-landing aliases for obvious-URL discovery. Same fix
+          shape as Bußgeld-Rechner / Meldepflicht-Timer: the canonical
+          German routes already exist, but visitors who guess the
+          single-word or English variant land on 404. Aliases route
+          to the same component without touching SEO canonicals. */}
+      <Route path="/legaltech"    element={<LegalTechLanding />} />
+      <Route path="/publicsector" element={<PublicSectorLanding />} />
+      <Route path="/public-sector" element={<PublicSectorLanding />} />
+      <Route path="/hr"           element={<HrSoftwareLanding />} />
       {/* More Competitor-Alternatives */}
       <Route path="/iubenda-alternative" element={<IubendaAlternative />} />
       {/* API + Integrations + Niche */}

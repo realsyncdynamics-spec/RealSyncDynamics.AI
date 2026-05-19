@@ -126,7 +126,7 @@ async function handleOpBased(req: Request): Promise<Response> {
   const op = String(body.op ?? '');
   if (!ALLOWED_OPS.has(op)) return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 
-  const gateway = buildGateway();
+  const gateway = await buildGateway();
   if (gateway instanceof Response) return gateway;
 
   if (op === 'health') {
@@ -165,7 +165,7 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
   const limited = await enforceRateLimit(req, parsed.request.feature);
   if (limited) return limited;
 
-  const gateway = buildGateway();
+  const gateway = await buildGateway();
   if (gateway instanceof Response) return gateway;
 
   try {
@@ -181,15 +181,48 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
 
 // ── Helpers ───────────────────────────────────────────────────────
 
-function buildGateway(): ServerAiGateway | Response {
+// Anthropic fallback model — kept here (not in config.ts) because config.ts
+// is browser-shared and must not hint at a default cloud model.
+const ANTHROPIC_FALLBACK_MODEL =
+  Deno.env.get('AI_GATEWAY_ANTHROPIC_MODEL') ?? 'claude-haiku-4-5-20251001';
+
+async function buildGateway(): Promise<ServerAiGateway | Response> {
   const baseUrl = Deno.env.get('LM_STUDIO_BASE_URL');
   if (!baseUrl) {
     return jsonError(503, 'LM_STUDIO_NOT_CONFIGURED', 'LM_STUDIO_BASE_URL not set');
   }
+  // Cloud fallback: optional. If ANTHROPIC_API_KEY is in Vault or env,
+  // we wire the AnthropicAdapter so the router can recover from
+  // LM-Studio transport failures (DNS error, 5xx, timeout). Without the
+  // key the router behaves exactly as before (no fallback, errors
+  // propagate).
+  const anthropicKey =
+    Deno.env.get('ANTHROPIC_API_KEY') ?? (await readVaultSecret('anthropic_api_key'));
   return new ServerAiGateway({
     lmStudioBaseUrl: baseUrl,
     lmStudioApiKey:  Deno.env.get('LM_STUDIO_API_KEY') ?? 'lm-studio',
+    anthropicConfig: anthropicKey
+      ? { apiKey: anthropicKey, model: ANTHROPIC_FALLBACK_MODEL }
+      : undefined,
   });
+}
+
+// Best-effort Vault read. Returns null on any failure so the gateway
+// can still serve LM-Studio-only requests. Mirrors the pattern in
+// supabase/functions/_shared/providers.ts.
+async function readVaultSecret(name: string): Promise<string | null> {
+  const url = Deno.env.get('SUPABASE_URL');
+  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !srk) return null;
+  try {
+    const { createClient } = await import('jsr:@supabase/supabase-js@2');
+    const admin = createClient(url, srk, { auth: { persistSession: false } });
+    const { data, error } = await admin.rpc('get_app_secret', { secret_name: name });
+    if (error) return null;
+    return typeof data === 'string' && data.length > 0 ? data : null;
+  } catch {
+    return null;
+  }
 }
 
 function json(payload: unknown, status = 200): Response {

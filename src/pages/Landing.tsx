@@ -19,6 +19,7 @@
 
 import { Navbar } from '../components/Navbar';
 import { HeroSection } from '../components/sections/HeroSection';
+import { RuntimeCanvasSection } from '../components/sections/RuntimeCanvasSection';
 import { OutcomeBulletsSection } from '../components/sections/OutcomeBulletsSection';
 import { PersonaCardsSection } from '../components/sections/PersonaCardsSection';
 import { LiveScanCanvasSection } from '../components/sections/LiveScanCanvasSection';
@@ -35,6 +36,9 @@ export function Landing() {
     <>
       <Navbar />
       <HeroSection />
+      {/* Phase 2 (Hostinger-Pattern): Runtime-Canvas direkt nach der Hero —
+          SVG-Governance-Graph + scrollendes Terminal-Feed. Demo-Daten. */}
+      <RuntimeCanvasSection />
       <OutcomeBulletsSection />
       <PersonaCardsSection />
       <LiveScanCanvasSection />

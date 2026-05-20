@@ -91,6 +91,26 @@ Wenn dein Modul Events emittiert oder konsumiert:
 - Tests: `test/types/runtime-event.test.ts`
 - Nicht in diesem PR: `_shared/governanceEvent.ts` (Edge-Function-Schema, getrennt versioniert — Phase-2-Convergence steht aus).
 
+## 7.1 Adopted Paths
+
+Welche Module emittieren bereits v0-konforme Events.
+
+| Modul | Export | Pattern | PR |
+|---|---|---|---|
+| `src/lib/runtimeMockEvents.ts` | `RUNTIME_MOCK_EVENTS_V0` | Parallel-Array zu altem `RUNTIME_MOCK_EVENTS` | #374 |
+| `src/features/governance/vvt/demoRuntimeVvtData.ts` | `DEMO_RUNTIME_EVENTS_V0` | Parallel-Array zu altem `DEMO_RUNTIME_EVENTS` | #374 |
+| `src/lib/enterprise-ai-os/policy-engine.ts` | `policyResultToRuntimeEventV0()` | Additiver Helper (Mapping-Funktion) | this PR |
+
+Pending — naechste Kandidaten (in Risiko-Reihenfolge):
+
+| Modul | Risiko | Bemerkung |
+|---|---|---|
+| `src/core/runtime/eventTypes.ts` | medium | Internes Event-Vokabular, braucht Schema-Bridge |
+| `src/features/governance/vvt/runtimeVvtMapper.ts` | low | Additive Variante `deriveVvtEntriesFromEventsV0()` denkbar |
+| `gdpr-audit` Edge Function Result-Mapper | medium | API-Response-Vertrag, braucht Konsumenten-Audit |
+| `src/core/runtime/governanceEvents.ts` | **high** | Frozen Phase A — Schema-Bridge-ADR Pflicht |
+| `supabase/functions/_shared/governanceEvent.ts` | **high** | Edge-Function-Schema, Deno-Resolver-Constraints |
+
 ## 8. Nicht-Ziele in v0
 
 - Keine Realtime-Subscription auf `runtime_events` (Datenmodell-Tabelle ist eigene Verantwortlichkeit).

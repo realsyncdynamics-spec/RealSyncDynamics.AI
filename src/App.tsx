@@ -128,6 +128,8 @@ const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => 
 const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
 const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
 const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').then((m) => ({ default: m.KeysView })));
+const RuntimeVvtView = lazy(() => import('./features/governance/vvt/RuntimeVvtView').then((m) => ({ default: m.RuntimeVvtView })));
+const AgentRegistryView = lazy(() => import('./features/governance/agents/AgentRegistryView').then((m) => ({ default: m.AgentRegistryView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
@@ -386,6 +388,8 @@ function RoutesWithTracking() {
           views (DpiasView, MappingsView, etc.) are updated accordingly. */}
       <Route path="/governance/admin" element={<GovernanceDashboardView />} />
       <Route path="/governance/keys" element={<GovernanceKeysView />} />
+      <Route path="/governance/vvt" element={<RuntimeVvtView />} />
+      <Route path="/governance/agents" element={<AgentRegistryView />} />
       <Route path="/governance/webhooks" element={<GovernanceWebhooksView />} />
       <Route path="/governance/onboarding" element={<GovernanceOnboardingView />} />
       <Route path="/governance/mappings" element={<GovernanceMappingsView />} />

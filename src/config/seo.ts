@@ -228,9 +228,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
   },
   '/pricing': {
-    title: 'Preise – RealSyncDynamicsAI Compliance-Plattform',
+    title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Wählen Sie zwischen Free Audit, Starter (79€), Growth (249€), Agency (699€) und Enterprise (ab 1.500€) für automatisierte DSGVO- und AI-Act-Compliance.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Scale (1.999 €), Enterprise (ab 1.500 €). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,

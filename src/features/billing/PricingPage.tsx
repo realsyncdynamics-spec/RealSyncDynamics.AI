@@ -112,15 +112,15 @@ export function PricingPage() {
             {[
               {
                 title: 'Consent-Timing-Analyse',
-                body: 'Wir messen exakt, welche Requests VOR dem ersten Nutzer-Klick feuern. Das ist der Kern-DSGVO-Verstoß — und den erkennen nur wir mit echtem Playwright-Headless-Browser.',
+                body: 'Wir messen exakt, welche Requests VOR dem ersten Nutzer-Klick feuern — mit echtem Playwright-Headless-Browser. Pre-Consent-Tracking ist die häufigste DSGVO-Schwachstelle und unser primärer Runtime-Detection-Anker.',
               },
               {
                 title: 'Auto-Remediation (nicht nur Audit)',
                 body: 'Nicht nur "hier ist das Problem". Sondern: hier ist der Fix-Code, den Sie einfügen können. Script-Blocking, Consent-Injection, Font-Self-Hosting — alles automatisiert.',
               },
               {
-                title: 'Continuous Monitoring (SaaS-Kern)',
-                body: 'Compliance ist kein einmaliger Zustand. Websites ändern sich. Wir monitoren täglich und alarmieren bei Drift — damit Sie nicht nach dem Audit wieder unsicher werden.',
+                title: 'Continuous Runtime-Monitoring',
+                body: 'Governance ist kein einmaliger Zustand. Websites und KI-Endpunkte verändern sich. Wir messen täglich, erkennen Drift gegen den letzten Baseline-Stand und alarmieren — damit zwischen den Audits keine stillen Regressionen verschwinden.',
               },
               {
                 title: 'Nachweisbarkeit (Audit-Trails)',
@@ -153,7 +153,7 @@ export function PricingPage() {
               },
               {
                 q: 'Was ist Consent-Timing-Analyse?',
-                a: 'Unsere Playwright-Engine lädt Ihre Website im echten Headless-Browser und protokolliert jeden Netzwerk-Request mit präzisem Timestamp — vor und nach dem ersten Klick. So sehen wir, ob Google Analytics, Meta Pixel oder andere Tracker geladen werden, bevor der Nutzer eingewilligt hat. Das ist der häufigste und gravierendste DSGVO-Verstoß.',
+                a: 'Unsere Playwright-Engine lädt Ihre Website im echten Headless-Browser und protokolliert jeden Netzwerk-Request mit präzisem Timestamp — vor und nach dem ersten Klick. So sehen wir, ob Google Analytics, Meta Pixel oder andere Tracker geladen werden, bevor der Nutzer eingewilligt hat. Pre-Consent-Tracking ist die häufigste Schwachstelle im DSGVO-Setup und der Anker, an dem unsere Runtime-Drift-Detection täglich aufsetzt.',
               },
               {
                 q: 'Was ist "Auto-Remediation" genau?',

@@ -73,7 +73,7 @@ Das ist gewollt — würden wir sofort strikt validieren, müssten wir alle exis
 | Phase | Was | Status |
 |---|---|---|
 | **Phase 1 — type adoption** | `RuntimeEvent`-Type + `createRuntimeEvent`-Helper + Doku. Bestehender Code wird **nicht** migriert. Neue Surfaces können den Type sofort verwenden. | **JETZT** |
-| **Phase 2 — shadow validation** | Ingest-Endpoint validiert ein **JSON-Schema** (Zod oder AJV) und **loggt** Mismatches, ohne abzulehnen. Erlaubt einen Soak-Test mit echtem Traffic, bevor wir strikt werden. | geplant |
+| **Phase 2 — shadow validation** | Ingest-Endpoint validiert ein **JSON-Schema** (Zod oder AJV) und **loggt** Mismatches, ohne abzulehnen. Erlaubt einen Soak-Test mit echtem Traffic, bevor wir strikt werden. → Siehe [Shadow Validation RFC](./runtime-event-shadow-validation-rfc.md) für vollständiges Design. | geplant |
 | **Phase 3 — tenant-gated strict** | Ein Feature-Flag `runtime_event_strict` pro Tenant lässt early-adopters in den strikten Modus. Mismatches → 422 mit Rejection-Reason. | geplant |
 | **Phase 4 — default rejection** | Strikte Validation für alle Tenants. Schema-Bump-Migrations dokumentieren Breaking Changes. | geplant |
 

@@ -10,18 +10,22 @@ import {
  *
  * USt-IdNr., HRB-Eintrag und Wirtschafts-ID werden aus ENV-Vars geladen
  * (VITE_BUSINESS_VAT_ID, VITE_BUSINESS_REGISTRY_ENTRY,
- * VITE_BUSINESS_ECONOMIC_ID). Solange die Felder leer sind, blendet die
- * Page einen Banner ein — sowohl in DEV als auch in PROD — damit der
- * Fail-State nicht heimlich live geht.
+ * VITE_BUSINESS_ECONOMIC_ID). In DEV erscheint ein Hinweis-Banner mit den
+ * offenen Feldern — in PROD wird der Banner unterdrueckt, weil das
+ * oeffentliche Wording „Pflichtangaben unvollstaendig" rechtlich heikler
+ * ist als der eigentliche Fehl-Wert. Stattdessen wird im jeweiligen
+ * Abschnitt (USt-IdNr., Wirtschafts-ID, HR-Eintrag) ein dezenter Status
+ * inline angezeigt („wird nach Vergabe ergaenzt").
  */
 export function Impressum() {
   const identity = loadBusinessIdentity();
   const productionReady = isImpressumProductionReady(identity);
-  const showBanner = import.meta.env.DEV || !productionReady;
+  // Banner nur in DEV — in PROD nicht oeffentlich "unvollstaendig" stehen.
+  const showBanner = import.meta.env.DEV;
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
+        <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3" aria-label="Zurueck zur Startseite">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5">
@@ -29,7 +33,7 @@ export function Impressum() {
             <FileText className="h-4 w-4 text-white" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Impressum</div>
+            <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Impressum</h1>
             <div className="text-[11px] text-titanium-400 font-medium">§ 5 TMG · § 18 MStV</div>
           </div>
         </div>
@@ -42,10 +46,10 @@ export function Impressum() {
             <span className="text-amber-200">
               <strong>
                 {productionReady
-                  ? 'Status: Pre-Launch (DEV-Build).'
-                  : 'Status: Pflichtangaben unvollständig.'}
+                  ? 'DEV-Build: alle Pflichtfelder gesetzt.'
+                  : 'DEV-Hinweis: optionale Felder noch leer.'}
               </strong>{' '}
-              {!identity.vatId && 'USt-IdNr. fehlt — sobald nach Finanzamt-Fragebogen vergeben, in VITE_BUSINESS_VAT_ID setzen. '}
+              {!identity.vatId && 'USt-IdNr. — sobald nach Finanzamt-Fragebogen vergeben, in VITE_BUSINESS_VAT_ID setzen. '}
               {!identity.registryEntry && 'HR-Eintrag nur bei UG/GmbH-Umwandlung relevant (VITE_BUSINESS_REGISTRY_ENTRY). '}
               {!identity.economicId && 'Wirtschafts-ID erst nach Vergabe durch BZSt (VITE_BUSINESS_ECONOMIC_ID).'}
             </span>

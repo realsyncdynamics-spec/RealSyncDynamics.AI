@@ -125,6 +125,26 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Phase 4 (Hostinger-Pattern): audit-copilot Tools im anon-Mode.
+  // Stellen die uniforme LLM-Tool-Vertragsoberflaeche fuer den
+  // AuditResultView-Right-Panel bereit. Beide Tools liefern strukturierte
+  // Mock-Responses — ein spaeterer Edge-Worker dispatched echte LLM-Calls
+  // via ai-gateway / Anthropic. Rate-Limit identisch zu chat_anon (per IP).
+  if (body.op === 'explain_finding') {
+    try {
+      return await handleExplainFindingAnon(req, body);
+    } catch (e) {
+      return jsonError(500, 'INTERNAL', (e as Error).message);
+    }
+  }
+  if (body.op === 'generate_fix_snippet') {
+    try {
+      return await handleGenerateFixSnippetAnon(req, body);
+    } catch (e) {
+      return jsonError(500, 'INTERNAL', (e as Error).message);
+    }
+  }
+
   // All other ops require a valid user JWT.
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -571,6 +591,92 @@ async function handleStartAuditScanAnon(req: Request, body: Record<string, unkno
     audit_id: `mock-${crypto.randomUUID()}`,
     url_normalized: normalized,
     hint: 'Demo-Response — kein echter Scan ausgelöst. Wechsel auf /audit für den vollen Scan.',
+  });
+}
+
+/**
+ * Phase 4 (Hostinger-Pattern): audit-copilot Tools.
+ *
+ * Beide Tools akzeptieren {audit_id, finding_id} (Pflicht) und optional
+ * {finding_payload} fuer anon-Flows, in denen kein DB-Lookup moeglich ist.
+ * Phase 4 liefert Mock-Responses — ein spaeterer Worker verbindet Anthropic/
+ * ai-gateway mit strict-json model_profile (analog auditCopilotApi.ts).
+ */
+interface FindingPayload {
+  id?: string;
+  severity?: string;
+  title?: string;
+  detail?: string;
+  paragraph_ref?: string;
+}
+
+function readFindingPayload(body: Record<string, unknown>): FindingPayload {
+  const raw = body.finding_payload;
+  if (!raw || typeof raw !== 'object') return {};
+  return raw as FindingPayload;
+}
+
+async function handleExplainFindingAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ipHash = await sha256Hex(ip);
+  if (!checkAnonRateLimit(ipHash)) {
+    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
+  }
+
+  const auditId   = typeof body.audit_id   === 'string' ? body.audit_id.trim()   : '';
+  const findingId = typeof body.finding_id === 'string' ? body.finding_id.trim() : '';
+  if (!auditId)   return jsonError(400, 'BAD_REQUEST', 'audit_id required');
+  if (!findingId) return jsonError(400, 'BAD_REQUEST', 'finding_id required');
+
+  const payload = readFindingPayload(body);
+  const title = payload.title ?? 'Befund';
+  const paraRef = payload.paragraph_ref ?? '–';
+
+  return json({
+    ok: true,
+    audit_id: auditId,
+    finding_id: findingId,
+    explanation: {
+      summary: `Demo-Erklaerung fuer Befund "${title}". Der echte LLM-Pfad liefert eine `
+             + `dreigliedrige Antwort: Was passiert technisch, was schreibt die Rechtsgrundlage `
+             + `vor (${paraRef}), welche Optionen hat der Verantwortliche.`,
+      technical: 'Mock — keine LLM-Inferenz ausgeloest. Der Edge-Worker dispatched spaeter '
+               + 'an ai-gateway model_profile=strict-json.',
+      legal_hint: paraRef,
+      disclaimer: 'Hinweis, keine Rechtsberatung.',
+    },
+    hint: 'Demo-Response — keine LLM-Inferenz ausgeloest.',
+  });
+}
+
+async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ipHash = await sha256Hex(ip);
+  if (!checkAnonRateLimit(ipHash)) {
+    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
+  }
+
+  const auditId   = typeof body.audit_id   === 'string' ? body.audit_id.trim()   : '';
+  const findingId = typeof body.finding_id === 'string' ? body.finding_id.trim() : '';
+  const cmsRaw    = typeof body.cms        === 'string' ? body.cms.trim()        : 'custom-html';
+  if (!auditId)   return jsonError(400, 'BAD_REQUEST', 'audit_id required');
+  if (!findingId) return jsonError(400, 'BAD_REQUEST', 'finding_id required');
+
+  const cmsAllowed = new Set(['wordpress', 'shopify', 'webflow', 'custom-html', 'nginx']);
+  const cms = cmsAllowed.has(cmsRaw) ? cmsRaw : 'custom-html';
+
+  return json({
+    ok: true,
+    audit_id: auditId,
+    finding_id: findingId,
+    snippet: {
+      cms,
+      language: cms === 'nginx' ? 'nginx' : cms === 'wordpress' ? 'php' : 'html',
+      snippet: '<!-- Demo-Snippet — kein echter LLM-Output. -->',
+      notes: 'Mock-Response. Der echte LLM-Pfad ruft auditCopilotApi.generateFixSnippet '
+           + 'mit strict-json model_profile auf und liefert ein produktionsfertiges Fragment.',
+    },
+    hint: 'Demo-Response — keine LLM-Inferenz ausgeloest.',
   });
 }
 

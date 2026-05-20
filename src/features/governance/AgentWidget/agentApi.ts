@@ -145,12 +145,6 @@ export async function sendChatAnon(args: {
  * Ruft den governance-agent op='start_audit_scan' auf. Phase 3 liefert
  * einen Mock-Queued-Status — der echte Scan-Worker konsumiert die queued
  * Eintraege erst spaeter (siehe Edge-Function-Kommentar).
- *
- * Wieso ein eigenes Tool statt direkter Call an gdpr-audit?
- *   - Die LLM-Tool-Vertragsoberflaeche soll uniform sein: alle Tools
- *     gehen ueber governance-agent.
- *   - So kann der AssistentChip im anon-Modus spaeter den Tool-Call
- *     autonom triggern (LLM-tool-use), ohne neue Endpoints anzufassen.
  */
 
 export interface AnonAuditScanResponse {
@@ -188,4 +182,103 @@ export async function startAuditScanAnon(args: {
     return { kind: 'error', error: (body as { ok: false; error: AgentError }).error };
   }
   return { kind: 'ok', data: body as AnonAuditScanResponse };
+}
+
+/**
+ * Phase 4 (Hostinger-Pattern): audit-copilot Tools im anon-Mode.
+ *
+ * Beide Tools rufen governance-agent op='explain_finding' bzw.
+ * 'generate_fix_snippet'. Phase 4 liefert Mock-Responses — der echte
+ * LLM-Pfad wird in einem Folge-PR aktiviert (auditCopilotApi.ts hat den
+ * strict-json ai-gateway-Call bereits implementiert, die Edge-Function
+ * dispatched spaeter dorthin).
+ */
+
+export interface ExplainFindingResponse {
+  ok: true;
+  audit_id: string;
+  finding_id: string;
+  explanation: {
+    summary: string;
+    technical: string;
+    legal_hint: string;
+    disclaimer: string;
+  };
+  hint: string;
+}
+
+export type ExplainFindingResult =
+  | { kind: 'ok'; data: ExplainFindingResponse }
+  | { kind: 'rate_limited' }
+  | { kind: 'invalid'; error: AgentError }
+  | { kind: 'error'; error: AgentError };
+
+export async function explainFindingAnon(args: {
+  audit_id: string;
+  finding_id: string;
+  finding_payload?: {
+    id?: string;
+    severity?: string;
+    title?: string;
+    detail?: string;
+    paragraph_ref?: string;
+  };
+}): Promise<ExplainFindingResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-agent', {
+    body: { op: 'explain_finding', ...args },
+  });
+
+  if (error) {
+    const status = (error as { context?: { status?: number } }).context?.status;
+    if (status === 429) return { kind: 'rate_limited' };
+    if (status === 400) return { kind: 'invalid', error: { code: 'BAD_REQUEST', message: error.message ?? 'invalid input' } };
+    return { kind: 'error', error: { code: 'NETWORK', message: error.message ?? 'network error' } };
+  }
+  return { kind: 'ok', data: data as ExplainFindingResponse };
+}
+
+export interface GenerateFixSnippetAnonResponse {
+  ok: true;
+  audit_id: string;
+  finding_id: string;
+  snippet: {
+    cms: string;
+    language: string;
+    snippet: string;
+    notes: string;
+  };
+  hint: string;
+}
+
+export type GenerateFixSnippetAnonResult =
+  | { kind: 'ok'; data: GenerateFixSnippetAnonResponse }
+  | { kind: 'rate_limited' }
+  | { kind: 'invalid'; error: AgentError }
+  | { kind: 'error'; error: AgentError };
+
+export async function generateFixSnippetAnon(args: {
+  audit_id: string;
+  finding_id: string;
+  cms?: 'wordpress' | 'shopify' | 'webflow' | 'custom-html' | 'nginx';
+  finding_payload?: {
+    id?: string;
+    severity?: string;
+    title?: string;
+    detail?: string;
+    paragraph_ref?: string;
+  };
+}): Promise<GenerateFixSnippetAnonResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-agent', {
+    body: { op: 'generate_fix_snippet', ...args },
+  });
+
+  if (error) {
+    const status = (error as { context?: { status?: number } }).context?.status;
+    if (status === 429) return { kind: 'rate_limited' };
+    if (status === 400) return { kind: 'invalid', error: { code: 'BAD_REQUEST', message: error.message ?? 'invalid input' } };
+    return { kind: 'error', error: { code: 'NETWORK', message: error.message ?? 'network error' } };
+  }
+  return { kind: 'ok', data: data as GenerateFixSnippetAnonResponse };
 }

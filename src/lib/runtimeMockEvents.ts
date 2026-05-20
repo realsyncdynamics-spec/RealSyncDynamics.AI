@@ -4,6 +4,10 @@
 // The terminal feed in GlobalRuntimeFeedSection reveals these one-by-one
 // with a stagger so the visitor sees a "live system" on first paint.
 
+// ⚠ DEMO-RUNTIME: Alle Events sind simulierte Beispieldaten.
+// Keine Live-Telemetrie. Kein Anschluss an Produktions-Datenbank.
+// Für echte Runtime-Daten: Phase 3 (Ingest Path, PR #373+).
+
 export type RuntimeEventKind =
     | 'scan'
   | 'drift'

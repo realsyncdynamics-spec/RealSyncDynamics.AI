@@ -92,6 +92,9 @@ function SectionHead() {
         Browser-Layer, Network-Layer und AI-Layer — alle annotiert, während sie passieren,
         und in die Evidence-Chain versiegelt, sobald sie abgeschlossen sind.
       </p>
+      <p className="mt-3 text-[11px] font-mono text-titanium-600 tracking-wide">
+        ⚠ Simulierte Telemetrie — keine Live-Produktionsdaten
+      </p>
     </div>
   );
 }
@@ -100,7 +103,7 @@ function SectionHead() {
 
 function GraphPane({ active, reduce }: { active: boolean; reduce: boolean }) {
   return (
-    <Pane title="governance-graph · live" badge={<span className="text-emerald-400">● synced</span>}>
+    <Pane title="governance-graph · live" badge={<span className="text-emerald-400">● Demo-Daten</span>}>
       <div className="aspect-[1200/700] w-full bg-gradient-to-br from-obsidian-950 to-obsidian-900 relative">
         <svg viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" className="w-full h-full">
           <defs>
@@ -179,7 +182,7 @@ const COUNTERS: CounterDef[] = [
 
 function CountersPane({ active, reduce }: { active: boolean; reduce: boolean }) {
   return (
-    <Pane title="signals · last 24h" badge={<span className="text-titanium-400">delta = live</span>}>
+    <Pane title="signals · last 24h" badge={<span className="text-titanium-400">Demo-Runtime · simuliert</span>}>
       <div className="grid grid-cols-2 gap-px bg-titanium-900">
         {COUNTERS.map((c) => (
           <div key={c.label} className="bg-obsidian-950 p-4">
@@ -191,7 +194,7 @@ function CountersPane({ active, reduce }: { active: boolean; reduce: boolean }) 
               <CountUp to={c.to} active={active} reduce={reduce} />
             </div>
             {c.highlight && (
-              <div className="text-[10px] font-mono text-emerald-400 mt-0.5">▲ live</div>
+              <div className="text-[10px] font-mono text-emerald-400 mt-0.5">▲ Beispieldaten</div>
             )}
           </div>
         ))}
@@ -236,7 +239,7 @@ function TerminalPane({ active, reduce }: { active: boolean; reduce: boolean }) 
   }, [active, reduce, revealed]);
 
   return (
-    <Pane title="event-stream · runtime.log" badge={<span className="text-cyan-300">▮ streaming</span>}>
+    <Pane title="event-stream · runtime.log" badge={<span className="text-cyan-300">▮ Demo-Runtime</span>}>
       <div className="bg-obsidian-950 font-mono text-[11px] leading-relaxed p-3 overflow-y-auto max-h-[300px] lg:max-h-none lg:h-full">
         {RUNTIME_MOCK_EVENTS.slice(0, revealed).map((e, i) => (
           <motion.div

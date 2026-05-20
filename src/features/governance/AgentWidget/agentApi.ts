@@ -138,3 +138,54 @@ export async function sendChatAnon(args: {
   }
   return { kind: 'ok', data: body as AnonChatResponse };
 }
+
+/**
+ * Anon-Tool: start_audit_scan({ url, email })
+ *
+ * Ruft den governance-agent op='start_audit_scan' auf. Phase 3 liefert
+ * einen Mock-Queued-Status — der echte Scan-Worker konsumiert die queued
+ * Eintraege erst spaeter (siehe Edge-Function-Kommentar).
+ *
+ * Wieso ein eigenes Tool statt direkter Call an gdpr-audit?
+ *   - Die LLM-Tool-Vertragsoberflaeche soll uniform sein: alle Tools
+ *     gehen ueber governance-agent.
+ *   - So kann der AssistentChip im anon-Modus spaeter den Tool-Call
+ *     autonom triggern (LLM-tool-use), ohne neue Endpoints anzufassen.
+ */
+
+export interface AnonAuditScanResponse {
+  ok: true;
+  status: 'queued';
+  audit_id: string;
+  url_normalized: string;
+  hint: string;
+}
+
+export type AnonAuditScanResult =
+  | { kind: 'ok'; data: AnonAuditScanResponse }
+  | { kind: 'rate_limited' }
+  | { kind: 'invalid'; error: AgentError }
+  | { kind: 'error'; error: AgentError };
+
+export async function startAuditScanAnon(args: {
+  url: string;
+  email: string;
+}): Promise<AnonAuditScanResult> {
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('governance-agent', {
+    body: { op: 'start_audit_scan', ...args },
+  });
+
+  if (error) {
+    const status = (error as { context?: { status?: number } }).context?.status;
+    if (status === 429) return { kind: 'rate_limited' };
+    if (status === 400) return { kind: 'invalid', error: { code: 'BAD_REQUEST', message: error.message ?? 'invalid input' } };
+    return { kind: 'error', error: { code: 'NETWORK', message: error.message ?? 'network error' } };
+  }
+
+  const body = data as AnonAuditScanResponse | { ok: false; error: AgentError };
+  if (body.ok === false && 'error' in body && body.error) {
+    return { kind: 'error', error: (body as { ok: false; error: AgentError }).error };
+  }
+  return { kind: 'ok', data: body as AnonAuditScanResponse };
+}

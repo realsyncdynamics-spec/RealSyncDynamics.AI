@@ -80,3 +80,93 @@ export function evaluateAgentAction(
 
   return { allowed, requiresApproval, auditRequired, reasons };
 }
+
+// ---------------------------------------------------------------------------
+// RuntimeEvent v0 adoption (additive)
+// ---------------------------------------------------------------------------
+//
+// Adoption #2 aus dem RuntimeEvent-Standard-Rollout. `evaluateAgentAction()`
+// laeuft pure und gibt seinen `EvaluateAgentActionResult` unveraendert
+// zurueck. Konsumenten, die ein standardisiertes Runtime-Event fuer
+// Logging/Telemetry/Audit-Trail brauchen, ruufen zusaetzlich diesen
+// Helper auf.
+//
+// Wir generieren das Event NUR bei einer Violation (allowed=false). Fuer
+// allowed=true gibt der Helper `null` zurueck — dann gibt es nichts zu
+// reporten. So bleibt das Event-Volumen ehrlich an Verstoessen orientiert.
+//
+// Source: 'policy_engine'. Type: 'policy.violation_detected'. Severity:
+//   - requiresApproval=true  -> 'medium' (Approval-Gate, aber kein Hard-Block)
+//   - sonst                  -> 'high'   (Block ohne Approval-Pfad)
+// review_status:
+//   - requiresApproval=true  -> 'review_required'
+//   - sonst                  -> 'not_required'
+//
+// Adoption #2 dokumentiert in docs/architecture/runtime-event-standard.md.
+
+import {
+  createRuntimeEvent,
+  type RuntimeEvent,
+} from '../../types/runtime-event';
+
+export interface PolicyEvaluationPayloadV0 {
+  /** Eingabe-Snapshot — alle Felder 1:1 aus dem Aufruf. */
+  input: {
+    model: string;
+    dataCategories: string[];
+    externalAction: boolean;
+    riskLevel: AiRiskLevel;
+  };
+  /** Vollstaendiges Ergebnis-Objekt aus evaluateAgentAction(). */
+  result: EvaluateAgentActionResult;
+}
+
+export interface PolicyEventContext {
+  tenantId?: string;
+  sessionId?: string;
+  correlationId?: string;
+}
+
+/**
+ * Verpackt das Ergebnis einer evaluateAgentAction-Auswertung in einen
+ * v0-RuntimeEvent. Liefert `null`, wenn die Aktion erlaubt war — dann gibt
+ * es keinen Verstoss zu protokollieren.
+ *
+ * Eigenschaften:
+ *   - `event.spec_version === '0.1'`
+ *   - `event.payload.input` enthaelt die Auswertungs-Eingabe 1:1
+ *   - `event.payload.result` enthaelt das vollstaendige Ergebnis 1:1
+ *   - Keine Mutation der uebergebenen Objekte
+ */
+export function policyResultToRuntimeEventV0(
+  result: EvaluateAgentActionResult,
+  input: EvaluateAgentActionInput,
+  context?: PolicyEventContext,
+): RuntimeEvent<PolicyEvaluationPayloadV0> | null {
+  if (result.allowed) return null;
+
+  return createRuntimeEvent<PolicyEvaluationPayloadV0>({
+    tenant_id: context?.tenantId,
+    session_id: context?.sessionId,
+    correlation_id: context?.correlationId,
+    type: 'policy.violation_detected',
+    source: 'policy_engine',
+    severity: result.requiresApproval ? 'medium' : 'high',
+    review_status: result.requiresApproval ? 'review_required' : 'not_required',
+    actor: { type: 'agent', id: 'policy-enforcement-agent' },
+    payload: {
+      input: {
+        model: input.model,
+        dataCategories: input.dataCategories,
+        externalAction: input.externalAction,
+        riskLevel: input.riskLevel,
+      },
+      result: {
+        allowed: result.allowed,
+        requiresApproval: result.requiresApproval,
+        auditRequired: result.auditRequired,
+        reasons: result.reasons,
+      },
+    },
+  });
+}

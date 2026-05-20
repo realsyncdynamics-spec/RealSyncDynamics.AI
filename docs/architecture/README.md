@@ -69,7 +69,7 @@ What must happen before advancing between phases:
 | # | Planned File | Layer | Description |
 |---|---|---|---|
 | P1 | `anon-governance-mode.md` | Layer 1 | Security spec for anonymous agent: rate-limits, read-only tools, audit logging |
-| P2 | `evidence-bundle-builder.md` | Layer 3 | EvidenceBundleBuilder RFC: anchor-chain traversal, export formats |
+| P2 | [`evidence-bundle-builder.md`](./evidence-bundle-builder.md) | Layer 3 | `proposed` — EvidenceBundleBuilder RFC: anchor-chain traversal, hash-chain, export formats (JSON / PDF-ready / CSV) |
 | P3 | `audit-copilot.md` | cross | Conversational audit flow: from scan → finding → remediation suggestion |
 | P4 | `runtime-canvas.md` | Layer 1 | RuntimeCanvas: demo/live mode switching, event feed architecture |
 | P5 | `drift-detection.md` | Layer 3 | Tenant drift detection over time windows using Evidence Graph |

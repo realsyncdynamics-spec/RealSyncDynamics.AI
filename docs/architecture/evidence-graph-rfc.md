@@ -1,5 +1,7 @@
 # RFC: Evidence Graph Architecture v0
 
+> **Phase B1 Status:** `src/types/evidence-graph.ts` implementiert. RuntimeEventNode, EvidenceNode, IncidentNode + Factory-Funktionen (`createRuntimeEventNode`, `createEvidenceNode`, `createIncidentNode`, `createEvidenceRelation`) verfügbar. Pure Type-Layer — keine DB-Schreibung, keine Validation. Siehe `src/types/evidence-graph.test.ts` für Vertragstests.
+
 **Status:** Proposed
 **Author:** Governance Runtime
 **Created:** 2026-05-20

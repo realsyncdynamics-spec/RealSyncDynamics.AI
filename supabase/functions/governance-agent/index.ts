@@ -113,6 +113,18 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Anon tool: start_audit_scan — public callable, rate-limited per IP.
+  // Akzeptiert {url, email} und liefert einen Mock-Queued-Status zurueck.
+  // Ein echter Scan-Worker liest spaeter aus public.audit_scan_queue —
+  // siehe README. Phase 3 nimmt nur die UI/Tool-Vertragsoberflaeche raus.
+  if (body.op === 'start_audit_scan') {
+    try {
+      return await handleStartAuditScanAnon(req, body);
+    } catch (e) {
+      return jsonError(500, 'INTERNAL', (e as Error).message);
+    }
+  }
+
   // All other ops require a valid user JWT.
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -508,6 +520,58 @@ function estimateCostUsd(model: string, inTok: number, outTok: number): number {
                           : m.includes('haiku')  ? [0.8, 4]
                           : [3, 15];
   return +(inTok / 1_000_000 * inRate + outTok / 1_000_000 * outRate).toFixed(6);
+}
+
+/**
+ * Phase 3 (Hostinger-Pattern): start_audit_scan-Tool im Anon-Mode.
+ *
+ * Vertrag:
+ *   Input:  { op: 'start_audit_scan', url: string, email: string }
+ *   Output: { ok: true, status: 'queued', audit_id: string,
+ *             url_normalized: string, hint: string }
+ *
+ * Wieso Mock-Queued statt echtem Scan?
+ *   - Der echte Scanner (gdpr-audit Edge Function) ist eine separate Surface
+ *     mit eigener Pre-Consent-/Headless-Logik. Phase 3 baut nur die LLM-Tool-
+ *     Vertragsoberflaeche, damit der Chat-Hero verdrahtet werden kann.
+ *   - Ein spaeterer Worker liest die queued-Eintraege und triggert
+ *     gdpr-audit — bis dahin ist der Mock ehrlich gelabelt.
+ *   - Wichtig: das Tool legt KEINE Daten in der DB an; pure clientseitige
+ *     UI-Vertragsschnittstelle. Die separate gdpr-audit-Function speichert
+ *     bei einem echten Scan einen Audit-Datensatz.
+ */
+async function handleStartAuditScanAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ipHash = await sha256Hex(ip);
+  if (!checkAnonRateLimit(ipHash)) {
+    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
+  }
+
+  const urlRaw   = typeof body.url   === 'string' ? body.url.trim()   : '';
+  const emailRaw = typeof body.email === 'string' ? body.email.trim() : '';
+
+  if (!urlRaw)   return jsonError(400, 'BAD_REQUEST', 'url required');
+  if (!emailRaw) return jsonError(400, 'BAD_REQUEST', 'email required');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+    return jsonError(400, 'BAD_REQUEST', 'email invalid');
+  }
+
+  // URL-Normalisierung: identisch zur AuditLanding-Form-Variante.
+  const normalized = urlRaw.match(/^https?:\/\//i) ? urlRaw : `https://${urlRaw}`;
+  try {
+    // Wirft TypeError bei ungueltigem Format.
+    new URL(normalized);
+  } catch {
+    return jsonError(400, 'BAD_REQUEST', 'url malformed');
+  }
+
+  return json({
+    ok: true,
+    status: 'queued',
+    audit_id: `mock-${crypto.randomUUID()}`,
+    url_normalized: normalized,
+    hint: 'Demo-Response — kein echter Scan ausgelöst. Wechsel auf /audit für den vollen Scan.',
+  });
 }
 
 function json(body: unknown, status = 200): Response {

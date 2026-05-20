@@ -68,8 +68,9 @@ export function Impressum() {
             vertreten durch den Inhaber Dominik Steiner.
           </p>
           <p className="text-xs text-titanium-500">
-            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI" — finaler
-            Eintrag bei Gewerbeanmeldung (Gewerbeamt Neuhaus am Rennweg, Landkreis Sonneberg).
+            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI".
+            Gewerbe angemeldet am 13.05.2026 (Gewerbeamt Neuhaus am Rennweg,
+            Landkreis Sonneberg, Gemeindekennzahl 16072013).
           </p>
         </Section>
 
@@ -90,14 +91,19 @@ export function Impressum() {
 
         <Section title="Tätigkeitsschwerpunkte">
           <p>
-            Entwicklung, Vermarktung und Betrieb von KI-gestützten Software-as-a-Service (SaaS)-Lösungen;
-            IT-Dienstleistungen; Unternehmensberatung im Bereich digitale Prozessautomatisierung und
-            Datenschutz-/AI-Act-Compliance. Schwerpunkt: EU-souveräne KI-Infrastruktur,
-            DSGVO-Compliance-Tools (AVV / VVT / DSFA / Cookie-Consent), Audit-Trail.
+            Entwicklung und Betrieb von Software-as-a-Service (SaaS)-Lösungen
+            im Bereich Datenschutz-, Compliance- und KI-Governance,
+            insbesondere automatisierte Website- und Tracking-Analysen,
+            DSGVO-/TTDSG-Compliance-Monitoring, technische Audit- und
+            Reporting-Systeme sowie digitale Compliance-Tools. Erbringung
+            von IT-Dienstleistungen, Softwareentwicklung und Bereitstellung
+            webbasierter Analyse- und Monitoringplattformen.
           </p>
           <p className="text-xs text-titanium-500">
-            WZ-Code (vorläufig, finaler Eintrag durch Finanzamt): 62.01.0 (Programmierungstätigkeiten),
-            ergänzend 62.09.0 (sonstige Tätigkeiten der Informationstechnologie).
+            Wortlaut gemäß registrierter Gewerbeanmeldung (Anlage zu GewA 1,
+            Feld 18, Datum 13.05.2026). WZ-Code: 62.01.0
+            (Programmierungstätigkeiten), ergänzend 62.09.0
+            (sonstige Tätigkeiten der Informationstechnologie).
           </p>
         </Section>
 

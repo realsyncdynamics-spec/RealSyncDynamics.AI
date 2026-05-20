@@ -108,3 +108,78 @@ export const DEMO_RUNTIME_EVENTS: RuntimeEvent[] = [
 ];
 
 export const DEMO_VVT_ENTRIES: RuntimeVvtEntry[] = deriveVvtEntriesFromEvents(DEMO_RUNTIME_EVENTS);
+
+// ---------------------------------------------------------------------------
+// RuntimeEvent v0 adoption (additive)
+// ---------------------------------------------------------------------------
+//
+// Adoption #2 aus dem RuntimeEvent-Standard-Rollout. Die VVT-Mapper-Pipeline
+// haelt ihre lokale `RuntimeEvent`-Shape unveraendert (id/tenantId/sourceUrl/
+// type/occurredAt/metadata) — `deriveVvtEntriesFromEvents` und alle
+// Consumer-Komponenten bleiben kompatibel.
+//
+// Zusaetzlich exportieren wir die GLEICHEN 10 Events als v0-konforme
+// `RuntimeEvent<T>`. Phase-2-Validierung kann gegen diese Liste linten,
+// ohne die VVT-Pipeline anzufassen.
+
+import {
+  createRuntimeEvent,
+  type RuntimeEvent as RuntimeEventV0,
+  type RuntimeEventSource,
+  type RuntimeEventType,
+} from '../../../types/runtime-event';
+
+export interface VvtDemoEventPayloadV0 {
+  /** Original VVT-Event-Type (mit Punkten, z. B. 'tracker.pre_consent.detected'). */
+  original_type: string;
+  source_url: string;
+  metadata: Record<string, unknown>;
+}
+
+function mapVvtTypeToV0(originalType: string): RuntimeEventType {
+  if (originalType === 'tracker.pre_consent.detected') return 'tracker.pre_consent_detected';
+  if (originalType === 'cookie.banner.detected')       return 'consent.banner_detected';
+  if (originalType === 'form.email.detected')          return 'form.email_detected';
+  if (originalType === 'form.newsletter.detected')     return 'form.email_detected';
+  if (originalType === 'ai.endpoint.found')            return 'ai.endpoint_found';
+  if (originalType === 'vendor.unknown.detected')      return 'vendor.unknown_detected';
+  if (originalType === 'payment.endpoint.detected')    return 'vendor.detected';
+  if (originalType === 'media.embedded.detected')      return 'vendor.detected';
+  if (originalType === 'analytics.endpoint.detected')  return 'vendor.detected';
+  return 'scan.completed';
+}
+
+function mapVvtTypeToSource(originalType: string): RuntimeEventSource {
+  if (originalType.startsWith('ai.'))      return 'ai_probe';
+  if (originalType.startsWith('vendor.'))  return 'browser_collector';
+  return 'browser_collector';
+}
+
+/**
+ * Exakt dieselben 10 Demo-Events wie `DEMO_RUNTIME_EVENTS` — verpackt in
+ * den v0-Envelope. Der bestehende VVT-Mapper liest unveraendert die alte
+ * Liste; v0-Consumer (Validierungs-Tooling, kuenftige Dashboards) lesen
+ * diese Liste.
+ *
+ * Eigenschaften:
+ *   - `event.spec_version === '0.1'`
+ *   - `event.tenant_id` aus dem Original
+ *   - `event.payload.original_type` traegt den ALTEN Typstring 1:1 weiter
+ *   - `event.payload.metadata` traegt ALLE Original-Felder vollstaendig weiter
+ *   - Reihenfolge identisch zur Quelle (deterministisch ueber .map(...))
+ */
+export const DEMO_RUNTIME_EVENTS_V0: ReadonlyArray<RuntimeEventV0<VvtDemoEventPayloadV0>> =
+  DEMO_RUNTIME_EVENTS.map((e) =>
+    createRuntimeEvent<VvtDemoEventPayloadV0>({
+      id: e.id,
+      tenant_id: e.tenantId,
+      type: mapVvtTypeToV0(e.type),
+      source: mapVvtTypeToSource(e.type),
+      actor: { type: 'system' },
+      payload: {
+        original_type: e.type,
+        source_url: e.sourceUrl,
+        metadata: e.metadata ?? {},
+      },
+    }),
+  );

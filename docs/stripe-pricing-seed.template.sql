@@ -12,25 +12,28 @@
 --
 -- Anwendungsweg:
 --   1. Stripe-Dashboard (Test-Mode oder Live): 3 Products + Prices anlegen
---      - Starter: 79 € / Monat recurring
---      - Growth:  249 € / Monat recurring
---      - Agency:  699 € / Monat recurring
+--      - Starter: 49 € / Monat recurring
+--      - Growth:  179 € / Monat recurring
+--      - Agency:  499 € / Monat recurring
+--      (Pricing-Rebalance 2026-05-18, siehe src/config/pricing.ts JSDoc.
+--       Alte Stripe-Price-IDs aus 79/249/699 in Stripe-Dashboard ARCHIVIEREN
+--       und neue Price-Objekte fuer die neuen Betraege anlegen.)
 --   2. Diese Datei kopieren -> price_REPLACE_*_ID durch echte IDs ersetzen
 --   3. Im Supabase-SQL-Editor ausfuehren (oder als Migration committen)
 --
 -- Idempotent dank ON CONFLICT (stripe_price_id) DO NOTHING.
 
--- ─── Starter (79 €/Monat) ────────────────────────────────────────────────────
+-- ─── Starter (49 €/Monat) ────────────────────────────────────────────────────
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
 VALUES ('price_REPLACE_STARTER_ID', 'Starter', 'starter')
 ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- ─── Growth (249 €/Monat) ────────────────────────────────────────────────────
+-- ─── Growth (179 €/Monat) ────────────────────────────────────────────────────
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
 VALUES ('price_REPLACE_GROWTH_ID', 'Growth', 'growth')
 ON CONFLICT (stripe_price_id) DO NOTHING;
 
--- ─── Agency (699 €/Monat) ────────────────────────────────────────────────────
+-- ─── Agency (499 €/Monat) ────────────────────────────────────────────────────
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key)
 VALUES ('price_REPLACE_AGENCY_ID', 'Agency', 'agency')
 ON CONFLICT (stripe_price_id) DO NOTHING;

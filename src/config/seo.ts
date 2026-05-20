@@ -84,12 +84,12 @@ const PRICING_PRODUCT_JSONLD = {
     {
       '@type': 'Offer',
       name: 'Starter',
-      price: '79',
+      price: '49',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/pricing`,
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
-        price: '79',
+        price: '49',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
       },
@@ -97,12 +97,12 @@ const PRICING_PRODUCT_JSONLD = {
     {
       '@type': 'Offer',
       name: 'Growth',
-      price: '249',
+      price: '179',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/pricing`,
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
-        price: '249',
+        price: '179',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
       },
@@ -110,12 +110,12 @@ const PRICING_PRODUCT_JSONLD = {
     {
       '@type': 'Offer',
       name: 'Agency',
-      price: '699',
+      price: '499',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/pricing`,
       priceSpecification: {
         '@type': 'UnitPriceSpecification',
-        price: '699',
+        price: '499',
         priceCurrency: 'EUR',
         billingDuration: 'P1M',
       },
@@ -125,7 +125,7 @@ const PRICING_PRODUCT_JSONLD = {
       name: 'Enterprise',
       priceCurrency: 'EUR',
       url: `${SITE_URL}/contact-sales?intent=enterprise`,
-      description: 'Auf Anfrage — ab 1.500 €/Monat, SLA, AI-Act-Modul, DSB-Integration, Evidence Vault',
+      description: 'Auf Anfrage — ab 998 €/Monat, SLA, AI-Act-Modul, DSB-Integration, Evidence Vault',
     },
   ],
 };
@@ -230,7 +230,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/pricing': {
     title: 'Preise – RealSyncDynamicsAI Compliance-Plattform',
     description:
-      'Wählen Sie zwischen Free Audit, Starter (79€), Growth (249€), Agency (699€) und Enterprise (ab 1.500€) für automatisierte DSGVO- und AI-Act-Compliance.',
+      'Wählen Sie zwischen Free Audit, Starter (49€), Growth (179€), Agency (499€) und Enterprise (ab 998€) für automatisierte DSGVO- und AI-Act-Compliance.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -540,7 +540,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/fuer-saas': {
     title: 'Für SaaS-Teams — DSGVO-Compliance als Infrastruktur | RealSyncDynamics.AI',
     description:
-      'Compliance-Layer für SaaS-Teams: API-First, Multi-Tenant, BYOK, Webhooks. Mechanical Input + AI Orchestration + Digital Output. Pilot ab 249 €/Monat.',
+      'Compliance-Layer für SaaS-Teams: API-First, Multi-Tenant, BYOK, Webhooks. Mechanical Input + AI Orchestration + Digital Output. Pilot ab 179 €/Monat.',
     canonical: `${SITE_URL}/fuer-saas`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -550,7 +550,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/fuer-praxen': {
     title: 'Für Arztpraxen + Zahnärzte — DSGVO ohne IT-Aufwand | RealSyncDynamics.AI',
     description:
-      'DSGVO-Komplettpaket für Arzt- und Zahnarztpraxen: Cookie-Banner, Datenschutzerklärung, AVV mit Praxisverwaltung, Patientendaten-Schutz. Starter ab 79 €/Monat, Growth ab 249 €/Monat.',
+      'DSGVO-Komplettpaket für Arzt- und Zahnarztpraxen: Cookie-Banner, Datenschutzerklärung, AVV mit Praxisverwaltung, Patientendaten-Schutz. Starter ab 49 €/Monat, Growth ab 179 €/Monat.',
     canonical: `${SITE_URL}/fuer-praxen`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

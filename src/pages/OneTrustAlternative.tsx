@@ -30,7 +30,7 @@ export function OneTrustAlternative() {
             </h1>
             <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
               OneTrust kostet ab 600 €/Monat, ist US-gehostet und kein Audit-Log über AI-Calls.
-              Wir liefern die KI-spezifische Compliance-Schicht ab 79 €/M (Starter).
+              Wir liefern die KI-spezifische Compliance-Schicht ab 49 €/M (Starter).
             </p>
           </div>
 
@@ -51,7 +51,7 @@ export function OneTrustAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing ab', o: '~600 €/M (Enterprise)', r: '79 €/M (Starter) · Free Audit kostenlos' },
+                  { f: 'Pricing ab', o: '~600 €/M (Enterprise)', r: '49 €/M (Starter) · Free Audit kostenlos' },
                   { f: 'Origin / Hosting', o: 'USA', r: '🇩🇪 Frankfurt' },
                   { f: 'Schrems-II-tauglich (default)', o: 'partial', r: 'yes' },
                   { f: 'Cookie-Consent-Banner (BfDI 2024)', o: 'yes', r: 'yes' },
@@ -98,7 +98,7 @@ export function OneTrustAlternative() {
                 <Euro className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
                   <strong className="text-titanium-50">Pricing-Transparenz</strong>: OneTrust hat Sales-Calls und Quote-on-Request ab ~600 €/M.
-                  Wir haben Pricing online ab 79 €/M (Starter), Self-Serve, jederzeit kündbar.
+                  Wir haben Pricing online ab 49 €/M (Starter), Self-Serve, jederzeit kündbar.
                 </div>
               </li>
             </ul>

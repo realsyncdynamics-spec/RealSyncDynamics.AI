@@ -43,7 +43,7 @@ export function IubendaAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing ab', o: '~108 €/Jahr Ultimate', r: '79 €/M (Starter) · Free Audit kostenlos' },
+                  { f: 'Pricing ab', o: '~108 €/Jahr Ultimate', r: '49 €/M (Starter) · Free Audit kostenlos' },
                   { f: 'Cookie-Banner', o: 'yes', r: 'yes' },
                   { f: 'BfDI 2024 / 3 gleichberechtigte Buttons', o: 'partial', r: 'yes' },
                   { f: 'Datenschutzerklärung-Generator', o: 'yes', r: 'yes' },
@@ -105,7 +105,7 @@ export function IubendaAlternative() {
 
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-              DACH-Compliance auf einer Plattform — ab 79 €/M (Starter)
+              DACH-Compliance auf einer Plattform — ab 49 €/M (Starter)
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
               <Link to="/cookie-consent-sdk" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">

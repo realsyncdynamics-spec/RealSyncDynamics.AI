@@ -16,6 +16,7 @@
     "e2e": "playwright test",
     "check:production": "node scripts/production-readiness-check.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
+    "eval:risk-agent": "tsx scripts/eval-ai-risk-agent.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh"
   },

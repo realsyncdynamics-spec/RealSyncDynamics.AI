@@ -1,0 +1,187 @@
+name: ai-risk-agent Eval
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/ai-risk/**'
+      - 'supabase/migrations/*_ai_risk_goldset.sql'
+      - 'scripts/eval-ai-risk-agent.ts'
+      - '.github/workflows/risk-agent-eval.yml'
+  schedule:
+    # Nightly 02:30 UTC — fängt Regression durch externe Modell-Updates.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  eval:
+    name: Goldset evaluation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required secrets
+        id: secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AI_RISK_AGENT_URL: ${{ secrets.AI_RISK_AGENT_URL }}
+          AI_RISK_AGENT_TOKEN: ${{ secrets.AI_RISK_AGENT_TOKEN }}
+        run: |
+          missing=()
+          [ -z "$SUPABASE_URL" ]         && missing+=(SUPABASE_URL)
+          [ -z "$SUPABASE_SERVICE_KEY" ] && missing+=(SUPABASE_SERVICE_KEY)
+          [ -z "$AI_RISK_AGENT_URL" ]    && missing+=(AI_RISK_AGENT_URL)
+          [ -z "$AI_RISK_AGENT_TOKEN" ]  && missing+=(AI_RISK_AGENT_TOKEN)
+          if [ ${#missing[@]} -gt 0 ]; then
+            joined="${missing[*]}"
+            echo "::notice title=ai-risk-agent eval skipped::Required secrets not configured. Set ${joined} in repo Settings → Secrets and variables → Actions to enable eval. See docs/qa/ai-risk-eval.md."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "missing=${joined}" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.secrets.outputs.skip != 'true'
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install deps
+        if: steps.secrets.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Run eval
+        id: eval
+        if: steps.secrets.outputs.skip != 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          AI_RISK_AGENT_URL: ${{ secrets.AI_RISK_AGENT_URL }}
+          AI_RISK_AGENT_TOKEN: ${{ secrets.AI_RISK_AGENT_TOKEN }}
+          AGENT_VERSION: ${{ github.event.pull_request.head.sha || github.sha }}
+          GIT_SHA: ${{ github.sha }}
+          CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVAL_REPORT_DIR: ${{ github.workspace }}/eval-reports
+        run: npx tsx scripts/eval-ai-risk-agent.ts
+        continue-on-error: true
+
+      - name: Locate report
+        id: report
+        if: always() && steps.secrets.outputs.skip != 'true'
+        run: |
+          report_path=$(ls -1t eval-reports/*.md 2>/dev/null | head -1 || true)
+          if [ -n "$report_path" ]; then
+            echo "path=$report_path" >> "$GITHUB_OUTPUT"
+            echo "exists=true"      >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload report artifact
+        if: always() && steps.report.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-risk-eval-report
+          path: ${{ steps.report.outputs.path }}
+          retention-days: 90
+
+      - name: Comment report on PR
+        if: github.event_name == 'pull_request' && steps.report.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('${{ steps.report.outputs.path }}', 'utf8');
+            const marker = '<!-- ai-risk-agent-eval-report -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            const payload = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: payload });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
+            }
+
+      - name: Open or update regression issue on failure
+        if: steps.secrets.outputs.skip != 'true' && steps.eval.outcome != 'success' && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const label = 'agent-regression';
+
+            // Ensure label exists (idempotent — ignore "already_exists" errors).
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo,
+                name: label,
+                color: 'b60205',
+                description: 'ai-risk-agent eval threshold violation',
+              });
+            } catch (e) {
+              if (!String(e.message).includes('already_exists')) throw e;
+            }
+
+            // Try to load the latest report for the issue body; fall back to
+            // a minimal description if the report did not land on disk.
+            const reportPath = '${{ steps.report.outputs.path }}';
+            let bodyTail = '';
+            try {
+              if (reportPath && fs.existsSync(reportPath)) {
+                const full = fs.readFileSync(reportPath, 'utf8');
+                bodyTail = full.length > 50000 ? full.slice(0, 50000) + '\n\n_(truncated — full report in workflow artifact)_' : full;
+              }
+            } catch (_) { /* report missing — keep bodyTail empty */ }
+
+            const title = `ai-risk-agent eval failure — ${context.payload.schedule ? 'nightly' : 'manual'} run ${context.runId}`;
+            const body = [
+              `**Run:** ${runUrl}`,
+              `**SHA:** \`${context.sha}\``,
+              `**Event:** ${context.eventName}`,
+              ``,
+              `The ai-risk-agent goldset evaluation did not pass its acceptance`,
+              `thresholds. See the report below (and the full artifact attached`,
+              `to the workflow run) for which metrics regressed.`,
+              ``,
+              `---`,
+              ``,
+              bodyTail || '_Report file missing — open the workflow run for logs._',
+            ].join('\n');
+
+            // De-dup: if an open issue with the same title-prefix exists, comment
+            // on it instead of opening a new one. Title-prefix dedup keys on the
+            // run-type (nightly vs manual), not on every single run id.
+            const titlePrefix = title.split(' — ')[0];
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: label, per_page: 50,
+            });
+            const dupe = existing.find(i => i.title.startsWith(titlePrefix));
+
+            if (dupe) {
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: dupe.number,
+                body: `Another failed run: ${runUrl} (\`${context.sha.slice(0,8)}\`)`,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner, repo, title, body, labels: [label],
+              });
+            }
+
+      - name: Fail job if eval failed
+        if: steps.secrets.outputs.skip != 'true' && steps.eval.outcome != 'success'
+        run: |
+          echo "ai-risk-agent eval did not pass — see report artifact above."
+          exit 1

@@ -31,7 +31,7 @@ export function CookiebotAlternative() {
             <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
               Cookiebot (Cybot A/S, gehört zu Usercentrics) ist beliebt — wurde aber 2022 vom VG Wiesbaden
               wegen US-Datentransfer (Akamai-CDN) <strong className="text-titanium-50">untersagt</strong>.
-              Wir liefern dasselbe — EU-hosted, ohne US-CDN, ab 79 €/Monat (Starter).
+              Wir liefern dasselbe — EU-hosted, ohne US-CDN, ab 49 €/Monat (Starter).
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export function CookiebotAlternative() {
               </thead>
               <tbody className="divide-y divide-titanium-900">
                 {[
-                  { f: 'Pricing ab', o: '~110 €/M (Premium)', r: '79 €/M (Starter) · Free Audit kostenlos' },
+                  { f: 'Pricing ab', o: '~110 €/M (Premium)', r: '49 €/M (Starter) · Free Audit kostenlos' },
                   { f: 'EU-Hosting Default', o: 'partial', r: 'yes' },
                   { f: 'BfDI 2024 konform', o: 'yes', r: 'yes' },
                   { f: 'Auto-Cookie-Scan (Crawler)', o: 'yes', r: 'partial' },
@@ -127,7 +127,7 @@ export function CookiebotAlternative() {
 
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-              EU-Hosting als Default. 79 €/M (Starter) statt 110 €/M.
+              EU-Hosting als Default. 49 €/M (Starter) statt 110 €/M.
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
               <Link to="/cookie-consent-sdk" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">

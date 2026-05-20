@@ -112,7 +112,7 @@ export function CookieConsentSdk() {
               </div>
             </div>
             <p className="text-[11px] text-titanium-500 mt-4">
-              Vergleich: OneTrust ab ~600 €/M · Usercentrics ab ~150 €/M. Wir ab 79 €/M (Starter), transparent, ohne Lock-in.
+              Vergleich: OneTrust ab ~600 €/M · Usercentrics ab ~150 €/M. Wir ab 49 €/M (Starter), transparent, ohne Lock-in.
             </p>
           </div>
         </div>

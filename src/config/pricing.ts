@@ -9,20 +9,24 @@
  *
  * Aenderungen hier propagieren ueberall — niemals duplizieren.
  *
- * Pricing-Rebalance vom 2026-05-10 (Test-Kunde-Critique):
- *   alt:  Free / Starter 49 / Growth 199 / Enterprise individuell  (4 Tier)
- *   neu:  Free / Starter 79 / Growth 249 / Agency 699 / Enterprise ab 1500
+ * Pricing-Rebalance vom 2026-05-18 (Conversation Punkt-Korrektur):
+ *   alt:  Free / Starter 79  / Growth 249 / Agency 699 / Enterprise ab 1500
+ *   neu:  Free / Starter 49  / Growth 179 / Agency 499 / Enterprise ab 998
  *
- * Reasoning:
- *   - Starter 49 -> 79: 49 wirkt wie Hobby-Tool. 79 ist das DACH-Pflicht-
- *     Compliance-Sweet-Spot (Cookiebot Premium ~110, Iubenda Plus ~280)
- *   - Growth 199 -> 249: leichte Anhebung weil Auto-Fix + Daily-Monitoring
- *     mehr wert ist als 199, und 249 markiert klar die Premium-Linie
- *   - Agency 699 NEU: fehlte komplett. Agenturen sind in DACH der schnellste
- *     Vertriebskanal — 1 Agency-Kunde = 5-15 End-Domains. Sweet-Spot 699:
- *     OneTrust ab ~600, aber wir liefern White-Label + DACH-Pricing
- *   - Enterprise jetzt mit Floor "ab 1500": signalisiert Niveau,
- *     blockiert Tire-Kicker
+ * Reasoning (2026-05-18):
+ *   - Starter 79 -> 49: aggressivere Penetration im KMU-Segment, das
+ *     79 als Pflicht-Tool-Schwelle wahrnimmt. 49 senkt die Aktivierungs-
+ *     Reibung ohne in den Hobby-Tool-Bereich (< 30) zu rutschen.
+ *   - Growth 249 -> 179: bleibt deutlich ueber 99-Marke (Premium-Signal),
+ *     aber unter der 200-Schwelle, ab der Procurement-Approval bei
+ *     Mittelstaendlern haerter wird.
+ *   - Agency 699 -> 499: White-Label-Pool wird breiter zugaenglich.
+ *     Bei 10 Kunden-Sites = 49,90 € pro betreuter Site fuer den Endkunden.
+ *   - Enterprise 1500 -> 998: psychologische Schwelle unter 1k, aber
+ *     immer noch klares Premium-Tier; signalisiert Niveau, blockiert
+ *     Tire-Kicker. Reale Vertraege werden weiterhin > 998 abgeschlossen.
+ *
+ * Frueherer Rebalance vom 2026-05-10 dokumentiert in PR #145.
  */
 
 export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
@@ -35,9 +39,9 @@ export interface PricingTier {
   planKey: string;
   /** Anzeige-Preis (Euro). Fuer Enterprise: priceEur=0, priceString='individuell' */
   priceEur: number;
-  /** "0", "79", "249", "699" — als String fuer Stripe Offer-Schema */
+  /** "0", "49", "179", "499" — als String fuer Stripe Offer-Schema */
   priceString: string;
-  /** "/ Monat", "einmalig", "individuell ab 1.500 €" */
+  /** "/ Monat", "einmalig", "individuell ab 998 €" */
   priceSuffix: string;
   /** isRecurring → mode: subscription bei Stripe Checkout */
   recurring: boolean;
@@ -76,8 +80,8 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'starter',
     name: 'Starter',
     planKey: 'starter',
-    priceEur: 79,
-    priceString: '79',
+    priceEur: 49,
+    priceString: '49',
     priceSuffix: '/ Monat',
     recurring: true,
     tagline: 'Für kleine Unternehmen, lokale Betriebe und Einzel-Domains, die laufend überwacht werden sollen',
@@ -96,8 +100,8 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'growth',
     name: 'Growth',
     planKey: 'growth',
-    priceEur: 249,
-    priceString: '249',
+    priceEur: 179,
+    priceString: '179',
     priceSuffix: '/ Monat',
     recurring: true,
     tagline: 'Für wachsende Unternehmen, Shops und Mittelstand mit täglichem Monitoring und konkreten Fix-Hinweisen',
@@ -117,8 +121,8 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'agency',
     name: 'Agency',
     planKey: 'agency',
-    priceEur: 699,
-    priceString: '699',
+    priceEur: 499,
+    priceString: '499',
     priceSuffix: '/ Monat',
     recurring: true,
     tagline: 'Für Multi-Domain-Teams und Plattformbetreiber, die mehrere Kundenseiten betreuen',

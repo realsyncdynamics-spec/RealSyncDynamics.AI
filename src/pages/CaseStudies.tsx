@@ -71,7 +71,7 @@ export function CaseStudies() {
                   Werde unsere nächste Case-Study.
                 </h2>
                 <p className="text-sm text-titanium-300 leading-relaxed">
-                  Pilot-Tier 14 Tage kostenlos. Wenn's passt, danach Growth 249 €/M (oder Starter 79 €/M). Bei Erfolg veröffentlichen wir Deinen Case (anonym oder named — Deine Wahl).
+                  Pilot-Tier 14 Tage kostenlos. Wenn's passt, danach Growth 179 €/M (oder Starter 49 €/M). Bei Erfolg veröffentlichen wir Deinen Case (anonym oder named — Deine Wahl).
                 </p>
               </div>
             </div>

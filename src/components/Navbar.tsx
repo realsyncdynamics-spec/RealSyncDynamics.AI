@@ -5,10 +5,10 @@ import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 
 // Single-product navigation with a Hostinger-style "KI fragen" pill before
-// the primary CTA. The pill is intentionally amber/gold so it doesn't
-// compete visually with the cyan "Run Scan" CTA — it's a secondary entry
-// point for visitors who want to ask first. The floating AssistentChip
-// (bottom-center) is the persistent surface; this pill is the in-nav twin.
+// the primary CTA. The pill uses a violet/fuchsia gradient outline so it
+// reads as a distinct AI-secondary entry next to the cyan "Run Scan" CTA.
+// The floating AssistentChip (bottom-center) is the persistent surface;
+// this pill is the in-nav twin and mirrors its visual identity (violet).
 const NAV_ITEMS = [
   { label: 'Runtime', to: '/runtime' },
   { label: 'AI Act',  to: '/ai-act' },
@@ -59,9 +59,16 @@ export function Navbar() {
             <Link
               to="/audit?source=ki-fragen"
               data-ki-fragen-pill
-              className="group inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-amber-300 hover:text-amber-200 border border-amber-500/40 hover:border-amber-400/70 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
+              className="group relative inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-violet-100 hover:text-white bg-gradient-to-br from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 hover:from-violet-500/25 hover:via-fuchsia-500/25 hover:to-violet-500/25 transition-colors"
+              style={{
+                backgroundImage:
+                  'linear-gradient(var(--ki-pill-bg, rgba(15,15,17,0.55)), var(--ki-pill-bg, rgba(15,15,17,0.55))), linear-gradient(135deg, #8b5cf6, #d946ef, #8b5cf6)',
+                backgroundClip: 'padding-box, border-box',
+                backgroundOrigin: 'border-box',
+                border: '1px solid transparent',
+              }}
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5 text-violet-300 group-hover:text-fuchsia-200" />
               KI fragen
             </Link>
             <Link
@@ -99,9 +106,17 @@ export function Navbar() {
             <Link
               to="/audit?source=ki-fragen-mobile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-2 justify-center px-3 py-3 mt-2 text-base font-semibold rounded-full text-amber-300 border border-amber-500/40 bg-amber-950/20"
+              data-ki-fragen-pill
+              className="flex items-center gap-2 justify-center px-3 py-3 mt-2 text-base font-semibold rounded-full text-violet-100"
+              style={{
+                backgroundImage:
+                  'linear-gradient(rgba(15,15,17,0.55), rgba(15,15,17,0.55)), linear-gradient(135deg, #8b5cf6, #d946ef, #8b5cf6)',
+                backgroundClip: 'padding-box, border-box',
+                backgroundOrigin: 'border-box',
+                border: '1px solid transparent',
+              }}
             >
-              <Sparkles className="h-4 w-4" /> KI fragen
+              <Sparkles className="h-4 w-4 text-violet-300" /> KI fragen
             </Link>
             <Link
               to="/audit?source=nav-activate-mobile"

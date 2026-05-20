@@ -4,13 +4,18 @@ import { AiOperatingSystemSection } from '../components/governance/AiOperatingSy
 import { GovernanceGraphSection } from '../components/governance/GovernanceGraphSection';
 import { EvidenceVaultPreview } from '../components/governance/EvidenceVaultPreview';
 import { AgentControlPlanePreview } from '../components/governance/AgentControlPlanePreview';
-import { ArrowRight, Activity, ShieldCheck, Bot, ScrollText } from 'lucide-react';
+import { ArrowRight, Activity, ShieldCheck, Bot, ScrollText, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // RuntimePage — AI Governance OS dashboard overview.
 // Five blocks: AI OS framing → governance graph → 4 surface drill-ins →
 // agents + evidence preview. Every block links into its dedicated
 // surface (/monitoring, /agents, /evidence, /governance).
+//
+// Demo-Telemetrie-Hinweis: Die hier dargestellten Metriken (agents active,
+// evidence anchored, policies enforced, governance.graph nodes/edges) sind
+// Beispiel-Werte aus Demo-Daten — keine Live-Telemetrie eines Kunden.
+// Persistenter Strip oben auf der Page deklariert das transparent (UWG § 5).
 
 export function RuntimePage() {
   usePageMeta({
@@ -24,6 +29,17 @@ export function RuntimePage() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
       <main className="pt-14">
+        {/* Demo-Telemetrie-Label — vor allen Sections, persistent, kein Dismiss.
+            Verhindert dass simulated metrics als Live-Daten missverstanden werden. */}
+        <div className="border-b border-titanium-900 bg-obsidian-900/80">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
+            <FlaskConical className="h-3 w-3 shrink-0 text-titanium-500" aria-hidden="true" />
+            <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
+              demo runtime · simulated events · not live customer data
+            </span>
+          </div>
+        </div>
+
         <AiOperatingSystemSection />
         <GovernanceGraphSection />
 

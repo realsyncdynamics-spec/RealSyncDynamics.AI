@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Activity, Cpu, ShieldCheck, Zap, FlaskConical } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, ChevronRight, Activity, Cpu, ShieldCheck, Zap, FlaskConical } from 'lucide-react';
 
 // HeroSection — the "this system is already running" moment. Infrastructure
 // feel (Datadog / Vercel / Stripe), not a legal-website hero. Single fold,
@@ -83,11 +83,32 @@ export function HeroSection() {
                                 <span className="text-cyan-300">already running.</span>
                       </h1>
               
-                      <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10">
+                      <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-8 sm:mb-10">
                                 AI Governance Runtime for EU privacy and AI Act. Continuous detection,
                                 monitoring, governance, automation — one operational plane, zero setup.
                       </p>
-              
+
+                {/* Mobile quick-rows: tappable shortcuts to the two primary funnels.
+                    On Mobile prominent (large touch-targets, full-width); on Desktop
+                    bleibt nur die kanonische URL-Form als Primary-CTA — Rows sind
+                    dort ausgeblendet damit die Hero nicht ueberladen wirkt. */}
+                      <div className="sm:hidden max-w-md mx-auto mb-8 flex flex-col gap-2" aria-label="Schnellstart">
+                                <Link
+                                            to="/audit?source=hero-scan"
+                                            className="group flex items-center justify-between gap-3 px-4 py-4 bg-obsidian-900/60 backdrop-blur-sm border border-titanium-800 hover:border-cyan-400/50 active:bg-obsidian-900 transition-colors min-h-[56px]"
+                                          >
+                                          <span className="text-base font-semibold text-titanium-50 tracking-tight">Website DSGVO prüfen</span>
+                                          <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-cyan-300 transition-colors shrink-0" />
+                                </Link>
+                                <Link
+                                            to="/pricing?source=hero-plans"
+                                            className="group flex items-center justify-between gap-3 px-4 py-4 bg-obsidian-900/60 backdrop-blur-sm border border-titanium-800 hover:border-violet-400/50 active:bg-obsidian-900 transition-colors min-h-[56px]"
+                                          >
+                                          <span className="text-base font-semibold text-titanium-50 tracking-tight">Enterprise-Pläne ansehen</span>
+                                          <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-violet-300 transition-colors shrink-0" />
+                                </Link>
+                      </div>
+
                 {/* URL launch input */}
                       <form onSubmit={onSubmit} className="max-w-2xl mx-auto" role="search" data-hero-cta>
                                 <div className="flex flex-col sm:flex-row gap-2">

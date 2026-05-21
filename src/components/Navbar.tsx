@@ -59,7 +59,7 @@ export function Navbar() {
             <Link
               to="/audit?source=ki-fragen"
               data-ki-fragen-pill
-              className="group relative inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-violet-100 hover:text-white bg-gradient-to-br from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 hover:from-violet-500/25 hover:via-fuchsia-500/25 hover:to-violet-500/25 transition-colors"
+              className="group relative inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold tracking-tight rounded-full text-violet-100 hover:text-white bg-gradient-to-br from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 hover:from-violet-500/25 hover:via-fuchsia-500/25 hover:to-violet-500/25 backdrop-blur-sm hover:scale-[1.03] hover:shadow-[0_0_24px_-4px_rgba(168,85,247,0.45)] transition-all duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100"
               style={{
                 backgroundImage:
                   'linear-gradient(var(--ki-pill-bg, rgba(15,15,17,0.55)), var(--ki-pill-bg, rgba(15,15,17,0.55))), linear-gradient(135deg, #8b5cf6, #d946ef, #8b5cf6)',

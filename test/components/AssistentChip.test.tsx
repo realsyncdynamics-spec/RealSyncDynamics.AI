@@ -124,4 +124,29 @@ describe('<AssistentChip>', () => {
     );
     expect(onRoot.queryByLabelText('Assistent öffnen')).not.toBeNull();
   });
+
+  it('opens the placeholder dialog on click', () => {
+    const { getByLabelText, getByRole, queryByRole } = renderChipWithHero({ withHero: false });
+    // Before click — kein offener Dialog
+    expect(queryByRole('dialog')).toBeNull();
+
+    act(() => { getByLabelText('Assistent öffnen').click(); });
+
+    const dialog = getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    // Placeholder-Vertrag: kein echter Chat, sondern Initialisierungs-Hinweis
+    expect(dialog.textContent).toMatch(/AI Runtime wird initialisiert/i);
+    // CTA-Link auf /audit ist sichtbar
+    expect(dialog.querySelector('a[href*="/audit"]')).not.toBeNull();
+  });
+
+  it('closes the dialog when the chip is clicked twice via the close button', () => {
+    const { getByLabelText, getByRole, queryByRole } = renderChipWithHero({ withHero: false });
+    act(() => { getByLabelText('Assistent öffnen').click(); });
+    expect(getByRole('dialog')).toBeInTheDocument();
+
+    act(() => { getByLabelText('Schließen').click(); });
+    expect(queryByRole('dialog')).toBeNull();
+  });
 });

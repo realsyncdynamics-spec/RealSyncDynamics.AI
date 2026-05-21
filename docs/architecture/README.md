@@ -28,6 +28,7 @@ Three-layer architecture:
 | 5 | [`governance-os-blueprint.md`](./governance-os-blueprint.md) | Governance OS Blueprint v1 | cross | `experimental` | High-level blueprint for the full Governance OS. Describes the three product layers and their interaction model. |
 | 6 | [`roadmap.md`](./roadmap.md) | Architecture Roadmap | cross | `adopted` | Phase-by-phase build sequence from RuntimeEvent foundation to Governance Intelligence. |
 | 7 | [`runtime-governance-social.md`](./runtime-governance-social.md) | Runtime → Governance → Social | cross | `experimental` | Describes the transition path from compliance scanning to runtime governance to social proof and trust signals. |
+| 8 | [`runtime-kernel-rfc.md`](./runtime-kernel-rfc.md) | Operational Governance Kernel v0 | Layer 2 | `proposed` | runtime_events Foundation, Replay Isolation, subject_ref Lifecycle, Memory Decay, tenant_cost_ledger. Master-RFC für den Governance-Runtime-Kernel mit konkreten Schema-Diffs + Code-Stubs. |
 
 ---
 

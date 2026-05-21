@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Activity, Cpu, ShieldCheck, Zap, FlaskConical } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Activity, Cpu, ShieldCheck, Zap, FlaskConical, ChevronRight } from 'lucide-react';
 
 // HeroSection — the "this system is already running" moment. Infrastructure
 // feel (Datadog / Vercel / Stripe), not a legal-website hero. Single fold,
@@ -78,12 +78,12 @@ export function HeroSection() {
                                 </div>
                       </div>
               
-                      <h1 className="text-center text-5xl sm:text-7xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.05] mb-5">
+                      <h1 className="text-center text-[3.25rem] sm:text-7xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.04] mb-6 sm:mb-5 text-balance">
                                 This system is{' '}
                                 <span className="text-cyan-300">already running.</span>
                       </h1>
-              
-                      <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10">
+
+                      <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-8 sm:mb-10">
                                 AI Governance Runtime for EU privacy and AI Act. Continuous detection,
                                 monitoring, governance, automation — one operational plane, zero setup.
                       </p>
@@ -113,6 +113,30 @@ export function HeroSection() {
                                 </div>
                       </form>
               
+                {/* Quick-pick rows — Hostinger mobile onboarding feel. Two
+                    tappable shortcuts under the primary input, mirroring the
+                    canonical CTAs (audit · pricing) with chevron affordance. */}
+                      <div className="mt-6 max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <Link
+                                          to="/audit?source=hero-scan"
+                                          className="group flex items-center justify-between gap-3 px-4 py-3.5 bg-obsidian-900/60 border border-titanium-800 hover:border-titanium-600 hover:bg-obsidian-900 backdrop-blur-sm transition-colors min-h-[56px]"
+                                        >
+                                          <span className="text-titanium-100 text-sm font-medium tracking-tight">
+                                                          Website DSGVO prüfen
+                                          </span>
+                                          <ChevronRight className="h-4 w-4 text-titanium-500 group-hover:text-titanium-200 group-hover:translate-x-0.5 transition-all" />
+                                </Link>
+                                <Link
+                                          to="/pricing?source=hero-plans"
+                                          className="group flex items-center justify-between gap-3 px-4 py-3.5 bg-obsidian-900/60 border border-titanium-800 hover:border-titanium-600 hover:bg-obsidian-900 backdrop-blur-sm transition-colors min-h-[56px]"
+                                        >
+                                          <span className="text-titanium-100 text-sm font-medium tracking-tight">
+                                                          Enterprise-Pläne ansehen
+                                          </span>
+                                          <ChevronRight className="h-4 w-4 text-titanium-500 group-hover:text-titanium-200 group-hover:translate-x-0.5 transition-all" />
+                                </Link>
+                      </div>
+
                 {/* Hint row */}
                       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-mono text-titanium-500">
                                 <span className="inline-flex items-center gap-1.5">

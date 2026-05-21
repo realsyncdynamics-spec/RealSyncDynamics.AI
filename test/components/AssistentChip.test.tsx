@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { render, act, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AssistentChip } from '../../src/components/AssistentChip';
 
@@ -123,5 +123,31 @@ describe('<AssistentChip>', () => {
       </MemoryRouter>,
     );
     expect(onRoot.queryByLabelText('Assistent öffnen')).not.toBeNull();
+  });
+
+  it('opens an initialisation sheet on click with an Audit-CTA', () => {
+    const { getByLabelText, getByText, getByRole } = renderChipWithHero({ withHero: false });
+
+    expect(() => getByRole('dialog')).toThrow();
+
+    fireEvent.click(getByLabelText('Assistent öffnen'));
+
+    const dialog = getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(getByText(/AI Runtime wird initialisiert/i)).toBeInTheDocument();
+    const cta = getByText('Audit starten').closest('a');
+    expect(cta).not.toBeNull();
+    expect(cta?.getAttribute('href')).toContain('/audit');
+  });
+
+  it('closes the sheet on Escape', () => {
+    const { getByLabelText, getByRole, queryByRole } = renderChipWithHero({ withHero: false });
+    fireEvent.click(getByLabelText('Assistent öffnen'));
+    expect(getByRole('dialog')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(queryByRole('dialog')).toBeNull();
   });
 });

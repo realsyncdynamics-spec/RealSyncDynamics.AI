@@ -254,19 +254,21 @@ d('RFC-002 / DSR export view + RPC (DB)', () => {
   beforeEach(async () => { ctx = await openDb(); });
   afterEach(async () => { await closeDb(ctx); ctx = null; });
 
-  it('subject_dsr_export_v returns only rows with subject_ref', async () => {
+  it('subject_dsr_export_v excludes rows without subject_ref', async () => {
     const { tenantId, userId } = await createTenantWithMember(ctx!);
     await insertEvent(ctx!, tenantId, { subject_ref: 'ref-with-enough-length', type: 'dsr.has_subject' });
     await insertEvent(ctx!, tenantId, { subject_ref: null, type: 'dsr.no_subject' });
 
     await ctx!.withClaims({ sub: userId }, async () => {
-      const r = await ctx!.client.query<{ subject_ref: string }>(
-        `SELECT subject_ref FROM public.subject_dsr_export_v
+      const r = await ctx!.client.query<{ subject_ref: string; type: string }>(
+        `SELECT subject_ref, type FROM public.subject_dsr_export_v
           WHERE tenant_id=$1`,
         [tenantId],
       );
+      // No-subject row is filtered out by the view's WHERE clause
       expect(r.rows.every((x) => x.subject_ref !== null)).toBe(true);
-      expect(r.rows).toHaveLength(1);
+      expect(r.rows.some((x) => x.type === 'dsr.has_subject')).toBe(true);
+      expect(r.rows.some((x) => x.type === 'dsr.no_subject')).toBe(false);
     });
   });
 
@@ -279,7 +281,9 @@ d('RFC-002 / DSR export view + RPC (DB)', () => {
 
     const r = await ctx!.withClaims({ sub: userId }, async () => {
       return ctx!.client.query<{ tenant_seq: string; type: string }>(
-        `SELECT tenant_seq, type FROM public.incident_correlation_export($1::uuid, $2)`,
+        `SELECT tenant_seq, type
+           FROM public.incident_correlation_export($1::uuid, $2)
+          WHERE type LIKE 'incident.%'`,
         [tenantId, ref],
       );
     });

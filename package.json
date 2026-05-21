@@ -13,7 +13,7 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/'",
+    "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",
     "e2e": "playwright test",
     "check:production": "node scripts/production-readiness-check.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",

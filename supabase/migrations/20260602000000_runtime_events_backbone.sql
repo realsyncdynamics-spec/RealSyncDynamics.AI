@@ -16,13 +16,22 @@
 --   5. Event version negotiation — spec_version is mandatory, semver MAJOR.MINOR.
 --   6. tenant_memberships table — RLS substrate, backfilled from existing
 --      public.memberships when present.
---   7. Indexes covering tenant+timestamp, subject correlation, and type+status.
+--   7. Cryptographic integrity — per-tenant SHA-256 hash chain (prev_hash +
+--      event_hash) computed atomically inside the tenant_seq trigger.
+--      Verifier RPC reproduces the chain for audit.
+--
+-- Indexes cover tenant+timestamp, subject correlation, type+status, severity,
+-- and hash-chain walks.
 --
 -- All objects are idempotent (CREATE IF NOT EXISTS / DROP-then-CREATE for
 -- policies). The whole script runs inside a single transaction; on any error
 -- the database stays on the pre-migration schema.
 
 BEGIN;
+
+-- pgcrypto provides digest() / hmac() — required for the hash chain (#7)
+-- and for the upcoming subject_ref HMAC pipeline.
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- ============================================================
 -- 0. Phase-0 fork: preserve old runtime_events (lossless)
@@ -171,10 +180,6 @@ CREATE TABLE IF NOT EXISTS public.runtime_events (
     subject_ref     TEXT
                       CHECK (subject_ref IS NULL OR length(subject_ref) BETWEEN 8 AND 256),
 
-    -- Tier (Decision 7 of the spec discussion; drives retention + replay)
-    event_tier      TEXT         NOT NULL DEFAULT 'T1'
-                      CHECK (event_tier IN ('T0','T1','T2','T3')),
-
     -- Free-form fields (Decision 1) --------------------------------------
     payload         JSONB        NOT NULL DEFAULT '{}'::jsonb,
     evidence_refs   JSONB        NOT NULL DEFAULT '[]'::jsonb
@@ -184,6 +189,14 @@ CREATE TABLE IF NOT EXISTS public.runtime_events (
     trace_id        UUID,
     correlation_id  UUID,
     causation_id    UUID,
+
+    -- Cryptographic integrity (Decision 7) -------------------------------
+    -- Per-tenant hash chain: event_hash = sha256(canonical(envelope, prev_hash))
+    -- prev_hash is NULL for the first event in a tenant (genesis).
+    prev_hash       BYTEA
+                      CHECK (prev_hash IS NULL OR octet_length(prev_hash) = 32),
+    event_hash      BYTEA        NOT NULL
+                      CHECK (octet_length(event_hash) = 32),
 
     -- PK includes partition key (Postgres requirement for partitioned tables)
     PRIMARY KEY (global_seq, ts)
@@ -206,6 +219,10 @@ COMMENT ON COLUMN public.runtime_events.subject_ref IS
     'Opaque subject reference (e.g. HMAC of email/IP/user_id). Never plaintext.';
 COMMENT ON COLUMN public.runtime_events.evidence_refs IS
     'JSONB array of {evidence_id, sha256, kind} pointers. Snapshot at insert.';
+COMMENT ON COLUMN public.runtime_events.prev_hash IS
+    'SHA-256 of the previous event in the per-tenant chain. NULL on genesis.';
+COMMENT ON COLUMN public.runtime_events.event_hash IS
+    'SHA-256 of the canonical event bytes including prev_hash. Tamper-evident.';
 
 
 -- ============================================================
@@ -243,9 +260,7 @@ CREATE INDEX IF NOT EXISTS runtime_events_correlation_idx
 CREATE INDEX IF NOT EXISTS runtime_events_causation_idx
     ON public.runtime_events (causation_id) WHERE causation_id IS NOT NULL;
 
--- Tier-scoped reads (audit vs. operational dashboards)
-CREATE INDEX IF NOT EXISTS runtime_events_tier_idx
-    ON public.runtime_events (tenant_id, event_tier, ts DESC);
+-- Hash-chain walks reuse runtime_events_tenant_seq_idx above.
 
 -- Payload search (rare but cheap to keep)
 CREATE INDEX IF NOT EXISTS runtime_events_payload_gin
@@ -297,23 +312,87 @@ $$;
 
 
 -- ============================================================
--- tenant_seq allocator (BEFORE INSERT)
+-- 7. Cryptographic integrity — canonical bytes + chain helpers
 -- ============================================================
-CREATE OR REPLACE FUNCTION public.runtime_events_alloc_tenant_seq()
+-- Deterministic byte representation of an event for hashing.
+-- jsonb sorts keys canonically on text-cast, so the byte sequence is
+-- stable across producers/PG versions for identical logical inputs.
+CREATE OR REPLACE FUNCTION public.runtime_events_canonical_bytes(
+    p_id              UUID,
+    p_tenant_id       UUID,
+    p_global_seq      BIGINT,
+    p_tenant_seq      BIGINT,
+    p_spec_version    TEXT,
+    p_ts              TIMESTAMPTZ,
+    p_type            TEXT,
+    p_severity        TEXT,
+    p_source          TEXT,
+    p_review_status   TEXT,
+    p_subject_ref     TEXT,
+    p_payload         JSONB,
+    p_evidence_refs   JSONB,
+    p_trace_id        UUID,
+    p_correlation_id  UUID,
+    p_causation_id    UUID,
+    p_prev_hash       BYTEA
+) RETURNS BYTEA
+LANGUAGE sql
+IMMUTABLE
+AS $$
+    SELECT convert_to(
+        jsonb_build_object(
+            'id',             p_id,
+            'tenant_id',      p_tenant_id,
+            'global_seq',     p_global_seq,
+            'tenant_seq',     p_tenant_seq,
+            'spec_version',   p_spec_version,
+            'ts',             to_char(p_ts AT TIME ZONE 'UTC',
+                                      'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+            'type',           p_type,
+            'severity',       p_severity,
+            'source',         p_source,
+            'review_status',  p_review_status,
+            'subject_ref',    p_subject_ref,
+            'payload',        p_payload,
+            'evidence_refs',  p_evidence_refs,
+            'trace_id',       p_trace_id,
+            'correlation_id', p_correlation_id,
+            'causation_id',   p_causation_id,
+            'prev_hash',      CASE WHEN p_prev_hash IS NULL
+                                   THEN NULL ELSE encode(p_prev_hash, 'hex') END
+        )::text,
+        'UTF8'
+    );
+$$;
+
+COMMENT ON FUNCTION public.runtime_events_canonical_bytes(
+    UUID, UUID, BIGINT, BIGINT, TEXT, TIMESTAMPTZ, TEXT, TEXT, TEXT, TEXT, TEXT,
+    JSONB, JSONB, UUID, UUID, UUID, BYTEA
+) IS
+    'Canonical UTF-8 byte representation of a runtime_events row, used as '
+    'sha256 input for the integrity chain. IMMUTABLE — must stay identical '
+    'across producers; bumping its output is a hard fork of the chain.';
+
+
+-- Combined allocator: tenant_seq + prev_hash lookup + event_hash compute,
+-- all under one advisory lock per tenant so the chain is gap-free and
+-- monotone even at high concurrency.
+CREATE OR REPLACE FUNCTION public.runtime_events_alloc_seq_and_chain()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
-    v_next BIGINT;
+    v_next       BIGINT;
+    v_prev_hash  BYTEA;
 BEGIN
-    -- Advisory lock keyed on tenant_id keeps concurrent inserts ordered
-    -- without locking the whole table.
+    -- Per-tenant advisory lock — serializes the chain without table-locking.
     PERFORM pg_advisory_xact_lock(
         hashtextextended(NEW.tenant_id::text, 11953384275872::bigint)
     );
 
+    -- 1. Allocate tenant_seq atomically.
     INSERT INTO public.runtime_event_tenant_counters AS c
         (tenant_id, last_seq, updated_at)
     VALUES
@@ -324,15 +403,109 @@ BEGIN
     RETURNING last_seq INTO v_next;
 
     NEW.tenant_seq := v_next;
+
+    -- 2. Look up prev_hash from the immediately preceding event.
+    --    NULL on genesis (first event for the tenant).
+    IF v_next > 1 THEN
+        SELECT event_hash INTO v_prev_hash
+          FROM public.runtime_events
+         WHERE tenant_id  = NEW.tenant_id
+           AND tenant_seq = v_next - 1;
+        IF v_prev_hash IS NULL THEN
+            RAISE EXCEPTION
+                'chain corruption: missing event_hash for tenant=% seq=%',
+                NEW.tenant_id, v_next - 1
+                USING ERRCODE = 'data_exception';
+        END IF;
+    END IF;
+
+    NEW.prev_hash := v_prev_hash;
+
+    -- 3. Compute event_hash over the canonical envelope incl. prev_hash.
+    NEW.event_hash := extensions.digest(
+        public.runtime_events_canonical_bytes(
+            NEW.id,             NEW.tenant_id,    NEW.global_seq, NEW.tenant_seq,
+            NEW.spec_version,   NEW.ts,           NEW.type,       NEW.severity,
+            NEW.source,         NEW.review_status, NEW.subject_ref,
+            NEW.payload,        NEW.evidence_refs,
+            NEW.trace_id,       NEW.correlation_id, NEW.causation_id,
+            v_prev_hash
+        ),
+        'sha256'
+    );
+
     RETURN NEW;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS runtime_events_alloc_tenant_seq ON public.runtime_events;
-CREATE TRIGGER runtime_events_alloc_tenant_seq
+DROP TRIGGER IF EXISTS runtime_events_alloc_seq_and_chain ON public.runtime_events;
+CREATE TRIGGER runtime_events_alloc_seq_and_chain
     BEFORE INSERT ON public.runtime_events
     FOR EACH ROW
-    EXECUTE FUNCTION public.runtime_events_alloc_tenant_seq();
+    EXECUTE FUNCTION public.runtime_events_alloc_seq_and_chain();
+
+
+-- Verifier: re-derives event_hash for each row in [from_seq, to_seq] and
+-- compares it to the stored value, plus checks prev_hash continuity.
+-- Returns one row per inspected event. Membership-gated.
+CREATE OR REPLACE FUNCTION public.runtime_events_verify_chain(
+    p_tenant_id  UUID,
+    p_from_seq   BIGINT DEFAULT 1,
+    p_to_seq     BIGINT DEFAULT NULL
+) RETURNS TABLE (
+    tenant_seq     BIGINT,
+    valid          BOOLEAN,
+    expected_hash  TEXT,
+    actual_hash    TEXT,
+    chain_ok       BOOLEAN
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+BEGIN
+    IF NOT public.has_tenant_membership(p_tenant_id) THEN
+        RAISE EXCEPTION 'forbidden: caller is not a member of tenant %', p_tenant_id
+            USING ERRCODE = '42501';
+    END IF;
+
+    RETURN QUERY
+    WITH chain AS (
+        SELECT
+            e.tenant_seq,
+            e.prev_hash,
+            e.event_hash,
+            LAG(e.event_hash) OVER (ORDER BY e.tenant_seq) AS expected_prev_hash,
+            extensions.digest(
+                public.runtime_events_canonical_bytes(
+                    e.id, e.tenant_id, e.global_seq, e.tenant_seq,
+                    e.spec_version, e.ts, e.type, e.severity, e.source,
+                    e.review_status, e.subject_ref, e.payload, e.evidence_refs,
+                    e.trace_id, e.correlation_id, e.causation_id, e.prev_hash
+                ),
+                'sha256'
+            ) AS recomputed
+          FROM public.runtime_events e
+         WHERE e.tenant_id = p_tenant_id
+           AND e.tenant_seq BETWEEN p_from_seq
+                              AND COALESCE(p_to_seq, 9223372036854775807)
+         ORDER BY e.tenant_seq
+    )
+    SELECT
+        c.tenant_seq,
+        (c.event_hash = c.recomputed)                          AS valid,
+        encode(c.recomputed, 'hex')                            AS expected_hash,
+        encode(c.event_hash, 'hex')                            AS actual_hash,
+        (c.tenant_seq = 1 AND c.prev_hash IS NULL)
+          OR (c.tenant_seq > 1 AND c.prev_hash = c.expected_prev_hash) AS chain_ok
+      FROM chain c;
+END;
+$$;
+
+COMMENT ON FUNCTION public.runtime_events_verify_chain(UUID, BIGINT, BIGINT) IS
+    'Replays the per-tenant SHA-256 hash chain and reports per-event validity. '
+    'Membership-gated. A single false in (valid, chain_ok) indicates tampering.';
 
 
 -- ============================================================
@@ -492,6 +665,11 @@ GRANT EXECUTE ON FUNCTION public.runtime_events_ensure_partition(TIMESTAMPTZ)
 
 REVOKE ALL ON FUNCTION public.has_tenant_membership(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.has_tenant_membership(UUID)
+    TO authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.runtime_events_verify_chain(UUID, BIGINT, BIGINT)
+    FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.runtime_events_verify_chain(UUID, BIGINT, BIGINT)
     TO authenticated, service_role;
 
 COMMIT;

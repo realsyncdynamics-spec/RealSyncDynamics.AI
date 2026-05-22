@@ -77,11 +77,20 @@ create table if not exists public.subject_ref_mappings (
   deleted_at            timestamptz
 );
 
+-- Coexistence with the parallel RFC-002 migration
+-- (20260603000000_subject_ref_lifecycle.sql, originally same-stamp as
+-- ours): if that migration created the table first with `erased_at`
+-- instead of `deleted_at`, add the missing column here. Keep both
+-- naming approaches alive until the codebase consolidates.
+alter table public.subject_ref_mappings
+  add column if not exists deleted_at timestamptz;
+
 alter table public.subject_ref_mappings
   drop constraint if exists subject_ref_mappings_subject_kind_check;
+-- Union of both designs' subject_kind whitelists (theirs adds 'device').
 alter table public.subject_ref_mappings
   add constraint subject_ref_mappings_subject_kind_check
-  check (subject_kind in ('email','ip','user_id','session'));
+  check (subject_kind in ('email','ip','user_id','session','device'));
 
 -- Same retention_class whitelist as runtime_events (RFC §P0.4) — keeps the
 -- two retention writers compatible.

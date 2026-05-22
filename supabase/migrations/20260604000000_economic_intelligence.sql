@@ -57,6 +57,34 @@ CREATE TABLE IF NOT EXISTS public.tenant_cost_ledger (
     )
 );
 
+-- Coexistence with the parallel P4-impl-1 migration
+-- (20260603100000_tenant_cost_ledger.sql, originally same-stamp as ours):
+-- if that migration created the table first, it lacks the reservation
+-- lifecycle columns SPEC-001 needs. The ADD COLUMN IF NOT EXISTS block
+-- below brings either schema up to the union, idempotently. The
+-- attribution + simulated-needs-replay-run CHECK constraints are
+-- (re-)applied via DROP-IF-EXISTS / ADD so a re-run is safe.
+ALTER TABLE public.tenant_cost_ledger
+    ADD COLUMN IF NOT EXISTS causation_event UUID,
+    ADD COLUMN IF NOT EXISTS reservation_id  UUID,
+    ADD COLUMN IF NOT EXISTS settled         BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN IF NOT EXISTS settled_at      TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS expires_at      TIMESTAMPTZ;
+
+ALTER TABLE public.tenant_cost_ledger
+    DROP CONSTRAINT IF EXISTS cost_ledger_has_attribution;
+ALTER TABLE public.tenant_cost_ledger
+    ADD CONSTRAINT cost_ledger_has_attribution CHECK (
+        agent_ref IS NOT NULL OR flow_ref IS NOT NULL OR trace_id IS NOT NULL
+    );
+
+ALTER TABLE public.tenant_cost_ledger
+    DROP CONSTRAINT IF EXISTS cost_ledger_sim_has_run;
+ALTER TABLE public.tenant_cost_ledger
+    ADD CONSTRAINT cost_ledger_sim_has_run CHECK (
+        is_simulated = false OR replay_run_id IS NOT NULL
+    );
+
 CREATE INDEX IF NOT EXISTS tenant_cost_ledger_tenant_time_idx
     ON public.tenant_cost_ledger (tenant_id, occurred_at DESC);
 CREATE INDEX IF NOT EXISTS tenant_cost_ledger_trace_idx

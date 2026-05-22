@@ -42,15 +42,15 @@ export function RuntimeActivationSection() {
       <div className="relative max-w-7xl mx-auto">
         <div className="max-w-3xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-            05 · activate
+            Runtime aktivieren
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            Activate your runtime.
+            Runtime aktivieren — vom Free Audit bis Enterprise.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Free Audit is the no-card entry. Starter unlocks continuous monitoring.
-            Growth adds the AI Act governance layer. Agency adds multi-domain whitelabel.
-            Enterprise is a dedicated runtime environment.
+            Free Audit ist der Einstieg ohne Karte. Starter aktiviert kontinuierliches Monitoring.
+            Growth ergänzt die AI-Act-Governance-Schicht. Agency liefert Multi-Domain-Whitelabel.
+            Enterprise ist eine dedizierte Runtime-Umgebung.
           </p>
         </div>
 
@@ -63,7 +63,8 @@ export function RuntimeActivationSection() {
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="your-company.com"
+                placeholder="ihre-domain.de"
+                aria-label="Website-URL für kostenlosen Audit"
                 autoComplete="off"
                 spellCheck={false}
                 className="flex-1 bg-transparent px-2 py-3 text-sm outline-none text-titanium-50 placeholder:text-titanium-600 font-mono"
@@ -71,9 +72,9 @@ export function RuntimeActivationSection() {
             </div>
             <button
               type="submit"
-              className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors"
+              className="group inline-flex items-center justify-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors whitespace-nowrap"
             >
-              Run Scan
+              Kostenlosen Audit starten
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
@@ -134,7 +135,7 @@ export function RuntimeActivationSection() {
 
         <div className="mt-6 text-center font-mono text-[10px] text-titanium-500">
           <Link to="/pricing" className="hover:text-titanium-200 underline underline-offset-4">
-            full plan comparison →
+            vollständiger Plan-Vergleich →
           </Link>
         </div>
       </div>

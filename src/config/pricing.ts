@@ -70,7 +70,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kein Account, kein Setup',
     ],
     highlight: false,
-    cta: { label: 'Run Scan', href: '/audit?source=pricing-free' },
+    cta: { label: 'Kostenlosen Audit starten', href: '/audit?source=pricing-free' },
   },
   {
     id: 'starter',

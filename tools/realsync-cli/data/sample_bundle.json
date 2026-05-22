@@ -1,0 +1,83 @@
+{
+  "events": [
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "evidence_refs": [],
+      "global_seq": 1,
+      "id": "00000000-0000-0000-0000-000000000001",
+      "payload": {
+        "vendor": "acme.com"
+      },
+      "prev_hash": null,
+      "review_status": "auto",
+      "severity": "info",
+      "source": "gdpr-audit",
+      "spec_version": "1.0",
+      "subject_ref": null,
+      "tenant_id": "tenant-acme-corp",
+      "tenant_seq": 1,
+      "trace_id": null,
+      "ts": "2026-05-22T10:00:01.000Z",
+      "type": "scan.started"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "evidence_refs": [],
+      "global_seq": 2,
+      "id": "00000000-0000-0000-0000-000000000002",
+      "payload": {
+        "pre_consent": true,
+        "vendor": "googletagmanager.com"
+      },
+      "prev_hash": "d843a6917e1c2b080223955c2b22032ca9768c7e907cdac57ce9708ffa5305f4",
+      "review_status": "auto",
+      "severity": "medium",
+      "source": "gdpr-audit",
+      "spec_version": "1.0",
+      "subject_ref": null,
+      "tenant_id": "tenant-acme-corp",
+      "tenant_seq": 2,
+      "trace_id": null,
+      "ts": "2026-05-22T10:00:05.000Z",
+      "type": "tracker.detected"
+    },
+    {
+      "causation_id": null,
+      "correlation_id": null,
+      "evidence_refs": [],
+      "global_seq": 3,
+      "id": "00000000-0000-0000-0000-000000000003",
+      "payload": {
+        "findings": 1,
+        "vendor": "acme.com"
+      },
+      "prev_hash": "fdb4563d8e9796d4717ee47207c0fb079d2e81fab26f74b235db5dd1066813b2",
+      "review_status": "auto",
+      "severity": "info",
+      "source": "gdpr-audit",
+      "spec_version": "1.0",
+      "subject_ref": null,
+      "tenant_id": "tenant-acme-corp",
+      "tenant_seq": 3,
+      "trace_id": null,
+      "ts": "2026-05-22T10:00:10.000Z",
+      "type": "scan.completed"
+    }
+  ],
+  "metadata": {
+    "bundle_id": "bundle-demo-001",
+    "created_at": "2026-05-22T10:17:45.212Z",
+    "event_count": 3,
+    "tenant_id": "tenant-acme-corp"
+  },
+  "signature": {
+    "algorithm": "Ed25519",
+    "bundle_digest": "6835b89c868ed6459c293ff1fe366580892325f44a7d44fb9402bda20758fe65",
+    "key_id": "demo-v1",
+    "pubkey_b64": "5lyZl1D8UXh8V7QUU0YZfwi1FeX3KZpGsctWPcwwcNs=",
+    "signature_b64": "ddvTI8a5AsRLDdtAWXzG7iIxoACW0wnIGq6eSIvr/sd9zVNYgIAcVMPDYYxT+JJP/DtD7jB2vqVbez8QbGNPAQ==",
+    "signed_at": "2026-05-22T10:17:45.212Z"
+  }
+}

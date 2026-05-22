@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+# Private keys never go in git. Public keys + signed bundles are fine.
+*.key.pem
+*.private.pem
+.DS_Store
+
+# Belt-and-braces (also caught by patterns above, but listed explicitly)
+realsync/__pycache__/
+tests/__pycache__/

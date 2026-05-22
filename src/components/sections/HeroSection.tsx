@@ -1,14 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronRight, Activity, Cpu, ShieldCheck, Zap, FlaskConical } from 'lucide-react';
+import { ArrowRight, ChevronRight, Activity, Cpu, ShieldCheck, FlaskConical, AlertTriangle, ClipboardCheck, FileSignature, Gauge } from 'lucide-react';
 
-// HeroSection — the "this system is already running" moment. Infrastructure
-// feel (Datadog / Vercel / Stripe), not a legal-website hero. Single fold,
-// single primary CTA, one input. No modals, no panels, no marketing block.
+// HeroSection — Infrastructure-feel (Datadog / Vercel / Stripe), kein Legal-
+// Website-Look. Eine Fold, ein primärer CTA, ein Input. Keine Modals, keine
+// Marketing-Panels.
 //
-// fix(#280): metric strip and status pill now carry a persistent "demo runtime"
-// label so fabricated numbers cannot be mistaken for live customer telemetry.
-// UWG §5 risk mitigation — label is always visible, not tooltip/hover-only.
+// fix(#280): Demo-Label auf Metric-Strip und Status-Pill bleibt persistent
+// sichtbar (UWG §5 — keine Verwechslung mit Live-Kundentelemetrie).
+//
+// fix(landing-conversion-hardening): Hero-Copy auf nutzenorientierte deutsche
+// Enterprise-Sprache umgestellt. Headline benennt das Outcome (Governance +
+// Evidence), Subline erklärt das Was, ein kompakter Nutzenblock liefert die
+// 5–8 s-Lesbarkeit. Primary CTA = „Kostenlosen Audit starten", Secondary CTA
+// = „Runtime ansehen". Keine Garantien, keine Live-Telemetrie-Claims.
 
 const LIVE_PILL_LABELS = [
   { label: 'EU-Frankfurt', color: 'text-emerald-300' },
@@ -67,49 +72,48 @@ export function HeroSection() {
                       />
         
               <div className="relative max-w-5xl mx-auto">
-                {/* Live status pill — eyebrow */}
+                {/* Eyebrow-Pill — markiert die Hero-Visualisierung explizit als
+                    Demo-Runtime, damit der pulsierende Indikator nicht als
+                    Live-Kundentelemetrie missverstanden wird (UWG §5). */}
                       <div className="flex justify-center mb-6">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-titanium-800 bg-obsidian-900/70 font-mono text-[10px] uppercase tracking-[0.18em] text-titanium-400">
                                             <span className="relative inline-flex h-2 w-2">
                                                           <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-75 animate-ping" />
                                                           <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-400" />
                                             </span>
-                                            runtime status: demo · t+{String(tick).padStart(2, '0')}s
+                                            runtime status · demo · t+{String(tick).padStart(2, '0')}s
                                 </div>
                       </div>
               
-                      <h1 className="text-center text-5xl sm:text-7xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.05] mb-5">
-                                This system is{' '}
-                                <span className="text-cyan-300">already running.</span>
+                      <h1 className="text-center text-4xl sm:text-6xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.08] mb-5 max-w-4xl mx-auto">
+                                Kontinuierliche KI- und DSGVO-Governance{' '}
+                                <span className="text-cyan-300">— mit überprüfbarer Evidence.</span>
                       </h1>
-              
-                      <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto mb-8 sm:mb-10">
-                                AI Governance Runtime for EU privacy and AI Act. Continuous detection,
-                                monitoring, governance, automation — one operational plane, zero setup.
+
+                      <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-3xl mx-auto mb-8">
+                                RealSyncDynamics.AI überwacht Websites, KI-Systeme und Datenflüsse kontinuierlich und
+                                erzeugt kryptographisch überprüfbare Audit-Evidence — ohne manuelle PDF-Audits.
                       </p>
 
-                {/* Mobile quick-rows: tappable shortcuts to the two primary funnels.
-                    On Mobile prominent (large touch-targets, full-width); on Desktop
-                    bleibt nur die kanonische URL-Form als Primary-CTA — Rows sind
-                    dort ausgeblendet damit die Hero nicht ueberladen wirkt. */}
-                      <div className="sm:hidden max-w-md mx-auto mb-8 flex flex-col gap-2" aria-label="Schnellstart">
-                                <Link
-                                            to="/audit?source=hero-scan"
-                                            className="group flex items-center justify-between gap-3 px-4 py-4 bg-obsidian-900/60 backdrop-blur-sm border border-titanium-800 hover:border-cyan-400/50 active:bg-obsidian-900 transition-colors min-h-[56px]"
-                                          >
-                                          <span className="text-base font-semibold text-titanium-50 tracking-tight">Website DSGVO prüfen</span>
-                                          <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-cyan-300 transition-colors shrink-0" />
-                                </Link>
-                                <Link
-                                            to="/pricing?source=hero-plans"
-                                            className="group flex items-center justify-between gap-3 px-4 py-4 bg-obsidian-900/60 backdrop-blur-sm border border-titanium-800 hover:border-violet-400/50 active:bg-obsidian-900 transition-colors min-h-[56px]"
-                                          >
-                                          <span className="text-base font-semibold text-titanium-50 tracking-tight">Enterprise-Pläne ansehen</span>
-                                          <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-violet-300 transition-colors shrink-0" />
-                                </Link>
-                      </div>
+                {/* Nutzenblock — vier kompakte Vorteile, 5–8 s-Lesbarkeit. */}
+                      <ul
+                                aria-label="Nutzen"
+                                className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 max-w-3xl mx-auto mb-10 border border-titanium-900"
+                              >
+                        {[
+                            { icon: <AlertTriangle    className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />, label: 'Risiken in Minuten erkennen' },
+                            { icon: <ClipboardCheck   className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" />, label: 'Audit-Aufwand reduzieren' },
+                            { icon: <FileSignature    className="h-3.5 w-3.5 text-violet-300" aria-hidden="true" />, label: 'Evidence automatisch erzeugen' },
+                            { icon: <Gauge            className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />, label: 'Runtime statt Excel-Compliance' },
+                        ].map((b) => (
+                            <li key={b.label} className="bg-obsidian-950 px-3 py-3 flex items-center gap-2 text-[12px] sm:text-[13px] text-titanium-200 leading-snug">
+                              {b.icon}
+                              <span>{b.label}</span>
+                            </li>
+                          ))}
+                      </ul>
 
-                {/* URL launch input */}
+                {/* URL launch input — Primary CTA: „Kostenlosen Audit starten" */}
                       <form onSubmit={onSubmit} className="max-w-2xl mx-auto" role="search" data-hero-cta>
                                 <div className="flex flex-col sm:flex-row gap-2">
                                             <div className="flex-1 flex items-center bg-obsidian-900 border border-titanium-800 focus-within:border-cyan-400/60 transition-colors">
@@ -118,7 +122,8 @@ export function HeroSection() {
                                                                             type="text"
                                                                             value={url}
                                                                             onChange={(e) => setUrl(e.target.value)}
-                                                                            placeholder="your-company.com"
+                                                                            placeholder="ihre-domain.de"
+                                                                            aria-label="Website-URL für kostenlosen Audit"
                                                                             autoComplete="off"
                                                                             spellCheck={false}
                                                                             className="flex-1 bg-transparent px-2 py-3.5 text-base outline-none text-titanium-50 placeholder:text-titanium-600 font-mono"
@@ -126,24 +131,42 @@ export function HeroSection() {
                                             </div>
                                             <button
                                                             type="submit"
-                                                            className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 text-obsidian-950 font-semibold text-sm sm:text-base tracking-tight hover:bg-cyan-300 transition-colors"
+                                                            className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 text-obsidian-950 font-semibold text-sm sm:text-base tracking-tight hover:bg-cyan-300 transition-colors whitespace-nowrap"
                                                           >
-                                                          Run Scan
+                                                          Kostenlosen Audit starten
                                                           <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
                                 </div>
                       </form>
-              
-                {/* Hint row */}
+
+                {/* Secondary CTA + Enterprise-Pfad. */}
+                      <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
+                                <Link
+                                            to="/runtime"
+                                            className="group inline-flex items-center gap-2 px-5 py-2.5 border border-titanium-800 bg-obsidian-900/60 hover:border-cyan-400/50 text-titanium-100 text-sm font-semibold tracking-tight transition-colors"
+                                          >
+                                          Runtime ansehen
+                                          <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-cyan-300 transition-colors" />
+                                </Link>
+                                <Link
+                                            to="/contact-sales?intent=demo&source=hero"
+                                            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-titanium-400 hover:text-titanium-100 transition-colors"
+                                          >
+                                          Demo für Governance Runtime buchen
+                                          <ChevronRight className="h-3 w-3" />
+                                </Link>
+                      </div>
+
+                {/* Hint row — keine Garantien, kein „rechtssicher". */}
                       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] font-mono text-titanium-500">
                                 <span className="inline-flex items-center gap-1.5">
-                                            <Zap className="h-3 w-3 text-cyan-300" /> first signal in 30 s
+                                            <ShieldCheck className="h-3 w-3 text-emerald-400" /> EU-first · tenant-isoliert
                                 </span>
                                 <span className="inline-flex items-center gap-1.5">
-                                            <ShieldCheck className="h-3 w-3 text-emerald-400" /> zero setup
+                                            <Cpu className="h-3 w-3 text-violet-300" /> evidence-backed · audit-ready
                                 </span>
                                 <span className="inline-flex items-center gap-1.5">
-                                            <Cpu className="h-3 w-3 text-violet-300" /> EU edge · audit-grade
+                                            <FlaskConical className="h-3 w-3 text-titanium-400" /> Free Audit · keine Setup-Gebühr
                                 </span>
                       </div>
               
@@ -153,14 +176,14 @@ export function HeroSection() {
                                 <div className="flex items-center gap-2 px-4 py-1.5 bg-obsidian-900/80 border-b border-titanium-900/60">
                                             <FlaskConical className="h-3 w-3 text-titanium-500 shrink-0" aria-hidden="true" />
                                             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500 select-none">
-                                                          demo runtime · simulated events · not live customer data
+                                                          Beispielhafte Vorschau · Demo-Daten · keine Kundentelemetrie
                                             </span>
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-titanium-900 divide-x divide-titanium-900/60">
-                                            <Metric icon={<Activity className="h-3.5 w-3.5 text-cyan-300" />}    label="scans / 24h" value="1,248" delta="example" deltaColor="text-titanium-600" />
-                                            <Metric icon={<Activity className="h-3.5 w-3.5 text-amber-300" />}   label="drift events" value="93"   delta="simulated" deltaColor="text-titanium-600" />
-                                            <Metric icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />}       label="AI systems"   value="17"   delta="example"   deltaColor="text-titanium-600" />
-                                            <Metric icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} label="evidence"  value="4,128" delta="simulated" deltaColor="text-titanium-600" />
+                                            <Metric icon={<Activity className="h-3.5 w-3.5 text-cyan-300" />}    label="Scans / 24 h"  value="1.248" delta="Beispiel" deltaColor="text-titanium-600" />
+                                            <Metric icon={<Activity className="h-3.5 w-3.5 text-amber-300" />}   label="Drift-Events"  value="93"    delta="Demo"     deltaColor="text-titanium-600" />
+                                            <Metric icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />}       label="AI-Systeme"    value="17"    delta="Beispiel" deltaColor="text-titanium-600" />
+                                            <Metric icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} label="Evidence"   value="4.128" delta="Demo"     deltaColor="text-titanium-600" />
                                 </div>
                       </div>
               

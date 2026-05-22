@@ -1,55 +1,49 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E for the runtime-narrative Landing (5 sections).
+ * Smoke-E2E for the conversion-hardened Landing.
  *
- * Aligned with `src/pages/Landing.tsx` post homepage-runtime refactor.
- * Old long-form-Landing / HeroOnly assertions ("Automatisierte DSGVO…",
- * "Beispiel-Report ansehen") are no longer mounted on `/` — the homepage
- * is now exclusively:
- *   01 HeroSection · 02 LiveScanCanvasSection · 03 GlobalRuntimeFeedSection
- *   04 GovernanceAgentsSection · 05 RuntimeActivationSection
+ * Aligned with `src/pages/Landing.tsx` nach landing-conversion-hardening:
+ * Hero ist auf deutsche Enterprise-Sprache umgestellt, ein 30-Sekunden-
+ * Ergebnisblock und ein FAQ-Block sind neu. CTAs sind „Kostenlosen Audit
+ * starten" / „Runtime ansehen".
  *
- * The assertions below check stable, copy-low elements (eyebrows, primary
- * CTA, plan names) so future copy tweaks don't keep tripping this spec.
+ * Assertions prüfen stabile, kopierarme Anker (Eyebrows, Primary-CTA,
+ * Plan-Namen) — so brechen kleinere Copy-Anpassungen den Spec nicht.
  */
-test('Landing renders the 5 runtime sections + Run Scan + plan grid', async ({ page }) => {
+test('Landing renders the conversion-hardened sections + primary CTA + plan grid', async ({ page }) => {
   await page.goto('/');
 
-  // 01 Hero — headline split into two spans
+  // 01 Hero — Headline „Kontinuierliche KI- und DSGVO-Governance …"
   await expect(
-    page.getByRole('heading', { name: /This system is\s+already running\./i }),
+    page.getByRole('heading', {
+      name: /Kontinuierliche KI- und DSGVO-Governance.*überprüfbarer Evidence/i,
+    }),
   ).toBeVisible();
 
-  // Primary CTA is "Run Scan", routed to /audit
-  const primary = page.getByRole('button', { name: /^Run Scan$/i }).first();
+  // Primary CTA „Kostenlosen Audit starten" routed to /audit
+  const primary = page.getByRole('button', { name: /Kostenlosen Audit starten/i }).first();
   await expect(primary).toBeVisible();
 
-  // 02-04 section eyebrows (mono uppercase, "NN · keyword")
-  await expect(page.getByText(/02\s*·\s*detect/i)).toBeVisible();
-  await expect(page.getByText(/03\s*·\s*monitor/i)).toBeVisible();
-  await expect(page.getByText(/04\s*·\s*govern\s*\+\s*automate/i)).toBeVisible();
-  await expect(page.getByText(/05\s*·\s*activate/i)).toBeVisible();
+  // Secondary CTA „Runtime ansehen" → /runtime
+  await expect(page.getByRole('link', { name: /Runtime ansehen/i }).first()).toBeVisible();
 
-  // 02 LiveScanCanvas — section H2
+  // 30-Sekunden-Ergebnisblock
+  await expect(page.getByText(/Ergebnis\s*·\s*30 Sekunden/i)).toBeVisible();
   await expect(
-    page.getByRole('heading', { name: /The runtime detects issues in real time\./i }),
+    page.getByRole('heading', { name: /Was Sie in den ersten 30 Sekunden sehen\./i }),
   ).toBeVisible();
 
-  // 03 GlobalRuntimeFeed — section H2
+  // Trust-Block (Zielgruppen-Fit, keine erfundenen Logos)
   await expect(
-    page.getByRole('heading', { name: /Events continuously happen\./i }),
+    page.getByRole('heading', { name: /Entwickelt für Teams, die Governance nachweisen müssen\./i }),
   ).toBeVisible();
 
-  // 04 GovernanceAgents — section H2
-  await expect(
-    page.getByRole('heading', { name: /AI systems are governed operationally\./i }),
-  ).toBeVisible();
+  // FAQ-Block am Ende
+  await expect(page.getByRole('heading', { name: /^Häufige Fragen\.$/i })).toBeVisible();
+  await expect(page.getByText(/Ist RealSync ein Cookie-Banner\?/i)).toBeVisible();
 
-  // 05 RuntimeActivation — section H2 + 5-plan grid
-  await expect(
-    page.getByRole('heading', { name: /^Activate your runtime\.$/i }),
-  ).toBeVisible();
+  // RuntimeActivation — Plan-Namen unverändert
   for (const name of ['Free Audit', 'Starter', 'Growth', 'Agency', 'Enterprise']) {
     await expect(
       page.getByRole('heading', { level: 3, name: new RegExp(`^${name}$`) }),

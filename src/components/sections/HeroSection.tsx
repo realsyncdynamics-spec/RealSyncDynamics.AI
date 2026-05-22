@@ -74,7 +74,7 @@ export function HeroSection() {
                                                           <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-75 animate-ping" />
                                                           <span className="relative inline-block h-2 w-2 rounded-full bg-emerald-400" />
                                             </span>
-                                            runtime status: live · t+{String(tick).padStart(2, '0')}s
+                                            runtime status: demo · t+{String(tick).padStart(2, '0')}s
                                 </div>
                       </div>
               

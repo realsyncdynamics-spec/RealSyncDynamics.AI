@@ -824,6 +824,23 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'AVV-Vorlage', url: '/legal/avv' },
     ]),
   },
+  '/legal/terms': {
+    title: 'Allgemeine Geschäftsbedingungen | RealSyncDynamics.AI',
+    description:
+      'AGB für die Nutzung der RealSyncDynamics.AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
+    canonical: `${SITE_URL}/legal/terms`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Legal', url: '/legal/sub-processors' },
+      { name: 'AGB', url: '/legal/terms' },
+    ]),
+  },
+  '/agb': {
+    title: 'Allgemeine Geschäftsbedingungen | RealSyncDynamics.AI',
+    description:
+      'AGB für die Nutzung der RealSyncDynamics.AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
+    canonical: `${SITE_URL}/legal/terms`,
+  },
   '/legal/compliance-matrix': {
     title: 'Compliance-Matrix — DSGVO, AI Act, BAIT, MaRisk | RealSyncDynamics.AI',
     description:

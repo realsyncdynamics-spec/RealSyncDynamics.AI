@@ -195,6 +195,7 @@ export function PricingPage() {
             <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-titanium-100">AI-Act Inventar · Beta</Link>
             <Link to="/legal/privacy" className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum" className="hover:text-titanium-50">Impressum</Link>
+            <Link to="/legal/terms" className="hover:text-titanium-50">AGB</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-50">Sub-Processors</Link>
             <Link to="/legal/methodology" className="hover:text-titanium-50">Methodik</Link>
             <Link to="/security" className="hover:text-titanium-50">Security</Link>

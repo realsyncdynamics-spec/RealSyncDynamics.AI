@@ -779,6 +779,12 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
     canonical: `${SITE_URL}/legal/privacy`,
   },
+  '/datenschutz': {
+    title: 'Datenschutzerklärung | RealSyncDynamics.AI',
+    description:
+      'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
+    canonical: `${SITE_URL}/legal/privacy`,
+  },
   '/legal/impressum': {
     title: 'Impressum | RealSyncDynamics.AI',
     description:

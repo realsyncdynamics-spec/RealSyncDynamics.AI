@@ -8,6 +8,7 @@ import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
+import { AuditResultPage } from './pages/AuditResultPage';
 import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
 import { AiActFaq } from './pages/AiActFaq';
@@ -225,6 +226,7 @@ function RoutesWithTracking() {
       <Route path="/fuer-agenturen" element={<AgenturenLanding />} />
       <Route path="/fuer-praxen"    element={<PraxenLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
+      <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />

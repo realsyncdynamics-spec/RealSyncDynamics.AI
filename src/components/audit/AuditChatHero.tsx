@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { AudioLines, Loader2, AlertTriangle, ShieldCheck, ArrowRight, Send } from 'lucide-react';
 import { trackConversion } from '../../lib/pixels';
 import { getAffiliateRef } from '../../lib/affiliate';
+import { startAuditScanAnon } from '../../features/governance/AgentWidget/agentApi';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,6 +127,17 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || 'audit-chat';
+
+      // Phase-3 governance-anon-audit-log coverage. Fire-and-forget so the
+      // user-facing scan flow is not blocked. The governance-agent records
+      // this attempt in `anon_chat_runs` (#393) with the same IP/UA rate-
+      // limit accounting as `chat_anon`. The actual scan keeps running
+      // through `gdpr-audit` below — this call is purely the audit hook.
+      void startAuditScanAnon({ url, email: trimmed }).catch(() => {
+        /* anon audit-log is best-effort; gdpr-audit still produces the
+         * real report. Failures here MUST NOT block the scan. */
+      });
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

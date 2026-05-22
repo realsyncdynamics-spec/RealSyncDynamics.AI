@@ -33,6 +33,13 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { AGENT_TOOLS, dispatchTool, SYSTEM_PROMPT } from '../_shared/agent-tools.ts';
 import { sha256Hex } from '../_shared/hash.ts';
+import {
+  reserveAnonAudit,
+  completeAnonAudit,
+  extractPayloadKeys,
+  type AnonOp,
+  type AnonAuditCompletion,
+} from '../_shared/anonAudit.ts';
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
 import type { ModelProfile } from '../_shared/aiGateway/types.ts';
 
@@ -59,20 +66,126 @@ const AGENT_LLM_MODEL_PROFILE = (Deno.env.get('AGENT_LLM_MODEL_PROFILE') ?? 'fas
 const ALLOW_US_ROUTING = Deno.env.get('AGENT_ALLOW_US_ROUTING') === 'true';
 
 // Per-IP rate-limit for anon chat — cleared per cold-start (in-memory).
-const ANON_RATE = new Map<string, { count: number; reset: number }>();
+// `auditedDeny` ensures the security-gate audit log records ONE
+// rate_limited event per (ip,window) — without it a denied IP would
+// hammer the DB once per follow-up call.
+const ANON_RATE = new Map<string, { count: number; reset: number; auditedDeny: boolean }>();
 const ANON_RATE_MAX = 5;
 const ANON_RATE_WINDOW_MS = 60_000;
 
-function checkAnonRateLimit(ipHash: string): boolean {
+function checkAnonRateLimit(ipHash: string): { allowed: boolean; shouldAuditDeny: boolean } {
   const now = Date.now();
   const rec = ANON_RATE.get(ipHash);
   if (!rec || now > rec.reset) {
-    ANON_RATE.set(ipHash, { count: 1, reset: now + ANON_RATE_WINDOW_MS });
-    return true;
+    ANON_RATE.set(ipHash, { count: 1, reset: now + ANON_RATE_WINDOW_MS, auditedDeny: false });
+    return { allowed: true, shouldAuditDeny: false };
   }
-  if (rec.count >= ANON_RATE_MAX) return false;
+  if (rec.count >= ANON_RATE_MAX) {
+    const firstDeny = !rec.auditedDeny;
+    rec.auditedDeny = true;
+    return { allowed: false, shouldAuditDeny: firstDeny };
+  }
   rec.count++;
-  return true;
+  return { allowed: true, shouldAuditDeny: false };
+}
+
+/**
+ * Helper used by all four anon-handler entry points to enforce the
+ * security gate uniformly: build admin client → reserve audit row →
+ * (caller's work) → complete audit row. Throws on reserve-failure so
+ * callers can surface a clean 503 to the client.
+ */
+async function makeAdmin() {
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  return createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+}
+
+interface AnonGateContext {
+  // deno-lint-ignore no-explicit-any
+  admin:     any;
+  requestId: string;
+  ipHash:    string;
+  startedAt: number;
+}
+
+/**
+ * Pre-flight for an anon handler. On audit-reserve failure returns the
+ * 503 Response that the caller MUST return as-is (no LLM call).
+ * On rate-limit returns a 429 Response after writing the deny row.
+ * Otherwise returns the live context to continue the handler.
+ */
+async function anonGate(
+  req:  Request,
+  body: Record<string, unknown>,
+  op:   AnonOp,
+  extra: {
+    session_id?: string;
+    correlation_id?: string;
+    acknowledge_us_routing?: boolean;
+  } = {},
+): Promise<AnonGateContext | Response> {
+  const ip       = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ua       = req.headers.get('user-agent') ?? '';
+  const ipHash   = await sha256Hex(ip);
+  const uaHash   = ua ? await sha256Hex(ua) : undefined;
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  // deno-lint-ignore no-explicit-any
+  let admin: any;
+  try {
+    admin = await makeAdmin();
+  } catch (e) {
+    return jsonError(503, 'AUDIT_UNAVAILABLE',
+      `anon path refused: admin client unavailable (${(e as Error).message})`);
+  }
+  try {
+    await reserveAnonAudit(admin, {
+      request_id:             requestId,
+      op,
+      ip_hash:                ipHash,
+      user_agent_hash:        uaHash,
+      acknowledge_us_routing: extra.acknowledge_us_routing,
+      session_id:             extra.session_id,
+      correlation_id:         extra.correlation_id,
+      payload_keys:           extractPayloadKeys(body),
+    });
+  } catch (e) {
+    // Security-gate: refuse the LLM call when audit cannot be reserved.
+    return jsonError(503, 'AUDIT_UNAVAILABLE',
+      `anon path refused: audit log not writable (${(e as Error).message})`);
+  }
+
+  const rl = checkAnonRateLimit(ipHash);
+  if (!rl.allowed) {
+    // Always complete THIS request's row as rate_limited; the auditedDeny
+    // flag governs only subsequent denies within the window (they reuse
+    // the in-memory counter without a fresh reservation).
+    await completeAnonAudit(admin, requestId, {
+      outcome:     'rate_limited',
+      duration_ms: Date.now() - startedAt,
+    });
+    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
+  }
+
+  return { admin, requestId, ipHash, startedAt };
+}
+
+/**
+ * Finalise an anon audit row. Wrapper around completeAnonAudit so handlers
+ * do not import the underlying helper directly.
+ */
+async function finishAnon(
+  // deno-lint-ignore no-explicit-any
+  admin: any,
+  requestId: string,
+  startedAt: number,
+  patch: Omit<AnonAuditCompletion, 'duration_ms'>,
+): Promise<void> {
+  await completeAnonAudit(admin, requestId, {
+    ...patch,
+    duration_ms: Date.now() - startedAt,
+  });
 }
 
 const ANON_SYSTEM_PROMPT = `Du bist der öffentliche KI-Compliance-Assistent von RealSyncDynamics.AI.
@@ -382,28 +495,33 @@ async function handleHistory(admin: any, userId: string, body: Record<string, un
 }
 
 async function handleChatAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  const ipHash = await sha256Hex(ip);
-  if (!checkAnonRateLimit(ipHash)) {
-    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
-  }
+  const sessionId = (body.session_id as string) || crypto.randomUUID();
+  const ack = body.acknowledge_us_routing === true;
+
+  const gate = await anonGate(req, body, 'chat_anon', {
+    session_id: sessionId,
+    acknowledge_us_routing: ack,
+  });
+  if (gate instanceof Response) return gate;
+  const { admin, requestId, startedAt } = gate;
 
   const message = (body.message as string ?? '').trim();
-  if (!message) return jsonError(400, 'BAD_REQUEST', 'message required');
+  if (!message) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'message required');
+  }
 
-  const sessionId = (body.session_id as string) || crypto.randomUUID();
   const clientHistory = Array.isArray(body.history) ? (body.history as SimpleMsg[]) : [];
 
   // EU-routing guard. ai_gateway provider routes via LM Studio (EU-local)
   // by default, so the US-routing acknowledgement is not required.
-  if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && body.acknowledge_us_routing !== true) {
+  if (LLM_PROVIDER === 'anthropic' && !ALLOW_US_ROUTING && !ack) {
+    await finishAnon(admin, requestId, startedAt, {
+      outcome: 'error', error_code: 'US_ROUTING_NOT_ACKNOWLEDGED',
+    });
     return jsonError(412, 'US_ROUTING_NOT_ACKNOWLEDGED',
       'LLM_PROVIDER=anthropic routes through US. Pass acknowledge_us_routing=true to proceed.');
   }
-
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
   const transcript: SimpleMsg[] = [
     ...clientHistory.slice(-ANON_MAX_HISTORY),
@@ -414,28 +532,50 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
   let inputTokens  = 0;
   let outputTokens = 0;
 
-  if (LLM_PROVIDER === 'ai_gateway') {
-    const result = await runAnonViaAiGateway(transcript);
-    if (result instanceof Response) return result;
-    finalText    = result.text;
-    inputTokens  = result.inputTokens;
-    outputTokens = result.outputTokens;
-  } else {
-    const apiKey = await getLlmApiKey(admin);
-    if (!apiKey) {
-      return jsonError(503, 'LLM_NOT_CONFIGURED',
-        `${LLM_PROVIDER}_api_key missing from env and vault.`);
+  try {
+    if (LLM_PROVIDER === 'ai_gateway') {
+      const result = await runAnonViaAiGateway(transcript);
+      if (result instanceof Response) {
+        await finishAnon(admin, requestId, startedAt, {
+          outcome: 'error', error_code: 'AI_GATEWAY_ERROR', model: LLM_MODEL,
+        });
+        return result;
+      }
+      finalText    = result.text;
+      inputTokens  = result.inputTokens;
+      outputTokens = result.outputTokens;
+    } else {
+      const apiKey = await getLlmApiKey(admin);
+      if (!apiKey) {
+        await finishAnon(admin, requestId, startedAt, {
+          outcome: 'error', error_code: 'LLM_NOT_CONFIGURED', model: LLM_MODEL,
+        });
+        return jsonError(503, 'LLM_NOT_CONFIGURED',
+          `${LLM_PROVIDER}_api_key missing from env and vault.`);
+      }
+      const result = await runAnonViaAnthropic(apiKey, transcript);
+      finalText    = result.text;
+      inputTokens  = result.inputTokens;
+      outputTokens = result.outputTokens;
     }
-    const result = await runAnonViaAnthropic(apiKey, transcript);
-    finalText    = result.text;
-    inputTokens  = result.inputTokens;
-    outputTokens = result.outputTokens;
+  } catch (e) {
+    await finishAnon(admin, requestId, startedAt, {
+      outcome: 'error', error_code: 'LLM_EXCEPTION', model: LLM_MODEL,
+    });
+    throw e;
   }
 
   const updatedHistory: SimpleMsg[] = [
     ...transcript,
     { role: 'assistant', content: finalText },
   ];
+
+  await finishAnon(admin, requestId, startedAt, {
+    outcome: 'success',
+    model: LLM_MODEL,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+  });
 
   return json({
     ok: true,
@@ -561,18 +701,23 @@ function estimateCostUsd(model: string, inTok: number, outTok: number): number {
  *     bei einem echten Scan einen Audit-Datensatz.
  */
 async function handleStartAuditScanAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  const ipHash = await sha256Hex(ip);
-  if (!checkAnonRateLimit(ipHash)) {
-    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
-  }
+  const gate = await anonGate(req, body, 'start_audit_scan');
+  if (gate instanceof Response) return gate;
+  const { admin, requestId, startedAt } = gate;
 
   const urlRaw   = typeof body.url   === 'string' ? body.url.trim()   : '';
   const emailRaw = typeof body.email === 'string' ? body.email.trim() : '';
 
-  if (!urlRaw)   return jsonError(400, 'BAD_REQUEST', 'url required');
-  if (!emailRaw) return jsonError(400, 'BAD_REQUEST', 'email required');
+  if (!urlRaw) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'url required');
+  }
+  if (!emailRaw) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'email required');
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
     return jsonError(400, 'BAD_REQUEST', 'email invalid');
   }
 
@@ -582,8 +727,11 @@ async function handleStartAuditScanAnon(req: Request, body: Record<string, unkno
     // Wirft TypeError bei ungueltigem Format.
     new URL(normalized);
   } catch {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
     return jsonError(400, 'BAD_REQUEST', 'url malformed');
   }
+
+  await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
 
   return json({
     ok: true,
@@ -617,20 +765,26 @@ function readFindingPayload(body: Record<string, unknown>): FindingPayload {
 }
 
 async function handleExplainFindingAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  const ipHash = await sha256Hex(ip);
-  if (!checkAnonRateLimit(ipHash)) {
-    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
-  }
+  const gate = await anonGate(req, body, 'explain_finding');
+  if (gate instanceof Response) return gate;
+  const { admin, requestId, startedAt } = gate;
 
   const auditId   = typeof body.audit_id   === 'string' ? body.audit_id.trim()   : '';
   const findingId = typeof body.finding_id === 'string' ? body.finding_id.trim() : '';
-  if (!auditId)   return jsonError(400, 'BAD_REQUEST', 'audit_id required');
-  if (!findingId) return jsonError(400, 'BAD_REQUEST', 'finding_id required');
+  if (!auditId) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'audit_id required');
+  }
+  if (!findingId) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'finding_id required');
+  }
 
   const payload = readFindingPayload(body);
   const title = payload.title ?? 'Befund';
   const paraRef = payload.paragraph_ref ?? '–';
+
+  await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
 
   return json({
     ok: true,
@@ -650,20 +804,26 @@ async function handleExplainFindingAnon(req: Request, body: Record<string, unkno
 }
 
 async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  const ipHash = await sha256Hex(ip);
-  if (!checkAnonRateLimit(ipHash)) {
-    return jsonError(429, 'RATE_LIMIT', 'Zu viele Anfragen. Bitte in einer Minute erneut versuchen.');
-  }
+  const gate = await anonGate(req, body, 'generate_fix_snippet');
+  if (gate instanceof Response) return gate;
+  const { admin, requestId, startedAt } = gate;
 
   const auditId   = typeof body.audit_id   === 'string' ? body.audit_id.trim()   : '';
   const findingId = typeof body.finding_id === 'string' ? body.finding_id.trim() : '';
   const cmsRaw    = typeof body.cms        === 'string' ? body.cms.trim()        : 'custom-html';
-  if (!auditId)   return jsonError(400, 'BAD_REQUEST', 'audit_id required');
-  if (!findingId) return jsonError(400, 'BAD_REQUEST', 'finding_id required');
+  if (!auditId) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'audit_id required');
+  }
+  if (!findingId) {
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
+    return jsonError(400, 'BAD_REQUEST', 'finding_id required');
+  }
 
   const cmsAllowed = new Set(['wordpress', 'shopify', 'webflow', 'custom-html', 'nginx']);
   const cms = cmsAllowed.has(cmsRaw) ? cmsRaw : 'custom-html';
+
+  await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
 
   return json({
     ok: true,

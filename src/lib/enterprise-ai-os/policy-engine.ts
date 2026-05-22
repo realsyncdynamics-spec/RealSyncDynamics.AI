@@ -146,6 +146,7 @@ export function policyResultToRuntimeEventV0(
   if (result.allowed) return null;
 
   return createRuntimeEvent<PolicyEvaluationPayloadV0>({
+    spec_version: '0.1', // frozen v0 contract — see function name *ToRuntimeEventV0
     tenant_id: context?.tenantId,
     session_id: context?.sessionId,
     correlation_id: context?.correlationId,

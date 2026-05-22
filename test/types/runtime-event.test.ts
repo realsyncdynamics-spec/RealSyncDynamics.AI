@@ -33,14 +33,70 @@ describe('createRuntimeEvent', () => {
     expect(e.id).toBe('evt-fixed-1');
   });
 
-  it('setzt spec_version auf "0.1"', () => {
+  it('defaultet spec_version auf "0.2" (kernel-v1-aware)', () => {
     const e = createRuntimeEvent({
       type: 'scan.started',
       source: 'system',
       actor: { type: 'system' },
       payload: {},
     });
+    expect(e.spec_version).toBe('0.2');
+  });
+
+  it('respektiert explizit gesetzte spec_version="0.1" (back-compat)', () => {
+    const e = createRuntimeEvent({
+      spec_version: '0.1',
+      type: 'scan.started',
+      source: 'system',
+      actor: { type: 'system' },
+      payload: {},
+    });
     expect(e.spec_version).toBe('0.1');
+  });
+
+  it('preserved kernel-v1 envelope fields (event_tier, subject_ref, agent_ref, trace_id, retention_class, replayable, cost_snapshot)', () => {
+    const e = createRuntimeEvent({
+      type: 'ai.risk_classified',
+      source: 'ai_probe',
+      actor: { type: 'agent', id: 'ai-risk-agent' },
+      payload: {},
+      event_tier: 'T1',
+      subject_ref: 'hmac:abc123',
+      agent_ref: 'ai-risk-agent:v1:0.4.2',
+      trace_id: '11111111-1111-4111-8111-111111111111',
+      retention_class: '3y',
+      replayable: true,
+      cost_snapshot: {
+        model_ref: 'claude-opus-4-7',
+        input_tokens: 1240,
+        output_tokens: 312,
+        total_usd: 0.042,
+      },
+    });
+    expect(e.event_tier).toBe('T1');
+    expect(e.subject_ref).toBe('hmac:abc123');
+    expect(e.agent_ref).toBe('ai-risk-agent:v1:0.4.2');
+    expect(e.trace_id).toBe('11111111-1111-4111-8111-111111111111');
+    expect(e.retention_class).toBe('3y');
+    expect(e.replayable).toBe(true);
+    expect(e.cost_snapshot?.total_usd).toBe(0.042);
+    expect(e.cost_snapshot?.input_tokens).toBe(1240);
+  });
+
+  it('laesst kernel-v1 envelope fields undefined wenn nicht gesetzt', () => {
+    const e = createRuntimeEvent({
+      type: 'scan.started',
+      source: 'system',
+      actor: { type: 'system' },
+      payload: {},
+    });
+    expect(e.event_tier).toBeUndefined();
+    expect(e.subject_ref).toBeUndefined();
+    expect(e.agent_ref).toBeUndefined();
+    expect(e.trace_id).toBeUndefined();
+    expect(e.retention_class).toBeUndefined();
+    expect(e.replayable).toBeUndefined();
+    expect(e.cost_snapshot).toBeUndefined();
   });
 
   it('setzt created_at als ISO-Datums-String', () => {

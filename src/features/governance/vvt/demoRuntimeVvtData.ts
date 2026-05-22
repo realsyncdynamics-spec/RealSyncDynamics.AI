@@ -171,6 +171,7 @@ function mapVvtTypeToSource(originalType: string): RuntimeEventSource {
 export const DEMO_RUNTIME_EVENTS_V0: ReadonlyArray<RuntimeEventV0<VvtDemoEventPayloadV0>> =
   DEMO_RUNTIME_EVENTS.map((e) =>
     createRuntimeEvent<VvtDemoEventPayloadV0>({
+      spec_version: '0.1', // frozen v0 contract — see DEMO_RUNTIME_EVENTS_V0 name
       id: e.id,
       tenant_id: e.tenantId,
       type: mapVvtTypeToV0(e.type),

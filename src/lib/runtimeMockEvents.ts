@@ -179,6 +179,7 @@ function mapSeverity(s: RuntimeEvent['severity']): RuntimeSeverity {
 export const RUNTIME_MOCK_EVENTS_V0: ReadonlyArray<RuntimeEventV0<MockRuntimeEventPayloadV0>> =
   RUNTIME_MOCK_EVENTS.map((e) =>
     createRuntimeEvent<MockRuntimeEventPayloadV0>({
+      spec_version: '0.1', // frozen v0 contract — see RUNTIME_MOCK_EVENTS_V0 name
       type:     mapToEventType(e.rule_id, e.kind),
       source:   mapKindToSource(e.kind),
       severity: mapSeverity(e.severity),

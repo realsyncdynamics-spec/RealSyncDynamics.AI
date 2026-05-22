@@ -6,15 +6,20 @@
  * RuntimeEvents. Die Surfaces (Dashboards, Audit-Result-Views, Triage)
  * KONSUMIEREN sie.
  *
- * Phase 1 (dieses Modul): pures Type-Layer. KEINE DB-Schreibops, KEIN
- * Ingest-Reject, KEINE AJV-Validation, KEIN Verhalten — nur Vokabular
- * und ein Konstruktions-Helper.
+ * Versionierung:
+ *  - v0.1 (initial): minimal envelope — id, type, source, severity, payload, …
+ *  - v0.2 (Operational Governance Kernel RFC §P0.2): optional kernel-v1
+ *    envelope fields — event_tier, subject_ref, agent_ref, trace_id,
+ *    retention_class, replayable, cost_snapshot. Defaults bleiben kompatibel,
+ *    Konsumenten muessen `spec_version` pruefen bevor sie kernel-v1 Felder
+ *    lesen. Bei unbekannter Version: log + skip (kein hard reject).
  *
- * Versionierung: spec_version='0.1'. Konsumenten muessen die Version
- * pruefen, bevor sie auf payload-Felder zugreifen. Bei unbekannter
- * Version: log + skip (kein hard reject). Der Rollout-Plan zur strikten
- * Validation steht in docs/architecture/runtime-event-standard.md.
+ * Der schreibseitige Tier-Discipline-Enforcement (event_tier ist Pflicht,
+ * Tier-Whitelist greift) kommt in P0-impl-3 (Edge-Function `governance-event`).
+ * Dieses Modul stellt nur das Vokabular.
  */
+
+export type RuntimeSpecVersion = '0.1' | '0.2';
 
 export type RuntimeSeverity =
   | 'info'
@@ -60,6 +65,42 @@ export type RuntimeEventType =
   | 'incident.opened'
   | 'incident.closed';
 
+/**
+ * Kernel-v1 envelope (RFC §P0.2). T0=audit-critical, T1=replay-relevant,
+ * T2=operational, T3=ephemeral/debug. Mirrored to runtime_events.event_tier
+ * CHECK constraint.
+ */
+export type RuntimeEventTier = 'T0' | 'T1' | 'T2' | 'T3';
+
+/**
+ * Retention bucket (RFC §P0.4). Mirrored to runtime_events.retention_class
+ * CHECK constraint.
+ */
+export type RuntimeRetentionClass =
+  | 'forever'
+  | '7y'
+  | '3y'
+  | '1y'
+  | '90d'
+  | '30d'
+  | '7d'
+  | 'ephemeral';
+
+/**
+ * Cost snapshot — captured in T0/T1 events that cause cost (RFC §P4.4).
+ * Doppelt geschrieben: hier am Event (fuer Replay-Diff) und parallel in
+ * tenant_cost_ledger (fuer Aggregation + Cap-Enforcement).
+ */
+export interface RuntimeCostSnapshot {
+  model_ref?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  input_usd?: number;
+  output_usd?: number;
+  total_usd: number;
+  vendor?: string;
+}
+
 export interface RuntimeEvidenceRef {
   id: string;
   type:
@@ -90,7 +131,7 @@ export type RuntimeEventPayload<T = Record<string, unknown>> = T;
 
 export interface RuntimeEvent<T = Record<string, unknown>> {
   id: string;
-  spec_version: '0.1';
+  spec_version: RuntimeSpecVersion;
   tenant_id?: string;
   session_id?: string;
   correlation_id?: string;
@@ -103,13 +144,25 @@ export interface RuntimeEvent<T = Record<string, unknown>> {
   evidence_refs?: RuntimeEvidenceRef[];
   review_status: RuntimeReviewStatus;
   created_at: string;
+
+  // Kernel-v1 envelope (v0.2 — optional). Konsumenten muessen spec_version
+  // pruefen bevor sie diese Felder als gesetzt voraussetzen.
+  event_tier?: RuntimeEventTier;
+  subject_ref?: string;       // HMAC-hashed — NEVER plain text
+  agent_ref?: string;         // '<agent_type>:<agent_id>:<version>'
+  trace_id?: string;          // end-to-end DAG correlation
+  retention_class?: RuntimeRetentionClass;
+  replayable?: boolean;       // T2/T3 MUST be false; T0/T1 MAY be true
+  cost_snapshot?: RuntimeCostSnapshot;
 }
 
 /**
  * Erzeugt ein RuntimeEvent mit sensiblen Defaults.
  *
  * - `id` faellt auf `crypto.randomUUID()` zurueck, sonst Math.random-hex.
- * - `spec_version` ist immer '0.1' (Konstante des Moduls).
+ * - `spec_version` defaultet auf '0.2' (kernel-v1-aware). Explizit '0.1'
+ *   kann gesetzt werden für Producer die das envelope-Upgrade noch nicht
+ *   leisten.
  * - `created_at` ist `new Date().toISOString()`.
  * - `severity` defaultet auf 'info'.
  * - `review_status` defaultet auf 'not_required'.
@@ -118,19 +171,20 @@ export interface RuntimeEvent<T = Record<string, unknown>> {
  * - keine DB-Schreibung
  * - keine AJV-/Schema-Validation
  * - kein Network-Call
- *
- * Die Validation folgt in einem spaeteren PR (Phase 2: shadow validation).
+ * - kein event_tier-Default — Tier-Discipline greift erst in P0-impl-3
+ *   im writer-pfad. Hier bleibt das Feld optional.
  */
 export function createRuntimeEvent<T = Record<string, unknown>>(
   input: Omit<RuntimeEvent<T>, 'id' | 'spec_version' | 'created_at' | 'severity' | 'review_status'> & {
     id?: string;
+    spec_version?: RuntimeSpecVersion;
     severity?: RuntimeSeverity;
     review_status?: RuntimeReviewStatus;
   },
 ): RuntimeEvent<T> {
   return {
     id: input.id ?? generateId(),
-    spec_version: '0.1',
+    spec_version: input.spec_version ?? '0.2',
     tenant_id: input.tenant_id,
     session_id: input.session_id,
     correlation_id: input.correlation_id,
@@ -143,6 +197,13 @@ export function createRuntimeEvent<T = Record<string, unknown>>(
     evidence_refs: input.evidence_refs,
     review_status: input.review_status ?? 'not_required',
     created_at: new Date().toISOString(),
+    event_tier: input.event_tier,
+    subject_ref: input.subject_ref,
+    agent_ref: input.agent_ref,
+    trace_id: input.trace_id,
+    retention_class: input.retention_class,
+    replayable: input.replayable,
+    cost_snapshot: input.cost_snapshot,
   };
 }
 

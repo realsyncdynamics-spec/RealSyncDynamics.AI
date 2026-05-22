@@ -33,7 +33,7 @@ test('Landing renders the 5 runtime sections + Run Scan + plan grid', async ({ p
 
   // 02 LiveScanCanvas — section H2
   await expect(
-    page.getByRole('heading', { name: /The runtime detects issues live\./i }),
+    page.getByRole('heading', { name: /The runtime detects issues in real time\./i }),
   ).toBeVisible();
 
   // 03 GlobalRuntimeFeed — section H2

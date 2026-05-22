@@ -125,28 +125,30 @@ describe('<AssistentChip>', () => {
     expect(onRoot.queryByLabelText('Assistent öffnen')).not.toBeNull();
   });
 
-  it('opens the placeholder dialog on click', () => {
-    const { getByLabelText, getByRole, queryByRole } = renderChipWithHero({ withHero: false });
-    // Before click — kein offener Dialog
-    expect(queryByRole('dialog')).toBeNull();
+  it('mounts the public AnonWidget hidden by default; click reveals it', () => {
+    const { getByLabelText, getByRole } = renderChipWithHero({ withHero: false });
+    // The widget is always in the DOM (controlled via aria-hidden + opacity
+    // transitions) — but starts hidden.
+    const dialog = getByRole('dialog', { hidden: true });
+    expect(dialog).toHaveAttribute('aria-hidden', 'true');
 
     act(() => { getByLabelText('Assistent öffnen').click(); });
 
-    const dialog = getByRole('dialog');
-    expect(dialog).toBeInTheDocument();
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    // Placeholder-Vertrag: kein echter Chat, sondern Initialisierungs-Hinweis
-    expect(dialog.textContent).toMatch(/AI Runtime wird initialisiert/i);
-    // CTA-Link auf /audit ist sichtbar
-    expect(dialog.querySelector('a[href*="/audit"]')).not.toBeNull();
+    // After click the same dialog node is now exposed to a11y.
+    expect(dialog).toHaveAttribute('aria-hidden', 'false');
+    // Contract: it is the AgentWidget anon surface, not the old placeholder.
+    expect(dialog).toHaveAttribute('aria-label', expect.stringMatching(/Compliance|Assistent/i) as unknown as string);
   });
 
-  it('closes the dialog when the chip is clicked twice via the close button', () => {
-    const { getByLabelText, getByRole, queryByRole } = renderChipWithHero({ withHero: false });
+  it('closes the widget via the WidgetHeader close button', () => {
+    const { getByLabelText, getByRole } = renderChipWithHero({ withHero: false });
     act(() => { getByLabelText('Assistent öffnen').click(); });
-    expect(getByRole('dialog')).toBeInTheDocument();
 
-    act(() => { getByLabelText('Schließen').click(); });
-    expect(queryByRole('dialog')).toBeNull();
+    const dialog = getByRole('dialog', { hidden: true });
+    expect(dialog).toHaveAttribute('aria-hidden', 'false');
+
+    // AgentWidget header close button uses aria-label="Schliessen" (no ß).
+    act(() => { getByLabelText('Schliessen').click(); });
+    expect(dialog).toHaveAttribute('aria-hidden', 'true');
   });
 });

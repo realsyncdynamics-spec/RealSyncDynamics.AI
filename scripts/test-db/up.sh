@@ -16,7 +16,7 @@ BOOTSTRAP="$ROOT/scripts/test-db/bootstrap.sql"
 # Apply migrations in timestamp order. Add new RFC migrations here as
 # they land. SPEC-001 is the foundation; everything else depends on it.
 MIGRATIONS=(
-    "$ROOT/supabase/migrations/20260602000000_runtime_events_backbone.sql"
+    "$ROOT/supabase/migrations/20260602100000_runtime_events_backbone.sql"
     "$ROOT/supabase/migrations/20260603000000_subject_ref_lifecycle.sql"
     "$ROOT/supabase/migrations/20260604000000_economic_intelligence.sql"
     "$ROOT/supabase/migrations/20260605000000_economic_intelligence_mvs.sql"

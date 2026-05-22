@@ -2,9 +2,21 @@
 --
 -- Vollständige, produktionsreife PostgreSQL DDL.
 --
--- Supersedes the Phase-0 runtime_events from 20260516300000_runtime_core.sql.
--- The old table is renamed to runtime_events_legacy_phase0 so historic rows
--- and references survive; new code targets the partitioned successor below.
+-- Supersedes the Phase-0 runtime_events from 20260516300000_runtime_core.sql
+-- AND the additive kernel-v1 envelope from
+-- 20260602000000_runtime_events_kernel_v1.sql.
+--
+-- This migration is intentionally non-additive: SPEC-001 introduces RANGE
+-- partitioning, a per-tenant hash chain (prev_hash + event_hash), a
+-- composite primary key (global_seq, ts), and a BEFORE-INSERT seq+chain
+-- trigger that cannot be retrofitted via ALTER. The pre-existing table is
+-- renamed to runtime_events_legacy_phase0 so historic rows + the kernel-v1
+-- column extensions survive read access; new writes target the partitioned
+-- successor below.
+--
+-- Timestamp note: scheduled at 20260602100000 — strictly after kernel-v1's
+-- 20260602000000 — so the kernel-v1 ALTERs apply cleanly to the still-
+-- existing legacy table before SPEC-001 supersedes it.
 --
 -- Decisions implemented (in order):
 --   1. Hybrid JSONB model — typed envelope columns + JSONB payload + JSONB

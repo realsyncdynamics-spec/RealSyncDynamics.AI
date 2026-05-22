@@ -156,7 +156,7 @@ export function LiveScanCanvasSection() {
           {/* Findings counter pane */}
           <div className="bg-obsidian-950 flex flex-col">
             <div className="px-4 py-2.5 border-b border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-              findings · live
+              findings · demo
             </div>
             <div className="flex-1 p-6 grid grid-cols-2 gap-px bg-titanium-900">
               <FindingTile label="critical" value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'critical').length} color="text-red-300" />

@@ -16,7 +16,7 @@ interface AgentCard {
   role: string;
   blurb: string;
   metrics: { label: string; value: string; tone: 'cyan' | 'amber' | 'violet' | 'emerald' }[];
-  status: 'live' | 'idle';
+  status: 'demo' | 'idle';
 }
 
 const AGENTS: readonly AgentCard[] = [
@@ -30,7 +30,7 @@ const AGENTS: readonly AgentCard[] = [
       { label: 'runs / h',    value: '4.2', tone: 'cyan' },
       { label: 'open inc.',   value: '12',  tone: 'amber' },
     ],
-    status: 'live',
+    status: 'demo',
   },
   {
     id: 'classifier',
@@ -42,7 +42,7 @@ const AGENTS: readonly AgentCard[] = [
       { label: 'classified', value: '17', tone: 'violet' },
       { label: 'high-risk',  value: '3',  tone: 'amber' },
     ],
-    status: 'live',
+    status: 'demo',
   },
   {
     id: 'evidence',
@@ -54,7 +54,7 @@ const AGENTS: readonly AgentCard[] = [
       { label: 'sealed',     value: '4,128', tone: 'emerald' },
       { label: 'last anchor', value: '3 s',   tone: 'emerald' },
     ],
-    status: 'live',
+    status: 'demo',
   },
   {
     id: 'policy',
@@ -66,7 +66,7 @@ const AGENTS: readonly AgentCard[] = [
       { label: 'drafts / w', value: '21', tone: 'cyan' },
       { label: 'merged',     value: '15', tone: 'emerald' },
     ],
-    status: 'live',
+    status: 'demo',
   },
 ];
 

@@ -1,0 +1,47 @@
+# frontend-vps-deploy-v2 — Vite-SPA als eigenständiger Container.
+#
+# Bewusst additiv: berührt weder `openclaw-app-1` noch die Host-nginx auf
+# 80/443. Lauscht intern auf 80, gemappt auf ${FRONTEND_HOST_PORT:-8090}.
+# Host-Reverse-Proxy (Host-nginx oder Traefik) reicht extern auf diesen
+# Port weiter.
+#
+# Start (auf dem VPS):
+#   cd deploy/frontend-vps-deploy-v2
+#   cp .env.example .env && $EDITOR .env
+#   docker compose --env-file .env up -d --build
+#
+# Status:  docker compose ps
+# Logs:    docker compose logs -f frontend
+# Stop:    docker compose down
+# Rollback: docker compose down && docker image tag realsync-frontend:previous realsync-frontend:latest && docker compose up -d
+
+services:
+  frontend:
+    build:
+      # Kontext = Repo-Root (zwei Ebenen hoch), damit der Build alle Sources sieht.
+      context: ../..
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?VITE_SUPABASE_URL must be set}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?VITE_SUPABASE_ANON_KEY must be set}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+    image: realsync-frontend:${FRONTEND_IMAGE_TAG:-latest}
+    container_name: realsync-frontend
+    restart: unless-stopped
+    ports:
+      # Default-Port 8090 — frei neben:
+      #   - Host-nginx 80/443
+      #   - openclaw-app-1
+      #   - agent-runtime 8787
+      - "${FRONTEND_HOST_PORT:-8090}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

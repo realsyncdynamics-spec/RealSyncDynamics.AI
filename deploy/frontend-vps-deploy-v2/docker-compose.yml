@@ -1,9 +1,15 @@
 # frontend-vps-deploy-v2 — Vite-SPA als eigenständiger Container.
 #
-# Bewusst additiv: berührt weder `openclaw-app-1` noch die Host-nginx auf
-# 80/443. Lauscht intern auf 80, gemappt auf ${FRONTEND_HOST_PORT:-8090}.
-# Host-Reverse-Proxy (Host-nginx oder Traefik) reicht extern auf diesen
-# Port weiter.
+# Architektur-Boundary (hart):
+#   - berührt NICHT openclaw-app-1
+#   - berührt NICHT Port 8080 (= openclaw-app-1)
+#   - berührt NICHT Host-nginx auf 80/443
+#   - berührt NICHT /root/OpenClaw
+#   - schaltet KEINE Domain/Traefik-Route
+#
+# Default-Bind: 127.0.0.1:${FRONTEND_HOST_PORT:-8090} — nur lokal auf dem
+# VPS erreichbar. Public-Expose passiert erst durch einen explizit
+# konfigurierten Reverse-Proxy, nicht durch dieses Compose-File allein.
 #
 # Start (auf dem VPS):
 #   cd deploy/frontend-vps-deploy-v2
@@ -29,11 +35,14 @@ services:
     container_name: realsync-frontend
     restart: unless-stopped
     ports:
-      # Default-Port 8090 — frei neben:
-      #   - Host-nginx 80/443
-      #   - openclaw-app-1
-      #   - agent-runtime 8787
-      - "${FRONTEND_HOST_PORT:-8090}:80"
+      # Default-Bind 127.0.0.1:8090 — nur lokal. Auf "0.0.0.0" stellen
+      # via FRONTEND_HOST_BIND="" erst dann, wenn ein Reverse-Proxy
+      # vor dem Container steht oder direkter Public-Expose gewollt ist.
+      # Bekannte Belegungen, die NICHT angefasst werden:
+      #   - 8080  → openclaw-app-1 (Python hybrid-orchestrator, Bestand)
+      #   - 80/443 → Host-nginx
+      #   - 8787   → realsync-agent-runtime
+      - "${FRONTEND_HOST_BIND:-127.0.0.1}:${FRONTEND_HOST_PORT:-8090}:80"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
       interval: 30s

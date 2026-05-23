@@ -48,6 +48,16 @@ done
 set -a; source "$ENV_FILE"; set +a
 PORT="${FRONTEND_HOST_PORT:-8090}"
 
+# Hard guard: 8080 ist openclaw-app-1. Nie übernehmen.
+if [[ "$PORT" == "8080" ]]; then
+  echo "FEHLER: Port 8080 ist openclaw-app-1 reserviert. FRONTEND_HOST_PORT ändern." >&2
+  exit 5
+fi
+
+# Vor-Snapshot: openclaw-app-1-Status festhalten, damit wir am Ende
+# verifizieren können, dass wir ihn nicht beeinflusst haben.
+OPENCLAW_BEFORE="$(docker ps --filter 'name=openclaw-app-1' --format '{{.Status}}' || true)"
+
 if ss -ltn "( sport = :$PORT )" 2>/dev/null | grep -q "LISTEN"; then
   OWNER="$(docker ps --filter "publish=$PORT" --format '{{.Names}}' || true)"
   if [[ "$OWNER" != "realsync-frontend" && -n "$OWNER" ]]; then
@@ -96,6 +106,17 @@ if curl -fsS "http://127.0.0.1:$PORT/healthz" >/dev/null; then
   echo "→ /healthz reachable on 127.0.0.1:$PORT"
 else
   echo "WARNUNG: /healthz auf 127.0.0.1:$PORT nicht erreichbar." >&2
+fi
+
+# Gegencheck: openclaw-app-1 muss unverändert sein.
+OPENCLAW_AFTER="$(docker ps --filter 'name=openclaw-app-1' --format '{{.Status}}' || true)"
+if [[ -n "$OPENCLAW_BEFORE" && "$OPENCLAW_BEFORE" != "$OPENCLAW_AFTER" ]]; then
+  echo "WARNUNG: openclaw-app-1-Status hat sich geändert:" >&2
+  echo "  vorher: $OPENCLAW_BEFORE" >&2
+  echo "  nachher: $OPENCLAW_AFTER" >&2
+  echo "  Das sollte nicht passieren — bitte prüfen." >&2
+else
+  echo "→ openclaw-app-1 unverändert: ${OPENCLAW_AFTER:-(nicht laufend)}"
 fi
 
 if [[ "$TAIL_LOGS" == "1" ]]; then

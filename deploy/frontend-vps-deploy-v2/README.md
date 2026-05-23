@@ -2,11 +2,29 @@
 
 Vite-SPA als eigenständiger Docker-Container auf dem Hostinger-VPS.
 
-**Verhältnis zu v1** (`deploy/README.md` + `deploy/nginx/realsyncdynamicsai.de.conf`):
-v1 deployt das statische `dist/` direkt unter `/var/www/realsyncdynamicsai.de/dist`
-und wird von der Host-nginx ausgeliefert. v2 paketiert Build + Auslieferung in einen
-Container, lauscht intern auf Port 80 und wird vom Host-Reverse-Proxy
-durchgereicht. Beide Pfade können parallel existieren — v2 ist additiv.
+## Architektur-Boundary (hart)
+
+Auf demselben VPS läuft bereits `openclaw-app-1` (Python `hybrid-orchestrator`,
+Quelle unter `/root/OpenClaw/`, Port `8080`). Dieser Stack ist **Bestand** —
+`frontend-vps-deploy-v2` ist ein **paralleler** Deploy-Pfad und garantiert:
+
+- **kein** Zugriff auf Port `8080`
+- **keine** Änderung an `openclaw-app-1` (kein stop, kein restart, kein rm)
+- **keine** Änderung an `/root/OpenClaw/`
+- **keine** Domain- oder Traefik-Umschaltung
+- Default-Bind `127.0.0.1:8090` — **nicht** öffentlich, bis explizit ein
+  Reverse-Proxy konfiguriert wird
+
+Reverse-Proxy-Anbindung passiert in einem separaten, dokumentierten Schritt
+(siehe unten) und erst nach expliziter Freigabe.
+
+## Verhältnis zu v1
+
+v1 (`deploy/README.md` + `deploy/nginx/realsyncdynamicsai.de.conf`) deployt das
+statische `dist/` direkt unter `/var/www/realsyncdynamicsai.de/dist` und wird
+von der Host-nginx ausgeliefert. v2 paketiert Build + Auslieferung in einen
+Container, lauscht intern auf Port 80, gemappt auf `127.0.0.1:8090`. Beide
+Pfade können parallel existieren — v2 ist additiv.
 
 ---
 
@@ -30,14 +48,19 @@ cd /pfad/zum/repo/deploy/frontend-vps-deploy-v2
 cp .env.example .env
 $EDITOR .env                       # VITE_*-Werte und ggf. FRONTEND_HOST_PORT setzen
 
-# Vor dem Build prüfen, dass der gewählte Port frei ist:
+# Vor dem Build prüfen, dass der gewählte Port frei ist UND openclaw-app-1
+# unangetastet bleibt:
 ss -ltnp | grep ":${FRONTEND_HOST_PORT:-8090}\b" && echo "PORT BELEGT — abbrechen" || echo "ok"
+docker ps --filter "name=openclaw-app-1" --format '{{.Names}} {{.Status}}'  # muss laufen + unverändert bleiben
 
 docker compose --env-file .env up -d --build
 
 # Smoke:
 curl -fsS "http://127.0.0.1:${FRONTEND_HOST_PORT:-8090}/healthz"   # → ok
-docker compose ps                  # State sollte "healthy" werden (~10–30s)
+docker compose ps                                                  # State → "healthy" (~10–30s)
+
+# Gegencheck: openclaw-app-1 darf NICHT betroffen sein.
+docker ps --filter "name=openclaw-app-1" --format '{{.Names}} {{.Status}}'
 ```
 
 ---

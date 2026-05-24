@@ -13,6 +13,7 @@ export function AgenciesLanding() {
         <Hero />
         <ValueProps />
         <UseCases />
+        <MultiSitePilot />
         <Onboarding />
         <TrustBlock />
         <FinalCTA />
@@ -152,6 +153,71 @@ function UseCases() {
               <p className="text-sm text-titanium-400 leading-relaxed">{c.body}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Multi-Site Pilot — Datenschutz-Agenturen mit mehreren Mandanten ──────
+
+function MultiSitePilot() {
+  const findings = [
+    'Pre-Consent-Tracker (z. B. GTM oder Pixel vor Cookie-Klick)',
+    'Unbekannte Vendor-Domains ohne dokumentierte AVV',
+    'Fehlende oder nicht erreichbare Impressum-/Datenschutz-Links',
+    'AI-/Chatbot-Widgets ohne dokumentierte Datenflüsse',
+    'Cookies ohne Kategorisierung im Consent-Manager',
+  ];
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 bg-obsidian-900/30">
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-2 py-1 border border-security-900 bg-security-950/30 text-security-300 text-[11px] font-mono uppercase tracking-wider rounded-none">
+            Agency Pilot · 14 Tage
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight leading-tight">
+            Für Datenschutz-Agenturen mit<br className="hidden sm:inline" />
+            mehreren Mandanten-Websites.
+          </h2>
+          <p className="text-titanium-300 leading-relaxed">
+            Wenn Sie regelmäßig 20–50 Mandanten-Websites prüfen, reduziert RealSync
+            die repetitive Prüf- und Dokumentationsarbeit. Die Runtime erkennt
+            Tracker-, Vendor- und AI-Risiken, priorisiert Befunde und erzeugt
+            Evidence-Reports für Mandantenkommunikation und interne Dokumentation.
+          </p>
+          <p className="text-sm text-titanium-500 leading-relaxed">
+            14-Tage-Pilot mit 5 Mandanten-Websites · wöchentlicher Re-Scan ·
+            Evidence-Bundles (SPEC-001, lokal verifizierbar) · Abschluss-Call
+            mit Befundpriorisierung.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Link to="/contact-sales?source=agency_pilot"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none">
+              Agency Pilot anfragen <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link to="/contact-sales?source=agency_pilot_details"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-900 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 font-semibold rounded-none">
+              Pilot-Details anfordern
+            </Link>
+          </div>
+        </div>
+        <div className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-500 mb-3">
+            Was die Runtime erkennt
+          </div>
+          <ul className="space-y-2.5">
+            {findings.map((f) => (
+              <li key={f} className="flex items-start gap-2.5 text-sm text-titanium-300 leading-snug">
+                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 pt-4 border-t border-titanium-900 text-[11px] font-mono text-titanium-500 leading-relaxed">
+            Jeder Befund: Severity, Evidence, Empfehlung.
+            Kein juristischer Rat, keine Konformitätsgarantie.
+          </div>
         </div>
       </div>
     </section>

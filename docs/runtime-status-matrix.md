@@ -126,7 +126,7 @@ Wenn ein 🟢-Modul mit einem offenen Finding verbunden ist, **muss** der Caveat
 | Multi-Tenancy (RLS auf `tenant_id`) | 🟢 | produktiv | RLS-Policies | bestehend |
 | Auth / RBAC | 🟢 | produktiv | – | Supabase Auth, Owner/Admin/Editor/Viewer |
 | EU-Hosting (Supabase eu-central) | 🟢 | produktiv | – | Primärregion EU |
-| EU-lokale AI-Inferenz (opt-in) | 🟢 | produktiv | residency routing | Ollama qwen3:4b auf Hostinger DE — **Caveat:** opt-in pro Tenant/User, Cloud-Pfad bleibt Standard |
+| EU-lokale AI-Inferenz (opt-in) | 🟢 | produktiv | residency routing | Ollama gemma3:4b auf Hostinger DE — **Caveat:** opt-in pro Tenant/User, Cloud-Pfad bleibt Standard |
 | Security Headers (HSTS, X-Frame, CSP) | 🟡 | beta | partial | Code geschlossen: `infra/nginx/security-headers.conf` (HSTS, X-Frame, Permissions-Policy, Referrer-Policy) und CSP-CI-Guard `test/compliance/no-raw-tracker-scripts.test.ts`. **Caveat:** Deployment auf Hostinger ausstehend → bis Header live + per `curl -I` verifiziert sind, bleibt 🟡. CSP-Nonce-Umstellung weiterhin als Folge-PR offen. |
 | Externe Sicherheits-Auditierung | 🔴 | roadmap | – | noch keine externe Pentest-/Compliance-Auditierung |
 | SOC 2 / ISO 27001 | 🔴 | roadmap | – | – |

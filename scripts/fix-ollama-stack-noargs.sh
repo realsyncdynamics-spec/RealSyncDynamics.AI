@@ -54,7 +54,7 @@ docker network inspect "$NET" --format '{{range .Containers}}{{.Name}}{{"\n"}}{{
 
 echo
 echo "===== 6. ollama model pull ====="
-docker exec -i kodee-ollama ollama pull qwen3:4b
+docker exec -i kodee-ollama ollama pull gemma3:4b
 
 echo
 echo "===== 7. self-tests ====="

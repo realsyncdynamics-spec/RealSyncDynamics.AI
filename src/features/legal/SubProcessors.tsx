@@ -76,6 +76,46 @@ const SUB_PROCESSORS: SubProcessor[] = [
     dpa_url: 'https://github.com/customer-terms/github-data-protection-agreement',
     status: 'available',
   },
+  {
+    name: 'Functional Software, Inc. d/b/a Sentry',
+    purpose: 'Frontend-Error-Monitoring (Stacktraces, JS-Exception-Aggregation). Aktiv nur wenn VITE_SENTRY_DSN gesetzt ist; PII automatisch maskiert, IP-Adressen werden nicht gesendet (sendDefaultPii: false); Session-Replays deaktiviert.',
+    data_categories: ['Browser-Stacktrace', 'Komponenten-Render-Pfad', 'URL ohne Query', 'User-Agent (anonym)'],
+    region: 'USA (mit EU-DPA + SCCs)',
+    dpa_url: 'https://sentry.io/legal/dpa/',
+    status: 'available',
+  },
+  {
+    name: 'Meta Platforms Ireland Limited (Facebook Pixel)',
+    purpose: 'Marketing-Pixel — Conversion-Tracking + Werbe-Audience-Aufbau. Wird AUSSCHLIESSLICH nach explizitem Marketing-Consent geladen; ohne Consent feuert weder fbq() noch wird fbevents.js geladen.',
+    data_categories: ['Pageview-Events', 'Conversion-Events (Lead, InitiateCheckout, Purchase)', 'Cookie-Identifier (_fbp, fbc)'],
+    region: 'Irland (EU) — Meta Platforms Ireland Ltd. ist Vertragspartner; Datenfluss zu Meta USA via SCCs.',
+    dpa_url: 'https://www.facebook.com/legal/terms/dataprocessing',
+    status: 'available',
+  },
+  {
+    name: 'TikTok Technology Limited',
+    purpose: 'Marketing-Pixel — Conversion-Tracking. Wird AUSSCHLIESSLICH nach explizitem Marketing-Consent geladen; ohne Consent ist ttq nicht initialisiert.',
+    data_categories: ['Pageview-Events', 'Conversion-Events', 'Cookie-Identifier (_ttp)'],
+    region: 'Irland (EU) — TikTok Technology Ltd. ist Vertragspartner; Datenfluss zu TikTok-Konzerngesellschaften (inkl. USA/Singapur) via SCCs.',
+    dpa_url: 'https://ads.tiktok.com/i18n/official/policy/data-processing',
+    status: 'available',
+  },
+  {
+    name: 'Google LLC (Google Ads + Google Analytics 4)',
+    purpose: 'Marketing-Pixel + Analytics — Conversion-Tracking, Google Ads Remarketing, GA4 Web-Stream. Separate Verarbeitung von der Gemini-AI-Inferenz oben. Wird AUSSCHLIESSLICH nach Marketing-/Analytics-Consent geladen (Consent-Mode v2: ohne Consent stehen analytics_storage und ad_storage auf denied).',
+    data_categories: ['Pageview-Events', 'Conversion-Events', 'Cookie-Identifier (_ga, _gid, _gcl_au)'],
+    region: 'USA (mit EU-DPA + SCCs; Server-Side-Tagging über Google-EU-Endpoints möglich, aktuell nicht konfiguriert)',
+    dpa_url: 'https://business.safety.google/processorterms/',
+    status: 'available',
+  },
+  {
+    name: 'LinkedIn Ireland Unlimited Company',
+    purpose: 'B2B-Marketing-Insight-Tag — Conversion-Tracking + Audience-Aufbau für LinkedIn-Ads. Wird AUSSCHLIESSLICH nach explizitem Marketing-Consent geladen.',
+    data_categories: ['Pageview-Events', 'Conversion-Events', 'Cookie-Identifier (lidc, _linkedin_partner_id)'],
+    region: 'Irland (EU) — LinkedIn Ireland UC ist Vertragspartner für europäische Nutzer; SCCs für Konzern-Datenflüsse.',
+    dpa_url: 'https://legal.linkedin.com/dpa',
+    status: 'available',
+  },
 ];
 
 export function SubProcessors() {

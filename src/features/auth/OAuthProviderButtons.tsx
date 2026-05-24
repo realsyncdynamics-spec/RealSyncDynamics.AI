@@ -106,12 +106,44 @@ export interface OAuthProviderButtonsProps {
   variant?: 'compact' | 'full';
 }
 
+// Maps Supabase-Auth-Fehler auf eine UI-Meldung. Der haeufigste produktive
+// Fall ist `validation_failed` mit msg "provider is not enabled" — der
+// Provider-String stimmt, aber der Provider ist im Supabase-Dashboard
+// (Auth → Providers) nicht aktiviert. Wir zeigen das explizit pro Provider,
+// damit der User sofort einen anderen Anbieter waehlt, und merken uns den
+// Button als deaktiviert (sonst landen wir in einer Retry-Schleife auf
+// demselben Fehler).
+function classifyOAuthError(
+  err: unknown,
+): { kind: 'provider_disabled' | 'other'; userMessage: string; rawCode?: string } {
+  const e = err as { message?: string; code?: string; status?: number } | null;
+  const msg = (e?.message ?? '').toLowerCase();
+  const code = e?.code ?? '';
+  if (code === 'validation_failed' || msg.includes('provider is not enabled')) {
+    return {
+      kind: 'provider_disabled',
+      userMessage:
+        'Dieser Login ist gerade nicht verfuegbar. Bitte waehle einen anderen Anbieter oder den Magic-Link weiter unten.',
+      rawCode: 'validation_failed',
+    };
+  }
+  return {
+    kind: 'other',
+    userMessage: e?.message ?? 'OAuth-Login konnte nicht gestartet werden.',
+    rawCode: code || undefined,
+  };
+}
+
 export function OAuthProviderButtons({
   redirectAfterAuthTo,
   variant = 'full',
 }: OAuthProviderButtonsProps) {
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [disabledProviders, setDisabledProviders] = useState<Set<Provider>>(
+    () => new Set(),
+  );
+  const [lastErrorProvider, setLastErrorProvider] = useState<Provider | null>(null);
 
   const handleProviderClick = async (provider: Provider) => {
     if (!isSupabaseConfigured()) {
@@ -120,6 +152,7 @@ export function OAuthProviderButtons({
     }
     setBusyProvider(provider);
     setError(null);
+    setLastErrorProvider(null);
     try {
       const sb = getSupabase();
       // redirectTo: zurueck auf die Seite die den Login getriggert hat
@@ -138,11 +171,23 @@ export function OAuthProviderButtons({
       if (oauthErr) throw oauthErr;
       // Browser navigiert nach Provider-Login — kein weiterer Code laeuft hier.
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'OAuth-Login konnte nicht gestartet werden.',
-      );
+      const cls = classifyOAuthError(err);
+      // Telemetry: macht im Browser-Devtools + Sentry sofort sichtbar,
+      // welcher Provider-Button welchen Fehler-Code geworfen hat.
+      console.error('[oauth] signInWithOAuth failed', {
+        provider,
+        code: cls.rawCode,
+        raw: err,
+      });
+      setError(cls.userMessage);
+      setLastErrorProvider(provider);
+      if (cls.kind === 'provider_disabled') {
+        setDisabledProviders((prev) => {
+          const next = new Set(prev);
+          next.add(provider);
+          return next;
+        });
+      }
       setBusyProvider(null);
     }
   };
@@ -154,12 +199,20 @@ export function OAuthProviderButtons({
       {PROVIDERS.map((p) => {
         const isThisBusy = busyProvider === p.id;
         const isAnyBusy = busyProvider !== null;
+        const isDisabled = disabledProviders.has(p.id);
         return (
           <button
             key={p.id}
             type="button"
-            disabled={isAnyBusy}
+            disabled={isAnyBusy || isDisabled}
             onClick={() => handleProviderClick(p.id)}
+            data-provider={p.id}
+            data-oauth-error={
+              lastErrorProvider === p.id ? 'validation_failed' : undefined
+            }
+            aria-label={
+              isDisabled ? `${p.label} (aktuell nicht verfuegbar)` : p.label
+            }
             className={`w-full inline-flex items-center justify-center gap-3 px-4 ${
               isCompact ? 'py-2' : 'py-2.5'
             } bg-obsidian-900/80 hover:bg-obsidian-800 border border-silver-700/40 hover:border-silver-500 rounded-none transition-colors text-titanium-100 disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -170,7 +223,14 @@ export function OAuthProviderButtons({
               <span className="shrink-0">{p.icon}</span>
             )}
             <span className="flex-1 text-left">
-              <span className="block text-sm font-semibold">{p.label}</span>
+              <span className="block text-sm font-semibold">
+                {p.label}
+                {isDisabled && (
+                  <span className="ml-2 text-[10px] font-mono uppercase tracking-wider text-silver-500">
+                    nicht verfuegbar
+                  </span>
+                )}
+              </span>
               {!isCompact && (
                 <span className="block text-[11px] font-mono uppercase tracking-wider text-silver-500">
                   {p.description}
@@ -182,7 +242,10 @@ export function OAuthProviderButtons({
       })}
 
       {error && (
-        <div className="mt-3 flex items-start gap-2 text-xs text-red-300 bg-red-950/30 border border-red-900/40 rounded-none p-2.5">
+        <div
+          role="alert"
+          className="mt-3 flex items-start gap-2 text-xs text-red-300 bg-red-950/30 border border-red-900/40 rounded-none p-2.5"
+        >
           <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>

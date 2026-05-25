@@ -1,10 +1,25 @@
 name: CI
 
+# Skip CI minutes for docs-only changes (RFC text, runbooks, READMEs).
+# Build, unit tests, and migration validation cannot regress when no
+# code / migrations / package files change. Saves ~3 CI-minutes per
+# docs-only PR. Anything outside `paths-ignore` still triggers CI in
+# full.
 on:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.github/ISSUE_TEMPLATE/**'
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.github/ISSUE_TEMPLATE/**'
 
 jobs:
   build:

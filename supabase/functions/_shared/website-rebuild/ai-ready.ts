@@ -42,7 +42,7 @@ export function buildLlmsTxt(ctx: AiReadyContext): string {
 
 export function buildAiInfoJson(ctx: AiReadyContext): string {
   return JSON.stringify({
-    schema: 'https://schemas.realsyncdynamics.ai/ai-info/v1',
+    schema: 'https://schemas.realsyncdynamicsai.de/ai-info/v1',
     domain: ctx.domain,
     title: ctx.title,
     description: ctx.description,

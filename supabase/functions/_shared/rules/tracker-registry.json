@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schemas.realsyncdynamics.ai/tracker-registry/v1",
+  "$schema": "https://schemas.realsyncdynamicsai.de/tracker-registry/v1",
   "version": "2026.05.0",
   "updated_at": "2026-05-09",
   "description": "Vollstaendige Tracker-Registry fuer RealSyncDynamics.AI Compliance Engine. Synchronisiert mit cookie-scan/index.ts und gdpr-audit/index.ts.",

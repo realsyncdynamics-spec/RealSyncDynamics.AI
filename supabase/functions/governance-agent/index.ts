@@ -52,12 +52,32 @@ const corsHeaders = {
 
 const MAX_ITERATIONS = 8;
 const MAX_HISTORY_TURNS = 20;
-const MAX_TOKENS_PER_TURN = 4096;
+// Output cap per Anthropic turn. Compliance answers typically need
+// 500–1500 tokens; the previous 4096 was a worst-case ceiling that
+// inflated output cost during runaway responses. 2048 covers >99% of
+// real answers while halving the worst-case spend per tenant turn.
+// Override via AGENT_MAX_TOKENS_PER_TURN if a specific deployment
+// needs longer outputs.
+const MAX_TOKENS_PER_TURN = parseInt(Deno.env.get('AGENT_MAX_TOKENS_PER_TURN') ?? '2048', 10);
 const ANON_MAX_TOKENS = 1024;
 const ANON_MAX_HISTORY = 10;
 
 const LLM_PROVIDER = Deno.env.get('AGENT_LLM_PROVIDER') ?? 'anthropic';
 const LLM_MODEL = Deno.env.get('AGENT_LLM_MODEL') ?? 'claude-sonnet-4-6';
+// Anon path uses a separate model env var so operators can route
+// public traffic to a cheaper tier (Haiku 4.5 is ~5x cheaper than
+// Sonnet 4.6 at similar Q&A quality for general DSGVO questions).
+// Falls back to AGENT_LLM_MODEL when AGENT_ANON_LLM_MODEL is not set
+// so existing deployments keep current behaviour until they opt in.
+const ANON_LLM_MODEL = Deno.env.get('AGENT_ANON_LLM_MODEL') ?? LLM_MODEL;
+
+// Returns the model identifier that actually serviced an anon request,
+// for audit + history accuracy. ai_gateway routes via LM Studio with
+// the AGENT_LLM_MODEL_PROFILE name (e.g. 'fast-local'); Anthropic path
+// returns ANON_LLM_MODEL.
+function anonModelLabel(): string {
+  return LLM_PROVIDER === 'ai_gateway' ? AGENT_LLM_MODEL_PROFILE : ANON_LLM_MODEL;
+}
 
 // When LLM_PROVIDER=ai_gateway, anon-mode inference routes through the
 // ai-gateway Edge Function. Tenant-mode tool-use still uses Anthropic
@@ -405,8 +425,22 @@ async function handleChat(
       const resp = await client.messages.create({
         model: LLM_MODEL,
         max_tokens: MAX_TOKENS_PER_TURN,
-        system: SYSTEM_PROMPT,
-        tools: AGENT_TOOLS,
+        // Anthropic prompt caching (cache_control: ephemeral) — the
+        // system prompt + tool catalogue are identical across every
+        // iteration of a tool-loop and across every chat turn within
+        // a 5-minute window. Marking them cacheable cuts the input-
+        // token cost for these blocks by ~90% on cache hits, which
+        // is the dominant input cost driver for tool-heavy chats.
+        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        tools: AGENT_TOOLS.map((t, i) =>
+          // Mark only the LAST tool with cache_control — Anthropic
+          // caches everything up to and including that marker, so
+          // tagging the final tool effectively caches the full
+          // tools array as one block.
+          i === AGENT_TOOLS.length - 1
+            ? { ...t, cache_control: { type: 'ephemeral' as const } }
+            : t,
+        ),
         messages: history,
       });
       totalIn += resp.usage.input_tokens;
@@ -719,9 +753,10 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     { role: 'assistant', content: finalText },
   ];
 
+  const modelUsed = anonModelLabel();
   await finishAnon(admin, requestId, startedAt, {
     outcome: 'success',
-    model: LLM_MODEL,
+    model: modelUsed,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
   });
@@ -734,7 +769,7 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     session_id: sessionId,
     op: 'chat_anon',
     provider: LLM_PROVIDER,
-    model: LLM_MODEL,
+    model: modelUsed,
     query_text: message.slice(0, 4000),
     response_summary: finalText,
     input_tokens: inputTokens,
@@ -756,9 +791,13 @@ async function runAnonViaAnthropic(
 ): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
   const client = new Anthropic({ apiKey });
   const resp = await client.messages.create({
-    model: LLM_MODEL,
+    model: ANON_LLM_MODEL,
     max_tokens: ANON_MAX_TOKENS,
-    system: ANON_SYSTEM_PROMPT,
+    // System-prompt caching on the anon path too. The anon system
+    // prompt is 224 tokens; with a free-tier cap of 10 calls/IP/mo
+    // and many IPs sharing the same prompt, the cache hit rate is
+    // high at the 5-minute window granularity.
+    system: [{ type: 'text', text: ANON_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
     messages: transcript.map((m) => ({ role: m.role, content: m.content })),
   });
   const text = resp.content

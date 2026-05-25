@@ -150,6 +150,8 @@ const GovernanceConnectorsView = lazy(() => import('./features/governance/Connec
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
 const GovernanceAuditorConsoleView = lazy(() => import('./features/governance/AuditorConsoleView').then((m) => ({ default: m.AuditorConsoleView })));
+const GovernanceScansListView = lazy(() => import('./features/governance/scans/ScansListView').then((m) => ({ default: m.ScansListView })));
+const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/ScanDetailView').then((m) => ({ default: m.ScanDetailView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
@@ -412,6 +414,8 @@ function RoutesWithTracking() {
       <Route path="/governance/remediation/:planId" element={<RemediationPlanDetailView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
       <Route path="/governance/auditor" element={<GovernanceAuditorConsoleView />} />
+      <Route path="/governance/scans" element={<GovernanceScansListView />} />
+      <Route path="/governance/scans/:scanId" element={<GovernanceScanDetailView />} />
       {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
           NOT linked from the public navbar; tenants reach it from the
           authenticated dashboard or directly via URL. */}

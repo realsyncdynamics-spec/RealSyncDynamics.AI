@@ -6,7 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
-scans/
+/scans/
 test-results/
 playwright-report/
 playwright/.cache/

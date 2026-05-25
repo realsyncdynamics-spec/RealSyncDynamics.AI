@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
+import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 
 /**
  * /pricing — public Pricing-Page mit 4 Paketen.
@@ -96,6 +97,10 @@ export function PricingPage() {
           </div>
         </div>
       </section>
+
+      {/* Beispielhafte Kostenrechnung — Procurement-Anker, klar als Beispiel
+          gekennzeichnet, keine Einsparzusagen. */}
+      <PricingRoiExampleSection />
 
       {/* Differenzierer */}
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">

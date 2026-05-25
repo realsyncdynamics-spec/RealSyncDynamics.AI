@@ -25,8 +25,7 @@ export function injectConsentSdk(html: string, cfg: ConsentConfig): string {
 
 function renderConsentSnippet(cfg: ConsentConfig): string {
   return `<!-- RealSync Cookie-Consent — DSGVO Art. 7 + TTDSG §25 -->
-<link rel="stylesheet" href="https://cdn.realsyncdynamicsai.de/consent/v1/consent.css">
-<script defer src="https://cdn.realsyncdynamicsai.de/consent/v1/consent.js"
+<script defer src="https://realsyncdynamicsai.de/sdk/cookie-consent.js"
   data-domain="${cfg.domain}"
   data-lang="${cfg.primaryLang}"
   data-privacy-url="${cfg.privacyPolicyUrl}"

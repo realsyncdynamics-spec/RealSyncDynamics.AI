@@ -37,11 +37,11 @@ export function HealthTechLanding() {
               Plus AI Act Annex III: Healthcare-Diagnose-AI ist kategorisch
               <strong className="text-titanium-50"> High-Risk</strong> ab August 2026.
             </p>
-            <p>Konsequenz ohne Compliance:</p>
+            <p>Was die Marktrealität verlangt:</p>
             <ul className="space-y-1.5 mt-3 text-sm">
-              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />Bußgeld bis 4 % Jahresumsatz (DSGVO Art. 83 Abs. 5) plus 35 Mio./7 % (AI Act Art. 99)</li>
-              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />Marktverbot durch Bundesnetzagentur bei nicht-konformem High-Risk-System</li>
-              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />Krankenhäuser und MFA-Praxen als Kunden brechen Verträge ab Q1 2026</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />Konformitätsbewertung nach DSGVO Art. 35 + AI Act (Risikoklasse High-Risk)</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />Technische und organisatorische Maßnahmen vor Inbetriebnahme dokumentieren</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />Lieferanten- und Kunden-Audits (Krankenhäuser, MFA-Praxen) erfordern belastbaren Nachweis</li>
             </ul>
           </Section>
 

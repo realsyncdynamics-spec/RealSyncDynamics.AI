@@ -7,7 +7,28 @@
 // the tenant-membership guards, audit log, and RLS policies all stay
 // in one place.
 
-import type Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
+import {
+  retrieveLegalContext,
+  LegalRetrievalGuardrailError,
+  LegalRetrievalPhaseError,
+  LEGAL_PLATFORM_DISCLAIMER,
+  type LegalFramework,
+  type LegalJurisdiction,
+} from './legal-retrieval.ts';
+
+// Structural shape of Anthropic.Tool — kept local so vitest (Node-resolver)
+// doesn't trip on the 'npm:' specifier used by Deno at runtime. The
+// Anthropic SDK accepts plain objects matching this shape; we forward
+// the AGENT_TOOLS array into it verbatim.
+interface AnthropicToolShape {
+  name: string;
+  description: string;
+  input_schema: {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required?: string[];
+  };
+}
 
 export const SYSTEM_PROMPT = `Du bist der KI-Compliance-Assistent von RealSyncDynamics.AI — einer EU-konformen Plattform für Continuous AI- und Privacy-Governance.
 
@@ -28,7 +49,7 @@ STIL
 
 WICHTIG: Du bist selbst ein AI-System unter EU-AI-Act-Geltung. Outputs werden zu \`agent_runs\` persistiert und in \`governance_admin_audit_log\` referenziert. Jede deiner Aktionen ist auditierbar.`;
 
-export const AGENT_TOOLS: Anthropic.Tool[] = [
+export const AGENT_TOOLS: AnthropicToolShape[] = [
   {
     name: 'list_assets',
     description:
@@ -102,6 +123,44 @@ export const AGENT_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'legal_context',
+    description:
+      'Source-grounded Compliance-Retrieval: sucht in der internen Wissensbasis ' +
+      '(DSGVO, EU AI Act, NIS2, DSA, Data Act, eIDAS, BfDI/EDPB-Leitlinien) nach ' +
+      'Passagen, die zu einer Frage passen. Jede Antwort enthält die Quelle ' +
+      '(URL + Anker) und den verbindlichen Disclaimer. KEINE Rechtsberatung — ' +
+      'Hinweise auf qualifizierten Rechtsbeistand sind im Output Pflicht. ' +
+      'Nutze dieses Tool, wenn der Auditor nach „Welche Pflichten betreffen X?" ' +
+      'oder „Was sagt die DSGVO zu …?" fragt.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Suchfrage in natürlicher Sprache, z.B. „Einwilligung bei Tracking nach Art. 6"',
+        },
+        top_k: {
+          type: 'integer',
+          minimum: 1, maximum: 10,
+          description: 'Anzahl der zurückgegebenen Passagen (1-10, default 5)',
+        },
+        framework: {
+          type: 'string',
+          enum: ['gdpr', 'ai_act', 'nis2', 'dsa', 'data_act', 'eidas',
+                 'ttdsg', 'tmg', 'tdsg', 'c2pa', 'cloud_act',
+                 'edpb', 'bfdi', 'cnil', 'other'],
+          description: 'Filtert auf ein einzelnes Regelwerk',
+        },
+        jurisdiction: {
+          type: 'string',
+          enum: ['eu', 'de', 'at', 'ch', 'fr', 'us', 'uk', 'other'],
+          description: 'Filtert auf eine Jurisdiktion',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'escalate_to_human',
     description:
       'Erstellt einen Eskalations-Eintrag im Audit-Log. Nutze dies, wenn das Anliegen Rechtsberatung erfordert oder eine destruktive Aktion ohne Tool-Coverage gewünscht ist.',
@@ -142,6 +201,7 @@ export async function dispatchTool(ctx: DispatchCtx): Promise<unknown> {
       case 'list_incidents':      return await toolListIncidents(ctx);
       case 'list_vendors':        return await toolListVendors(ctx);
       case 'get_regulation_info': return toolRegulationInfo(ctx);
+      case 'legal_context':       return await toolLegalContext(ctx);
       case 'escalate_to_human':   return await toolEscalate(ctx);
       default:                    return { error: `tool not implemented: ${ctx.name}` };
     }
@@ -305,6 +365,70 @@ function toolRegulationInfo(ctx: DispatchCtx): unknown {
     };
   }
   return { regulation: regulation.toUpperCase(), article, ...info, disclaimer: 'Technische Zusammenfassung, keine Rechtsberatung.' };
+}
+
+// Pulls source-grounded legal/compliance passages from the internal
+// Legal-RAG layer (migration 20260614 + 20260615). Every result is
+// returned with its source URL, citation anchor, and disclaimer; the
+// platform disclaimer is appended at the top of the envelope. The
+// retrieval helper writes a legal_retrieval_log row on every call
+// (audit substrate). Failures degrade gracefully so the agent can
+// still respond — caller gets a structured error, not an exception.
+async function toolLegalContext(ctx: DispatchCtx): Promise<unknown> {
+  const query = String(ctx.input.query ?? '').trim();
+  if (!query) {
+    return {
+      error: 'query parameter is required',
+      hint:  'Nenne die konkrete Frage in natürlicher Sprache.',
+    };
+  }
+  const top_k = typeof ctx.input.top_k === 'number'
+    ? Math.min(Math.max(Math.floor(ctx.input.top_k), 1), 10)
+    : 5;
+
+  try {
+    const r = await retrieveLegalContext(ctx.admin, {
+      query,
+      top_k,
+      framework:      ctx.input.framework    as LegalFramework    | undefined,
+      jurisdiction:   ctx.input.jurisdiction as LegalJurisdiction | undefined,
+      caller_type:    'internal',
+      caller_ref:     ctx.userId || 'agent',
+      correlation_id: null,
+    });
+    return {
+      query:        r.query,
+      retrieved_at: r.retrieved_at,
+      log_id:       r.log_id,
+      platform_disclaimer: LEGAL_PLATFORM_DISCLAIMER,
+      results: r.results.map((p) => ({
+        title:           p.title,
+        framework:       p.framework,
+        jurisdiction:    p.jurisdiction,
+        heading:         p.heading_path,
+        chunk_text:      p.chunk_text,
+        source_url:      p.source_url,
+        citation_anchor: p.citation_anchor,
+        published_at:    p.published_at,
+        disclaimer:      p.disclaimer,
+        rank_score:      p.rank_score,
+      })),
+      // Hard reminder for the model — keeps the legal-advice guardrail
+      // in the conversation context even if the system prompt drifts.
+      note: 'Diese Passagen sind Quellenausschnitte. Beziehe dich beim Antworten ausschließlich auf den zurückgegebenen Text. Keine Aussage ohne mindestens eine source_url. Verweise bei rechtlicher Auslegung auf qualifizierten Rechtsbeistand.',
+    };
+  } catch (err) {
+    if (err instanceof LegalRetrievalPhaseError) {
+      return { error: 'legal_context phase mismatch', detail: err.message };
+    }
+    if (err instanceof LegalRetrievalGuardrailError) {
+      return { error: 'legal_context guardrail violation', detail: err.violation };
+    }
+    return {
+      error: 'legal_context retrieval failed',
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 async function toolEscalate(ctx: DispatchCtx): Promise<unknown> {

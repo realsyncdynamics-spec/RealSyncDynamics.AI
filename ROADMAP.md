@@ -173,7 +173,7 @@ Was bewusst *nicht* in Phase A ist: eigene CMS-Plugins, eigenes CRM/IAM/Ticket-S
 - [ ] HAR Files + Screenshots archivieren
 - [ ] Consent Logs (DSGVO Art. 7: Nachweis der Einwilligung)
 - [ ] Audit-Trail PDF mit Zeitstempel + Signatur
-- [ ] Rechtssichere Archivierung (10 Jahre)
+- [ ] Langzeit-Archivierung mit konfigurierbarer Retention (juristische Eignung pro Anwendungsfall durch DSB / Fachjuristen zu pruefen — die Plattform garantiert sie nicht)
 
 ### AI Act Compliance
 - [ ] AI-Tool-Inventar erfassen
@@ -221,7 +221,7 @@ Wir verkaufen **nicht**: Webseiten, Cookie-Banner, HTML.
 
 Wir verkaufen: **Risikoreduktion + Nachweisbarkeit + Automatisierung + Monitoring + Infrastruktur.**
 
-Das ist Enterprise-faehig, skalierbar und rechtfertigt hohe Preise durch Lock-in.
+Diese Positionierung skaliert in Richtung groesserer Kunden, weil sie auf nachvollziehbare Evidence, Audit-Trails und kontinuierliches Monitoring zielt — nicht auf einmalige Reports.
 
 ---
 

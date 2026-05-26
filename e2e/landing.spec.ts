@@ -1,52 +1,62 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E for the conversion-hardened Landing.
+ * Smoke-E2E für die minimale, stabile Landing.
  *
- * Aligned with `src/pages/Landing.tsx` nach landing-conversion-hardening:
- * Hero ist auf deutsche Enterprise-Sprache umgestellt, ein 30-Sekunden-
- * Ergebnisblock und ein FAQ-Block sind neu. CTAs sind „Kostenlosen Audit
- * starten" / „Runtime ansehen".
+ * Aligned mit `src/pages/Landing.tsx` nach `fix(landing): reduce
+ * homepage to stable German conversion surface`: Hero (kurz, deutsch,
+ * ohne Animation), 4 Nutzenkarten, Evidence-Vorschau (Demo-Daten),
+ * CTA-Block, kompakter Footer. Keine Auto-Scroll-Sektionen, kein
+ * RuntimeCanvas / LiveScan / FAQ / Plan-Grid auf der Startseite.
  *
- * Assertions prüfen stabile, kopierarme Anker (Eyebrows, Primary-CTA,
- * Plan-Namen) — so brechen kleinere Copy-Anpassungen den Spec nicht.
+ * Assertions prüfen stabile, kopierarme Anker. Tiefere Inhalte
+ * (Pricing, Runtime, FAQ usw.) liegen auf Unterseiten.
  */
-test('Landing renders the conversion-hardened sections + primary CTA + plan grid', async ({ page }) => {
+test('Landing renders the minimal hero + value cards + CTAs + footer', async ({ page }) => {
   await page.goto('/');
 
-  // 01 Hero — Headline „Kontinuierliche KI- und DSGVO-Governance …"
+  // Hero — neue Headline
   await expect(
     page.getByRole('heading', {
-      name: /Kontinuierliche KI- und DSGVO-Governance.*überprüfbarer Evidence/i,
+      name: /Mehrere Websites\..*Kontinuierlich überwacht\..*Audit-ready\./i,
     }),
   ).toBeVisible();
 
-  // Primary CTA „Kostenlosen Audit starten" routed to /audit
-  const primary = page.getByRole('button', { name: /Kostenlosen Audit starten/i }).first();
+  // Primary CTA „Kostenlosen Audit starten" → /audit
+  const primary = page.getByRole('link', { name: /Kostenlosen Audit starten/i }).first();
   await expect(primary).toBeVisible();
+  await expect(primary).toHaveAttribute('href', /\/audit/);
 
   // Secondary CTA „Runtime ansehen" → /runtime
-  await expect(page.getByRole('link', { name: /Runtime ansehen/i }).first()).toBeVisible();
+  const secondary = page.getByRole('link', { name: /^Runtime ansehen$/i }).first();
+  await expect(secondary).toBeVisible();
+  await expect(secondary).toHaveAttribute('href', /\/runtime/);
 
-  // 30-Sekunden-Ergebnisblock
-  await expect(page.getByText(/Ergebnis\s*·\s*30 Sekunden/i)).toBeVisible();
+  // Third CTA „Agency Pilot anfragen" → /agencies
+  const third = page.getByRole('link', { name: /Agency Pilot anfragen/i }).first();
+  await expect(third).toBeVisible();
+  await expect(third).toHaveAttribute('href', /\/agencies/);
+
+  // Value-Sektion „Was Sie sofort sehen" + die vier Nutzenkarten
   await expect(
-    page.getByRole('heading', { name: /Was Sie in den ersten 30 Sekunden sehen\./i }),
+    page.getByRole('heading', { name: /^Was Sie sofort sehen$/i }),
   ).toBeVisible();
-
-  // Trust-Block (Zielgruppen-Fit, keine erfundenen Logos)
-  await expect(
-    page.getByRole('heading', { name: /Entwickelt für Teams, die Governance nachweisen müssen\./i }),
-  ).toBeVisible();
-
-  // FAQ-Block am Ende
-  await expect(page.getByRole('heading', { name: /^Häufige Fragen\.$/i })).toBeVisible();
-  await expect(page.getByText(/Ist RealSync ein Cookie-Banner\?/i)).toBeVisible();
-
-  // RuntimeActivation — Plan-Namen unverändert
-  for (const name of ['Free Audit', 'Starter', 'Growth', 'Agency', 'Enterprise']) {
-    await expect(
-      page.getByRole('heading', { level: 3, name: new RegExp(`^${name}$`) }),
-    ).toBeVisible();
+  for (const card of ['Risiko-Score', 'Top-Findings', 'Evidence-Report', 'Nächster Schritt']) {
+    await expect(page.getByRole('heading', { name: new RegExp(`^${card}$`) })).toBeVisible();
   }
+
+  // Evidence-Vorschau — klar als Demo gelabelt
+  await expect(
+    page.getByRole('heading', { name: /^So sieht ein Report aus$/i }),
+  ).toBeVisible();
+  await expect(page.getByText(/Beispieldaten · Demo-Vorschau/i)).toBeVisible();
+
+  // CTA-Block — Sekundärlinks auf Unterseiten
+  for (const link of ['Evidence ansehen', 'AI Act ansehen', 'Sicherheit ansehen', 'Entwickler ansehen', 'Preise ansehen']) {
+    await expect(page.getByRole('link', { name: new RegExp(`^${link}$`) })).toBeVisible();
+  }
+
+  // Footer-Legal-Links
+  await expect(page.getByRole('link', { name: /^Impressum$/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /^Datenschutz$/i })).toBeVisible();
 });

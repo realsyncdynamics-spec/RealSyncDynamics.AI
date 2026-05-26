@@ -12,6 +12,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from './entitlements.ts';
 import { recordUsage, getCurrentTotal, UsageError } from './usage.ts';
 import { callProvider, ProviderError } from './providers.ts';
+import { writeLlmCostEntries } from './cost-writer.ts';
 
 export interface RunAiToolOptions {
   /** Forwarded to ai_tool_runs.metadata. */
@@ -195,6 +196,27 @@ export async function runAiTool(
       ]);
     } catch (e) {
       console.error('usage recordUsage failed', (e as Error).message);
+    }
+
+    // P4-impl-2 — feed the SPEC-001 economic-intelligence ledger.
+    // Local inference (ollama) costs 0 USD per call; recording it would
+    // add noise without economic signal, so it's skipped.
+    if (effectiveProvider !== 'ollama' && totalTokens > 0) {
+      try {
+        await writeLlmCostEntries(admin, {
+          tenantId,
+          agentRef: tool.key,
+          inputTokens: result.inputTokens,
+          outputTokens: result.outputTokens,
+          inputPricePerMillionUsd: Number(tool.cost_input_per_million_usd),
+          outputPricePerMillionUsd: Number(tool.cost_output_per_million_usd),
+          vendor: effectiveProvider,
+          modelRef: effectiveModelId,
+          rawMetadata: { tool_key: tool.key, run_id: run?.id, residency },
+        });
+      } catch (e) {
+        console.error('cost-writer failed', (e as Error).message);
+      }
     }
 
     return {

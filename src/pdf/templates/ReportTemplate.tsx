@@ -332,6 +332,9 @@ export function ReportTemplate({ payload, subjectLabel }: ReportTemplateProps) {
                     detector:     f.detector,
                     summary:      f.summary,
                     evidence:     null,  // detail listing intentionally omits evidence
+                    confidence_score:    f.confidence_score,
+                    evidence_level:      f.evidence_level,
+                    verification_status: f.verification_status,
                     created_at:   f.created_at,
                   }}
                 />

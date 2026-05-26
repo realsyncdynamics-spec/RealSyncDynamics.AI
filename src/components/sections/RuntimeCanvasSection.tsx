@@ -85,7 +85,7 @@ function SectionHead() {
         02 · Runtime Canvas
       </div>
       <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-        Watch the runtime read a site in real time.
+        Wie die Runtime eine Site in Echtzeit liest.
       </h2>
       <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
         Browser-Layer, Network-Layer und AI-Layer — alle annotiert, während sie passieren,
@@ -171,11 +171,11 @@ function CountersPane({ events, active, reduce }: { events: any[]; active: boole
   };
 
   return (
-    <Pane title="signals · last 24h" badge={<span className="text-titanium-400">Demo-Runtime · simuliert</span>}>
+    <Pane title="signale · letzte 24 h" badge={<span className="text-titanium-400">Demo-Runtime · simuliert</span>}>
       <div className="grid grid-cols-2 gap-px bg-titanium-900">
         <MetricTile label="scans" value={counters.scans} icon={<Activity className="h-3.5 w-3.5 text-cyan-300" />} highlight />
-        <MetricTile label="drift events" value={counters.drifts} icon={<Activity className="h-3.5 w-3.5 text-amber-300" />} />
-        <MetricTile label="AI systems" value={counters.ai} icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />} />
+        <MetricTile label="drift-events" value={counters.drifts} icon={<Activity className="h-3.5 w-3.5 text-amber-300" />} />
+        <MetricTile label="KI-systeme" value={counters.ai} icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />} />
         <MetricTile label="evidence" value={counters.evidence} icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} />
       </div>
     </Pane>
@@ -199,10 +199,10 @@ function MetricTile({ label, value, icon, highlight }: { label: string; value: n
 
 function TerminalPane({ events, isRunning, active, reduce }: { events: any[]; isRunning: boolean; active: boolean; reduce: boolean }) {
   return (
-    <Pane title="event-stream · demo" badge={<span className="text-cyan-300">{isRunning ? '▮ Demo-Runtime' : '⊘ paused'}</span>}>
+    <Pane title="event-stream · demo" badge={<span className="text-cyan-300">{isRunning ? '▮ Demo-Runtime' : '⊘ pausiert'}</span>}>
       <div className="bg-obsidian-950 font-mono text-[11px] leading-relaxed p-3 overflow-y-auto max-h-[300px] lg:max-h-none lg:h-full">
         {events.length === 0 ? (
-          <div className="text-titanium-600">Waiting for first event...</div>
+          <div className="text-titanium-600">Warte auf erstes Event ...</div>
         ) : (
           events.map((e, i) => (
             <motion.div

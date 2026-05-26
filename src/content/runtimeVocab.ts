@@ -98,11 +98,11 @@ export const PLANS = [
  *   View Evidence         → secondary nav into evidence vault / audit trail
  */
 export const CTA = {
-  runScan:            'Run Scan',
-  openRuntime:        'Open Runtime',
-  activateMonitoring: 'Activate Monitoring',
-  activateGovernance: 'Activate Governance',
-  viewEvidence:       'View Evidence',
+  runScan:            'Scan starten',
+  openRuntime:        'Runtime öffnen',
+  activateMonitoring: 'Monitoring aktivieren',
+  activateGovernance: 'Governance aktivieren',
+  viewEvidence:       'Evidence ansehen',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];

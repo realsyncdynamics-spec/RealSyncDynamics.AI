@@ -79,12 +79,12 @@ export function GlobalRuntimeFeedSection() {
               </span>
               <span className="text-cyan-300 inline-flex items-center gap-1.5">
                 <span className={`inline-block h-1.5 w-3 bg-cyan-300 ${isRunning && !reduce ? 'animate-pulse' : 'opacity-40'}`} />
-                {isRunning ? 'demo-streaming' : 'demo · paused'}
+                {isRunning ? 'demo · streaming' : 'demo · pausiert'}
               </span>
             </div>
             <div ref={feedRef} className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
               {events.length === 0 ? (
-                <div className="text-titanium-600 italic">demo stream warming up…</div>
+                <div className="text-titanium-600 italic">Demo-Stream startet …</div>
               ) : (
                 events.map((e) => <FeedRow key={e.id} event={e} reduce={!!reduce} />)
               )}
@@ -95,22 +95,22 @@ export function GlobalRuntimeFeedSection() {
               )}
             </div>
             <div className="px-4 py-2 border-t border-titanium-900 bg-obsidian-900 font-mono text-[10px] text-titanium-500 flex items-center justify-between">
-              <span>{events.length} / 40 demo events</span>
-              <span className="text-emerald-400">● chain sealed (demo)</span>
+              <span>{events.length} / 40 Demo-Events</span>
+              <span className="text-emerald-400">● Chain versiegelt (demo)</span>
             </div>
           </div>
 
           {/* Aggregate counters */}
           <div className="bg-obsidian-950 flex flex-col">
             <div className="px-4 py-2.5 border-b border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-              by kind · demo session
+              nach kategorie · demo-session
             </div>
             <div className="grid grid-rows-5 divide-y divide-titanium-900 flex-1">
               <CounterRow label="detect"   value={counters.detect}   color="text-cyan-300" />
               <CounterRow label="drift"    value={counters.drift}    color="text-amber-300" />
-              <CounterRow label="ai"       value={counters.ai}       color="text-violet-300" />
+              <CounterRow label="ki"       value={counters.ai}       color="text-violet-300" />
               <CounterRow label="evidence" value={counters.evidence} color="text-emerald-300" />
-              <CounterRow label="agents"   value={counters.agents}   color="text-titanium-100" />
+              <CounterRow label="agenten"  value={counters.agents}   color="text-titanium-100" />
             </div>
           </div>
         </div>

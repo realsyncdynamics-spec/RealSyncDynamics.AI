@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -204,10 +204,25 @@ function LazyFallback() {
   );
 }
 
+function ScrollToTopOnRouteChange() {
+  // Wenn der Nutzer per SPA-Link zu einer neuen Route wechselt, springt der
+  // Browser nicht automatisch nach oben — er behält die Scroll-Position
+  // der vorherigen Route. Auf der Landingpage führt das zum Symptom
+  // "Seite startet in der Mitte". Dieser Effekt setzt den Scroll bei
+  // jedem Route-Wechsel auf 0, ohne Hash-Navigation zu brechen.
+  const { pathname, hash } = useLocation();
+  useEffect(() => {
+    if (hash) return;
+    window.scrollTo(0, 0);
+  }, [pathname, hash]);
+  return null;
+}
+
 function RoutesWithTracking() {
   useTrackPageview();
   return (
     <Suspense fallback={<LazyFallback />}>
+    <ScrollToTopOnRouteChange />
     <Routes>
       {/* Public */}
       <Route path="/" element={<Landing />} />
@@ -474,6 +489,15 @@ function RoutesWithTracking() {
 
 export default function App() {
   useEffect(() => { initMarketingPixels(); }, []);
+  // Browser-Default 'auto' kann beim Reload/Back die zuletzt gesehene
+  // Scroll-Position wiederherstellen — auf der Landingpage führt das zum
+  // gefühlten "Sprung in die Mitte". 'manual' deaktiviert das, ohne die
+  // Back/Forward-UX zu brechen.
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
   return (
     <TenantProvider>
       <EnvironmentProvider>

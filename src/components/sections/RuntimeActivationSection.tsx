@@ -92,7 +92,7 @@ export function RuntimeActivationSection() {
             >
               {tier.highlight && (
                 <span className="absolute -top-2 right-3 px-1.5 py-0.5 bg-cyan-400 text-obsidian-950 font-mono text-[9px] uppercase tracking-wider">
-                  recommended
+                  empfohlen
                 </span>
               )}
 
@@ -103,7 +103,7 @@ export function RuntimeActivationSection() {
 
               <div>
                 <div className="font-display font-semibold text-3xl tabular-nums text-titanium-50">
-                  {tier.priceString === 'individuell' ? 'Custom' : `€ ${tier.priceString}`}
+                  {tier.priceString === 'individuell' ? 'Individuell' : `€ ${tier.priceString}`}
                 </div>
                 <div className="font-mono text-[10px] text-titanium-500 mt-1">{tier.priceSuffix}</div>
               </div>

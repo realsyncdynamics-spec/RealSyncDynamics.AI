@@ -41,8 +41,17 @@ export function useAgentChat(tenantId: string | null) {
     setLlmNotConfigured(null);
   }, [tenantId]);
 
+  // Nur den internen Chat-Container scrollen, nicht das Document.
+  // scrollIntoView ohne block:'nearest' walked alle scroll-ancestors hoch
+  // und kann die Landingpage in die Mitte ziehen, sobald der Anon-Widget-
+  // Chat noch im DOM hängt (siehe AssistentChip auf /).
   const scrollToBottom = useCallback(() => {
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
+    setTimeout(() => {
+      const el = bottomRef.current;
+      if (!el) return;
+      const scroller = el.parentElement;
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    }, 30);
   }, []);
 
   const send = useCallback(
@@ -209,8 +218,15 @@ export function useAnonChat() {
   const [usRoutingAck, setUsRoutingAck] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  // Siehe useAgentChat scrollToBottom: bewusst kein scrollIntoView, weil
+  // dieser Widget auch im Anon-Modus auf der Landingpage gemountet ist.
   const scrollToBottom = useCallback(() => {
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
+    setTimeout(() => {
+      const el = bottomRef.current;
+      if (!el) return;
+      const scroller = el.parentElement;
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    }, 30);
   }, []);
 
   const send = useCallback(

@@ -80,8 +80,8 @@ export function LiveScanCanvasSection() {
       <div className="max-w-7xl mx-auto">
         <SectionHead
           eyebrow="02 · detect"
-          title="The runtime detects issues in real time."
-          sub="Browser layer, network layer, AI layer — annotated while the scan happens. Every signal sealed into the evidence chain on the same request."
+          title="Die Runtime erkennt Risiken in Echtzeit."
+          sub="Browser-Layer, Network-Layer, AI-Layer — annotiert, während der Scan läuft. Jedes Signal wird im selben Request in die Evidence-Chain versiegelt."
         />
 
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-px bg-titanium-900">
@@ -97,7 +97,7 @@ export function LiveScanCanvasSection() {
                 <Globe className="h-3 w-3 text-titanium-500" />
                 https://your-company.com
               </span>
-              <span className="uppercase tracking-wider">view · annotated</span>
+              <span className="uppercase tracking-wider">ansicht · annotiert</span>
             </div>
 
             <div className="relative h-[420px] sm:h-[460px] p-6">
@@ -107,7 +107,7 @@ export function LiveScanCanvasSection() {
               <Skeleton width="72%" />
               <Skeleton width="64%" />
               <div className="my-5 px-4 py-3 border border-titanium-900 bg-obsidian-900">
-                <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-2">checkout form</div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-2">checkout-formular</div>
                 <Skeleton width="80%" />
                 <Skeleton width="55%" />
               </div>
@@ -141,7 +141,7 @@ export function LiveScanCanvasSection() {
                   <span className="absolute inset-0 rounded-full bg-cyan-400 opacity-75 animate-ping" />
                   <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-cyan-400" />
                 </span>
-                scanning
+                scan läuft
               </span>
               <div className="flex-1 h-px bg-titanium-900 overflow-hidden">
                 <div
@@ -156,16 +156,16 @@ export function LiveScanCanvasSection() {
           {/* Findings counter pane */}
           <div className="bg-obsidian-950 flex flex-col">
             <div className="px-4 py-2.5 border-b border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-              findings · demo
+              befunde · demo
             </div>
             <div className="flex-1 p-6 grid grid-cols-2 gap-px bg-titanium-900">
-              <FindingTile label="critical" value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'critical').length} color="text-red-300" />
-              <FindingTile label="warn"     value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'warn').length}     color="text-amber-300" />
-              <FindingTile label="ai"       value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'ai').length}       color="text-violet-300" />
+              <FindingTile label="kritisch" value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'critical').length} color="text-red-300" />
+              <FindingTile label="warnung"  value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'warn').length}     color="text-amber-300" />
+              <FindingTile label="ki"       value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'ai').length}       color="text-violet-300" />
               <FindingTile label="ok"       value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'ok').length}       color="text-emerald-300" />
             </div>
             <div className="px-4 py-3 border-t border-titanium-900 font-mono text-[10px] text-titanium-500 leading-relaxed">
-              every annotation → evidence-chain entry · sealed sha256 · replay-ready
+              jede annotation → eintrag in der evidence-chain · sha-256 versiegelt · replay-fähig
             </div>
           </div>
         </div>

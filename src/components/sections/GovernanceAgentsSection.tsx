@@ -25,10 +25,10 @@ const AGENTS: readonly AgentCard[] = [
     icon: <Activity className="h-4 w-4" />,
     name: 'website-drift-agent',
     role: 'detect · monitor',
-    blurb: 'Watches sites for new trackers, header regressions, banner-dark-pattern shifts. Opens an incident on regression, with a diff.',
+    blurb: 'Überwacht Websites auf neue Tracker, Header-Regressionen und Banner-Dark-Pattern-Veränderungen. Eröffnet bei Regression ein Incident inklusive Diff.',
     metrics: [
-      { label: 'runs / h',    value: '4.2', tone: 'cyan' },
-      { label: 'open inc.',   value: '12',  tone: 'amber' },
+      { label: 'läufe / h',   value: '4.2', tone: 'cyan' },
+      { label: 'offene inc.', value: '12',  tone: 'amber' },
     ],
     status: 'demo',
   },
@@ -37,10 +37,10 @@ const AGENTS: readonly AgentCard[] = [
     icon: <Cpu className="h-4 w-4" />,
     name: 'ai-risk-agent',
     role: 'govern',
-    blurb: 'Classifies discovered AI endpoints against AI Act Annex III. Produces risk profile + use-case-registry entry.',
+    blurb: 'Klassifiziert entdeckte KI-Endpunkte nach AI-Act-Annex III. Erzeugt Risk-Profile und Eintrag in die Usecase-Registry.',
     metrics: [
-      { label: 'classified', value: '17', tone: 'violet' },
-      { label: 'high-risk',  value: '3',  tone: 'amber' },
+      { label: 'klassifiziert', value: '17', tone: 'violet' },
+      { label: 'high-risk',     value: '3',  tone: 'amber' },
     ],
     status: 'demo',
   },
@@ -49,10 +49,10 @@ const AGENTS: readonly AgentCard[] = [
     icon: <ShieldCheck className="h-4 w-4" />,
     name: 'evidence-agent',
     role: 'automate',
-    blurb: 'Hashes every finding, signs and anchors into the evidence chain. Re-renders audit bundles on demand for procurement.',
+    blurb: 'Hasht jeden Befund, signiert ihn und verankert ihn in der Evidence-Chain. Erzeugt Audit-Bundles für Procurement auf Knopfdruck.',
     metrics: [
-      { label: 'sealed',     value: '4,128', tone: 'emerald' },
-      { label: 'last anchor', value: '3 s',   tone: 'emerald' },
+      { label: 'versiegelt',    value: '4.128', tone: 'emerald' },
+      { label: 'letzter anker', value: '3 s',   tone: 'emerald' },
     ],
     status: 'demo',
   },
@@ -61,10 +61,10 @@ const AGENTS: readonly AgentCard[] = [
     icon: <ScrollText className="h-4 w-4" />,
     name: 'policy-agent',
     role: 'govern · automate',
-    blurb: 'Drafts §13 updates, AVV deltas, policy snippets per finding. Routes diff to owner via Slack / Email / webhook.',
+    blurb: 'Entwirft §13-Updates, AVV-Deltas und Policy-Snippets pro Befund. Routet den Diff an Owner via Slack, E-Mail oder Webhook.',
     metrics: [
-      { label: 'drafts / w', value: '21', tone: 'cyan' },
-      { label: 'merged',     value: '15', tone: 'emerald' },
+      { label: 'entwürfe / w', value: '21', tone: 'cyan' },
+      { label: 'übernommen',   value: '15', tone: 'emerald' },
     ],
     status: 'demo',
   },
@@ -101,11 +101,11 @@ export function GovernanceAgentsSection() {
             04 · govern + automate
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            AI systems are governed operationally.
+            KI-Systeme werden operativ geführt.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Four agents share the same runtime: detection, classification, evidence and policy.
-            They run continuously, write to the audit-trail and escalate high-risk decisions for human review per governance policy.
+            Vier Agenten teilen sich eine Runtime: Detection, Klassifikation, Evidence und Policy.
+            Sie laufen kontinuierlich, schreiben in den Audit-Trail und eskalieren High-Risk-Entscheidungen gemäß Governance-Policy für die Human-Review.
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export function GovernanceAgentsSection() {
             className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-titanium-400 hover:text-titanium-100 transition-colors"
           >
             <Bot className="h-3 w-3" />
-            view full agent registry
+            Vollständige Agenten-Registry ansehen
             <ArrowRight className="h-3 w-3" />
           </Link>
         </div>

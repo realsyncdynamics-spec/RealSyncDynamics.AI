@@ -55,6 +55,10 @@ export type FindingCategory =
   | 'consent' | 'tracker' | 'ai_act' | 'tom' | 'dpa'
   | 'accessibility' | 'security' | 'transparency' | 'data_quality'
   | 'documentation' | 'other';
+export type FindingEvidenceLevel =
+  | 'observed' | 'inferred' | 'reported' | 'unverifiable';
+export type FindingVerificationStatus =
+  | 'verified' | 'partial' | 'unverified' | 'disputed';
 
 export interface NewFinding {
   tenant_id:       string;
@@ -67,6 +71,9 @@ export interface NewFinding {
   evidence_ref?:   string | null;
   summary:         string;
   raw_payload?:    Record<string, unknown> | null;
+  confidence_score?:    number;
+  evidence_level?:      FindingEvidenceLevel;
+  verification_status?: FindingVerificationStatus;
   correlation_id?: string | null;
 }
 
@@ -82,6 +89,9 @@ export interface FindingRow {
   evidence_ref:    string | null;
   summary:         string;
   raw_payload:     Record<string, unknown> | null;
+  confidence_score:    number;
+  evidence_level:      FindingEvidenceLevel;
+  verification_status: FindingVerificationStatus;
   correlation_id:  string | null;
   created_at:      string;
   updated_at:      string;
@@ -102,6 +112,12 @@ const VALID_SEVERITIES: ReadonlySet<FindingSeverity> = new Set([
 const VALID_STATUSES: ReadonlySet<FindingStatus> = new Set([
   'open', 'acknowledged', 'fixed', 'false_positive', 'ignored', 'resolved',
 ]);
+const VALID_EVIDENCE_LEVELS: ReadonlySet<FindingEvidenceLevel> = new Set([
+  'observed', 'inferred', 'reported', 'unverifiable',
+]);
+const VALID_VERIFICATION_STATUSES: ReadonlySet<FindingVerificationStatus> = new Set([
+  'verified', 'partial', 'unverified', 'disputed',
+]);
 
 export async function recordFinding(
   admin: AdminLike,
@@ -117,6 +133,17 @@ export async function recordFinding(
   if (!f.detector)                return { ok: false, error: 'detector required' };
   if (!f.summary)                 return { ok: false, error: 'summary required' };
   if (f.summary.length > 1000)    return { ok: false, error: 'summary too long (>1000 chars)' };
+  if (f.evidence_level && !VALID_EVIDENCE_LEVELS.has(f.evidence_level)) {
+    return { ok: false, error: `invalid evidence_level: ${f.evidence_level}` };
+  }
+  if (f.verification_status && !VALID_VERIFICATION_STATUSES.has(f.verification_status)) {
+    return { ok: false, error: `invalid verification_status: ${f.verification_status}` };
+  }
+  if (typeof f.confidence_score === 'number') {
+    if (!Number.isFinite(f.confidence_score) || f.confidence_score < 0 || f.confidence_score > 1) {
+      return { ok: false, error: `confidence_score must be 0..1, got ${f.confidence_score}` };
+    }
+  }
 
   const row = {
     tenant_id:      f.tenant_id,
@@ -129,6 +156,12 @@ export async function recordFinding(
     evidence_ref:   f.evidence_ref   ?? null,
     summary:        f.summary,
     raw_payload:    f.raw_payload    ?? null,
+    // Leave undefined when not supplied — DB DEFAULT fires
+    // (confidence_score=1.0, evidence_level='observed',
+    // verification_status='unverified'). Explicit values override.
+    confidence_score:    f.confidence_score    ?? undefined,
+    evidence_level:      f.evidence_level      ?? undefined,
+    verification_status: f.verification_status ?? undefined,
     correlation_id: f.correlation_id ?? null,
   };
 

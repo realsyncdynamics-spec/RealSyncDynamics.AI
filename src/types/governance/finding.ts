@@ -29,6 +29,18 @@ export type FindingStatus =
   | 'ignored'        // accepted risk
   | 'resolved';      // fixed + confirmed by re-scan
 
+export type FindingEvidenceLevel =
+  | 'observed'      // direct DOM/network/header observation
+  | 'inferred'      // derived from indirect indicators
+  | 'reported'      // third-party report (customer, external scanner)
+  | 'unverifiable'; // claim about non-observable state
+
+export type FindingVerificationStatus =
+  | 'verified'
+  | 'partial'
+  | 'unverified'
+  | 'disputed';
+
 export type FindingCategory =
   | 'consent'        // banner / pre-consent tracker / TTDSG §25
   | 'tracker'        // unknown vendor, DPA missing, third-party script
@@ -74,6 +86,34 @@ export interface Finding {
   raw_payload:     Record<string, unknown> | null;
 
   /**
+   * Detector confidence in the OBSERVATION (not the legal conclusion).
+   * 0..1; 1.0 = direct network/DOM observation; 0.5 = inferred from
+   * indirect indicators; rows < 0.3 should not be persisted. UI MUST
+   * surface this — anti-overclaim guardrail.
+   * Migration 20260617000000.
+   */
+  confidence_score: number;
+
+  /**
+   * What kind of evidence backs this finding:
+   *   observed     — direct DOM/network/header observation
+   *   inferred     — derived from indirect indicators
+   *   reported     — third-party report (customer, external scanner)
+   *   unverifiable — claim about something not observable from outside
+   *                  (e.g. server-side data masking)
+   */
+  evidence_level: FindingEvidenceLevel;
+
+  /**
+   * Cross-method verification state:
+   *   verified   — confirmed by a second method (re-scan, manual)
+   *   partial    — partially confirmed, gaps known
+   *   unverified — single observation, no cross-check yet
+   *   disputed   — customer pushed back; re-verification pending
+   */
+  verification_status: FindingVerificationStatus;
+
+  /**
    * Joinable to:
    *   runtime_events.correlation_id   — activity-log backbone
    *   anon_chat_runs.correlation_id   — anon audit trail
@@ -102,6 +142,14 @@ export interface NewFinding {
 
   summary:         string;
   raw_payload?:    Record<string, unknown> | null;
+
+  /** Detector confidence 0..1. Defaults to 1.0 (DB default) — set
+   *  explicitly when inferring or reporting. */
+  confidence_score?: number;
+  /** Anti-overclaim label. Defaults to 'observed' (DB default). */
+  evidence_level?:   FindingEvidenceLevel;
+  /** Cross-method check state. Defaults to 'unverified'. */
+  verification_status?: FindingVerificationStatus;
 
   correlation_id?: string | null;
 }

@@ -191,6 +191,85 @@ describe('recordFinding', () => {
     expect(r.ok).toBe(false);
     expect(r.error).toBe('unique-violation');
   });
+
+  // ─── Evidence-First fields (PR feat(findings): confidence + evidence) ──
+
+  it('passes confidence_score / evidence_level / verification_status when supplied', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    await recordFinding(admin, {
+      tenant_id: 't-1',
+      category:  'tracker',
+      severity:  'high',
+      detector:  'gdpr-audit',
+      summary:   'Tracker observed',
+      confidence_score:    0.72,
+      evidence_level:      'observed',
+      verification_status: 'partial',
+    });
+    expect(insertCalls[0].row.confidence_score).toBe(0.72);
+    expect(insertCalls[0].row.evidence_level).toBe('observed');
+    expect(insertCalls[0].row.verification_status).toBe('partial');
+  });
+
+  it('lets DB defaults fire when evidence fields are omitted', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    await recordFinding(admin, {
+      tenant_id: 't-1', category: 'tracker', severity: 'low',
+      detector: 'd', summary: 's',
+    });
+    expect(insertCalls[0].row.confidence_score).toBeUndefined();
+    expect(insertCalls[0].row.evidence_level).toBeUndefined();
+    expect(insertCalls[0].row.verification_status).toBeUndefined();
+  });
+
+  it('rejects confidence_score outside 0..1', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    const r = await recordFinding(admin, {
+      tenant_id: 't-1', category: 'tracker', severity: 'low',
+      detector: 'd', summary: 's', confidence_score: 1.5,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/confidence_score/);
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('rejects unknown evidence_level', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = await recordFinding(admin, {
+      tenant_id: 't-1', category: 'tracker', severity: 'low',
+      detector: 'd', summary: 's',
+      evidence_level: 'wild_guess' as any,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/evidence_level/);
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('rejects unknown verification_status', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r = await recordFinding(admin, {
+      tenant_id: 't-1', category: 'tracker', severity: 'low',
+      detector: 'd', summary: 's',
+      verification_status: 'maybe-ish' as any,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/verification_status/);
+    expect(insertCalls).toHaveLength(0);
+  });
+
+  it('rejects NaN / Infinity confidence_score', async () => {
+    const { admin } = mockAdmin();
+    expect((await recordFinding(admin, {
+      tenant_id: 't-1', category: 'tracker', severity: 'low',
+      detector: 'd', summary: 's', confidence_score: NaN,
+    })).ok).toBe(false);
+    expect((await recordFinding(admin, {
+      tenant_id: 't-1', category: 'tracker', severity: 'low',
+      detector: 'd', summary: 's', confidence_score: Infinity,
+    })).ok).toBe(false);
+  });
 });
 
 describe('updateFindingStatus', () => {

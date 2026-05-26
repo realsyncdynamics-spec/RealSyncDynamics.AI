@@ -40,6 +40,7 @@ function f(
     evidence_ref,
     summary,
     raw_payload:    null,
+    fingerprint:    null,
     correlation_id: CORR_ID,
     created_at:     TC,
     updated_at:     TC,

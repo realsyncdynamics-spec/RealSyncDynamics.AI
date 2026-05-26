@@ -74,6 +74,16 @@ export interface Finding {
   raw_payload:     Record<string, unknown> | null;
 
   /**
+   * Stable identity for "the same logical violation" — sha256_hex of
+   * (detector | website_id | category | normalized(evidence_ref)).
+   * Populated by the adapter on insert; backfilled in migration
+   * 20260612000000. May be null on pre-migration rows or rows inserted
+   * outside the adapter (will be backfilled on next manual sweep).
+   * See: src/lib/governance/findingFingerprint.ts.
+   */
+  fingerprint:     string | null;
+
+  /**
    * Joinable to:
    *   runtime_events.correlation_id   — activity-log backbone
    *   anon_chat_runs.correlation_id   — anon audit trail

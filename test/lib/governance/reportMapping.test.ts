@@ -54,6 +54,7 @@ function f(o: Partial<Finding>): Finding {
     evidence_ref:   null,
     summary:        's',
     raw_payload:    null,
+    fingerprint:    null,
     correlation_id: 'corr-1',
     created_at:     '2026-05-25T15:00:10Z',
     updated_at:     '2026-05-25T15:00:10Z',

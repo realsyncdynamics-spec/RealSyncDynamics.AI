@@ -23,6 +23,8 @@
 //     spec_version + event_tier stay caller-controlled. A helper
 //     `emitCorrelatedRuntimeEvent` lives in a future PR.
 
+import { computeFindingFingerprint } from './findingFingerprint.ts';
+
 export interface AdminLike {
   from(table: string): {
     insert(row: Record<string, unknown>): Promise<{
@@ -82,6 +84,7 @@ export interface FindingRow {
   evidence_ref:    string | null;
   summary:         string;
   raw_payload:     Record<string, unknown> | null;
+  fingerprint:     string | null;
   correlation_id:  string | null;
   created_at:      string;
   updated_at:      string;
@@ -118,6 +121,13 @@ export async function recordFinding(
   if (!f.summary)                 return { ok: false, error: 'summary required' };
   if (f.summary.length > 1000)    return { ok: false, error: 'summary too long (>1000 chars)' };
 
+  const fingerprint = await computeFindingFingerprint({
+    detector:     f.detector,
+    website_id:   f.website_id,
+    category:     f.category,
+    evidence_ref: f.evidence_ref,
+  });
+
   const row = {
     tenant_id:      f.tenant_id,
     website_id:     f.website_id     ?? null,
@@ -129,6 +139,7 @@ export async function recordFinding(
     evidence_ref:   f.evidence_ref   ?? null,
     summary:        f.summary,
     raw_payload:    f.raw_payload    ?? null,
+    fingerprint,
     correlation_id: f.correlation_id ?? null,
   };
 

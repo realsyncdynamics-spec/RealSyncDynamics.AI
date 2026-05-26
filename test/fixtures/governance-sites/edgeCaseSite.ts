@@ -61,6 +61,7 @@ function f(a: FArgs): Finding {
     evidence_ref:   a.evidence_ref,
     summary:        a.summary,
     raw_payload:    null,
+    fingerprint:    null,
     correlation_id: CORR_ID,
     created_at:     TC,
     updated_at:     TC,

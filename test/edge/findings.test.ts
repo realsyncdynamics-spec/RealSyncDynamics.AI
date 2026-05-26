@@ -91,6 +91,41 @@ describe('recordFinding', () => {
       summary:        'Tracker fires before consent',
       correlation_id: 'corr-1',
     });
+    // Fingerprint must be deterministically computed and persisted.
+    expect(insertCalls[0].row.fingerprint).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('computes the same fingerprint for two inserts with the same logical identity', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    const shared = {
+      tenant_id:    't-1',
+      website_id:   'w-1',
+      category:     'consent' as const,
+      severity:     'high'    as const,
+      detector:     'gdpr-audit',
+      evidence_ref: 'url:https://example.com/',
+      summary:      'Tracker fires before consent',
+    };
+    await recordFinding(admin, { ...shared, scan_run_id: 's-1' });
+    await recordFinding(admin, { ...shared, scan_run_id: 's-2' });  // re-scan
+    expect(insertCalls).toHaveLength(2);
+    expect(insertCalls[0].row.fingerprint).toBe(insertCalls[1].row.fingerprint);
+  });
+
+  it('computes different fingerprints for different detectors on the same evidence', async () => {
+    const { admin, insertCalls } = mockAdmin();
+    const shared = {
+      tenant_id:    't-1',
+      website_id:   'w-1',
+      category:     'tracker' as const,
+      severity:     'high'    as const,
+      evidence_ref: 'url:https://shop.example.de/ga.js',
+      summary:      'GA before consent',
+    };
+    await recordFinding(admin, { ...shared, detector: 'gdpr-audit' });
+    await recordFinding(admin, { ...shared, detector: 'governance-agent' });
+    expect(insertCalls[0].row.fingerprint).not
+      .toBe(insertCalls[1].row.fingerprint);
   });
 
   it('defaults status to "open" when not supplied', async () => {

@@ -19,13 +19,14 @@ import { useTenant } from '../../../core/access/TenantProvider';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { listScanRuns } from './scansApi';
 import type { ScanRun } from '../../../types/governance/scan-run';
+import { SEVERITY_PALETTE } from '../../../lib/governance/severityPalette';
 
 const SEVERITY_COLOR: Record<string, string> = {
-  critical: 'text-rose-300',
-  high:     'text-amber-300',
-  medium:   'text-sky-300',
-  low:      'text-titanium-300',
-  info:     'text-titanium-400',
+  critical: SEVERITY_PALETTE.critical.text,
+  high:     SEVERITY_PALETTE.high.text,
+  medium:   SEVERITY_PALETTE.medium.text,
+  low:      SEVERITY_PALETTE.low.text,
+  info:     SEVERITY_PALETTE.info.text,
 };
 
 const STATUS_BADGE: Record<ScanRun['status'], { label: string; cls: string; Icon: typeof CheckCircle2 }> = {

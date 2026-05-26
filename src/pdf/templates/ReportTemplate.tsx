@@ -34,12 +34,17 @@ import { evidenceRefLabel } from '../../types/governance/evidence';
  *   - No I/O, no async — pure component.
  */
 
+// Severity-Palette für die PDF-Ausgabe — Spiegel von
+// src/lib/governance/severityPalette.ts auf statische Hex-Werte:
+//   CRITICAL → rot, HIGH → orange, MEDIUM → amber/gelb,
+//   LOW → titanium-neutral, INFO → blau
+// React-PDF kann keine Tailwind-Klassen, daher hier inline.
 const SEVERITY_PALETTE: Record<FindingSeverity, { label: string; bg: string; fg: string }> = {
   critical: { label: 'KRITISCH', bg: '#FEE2E2', fg: '#991B1B' },
   high:     { label: 'HOCH',     bg: '#FFEDD5', fg: '#9A3412' },
   medium:   { label: 'MITTEL',   bg: '#FEF3C7', fg: '#92400E' },
-  low:      { label: 'NIEDRIG',  bg: '#DBEAFE', fg: '#1E40AF' },
-  info:     { label: 'INFO',     bg: '#E5E7EB', fg: '#374151' },
+  low:      { label: 'NIEDRIG',  bg: '#E5E7EB', fg: '#374151' },
+  info:     { label: 'INFO',     bg: '#DBEAFE', fg: '#1E40AF' },
 };
 
 const STATUS_LABEL: Record<FindingStatus, string> = {

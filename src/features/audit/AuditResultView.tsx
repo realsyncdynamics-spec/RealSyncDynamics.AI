@@ -39,10 +39,10 @@ const SEVERITY_LABEL: Record<AuditResultFinding['severity'], string> = {
 };
 const SEVERITY_CLS: Record<AuditResultFinding['severity'], string> = {
   critical: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
-  high:     'border-amber-500/40 bg-amber-500/10 text-amber-200',
-  medium:   'border-sky-500/40 bg-sky-500/10 text-sky-200',
+  high:     'border-orange-500/40 bg-orange-500/10 text-orange-200',
+  medium:   'border-amber-500/40 bg-amber-500/10 text-amber-200',
   low:      'border-titanium-700 bg-titanium-800/30 text-titanium-300',
-  info:     'border-titanium-700 bg-titanium-800/30 text-titanium-300',
+  info:     'border-sky-500/30 bg-sky-500/10 text-sky-200',
   pass:     'border-emerald-500/40 bg-emerald-500/10 text-emerald-200',
 };
 

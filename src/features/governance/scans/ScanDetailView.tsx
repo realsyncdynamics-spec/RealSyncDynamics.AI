@@ -19,17 +19,23 @@ import { getScanReport } from './scansApi';
 import type { ReportPayload } from '../../../types/governance/report';
 import type { FindingSeverity, FindingStatus } from '../../../types/governance/finding';
 import { evidenceRefLabel } from '../../../types/governance/evidence';
+import { SEVERITY_PALETTE } from '../../../lib/governance/severityPalette';
 
+// Pill + Label aus zentraler Palette — siehe src/lib/governance/severityPalette.ts.
 const SEVERITY_PILL: Record<FindingSeverity, string> = {
-  critical: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
-  high:     'border-amber-500/40 bg-amber-500/10 text-amber-200',
-  medium:   'border-sky-500/40 bg-sky-500/10 text-sky-200',
-  low:      'border-titanium-700 bg-titanium-800/30 text-titanium-300',
-  info:     'border-titanium-700 bg-titanium-800/30 text-titanium-400',
+  critical: SEVERITY_PALETTE.critical.pill,
+  high:     SEVERITY_PALETTE.high.pill,
+  medium:   SEVERITY_PALETTE.medium.pill,
+  low:      SEVERITY_PALETTE.low.pill,
+  info:     SEVERITY_PALETTE.info.pill,
 };
 
 const SEVERITY_LABEL: Record<FindingSeverity, string> = {
-  critical: 'kritisch', high: 'hoch', medium: 'mittel', low: 'niedrig', info: 'hinweis',
+  critical: SEVERITY_PALETTE.critical.label,
+  high:     SEVERITY_PALETTE.high.label,
+  medium:   SEVERITY_PALETTE.medium.label,
+  low:      SEVERITY_PALETTE.low.label,
+  info:     SEVERITY_PALETTE.info.label,
 };
 
 const STATUS_LABEL: Record<FindingStatus, string> = {

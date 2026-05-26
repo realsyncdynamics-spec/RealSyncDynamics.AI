@@ -21,6 +21,11 @@ import {
   matchedUseCases as matchedFromSignals,
   type ExtractionResult,
 } from '../lib/ai-act/signal-extraction';
+import { useTenant } from '../core/access/TenantProvider';
+import {
+  createRiskInventory,
+  type Severity as InventorySeverity,
+} from '../features/governance/aiActRiskInventoryApi';
 
 /**
  * /ai-act-klassifikator — registry-backed EU-AI-Act-Risiko-Klassifikator.
@@ -562,6 +567,31 @@ function ResultPanel({ system, result, answeredCount }: {
   answeredCount: number;
 }) {
   const isMinimal = result.severity === 'limited' && result.matchedUseCases.length === 0 && result.limitedTriggers.length === 0;
+  const { activeTenantId } = useTenant();
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function saveToInventory() {
+    if (!activeTenantId) return;
+    const name = system.trim() || 'KI-System (ohne Namen)';
+    const inventorySeverity: InventorySeverity = isMinimal
+      ? 'minimal'
+      : (result.severity as InventorySeverity);
+    setSaveState('saving'); setSaveError(null);
+    const r = await createRiskInventory({
+      tenant_id: activeTenantId,
+      name,
+      severity: inventorySeverity,
+      matched_use_cases: result.matchedUseCases.map((uc) => ({ id: uc.id, title: uc.title, category: uc.category })),
+      prohibited_triggers: result.prohibitedTriggers,
+      limited_triggers: result.limitedTriggers,
+      has_prohibited_overlay: result.hasProhibitedOverlay,
+      confidence_score: confidenceFor(result, answeredCount),
+      registry_version: REGISTRY.version,
+    });
+    if (!r.ok) { setSaveState('error'); setSaveError(r.error?.message ?? 'Speichern fehlgeschlagen'); }
+    else        setSaveState('saved');
+  }
 
   const cfg = isMinimal ? {
     color: '#16a34a', bg: '#052e16', border: '#166534', label: 'MINIMALES RISIKO', icon: '✓',
@@ -635,7 +665,34 @@ function ResultPanel({ system, result, answeredCount }: {
           >
             ⎙ Drucken / als PDF speichern
           </button>
+          {activeTenantId && (
+            <button
+              type="button"
+              onClick={() => void saveToInventory()}
+              disabled={saveState === 'saving' || saveState === 'saved'}
+              style={{
+                padding: '0.5rem 0.9rem',
+                background: saveState === 'saved' ? '#166534' : 'transparent',
+                border: '1px solid ' + (saveState === 'saved' ? '#166534' : '#4b5563'),
+                color: saveState === 'saved' ? '#bbf7d0' : '#cbd5e1',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: saveState === 'saving' || saveState === 'saved' ? 'default' : 'pointer',
+                borderRadius: 2,
+              }}
+              title="In das KI-Risiko-Inventar Ihres Tenants speichern"
+            >
+              {saveState === 'saving' ? '⏳ Speichere…'
+                : saveState === 'saved' ? '✓ Im Inventar gespeichert'
+                : '💾 In Tenant-Inventar speichern'}
+            </button>
+          )}
         </div>
+        {saveError && (
+          <div style={{ marginTop: '0.5rem', padding: '0.4rem 0.6rem', background: '#1f0a0a', border: '1px solid #7f1d1d', borderRadius: 2, fontSize: '0.75rem', color: '#fecaca' }}>
+            {saveError}
+          </div>
+        )}
       </div>
 
       {/* Prohibited Triggers */}

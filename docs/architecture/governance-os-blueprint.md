@@ -1003,7 +1003,7 @@ Implemented via:
 2. **Policy bundles** in object storage are versioned (`policies/<tenant>/<sha>.tar.gz`).
 3. **Evidence records** for policy decisions store the `policy_bundle_sha`.
 
-Given an `event_id`, we can reconstruct: which bundle was active, which rules matched, what action was returned, who approved any escalation. End-to-end, with cryptographic proof.
+Given an `event_id`, we can reconstruct: which bundle was active, which rules matched, what action was returned, who approved any escalation. End-to-end, deterministisch nachvollziehbar ueber kanonische SHA-256-Hashes (siehe §8.5); externe RFC3161-Zeitstempel werden nur fuer die in §8.5 aufgelisteten Record-Klassen angefordert und sind kein universeller kryptographischer Beweis fuer alle Events.
 
 ### 8.7 Forensics
 

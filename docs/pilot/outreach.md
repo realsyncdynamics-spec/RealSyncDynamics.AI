@@ -53,7 +53,7 @@ auch ein „nein, hier ist warum" hilft uns weiter.
 
 Beste Grüße
 [Name]
-realsyncdynamics.ai
+realsyncdynamicsai.de · support@realsyncdynamicsai.de
 ```
 
 ## Outreach 2 — LinkedIn-DM (kürzer)

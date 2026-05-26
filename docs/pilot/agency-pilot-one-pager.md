@@ -85,8 +85,8 @@ Beides per Stripe-Link, EU-Rechnung, keine Mindestlaufzeit über die
 
 ## Kontakt
 
-E-Mail: agency-pilot@realsyncdynamics.ai
-Web: realsyncdynamics.ai/agencies → „Agency Pilot anfragen"
+E-Mail: support@realsyncdynamicsai.de
+Web: realsyncdynamicsai.de/agencies → „Agency Pilot anfragen"
 
 ---
 

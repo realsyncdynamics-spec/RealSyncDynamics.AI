@@ -97,8 +97,8 @@ curl -X POST http://localhost:3000/scan \
 ```bash
 # Auf dem VPS
 ssh user@vps.realsyncdynamicsai.de
-git clone https://github.com/realsyncdynamics-spec/realsyncdynamics.ai.git
-cd realsyncdynamics.ai/services/playwright-scanner
+git clone https://github.com/realsyncdynamics-spec/RealSyncDynamics.AI.git
+cd RealSyncDynamics.AI/services/playwright-scanner
 
 cp .env.example .env
 echo "SCANNER_SECRET=$(openssl rand -hex 32)" >> .env

@@ -66,6 +66,33 @@ export const createRiskInventory  = (input: CreateInput)        => call<OneRes>(
 export const updateRiskInventory  = (input: UpdateInput)        => call<OneRes>({  op: 'update', ...input });
 export const deleteRiskInventory  = (id: string)               => call<AckRes>({  op: 'delete', id });
 
+/**
+ * Lightweight tenant-count helper für Live-Widgets (Homepage-Agent-Card etc.).
+ * Geht direkt über den anon-Client + RLS — kein Edge-Function-Hop nötig.
+ * Liefert null wenn Supabase nicht konfiguriert oder der Tenant nicht
+ * lesbar ist (z.B. Visitor ohne Session).
+ */
+export async function countRiskInventory(
+  tenant_id: string,
+): Promise<{ total: number; high_risk: number } | null> {
+  try {
+    const sb = getSupabase();
+    const [allRes, hrRes] = await Promise.all([
+      sb.from('ai_act_risk_inventory')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenant_id),
+      sb.from('ai_act_risk_inventory')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenant_id)
+        .in('severity', ['prohibited', 'high']),
+    ]);
+    if (allRes.error || hrRes.error) return null;
+    return { total: allRes.count ?? 0, high_risk: hrRes.count ?? 0 };
+  } catch {
+    return null;
+  }
+}
+
 export const SEVERITY_LABEL: Record<Severity, string> = {
   prohibited: 'Verboten (Art. 5)',
   high:       'Hohes Risiko (Annex III)',

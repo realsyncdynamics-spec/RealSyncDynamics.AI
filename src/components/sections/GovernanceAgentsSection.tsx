@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Cpu, ShieldCheck, ScrollText, Bot, ArrowRight, Activity } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTenant } from '../../core/access/TenantProvider';
+import { countRiskInventory } from '../../features/governance/aiActRiskInventoryApi';
 
 // GovernanceAgentsSection — "AI systems are governed operationally."
 // Four agent cards arranged as a control plane: drift, ai-classifier,
@@ -16,7 +18,7 @@ interface AgentCard {
   role: string;
   blurb: string;
   metrics: { label: string; value: string; tone: 'cyan' | 'amber' | 'violet' | 'emerald' }[];
-  status: 'demo' | 'idle';
+  status: 'demo' | 'idle' | 'live';
 }
 
 const AGENTS: readonly AgentCard[] = [
@@ -82,12 +84,35 @@ export function GovernanceAgentsSection() {
   const inView = useInView(ref, { once: true, amount: 0.15 });
   const reduce = useReducedMotion();
   const [tick, setTick] = useState(0);
+  const { activeTenantId } = useTenant();
+  const [liveCounts, setLiveCounts] = useState<{ total: number; high_risk: number } | null>(null);
 
   useEffect(() => {
     if (reduce) return;
     const id = setInterval(() => setTick((t) => (t + 1) % 4), 1500);
     return () => clearInterval(id);
   }, [reduce]);
+
+  // Live-Counts für ai-risk-agent aus dem Tenant-Inventar. Visitors ohne
+  // Tenant bleiben auf den Demo-Werten — die Live-Brücke ist opt-in via Login.
+  useEffect(() => {
+    if (!activeTenantId) { setLiveCounts(null); return; }
+    let cancelled = false;
+    void countRiskInventory(activeTenantId).then((c) => { if (!cancelled) setLiveCounts(c); });
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
+
+  const agents: AgentCard[] = AGENTS.map((a) => {
+    if (a.id !== 'classifier' || !liveCounts) return a;
+    return {
+      ...a,
+      status: 'live',
+      metrics: [
+        { label: 'classified', value: String(liveCounts.total),     tone: 'violet' },
+        { label: 'high-risk',  value: String(liveCounts.high_risk), tone: 'amber' },
+      ],
+    };
+  });
 
   return (
     <section
@@ -110,7 +135,7 @@ export function GovernanceAgentsSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-titanium-900">
-          {AGENTS.map((a, i) => (
+          {agents.map((a, i) => (
             <motion.article
               key={a.id}
               initial={reduce ? false : { opacity: 0, y: 10 }}

@@ -14,7 +14,10 @@
  * (ScanRun, Finding[]) and optional evidence dereferencing.
  */
 
-import type { Finding, FindingCategory, FindingSeverity, FindingStatus } from './finding';
+import type {
+  Finding, FindingCategory, FindingSeverity, FindingStatus,
+  FindingEvidenceLevel, FindingVerificationStatus,
+} from './finding';
 import type { ScanRun } from './scan-run';
 import type { EvidenceRef } from './evidence';
 
@@ -63,6 +66,11 @@ export interface ReportFinding {
   detector:       string;
   summary:        string;
   evidence:       EvidenceRef | null;   // parsed from finding.evidence_ref
+  /** 0..1 detector confidence in the observation. Anti-overclaim
+   *  pill in the UI surfaces this verbatim. */
+  confidence_score:    number;
+  evidence_level:      FindingEvidenceLevel;
+  verification_status: FindingVerificationStatus;
   created_at:     string;
 }
 

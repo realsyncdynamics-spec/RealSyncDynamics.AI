@@ -17,9 +17,10 @@ import {
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { getScanReport } from './scansApi';
 import type { ReportPayload } from '../../../types/governance/report';
-import type { FindingSeverity, FindingStatus } from '../../../types/governance/finding';
+import type { Finding, FindingSeverity, FindingStatus } from '../../../types/governance/finding';
 import { evidenceRefLabel } from '../../../types/governance/evidence';
 import { SEVERITY_PALETTE } from '../../../lib/governance/severityPalette';
+import { FindingEvidencePanel } from './FindingEvidencePanel';
 
 // Pill + Label aus zentraler Palette — siehe src/lib/governance/severityPalette.ts.
 const SEVERITY_PILL: Record<FindingSeverity, string> = {
@@ -153,27 +154,31 @@ function Detail({ payload }: { payload: ReportPayload }) {
             </div>
           ) : (
             <ul className="space-y-2">
-              {report.top_findings.map((f) => (
-                <li key={f.id} className="border border-titanium-800 bg-obsidian-900 p-4">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 text-[10px] uppercase font-mono tracking-wider border ${SEVERITY_PILL[f.severity]}`}>
-                          {SEVERITY_LABEL[f.severity]}
-                        </span>
-                        <span className="text-[11px] font-mono text-titanium-500">{f.category}</span>
-                        <span className="text-[11px] font-mono text-titanium-500">· {STATUS_LABEL[f.status]}</span>
+              {report.top_findings.map((rf) => {
+                const full = all_findings.find((x: Finding) => x.id === rf.id);
+                return (
+                  <li key={rf.id} className="border border-titanium-800 bg-obsidian-900 p-4">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className={`inline-flex items-center px-2 py-0.5 text-[10px] uppercase font-mono tracking-wider border ${SEVERITY_PILL[rf.severity]}`}>
+                            {SEVERITY_LABEL[rf.severity]}
+                          </span>
+                          <span className="text-[11px] font-mono text-titanium-500">{rf.category}</span>
+                          <span className="text-[11px] font-mono text-titanium-500">· {STATUS_LABEL[rf.status]}</span>
+                        </div>
+                        <p className="text-sm text-titanium-100 mb-1">{rf.summary}</p>
+                        {rf.evidence ? (
+                          <p className="text-[11px] text-brass-300 font-mono">
+                            Beleg: {evidenceRefLabel(rf.evidence)}
+                          </p>
+                        ) : null}
+                        {full ? <FindingEvidencePanel finding={full} /> : null}
                       </div>
-                      <p className="text-sm text-titanium-100 mb-1">{f.summary}</p>
-                      {f.evidence ? (
-                        <p className="text-[11px] text-brass-300 font-mono">
-                          Beleg: {evidenceRefLabel(f.evidence)}
-                        </p>
-                      ) : null}
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

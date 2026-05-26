@@ -253,6 +253,33 @@ const LEGACY_FILENAME_ALLOWLIST = new Set([
   '20260510_ai_governance_core.sql',
 ]);
 
+// Migrations that intentionally share a timestamp with their predecessor.
+//
+// Default policy is strictly-greater (see lintMigrations below): every
+// new migration must produce a timestamp strictly greater than the
+// previous one. This catches the typical race where two PRs are opened
+// on the same day and both pick YYYYMMDD000000.
+//
+// In rare cases, renaming is unsafe — e.g. a migration is already
+// applied in downstream environments and a rename would cause Supabase
+// to re-attempt the application under the new filename, conflicting
+// with the existing schema. For those cases, register the SECOND file
+// (alphabetically) of the collision pair here. The lint downgrades the
+// violation to info-only; the ordering risk stays visible in the log,
+// and new migrations are still held to the strict rule.
+//
+// Adding entries here is a deliberate one-way decision — they should
+// only ever grow, never shrink, since the historical collision they
+// document is a fact about applied production state, not about source.
+//
+// Empty by default. Previous collision (PR #425 + #426 both at
+// 20260610000000) was resolved by rename in hotfix PR #439 before
+// either migration shipped to prod-like envs, so no allowlist entry
+// was needed. Document future collisions here when rename is not an
+// option.
+const DUPLICATE_TIMESTAMP_ALLOWLIST = new Set([
+]);
+
 function lintMigrations() {
   const migDir = join(__root, 'supabase/migrations');
   if (!existsSync(migDir)) {
@@ -280,11 +307,19 @@ function lintMigrations() {
     stamps.push({ stamp: m[1], file: f });
   }
 
-  // Sequential monotonic check (stamps must be strictly increasing)
+  // Sequential monotonic check (stamps must be strictly increasing).
+  // Files in DUPLICATE_TIMESTAMP_ALLOWLIST are grandfathered to
+  // info-level; see allowlist declaration above for the policy.
   for (let i = 1; i < stamps.length; i++) {
     const a = stamps[i - 1];
     const b = stamps[i];
     if (b.stamp <= a.stamp) {
+      if (DUPLICATE_TIMESTAMP_ALLOWLIST.has(b.file)) {
+        push('info', 'migration-order-grandfathered',
+          `${b.file} (${b.stamp}) shares timestamp with predecessor ${a.file} — grandfathered via DUPLICATE_TIMESTAMP_ALLOWLIST; rename was not safe at the time.`,
+          `supabase/migrations/${b.file}`);
+        continue;
+      }
       push('error', 'migration-order',
         `migration ${b.file} stamp ${b.stamp} is not strictly greater than predecessor ${a.file} (${a.stamp})`,
         `supabase/migrations/${b.file}`);

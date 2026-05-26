@@ -37,6 +37,12 @@ export function CheckoutPage() {
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
   const [checkoutErr, setCheckoutErr] = useState<string | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  // §312k / §356(5) BGB: explicit consent gate. Required for paid recurring
+  // SaaS so the §356(5) BGB withdrawal-right-erasure is documentably
+  // acknowledged BEFORE we hand off to Stripe-Hosted-Checkout. See
+  // /legal/terms §12. Both must be checked to enable submit.
+  const [agreedToTerms,    setAgreedToTerms]    = useState(false);
+  const [acknowledgedWithdrawal, setAcknowledgedWithdrawal] = useState(false);
 
   // 1. Validate planKey
   const validPlan = planKey && VALID_PLAN_KEYS.has(planKey as PlanKey)
@@ -85,26 +91,27 @@ export function CheckoutPage() {
     return () => { cancelled = true; };
   }, [validPlan]);
 
-  // 4. Auto-Trigger Checkout sobald ready
-  useEffect(() => {
+  // 4. Manual trigger on user submit — see consent gate render below.
+  // Both BGB checkboxes are required before this fires.
+  async function handleConfirmAndPay() {
     if (auth.status !== 'ready' || !validPlan || redirecting) return;
+    if (!agreedToTerms || !acknowledgedWithdrawal) return;
     setRedirecting(true);
+    setCheckoutErr(null);
     trackMarketingEvent('checkout_started', { plan_key: validPlan });
     trackConversion('InitiateCheckout', {
       content_name: validPlan,
       value: tier?.priceEur ?? 0,
       currency: 'EUR',
     });
-    (async () => {
-      const result = await createCheckoutSession(auth.tenantId, validPlan);
-      if (result.ok && result.url) {
-        window.location.href = result.url;
-      } else {
-        setCheckoutErr(result.error?.message ?? 'Unbekannter Fehler beim Checkout');
-        setRedirecting(false);
-      }
-    })();
-  }, [auth, validPlan, redirecting]);
+    const result = await createCheckoutSession(auth.tenantId, validPlan);
+    if (result.ok && result.url) {
+      window.location.href = result.url;
+    } else {
+      setCheckoutErr(result.error?.message ?? 'Unbekannter Fehler beim Checkout');
+      setRedirecting(false);
+    }
+  }
 
   // ─── Render-Cases ──────────────────────────────────────────────────────────
 
@@ -153,22 +160,18 @@ export function CheckoutPage() {
     );
   }
 
-  // status === 'ready'
+  // status === 'ready' — manual consent gate before Stripe hand-off.
   return (
-    <ShellWithMessage
-      title={`${tier.name} fuer ${tier.priceEur} € / Monat`}
-      body={
-        checkoutErr
-          ? `Checkout-Fehler: ${checkoutErr}`
-          : 'Wir leiten Sie gleich zur sicheren Stripe-Checkout-Seite weiter. Sekundenangelegenheit.'
-      }
-      loading={!checkoutErr}
-      cta={
-        checkoutErr
-          ? { label: 'Zurueck zur Preisuebersicht', to: '/pricing' }
-          : undefined
-      }
-      footer={`Eingeloggt als ${auth.userEmail}`}
+    <ConsentGateShell
+      tier={tier}
+      userEmail={auth.userEmail}
+      agreedToTerms={agreedToTerms}
+      onAgreedToTerms={setAgreedToTerms}
+      acknowledgedWithdrawal={acknowledgedWithdrawal}
+      onAcknowledgedWithdrawal={setAcknowledgedWithdrawal}
+      redirecting={redirecting}
+      checkoutErr={checkoutErr}
+      onConfirm={handleConfirmAndPay}
     />
   );
 }
@@ -303,6 +306,149 @@ function NoUserShell({
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">
             <AlertCircle className="h-3 w-3" />
             <span>OAuth · Magic-Link · Stripe-Hosted-Checkout</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ─── Consent Gate (§312k + §356(5) BGB) ────────────────────────────────────
+//
+// Final step before handing off to Stripe-Hosted-Checkout. The user must
+// explicitly tick both boxes:
+//
+//   1. AGB + Datenschutz acknowledgment    → standard transparency
+//   2. §356(5) BGB withdrawal-right erasure → digital-content waiver so
+//      service can be provisioned immediately at payment, before the
+//      14-day Widerrufsfrist would elapse. Documented in /legal/terms §12.
+//
+// Both ticks are recorded in marketing analytics so we have a timestamped
+// trail of consent — separate from the Stripe session itself.
+
+function ConsentGateShell({
+  tier,
+  userEmail,
+  agreedToTerms,
+  onAgreedToTerms,
+  acknowledgedWithdrawal,
+  onAcknowledgedWithdrawal,
+  redirecting,
+  checkoutErr,
+  onConfirm,
+}: {
+  tier:                     { name: string; priceEur: number };
+  userEmail:                string;
+  agreedToTerms:            boolean;
+  onAgreedToTerms:          (value: boolean) => void;
+  acknowledgedWithdrawal:   boolean;
+  onAcknowledgedWithdrawal: (value: boolean) => void;
+  redirecting:              boolean;
+  checkoutErr:              string | null;
+  onConfirm:                () => void;
+}) {
+  const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
+
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
+        <Link
+          to="/pricing"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span className="font-display font-bold">RealSyncDynamics.AI</span>
+        </Link>
+        <Link to="/legal/privacy" className="text-xs text-silver-500 hover:text-titanium-200">
+          Datenschutz
+        </Link>
+      </header>
+
+      <main className="flex flex-col items-center justify-center px-4 py-12 sm:py-16">
+        <div className="max-w-md w-full">
+          <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-5" />
+          <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-2 text-center">
+            {tier.name}
+          </h1>
+          <p className="text-center text-silver-300 text-sm sm:text-base mb-6">
+            {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
+          </p>
+
+          <div className="space-y-3 mb-5">
+            <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => onAgreedToTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-gold-400"
+                aria-describedby="agb-consent-text"
+              />
+              <span id="agb-consent-text" className="text-xs sm:text-sm text-silver-200 leading-relaxed">
+                Ich habe die{' '}
+                <Link to="/legal/terms" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                  AGB
+                </Link>{' '}
+                und die{' '}
+                <Link to="/legal/privacy" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                  Datenschutzerklärung
+                </Link>{' '}
+                gelesen und akzeptiere sie.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">
+              <input
+                type="checkbox"
+                checked={acknowledgedWithdrawal}
+                onChange={(e) => onAcknowledgedWithdrawal(e.target.checked)}
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-gold-400"
+                aria-describedby="withdrawal-consent-text"
+              />
+              <span id="withdrawal-consent-text" className="text-xs sm:text-sm text-silver-200 leading-relaxed">
+                Ich willige ausdrücklich ein, dass mit der Bereitstellung des Dienstes vor Ablauf der
+                14-tägigen Widerrufsfrist begonnen wird, und bestätige, dass mein Widerrufsrecht
+                mit Beginn der Vertragsausführung erlischt
+                (§§ 356 Abs. 5, 327 BGB; siehe{' '}
+                <Link to="/legal/terms" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                  AGB § 12
+                </Link>
+                ).
+              </span>
+            </label>
+          </div>
+
+          {checkoutErr && (
+            <div className="mb-4 p-3 border border-red-900 bg-red-950/30 text-xs text-red-200">
+              Checkout-Fehler: {checkoutErr}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!canSubmit}
+            className={`surface-gold w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-none transition-opacity ${
+              canSubmit ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed'
+            }`}
+          >
+            {redirecting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Stripe wird geöffnet…
+              </>
+            ) : (
+              <>
+                Jetzt zahlungspflichtig bestellen <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
+
+          <div className="mt-4 text-[11px] font-mono uppercase tracking-wider text-silver-500 text-center">
+            Eingeloggt als {userEmail}
+          </div>
+          <div className="mt-5 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">
+            <AlertCircle className="h-3 w-3" />
+            <span>Stripe-Hosted-Checkout · Monatlich kündbar · Keine Setup-Gebühren</span>
           </div>
         </div>
       </main>

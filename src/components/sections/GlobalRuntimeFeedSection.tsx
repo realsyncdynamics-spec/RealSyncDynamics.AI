@@ -25,10 +25,13 @@ export function GlobalRuntimeFeedSection() {
     maxEvents: 40,
     autoStart: inView,
   });
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
 
+  // Nur den internen Feed-Container scrollen, nicht die Seite.
+  // scrollIntoView würde alle scroll-ancestors verschieben → page-jump.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const el = feedRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [events.length]);
 
   const counters = {
@@ -51,11 +54,11 @@ export function GlobalRuntimeFeedSection() {
             03 · monitor
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            Events continuously happen.
+            Events laufen kontinuierlich.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Each scan, each drift detection, each agent action and each evidence anchor lands on the global runtime feed.
-            No dashboards to refresh. The system reports its own state.
+            Jeder Scan, jede Drift-Erkennung, jede Agenten-Aktion und jeder Evidence-Anchor landet im globalen Runtime-Feed.
+            Keine Dashboards zum Aktualisieren. Das System meldet seinen Zustand selbst.
           </p>
           <p className="mt-3 text-[11px] font-mono uppercase tracking-wider text-titanium-500">
             ⚠ Simulierte Telemetrie — keine Live-Produktionsdaten
@@ -79,13 +82,12 @@ export function GlobalRuntimeFeedSection() {
                 {isRunning ? 'demo-streaming' : 'demo · paused'}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
+            <div ref={feedRef} className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed">
               {events.length === 0 ? (
                 <div className="text-titanium-600 italic">demo stream warming up…</div>
               ) : (
                 events.map((e) => <FeedRow key={e.id} event={e} reduce={!!reduce} />)
               )}
-              <div ref={bottomRef} />
               {!reduce && isRunning && (
                 <div className="mt-1 text-titanium-600">
                   <span className="inline-block w-2 h-3 bg-cyan-300 align-middle animate-pulse" />

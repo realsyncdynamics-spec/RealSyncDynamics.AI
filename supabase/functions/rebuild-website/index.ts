@@ -301,7 +301,7 @@ async function executeStep(
       // V1: nur Storage-Pfad, Cloudflare-Pages-Deploy kommt in Phase 2.
       const bundlePath = `rebuilds/${ctx.rebuildId}/index.html`;
       state.bundlePath = bundlePath;
-      state.previewUrl = `https://preview.realsyncdynamics.ai/${ctx.rebuildId}`;
+      state.previewUrl = `https://preview.realsyncdynamicsai.de/${ctx.rebuildId}`;
       // TODO Phase 2: Upload zu Storage + Cloudflare-Pages-Deploy.
       return {
         summary: `Bundle gepackt (${bundlePath}); Preview pending Storage-Upload`,

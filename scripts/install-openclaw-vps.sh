@@ -108,9 +108,24 @@ if [ -z "$OPENCLAW_SECRET" ]; then
     fi
 fi
 
-# ─── 2. Docker-Image pullen ────────────────────────────────────────────────
+# ─── 2. Docker-Image pullen (oder lokal bauen als Fallback) ─────────────────
 log "Docker-Image pullen: $DOCKER_IMAGE"
-docker pull "$DOCKER_IMAGE" >/dev/null
+IMAGE_FROM_LOCAL_BUILD=0
+if docker pull "$DOCKER_IMAGE" >/dev/null 2>&1; then
+    log "Image-Pull erfolgreich."
+else
+    warn "Pull von $DOCKER_IMAGE fehlgeschlagen (Image nicht in Registry?)."
+    DOCKERFILE_DIR="$REPO_ROOT/services/openclaw-agent"
+    if [ -f "$DOCKERFILE_DIR/Dockerfile" ]; then
+        log "Fallback: baue Image lokal aus $DOCKERFILE_DIR …"
+        docker build -t "$DOCKER_IMAGE" "$DOCKERFILE_DIR" \
+            || fail "Local Docker-Build fehlgeschlagen."
+        log "Local Build OK — Image $DOCKER_IMAGE jetzt lokal verfuegbar."
+        IMAGE_FROM_LOCAL_BUILD=1
+    else
+        fail "Pull fehlgeschlagen und kein Dockerfile unter $DOCKERFILE_DIR fuer Local-Build."
+    fi
+fi
 
 # ─── 3. /etc/openclaw-agent/env schreiben ──────────────────────────────────
 log "Schreibe $ENV_FILE (chmod 600)"
@@ -133,7 +148,17 @@ umask 022
 
 # ─── 4. systemd-Unit installieren + starten ────────────────────────────────
 log "Installiere $SERVICE_DST"
-cp "$SERVICE_SRC" "$SERVICE_DST"
+if [ "$IMAGE_FROM_LOCAL_BUILD" = "1" ]; then
+    # Local-Build-Fallback: docker-pull-Zeile darf nicht fatal sein, sonst
+    # versucht systemd bei jedem Start ein Image zu pullen, das nicht in der
+    # Registry liegt, und scheitert. Vorzeichen-Dash macht den Pre-Step
+    # non-fatal — systemd nutzt den lokal vorhandenen Tag.
+    log "(Local-Build erkannt — docker-pull-Zeile wird non-fatal gemacht)"
+    sed 's|^ExecStartPre=/usr/bin/docker pull|ExecStartPre=-/usr/bin/docker pull|' \
+        "$SERVICE_SRC" > "$SERVICE_DST"
+else
+    cp "$SERVICE_SRC" "$SERVICE_DST"
+fi
 systemctl daemon-reload
 systemctl enable openclaw-agent >/dev/null 2>&1 || true
 systemctl restart openclaw-agent

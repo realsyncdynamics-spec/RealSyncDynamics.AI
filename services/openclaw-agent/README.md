@@ -100,11 +100,22 @@ Apex-Pfad `/_openclaw/...`), zieht das TLS-Cert via certbot und faehrt
 Health/Auth-Smoke-Tests gegen beide Endpoints.
 
 ```bash
-# 1. Image bauen + pushen (von der Dev-Maschine)
+# Variante A — Image kommt von Docker Hub (Standard, via CI):
+#   Push auf main mit Aenderungen unter services/openclaw-agent/** triggert
+#   .github/workflows/build-openclaw-image.yml; das baut + pusht das Image
+#   nach realsync/openclaw-agent:latest. Repo-Secrets DOCKER_HUB_USERNAME +
+#   DOCKER_HUB_TOKEN muessen einmalig gesetzt sein.
+
+# Variante B — Image lokal auf der Dev-Maschine bauen + pushen:
 docker build -t realsync/openclaw-agent:latest .
 docker push realsync/openclaw-agent:latest
 
-# 2. Repo auf VPS klonen (oder pullen), dann im Repo-Root:
+# Variante C — Initial-Bootstrap ohne Docker-Hub-Push: der Installer baut
+#   das Image direkt auf dem VPS aus services/openclaw-agent/Dockerfile,
+#   falls der Pull fehlschlaegt. systemctl-Unit wird automatisch
+#   angepasst (pull-Zeile non-fatal), damit der Restart nicht failed.
+
+# Dann auf dem VPS (Repo geklont), im Repo-Root:
 sudo OPENAI_API_KEY="sk-..." \
      CERTBOT_EMAIL="ops@realsyncdynamicsai.de" \
      bash scripts/install-openclaw-vps.sh

@@ -6,5 +6,6 @@ export { AVVTemplate } from './templates/AVVTemplate';
 export { VVTTemplate } from './templates/VVTTemplate';
 export { TOMTemplate } from './templates/TOMTemplate';
 export { DSFATemplate } from './templates/DSFATemplate';
+export { ReportTemplate, type ReportTemplateProps } from './templates/ReportTemplate';
 export type { DocMeta } from './shared';
 export { DOCS_VERSION } from './shared';

@@ -15,7 +15,7 @@ export async function scrapeSource(sourceUrl: string): Promise<ScrapedSite> {
   let res: Response;
   try {
     res = await fetch(sourceUrl, {
-      headers: { 'User-Agent': 'RealSyncDynamics-Rebuild/1.0 (+https://realsyncdynamics.ai)' },
+      headers: { 'User-Agent': 'RealSyncDynamics-Rebuild/1.0 (+https://realsyncdynamicsai.de)' },
       redirect: 'follow',
       signal: ctrl.signal,
     });

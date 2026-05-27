@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, Cpu, ShieldCheck, ScrollText, Bot } from 'lucide-react';
 
-// AgentControlPlanePreview — compact 4-card grid for the AI governance
-// agents currently running on the runtime. Pulse cycles through cards so
-// the panel reads as a live control plane even at rest.
+// AgentControlPlanePreview — kompakte 4-Karten-Vorschau für die vier
+// Governance-Agenten. Demo-Daten, kein echter Live-Stream — das Pulse-
+// Cycling ist visuelle UI-Animation, nicht Indikator für laufende Telemetrie.
 
 interface Agent {
   id: string;
   name: string;
   role: string;
   icon: React.ReactNode;
-  status: 'live' | 'idle';
+  /** 'demo' = simulierte Werte (Phase 1 Demo-Surface).
+   *  'live' bleibt reserviert für eine echte Tenant-Telemetrie-PR. */
+  status: 'demo' | 'live' | 'idle';
   metric: string;
   delta: string;
 }
@@ -20,38 +22,38 @@ const AGENTS: readonly Agent[] = [
   {
     id: 'drift',
     name: 'drift-agent',
-    role: 'detect · monitor',
+    role: 'erkennen · monitoring',
     icon: <Activity className="h-3.5 w-3.5 text-cyan-300" />,
-    status: 'live',
-    metric: '4.2 runs/h',
-    delta: '12 incidents open',
+    status: 'demo',
+    metric: '4.2 Läufe/h',
+    delta: '12 offene Vorfälle',
   },
   {
     id: 'ai-risk',
     name: 'ai-risk-agent',
-    role: 'govern',
+    role: 'governance',
     icon: <Cpu className="h-3.5 w-3.5 text-violet-300" />,
-    status: 'live',
-    metric: '17 systems',
-    delta: '3 high-risk',
+    status: 'demo',
+    metric: '17 Systeme',
+    delta: '3 hohes Risiko',
   },
   {
     id: 'evidence',
     name: 'evidence-agent',
-    role: 'automate',
+    role: 'automatisieren',
     icon: <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />,
-    status: 'live',
-    metric: '4,128 sealed',
-    delta: 'last anchor: 3 s',
+    status: 'demo',
+    metric: '4.128 gehasht',
+    delta: 'letzter Anchor: 3 s',
   },
   {
     id: 'policy',
     name: 'policy-agent',
-    role: 'govern · automate',
+    role: 'governance · automatisieren',
     icon: <ScrollText className="h-3.5 w-3.5 text-amber-300" />,
-    status: 'live',
-    metric: '21 drafts/w',
-    delta: '15 merged',
+    status: 'demo',
+    metric: '21 Entwürfe/W',
+    delta: '15 zusammengeführt',
   },
 ];
 
@@ -69,9 +71,11 @@ export function AgentControlPlanePreview({ heading = true }: { heading?: boolean
         <header className="flex items-center justify-between px-3 py-2 border-b border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
           <span className="inline-flex items-center gap-2">
             <Bot className="h-3 w-3" />
-            agent control plane
+            Agent-Kontrollebene · Demo
           </span>
-          <span className="text-emerald-400">{AGENTS.filter((a) => a.status === 'live').length} / {AGENTS.length} running</span>
+          <span className="text-titanium-400">
+            {AGENTS.filter((a) => a.status === 'demo' || a.status === 'live').length} / {AGENTS.length} aktiv
+          </span>
         </header>
       )}
 
@@ -90,14 +94,14 @@ export function AgentControlPlanePreview({ heading = true }: { heading?: boolean
                   </div>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-emerald-400 shrink-0">
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-amber-300 shrink-0">
                 <span className="relative inline-flex h-1.5 w-1.5">
                   <span
-                    className={`absolute inset-0 rounded-full bg-emerald-400 opacity-75 ${phase === i ? 'motion-safe:animate-ping' : ''}`}
+                    className={`absolute inset-0 rounded-full bg-amber-400 opacity-75 ${phase === i ? 'motion-safe:animate-ping' : ''}`}
                   />
-                  <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
                 </span>
-                live
+                demo
               </span>
             </div>
 
@@ -110,9 +114,9 @@ export function AgentControlPlanePreview({ heading = true }: { heading?: boolean
       </div>
 
       <footer className="px-3 py-2 border-t border-titanium-900 bg-obsidian-900 flex items-center justify-between font-mono text-[10px] text-titanium-500">
-        <span>continuous · no human queue</span>
+        <span>kontinuierlich · ohne manuelles Triage-Backlog · Demo-Daten</span>
         <Link to="/agents" className="text-cyan-300 hover:text-cyan-200 uppercase tracking-wider">
-          view agents →
+          Agenten ansehen →
         </Link>
       </footer>
     </div>

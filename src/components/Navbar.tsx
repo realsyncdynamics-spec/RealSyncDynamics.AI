@@ -12,8 +12,8 @@ import { CTA } from '../content/runtimeVocab';
 const NAV_ITEMS = [
   { label: 'Runtime', to: '/runtime' },
   { label: 'AI Act',  to: '/ai-act' },
-  { label: 'Pricing', to: '/pricing' },
-  { label: 'Docs',    to: '/docs' },
+  { label: 'Preise',  to: '/pricing' },
+  { label: 'Doku',    to: '/docs' },
 ] as const;
 
 export function Navbar() {

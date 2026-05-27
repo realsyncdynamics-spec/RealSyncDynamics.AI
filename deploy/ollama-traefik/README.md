@@ -3,11 +3,12 @@
 EU-lokale, **DSGVO-konforme** AI-Inferenz für RealSyncDynamics.AI, hinter dem
 bestehenden Host-Traefik auf dem Kodee-VPS (187.77.89.1, Hostinger srv1622293).
 
-## DSGVO-Posture (Stand 2026-05-03)
+## DSGVO-Posture (Stand 2026-05-24)
 
-- **Modell:** `qwen3:4b` (Apache 2.0, Alibaba) — läuft komplett auf dem
-  Hostinger-EU-VPS; keine Daten an Anthropic, Google, OpenAI oder andere
-  Drittländer.
+- **Modell:** `gemma3:4b` (Gemma Terms of Use, Google) — läuft komplett
+  auf dem Hostinger-EU-VPS; keine Daten an Anthropic, Google-Cloud, OpenAI
+  oder andere Drittländer. Gewichte werden einmalig beim Pull über
+  ollama.com bezogen, danach ausschließlich lokale Inferenz.
 - **Telemetrie aus:** Ollama hat keine Telemetrie; Open WebUI mit
   `ENABLE_SIGNUP=false`; n8n mit `N8N_DIAGNOSTICS_ENABLED=false` und
   `N8N_VERSION_NOTIFICATIONS_ENABLED=false`.
@@ -57,8 +58,8 @@ bestehenden Host-Traefik auf dem Kodee-VPS (187.77.89.1, Hostinger srv1622293).
 - DNS A-Records:
   - `ollama.realsyncdynamicsai.de` → 187.77.89.1 (VPS public IP)
   - `chat.realsyncdynamicsai.de`   → 187.77.89.1
-- Mind. 4 GB RAM für `qwen3:4b` (Default-Modell, ~2.5 GB). 7B/8B-Modelle brauchen
-  ≥ 16 GB — wenn die VPS knapp ist, beim 3B bleiben + 2 GB Swap einrichten:
+- Mind. 4 GB RAM für `gemma3:4b` (Default-Modell, ~3.3 GB). 7B/8B-Modelle brauchen
+  ≥ 16 GB — wenn die VPS knapp ist, beim 4B bleiben + 2 GB Swap einrichten:
   `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile && echo '/swapfile none swap sw 0 0' >> /etc/fstab`
 
 ## Setup
@@ -123,7 +124,7 @@ Beide Container sollten `Up` (Ollama eventuell `health: starting` bis 60s).
 ### 5. Modell pullen (~5-15 Min, einmalig)
 
 ```bash
-docker exec -it kodee-ollama ollama pull qwen3:4b
+docker exec -it kodee-ollama ollama pull gemma3:4b
 ```
 
 ### 6. Tests
@@ -140,7 +141,7 @@ curl -sf -u "kodee:$PASS" https://ollama.realsyncdynamicsai.de/
 curl -sf --max-time 180 -u "kodee:$PASS" \
   -X POST https://ollama.realsyncdynamicsai.de/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"model":"qwen3:4b","messages":[{"role":"user","content":"Antworte mit genau einem Wort: ok"}],"stream":false}'
+  -d '{"model":"gemma3:4b","messages":[{"role":"user","content":"Antworte mit genau einem Wort: ok"}],"stream":false}'
 
 # WebUI im Browser:  https://chat.realsyncdynamicsai.de
 ```

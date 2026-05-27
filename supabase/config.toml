@@ -96,6 +96,11 @@ verify_jwt = false
 [functions.gdpr-audit]
 verify_jwt = false
 
+# Health-Probe — oeffentlich, fuer Uptime-Monitoring und Status-Page.
+# Antwortet 200 / 503; keine sensiblen Daten, keine Auth noetig.
+[functions.health]
+verify_jwt = false
+
 [functions.cookie-scan]
 verify_jwt = false
 

@@ -41,7 +41,7 @@ export const AssetDetailModal = ({ isOpen, onClose, asset }: ModalProps) => {
           </div>
           
           <div className="bg-[#E2E2E2] p-4 flex flex-col items-center">
-            <QRCodeSVG value={`https://realsyncdynamics.com/verify/${asset.id}`} size={160} fgColor="#0A0A0B" bgColor="#E2E2E2" />
+            <QRCodeSVG value={`https://realsyncdynamicsai.de/verify/${asset.id}`} size={160} fgColor="#0A0A0B" bgColor="#E2E2E2" />
           </div>
           <div className="font-mono text-[9px] uppercase tracking-widest text-titanium-400 mt-4 mb-8 text-center flex flex-col gap-1">
              <span>SCANNABLE_SIGNATURE_TOKEN</span>

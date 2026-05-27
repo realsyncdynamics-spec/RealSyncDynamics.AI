@@ -10,14 +10,17 @@
  * finding_count + severity_max from the row, computed by the
  * scan-pipeline adapter at completeScanRun time (PR 2).
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, AlertTriangle, Loader2, CheckCircle2, XCircle, Clock,
+  ArrowLeft, ArrowRight, AlertTriangle, Loader2, CheckCircle2, XCircle, Clock, Plus, Play,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { AuthGate } from '../../kodee/connections/AuthGate';
-import { listScanRuns } from './scansApi';
+import {
+  listScanRuns, listWebsitesForTenant, addWebsiteForTenant,
+  triggerTenantAudit, type TenantWebsite,
+} from './scansApi';
 import type { ScanRun } from '../../../types/governance/scan-run';
 import { SEVERITY_PALETTE } from '../../../lib/governance/severityPalette';
 
@@ -56,17 +59,26 @@ function Inner() {
 
 function ScansList({ tenantId }: { tenantId: string }) {
   const [rows, setRows] = useState<ScanRun[] | null>(null);
+  const [websites, setWebsites] = useState<TenantWebsite[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setRows(null);
-    setError(null);
-    listScanRuns(tenantId, { limit: 50 })
-      .then((data) => { if (!cancelled) setRows(data); })
-      .catch((e: Error) => { if (!cancelled) setError(e.message); });
-    return () => { cancelled = true; };
+  const refresh = useCallback(async () => {
+    try {
+      const [r, w] = await Promise.all([
+        listScanRuns(tenantId, { limit: 50 }),
+        listWebsitesForTenant(tenantId),
+      ]);
+      setRows(r);
+      setWebsites(w);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
   }, [tenantId]);
+
+  useEffect(() => {
+    setRows(null); setWebsites(null); setError(null);
+    void refresh();
+  }, [refresh]);
 
   if (error) {
     return (
@@ -75,9 +87,9 @@ function ScansList({ tenantId }: { tenantId: string }) {
       </EmptyShell>
     );
   }
-  if (rows === null) {
+  if (rows === null || websites === null) {
     return (
-      <EmptyShell title="Lade Scans…">
+      <EmptyShell title="Lade Workspace…">
         <Loader2 className="h-4 w-4 animate-spin inline-block" />
       </EmptyShell>
     );
@@ -86,8 +98,8 @@ function ScansList({ tenantId }: { tenantId: string }) {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Header />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+        <div>
           <h1 className="font-display font-bold text-2xl tracking-tight text-titanium-50 mb-1">
             Scans
           </h1>
@@ -96,28 +108,140 @@ function ScansList({ tenantId }: { tenantId: string }) {
           </p>
         </div>
 
-        {rows.length === 0 ? (
-          <div className="border border-titanium-800 bg-obsidian-900 p-8 text-center">
-            <AlertTriangle className="h-6 w-6 text-amber-400 mx-auto mb-3" />
-            <h2 className="font-display font-semibold text-titanium-50 mb-1">Noch keine Scans</h2>
-            <p className="text-sm text-titanium-400 mb-4">
-              Sobald ein Detektor (z.B. <code className="text-titanium-200">gdpr-audit</code>) eine
-              Website scannt, erscheint der Lauf hier.
-            </p>
-            <Link
-              to="/audit"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-cyan-400 text-obsidian-950 font-semibold hover:bg-cyan-300 transition-colors"
-            >
-              Audit starten <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {rows.map((r) => <ScanRow key={r.id} run={r} />)}
-          </ul>
-        )}
+        <WebsitesSection
+          tenantId={tenantId}
+          websites={websites}
+          onChange={() => { void refresh(); }}
+        />
+
+        <div>
+          <h2 className="font-display font-semibold text-titanium-50 mb-3">Scan-Läufe</h2>
+          {rows.length === 0 ? (
+            <div className="border border-titanium-800 bg-obsidian-900 p-8 text-center">
+              <AlertTriangle className="h-6 w-6 text-amber-400 mx-auto mb-3" />
+              <h3 className="font-display font-semibold text-titanium-50 mb-1">Noch keine Scans</h3>
+              <p className="text-sm text-titanium-400 mb-4">
+                Trage oben eine Website ein und drücke „Scan starten" — der Lauf erscheint dann hier.
+              </p>
+              <Link
+                to="/audit"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-titanium-700 text-titanium-100 font-medium hover:border-titanium-500 transition-colors"
+              >
+                Stattdessen anonymen Audit ausprobieren <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {rows.map((r) => <ScanRow key={r.id} run={r} />)}
+            </ul>
+          )}
+        </div>
       </main>
     </div>
+  );
+}
+
+// ─── Websites-Sektion (Hinzufügen + Scan-Trigger) ──────────────────
+
+function WebsitesSection({
+  tenantId, websites, onChange,
+}: {
+  tenantId: string;
+  websites: TenantWebsite[];
+  onChange: () => void;
+}) {
+  const [domainInput, setDomainInput] = useState('');
+  const [busy, setBusy] = useState<'idle' | 'adding' | string>('idle');
+  const [err, setErr] = useState<string | null>(null);
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!domainInput.trim()) return;
+    setBusy('adding'); setErr(null);
+    try {
+      await addWebsiteForTenant(tenantId, domainInput);
+      setDomainInput('');
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy('idle');
+    }
+  }
+
+  async function handleScan(site: TenantWebsite) {
+    setBusy(`scan-${site.id}`); setErr(null);
+    try {
+      const url = site.domain.startsWith('http') ? site.domain : `https://${site.domain}`;
+      await triggerTenantAudit(tenantId, url, { website_id: site.id });
+      onChange();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy('idle');
+    }
+  }
+
+  return (
+    <section>
+      <h2 className="font-display font-semibold text-titanium-50 mb-3">Websites</h2>
+
+      <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-2 mb-3">
+        <input
+          type="text"
+          value={domainInput}
+          onChange={(e) => setDomainInput(e.target.value)}
+          placeholder="z. B. shop.kunde-1.de"
+          className="flex-1 bg-obsidian-900 border border-titanium-800 px-3 py-2 text-sm text-titanium-100 placeholder-titanium-500 focus:border-cyan-400 focus:outline-none"
+          aria-label="Domain hinzufügen"
+        />
+        <button
+          type="submit"
+          disabled={busy === 'adding' || !domainInput.trim()}
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm bg-cyan-400 text-obsidian-950 font-semibold hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {busy === 'adding' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          Website hinzufügen
+        </button>
+      </form>
+
+      {err ? (
+        <div className="mb-3 border border-rose-500/40 bg-rose-500/10 text-rose-200 text-sm p-2">
+          {err}
+        </div>
+      ) : null}
+
+      {websites.length === 0 ? (
+        <div className="border border-titanium-800 bg-obsidian-900 p-4 text-sm text-titanium-400">
+          Noch keine Website erfasst. Trage oben eine Domain ein, um den ersten Scan zu starten.
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {websites.map((w) => {
+            const scanning = busy === `scan-${w.id}`;
+            return (
+              <li key={w.id} className="border border-titanium-800 bg-obsidian-900 p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-mono text-sm text-titanium-100 truncate">{w.domain}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-titanium-500 mt-0.5">
+                    {w.plan_tier} · {w.status}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleScan(w)}
+                  disabled={scanning}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs border border-titanium-700 text-titanium-100 hover:border-titanium-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                  Scan starten
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 

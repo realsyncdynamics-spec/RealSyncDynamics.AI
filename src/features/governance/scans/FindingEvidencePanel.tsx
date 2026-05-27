@@ -9,16 +9,20 @@
  *   - evidence_ref     (URL / Hash / Storage / Runtime-Event)
  *   - raw_payload      (JSON, formatiert)
  *
+ * Plus Status-Transition-Aktionen (open → acknowledged / fixed / …)
+ * gemäß FINDING_NEXT_STATUS-Map aus src/types/governance/finding.ts.
+ *
  * Keine Animation, kein Auto-Scroll, ein einfacher Disclosure-Toggle.
- * Bewusst rein-lesend; Status-Transitions kommen in einer eigenen PR.
  */
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, ExternalLink, ShieldQuestion, Sparkles } from 'lucide-react';
-import type { Finding } from '../../../types/governance/finding';
+import { ChevronDown, ChevronRight, ExternalLink, ShieldQuestion, Sparkles, Loader2 } from 'lucide-react';
+import type { Finding, FindingStatus } from '../../../types/governance/finding';
+import { FINDING_NEXT_STATUS } from '../../../types/governance/finding';
 import {
   parseEvidenceRef,
   evidenceRefLabel,
 } from '../../../types/governance/evidence';
+import { updateFindingStatus } from './scansApi';
 
 const EVIDENCE_LEVEL_LABEL: Record<Finding['evidence_level'], string> = {
   observed:     'beobachtet',
@@ -48,17 +52,33 @@ const VERIFICATION_PILL: Record<Finding['verification_status'], string> = {
   disputed:   'border-rose-500/30 bg-rose-500/10 text-rose-200',
 };
 
+const STATUS_ACTION_LABEL: Record<FindingStatus, string> = {
+  open:           'Wieder öffnen',
+  acknowledged:   'Bestätigen',
+  fixed:          'Behoben',
+  false_positive: 'Kein Treffer',
+  ignored:        'Akzeptiertes Risiko',
+  resolved:       'Schließen',
+};
+
 export interface FindingEvidencePanelProps {
   finding: Finding;
   /** Default: collapsed. Set true for "always-open" surfaces (PDF). */
   defaultOpen?: boolean;
+  /** Called after a successful status transition so the parent can
+   *  re-fetch the report. Without this, transitions still persist but
+   *  the panel keeps showing the old status until the next page load. */
+  onStatusChange?: () => void;
 }
 
-export function FindingEvidencePanel({ finding, defaultOpen = false }: FindingEvidencePanelProps) {
+export function FindingEvidencePanel({
+  finding, defaultOpen = false, onStatusChange,
+}: FindingEvidencePanelProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-t border-titanium-900 mt-3 pt-3">
       <ConfidenceLine finding={finding} />
+      <StatusActions finding={finding} onChange={onStatusChange} />
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -69,6 +89,53 @@ export function FindingEvidencePanel({ finding, defaultOpen = false }: FindingEv
         Evidence anzeigen
       </button>
       {open ? <EvidenceDetails finding={finding} /> : null}
+    </div>
+  );
+}
+
+function StatusActions({
+  finding, onChange,
+}: { finding: Finding; onChange?: () => void }) {
+  const [busy, setBusy] = useState<FindingStatus | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const next = FINDING_NEXT_STATUS[finding.status] ?? [];
+  if (next.length === 0) return null;
+
+  async function go(target: FindingStatus) {
+    setBusy(target); setErr(null);
+    try {
+      await updateFindingStatus(finding.id, finding.status, target);
+      onChange?.();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-titanium-500 font-mono mr-1">
+        Aktion
+      </span>
+      {next.map((s) => {
+        const isLoading = busy === s;
+        return (
+          <button
+            key={s}
+            type="button"
+            onClick={() => go(s)}
+            disabled={busy !== null}
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] uppercase font-mono tracking-wider border border-titanium-700 text-titanium-200 hover:border-titanium-500 hover:text-titanium-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+            {STATUS_ACTION_LABEL[s]}
+          </button>
+        );
+      })}
+      {err ? (
+        <span className="text-[10px] text-rose-300 ml-2">{err}</span>
+      ) : null}
     </div>
   );
 }

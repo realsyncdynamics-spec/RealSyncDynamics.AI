@@ -13,10 +13,13 @@
  */
 
 import { getSupabase } from '../../../lib/supabase';
-import type { Finding } from '../../../types/governance/finding';
+import type { Finding, FindingStatus } from '../../../types/governance/finding';
+import { FINDING_NEXT_STATUS } from '../../../types/governance/finding';
 import type { ScanRun } from '../../../types/governance/scan-run';
 import type { ReportPayload } from '../../../types/governance/report';
 import { buildReportPayload } from '../../../lib/governance/reportMapping';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 
 /**
  * List a tenant's most recent scan_runs. Default limit 50; UI
@@ -78,4 +81,137 @@ export async function getScanReport(
   ]);
   if (!scan) return null;
   return buildReportPayload(scan, findings, { topN: opts.topN ?? 10 });
+}
+
+// ─── Website registry ───────────────────────────────────────────────
+
+export interface TenantWebsite {
+  id:         string;
+  tenant_id:  string;
+  domain:     string;
+  plan_tier:  'audit' | 'rebuild' | 'managed';
+  status:     string;
+  created_at: string;
+}
+
+/** Lists the tenant's registered websites, most-recent first. */
+export async function listWebsitesForTenant(tenantId: string): Promise<TenantWebsite[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb.from('websites')
+    .select('id, tenant_id, domain, plan_tier, status, created_at')
+    .eq('tenant_id', tenantId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as TenantWebsite[];
+}
+
+/**
+ * Adds a website to the tenant's registry. Domain is normalised
+ * lowercase + scheme-stripped. Caller is responsible for being a
+ * tenant member; the server-side RLS / service-role-only insert
+ * policy is the actual gate (this just shapes the row).
+ */
+export async function addWebsiteForTenant(
+  tenantId: string,
+  rawInput: string,
+): Promise<TenantWebsite> {
+  const sb = getSupabase();
+  const domain = normaliseDomain(rawInput);
+  if (!domain) throw new Error('Bitte eine gültige Domain angeben.');
+  const { data, error } = await sb.from('websites')
+    .insert({
+      tenant_id: tenantId,
+      domain,
+      plan_tier: 'audit',
+      status:    'lead',
+    })
+    .select('id, tenant_id, domain, plan_tier, status, created_at')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as TenantWebsite;
+}
+
+function normaliseDomain(raw: string): string | null {
+  const s = (raw ?? '').trim().toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .replace(/[^a-z0-9.\-]/g, '');
+  if (!s) return null;
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(s)) {
+    return null;
+  }
+  return s;
+}
+
+/** Exported for unit tests. */
+export const __test = { normaliseDomain };
+
+// ─── Tenant-scoped scan trigger (via tenant-audit Edge Function) ────
+
+/**
+ * Trigger an authenticated scan for the active tenant. Calls the
+ * `tenant-audit` Edge Function which fans out to `gdpr-audit` and
+ * persists into `scan_runs` + `findings`.
+ */
+export async function triggerTenantAudit(
+  tenantId: string,
+  url: string,
+  opts: { website_id?: string } = {},
+): Promise<{ scan_run_id: string; finding_count: number; severity_max: string | null }> {
+  const sb = getSupabase();
+  const { data: sess } = await sb.auth.getSession();
+  const accessToken = sess?.session?.access_token;
+  if (!accessToken) throw new Error('Bitte einloggen, um einen Scan zu starten.');
+
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/tenant-audit`, {
+    method:  'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'X-Tenant-Id':   tenantId,
+    },
+    body: JSON.stringify({ url, website_id: opts.website_id }),
+  });
+  const body = await r.json() as {
+    ok?: boolean;
+    scan_run_id?: string;
+    finding_count?: number;
+    severity_max?: string | null;
+    error?: { message?: string };
+  };
+  if (!r.ok || !body.ok || !body.scan_run_id) {
+    throw new Error(body.error?.message ?? `tenant-audit fehlgeschlagen (HTTP ${r.status})`);
+  }
+  return {
+    scan_run_id:   body.scan_run_id,
+    finding_count: body.finding_count ?? 0,
+    severity_max:  body.severity_max ?? null,
+  };
+}
+
+// ─── Finding status transitions ─────────────────────────────────────
+
+/**
+ * Update a finding's status. Validates the transition against
+ * FINDING_NEXT_STATUS client-side before hitting the DB — the DB
+ * doesn't enforce the transition map (only the value range), but
+ * surfacing an invalid transition early gives a clearer error.
+ */
+export async function updateFindingStatus(
+  findingId:   string,
+  currentStatus: FindingStatus,
+  nextStatus:    FindingStatus,
+): Promise<void> {
+  const allowed = FINDING_NEXT_STATUS[currentStatus] ?? [];
+  if (!allowed.includes(nextStatus)) {
+    throw new Error(
+      `Übergang von „${currentStatus}" auf „${nextStatus}" nicht erlaubt.`,
+    );
+  }
+  const sb = getSupabase();
+  const { error } = await sb.from('findings')
+    .update({ status: nextStatus })
+    .eq('id', findingId);
+  if (error) throw new Error(error.message);
 }

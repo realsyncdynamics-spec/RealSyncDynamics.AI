@@ -57,17 +57,21 @@ function Inner() {
   const { scanId = '' } = useParams<{ scanId: string }>();
   const [payload, setPayload] = useState<ReportPayload | null | 'loading' | 'not-found'>('loading');
   const [error, setError] = useState<string | null>(null);
+  // Increment to force a refetch after a status transition.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!scanId) { setPayload('not-found'); return; }
     let cancelled = false;
-    setPayload('loading');
+    // Only show full loading state on initial load — silent refetch
+    // after a status transition keeps the UI from blinking.
+    if (reloadKey === 0) setPayload('loading');
     setError(null);
     getScanReport(scanId)
       .then((p) => { if (cancelled) return; setPayload(p === null ? 'not-found' : p); })
       .catch((e: Error) => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
-  }, [scanId]);
+  }, [scanId, reloadKey]);
 
   if (error) {
     return <Shell><p className="text-rose-300">{error}</p></Shell>;
@@ -83,10 +87,12 @@ function Inner() {
       </Shell>
     );
   }
-  return <Detail payload={payload} />;
+  return <Detail payload={payload} onReload={() => setReloadKey((n) => n + 1)} />;
 }
 
-function Detail({ payload }: { payload: ReportPayload }) {
+function Detail({
+  payload, onReload,
+}: { payload: ReportPayload; onReload: () => void }) {
   const { report, scan_run, all_findings, evidence_catalog } = payload;
   const gradeCls = GRADE_COLOR[report.grade] ?? '';
   return (
@@ -173,7 +179,12 @@ function Detail({ payload }: { payload: ReportPayload }) {
                             Beleg: {evidenceRefLabel(rf.evidence)}
                           </p>
                         ) : null}
-                        {full ? <FindingEvidencePanel finding={full} /> : null}
+                        {full ? (
+                          <FindingEvidencePanel
+                            finding={full}
+                            onStatusChange={onReload}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   </li>

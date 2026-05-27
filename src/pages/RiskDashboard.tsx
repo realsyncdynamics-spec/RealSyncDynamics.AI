@@ -4,7 +4,7 @@ import {
   ArrowLeft, Activity, AlertCircle, CheckCircle2, Clock, Globe,
   ShieldCheck, TrendingDown, TrendingUp, Plus, RefreshCw, Bell, BellOff,
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '../lib/supabase';
 
 /**
  * /risk-dashboard — Compliance Monitoring Dashboard
@@ -20,10 +20,7 @@ import { createClient } from '@supabase/supabase-js';
  * Route: /risk-dashboard
  */
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const supabase = getSupabase();
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

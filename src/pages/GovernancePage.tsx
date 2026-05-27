@@ -3,9 +3,9 @@ import { usePageMeta } from '../lib/usePageMeta';
 import { GovernanceGraphSection } from '../components/governance/GovernanceGraphSection';
 import { ScrollText, Lock, Cookie, Cpu, ShieldCheck, FileSearch, Server, Database } from 'lucide-react';
 
-// GovernancePage — controls + policies grid.
-// Public-facing surface, NO auth-gated tenant data. Auth dashboard now
-// lives at /governance/admin.
+// GovernancePage — Kontrollen + Policies Übersicht (Demo).
+// Public-facing Surface, KEINE Auth-Gated Tenant-Daten. Auth-Dashboard
+// liegt unter /governance/admin.
 
 interface Control {
   id: string;
@@ -18,27 +18,29 @@ interface Control {
 }
 
 const CONTROLS: readonly Control[] = [
-  { id: 'c1', name: 'pre-consent-tracker-block',  description: 'Blocks third-party trackers from firing before the consent banner emits accept.',     status: 'enforced',     scope: '12 sites', owner: 'drift-agent',    icon: <Cookie className="h-4 w-4 text-amber-300" /> },
-  { id: 'c2', name: 'pii-redaction',              description: 'Strips emails, phone numbers and free-text PII from outbound model prompts.',          status: 'enforced',     scope: '5 ai systems', owner: 'ai-risk-agent',  icon: <Lock className="h-4 w-4 text-cyan-300" /> },
-  { id: 'c3', name: 'output-disclaimer',          description: 'Injects an AI-Act-Art-50 disclaimer into chatbot output and AI-generated emails.',     status: 'enforced',     scope: '3 ai systems', owner: 'policy-agent',   icon: <FileSearch className="h-4 w-4 text-violet-300" /> },
-  { id: 'c4', name: 'human-in-the-loop',          description: 'Routes high-risk classifier decisions through a human review queue with SLA.',         status: 'monitor-only', scope: 'risk-classifier', owner: 'policy-agent', icon: <ShieldCheck className="h-4 w-4 text-emerald-300" /> },
-  { id: 'c5', name: 'data-retention-90d',         description: 'Auto-purges raw scan payloads after 90 days, keeps sealed hashes indefinitely.',       status: 'enforced',     scope: 'global', owner: 'evidence-agent', icon: <Database className="h-4 w-4 text-cyan-300" /> },
-  { id: 'c6', name: 'cross-border-egress-block',  description: 'Refuses model invocations that would route data outside the configured EU regions.',    status: 'enforced',     scope: 'all ai systems', owner: 'ai-risk-agent', icon: <Server className="h-4 w-4 text-amber-300" /> },
-  { id: 'c7', name: 'consent-receipt-anchor',     description: 'Hashes each consent submission and anchors the receipt into the evidence chain.',       status: 'enforced',     scope: 'global', owner: 'evidence-agent', icon: <ShieldCheck className="h-4 w-4 text-emerald-300" /> },
-  { id: 'c8', name: 'incident-72h-escalation',    description: 'Auto-escalates high-severity drift to the configured DPO mailbox within the 72h DSGVO window.', status: 'enforced', scope: 'global', owner: 'drift-agent', icon: <Cpu className="h-4 w-4 text-violet-300" /> },
+  { id: 'c1', name: 'pre-consent-tracker-block',  description: 'Blockiert Drittanbieter-Tracker, bevor das Consent-Banner Einwilligung gemeldet hat.', status: 'enforced',     scope: '12 Sites',          owner: 'drift-agent',    icon: <Cookie className="h-4 w-4 text-amber-300" /> },
+  { id: 'c2', name: 'pii-redaction',              description: 'Entfernt E-Mails, Telefonnummern und freitextliche personenbezogene Daten aus ausgehenden Modell-Prompts.', status: 'enforced',     scope: '5 KI-Systeme',      owner: 'ai-risk-agent',  icon: <Lock className="h-4 w-4 text-cyan-300" /> },
+  { id: 'c3', name: 'output-disclaimer',          description: 'Setzt einen AI-Act-Art-50-Hinweis in Chatbot-Ausgaben und KI-generierte E-Mails ein.', status: 'enforced',     scope: '3 KI-Systeme',      owner: 'policy-agent',   icon: <FileSearch className="h-4 w-4 text-violet-300" /> },
+  { id: 'c4', name: 'human-in-the-loop',          description: 'Leitet Hochrisiko-Klassifikator-Entscheidungen in eine Human-Review-Warteschlange mit SLA.', status: 'monitor-only', scope: 'risk-classifier',   owner: 'policy-agent',   icon: <ShieldCheck className="h-4 w-4 text-emerald-300" /> },
+  { id: 'c5', name: 'data-retention-90d',         description: 'Löscht Roh-Scan-Daten nach 90 Tagen automatisch; SHA-256-Hashes bleiben dauerhaft.', status: 'enforced',     scope: 'global',            owner: 'evidence-agent', icon: <Database className="h-4 w-4 text-cyan-300" /> },
+  { id: 'c6', name: 'cross-border-egress-block',  description: 'Lehnt Modell-Aufrufe ab, die Daten außerhalb der konfigurierten EU-Regionen leiten würden.', status: 'enforced',     scope: 'alle KI-Systeme',   owner: 'ai-risk-agent',  icon: <Server className="h-4 w-4 text-amber-300" /> },
+  { id: 'c7', name: 'consent-receipt-anchor',     description: 'Hashed jede Einwilligung und verankert die Quittung in der Evidence-Chain.', status: 'enforced',     scope: 'global',            owner: 'evidence-agent', icon: <ShieldCheck className="h-4 w-4 text-emerald-300" /> },
+  { id: 'c8', name: 'incident-72h-escalation',    description: 'Eskaliert Hochrisiko-Drift automatisch an den DSB-Posteingang innerhalb des DSGVO-72h-Fensters (Art. 33).', status: 'enforced', scope: 'global', owner: 'drift-agent', icon: <Cpu className="h-4 w-4 text-violet-300" /> },
 ];
 
 const STATUS_TONE: Record<Control['status'], { dot: string; text: string; label: string }> = {
-  enforced:       { dot: 'bg-emerald-400', text: 'text-emerald-300', label: 'enforced' },
-  'monitor-only': { dot: 'bg-amber-400',   text: 'text-amber-300',   label: 'monitor' },
-  draft:          { dot: 'bg-titanium-500', text: 'text-titanium-400', label: 'draft' },
-  failing:        { dot: 'bg-red-400',     text: 'text-red-300',     label: 'failing' },
+  enforced:       { dot: 'bg-emerald-400', text: 'text-emerald-300', label: 'aktiv' },
+  'monitor-only': { dot: 'bg-amber-400',   text: 'text-amber-300',   label: 'beobachtend' },
+  draft:          { dot: 'bg-titanium-500', text: 'text-titanium-400', label: 'Entwurf' },
+  failing:        { dot: 'bg-red-400',     text: 'text-red-300',     label: 'fehlerhaft' },
 };
 
 export function GovernancePage() {
   usePageMeta({
-    title: 'Governance — Controls + Policies | RealSync',
-    description: 'AI Governance controls and policies operated continuously by the runtime. Every control mapped to AI systems, agents and evidence.',
+    title: 'Governance — Kontrollen + Policies | RealSync',
+    description:
+      'Governance-Kontrollen und -Policies in der Runtime. Demo-Surface — ' +
+      'jede Kontrolle ist KI-Systemen, Agenten und Evidence zugeordnet.',
     url: 'https://RealSyncDynamicsAI.de/governance',
   });
 
@@ -46,17 +48,27 @@ export function GovernancePage() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
       <main className="pt-14">
+        {/* Demo-Strip. */}
+        <div className="border-b border-titanium-900 bg-obsidian-900/80">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
+            <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
+              Demo-Runtime · simulierte Werte · keine Kundendaten
+            </span>
+          </div>
+        </div>
+
         <header className="border-b border-titanium-900 px-4 sm:px-6 py-16">
           <div className="max-w-7xl mx-auto">
             <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-              governance · controls + policies
+              Governance · Kontrollen + Policies
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-              Policies are operational, not paperwork.
+              Policies sind operativ, kein Papier.
             </h1>
             <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-              Every governance control is a live process owned by an agent. Status, scope and owner are visible in real time —
-              the runtime enforces them on every relevant request.
+              Jede Governance-Kontrolle ist ein Prozess, der einem Agenten gehört. Status,
+              Scope und Verantwortliche sind sichtbar — die Runtime führt sie bei jeder
+              relevanten Anfrage aus.
             </p>
           </div>
         </header>
@@ -67,10 +79,10 @@ export function GovernancePage() {
           <div className="max-w-7xl mx-auto">
             <div className="max-w-3xl mb-8">
               <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-2">
-                catalog · {CONTROLS.length} controls
+                Katalog · {CONTROLS.length} Kontrollen
               </div>
               <h2 className="text-2xl sm:text-3xl font-display font-semibold tracking-tight text-titanium-50">
-                Active control catalog.
+                Aktiver Kontroll-Katalog.
               </h2>
             </div>
 
@@ -86,7 +98,7 @@ export function GovernancePage() {
                         </span>
                         <div className="min-w-0">
                           <div className="font-mono text-sm text-titanium-50 truncate">{c.name}</div>
-                          <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mt-0.5">control</div>
+                          <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mt-0.5">Kontrolle</div>
                         </div>
                       </div>
                       <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider ${t.text} shrink-0`}>
@@ -101,8 +113,8 @@ export function GovernancePage() {
                     </header>
                     <p className="text-sm text-titanium-300 leading-relaxed flex-1">{c.description}</p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-titanium-900/60 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                      <span>scope: <span className="text-titanium-200 normal-case">{c.scope}</span></span>
-                      <span>owner: <span className="text-titanium-200 normal-case">{c.owner}</span></span>
+                      <span>Scope: <span className="text-titanium-200 normal-case">{c.scope}</span></span>
+                      <span>Owner: <span className="text-titanium-200 normal-case">{c.owner}</span></span>
                     </div>
                   </article>
                 );

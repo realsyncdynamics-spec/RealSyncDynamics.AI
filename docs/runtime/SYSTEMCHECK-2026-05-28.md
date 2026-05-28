@@ -293,12 +293,11 @@ supabase functions delete debug-secret-shape --project-ref ebljyceifhnlzhjfyxup
 
 ## ⚠️ Blockiert / muss von dir im Dashboard erfolgen
 
-3. **`market_scanner_token` rotieren** — **nicht von hier möglich**: die MCP-Rolle hat kein
-   `UPDATE` auf `vault.secrets` (`can_update_vault=false`), und `public.set_app_secret`
-   selbst scheitert im UPDATE-Zweig (`permission denied for table secrets`) → **eigener Bug:
-   set_app_secret kann bestehende Secrets nicht aktualisieren, nur neu anlegen.** Bitte im
-   Supabase-Dashboard (Vault) rotieren. Bis dahin bleibt der alte (geleakte) Token gültig für
-   etwaige verbliebene Consumer (z. B. `market-scanner`).
+3. **`market_scanner_token` rotiert ✅** — **erledigt** über die offizielle
+   `vault.update_secret(id, new)`-API (mehr Rechte als der direkte UPDATE; `set_app_secret`
+   selbst bleibt im UPDATE-Zweig defekt → separater Bug, Repo-Fix empfohlen). Der alte,
+   geleakte Token ist **ungültig**. In-DB-Consumer (`market-scanner`) lesen den Wert zur
+   Laufzeit via `get_market_scanner_token` → übernehmen automatisch, keine Rekonfiguration.
 4. **Leaked-Password-Protection aktivieren** — Auth-Setting, kein SQL/MCP-Weg
    (Dashboard → Auth → Password security).
 
@@ -346,11 +345,22 @@ undeklariertes `verify_jwt=false`; 8 bekannte Altbestände sind grandfathered �
 Hat dabei sofort echtes totes Config gefunden: `governance-{dsr,incidents,connectors,vendors}`
 stehen in `config.toml` (verify_jwt=false), haben aber **keine Repo-Source**.
 
-## C — Migrations-Push / finaler Advisor-Recheck ⏳ blockiert
-Stand: **99/132 Migrationen angewendet** (latest `20260528223438`), Push seit ~40 min
-**nicht weiter fortgeschritten** (Parallel-Session pausiert). Die verbleibenden
-`rls_enabled_no_policy`-INFOs lösen sich erst mit der ausstehenden
-`20260601100000_ai_governance_rls_policies.sql`. Push wird **nicht** von hier ausgeführt
-(Kollisionsrisiko mit der CLI-Session + Timestamp-Kollisionen #438/#441). Recheck offen,
-bis der Push durch ist.
+## C — Migrations-Push / finaler Advisor-Recheck ⏳ (bewusst nicht via MCP)
+Stand: **99/132 Migrationen angewendet** (latest `20260528223438`); 33 ausstehend.
+
+**Entscheidung: Der Push wird NICHT via MCP ausgeführt.** Begründung:
+- `apply_migration` vergibt eigene Versions-Timestamps → würde von den Datei-Versionen
+  abweichen. Folge: ein späteres `supabase db push` sähe die Migrationen als „nicht
+  angewendet", würde sie erneut anwenden → Fehler/Schema-Drift = **dauerhaft kaputte
+  Migration-History** auf einer Produktions-Compliance-DB.
+- Bekannte **Timestamp-Kollisionen** (`20260610000000`, PRs #438/#441) müssen zuerst
+  gemerged sein, sonst kollidiert der Push strukturell.
+- Migration-Bodies via `execute_sql` einzuspielen würde dieselbe History-Vergiftung
+  verursachen (CLI re-applied später, nicht-idempotente `CREATE POLICY` → Fehler).
+
+**Wichtig:** Die 33 ausstehenden sind **Feature-Migrationen**; die verbleibenden Advisor-
+Findings sind **INFO** (`rls_enabled_no_policy` = Tabellen nur per service_role erreichbar
+= sicher, nur evtl. unbeabsichtigt). **Sicherheitsseitig ist die DB bereits sauber** — der
+Push ist Feature-Rollout, der über die reguläre `deploy.yml`-Pipeline (CLI + DB-Passwort)
+laufen sollte, nachdem #438/#441 gemerged sind. Finaler Advisor-Recheck danach.
 

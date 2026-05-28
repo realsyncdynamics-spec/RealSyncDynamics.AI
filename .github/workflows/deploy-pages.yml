@@ -5,12 +5,12 @@ name: Deploy to GitHub Pages
 # ─────────────────────────────────────────────────────────────────
 # This workflow ships the production frontend.
 #
-# `realsyncdynamicsai.de` resolves DIRECTLY to GitHub Pages (anycast
-# 185.199.108-111.153) and serves the bytes from there via Fastly CDN.
-# NOTE (re-verified 2026-05-28): the apex no longer flows through a VPS
-# Traefik 301 hop — `curl -sI` returns HTTP 200 from GitHub.com directly,
-# not a redirect. The old "apex → VPS → Traefik 301 → Pages" description
-# is stale; see docs/runtime/SYSTEMCHECK-2026-05-28.md.
+# `realsyncdynamicsai.de` zeigt DIREKT auf GitHub Pages (Anycast
+# 185.199.108-111.153) und liefert die Bytes von dort via Fastly CDN.
+# HINWEIS (nachgeprüft 2026-05-28): der Apex läuft NICHT mehr über einen
+# VPS-Traefik-301-Hop — `curl -sI` liefert HTTP 200 direkt von GitHub.com,
+# keinen Redirect. Die alte Beschreibung "Apex → VPS → Traefik 301 → Pages"
+# ist veraltet; siehe docs/runtime/SYSTEMCHECK-2026-05-28.md.
 #
 # Verify:    curl -sI https://realsyncdynamicsai.de/ | grep server
 #            → server: GitHub.com   (and HTTP/2 200, no 301)

@@ -1,12 +1,13 @@
 # Production Runtime — Source of Truth
 
-> ⚠️ **PARTIALLY SUPERSEDED (2026-05-28).** A live re-verification found that (1) the apex
-> `realsyncdynamicsai.de` now resolves **directly to GitHub Pages** and returns HTTP 200
-> from `GitHub.com` with **no VPS Traefik 301 hop** — the request-flow diagram below is
-> stale; and (2) the Kodee-subdomain VPS `187.77.89.1` is currently **unreachable**, while
-> a second host `194.163.130.123` (referenced in `ollama-traefik/docker-compose.yml`)
-> answers instead — the IP references conflict. See
-> [`SYSTEMCHECK-2026-05-28.md`](./SYSTEMCHECK-2026-05-28.md) for the measured state.
+> ⚠️ **TEILWEISE ÜBERHOLT (2026-05-28).** Eine Live-Nachprüfung ergab: (1) der Apex
+> `realsyncdynamicsai.de` löst jetzt **direkt auf GitHub Pages** auf und liefert HTTP 200
+> von `GitHub.com` **ohne VPS-Traefik-301-Hop** — das Request-Flow-Diagramm unten ist
+> veraltet; und (2) der Kodee-Subdomain-VPS `187.77.89.1` ist aktuell **nicht erreichbar**,
+> während ein zweiter Host `194.163.130.123` (referenziert in
+> `ollama-traefik/docker-compose.yml`) stattdessen antwortet — die IP-Referenzen
+> widersprechen sich. Gemessener Zustand:
+> [`SYSTEMCHECK-2026-05-28.md`](./SYSTEMCHECK-2026-05-28.md).
 
 **Last verified:** 2026-05-16
 **Verification method:** `curl -sI https://realsyncdynamicsai.de/` returned `server: GitHub.com` and `x-served-by: cache-chi-klot8100052-CHI` (Fastly = GitHub Pages CDN).

@@ -1,167 +1,168 @@
-# Infrastructure & Runtime System Check — 2026-05-28
+# Infrastruktur- & Runtime-Systemcheck — 2026-05-28
 
-**Verification method:** black-box probes (DNS via local resolver + Cloudflare DoH, HTTP
-header probes of every public host, inspection of the live production JS bundle) plus
-authenticated reads of Supabase (project status, active API keys, auth logs, security
-advisors) and GitHub (open PRs). **No VPS shell access** was available, so anything about
-container state, volumes, OpenClaw/SQLite, host port conflicts, or the live Traefik router
-table is **inferred from repo config**, not directly observed.
+**Prüfmethode:** Black-Box-Probes (DNS via lokalem Resolver + Cloudflare DoH, HTTP-Header-Probes
+aller öffentlichen Hosts, Inspektion des ausgelieferten Produktions-JS-Bundles) sowie
+authentifizierte Reads von Supabase (Projekt-Status, aktive API-Keys, Auth-Logs,
+Security-Advisors) und GitHub (offene PRs). **Kein VPS-Shell-Zugang** vorhanden — daher sind
+Aussagen zu Container-State, Volumes, OpenClaw/SQLite, Host-Port-Konflikten oder der
+Live-Traefik-Router-Tabelle **aus Repo-Config abgeleitet**, nicht direkt beobachtet.
 
-This document records the *measured* live state on 2026-05-28 ~23:10 UTC. Where it
-contradicts [`production-runtime.md`](./production-runtime.md), the measurements here are
-newer — see "Corrections to prior docs" at the bottom.
+Dieses Dokument hält den *gemessenen* Live-Zustand am 2026-05-28 ~23:10 UTC fest. Wo es
+[`production-runtime.md`](./production-runtime.md) widerspricht, sind die Messungen hier neuer
+— siehe „Korrekturen an früheren Docs" am Ende.
 
 ---
 
-## TL;DR
+## Kurzfassung
 
-| Surface | State | Note |
+| Bereich | Zustand | Anmerkung |
 |---|---|---|
-| Frontend `realsyncdynamicsai.de` | ✅ healthy | Served **directly by GitHub Pages** (`server: GitHub.com`), HTTP 200, no VPS hop |
-| Supabase `ebljyceifhnlzhjfyxup` | ✅ healthy | `ACTIVE_HEALTHY`, eu-central-1, PG17; bundle key matches an active publishable key |
-| **Login (Google OAuth)** | 🟢 recovered | Was failing with `invalid_client`; an Auth config reload ~22:11 fixed it; prod login succeeded 22:14 |
-| **Kodee subdomains** (`ollama/chat/n8n`) | 🔴 down | DNS → `187.77.89.1` (the documented VPS) but host is **unreachable** (timeout :80/:443) |
-| **Second host** `194.163.130.123` | 🟠 stale? | Answers `nginx 404` (:80) / `503` (:443) — referenced by `ollama-traefik` compose; likely a competing/legacy deployment |
+| Frontend `realsyncdynamicsai.de` | ✅ gesund | Wird **direkt von GitHub Pages** ausgeliefert (`server: GitHub.com`), HTTP 200, kein VPS-Hop |
+| Supabase `ebljyceifhnlzhjfyxup` | ✅ gesund | `ACTIVE_HEALTHY`, eu-central-1, PG17; Bundle-Key = aktiver Publishable-Key |
+| **Login (Google OAuth)** | 🟢 erholt | War `invalid_client`; Auth-Config-Reload ~22:11 fixte es; Prod-Login um 22:14 erfolgreich |
+| **Kodee-Subdomains** (`ollama/chat/n8n`) | 🔴 down | DNS → `187.77.89.1` (= dokumentierter VPS), aber Host **nicht erreichbar** (Timeout :80/:443) |
+| **Zweiter Host** `194.163.130.123` | 🟠 stale? | Antwortet `nginx 404` (:80) / `503` (:443) — vom `ollama-traefik`-Compose referenziert; mögliche konkurrierende/Legacy-Deployment |
 
 ---
 
-## 1. Frontend / DNS topology
+## 1. Frontend / DNS-Topologie
 
 ```
 realsyncdynamicsai.de   A → 185.199.108–111.153   (GitHub Pages)
-                        HTTPS → 200, server: GitHub.com, via Fastly   ← NO redirect hop
-www.realsyncdynamicsai.de  CNAME → realsyncdynamics-spec.github.io → 301 → apex
-public/CNAME = realsyncdynamicsai.de   ·   pipeline deploy-pages.yml (VITE_BASE=/)
+                        HTTPS → 200, server: GitHub.com, via Fastly   ← KEIN Redirect-Hop
+www.realsyncdynamicsai.de  CNAME → realsyncdynamics-spec.github.io → 301 → Apex
+public/CNAME = realsyncdynamicsai.de   ·   Pipeline deploy-pages.yml (VITE_BASE=/)
 ```
 
-**Key correction:** a plain `curl -sI https://realsyncdynamicsai.de/` returns **HTTP 200
-from GitHub.com directly** — *not* a `301` from a VPS Traefik redirect. The apex A-record
-now points straight at the GitHub Pages anycast IPs. The "apex → VPS → `kodee-apex`
-Traefik 301 → github.io" flow described in `production-runtime.md` and the
-`deploy-pages.yml` header is **no longer how production works**; the `kodee-apex` router in
-`deploy/ollama-traefik/docker-compose.yml` is effectively dead code.
+**Wichtige Korrektur:** Ein einfaches `curl -sI https://realsyncdynamicsai.de/` liefert
+**HTTP 200 direkt von GitHub.com** — *kein* `301` von einem VPS-Traefik-Redirect. Der
+Apex-A-Record zeigt jetzt direkt auf die GitHub-Pages-Anycast-IPs. Der in
+`production-runtime.md` und im `deploy-pages.yml`-Header beschriebene Fluss „Apex → VPS →
+`kodee-apex` Traefik-301 → github.io" ist **nicht mehr die Realität**; der `kodee-apex`-Router
+in `deploy/ollama-traefik/docker-compose.yml` ist faktisch toter Code.
 
 ## 2. Supabase / Auth
 
-- Project **RealSyncDynamicsLive** (`ebljyceifhnlzhjfyxup`), region **eu-central-1**,
-  status **ACTIVE_HEALTHY**, Postgres 17.6. ✅ (correct DSGVO region)
-- Production bundle bakes in the URL + `sb_publishable_BqKKWFM8…`. Cross-checked against
-  the live key list: that publishable key is **active, not disabled**. The legacy anon JWT
-  is also active. → **No stale/mismatched key in the bundle.**
-- `src/lib/supabase.ts` is a correct singleton (`detectSessionInUrl`, `autoRefreshToken`).
+- Projekt **RealSyncDynamicsLive** (`ebljyceifhnlzhjfyxup`), Region **eu-central-1**, Status
+  **ACTIVE_HEALTHY**, Postgres 17.6. ✅ (korrekte DSGVO-Region)
+- Das Produktions-Bundle enthält URL + `sb_publishable_BqKKWFM8…`. Gegen die Live-Key-Liste
+  geprüft: dieser Publishable-Key ist **aktiv, nicht disabled**. Das Legacy-anon-JWT ist
+  ebenfalls aktiv. → **Kein stale/falscher Key im Bundle.**
+- `src/lib/supabase.ts` ist ein korrekter Singleton (`detectSessionInUrl`, `autoRefreshToken`).
 
-## 3. Login outage — root cause + resolution
+## 3. Login-Ausfall — Ursache + Behebung
 
-The auth logs are unambiguous:
+Die Auth-Logs sind eindeutig:
 
 ```
 20:53–20:57 UTC  /callback (referer http://localhost:3000)
    ERROR  oauth2: "invalid_client" "The provided client secret is invalid."
-   → 500: Unable to exchange external code            ← wrong Google OAuth client secret
-~22:09–22:12     "reloading api with new configuration" (×N)   ← Auth provider reconfigured
+   → 500: Unable to exchange external code            ← falsches Google-OAuth-Client-Secret
+~22:09–22:12     "reloading api with new configuration" (×N)   ← Auth-Provider neu konfiguriert
 22:14:02 UTC     /callback (referer https://realsyncdynamicsai.de)
    auth_event login  realsyncdynamics@gmail.com  provider=google  → 302   ✅
-22:14:06/07      /user → 200, 200                    ← session valid, login succeeded
+22:14:06/07      /user → 200, 200                    ← Session gültig, Login erfolgreich
 ```
 
-- **Root cause:** an invalid **Google OAuth client secret** configured in Supabase Auth.
-- The `invalid_client` failures originated from **`localhost:3000`** (dev debugging).
-- After the ~22:11 config reload, the **production** Google login succeeded at 22:14.
-- **Conclusion:** the acute outage appears resolved ~1 h before this check. **Verify** the
-  fix is stable and that the **dev/localhost Google client** + the **Auth redirect-URL
-  allowlist** were also corrected.
+- **Ursache:** ein ungültiges **Google-OAuth-Client-Secret** in der Supabase-Auth-Config.
+- Die `invalid_client`-Fehler kamen von **`localhost:3000`** (Dev-Debugging).
+- Nach dem ~22:11-Config-Reload lief der **Production**-Google-Login um 22:14 durch.
+- **Fazit:** Der akute Ausfall scheint ~1 h vor diesem Check behoben. **Bitte prüfen**, ob der
+  Fix stabil ist und ob der **Dev/localhost-Google-Client** + die **Auth-Redirect-URL-Allowlist**
+  ebenfalls korrigiert wurden.
 
-**Latent bug:** `src/lib/auth-redirect.ts` hardcodes `APEX_DOMAIN =
-'https://RealSyncDynamicsAI.de'` (mixed case). Magic-link `emailRedirectTo` uses it, and
-Supabase's redirect allowlist can match case-sensitively → magic links may break.
-**PR #463 (draft) fixes this to lowercase.** Related open auth PRs: **#416** (defensive
-OAuth `validation_failed` handling), **#461** (use `getSupabase()` singleton).
+**Latenter Bug:** `src/lib/auth-redirect.ts` hardcodet `APEX_DOMAIN =
+'https://RealSyncDynamicsAI.de'` (Mixed-Case). Magic-Link-`emailRedirectTo` nutzt das, und
+Supabase' Redirect-Allowlist matcht teils case-sensitiv → Magic-Links können brechen.
+**PR #463 (draft) fixt das auf lowercase.** Verwandte offene Auth-PRs: **#416** (defensives
+OAuth-`validation_failed`-Handling), **#461** (`getSupabase()`-Singleton).
 
-## 4. VPS layer — two distinct hosts, both unhealthy for their stated role
+## 4. VPS-Schicht — zwei verschiedene Hosts, beide für ihre Rolle ungesund
 
-The repo references **two different VPS IPs**, and they disagree:
+Das Repo referenziert **zwei verschiedene VPS-IPs**, die sich widersprechen:
 
-| IP | Referenced in | Live probe |
+| IP | Referenziert in | Live-Probe |
 |---|---|---|
-| `187.77.89.1` | `production-runtime.md` (VPS `srv1622293`, rollback ssh) | **Timeout** on :80 and :443 — host unreachable |
-| `194.163.130.123` | `deploy/ollama-traefik/docker-compose.yml` comment (Z. 25) | **Up:** `nginx/1.18.0` → 404 (:80), **503** (:443) |
+| `187.77.89.1` | `production-runtime.md` (VPS `srv1622293`, Rollback-SSH) | **Timeout** auf :80 und :443 — Host nicht erreichbar |
+| `194.163.130.123` | `deploy/ollama-traefik/docker-compose.yml`-Kommentar (Z. 25) | **Up:** `nginx/1.18.0` → 404 (:80), **503** (:443) |
 
-The Kodee subdomains (`ollama/chat/n8n`) resolve (authoritatively, via Cloudflare DoH) to
-**`187.77.89.1`** — i.e. DNS matches the *documented* VPS, but that host does not answer.
-Meanwhile `194.163.130.123` answers but with a bare `nginx 404` / Traefik-style `503`
-(no healthy route/backend). This is the classic "competing/stale deployment" situation:
-**the intended kodee-stack host is down, and a second host is serving leftovers.**
+Die Kodee-Subdomains (`ollama/chat/n8n`) lösen (autoritativ via Cloudflare DoH) auf
+**`187.77.89.1`** auf — DNS passt also zum *dokumentierten* VPS, aber dieser Host antwortet
+nicht. `194.163.130.123` antwortet, jedoch mit nacktem `nginx 404` / Traefik-typischem `503`
+(keine gesunde Route/Backend). Das ist die klassische „konkurrierende/stale Deployment"-Lage:
+**der vorgesehene kodee-stack-Host ist down, und ein zweiter Host liefert Überreste.**
 
-> Cannot be resolved from this environment (no SSH). See the runbook below.
+> Aus dieser Umgebung nicht lösbar (kein SSH). Siehe Runbook unten.
 
-## 5. Supabase security advisors
+## 5. Supabase Security-Advisors
 
-- 🔴 **ERROR** — `security_definer_view`: `public.ai_evidence_retention_status` runs with
-  creator rights (bypasses RLS). → switch to `SECURITY INVOKER`.
-- 🟡 **WARN** — leaked-password protection disabled; `pg_trgm` / `vector` / `pg_net` in
-  `public` schema; many `SECURITY DEFINER` functions executable by `anon`/`authenticated`
-  via REST (`is_tenant_member`, `tenant_entitlements`, `admin_customers_list`,
+- 🔴 **ERROR** — `security_definer_view`: `public.ai_evidence_retention_status` läuft mit
+  Creator-Rechten (umgeht RLS). → auf `SECURITY INVOKER` umstellen.
+- 🟡 **WARN** — Leaked-Password-Schutz deaktiviert; `pg_trgm` / `vector` / `pg_net` im
+  `public`-Schema; viele `SECURITY DEFINER`-Funktionen via REST durch `anon`/`authenticated`
+  aufrufbar (`is_tenant_member`, `tenant_entitlements`, `admin_customers_list`,
   `admin_system_health`, `affiliate_validate`, …).
-- ℹ️ **INFO** — ~12 tables have RLS enabled but **no policy** (`ai_systems`, `ai_policies`,
-  `enterprise_*`, …) → effectively service-role-only. Likely intentional; **confirm**.
+- ℹ️ **INFO** — ~12 Tabellen mit RLS aktiviert, aber **ohne Policy** (`ai_systems`,
+  `ai_policies`, `enterprise_*`, …) → faktisch nur Service-Role. Wahrscheinlich gewollt;
+  **bitte bestätigen**.
 
-*(These are reported, not changed — schema changes need explicit sign-off.)*
+*(Diese Punkte sind dokumentiert, nicht geändert — Schema-Änderungen brauchen explizites Sign-off.)*
 
-## 6. GitHub state
+## 6. GitHub-Zustand
 
-- 20 open PRs. Three are auth-related (#463, #416, #461 — see §3).
-- Migration timestamp collisions being chased (#438 ready, #441 draft for
-  `20260610000000`). A parallel session is pushing ~35 migrations → **coordinate to avoid
-  further collisions / drift.**
-- `#402` (openclaw Hostinger one-shot setup) and `#335` (infrastructure restructure) touch
-  exactly the VPS/DNS area in §4.
+- 20 offene PRs. Drei sind auth-bezogen (#463, #416, #461 — siehe §3).
+- Migrations-Timestamp-Kollisionen werden behoben (#438 ready, #441 draft für
+  `20260610000000`). Eine Parallel-Session pusht ~35 Migrationen → **koordinieren, um weitere
+  Kollisionen / Drift zu vermeiden.**
+- `#402` (openclaw Hostinger One-Shot-Setup) und `#335` (infrastructure restructure) betreffen
+  genau den VPS/DNS-Bereich aus §4.
 
 ---
 
-## VPS investigation runbook (operator, needs SSH)
+## VPS-Investigations-Runbook (Operator, braucht SSH)
 
-The two items in §4 are the only **live-critical** problems and both require shell access.
+Die zwei Punkte aus §4 sind die einzigen **live-kritischen** Probleme und brauchen beide Shell-Zugang.
 
 ```bash
-# 1) Is the intended kodee-stack host alive at all?
+# 1) Lebt der vorgesehene kodee-stack-Host überhaupt?
 ping -c3 187.77.89.1
-ssh deploy@187.77.89.1            # if this hangs, the host/firewall is the problem
+ssh deploy@187.77.89.1            # wenn das hängt, ist der Host/Firewall das Problem
 
-# On 187.77.89.1 (the documented VPS):
-docker ps -a                      # are kodee-ollama / kodee-chat / kodee-n8n running?
-docker compose -f /var/www/kodee-stack/docker-compose.yml ps   # adjust path
-ss -tlnp | grep -E ':(80|443|11434|5678|8080)'   # who listens?
-docker logs --tail=100 traefik    # why no route / cert?
+# Auf 187.77.89.1 (dem dokumentierten VPS):
+docker ps -a                      # laufen kodee-ollama / kodee-chat / kodee-n8n?
+docker compose -f /var/www/kodee-stack/docker-compose.yml ps   # Pfad anpassen
+ss -tlnp | grep -E ':(80|443|11434|5678|8080)'   # wer lauscht?
+docker logs --tail=100 traefik    # warum keine Route / kein Cert?
 
-# 2) What is 194.163.130.123 and why does it answer 503?
+# 2) Was ist 194.163.130.123 und warum antwortet es 503?
 ssh root@194.163.130.123
 docker ps -a ; ss -tlnp | grep -E ':(80|443)'
-nginx -t ; systemctl status nginx # is host-nginx the 404/:80?
-# 503 on :443 = a reverse proxy with no healthy upstream. Identify it and decide:
-#   keep (and point subdomains here) OR decommission (stale parallel deployment).
+nginx -t ; systemctl status nginx # ist Host-nginx das 404/:80?
+# 503 auf :443 = Reverse-Proxy ohne gesundes Upstream. Identifizieren und entscheiden:
+#   behalten (und Subdomains hierher zeigen) ODER abschalten (stale Parallel-Deployment).
 
-# 3) Decide the canonical VPS IP and make repo + DNS agree:
-#    - production-runtime.md says 187.77.89.1
-#    - ollama-traefik/docker-compose.yml comment says 194.163.130.123
-#    Pick one, update the other, then verify:
+# 3) Kanonische VPS-IP festlegen und Repo + DNS in Einklang bringen:
+#    - production-runtime.md sagt 187.77.89.1
+#    - ollama-traefik/docker-compose.yml-Kommentar sagt 194.163.130.123
+#    Eine wählen, die andere aktualisieren, dann verifizieren:
 curl -sI --resolve ollama.realsyncdynamicsai.de:443:<IP> https://ollama.realsyncdynamicsai.de/
 ```
 
-**Do NOT** run `docker compose up`, `restart`, `prune`, `rm`, or rotate secrets until the
-two-host question is answered — you could promote the stale deployment by accident.
+**KEINE** `docker compose up`, `restart`, `prune`, `rm` oder Secret-Rotation ausführen, bevor
+die Zwei-Host-Frage geklärt ist — sonst beförderst du versehentlich das stale Deployment.
 
 ---
 
-## Corrections to prior docs
+## Korrekturen an früheren Docs
 
-`production-runtime.md` (last verified 2026-05-16) is partially superseded by the live
-measurements here:
+`production-runtime.md` (zuletzt geprüft 2026-05-16) wird durch die Live-Messungen hier
+teilweise überholt:
 
-1. The apex **no longer flows through a VPS Traefik 301** — it resolves directly to GitHub
-   Pages and returns 200 from `GitHub.com`. The "How a request flows" diagram (VPS →
-   `kodee-apex` → 301 → Pages) is stale.
-2. The Kodee-subdomain host (`187.77.89.1`) is currently **unreachable**, and a second host
-   (`194.163.130.123`) answers in its place — the IP references across the repo conflict.
+1. Der Apex **fließt nicht mehr durch einen VPS-Traefik-301** — er löst direkt auf GitHub Pages
+   auf und liefert 200 von `GitHub.com`. Das „How a request flows"-Diagramm (VPS →
+   `kodee-apex` → 301 → Pages) ist veraltet.
+2. Der Kodee-Subdomain-Host (`187.77.89.1`) ist aktuell **nicht erreichbar**, und ein zweiter
+   Host (`194.163.130.123`) antwortet stattdessen — die IP-Referenzen im Repo widersprechen sich.
 
-A banner pointing here has been added to `production-runtime.md` and the `deploy-pages.yml`
-header. The routing config itself was left untouched (behavioral change → needs sign-off).
+Ein Banner mit Verweis hierher wurde in `production-runtime.md` und im `deploy-pages.yml`-Header
+ergänzt. Die Routing-Config selbst wurde unangetastet gelassen (Verhaltensänderung → braucht Sign-off).

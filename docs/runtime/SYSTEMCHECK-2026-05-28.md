@@ -323,3 +323,34 @@ supabase functions delete debug-secret-shape --project-ref ebljyceifhnlzhjfyxup
 abgedeckt durch (a) den laufenden Migrations-Push, (b) zwei Dashboard-Toggles oder
 (c) bewusst zurückgestellte, risikobehaftete Optimierungen.
 
+---
+
+# Teil 4 — Härtung A/B/C (2026-05-28)
+
+## A — Interne RPCs gegen REST gesperrt ✅
+`REVOKE EXECUTE` (public/anon/authenticated), `service_role` behält Zugriff — für
+`resolve_ai_residency` (nur Edge), `pii_redaction_log_block_modification` (Trigger),
+`prune_business_metric_snapshots` (Cron). Live via `execute_sql` + durabel als Migration
+`20260620000000_lockdown_internal_functions.sql` (Timestamp nach allen ausstehenden →
+keine Kollision). Verifiziert: `anon=false, authenticated=false, service_role=true`.
+
+**Korrektur eines vorherigen Fehlalarms:** `admin_customers_list` und alle `analytics_*`
+**self-gaten bereits** via `WHERE EXISTS(… profiles.is_super_admin = true)` — **kein
+PII-Leak**, kein Fix nötig (der frühere „has_internal_gate=false"-Befund war ein
+Regex-Artefakt, weil `is_super_admin` nicht im Suchmuster war).
+
+## B — Edge-Function-Drift-Guard ✅
+`scripts/check-edge-function-drift.mjs` (+ Allowlist + Workflow `edge-function-drift.yml`,
+`npm run check:edge-functions`): blockt **neue** Orphans (live deployt, nicht im Repo) und
+undeklariertes `verify_jwt=false`; 8 bekannte Altbestände sind grandfathered → startet grün.
+Hat dabei sofort echtes totes Config gefunden: `governance-{dsr,incidents,connectors,vendors}`
+stehen in `config.toml` (verify_jwt=false), haben aber **keine Repo-Source**.
+
+## C — Migrations-Push / finaler Advisor-Recheck ⏳ blockiert
+Stand: **99/132 Migrationen angewendet** (latest `20260528223438`), Push seit ~40 min
+**nicht weiter fortgeschritten** (Parallel-Session pausiert). Die verbleibenden
+`rls_enabled_no_policy`-INFOs lösen sich erst mit der ausstehenden
+`20260601100000_ai_governance_rls_policies.sql`. Push wird **nicht** von hier ausgeführt
+(Kollisionsrisiko mit der CLI-Session + Timestamp-Kollisionen #438/#441). Recheck offen,
+bis der Push durch ist.
+

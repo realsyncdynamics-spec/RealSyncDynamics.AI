@@ -274,3 +274,52 @@ supabase functions delete debug-secret-shape --project-ref ebljyceifhnlzhjfyxup
 - CI-Guard in `deploy.yml`: Prod-Function-Liste gegen `supabase/functions/*` diffen und bei
   Orphans/`verify_jwt=false`-Drift fehlschlagen.
 
+---
+
+# Teil 3 — Ausgeführte Fixes (2026-05-28, live)
+
+## ✅ Erledigt (verifiziert)
+
+1. **P0-Token-Leak geschlossen** — `vault-key-setter`, `vault-set-secret`, `debug-secret-shape`
+   per MCP mit 410-Gone-Stub + `verify_jwt=true` überschrieben. Re-Probe des öffentlichen
+   Endpoints: **HTTP 401** (vorher 200 + Klartext-Token). Token wird nicht mehr ausgegeben.
+2. **Cross-Tenant-Leak der Evidence-View geschlossen** — `ALTER VIEW
+   public.ai_evidence_retention_status SET (security_invoker = true)` (idempotent, via
+   `execute_sql`, **ohne** Migration-History/laufenden Push zu stören). Verifiziert:
+   `security_invoker=true`. **Der einzige Security-`ERROR` des Advisors ist damit weg.**
+   - Befund: Der Repo-Fix `20260524100000_fix_evidence_retention_view_invoker.sql` war in
+     der DB **nicht wirksam** (vermutlich durch ein späteres `create or replace view`
+     überholt). Keine der 27 ausstehenden Migrationen erstellt die View neu → Fix ist durabel.
+
+## ⚠️ Blockiert / muss von dir im Dashboard erfolgen
+
+3. **`market_scanner_token` rotieren** — **nicht von hier möglich**: die MCP-Rolle hat kein
+   `UPDATE` auf `vault.secrets` (`can_update_vault=false`), und `public.set_app_secret`
+   selbst scheitert im UPDATE-Zweig (`permission denied for table secrets`) → **eigener Bug:
+   set_app_secret kann bestehende Secrets nicht aktualisieren, nur neu anlegen.** Bitte im
+   Supabase-Dashboard (Vault) rotieren. Bis dahin bleibt der alte (geleakte) Token gültig für
+   etwaige verbliebene Consumer (z. B. `market-scanner`).
+4. **Leaked-Password-Protection aktivieren** — Auth-Setting, kein SQL/MCP-Weg
+   (Dashboard → Auth → Password security).
+
+## 🟦 Migrations-Drift (Kontext, nicht von mir angefasst)
+
+- **132 Migrationen im Repo, 99 angewendet → 27–33 ausstehend.** Eine **parallele
+  `supabase db push`-Session läuft aktiv** (zuletzt angewendet `20260528223438`). Deshalb
+  wurden **keine eigenen Migrationen/DDL** erzeugt, die mit dem Push kollidieren würden.
+- Die 12× `rls_enabled_no_policy` (INFO) werden voraussichtlich durch die ausstehende
+  `20260601100000_ai_governance_rls_policies.sql` geschlossen, sobald der Push sie erreicht.
+
+## ⏸️ Bewusst NICHT autonom gefixt (Risiko auf Compliance-DB)
+
+| Advisor | Anzahl | Warum nicht auto-fixen |
+|---|---|---|
+| `function_search_path_mutable` (`tg_evidence_event_chain`) | 1 WARN | **Integritätskritisch** (Evidence-Hash-Kette, nutzt `digest`/unqualifizierte Namen) — falscher search_path bricht den Prüfpfad. |
+| `*_security_definer_function_executable` | ~20 WARN | `EXECUTE`-Revoke auf RLS-Helper (`is_tenant_member`, `tenant_entitlements`) **bricht RLS-Auswertung** für `authenticated`. Pro Funktion zu entscheiden. |
+| `extension_in_public` (pg_trgm/vector/pg_net) | 3 WARN | Schema-Verschiebung bricht unqualifizierte Referenzen. |
+| `auth_rls_initplan` / `unused_index` / `unindexed_fk` | 90/208/63 (Perf) | Reine Performance bei aktuell ~0 Datenvolumen; Massen-Index-Drop / Bulk-RLS-Rewrite auf Multi-Tenant-DB = hohes Risiko/kein Nutzen jetzt. Gezielt nach Daten-Wachstum. |
+
+**Security-Endstand:** keine `ERROR`-Findings mehr; verbleibende Punkte sind WARN/INFO,
+abgedeckt durch (a) den laufenden Migrations-Push, (b) zwei Dashboard-Toggles oder
+(c) bewusst zurückgestellte, risikobehaftete Optimierungen.
+

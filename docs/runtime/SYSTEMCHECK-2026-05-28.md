@@ -166,3 +166,111 @@ teilweise überholt:
 
 Ein Banner mit Verweis hierher wurde in `production-runtime.md` und im `deploy-pages.yml`-Header
 ergänzt. Die Routing-Config selbst wurde unangetastet gelassen (Verhaltensänderung → braucht Sign-off).
+
+---
+
+# Teil 2 — Erweiterter A-bis-Z-Check (2026-05-28, Nachtrag)
+
+## 🔴 P0-INCIDENT — öffentlich geleakter Master-Token
+
+**Bestätigt live (HTTP 200, ohne Auth):**
+`https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/vault-key-setter` liefert eine
+HTML-Seite, in der der **`market_scanner_token` im Klartext hartkodiert** ist (Token-Wert
+hier bewusst **nicht** eingetragen, um ihn nicht erneut zu leaken — er ist am Endpoint
+einsehbar).
+
+**Angriffskette:**
+1. `vault-key-setter` (`verify_jwt=false`, keinerlei Auth) → gibt den Master-Token an jeden aus.
+2. Mit dem Token → `vault-set-secret` (`verify_jwt=false`): erlaubt **Überschreiben** der
+   Vault-Secrets `anthropic_api_key`, `openai_api_key`, `gemini_api_key`, `ollama_url`,
+   `ollama_auth_token`.
+3. Mit dem Token → `debug-secret-shape` (`verify_jwt=false`): leakt **Prefix/Suffix/Länge**
+   des `ANTHROPIC_API_KEY`.
+
+Alle drei Functions sind **nicht im Repo** (manuell aus `/tmp/` deployt) → unsichtbar in
+Code-Reviews. **Remediation-Plan unten.**
+
+## A. Codebase-Gesundheit
+
+| Check | Ergebnis |
+|---|---|
+| `tsc --noEmit` | ✅ 0 Fehler |
+| `vitest run` | ✅ 1256 passed · 0 failed · 93 skipped · 96 todo (124 Files) |
+| `vite build` | ✅ 13,3 s |
+| CI PR #466 | ✅ build / Lint-infra / Migration-validation alle grün |
+
+🟡 Bundle: `vendor-BnZMt3LQ.js` 2,10 MB (658 KB gzip) + `index` 1,34 MB (319 KB gzip) →
+`manualChunks`-Splitting empfohlen.
+
+## B. Supabase-Datenschicht
+
+- **95+ Tabellen im `public`-Schema — alle `rls_enabled: true`** ✓. Weitere Schemas:
+  `creatorseal`, `agentos`.
+- Produktiv befüllt: `page_views` (16.636), `sales_leads` (51), `gdpr_audits` (47),
+  `product_entitlements` (146), Rest überwiegend leer (Schema-Vorbau).
+
+## C. Edge Functions — Repo↔Prod-Drift
+
+- **72 Function-Ordner im Repo vs. 80 aktiv in Prod → 8 Orphans** (nur in Prod, aus `/tmp/`):
+  `vault-set-secret`, `vault-key-setter`, `debug-secret-shape`, `stripe-webhook-fixer`,
+  `governance-dsr`, `governance-incidents`, `governance-connectors`, `governance-vendors`.
+
+## D. Secret-Hygiene (Repo)
+
+✅ Keine committeten Klartext-Secrets im Repo (Scan auf live/test-Keys, JWTs, Private Keys).
+⚠️ Aber: geleakter Token im **deployten** (nicht-committeten) `vault-key-setter` — siehe Incident.
+
+## E. Supabase Performance-Advisors
+
+| Anzahl | Level | Typ |
+|---|---|---|
+| 208 | INFO | `unused_index` |
+| 90 | WARN | `auth_rls_initplan` (`auth.<fn>()` pro Zeile statt `(select …)`) |
+| 73 | WARN | `multiple_permissive_policies` (inkl. ä/ae-Umlaut-Duplikate aus Migrationen) |
+| 63 | INFO | `unindexed_foreign_keys` |
+| 1 | WARN | `duplicate_index` (`creatorseal.plans`) |
+
+## F. Backend-Flotte (services/worker/connectors/apps/extensions)
+
+Deploy-ready, aber **un-getestet und nicht in CI** — Live-Status je Service unbekannt:
+
+- `services/{openclaw-agent, playwright-scanner, realsync-runtime-core, realsync-evidence-runtime}`
+  — Hono/Fastify, Docker vorhanden, **0 Tests**, viel Stub, hartkodierte Inter-Service-URLs,
+  Secrets via Env statt Vault.
+- `worker/audit-worker` — SCAFFOLD, **nicht aktiviert** (2 TODOs).
+- `apps/agent-runtime` — Gateway-only, kein echtes Tool-Calling, Audit nur nach stdout.
+- `connectors/` — OpenAI/Anthropic-Telemetrie-Wrapper (Lib); n8n/make nur Platzhalter.
+- `tools/realsync-cli` — Python, **einziges Projekt mit Tests (37)**; CI nur nach Subtree-Split.
+- `extension*` (3×) — Chrome MV3; kein HMAC-Signing, Token in `storage.local`, kein Dedup.
+
+---
+
+## Remediation-Plan — unsichere Edge Functions (P0)
+
+> Ausführung braucht Operator-Go (Löschen + Secret-Rotation = destruktiv). Befehle nutzen die
+> Supabase-CLI gegen `--project-ref ebljyceifhnlzhjfyxup`.
+
+**Sofort (Incident eindämmen):**
+```bash
+# 1) Den leakenden Endpoint entfernen — HÖCHSTE Priorität
+supabase functions delete vault-key-setter --project-ref ebljyceifhnlzhjfyxup
+
+# 2) Master-Token rotieren (alter Token ist kompromittiert: öffentlich + in Logs)
+#    Neuen Token generieren und in Vault setzen (Quelle von get_market_scanner_token):
+#    z.B. via SQL: select set_app_secret('market_scanner_token', '<neuer-random>');
+
+# 3) Die zwei verbleibenden Token-Functions löschen (nicht im Repo, Einmal-Zweck)
+supabase functions delete vault-set-secret  --project-ref ebljyceifhnlzhjfyxup
+supabase functions delete debug-secret-shape --project-ref ebljyceifhnlzhjfyxup
+
+# 4) Vorsichtshalber rotieren: ANTHROPIC_API_KEY (Shape war via debug-secret-shape abgreifbar),
+#    sowie OPENAI/GEMINI (waren via vault-set-secret überschreibbar).
+```
+
+**Danach (Drift schließen):**
+- `stripe-webhook-fixer` löschen (Einmal-Tool).
+- `governance-{dsr,incidents,connectors,vendors}` aus Prod-Source ins Repo zurückführen
+  (`supabase functions download …`) oder sauber aus dem Repo neu deployen.
+- CI-Guard in `deploy.yml`: Prod-Function-Liste gegen `supabase/functions/*` diffen und bei
+  Orphans/`verify_jwt=false`-Drift fehlschlagen.
+

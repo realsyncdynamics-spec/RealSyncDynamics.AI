@@ -1,0 +1,43 @@
+name: Backend Services CI
+
+# Smoke-/Compile-CI fuer die Backend-Service-Flotte (services/*, worker, apps/*).
+# Diese Projekte waren bisher in KEINER CI (Systemcheck 2026-05-28, High-Finding):
+# 0 Tests, teils Stubs, Live-Status unklar. Dieser Workflow faengt zumindest
+# Compile-/Dependency-Regressionen ab — ohne Laufzeit/DB. Separat von der
+# Haupt-CI, damit er das Frontend-Shipping nicht blockiert.
+# Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md
+
+on:
+  push:
+    branches: [main]
+    paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+  pull_request:
+    paths: ['services/**', 'worker/**', 'apps/**', '.github/workflows/backend-services-ci.yml']
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { dir: services/openclaw-agent,          check: 'npm run typecheck' }
+          - { dir: services/playwright-scanner,       check: 'npm run typecheck' }
+          - { dir: apps/agent-runtime,                check: 'npm run typecheck' }
+          - { dir: worker,                            check: 'npm run build' }
+          # Diese zwei haben (noch) kein TS-Setup → reiner Dependency-Install-Smoke:
+          - { dir: services/realsync-runtime-core,    check: 'node --version' }
+          - { dir: services/realsync-evidence-runtime, check: 'node --version' }
+    name: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: ${{ matrix.dir }}
+        run: npm ci --no-audit --no-fund 2>/dev/null || npm install --no-audit --no-fund
+      - name: Check (${{ matrix.check }})
+        working-directory: ${{ matrix.dir }}
+        run: ${{ matrix.check }}

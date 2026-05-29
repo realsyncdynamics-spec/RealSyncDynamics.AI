@@ -1,23 +1,32 @@
-# RealSync Agent OS
+# Architektur — RealSyncDynamics.AI
 
-Dies ist das Basis-Repository für das RealSync Agent OS. 
+> **Hinweis:** Diese Datei war ein veralteter Stand („RealSync Agent OS" /
+> Creator / C2PA) und widersprach der aktuellen Positionierung. Sie wurde auf
+> den heutigen Stand gebracht und verweist auf die maßgeblichen Dokumente.
 
-## 🗺 Ordner-Architektur (Feature-Sliced Design)
+RealSyncDynamics.AI ist eine **EU-souveräne Compliance-Infrastruktur**:
+automatisierte DSGVO- und EU-AI-Act-Überwachung, kontinuierliches Monitoring,
+typisierte Remediation und prüfsichere Evidence — Multi-Tenant.
 
-Damit das Projekt auch mit hunderten Komponenten und Ansichten skalierbar und maintainable bleibt, nutzen wir ein Domain-Driven / Feature-Sliced Design.
+## Maßgebliche Dokumente
 
-### Struktur
-- \`/extension/\`: Der vollständige Code für die Chrome Extension (Manifest V3, Service Workers, React Sidebar).
-- \`/src/core/\`: Framework-agnostische Geschäftslogik, API-Gateways (\`ai-gateway\`), Entitlements und Auth-Logik.
-- \`/src/features/\`: Die Domänen der Anwendung. Alles, was zu einem Feature gehört (z.B. UI, Modale, lokale State-Hooks) liegt hier extrem nah beieinander, z.B.:
-  - \`/features/assets/\` (C2PA Siegel, Uploads)
-  - \`/features/workflows/\` (Dealflow Automation)
-  - \`/features/workspace/\` (Chat, Prompts)
-  - \`/features/billing/\`, \`/features/settings/\`
-- \`/src/components/\`: Allgemeine / Globale UI Komponenten (Landingpage-Sections, Buttons).
-- \`/src/pages/\`: Reines Routing und Struktur, welche die Features auf den Bildschirmen zu einer Ansicht orchestriert (z.B. \`CreatorDashboard.tsx\`).
+| Thema | Quelle |
+|---|---|
+| **Positionierung** (USP, ICP, GTM) | [`docs/POSITIONING_STRATEGY.md`](docs/POSITIONING_STRATEGY.md) |
+| **Scope-Disziplin** (Kern vs. außerhalb) | [`docs/PRODUCT_FOCUS.md`](docs/PRODUCT_FOCUS.md) |
+| **Zielarchitektur** (Domänen, Tech-Stack, ADRs) | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| **System- & Datenfluss** (Edge Functions, Residency) | [`README.md`](README.md) |
+| **Roadmap & Preisstruktur** | [`ROADMAP.md`](ROADMAP.md) |
 
-## 🚀 Status
-- **V1.0 (MVP) - Feature Complete**: Copilot (Web & App), Multi-Model Gateway, Entitlements-Basis, Extension ↔ Gateway Integration, UI/UX Mockups für alle SaaS-Module.
+## Kurzüberblick
 
-(Nächste Phasen: Siehe GitHub Issues Masterplan)
+- **Frontend:** Vite + React 19 (SPA), hinter Traefik auf Hostinger-DE-VPS.
+- **Backend:** Supabase (Auth, Postgres mit RLS, Edge Functions, Storage), EU-Region.
+- **AI-Inferenz:** Cloud-Pfad (Anthropic / Google / OpenAI) **oder** EU-lokaler
+  Pfad (Ollama `gemma3:4b`), per-User/Tenant wählbar (Residency-Routing).
+- **Kern-Runtime:** Event-Bus → Evidence-Chain (SHA-256) → Remediation-Layer
+  (`src/core/runtime/`). Jeder externe Call wird in `ai_tool_runs` /
+  `workflow_runs` geloggt.
+
+Detaillierte Domänen-Schnitte und die Feature-Sliced-Ordnerstruktur sind in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) beschrieben.

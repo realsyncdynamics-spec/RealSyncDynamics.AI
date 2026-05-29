@@ -1,7 +1,10 @@
 # RealSyncDynamics.AI
 
-EU-souveräne SaaS-Plattform für Creator und Agenturen.
-Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
+EU-souveräne Compliance-Infrastruktur für Unternehmen und Agenturen.
+Automatisierte DSGVO- & EU-AI-Act-Überwachung, Remediation und prüfsichere
+Evidence — Multi-Tenant, opt-in EU-lokale AI-Inferenz.
+
+Kanonische Positionierung (USP, ICP, GTM): `docs/POSITIONING_STRATEGY.md`.
 
 ## Stack
 - Frontend: Vite + React 19, TypeScript, Tailwind 4

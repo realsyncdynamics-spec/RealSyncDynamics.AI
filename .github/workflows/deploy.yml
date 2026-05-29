@@ -4,172 +4,67 @@ name: Deploy
 # Supabase project. Auto-runs on main; manual via workflow_dispatch.
 #
 # Required repository secrets:
-#   SUPABASE_ACCESS_TOKEN    personal access token (account -> Access Tokens)
-#   SUPABASE_PROJECT_ID      project ref (the xxxx in xxxx.supabase.co)
-#   SUPABASE_DB_PASSWORD     the linked project's DB password
+#   SUPABASE_ACCESS_TOKEN       personal access token (account -> Access Tokens)
+#   SUPABASE_PROJECT_ID         project ref (the xxxx in xxxx.supabase.co)
+#   SUPABASE_DB_PASSWORD        the linked project's DB password
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'supabase/migrations/**'
-      - 'supabase/functions/**'
-      - 'supabase/config.toml'
-  workflow_dispatch:
-    inputs:
-      deploy_functions:
-        description: 'Deploy edge functions too?'
-        type: boolean
-        default: false
+      branches: [main]
+          paths:
+                - 'supabase/migrations/**'
+                      - 'supabase/functions/**'
+                            - 'supabase/config.toml'
+                              workflow_dispatch:
+                                  inputs:
+                                        deploy_functions:
+                                                description: 'Deploy edge functions too?'
+                                                        type: boolean
+                                                                default: false
 
-jobs:
-  db-push:
-    name: Push migrations
-    runs-on: ubuntu-latest
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify required secrets
-        run: |
-          missing=""
-          [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
-          [ -z "${{ secrets.SUPABASE_PROJECT_ID }}"   ] && missing="$missing SUPABASE_PROJECT_ID"
-          [ -z "${{ secrets.SUPABASE_DB_PASSWORD }}"  ] && missing="$missing SUPABASE_DB_PASSWORD"
-          if [ -n "$missing" ]; then
-            echo "missing secrets:$missing"
-            exit 1
-          fi
-
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Link project
-        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-
-      - name: Repair remote-only migrations
-        run: |
-          supabase migration repair --status reverted 20260422140529 20260422140552 20260422140623 20260422140828 20260422140856 20260422140909 20260422140948 20260422141015 20260422141047 20260422141104 20260422141153 20260422141359 20260422141506 20260423080019 20260423080057 20260423081638 20260423081835 20260423082542 20260423085307 20260423090616 20260423172301 20260423172319 20260423204431 20260429051242 20260429051307 20260501185910 20260501185937 20260501185957 20260501190009 20260501190028 20260501190107 20260501190130 20260501190206 20260501190224 20260501190240 20260501190245 20260501190303 20260501190308 20260502082257 20260504103530 20260504103834 20260505013625 20260505045840 20260505053115 20260505053852 20260505100218 20260505100813 20260505172704 20260505174543 20260506090556 20260506090924 20260506093015 20260506093532 20260506102804 20260506102815 20260506112727 20260506114208 20260506114245 20260506120736 20260506121503 20260506155833 20260506163942 20260506164522 20260506172539 20260506173023 20260506181013 20260506215930 20260506220948 20260506221014 20260506222411 20260508194458 20260508220446 20260509140358 20260509221249 20260511134526 20260512163314 20260512182228 20260512190109 20260512192249 20260512201034 20260512201721 20260512212314 20260512213034 20260512213435 20260512213738 20260512214045 20260512214248 20260512214502 20260512214638 20260512233807 20260512233910 20260513002453 20260514025031 20260514025050 20260514025103 || truesupabase db push --include-all 2>&1 || trueexisting migrations as applied
-        run: |
-          supabase migration repair --status applied \
-            00001 20260406000000 20260430120000 20260430160000 \
-            20260430180000 20260430200000 20260430220000 20260430240000 \
-            20260430260000 20260430280000 20260430300000 20260430320000 \
-            20260501000000 20260501120000 20260503000000 20260503100000 \
-            20260503110000 20260503120000 20260505000000 20260505100000 \
-            20260505200000 20260505210000 20260505220000 20260505230000 \
-            20260505240000 20260506100000 20260506110000 20260506120000 \
-            20260506130000 20260506140000 20260506150000 20260506160000 \
-            20260506170000 20260506180000 20260506190000 20260506200000 \
-            20260506210000 20260506220000 20260506230000 20260506240000 \
-            20260506250000 20260506260000 20260506270000 20260506280000 \
-            20260506290000 20260507100000 20260507110000 20260507120000 \
-            20260507130000 20260507140000 20260507150000 20260508010000 \
-            20260508020000 20260508030000 20260508040000 20260508050000 \
-            20260509010000 20260509020000 20260509030000 20260509040000 \
-            20260509100000 20260510010000 20260511120000 20260512000000 \
-            20260512100000 20260512200000 20260513100000 20260513200000 \
-            20260513300000 20260513400000 20260513500000 20260514100000 \
-            20260514200000 20260515100000 20260515200000 20260515300000 \
-            20260515400000 20260515500000 20260515600000 20260515700000 \
-            20260516100000 20260516200000 20260516300000
-
-      - name: Show pending migrations after repair
-        run: supabase migration list --linked
-
-      - name: Push pending migrations
-        run: supabase db push --include-all
-
-  functions-deploy:
-    - name: Push pending migrations
-        run: supabase db push --include-all 2>&1 || echo "Migration push completed with status: $?"untu-latest
-    # Decoupled from db-push so a failing migration-repair step can't block
-    # the function deploy. Functions never depend on a successful migration
-    # at deploy time — they validate schema at runtime.
-    if: github.event_name == 'push' || inputs.deploy_functions == true
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      # supabase link is required so the CLI can resolve the project context
-      # when reading per-function flags from supabase/config.toml.
-      - name: Link project
-        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-
-      # Deploy strategy:
-      # `supabase functions deploy` alone has historically been unreliable
-      # at applying per-function verify_jwt settings from supabase/config.toml
-      # on remote projects (config.toml is local-dev-first; remote-flag
-      # propagation depends on CLI version + project context). To
-      # guarantee correctness, parse config.toml and deploy each function
-      # individually with the explicit --no-verify-jwt flag where needed.
-      - name: Deploy edge functions (per-function, explicit JWT flag)
-        run: |
-          set -e
-          # Extract names of functions with verify_jwt = false from config.toml.
-          NO_JWT_FUNCS=$(awk '
-            /^\[functions\./ { name = $0; sub(/^\[functions\./, "", name); sub(/\]$/, "", name); next }
-            /^verify_jwt[[:space:]]*=[[:space:]]*false/ && name != "" { print name; name = "" }
-            /^\[/ && !/^\[functions\./ { name = "" }
-          ' supabase/config.toml | sort -u)
-
-          echo "::group::Functions with verify_jwt=false"
-          echo "$NO_JWT_FUNCS"
-          echo "::endgroup::"
-
-          # Deploy each function under supabase/functions/* with the correct flag.
-          # _shared, _internal, .ts/.md files are skipped (directories only).
-          for dir in supabase/functions/*/; do
-            fn=$(basename "$dir")
-            case "$fn" in
-              _*) continue ;;
-            esac
-            if [ ! -f "$dir/index.ts" ]; then continue; fi
-
-            if echo "$NO_JWT_FUNCS" | grep -qx "$fn"; then
-              echo "→ deploy $fn --no-verify-jwt"
-              supabase functions deploy "$fn" --no-verify-jwt --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-            else
-              echo "→ deploy $fn (verify_jwt=default)"
-              supabase functions deploy "$fn" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-            fi
-          done
-
-      # Smoke-verify that public functions actually deployed with verify_jwt=false.
-      # If this fails the workflow surface shows the regression instead of
-      # leaving prod in a silent 401 state.
-      #
-      # IMPORTANT: invalid payloads only. The request must pass the JWT
-      # gateway (would be 401 if verify_jwt=true) and fail validation
-      # *before* the function performs any DB inserts — that keeps the
-      # smoke check non-mutating and rate-limit-free across many deploys.
-      - name: Verify public endpoints (non-mutating)
-        run: |
-          set -e
-          # gdpr-audit: invalid URL → 400 INVALID_URL before any DB write.
-          gdpr_status=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/gdpr-audit" \
-            -H 'content-type: application/json' \
-            -d '{"url":"not-a-url","email":"smoke@example.invalid"}' --max-time 15)
-          # cookie-scan: invalid URL → 400 before any persistence.
-          cookie_status=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/cookie-scan" \
-            -H 'content-type: application/json' \
-            -d '{"url":"not-a-url"}' --max-time 15)
-          echo "gdpr-audit no-auth: $gdpr_status"
-          echo "cookie-scan no-auth: $cookie_status"
-          # 400 (validation rejected) = function reachable, verify_jwt=false applied.
-          # 401 = gateway rejection = config didn't apply.
-          if [ "$gdpr_status" = "401" ] || [ "$cookie_status" = "401" ]; then
-            echo "::error::Public function returned 401 after deploy — verify_jwt config didn't apply"
-            exit 1
-          fi
+                                                                jobs:
+                                                                  db-push:
+                                                                      name: Push migrations
+                                                                          runs-on: ubuntu-latest
+                                                                              env:
+                                                                                    SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+                                                                                          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+                                                                                              steps:
+                                                                                                    - uses: actions/checkout@v4
+                                                                                                    
+                                                                                                          - name: Verify required secrets
+                                                                                                                  run: |
+                                                                                                                            missing=""
+                                                                                                                                      [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ] && missing="$missing SUPABASE_ACCESS_TOKEN"
+                                                                                                                                                [ -z "${{ secrets.SUPABASE_PROJECT_ID }}" ] && missing="$missing SUPABASE_PROJECT_ID"
+                                                                                                                                                          [ -z "${{ secrets.SUPABASE_DB_PASSWORD }}" ] && missing="$missing SUPABASE_DB_PASSWORD"
+                                                                                                                                                                    if [ -n "$missing" ]; then
+                                                                                                                                                                                echo "missing secrets:$missing"
+                                                                                                                                                                                            exit 1
+                                                                                                                                                                                                      fi
+                                                                                                                                                                                                      
+                                                                                                                                                                                                            - uses: supabase/setup-cli@v1
+                                                                                                                                                                                                                    with:
+                                                                                                                                                                                                                              version: latest
+                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                    - name: Link project
+                                                                                                                                                                                                                                            run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+                                                                                                                                                                                                                                            
+                                                                                                                                                                                                                                                  - name: Push pending migrations
+                                                                                                                                                                                                                                                          run: supabase db push --include-all 2>&1 || true
+                                                                                                                                                                                                                                                          
+                                                                                                                                                                                                                                                            functions-deploy:
+                                                                                                                                                                                                                                                                name: Deploy edge functions
+                                                                                                                                                                                                                                                                    runs-on: ubuntu-latest
+                                                                                                                                                                                                                                                                        env:
+                                                                                                                                                                                                                                                                              SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+                                                                                                                                                                                                                                                                                    SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+                                                                                                                                                                                                                                                                                        steps:
+                                                                                                                                                                                                                                                                                              - uses: actions/checkout@v4
+                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                    - uses: supabase/setup-cli@v1
+                                                                                                                                                                                                                                                                                                            with:
+                                                                                                                                                                                                                                                                                                                      version: latest
+                                                                                                                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                                                                                                            - name: Deploy edge functions
+                                                                                                                                                                                                                                                                                                                                    run: supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"

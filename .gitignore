@@ -6,7 +6,13 @@ coverage/
 *.log
 .env*
 !.env.example
-scans/
+/scans/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Agent-Skills (installiert via `npx skills add ...`) — pro-Maschine,
+# nicht Teil des Produktcodes.
+.agents/
+.claude/skills/
+skills-lock.json

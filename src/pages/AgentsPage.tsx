@@ -3,16 +3,18 @@ import { Navbar } from '../components/Navbar';
 import { usePageMeta } from '../lib/usePageMeta';
 import { Activity, Cpu, ShieldCheck, ScrollText, Bot } from 'lucide-react';
 
-// AgentsPage — agent control plane (public).
-// Each agent rendered with status, live metrics, recent actions feed and
-// scope. Visualised as control-plane tiles, not as a chat surface.
+// AgentsPage — Agent-Kontrollebene (Public-Demo).
+// Jeder Agent mit Status, Demo-Metriken, jüngsten Aktionen und Scope.
+// Visualisiert als Control-Plane-Tiles, nicht als Chat-Surface.
 
 interface AgentDef {
   id: string;
   name: string;
   role: string;
   icon: React.ReactNode;
-  status: 'live' | 'idle';
+  /** 'demo' = simulierte Werte; 'live' bleibt reserviert für echte
+   *  Tenant-Telemetrie. */
+  status: 'demo' | 'live' | 'idle';
   blurb: string;
   metrics: { label: string; value: string; tone: 'cyan' | 'amber' | 'violet' | 'emerald' }[];
   recent: { ts: string; text: string }[];
@@ -22,77 +24,77 @@ const AGENTS: readonly AgentDef[] = [
   {
     id: 'drift',
     name: 'drift-agent',
-    role: 'detect · monitor',
+    role: 'erkennen · monitoring',
     icon: <Activity className="h-4 w-4 text-cyan-300" />,
-    status: 'live',
-    blurb: 'Watches every site for new trackers, header regressions, banner-dark-pattern shifts. Opens incidents with a structured diff.',
+    status: 'demo',
+    blurb: 'Beobachtet jede Website auf neue Tracker, Header-Regressionen und Banner-Dark-Pattern-Verschiebungen. Öffnet Vorfälle mit strukturiertem Diff.',
     metrics: [
-      { label: 'runs / h',     value: '4.2', tone: 'cyan' },
-      { label: 'open inc.',    value: '12',  tone: 'amber' },
-      { label: 'mttr',         value: '4 m', tone: 'emerald' },
-      { label: 'last run',     value: '8 s', tone: 'cyan' },
+      { label: 'Läufe / h',     value: '4.2', tone: 'cyan' },
+      { label: 'Offene Vorf.',  value: '12',  tone: 'amber' },
+      { label: 'MTTR',          value: '4 Min', tone: 'emerald' },
+      { label: 'Letzter Lauf',  value: '8 s', tone: 'cyan' },
     ],
     recent: [
-      { ts: 'T+02s', text: 'tracker added · googletagmanager · pre-consent · kunde-1.de' },
-      { ts: 'T+18s', text: 'vendor added · plausible.io · no DPA · kunde-3.com' },
-      { ts: 'T+47s', text: 'header re-check · X-Frame-Options absent · kunde-4.shop' },
+      { ts: 'T+02s', text: 'Tracker hinzugefügt · googletagmanager · vor Consent · kunde-1.de' },
+      { ts: 'T+18s', text: 'Vendor hinzugefügt · plausible.io · ohne AVV · kunde-3.com' },
+      { ts: 'T+47s', text: 'Header-Recheck · X-Frame-Options fehlt · kunde-4.shop' },
     ],
   },
   {
     id: 'ai-risk',
     name: 'ai-risk-agent',
-    role: 'govern',
+    role: 'governance',
     icon: <Cpu className="h-4 w-4 text-violet-300" />,
-    status: 'live',
-    blurb: 'Classifies discovered AI endpoints against AI Act Annex III. Produces a risk profile and writes the use-case registry entry.',
+    status: 'demo',
+    blurb: 'Klassifiziert entdeckte KI-Endpunkte gegen AI Act Annex III. Erstellt ein Risiko-Profil und schreibt den Eintrag in das Use-Case-Register.',
     metrics: [
-      { label: 'classified',   value: '17', tone: 'violet' },
-      { label: 'high-risk',    value: '3',  tone: 'amber' },
-      { label: 'prohibited',   value: '0',  tone: 'emerald' },
-      { label: 'last classify', value: '2 m', tone: 'violet' },
+      { label: 'Klassifiziert', value: '17', tone: 'violet' },
+      { label: 'Hochrisiko',    value: '3',  tone: 'amber' },
+      { label: 'Verboten',      value: '0',  tone: 'emerald' },
+      { label: 'Letzte Klass.', value: '2 Min', tone: 'violet' },
     ],
     recent: [
-      { ts: 'T+04s', text: 'classify widget · chat-bot · AI-Act class: limited · kunde-2.io' },
-      { ts: 'T+22s', text: 'detect · LLM-Endpoint · provider=openai · region=us-east' },
-      { ts: 'T+33s', text: 'register · openai/gpt-4o · classification: high-risk' },
+      { ts: 'T+04s', text: 'Klassifizieren · Chatbot · AI-Act-Klasse: limited · kunde-2.io' },
+      { ts: 'T+22s', text: 'Erkennen · LLM-Endpunkt · provider=openai · region=us-east' },
+      { ts: 'T+33s', text: 'Registrieren · openai/gpt-4o · Klassifikation: high-risk' },
     ],
   },
   {
     id: 'evidence',
     name: 'evidence-agent',
-    role: 'automate',
+    role: 'automatisieren',
     icon: <ShieldCheck className="h-4 w-4 text-emerald-300" />,
-    status: 'live',
-    blurb: 'Hashes every finding, signs and anchors into the evidence chain. Renders audit bundles on demand and verifies chain integrity.',
+    status: 'demo',
+    blurb: 'Hashed jeden Befund (SHA-256) und verankert ihn in der Evidence-Chain. Erstellt Audit-Bundles bei Bedarf und prüft die Chain-Integrität.',
     metrics: [
-      { label: 'sealed',       value: '4,128', tone: 'emerald' },
-      { label: 'last anchor',  value: '3 s',   tone: 'emerald' },
-      { label: 'bundles',      value: '34',    tone: 'cyan' },
-      { label: 'chain depth',  value: '42,914', tone: 'emerald' },
+      { label: 'Gehasht',       value: '4.128', tone: 'emerald' },
+      { label: 'Letzter Anker', value: '3 s',   tone: 'emerald' },
+      { label: 'Bundles',       value: '34',    tone: 'cyan' },
+      { label: 'Chain-Tiefe',   value: '42.914', tone: 'emerald' },
     ],
     recent: [
-      { ts: 'T+06s', text: 'sealed hash · sha256:9f2c…b81 · ledger-anchor ✓' },
-      { ts: 'T+25s', text: 'audit-bundle 04-26 · 1,248 events · anchored' },
-      { ts: 'T+41s', text: 'rolling backup · supabase-eu-west · 24 GB' },
+      { ts: 'T+06s', text: 'Hash gespeichert · sha256:9f2c…b81 · Anker geschrieben ✓' },
+      { ts: 'T+25s', text: 'Audit-Bundle 04-26 · 1.248 Ereignisse · verankert' },
+      { ts: 'T+41s', text: 'Rolling-Backup · supabase-eu-west · 24 GB' },
     ],
   },
   {
     id: 'policy',
     name: 'policy-agent',
-    role: 'govern · automate',
+    role: 'governance · automatisieren',
     icon: <ScrollText className="h-4 w-4 text-amber-300" />,
-    status: 'live',
-    blurb: 'Drafts §13 updates, AVV deltas, policy snippets per finding. Routes diffs to the owner via Slack, Email or webhook.',
+    status: 'demo',
+    blurb: 'Entwirft §13-Updates, AVV-Deltas und Policy-Snippets je Befund. Leitet Diffs an die Verantwortlichen via Slack, E-Mail oder Webhook.',
     metrics: [
-      { label: 'drafts / w',   value: '21',  tone: 'cyan' },
-      { label: 'merged',       value: '15',  tone: 'emerald' },
-      { label: 'pending owner', value: '6',  tone: 'amber' },
-      { label: 'avg review',   value: '12 h', tone: 'cyan' },
+      { label: 'Entwürfe / W', value: '21',   tone: 'cyan' },
+      { label: 'Zusammengeführt', value: '15', tone: 'emerald' },
+      { label: 'Offen (Owner)', value: '6',   tone: 'amber' },
+      { label: 'Review-⌀',     value: '12 h', tone: 'cyan' },
     ],
     recent: [
-      { ts: 'T+11s', text: 'dpo-agent → drafted §13 update · 14 lines · kunde-1.de' },
-      { ts: 'T+29s', text: 'triage-agent → owner=daniel · sla=72h · kunde-1.de' },
-      { ts: 'T+45s', text: 'policy diff merged · consent-v2 · enforced on 12 sites' },
+      { ts: 'T+11s', text: 'DSB-Agent → §13-Update entworfen · 14 Zeilen · kunde-1.de' },
+      { ts: 'T+29s', text: 'Triage-Agent → Owner=daniel · SLA=72h · kunde-1.de' },
+      { ts: 'T+45s', text: 'Policy-Diff zusammengeführt · consent-v2 · 12 Sites' },
     ],
   },
 ];
@@ -103,8 +105,10 @@ const TONE_TEXT: Record<'cyan' | 'amber' | 'violet' | 'emerald', string> = {
 
 export function AgentsPage() {
   usePageMeta({
-    title: 'Agents — AI Governance Control Plane | RealSync',
-    description: 'Four autonomous agents run the AI governance runtime: drift, AI-risk, evidence and policy. Live status, metrics and recent actions.',
+    title: 'Agents — Governance-Kontrollebene | RealSync',
+    description:
+      'Vier autonome Agenten in der Governance-Runtime: Drift, KI-Risiko, Evidence, ' +
+      'Policy. Demo-Surface mit simulierten Werten — keine Kundendaten.',
     url: 'https://RealSyncDynamicsAI.de/agents',
   });
 
@@ -118,17 +122,27 @@ export function AgentsPage() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
       <main className="pt-14">
+        {/* Demo-Strip. */}
+        <div className="border-b border-titanium-900 bg-obsidian-900/80">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
+            <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
+              Demo-Runtime · simulierte Werte · keine Kundendaten
+            </span>
+          </div>
+        </div>
+
         <header className="border-b border-titanium-900 px-4 sm:px-6 py-16">
           <div className="max-w-7xl mx-auto">
             <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-              agents · autonomous control plane
+              Agenten · autonome Kontrollebene
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-              Four agents run governance. No human queue.
+              Vier Agenten betreiben die Governance — ohne manuelles Triage-Backlog.
             </h1>
             <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-              The agents are not chatbots. They are autonomous processes inside the runtime that detect, classify,
-              draft and anchor — continuously, in parallel, with full audit trail.
+              Die Agenten sind keine Chatbots. Sie sind autonome Prozesse in der Runtime,
+              die erkennen, klassifizieren, entwerfen und verankern — kontinuierlich,
+              parallel, mit vollem Audit-Trail.
             </p>
           </div>
         </header>
@@ -148,12 +162,12 @@ export function AgentsPage() {
                         <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mt-0.5">{a.role}</div>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-emerald-400">
+                    <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-amber-300">
                       <span className="relative inline-flex h-1.5 w-1.5">
-                        <span className={`absolute inset-0 rounded-full bg-emerald-400 opacity-75 ${phase === i ? 'motion-safe:animate-ping' : ''}`} />
-                        <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        <span className={`absolute inset-0 rounded-full bg-amber-400 opacity-75 ${phase === i ? 'motion-safe:animate-ping' : ''}`} />
+                        <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
                       </span>
-                      live
+                      demo
                     </span>
                   </header>
 
@@ -170,7 +184,7 @@ export function AgentsPage() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">recent actions</div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Jüngste Aktionen</div>
                   <div className="bg-obsidian-900 border border-titanium-900 font-mono text-[11px] p-3 space-y-1">
                     {a.recent.map((r, j) => (
                       <div key={j} className="flex items-start gap-2 py-0.5 border-b border-titanium-900/40 last:border-b-0">
@@ -186,7 +200,7 @@ export function AgentsPage() {
 
           <div className="mt-6 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-cyan-300">
             <Bot className="h-3 w-3" />
-            agents · not advisors
+            Agenten · keine Berater
           </div>
         </section>
       </main>

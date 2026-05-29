@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Activity, ShieldCheck, Cpu, Bot, ScrollText } from 'lucide-react';
 
-// AiOperatingSystemSection — the "this is an OS, not a SaaS tool" framing.
-// One section, big mono claim, 4 status indicators, no CTAs. Each indicator
-// has its own tiny live cadence (counters tick, dots pulse) so the section
-// reads as live even in isolation.
+// AiOperatingSystemSection — Framing-Block für die Runtime-Übersicht.
+// Vier Status-Indikatoren als Demo-Surface; alle Werte sind simuliert.
+// Der „uptime"-Counter rechts oben ist eine UI-Animation des aktuellen
+// Browser-Sessions, KEIN Indikator für laufende Kunden-Telemetrie.
 
 interface Indicator {
   icon: React.ReactNode;
@@ -17,28 +17,28 @@ interface Indicator {
 const INDICATORS: readonly Indicator[] = [
   {
     icon: <Activity className="h-4 w-4 text-cyan-300" />,
-    label: 'continuous monitoring',
-    status: 'detect · monitor',
+    label: 'Kontinuierliche Beobachtung',
+    status: 'erkennen · überwachen',
     tone: 'cyan',
     pulseMs: 2200,
   },
   {
     icon: <Bot className="h-4 w-4 text-violet-300" />,
-    label: 'agents active',
-    status: '4 / 4 running',
+    label: 'Agenten aktiv',
+    status: '4 / 4 (Demo)',
     tone: 'violet',
     pulseMs: 2800,
   },
   {
     icon: <ShieldCheck className="h-4 w-4 text-emerald-300" />,
-    label: 'evidence anchored',
-    status: 'chain · sealed',
+    label: 'Evidence verankert',
+    status: 'Kette · SHA-256',
     tone: 'emerald',
     pulseMs: 3200,
   },
   {
     icon: <ScrollText className="h-4 w-4 text-amber-300" />,
-    label: 'policies enforced',
+    label: 'Policies dokumentiert',
     status: '12 / 12',
     tone: 'amber',
     pulseMs: 3700,
@@ -95,24 +95,25 @@ export function AiOperatingSystemSection() {
 
       <div className="relative max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-6 font-mono text-[11px] uppercase tracking-[0.18em] text-titanium-500">
-          <span>AI Governance · Operating System</span>
-          <span className="inline-flex items-center gap-1.5 text-emerald-400">
+          <span>Governance · Runtime · Demo</span>
+          <span className="inline-flex items-center gap-1.5 text-titanium-400">
             <span className="relative inline-flex h-1.5 w-1.5">
-              <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-75 motion-safe:animate-ping" />
-              <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="absolute inset-0 rounded-full bg-amber-400 opacity-75 motion-safe:animate-ping" />
+              <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-amber-400" />
             </span>
-            uptime · {String(Math.floor(tick / 60)).padStart(2, '0')}m {String(tick % 60).padStart(2, '0')}s
+            Session · {String(Math.floor(tick / 60)).padStart(2, '0')}m {String(tick % 60).padStart(2, '0')}s
           </span>
         </div>
 
         <h2 className="text-3xl sm:text-5xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.1] mb-4">
-          AI Governance is an{' '}
-          <span className="text-cyan-300">operating system</span>, not a checklist.
+          Governance ist eine{' '}
+          <span className="text-cyan-300">Runtime</span>, keine Checkliste.
         </h2>
         <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl mb-10">
-          AI and privacy systems are monitored continuously, agents automate the routine governance work,
-          evidence is generated as a side-effect of operation, and every control behaves like infrastructure —
-          self-service, observable, replayable. There is nothing to schedule with us.
+          KI- und Datenschutz-Systeme werden kontinuierlich beobachtet, Agenten
+          übernehmen die wiederkehrende Governance-Arbeit, Evidence entsteht als
+          Nebenprodukt des Betriebs, und jede Kontrolle verhält sich wie Infrastruktur —
+          self-service, beobachtbar, wiederabspielbar.
         </p>
 
         {/* 4-up status grid */}
@@ -146,11 +147,11 @@ export function AiOperatingSystemSection() {
 
         <div className="mt-10 grid grid-cols-2 sm:grid-cols-5 gap-px bg-titanium-900 font-mono text-[10px] text-titanium-500">
           {[
-            ['Self-service', 'no setup-call'],
-            ['Continuous',   'no schedule'],
-            ['Replayable',   'sealed evidence'],
-            ['Observable',   'live runtime feed'],
-            ['Operational',  'agents · not advisors'],
+            ['Self-service', 'kein Setup-Call'],
+            ['Kontinuierlich', 'kein Zeitplan'],
+            ['Reproduzierbar', 'gehashte Evidence'],
+            ['Beobachtbar',  'Runtime-Feed (Demo)'],
+            ['Operativ',     'Agenten · keine Berater'],
           ].map(([k, v]) => (
             <div key={k} className="bg-obsidian-950 p-3">
               <div className="text-titanium-100 mb-0.5">{k}</div>
@@ -161,7 +162,7 @@ export function AiOperatingSystemSection() {
 
         <div className="mt-6 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-cyan-300">
           <Cpu className="h-3 w-3" />
-          self-service AI Governance Operating System
+          Self-Service-Governance-Runtime
         </div>
       </div>
     </section>

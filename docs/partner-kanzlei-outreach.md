@@ -71,7 +71,7 @@ Mit besten Grüßen
 [Vorname Nachname]
 [Position] · RealSyncDynamics.AI
 [E-Mail] · [Telefon]
-https://realsyncdynamics.ai
+https://realsyncdynamicsai.de
 ```
 
 ---

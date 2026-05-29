@@ -1,8 +1,11 @@
-// Governance admin audit log — fire-and-forget helper.
+// Governance admin audit log — best-effort helper mit beobachtbarem Fehlerpfad.
 //
 // Called from every owner/admin write path in governance-keys /
-// -resources / -webhooks / -approvals. Failures are swallowed so
-// the primary action never fails because logging did.
+// -resources / -webhooks / -approvals. Die Primaeraktion soll nicht an einem
+// Logging-Fehler scheitern (kein throw) — ABER der Fehler wird ab jetzt
+// strukturiert nach stderr geloggt (Supabase-Function-Logs → Sentry/Alerting),
+// statt still verschluckt zu werden: ein fehlender Audit-Eintrag ist auf einer
+// Compliance-Plattform eine meldepflichtige Luecke.
 
 // deno-lint-ignore no-explicit-any
 export async function audit(
@@ -27,7 +30,15 @@ export async function audit(
       target_id:      args.target_id,
       payload:        args.payload ?? {},
     });
-  } catch {
-    /* swallow — audit logging must not fail the request */
+  } catch (e) {
+    console.error(JSON.stringify({
+      level: 'error',
+      scope: 'audit_log_failed',
+      action: args.action,
+      target_type: args.target_type,
+      target_id: args.target_id,
+      tenant_id: args.tenant_id,
+      error: (e as Error)?.message ?? String(e),
+    }));
   }
 }

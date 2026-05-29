@@ -45,10 +45,10 @@ export function RuntimeActivationSection() {
             Runtime aktivieren
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            Runtime aktivieren — vom Free Audit bis Enterprise.
+            Runtime aktivieren — vom kostenlosen Audit bis Enterprise.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Free Audit ist der Einstieg ohne Karte. Starter aktiviert kontinuierliches Monitoring.
+            Das kostenlose Audit ist der Einstieg ohne Karte. Starter aktiviert kontinuierliches Monitoring.
             Growth ergänzt die AI-Act-Governance-Schicht. Agency liefert Multi-Domain-Whitelabel.
             Enterprise ist eine dedizierte Runtime-Umgebung.
           </p>

@@ -46,7 +46,7 @@ Klare Schnitt-Linien, damit das System nicht in einem „God-Backend" endet:
 | Crawl | Playwright | Real-Browser-Render |
 | Search | Meilisearch / OpenSearch | Schnelle Findings-Suche |
 | Storage | S3-kompatibel (MinIO) | Evidence-Files, PDFs |
-| Auth | Keycloak oder Auth.js | Enterprise-fähig |
+| Auth | Keycloak oder Auth.js | SSO/OIDC-tauglich |
 | Realtime | WebSockets / SSE | Live-Audit-Status |
 | Infra | Docker + Coolify oder K8s | EU-self-hostbar |
 | AI | OpenAI-kompatibles Gateway | Provider-agnostisch |

@@ -8,7 +8,7 @@ AI-Inferenz, transparentes Billing.
 
 **Live:** https://realsyncdynamicsai.de · **Backend:** Supabase
 (EU-Region) · **AI-Stack:** Anthropic / Google / OpenAI für Cloud-Pfad,
-[Ollama](https://ollama.com) (qwen3:4b) für EU-lokal-Pfad.
+[Ollama](https://ollama.com) (gemma3:4b) für EU-lokal-Pfad.
 
 ---
 
@@ -51,7 +51,7 @@ AI-Inferenz, transparentes Billing.
 
    ▼ residency=eu_local
 [Kodee-VPS Hostinger DE]   Traefik-Stack
-   ├── ollama.realsyncdynamicsai.de    Ollama qwen3:4b (BasicAuth)
+   ├── ollama.realsyncdynamicsai.de    Ollama gemma3:4b (BasicAuth)
    ├── chat.realsyncdynamicsai.de      Open WebUI (Login)
    └── n8n.realsyncdynamicsai.de       n8n (eigene Auth)
 ```

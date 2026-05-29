@@ -340,10 +340,10 @@ function WhatGetsChecked() {
 
 function Pillars() {
   const items = [
-    { law: 'DSGVO Art. 6 Abs. 1', issue: 'Tracker ohne Consent', max: '4 % Jahresumsatz' },
-    { law: 'DSGVO Art. 13', issue: 'Fehlende Datenschutzerklärung', max: 'Aufsichts-Reklamation' },
-    { law: '§ 25 TTDSG', issue: 'Cookies vor Consent', max: 'bis 300 k€ pro Fall' },
-    { law: '§ 5 TMG', issue: 'Fehlendes Impressum', max: 'Abmahnung 1.500 €+' },
+    { law: 'DSGVO Art. 6 Abs. 1', issue: 'Tracker ohne Consent', max: 'Rechtsgrundlage erforderlich' },
+    { law: 'DSGVO Art. 13',       issue: 'Fehlende Datenschutzerklärung', max: 'Informationspflicht' },
+    { law: '§ 25 TTDSG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
+    { law: '§ 5 TMG',             issue: 'Fehlendes Impressum', max: 'Anbieterkennzeichnung erforderlich' },
   ];
   return (
     <div className="mt-12">
@@ -356,7 +356,7 @@ function Pillars() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-titanium-300">{it.law}</span>
             </div>
             <div className="font-display font-bold text-sm text-titanium-50">{it.issue}</div>
-            <div className="text-xs text-titanium-500 mt-0.5">Risiko: {it.max}</div>
+            <div className="text-xs text-titanium-500 mt-0.5">Pflicht: {it.max}</div>
           </div>
         ))}
       </div>
@@ -584,11 +584,11 @@ function severityConfig(s: Severity): {
   // alle anderen Severities werden über Helligkeit + Text differenziert.
   switch (s) {
     case 'critical': return { label: 'Kritisch — handeln', bg: 'bg-red-950/30', border: 'border-red-900', color: 'text-red-300',
-      summary: (n) => `${n} Befunde, davon mindestens einer mit Bußgeld-Risiko bis 4 % Jahresumsatz. Hier brauchst Du eine Lösung — bevor Dich ein Mitbewerber abmahnt oder Dein DSB blockt.` };
+      summary: (n) => `${n} Befunde mit hoher Schweregrad-Bewertung. Empfehlung: technische Evidence sichten und mit DSB / Fachjurist priorisieren.` };
     case 'high':     return { label: 'Hohe Priorität', bg: 'bg-obsidian-900', border: 'border-titanium-700', color: 'text-titanium-50',
-      summary: (n) => `${n} Befunde mit hohem Risiko-Profil. Schnell adressieren — bevor erste Beschwerden bei der Aufsicht eingehen.` };
+      summary: (n) => `${n} Befunde mit erhöhter Schweregrad-Bewertung. Empfehlung: zeitnahe Behandlung im Governance-Backlog.` };
     case 'medium':   return { label: 'Verbesserungsbedarf', bg: 'bg-obsidian-900', border: 'border-titanium-800', color: 'text-titanium-100',
-      summary: (n) => `${n} Befunde mittlerer Severity. Kein akutes Bußgeld-Risiko, aber rechtssicher ist anders.` };
+      summary: (n) => `${n} Befunde mittlerer Schweregrad-Bewertung. Im regulären Sprint adressierbar.` };
     case 'low':      return { label: 'Solide Basis', bg: 'bg-obsidian-900', border: 'border-titanium-900', color: 'text-titanium-200',
       summary: (n) => `${n} kleinere Findings. Best-Practice-Verbesserungen.` };
     case 'pass':     return { label: 'Audit bestanden', bg: 'bg-obsidian-900', border: 'border-titanium-700', color: 'text-titanium-50',

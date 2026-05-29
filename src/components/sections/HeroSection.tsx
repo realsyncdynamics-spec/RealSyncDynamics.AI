@@ -166,7 +166,7 @@ export function HeroSection() {
                                             <Cpu className="h-3 w-3 text-violet-300" /> evidence-backed · audit-ready
                                 </span>
                                 <span className="inline-flex items-center gap-1.5">
-                                            <FlaskConical className="h-3 w-3 text-titanium-400" /> Free Audit · keine Setup-Gebühr
+                                            <FlaskConical className="h-3 w-3 text-titanium-400" /> Kostenloses Audit · keine Setup-Gebühr
                                 </span>
                       </div>
               

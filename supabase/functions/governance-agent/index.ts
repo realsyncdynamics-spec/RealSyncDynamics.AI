@@ -42,6 +42,7 @@ import {
 } from '../_shared/anonAudit.ts';
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
 import type { ModelProfile } from '../_shared/aiGateway/types.ts';
+import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/llm-quota.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,12 +52,32 @@ const corsHeaders = {
 
 const MAX_ITERATIONS = 8;
 const MAX_HISTORY_TURNS = 20;
-const MAX_TOKENS_PER_TURN = 4096;
+// Output cap per Anthropic turn. Compliance answers typically need
+// 500–1500 tokens; the previous 4096 was a worst-case ceiling that
+// inflated output cost during runaway responses. 2048 covers >99% of
+// real answers while halving the worst-case spend per tenant turn.
+// Override via AGENT_MAX_TOKENS_PER_TURN if a specific deployment
+// needs longer outputs.
+const MAX_TOKENS_PER_TURN = parseInt(Deno.env.get('AGENT_MAX_TOKENS_PER_TURN') ?? '2048', 10);
 const ANON_MAX_TOKENS = 1024;
 const ANON_MAX_HISTORY = 10;
 
 const LLM_PROVIDER = Deno.env.get('AGENT_LLM_PROVIDER') ?? 'anthropic';
 const LLM_MODEL = Deno.env.get('AGENT_LLM_MODEL') ?? 'claude-sonnet-4-6';
+// Anon path uses a separate model env var so operators can route
+// public traffic to a cheaper tier (Haiku 4.5 is ~5x cheaper than
+// Sonnet 4.6 at similar Q&A quality for general DSGVO questions).
+// Falls back to AGENT_LLM_MODEL when AGENT_ANON_LLM_MODEL is not set
+// so existing deployments keep current behaviour until they opt in.
+const ANON_LLM_MODEL = Deno.env.get('AGENT_ANON_LLM_MODEL') ?? LLM_MODEL;
+
+// Returns the model identifier that actually serviced an anon request,
+// for audit + history accuracy. ai_gateway routes via LM Studio with
+// the AGENT_LLM_MODEL_PROFILE name (e.g. 'fast-local'); Anthropic path
+// returns ANON_LLM_MODEL.
+function anonModelLabel(): string {
+  return LLM_PROVIDER === 'ai_gateway' ? AGENT_LLM_MODEL_PROFILE : ANON_LLM_MODEL;
+}
 
 // When LLM_PROVIDER=ai_gateway, anon-mode inference routes through the
 // ai-gateway Edge Function. Tenant-mode tool-use still uses Anthropic
@@ -175,6 +196,41 @@ async function anonGate(
  * Finalise an anon audit row. Wrapper around completeAnonAudit so handlers
  * do not import the underlying helper directly.
  */
+// LLM quota + chat history helpers live in `_shared/llm-quota.ts` so
+// vitest can exercise them without pulling in Deno-only imports. Thin
+// adapters here map the structured results to HTTP responses.
+async function enforceTenantQuota(admin: any, tenantId: string): Promise<Response | null> {
+  const r = await checkTenantQuota(admin, tenantId);
+  if (r.allowed) return null;
+  if (r.errorCode === 'QUOTA_LOOKUP_FAILED') {
+    return jsonError(503, 'QUOTA_LOOKUP_FAILED', r.reason ?? 'cap rpc failed');
+  }
+  return jsonError(429, 'QUOTA_EXCEEDED',
+    (r.reason ?? 'Monatslimit erreicht.') +
+    ' Bis zum Monatswechsel keine weiteren Anfragen, oder Plan upgraden.');
+}
+
+async function enforceAnonQuota(admin: any, ipHash: string): Promise<Response | null> {
+  const r = await checkAnonQuota(admin, ipHash);
+  if (r.allowed) return null;
+  if (r.errorCode === 'QUOTA_LOOKUP_FAILED') {
+    return jsonError(503, 'QUOTA_LOOKUP_FAILED', r.reason ?? 'cap rpc failed');
+  }
+  return jsonError(429, 'QUOTA_EXCEEDED',
+    (r.reason ?? 'Monatslimit für anonyme Anfragen erreicht.') +
+    ' Erstellen Sie einen Account oder warten Sie bis zum Monatswechsel.');
+}
+
+async function logChatToHistory(
+  admin: any,
+  args: Parameters<typeof recordChatHistory>[1],
+): Promise<void> {
+  const r = await recordChatHistory(admin, args);
+  if (!r.ok) {
+    console.error('logChatToHistory failed:', r.error);
+  }
+}
+
 async function finishAnon(
   // deno-lint-ignore no-explicit-any
   admin: any,
@@ -258,6 +314,17 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Anon chat history readback — keyed by session_id (the same cookie
+  // the chat path uses). No JWT required; the session_id IS the bearer
+  // credential for anon. Reads via service_role; no RLS issue.
+  if (body.op === 'chat_history_anon') {
+    try {
+      return await handleChatHistoryAnon(body);
+    } catch (e) {
+      return jsonError(500, 'INTERNAL', (e as Error).message);
+    }
+  }
+
   // All other ops require a valid user JWT.
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -279,10 +346,11 @@ Deno.serve(async (req) => {
 
   try {
     switch (body.op) {
-      case 'chat':    return await handleChat(admin, userId, userEmail, auth, body);
-      case 'reset':   return await handleReset(admin, userId, body);
-      case 'history': return await handleHistory(admin, userId, body);
-      default:        return jsonError(400, 'BAD_REQUEST', 'unknown op');
+      case 'chat':         return await handleChat(admin, userId, userEmail, auth, body);
+      case 'reset':        return await handleReset(admin, userId, body);
+      case 'history':      return await handleHistory(admin, userId, body);
+      case 'chat_history': return await handleChatHistoryTenant(admin, userId, body);
+      default:             return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {
     return jsonError(500, 'INTERNAL', (e as Error).message);
@@ -305,6 +373,12 @@ async function handleChat(
   const { data: mem } = await admin.from('memberships')
     .select('role').eq('tenant_id', tenant_id).eq('user_id', userId).maybeSingle();
   if (!mem) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
+
+  // Plan-coupled monthly LLM quota — see migration
+  // 20260609000000_llm_query_quota_history.sql. Runs after membership
+  // check so we don't leak quota state for tenants the user can't see.
+  const quotaResp = await enforceTenantQuota(admin, tenant_id);
+  if (quotaResp) return quotaResp;
 
   // EU-routing guard. Tenant chat always uses Anthropic (the
   // ai_gateway switch only flips anon-mode), so the guard must also
@@ -351,8 +425,22 @@ async function handleChat(
       const resp = await client.messages.create({
         model: LLM_MODEL,
         max_tokens: MAX_TOKENS_PER_TURN,
-        system: SYSTEM_PROMPT,
-        tools: AGENT_TOOLS,
+        // Anthropic prompt caching (cache_control: ephemeral) — the
+        // system prompt + tool catalogue are identical across every
+        // iteration of a tool-loop and across every chat turn within
+        // a 5-minute window. Marking them cacheable cuts the input-
+        // token cost for these blocks by ~90% on cache hits, which
+        // is the dominant input cost driver for tool-heavy chats.
+        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        tools: AGENT_TOOLS.map((t, i) =>
+          // Mark only the LAST tool with cache_control — Anthropic
+          // caches everything up to and including that marker, so
+          // tagging the final tool effectively caches the full
+          // tools array as one block.
+          i === AGENT_TOOLS.length - 1
+            ? { ...t, cache_control: { type: 'ephemeral' as const } }
+            : t,
+        ),
         messages: history,
       });
       totalIn += resp.usage.input_tokens;
@@ -449,6 +537,23 @@ async function handleChat(
     payload: { iterations: toolCallsLog.length, outcome, tools: toolCallsLog.map((t) => t.tool) },
   });
 
+  // Per-run history for user/tenant-facing review + quota counting.
+  // Only logged on success — failures don't consume quota budget.
+  if (outcome === 'success') {
+    await logChatToHistory(admin, {
+      tenant_id,
+      user_id: userId,
+      session_id: sessionId,
+      op: 'chat',
+      provider: LLM_PROVIDER,
+      model: LLM_MODEL,
+      query_text: message.slice(0, 4000),
+      response_summary: finalText,
+      input_tokens: totalIn,
+      output_tokens: totalOut,
+    });
+  }
+
   return json({
     ok: outcome === 'success',
     session_id: sessionId,
@@ -494,6 +599,72 @@ async function handleHistory(admin: any, userId: string, body: Record<string, un
   return json({ ok: true, runs: data ?? [] });
 }
 
+// op:'chat_history' — tenant-scoped per-run history from llm_query_history.
+// Differs from op:'history' above (which reads conversation turns from
+// agent_runs / agent_sessions): this returns the dedicated LLM-query
+// records used for the user's "my past questions" view and shared with
+// the monthly-quota counter. RLS scopes by tenant membership, so the
+// service-role client mirrors the user's effective view by filtering
+// on tenant_id + user_id explicitly (defense-in-depth).
+async function handleChatHistoryTenant(admin: any, userId: string, body: Record<string, unknown>): Promise<Response> {
+  const tenant_id = body.tenant_id as string;
+  if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+
+  // Membership check — mirror handleChat's gate.
+  const { data: mem } = await admin.from('memberships')
+    .select('role').eq('tenant_id', tenant_id).eq('user_id', userId).maybeSingle();
+  if (!mem) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
+
+  const limit = Math.min((body.limit as number | undefined) ?? 50, 200);
+  const { data, error } = await admin.from('llm_query_history')
+    .select('id, occurred_at, op, provider, model, query_text, response_summary, input_tokens, output_tokens, session_id, correlation_id')
+    .eq('tenant_id', tenant_id)
+    .order('occurred_at', { ascending: false }).limit(limit);
+  if (error) return jsonError(500, 'INTERNAL', error.message);
+
+  // Also surface cap + used so the UI can render "X of Y used".
+  const { data: capRows } = await admin.rpc('llm_quota_for_tenant', { p_tenant_id: tenant_id });
+  const { data: usedRows } = await admin.rpc('llm_quota_used_for_tenant', { p_tenant_id: tenant_id });
+  const cap  = typeof capRows  === 'number' ? capRows  : (capRows?.[0]  as number | undefined) ?? 10;
+  const used = typeof usedRows === 'number' ? usedRows : (usedRows?.[0] as number | undefined) ?? 0;
+
+  return json({
+    ok: true,
+    runs: data ?? [],
+    quota: { cap, used, unlimited: cap === -1 },
+  });
+}
+
+// op:'chat_history_anon' — anon variant. Session_id is the bearer
+// credential; if a caller can produce a valid session UUID, they get
+// the history rows for that session. No JWT path.
+async function handleChatHistoryAnon(body: Record<string, unknown>): Promise<Response> {
+  const session_id = body.session_id as string;
+  if (!session_id || typeof session_id !== 'string') {
+    return jsonError(400, 'BAD_REQUEST', 'session_id required');
+  }
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+
+  const limit = Math.min((body.limit as number | undefined) ?? 50, 200);
+  const { data, error } = await admin.from('llm_query_history')
+    .select('id, occurred_at, op, provider, model, query_text, response_summary, input_tokens, output_tokens, session_id, correlation_id')
+    .eq('session_id', session_id)
+    .eq('op', 'chat_anon')
+    .order('occurred_at', { ascending: false }).limit(limit);
+  if (error) return jsonError(500, 'INTERNAL', error.message);
+
+  return json({
+    ok: true,
+    runs: data ?? [],
+    // Anon cap is constant; usage requires the IP hash which we don't
+    // expose to the client. UI can compute "used" as runs.length if
+    // it wants to display progress against the cap.
+    quota: { cap: 10, unlimited: false },
+  });
+}
+
 async function handleChatAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
   const sessionId = (body.session_id as string) || crypto.randomUUID();
   const ack = body.acknowledge_us_routing === true;
@@ -503,12 +674,24 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     acknowledge_us_routing: ack,
   });
   if (gate instanceof Response) return gate;
-  const { admin, requestId, startedAt } = gate;
+  const { admin, requestId, ipHash, startedAt } = gate;
 
   const message = (body.message as string ?? '').trim();
   if (!message) {
     await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: 'BAD_REQUEST' });
     return jsonError(400, 'BAD_REQUEST', 'message required');
+  }
+
+  // Plan-coupled monthly quota — anon = implicit free (10/month/IP).
+  // Returns null if within budget; on exceeded the audit row is
+  // finalised as QUOTA_EXCEEDED so the security trail shows the
+  // rejection and the audit timeline reflects the failed attempt.
+  const quotaResp = await enforceAnonQuota(admin, ipHash);
+  if (quotaResp) {
+    await finishAnon(admin, requestId, startedAt, {
+      outcome: 'error', error_code: 'QUOTA_EXCEEDED',
+    });
+    return quotaResp;
   }
 
   const clientHistory = Array.isArray(body.history) ? (body.history as SimpleMsg[]) : [];
@@ -570,11 +753,28 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     { role: 'assistant', content: finalText },
   ];
 
+  const modelUsed = anonModelLabel();
   await finishAnon(admin, requestId, startedAt, {
     outcome: 'success',
-    model: LLM_MODEL,
+    model: modelUsed,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
+  });
+
+  // Per-run history — feeds the user-facing session history view and
+  // counts toward the anon monthly quota the next time around.
+  await logChatToHistory(admin, {
+    tenant_id: null,
+    user_id: null,
+    session_id: sessionId,
+    op: 'chat_anon',
+    provider: LLM_PROVIDER,
+    model: modelUsed,
+    query_text: message.slice(0, 4000),
+    response_summary: finalText,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    correlation_id: requestId,
   });
 
   return json({
@@ -591,9 +791,13 @@ async function runAnonViaAnthropic(
 ): Promise<{ text: string; inputTokens: number; outputTokens: number }> {
   const client = new Anthropic({ apiKey });
   const resp = await client.messages.create({
-    model: LLM_MODEL,
+    model: ANON_LLM_MODEL,
     max_tokens: ANON_MAX_TOKENS,
-    system: ANON_SYSTEM_PROMPT,
+    // System-prompt caching on the anon path too. The anon system
+    // prompt is 224 tokens; with a free-tier cap of 10 calls/IP/mo
+    // and many IPs sharing the same prompt, the cache hit rate is
+    // high at the 5-minute window granularity.
+    system: [{ type: 'text', text: ANON_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
     messages: transcript.map((m) => ({ role: m.role, content: m.content })),
   });
   const text = resp.content

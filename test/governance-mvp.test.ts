@@ -145,6 +145,12 @@ function runSimulatedScan(site: FixtureSite): SimulatedScan {
   // Schritt 1: simulierter Detektor-Lauf
   const findings: Finding[] = site.expected.findings.map((exp, idx) => {
     const now = new Date().toISOString();
+    // Konfidenz/Evidence-Level/Verification leiten sich aus dem
+    // Evidence-Kind ab — sha256 = direkte DOM-Observation (höchste
+    // Konfidenz), url = inferiert aus Crawl-Ergebnis. Der echte
+    // Detector entscheidet dasselbe; das Fixture-Schema bleibt
+    // bewusst schlank.
+    const isDirectObservation = exp.evidence_kind === 'sha256';
     return {
       id:             randomUUID(),
       tenant_id,
@@ -157,6 +163,9 @@ function runSimulatedScan(site: FixtureSite): SimulatedScan {
       evidence_ref:   buildEvidenceFromFixture(exp),
       summary:        exp.summary,
       raw_payload:    { ...exp.raw_payload, fixture_index: idx },
+      confidence_score:    isDirectObservation ? 1.0 : 0.85,
+      evidence_level:      isDirectObservation ? 'observed' : 'inferred',
+      verification_status: 'unverified',
       correlation_id,
       created_at:     now,
       updated_at:     now,

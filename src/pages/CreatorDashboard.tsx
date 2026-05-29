@@ -160,7 +160,7 @@ export function CreatorDashboard() {
                 to="/dashboard/agents"
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-none text-sm font-medium text-titanium-300 hover:bg-titanium-900 hover:text-titanium-50 transition-colors"
               >
-                <Bot className="h-4 w-4 text-violet-400" /> Agent OS · Live
+                <Bot className="h-4 w-4 text-violet-400" /> Governance-Agents · Live
               </Link>
             </nav>
 
@@ -336,7 +336,7 @@ export function CreatorDashboard() {
                                 <span className="w-1.5 h-1.5 bg-security-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                                 <span className="w-1.5 h-1.5 bg-security-500 rounded-full animate-bounce"></span>
                               </div>
-                              <span className="text-sm font-medium">EU Agent OS denkt...</span>
+                              <span className="text-sm font-medium">EU-Runtime denkt...</span>
                             </div>
                           ) : msg.status === 'error' ? (
                             <div className="bg-red-950/50 border border-red-900 text-red-300 px-5 py-4 rounded-none flex items-start gap-3">

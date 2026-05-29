@@ -233,7 +233,7 @@ function Header({
               to="/dashboard/agents"
               className="rounded-2xl border border-violet-700/50 px-4 py-2 text-sm text-violet-200 hover:text-white hover:border-violet-500/80"
             >
-              Agent OS · Live
+              Governance-Agents · Live
             </Link>
             <Link
               to="/billing/usage"

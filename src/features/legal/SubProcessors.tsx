@@ -76,6 +76,14 @@ const SUB_PROCESSORS: SubProcessor[] = [
     dpa_url: 'https://github.com/customer-terms/github-data-protection-agreement',
     status: 'available',
   },
+  {
+    name: 'Fontshare (Indian Type Foundry Pvt. Ltd.)',
+    purpose: 'Auslieferung von Webfonts (Schriften) für die Marketing-Surfaces',
+    data_categories: ['IP-Adresse + User-Agent (HTTP-Request beim Font-Download)'],
+    region: 'Indien (Drittland) — Transfer auf Grundlage Art. 49 Abs. 1 lit. b DSGVO (Vertragserfüllung) bzw. SCCs nach Art. 46',
+    dpa_url: 'https://www.fontshare.com/legal/privacy',
+    status: 'available',
+  },
 ];
 
 export function SubProcessors() {

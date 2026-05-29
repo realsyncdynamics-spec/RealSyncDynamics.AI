@@ -1,0 +1,170 @@
+{
+  "$schema_version": "1.0",
+  "description": "Fixture für den Governance-Plattform Test-Harness. Jeder Eintrag beschreibt eine simulierte Website mit den Findings, die ein korrekt arbeitender Detektor-Stack (gdpr-audit, cookie-scanner, ai-act-classifier) emittieren MUSS. Wird vom Test test/governance-mvp.test.ts geladen.",
+  "tenant_id": "00000000-0000-4000-8000-00000000beef",
+  "sites": [
+    {
+      "id": "site-01-missing-privacy",
+      "website_id": "11111111-1111-4111-8111-111111111101",
+      "url": "https://test-missing-privacy.example",
+      "label": "Fehlender Datenschutzlink",
+      "raw_html_sample": "<html><head><title>Demo</title></head><body><footer>Kontakt | Impressum</footer></body></html>",
+      "expected": {
+        "finding_count": 1,
+        "max_severity": "high",
+        "categories": ["transparency"],
+        "findings": [
+          {
+            "detector": "gdpr-audit",
+            "category": "transparency",
+            "severity": "high",
+            "summary": "Datenschutzlink im Footer fehlt (Art. 13 DSGVO).",
+            "evidence_kind": "url",
+            "evidence_url": "https://test-missing-privacy.example/#footer",
+            "raw_payload": {
+              "scanned_url": "https://test-missing-privacy.example",
+              "footer_links": ["Kontakt", "Impressum"],
+              "missing": ["datenschutz", "privacy"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-02-pre-consent-tracker",
+      "website_id": "11111111-1111-4111-8111-111111111102",
+      "url": "https://test-pre-consent.example",
+      "label": "Pre-Consent Tracker (GA4 lädt vor Einwilligung)",
+      "raw_html_sample": "<html><head><script async src=\"https://www.googletagmanager.com/gtag/js?id=G-XYZ\"></script></head><body>Banner erscheint erst nach 2s</body></html>",
+      "expected": {
+        "finding_count": 2,
+        "max_severity": "critical",
+        "categories": ["consent", "tracker"],
+        "findings": [
+          {
+            "detector": "cookie-scanner",
+            "category": "consent",
+            "severity": "critical",
+            "summary": "Tracker (Google Tag Manager) feuert vor Consent-Banner — Verstoß gegen TTDSG §25.",
+            "evidence_kind": "sha256",
+            "evidence_source": "<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-XYZ\"></script>",
+            "raw_payload": {
+              "vendor": "Google Tag Manager",
+              "fired_at_ms": 230,
+              "consent_at_ms": 2100,
+              "request_url": "https://www.googletagmanager.com/gtag/js?id=G-XYZ"
+            }
+          },
+          {
+            "detector": "cookie-scanner",
+            "category": "tracker",
+            "severity": "high",
+            "summary": "Drittvendor 'googletagmanager.com' geladen — fehlender DPA-Nachweis.",
+            "evidence_kind": "url",
+            "evidence_url": "https://www.googletagmanager.com/gtag/js?id=G-XYZ",
+            "raw_payload": {
+              "vendor_domain": "googletagmanager.com",
+              "dpa_documented": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-03-unknown-vendor",
+      "website_id": "11111111-1111-4111-8111-111111111103",
+      "url": "https://test-unknown-vendor.example",
+      "label": "Unbekannte Vendor-Domain",
+      "raw_html_sample": "<html><body><img src=\"https://pixel.unknown-analytics-vendor.io/track.gif\"></body></html>",
+      "expected": {
+        "finding_count": 1,
+        "max_severity": "high",
+        "categories": ["tracker"],
+        "findings": [
+          {
+            "detector": "cookie-scanner",
+            "category": "tracker",
+            "severity": "high",
+            "summary": "Unbekannte Vendor-Domain 'unknown-analytics-vendor.io' — nicht im Vendor-Register.",
+            "evidence_kind": "url",
+            "evidence_url": "https://pixel.unknown-analytics-vendor.io/track.gif",
+            "raw_payload": {
+              "vendor_domain": "unknown-analytics-vendor.io",
+              "in_vendor_register": false,
+              "category_guess": "analytics"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-04-ai-chatbot",
+      "website_id": "11111111-1111-4111-8111-111111111104",
+      "url": "https://test-ai-chatbot.example",
+      "label": "AI-Chatbot/Widget ohne Transparenz-Hinweis",
+      "raw_html_sample": "<html><body><div id=\"chat-widget\" data-provider=\"openai\" data-model=\"gpt-4o\">Frag uns!</div></body></html>",
+      "expected": {
+        "finding_count": 1,
+        "max_severity": "high",
+        "categories": ["ai_act"],
+        "findings": [
+          {
+            "detector": "ai-act-classifier",
+            "category": "ai_act",
+            "severity": "high",
+            "summary": "AI-Chatbot ohne sichtbare Transparenz-Kennzeichnung — Verstoß gegen EU AI Act Art. 50 (Transparenzpflicht).",
+            "evidence_kind": "sha256",
+            "evidence_source": "<div id=\"chat-widget\" data-provider=\"openai\" data-model=\"gpt-4o\">Frag uns!</div>",
+            "raw_payload": {
+              "widget_selector": "#chat-widget",
+              "provider": "openai",
+              "model": "gpt-4o",
+              "ai_disclosure_visible": false,
+              "ai_act_article": "Art. 50"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-05-missing-impressum",
+      "website_id": "11111111-1111-4111-8111-111111111105",
+      "url": "https://test-missing-impressum.example",
+      "label": "Fehlendes Impressum (TMG §5)",
+      "raw_html_sample": "<html><body><footer>Datenschutz | AGB</footer></body></html>",
+      "expected": {
+        "finding_count": 1,
+        "max_severity": "high",
+        "categories": ["transparency"],
+        "findings": [
+          {
+            "detector": "gdpr-audit",
+            "category": "transparency",
+            "severity": "high",
+            "summary": "Impressum-Link fehlt im Footer — Verstoß gegen TMG §5 / DDG §5.",
+            "evidence_kind": "url",
+            "evidence_url": "https://test-missing-impressum.example/#footer",
+            "raw_payload": {
+              "scanned_url": "https://test-missing-impressum.example",
+              "footer_links": ["Datenschutz", "AGB"],
+              "missing": ["impressum"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "site-06-clean-control",
+      "website_id": "11111111-1111-4111-8111-111111111106",
+      "url": "https://test-clean-control.example",
+      "label": "Saubere Kontrollseite (keine Risiken erwartet)",
+      "raw_html_sample": "<html><head><script>/* nothing before consent */</script></head><body><footer>Impressum | Datenschutz | AGB</footer></body></html>",
+      "expected": {
+        "finding_count": 0,
+        "max_severity": null,
+        "categories": [],
+        "findings": []
+      }
+    }
+  ]
+}

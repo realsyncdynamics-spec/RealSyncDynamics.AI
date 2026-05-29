@@ -36,6 +36,10 @@ export function Welcome() {
   const [busy, setBusy] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [auditQueued, setAuditQueued] = useState(false);
+  // Anzahl bereits übernommener anonymer Audits (server-seitig via
+  // claim_anonymous_audits_for_tenant beim Signup). Wenn > 0, zeigen
+  // wir Step 3 ohne erneute Domain-Eingabe — der erste Scan ist schon da.
+  const [claimedAudits, setClaimedAudits] = useState<number>(0);
 
   // OAuth-Provider-Fehler abfangen, falls der User mit ?error=... oder
   // #error=... auf /welcome zurueck navigiert (z.B. access_denied,
@@ -108,6 +112,23 @@ export function Welcome() {
     })();
     return () => { cancelled = true; };
   }, [step, tenantId]);
+
+  // Sobald wir den Tenant kennen: prüfen, ob beim Signup anonyme
+  // Audits übernommen wurden. RLS gibt dem owner die Zeilen frei.
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !tenantId) return;
+    const sb = getSupabase();
+    let cancelled = false;
+    void (async () => {
+      const { count, error: countErr } = await sb
+        .from('gdpr_audits')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId);
+      if (cancelled) return;
+      if (!countErr && typeof count === 'number') setClaimedAudits(count);
+    })();
+    return () => { cancelled = true; };
+  }, [tenantId]);
 
   // Step 1 → Magic-Link
   const submitAccount = async (e: React.FormEvent) => {
@@ -445,8 +466,29 @@ export function Welcome() {
           {step === 3 && (
             <div className="space-y-5">
               <h2 className="font-display font-bold text-xl text-titanium-50 tracking-tight">
-                {isCookieSdk ? 'Snippet einbauen' : 'Domain prüfen'}
+                {isCookieSdk
+                  ? 'Snippet einbauen'
+                  : claimedAudits > 0
+                    ? 'Dein Audit ist bereit'
+                    : 'Domain prüfen'}
               </h2>
+
+              {!isCookieSdk && claimedAudits > 0 && !auditQueued && (
+                <div className="p-4 bg-obsidian-900 border border-emerald-700 rounded-none flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-display font-bold text-titanium-50 mb-1">
+                      {claimedAudits === 1
+                        ? '1 Audit-Report in deinen Workspace übernommen'
+                        : `${claimedAudits} Audit-Reports in deinen Workspace übernommen`}
+                    </div>
+                    <p className="text-sm text-titanium-300 leading-relaxed">
+                      Wir haben den Audit, den du vor dem Login erstellt hast, mit deinem Account verknüpft.
+                      Du musst keine Domain erneut eingeben — der Bericht ist bereits da.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {isCookieSdk ? (
                 <>
@@ -473,7 +515,7 @@ export function Welcome() {
                     </p>
                   </div>
                 </div>
-              ) : (
+              ) : claimedAudits > 0 ? null : (
                 <>
                   <p className="text-sm text-titanium-400">
                     Trage die Domain ein, die wir für deinen Audit-Pro-Tiefenscan analysieren sollen:

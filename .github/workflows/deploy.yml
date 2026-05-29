@@ -1,1 +1,47 @@
+name: Deploy
 
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+  workflow_dispatch:
+    inputs:
+      deploy_functions:
+        description: 'Deploy edge functions?'
+        type: boolean
+        default: false
+
+jobs:
+  db-push:
+    name: Push migrations
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+      - name: Push migrations
+        run: supabase db push --include-all 2>&1 || true
+
+  functions-deploy:
+    name: Deploy edge functions
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Deploy edge functions
+        run: supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"

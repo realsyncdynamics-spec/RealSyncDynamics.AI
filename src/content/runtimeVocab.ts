@@ -91,18 +91,18 @@ export const PLANS = [
  * Product Clarity Cleanup. New copy MUST be one of these — anything else
  * is a regression.
  *
- *   Run Scan              → kick off a free audit
- *   Open Runtime          → enterprise / contact-driven entry
- *   Activate Monitoring   → Starter tier
- *   Activate Governance   → Growth / Agency tier
- *   View Evidence         → secondary nav into evidence vault / audit trail
+ *   Scan starten          → kick off a free audit
+ *   Runtime öffnen        → enterprise / contact-driven entry
+ *   Monitoring aktivieren → Starter tier
+ *   Governance aktivieren → Growth / Agency tier
+ *   Evidence ansehen      → secondary nav into evidence vault / audit trail
  */
 export const CTA = {
-  runScan:            'Run Scan',
-  openRuntime:        'Open Runtime',
-  activateMonitoring: 'Activate Monitoring',
-  activateGovernance: 'Activate Governance',
-  viewEvidence:       'View Evidence',
+  runScan:            'Scan starten',
+  openRuntime:        'Runtime öffnen',
+  activateMonitoring: 'Monitoring aktivieren',
+  activateGovernance: 'Governance aktivieren',
+  viewEvidence:       'Evidence ansehen',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];

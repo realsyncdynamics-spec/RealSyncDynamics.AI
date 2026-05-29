@@ -188,7 +188,7 @@ import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
 import { CookieConsent } from './components/CookieConsent';
-import { AssistentChip } from './components/AssistentChip';
+const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
@@ -480,7 +480,9 @@ export default function App() {
         <BrowserRouter basename={ROUTER_BASENAME}>
           <RoutesWithTracking />
           <CookieConsent />
-          <AssistentChip />
+          <Suspense fallback={null}>
+            <AssistentChip />
+          </Suspense>
         </BrowserRouter>
       </EnvironmentProvider>
     </TenantProvider>

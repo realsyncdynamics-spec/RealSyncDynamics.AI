@@ -40,12 +40,7 @@ import {
   confidenceFor,
   evidenceLevelFor,
 } from '../_shared/audit-mapping.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-tenant-id',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { withCors } from '../_shared/cors.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,7 +69,8 @@ interface GdprAuditResponse {
 // damit Vitest die pure Heuristik testen kann (kein Deno-Runtime).
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const { json, jsonError, preflight } = withCors(req);
+  if (req.method === 'OPTIONS') return preflight();
   if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -214,15 +210,5 @@ Deno.serve(async (req) => {
   });
 });
 
-// ─── helpers ─────────────────────────────────────────────────────────
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}
+// json/jsonError werden über `withCors(req)` pro Request bereitgestellt
+// — sie kapseln den Origin-aware CORS-Header.

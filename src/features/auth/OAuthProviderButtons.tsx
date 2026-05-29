@@ -8,19 +8,18 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
  *
  * Provider-Set in dieser PR (User-Wahl):
  *   - Google      (Workspace + Gmail — primaer fuer DACH-Compliance-Personae)
- *   - LinkedIn    (DSB / Compliance-Officer Sales-Pfad)
  *   - GitHub      (Engineering-Audience)
  *
  * Bewusst NICHT enthalten:
- *   - Facebook    (Trust-Konflikt mit DSGVO-Brand — Meta-Login auf einer
- *                  Datenschutz-Plattform widerspricht der Position)
- *   - Microsoft   (kommt mit Enterprise-Tier-Outreach in Folge-PR)
+ *   - LinkedIn    (B2B/Compliance-Pfad — Reaktivierung sobald Dashboard-Setup steht)
+ *   - Microsoft   (Enterprise-Tier — Reaktivierung mit Enterprise-Outreach)
+ *   - Facebook    (Trust-Konflikt mit DSGVO-Brand — dauerhaft ausgeschlossen)
  *
- * Magic-Link bleibt als Fallback in Welcome.tsx erhalten — diese Component
- * ergaenzt es, ersetzt es nicht.
+ * Magic-Link / E-Mail-Anmeldung in Welcome.tsx + CheckoutPage.tsx ist der
+ * Fallback-Pfad fuer alle nicht abgedeckten Identitaeten.
  */
 
-type Provider = 'google' | 'azure' | 'linkedin_oidc' | 'github';
+type Provider = 'google' | 'github';
 
 interface ProviderConfig {
   id: Provider;
@@ -52,33 +51,6 @@ const PROVIDERS: ProviderConfig[] = [
         <path
           fill="#EA4335"
           d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"
-        />
-      </svg>
-    ),
-  },
-  {
-    id: 'azure',
-    label: 'Mit Microsoft fortfahren',
-    description: 'Microsoft 365 · Azure AD · Entra ID',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-        <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-        <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-        <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-      </svg>
-    ),
-  },
-  {
-    id: 'linkedin_oidc',
-    label: 'Mit LinkedIn fortfahren',
-    description: 'Sales / Compliance-Officer',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="4" fill="#0A66C2" />
-        <path
-          fill="#fff"
-          d="M7 9.5h-3v9h3v-9zm-1.5-1.2c.94 0 1.7-.76 1.7-1.7s-.76-1.7-1.7-1.7c-.94 0-1.7.76-1.7 1.7s.76 1.7 1.7 1.7zm14.5 1.2h-2.86v1.23h-.04c-.4-.76-1.38-1.55-2.83-1.55-3.03 0-3.59 1.99-3.59 4.58v4.74h2.99v-4.2c0-1 .02-2.29 1.39-2.29 1.39 0 1.6 1.09 1.6 2.21v4.28h2.99v-4.91c0-2.6-.56-4.59-3.65-4.59z"
         />
       </svg>
     ),

@@ -11,11 +11,26 @@ Prinzip:
 
 ## Verfügbare Skripte
 
+### VPS / Docker
+
 | Skript | Modus | Zweck |
 |---|---|---|
 | `doctor.sh` | Read-Only | Vollständige VPS-Diagnose (Container, Ports, Traefik-Routing, Ollama-Triage, Reachability) |
 | `status.sh` | Read-Only | Kurzer Status: was läuft, was hört, was antwortet |
 | `logs.sh` | Read-Only | Container-Logs tailen mit konsistenten Defaults |
+
+### Supabase
+
+| Skript | Modus | Zweck |
+|---|---|---|
+| `supabase-status.sh` | Read-Only | Link-Status, Migration-Drift-Übersicht, Function-Liste |
+| `supabase-functions-deploy.sh` | Write (mit Confirm) | Edge-Function-Deploy mit korrektem `verify_jwt`-Flag aus `config.toml` |
+| `supabase-migration-drift.sh` | Read-Only + lokales File | Klassifiziert local-only vs. remote-only Migrations, schreibt Repair-Vorschläge nach `.migration-drift-suggested.sh` (gitignored, manuell review) |
+| `supabase-secrets.sh` | Mixed | `list`/`set`/`unset`/`push`/`diff` von Edge-Function-Secrets — Ersatz für Dashboard |
+
+ENV für Supabase-Skripte:
+- `SUPABASE_ACCESS_TOKEN` — PAT (account → Access Tokens)
+- `SUPABASE_PROJECT_ID` — Project-Ref (xxxx in xxxx.supabase.co)
 
 ## Ausführungsort
 

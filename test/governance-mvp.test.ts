@@ -81,7 +81,7 @@ interface FixtureFile {
 }
 
 const FIXTURE: FixtureFile = JSON.parse(
-  readFileSync(join(__dirname, 'fixtures', 'governance-sites.json'), 'utf8'),
+  readFileSync(join(__dirname, 'fixtures', 'governance-mvp-sites.json'), 'utf8'),
 );
 
 /* ────────────────────────────────────────────────────────────────────

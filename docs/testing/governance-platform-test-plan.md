@@ -7,7 +7,7 @@
 
 | Datei | Rolle |
 | --- | --- |
-| `test/fixtures/governance-sites.json` | 6 simulierte Websites (5 mit definierten Risiken + 1 saubere Kontrolle), inkl. erwartete Findings, Kategorien, Severities und Evidence-Schema. |
+| `test/fixtures/governance-mvp-sites.json` | 6 simulierte Websites (5 mit definierten Risiken + 1 saubere Kontrolle), inkl. erwartete Findings, Kategorien, Severities und Evidence-Schema. |
 | `test/governance-mvp.test.ts` | Vitest-Suite: simuliert Pipeline-Lauf, prüft Evidence/Report/Disclaimer/Export, misst Performance, vergleicht expected vs. actual mit FP/FN-Metrik. |
 | `docs/testing/governance-platform-test-plan.md` | Dieser Plan: Ziel, Testdaten, Kriterien, Pass/Fail-Matrix, Metriken, nächste Schritte. |
 
@@ -50,7 +50,7 @@ Kunden bekommt:
 
 ## 2 · Testdaten
 
-`test/fixtures/governance-sites.json` (Schema v1.0). Pro Site:
+`test/fixtures/governance-mvp-sites.json` (Schema v1.0). Pro Site:
 
 | Site | Risiko | erwarteter Detector | erwartete Severity | erwartete Kategorie | Anzahl Findings |
 | --- | --- | --- | --- | --- | --- |

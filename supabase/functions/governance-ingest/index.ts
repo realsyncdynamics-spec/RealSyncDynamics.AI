@@ -123,8 +123,12 @@ Deno.serve(async (req) => {
   if (!keyRow) return jsonError(401, 'UNAUTHORIZED', 'unknown token');
   if (keyRow.revoked_at) return jsonError(401, 'UNAUTHORIZED', 'token revoked');
 
+  // Body-Groessen-Grenze VOR dem Parsen (DoS-Schutz auf diesem Public-Webhook).
+  // 1 MB ist grosszuegig fuer einen Batch von bis zu MAX_BATCH Events inkl. Evidence.
+  const rawBody = await req.text();
+  if (rawBody.length > 1_048_576) return jsonError(413, 'BODY_TOO_LARGE', 'max 1 MB');
   let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
+  try { body = JSON.parse(rawBody); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   const items = normalizeItems(body);
   if (!items) return jsonError(400, 'BAD_REQUEST', 'expected { event } or { events: [...] }');

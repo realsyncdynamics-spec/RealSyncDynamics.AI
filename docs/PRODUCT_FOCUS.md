@@ -83,6 +83,7 @@ Bevor ein neues Feature, Modul oder Dependency in den Kern wandert:
 
 ## Referenzen
 
+- `docs/POSITIONING_STRATEGY.md` — kanonische Positionierung, USP, ICP, GTM (die *Story*; diese Datei regelt den *Scope*).
 - `ROADMAP.md` — Phasen 1–4, Preisstruktur.
 - `docs/architecture/agent-os.md` — Runtime-Architektur (Quelle der DB-Migration).
 - `AGENTS.md` — Agent-Katalog.

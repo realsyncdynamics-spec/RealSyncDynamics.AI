@@ -16,6 +16,7 @@
     "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",
     "e2e": "playwright test",
     "check:production": "node scripts/production-readiness-check.mjs",
+    "check:edge-functions": "node scripts/check-edge-function-drift.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh"

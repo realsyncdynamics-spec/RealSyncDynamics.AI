@@ -4,17 +4,20 @@ import { usePageMeta } from '../lib/usePageMeta';
 import { RUNTIME_MOCK_EVENTS, KIND_COLOR, KIND_LABEL, SEVERITY_COLOR } from '../lib/runtimeMockEvents';
 import { Activity, Cpu, ShieldCheck, AlertTriangle } from 'lucide-react';
 
-// MonitoringPage — live runtime feed.
-// Streaming terminal of mock events + aggregate counters that tick up as
-// events arrive. Static data; the page simulates a live system at rest.
+// MonitoringPage — Runtime-Feed-Vorschau (Demo).
+// Streaming-Terminal mit Mock-Events + Aggregat-Counter, die hochlaufen,
+// während Events erscheinen. Statische Daten — simuliert ein Live-System
+// im Ruhezustand für Pilot-Evaluierung.
 
 const KIND_FILTERS = ['all', 'scan', 'drift', 'ai', 'consent', 'evidence', 'incident', 'agent'] as const;
 type KindFilter = (typeof KIND_FILTERS)[number];
 
 export function MonitoringPage() {
   usePageMeta({
-    title: 'Monitoring — Live Runtime Feed | RealSync',
-    description: 'Live runtime monitoring: streaming events, drift detection, AI classification, evidence anchoring.',
+    title: 'Monitoring — Runtime-Feed-Vorschau | RealSync',
+    description:
+      'Runtime-Monitoring-Vorschau: Ereignisse, Drift-Erkennung, KI-Klassifikation, ' +
+      'Evidence-Anchor. Demo-Surface mit simulierten Daten — keine Kundendaten.',
     url: 'https://RealSyncDynamicsAI.de/monitoring',
   });
 
@@ -45,27 +48,37 @@ export function MonitoringPage() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
       <main className="pt-14">
+        {/* Demo-Strip — verhindert „live"-Missverständnis. */}
+        <div className="border-b border-titanium-900 bg-obsidian-900/80">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
+            <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
+              Demo-Runtime · simulierte Ereignisse · keine Kundendaten
+            </span>
+          </div>
+        </div>
+
         <header className="border-b border-titanium-900 px-4 sm:px-6 py-16">
           <div className="max-w-7xl mx-auto">
             <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-              monitoring · live runtime
+              Monitoring · Runtime-Vorschau
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-              Every signal, in the order it happened.
+              Jedes Signal — in der Reihenfolge, wie es aufgetreten ist.
             </h1>
             <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-              The monitoring surface is the system's own log. Detection, classification, agent actions
-              and evidence anchors stream in real time and never go silent.
+              Die Monitoring-Surface ist das eigene Log des Systems. Erkennung,
+              Klassifikation, Agent-Aktionen und Evidence-Anchor erscheinen in
+              der Demo-Vorschau nacheinander.
             </p>
           </div>
         </header>
 
         <section className="px-4 sm:px-6 py-12 bg-obsidian-950 border-b border-titanium-900">
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px bg-titanium-900">
-            <StatTile icon={<Activity className="h-3.5 w-3.5 text-cyan-300" />} label="scans" value={counters.scan} tone="text-cyan-300" />
-            <StatTile icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-300" />} label="drift events" value={counters.drift} tone="text-amber-300" />
-            <StatTile icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />} label="ai" value={counters.ai} tone="text-violet-300" />
-            <StatTile icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} label="evidence" value={counters.evidence} tone="text-emerald-300" />
+            <StatTile icon={<Activity className="h-3.5 w-3.5 text-cyan-300" />} label="Scans" value={counters.scan} tone="text-cyan-300" />
+            <StatTile icon={<AlertTriangle className="h-3.5 w-3.5 text-amber-300" />} label="Drift-Ereignisse" value={counters.drift} tone="text-amber-300" />
+            <StatTile icon={<Cpu className="h-3.5 w-3.5 text-violet-300" />} label="KI" value={counters.ai} tone="text-violet-300" />
+            <StatTile icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />} label="Evidence" value={counters.evidence} tone="text-emerald-300" />
           </div>
         </section>
 
@@ -84,7 +97,7 @@ export function MonitoringPage() {
                       : 'bg-obsidian-900 text-titanium-300 border-titanium-800 hover:border-titanium-600',
                   ].join(' ')}
                 >
-                  {k}
+                  {k === 'all' ? 'alle' : k}
                 </button>
               ))}
             </div>
@@ -97,11 +110,11 @@ export function MonitoringPage() {
                     <span className="w-2 h-2 rounded-full bg-amber-500/70" />
                     <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
                   </span>
-                  runtime.log
+                  runtime.log · Demo
                 </span>
-                <span className="text-cyan-300 inline-flex items-center gap-1.5">
-                  <span className="inline-block h-1.5 w-3 bg-cyan-300 motion-safe:animate-pulse" />
-                  streaming
+                <span className="text-titanium-400 inline-flex items-center gap-1.5">
+                  <span className="inline-block h-1.5 w-3 bg-amber-400 motion-safe:animate-pulse" />
+                  Beispieldaten
                 </span>
               </header>
               <div className="font-mono text-[11px] leading-relaxed p-4 max-h-[60vh] overflow-y-auto">
@@ -127,8 +140,8 @@ export function MonitoringPage() {
                 )}
               </div>
               <footer className="px-3 py-2 border-t border-titanium-900 bg-obsidian-900 font-mono text-[10px] text-titanium-500 flex items-center justify-between">
-                <span>{events.length} / {RUNTIME_MOCK_EVENTS.length} events</span>
-                <span className="text-emerald-400">● chain sealed</span>
+                <span>{events.length} / {RUNTIME_MOCK_EVENTS.length} Ereignisse</span>
+                <span className="text-emerald-400">● Kette gehasht (SHA-256)</span>
               </footer>
             </div>
           </div>

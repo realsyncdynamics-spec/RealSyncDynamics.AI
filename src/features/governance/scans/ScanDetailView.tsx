@@ -17,19 +17,26 @@ import {
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { getScanReport } from './scansApi';
 import type { ReportPayload } from '../../../types/governance/report';
-import type { FindingSeverity, FindingStatus } from '../../../types/governance/finding';
+import type { Finding, FindingSeverity, FindingStatus } from '../../../types/governance/finding';
 import { evidenceRefLabel } from '../../../types/governance/evidence';
+import { SEVERITY_PALETTE } from '../../../lib/governance/severityPalette';
+import { FindingEvidencePanel } from './FindingEvidencePanel';
 
+// Pill + Label aus zentraler Palette — siehe src/lib/governance/severityPalette.ts.
 const SEVERITY_PILL: Record<FindingSeverity, string> = {
-  critical: 'border-rose-500/40 bg-rose-500/10 text-rose-200',
-  high:     'border-amber-500/40 bg-amber-500/10 text-amber-200',
-  medium:   'border-sky-500/40 bg-sky-500/10 text-sky-200',
-  low:      'border-titanium-700 bg-titanium-800/30 text-titanium-300',
-  info:     'border-titanium-700 bg-titanium-800/30 text-titanium-400',
+  critical: SEVERITY_PALETTE.critical.pill,
+  high:     SEVERITY_PALETTE.high.pill,
+  medium:   SEVERITY_PALETTE.medium.pill,
+  low:      SEVERITY_PALETTE.low.pill,
+  info:     SEVERITY_PALETTE.info.pill,
 };
 
 const SEVERITY_LABEL: Record<FindingSeverity, string> = {
-  critical: 'kritisch', high: 'hoch', medium: 'mittel', low: 'niedrig', info: 'hinweis',
+  critical: SEVERITY_PALETTE.critical.label,
+  high:     SEVERITY_PALETTE.high.label,
+  medium:   SEVERITY_PALETTE.medium.label,
+  low:      SEVERITY_PALETTE.low.label,
+  info:     SEVERITY_PALETTE.info.label,
 };
 
 const STATUS_LABEL: Record<FindingStatus, string> = {
@@ -50,17 +57,21 @@ function Inner() {
   const { scanId = '' } = useParams<{ scanId: string }>();
   const [payload, setPayload] = useState<ReportPayload | null | 'loading' | 'not-found'>('loading');
   const [error, setError] = useState<string | null>(null);
+  // Increment to force a refetch after a status transition.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!scanId) { setPayload('not-found'); return; }
     let cancelled = false;
-    setPayload('loading');
+    // Only show full loading state on initial load — silent refetch
+    // after a status transition keeps the UI from blinking.
+    if (reloadKey === 0) setPayload('loading');
     setError(null);
     getScanReport(scanId)
       .then((p) => { if (cancelled) return; setPayload(p === null ? 'not-found' : p); })
       .catch((e: Error) => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
-  }, [scanId]);
+  }, [scanId, reloadKey]);
 
   if (error) {
     return <Shell><p className="text-rose-300">{error}</p></Shell>;
@@ -76,10 +87,12 @@ function Inner() {
       </Shell>
     );
   }
-  return <Detail payload={payload} />;
+  return <Detail payload={payload} onReload={() => setReloadKey((n) => n + 1)} />;
 }
 
-function Detail({ payload }: { payload: ReportPayload }) {
+function Detail({
+  payload, onReload,
+}: { payload: ReportPayload; onReload: () => void }) {
   const { report, scan_run, all_findings, evidence_catalog } = payload;
   const gradeCls = GRADE_COLOR[report.grade] ?? '';
   return (
@@ -147,27 +160,36 @@ function Detail({ payload }: { payload: ReportPayload }) {
             </div>
           ) : (
             <ul className="space-y-2">
-              {report.top_findings.map((f) => (
-                <li key={f.id} className="border border-titanium-800 bg-obsidian-900 p-4">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                        <span className={`inline-flex items-center px-2 py-0.5 text-[10px] uppercase font-mono tracking-wider border ${SEVERITY_PILL[f.severity]}`}>
-                          {SEVERITY_LABEL[f.severity]}
-                        </span>
-                        <span className="text-[11px] font-mono text-titanium-500">{f.category}</span>
-                        <span className="text-[11px] font-mono text-titanium-500">· {STATUS_LABEL[f.status]}</span>
+              {report.top_findings.map((rf) => {
+                const full = all_findings.find((x: Finding) => x.id === rf.id);
+                return (
+                  <li key={rf.id} className="border border-titanium-800 bg-obsidian-900 p-4">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                          <span className={`inline-flex items-center px-2 py-0.5 text-[10px] uppercase font-mono tracking-wider border ${SEVERITY_PILL[rf.severity]}`}>
+                            {SEVERITY_LABEL[rf.severity]}
+                          </span>
+                          <span className="text-[11px] font-mono text-titanium-500">{rf.category}</span>
+                          <span className="text-[11px] font-mono text-titanium-500">· {STATUS_LABEL[rf.status]}</span>
+                        </div>
+                        <p className="text-sm text-titanium-100 mb-1">{rf.summary}</p>
+                        {rf.evidence ? (
+                          <p className="text-[11px] text-brass-300 font-mono">
+                            Beleg: {evidenceRefLabel(rf.evidence)}
+                          </p>
+                        ) : null}
+                        {full ? (
+                          <FindingEvidencePanel
+                            finding={full}
+                            onStatusChange={onReload}
+                          />
+                        ) : null}
                       </div>
-                      <p className="text-sm text-titanium-100 mb-1">{f.summary}</p>
-                      {f.evidence ? (
-                        <p className="text-[11px] text-brass-300 font-mono">
-                          Beleg: {evidenceRefLabel(f.evidence)}
-                        </p>
-                      ) : null}
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

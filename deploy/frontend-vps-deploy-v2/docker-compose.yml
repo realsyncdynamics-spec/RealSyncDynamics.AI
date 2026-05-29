@@ -1,0 +1,56 @@
+# frontend-vps-deploy-v2 — Vite-SPA als eigenständiger Container.
+#
+# Architektur-Boundary (hart):
+#   - berührt NICHT openclaw-app-1
+#   - berührt NICHT Port 8080 (= openclaw-app-1)
+#   - berührt NICHT Host-nginx auf 80/443
+#   - berührt NICHT /root/OpenClaw
+#   - schaltet KEINE Domain/Traefik-Route
+#
+# Default-Bind: 127.0.0.1:${FRONTEND_HOST_PORT:-8090} — nur lokal auf dem
+# VPS erreichbar. Public-Expose passiert erst durch einen explizit
+# konfigurierten Reverse-Proxy, nicht durch dieses Compose-File allein.
+#
+# Start (auf dem VPS):
+#   cd deploy/frontend-vps-deploy-v2
+#   cp .env.example .env && $EDITOR .env
+#   docker compose --env-file .env up -d --build
+#
+# Status:  docker compose ps
+# Logs:    docker compose logs -f frontend
+# Stop:    docker compose down
+# Rollback: docker compose down && docker image tag realsync-frontend:previous realsync-frontend:latest && docker compose up -d
+
+services:
+  frontend:
+    build:
+      # Kontext = Repo-Root (zwei Ebenen hoch), damit der Build alle Sources sieht.
+      context: ../..
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?VITE_SUPABASE_URL must be set}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?VITE_SUPABASE_ANON_KEY must be set}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+    image: realsync-frontend:${FRONTEND_IMAGE_TAG:-latest}
+    container_name: realsync-frontend
+    restart: unless-stopped
+    ports:
+      # Default-Bind 127.0.0.1:8090 — nur lokal. Auf "0.0.0.0" stellen
+      # via FRONTEND_HOST_BIND="" erst dann, wenn ein Reverse-Proxy
+      # vor dem Container steht oder direkter Public-Expose gewollt ist.
+      # Bekannte Belegungen, die NICHT angefasst werden:
+      #   - 8080  → openclaw-app-1 (Python hybrid-orchestrator, Bestand)
+      #   - 80/443 → Host-nginx
+      #   - 8787   → realsync-agent-runtime
+      - "${FRONTEND_HOST_BIND:-127.0.0.1}:${FRONTEND_HOST_PORT:-8090}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

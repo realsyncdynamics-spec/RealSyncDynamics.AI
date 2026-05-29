@@ -315,7 +315,7 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
       id: 'tracker_no_consent',
       severity: 'critical',
       title: `Tracker ohne sichtbares Consent-Banner: ${trackers}`,
-      detail: 'EuGH (C-673/17) + BGH-Urteil „Cookie II" (2020): Tracker, die nicht technisch notwendig sind, brauchen aktives Opt-In. Verstoß = bis 4% Jahresumsatz.',
+      detail: 'EuGH (C-673/17) + BGH „Cookie II" (2020): Nicht-essenzielle Tracker setzen aktives Opt-In voraus (DSGVO Art. 6, § 25 TTDSG). Technische Beobachtung — rechtliche Würdigung durch DSB/Fachjurist erforderlich.',
       paragraph_ref: 'DSGVO Art. 6 Abs. 1, § 25 TTDSG',
     });
   }
@@ -426,7 +426,7 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
       id: 'social_pixel_no_consent',
       severity: 'critical',
       title: `Social-Media-Pixel ohne Consent: ${trackers}`,
-      detail: 'TikTok + Pinterest übertragen ins Drittland (CN/US) ohne SCC. Höchstes Risiko-Profil.',
+      detail: 'TikTok/Pinterest-Pixel impliziert Datentransfer in Drittländer (CN/US). Standardvertragsklauseln (SCC) bzw. Angemessenheitsbeschluss erforderlich (DSGVO Art. 44 ff.). Garantien sind im Scan nicht beobachtbar — DSB/Fachjurist sollte den Transfer prüfen.',
       paragraph_ref: 'DSGVO Art. 44',
     });
   }

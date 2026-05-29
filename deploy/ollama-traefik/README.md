@@ -127,6 +127,13 @@ Beide Container sollten `Up` (Ollama eventuell `health: starting` bis 60s).
 docker exec -it kodee-ollama ollama pull gemma3:4b
 ```
 
+> **Auto-Pull-Fallback:** Wenn der manuelle Pull vergessen wird, fängt der
+> Pre-Flight-Guard in `_shared/ollamaPull.ts` das ab: der erste User-Call
+> erkennt das fehlende Modell, triggert einen Background-`/api/pull` und
+> antwortet mit `503 MODEL_PROVISIONING`. Beim nächsten Aufruf ist das Modell
+> da. Zusätzlich konvergiert die Cron-Function `ollama-warmup-cron` täglich
+> auf den DB-Soll-Zustand — siehe `supabase/functions/ollama-warmup-cron/`.
+
 ### 6. Tests
 
 ```bash

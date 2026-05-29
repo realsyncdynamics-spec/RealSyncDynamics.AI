@@ -286,6 +286,7 @@ export async function runAiTool(
                  : code === 'PROVIDER_ERROR' ? 502
                  : code === 'QUOTA_EXCEEDED' ? 402
                  : code === 'LOCAL_UNAVAILABLE' ? 503
+                 : code === 'MODEL_PROVISIONING' ? 503
                  : 500;
     throw new AiInvokeError(message, code, status);
   }

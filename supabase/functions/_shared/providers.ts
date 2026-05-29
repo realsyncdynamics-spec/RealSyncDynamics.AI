@@ -14,6 +14,7 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.32.1';
 import { GoogleGenAI } from 'npm:@google/genai@1.29.0';
 import OpenAI from 'npm:openai@4.77.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { ensureOllamaModel } from './ollamaPull.ts';
 
 // Edge-Function-Project-Secrets müssen per Dashboard/CLI gesetzt werden.
 // Wenn nicht da: Fallback auf Supabase Vault via SECURITY-DEFINER-RPC.
@@ -161,6 +162,21 @@ async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
   const cred = await getApiKey('OLLAMA_AUTH_TOKEN', 'ollama_auth_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (cred) headers['Authorization'] = `Basic ${btoa(cred)}`;
+
+  // Pre-flight: ist das Modell auf dem VPS bereits gepullt? Falls nicht,
+  // Background-Pull triggern und MODEL_PROVISIONING zurueckgeben. Beim
+  // naechsten Aufruf ist das Modell verfuegbar.
+  const guard = await ensureOllamaModel({
+    baseUrl: baseUrl.replace(/\/$/, ''),
+    headers,
+    model: req.modelId,
+  });
+  if (guard.status === 'provisioning') {
+    throw new ProviderError(
+      `Ollama model '${req.modelId}' not loaded; background pull triggered, retry in a few minutes`,
+      'MODEL_PROVISIONING',
+    );
+  }
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
   if (req.systemPrompt) messages.push({ role: 'system', content: req.systemPrompt });

@@ -85,7 +85,7 @@ function SectionHead() {
         02 · Runtime Canvas
       </div>
       <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-        Watch the runtime read a site in real time.
+        Die Runtime liest eine Site in Echtzeit.
       </h2>
       <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
         Browser-Layer, Network-Layer und AI-Layer — alle annotiert, während sie passieren,

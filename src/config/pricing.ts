@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Activate Monitoring', href: '/checkout/starter?source=pricing' },
+    cta: { label: 'Monitoring aktivieren', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Activate Governance', href: '/checkout/growth?source=pricing' },
+    cta: { label: 'Governance aktivieren', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -132,7 +132,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Activate Governance', href: '/audit?plan=agency&source=pricing' },
+    cta: { label: 'Governance aktivieren', href: '/audit?plan=agency&source=pricing' },
   },
   {
     id: 'scale',
@@ -166,7 +166,7 @@ export const PRICING_TIERS: PricingTier[] = [
     planKey: 'enterprise',
     priceEur: 0,
     priceString: 'individuell',
-    priceSuffix: 'Custom Runtime Environment',
+    priceSuffix: 'Individuelle Runtime-Umgebung',
     recurring: true,
     tagline: 'Für regulierte Unternehmen, größere Mittelständler und Organisationen mit SLA-, DSB- oder AI-Act-Anforderungen',
     bullets: [
@@ -179,7 +179,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Individuelle Vertragsgestaltung / DPA',
     ],
     highlight: false,
-    cta: { label: 'Open Runtime', href: '/audit?plan=enterprise&source=pricing' },
+    cta: { label: 'Runtime öffnen', href: '/audit?plan=enterprise&source=pricing' },
   },
 ];
 
@@ -190,4 +190,4 @@ export function tierById(id: TierId): PricingTier | undefined {
 
 /** Trust-Note unter Pricing-Cards */
 export const PRICING_TRUST_NOTE =
-  'Free Audit kostenlos · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
+  'Kostenloses Audit · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';

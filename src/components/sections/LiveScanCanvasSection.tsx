@@ -80,8 +80,8 @@ export function LiveScanCanvasSection() {
       <div className="max-w-7xl mx-auto">
         <SectionHead
           eyebrow="02 · detect"
-          title="The runtime detects issues in real time."
-          sub="Browser layer, network layer, AI layer — annotated while the scan happens. Every signal sealed into the evidence chain on the same request."
+          title="Die Runtime erkennt Probleme in Echtzeit."
+          sub="Browser-Layer, Network-Layer, AI-Layer — annotiert während des Scans. Jedes Signal wird im selben Request in die Evidence-Chain versiegelt."
         />
 
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-px bg-titanium-900">

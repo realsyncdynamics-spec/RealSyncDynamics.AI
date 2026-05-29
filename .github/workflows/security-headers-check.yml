@@ -1,0 +1,30 @@
+name: Security Headers Check
+
+# Verifiziert täglich + bei jedem Push auf main, dass die produktive
+# Domain alle Pflicht-Security-Header liefert (HSTS, X-Frame-Options,
+# X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP).
+#
+# Bei fehlendem Header schlägt der Workflow fehl. Setup-Anleitung
+# in docs/runbooks/cloudflare-security-headers.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check-security-headers.sh'
+      - '.github/workflows/security-headers-check.yml'
+  schedule:
+    # Täglich 06:00 UTC = 08:00 CEST
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  probe-production:
+    name: Probe realsyncdynamicsai.de
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run security headers check
+        run: bash scripts/check-security-headers.sh https://realsyncdynamicsai.de

@@ -1,11 +1,22 @@
 name: Security Headers Check
 
-# Verifiziert täglich + bei jedem Push auf main, dass die produktive
-# Domain alle Pflicht-Security-Header liefert (HSTS, X-Frame-Options,
-# X-Content-Type-Options, Referrer-Policy, Permissions-Policy, CSP).
+# Verifiziert, dass die produktive Domain alle Pflicht-Security-Header
+# liefert (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy,
+# Permissions-Policy, CSP).
 #
-# Bei fehlendem Header schlägt der Workflow fehl. Setup-Anleitung
-# in docs/runbooks/cloudflare-security-headers.md.
+# WICHTIG: Der Cron-Trigger ist absichtlich auskommentiert, solange die
+# Cloudflare-Migration noch nicht durch ist (siehe
+# docs/runbooks/cloudflare-security-headers.md). GitHub Pages liefert
+# diese Header nicht — der Check würde täglich rot werden und im
+# Actions-Tab Rauschen erzeugen.
+#
+# Aktivierung NACH Cloudflare-Cutover:
+#   1. Cloudflare-Transform-Rule + HSTS laut Runbook aktivieren
+#   2. ./scripts/check-security-headers.sh https://realsyncdynamicsai.de
+#      → muss 0 zurückgeben
+#   3. Schedule-Block unten einkommentieren + diesen Kommentar entfernen
+#
+# Manueller Probe-Lauf ist jederzeit über `workflow_dispatch` möglich.
 
 on:
   push:
@@ -13,9 +24,9 @@ on:
     paths:
       - 'scripts/check-security-headers.sh'
       - '.github/workflows/security-headers-check.yml'
-  schedule:
-    # Täglich 06:00 UTC = 08:00 CEST
-    - cron: '0 6 * * *'
+  # schedule:
+  #   # Täglich 06:00 UTC = 08:00 CEST — aktivieren nach Cloudflare-Cutover.
+  #   - cron: '0 6 * * *'
   workflow_dispatch:
 
 jobs:

@@ -4,19 +4,26 @@ import { AiOperatingSystemSection } from '../components/governance/AiOperatingSy
 import { GovernanceGraphSection } from '../components/governance/GovernanceGraphSection';
 import { EvidenceVaultPreview } from '../components/governance/EvidenceVaultPreview';
 import { AgentControlPlanePreview } from '../components/governance/AgentControlPlanePreview';
-import { ArrowRight, Activity, ShieldCheck, Bot, ScrollText } from 'lucide-react';
+import { ArrowRight, Activity, ShieldCheck, Bot, ScrollText, FlaskConical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-// RuntimePage — AI Governance OS dashboard overview.
-// Five blocks: AI OS framing → governance graph → 4 surface drill-ins →
-// agents + evidence preview. Every block links into its dedicated
-// surface (/monitoring, /agents, /evidence, /governance).
+// RuntimePage — Governance-Runtime-Übersicht.
+// Fünf Blöcke: AI-OS-Framing → Governance-Graph → 4 Surface-Drill-Ins →
+// Agents + Evidence-Vorschau. Jeder Block verlinkt in seine eigene
+// Surface (/monitoring, /agents, /evidence, /governance).
+//
+// Demo-Telemetrie-Hinweis: Die hier dargestellten Metriken (Agents-Counts,
+// Evidence-Anchors, enforced Policies, Governance-Graph-Knoten) sind
+// **Beispiel-Werte aus Demo-Daten — keine Live-Telemetrie eines Kunden.**
+// Persistenter Strip oben auf der Page deklariert das transparent (UWG § 5).
 
 export function RuntimePage() {
   usePageMeta({
-    title: 'Runtime — AI Governance Operating System | RealSync',
+    title: 'Runtime — Governance-Übersicht | RealSync',
     description:
-      'The AI Governance Operating System: continuous monitoring, autonomous agents, sealed evidence, enforced policies. Self-service, observable, replayable.',
+      'Governance-Runtime: kontinuierliche Beobachtung, Compliance-Agenten, ' +
+      'überprüfbare Evidence-Reports, dokumentierte Policies. Demo-Surface ' +
+      'für Pilot-Evaluierung.',
     url: 'https://RealSyncDynamicsAI.de/runtime',
   });
 
@@ -24,6 +31,17 @@ export function RuntimePage() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
       <main className="pt-14">
+        {/* Demo-Telemetrie-Label — vor allen Sections, persistent, kein Dismiss.
+            Verhindert, dass simulierte Metriken als Live-Daten missverstanden werden. */}
+        <div className="border-b border-titanium-900 bg-obsidian-900/80">
+          <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
+            <FlaskConical className="h-3 w-3 shrink-0 text-titanium-500" aria-hidden="true" />
+            <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
+              Demo-Runtime · simulierte Ereignisse · keine Kundendaten
+            </span>
+          </div>
+        </div>
+
         <AiOperatingSystemSection />
         <GovernanceGraphSection />
 
@@ -31,14 +49,15 @@ export function RuntimePage() {
           <div className="max-w-7xl mx-auto">
             <div className="max-w-3xl mb-10">
               <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-                surfaces · the OS layers
+                Surfaces · Ebenen der Runtime
               </div>
               <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-                Drill into any layer of the runtime.
+                In jede Ebene der Runtime hineinzoomen.
               </h2>
               <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-                Monitoring, governance, evidence, agents — every surface is its own page in the OS.
-                Browse the live state. Operate the policies. Read the evidence chain.
+                Monitoring, Governance, Evidence, Agents — jede Surface ist
+                eine eigene Seite. Den Zustand prüfen, Policies bedienen,
+                die Evidence-Kette einsehen.
               </p>
             </div>
 
@@ -47,29 +66,29 @@ export function RuntimePage() {
                 to="/monitoring"
                 icon={<Activity className="h-4 w-4 text-cyan-300" />}
                 label="monitoring"
-                title="Live event feed."
-                blurb="Drift events, AI classifications, evidence anchors — all streaming live, sealed in order."
+                title="Ereignis-Feed."
+                blurb="Drift-Ereignisse, KI-Klassifikationen, Evidence-Anchors — in der Demo gestreamt, in der Pilot-Phase persistiert."
               />
               <SurfaceCard
                 to="/governance"
                 icon={<ScrollText className="h-4 w-4 text-amber-300" />}
                 label="governance"
-                title="Controls + policies."
-                blurb="12 active controls map AI systems to policies. Status, scope, owner — all in one grid."
+                title="Kontrollen & Policies."
+                blurb="12 dokumentierte Kontrollen ordnen KI-Systeme den Policies zu. Status, Scope, Verantwortliche — eine Übersicht."
               />
               <SurfaceCard
                 to="/agents"
                 icon={<Bot className="h-4 w-4 text-violet-300" />}
                 label="agents"
-                title="Autonomous control plane."
-                blurb="Four agents run continuously — drift, ai-risk, evidence, policy. No human queue."
+                title="Autonome Compliance-Agenten."
+                blurb="Vier Agenten überwachen Drift, KI-Risiko, Evidence und Policies — ohne manuelles Triage-Backlog."
               />
               <SurfaceCard
                 to="/evidence"
                 icon={<ShieldCheck className="h-4 w-4 text-emerald-300" />}
                 label="evidence"
-                title="Sealed audit chain."
-                blurb="Every finding sealed (sha256), every agent action anchored. Replay-ready bundles."
+                title="Audit-Kette."
+                blurb="Jeder Befund kanonisch gehasht (SHA-256), jede Agent-Aktion verankert. Reportable und nachverfolgbar — keine pauschale Rechtsgarantie."
               />
             </div>
           </div>

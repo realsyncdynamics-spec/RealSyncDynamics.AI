@@ -4,6 +4,10 @@
 // The terminal feed in GlobalRuntimeFeedSection reveals these one-by-one
 // with a stagger so the visitor sees a "live system" on first paint.
 
+// ⚠ DEMO-RUNTIME: Alle Events sind simulierte Beispieldaten.
+// Keine Live-Telemetrie. Kein Anschluss an Produktions-Datenbank.
+// Für echte Runtime-Daten: Phase 3 (Ingest Path, PR #373+).
+
 export type RuntimeEventKind =
     | 'scan'
   | 'drift'
@@ -96,6 +100,106 @@ export const SEVERITY_COLOR: Record<RuntimeEvent['severity'], string> = {
 };
 
 /** Arrow suffix rendered after the rule_id, e.g. "rule.cookie.reject_button → warning" */
+// ---------------------------------------------------------------------------
+// RuntimeEvent v0 adoption (additive)
+// ---------------------------------------------------------------------------
+//
+// Wir exportieren die SELBEN Mock-Events ZUSAETZLICH als v0-konforme
+// `RuntimeEvent<T>` (siehe src/types/runtime-event.ts). Existierende
+// Konsumenten lesen weiter den lokalen `RuntimeEvent` (oben). Neue
+// Konsumenten (Phase-2-Validierungs-Tooling, kuenftige Dashboards) koennen
+// `RUNTIME_MOCK_EVENTS_V0` lesen, ohne dass die alte Shape angefasst wird.
+//
+// Jeder Mock-Eintrag bleibt mit seinem ORIGINAL-Payload vollstaendig
+// unter `event.payload` erhalten. Die v0-Felder (type/source/severity/actor)
+// werden aus rule_id + kind + severity heuristisch abgeleitet.
+//
+// Adoption #1 aus dem RuntimeEvent-Standard-Rollout
+// (siehe docs/architecture/runtime-event-standard.md).
+
+import {
+  createRuntimeEvent,
+  type RuntimeEvent as RuntimeEventV0,
+  type RuntimeEventSource,
+  type RuntimeEventType,
+  type RuntimeSeverity,
+} from '../types/runtime-event';
+
+export interface MockRuntimeEventPayloadV0 {
+  /** Wall-clock HH:MM:SS aus dem Original-Mock. */
+  ts: string;
+  rule_id: string;
+  /** Original-Kind aus dem alten Schema (unveraendert). */
+  kind: RuntimeEventKind;
+  /** Original-Severity aus dem alten Schema (unveraendert). */
+  original_severity: RuntimeEvent['severity'];
+  detail?: string;
+}
+
+function mapKindToSource(kind: RuntimeEventKind): RuntimeEventSource {
+  switch (kind) {
+    case 'scan':
+    case 'drift':
+    case 'consent': return 'browser_collector';
+    case 'ai':      return 'ai_probe';
+    case 'evidence':return 'evidence_engine';
+    case 'agent':   return 'governance_agent';
+    case 'incident':return 'policy_engine';
+  }
+}
+
+function mapToEventType(rule_id: string, kind: RuntimeEventKind): RuntimeEventType {
+  if (kind === 'incident' && rule_id.startsWith('rule.tracker.pre_consent')) return 'incident.opened';
+  if (rule_id.startsWith('rule.tracker.pre_consent')) return 'tracker.pre_consent_detected';
+  if (rule_id.startsWith('rule.cookie.reject_button')) return 'consent.reject_missing';
+  if (rule_id.startsWith('rule.cookie.')) return 'consent.banner_detected';
+  if (rule_id.startsWith('rule.header.')) return 'header.missing';
+  if (rule_id.startsWith('rule.ai_act.llm_endpoint') ||
+      rule_id.startsWith('rule.ai_act.register_model')) return 'ai.endpoint_found';
+  if (rule_id.startsWith('rule.ai_act.')) return 'ai.risk_classified';
+  if (rule_id.startsWith('rule.vendor.')) return 'vendor.detected';
+  if (rule_id.startsWith('rule.meta.pixel')) return 'tracker.detected';
+  if (rule_id.startsWith('rule.fonts.')) return 'vendor.detected';
+  if (rule_id.startsWith('rule.page.')) return 'header.missing';
+  if (rule_id.startsWith('evidence.')) return 'evidence.created';
+  if (rule_id.startsWith('policy.')) return 'remediation.suggested';
+  return 'scan.completed';
+}
+
+function mapSeverity(s: RuntimeEvent['severity']): RuntimeSeverity {
+  switch (s) {
+    case 'ok':        return 'info';
+    case 'info':      return 'info';
+    case 'warning':   return 'medium';
+    case 'error':     return 'high';
+    case 'sealed':    return 'info';
+    case 'generated': return 'info';
+  }
+}
+
+/**
+ * Exakt dieselben 24 Mock-Events wie `RUNTIME_MOCK_EVENTS` — verpackt in
+ * den v0-Envelope. Konsumenten, die gegen den RuntimeEvent-v0-Standard
+ * programmieren, lesen diese Liste statt der alten.
+ */
+export const RUNTIME_MOCK_EVENTS_V0: ReadonlyArray<RuntimeEventV0<MockRuntimeEventPayloadV0>> =
+  RUNTIME_MOCK_EVENTS.map((e) =>
+    createRuntimeEvent<MockRuntimeEventPayloadV0>({
+      spec_version: '0.1', // frozen v0 contract — see RUNTIME_MOCK_EVENTS_V0 name
+      type:     mapToEventType(e.rule_id, e.kind),
+      source:   mapKindToSource(e.kind),
+      severity: mapSeverity(e.severity),
+      actor:    { type: e.kind === 'agent' ? 'agent' : 'system' },
+      payload:  {
+        ts: e.ts,
+        rule_id: e.rule_id,
+        kind: e.kind,
+        original_severity: e.severity,
+        detail: e.detail,
+      },
+    }),
+  );
+
 export function formatEventLine(e: RuntimeEvent): string {
     return `${e.rule_id} \u2192 ${e.severity}${e.detail ? ' · ' + e.detail : ''}`;
 }

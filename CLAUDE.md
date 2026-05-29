@@ -7,7 +7,7 @@ Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
 - Frontend: Vite + React 19, TypeScript, Tailwind 4
 - Routing: react-router-dom 7
 - Backend: Supabase (Auth, Postgres mit RLS, Edge Functions, Storage)
-- AI-Provider: Anthropic / Google / OpenAI (Cloud) · Ollama qwen3:4b (EU-lokal)
+- AI-Provider: Anthropic / Google / OpenAI (Cloud) · Ollama gemma3:4b (EU-lokal)
 - Automation: n8n
 - Billing: Stripe
 - Monitoring: Sentry

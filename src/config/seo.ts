@@ -228,9 +228,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     canonical: `${SITE_URL}/`,
   },
   '/pricing': {
-    title: 'Preise – RealSyncDynamicsAI Compliance-Plattform',
+    title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
     description:
-      'Wählen Sie zwischen Free Audit, Starter (79€), Growth (249€), Agency (699€) und Enterprise (ab 1.500€) für automatisierte DSGVO- und AI-Act-Compliance.',
+      'Free Audit (0 €), Starter (79 €), Growth (249 €), Agency (699 €), Scale (1.999 €), Enterprise (ab 1.500 €). Runtime-native Governance: kontinuierliche Telemetrie, Policy-Engine, kryptografisch nachvollziehbare Evidenz. EU-Hosting, AVV inklusive.',
     canonical: `${SITE_URL}/pricing`,
     jsonLd: [
       PRICING_PRODUCT_JSONLD,
@@ -335,7 +335,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     ]),
   },
   '/dataguard-alternative': {
-    title: 'DataGuard Alternative — automatisierte Compliance ab 49€ | RealSyncDynamics.AI',
+    title: 'DataGuard Alternative — automatisierte Compliance ab 79 € | RealSyncDynamics.AI',
     description:
       'Günstigere DataGuard Alternative mit automatischem Website-Scan, Consent-Timing und AI-Act-Compliance. Kein Setup, kein Berater erforderlich.',
     canonical: `${SITE_URL}/dataguard-alternative`,
@@ -347,7 +347,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/onetrust-alternative': {
     title: 'OneTrust Alternative für KMU und Agenturen | RealSyncDynamics.AI',
     description:
-      'OneTrust ist für Enterprise. RealSyncDynamics.AI ist für KMU: automatischer DSGVO-Scan, Consent-Management und AI-Act-Inventar — ab 49€/Monat.',
+      'OneTrust ist für Enterprise. RealSyncDynamics.AI ist für KMU: automatischer DSGVO-Scan, Consent-Management und AI-Act-Inventar — ab 79 €/Monat.',
     canonical: `${SITE_URL}/onetrust-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -779,6 +779,12 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
     canonical: `${SITE_URL}/legal/privacy`,
   },
+  '/datenschutz': {
+    title: 'Datenschutzerklärung | RealSyncDynamics.AI',
+    description:
+      'Datenschutzerklärung von RealSyncDynamics.AI gemäß DSGVO Art. 13/14. Verantwortlicher, Verarbeitungszwecke, Betroffenenrechte und Sub-Prozessoren.',
+    canonical: `${SITE_URL}/legal/privacy`,
+  },
   '/legal/impressum': {
     title: 'Impressum | RealSyncDynamics.AI',
     description:
@@ -817,6 +823,23 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Legal', url: '/legal/sub-processors' },
       { name: 'AVV-Vorlage', url: '/legal/avv' },
     ]),
+  },
+  '/legal/terms': {
+    title: 'Allgemeine Geschäftsbedingungen | RealSyncDynamics.AI',
+    description:
+      'AGB für die Nutzung der RealSyncDynamics.AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
+    canonical: `${SITE_URL}/legal/terms`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Legal', url: '/legal/sub-processors' },
+      { name: 'AGB', url: '/legal/terms' },
+    ]),
+  },
+  '/agb': {
+    title: 'Allgemeine Geschäftsbedingungen | RealSyncDynamics.AI',
+    description:
+      'AGB für die Nutzung der RealSyncDynamics.AI-Plattform. Leistungsumfang, Vergütung, Kündigung, Haftung, Verbraucherwiderruf, Datenschutz-Verweise.',
+    canonical: `${SITE_URL}/legal/terms`,
   },
   '/legal/compliance-matrix': {
     title: 'Compliance-Matrix — DSGVO, AI Act, BAIT, MaRisk | RealSyncDynamics.AI',

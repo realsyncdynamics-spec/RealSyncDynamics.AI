@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AudioLines, Loader2, AlertTriangle, ShieldCheck, ArrowRight, Send } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AudioLines, Loader2, AlertTriangle, ShieldCheck, ArrowRight, Send, ExternalLink } from 'lucide-react';
 import { trackConversion } from '../../lib/pixels';
 import { getAffiliateRef } from '../../lib/affiliate';
+import { startAuditScanAnon } from '../../features/governance/AgentWidget/agentApi';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -126,6 +128,17 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || 'audit-chat';
+
+      // Phase-3 governance-anon-audit-log coverage. Fire-and-forget so the
+      // user-facing scan flow is not blocked. The governance-agent records
+      // this attempt in `anon_chat_runs` (#393) with the same IP/UA rate-
+      // limit accounting as `chat_anon`. The actual scan keeps running
+      // through `gdpr-audit` below — this call is purely the audit hook.
+      void startAuditScanAnon({ url, email: trimmed }).catch(() => {
+        /* anon audit-log is best-effort; gdpr-audit still produces the
+         * real report. Failures here MUST NOT block the scan. */
+      });
+
       const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -320,12 +333,33 @@ function ScanSummary({ report }: { report: Report }) {
           <span>Keine der 12 Standard-Checks hat angeschlagen.</span>
         </div>
       )}
-      <a
-        href="#report"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-titanium-50 border-b border-titanium-50/40 hover:border-titanium-50 transition-colors"
-      >
-        Vollen Report unten ansehen <ArrowRight className="h-3.5 w-3.5" />
-      </a>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        <a
+          href="#report"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-titanium-50 border-b border-titanium-50/40 hover:border-titanium-50 transition-colors"
+        >
+          Vollen Report unten ansehen <ArrowRight className="h-3.5 w-3.5" />
+        </a>
+        {report.audit_id ? (
+          <Link
+            to={`/audit/result/${report.audit_id}`}
+            state={{
+              domain:   report.domain,
+              score:    report.score,
+              findings: report.issues.map((i) => ({
+                id:            i.id,
+                severity:      i.severity,
+                title:         i.title,
+                detail:        i.detail,
+                paragraph_ref: i.paragraph_ref,
+              })),
+            }}
+            className="inline-flex items-center gap-1.5 text-xs text-titanium-300 hover:text-titanium-50 transition-colors"
+          >
+            Permalink öffnen <ExternalLink className="h-3 w-3" />
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }

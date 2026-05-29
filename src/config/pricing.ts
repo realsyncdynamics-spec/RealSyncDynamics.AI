@@ -25,7 +25,7 @@
  *     blockiert Tire-Kicker
  */
 
-export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise';
+export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
 
 export interface PricingTier {
   id: TierId;
@@ -70,7 +70,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kein Account, kein Setup',
     ],
     highlight: false,
-    cta: { label: 'Run Scan', href: '/audit?source=pricing-free' },
+    cta: { label: 'Kostenlosen Audit starten', href: '/audit?source=pricing-free' },
   },
   {
     id: 'starter',
@@ -133,6 +133,32 @@ export const PRICING_TIERS: PricingTier[] = [
     badges: ['Neu'],
     highlight: false,
     cta: { label: 'Activate Governance', href: '/audit?plan=agency&source=pricing' },
+  },
+  {
+    id: 'scale',
+    name: 'Scale',
+    planKey: 'scale',
+    priceEur: 1999,
+    priceString: '1.999',
+    priceSuffix: '/ Monat',
+    recurring: true,
+    tagline: 'Für DSB-Kanzleien und Compliance-Dienstleister, die 11-50 Mandanten parallel betreuen',
+    bullets: [
+      'Alles aus Agency',
+      'Multi-Tenant-Dashboard für bis zu 50 Mandanten',
+      'Eigene Sub-Domain (z.B. dsb.ihrekanzlei.de)',
+      'White-Label PDFs + Live-Dashboard',
+      'Voller API-Zugriff für eigene Integrationen',
+      'SLA 4 h auf Bug-Reports + Priority-Support',
+    ],
+    badges: ['Reseller'],
+    highlight: false,
+    // Scale läuft Phase A noch über manuelles Onboarding (Sales-Call statt
+    // self-serve Checkout). Sobald ein Stripe-Price-ID existiert UND die
+    // 50-Tenant-Quotas im Backend erzwungen sind, kann die CTA auf
+    // /checkout/scale flippen. Bis dahin geht jeder Scale-Interessent
+    // durch /contact-sales mit `?tier=scale` für Lead-Routing.
+    cta: { label: 'Sales kontaktieren', href: '/contact-sales?tier=scale&source=pricing' },
   },
   {
     id: 'enterprise',

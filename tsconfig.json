@@ -33,6 +33,7 @@
     "services/openclaw-agent",
     "services/realsync-runtime-core",
     "services/realsync-evidence-runtime",
-    "worker"
+    "worker",
+    "apps/agent-runtime"
   ]
 }

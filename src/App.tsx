@@ -8,6 +8,7 @@ import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
+import { AuditResultPage } from './pages/AuditResultPage';
 import { DsgvoKiChecklist } from './pages/DsgvoKiChecklist';
 import { AuditShare } from './pages/AuditShare';
 import { AiActFaq } from './pages/AiActFaq';
@@ -104,6 +105,7 @@ import { ApiDocs } from './pages/ApiDocs';
 import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { Welcome } from './pages/Welcome';
+import { PartnersPage } from './pages/PartnersPage';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
 import { EuAiActCheck } from './pages/seo/EuAiActCheck';
@@ -111,12 +113,15 @@ import { CookieCompliance } from './pages/seo/CookieCompliance';
 // Public Legal-Pages bleiben eager (SEO + small bundle)
 import { PricingPage } from './features/billing/PricingPage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
+import { CheckoutSuccessPage } from './features/billing/CheckoutSuccessPage';
+import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
 import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { LegalMethodology } from './features/legal/LegalMethodology';
+import { LegalTerms } from './features/legal/LegalTerms';
 
 // Auth-gated Features → lazy. Reduzieren Initial-Bundle für public Audit-Page.
 const KodeeView = lazy(() => import('./features/kodee/KodeeView').then((m) => ({ default: m.KodeeView })));
@@ -125,6 +130,8 @@ const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => 
 const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
 const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
 const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').then((m) => ({ default: m.KeysView })));
+const RuntimeVvtView = lazy(() => import('./features/governance/vvt/RuntimeVvtView').then((m) => ({ default: m.RuntimeVvtView })));
+const AgentRegistryView = lazy(() => import('./features/governance/agents/AgentRegistryView').then((m) => ({ default: m.AgentRegistryView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
@@ -142,6 +149,9 @@ const GovernanceIncidentsView = lazy(() => import('./features/governance/Inciden
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
+const GovernanceAuditorConsoleView = lazy(() => import('./features/governance/AuditorConsoleView').then((m) => ({ default: m.AuditorConsoleView })));
+const GovernanceScansListView = lazy(() => import('./features/governance/scans/ScansListView').then((m) => ({ default: m.ScansListView })));
+const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/ScanDetailView').then((m) => ({ default: m.ScanDetailView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
@@ -220,6 +230,7 @@ function RoutesWithTracking() {
       <Route path="/fuer-agenturen" element={<AgenturenLanding />} />
       <Route path="/fuer-praxen"    element={<PraxenLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
+      <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
@@ -310,6 +321,15 @@ function RoutesWithTracking() {
       <Route path="/schulen" element={<EducationLanding />} />
       <Route path="/hr-software" element={<HrSoftwareLanding />} />
       <Route path="/personalwesen" element={<HrSoftwareLanding />} />
+      {/* Industry-landing aliases for obvious-URL discovery. Same fix
+          shape as Bußgeld-Rechner / Meldepflicht-Timer: the canonical
+          German routes already exist, but visitors who guess the
+          single-word or English variant land on 404. Aliases route
+          to the same component without touching SEO canonicals. */}
+      <Route path="/legaltech"    element={<LegalTechLanding />} />
+      <Route path="/publicsector" element={<PublicSectorLanding />} />
+      <Route path="/public-sector" element={<PublicSectorLanding />} />
+      <Route path="/hr"           element={<HrSoftwareLanding />} />
       {/* More Competitor-Alternatives */}
       <Route path="/iubenda-alternative" element={<IubendaAlternative />} />
       {/* API + Integrations + Niche */}
@@ -345,6 +365,15 @@ function RoutesWithTracking() {
       <Route path="/tools/dsfa-wizard" element={<DsfaWizard />} />
       <Route path="/busseld-rechner" element={<BusseldRechner />} />
       <Route path="/tools/busseld-rechner" element={<BusseldRechner />} />
+      {/* Bußgeld-Rechner: aliases for the correct-spelling URLs.
+          Canonical /busseld-rechner stays the SEO target. */}
+      <Route path="/bussgeld-rechner"  element={<BusseldRechner />} />
+      <Route path="/bussgeldrechner"   element={<BusseldRechner />} />
+      <Route path="/meldepflicht-timer" element={<MeldepflichtTimer />} />
+      {/* DSB-Kanzlei Partner-Programm */}
+      <Route path="/partners"         element={<PartnersPage />} />
+      <Route path="/partner-programm" element={<PartnersPage />} />
+      <Route path="/dsb-partner"      element={<PartnersPage />} />
       {/* Dashboard */}
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
@@ -355,6 +384,8 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<UsageView />} />
       <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+                <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
                 <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       <Route path="/tenant/invites" element={<InvitesView />} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
@@ -363,6 +394,8 @@ function RoutesWithTracking() {
           views (DpiasView, MappingsView, etc.) are updated accordingly. */}
       <Route path="/governance/admin" element={<GovernanceDashboardView />} />
       <Route path="/governance/keys" element={<GovernanceKeysView />} />
+      <Route path="/governance/vvt" element={<RuntimeVvtView />} />
+      <Route path="/governance/agents" element={<AgentRegistryView />} />
       <Route path="/governance/webhooks" element={<GovernanceWebhooksView />} />
       <Route path="/governance/onboarding" element={<GovernanceOnboardingView />} />
       <Route path="/governance/mappings" element={<GovernanceMappingsView />} />
@@ -380,6 +413,9 @@ function RoutesWithTracking() {
       <Route path="/governance/remediation" element={<RemediationPlansView />} />
       <Route path="/governance/remediation/:planId" element={<RemediationPlanDetailView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
+      <Route path="/governance/auditor" element={<GovernanceAuditorConsoleView />} />
+      <Route path="/governance/scans" element={<GovernanceScansListView />} />
+      <Route path="/governance/scans/:scanId" element={<GovernanceScanDetailView />} />
       {/* Operations Runtime — auth-gated inventory / warenwirtschaft module.
           NOT linked from the public navbar; tenants reach it from the
           authenticated dashboard or directly via URL. */}
@@ -424,6 +460,8 @@ function RoutesWithTracking() {
       <Route path="/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
+      <Route path="/legal/terms" element={<LegalTerms />} />
+      <Route path="/agb" element={<LegalTerms />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
       <Route path="/legal/methodology" element={<LegalMethodology />} />
       <Route path="/methodik" element={<LegalMethodology />} />

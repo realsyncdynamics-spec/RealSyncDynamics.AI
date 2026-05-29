@@ -5,16 +5,19 @@ name: Deploy to GitHub Pages
 # ─────────────────────────────────────────────────────────────────
 # This workflow ships the production frontend.
 #
-# `realsyncdynamicsai.de` resolves to the Hostinger VPS, where
-# Traefik 301-redirects every Host(realsyncdynamicsai.de) request to
-# `realsyncdynamics-spec.github.io/RealSyncDynamics.AI/$path`. So the
-# bytes the user sees come from GitHub Pages, served via Fastly CDN.
+# `realsyncdynamicsai.de` zeigt DIREKT auf GitHub Pages (Anycast
+# 185.199.108-111.153) und liefert die Bytes von dort via Fastly CDN.
+# HINWEIS (nachgeprüft 2026-05-28): der Apex läuft NICHT mehr über einen
+# VPS-Traefik-301-Hop — `curl -sI` liefert HTTP 200 direkt von GitHub.com,
+# keinen Redirect. Die alte Beschreibung "Apex → VPS → Traefik 301 → Pages"
+# ist veraltet; siehe docs/runtime/SYSTEMCHECK-2026-05-28.md.
 #
 # Verify:    curl -sI https://realsyncdynamicsai.de/ | grep server
-#            → server: GitHub.com
+#            → server: GitHub.com   (and HTTP/2 200, no 301)
 #
 # ADR:       docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md
 # Topology:  docs/runtime/production-runtime.md
+#            docs/runtime/SYSTEMCHECK-2026-05-28.md  (latest live state)
 # ─────────────────────────────────────────────────────────────────
 #
 # Builds the Vite SPA and publishes to GitHub Pages.

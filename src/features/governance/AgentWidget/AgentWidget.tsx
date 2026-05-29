@@ -12,19 +12,51 @@ import { useAnonChat } from './useAgentChat';
 //
 // mode="anon": public, rate-limited, no tenant data access. The panel is
 //   controlled externally (open/onClose props from AssistentChip). No FAB.
+//
+// mode="audit_copilot": Phase 4 (Hostinger-Pattern). Right-Panel-Variante
+//   nach einem Audit. Erlaubt Tool-Calls `explain_finding` und
+//   `generate_fix_snippet` ueber den anon-Pfad. `auditId` ist Pflicht,
+//   weil die Tools alle Calls an den Audit knuepfen. Der bestehende
+//   AuditCopilotPanel.tsx liefert die konkrete UI — hier ist die Surface
+//   als duenne Weiche, damit Aufrufer `<AgentWidget mode="audit_copilot"
+//   auditId={...} />` einheitlich benutzen koennen.
 
-type AgentWidgetMode = 'tenant' | 'anon';
+type AgentWidgetMode = 'tenant' | 'anon' | 'audit_copilot';
+
+import { lazy, Suspense } from 'react';
+const AuditCopilotShell = lazy(() => import('./AuditCopilotShell').then((m) => ({ default: m.AuditCopilotShell })));
 
 interface AgentWidgetProps {
   mode?: AgentWidgetMode;
   // Required in anon mode: controlled open/close from AssistentChip.
   open?: boolean;
   onClose?: () => void;
+  // Phase 4: required in audit_copilot mode. Identifies the audit
+  // the copilot is anchored to; child components pass this id along
+  // with every tool call (explain_finding, generate_fix_snippet).
+  auditId?: string;
 }
 
-export function AgentWidget({ mode = 'tenant', open: controlledOpen, onClose }: AgentWidgetProps) {
+export function AgentWidget({ mode = 'tenant', open: controlledOpen, onClose, auditId }: AgentWidgetProps) {
   if (mode === 'anon') {
     return <AnonWidget open={controlledOpen ?? false} onClose={onClose ?? (() => {})} />;
+  }
+  if (mode === 'audit_copilot') {
+    if (!auditId) {
+      // Defensive: ohne auditId hat das Panel keinen Bezug. Statt
+      // stillschweigend Tenant-Tab zu rendern, liefern wir einen klaren
+      // Hinweis — das vermeidet stille Mis-Mounts in Tests.
+      return (
+        <div className="p-4 text-xs text-rose-300 border border-rose-500/40 bg-rose-500/10">
+          AgentWidget mode="audit_copilot" benoetigt eine auditId.
+        </div>
+      );
+    }
+    return (
+      <Suspense fallback={<div className="p-4 text-xs text-titanium-500">Audit-Copilot wird geladen ...</div>}>
+        <AuditCopilotShell auditId={auditId} />
+      </Suspense>
+    );
   }
   return <TenantWidget />;
 }

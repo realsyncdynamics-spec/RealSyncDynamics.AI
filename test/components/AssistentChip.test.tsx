@@ -124,4 +124,31 @@ describe('<AssistentChip>', () => {
     );
     expect(onRoot.queryByLabelText('Assistent öffnen')).not.toBeNull();
   });
+
+  it('mounts the public AnonWidget hidden by default; click reveals it', () => {
+    const { getByLabelText, getByRole } = renderChipWithHero({ withHero: false });
+    // The widget is always in the DOM (controlled via aria-hidden + opacity
+    // transitions) — but starts hidden.
+    const dialog = getByRole('dialog', { hidden: true });
+    expect(dialog).toHaveAttribute('aria-hidden', 'true');
+
+    act(() => { getByLabelText('Assistent öffnen').click(); });
+
+    // After click the same dialog node is now exposed to a11y.
+    expect(dialog).toHaveAttribute('aria-hidden', 'false');
+    // Contract: it is the AgentWidget anon surface, not the old placeholder.
+    expect(dialog).toHaveAttribute('aria-label', expect.stringMatching(/Compliance|Assistent/i) as unknown as string);
+  });
+
+  it('closes the widget via the WidgetHeader close button', () => {
+    const { getByLabelText, getByRole } = renderChipWithHero({ withHero: false });
+    act(() => { getByLabelText('Assistent öffnen').click(); });
+
+    const dialog = getByRole('dialog', { hidden: true });
+    expect(dialog).toHaveAttribute('aria-hidden', 'false');
+
+    // AgentWidget header close button uses aria-label="Schliessen" (no ß).
+    act(() => { getByLabelText('Schliessen').click(); });
+    expect(dialog).toHaveAttribute('aria-hidden', 'true');
+  });
 });

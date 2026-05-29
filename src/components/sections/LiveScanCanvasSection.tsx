@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Globe, Lock, Cookie, Cpu, AlertTriangle } from 'lucide-react';
 
-// LiveScanCanvasSection — "The runtime detects issues live."
+// LiveScanCanvasSection — "The runtime detects issues in real time."
 // Browser-pane mock that gets annotated in real-time as the scan progresses.
 // No screenshot images. Pure DOM mock with annotation pills floating in.
 
@@ -80,7 +80,7 @@ export function LiveScanCanvasSection() {
       <div className="max-w-7xl mx-auto">
         <SectionHead
           eyebrow="02 · detect"
-          title="The runtime detects issues live."
+          title="The runtime detects issues in real time."
           sub="Browser layer, network layer, AI layer — annotated while the scan happens. Every signal sealed into the evidence chain on the same request."
         />
 
@@ -156,7 +156,7 @@ export function LiveScanCanvasSection() {
           {/* Findings counter pane */}
           <div className="bg-obsidian-950 flex flex-col">
             <div className="px-4 py-2.5 border-b border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-              findings · live
+              findings · demo
             </div>
             <div className="flex-1 p-6 grid grid-cols-2 gap-px bg-titanium-900">
               <FindingTile label="critical" value={[...revealed].filter((id) => ANNOTATIONS.find((a) => a.id === id)?.severity === 'critical').length} color="text-red-300" />

@@ -1,18 +1,31 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
+import {
+  isImpressumProductionReady,
+  loadBusinessIdentity,
+} from '../../config/business-identity';
 
 /**
  * Impressum nach § 5 TMG + § 18 MStV.
  *
- * WICHTIG: Mit eckigen Klammern markierte Felder MÜSSEN vor Live-Schaltung
- * mit echten Daten ersetzt werden. Ohne diese Daten ist die Seite nicht
- * rechtskonform — § 5 TMG-Verstoß = sofort abmahnfähig.
+ * USt-IdNr., HRB-Eintrag und Wirtschafts-ID werden aus ENV-Vars geladen
+ * (VITE_BUSINESS_VAT_ID, VITE_BUSINESS_REGISTRY_ENTRY,
+ * VITE_BUSINESS_ECONOMIC_ID). In DEV erscheint ein Hinweis-Banner mit den
+ * offenen Feldern — in PROD wird der Banner unterdrueckt, weil das
+ * oeffentliche Wording „Pflichtangaben unvollstaendig" rechtlich heikler
+ * ist als der eigentliche Fehl-Wert. Stattdessen wird im jeweiligen
+ * Abschnitt (USt-IdNr., Wirtschafts-ID, HR-Eintrag) ein dezenter Status
+ * inline angezeigt („wird nach Vergabe ergaenzt").
  */
 export function Impressum() {
+  const identity = loadBusinessIdentity();
+  const productionReady = isImpressumProductionReady(identity);
+  // Banner nur in DEV — in PROD nicht oeffentlich "unvollstaendig" stehen.
+  const showBanner = import.meta.env.DEV;
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
+        <Link to="/" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3" aria-label="Zurueck zur Startseite">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5">
@@ -20,20 +33,25 @@ export function Impressum() {
             <FileText className="h-4 w-4 text-white" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Impressum</div>
+            <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Impressum</h1>
             <div className="text-[11px] text-titanium-400 font-medium">§ 5 TMG · § 18 MStV</div>
           </div>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6 text-titanium-300 text-sm leading-relaxed">
-        {import.meta.env.DEV && (
+        {showBanner && (
           <div className="flex items-start gap-2 p-3 bg-amber-950/30 border border-amber-900 rounded-none text-xs">
             <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
             <span className="text-amber-200">
-              <strong>Status: Pre-Launch.</strong> Anbieter, Anschrift, Telefon, Vertretungsberechtigter und Aufsichtsbehörde sind eingetragen.
-              Ausstehend: USt-IdNr. (kommt nach Finanzamt-Fragebogen) · HR-Eintrag (nur falls spätere UG/GmbH-Umwandlung).
-              Vor Live-Schaltung Empfehlung: Anwalt-Review für individuelle Verarbeitungsprozesse.
+              <strong>
+                {productionReady
+                  ? 'DEV-Build: alle Pflichtfelder gesetzt.'
+                  : 'DEV-Hinweis: optionale Felder noch leer.'}
+              </strong>{' '}
+              {!identity.vatId && 'USt-IdNr. — sobald nach Finanzamt-Fragebogen vergeben, in VITE_BUSINESS_VAT_ID setzen. '}
+              {!identity.registryEntry && 'HR-Eintrag nur bei UG/GmbH-Umwandlung relevant (VITE_BUSINESS_REGISTRY_ENTRY). '}
+              {!identity.economicId && 'Wirtschafts-ID erst nach Vergabe durch BZSt (VITE_BUSINESS_ECONOMIC_ID).'}
             </span>
           </div>
         )}
@@ -50,8 +68,9 @@ export function Impressum() {
             vertreten durch den Inhaber Dominik Steiner.
           </p>
           <p className="text-xs text-titanium-500">
-            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI" — finaler
-            Eintrag bei Gewerbeanmeldung (Gewerbeamt Neuhaus am Rennweg, Landkreis Sonneberg).
+            Handelsname „RealSync Dynamics" bzw. „RealSyncDynamics.AI".
+            Gewerbe angemeldet am 13.05.2026 (Gewerbeamt Neuhaus am Rennweg,
+            Landkreis Sonneberg, Gemeindekennzahl 16072013).
           </p>
         </Section>
 
@@ -72,32 +91,49 @@ export function Impressum() {
 
         <Section title="Tätigkeitsschwerpunkte">
           <p>
-            Entwicklung, Vermarktung und Betrieb von KI-gestützten Software-as-a-Service (SaaS)-Lösungen;
-            IT-Dienstleistungen; Unternehmensberatung im Bereich digitale Prozessautomatisierung und
-            Datenschutz-/AI-Act-Compliance. Schwerpunkt: EU-souveräne KI-Infrastruktur,
-            DSGVO-Compliance-Tools (AVV / VVT / DSFA / Cookie-Consent), Audit-Trail.
+            Entwicklung und Betrieb von Software-as-a-Service (SaaS)-Lösungen
+            im Bereich Datenschutz-, Compliance- und KI-Governance,
+            insbesondere automatisierte Website- und Tracking-Analysen,
+            DSGVO-/TTDSG-Compliance-Monitoring, technische Audit- und
+            Reporting-Systeme sowie digitale Compliance-Tools. Erbringung
+            von IT-Dienstleistungen, Softwareentwicklung und Bereitstellung
+            webbasierter Analyse- und Monitoringplattformen.
           </p>
           <p className="text-xs text-titanium-500">
-            WZ-Code (vorläufig, finaler Eintrag durch Finanzamt): 62.01.0 (Programmierungstätigkeiten),
-            ergänzend 62.09.0 (sonstige Tätigkeiten der Informationstechnologie).
+            Wortlaut gemäß registrierter Gewerbeanmeldung (Anlage zu GewA 1,
+            Feld 18, Datum 13.05.2026). WZ-Code: 62.01.0
+            (Programmierungstätigkeiten), ergänzend 62.09.0
+            (sonstige Tätigkeiten der Informationstechnologie).
           </p>
         </Section>
 
         <Section title="Handelsregister / Rechtsform">
-          <p className="text-titanium-500">
-            <span className="text-titanium-300">Aktueller Status:</span> Einzelunternehmen, nicht im Handelsregister eingetragen.
-            Bei späterer Umwandlung in UG (haftungsbeschränkt) oder GmbH wird hier der HRB-Eintrag
-            (Registergericht Jena oder zuständiges Amtsgericht) ergänzt.
-          </p>
+          {identity.registryEntry ? (
+            <p>
+              <strong className="text-titanium-50">Registereintrag:</strong> {identity.registryEntry}
+            </p>
+          ) : (
+            <p className="text-titanium-500">
+              <span className="text-titanium-300">Aktueller Status:</span> Einzelunternehmen, nicht im Handelsregister eingetragen.
+              Bei späterer Umwandlung in UG (haftungsbeschränkt) oder GmbH wird hier der HRB-Eintrag
+              (Registergericht Jena oder zuständiges Amtsgericht) ergänzt.
+            </p>
+          )}
           <p className="text-xs text-titanium-500">
             Falls Einzelunternehmen bleibt: dieser Abschnitt kann entfernt werden, der Hinweis „Nicht im Handelsregister eingetragen" reicht.
           </p>
         </Section>
 
         <Section title="Umsatzsteuer-Identifikationsnummer">
-          <p>
-            USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="text-titanium-500">[wird nach Finanzamt-Fragebogen vergeben]</span>
-          </p>
+          {identity.vatId ? (
+            <p>
+              USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="font-mono text-titanium-50">{identity.vatId}</span>
+            </p>
+          ) : (
+            <p>
+              USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="text-amber-300">wird nach Finanzamt-Fragebogen vergeben</span>
+            </p>
+          )}
           <p className="text-xs text-titanium-500">
             Falls Kleinunternehmer-Regelung (§ 19 UStG) bei Anmeldung gewählt wird: Diesen Block ersetzen durch
             „Hinweis: Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen."
@@ -105,9 +141,15 @@ export function Impressum() {
         </Section>
 
         <Section title="Wirtschafts-ID (sobald vergeben)">
-          <p className="text-titanium-500">
-            Wirtschafts-Identifikationsnummer (§ 139c AO): [noch nicht vergeben]
-          </p>
+          {identity.economicId ? (
+            <p>
+              Wirtschafts-Identifikationsnummer (§ 139c AO): <span className="font-mono text-titanium-50">{identity.economicId}</span>
+            </p>
+          ) : (
+            <p className="text-titanium-500">
+              Wirtschafts-Identifikationsnummer (§ 139c AO): noch nicht vergeben
+            </p>
+          )}
         </Section>
 
         <Section title="Aufsichtsbehörde Datenschutz">

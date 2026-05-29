@@ -89,13 +89,14 @@ describe('AiGateway', () => {
     expect(adapter.generate).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects unknown providers (cloud-fallback adapter not yet wired)', async () => {
+  it('rejects cloud-fallback profile when no Anthropic adapter is wired', async () => {
     const adapter = stubAdapter();
     const gateway = new AiGateway({ lmStudio: adapter });
 
+    expect(gateway.hasCloudFallback()).toBe(false);
     await expect(
       gateway.generate(chatRequest({ model_profile: 'cloud-fallback' })),
-    ).rejects.toThrow(/Provider not implemented/);
+    ).rejects.toThrow(/Provider not configured/);
   });
 
   it('health() proxies to the LM Studio adapter', async () => {
@@ -105,5 +106,232 @@ describe('AiGateway', () => {
     const result = await gateway.health();
     expect(result.ok).toBe(true);
     expect(result.models).toContain('stub-model');
+  });
+
+  // ── Cloud-fallback (Anthropic) ────────────────────────────────────
+
+  function anthropicStub(over: { generate?: AiProviderAdapter['generate'] } = {}): AiProviderAdapter {
+    const gen: AiProviderAdapter['generate'] = over.generate ?? (async (req) => ({
+      provider: 'anthropic' as const,
+      model:    'claude-haiku-4-5',
+      profile:  req.model_profile,
+      output:   'anthropic-output',
+      trace_id: req.trace_id ?? 't',
+      latency_ms: 1,
+    }));
+    const ej = async <T>(req: AiGatewayRequest): Promise<AiGatewayResponse<T>> => ({
+      provider: 'anthropic' as const,
+      model:    'claude-haiku-4-5',
+      profile:  req.model_profile,
+      output:   ({ ok: true } as unknown) as T,
+      trace_id: req.trace_id ?? 't',
+      latency_ms: 1,
+    });
+    return {
+      id: 'anthropic',
+      health:      vi.fn(async () => ({ ok: true, models: ['claude-haiku-4-5'] })),
+      generate:    vi.fn(gen),
+      extractJson: vi.fn(ej) as unknown as AiProviderAdapter['extractJson'],
+      embed:       vi.fn(async () => { throw new Error('Anthropic offers no embeddings API'); }),
+    };
+  }
+
+  it('hasCloudFallback() returns true when an Anthropic adapter is wired', () => {
+    const gateway = new AiGateway({ lmStudio: stubAdapter(), anthropic: anthropicStub() });
+    expect(gateway.hasCloudFallback()).toBe(true);
+  });
+
+  it('falls back to Anthropic when the primary throws a DNS error', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information: lmstudio.internal'); });
+    const anthropic = anthropicStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    const result = await gateway.generate(chatRequest());
+
+    expect(result.provider).toBe('anthropic');
+    expect(result.output).toBe('anthropic-output');
+    expect(primary.generate).toHaveBeenCalledTimes(1);
+    expect(anthropic.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back on connection-refused, timeout, no-model-available, 5xx', async () => {
+    const messages = [
+      'connect ECONNREFUSED 127.0.0.1:1234',
+      'The signal has been aborted',
+      'No LM Studio model available',
+      'LM Studio HTTP 503',
+    ];
+    for (const m of messages) {
+      const primary = stubAdapter();
+      primary.generate = vi.fn(async () => { throw new Error(m); });
+      const anthropic = anthropicStub();
+      const gateway = new AiGateway({ lmStudio: primary, anthropic });
+      const result = await gateway.generate(chatRequest());
+      expect(result.provider, `should fall back on: ${m}`).toBe('anthropic');
+    }
+  });
+
+  it('does NOT fall back on 4xx validation errors', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('LM Studio HTTP 400: invalid request'); });
+    const anthropic = anthropicStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    await expect(gateway.generate(chatRequest())).rejects.toThrow(/HTTP 400/);
+    expect(anthropic.generate).not.toHaveBeenCalled();
+  });
+
+  it('falls back for extractJson via the JSON path', async () => {
+    const primary = stubAdapter();
+    primary.extractJson = vi.fn(async () => { throw new Error('failed to lookup address information'); }) as never;
+    const anthropic = anthropicStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    const result = await gateway.extractJson(chatRequest({ task_type: 'extract_json' }));
+
+    expect(result.provider).toBe('anthropic');
+    expect(anthropic.extractJson).toHaveBeenCalledTimes(1);
+    expect(anthropic.generate).not.toHaveBeenCalled();
+  });
+
+  it('embed() never falls back — Anthropic has no embeddings', async () => {
+    const primary = stubAdapter();
+    primary.embed = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic });
+    await expect(gateway.embed(chatRequest({ task_type: 'embed' }))).rejects.toThrow(/lookup address/);
+    // Anthropic adapter is NOT consulted at all for embed.
+    expect(anthropic.generate).not.toHaveBeenCalled();
+  });
+
+  // ── Fallback CHAIN (Anthropic → OpenAI) ───────────────────────────
+
+  function openaiStub(over: { generate?: AiProviderAdapter['generate']; throws?: string } = {}): AiProviderAdapter {
+    const gen: AiProviderAdapter['generate'] = over.generate ?? (async (req) => {
+      if (over.throws) throw new Error(over.throws);
+      return {
+        provider: 'openai' as const,
+        model:    'gpt-4.1-mini',
+        profile:  req.model_profile,
+        output:   'openai-output',
+        trace_id: req.trace_id ?? 't',
+        latency_ms: 1,
+      };
+    });
+    return {
+      id: 'openai',
+      health:      vi.fn(async () => ({ ok: true, models: ['gpt-4.1-mini'] })),
+      generate:    vi.fn(gen),
+      extractJson: vi.fn(async <T,>(req: AiGatewayRequest): Promise<AiGatewayResponse<T>> => ({
+        provider: 'openai' as const,
+        model:    'gpt-4.1-mini',
+        profile:  req.model_profile,
+        output:   ({ ok: true } as unknown) as T,
+        trace_id: req.trace_id ?? 't',
+        latency_ms: 1,
+      })) as unknown as AiProviderAdapter['extractJson'],
+      embed: vi.fn(async () => { throw new Error('OpenAI embed stub not impl'); }),
+    };
+  }
+
+  it('reports the chain order via fallbackChainIds()', () => {
+    const gateway = new AiGateway({
+      lmStudio: stubAdapter(),
+      anthropic: anthropicStub(),
+      openai: openaiStub(),
+    });
+    expect(gateway.fallbackChainIds()).toEqual(['anthropic', 'openai']);
+  });
+
+  it('chain stops at first OK — Anthropic answers, OpenAI not consulted', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub();
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const result = await gateway.generate(chatRequest());
+
+    expect(result.provider).toBe('anthropic');
+    expect(anthropic.generate).toHaveBeenCalledTimes(1);
+    expect(openai.generate).not.toHaveBeenCalled();
+  });
+
+  it('chain advances to OpenAI when Anthropic also fails with transport error', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('Anthropic HTTP 503'); }) });
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    const result = await gateway.generate(chatRequest());
+
+    expect(result.provider).toBe('openai');
+    expect(anthropic.generate).toHaveBeenCalledTimes(1);
+    expect(openai.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it('all chain links fail → last error propagates', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('Anthropic HTTP 503'); }) });
+    const openai = openaiStub({ throws: 'OpenAI HTTP 503' });
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    await expect(gateway.generate(chatRequest())).rejects.toThrow(/OpenAI HTTP 503/);
+  });
+
+  it('chain stops if a link throws a 4xx-shaped error (no continue)', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    // Anthropic returns 401 (invalid key) — this is NOT a transport
+    // error, so the chain should propagate it without trying OpenAI.
+    const anthropic = anthropicStub({ generate: vi.fn(async () => { throw new Error('invalid x-api-key'); }) });
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, anthropic, openai });
+    await expect(gateway.generate(chatRequest())).rejects.toThrow(/invalid x-api-key/);
+    expect(openai.generate).not.toHaveBeenCalled();
+  });
+
+  it('works with only OpenAI configured (no Anthropic)', async () => {
+    const primary = stubAdapter();
+    primary.generate = vi.fn(async () => { throw new Error('failed to lookup address information'); });
+    const openai = openaiStub();
+
+    const gateway = new AiGateway({ lmStudio: primary, openai });
+    expect(gateway.fallbackChainIds()).toEqual(['openai']);
+    const result = await gateway.generate(chatRequest());
+    expect(result.provider).toBe('openai');
+  });
+});
+
+// ── isTransportLevelFailure pure-fn coverage ──────────────────────
+
+describe('isTransportLevelFailure', () => {
+  it('returns true for known transport patterns', async () => {
+    const { isTransportLevelFailure } = await import('../../../src/core/ai-gateway/router');
+    expect(isTransportLevelFailure(new Error('failed to lookup address information'))).toBe(true);
+    expect(isTransportLevelFailure(new Error('dns error'))).toBe(true);
+    expect(isTransportLevelFailure(new Error('connect ECONNREFUSED'))).toBe(true);
+    expect(isTransportLevelFailure(new Error('fetch failed'))).toBe(true);
+    expect(isTransportLevelFailure(new Error('The signal has been aborted'))).toBe(true);
+    expect(isTransportLevelFailure(new Error('No LM Studio model available'))).toBe(true);
+    expect(isTransportLevelFailure(new Error('LM Studio HTTP 502'))).toBe(true);
+  });
+
+  it('returns false for 4xx / validation errors', async () => {
+    const { isTransportLevelFailure } = await import('../../../src/core/ai-gateway/router');
+    expect(isTransportLevelFailure(new Error('LM Studio HTTP 400: bad input'))).toBe(false);
+    expect(isTransportLevelFailure(new Error('LM Studio HTTP 422'))).toBe(false);
+    expect(isTransportLevelFailure(new Error('invalid json'))).toBe(false);
+  });
+
+  it('returns false for null/undefined', async () => {
+    const { isTransportLevelFailure } = await import('../../../src/core/ai-gateway/router');
+    expect(isTransportLevelFailure(null)).toBe(false);
+    expect(isTransportLevelFailure(undefined)).toBe(false);
   });
 });

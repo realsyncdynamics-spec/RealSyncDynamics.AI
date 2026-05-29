@@ -18,9 +18,28 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
  *
  * Magic-Link bleibt als Fallback in Welcome.tsx erhalten — diese Component
  * ergaenzt es, ersetzt es nicht.
+ *
+ * Provider-Sichtbarkeit ist per env-Flag steuerbar (Default: an). Setze
+ * VITE_AUTH_<PROVIDER>_ENABLED=false im Hosting-Dashboard, um einen
+ * defekten Provider auszublenden, ohne Deploy auszuloesen. Beispiel:
+ * VITE_AUTH_GOOGLE_ENABLED=false blendet den Google-Button aus, wenn
+ * die OAuth-Client-ID in der Google Cloud Console ungueltig ist.
  */
 
 type Provider = 'google' | 'azure' | 'linkedin_oidc' | 'github';
+
+// "true" ist Default — nur explizites "false" deaktiviert. Damit kann ein
+// neu deployter Stack ohne env-Var weiterhin alle Provider zeigen.
+function flagOn(value: string | undefined): boolean {
+  return value !== 'false';
+}
+
+const PROVIDER_ENABLED: Record<Provider, boolean> = {
+  google:        flagOn(import.meta.env.VITE_AUTH_GOOGLE_ENABLED),
+  azure:         flagOn(import.meta.env.VITE_AUTH_AZURE_ENABLED),
+  linkedin_oidc: flagOn(import.meta.env.VITE_AUTH_LINKEDIN_ENABLED),
+  github:        flagOn(import.meta.env.VITE_AUTH_GITHUB_ENABLED),
+};
 
 interface ProviderConfig {
   id: Provider;
@@ -148,10 +167,16 @@ export function OAuthProviderButtons({
   };
 
   const isCompact = variant === 'compact';
+  const visibleProviders = PROVIDERS.filter((p) => PROVIDER_ENABLED[p.id]);
+
+  // Wenn alle Provider per Flag aus sind, rendern wir nichts statt einer
+  // leeren Box — die aufrufenden Seiten haben weiterhin Magic-Link als
+  // Fallback. Kein Layout-Sprung, keine Verwirrung.
+  if (visibleProviders.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      {PROVIDERS.map((p) => {
+      {visibleProviders.map((p) => {
         const isThisBusy = busyProvider === p.id;
         const isAnyBusy = busyProvider !== null;
         return (

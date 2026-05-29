@@ -37,6 +37,26 @@ export function Welcome() {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [auditQueued, setAuditQueued] = useState(false);
 
+  // OAuth-Provider-Fehler abfangen, falls der User mit ?error=... oder
+  // #error=... auf /welcome zurueck navigiert (z.B. access_denied,
+  // server_error). Der invalid_client-Fall bleibt allerdings auf der
+  // Provider-Seite haengen — dagegen hilft nur das Provider-Flag in
+  // OAuthProviderButtons.tsx.
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const hash   = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const err    = search.get('error') ?? hash.get('error');
+    if (!err) return;
+    const desc =
+      search.get('error_description') ??
+      hash.get('error_description') ??
+      err;
+    setError(`Login abgebrochen: ${decodeURIComponent(desc).replace(/\+/g, ' ')}`);
+    // Query + Hash aufraeumen, damit ein Reload den Banner nicht wieder zeigt.
+    const cleaned = window.location.pathname;
+    window.history.replaceState({}, '', cleaned);
+  }, []);
+
   // Detect signed-in state on mount + on auth changes (post-magic-link return)
   useEffect(() => {
     if (!isSupabaseConfigured()) return;

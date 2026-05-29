@@ -1,19 +1,26 @@
-import { PlanKey } from './types';
-
-export const PRICE_TO_PLAN: Record<string, PlanKey> = {
-  'price_free_internal': 'free',
-  'price_bronze_monthly': 'bronze',
-  'price_bronze_yearly': 'bronze',
-  'price_silver_monthly': 'silver',
-  'price_silver_yearly': 'silver',
-  'price_gold_monthly': 'gold',
-  'price_gold_yearly': 'gold',
-  'price_enterprise_manual': 'enterprise_public',
+export const STRIPE_PLAN_MAPPING: Record<string, { priceId: string; label: string }> = {
+  free_audit: {
+    priceId: 'price_1TVbcMCNKcHrCAICoX7QYcxA',
+    label: 'Frei (Audit-Modus)',
+  },
+  starter: {
+    priceId: 'price_1TVbdCCNKcHrCAICUiJEMfyf',
+    label: 'Anlasser (Starter)',
+  },
+  growth: {
+    priceId: 'price_1TVbdbCNKcHrCAICBr5X3NmN',
+    label: 'Wachstum (Growth)',
+  },
+  agency: {
+    priceId: 'price_1TVbduCNKcHrCAICT0IYHOmB',
+    label: 'Unternehmen (Agency)',
+  }
 };
 
-export const ADD_ON_KEYS = {
-  extraSeat: 'addon.extra_seat',
-  extraApiPack: 'addon.api_pack',
-  extraBulkPack: 'addon.bulk_pack',
-  compliancePack: 'addon.compliance_pack',
-} as const;
+export function getStripePriceId(planKey: string): string {
+  const mapping = STRIPE_PLAN_MAPPING[planKey];
+  if (!mapping) {
+    throw new Error(`[Billing Error] Unbekannter oder nicht autorisierter Plan-Key: ${planKey}`);
+  }
+  return mapping.priceId;
+}

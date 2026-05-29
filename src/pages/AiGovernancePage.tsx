@@ -51,7 +51,7 @@ export function AiGovernancePage() {
 
           <p className="mt-6 max-w-3xl text-base sm:text-xl text-silver-300 leading-relaxed">
             Unternehmen nutzen ChatGPT, Claude, Copilot, Cursor, interne Agents und
-            AI-Workflows — aber häufig ohne Inventar, Policy Enforcement oder Audit Trail.
+            AI-Workflows — aber häufig ohne Inventar, Policy Enforcement oder Prüfpfad.
             RealSyncDynamicsAI macht AI-Systeme sichtbar, bewertbar und nachweisbar.
           </p>
 

@@ -49,6 +49,29 @@ const CHECKS = [
   { id: 'sitemap',     name: 'Sitemap reachable',            kind: 'html', url: `${BASE_URL}/sitemap.xml`,       expected: 'governance' },
   { id: 'robots',      name: 'Robots.txt reachable',         kind: 'html', url: `${BASE_URL}/robots.txt`,        expected: 'Sitemap' },
 
+  // ── Legal-Surface vollständigkeitchecks ─────────────────────────
+  //
+  // Gate gegen Live-Schaltung mit unvollständigen § 5 TMG-Pflichtangaben.
+  // mustNotInclude blockt, wenn der Pre-Launch-Banner aus Impressum.tsx
+  // im prerendered HTML sichtbar ist (= VITE_BUSINESS_VAT_ID fehlt).
+  { id: 'impressum',         name: 'Impressum reachable + Pflichtsektionen present',
+                             kind: 'html', url: `${BASE_URL}/legal/impressum`,
+                             expected: 'Umsatzsteuer-Identifikationsnummer' },
+  { id: 'impressum-vat',     name: 'Impressum: USt-IdNr. ist gesetzt (kein Pre-Launch-Banner)',
+                             kind: 'html', url: `${BASE_URL}/legal/impressum`,
+                             expected: 'Umsatzsteuer-Identifikationsnummer',
+                             mustNotInclude: ['Pflichtangaben unvollständig', 'USt-IdNr. fehlt'] },
+  { id: 'sub-processors',    name: 'Sub-Prozessoren: alle 8 Anbieter vorhanden',
+                             kind: 'html', url: `${BASE_URL}/legal/sub-processors`,
+                             expected: 'Sub-Prozessoren',
+                             mustInclude: [
+                               'Supabase', 'Anthropic', 'Google', 'OpenAI',
+                               'Stripe', 'Hostinger', 'Resend', 'GitHub',
+                             ] },
+  { id: 'privacy-policy',    name: 'Datenschutzerklärung reachable',
+                             kind: 'html', url: `${BASE_URL}/legal/privacy`,
+                             expected: 'Datenschutz' },
+
   // ── Last-Modified freshness (catches stale deploys) ─────────────
   { id: 'freshness',   name: `Frontend deployed within ${MAX_FRESHNESS_HOURS}h`,
                        kind: 'last-modified', url: `${BASE_URL}/`,
@@ -88,16 +111,38 @@ const CHECKS = [
 
 // ── Per-kind check implementations ─────────────────────────────────
 
-async function checkHtml({ url, expected }) {
+async function checkHtml({ url, expected, mustInclude, mustNotInclude }) {
   const res = await fetchWithTimeout(url, { method: 'GET' });
   if (!res.ok) return { status: res.status, ok: false, detail: `HTTP ${res.status}` };
   const text = await res.text();
-  const found = text.includes(expected);
-  return {
-    status: res.status,
-    ok:     found,
-    detail: found ? 'OK' : `missing marker: ${expected}`,
-  };
+
+  if (expected && !text.includes(expected)) {
+    return { status: res.status, ok: false, detail: `missing marker: ${expected}` };
+  }
+
+  if (Array.isArray(mustInclude)) {
+    const missing = mustInclude.filter((m) => !text.includes(m));
+    if (missing.length > 0) {
+      return {
+        status: res.status,
+        ok: false,
+        detail: `missing required markers: ${missing.join(', ')}`,
+      };
+    }
+  }
+
+  if (Array.isArray(mustNotInclude)) {
+    const forbidden = mustNotInclude.filter((m) => text.includes(m));
+    if (forbidden.length > 0) {
+      return {
+        status: res.status,
+        ok: false,
+        detail: `forbidden marker(s) present: ${forbidden.join(', ')}`,
+      };
+    }
+  }
+
+  return { status: res.status, ok: true, detail: 'OK' };
 }
 
 async function checkLastModified({ url, expected /* max-age hours */ }) {

@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "realsync-cli"
+version = "0.2.0"
+description = "Offline verifier for RealSyncDynamics.AI governance evidence bundles (SPEC-001)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "RealSyncDynamics" },
+]
+keywords = ["governance", "audit", "evidence", "ed25519", "hash-chain"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Security :: Cryptography",
+]
+dependencies = [
+  # Ed25519 is not in the Python standard library. `cryptography` is the
+  # OpenSSL-backed canonical implementation; it ships precompiled wheels
+  # for every supported OS so installation does not require a compiler.
+  "cryptography>=42,<46",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+]
+
+[project.scripts]
+realsync = "realsync.cli:main"
+
+[project.urls]
+Homepage = "https://realsyncdynamicsai.de"
+
+[tool.setuptools.packages.find]
+include = ["realsync*"]
+exclude = ["tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts  = "-ra"

@@ -164,8 +164,8 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
             role: 'assistant',
             content:
               result.code === 'UPSTREAM_UNAVAILABLE'
-                ? 'Der Assistent ist gerade nicht erreichbar. Bitte später erneut versuchen.'
-                : `Fehler beim Senden: ${result.message}`,
+                ? 'Der Assistent ist gerade nicht erreichbar. Direkt-Kanal: support@realsyncdynamicsai.de — oder Audit jetzt starten unter /audit.'
+                : `Fehler beim Senden: ${result.message}. Direkt-Kanal: support@realsyncdynamicsai.de.`,
             isError: true,
           },
         ]);

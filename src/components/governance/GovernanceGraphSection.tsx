@@ -69,11 +69,11 @@ const EDGES: readonly [string, string][] = [
 ];
 
 const KIND_STYLE: Record<GraphNodeKind, { fill: string; stroke: string; tone: string; label: string }> = {
-  ai_system: { fill: '#1e1b4b', stroke: '#a855f7', tone: 'text-violet-300',  label: 'ai system' },
-  policy:    { fill: '#082f49', stroke: '#22d3ee', tone: 'text-cyan-300',    label: 'policy' },
-  evidence:  { fill: '#022c22', stroke: '#10b981', tone: 'text-emerald-300', label: 'evidence' },
-  control:   { fill: '#451a03', stroke: '#f59e0b', tone: 'text-amber-300',   label: 'control' },
-  agent:     { fill: '#0f172a', stroke: '#e5e7eb', tone: 'text-titanium-100', label: 'agent' },
+  ai_system: { fill: '#1e1b4b', stroke: '#a855f7', tone: 'text-violet-300',  label: 'KI-System' },
+  policy:    { fill: '#082f49', stroke: '#22d3ee', tone: 'text-cyan-300',    label: 'Policy' },
+  evidence:  { fill: '#022c22', stroke: '#10b981', tone: 'text-emerald-300', label: 'Evidence' },
+  control:   { fill: '#451a03', stroke: '#f59e0b', tone: 'text-amber-300',   label: 'Kontrolle' },
+  agent:     { fill: '#0f172a', stroke: '#e5e7eb', tone: 'text-titanium-100', label: 'Agent' },
 };
 
 const KINDS: GraphNodeKind[] = ['ai_system', 'policy', 'evidence', 'control', 'agent'];
@@ -102,15 +102,17 @@ export function GovernanceGraphSection({ headless = false }: { headless?: boolea
         {!headless && (
           <div className="max-w-3xl mb-10">
             <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-              graph · governance topology
+              Graph · Governance-Topologie
             </div>
             <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-              Every AI system maps to a policy, a control, an agent, an evidence chain.
+              Jedes KI-System ist auf Policy, Kontrolle, Agent und Evidence-Kette abgebildet.
             </h2>
             <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-              The governance graph keeps the runtime honest. AI systems point at the controls that constrain them,
-              the controls point at the policies that authorise them, every step writes evidence, and agents keep
-              the graph in sync.
+              Der Governance-Graph hält die Runtime ehrlich: KI-Systeme zeigen auf
+              die Kontrollen, die sie einschränken; Kontrollen zeigen auf die Policies,
+              die sie autorisieren; jeder Schritt erzeugt einen Evidence-Eintrag —
+              und die Agenten halten den Graphen synchron. Diese Vorschau zeigt
+              Demo-Daten.
             </p>
           </div>
         )}
@@ -143,9 +145,9 @@ export function GovernanceGraphSection({ headless = false }: { headless?: boolea
                 <span className="w-2 h-2 rounded-full bg-amber-500/70" />
                 <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
               </span>
-              governance.graph · live
+              governance.graph · Demo
             </span>
-            <span className="text-emerald-400">{NODES.length} nodes · {EDGES.length} edges</span>
+            <span className="text-titanium-400">{NODES.length} Knoten · {EDGES.length} Kanten</span>
           </div>
 
           <div className="relative">
@@ -241,7 +243,7 @@ export function GovernanceGraphSection({ headless = false }: { headless?: boolea
           </div>
 
           <div className="px-3 py-2 border-t border-titanium-900 bg-obsidian-900 font-mono text-[10px] text-titanium-500">
-            hover any node → highlight its relationships · every edge is replayable from the evidence chain
+            Knoten anhovern → markiert die Beziehungen · jede Kante ist über die Evidence-Chain nachvollziehbar · Demo-Graph
           </div>
         </div>
       </div>

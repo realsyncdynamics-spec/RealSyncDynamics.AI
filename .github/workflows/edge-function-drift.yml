@@ -1,0 +1,34 @@
+name: Edge Function Drift Guard
+
+# Prueft, ob live deployte Edge Functions vom Repo abweichen (Orphans /
+# undeklariertes verify_jwt=false). Bewusst SEPARAT von deploy.yml, damit es
+# das Shipping nicht blockiert, aber Drift laut sichtbar macht.
+# Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # taeglich 06:00 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'supabase/config.toml'
+      - 'supabase/functions/**'
+      - 'scripts/check-edge-function-drift.mjs'
+      - 'scripts/edge-function-drift-allowlist.json'
+      - '.github/workflows/edge-function-drift.yml'
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check edge function drift
+        env:
+          # Bei PRs aus Forks fehlen die Secrets → Skript ueberspringt den
+          # Prod-Teil sauber (Exit 0) und prueft nur die Repo-Konsistenz.
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: node scripts/check-edge-function-drift.mjs

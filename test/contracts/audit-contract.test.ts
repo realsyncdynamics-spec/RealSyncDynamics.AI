@@ -9,9 +9,9 @@ import { PRICING_TIERS, tierById, type TierId } from '../../src/config/pricing';
 import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig, planForTier } from '../../src/lib/billing/planConfig';
 
 describe('PRICING_TIERS — Single Source of Truth', () => {
-  it('has all 5 tier ids', () => {
+  it('has all 6 tier ids', () => {
     const ids = PRICING_TIERS.map((t) => t.id).sort();
-    expect(ids).toEqual(['agency', 'enterprise', 'free', 'growth', 'starter']);
+    expect(ids).toEqual(['agency', 'enterprise', 'free', 'growth', 'scale', 'starter']);
   });
 
   it('Starter price is 79 €', () => {
@@ -24,6 +24,17 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
 
   it('Agency price is 699 €', () => {
     expect(tierById('agency')?.priceEur).toBe(699);
+  });
+
+  it('Scale price is 1999 € and slots between Agency and Enterprise', () => {
+    expect(tierById('scale')?.priceEur).toBe(1999);
+    // Verify slot order: agency → scale → enterprise
+    const order = PRICING_TIERS.map((t) => t.id);
+    const agencyIdx = order.indexOf('agency');
+    const scaleIdx = order.indexOf('scale');
+    const enterpriseIdx = order.indexOf('enterprise');
+    expect(scaleIdx).toBeGreaterThan(agencyIdx);
+    expect(scaleIdx).toBeLessThan(enterpriseIdx);
   });
 
   it('Free tier has priceEur=0 and recurring=false', () => {

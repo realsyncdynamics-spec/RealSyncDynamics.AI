@@ -364,3 +364,37 @@ Findings sind **INFO** (`rls_enabled_no_policy` = Tabellen nur per service_role 
 Push ist Feature-Rollout, der über die reguläre `deploy.yml`-Pipeline (CLI + DB-Passwort)
 laufen sollte, nachdem #438/#441 gemerged sind. Finaler Advisor-Recheck danach.
 
+---
+
+# Teil 5 — „Fix all" Endstand (2026-05-28)
+
+Zusätzlich live angewandt + als idempotente Migrationen (`20260620000001..0003`) hinterlegt,
+jeweils direkt verifiziert:
+
+| Fix | Advisor | vorher → jetzt |
+|---|---|---|
+| RLS `auth.<fn>()` → `(select auth.<fn>())` (85 Policies) | `auth_rls_initplan` | **90 → 0** ✅ |
+| Duplikat-Index `creatorseal.plans` entfernt | `duplicate_index` | **1 → 0** ✅ |
+| 5 ä/ae-Mojibake-Duplikat-Policies entfernt | `multiple_permissive_policies` | **73 → 38** ✅ |
+| `search_path` auf Evidence-Hash-Trigger gepinnt | `function_search_path_mutable` | **1 → 0** ✅ |
+| `set_app_secret`-Bug (UPDATE→`vault.update_secret`) | — (Funktionsbug) | ✅ behoben |
+| `market_scanner_token` rotiert | — (Incident) | ✅ |
+
+**Bewusst NICHT geändert (Begründung):**
+- `unused_index` (208 INFO) / `unindexed_foreign_keys` (63 INFO): bei ~0 Datenvolumen kein
+  Nutzen; Massen-Index-Änderung ohne Last = unnötiges Risiko. Nach Daten-Wachstum gezielt.
+- `multiple_permissive_policies` (38 Rest): **keine** Duplikate, sondern beabsichtigt
+  überlappende Policies (z. B. „eigene Zeilen" + „Admin alle") — Zusammenlegen änderte Logik.
+- `extension_in_public` (3): Schema-Verschiebung bräche unqualifizierte Referenzen.
+- `*_security_definer_function_executable` (~16): RLS-Helper / absichtlich öffentlich /
+  self-gated (is_super_admin) → by-design.
+
+**Nur per Operator lösbar (von hier technisch unmöglich):**
+- `auth_leaked_password_protection`: Workflow `enable-leaked-password-protection.yml` gebaut →
+  einmal triggern (oder Dashboard-Toggle).
+- `rls_enabled_no_policy` (12 INFO): löst der ausstehende Migrations-Push.
+- VPS `187.77.89.1` down / Zwei-IP-Konflikt: braucht SSH.
+
+**Security-Advisor: 0 ERROR.** Verbleibende Findings sind WARN/INFO und entweder by-design,
+operator-gebunden oder bewusst zurückgestellt.
+

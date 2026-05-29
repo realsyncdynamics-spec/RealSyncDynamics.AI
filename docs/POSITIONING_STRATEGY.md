@@ -112,8 +112,19 @@ Die Positionierung ist tragfähig, weil der Stack sie *heute* schon trägt:
   `HrSoftwareLanding`, `SteuerberaterLanding`, `EducationLanding`
 - SEO-Cluster: `seo/PreConsentTracking`, `EuAiActCheck`, `BaitCompliance`, `MariskAudit`, …
 
-**Schlussfolgerung:** Der Code ist zu ~90 % Compliance/Governance. Die Strategie
-beschreibt nicht eine Wunsch-Zukunft, sondern benennt, was bereits da ist.
+**Schlussfolgerung (gemessen, nicht geschätzt).** In `src/features/` (≈ 33.200 LOC)
+ist Compliance/Governance der mit Abstand größte und einzige zusammenhängende
+Produktcluster (`governance` + `legal` + `ai-governance` + `audit` + Shopify-Scan
+≈ **52 %**). Weitere ~37 % sind *generische SaaS-Infrastruktur*, die jedes Produkt
+braucht (Billing, Admin, Auth, Tenancy, Settings, Analytics, Operations). Nur
+**~8 %** sind echtes *Off-Narrative*-Produkt (C2PA-`assets`, Kodee-VPS, n8n-`workflows`).
+
+Auf der **kundenseitigen Außenfläche** (Landings, SEO-Cluster, Wettbewerber-
+Vergleichsseiten, Branchen-Landings) ist der Compliance-Anteil nahezu vollständig.
+
+Das heißt: Die konkurrierenden Narrative (Creator/C2PA, Agent-OS, VPS-Sidekick)
+sind ein **~8-%-Residuum**, kein gleichwertiges zweites Produkt. Die Strategie
+beschreibt damit keine Wunsch-Zukunft, sondern benennt, was bereits da ist.
 
 ---
 

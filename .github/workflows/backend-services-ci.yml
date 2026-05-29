@@ -25,7 +25,9 @@ jobs:
           - { dir: services/openclaw-agent,          check: 'npm run typecheck' }
           - { dir: services/playwright-scanner,       check: 'npm run typecheck' }
           - { dir: apps/agent-runtime,                check: 'npm run typecheck' }
-          - { dir: worker,                            check: 'npm run build' }
+          # Worker importiert ../src/rules (Repo-Root) → reiner Typecheck ohne Emit,
+          # damit keine .js-Artefakte ausserhalb des Worker-Verzeichnisses entstehen.
+          - { dir: worker,                            check: 'npx tsc --noEmit' }
           # Diese zwei haben (noch) kein TS-Setup → reiner Dependency-Install-Smoke:
           - { dir: services/realsync-runtime-core,    check: 'node --version' }
           - { dir: services/realsync-evidence-runtime, check: 'node --version' }

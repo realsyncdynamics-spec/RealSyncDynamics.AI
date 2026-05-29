@@ -12,7 +12,7 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from './entitlements.ts';
 import { recordUsage, getCurrentTotal, UsageError } from './usage.ts';
 import { callProvider, ProviderError } from './providers.ts';
-import { writeLlmCostEntries } from './cost-writer.ts';
+import { reserveLlmBudget, settleLlmBudget, CostCapError } from './cost-cap.ts';
 
 export interface RunAiToolOptions {
   /** Forwarded to ai_tool_runs.metadata. */
@@ -152,6 +152,38 @@ export async function runAiTool(
     effectiveModelId  = tool.ollama_model_id;
   }
 
+  // P4-impl-3 — reserve budget against the monthly USD-cap BEFORE the
+  // provider call. Local inference is free at the per-call level and
+  // sits outside the LLM-USD cap, so reservation is skipped for ollama.
+  const estimatedUsd = effectiveProvider === 'ollama'
+    ? 0
+    : (estimatedInputTokens / 1_000_000) * Number(tool.cost_input_per_million_usd) +
+      (tool.max_tokens       / 1_000_000) * Number(tool.cost_output_per_million_usd);
+  let reservationId: string | null = null;
+  if (effectiveProvider !== 'ollama' && estimatedUsd > 0) {
+    try {
+      const r = await reserveLlmBudget(admin, {
+        tenantId,
+        agentRef: tool.key,
+        estimatedUsd,
+      });
+      reservationId = r.reservationId;
+    } catch (e) {
+      if (e instanceof CostCapError) {
+        throw new AiInvokeError(
+          'monthly LLM USD cap reached',
+          'COST_LIMIT_EXCEEDED',
+          429,
+          { cap_used: e.capUsed, cap_total: e.capTotal, cap_remaining: e.capRemaining },
+        );
+      }
+      // Reservation infrastructure errors should not block calls in
+      // the absence of a clear deny — log and fall through so a
+      // degraded ledger doesn't take down the runtime.
+      console.error('cost-cap reserve failed (proceeding):', (e as Error).message);
+    }
+  }
+
   // Call provider
   const start = performance.now();
   try {
@@ -198,24 +230,24 @@ export async function runAiTool(
       console.error('usage recordUsage failed', (e as Error).message);
     }
 
-    // P4-impl-2 — feed the SPEC-001 economic-intelligence ledger.
-    // Local inference (ollama) costs 0 USD per call; recording it would
-    // add noise without economic signal, so it's skipped.
-    if (effectiveProvider !== 'ollama' && totalTokens > 0) {
+    // P4-impl-3 — settle the reservation with actual consumed tokens.
+    // The reservation row becomes the canonical ledger entry for this
+    // call. cost_kind=llm_input is the chosen label; the SUM in
+    // cost_check_and_reserve treats llm_input + llm_output as one
+    // bucket, so granularity-by-direction is preserved at the cap
+    // level via raw_metadata downstream, not via separate rows.
+    if (reservationId && totalTokens > 0) {
       try {
-        await writeLlmCostEntries(admin, {
-          tenantId,
-          agentRef: tool.key,
-          inputTokens: result.inputTokens,
-          outputTokens: result.outputTokens,
-          inputPricePerMillionUsd: Number(tool.cost_input_per_million_usd),
-          outputPricePerMillionUsd: Number(tool.cost_output_per_million_usd),
-          vendor: effectiveProvider,
-          modelRef: effectiveModelId,
-          rawMetadata: { tool_key: tool.key, run_id: run?.id, residency },
+        await settleLlmBudget(admin, {
+          reservationId,
+          costKind: 'llm_input',
+          unitsActual: totalTokens,
+          unitPriceUsd: costUsd / totalTokens,
         });
       } catch (e) {
-        console.error('cost-writer failed', (e as Error).message);
+        // Settlement failure leaves the reservation to expire after
+        // 5min via cost_sweep_expired_reservations. Log and proceed.
+        console.error('cost-cap settle failed', (e as Error).message);
       }
     }
 

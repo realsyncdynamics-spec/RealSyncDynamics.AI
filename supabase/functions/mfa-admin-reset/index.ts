@@ -5,35 +5,48 @@
 // Entfernt TOTP-Faktoren (service-role) und invalidiert offene Recovery-Codes.
 // AAL2-Pflicht laut Matrix — in P0a observe (hartes Enforce folgt P0c).
 //
-// Auth: erfordert ein gültiges User-JWT (verify_jwt=true, Default).
-import { corsHeaders } from '../_shared/cors.ts';
+// POST /functions/v1/mfa-admin-reset
+// Authorization: Bearer <user JWT>   (verify_jwt=true, Default)
+// Body: { tenant_id: string, target_user_id: string }
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-Deno.serve(async (req) => {
-  const origin = req.headers.get('Origin');
-  const cors = corsHeaders(origin);
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return json({ error: 'missing_authorization' }, 401);
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
   });
-  const { data: { user }, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !user) return json({ error: 'invalid_token' }, 401);
+}
 
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
+
+  const auth = req.headers.get('Authorization');
+  if (!auth?.startsWith('Bearer ')) return json({ error: 'missing_authorization' }, 401);
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: auth } }, auth: { persistSession: false },
+  });
+  const { data: userResp, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userResp.user) return json({ error: 'invalid_token' }, 401);
+  const user = userResp.user;
+
+  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
   try {
-    const { tenant_id: tenantId, target_user_id: targetUserId } = (await req.json().catch(() => ({}))) ?? {};
+    let body: Record<string, unknown>;
+    try { body = await req.json(); } catch { return json({ error: 'invalid_json' }, 400); }
+    const tenantId = body.tenant_id as string | undefined;
+    const targetUserId = body.target_user_id as string | undefined;
     if (!tenantId || !targetUserId) return json({ error: 'missing_fields' }, 400);
 
     // Autorisierung: Plattform-super_admin ODER owner/admin des Tenants.

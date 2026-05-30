@@ -5,9 +5,16 @@
 // entfernen wir hier (service-role) seine TOTP-Faktoren, sodass er sich neu
 // einschreiben kann. Der Code wird einmalig verbraucht.
 //
-// Auth: erfordert ein gültiges User-JWT (verify_jwt=true, Default).
-import { corsHeaders } from '../_shared/cors.ts';
+// POST /functions/v1/mfa-recovery-redeem
+// Authorization: Bearer <user JWT>   (verify_jwt=true, Default)
+// Body: { code: string }
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 async function sha256Hex(input: string): Promise<string> {
   const norm = input.replace(/[\s-]+/g, '').toUpperCase();
@@ -15,31 +22,36 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-Deno.serve(async (req) => {
-  const origin = req.headers.get('Origin');
-  const cors = corsHeaders(origin);
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
-
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) return json({ error: 'missing_authorization' }, 401);
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false },
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
   });
-  const { data: { user }, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !user) return json({ error: 'invalid_token' }, 401);
+}
 
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
+
+  const auth = req.headers.get('Authorization');
+  if (!auth?.startsWith('Bearer ')) return json({ error: 'missing_authorization' }, 401);
+
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: auth } }, auth: { persistSession: false },
+  });
+  const { data: userResp, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userResp.user) return json({ error: 'invalid_token' }, 401);
+  const user = userResp.user;
+
+  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
   try {
-    const { code } = (await req.json().catch(() => ({}))) ?? {};
+    let body: Record<string, unknown>;
+    try { body = await req.json(); } catch { return json({ error: 'invalid_json' }, 400); }
+    const code = body.code as string | undefined;
     if (!code || typeof code !== 'string') return json({ error: 'missing_code' }, 400);
 
     const codeHash = await sha256Hex(code);

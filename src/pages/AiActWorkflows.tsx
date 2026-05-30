@@ -372,7 +372,7 @@ export function AiActWorkflows() {
             </Link>
             <Link to="/contact-sales?intent=firmen_aiact" className="group p-4 bg-obsidian-900 border border-amber-700 hover:bg-amber-950/20 rounded-none">
               <Briefcase className="h-4 w-4 text-amber-400 mb-1.5" />
-              <div className="text-sm font-display font-bold text-titanium-50 mb-0.5">Beratungstermin</div>
+              <div className="text-sm font-display font-bold text-titanium-50 mb-0.5">Workflow starten</div>
               <div className="text-xs text-titanium-400">Doku-Pflichten für Ihre Use-Cases klären.</div>
             </Link>
           </section>

@@ -37,9 +37,9 @@ function Header() {
         <nav className="flex items-center gap-2">
           <Link to="/" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Apex (B2B)</Link>
           <Link to="/pricing" className="hidden sm:inline px-3 py-1.5 text-sm text-titanium-300 hover:text-titanium-50">Preise</Link>
-          <Link to="/contact-sales?source=agencies_header"
+          <Link to="/pricing?source=agencies_header"
             className="px-4 py-1.5 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none">
-            Partner-Gespräch
+            Tarif starten
           </Link>
         </nav>
       </div>
@@ -65,9 +65,9 @@ function Hero() {
           Eure Kunden buchen — Ihr behaltet die Kundenbeziehung, Wir den Compliance-Stack.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-          <Link to="/contact-sales?source=agencies_hero"
+          <Link to="/pricing?source=agencies_hero"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none shadow-[0_4px_0_rgba(0,0,0,0.3)]">
-            Partner-Gespräch buchen <ArrowRight className="h-4 w-4" />
+            Tarif starten <ArrowRight className="h-4 w-4" />
           </Link>
           <Link to="/legal/sub-processors"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-obsidian-900 border border-titanium-700 hover:bg-obsidian-800 text-titanium-200 font-semibold rounded-none">
@@ -227,9 +227,9 @@ function FinalCTA() {
           und Stripe-Billing-Setup. Kein Deck.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link to="/contact-sales?source=agencies_cta"
+          <Link to="/pricing?source=agencies_cta"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-security-500 hover:bg-security-600 text-white font-bold rounded-none">
-            Partner-Gespräch buchen <ArrowRight className="h-4 w-4" />
+            Tarif starten <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>

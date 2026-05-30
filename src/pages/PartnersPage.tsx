@@ -98,7 +98,7 @@ export function PartnersPage() {
                 'Voller API-Zugriff',
                 'SLA 4 h · Priority-Support',
               ]}
-              cta={{ label: 'Sales kontaktieren', href: '/contact-sales?tier=scale&source=partners' }}
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=partners' }}
               footnote="manuelles Onboarding · Pilot-Phase · Stripe-Self-Serve folgt"
             />
             <TierCard
@@ -113,7 +113,7 @@ export function PartnersPage() {
                 'DSB-Integration (intern oder extern)',
                 'Evidence Vault · Custom DPA',
               ]}
-              cta={{ label: 'Sales kontaktieren', href: '/contact-sales?tier=enterprise&source=partners' }}
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
               footnote="ab € 1.500 / Monat · Festpreis nach Mandanten-Volumen"
             />
           </div>
@@ -165,7 +165,7 @@ export function PartnersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-titanium-900">
             <Roadmap
               title="Provisions-Tracking"
-              body="Bronze / Silber / Gold-Stufen mit prozentualer Beteiligung an vermittelten Subscriptions. Aktuell: individuelle Vereinbarung im Sales-Call."
+              body="Bronze / Silber / Gold-Stufen mit prozentualer Beteiligung an vermittelten Subscriptions. Aktuell: individuelle Vereinbarung."
               eta="Q4 2026"
             />
             <Roadmap
@@ -242,14 +242,14 @@ export function PartnersPage() {
             Pilot-Partner werden.
           </h2>
           <p className="text-titanium-400 mb-8">
-            15-Minuten-Call. Wir verstehen Ihre Mandanten-Struktur, Sie entscheiden ob's passt. Keine Kreditkarte, kein Vertrag im Call.
+            Wir verstehen Ihre Mandanten-Struktur, Sie entscheiden ob's passt. Keine Kreditkarte.
           </p>
           <Link
             to="/contact-sales?source=partners&tier=pilot"
             className="inline-flex items-center gap-2 px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 font-semibold text-sm tracking-tight transition-colors"
           >
             <Clock className="h-4 w-4" />
-            15-Min Erstgespräch buchen
+            Enterprise anfragen
             <ArrowRight className="h-4 w-4" />
           </Link>
           <p className="mt-6 text-[11px] font-mono uppercase tracking-wider text-titanium-500">

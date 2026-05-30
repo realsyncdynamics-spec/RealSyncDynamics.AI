@@ -97,7 +97,7 @@ export function OneTrustAlternative() {
               <li className="flex items-start gap-3">
                 <Euro className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-titanium-50">Pricing-Transparenz</strong>: OneTrust hat Sales-Calls und Quote-on-Request ab ~600 €/M.
+                  <strong className="text-titanium-50">Pricing-Transparenz</strong>: OneTrust hat Sales-Termine und Quote-on-Request ab ~600 €/M.
                   Wir haben Pricing online ab 79 €/M (Starter), Self-Serve, jederzeit kündbar.
                 </div>
               </li>
@@ -123,8 +123,8 @@ export function OneTrustAlternative() {
               <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
                 Kostenloser Site-Scan <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/contact-sales?source=onetrust-alt" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Migration-Call buchen
+              <Link to="/pricing?source=onetrust-alt" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                Tarif starten
               </Link>
               <Link to="/dsgvo-tool-vergleich" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
                 Volles Tool-Vergleich

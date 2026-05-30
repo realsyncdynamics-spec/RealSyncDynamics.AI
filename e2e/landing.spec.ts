@@ -1,59 +1,62 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für die minimale, stabile Landing.
+ * Smoke-E2E für die statische Self-Service-Landing (Governance OS).
  *
- * Aligned mit `src/pages/Landing.tsx` nach `fix(landing): reduce
- * homepage to stable German conversion surface`: Hero (kurz, deutsch,
- * ohne Animation), 4 Nutzenkarten, Evidence-Vorschau (Demo-Daten),
- * CTA-Block, kompakter Footer. Keine Auto-Scroll-Sektionen, kein
- * RuntimeCanvas / LiveScan / FAQ / Plan-Grid auf der Startseite.
+ * Aligned mit `src/pages/Landing.tsx`: Hero (Mission, 4-Verb-Botschaft),
+ * Problem, Detect→Monitor→Document→Prove, DSGVO-/AI-Act-Automation,
+ * Security & EU-Hosting, Für wen?, Preise-Teaser, Final CTA, Footer.
+ * Vollständig statisch — keine Auto-Scroll-Sektionen.
  *
- * Assertions prüfen stabile, kopierarme Anker. Tiefere Inhalte
- * (Pricing, Runtime, FAQ usw.) liegen auf Unterseiten.
+ * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
+ * Pilot-/Demo-/Call-/Sales-Sprache.
  */
-test('Landing renders the minimal hero + value cards + CTAs + footer', async ({ page }) => {
+test('Landing renders the self-service governance-OS narrative + CTAs', async ({ page }) => {
   await page.goto('/');
 
-  // Hero — neue Headline
+  // Hero — Governance-OS-Headline
   await expect(
     page.getByRole('heading', {
-      name: /Mehrere Websites\..*Kontinuierlich überwacht\..*Audit-ready\./i,
+      name: /Governance Operating System für DSGVO, AI Act und Continuous Compliance\./i,
     }),
   ).toBeVisible();
 
-  // Primary CTA „Kostenlosen Audit starten" → /audit
-  const primary = page.getByRole('link', { name: /Kostenlosen Audit starten/i }).first();
+  // Primary CTA „Kostenlos starten" → /audit
+  const primary = page.getByRole('link', { name: /^Kostenlos starten$/i }).first();
   await expect(primary).toBeVisible();
   await expect(primary).toHaveAttribute('href', /\/audit/);
 
-  // Secondary CTA „Runtime ansehen" → /runtime
-  const secondary = page.getByRole('link', { name: /^Runtime ansehen$/i }).first();
+  // Secondary CTA „Dashboard öffnen" → /welcome
+  const secondary = page.getByRole('link', { name: /^Dashboard öffnen$/i }).first();
   await expect(secondary).toBeVisible();
-  await expect(secondary).toHaveAttribute('href', /\/runtime/);
+  await expect(secondary).toHaveAttribute('href', /\/welcome/);
 
-  // Third CTA „Agency Pilot anfragen" → /agencies
-  const third = page.getByRole('link', { name: /Agency Pilot anfragen/i }).first();
-  await expect(third).toBeVisible();
-  await expect(third).toHaveAttribute('href', /\/agencies/);
-
-  // Value-Sektion „Was Sie sofort sehen" + die vier Nutzenkarten
+  // Automation-Flow — Detect · Monitor · Document · Prove
   await expect(
-    page.getByRole('heading', { name: /^Was Sie sofort sehen$/i }),
+    page.getByRole('heading', { name: /Detect · Monitor · Document · Prove/i }),
   ).toBeVisible();
-  for (const card of ['Risiko-Score', 'Top-Findings', 'Evidence-Report', 'Nächster Schritt']) {
-    await expect(page.getByRole('heading', { name: new RegExp(`^${card}$`) })).toBeVisible();
-  }
 
-  // Evidence-Vorschau — klar als Demo gelabelt
+  // Problem-Sektion
   await expect(
-    page.getByRole('heading', { name: /^So sieht ein Report aus$/i }),
+    page.getByRole('heading', { name: /Compliance ist manuell, teuer und riskant/i }),
   ).toBeVisible();
-  await expect(page.getByText(/Beispieldaten · Demo-Vorschau/i)).toBeVisible();
 
-  // CTA-Block — Sekundärlinks auf Unterseiten
-  for (const link of ['Evidence ansehen', 'AI Act ansehen', 'Sicherheit ansehen', 'Entwickler ansehen', 'Preise ansehen']) {
-    await expect(page.getByRole('link', { name: new RegExp(`^${link}$`) })).toBeVisible();
+  // Automations-Sektionen
+  await expect(page.getByRole('heading', { name: /^DSGVO-Automation$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^AI-Act-Automation$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Für wen\?$/i })).toBeVisible();
+
+  // Keine alten Vertriebs-/Pilot-CTAs auf der Startseite. Bewusst präzise
+  // (Mehrwort-CTA-Phrasen), damit legitime globale Komponenten-Texte — etwa
+  // der Assistent-Disclaimer „Für tiefere Beratung …" oder „ersetzt keine
+  // Rechtsberatung" — NICHT fälschlich als Treffer zählen. Spiegelt die
+  // CI-Gate-Logik aus .github/workflows/cta-enforcement.yml.
+  for (const forbidden of [
+    /Agency Pilot anfragen/i, /Pilot anfragen/i, /Pilot starten/i,
+    /Demo anfragen/i, /Beratung anfragen/i, /Gespräch buchen/i,
+    /Call buchen/i, /Runtime ansehen/i,
+  ]) {
+    await expect(page.getByRole('link', { name: forbidden })).toHaveCount(0);
   }
 
   // Footer-Legal-Links

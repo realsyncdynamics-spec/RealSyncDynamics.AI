@@ -1,0 +1,51 @@
+name: CTA Enforcement
+
+# Erzwingt die Self-Service-CTA-Disziplin: keine Beratungs-/Pilot-/Demo-/
+# Call-buchen-/Sales-/Gesprächs-Sprache im öffentlichen Frontend.
+#
+# Quelle der Wahrheit: src/content/runtimeVocab.ts → CI_FORBIDDEN_CTA.
+# Diese Liste hier muss damit synchron bleiben.
+#
+# Bewusst PRÄZISE (Mehrwort-Phrasen): bare „Pilot"/„Beratung" werden NICHT
+# geprüft, weil sie legitime Kontexte haben („Pilotkunden", der Pflicht-
+# Disclaimer „ersetzt keine Rechtsberatung", Positionierung „Tools statt
+# Beratung", Competitor-Beschreibungen). Scope: src/pages + src/components.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/pages/**'
+      - 'src/components/**'
+      - 'src/content/runtimeVocab.ts'
+      - '.github/workflows/cta-enforcement.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: cta-enforcement-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  enforce:
+    name: Forbidden CTA phrases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grep public frontend for forbidden CTA phrases
+        run: |
+          # Mehrwort-CTA-Phrasen (synchron zu runtimeVocab.ts CI_FORBIDDEN_CTA).
+          PATTERN='Pilot anfragen|Pilot starten|Demo anfragen|Demo buchen|Gespräch buchen|Call buchen|Migration-Call|Strategie-Call|Beratung-Call|Sales-Call|Partner-Gespräch|Erstgespräch|Beratung anfragen|Beratungstermin|Vertrieb kontaktieren|Sales kontaktieren'
+
+          # Scope: öffentliches Frontend, ohne Tests.
+          if grep -rniE "$PATTERN" src/pages src/components \
+               --include='*.ts' --include='*.tsx' \
+               | grep -v '\.test\.' ; then
+            echo ""
+            echo "::error::Verbotene CTA-/Kontakt-Phrasen im öffentlichen Frontend gefunden."
+            echo "RealSyncDynamics.AI ist Self-Service-SaaS: keine Beratungs-/Pilot-/Demo-/Call-/Sales-Sprache."
+            echo "Erlaubte CTAs siehe src/content/runtimeVocab.ts → CTA. Einzige kontaktbasierte CTA: 'Enterprise anfragen'."
+            exit 1
+          fi
+
+          echo "✓ Keine verbotenen CTA-Phrasen im öffentlichen Frontend."

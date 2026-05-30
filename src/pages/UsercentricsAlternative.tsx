@@ -114,8 +114,8 @@ export function UsercentricsAlternative() {
               <Link to="/cookie-consent-sdk" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
                 SDK-Snippet ansehen <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/contact-sales?source=usercentrics-alt" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Migration-Call buchen
+              <Link to="/pricing?source=usercentrics-alt" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                Tarif starten
               </Link>
               <Link to="/dsgvo-tool-vergleich" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
                 Volles Tool-Vergleich

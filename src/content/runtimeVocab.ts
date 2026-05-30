@@ -87,30 +87,73 @@ export const PLANS = [
 ] as const;
 
 /**
- * Canonical CTA copy. The ONLY 5 strings allowed on public CTAs after the
- * Product Clarity Cleanup. New copy MUST be one of these — anything else
- * is a regression.
+ * Canonical Self-Service CTA copy (Deutsch). Die EINZIGEN Strings, die auf
+ * öffentlichen CTAs erlaubt sind. RealSyncDynamics.AI ist ein vollständig
+ * automatisiertes Self-Service-SaaS — jede CTA muss eine Aktion sein, die
+ * der Nutzer ohne Mensch ausführen kann. Einzige Ausnahme: Enterprise
+ * (`enterprise` → SSO / On-Prem / Behördenvertrag / Custom-DPA / PO).
  *
- *   Run Scan              → kick off a free audit
- *   Open Runtime          → enterprise / contact-driven entry
- *   Activate Monitoring   → Starter tier
- *   Activate Governance   → Growth / Agency tier
- *   View Evidence         → secondary nav into evidence vault / audit trail
+ *   Kostenlos starten     → Free Audit / Onboarding
+ *   Audit starten         → Scan auslösen
+ *   Website hinzufügen    → Domain im Dashboard ergänzen
+ *   Monitoring aktivieren → Continuous-Runtime einschalten
+ *   Dashboard öffnen      → in die App
+ *   Evidence exportieren  → Audit-Bundle/Report-Export
+ *   Report herunterladen  → PDF/JSON-Report
+ *   Jetzt upgraden        → Tarifwechsel (self-serve)
+ *   Tarif starten         → Tarif self-serve kaufen (inkl. Agency)
+ *   Enterprise anfragen   → EINZIGE kontaktbasierte CTA
  */
 export const CTA = {
-  runScan:            'Run Scan',
-  openRuntime:        'Open Runtime',
-  activateMonitoring: 'Activate Monitoring',
-  activateGovernance: 'Activate Governance',
-  viewEvidence:       'View Evidence',
+  startFree:          'Kostenlos starten',
+  startAudit:         'Audit starten',
+  addWebsite:         'Website hinzufügen',
+  activateMonitoring: 'Monitoring aktivieren',
+  openDashboard:      'Dashboard öffnen',
+  exportEvidence:     'Evidence exportieren',
+  downloadReport:     'Report herunterladen',
+  upgrade:            'Jetzt upgraden',
+  startPlan:          'Tarif starten',
+  enterprise:         'Enterprise anfragen',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];
 
 /**
- * Vocabulary that must NOT appear in any public-facing copy. Enforce by
- * grep before merging. Order matters for `replace_all` runs — longer
- * substrings first.
+ * CI-ENFORCED: Mehrwort-CTA-Phrasen, die im öffentlichen Frontend
+ * (src/pages, src/components) NICHT vorkommen dürfen. Bewusst präzise
+ * (Mehrwort), damit legitime Inhalte — „Pilotkunden", der Pflicht-
+ * Disclaimer „ersetzt keine Rechtsberatung", die Positionierung „Tools
+ * statt Beratung" — NICHT fälschlich gebrochen werden.
+ *
+ * Der Grep-Gate in `.github/workflows/cta-enforcement.yml` prüft genau
+ * diese Liste. Build schlägt fehl, wenn eine Phrase auftaucht.
+ */
+export const CI_FORBIDDEN_CTA = [
+  'Pilot anfragen',
+  'Pilot starten',
+  'Demo anfragen',
+  'Demo buchen',
+  'Gespräch buchen',
+  'Call buchen',
+  'Migration-Call',
+  'Strategie-Call',
+  'Beratung-Call',
+  'Sales-Call',
+  'Partner-Gespräch',
+  'Erstgespräch',
+  'Beratung anfragen',
+  'Beratungstermin',
+  'Vertrieb kontaktieren',
+  'Sales kontaktieren',
+] as const;
+
+/**
+ * Dokumentations-Liste (NICHT hart CI-enforced): Vokabular, das in
+ * Marketing-Copy vermieden werden soll. Bare-Word-Begriffe wie „Beratung"
+ * / „Pilot" stehen hier nur als Leitlinie — sie haben legitime Kontexte
+ * (Disclaimer, Positionierung „Tools statt Beratung", „Pilotkunden") und
+ * werden deshalb NICHT vom CI-Gate geprüft.
  */
 export const FORBIDDEN_TERMS = [
   'Managed-Hosting',
@@ -123,8 +166,7 @@ export const FORBIDDEN_TERMS = [
   'Implementation Package',
   'Request quote',
   'Tarif anfragen',
-  'Beratung anfragen',
-  'Beratungstermin',
+  ...CI_FORBIDDEN_CTA,
   'Kontaktieren Sie uns',
   'Projekt anfragen',
   'Website-Service',
@@ -132,7 +174,4 @@ export const FORBIDDEN_TERMS = [
   'Agentur',
   'Rebuild',
   'Consulting',
-  'Beratung',
-  'Projekt',
-  'Übergabe',
 ] as const;

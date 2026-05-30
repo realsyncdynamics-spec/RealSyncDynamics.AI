@@ -174,6 +174,7 @@ const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySe
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
+const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
@@ -439,6 +440,7 @@ function RoutesWithTracking() {
       <Route path="/finance/reviews" element={<TaxReviewsView />} />
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
+      <Route path="/settings/security" element={<SecuritySettings />} />
       <Route path="/settings/account" element={<AccountSettings />} />
       <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
       <Route path="/workflows" element={<WorkflowsView />} />

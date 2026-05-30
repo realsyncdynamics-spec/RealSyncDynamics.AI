@@ -132,8 +132,8 @@ export function Marktanalyse() {
               <Link to="/audit" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 Website-Audit (kostenlos)
               </Link>
-              <Link to="/contact-sales?source=marktanalyse" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
-                Strategie-Call buchen
+              <Link to="/pricing?source=marktanalyse" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
+                Tarif starten
               </Link>
             </div>
           </div>

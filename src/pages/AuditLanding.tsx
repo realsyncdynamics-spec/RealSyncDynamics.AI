@@ -426,10 +426,10 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
           <Link
-            to={`/contact-sales?source=audit_lp&audit=${report.audit_id}`}
+            to={`/checkout/starter?source=audit_lp&audit=${report.audit_id}`}
             className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
           >
-            Founding Access starten <ArrowRight className="h-4 w-4" />
+            Monitoring aktivieren <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/pricing"
@@ -688,13 +688,13 @@ function NextStepBlock({ report }: { report: Report }) {
   const highRisk = report.severity === 'critical' || report.severity === 'high' || report.score < 60;
   const ctas = highRisk
     ? [
-        { label: 'Fix-Call buchen',     to: `/contact-sales?intent=fix-call&source=audit_report&audit=${report.audit_id}` },
-        { label: 'Fix-Paket anfragen',  to: `/fix-paket?source=audit_report&audit=${report.audit_id}` },
-        { label: 'Monitoring anfragen', to: `/contact-sales?intent=monitoring&source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring aktivieren',     to: `/pricing?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Fix-Paket ansehen',  to: `/fix-paket?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Tarif starten', to: `/pricing?source=audit_report&audit=${report.audit_id}` },
       ]
     : [
-        { label: 'Audit Pro anfragen',  to: `/contact-sales?intent=audit-pro&source=audit_report&audit=${report.audit_id}` },
-        { label: 'Monitoring aktivieren', to: `/contact-sales?intent=monitoring&source=audit_report&audit=${report.audit_id}` },
+        { label: 'Audit Pro ansehen',  to: `/audit-pro?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring aktivieren', to: `/pricing?source=audit_report&audit=${report.audit_id}` },
       ];
   return (
     <div className="bg-obsidian-900 border border-titanium-800 p-6 rounded-none">

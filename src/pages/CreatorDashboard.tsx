@@ -272,6 +272,26 @@ export function CreatorDashboard() {
                 </div>
               </div>
 
+              {/* Self-Service Schnellaktionen — keine Kontakt-/Beratungsaktionen */}
+              <div className="shrink-0 px-4 sm:px-6 py-2 border-b border-titanium-900/50 flex flex-wrap gap-2">
+                {[
+                  { Icon: Globe,       label: 'Website hinzufügen',   to: '/audit?source=dashboard-add' },
+                  { Icon: Search,      label: 'Audit starten',        to: '/audit?source=dashboard-scan' },
+                  { Icon: ShieldCheck, label: 'Monitoring aktivieren', to: '/pricing?source=dashboard' },
+                  { Icon: FileText,    label: 'Report herunterladen', to: '/dashboard/audit' },
+                  { Icon: Shield,      label: 'Evidence exportieren', to: '/governance/reports' },
+                  { Icon: CreditCard,  label: 'Jetzt upgraden',       to: '/pricing?source=dashboard-upgrade' },
+                ].map(({ Icon, label, to }) => (
+                  <Link
+                    key={label}
+                    to={to}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-none bg-obsidian-800 hover:bg-titanium-900 text-titanium-200 hover:text-titanium-50 text-xs font-semibold border border-titanium-900 transition-colors"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-security-400" /> {label}
+                  </Link>
+                ))}
+              </div>
+
               {/* Chat Feed */}
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 scroll-smooth">
                 {messages.length === 0 ? (

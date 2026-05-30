@@ -119,14 +119,14 @@ export function ProlianceAlternative() {
 
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">
-              Pilot starten — Tools statt Beratungs-Pakete
+              Self-Service statt Beratungs-Pakete
             </h2>
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
               <Link to="/pricing" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Pilot starten <ArrowRight className="h-4 w-4" />
+                Tarif starten <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/contact-sales?source=proliance-alt" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Beratung-Call buchen
+              <Link to="/audit?source=proliance-alt" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                Kostenlos starten
               </Link>
               <Link to="/dsgvo-tool-vergleich" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
                 Voller Tool-Vergleich

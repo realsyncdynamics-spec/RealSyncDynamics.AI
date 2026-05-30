@@ -61,7 +61,7 @@ export function InsuranceLanding() {
           <Section title="Use-Cases">
             <div className="grid sm:grid-cols-2 gap-3">
               {[
-                { t: 'Tarif-Voranalyse', d: 'Kontext-aware Beratung mit Auto-Disclaimer + Übergabe an Vertrieb' },
+                { t: 'Tarif-Voranalyse', d: 'Automatische Risiko-Vorklassifikation mit Auto-Disclaimer' },
                 { t: 'Schadenmeldung-Triage', d: 'Vollständigkeits-Check + Vor-Klassifikation, Schadenregulierung human' },
                 { t: 'Vertragsbedingungen-Erklärung', d: 'Plain-Language-Erläuterung von AVB / IDD-konform' },
                 { t: 'Betrugs-Indikator-Modelle', d: 'Score-Generierung mit nachvollziehbarer Feature-Erklärung' },

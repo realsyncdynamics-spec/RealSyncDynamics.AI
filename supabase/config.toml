@@ -203,10 +203,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.governance-incidents]
-verify_jwt = false
+verify_jwt = true
 
 [functions.governance-connectors]
-verify_jwt = false
+verify_jwt = true
 
 [functions.governance-vendors]
 verify_jwt = false

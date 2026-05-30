@@ -241,7 +241,12 @@ export function Welcome() {
       nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
         ? nextParam
         : null;
-    const target = safeNext ?? (isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro');
+    const target = safeNext ?? (
+      // Ohne ?session (= kein Post-Checkout-Onboarding) ist dies ein
+      // generischer Login → kanonisches Workspace-Home /app. Mit ?session
+      // bleibt der produktspezifische Onboarding-Landeplatz erhalten.
+      !sessionId ? '/app' : (isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro')
+    );
     if (isSupabaseConfigured()) {
       try {
         const sb = getSupabase();

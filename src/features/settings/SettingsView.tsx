@@ -195,6 +195,8 @@ function ShortcutsSection() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ShortcutLink to="/settings/security" title="Sicherheit · MFA"
           desc="Zwei-Faktor (TOTP), Recovery-Codes, MFA-Erzwingung pro Tenant." />
+        <ShortcutLink to="/settings/team" title="Team & Zugriff"
+          desc="Mitglieder, Rollen, Sicherheit, Prüfprotokoll — Tenant-Verwaltung." />
         <ShortcutLink to="/settings/ai-residency" title="AI-Datenstandort"
           desc="Cloud (Anthropic/Google/OpenAI) vs. EU-lokal (Ollama auf Hostinger DE) toggeln." />
         <ShortcutLink to="/settings/account" title="Mein Account · DSGVO"

@@ -60,6 +60,18 @@ Seiten vorerst deaktivieren/ausblenden, bis Option A umgesetzt ist.
 Service-Role → Anon-Key + dedizierte RLS-INSERT-Policy + Rate-Limit. Verhalten
 für echte Nutzer unverändert.
 
+## Status: Option B (Stopgap) angewandt
+
+Umgesetzt für die zwei Read-Endpoints (`agent-runs-list`, `discovery-pending`):
+`verify_jwt=true` + Bearer-Pflicht (401) + Query unter **Anon-Key + JWT** (RLS
+greift, Service-Role entfernt). Die anonymen Dashboard-Caller degradieren sauber
+(AiCommandCenter → Mock-Fallback; Discovery → Fehlerzeile statt Crash). Die volle
+Lösung (Option A: AuthGate + JWT-Weitergabe im Frontend) bleibt offen.
+
+**Noch NICHT adressiert** (bewusst, außerhalb Option-B-Scope): `agents-run`
+(öffentlicher Write, kein echter Caller), Public-Forms (intake/feedback/
+founding-access — Service-Role beibehalten), `governance-vendors` Stanza.
+
 ## Empfehlung
 
 Vor dem ersten produktiven Befüllen der `enterprise_*`-Tabellen: **Option A**

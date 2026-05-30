@@ -163,7 +163,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.enterprise-ai-os-discovery-pending]
-verify_jwt = false
+verify_jwt = true
 
 [functions.enterprise-ai-os-agents-list]
 verify_jwt = false
@@ -181,7 +181,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.enterprise-ai-os-agent-runs-list]
-verify_jwt = false
+verify_jwt = true
 
 # ── Governance public surfaces (were verify_jwt=false before the CI race) ──
 [functions.governance-keys]

@@ -123,12 +123,12 @@ function Inner() {
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
-          <NavCard to="/governance/assets" icon={Globe} title="Websites" body="Domains, Cookies, Vendoren, Monitoring, Evidence." />
-          <NavCard to="/governance/agents" icon={Bot} title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift." />
-          <NavCard to="/evidence" icon={FileCheck2} title="Evidence" body="Nachweise, Reports, Audit-Trail, Exporte." />
-          <NavCard to="/governance/reports" icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR." />
-          <NavCard to="/monitoring" icon={Activity} title="Monitoring" body="Live-Scans, Drift, Alerts." />
-          <NavCard to="/governance/auditor" icon={Search} title="Auditor-Sicht" body="Prüfprotokoll & read-only Audit-Konsole." />
+          <NavCard to="/app/websites" icon={Globe} title="Websites" body="Domains, Cookies, Vendoren, Monitoring, Evidence." />
+          <NavCard to="/app/ai-systems" icon={Bot} title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift." />
+          <NavCard to="/app/evidence" icon={FileCheck2} title="Evidence" body="Nachweise, Reports, Audit-Trail, Exporte." />
+          <NavCard to="/app/compliance" icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR." />
+          <NavCard to="/app/monitoring" icon={Activity} title="Monitoring" body="Live-Scans, Drift, Alerts." />
+          <NavCard to="/app/risks" icon={Search} title="Risiken" body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
         </div>
       </section>
     </div>

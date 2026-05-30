@@ -16,17 +16,17 @@ import { useTenant } from '../../core/access/TenantProvider';
 interface NavItem { to: string; label: string; icon: typeof Home }
 
 const WORK: NavItem[] = [
-  { to: '/app',                 label: 'Übersicht',   icon: Home },
-  { to: '/governance/assets',   label: 'Websites',    icon: Globe },        // P1: eigene Objekt-Liste
-  { to: '/governance/agents',   label: 'KI-Systeme',  icon: Bot },
-  { to: '/governance/incidents',label: 'Risiken',     icon: AlertTriangle },
-  { to: '/governance/dpias',    label: 'Compliance',  icon: ClipboardCheck },
-  { to: '/evidence',            label: 'Evidence',    icon: FileCheck2 },
-  { to: '/monitoring',          label: 'Monitoring',  icon: Activity },
+  { to: '/app',            label: 'Übersicht',   icon: Home },
+  { to: '/app/websites',   label: 'Websites',    icon: Globe },
+  { to: '/app/ai-systems', label: 'KI-Systeme',  icon: Bot },
+  { to: '/app/risks',      label: 'Risiken',     icon: AlertTriangle },
+  { to: '/app/compliance', label: 'Compliance',  icon: ClipboardCheck },
+  { to: '/app/evidence',   label: 'Evidence',    icon: FileCheck2 },
+  { to: '/app/monitoring', label: 'Monitoring',  icon: Activity },
 ];
 const MANAGE: NavItem[] = [
-  { to: '/settings/team', label: 'Team',          icon: Users },
-  { to: '/settings',      label: 'Einstellungen', icon: Settings },
+  { to: '/app/team',     label: 'Team',          icon: Users },
+  { to: '/app/settings', label: 'Einstellungen', icon: Settings },
 ];
 
 export function WorkspaceShell({ children, title }: { children: React.ReactNode; title?: string }) {
@@ -121,7 +121,7 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
             {activeTenant && tenants.length <= 1 && (
               <span className="hidden sm:inline text-xs text-titanium-400 font-medium max-w-[140px] truncate">{activeTenant.name}</span>
             )}
-            <Link to="/dashboard" title="Assistent" className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none">
+            <Link to="/assistant" title="Assistent" className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none">
               <Sparkles className="h-4 w-4" />
             </Link>
           </div>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -379,8 +379,24 @@ function RoutesWithTracking() {
       <Route path="/partner-programm" element={<PartnersPage />} />
       <Route path="/dsb-partner"      element={<PartnersPage />} />
       {/* Dashboard */}
+      {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
+          Wiederverwendung bestehender Views; alte Pfade redirecten unten.
+          Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
       <Route path="/app" element={<WorkspaceHome />} />
-      <Route path="/dashboard" element={<CreatorDashboard />} />
+      <Route path="/app/websites" element={<GovernanceDashboardView />} />
+      <Route path="/app/ai-systems" element={<AgentRegistryView />} />
+      <Route path="/app/risks" element={<GovernanceIncidentsView />} />
+      <Route path="/app/compliance" element={<GovernanceComplianceReportView />} />
+      <Route path="/app/evidence" element={<GovernanceAuditorConsoleView />} />
+      <Route path="/app/monitoring" element={<MonitoringPage />} />
+      <Route path="/app/team" element={<TenantAdminConsole />} />
+      <Route path="/app/settings" element={<SettingsView />} />
+
+      {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
+          Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
+          Chat bleibt als Assistent unter /assistant erreichbar. */}
+      <Route path="/assistant" element={<CreatorDashboard />} />
+      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />

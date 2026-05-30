@@ -6,15 +6,21 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
  * OAuthProviderButtons — wiederverwendbare Auth-Provider-Buttons fuer
  * Welcome.tsx und CheckoutPage.tsx.
  *
- * Provider-Set in dieser PR (User-Wahl):
+ * Standard-sichtbares Provider-Set (default-on, opt-out per env-Flag):
  *   - Google      (Workspace + Gmail — primaer fuer DACH-Compliance-Personae)
  *   - LinkedIn    (DSB / Compliance-Officer Sales-Pfad)
  *   - GitHub      (Engineering-Audience)
  *
+ * Opt-IN (default-OFF, nur sichtbar bei VITE_AUTH_AZURE_ENABLED=true):
+ *   - Microsoft   (Enterprise-Tier / BaFin-MaRisk — siehe docs/oauth-setup.md §2).
+ *                  Default-off, weil der Provider in vielen Deployments noch
+ *                  NICHT im Supabase-Dashboard aktiviert ist; ein sichtbarer,
+ *                  aber nicht aktivierter Button laeuft sonst in den
+ *                  `validation_failed: provider is not enabled`-Dead-End.
+ *
  * Bewusst NICHT enthalten:
  *   - Facebook    (Trust-Konflikt mit DSGVO-Brand — Meta-Login auf einer
  *                  Datenschutz-Plattform widerspricht der Position)
- *   - Microsoft   (kommt mit Enterprise-Tier-Outreach in Folge-PR)
  *
  * Magic-Link bleibt als Fallback in Welcome.tsx erhalten — diese Component
  * ergaenzt es, ersetzt es nicht.
@@ -29,14 +35,20 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 type Provider = 'google' | 'azure' | 'linkedin_oidc' | 'github';
 
 // "true" ist Default — nur explizites "false" deaktiviert. Damit kann ein
-// neu deployter Stack ohne env-Var weiterhin alle Provider zeigen.
+// neu deployter Stack ohne env-Var weiterhin die Standard-Provider zeigen.
 function flagOn(value: string | undefined): boolean {
   return value !== 'false';
 }
 
+// Opt-IN: default-OFF, nur explizites "true" aktiviert. Fuer Provider, die
+// erst nach manueller Supabase-Aktivierung sichtbar werden sollen.
+function flagOptIn(value: string | undefined): boolean {
+  return value === 'true';
+}
+
 const PROVIDER_ENABLED: Record<Provider, boolean> = {
   google:        flagOn(import.meta.env.VITE_AUTH_GOOGLE_ENABLED),
-  azure:         flagOn(import.meta.env.VITE_AUTH_AZURE_ENABLED),
+  azure:         flagOptIn(import.meta.env.VITE_AUTH_AZURE_ENABLED),
   linkedin_oidc: flagOn(import.meta.env.VITE_AUTH_LINKEDIN_ENABLED),
   github:        flagOn(import.meta.env.VITE_AUTH_GITHUB_ENABLED),
 };

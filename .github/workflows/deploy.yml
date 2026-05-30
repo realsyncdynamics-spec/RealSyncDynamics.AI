@@ -30,7 +30,36 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
       - name: Push migrations
-        run: supabase db push --include-all 2>&1 || true
+        # Frueher: `supabase db push --include-all 2>&1 || true` — das hat
+        # JEDEN Migrationsfehler still verschluckt (Job blieb gruen, obwohl
+        # eine Migration scheiterte). Genau das hat den P0a-Constraint-Fehler
+        # zunaechst unsichtbar gemacht.
+        #
+        # Neu: Exit-Code wird erfasst und als ::error + Step-Summary sichtbar
+        # gemacht. Wir lassen den db-push-Job dabei (noch) NICHT hart
+        # fehlschlagen, weil der Remote-Ledger projektweit out-of-band gepflegt
+        # wird (viele Repo-Migrationen sind unter Apply-Datums-Versionen statt
+        # Dateinamen-Versionen geloggt) — ein hartes Gate erfordert zuerst eine
+        # vollstaendige Ledger-Reconciliation (separater Infra-Task, Operator/CLI).
+        # Sichtbarkeit statt Stille ist der bewusste Zwischenschritt.
+        run: |
+          set +e
+          supabase db push --include-all 2>&1 | tee /tmp/db-push.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -ne 0 ]; then
+            echo "::error::supabase db push exited with code $code — Migration NICHT sauber durchgelaufen (Log oben)."
+            {
+              echo "## ⚠️ db push fehlgeschlagen (exit $code)"
+              echo ""
+              echo "Migrationen wurden NICHT vollstaendig angewandt. Letzte Zeilen:"
+              echo '```'
+              tail -n 20 /tmp/db-push.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✓ db push erfolgreich" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   functions-deploy:
     name: Deploy edge functions

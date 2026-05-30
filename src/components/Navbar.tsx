@@ -4,16 +4,21 @@ import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 
-// Single-product navigation with a Hostinger-style "KI fragen" pill before
-// the primary CTA. The pill uses a violet/fuchsia gradient outline so it
-// reads as a distinct AI-secondary entry next to the cyan "Run Scan" CTA.
-// The floating AssistentChip (bottom-center) is the persistent surface;
-// this pill is the in-nav twin and mirrors its visual identity (violet).
+// Kategorie-Navigation (max. 7 Punkte). Reihenfolge folgt der
+// Enterprise-/Government-Lese-Logik: Was (Plattform) -> Warum
+// (Compliance/Loesungen) -> Wie (Evidence) -> Warum vertrauenswuerdig
+// (Security) -> Vertiefung (Ressourcen) -> Preise zuletzt.
+// Alle Ziele verweisen auf bereits existierende Routen.
+// Die "KI fragen"-Pill und der cyan "Run Scan"-CTA bleiben als
+// Sekundaer-/Primaer-Aktion erhalten (Funnel + Analytics unangetastet).
 const NAV_ITEMS = [
-  { label: 'Runtime', to: '/runtime' },
-  { label: 'AI Act',  to: '/ai-act' },
-  { label: 'Preise',  to: '/pricing' },
-  { label: 'Doku',    to: '/docs' },
+  { label: 'Plattform',  to: '/runtime' },
+  { label: 'Lösungen',   to: '/branchen' },
+  { label: 'Compliance', to: '/ai-act' },
+  { label: 'Evidence',   to: '/evidence' },
+  { label: 'Security',   to: '/trust' },
+  { label: 'Ressourcen', to: '/ressourcen' },
+  { label: 'Preise',     to: '/pricing' },
 ] as const;
 
 export function Navbar() {
@@ -41,7 +46,7 @@ export function Navbar() {
             <Logo size={26} />
           </Link>
 
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center space-x-6">
             {NAV_ITEMS.map((item) => {
               const active = pathname === item.to.split('?')[0];
               return (
@@ -82,7 +87,7 @@ export function Navbar() {
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden text-titanium-300 hover:text-titanium-100"
+            className="lg:hidden text-titanium-300 hover:text-titanium-100"
             aria-label="Menü öffnen"
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -91,7 +96,7 @@ export function Navbar() {
       </div>
 
       {isOpen && (
-        <div className="md:hidden bg-obsidian-950 border-b border-titanium-900">
+        <div className="lg:hidden bg-obsidian-950 border-b border-titanium-900">
           <div className="px-4 pt-2 pb-4 space-y-1">
             {NAV_ITEMS.map((item) => (
               <Link

@@ -87,7 +87,7 @@ export function AuditPro() {
 
           <div className="text-center text-sm text-titanium-400">
             <p>Lieber den kostenlosen Standard-Audit testen? <Link to="/audit" className="text-security-400 hover:underline">/audit</Link></p>
-            <p>Größere Setups (mehrere Mandanten / Konzern-Tochter)? <Link to="/contact-sales?source=audit-pro" className="text-security-400 hover:underline">Vertrieb kontaktieren</Link></p>
+            <p>Größere Setups (mehrere Mandanten / Konzern-Tochter)? <Link to="/contact-sales?source=audit-pro" className="text-security-400 hover:underline">Enterprise anfragen</Link></p>
           </div>
         </div>
       </main>

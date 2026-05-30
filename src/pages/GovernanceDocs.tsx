@@ -311,7 +311,7 @@ if (!res.ok) {
                 to="/contact-sales?intent=governance-pilot&source=docs"
                 className="surface-mono inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
               >
-                Pilot anfragen <ArrowRight className="h-4 w-4" />
+                Enterprise anfragen <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

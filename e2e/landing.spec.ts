@@ -1,65 +1,55 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für die statische Landing im Governance-OS-Framing.
+ * Smoke-E2E für die statische Self-Service-Landing (Governance OS).
  *
- * Aligned mit `src/pages/Landing.tsx`: Hero (Mission), Problem,
- * Lösung (Detect/Monitor/Govern/Automate), Architektur-Kette,
- * 4 Nutzenkarten, Evidence-Vorschau (Demo-Daten), Layer-Teaser,
- * CTA-Block, kompakter Footer. Weiterhin vollständig statisch —
- * keine Auto-Scroll-Sektionen, kein RuntimeCanvas / LiveScan / FAQ.
+ * Aligned mit `src/pages/Landing.tsx`: Hero (Mission, 4-Verb-Botschaft),
+ * Problem, Detect→Monitor→Document→Prove, DSGVO-/AI-Act-Automation,
+ * Security & EU-Hosting, Für wen?, Preise-Teaser, Final CTA, Footer.
+ * Vollständig statisch — keine Auto-Scroll-Sektionen.
  *
- * Assertions prüfen stabile, kopierarme Anker. Tiefere Inhalte
- * (Pricing, Runtime, FAQ usw.) liegen auf Unterseiten.
+ * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
+ * Pilot-/Demo-/Call-/Sales-Sprache.
  */
-test('Landing renders the governance-OS hero + narrative + CTAs + footer', async ({ page }) => {
+test('Landing renders the self-service governance-OS narrative + CTAs', async ({ page }) => {
   await page.goto('/');
 
   // Hero — Governance-OS-Headline
   await expect(
     page.getByRole('heading', {
-      name: /Den regulatorischen Zustand Ihrer Systeme messen, versionieren und beweisen\./i,
+      name: /Governance Operating System für DSGVO, AI Act und Continuous Compliance\./i,
     }),
   ).toBeVisible();
 
-  // Primary CTA „Kostenlosen Audit starten" → /audit
-  const primary = page.getByRole('link', { name: /Kostenlosen Audit starten/i }).first();
+  // Primary CTA „Kostenlos starten" → /audit
+  const primary = page.getByRole('link', { name: /^Kostenlos starten$/i }).first();
   await expect(primary).toBeVisible();
   await expect(primary).toHaveAttribute('href', /\/audit/);
 
-  // Secondary CTA „Plattform ansehen" → /runtime
-  const secondary = page.getByRole('link', { name: /^Plattform ansehen$/i }).first();
+  // Secondary CTA „Dashboard öffnen" → /welcome
+  const secondary = page.getByRole('link', { name: /^Dashboard öffnen$/i }).first();
   await expect(secondary).toBeVisible();
-  await expect(secondary).toHaveAttribute('href', /\/runtime/);
+  await expect(secondary).toHaveAttribute('href', /\/welcome/);
 
-  // Tertiary CTA „Demo anfragen" → /contact-sales
-  const third = page.getByRole('link', { name: /^Demo anfragen$/i }).first();
-  await expect(third).toBeVisible();
-  await expect(third).toHaveAttribute('href', /\/contact-sales/);
-
-  // Lösung — Detect · Monitor · Govern · Automate
+  // Automation-Flow — Detect · Monitor · Document · Prove
   await expect(
-    page.getByRole('heading', { name: /Detect · Monitor · Govern · Automate/i }),
+    page.getByRole('heading', { name: /Detect · Monitor · Document · Prove/i }),
   ).toBeVisible();
 
-  // Architektur-Kette
+  // Problem-Sektion
   await expect(
-    page.getByRole('heading', { name: /^Eine Kette vom Signal zum Nachweis$/i }),
+    page.getByRole('heading', { name: /Compliance ist manuell, teuer und riskant/i }),
   ).toBeVisible();
 
-  // Value-Sektion „Was Sie sofort sehen" + die vier Nutzenkarten
-  await expect(
-    page.getByRole('heading', { name: /^Was Sie sofort sehen$/i }),
-  ).toBeVisible();
-  for (const card of ['Risiko-Score', 'Top-Findings', 'Evidence-Report', 'Nächster Schritt']) {
-    await expect(page.getByRole('heading', { name: new RegExp(`^${card}$`) })).toBeVisible();
+  // Automations-Sektionen
+  await expect(page.getByRole('heading', { name: /^DSGVO-Automation$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^AI-Act-Automation$/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Für wen\?$/i })).toBeVisible();
+
+  // Keine Beratungs-/Pilot-/Demo-/Call-Sprache auf der Startseite
+  for (const forbidden of [/Demo anfragen/i, /Pilot/i, /Call buchen/i, /Beratung/i, /Gespräch buchen/i]) {
+    await expect(page.getByText(forbidden)).toHaveCount(0);
   }
-
-  // Evidence-Vorschau — klar als Demo gelabelt
-  await expect(
-    page.getByRole('heading', { name: /^So sieht ein Report aus$/i }),
-  ).toBeVisible();
-  await expect(page.getByText(/Beispieldaten · Demo-Vorschau/i)).toBeVisible();
 
   // Footer-Legal-Links
   await expect(page.getByRole('link', { name: /^Impressum$/i })).toBeVisible();

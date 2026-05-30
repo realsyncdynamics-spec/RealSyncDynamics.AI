@@ -70,7 +70,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kein Account, kein Setup',
     ],
     highlight: false,
-    cta: { label: 'Kostenlosen Audit starten', href: '/audit?source=pricing-free' },
+    cta: { label: 'Kostenlos starten', href: '/audit?source=pricing-free' },
   },
   {
     id: 'starter',
@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Activate Monitoring', href: '/checkout/starter?source=pricing' },
+    cta: { label: 'Jetzt upgraden', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Activate Governance', href: '/checkout/growth?source=pricing' },
+    cta: { label: 'Jetzt upgraden', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -132,7 +132,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Activate Governance', href: '/audit?plan=agency&source=pricing' },
+    cta: { label: 'Tarif starten', href: '/checkout/agency?source=pricing' },
   },
   {
     id: 'scale',
@@ -158,7 +158,7 @@ export const PRICING_TIERS: PricingTier[] = [
     // 50-Tenant-Quotas im Backend erzwungen sind, kann die CTA auf
     // /checkout/scale flippen. Bis dahin geht jeder Scale-Interessent
     // durch /contact-sales mit `?tier=scale` für Lead-Routing.
-    cta: { label: 'Sales kontaktieren', href: '/contact-sales?tier=scale&source=pricing' },
+    cta: { label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=pricing' },
   },
   {
     id: 'enterprise',
@@ -179,7 +179,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Individuelle Vertragsgestaltung / DPA',
     ],
     highlight: false,
-    cta: { label: 'Open Runtime', href: '/audit?plan=enterprise&source=pricing' },
+    cta: { label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=pricing' },
   },
 ];
 

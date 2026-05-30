@@ -122,17 +122,17 @@ export function Integrations() {
           <div className="mt-12 p-6 bg-obsidian-900 border border-security-700 rounded-none">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">Integration einrichten</h2>
             <p className="text-titanium-300 text-sm mb-4">
-              Webhooks und API-Keys ab Growth-Tier. Pilot-Trial 14 Tage, keine Kreditkarte.
+              Webhooks und API-Keys ab Growth-Tier. 14 Tage testen, keine Kreditkarte.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Link to="/pricing?source=integrations" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Pilot starten <ArrowRight className="h-4 w-4" />
+                Tarif starten <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/api" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                 API-Docs ansehen
               </Link>
               <Link to="/contact-sales?source=integrations" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
-                Custom-Integration anfragen
+                Enterprise anfragen
               </Link>
             </div>
           </div>

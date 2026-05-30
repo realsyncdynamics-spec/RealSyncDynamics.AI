@@ -376,7 +376,7 @@ Diese Datenschutzerklärung ist aktuell gültig und hat den Stand ${date}. Durch
 
             <div style={{ background: '#1a1a2e', borderRadius: 8, padding: 16, marginTop: 16 }}>
               <p style={{ color: '#fbbf24', fontSize: 13, margin: 0 }}>
-                ⚠️ <strong>Hinweis:</strong> Diese Datenschutzerklärung dient als Ausgangsbasis. Für rechtssichere Implementierung empfehlen wir eine Prüfung durch einen Datenschutzbeauftragten. Kontakt: <a href="mailto:support@realsyncdynamicsai.de" style={{ color: '#60a5fa' }}>support@realsyncdynamicsai.de</a>
+                ⚠️ <strong>Hinweis:</strong> Diese Datenschutzerklärung dient als Ausgangsbasis. Für eine rechtlich belastbare Umsetzung empfehlen wir eine Prüfung durch einen Datenschutzbeauftragten. Kontakt: <a href="mailto:support@realsyncdynamicsai.de" style={{ color: '#60a5fa' }}>support@realsyncdynamicsai.de</a>
               </p>
             </div>
           </div>

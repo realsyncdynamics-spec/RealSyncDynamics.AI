@@ -138,7 +138,7 @@ export function Features() {
               icon={<Users className="h-5 w-5 text-amber-400" />}
               role="HR & Betriebsrat"
               body="Sicherheit, dass Monitoring/Tracking (Productivity-Tools, AI-Assistenten, Performance-KPIs) Mitbestimmungsrechte respektieren. BetrVG § 87 + AGG-Bias-Auditing eingebaut."
-              cta={{ to: '/contact-sales?intent=hr&source=features', label: 'Beratung anfragen' }}
+              cta={{ to: '/audit?source=features-hr', label: 'Kostenlos starten' }}
             />
             <RoleCard
               icon={<Cog className="h-5 w-5 text-ai-cyan-400" />}

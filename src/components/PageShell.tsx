@@ -54,7 +54,7 @@ export function PageShell({
                 to="/audit?source=page-footer-activate"
                 className="inline-flex items-center gap-2 px-5 py-3 bg-cyan-400 text-obsidian-950 font-semibold text-sm tracking-tight hover:bg-cyan-300 transition-colors"
               >
-                {CTA.runScan}
+                {CTA.startFree}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link

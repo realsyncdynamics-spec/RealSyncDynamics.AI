@@ -103,7 +103,7 @@ const ITEMS: Item[] = [
       <p>
         Ja, ab Growth-Tier inklusive. API-Keys per Tenant, Rate-Limits, Audit-Log
         pro Aufruf. Dokumentation in Vorbereitung — bis dahin Endpoints siehe
-        Sub-Processor-Liste oder Sales-Call buchen.
+        Sub-Processor-Liste.
       </p>
     ),
   },

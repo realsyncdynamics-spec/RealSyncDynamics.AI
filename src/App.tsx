@@ -177,6 +177,7 @@ const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings')
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
+const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
@@ -378,6 +379,7 @@ function RoutesWithTracking() {
       <Route path="/partner-programm" element={<PartnersPage />} />
       <Route path="/dsb-partner"      element={<PartnersPage />} />
       {/* Dashboard */}
+      <Route path="/app" element={<WorkspaceHome />} />
       <Route path="/dashboard" element={<CreatorDashboard />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />

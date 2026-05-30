@@ -1,0 +1,135 @@
+// WorkspaceShell — der persistente App-Shell des Governance OS (P0).
+//
+// Ziel (docs/strategy/governance-os-product-architecture.md): EIN Ort statt
+// 222 Einzelseiten. Sidebar + Topbar bleiben stehen, nur der Inhalt (children)
+// wechselt. Bestehende Auth-Views koennen schrittweise hier eingehaengt werden;
+// in P0 rahmt der Shell das neue Status-Home (/app) und verlinkt in die
+// vorhandenen Governance-Routen.
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Home, Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
+  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown,
+} from 'lucide-react';
+import { useTenant } from '../../core/access/TenantProvider';
+
+interface NavItem { to: string; label: string; icon: typeof Home }
+
+const WORK: NavItem[] = [
+  { to: '/app',                 label: 'Übersicht',   icon: Home },
+  { to: '/governance/assets',   label: 'Websites',    icon: Globe },        // P1: eigene Objekt-Liste
+  { to: '/governance/agents',   label: 'KI-Systeme',  icon: Bot },
+  { to: '/governance/incidents',label: 'Risiken',     icon: AlertTriangle },
+  { to: '/governance/dpias',    label: 'Compliance',  icon: ClipboardCheck },
+  { to: '/evidence',            label: 'Evidence',    icon: FileCheck2 },
+  { to: '/monitoring',          label: 'Monitoring',  icon: Activity },
+];
+const MANAGE: NavItem[] = [
+  { to: '/settings/team', label: 'Team',          icon: Users },
+  { to: '/settings',      label: 'Einstellungen', icon: Settings },
+];
+
+export function WorkspaceShell({ children, title }: { children: React.ReactNode; title?: string }) {
+  const { pathname } = useLocation();
+  const { tenants, activeTenantId, setActiveTenant } = useTenant();
+  const [open, setOpen] = useState(false);
+  const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
+
+  const isActive = (to: string) => pathname === to || pathname.startsWith(to + '/');
+
+  const NavList = ({ items }: { items: NavItem[] }) => (
+    <ul className="space-y-0.5">
+      {items.map(({ to, label, icon: Icon }) => (
+        <li key={to}>
+          <Link
+            to={to}
+            onClick={() => setOpen(false)}
+            className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-none transition-colors ${
+              isActive(to)
+                ? 'bg-titanium-900 text-titanium-50'
+                : 'text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-100'
+            }`}
+          >
+            <Icon className={`h-4 w-4 ${isActive(to) ? 'text-cyan-300' : ''}`} /> {label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  const Sidebar = (
+    <aside className="w-60 shrink-0 bg-obsidian-900 border-r border-titanium-900 flex flex-col">
+      <Link to="/app" className="h-14 flex items-center gap-2 px-4 border-b border-titanium-900">
+        <div className="w-7 h-7 bg-gradient-to-br from-cyan-400 to-security-600 flex items-center justify-center">
+          <Sparkles className="h-4 w-4 text-obsidian-950" />
+        </div>
+        <span className="font-display font-bold text-sm text-titanium-50 tracking-tight">Governance OS</span>
+      </Link>
+      <nav className="flex-1 overflow-y-auto p-3 space-y-5">
+        <div>
+          <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Arbeitsbereich</div>
+          <NavList items={WORK} />
+        </div>
+        <div>
+          <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Verwaltung</div>
+          <NavList items={MANAGE} />
+        </div>
+      </nav>
+    </aside>
+  );
+
+  return (
+    <div className="h-screen flex bg-obsidian-950 text-titanium-100 overflow-hidden">
+      {/* Desktop-Sidebar */}
+      <div className="hidden lg:flex">{Sidebar}</div>
+
+      {/* Mobile-Drawer */}
+      {open && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-obsidian-950/70" onClick={() => setOpen(false)} />
+          <div className="relative z-10">{Sidebar}</div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Topbar — bleibt persistent */}
+        <header className="h-14 shrink-0 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-3 sm:px-4 gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => setOpen(!open)} className="lg:hidden text-titanium-300 hover:text-titanium-100" aria-label="Menü">
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            {title && <h1 className="font-display font-bold text-titanium-50 text-sm sm:text-base truncate">{title}</h1>}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Command/Suche — P2 verdrahtet die ⌘K-Palette; hier Einstieg */}
+            <Link to="/app" className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-obsidian-950 border border-titanium-800 text-titanium-500 text-xs rounded-none hover:border-titanium-600">
+              <Search className="h-3.5 w-3.5" /> Suchen… <span className="font-mono text-[10px] text-titanium-700">⌘K</span>
+            </Link>
+            {tenants.length > 1 && (
+              <div className="relative">
+                <select
+                  value={activeTenantId ?? ''}
+                  onChange={(e) => setActiveTenant(e.target.value)}
+                  className="appearance-none bg-obsidian-950 border border-titanium-800 text-titanium-200 text-xs rounded-none pl-2.5 pr-7 py-1.5 outline-none cursor-pointer max-w-[160px]"
+                >
+                  {tenants.map((t) => <option key={t.tenantId} value={t.tenantId}>{t.name}</option>)}
+                </select>
+                <ChevronDown className="h-3.5 w-3.5 text-titanium-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            )}
+            {activeTenant && tenants.length <= 1 && (
+              <span className="hidden sm:inline text-xs text-titanium-400 font-medium max-w-[140px] truncate">{activeTenant.name}</span>
+            )}
+            <Link to="/dashboard" title="Assistent" className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none">
+              <Sparkles className="h-4 w-4" />
+            </Link>
+          </div>
+        </header>
+
+        {/* Panel */}
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </div>
+  );
+}

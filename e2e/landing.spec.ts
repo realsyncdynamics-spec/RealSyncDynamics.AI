@@ -46,9 +46,17 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
   await expect(page.getByRole('heading', { name: /^AI-Act-Automation$/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /^Für wen\?$/i })).toBeVisible();
 
-  // Keine Beratungs-/Pilot-/Demo-/Call-Sprache auf der Startseite
-  for (const forbidden of [/Demo anfragen/i, /Pilot/i, /Call buchen/i, /Beratung/i, /Gespräch buchen/i]) {
-    await expect(page.getByText(forbidden)).toHaveCount(0);
+  // Keine alten Vertriebs-/Pilot-CTAs auf der Startseite. Bewusst präzise
+  // (Mehrwort-CTA-Phrasen), damit legitime globale Komponenten-Texte — etwa
+  // der Assistent-Disclaimer „Für tiefere Beratung …" oder „ersetzt keine
+  // Rechtsberatung" — NICHT fälschlich als Treffer zählen. Spiegelt die
+  // CI-Gate-Logik aus .github/workflows/cta-enforcement.yml.
+  for (const forbidden of [
+    /Agency Pilot anfragen/i, /Pilot anfragen/i, /Pilot starten/i,
+    /Demo anfragen/i, /Beratung anfragen/i, /Gespräch buchen/i,
+    /Call buchen/i, /Runtime ansehen/i,
+  ]) {
+    await expect(page.getByRole('link', { name: forbidden })).toHaveCount(0);
   }
 
   // Footer-Legal-Links

@@ -178,6 +178,7 @@ const SettingsView = lazy(() => import('./features/settings/SettingsView').then(
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
 const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
+const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
@@ -383,14 +384,14 @@ function RoutesWithTracking() {
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
           Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
       <Route path="/app" element={<WorkspaceHome />} />
-      <Route path="/app/websites" element={<GovernanceDashboardView />} />
-      <Route path="/app/ai-systems" element={<AgentRegistryView />} />
-      <Route path="/app/risks" element={<GovernanceIncidentsView />} />
-      <Route path="/app/compliance" element={<GovernanceComplianceReportView />} />
-      <Route path="/app/evidence" element={<GovernanceAuditorConsoleView />} />
-      <Route path="/app/monitoring" element={<MonitoringPage />} />
-      <Route path="/app/team" element={<TenantAdminConsole />} />
-      <Route path="/app/settings" element={<SettingsView />} />
+      <Route path="/app/websites" element={<WorkspaceEmbed title="Websites"><GovernanceDashboardView /></WorkspaceEmbed>} />
+      <Route path="/app/ai-systems" element={<WorkspaceEmbed title="KI-Systeme"><AgentRegistryView /></WorkspaceEmbed>} />
+      <Route path="/app/risks" element={<WorkspaceEmbed title="Risiken"><GovernanceIncidentsView /></WorkspaceEmbed>} />
+      <Route path="/app/compliance" element={<WorkspaceEmbed title="Compliance"><GovernanceComplianceReportView /></WorkspaceEmbed>} />
+      <Route path="/app/evidence" element={<WorkspaceEmbed title="Evidence"><GovernanceAuditorConsoleView /></WorkspaceEmbed>} />
+      <Route path="/app/monitoring" element={<WorkspaceEmbed title="Monitoring"><MonitoringPage /></WorkspaceEmbed>} />
+      <Route path="/app/team" element={<WorkspaceEmbed title="Team & Zugriff"><TenantAdminConsole /></WorkspaceEmbed>} />
+      <Route path="/app/settings" element={<WorkspaceEmbed title="Einstellungen"><SettingsView /></WorkspaceEmbed>} />
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).

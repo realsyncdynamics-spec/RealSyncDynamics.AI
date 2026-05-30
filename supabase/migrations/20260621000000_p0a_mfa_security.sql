@@ -9,11 +9,7 @@
 -- KEIN SSO, KEIN SCIM, KEIN hartes AAL2-Enforcement. Nichts wird entfernt.
 
 -- 1. Rollenmodell: 'dpo' additiv. Bestehende Werte bleiben gültig.
--- Der reale Constraint-Name ist historisch `organization_members_role_check`
--- (memberships wurde aus organization_members umbenannt). Beide Namen droppen,
--- damit die Migration unabhängig vom Stand idempotent ist.
 ALTER TABLE public.memberships DROP CONSTRAINT IF EXISTS memberships_role_check;
-ALTER TABLE public.memberships DROP CONSTRAINT IF EXISTS organization_members_role_check;
 ALTER TABLE public.memberships
     ADD CONSTRAINT memberships_role_check
     CHECK (role IN ('owner', 'admin', 'dpo', 'editor', 'viewer_auditor'));

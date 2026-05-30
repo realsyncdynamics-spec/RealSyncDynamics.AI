@@ -22,11 +22,30 @@ MFA = **TOTP via Supabase Auth** (`supabase.auth.mfa.*`). Kein Eigenbau. AAL-Stu
 | **Public-Sector-Tenant** (`is_public_sector`) | **alle Rollen Pflicht** | Behörden-Baseline (ADR 0009) |
 
 ## Durchsetzungs-Stand (observe → enforce)
-- **IST (P0a):** MFA verfügbar; AAL2 wird **observe-only** geloggt (`logAal2Intent`), **nicht** erzwungen.
-- **P0c (geplant, #496):** AAL2-Hard-Enforce für privilegierte Aktionen — gestaffelt observe→soft→hard, Edge-Function-Check (`requireAal2`) + RLS-Klausel (`auth.jwt()->>'aal'='aal2'`, service-role ausgenommen). Lockout-Schutz (Recovery + Admin-Reset) ist Voraussetzung und bereits live.
+- **P0a (Vorstufe):** MFA verfügbar; AAL2 wurde **observe-only** geloggt (`logAal2Intent`), nicht erzwungen.
+- **P0c (IST — UI-Hard-Enforce, dieser Stand):** Privilegierte Bereiche sind clientseitig **hart gegated** über den Guard `RequireAal2` (`src/core/access/RequireAal2.tsx`) mit reiner, getesteter Policy (`src/core/access/aal2-policy.ts`). Hat ein privilegierter Nutzer nur AAL1, wird der Bereich **blockiert** und „MFA erforderlich" + CTA angezeigt (Step-up „MFA bestätigen" bei vorhandenem Faktor via `stepUpTotp`, sonst „MFA einrichten" → `/settings/security`). Kein Eigenbau — ausschließlich `supabase.auth.mfa.*`.
+- **P0c-Rest (geplant, freigabepflichtig — NICHT in diesem Stand):** server-seitige Defense-in-Depth: Edge-Function-Check (`requireAal2`) + RLS-Klausel (`auth.jwt()->>'aal'='aal2'`, service-role ausgenommen). **Erfordert eine Migration** → bewusst separat, um keine aktiven Sessions/Service-Jobs zu brechen.
+
+## Enforcement-Matrix (IST, UI-Layer)
+**Privilegierte Rollen** (`PRIVILEGED_ROLES`): `owner`, `admin`, `dpo`, `viewer_auditor` (Auditor). `editor`/reine Viewer sind **nicht** privilegiert. **Public-Sector-Tenant:** alle Rollen.
+
+| Bereich | Route | Komponente | AAL2 erzwungen |
+|---|---|---|---|
+| Tenant-/Team-/User-Verwaltung (inkl. MFA-Admin-Reset) | `/app/team`, `/settings/team` | `TenantAdminConsole` | ✅ |
+| Team-Invites | `/tenant/invites` | `InvitesView` | ✅ |
+| Evidence-Export / Auditor-Konsole | `/app/evidence`, `/governance/auditor` | `AuditorConsoleView` | ✅ |
+| Billing-Verwaltung | `/billing/usage` | `UsageView` | ✅ |
+| **NICHT gegated (bewusst):** MFA-Setup/Step-up/Recovery | `/settings/security` | `SecuritySettings` | ❌ (sonst Endlosschleife) |
+| **NICHT gegated:** Invite-Annahme | `/tenant/invite/:token` | `AcceptInviteView` | ❌ (neue Mitglieder vor Rollen-/MFA-Zuweisung) |
+| Öffentliche Seiten, Login, normale Viewer-Reads | — | — | ❌ |
+
+## Bekannte Grenzen
+- **UI-Layer-Enforcement:** `RequireAal2` blockt die Oberfläche. Echte Durchsetzung gegen direkte API-Aufrufe erfordert zusätzlich die server-seitige Schicht (RLS/Edge `requireAal2`) — **migrationspflichtig, freigabepflichtig, nicht in diesem Stand**.
+- **Kein Block ohne Session:** Liegt keine Session vor, greift der vorgelagerte `AuthGate` (Login) — der AAL2-Guard lässt durch, um „nicht eingeloggt" nicht mit „MFA fehlt" zu verwechseln.
+- **`/settings/security` ungated:** notwendig, damit Enrollment/Step-up/Recovery erreichbar bleiben (kein Lockout-Loop).
 
 ## Offene Operator-Aufgabe
 Supabase-Dashboard → **Auth → MFA**: bestätigen, dass TOTP-Faktoren projektseitig aktiviert sind (nicht aus Repo prüfbar). HIBP-Leaked-Password-Schutz via `enable-leaked-password-protection.yml` aktivierbar.
 
 ## Fazit
-MFA-**Fundament steht live** (Enrollment, Recovery, Admin-Reset, Rollen-Konfig). Was fehlt, ist ausschließlich das **harte Enforcement** (P0c) — bewusst als eigener, freigabepflichtiger Schritt geplant, um keine aktiven Sessions/Service-Jobs zu brechen.
+MFA-**Fundament steht live** (Enrollment, Recovery, Admin-Reset, Rollen-Konfig) **und ist auf UI-Ebene für privilegierte Bereiche hart erzwungen** (P0c, dieser Stand). Was noch fehlt, ist die **server-seitige Defense-in-Depth** (RLS/Edge `requireAal2`) — migrationspflichtig und bewusst als eigener, freigabepflichtiger Schritt geführt, um keine aktiven Sessions/Service-Jobs zu brechen.

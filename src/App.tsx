@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SEOHead } from './components/SEOHead';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -178,6 +178,7 @@ const SettingsView = lazy(() => import('./features/settings/SettingsView').then(
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
 const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
+const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
@@ -379,8 +380,24 @@ function RoutesWithTracking() {
       <Route path="/partner-programm" element={<PartnersPage />} />
       <Route path="/dsb-partner"      element={<PartnersPage />} />
       {/* Dashboard */}
+      {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
+          Wiederverwendung bestehender Views; alte Pfade redirecten unten.
+          Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
       <Route path="/app" element={<WorkspaceHome />} />
-      <Route path="/dashboard" element={<CreatorDashboard />} />
+      <Route path="/app/websites" element={<WorkspaceEmbed title="Websites"><GovernanceDashboardView /></WorkspaceEmbed>} />
+      <Route path="/app/ai-systems" element={<WorkspaceEmbed title="KI-Systeme"><AgentRegistryView /></WorkspaceEmbed>} />
+      <Route path="/app/risks" element={<WorkspaceEmbed title="Risiken"><GovernanceIncidentsView /></WorkspaceEmbed>} />
+      <Route path="/app/compliance" element={<WorkspaceEmbed title="Compliance"><GovernanceComplianceReportView /></WorkspaceEmbed>} />
+      <Route path="/app/evidence" element={<WorkspaceEmbed title="Evidence"><GovernanceAuditorConsoleView /></WorkspaceEmbed>} />
+      <Route path="/app/monitoring" element={<WorkspaceEmbed title="Monitoring"><MonitoringPage /></WorkspaceEmbed>} />
+      <Route path="/app/team" element={<WorkspaceEmbed title="Team & Zugriff"><TenantAdminConsole /></WorkspaceEmbed>} />
+      <Route path="/app/settings" element={<WorkspaceEmbed title="Einstellungen"><SettingsView /></WorkspaceEmbed>} />
+
+      {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
+          Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
+          Chat bleibt als Assistent unter /assistant erreichbar. */}
+      <Route path="/assistant" element={<CreatorDashboard />} />
+      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />

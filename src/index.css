@@ -274,3 +274,11 @@ html, body {
   --tw-prose-bullets: var(--color-titanium-700);
   --tw-prose-quotes: var(--color-titanium-300);
 }
+
+/* WorkspaceEmbed (P2): bestehende Voll-Seiten-Views laufen in der
+   WorkspaceShell ohne ihren EIGENEN min-h-screen-Container + ohne ihre
+   EIGENE h-14-Topbar. Vermeidet doppelte Header / doppeltes Scrolling, OHNE
+   die ~9 Views einzeln umzuschreiben. Strukturell verifiziert: jede Ziel-View
+   hat als root `div.min-h-screen` mit `header.h-14` als erstem Kind. */
+.ws-embed > div.min-h-screen { min-height: 0; }
+.ws-embed > div.min-h-screen > header.h-14 { display: none; }

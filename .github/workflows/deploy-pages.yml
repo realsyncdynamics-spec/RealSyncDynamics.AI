@@ -88,7 +88,29 @@ jobs:
           with open('public/sitemap.xml', 'r', encoding='utf-8') as f:
               xml = f.read()
           paths = re.findall(r'https?://realsyncdynamicsai\.de(/[^<\s]*)', xml)
-          paths = sorted(set(p.rstrip('/') for p in paths if p and p != '/'))
+          paths = set(p.rstrip('/') for p in paths if p and p != '/')
+
+          # Authentifizierte Workspace-/App-Routen stehen NICHT in der Sitemap
+          # (kein SEO), brauchen aber denselben 200-Shell-Fallback, damit
+          # Direktaufruf + Refresh + Bookmark + E-Mail-Deep-Link sauber laden
+          # (statt ueber 404.html-Redirect mit initialem 404-Status zu bouncen).
+          # Liste mit src/App.tsx synchron halten.
+          APP_ROUTES = [
+              '/app', '/app/websites', '/app/ai-systems', '/app/risks',
+              '/app/compliance', '/app/evidence', '/app/monitoring',
+              '/app/team', '/app/settings',
+              '/dashboard', '/command-center',
+              '/governance', '/governance/admin', '/governance/agents',
+              '/governance/incidents', '/governance/dpias', '/governance/dsr',
+              '/governance/vendors', '/governance/reports', '/governance/auditor',
+              '/governance/admin-log', '/governance/approvals', '/governance/scans',
+              '/evidence', '/monitoring', '/runtime',
+              '/settings', '/settings/team', '/settings/security',
+              '/settings/account', '/settings/ai-residency', '/settings/api-keys',
+              '/billing/usage', '/tenant/invites',
+              '/checkout/starter', '/checkout/growth', '/checkout/agency',
+          ]
+          paths = sorted(paths | set(APP_ROUTES))
           src = 'dist/index.html'
           filled, skipped = 0, 0
           for p in paths:

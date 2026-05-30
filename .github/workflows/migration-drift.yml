@@ -1,0 +1,45 @@
+name: Migration Drift Guard
+
+# Faengt Migrations-Drift ab: Remote-Versionen (schema_migrations) ohne Repo-Datei.
+# Genau der Zustand, der `supabase db push` blockiert ("remote migration versions
+# not found in local migrations directory"). Separat von deploy.yml, damit Drift
+# sichtbar wird, BEVOR ein Merge den Deploy blockiert.
+# Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # taeglich 06:00 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/check-migration-drift.mjs'
+      - '.github/workflows/migration-drift.yml'
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project (best-effort; ohne Secrets uebersprungen)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -n "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ] && [ -n "${{ secrets.SUPABASE_PROJECT_ID }}" ]; then
+            supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" || true
+          else
+            echo "Keine Supabase-Secrets — Link uebersprungen."
+          fi
+      - name: Check migration drift
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: node scripts/check-migration-drift.mjs

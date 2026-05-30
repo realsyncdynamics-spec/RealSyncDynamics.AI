@@ -12,8 +12,10 @@ import {
 } from '../../core/access/mfa';
 
 export function SecuritySettings() {
-  const { activeTenantId, role, tenants } = useTenant();
-  const isPublicSector = tenants.find((t) => t.tenantId === activeTenantId)?.isPublicSector ?? false;
+  const { activeTenantId, tenants } = useTenant();
+  const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
+  const role = activeTenant?.role ?? null;
+  const isPublicSector = activeTenant?.isPublicSector ?? false;
   const isAdmin = role === 'owner' || role === 'admin';
 
   const [userId, setUserId] = useState<string | null>(null);

@@ -4,8 +4,10 @@
 // eingeloggt, kann aber AAL2 nicht erreichen. Mit einem gültigen Recovery-Code
 // entfernen wir hier (service-role) seine TOTP-Faktoren, sodass er sich neu
 // einschreiben kann. Der Code wird einmalig verbraucht.
+//
+// Auth: erfordert ein gültiges User-JWT (verify_jwt=true, Default).
 import { corsHeaders } from '../_shared/cors.ts';
-import { requireUser } from '../_shared/auth.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 async function sha256Hex(input: string): Promise<string> {
   const norm = input.replace(/[\s-]+/g, '').toUpperCase();
@@ -20,9 +22,24 @@ Deno.serve(async (req) => {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return json({ error: 'missing_authorization' }, 401);
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
+  });
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) return json({ error: 'invalid_token' }, 401);
+
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
   try {
-    const { user, admin } = await requireUser(req);
-    const { code } = (await req.json()) ?? {};
+    const { code } = (await req.json().catch(() => ({}))) ?? {};
     if (!code || typeof code !== 'string') return json({ error: 'missing_code' }, 400);
 
     const codeHash = await sha256Hex(code);
@@ -52,7 +69,6 @@ Deno.serve(async (req) => {
 
     return json({ ok: true, removed_factors: list.length });
   } catch (e) {
-    if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);
   }
 });

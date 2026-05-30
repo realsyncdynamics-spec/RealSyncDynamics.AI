@@ -3,10 +3,11 @@
 // Owner/Admin des Tenants ODER Plattform-super_admin setzt die MFA eines
 // Mitglieds zurück (Geräteverlust ohne Recovery-Code, Offboarding-Support).
 // Entfernt TOTP-Faktoren (service-role) und invalidiert offene Recovery-Codes.
-// AAL2-Pflicht laut Matrix — in P0a observe (siehe `requireAal2`-Hinweis),
-// hartes Enforce folgt P0c.
+// AAL2-Pflicht laut Matrix — in P0a observe (hartes Enforce folgt P0c).
+//
+// Auth: erfordert ein gültiges User-JWT (verify_jwt=true, Default).
 import { corsHeaders } from '../_shared/cors.ts';
-import { requireUser } from '../_shared/auth.ts';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
@@ -15,9 +16,24 @@ Deno.serve(async (req) => {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return json({ error: 'missing_authorization' }, 401);
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
+  });
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) return json({ error: 'invalid_token' }, 401);
+
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
   try {
-    const { user, admin } = await requireUser(req);
-    const { tenant_id: tenantId, target_user_id: targetUserId } = (await req.json()) ?? {};
+    const { tenant_id: tenantId, target_user_id: targetUserId } = (await req.json().catch(() => ({}))) ?? {};
     if (!tenantId || !targetUserId) return json({ error: 'missing_fields' }, 400);
 
     // Autorisierung: Plattform-super_admin ODER owner/admin des Tenants.
@@ -51,7 +67,7 @@ Deno.serve(async (req) => {
       await (admin as any).auth.admin.mfa.deleteFactor({ userId: targetUserId, id: f.id });
     }
 
-    // Audit-Eintrag (best effort).
+    // Audit-Eintrag (best effort — Tabelle/Spalten ggf. abweichend, nie hart fehlschlagen).
     await admin.from('governance_admin_log').insert({
       tenant_id: tenantId,
       actor_user_id: user.id,
@@ -59,11 +75,10 @@ Deno.serve(async (req) => {
       target_type: 'user',
       target_id: targetUserId,
       payload: { removed_factors: list.length, by_super_admin: isSuperAdmin },
-    }).then(() => {}, () => {}); // Tabelle/Spalten ggf. abweichend → nie hart fehlschlagen
+    }).then(() => {}, () => {});
 
     return json({ ok: true, removed_factors: list.length });
   } catch (e) {
-    if (e instanceof Response) return e;
     return json({ error: String(e) }, 500);
   }
 });

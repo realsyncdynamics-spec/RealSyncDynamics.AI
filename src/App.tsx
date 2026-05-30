@@ -5,6 +5,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SEOHead } from './components/SEOHead';
+import { RequireAal2 } from './core/access/RequireAal2';
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
@@ -388,9 +389,9 @@ function RoutesWithTracking() {
       <Route path="/app/ai-systems" element={<WorkspaceEmbed title="KI-Systeme"><AgentRegistryView /></WorkspaceEmbed>} />
       <Route path="/app/risks" element={<WorkspaceEmbed title="Risiken"><GovernanceIncidentsView /></WorkspaceEmbed>} />
       <Route path="/app/compliance" element={<WorkspaceEmbed title="Compliance"><GovernanceComplianceReportView /></WorkspaceEmbed>} />
-      <Route path="/app/evidence" element={<WorkspaceEmbed title="Evidence"><GovernanceAuditorConsoleView /></WorkspaceEmbed>} />
+      <Route path="/app/evidence" element={<WorkspaceEmbed title="Evidence"><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></WorkspaceEmbed>} />
       <Route path="/app/monitoring" element={<WorkspaceEmbed title="Monitoring"><MonitoringPage /></WorkspaceEmbed>} />
-      <Route path="/app/team" element={<WorkspaceEmbed title="Team & Zugriff"><TenantAdminConsole /></WorkspaceEmbed>} />
+      <Route path="/app/team" element={<WorkspaceEmbed title="Team & Zugriff"><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></WorkspaceEmbed>} />
       <Route path="/app/settings" element={<WorkspaceEmbed title="Einstellungen"><SettingsView /></WorkspaceEmbed>} />
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
@@ -404,12 +405,12 @@ function RoutesWithTracking() {
       <Route path="/business" element={<BusinessDashboard />} />
       <Route path="/kodee" element={<KodeeView />} />
       <Route path="/kodee/connections" element={<ConnectionsView />} />
-      <Route path="/billing/usage" element={<UsageView />} />
+      <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                 <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
                 <Route path="/checkout/:planKey" element={<CheckoutPage />} />
-      <Route path="/tenant/invites" element={<InvitesView />} />
+      <Route path="/tenant/invites" element={<RequireAal2 action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
       {/* Auth-gated tenant dashboard moved to /governance/admin so /governance
           can be the public AI Governance OS surface. Back-links from feature
@@ -435,7 +436,7 @@ function RoutesWithTracking() {
       <Route path="/governance/remediation" element={<RemediationPlansView />} />
       <Route path="/governance/remediation/:planId" element={<RemediationPlanDetailView />} />
       <Route path="/governance/costs" element={<GovernanceCostTrackingView />} />
-      <Route path="/governance/auditor" element={<GovernanceAuditorConsoleView />} />
+      <Route path="/governance/auditor" element={<RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2>} />
       <Route path="/governance/scans" element={<GovernanceScansListView />} />
       <Route path="/governance/scans/:scanId" element={<GovernanceScanDetailView />} />
       <Route path="/governance/risk-inventory" element={<AiActRiskInventoryView />} />
@@ -463,7 +464,7 @@ function RoutesWithTracking() {
       <Route path="/settings" element={<SettingsView />} />
       <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
       <Route path="/settings/security" element={<SecuritySettings />} />
-      <Route path="/settings/team" element={<TenantAdminConsole />} />
+      <Route path="/settings/team" element={<RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2>} />
       <Route path="/settings/account" element={<AccountSettings />} />
       <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
       <Route path="/workflows" element={<WorkflowsView />} />

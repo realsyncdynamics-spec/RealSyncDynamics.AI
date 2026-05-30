@@ -51,6 +51,20 @@ export async function unenroll(factorId: string): Promise<void> {
 }
 
 /**
+ * Step-up (P0c): hebt eine bestehende AAL1-Session per Challenge auf AAL2,
+ * indem der bereits VERIFIZIERTE TOTP-Faktor bestätigt wird. Reine Wiederver-
+ * wendung von `verifyTotp` — kein neuer Mechanismus. Wirft, wenn kein
+ * verifizierter Faktor existiert (dann ist Enrollment statt Step-up nötig).
+ */
+export async function stepUpTotp(code: string): Promise<void> {
+  const sb = getSupabase();
+  const { data } = await sb.auth.mfa.listFactors();
+  const factor = (data?.totp ?? []).find((f) => f.status === 'verified');
+  if (!factor) throw new Error('no_verified_factor');
+  await verifyTotp(factor.id, code.trim());
+}
+
+/**
  * Erzeugt 10 Recovery-Codes, speichert NUR die Hashes und gibt den Klartext
  * EINMALIG zurück (anzeigen, dann verwerfen). Vorherige Codes des Nutzers
  * werden invalidiert (über Edge Function nicht nötig — Insert-only Modell:

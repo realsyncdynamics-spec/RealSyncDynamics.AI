@@ -178,7 +178,7 @@ export function ToolsHub() {
         <div style={{ background: '#111', border: '1px solid #1f2937', borderRadius: 12, padding: 40, marginTop: 48, textAlign: 'center' }}>
           <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 12 }}>Compliance automatisch überwacht</h2>
           <p style={{ color: '#6b7280', fontSize: 16, maxWidth: 560, margin: '0 auto 28px', lineHeight: 1.6 }}>
-            Mit RealSync Dynamics AI erhalten Sie kontinuierliches DSGVO-Monitoring, automatische Audit-Reports und Echtzeit-Warnungen für Ihr Unternehmen.
+            Mit RealSync Dynamics AI erhalten Sie kontinuierliches DSGVO-Monitoring (geplant-zyklische Re-Scans), automatische Audit-Reports und Drift-Warnungen für Ihr Unternehmen.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' as const }}>
             <a href="/audit" style={{ background: '#2563eb', color: '#fff', borderRadius: 8, padding: '12px 24px', fontSize: 15, fontWeight: 600, textDecoration: 'none' }}>

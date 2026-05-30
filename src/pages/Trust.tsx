@@ -231,6 +231,8 @@ const FRAMEWORKS = [
   { name: 'ISO 27001', status: 'Self-Assessment', note: 'Control-Mapping in Compliance-Matrix; externe Zertifizierung 2026 Q4.' },
   { name: 'SOC 2 Type II', status: 'Self-Assessment', note: 'Trust-Service-Criteria gemappt; Audit-Window 2027 Q1–Q2.' },
   { name: 'NIST AI RMF', status: 'Self-Assessment', note: 'Govern/Map/Measure/Manage gemappt auf existierende Controls.' },
+  { name: 'BSI C5', status: 'Planned', note: 'Kriterienkatalog-Mapping geplant; Voraussetzung für Behörden-Beschaffung.' },
+  { name: 'NIS2', status: 'Planned', note: 'Control-Set-Mapping geplant (Risiko-, Incident-, Lieferketten-Anforderungen).' },
 ];
 
 const SLOS = [

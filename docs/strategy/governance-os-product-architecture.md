@@ -8,7 +8,7 @@
 
 ## A. Aktuelle Architektur (IST)
 
-**106 Routen**, grob in 6 Welten — die sich heute **nicht** wie ein Produkt anfühlen, weil sie nebeneinander statt ineinander liegen:
+**222 Routen**, grob in 6 Welten — die sich heute **nicht** wie ein Produkt anfühlen, weil sie nebeneinander statt ineinander liegen:
 
 | Welt | Beispiele (IST-Routen) | Problem |
 |---|---|---|

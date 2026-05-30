@@ -16,3 +16,7 @@ playwright/.cache/
 .agents/
 .claude/skills/
 skills-lock.json
+
+# Ops-Skripte: lokal generierte Drift-Vorschläge — projekt- und zeitabhängig,
+# nicht commitbar (enthält evtl. Migration-IDs aus Live-Drift).
+scripts/ops/.migration-drift-suggested.sh

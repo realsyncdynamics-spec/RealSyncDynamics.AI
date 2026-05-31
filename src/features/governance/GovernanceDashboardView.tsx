@@ -89,8 +89,8 @@ function Inner() {
               <ShieldCheck className="h-4 w-4 text-white" />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Governance Runtime</div>
-              <div className="text-[11px] text-titanium-400 font-medium">Echtzeit-Telemetrie · Policy-Decisions · Evidence</div>
+              <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Websites & Assets</div>
+              <div className="text-[11px] text-titanium-400 font-medium">Telemetrie · Policy-Entscheidungen · Evidence</div>
             </div>
           </div>
         </div>
@@ -235,7 +235,7 @@ function Inner() {
         )}
 
         {!activeTenantId ? (
-          <div className="text-titanium-500 text-sm">Wähle einen Tenant aus, um die Governance Runtime zu sehen.</div>
+          <div className="text-titanium-500 text-sm">Wähle einen Tenant aus, um die Übersicht zu sehen.</div>
         ) : events === null ? (
           <div className="flex items-center gap-2 text-titanium-500 text-sm py-12 justify-center">
             <Loader2 className="h-4 w-4 animate-spin" /> Lade Tenant-Daten…
@@ -265,7 +265,7 @@ function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
       </div>
       <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch leer</h2>
       <p className="text-sm text-titanium-400 mb-6 max-w-md mx-auto leading-relaxed">
-        4 geführte Schritte zur produktiven Runtime — oder direkt eigenes Asset anlegen.
+        4 geführte Schritte zum produktiven Betrieb — oder direkt eigenes Asset anlegen.
       </p>
       <div className="flex items-center justify-center gap-2 flex-wrap">
         <Link
@@ -318,7 +318,7 @@ function Body({
       <GovernanceTrendsPanel events={events} />
 
       {events.length > 0 && (
-        <Panel icon={<Activity className="h-4 w-4" />} title="Runtime Event Stream">
+        <Panel icon={<Activity className="h-4 w-4" />} title="Ereignis-Verlauf">
           <ul className="space-y-2">
             {events.slice(0, 25).map((ev) => (
               <li key={ev.id}>

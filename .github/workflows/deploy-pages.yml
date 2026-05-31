@@ -98,7 +98,7 @@ jobs:
           APP_ROUTES = [
               '/app', '/app/websites', '/app/ai-systems', '/app/risks',
               '/app/compliance', '/app/evidence', '/app/monitoring',
-              '/app/team', '/app/settings', '/assistant',
+              '/app/team', '/app/settings', '/app/company', '/assistant',
               '/dashboard', '/command-center',
               '/governance', '/governance/admin', '/governance/agents',
               '/governance/incidents', '/governance/dpias', '/governance/dsr',

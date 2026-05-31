@@ -19,20 +19,26 @@ interface NavItem { to: string; label: string; icon: typeof Home }
 // KMU-Tarife sehen die „Mein Unternehmen"-Sicht; Agency/Scale/Enterprise nicht.
 const KMU_PLANS = new Set(['free', 'starter', 'growth']);
 
-const COMPANY: NavItem[] = [
-  { to: '/app/company', label: 'Mein Unternehmen', icon: Building2 },
+// Nav-Gruppen (Governance-OS-Finalisierung): START / GOVERNANCE / COMPLIANCE /
+// ADMIN. Bewusst KEINE technischen Begriffe (Runtime, Agent Registry, Event
+// Stream, Evidence Chain) in der Hauptnav — die bleiben interne /governance/*-
+// Routen. „Unternehmen" ist tarif-gated (nur Free/Starter/Growth).
+const START_BASE: NavItem[] = [
+  { to: '/app',         label: 'Übersicht',   icon: Home },
 ];
+const START_COMPANY: NavItem = { to: '/app/company', label: 'Unternehmen', icon: Building2 };
 
-const WORK: NavItem[] = [
-  { to: '/app',            label: 'Übersicht',   icon: Home },
-  { to: '/app/websites',   label: 'Websites',    icon: Globe },
-  { to: '/app/ai-systems', label: 'KI-Systeme',  icon: Bot },
-  { to: '/app/risks',      label: 'Risiken',     icon: AlertTriangle },
-  { to: '/app/compliance', label: 'Compliance',  icon: ClipboardCheck },
-  { to: '/app/evidence',   label: 'Evidence',    icon: FileCheck2 },
-  { to: '/app/monitoring', label: 'Monitoring',  icon: Activity },
+const GOVERNANCE: NavItem[] = [
+  { to: '/app/websites',   label: 'Websites',   icon: Globe },
+  { to: '/app/ai-systems', label: 'KI-Systeme', icon: Bot },
+  { to: '/app/risks',      label: 'Risiken',    icon: AlertTriangle },
 ];
-const MANAGE: NavItem[] = [
+const COMPLIANCE: NavItem[] = [
+  { to: '/app/compliance', label: 'Compliance', icon: ClipboardCheck },
+  { to: '/app/evidence',   label: 'Evidence',   icon: FileCheck2 },
+  { to: '/app/monitoring', label: 'Monitoring', icon: Activity },
+];
+const ADMIN: NavItem[] = [
   { to: '/app/team',     label: 'Team',          icon: Users },
   { to: '/app/settings', label: 'Einstellungen', icon: Settings },
 ];
@@ -77,6 +83,13 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
     </ul>
   );
 
+  const NavGroup = ({ label, items }: { label: string; items: NavItem[] }) => (
+    <div>
+      <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">{label}</div>
+      <NavList items={items} />
+    </div>
+  );
+
   const Sidebar = (
     <aside className="w-60 shrink-0 bg-obsidian-900 border-r border-titanium-900 flex flex-col">
       <Link to="/app" className="h-14 flex items-center gap-2 px-4 border-b border-titanium-900">
@@ -86,20 +99,10 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
         <span className="font-display font-bold text-sm text-titanium-50 tracking-tight">Governance OS</span>
       </Link>
       <nav className="flex-1 overflow-y-auto p-3 space-y-5">
-        <div>
-          <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Arbeitsbereich</div>
-          <NavList items={WORK} />
-        </div>
-        {isKmu && (
-          <div>
-            <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Für Ihr Unternehmen</div>
-            <NavList items={COMPANY} />
-          </div>
-        )}
-        <div>
-          <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Verwaltung</div>
-          <NavList items={MANAGE} />
-        </div>
+        <NavGroup label="Start" items={isKmu ? [...START_BASE, START_COMPANY] : START_BASE} />
+        <NavGroup label="Governance" items={GOVERNANCE} />
+        <NavGroup label="Compliance" items={COMPLIANCE} />
+        <NavGroup label="Admin" items={ADMIN} />
       </nav>
     </aside>
   );

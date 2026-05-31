@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
-  Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search,
+  Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search, ShieldCheck,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -66,6 +66,10 @@ function Inner() {
   }, [activeTenantId]);
 
   const inboxTotal = counts ? counts.approvals + counts.dsr.overdue + counts.incidents : 0;
+  // Transparenter Self-Assessment-Score aus den BEREITS geladenen Counts —
+  // keine zusätzlichen Fetches, keine erfundenen Zahlen. Gewichtung: überfällige
+  // DSR und offene Vorfälle wiegen am schwersten. 100 = nichts offen.
+  const score = computeComplianceScore(counts);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
@@ -89,6 +93,9 @@ function Inner() {
           <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" /> {error}
         </div>
       )}
+
+      {/* Compliance-Score (Self-Assessment, aus offenen Posten abgeleitet) */}
+      <ScoreCard score={score} loading={!counts} />
 
       {/* Aktions-Inbox (Linear-artig) */}
       <section className="border border-titanium-800 bg-obsidian-900">
@@ -132,6 +139,61 @@ function Inner() {
         </div>
       </section>
     </div>
+  );
+}
+
+// ─── Compliance-Score (Self-Assessment) ─────────────────────────────
+// Reine Ableitung aus offenen Posten — KEIN externer Anspruch, KEINE
+// Zertifizierungs-Behauptung. 100 = keine offenen Posten. Gewichte:
+// überfällige DSR (−12) und offene Vorfälle (−10) am schwersten, offene
+// DSFA (−5), Vendoren ohne DPA (−4), offene Freigaben (−3). Clamp 0..100.
+function computeComplianceScore(counts: Counts | null): number | null {
+  if (!counts) return null;
+  const penalty =
+    counts.dsr.overdue * 12 +
+    counts.incidents * 10 +
+    counts.dpias * 5 +
+    counts.vendorsNoDpa * 4 +
+    counts.approvals * 3;
+  return Math.max(0, Math.min(100, 100 - penalty));
+}
+
+function scoreLabel(score: number): string {
+  if (score >= 90) return 'Sehr gut';
+  if (score >= 75) return 'Gut';
+  if (score >= 50) return 'Verbesserungsbedarf';
+  return 'Handlungsbedarf';
+}
+
+function ScoreCard({ score, loading }: { score: number | null; loading: boolean }) {
+  const accent = score === null ? 'text-titanium-600'
+    : score >= 75 ? 'text-emerald-300'
+    : score >= 50 ? 'text-amber-300' : 'text-rose-300';
+  return (
+    <section className="border border-titanium-800 bg-obsidian-900 p-5 flex flex-wrap items-center gap-x-8 gap-y-3">
+      <div className="flex items-center gap-3">
+        <ShieldCheck className={`h-7 w-7 ${accent}`} />
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-display font-semibold text-titanium-50 text-sm">Compliance-Status</span>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 border border-titanium-800 px-1.5 py-0.5">Self-Assessment</span>
+          </div>
+          <p className="text-xs text-titanium-400 mt-0.5">Aus offenen Vorfällen, Fristen, DSFA, DPAs und Freigaben abgeleitet.</p>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2">
+        {loading || score === null
+          ? <Loader2 className="h-7 w-7 animate-spin text-titanium-600" />
+          : <>
+              <span className={`font-display font-bold text-4xl tabular-nums ${accent}`}>{score}</span>
+              <span className="text-sm text-titanium-500">/ 100</span>
+              <span className="text-xs text-titanium-400 ml-2">{scoreLabel(score)}</span>
+            </>}
+      </div>
+      <Link to="/app/compliance" className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-300 ml-auto">
+        Compliance öffnen <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
+    </section>
   );
 }
 

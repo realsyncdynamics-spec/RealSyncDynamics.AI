@@ -24,7 +24,6 @@ import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
 import { GovernanceDocs } from './pages/GovernanceDocs';
 import { RuntimePage } from './pages/RuntimePage';
 import { MonitoringPage } from './pages/MonitoringPage';
-import { GovernancePage } from './pages/GovernancePage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
@@ -42,7 +41,6 @@ import { ContactSales } from './pages/ContactSales';
 import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
-import { AiCommandCenter } from './pages/AiCommandCenter';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { BusinessDashboard } from './pages/BusinessDashboard';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
@@ -220,7 +218,7 @@ function RoutesWithTracking() {
       <Route path="/" element={<Landing />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
-      <Route path="/governance" element={<GovernancePage />} />
+      <Route path="/governance" element={<Navigate to="/app" replace />} />
       <Route path="/agents"     element={<AgentsPage />} />
       <Route path="/evidence"   element={<EvidencePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
@@ -265,8 +263,8 @@ function RoutesWithTracking() {
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
       {/* AI Command Center — kompakte Operating-Layer-UI (frontend-only, no backend) */}
-      <Route path="/command-center" element={<AiCommandCenter />} />
-      <Route path="/ai-command-center" element={<AiCommandCenter />} />
+      <Route path="/command-center" element={<Navigate to="/assistant" replace />} />
+      <Route path="/ai-command-center" element={<Navigate to="/assistant" replace />} />
       <Route path="/command-center/showcase" element={<AiCommandCenterShowcase />} />
       <Route path="/dashboard/enterprise-ai-os/discovery" element={<EnterpriseAiOsDiscovery />} />
       {/* Onboarding nach Stripe-Checkout */}
@@ -417,7 +415,7 @@ function RoutesWithTracking() {
       {/* Auth-gated tenant dashboard moved to /governance/admin so /governance
           can be the public AI Governance OS surface. Back-links from feature
           views (DpiasView, MappingsView, etc.) are updated accordingly. */}
-      <Route path="/governance/admin" element={<GovernanceDashboardView />} />
+      <Route path="/governance/admin" element={<Navigate to="/app/websites" replace />} />
       <Route path="/governance/keys" element={<GovernanceKeysView />} />
       <Route path="/governance/vvt" element={<RuntimeVvtView />} />
       <Route path="/governance/agents" element={<AgentRegistryView />} />

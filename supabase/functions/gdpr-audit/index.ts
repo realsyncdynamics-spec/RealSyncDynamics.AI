@@ -18,6 +18,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
 import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
 import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
+import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -144,6 +145,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Scan-Reichweite bewerten — bei rein client-gerenderten SPA-Shells sieht
+  // der statische Fetch nur das Grundgerüst (False-Negative-Risiko). Wir
+  // melden das ehrlich als info-Befund (kein Score-Abzug) statt eine
+  // trügerische Entwarnung zu präsentieren. 'failed'/'http_*' sind bereits
+  // über fetch_failed / http_error abgedeckt.
+  const coverageInfo = assessScanCoverage(html, status, fetchError);
+  if (coverageInfo.coverage === 'limited' && coverageInfo.reason === 'client_rendered_shell') {
+    issues.push({
+      id: 'scan_coverage_limited',
+      severity: 'info',
+      title: 'Scan-Reichweite eingeschränkt (client-gerenderte Seite)',
+      detail: coverageInfo.notice!,
+    });
+  }
+
   const { score, severity } = scoreReport(issues);
 
   // Insert sales_lead — preserve plan/source attribution from caller
@@ -191,6 +207,11 @@ Deno.serve(async (req) => {
     fetched_status: status,
     fetched: status !== null && fetchError === null,
     fetch_error: fetchError,
+    // Scan-Reichweite: 'full' | 'limited' | 'failed'. Bei 'limited' ist das
+    // Ergebnis nicht abschließend (z. B. SPA-Shell) — die UI zeigt einen
+    // entsprechenden Hinweis statt eines belastbaren Urteils.
+    coverage: coverageInfo.coverage,
+    coverage_notice: coverageInfo.notice,
     methodology: {
       // 2026.05.1 — Tracker-Detection ignoriert CSP-Allowlist + Resource-Hints
       // (Fix gegen identische False-Positive-Befunde / fixen 28/100-Score).

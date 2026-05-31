@@ -28,6 +28,8 @@ interface Report {
   fetched: boolean;
   fetched_status: number | null;
   fetch_error: string | null;
+  coverage?: 'full' | 'limited' | 'failed';
+  coverage_notice?: string | null;
 }
 
 type Phase = 'ask-url' | 'ask-email' | 'scanning' | 'done' | 'error';
@@ -309,6 +311,15 @@ function ScanSummary({ report }: { report: Report }) {
           <span className="text-xs text-titanium-500">/100</span>
         </div>
       </div>
+      {report.coverage === 'limited' && (
+        <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 px-2.5 py-2 text-[11px] text-amber-200">
+          <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />
+          <span>
+            {report.coverage_notice ??
+              'Diese Seite wird client-seitig gerendert — der statische Scan sieht nur das Grundgerüst. Das Ergebnis ist nicht abschließend.'}
+          </span>
+        </div>
+      )}
       {top.length > 0 ? (
         <div>
           <div className="text-[10px] font-bold uppercase tracking-wider text-titanium-500 mb-1.5">

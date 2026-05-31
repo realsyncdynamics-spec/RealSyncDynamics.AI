@@ -185,7 +185,7 @@ function SubProcessorSubscribeForm() {
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       // Fallback: mailto
-      window.location.href = `mailto:hello@realsyncdynamicsai.de?subject=Sub-Processor-Notifications%20abonnieren&body=Email%3A%20${encodeURIComponent(email)}%0AFirma%3A%20${encodeURIComponent(company)}`;
+      window.location.href = `mailto:support@realsyncdynamicsai.de?subject=Sub-Processor-Notifications%20abonnieren&body=Email%3A%20${encodeURIComponent(email)}%0AFirma%3A%20${encodeURIComponent(company)}`;
       setStatus('success');
       return;
     }

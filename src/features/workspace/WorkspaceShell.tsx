@@ -5,15 +5,23 @@
 // wechselt. Bestehende Auth-Views koennen schrittweise hier eingehaengt werden;
 // in P0 rahmt der Shell das neue Status-Home (/app) und verlinkt in die
 // vorhandenen Governance-Routen.
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
-  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown,
+  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown, Building2,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
+import { getActivePlanForTenant } from '../../lib/billing/planAccess';
 
 interface NavItem { to: string; label: string; icon: typeof Home }
+
+// KMU-Tarife sehen die „Mein Unternehmen"-Sicht; Agency/Scale/Enterprise nicht.
+const KMU_PLANS = new Set(['free', 'starter', 'growth']);
+
+const COMPANY: NavItem[] = [
+  { to: '/app/company', label: 'Mein Unternehmen', icon: Building2 },
+];
 
 const WORK: NavItem[] = [
   { to: '/app',            label: 'Übersicht',   icon: Home },
@@ -34,6 +42,18 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
   const [open, setOpen] = useState(false);
   const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
+
+  // Tarif-gesteuerte KMU-Sicht: nur Free/Starter/Growth sehen „Mein Unternehmen".
+  // Liest den autoritativen plan_key (subscriptions) — kein DB-Schema-Eingriff.
+  const [isKmu, setIsKmu] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (!activeTenantId) { setIsKmu(false); return; }
+    getActivePlanForTenant(activeTenantId)
+      .then((plan) => { if (active) setIsKmu(KMU_PLANS.has(plan ?? 'free')); })
+      .catch(() => { if (active) setIsKmu(false); });
+    return () => { active = false; };
+  }, [activeTenantId]);
 
   const isActive = (to: string) => pathname === to || pathname.startsWith(to + '/');
 
@@ -70,6 +90,12 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
           <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Arbeitsbereich</div>
           <NavList items={WORK} />
         </div>
+        {isKmu && (
+          <div>
+            <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Für Ihr Unternehmen</div>
+            <NavList items={COMPANY} />
+          </div>
+        )}
         <div>
           <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">Verwaltung</div>
           <NavList items={MANAGE} />

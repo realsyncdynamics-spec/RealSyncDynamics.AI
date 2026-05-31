@@ -180,6 +180,7 @@ const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
 const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
 const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
+const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
 const MarketGapsView = lazy(() => import('./features/market/MarketGapsView').then((m) => ({ default: m.MarketGapsView })));
 const OutreachView = lazy(() => import('./features/outreach/OutreachView').then((m) => ({ default: m.OutreachView })));
@@ -385,6 +386,7 @@ function RoutesWithTracking() {
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
           Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
       <Route path="/app" element={<WorkspaceHome />} />
+      <Route path="/app/company" element={<WorkspaceEmbed title="Mein Unternehmen"><CompanyView /></WorkspaceEmbed>} />
       <Route path="/app/websites" element={<WorkspaceEmbed title="Websites"><GovernanceDashboardView /></WorkspaceEmbed>} />
       <Route path="/app/ai-systems" element={<WorkspaceEmbed title="KI-Systeme"><AgentRegistryView /></WorkspaceEmbed>} />
       <Route path="/app/risks" element={<WorkspaceEmbed title="Risiken"><GovernanceIncidentsView /></WorkspaceEmbed>} />

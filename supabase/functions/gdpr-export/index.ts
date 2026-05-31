@@ -17,6 +17,7 @@
 // Filename: gdpr-export-<user_id>-<YYYYMMDD>.json
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 import type { RedactionPolicy } from '../_shared/redact.ts';
 
 // DSGVO Art. 15 garantiert dem Betroffenen Auskunft ueber SEINE eigenen
@@ -50,6 +51,8 @@ Deno.serve(async (req) => {
   if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(auth, 'gdpr-export');
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },

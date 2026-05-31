@@ -9,6 +9,7 @@
 // Authorization: Bearer <user JWT>   (verify_jwt=true, Default)
 // Body: { tenant_id: string, target_user_id: string }
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +40,8 @@ Deno.serve(async (req) => {
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userResp.user) return json({ error: 'invalid_token' }, 401);
   const user = userResp.user;
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(auth, 'mfa-admin-reset');
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 

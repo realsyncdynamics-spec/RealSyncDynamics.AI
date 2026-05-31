@@ -14,6 +14,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,10 @@ Deno.serve(async (req) => {
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
+
+  // P0d Phase 1 — OBSERVE ONLY: nur privilegierte Ops beobachten, NICHT blocken.
+  // `accept` ist bewusst ausgenommen (jeder authentifizierte Nutzer nimmt an).
+  if (body.op !== 'accept') observeAal2(auth, `tenant-invite:${String(body.op)}`);
 
   try {
     switch (body.op) {

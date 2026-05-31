@@ -14,6 +14,7 @@
 //   - cross-tenant: target must be a member of the same tenant
 // Every write is audited into governance_admin_log (best effort).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,6 +50,8 @@ Deno.serve(async (req) => {
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userResp.user) return err(401, 'UNAUTHORIZED', 'invalid token');
   const actorId = userResp.user.id;
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(auth, 'tenant-members');
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 

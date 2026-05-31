@@ -22,6 +22,7 @@
 //   - subscriptions — Buchhaltung 10 Jahre Pflicht (HGB/AO)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,8 @@ Deno.serve(async (req) => {
   if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(auth, 'gdpr-delete');
 
   let body: { confirm?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }

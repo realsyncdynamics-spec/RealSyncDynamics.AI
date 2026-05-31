@@ -25,6 +25,7 @@
 // and the tax_evidence_exports UPDATE use the service-role key.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 import {
   BlobReader, BlobWriter, TextReader, ZipWriter,
 } from 'jsr:@zip-js/zip-js@2.7.45';
@@ -71,6 +72,8 @@ Deno.serve(async (req) => {
   if (!authHeader.startsWith('Bearer ')) {
     return jsonError(401, 'UNAUTHORIZED', 'bearer token required');
   }
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(authHeader, 'evidence-export');
 
   // Caller-scoped client for the reads (RLS enforces tenant isolation).
   const caller = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {

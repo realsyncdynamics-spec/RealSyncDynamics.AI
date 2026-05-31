@@ -11,6 +11,7 @@
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 
 const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -39,6 +40,8 @@ Deno.serve(async (req) => {
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
   const userId = userResp.user.id;
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(auth, 'stripe-portal');
 
   let body: { tenant_id?: string; return_url?: string };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }

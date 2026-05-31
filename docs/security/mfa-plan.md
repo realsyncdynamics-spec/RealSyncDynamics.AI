@@ -3,6 +3,17 @@
 > **Status:** 2026-05-30. **Keine eigene MFA gebaut** — Supabase-nativ. Dieses Dokument hält Architektur + IST-Stand fest.
 > **Verweise:** ADR 0006 (MFA/AAL2-Policy), `docs/architecture/enterprise-identity-p0a-mfa-plan.md`, P0c-Plan (AAL2 enforce, #496).
 
+## Enforcement-Lagebild (Stand P0d Phase 1)
+| Schicht | Status | Belegt durch |
+|---|---|---|
+| **UI Enforcement** | **ACTIVE** | `RequireAal2` (#504) — privilegierte Routen hart gegated |
+| **Edge Enforcement** | **OBSERVE** | `_shared/requireAal2.ts` → `observeAal2()` loggt `AAL2_OK` / `AAL2_REQUIRED_OBSERVED` in privilegierten Functions, **blockt NICHT** |
+| **RLS Enforcement** | **NOT ENABLED** | bewusst (Service-Role umgeht RLS ohnehin; späterer Defense-in-Depth-Schritt) |
+
+**Edge-Observe-Functions (P0d Phase 1):** `tenant-members`, `mfa-admin-reset`, `stripe-portal`, `tenant-invite` (nur `create/list/revoke`), `tenant-audit`, `gdpr-export`, `gdpr-delete`, `evidence-export`.
+**Bewusst NICHT beobachtet:** `mfa-recovery-redeem` (Lockout-Escape, muss AAL1 bleiben), `tenant-invite:accept`, Cron-/Vault-Jobs, `stripe-webhook`, sowie `gdpr-audit` + `evidence-vault-export` (**kein User-JWT** → kein `aal` beobachtbar; durch UI-Guard abgedeckt).
+**Hard-Enforce** (401 `AAL2_REQUIRED`) ist der **separate, freigabepflichtige** Folgeschritt — erst nach Auswertung der Observe-Telemetrie.
+
 ## Mechanismus (Supabase-nativ)
 MFA = **TOTP via Supabase Auth** (`supabase.auth.mfa.*`). Kein Eigenbau. AAL-Stufen im JWT (`aal1`/`aal2`). Bereits **live**:
 - `/settings/security` (`SecuritySettings.tsx`) — Enrollment (QR/Verify), Recovery-Codes, MFA entfernen.

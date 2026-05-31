@@ -12,6 +12,7 @@ import { Activity, Cpu, ShieldCheck, AlertTriangle } from 'lucide-react';
 const KIND_FILTERS = ['all', 'scan', 'drift', 'ai', 'consent', 'evidence', 'incident', 'agent'] as const;
 type KindFilter = (typeof KIND_FILTERS)[number];
 
+// Oeffentliche Standalone-Seite (/monitoring): volle Marketing-Chrome + SEO-Meta.
 export function MonitoringPage() {
   usePageMeta({
     title: 'Monitoring — Runtime-Feed-Vorschau | RealSync',
@@ -20,7 +21,13 @@ export function MonitoringPage() {
       'Evidence-Anchor. Demo-Surface mit simulierten Daten — keine Kundendaten.',
     url: 'https://RealSyncDynamicsAI.de/monitoring',
   });
+  return <MonitoringSurface />;
+}
 
+// Praesentationskomponente. Im Workspace-Embed (/app/monitoring) ohne eigene
+// Marketing-Navbar, ohne Hero und ohne SEO-Meta — die WorkspaceShell stellt
+// Header + Layout. Standalone rendert die volle Seite.
+export function MonitoringSurface({ embedded = false }: { embedded?: boolean }) {
   const [shown, setShown] = useState(0);
   const [filter, setFilter] = useState<KindFilter>('all');
 
@@ -45,10 +52,10 @@ export function MonitoringPage() {
   };
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      <Navbar />
-      <main className="pt-14">
-        {/* Demo-Strip — verhindert „live"-Missverständnis. */}
+    <div className={`${embedded ? '' : 'min-h-screen '}bg-obsidian-950 text-titanium-100`}>
+      {!embedded && <Navbar />}
+      <main className={embedded ? '' : 'pt-14'}>
+        {/* Demo-Strip — verhindert „live"-Missverständnis (beide Modi). */}
         <div className="border-b border-titanium-900 bg-obsidian-900/80">
           <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-1.5 sm:px-6">
             <span className="select-none font-mono text-[9px] uppercase tracking-[0.2em] text-titanium-500">
@@ -57,21 +64,24 @@ export function MonitoringPage() {
           </div>
         </div>
 
-        <header className="border-b border-titanium-900 px-4 sm:px-6 py-16">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-              Monitoring · Runtime-Vorschau
+        {/* Marketing-Hero nur standalone — im Workspace liefert die Shell den Titel. */}
+        {!embedded && (
+          <header className="border-b border-titanium-900 px-4 sm:px-6 py-16">
+            <div className="max-w-7xl mx-auto">
+              <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
+                Monitoring · Runtime-Vorschau
+              </div>
+              <h1 className="text-4xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
+                Jedes Signal — in der Reihenfolge, wie es aufgetreten ist.
+              </h1>
+              <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
+                Die Monitoring-Surface ist das eigene Log des Systems. Erkennung,
+                Klassifikation, Agent-Aktionen und Evidence-Anchor erscheinen in
+                der Demo-Vorschau nacheinander.
+              </p>
             </div>
-            <h1 className="text-4xl sm:text-5xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-              Jedes Signal — in der Reihenfolge, wie es aufgetreten ist.
-            </h1>
-            <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-              Die Monitoring-Surface ist das eigene Log des Systems. Erkennung,
-              Klassifikation, Agent-Aktionen und Evidence-Anchor erscheinen in
-              der Demo-Vorschau nacheinander.
-            </p>
-          </div>
-        </header>
+          </header>
+        )}
 
         <section className="px-4 sm:px-6 py-12 bg-obsidian-950 border-b border-titanium-900">
           <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-px bg-titanium-900">

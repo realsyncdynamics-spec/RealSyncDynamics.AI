@@ -23,7 +23,7 @@ import { Roadmap } from './pages/Roadmap';
 import { GovernanceRuntimePage } from './pages/GovernanceRuntimePage';
 import { GovernanceDocs } from './pages/GovernanceDocs';
 import { RuntimePage } from './pages/RuntimePage';
-import { MonitoringPage } from './pages/MonitoringPage';
+import { MonitoringPage, MonitoringSurface } from './pages/MonitoringPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
@@ -390,7 +390,7 @@ function RoutesWithTracking() {
       <Route path="/app/risks" element={<WorkspaceEmbed title="Risiken"><GovernanceIncidentsView /></WorkspaceEmbed>} />
       <Route path="/app/compliance" element={<WorkspaceEmbed title="Compliance"><GovernanceComplianceReportView /></WorkspaceEmbed>} />
       <Route path="/app/evidence" element={<WorkspaceEmbed title="Evidence"><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></WorkspaceEmbed>} />
-      <Route path="/app/monitoring" element={<WorkspaceEmbed title="Monitoring"><MonitoringPage /></WorkspaceEmbed>} />
+      <Route path="/app/monitoring" element={<WorkspaceEmbed title="Monitoring"><MonitoringSurface embedded /></WorkspaceEmbed>} />
       <Route path="/app/team" element={<WorkspaceEmbed title="Team & Zugriff"><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></WorkspaceEmbed>} />
       <Route path="/app/settings" element={<WorkspaceEmbed title="Einstellungen"><SettingsView /></WorkspaceEmbed>} />
 

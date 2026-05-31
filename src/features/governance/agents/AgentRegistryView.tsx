@@ -3,17 +3,25 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Bot } from 'lucide-react';
 import { DEMO_AGENTS } from './demoAgents';
 import { AgentCard } from './AgentCard';
+import { AuthGate } from '../../kodee/connections/AuthGate';
 import type { AgentStatus, GovernanceAgent } from './types';
 
 /**
- * /governance/agents — Agent-Register.
+ * /governance/agents (+ /app/ai-systems) — Agent-Register.
  *
- * Phase A: rendert das fest definierte Initial-Set (DEMO_AGENTS). Spaeter
- * laed der View aus einer Supabase-Tabelle (z. B. governance_agents),
- * die dieselbe Typdefinition haelt. Die View bleibt identisch — es
- * aendert sich nur die Datenquelle.
+ * Auth-gated: das Register ist eine Workspace-Sicht, keine oeffentliche
+ * Seite — ohne Session erscheint der AuthGate, nicht das Demo-Set.
+ *
+ * Phase A: rendert das fest definierte Initial-Set (DEMO_AGENTS), das im
+ * View klar als Beispiel-Set markiert ist. Spaeter laed der View aus einer
+ * Supabase-Tabelle (z. B. governance_agents), die dieselbe Typdefinition
+ * haelt. Die View bleibt identisch — es aendert sich nur die Datenquelle.
  */
 export function AgentRegistryView() {
+  return <AuthGate>{() => <AgentRegistryInner />}</AuthGate>;
+}
+
+function AgentRegistryInner() {
   const [filter, setFilter] = useState<AgentStatus | 'all'>('all');
 
   const agents: GovernanceAgent[] = DEMO_AGENTS;

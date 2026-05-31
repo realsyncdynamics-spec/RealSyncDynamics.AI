@@ -160,7 +160,29 @@ Keine nicht-verifizierten Analytics-Systeme werden als Quelle behauptet.
 
 ---
 
-## 7. STOP — Nächster erlaubter Schritt
+## 7. Offene Punkte (OPEN — sichtbar zu halten)
+
+Diese Punkte sind **OPEN** und dürfen nicht als erreicht dargestellt werden. Sie
+sind kein Teil dieser Baseline, sondern der nachgelagerten Validierungs-/Trust-/
+GovTech-Phasen. Aufnahme hier dient ausschließlich der Transparenz, nicht als
+Roadmap-Start (Freeze bleibt aktiv).
+
+| Offener Punkt | Status | Phase |
+|---|---|---|
+| Customer Validation (echter Nutzer-Durchlauf) | **OPEN** | Real User Validation |
+| Payment E2E (echte abgeschlossene Zahlung) | **OPEN** | Real User Validation |
+| Evidence-Export E2E (User-Journey end-to-end) | **OPEN** | Real User Validation |
+| SSO (SAML/OIDC) | **OPEN** | P1 Enterprise Trust |
+| SCIM (automatisiertes User-Provisioning) | **OPEN** | P1 Enterprise Trust |
+| FRIA (Fundamental Rights Impact Assessment, EU AI Act Art. 27) | **OPEN** | P2 Government |
+| BSI / NIS2 / KRITIS | **OPEN** | P2 Government |
+
+> Keine dieser Aussagen darf als „ready"/„complete"/„certified" formuliert werden,
+> bevor sie nicht durch Test/Audit/Zertifizierung von VERIFIED-Qualität belegt ist.
+
+---
+
+## 8. STOP — Nächster erlaubter Schritt
 
 **Keine neue Roadmap. Keine Feature-Entwicklung.**
 

@@ -29,6 +29,7 @@
 //   runtime_events ← TODO (PR P0-impl-3 wired später automatisch)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { observeAal2 } from '../_shared/requireAal2.ts';
 import {
   startScanRun,
   recordScanFinding,
@@ -122,6 +123,8 @@ Deno.serve(async (req) => {
     return jsonError(401, 'UNAUTHORIZED', `invalid jwt: ${userErr?.message ?? 'no user'}`);
   }
   const userId = userResult.user.id;
+  // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
+  observeAal2(authHeader, 'tenant-audit');
 
   const { data: membership, error: memErr } = await admin
     .from('memberships').select('role')

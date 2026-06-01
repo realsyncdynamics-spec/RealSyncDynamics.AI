@@ -1,0 +1,38 @@
+{
+  "name": "RSD · 02 Audit-Scans (täglich 10:00)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 10 * * *" } ] }
+      },
+      "id": "a2d1e002-0001-4002-8002-000000000001",
+      "name": "Schedule 10:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [ 260, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/audit-drip-cron",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"source\": \"n8n-audit\" }",
+        "options": { "timeout": 120000 }
+      },
+      "id": "a2d1e002-0002-4002-8002-000000000002",
+      "name": "Call audit-drip-cron",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 520, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule 10:00": { "main": [ [ { "node": "Call audit-drip-cron", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Europe/Berlin" },
+  "pinData": {}
+}

@@ -1,0 +1,65 @@
+{
+  "name": "RSD · 05 Infrastruktur-Healthcheck (stündlich)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 * * * *" } ] }
+      },
+      "id": "a5d1e005-0001-4005-8005-000000000001",
+      "name": "Schedule hourly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [ 260, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/health",
+        "options": { "timeout": 15000 }
+      },
+      "id": "a5d1e005-0002-4005-8005-000000000002",
+      "name": "Call health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 520, 300 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-health-ok",
+              "leftValue": "={{ $json.statusCode || $statusCode }}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a5d1e005-0003-4005-8005-000000000003",
+      "name": "If unhealthy",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 780, 300 ]
+    },
+    {
+      "parameters": {},
+      "id": "a5d1e005-0004-4005-8005-000000000004",
+      "name": "Alert (configure)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ 1040, 220 ]
+    }
+  ],
+  "connections": {
+    "Schedule hourly": { "main": [ [ { "node": "Call health", "type": "main", "index": 0 } ] ] },
+    "Call health": { "main": [ [ { "node": "If unhealthy", "type": "main", "index": 0 } ] ] },
+    "If unhealthy": { "main": [ [ { "node": "Alert (configure)", "type": "main", "index": 0 } ], [] ] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Europe/Berlin" },
+  "pinData": {}
+}

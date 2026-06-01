@@ -3,9 +3,11 @@
  *
  * Hört auf Postgres-LISTEN/NOTIFY-Channel `audit_job_queued`, claimed Jobs
  * via FOR UPDATE SKIP LOCKED, führt Real-Browser-Audit aus, persistiert
- * Findings + Evidence, marked Job complete.
+ * scan_run + Findings + Evidence (siehe crawler.ts/persistence.ts), marked
+ * Job complete.
  *
- * Status: Scaffold. Aktivierung siehe worker/README.md.
+ * Deployment: Container muss gehostet werden (Playwright braucht Docker) —
+ * Schritte siehe worker/README.md.
  */
 import { Client } from 'pg';
 import { createClient } from '@supabase/supabase-js';

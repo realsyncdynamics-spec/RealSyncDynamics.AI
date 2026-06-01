@@ -1,0 +1,89 @@
+{
+  "name": "RSD · 03 Outreach-Entwürfe + DSGVO-Gate (täglich 14:00)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 14 * * *" } ] }
+      },
+      "id": "a3d1e003-0001-4003-8003-000000000001",
+      "name": "Schedule 14:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [ 220, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/sales-lead",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"op\": \"list_qualified\", \"limit\": 25 }",
+        "options": { "timeout": 60000 }
+      },
+      "id": "a3d1e003-0002-4003-8003-000000000002",
+      "name": "Fetch qualified leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 460, 300 ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// DSGVO-Compliance-Gate — JS-Spiegel von\n// supabase/functions/_shared/outreach-gate.ts. Bei Schema-Änderung\n// dort BEIDE Stellen anpassen (Single-Source bleibt die .ts-Datei).\n// Erzeugt NUR Entwürfe für Kandidaten, die das Gate bestehen.\n\nconst FREEMAIL = new Set(['gmail.com','googlemail.com','outlook.com','hotmail.com','live.com','yahoo.com','yahoo.de','gmx.de','gmx.net','web.de','t-online.de','icloud.com','me.com','aol.com','proton.me','protonmail.com','mail.com','freenet.de','posteo.de']);\nconst OPT_OUT_FOOTER = 'Sie erhalten diese einmalige geschäftliche Information auf Basis unseres berechtigten Interesses (Art. 6 Abs. 1 lit. f DSGVO). Wenn Sie keine weiteren Nachrichten wünschen, antworten Sie mit \\u201eSTOPP\\u201c \\u2014 wir löschen Ihre Daten dann umgehend.';\n\nfunction gate(c) {\n  const v = [];\n  if (c.opt_out === true) v.push('OPT_OUT');\n  if (!c.source_url || !String(c.source_url).trim()) v.push('MISSING_SOURCE');\n  const email = (c.contact_email || '').trim();\n  let businessEmail = false;\n  if (email) {\n    const at = email.lastIndexOf('@');\n    const dom = at > 0 ? email.slice(at + 1).toLowerCase() : '';\n    if (!dom) v.push('PERSONAL_EMAIL');\n    else if (FREEMAIL.has(dom)) v.push('PERSONAL_EMAIL');\n    else businessEmail = true;\n  }\n  const basis = c.legal_basis || 'legitimate_interest';\n  if (basis === 'legitimate_interest' && !(c.legitimate_interest_note || '').trim()) v.push('MISSING_LEGITIMATE_INTEREST_NOTE');\n  if (basis === 'consent' && !(c.consent_ref || '').trim()) v.push('MISSING_CONSENT_REF');\n  if (!((c.domain || '').trim()) && !businessEmail) v.push('MISSING_BUSINESS_CONTEXT');\n  return v;\n}\n\nconst out = [];\nfor (const item of $input.all()) {\n  const c = item.json || {};\n  const violations = gate(c);\n  if (violations.length === 0) {\n    out.push({ json: {\n      decision: 'allow',\n      company_name: c.company_name,\n      contact_email: c.contact_email,\n      draft_subject: `Kurzer Hinweis zu DSGVO/Tracking auf ${c.domain || c.company_name}`,\n      draft_body: `Guten Tag,\\n\\nbei einer automatisierten Prüfung von ${c.domain || c.company_name} sind uns mögliche DSGVO-Themen aufgefallen. Gern teilen wir den kostenlosen Kurz-Audit.\\n\\n${OPT_OUT_FOOTER}`,\n      legal_basis: c.legal_basis || 'legitimate_interest',\n      source_url: c.source_url || null\n    }});\n  } else {\n    out.push({ json: { decision: 'block', company_name: c.company_name, violations } });\n  }\n}\nreturn out;\n"
+      },
+      "id": "a3d1e003-0003-4003-8003-000000000003",
+      "name": "DSGVO-Gate + Entwurf",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [ 700, 300 ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "cond-allow",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "allow",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a3d1e003-0004-4003-8003-000000000004",
+      "name": "If allowed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 940, 300 ]
+    },
+    {
+      "parameters": {},
+      "id": "a3d1e003-0005-4003-8003-000000000005",
+      "name": "Save draft (manual send only)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ 1180, 220 ]
+    },
+    {
+      "parameters": {},
+      "id": "a3d1e003-0006-4003-8003-000000000006",
+      "name": "Log blocked (audit trail)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ 1180, 380 ]
+    }
+  ],
+  "connections": {
+    "Schedule 14:00": { "main": [ [ { "node": "Fetch qualified leads", "type": "main", "index": 0 } ] ] },
+    "Fetch qualified leads": { "main": [ [ { "node": "DSGVO-Gate + Entwurf", "type": "main", "index": 0 } ] ] },
+    "DSGVO-Gate + Entwurf": { "main": [ [ { "node": "If allowed", "type": "main", "index": 0 } ] ] },
+    "If allowed": { "main": [ [ { "node": "Save draft (manual send only)", "type": "main", "index": 0 } ], [ { "node": "Log blocked (audit trail)", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Europe/Berlin" },
+  "pinData": {}
+}

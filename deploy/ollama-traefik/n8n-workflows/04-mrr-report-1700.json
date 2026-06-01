@@ -1,0 +1,38 @@
+{
+  "name": "RSD · 04 MRR/Pipeline-Report (täglich 17:00)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 17 * * *" } ] }
+      },
+      "id": "a4d1e004-0001-4004-8004-000000000001",
+      "name": "Schedule 17:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [ 260, 300 ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/business-metrics-cron",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"source\": \"n8n-mrr-report\" }",
+        "options": { "timeout": 60000 }
+      },
+      "id": "a4d1e004-0002-4004-8004-000000000002",
+      "name": "Call business-metrics-cron",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 520, 300 ]
+    }
+  ],
+  "connections": {
+    "Schedule 17:00": { "main": [ [ { "node": "Call business-metrics-cron", "type": "main", "index": 0 } ] ] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Europe/Berlin" },
+  "pinData": {}
+}

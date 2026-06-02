@@ -219,6 +219,7 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<PublicWorkspacePreview />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<Navigate to="/app" replace />} />

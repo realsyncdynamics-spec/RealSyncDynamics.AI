@@ -1,252 +1,153 @@
-/**
- * PublicWorkspacePreview
- *
- * Öffentliche, Read-only Vorschau der Governance-OS-Oberfläche.
- * Zeigt die echte WorkspaceShell (Sidebar + Topbar) ohne AuthGate.
- * Alle Aktionen führen entweder zu /app, /audit oder Checkout.
- *
- * Kein echter Tenant-Request, keine Supabase-Abfrage.
- */
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Globe,
-  Bot,
-  ShieldAlert,
-  ClipboardCheck,
-  FolderLock,
-  Activity,
-  Users,
-  Settings,
-  ArrowRight,
-  Lock,
+  Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
+  Activity, Users, Settings, ArrowRight, Lock,
 } from 'lucide-react';
 
-// ─── Tile-Daten ────────────────────────────────────────────────────────────
-const TILES = [
+interface Tile {
+  id: string;
+  label: string;
+  description: string;
+  icon: typeof Globe;
+  color: 'cyan' | 'blue' | 'orange' | 'emerald' | 'purple' | 'amber' | 'rose' | 'indigo';
+}
+
+const TILES: Tile[] = [
   {
     id: 'websites',
     label: 'Websites',
+    description: 'Übersicht und Management aller Website-Assets',
     icon: Globe,
-    badge: '3 aktiv',
-    desc: 'Cookie-Consent, Scan-Status, DSGVO-Konformität',
-    href: '/app/websites',
+    color: 'cyan',
   },
   {
     id: 'ai-systems',
     label: 'KI-Systeme',
+    description: 'Registrierung und Dokumentation von KI-Systemen',
     icon: Bot,
-    badge: '2 registriert',
-    desc: 'EU AI Act Klassifikation, Risikoklassen, Dokumentation',
-    href: '/app/ai-systems',
+    color: 'blue',
   },
   {
     id: 'risks',
     label: 'Risiken',
-    icon: ShieldAlert,
-    badge: '1 offen',
-    desc: 'Incidents, Schwachstellen, Behebungspläne',
-    href: '/app/risks',
+    description: 'Identifikation und Bewertung von Compliance-Risiken',
+    icon: AlertTriangle,
+    color: 'orange',
   },
   {
     id: 'compliance',
     label: 'Compliance',
+    description: 'Dokumentation und Einhaltung von Vorgaben',
     icon: ClipboardCheck,
-    badge: '94 %',
-    desc: 'DSGVO, EU AI Act, BAIT/MaRisk Scorecard',
-    href: '/app/compliance',
+    color: 'emerald',
   },
   {
     id: 'evidence',
     label: 'Evidence',
-    icon: FolderLock,
-    badge: '12 Belege',
-    desc: 'Audit-Trail, Nachweise, Export-Pakete',
-    href: '/app/evidence',
+    description: 'Herkunftsnachweis und Audit-Trails (C2PA)',
+    icon: FileCheck2,
+    color: 'purple',
   },
   {
     id: 'monitoring',
     label: 'Monitoring',
+    description: 'Echtzeit-Überwachung und Performance-Metriken',
     icon: Activity,
-    badge: 'Live',
-    desc: 'Laufzeit-Events, Anomalieerkennung, Alerts',
-    href: '/app/monitoring',
+    color: 'amber',
   },
   {
     id: 'team',
     label: 'Team',
+    description: 'Zusammenarbeit und Mitgliederverwaltung',
     icon: Users,
-    badge: '1 Mitglied',
-    desc: 'Rollen, Einladungen, MFA-Status',
-    href: '/app/team',
+    color: 'rose',
   },
   {
     id: 'settings',
     label: 'Einstellungen',
+    description: 'Konfiguration und Organisationsoptionen',
     icon: Settings,
-    badge: '',
-    desc: 'KI-Residenz, API-Keys, Integrationen',
-    href: '/app/settings',
+    color: 'indigo',
   },
-] as const;
-
-// ─── Sidebar-Items (spiegeln echte WorkspaceShell wider) ───────────────────
-const NAV_ITEMS = [
-  { label: 'Websites',      icon: Globe,          path: '/app/websites' },
-  { label: 'KI-Systeme',    icon: Bot,            path: '/app/ai-systems' },
-  { label: 'Risiken',       icon: ShieldAlert,    path: '/app/risks' },
-  { label: 'Compliance',    icon: ClipboardCheck, path: '/app/compliance' },
-  { label: 'Evidence',      icon: FolderLock,     path: '/app/evidence' },
-  { label: 'Monitoring',    icon: Activity,       path: '/app/monitoring' },
-  { label: 'Team',          icon: Users,          path: '/app/team' },
-  { label: 'Einstellungen', icon: Settings,       path: '/app/settings' },
 ];
 
-// ─── Komponente ────────────────────────────────────────────────────────────
+const COLOR_MAP: Record<string, { bg: string; icon: string; hover: string }> = {
+  cyan: { bg: 'bg-cyan-950/30', icon: 'text-cyan-400', hover: 'hover:bg-cyan-950/50' },
+  blue: { bg: 'bg-security-950/30', icon: 'text-security-400', hover: 'hover:bg-security-950/50' },
+  orange: { bg: 'bg-orange-950/30', icon: 'text-orange-400', hover: 'hover:bg-orange-950/50' },
+  emerald: { bg: 'bg-emerald-950/30', icon: 'text-emerald-400', hover: 'hover:bg-emerald-950/50' },
+  purple: { bg: 'bg-purple-950/30', icon: 'text-purple-400', hover: 'hover:bg-purple-950/50' },
+  amber: { bg: 'bg-amber-950/30', icon: 'text-amber-400', hover: 'hover:bg-amber-950/50' },
+  rose: { bg: 'bg-rose-950/30', icon: 'text-rose-400', hover: 'hover:bg-rose-950/50' },
+  indigo: { bg: 'bg-indigo-950/30', icon: 'text-indigo-400', hover: 'hover:bg-indigo-950/50' },
+};
+
 export function PublicWorkspacePreview() {
   const navigate = useNavigate();
 
-  const handleLockedAction = (path: string) => {
-    navigate('/app');
-  };
-
   return (
-    <div className="min-h-screen flex flex-col bg-obsidian-950 text-titanium-100 font-sans">
-      {/* ── Topbar ──────────────────────────────────────────────────── */}
-      <header className="h-14 border-b border-obsidian-800 flex items-center justify-between px-4 shrink-0 bg-obsidian-950/90 backdrop-blur-sm sticky top-0 z-30">
-        {/* Logo */}
-        <a href="/" className="flex items-center gap-2 select-none">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-label="RealSyncDynamics.AI" className="shrink-0">
-            <rect width="28" height="28" rx="6" fill="#0ea5e9" />
-            <path d="M7 14h14M14 7v14" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-          <span className="font-semibold text-sm tracking-tight text-titanium-50">
-            RealSync<span className="text-sky-400">Dynamics</span>
-          </span>
-        </a>
-
-        {/* Workspace-Name + Preview-Badge */}
-        <div className="hidden sm:flex items-center gap-2 text-xs text-titanium-400">
-          <span className="px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 font-medium">
-            Read-only Vorschau
-          </span>
-          <span>Demo-Workspace</span>
-        </div>
-
-        {/* CTAs */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => navigate('/audit?source=public-workspace')}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-sky-500/30 text-sky-400 hover:bg-sky-500/10 transition-colors text-xs font-medium"
-          >
-            Audit starten
-          </button>
-          <button
-            onClick={() => navigate('/app')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-sky-500 hover:bg-sky-400 text-white transition-colors text-xs font-semibold"
-          >
-            Dashboard öffnen <ArrowRight size={12} />
-          </button>
-        </div>
-      </header>
-
-      {/* ── Layout: Sidebar + Main ───────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className="hidden md:flex flex-col w-56 shrink-0 border-r border-obsidian-800 bg-obsidian-950 pt-4 pb-6 overflow-y-auto">
-          <nav className="flex-1 px-2 space-y-0.5">
-            {NAV_ITEMS.map(({ label, icon: Icon, path }) => (
-              <button
-                key={label}
-                onClick={() => handleLockedAction(path)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-titanium-300 hover:bg-obsidian-800 hover:text-titanium-50 transition-colors group"
-              >
-                <Icon size={15} className="shrink-0 text-titanium-500 group-hover:text-sky-400 transition-colors" />
-                <span className="truncate">{label}</span>
-                <Lock size={10} className="ml-auto text-titanium-600 shrink-0" />
-              </button>
-            ))}
-          </nav>
-
-          {/* Upgrade CTA at bottom */}
-          <div className="mt-auto px-3">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-b from-obsidian-900 to-obsidian-950 border-b border-titanium-900 px-4 py-12 sm:py-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-3 mb-4">
+            <Lock className="h-5 w-5 text-security-400" />
+            <span className="text-xs font-mono uppercase tracking-wider text-titanium-500">Öffentliche Vorschau</span>
+          </div>
+          <h1 className="font-display font-bold text-3xl sm:text-4xl mb-2 text-titanium-50">
+            Governance OS
+          </h1>
+          <p className="text-titanium-400 max-w-2xl mb-6">
+            EU-souveräne SaaS-Plattform für Creator und Agenturen. Verwalten Sie Websites, KI-Systeme, Risiken und Compliance in einer einheitlichen Oberfläche.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => navigate('/pricing')}
-              className="w-full rounded-lg bg-sky-500/10 border border-sky-500/20 px-3 py-3 text-left hover:bg-sky-500/15 transition-colors"
+              onClick={() => navigate('/app')}
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-security-600 text-obsidian-950 font-medium rounded-none hover:bg-security-500 transition-colors"
             >
-              <p className="text-xs font-semibold text-sky-400 mb-0.5">Zugang freischalten</p>
-              <p className="text-xs text-titanium-500 leading-snug">Alle Module, echter Tenant, DSGVO-Konform.</p>
+              Dashboard öffnen
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => navigate('/audit?source=public-workspace')}
+              className="flex items-center justify-center gap-2 px-6 py-2.5 border border-titanium-700 text-titanium-100 font-medium rounded-none hover:bg-obsidian-800 transition-colors"
+            >
+              Audit starten
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-        </aside>
+        </div>
+      </div>
 
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
-          {/* Page header */}
-          <div className="px-6 pt-8 pb-4">
-            <p className="text-xs text-titanium-500 mb-1 uppercase tracking-widest font-medium">Workspace</p>
-            <h1 className="text-xl font-semibold text-titanium-50">Governance OS</h1>
-            <p className="text-sm text-titanium-400 mt-1 max-w-xl">
-              Alle Compliance-Module auf einen Blick — DSGVO, EU AI Act, Evidence, Monitoring.
-              Dies ist eine öffentliche Vorschau. Für echte Daten{' '}
-              <button onClick={() => navigate('/app')} className="text-sky-400 hover:underline">
-                Dashboard öffnen
-              </button>
-              .
-            </p>
-          </div>
+      {/* Tiles Grid */}
+      <div className="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {TILES.map((tile) => {
+            const Icon = tile.icon;
+            const colors = COLOR_MAP[tile.color];
 
-          {/* Tiles grid */}
-          <div className="px-6 pb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {TILES.map(({ id, label, icon: Icon, badge, desc, href }) => (
-              <button
-                key={id}
-                onClick={() => handleLockedAction(href)}
-                className="group text-left rounded-xl border border-obsidian-800 bg-obsidian-900 p-5 hover:border-sky-500/30 hover:bg-obsidian-800 transition-all duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-500"
+            return (
+              <div
+                key={tile.id}
+                className={`p-6 border border-titanium-800 rounded-none ${colors.bg} ${colors.hover} transition-colors cursor-default group`}
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 rounded-lg bg-obsidian-800 group-hover:bg-sky-500/10 transition-colors">
-                    <Icon size={18} className="text-titanium-400 group-hover:text-sky-400 transition-colors" />
-                  </div>
-                  {badge && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-obsidian-800 text-titanium-400 border border-obsidian-700">
-                      {badge}
-                    </span>
-                  )}
+                <div className={`h-10 w-10 rounded-none ${colors.icon} text-opacity-80 group-hover:text-opacity-100 mb-4 transition-all`}>
+                  <Icon className="h-6 w-6" />
                 </div>
-                <h2 className="text-sm font-semibold text-titanium-100 mb-1">{label}</h2>
-                <p className="text-xs text-titanium-500 leading-relaxed">{desc}</p>
-                <div className="mt-3 flex items-center gap-1 text-xs text-titanium-600 group-hover:text-sky-400 transition-colors">
-                  <Lock size={10} />
-                  <span>Login erforderlich</span>
-                </div>
-              </button>
-            ))}
-          </div>
+                <h3 className="font-display font-bold text-titanium-50 mb-1">{tile.label}</h3>
+                <p className="text-sm text-titanium-400 leading-snug">{tile.description}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-          {/* Bottom CTA banner */}
-          <div className="mx-6 mb-12 rounded-xl border border-sky-500/20 bg-sky-500/5 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-semibold text-titanium-50 mb-1">Governance OS jetzt freischalten</h3>
-              <p className="text-xs text-titanium-400 max-w-md">
-                DSGVO, EU AI Act & Evidence in einem Workspace — für SaaS-Anbieter, Agenturen und Unternehmen ab 30 €/Monat.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => navigate('/audit?source=public-workspace')}
-                className="px-4 py-2 rounded-lg border border-sky-500/30 text-sky-400 hover:bg-sky-500/10 transition-colors text-sm font-medium"
-              >
-                Audit starten
-              </button>
-              <button
-                onClick={() => navigate('/app')}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-white transition-colors text-sm font-semibold"
-              >
-                Dashboard öffnen <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-        </main>
+      {/* Footer Info */}
+      <div className="bg-obsidian-900 border-t border-titanium-900 px-4 py-8 mt-12">
+        <div className="max-w-6xl mx-auto text-center text-sm text-titanium-500">
+          <p>Dies ist eine öffentliche Vorschau der Governance-OS-Plattform. Melden Sie sich an, um Zugriff auf alle Features zu erhalten.</p>
+        </div>
       </div>
     </div>
   );

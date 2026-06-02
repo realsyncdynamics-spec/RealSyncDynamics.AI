@@ -6,6 +6,9 @@ import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
+// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
+import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
+// ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
@@ -214,8 +217,8 @@ function RoutesWithTracking() {
   return (
     <Suspense fallback={<LazyFallback />}>
     <Routes>
-      {/* Public */}
-      <Route path="/" element={<Landing />} />
+      {/* ── Public Entry: Governance-OS Workspace Preview ── */}
+      <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<Navigate to="/app" replace />} />

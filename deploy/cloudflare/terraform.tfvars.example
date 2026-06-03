@@ -1,0 +1,6 @@
+# Kopieren nach terraform.tfvars und ausfüllen (NICHT committen — siehe .gitignore).
+# Zone-ID: Cloudflare Dashboard → realsyncdynamicsai.de → Overview → "Zone ID".
+cloudflare_zone_id = "<deine-zone-id>"
+
+# Auth NICHT hier ablegen, sondern als Env-Variable:
+#   export CLOUDFLARE_API_TOKEN=<token-mit-zone-settings-edit-und-transform-rules-edit>

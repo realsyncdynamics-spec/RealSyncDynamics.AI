@@ -17,6 +17,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts';
 import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
+import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
+import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -143,6 +145,21 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Scan-Reichweite bewerten — bei rein client-gerenderten SPA-Shells sieht
+  // der statische Fetch nur das Grundgerüst (False-Negative-Risiko). Wir
+  // melden das ehrlich als info-Befund (kein Score-Abzug) statt eine
+  // trügerische Entwarnung zu präsentieren. 'failed'/'http_*' sind bereits
+  // über fetch_failed / http_error abgedeckt.
+  const coverageInfo = assessScanCoverage(html, status, fetchError);
+  if (coverageInfo.coverage === 'limited' && coverageInfo.reason === 'client_rendered_shell') {
+    issues.push({
+      id: 'scan_coverage_limited',
+      severity: 'info',
+      title: 'Scan-Reichweite eingeschränkt (client-gerenderte Seite)',
+      detail: coverageInfo.notice!,
+    });
+  }
+
   const { score, severity } = scoreReport(issues);
 
   // Insert sales_lead — preserve plan/source attribution from caller
@@ -190,8 +207,15 @@ Deno.serve(async (req) => {
     fetched_status: status,
     fetched: status !== null && fetchError === null,
     fetch_error: fetchError,
+    // Scan-Reichweite: 'full' | 'limited' | 'failed'. Bei 'limited' ist das
+    // Ergebnis nicht abschließend (z. B. SPA-Shell) — die UI zeigt einen
+    // entsprechenden Hinweis statt eines belastbaren Urteils.
+    coverage: coverageInfo.coverage,
+    coverage_notice: coverageInfo.notice,
     methodology: {
-      audit_engine: '2026.05.0',
+      // 2026.05.1 — Tracker-Detection ignoriert CSP-Allowlist + Resource-Hints
+      // (Fix gegen identische False-Positive-Befunde / fixen 28/100-Score).
+      audit_engine: '2026.05.1',
       rule_engine: RULE_ENGINE_VERSION,
     },
   });
@@ -240,7 +264,13 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
       detail: 'Strict-Transport-Security verhindert Downgrade-Angriffe auf HTTP. Empfohlen: max-age=31536000; includeSubDomains.',
     });
   }
-  if (!h?.get('content-security-policy')) {
+  // CSP zählt auch, wenn per <meta http-equiv="Content-Security-Policy">
+  // ausgeliefert — der Browser setzt das für script-src/style-src/etc. durch
+  // (relevant z. B. bei GitHub-Pages-Hosting, wo keine HTTP-Header gesetzt
+  // werden können). Nur frame-ancestors/sandbox/report-uri wirken per Meta
+  // nicht — der Clickjacking-Check unten bleibt deshalb header-basiert.
+  const cspValue = effectiveCspValue(h?.get('content-security-policy'), html);
+  if (!cspValue) {
     issues.push({
       id: 'no_csp',
       severity: 'low',
@@ -295,18 +325,26 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
   }
 
   // ── Tracker ohne sichtbares Consent-Banner ──
-  const hasGA = /google-analytics\.com|googletagmanager\.com|gtag\(/i.test(html);
-  const hasMeta = /connect\.facebook\.net|fbq\(/i.test(html);
-  const hasLI = /snap\.licdn\.com|lintrk\(/i.test(html);
-  const hasHotjar = /static\.hotjar\.com|hotjar/i.test(html);
+  // WICHTIG: Tracker-Detection läuft gegen `trackerHtml` — Roh-HTML OHNE
+  // CSP-Allowlist + Resource-Hints. Eine in der Content-Security-Policy
+  // erlaubte Domain (script-src https://www.googletagmanager.com …) bedeutet
+  // NICHT, dass der Tracker geladen wird; früher erzeugte genau das die
+  // identischen False-Positive-Befunde (GA/Meta/TikTok/LinkedIn) und den
+  // fixen 28/100-Score. Echte `<script src>`-Tags und Runtime-Aufrufe
+  // (gtag(/fbq(/ttq(/_paq) bleiben erhalten.
+  const trackerHtml = stripPolicyDeclarations(html);
+  const hasGA = /google-analytics\.com|googletagmanager\.com|gtag\(/i.test(trackerHtml);
+  const hasMeta = /connect\.facebook\.net|fbq\(/i.test(trackerHtml);
+  const hasLI = /snap\.licdn\.com|lintrk\(/i.test(trackerHtml);
+  const hasHotjar = /static\.hotjar\.com|hotjar/i.test(trackerHtml);
   // Matomo / Piwik signature. We pick up explicit script paths (matomo.js,
   // piwik.js, matomo.php) and the runtime _paq global to catch self-hosted
   // installations behind custom domains.
-  const hasMatomo = /matomo\.js|piwik\.js|matomo\.php|_paq\b/i.test(html);
+  const hasMatomo = /matomo\.js|piwik\.js|matomo\.php|_paq\b/i.test(trackerHtml);
   // Heuristic: visible client-side trace of Matomo cookies (pk_id / pk_ses
   // / pk_ref) in the HTML payload, which indicates the cookies are likely
   // being set without the cookieless `disableCookies` configuration.
-  const hasMatomoCookieHint = /\bpk_id\b|\bpk_ses\b|\bpk_ref\b/i.test(html);
+  const hasMatomoCookieHint = /\bpk_id\b|\bpk_ses\b|\bpk_ref\b/i.test(trackerHtml);
   const hasConsent = /(cookie[\s-]?banner|cookieconsent|cookieyes|usercentrics|borlabs|cookiebot|onetrust|klaro|tarteaucitron)/i.test(html);
 
   if ((hasGA || hasMeta || hasLI || hasHotjar) && !hasConsent) {
@@ -407,7 +445,7 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
   }
 
   // ── Microsoft Clarity ohne Consent ──
-  if (/clarity\.ms|window\.clarity/i.test(html) && !hasConsent) {
+  if (/clarity\.ms|window\.clarity/i.test(trackerHtml) && !hasConsent) {
     issues.push({
       id: 'clarity_no_consent',
       severity: 'high',
@@ -418,8 +456,8 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
   }
 
   // ── TikTok / Pinterest Pixel ohne Consent ──
-  const hasTikTok = /analytics\.tiktok\.com|ttq\(/i.test(html);
-  const hasPinterest = /pinimg\.com\/ct\/|pintrk\(/i.test(html);
+  const hasTikTok = /analytics\.tiktok\.com|ttq\(/i.test(trackerHtml);
+  const hasPinterest = /pinimg\.com\/ct\/|pintrk\(/i.test(trackerHtml);
   if ((hasTikTok || hasPinterest) && !hasConsent) {
     const trackers = [hasTikTok && 'TikTok Pixel', hasPinterest && 'Pinterest Tag'].filter(Boolean).join(', ');
     issues.push({
@@ -432,7 +470,7 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
   }
 
   // ── Reverse-IP-Tracker (Lead-Generation à la Albacross/Leadfeeder) ──
-  if (/albacross|leadfeeder|leadinfo|dealfront|wisepops/i.test(html)) {
+  if (/albacross|leadfeeder|leadinfo|dealfront|wisepops/i.test(trackerHtml)) {
     issues.push({
       id: 'reverse_ip_tracker',
       severity: 'critical',
@@ -701,15 +739,18 @@ function extractFacts(
   issues: Issue[],
 ): Record<string, unknown> {
   const lc = html.toLowerCase();
+  // Tracker-Detection gegen CSP-/Hint-bereinigtes HTML (siehe runChecks):
+  // eine in der CSP-Allowlist erlaubte Domain ist kein geladener Tracker.
+  const trackerLc = stripPolicyDeclarations(html).toLowerCase();
 
   // Tracker-Detection via URL-Patterns im HTML
-  const ga = /googletagmanager\.com\/gtag\/js|google-analytics\.com\/g\/collect|google-analytics\.com\/analytics\.js/.test(lc);
-  const meta = /connect\.facebook\.net\/.+\/fbevents\.js|www\.facebook\.com\/tr/.test(lc);
-  const tiktok = /analytics\.tiktok\.com/.test(lc);
-  const linkedin = /snap\.licdn\.com\/li\.lms-analytics|px\.ads\.linkedin\.com/.test(lc);
-  const hotjar = /static\.hotjar\.com|script\.hotjar\.com/.test(lc);
-  const gFonts = /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(lc);
-  const gtm = /googletagmanager\.com\/gtm\.js/.test(lc);
+  const ga = /googletagmanager\.com\/gtag\/js|google-analytics\.com\/g\/collect|google-analytics\.com\/analytics\.js/.test(trackerLc);
+  const meta = /connect\.facebook\.net\/.+\/fbevents\.js|www\.facebook\.com\/tr/.test(trackerLc);
+  const tiktok = /analytics\.tiktok\.com/.test(trackerLc);
+  const linkedin = /snap\.licdn\.com\/li\.lms-analytics|px\.ads\.linkedin\.com/.test(trackerLc);
+  const hotjar = /static\.hotjar\.com|script\.hotjar\.com/.test(trackerLc);
+  const gFonts = /fonts\.googleapis\.com|fonts\.gstatic\.com/.test(trackerLc);
+  const gtm = /googletagmanager\.com\/gtm\.js/.test(trackerLc);
 
   // Consent-Banner-Heuristik (statische DOM-Detection ist begrenzt)
   const consentKeywords = ['cookie', 'einwilligung', 'consent', 'datenschutz', 'akzeptieren', 'ablehnen'];

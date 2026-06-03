@@ -24,16 +24,6 @@ export default defineConfig(({mode}) => {
       // vendor-chunks. Browser CDNs (GH-Pages Fastly) cache vendor-* across
       // deploys since they only change when dependencies change, while the
       // small app-chunk re-downloads each deploy.
-      //
-      // TODO(bundle-size): the catch-all "vendor" chunk currently lands at
-      //   ~1.96 MB (≈ 612 KB gzip) and triggers Rollup's chunkSizeWarningLimit.
-      //   The likely big contributors are recharts/d3 dependencies that
-      //   bleed in via the admin/analytics views even on landing routes.
-      //   Follow-up: introduce route-level dynamic import() on the
-      //   admin / analytics / KodeeView / CreatorDashboard imports in App.tsx
-      //   so the marketing surfaces don't pay for the dashboard JS. Deferred
-      //   out of the current PR — see commit log for the funnel/SEO work
-      //   that intentionally did not touch import shape.
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -45,6 +35,21 @@ export default defineConfig(({mode}) => {
             if (id.includes('@sentry')) return 'vendor-sentry';
             if (id.includes('lucide-react')) return 'vendor-icons';
             if (id.includes('three') || id.includes('@react-three')) return 'vendor-three';
+            if (id.includes('@react-pdf') || id.includes('fontkit') || id.includes('pdfkit')) return 'vendor-pdf';
+            if (id.includes('@google/genai')) return 'vendor-genai';
+            if (
+              id.includes('react-markdown') ||
+              id.includes('/remark') ||
+              id.includes('/rehype') ||
+              id.includes('/micromark') ||
+              id.includes('/unified') ||
+              id.includes('/mdast') ||
+              id.includes('/hast')
+            ) {
+              return 'vendor-markdown';
+            }
+            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) return 'vendor-motion';
+            if (id.includes('node_modules/ajv')) return 'vendor-ajv';
             if (id.includes('react-dom') || id.includes('scheduler') || id.includes('/react/')) return 'vendor-react';
             return 'vendor';
           },

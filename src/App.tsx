@@ -45,8 +45,9 @@ import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
-import { BusinessDashboard } from './pages/BusinessDashboard';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
+// BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
+const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard })));
 // Compliance Tools (Free)
@@ -196,7 +197,7 @@ import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
 import { CookieConsent } from './components/CookieConsent';
-import { AssistentChip } from './components/AssistentChip';
+const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
@@ -510,7 +511,9 @@ export default function App() {
         <BrowserRouter basename={ROUTER_BASENAME}>
           <RoutesWithTracking />
           <CookieConsent />
-          <AssistentChip />
+          <Suspense fallback={null}>
+            <AssistentChip />
+          </Suspense>
         </BrowserRouter>
       </EnvironmentProvider>
     </TenantProvider>

@@ -1,0 +1,7 @@
+# Lokaler Terraform-State + Secrets — niemals committen.
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log

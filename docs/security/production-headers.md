@@ -43,5 +43,11 @@ x-served-by: cache-chi-klot8100125-CHI
 
 **Empfehlung:** Für echte Enterprise-Header-Anforderungen (HSTS, Permissions-Policy) ist **Option B (Cloudflare-Proxy)** der sauberste Hebel — separate Infra-Entscheidung, kein Code. Bis dahin gilt Option D: dokumentierter IST-Zustand + Meta-CSP als aktive Schutzschicht.
 
+> **Update:** Option B ist jetzt als anwendbares, versioniertes Artefakt umgesetzt:
+> [`deploy/cloudflare/`](../../deploy/cloudflare/) (Terraform + Dashboard-Runbook + `verify.sh`).
+> Es setzt HSTS + `X-Frame-Options` + `Referrer-Policy` + `Permissions-Policy` als echte
+> HTTP-Header und schließt damit die realen Audit-Befunde `no_hsts` / `no_xframe`.
+> Noch **nicht angewendet** — `terraform apply` erfordert Cloudflare-Account-Zugang.
+
 ## Fazit OF-1
 **Geschlossen (dokumentiert).** Der reale Header-Zustand ist verifiziert und transparent: aktive Meta-CSP + X-Content-Type-Options + TLS; HSTS/XFO/Permissions-Policy auf GitHub Pages technisch nicht als HTTP-Header setzbar. Für Security-Fragebögen ist dieser Befund jetzt belastbar zitierbar — ohne falsche Behauptung, „alle Header seien gesetzt".

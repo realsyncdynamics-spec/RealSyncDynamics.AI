@@ -57,10 +57,10 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
 test('Marketing landing (/landing) renders governance-OS narrative + CTAs', async ({ page }) => {
   await page.goto('/landing');
 
-  // Hero — Governance-OS-Headline
+  // Hero — branchenoffene Governance-Headline
   await expect(
     page.getByRole('heading', {
-      name: /Governance Operating System für DSGVO, AI Act und Continuous Compliance\./i,
+      name: /Kontinuierliche AI- und Compliance-Governance für jede Branche\./i,
     }),
   ).toBeVisible();
 

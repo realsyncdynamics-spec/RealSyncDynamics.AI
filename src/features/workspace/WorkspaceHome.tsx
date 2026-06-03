@@ -1,15 +1,17 @@
-// WorkspaceHome — kanonisches Status-Home (/app) des Governance OS (P0).
+// WorkspaceHome — kanonisches Status-Home (/app) des Governance OS.
 //
-// Ersetzt den Chat als Post-Login-Einstieg: Status-first, in 3 Sekunden
-// erfassbar. Nutzt ausschliesslich vorhandene, RLS-gescopte Count-Helfer —
-// keine erfundenen Daten. Kacheln verlinken in die bestehenden Views.
+// Für eingeloggte Nutzer: echte RLS-gescopte Counts aus Supabase.
+// Für nicht eingeloggte Nutzer: statische Demo-Ansicht — kein sofortiges
+// Auth-Gate. Echte Aktionen (Nav-Klicks, QuickActions) lösen Auth erst
+// dann aus, wenn der Nutzer tatsächlich eine geschützte Route betritt.
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
-  Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search, ShieldCheck,
+  Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search, ShieldCheck, LogIn,
 } from 'lucide-react';
-import { AuthGate } from '../kodee/connections/AuthGate';
+import type { Session } from '@supabase/supabase-js';
+import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 import { WorkspaceShell } from './WorkspaceShell';
 import { countOpenDpias } from '../governance/dpiasApi';
@@ -18,24 +20,133 @@ import { countPendingApprovals } from '../governance/approvalsApi';
 import { countOpenIncidents } from '../governance/incidentsApi';
 import { countVendorsNoDpa } from '../governance/vendorsApi';
 
+// Statische Platzhalter für die öffentliche Demo-Ansicht
+const DEMO_COUNTS = {
+  incidents: 1,
+  dpias: 2,
+  dsr: { total: 4, overdue: 0 },
+  approvals: 3,
+  vendorsNoDpa: 1,
+} as const;
+const DEMO_SCORE = 87;
+
+export function WorkspaceHome() {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) { setSession(null); return; }
+    const sb = getSupabase();
+    sb.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: sub } = sb.auth.onAuthStateChange((_evt, s) => setSession(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // undefined = Session wird geladen — kurz Ladeindikator im Shell zeigen
+  if (session === undefined) {
+    return (
+      <WorkspaceShell title="Übersicht">
+        <div className="flex items-center justify-center h-40 text-titanium-500 text-sm">
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Lade…
+        </div>
+      </WorkspaceShell>
+    );
+  }
+
+  return (
+    <WorkspaceShell title="Übersicht">
+      {session ? <Inner /> : <DemoInner />}
+    </WorkspaceShell>
+  );
+}
+
+// ─── Demo-Ansicht (nicht eingeloggt) ────────────────────────────────
+
+function DemoInner() {
+  const counts = DEMO_COUNTS;
+  const score = DEMO_SCORE;
+  const inboxTotal = counts.approvals + counts.dsr.overdue + counts.incidents;
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      {/* Demo-Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-obsidian-900 border border-titanium-800 px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-cyan-400 border border-cyan-800 px-1.5 py-0.5">Demo-Modus</span>
+          <span className="text-sm text-titanium-300">Vorschau mit Demo-Daten. Melde dich an, um eigene Objekte zu verwalten.</span>
+        </div>
+        <Link
+          to="/app/settings"
+          className="inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 px-3 py-1.5 text-sm font-semibold hover:bg-cyan-300 transition-colors shrink-0"
+        >
+          <LogIn className="h-4 w-4" /> Anmelden
+        </Link>
+      </div>
+
+      {/* Begrüßung + Schnellaktionen */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="font-display font-bold text-2xl text-titanium-50 tracking-tight">Governance-Übersicht</h2>
+          <p className="text-sm text-titanium-400 mt-1">Status, offene Aufgaben und Objekte auf einen Blick.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <QuickAction to="/audit?source=workspace" icon={Plus} label="Website hinzufügen" primary />
+          <QuickAction to="/app/ai-systems" icon={Bot} label="KI-System erfassen" />
+          <QuickAction to="/app/evidence" icon={FileCheck2} label="Report exportieren" />
+        </div>
+      </div>
+
+      <ScoreCard score={score} loading={false} />
+
+      <section className="border border-titanium-800 bg-obsidian-900">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-titanium-900">
+          <div className="flex items-center gap-2">
+            <Inbox className="h-4 w-4 text-cyan-300" />
+            <span className="font-display font-semibold text-titanium-50 text-sm">Aktions-Inbox</span>
+            {inboxTotal > 0 && (
+              <span className="font-mono text-[11px] text-obsidian-950 bg-cyan-400 px-1.5 py-0.5">{inboxTotal}</span>
+            )}
+          </div>
+        </div>
+        <div className="divide-y divide-titanium-900">
+          <InboxRow to="/app/websites" label="Offene Freigaben" count={counts.approvals} loading={false} icon={UserCheck} />
+          <InboxRow to="/app/compliance" label="Überfällige Betroffenenanfragen (DSR)" count={counts.dsr.overdue} loading={false} icon={ClipboardCheck} severity={!!counts.dsr.overdue} />
+          <InboxRow to="/app/risks" label="Offene Vorfälle / Meldefristen" count={counts.incidents} loading={false} icon={AlertTriangle} severity={!!counts.incidents} />
+        </div>
+      </section>
+
+      <section>
+        <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Status</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
+          <Tile to="/app/risks"      icon={AlertTriangle}   label="Offene Risiken"   value={counts.incidents}     loading={false} accent="rose" />
+          <Tile to="/app/compliance" icon={ClipboardCheck}  label="Offene DSFA"      value={counts.dpias}         loading={false} accent="cyan" />
+          <Tile to="/app/compliance" icon={ClipboardCheck}  label="DSR offen"        value={counts.dsr.total}     loading={false} accent="amber" />
+          <Tile to="/app/websites"   icon={UserCheck}       label="Vendoren ohne DPA" value={counts.vendorsNoDpa} loading={false} accent="amber" />
+        </div>
+      </section>
+
+      <section>
+        <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
+          <NavCard to="/app/websites"   icon={Globe}          title="Websites"    body="Domains, Cookies, Vendoren, Monitoring, Evidence." />
+          <NavCard to="/app/ai-systems" icon={Bot}            title="KI-Systeme"  body="Inventar, Klassifizierung, Dokumentation, Drift." />
+          <NavCard to="/app/evidence"   icon={FileCheck2}     title="Evidence"    body="Nachweise, Reports, Audit-Trail, Exporte." />
+          <NavCard to="/app/compliance" icon={ClipboardCheck} title="Compliance"  body="DSGVO, AI Act, VVT, TOM, DSFA, DSR." />
+          <NavCard to="/app/monitoring" icon={Activity}       title="Monitoring"  body="Live-Scans, Drift, Alerts." />
+          <NavCard to="/app/risks"      icon={Search}         title="Risiken"     body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ─── Echte Ansicht (eingeloggt) ──────────────────────────────────────
+
 interface Counts {
   incidents: number;
   dpias: number;
   dsr: { total: number; overdue: number };
   approvals: number;
   vendorsNoDpa: number;
-}
-
-export function WorkspaceHome() {
-  return (
-    <AuthGate>
-      {() => (
-        <WorkspaceShell title="Übersicht">
-          <Inner />
-        </WorkspaceShell>
-      )}
-    </AuthGate>
-  );
 }
 
 function Inner() {
@@ -66,14 +177,10 @@ function Inner() {
   }, [activeTenantId]);
 
   const inboxTotal = counts ? counts.approvals + counts.dsr.overdue + counts.incidents : 0;
-  // Transparenter Self-Assessment-Score aus den BEREITS geladenen Counts —
-  // keine zusätzlichen Fetches, keine erfundenen Zahlen. Gewichtung: überfällige
-  // DSR und offene Vorfälle wiegen am schwersten. 100 = nichts offen.
   const score = computeComplianceScore(counts);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-      {/* Begrüßung + Schnellaktionen */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="font-display font-bold text-2xl text-titanium-50 tracking-tight">
@@ -94,10 +201,8 @@ function Inner() {
         </div>
       )}
 
-      {/* Compliance-Score (Self-Assessment, aus offenen Posten abgeleitet) */}
       <ScoreCard score={score} loading={!counts} />
 
-      {/* Aktions-Inbox (Linear-artig) */}
       <section className="border border-titanium-800 bg-obsidian-900">
         <div className="flex items-center justify-between px-4 py-3 border-b border-titanium-900">
           <div className="flex items-center gap-2">
@@ -109,44 +214,39 @@ function Inner() {
           </div>
         </div>
         <div className="divide-y divide-titanium-900">
-          <InboxRow to="/governance/approvals" label="Offene Freigaben" count={counts?.approvals} loading={!counts} icon={UserCheck} />
-          <InboxRow to="/governance/dsr" label="Überfällige Betroffenenanfragen (DSR)" count={counts?.dsr.overdue} loading={!counts} icon={ClipboardCheck} severity={!!counts?.dsr.overdue} />
-          <InboxRow to="/governance/incidents" label="Offene Vorfälle / Meldefristen" count={counts?.incidents} loading={!counts} icon={AlertTriangle} severity={!!counts?.incidents} />
+          <InboxRow to="/governance/approvals" label="Offene Freigaben"                         count={counts?.approvals}   loading={!counts} icon={UserCheck} />
+          <InboxRow to="/governance/dsr"       label="Überfällige Betroffenenanfragen (DSR)"    count={counts?.dsr.overdue} loading={!counts} icon={ClipboardCheck} severity={!!counts?.dsr.overdue} />
+          <InboxRow to="/governance/incidents" label="Offene Vorfälle / Meldefristen"           count={counts?.incidents}   loading={!counts} icon={AlertTriangle} severity={!!counts?.incidents} />
         </div>
       </section>
 
-      {/* Status-Kacheln */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Status</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
-          <Tile to="/governance/incidents" icon={AlertTriangle} label="Offene Risiken" value={counts?.incidents} loading={!counts} accent="rose" />
-          <Tile to="/governance/dpias" icon={ClipboardCheck} label="Offene DSFA" value={counts?.dpias} loading={!counts} accent="cyan" />
-          <Tile to="/governance/dsr" icon={ClipboardCheck} label="DSR offen" value={counts?.dsr.total} sub={counts?.dsr.overdue ? `${counts.dsr.overdue} überfällig` : undefined} loading={!counts} accent="amber" />
-          <Tile to="/governance/vendors" icon={UserCheck} label="Vendoren ohne DPA" value={counts?.vendorsNoDpa} loading={!counts} accent="amber" />
+          <Tile to="/governance/incidents" icon={AlertTriangle}  label="Offene Risiken"    value={counts?.incidents}     loading={!counts} accent="rose" />
+          <Tile to="/governance/dpias"     icon={ClipboardCheck} label="Offene DSFA"       value={counts?.dpias}         loading={!counts} accent="cyan" />
+          <Tile to="/governance/dsr"       icon={ClipboardCheck} label="DSR offen"         value={counts?.dsr.total}     sub={counts?.dsr.overdue ? `${counts.dsr.overdue} überfällig` : undefined} loading={!counts} accent="amber" />
+          <Tile to="/governance/vendors"   icon={UserCheck}      label="Vendoren ohne DPA" value={counts?.vendorsNoDpa}  loading={!counts} accent="amber" />
         </div>
       </section>
 
-      {/* Objekte */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
-          <NavCard to="/app/websites" icon={Globe} title="Websites" body="Domains, Cookies, Vendoren, Monitoring, Evidence." />
-          <NavCard to="/app/ai-systems" icon={Bot} title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift." />
-          <NavCard to="/app/evidence" icon={FileCheck2} title="Evidence" body="Nachweise, Reports, Audit-Trail, Exporte." />
+          <NavCard to="/app/websites"   icon={Globe}          title="Websites"   body="Domains, Cookies, Vendoren, Monitoring, Evidence." />
+          <NavCard to="/app/ai-systems" icon={Bot}            title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift." />
+          <NavCard to="/app/evidence"   icon={FileCheck2}     title="Evidence"   body="Nachweise, Reports, Audit-Trail, Exporte." />
           <NavCard to="/app/compliance" icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR." />
-          <NavCard to="/app/monitoring" icon={Activity} title="Monitoring" body="Live-Scans, Drift, Alerts." />
-          <NavCard to="/app/risks" icon={Search} title="Risiken" body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
+          <NavCard to="/app/monitoring" icon={Activity}       title="Monitoring" body="Live-Scans, Drift, Alerts." />
+          <NavCard to="/app/risks"      icon={Search}         title="Risiken"    body="Findings, Vorfälle, Vendor-Risiken priorisiert." />
         </div>
       </section>
     </div>
   );
 }
 
-// ─── Compliance-Score (Self-Assessment) ─────────────────────────────
-// Reine Ableitung aus offenen Posten — KEIN externer Anspruch, KEINE
-// Zertifizierungs-Behauptung. 100 = keine offenen Posten. Gewichte:
-// überfällige DSR (−12) und offene Vorfälle (−10) am schwersten, offene
-// DSFA (−5), Vendoren ohne DPA (−4), offene Freigaben (−3). Clamp 0..100.
+// ─── Compliance-Score ────────────────────────────────────────────────
+
 function computeComplianceScore(counts: Counts | null): number | null {
   if (!counts) return null;
   const penalty =

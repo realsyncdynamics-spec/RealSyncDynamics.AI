@@ -75,7 +75,7 @@ function Hero() {
             {CTA.startFree} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/welcome?source=hero"
+            to="/app"
             className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
           >
             {CTA.openDashboard}

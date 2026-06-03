@@ -48,43 +48,136 @@ export function Landing() {
 
 // ─── 1 · Hero ────────────────────────────────────────────────────────
 
+// Zielgruppen-Kacheln im Hero — breite Branchenansprache, Hard-Edge.
+const HERO_AUDIENCE = [
+  { title: 'Kleine Betriebe', body: 'Website fortlaufend auf DSGVO-Risiken, Einwilligungen und externe Dienste prüfen.' },
+  { title: 'Online-Shops',    body: 'Tracking, Tools, Formulare und Datenflüsse zentral und nachvollziehbar überwachen.' },
+  { title: 'Dienstleister',   body: 'Risiken, technische Änderungen und Compliance-Nachweise ohne Medienbruch dokumentieren.' },
+  { title: 'Agenturen',       body: 'Mehrere Mandate, Reports und Governance-Prozesse in einer Oberfläche verwalten.' },
+];
+
+const HERO_SIGNALS = [
+  'Kontinuierliche Überwachung',
+  'Regulatorische Risiko-Erkennung',
+  'Kryptografisch nachvollziehbare Evidenz',
+  'EU-gehostete Infrastruktur',
+];
+
 function Hero() {
   return (
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-24">
-      <div className="max-w-5xl mx-auto">
-        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-4">
-          Self-Service · EU-souverän · Auditfähig
-        </p>
-        <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
-          Governance Operating System für DSGVO, AI Act und Continuous Compliance.
-        </h1>
-        <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-3xl leading-relaxed">
-          RealSyncDynamics.AI <strong className="text-titanium-100">erkennt</strong>,{' '}
-          <strong className="text-titanium-100">überwacht</strong>,{' '}
-          <strong className="text-titanium-100">dokumentiert</strong> und{' '}
-          <strong className="text-titanium-100">beweist</strong> Compliance automatisch —
-          für Websites, KI-Systeme und Agenten. Ohne manuelle Dokumentation,
-          sofort startklar.
-        </p>
+      <div className="max-w-6xl mx-auto grid gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,400px)] items-start">
+        {/* Linke Spalte — Narrative + CTAs + Zielgruppen */}
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-4">
+            Self-Service · EU-souverän · Auditfähig · Jede Branche
+          </p>
+          <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
+            Kontinuierliche AI- und Compliance-Governance für jede Branche.
+          </h1>
+          <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-3xl leading-relaxed">
+            RealSyncDynamics.AI <strong className="text-titanium-100">erkennt</strong>,{' '}
+            <strong className="text-titanium-100">überwacht</strong>,{' '}
+            <strong className="text-titanium-100">dokumentiert</strong> und{' '}
+            <strong className="text-titanium-100">beweist</strong> Risiken automatisch —
+            für Betriebe, Shops, Dienstleister, Agenturen und wachsende
+            Unternehmen. Ohne manuelle Dokumentation, mit nachvollziehbarer
+            Evidenz für Websites, Datenflüsse und KI-Systeme.
+          </p>
 
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link
-            to="/audit?source=hero"
-            className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors"
-          >
-            {CTA.startFree} <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            to="/welcome?source=hero"
-            className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
-          >
-            {CTA.openDashboard}
-          </Link>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link
+              to="/audit?source=hero"
+              className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors"
+            >
+              {CTA.startFree} <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/welcome?source=hero"
+              className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
+            >
+              {CTA.openDashboard}
+            </Link>
+          </div>
+
+          <p className="mt-6 font-mono text-[11px] text-titanium-500">
+            Keine Karte nötig · EU-Hosting (Frankfurt) · kein Onboarding nötig
+          </p>
+
+          {/* Zielgruppen-Kacheln */}
+          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900">
+            {HERO_AUDIENCE.map(({ title, body }) => (
+              <div key={title} className="bg-obsidian-900 p-4">
+                <p className="font-display font-semibold text-titanium-50 text-sm">{title}</p>
+                <p className="mt-2 text-sm text-titanium-400 leading-relaxed">{body}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Signal-Chips */}
+          <div className="mt-8 flex flex-wrap gap-2 font-mono text-[11px] text-titanium-400">
+            {HERO_SIGNALS.map((s) => (
+              <span key={s} className="border border-titanium-800 px-3 py-1">
+                {s}
+              </span>
+            ))}
+          </div>
         </div>
 
-        <p className="mt-6 font-mono text-[11px] text-titanium-500">
-          Keine Karte nötig · EU-Hosting (Frankfurt) · kein Onboarding nötig
-        </p>
+        {/* Rechte Spalte — Live-Risikoübersicht-Widget */}
+        <aside className="border border-titanium-800 bg-obsidian-900 p-5">
+          <div className="flex items-center justify-between border-b border-titanium-800 pb-4">
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-titanium-500">
+                Governance Runtime
+              </p>
+              <p className="mt-1 font-display font-semibold text-titanium-50">
+                Live-Risikoübersicht
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-mono text-[10px] text-emerald-300">
+              <span className="h-1.5 w-1.5 bg-emerald-300" /> LIVE
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-4">
+            <div className="border border-titanium-800 bg-obsidian-950 p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm text-titanium-500">Domains</p>
+                  <p className="mt-1 font-display font-bold text-2xl text-titanium-50">24</p>
+                </div>
+                <div>
+                  <p className="text-sm text-titanium-500">Offene Risiken</p>
+                  <p className="mt-1 font-display font-bold text-2xl text-amber-300">7</p>
+                </div>
+              </div>
+              <div className="mt-4 h-2 bg-titanium-800">
+                <div className="h-2 w-[72%] bg-cyan-400" />
+              </div>
+              <p className="mt-2 font-mono text-[10px] text-titanium-500">
+                72 % der überwachten Systeme mit aktueller Evidenz
+              </p>
+            </div>
+
+            <div className="grid gap-px bg-titanium-900 sm:grid-cols-2">
+              <div className="bg-obsidian-900 p-4">
+                <p className="text-sm text-titanium-500">Letzte Prüfung</p>
+                <p className="mt-2 font-display font-semibold text-titanium-50">Vor 18 Minuten</p>
+                <p className="mt-2 text-xs text-titanium-500 leading-5">
+                  Website, Consent-Layer und externe Dienste automatisch neu bewertet.
+                </p>
+              </div>
+              <div className="bg-obsidian-900 p-4">
+                <p className="text-sm text-titanium-500">Evidence Status</p>
+                <p className="mt-2 font-display font-semibold text-titanium-50">Auditierbar</p>
+                <p className="mt-2 text-xs text-titanium-500 leading-5">
+                  Änderungen, Funde und Maßnahmen nachvollziehbar dokumentiert.
+                </p>
+              </div>
+            </div>
+          </div>
+        </aside>
       </div>
     </section>
   );

@@ -10,7 +10,6 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
-import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
 import { AuditResultPage } from './pages/AuditResultPage';
@@ -221,6 +220,7 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<PublicWorkspacePreview />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<Navigate to="/app" replace />} />

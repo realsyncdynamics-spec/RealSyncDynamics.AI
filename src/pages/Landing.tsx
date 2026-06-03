@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { CTA } from '../content/runtimeVocab';
+import { usePlatformStats, relativeTimeDe } from '../hooks/usePlatformStats';
 
 export function Landing() {
   return (
@@ -64,6 +65,15 @@ const HERO_SIGNALS = [
 ];
 
 function Hero() {
+  const { data: stats } = usePlatformStats();
+
+  // Echte Plattform-Aggregate (aus public.platform_stats), sonst Fallback.
+  const domains = stats?.domainsScanned ?? 15;
+  const openRisks = stats?.openRisks ?? 51;
+  const evidencePct = stats?.evidencePct ?? 44;
+  const lastScan = stats ? relativeTimeDe(stats.lastScanAt) : '—';
+  const isLive = Boolean(stats);
+
   return (
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-24">
       <div className="max-w-6xl mx-auto grid gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,400px)] items-start">
@@ -136,7 +146,7 @@ function Hero() {
               </p>
             </div>
             <span className="inline-flex items-center gap-1.5 border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-mono text-[10px] text-emerald-300">
-              <span className="h-1.5 w-1.5 bg-emerald-300" /> LIVE
+              <span className="h-1.5 w-1.5 bg-emerald-300" /> {isLive ? 'LIVE' : 'BEISPIEL'}
             </span>
           </div>
 
@@ -144,26 +154,26 @@ function Hero() {
             <div className="border border-titanium-800 bg-obsidian-950 p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm text-titanium-500">Domains</p>
-                  <p className="mt-1 font-display font-bold text-2xl text-titanium-50">24</p>
+                  <p className="text-sm text-titanium-500">Domains geprüft</p>
+                  <p className="mt-1 font-display font-bold text-2xl text-titanium-50">{domains}</p>
                 </div>
                 <div>
                   <p className="text-sm text-titanium-500">Offene Risiken</p>
-                  <p className="mt-1 font-display font-bold text-2xl text-amber-300">7</p>
+                  <p className="mt-1 font-display font-bold text-2xl text-amber-300">{openRisks}</p>
                 </div>
               </div>
               <div className="mt-4 h-2 bg-titanium-800">
-                <div className="h-2 w-[72%] bg-cyan-400" />
+                <div className="h-2 bg-cyan-400" style={{ width: `${evidencePct}%` }} />
               </div>
               <p className="mt-2 font-mono text-[10px] text-titanium-500">
-                72 % der überwachten Systeme mit aktueller Evidenz
+                {evidencePct} % der Prüfungen mit auditfähiger Evidenz
               </p>
             </div>
 
             <div className="grid gap-px bg-titanium-900 sm:grid-cols-2">
               <div className="bg-obsidian-900 p-4">
                 <p className="text-sm text-titanium-500">Letzte Prüfung</p>
-                <p className="mt-2 font-display font-semibold text-titanium-50">Vor 18 Minuten</p>
+                <p className="mt-2 font-display font-semibold text-titanium-50">{lastScan}</p>
                 <p className="mt-2 text-xs text-titanium-500 leading-5">
                   Website, Consent-Layer und externe Dienste automatisch neu bewertet.
                 </p>

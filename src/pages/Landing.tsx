@@ -467,7 +467,6 @@ function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="px-4 sm:px-6 py-10 text-titanium-500">
-<<<<<<< HEAD
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-wrap gap-2 mb-6">
           {TRUST_STRIP_ITEMS.map(({ Icon, label }) => (

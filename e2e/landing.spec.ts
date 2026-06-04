@@ -22,7 +22,7 @@ test('Landing (/) renders the simplified hero + CTAs', async ({ page }) => {
 
   // Subheadline
   await expect(
-    page.getByText(/erkennt Risiken, erzeugt Evidence/i),
+    page.getByText(/Europäisches Governance Operating System/i),
   ).toBeVisible();
 
   // Primärer CTA „Kostenlosen Audit starten" (Button, startet Domain-Scan)

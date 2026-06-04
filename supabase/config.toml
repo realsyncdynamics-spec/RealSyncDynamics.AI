@@ -204,17 +204,20 @@ verify_jwt = false
 [functions.governance-dpias]
 verify_jwt = false
 
-[functions.governance-dsr]
-verify_jwt = false
-
 [functions.governance-incidents]
 verify_jwt = false
 
 [functions.governance-connectors]
 verify_jwt = false
 
-[functions.governance-vendors]
-verify_jwt = false
+# governance-dsr and governance-vendors were declared here without
+# corresponding supabase/functions/<name>/index.ts, which broke
+# `supabase functions deploy` (entrypoint path does not exist). UI
+# code in src/features/governance/{dsrApi,vendorsApi}.ts still
+# invokes these names — those calls return 404 today and will keep
+# returning 404 until the functions are actually implemented. The
+# right fix when picking that up is to implement both functions (or
+# remove the dead UI calls). For now we keep the deploy unblocked.
 
 # ── Legacy debug/setup helpers ──
 # Previously held `verify_jwt = false` entries for `debug-secret-shape`,

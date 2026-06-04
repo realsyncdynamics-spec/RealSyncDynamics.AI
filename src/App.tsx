@@ -199,6 +199,7 @@ import { AiGovernancePage } from './pages/AiGovernancePage';
 import { CookieConsent } from './components/CookieConsent';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
+import { DemoModeProvider } from './core/demo/DemoModeProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
 import { initMarketingPixels } from './lib/pixels';
@@ -508,13 +509,15 @@ export default function App() {
   return (
     <TenantProvider>
       <EnvironmentProvider>
-        <BrowserRouter basename={ROUTER_BASENAME}>
+        <DemoModeProvider>
+          <BrowserRouter basename={ROUTER_BASENAME}>
           <RoutesWithTracking />
           <CookieConsent />
           <Suspense fallback={null}>
             <AssistentChip />
           </Suspense>
         </BrowserRouter>
+        </DemoModeProvider>
       </EnvironmentProvider>
     </TenantProvider>
   );

@@ -6,7 +6,7 @@
  *
  * Tabs navigieren zwischen Übersichten; Daten werden aus bestehenden Views eingebettet.
  */
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Lock, Bot, CheckCircle2, AlertTriangle, GitMerge, Plug, ArrowRight, X,
@@ -17,6 +17,9 @@ import { AgentCard } from '../features/governance/agents/AgentCard';
 import { BrowserNav } from '../components/GovernanceBrowser/BrowserNav';
 import { AgentPeekPanel } from '../components/GovernanceBrowser/AgentPeekPanel';
 import { WorkflowDiscoveryPanel } from '../components/GovernanceBrowser/WorkflowDiscoveryPanel';
+import { ApprovalsView } from '../features/governance/ApprovalsView';
+import { AuditorConsoleView } from '../features/governance/AuditorConsoleView';
+import { ConnectorsView } from '../features/governance/ConnectorsView';
 
 type Tab = 'agents' | 'approvals' | 'evidence' | 'risks' | 'workflows' | 'connectors';
 
@@ -76,10 +79,9 @@ export function GovernanceBrowserPage() {
                 <CheckCircle2 className="h-5 w-5 text-emerald-300" />
                 Freigaben (Approvals)
               </h2>
-              <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none text-center text-titanium-400">
-                <p>Freigabe-Queue wird in der nächsten Phase implementiert.</p>
-                <p className="text-xs mt-2">Registrieren Sie sich, um echte Freigaben zu sehen.</p>
-              </div>
+              <Suspense fallback={<div className="text-titanium-400">Laden …</div>}>
+                <ApprovalsView />
+              </Suspense>
             </div>
           )}
 
@@ -89,10 +91,9 @@ export function GovernanceBrowserPage() {
                 <AlertTriangle className="h-5 w-5 text-security-300" />
                 Evidence & Audit Trail
               </h2>
-              <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none text-center text-titanium-400">
-                <p>Hash-Chain Verification und DSR-Export werden in der nächsten Phase implementiert.</p>
-                <p className="text-xs mt-2">Registrieren Sie sich, um echte Evidence zu prüfen.</p>
-              </div>
+              <Suspense fallback={<div className="text-titanium-400">Laden …</div>}>
+                <AuditorConsoleView />
+              </Suspense>
             </div>
           )}
 
@@ -144,10 +145,9 @@ export function GovernanceBrowserPage() {
                 <Plug className="h-5 w-5 text-purple-300" />
                 Connectoren
               </h2>
-              <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none text-center text-titanium-400">
-                <p>Verfügbare Connectoren: Jira, GitHub, Linear, Slack, ServiceNow, Teams</p>
-                <p className="text-xs mt-2">Registrieren Sie sich, um Connectoren zu konfigurieren.</p>
-              </div>
+              <Suspense fallback={<div className="text-titanium-400">Laden …</div>}>
+                <ConnectorsView />
+              </Suspense>
             </div>
           )}
         </div>

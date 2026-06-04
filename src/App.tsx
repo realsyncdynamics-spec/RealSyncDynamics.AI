@@ -8,6 +8,7 @@ import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
+import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -222,6 +223,7 @@ function RoutesWithTracking() {
       {/* Public */}
       <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<Navigate to="/app" replace />} />

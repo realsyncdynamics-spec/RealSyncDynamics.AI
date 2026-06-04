@@ -178,6 +178,28 @@ export function PublicWorkspacePreview() {
         </div>
       </div>
 
+      {/* Governance Browser CTA */}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none">
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <h2 className="font-display font-bold text-lg text-titanium-50 mb-2">Governance Browser</h2>
+              <p className="text-sm text-titanium-400 mb-4">
+                Erkunden Sie die vollständige Governance-Architektur mit Agenten, Freigaben, Evidence-Trails, Risiken und Workflows der Demo-Organisation.
+              </p>
+              <button
+                onClick={() => navigate('/governance-browser')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-cyan-400 hover:text-cyan-300 border-b border-cyan-400/30 hover:border-cyan-400/60 transition-colors"
+              >
+                Governance Browser öffnen
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+            <Bot className="h-8 w-8 text-cyan-400 flex-shrink-0 opacity-60" />
+          </div>
+        </div>
+      </div>
+
       {/* Footer Info */}
       <div className="bg-obsidian-900 border-t border-titanium-900 px-4 py-8 mt-12">
         <div className="max-w-6xl mx-auto text-center text-sm text-titanium-500">

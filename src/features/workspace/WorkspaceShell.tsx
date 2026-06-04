@@ -9,7 +9,7 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
-  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown, Building2, ChevronRight,
+  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown, Building2, ChevronRight, Lock,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getActivePlanForTenant } from '../../lib/billing/planAccess';
@@ -47,7 +47,9 @@ const ADMIN: NavItem[] = [
   { to: '/app/settings', label: 'Einstellungen', icon: Settings },
 ];
 
-export function WorkspaceShell({ children, title }: { children: React.ReactNode; title?: string }) {
+// onGate — wenn gesetzt, werden GOVERNANCE/COMPLIANCE/ADMIN-Nav-Items zu
+// Buttons, die den Callback auslösen statt zu navigieren (Demo-Modus).
+export function WorkspaceShell({ children, title, onGate }: { children: React.ReactNode; title?: string; onGate?: () => void }) {
   const { pathname } = useLocation();
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
   const [open, setOpen] = useState(false);
@@ -68,30 +70,40 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
 
   const isActive = (to: string) => pathname === to || pathname.startsWith(to + '/');
 
-  const NavList = ({ items }: { items: NavItem[] }) => (
+  const NavList = ({ items, gated = false }: { items: NavItem[]; gated?: boolean }) => (
     <ul className="space-y-0.5">
       {items.map(({ to, label, icon: Icon }) => (
         <li key={to}>
-          <Link
-            to={to}
-            onClick={() => setOpen(false)}
-            className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-none transition-colors ${
-              isActive(to)
-                ? 'bg-titanium-900 text-titanium-50'
-                : 'text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-100'
-            }`}
-          >
-            <Icon className={`h-4 w-4 ${isActive(to) ? 'text-cyan-300' : ''}`} /> {label}
-          </Link>
+          {gated && onGate ? (
+            <button
+              onClick={() => { setOpen(false); onGate(); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-titanium-500 hover:bg-obsidian-800 hover:text-titanium-300 transition-colors text-left"
+            >
+              <Icon className="h-4 w-4" /> {label}
+              <Lock className="h-3 w-3 ml-auto opacity-40" />
+            </button>
+          ) : (
+            <Link
+              to={to}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-none transition-colors ${
+                isActive(to)
+                  ? 'bg-titanium-900 text-titanium-50'
+                  : 'text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-100'
+              }`}
+            >
+              <Icon className={`h-4 w-4 ${isActive(to) ? 'text-cyan-300' : ''}`} /> {label}
+            </Link>
+          )}
         </li>
       ))}
     </ul>
   );
 
-  const NavGroup = ({ label, items }: { label: string; items: NavItem[] }) => (
+  const NavGroup = ({ label, items, gated = false }: { label: string; items: NavItem[]; gated?: boolean }) => (
     <div>
       <div className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-wider text-titanium-600">{label}</div>
-      <NavList items={items} />
+      <NavList items={items} gated={gated} />
     </div>
   );
 
@@ -105,9 +117,9 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
       </Link>
       <nav className="flex-1 overflow-y-auto p-3 space-y-5">
         <NavGroup label="Start" items={isKmu ? [...START_BASE, START_COMPANY] : START_BASE} />
-        <NavGroup label="Governance" items={GOVERNANCE} />
-        <NavGroup label="Compliance" items={COMPLIANCE} />
-        <NavGroup label="Admin" items={ADMIN} />
+        <NavGroup label="Governance" items={GOVERNANCE} gated={!!onGate} />
+        <NavGroup label="Compliance" items={COMPLIANCE} gated={!!onGate} />
+        <NavGroup label="Admin" items={ADMIN} gated={!!onGate} />
       </nav>
     </aside>
   );

@@ -1,10 +1,10 @@
 // WorkspaceHome — kanonisches Status-Home (/app) des Governance OS.
 //
-// Eingeloggt: echte RLS-gescopte Counts aus Supabase.
-// Nicht eingeloggt: statische Demo-Ansicht mit inline Magic-Link-Auth.
-// Gesperrte Aktionen lösen kein Navigations-AuthGate aus — stattdessen
-// erscheint das Auth-Panel direkt im selben View.
-import { useEffect, useState } from 'react';
+// Eingeloggt: echte RLS-gescopte Counts aus Supabase (Inner).
+// Nicht eingeloggt: statische Demo-Ansicht (DemoInner) — kein sofortiges
+// Wegnavigieren. Gesperrte Aktionen öffnen ein inline Auth-Panel.
+// Die WorkspaceShell-Sidebar wird via onGate ebenfalls gesperrt.
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
@@ -33,6 +33,8 @@ const DEMO_SCORE = 87;
 
 export function WorkspaceHome() {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [authOpen, setAuthOpen] = useState(false);
+  const gate = useCallback(() => setAuthOpen(true), []);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) { setSession(null); return; }
@@ -52,16 +54,29 @@ export function WorkspaceHome() {
     );
   }
 
+  if (session) {
+    return (
+      <WorkspaceShell title="Übersicht">
+        <Inner />
+      </WorkspaceShell>
+    );
+  }
+
+  // Demo-Modus: onGate sperrt Sidebar-Nav, AuthPanel ersetzt DemoInner bei Klick
   return (
-    <WorkspaceShell title="Übersicht">
-      {session ? <Inner /> : <DemoInner />}
+    <WorkspaceShell title="Übersicht" onGate={gate}>
+      {authOpen ? (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+          <AuthPanel onClose={() => setAuthOpen(false)} />
+        </div>
+      ) : (
+        <DemoInner gate={gate} />
+      )}
     </WorkspaceShell>
   );
 }
 
 // ─── Inline Auth-Panel ───────────────────────────────────────────────
-// Erscheint im Demo-Modus, wenn der Nutzer eine gesperrte Aktion auslöst.
-// Magic Link → redirect zurück zu /app (echte Daten nach Login).
 
 function AuthPanel({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState('');
@@ -69,7 +84,7 @@ function AuthPanel({ onClose }: { onClose: () => void }) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const send = async (e: React.FormEvent) => {
+  const send = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     if (!isSupabaseConfigured()) { setError('Supabase nicht konfiguriert.'); return; }
     setSending(true); setError(null);
@@ -129,36 +144,28 @@ function AuthPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Demo-Ansicht (nicht eingeloggt) ────────────────────────────────
+// ─── Demo-Ansicht ────────────────────────────────────────────────────
 
-function DemoInner() {
-  const [authOpen, setAuthOpen] = useState(false);
-  const gate = () => setAuthOpen(true);
-
+function DemoInner({ gate }: { gate: () => void }) {
   const counts = DEMO_COUNTS;
   const score = DEMO_SCORE;
   const inboxTotal = counts.approvals + counts.dsr.overdue + counts.incidents;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-      {/* Inline Auth-Panel */}
-      {authOpen && <AuthPanel onClose={() => setAuthOpen(false)} />}
-
       {/* Demo-Banner */}
-      {!authOpen && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-obsidian-900 border border-titanium-800 px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-cyan-400 border border-cyan-800 px-1.5 py-0.5">Demo-Modus</span>
-            <span className="text-sm text-titanium-300">Vorschau mit Demo-Daten. Melde dich an, um eigene Objekte zu verwalten.</span>
-          </div>
-          <button
-            onClick={gate}
-            className="inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 px-3 py-1.5 text-sm font-semibold hover:bg-cyan-300 transition-colors shrink-0"
-          >
-            Kostenlos anmelden
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-obsidian-900 border border-titanium-800 px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-cyan-400 border border-cyan-800 px-1.5 py-0.5">Demo-Modus</span>
+          <span className="text-sm text-titanium-300">Vorschau mit Demo-Daten. Melde dich an, um eigene Objekte zu verwalten.</span>
         </div>
-      )}
+        <button
+          onClick={gate}
+          className="inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 px-3 py-1.5 text-sm font-semibold hover:bg-cyan-300 transition-colors shrink-0"
+        >
+          Kostenfrei anmelden
+        </button>
+      </div>
 
       {/* Begrüßung + Schnellaktionen */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -167,21 +174,19 @@ function DemoInner() {
           <p className="text-sm text-titanium-400 mt-1">Status, offene Aufgaben und Objekte auf einen Blick.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* Website hinzufügen → öffentlicher Audit-Flow, kein Auth nötig */}
           <Link
             to="/audit?source=workspace"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 transition-colors"
           >
             <Plus className="h-4 w-4" /> Website hinzufügen
           </Link>
-          <DemoAction icon={Bot} label="KI-System erfassen" onGate={gate} />
+          <DemoAction icon={Bot}       label="KI-System erfassen"  onGate={gate} />
           <DemoAction icon={FileCheck2} label="Report exportieren" onGate={gate} />
         </div>
       </div>
 
       <ScoreCard score={score} loading={false} onAction={gate} />
 
-      {/* Aktions-Inbox */}
       <section className="border border-titanium-800 bg-obsidian-900">
         <div className="flex items-center justify-between px-4 py-3 border-b border-titanium-900">
           <div className="flex items-center gap-2">
@@ -199,27 +204,25 @@ function DemoInner() {
         </div>
       </section>
 
-      {/* Status-Kacheln */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Status</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
-          <Tile icon={AlertTriangle}  label="Offene Risiken"    value={counts.incidents}     accent="rose"  onGate={gate} />
-          <Tile icon={ClipboardCheck} label="Offene DSFA"       value={counts.dpias}         accent="cyan"  onGate={gate} />
-          <Tile icon={ClipboardCheck} label="DSR offen"         value={counts.dsr.total}     accent="amber" onGate={gate} />
-          <Tile icon={UserCheck}      label="Vendoren ohne DPA" value={counts.vendorsNoDpa}  accent="amber" onGate={gate} />
+          <Tile icon={AlertTriangle}  label="Offene Risiken"    value={counts.incidents}    accent="rose"  onGate={gate} />
+          <Tile icon={ClipboardCheck} label="Offene DSFA"       value={counts.dpias}        accent="cyan"  onGate={gate} />
+          <Tile icon={ClipboardCheck} label="DSR offen"         value={counts.dsr.total}    accent="amber" onGate={gate} />
+          <Tile icon={UserCheck}      label="Vendoren ohne DPA" value={counts.vendorsNoDpa} accent="amber" onGate={gate} />
         </div>
       </section>
 
-      {/* Objekte & Bereiche */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
-          <NavCard icon={Globe}          title="Websites"   body="Domains, Cookies, Vendoren, Monitoring, Evidence."    onGate={gate} />
-          <NavCard icon={Bot}            title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift."      onGate={gate} />
-          <NavCard icon={FileCheck2}     title="Evidence"   body="Nachweise, Reports, Audit-Trail, Exporte."             onGate={gate} />
-          <NavCard icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR."                  onGate={gate} />
-          <NavCard icon={Activity}       title="Monitoring" body="Live-Scans, Drift, Alerts."                            onGate={gate} />
-          <NavCard icon={Search}         title="Risiken"    body="Findings, Vorfälle, Vendor-Risiken priorisiert."       onGate={gate} />
+          <NavCard icon={Globe}          title="Websites"   body="Domains, Cookies, Vendoren, Monitoring, Evidence."  onGate={gate} />
+          <NavCard icon={Bot}            title="KI-Systeme" body="Inventar, Klassifizierung, Dokumentation, Drift."    onGate={gate} />
+          <NavCard icon={FileCheck2}     title="Evidence"   body="Nachweise, Reports, Audit-Trail, Exporte."           onGate={gate} />
+          <NavCard icon={ClipboardCheck} title="Compliance" body="DSGVO, AI Act, VVT, TOM, DSFA, DSR."                onGate={gate} />
+          <NavCard icon={Activity}       title="Monitoring" body="Live-Scans, Drift, Alerts."                          onGate={gate} />
+          <NavCard icon={Search}         title="Risiken"    body="Findings, Vorfälle, Vendor-Risiken priorisiert."     onGate={gate} />
         </div>
       </section>
     </div>
@@ -229,11 +232,9 @@ function DemoInner() {
 // ─── Echte Ansicht (eingeloggt) ──────────────────────────────────────
 
 interface Counts {
-  incidents: number;
-  dpias: number;
+  incidents: number; dpias: number;
   dsr: { total: number; overdue: number };
-  approvals: number;
-  vendorsNoDpa: number;
+  approvals: number; vendorsNoDpa: number;
 }
 
 function Inner() {
@@ -276,8 +277,8 @@ function Inner() {
           <p className="text-sm text-titanium-400 mt-1">Status, offene Aufgaben und Objekte auf einen Blick.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <QuickAction to="/audit?source=workspace"  icon={Plus}      label="Website hinzufügen" primary />
-          <QuickAction to="/governance/agents"        icon={Bot}       label="KI-System erfassen" />
+          <QuickAction to="/audit?source=workspace"  icon={Plus}       label="Website hinzufügen" primary />
+          <QuickAction to="/governance/agents"        icon={Bot}        label="KI-System erfassen" />
           <QuickAction to="/governance/reports"       icon={FileCheck2} label="Report exportieren" />
         </div>
       </div>
@@ -479,7 +480,7 @@ function ScoreCard({ score, loading, onAction }: { score: number | null; loading
   );
 }
 
-// ─── Demo-Bausteine (kein href, zeigen Auth-Panel) ───────────────────
+// ─── Demo-Bausteine ──────────────────────────────────────────────────
 
 function DemoAction({ icon: Icon, label, onGate }: { icon: typeof Plus; label: string; onGate: () => void }) {
   return (
@@ -533,7 +534,7 @@ function NavCard({ icon: Icon, title, body, onGate }: { icon: typeof Globe; titl
   );
 }
 
-// ─── Auth-Bausteine (echte Navigation, eingeloggt) ───────────────────
+// ─── Auth-Bausteine (eingeloggt, echte Navigation) ───────────────────
 
 function QuickAction({ to, icon: Icon, label, primary }: { to: string; icon: typeof Plus; label: string; primary?: boolean }) {
   return (

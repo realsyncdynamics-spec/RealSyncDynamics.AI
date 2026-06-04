@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
@@ -88,7 +88,13 @@ const COLOR_MAP: Record<string, { bg: string; icon: string; hover: string }> = {
 export function PublicWorkspacePreview() {
   const navigate = useNavigate();
   const { isDemoMode, setDemoMode } = useDemoMode();
-  const [showDemo, setShowDemo] = useState(false);
+  const [showDemo, setShowDemo] = useState(true);
+
+  useEffect(() => {
+    if (!isDemoMode) {
+      setDemoMode(true);
+    }
+  }, [isDemoMode, setDemoMode]);
 
   if (showDemo && isDemoMode) {
     return (
@@ -130,17 +136,10 @@ export function PublicWorkspacePreview() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => setShowDemo(true)}
+              onClick={() => navigate('/welcome?source=feature-overview')}
               className="flex items-center justify-center gap-2 px-6 py-2.5 bg-cyan-400 text-obsidian-950 font-medium rounded-none hover:bg-cyan-300 transition-colors"
             >
-              <Zap className="h-4 w-4" />
-              Live Demo anschauen
-            </button>
-            <button
-              onClick={() => navigate('/app')}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-security-600 text-obsidian-950 font-medium rounded-none hover:bg-security-500 transition-colors"
-            >
-              Dashboard öffnen
+              Kostenlos testen
               <ArrowRight className="h-4 w-4" />
             </button>
             <button

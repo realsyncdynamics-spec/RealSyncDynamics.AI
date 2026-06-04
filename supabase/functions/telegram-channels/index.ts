@@ -62,11 +62,15 @@ Deno.serve(async (req) => {
 
 // deno-lint-ignore no-explicit-any
 async function handleConnectComplete(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
-  const token    = (body.token as string ?? '').trim();
-  const tenantId = (body.tenant_id as string ?? '').trim();
+  const token          = (body.token as string ?? '').trim();
+  const tenantId       = (body.tenant_id as string ?? '').trim();
+  // telegram_user_id wird vom Bot in der Connect-URL als ?uid= mitgegeben und
+  // hier zur Bindungsprüfung genutzt — verhindert Cross-User-Token-Diebstahl.
+  const telegramUserId = (body.telegram_user_id as string ?? '').trim();
 
-  if (!token)    return jsonError(400, 'BAD_REQUEST', 'token required');
-  if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  if (!token)          return jsonError(400, 'BAD_REQUEST', 'token required');
+  if (!tenantId)       return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
+  if (!telegramUserId) return jsonError(400, 'BAD_REQUEST', 'telegram_user_id required');
 
   // Mitgliedschaft prüfen
   const { data: membership } = await admin
@@ -79,11 +83,13 @@ async function handleConnectComplete(admin: any, userId: string, userEmail: stri
 
   const tokenHash = await sha256Hex(token);
 
-  // Verbindung mit passendem Token suchen
+  // Token-Lookup mit Bindung an telegram_user_id — verhindert, dass ein
+  // anderer Auth-User einen fremden Connect-Token einlöst.
   const { data: conn, error: connErr } = await admin
     .from('telegram_connections')
     .select('id, telegram_user_id, telegram_chat_id, created_at')
     .eq('connection_token_hash', tokenHash)
+    .eq('telegram_user_id', telegramUserId)
     .eq('status', 'pending')
     .maybeSingle();
 
@@ -94,6 +100,14 @@ async function handleConnectComplete(admin: any, userId: string, userEmail: stri
   if (Date.now() - createdAt > TOKEN_TTL_MS) {
     return jsonError(410, 'GONE', 'token expired');
   }
+
+  // Bestehende 'connected' Rows für diesen User revoken → max. 1 aktive Verbindung pro User
+  await admin
+    .from('telegram_connections')
+    .update({ status: 'revoked', connection_token_hash: null })
+    .eq('user_id', userId)
+    .eq('status', 'connected')
+    .neq('id', conn.id);
 
   // Verbindung aktivieren
   const { error: updateErr } = await admin

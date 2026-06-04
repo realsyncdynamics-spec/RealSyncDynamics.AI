@@ -24,7 +24,12 @@ function randomToken(byteLength = 24): string {
 
 // HTML-Escaping
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // Command-Extraktion aus Telegram-Message
@@ -137,6 +142,12 @@ describe('HTML Escaping', () => {
   });
   it('< wird escaped', () => {
     expect(escapeHtml('<script>')).toBe('&lt;script&gt;');
+  });
+  it('" wird escaped', () => {
+    expect(escapeHtml('say "hello"')).toBe('say &quot;hello&quot;');
+  });
+  it("' wird escaped", () => {
+    expect(escapeHtml("it's")).toBe('it&#39;s');
   });
   it('normaler Text bleibt unverändert', () => {
     expect(escapeHtml('Hallo Welt')).toBe('Hallo Welt');

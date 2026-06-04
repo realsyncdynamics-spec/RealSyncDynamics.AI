@@ -2,9 +2,8 @@
 //
 // POST /functions/v1/telegram-webhook
 //
-// Telegram ruft diesen Endpoint für jede Nachricht/Command auf.
 // Der Endpoint:
-//  1. Verifiziert das optionale Webhook-Secret (X-Telegram-Bot-Api-Secret-Token)
+//  1. Verifiziert das Webhook-Secret (X-Telegram-Bot-Api-Secret-Token)
 //  2. Extrahiert command, text, chat_id, user_id, username
 //  3. Sucht die Workspace-Verknüpfung aus telegram_connections
 //  4. Routet an den passenden Agenten
@@ -15,20 +14,29 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
+import { audit } from '../_shared/auditLog.ts';
 import { AiGatewayEdgeClient } from '../_shared/aiGateway/edgeClient.ts';
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SRK               = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const BOT_TOKEN         = Deno.env.get('TELEGRAM_BOT_TOKEN');
 const WEBHOOK_SECRET    = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
 const APP_BASE_URL      = Deno.env.get('PUBLIC_APP_URL') ?? Deno.env.get('APP_BASE_URL') ?? 'https://app.realsyncdynamicsai.de';
 
+if (!WEBHOOK_SECRET) {
+  // Webhook ohne Secret ist spoofbar — beim Start laut warnen.
+  console.error(JSON.stringify({
+    level: 'warn',
+    scope: 'telegram_webhook_startup',
+    msg:   'TELEGRAM_WEBHOOK_SECRET not set — webhook is unauthenticated. Set the secret via BotFather and configure this env var.',
+  }));
+}
+
 // --- Types ----------------------------------------------------------------
 
 interface TelegramUser {
-  id:         number;
-  username?:  string;
+  id:          number;
+  username?:   string;
   first_name?: string;
 }
 
@@ -98,50 +106,46 @@ function extractCommand(msg: TelegramMessage): string | null {
 // --- Agent Routing --------------------------------------------------------
 
 async function routeToAgent(
-  admin: ReturnType<typeof createClient>,
+  _admin: ReturnType<typeof createClient>,
   tenantId: string,
-  userId: string,
+  _userId: string,
   command: string,
   text: string,
 ): Promise<string> {
-  const supabaseUrl = SUPABASE_URL;
-  const apiKey = SRK;
+  const gatewayClient = new AiGatewayEdgeClient({ supabaseUrl: SUPABASE_URL, apiKey: SRK });
 
-  const gatewayClient = new AiGatewayEdgeClient({ supabaseUrl, apiKey });
-
-  // Map command to intent/feature for the gateway
   const featureMap: Record<string, string> = {
     '/audit':      'compliance_audit',
     '/risks':      'risk_assessment',
     '/evidence':   'evidence_vault',
     '/compliance': 'compliance_overview',
-    '/status':     'governance_status',
     '/assistant':  'general_assistant',
   };
 
   const feature  = featureMap[command] ?? 'general_assistant';
   const userText = command === '/assistant'
     ? text.replace(/^\/assistant\s*/i, '').trim() || 'Hilf mir mit meinem Workspace.'
-    : `Zeige mir: ${feature.replace('_', ' ')} für meinen Workspace.`;
+    : `Zeige mir: ${feature.replace('_', ' ')} für Workspace ${tenantId}.`;
 
   try {
     const result = await gatewayClient.generate({
       feature,
       task_type:     'chat',
-      model_profile: 'balanced',
+      model_profile: 'cloud-fallback',
+      tenant_id:     tenantId,
       input:         userText,
-      context:       { tenant_id: tenantId, source: 'telegram', command },
     });
-    return result.output as string ?? 'Keine Antwort erhalten.';
+    const output = result.output;
+    if (typeof output === 'string') return output;
+    if (output != null) return JSON.stringify(output);
+    return 'Keine Antwort erhalten.';
   } catch (e) {
     console.error(JSON.stringify({ level: 'warn', scope: 'agent_route_failed', feature, error: (e as Error)?.message }));
-    // Fallback: Direct link to app
     const linkMap: Record<string, string> = {
       '/audit':      `${APP_BASE_URL}/app/websites`,
       '/risks':      `${APP_BASE_URL}/app/risks`,
       '/evidence':   `${APP_BASE_URL}/app/evidence`,
       '/compliance': `${APP_BASE_URL}/app/compliance`,
-      '/status':     `${APP_BASE_URL}/app`,
     };
     const link = linkMap[command] ?? `${APP_BASE_URL}/app`;
     return `Hier geht es weiter: <a href="${link}">${link}</a>`;
@@ -161,32 +165,26 @@ async function logTelegramEvent(
     outcome:          string;
   },
 ): Promise<void> {
-  try {
-    await admin.from('governance_admin_log').insert({
-      tenant_id:    params.tenant_id ?? '00000000-0000-0000-0000-000000000000',
-      actor_user_id: params.user_id ?? '00000000-0000-0000-0000-000000000000',
-      actor_email:  null,
-      action:       `telegram.${params.intent}`,
-      target_type:  'telegram_connection',
-      target_id:    params.telegram_user_id,
-      payload: {
-        source:           'telegram',
-        command:          params.command,
-        intent:           params.intent,
-        outcome:          params.outcome,
-      },
-    });
-  } catch (e) {
-    console.error(JSON.stringify({ level: 'error', scope: 'telegram_audit_failed', error: (e as Error)?.message }));
-  }
+  await audit(admin, {
+    tenant_id:     params.tenant_id     ?? '00000000-0000-0000-0000-000000000000',
+    actor_user_id: params.user_id       ?? '00000000-0000-0000-0000-000000000000',
+    actor_email:   null,
+    action:        `telegram.${params.intent}`,
+    target_type:   'telegram_connection',
+    target_id:     params.telegram_user_id,
+    payload: {
+      source:  'telegram',
+      command: params.command,
+      intent:  params.intent,
+      outcome: params.outcome,
+    },
+  });
 }
 
 // --- Command Handlers -----------------------------------------------------
 
 async function handleStart(
-  admin: ReturnType<typeof createClient>,
   chatId: number,
-  telegramUserId: string,
   isConnected: boolean,
   tenantName: string | null,
 ): Promise<void> {
@@ -247,9 +245,26 @@ async function handleConnect(
     return;
   }
 
+  // Widerrufene Verbindung darf nicht reaktiviert werden
+  const { data: revoked } = await admin
+    .from('telegram_connections')
+    .select('id')
+    .eq('telegram_user_id', telegramUserId)
+    .eq('status', 'revoked')
+    .maybeSingle();
+  if (revoked) {
+    await sendMessage(chatId,
+      `<b>Verbindung widerrufen</b>\n\n` +
+      `Deine Telegram-Verknüpfung wurde von einem Administrator widerrufen.\n` +
+      `Wende dich an deinen Workspace-Administrator, um die Verbindung neu einzurichten.`,
+    );
+    return;
+  }
+
   // Token erzeugen und Hash speichern
   const token     = randomToken(32);
   const tokenHash = await sha256Hex(token);
+  const now       = new Date().toISOString();
 
   const { error } = await admin
     .from('telegram_connections')
@@ -261,7 +276,10 @@ async function handleConnect(
         status:                'pending',
         connection_token_hash: tokenHash,
         connected_at:          null,
-        updated_at:            new Date().toISOString(),
+        // created_at muss bei jedem /connect zurückgesetzt werden,
+        // damit die 15-Minuten-TTL korrekt vom neuen Token aus läuft.
+        created_at:            now,
+        updated_at:            now,
       },
       { onConflict: 'telegram_user_id' },
     );
@@ -272,7 +290,10 @@ async function handleConnect(
     return;
   }
 
-  const connectUrl = `${APP_BASE_URL}/app/settings/integrations/telegram?token=${encodeURIComponent(token)}`;
+  // telegram_user_id als UID-Param einbetten damit das Frontend die Bindung prüfen kann.
+  const connectUrl =
+    `${APP_BASE_URL}/app/settings/integrations/telegram` +
+    `?token=${encodeURIComponent(token)}&uid=${encodeURIComponent(telegramUserId)}`;
   await sendMessage(chatId,
     `<b>Workspace verbinden</b>\n\n` +
     `Öffne diesen Link in deinem Browser und melde dich mit deinem RealSync-Account an:\n\n` +
@@ -282,7 +303,6 @@ async function handleConnect(
 }
 
 async function handleStatus(
-  admin: ReturnType<typeof createClient>,
   chatId: number,
   tenantId: string,
 ): Promise<void> {
@@ -296,7 +316,6 @@ async function handleStatus(
 
 async function handleSettings(
   chatId: number,
-  telegramUserId: string,
   isConnected: boolean,
   tenantName: string | null,
 ): Promise<void> {
@@ -320,7 +339,9 @@ function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // --- Main Handler ---------------------------------------------------------
@@ -332,7 +353,7 @@ Deno.serve(async (req) => {
       return new Response('OK', { status: 200 });
     }
 
-    // Webhook-Secret prüfen (optional aber empfohlen)
+    // Webhook-Secret prüfen — falls konfiguriert ist es Pflicht
     if (WEBHOOK_SECRET) {
       const incomingSecret = req.headers.get('x-telegram-bot-api-secret-token');
       if (incomingSecret !== WEBHOOK_SECRET) {
@@ -358,18 +379,18 @@ Deno.serve(async (req) => {
       return new Response('OK', { status: 200 });
     }
 
-    const chatId          = msg.chat.id;
-    const telegramUserId  = String(msg.from.id);
+    const chatId           = msg.chat.id;
+    const telegramUserId   = String(msg.from.id);
     const telegramUsername = msg.from.username ?? null;
-    const command         = extractCommand(msg);
-    const text            = msg.text ?? '';
+    const command          = extractCommand(msg);
+    const text             = msg.text ?? '';
 
     const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
-    // Verbindung suchen
+    // Verbindung suchen — mit Tenant-Name per Join
     const { data: conn } = await admin
       .from('telegram_connections')
-      .select('id, tenant_id, user_id, status')
+      .select('id, tenant_id, user_id, status, tenants(name)')
       .eq('telegram_user_id', telegramUserId)
       .eq('status', 'connected')
       .maybeSingle();
@@ -377,21 +398,12 @@ Deno.serve(async (req) => {
     const isConnected = Boolean(conn);
     const tenantId    = conn?.tenant_id ?? null;
     const userId      = conn?.user_id   ?? null;
+    // deno-lint-ignore no-explicit-any
+    const tenantName  = (conn as any)?.tenants?.name ?? null;
 
-    // Tenant-Name laden
-    let tenantName: string | null = null;
-    if (tenantId) {
-      const { data: tenant } = await admin
-        .from('tenants')
-        .select('name')
-        .eq('id', tenantId)
-        .maybeSingle();
-      tenantName = tenant?.name ?? null;
-    }
-
-    // Keine destruktiven Aktionen ohne Auth
+    // Workspace-Commands erfordern eine aktive Verbindung mit tenantId und userId
     const authRequired = new Set(['/status', '/audit', '/risks', '/evidence', '/compliance', '/assistant']);
-    if (command && authRequired.has(command) && !isConnected) {
+    if (command && authRequired.has(command) && (!isConnected || !tenantId || !userId)) {
       await sendMessage(chatId,
         `<b>Workspace-Verknüpfung erforderlich</b>\n\n` +
         `Dieser Command ist nur für verbundene Workspaces verfügbar.\n` +
@@ -404,7 +416,7 @@ Deno.serve(async (req) => {
     // Command-Routing
     switch (command) {
       case '/start':
-        await handleStart(admin, chatId, telegramUserId, isConnected, tenantName);
+        await handleStart(chatId, isConnected, tenantName);
         await logTelegramEvent(admin, { tenant_id: tenantId, user_id: userId, telegram_user_id: telegramUserId, command, intent: 'start', outcome: 'ok' });
         break;
 
@@ -419,12 +431,12 @@ Deno.serve(async (req) => {
         break;
 
       case '/settings':
-        await handleSettings(chatId, telegramUserId, isConnected, tenantName);
+        await handleSettings(chatId, isConnected, tenantName);
         await logTelegramEvent(admin, { tenant_id: tenantId, user_id: userId, telegram_user_id: telegramUserId, command, intent: 'settings', outcome: 'ok' });
         break;
 
       case '/status':
-        await handleStatus(admin, chatId, tenantId!);
+        await handleStatus(chatId, tenantId!);
         await logTelegramEvent(admin, { tenant_id: tenantId, user_id: userId, telegram_user_id: telegramUserId, command, intent: 'status', outcome: 'ok' });
         break;
 
@@ -440,9 +452,9 @@ Deno.serve(async (req) => {
       }
 
       default:
-        if (text && !command && isConnected) {
+        if (text && !command && isConnected && tenantId && userId) {
           // Freitext → Assistant
-          const response = await routeToAgent(admin, tenantId!, userId!, '/assistant', text);
+          const response = await routeToAgent(admin, tenantId, userId, '/assistant', text);
           await sendMessage(chatId, response);
           await logTelegramEvent(admin, { tenant_id: tenantId, user_id: userId, telegram_user_id: telegramUserId, command: null, intent: 'freetext', outcome: 'routed' });
         } else if (command) {

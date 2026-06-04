@@ -39,7 +39,9 @@ export function TelegramIntegrationPage() {
 
 function Inner({ session }: { session: Session }) {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token          = searchParams.get('token');
+  // telegram_user_id aus dem Connect-Link — vom Bot als ?uid= gesetzt
+  const telegramUserId = searchParams.get('uid');
 
   const [status, setStatus]     = useState<ConnectionStatus | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -84,22 +86,32 @@ function Inner({ session }: { session: Session }) {
   }
 
   // Token-basierte Verbindung abschließen
-  async function completeConnection(t: string) {
+  async function completeConnection(t: string, uid: string) {
     setConnecting(true);
     setError(null);
+    setSuccess(null);
     try {
-      // tenant_id aus Membership ableiten
-      const { data: memberships } = await supabase
+      // tenant_id aus Membership ableiten — maybeSingle() statt single() damit
+      // der Fehler bei 0 Memberships klar kommuniziert wird.
+      const { data: membership, error: memberErr } = await supabase
         .from('memberships')
         .select('tenant_id')
         .in('role', ['owner', 'admin', 'editor', 'dpo'])
+        .order('created_at', { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      const tenantId = memberships?.tenant_id;
-      if (!tenantId) throw new Error('Kein Workspace gefunden. Bitte zuerst einen Workspace erstellen.');
+      if (memberErr) throw new Error(memberErr.message);
+      if (!membership?.tenant_id) {
+        throw new Error('Kein Workspace gefunden. Bitte zuerst einen Workspace erstellen.');
+      }
 
-      await callChannels({ op: 'connect_complete', token: t, tenant_id: tenantId });
+      await callChannels({
+        op:               'connect_complete',
+        token:            t,
+        tenant_id:        membership.tenant_id,
+        telegram_user_id: uid,
+      });
       setSuccess('Verbindung hergestellt! Du kannst jetzt den Telegram Bot nutzen.');
       await loadStatus();
     } catch (e) {
@@ -114,6 +126,7 @@ function Inner({ session }: { session: Session }) {
     if (!window.confirm('Telegram-Verbindung wirklich trennen?')) return;
     setRevoking(true);
     setError(null);
+    setSuccess(null);
     try {
       await callChannels({ op: 'revoke' });
       setSuccess('Verbindung getrennt.');
@@ -131,11 +144,13 @@ function Inner({ session }: { session: Session }) {
   }, []);
 
   useEffect(() => {
-    if (token && !loading && !status?.connected && !connecting) {
-      completeConnection(token);
+    if (token && telegramUserId && !loading && !status?.connected && !connecting) {
+      completeConnection(token, telegramUserId);
+    } else if (token && !telegramUserId && !loading) {
+      setError('Ungültiger Verbindungslink — fehlende Nutzer-ID. Bitte /connect im Telegram-Bot erneut ausführen.');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, loading]);
+  }, [token, telegramUserId, loading]);
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">

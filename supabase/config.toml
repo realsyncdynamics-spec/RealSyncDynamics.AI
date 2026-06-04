@@ -225,6 +225,14 @@ verify_jwt = false
 # Provision secrets directly via `supabase secrets set` or the Vault
 # dashboard.
 
+# ── Telegram integration ──
+# telegram-webhook is called by Telegram's servers without any JWT.
+[functions.telegram-webhook]
+verify_jwt = false
+
+# telegram-channels is called from the SPA with a user Bearer JWT.
+[functions.telegram-channels]
+
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # stripe-meter-sync, governance-agent, governance-remediate,

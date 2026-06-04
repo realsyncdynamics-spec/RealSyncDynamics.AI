@@ -188,6 +188,9 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'governance-approvals',
   'governance-risk-score',
   'governance-dpias',
+
+  // Telegram webhook — called by Telegram's servers without JWT.
+  'telegram-webhook',
 ]);
 
 // Walk src/ shallowly for grep-style references to "functions/v1/NAME"

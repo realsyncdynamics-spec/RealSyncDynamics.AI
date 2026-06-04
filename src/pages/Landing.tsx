@@ -80,7 +80,7 @@ function Hero() {
         {/* Linke Spalte — Narrative + CTAs + Zielgruppen */}
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-4">
-            Self-Service · EU-souverän · Auditfähig · Jede Branche
+            Governance OS · Self-Service · EU-souverän · Jede Branche
           </p>
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
             Kontinuierliche AI- und Compliance-Governance für jede Branche.
@@ -495,7 +495,7 @@ function Footer() {
     <footer className="px-4 sm:px-6 py-10 text-titanium-500">
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[12px]">
         <div className="font-mono uppercase tracking-[0.2em]">
-          RealSyncDynamics.AI · EU-Frankfurt
+          Governance OS · RealSyncDynamics.AI · EU-Frankfurt
         </div>
         <nav className="flex flex-wrap gap-x-5 gap-y-2">
           <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>

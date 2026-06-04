@@ -98,9 +98,11 @@ export function PublicWorkspacePreview() {
 
   if (showDemo && isDemoMode) {
     return (
-      <div className="min-h-screen bg-obsidian-950">
-        <DemoDashboard />
-        <div className="flex justify-center gap-3 p-4 bg-obsidian-900 border-t border-titanium-800">
+      <div className="flex flex-col h-screen bg-obsidian-950">
+        <div className="flex-1 overflow-y-auto">
+          <DemoDashboard />
+        </div>
+        <div className="shrink-0 flex justify-center gap-3 p-4 bg-obsidian-900 border-t border-titanium-800">
           <button
             onClick={() => setShowDemo(false)}
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-titanium-700 text-titanium-100 rounded-none hover:bg-obsidian-800 transition-colors"

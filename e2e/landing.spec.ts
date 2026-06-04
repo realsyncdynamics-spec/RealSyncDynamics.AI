@@ -12,25 +12,22 @@ import { test, expect } from '@playwright/test';
 test('Landing renders the self-service governance-OS narrative + CTAs', async ({ page }) => {
   await page.goto('/');
 
-  // "/" zeigt jetzt die Demo-Vorschau. Zurück zur Feature-Übersicht klicken.
-  await page.getByRole('button', { name: /Zurück zu Übersicht/i }).click();
-
   // Hero — Governance-OS-Headline
   await expect(
     page.getByRole('heading', { name: /Governance OS/i }),
   ).toBeVisible();
 
-  // EU-Sovereign-Beschreibung (updated wording)
+  // EU-Sovereign-Beschreibung
   await expect(
     page.getByText(/Europäisches Governance Operating System/i),
   ).toBeVisible();
 
-  // Primäre CTA „Kostenlos testen" (button, navigiert zu /welcome)
+  // Primärer CTA „Live Demo anschauen" (button, zeigt Governance-OS-Demo)
   await expect(
-    page.getByRole('button', { name: /Kostenlos testen/i }),
+    page.getByRole('button', { name: /Live Demo anschauen/i }),
   ).toBeVisible();
 
-  // Sekundäre CTA „Audit starten" (button, navigiert zu /audit)
+  // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)
   await expect(
     page.getByRole('button', { name: /Audit starten/i }),
   ).toBeVisible();

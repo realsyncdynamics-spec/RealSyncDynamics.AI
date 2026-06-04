@@ -88,13 +88,13 @@ const COLOR_MAP: Record<string, { bg: string; icon: string; hover: string }> = {
 export function PublicWorkspacePreview() {
   const navigate = useNavigate();
   const { isDemoMode, setDemoMode } = useDemoMode();
-  const [showDemo, setShowDemo] = useState(true);
+  const [showDemo, setShowDemo] = useState(false);
 
   useEffect(() => {
-    if (!isDemoMode) {
+    if (showDemo && !isDemoMode) {
       setDemoMode(true);
     }
-  }, [isDemoMode, setDemoMode]);
+  }, [showDemo, isDemoMode, setDemoMode]);
 
   if (showDemo && isDemoMode) {
     return (
@@ -138,11 +138,11 @@ export function PublicWorkspacePreview() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => navigate('/welcome?source=feature-overview')}
+              onClick={() => setShowDemo(true)}
               className="flex items-center justify-center gap-2 px-6 py-2.5 bg-cyan-400 text-obsidian-950 font-medium rounded-none hover:bg-cyan-300 transition-colors"
             >
-              Kostenlos testen
-              <ArrowRight className="h-4 w-4" />
+              <Zap className="h-4 w-4" />
+              Live Demo anschauen
             </button>
             <button
               onClick={() => navigate('/audit?source=public-workspace')}

@@ -34,8 +34,8 @@ const START_COMPANY: NavItem = { to: '/app/company', label: 'Unternehmen', icon:
 
 const GOVERNANCE: NavItem[] = [
   { to: '/app/websites',   label: 'Websites',   icon: Globe },
-  { to: '/app/ai-systems', label: 'KI-Systeme', icon: Bot },
-  { to: '/app/risks',      label: 'Risiken',    icon: AlertTriangle },
+  { to: '/app/ai-systems', label: 'AI Registry',   icon: Bot },
+  { to: '/app/risks',      label: 'Risk Register', icon: AlertTriangle },
 ];
 const COMPLIANCE: NavItem[] = [
   { to: '/app/compliance', label: 'Compliance', icon: ClipboardCheck },

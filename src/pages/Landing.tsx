@@ -82,7 +82,7 @@ function Hero() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div>
           <p className="inline-flex items-center rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-petrol-300 mb-5">
-            EU AI Act + DSGVO Governance OS
+            Governance OS · Self-Service · EU-souverän · Jede Branche
           </p>
 
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.08]">
@@ -467,6 +467,7 @@ function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="px-4 sm:px-6 py-10 text-titanium-500">
+<<<<<<< HEAD
       <div className="max-w-5xl mx-auto">
         <div className="flex flex-wrap gap-2 mb-6">
           {TRUST_STRIP_ITEMS.map(({ Icon, label }) => (
@@ -480,7 +481,7 @@ function Footer() {
         </div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[12px] border-t border-titanium-900 pt-6">
           <div className="font-mono uppercase tracking-[0.2em]">
-            RealSyncDynamics.AI · EU-Frankfurt
+            Governance OS · RealSyncDynamics.AI · EU-Frankfurt
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2">
             <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>

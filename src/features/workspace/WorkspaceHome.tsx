@@ -75,7 +75,7 @@ function DemoInner() {
           <span className="text-sm text-titanium-300">Vorschau mit Demo-Daten. Melde dich an, um eigene Objekte zu verwalten.</span>
         </div>
         <Link
-          to="/app/settings"
+          to="/app/websites"
           className="inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 px-3 py-1.5 text-sm font-semibold hover:bg-cyan-300 transition-colors shrink-0"
         >
           <LogIn className="h-4 w-4" /> Anmelden

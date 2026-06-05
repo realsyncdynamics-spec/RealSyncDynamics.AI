@@ -9,6 +9,7 @@ import { GovernanceTabs } from './GovernanceTabs';
 import { GovernanceCanvas } from './GovernanceCanvas';
 import { GovernanceAssistantPanel } from './GovernanceAssistantPanel';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
+import { MobileBottomNavigation } from './MobileBottomNavigation';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -26,7 +27,9 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         onOpenAssistant={() => setAssistantOpen((v) => !v)}
       />
 
-      <GovernanceTabs />
+      <div className="hidden lg:block">
+        <GovernanceTabs />
+      </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
         <GovernanceCanvas>{children}</GovernanceCanvas>
@@ -37,7 +40,10 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         />
       </div>
 
-      <GovernanceStatusBar />
+      <MobileBottomNavigation />
+      <div className="hidden lg:block">
+        <GovernanceStatusBar />
+      </div>
     </div>
   );
 }

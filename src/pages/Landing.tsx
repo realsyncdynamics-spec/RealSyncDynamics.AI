@@ -89,14 +89,14 @@ function Hero() {
         {/* Linke Spalte — Narrative + CTAs + Zielgruppen */}
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-4">
-            DSGVO • EU AI Act • Evidence · by RealSync Dynamics AI
+            Governance OS Browser · DSGVO · EU AI Act · Evidence · by RealSync Dynamics AI
           </p>
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
-            DSGVO + EU AI Act Governance für Websites, KI-Systeme und Agenten
+            Der Browser für DSGVO, EU AI Act, KI-Systeme und Evidence.
           </h1>
           <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-3xl leading-relaxed">
-            Überwachen, dokumentieren und belegen Sie Compliance automatisiert –
-            mit Runtime-Monitoring, Evidence-Vault und Audit-Trails.
+            Prüfen Sie Websites, dokumentieren Sie KI-Systeme, bewerten Sie Risiken
+            und erzeugen Sie Audit-Nachweise in einer browserartigen Arbeitsoberfläche.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row flex-wrap gap-3">
@@ -107,14 +107,14 @@ function Hero() {
               Governance OS öffnen <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/welcome?source=hero"
-              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors rounded-none"
+              to="/audit"
+              className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
             >
-              Plattform ansehen
+              Kostenlosen Audit starten
             </Link>
             <Link
-              to="/welcome?source=hero&intent=founding"
-              className="inline-flex items-center justify-center gap-2 border border-amber-500 text-amber-300 px-5 py-3 text-sm font-semibold hover:bg-amber-500/10 transition-colors rounded-none"
+              to="/welcome?intent=founding"
+              className="inline-flex items-center gap-2 border border-cyan-800 text-cyan-300 px-5 py-3 text-sm font-semibold hover:border-cyan-600 transition-colors"
             >
               {CTA.foundingAccess}
             </Link>
@@ -508,13 +508,13 @@ function FoundingAccessBanner() {
 // ─── Browser-Metapher-Section ─────────────────────────────────────────
 
 const BROWSER_METAPHORS = [
-  { icon: Globe,      label: 'Adresszeile',   mapping: 'Website, KI-System oder Risiko prüfen' },
-  { icon: BarChart3,  label: 'Tabs',          mapping: 'Governance-Module: DSGVO, AI Act, Evidence' },
-  { icon: Bot,        label: 'Seitenpanel',   mapping: 'KI-Assistent mit Modulkontext' },
-  { icon: FileCheck2, label: 'Verlauf',       mapping: 'Audit Trail und Evidence-Snapshots' },
+  { icon: Globe,      label: 'Adresszeile',       mapping: 'Website, KI-System oder Risiko prüfen' },
+  { icon: BarChart3,  label: 'Tabs',              mapping: 'Governance-Module: DSGVO, AI Act, Evidence' },
+  { icon: Bot,        label: 'Seitenpanel',       mapping: 'KI-Assistent mit Modulkontext' },
+  { icon: ScanLine,   label: 'Verlauf',           mapping: 'Audit Trail und Evidence-Snapshots' },
   { icon: Shield,     label: 'Sicherheitsstatus', mapping: 'Compliance Score und Risk-Level' },
-  { icon: FileCheck2, label: 'Downloads',     mapping: 'Compliance-Reports und PDF-Exporte' },
-  { icon: Activity,   label: 'Erweiterungen', mapping: 'Module, Add-ons und Integrationen' },
+  { icon: FileCheck2, label: 'Downloads',         mapping: 'Compliance-Reports und PDF-Exporte' },
+  { icon: Activity,   label: 'Erweiterungen',     mapping: 'Module, Add-ons und Integrationen' },
 ];
 
 function BrowserMetaphorSection() {
@@ -522,30 +522,33 @@ function BrowserMetaphorSection() {
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-14 sm:py-20">
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
-          <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3">
             Warum als Browser?
+          </p>
+          <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-4">
+            Compliance-Arbeit so bedienbar wie Web-Arbeit.
           </h2>
           <p className="text-base text-titanium-400 max-w-2xl leading-relaxed">
-            Jeder kennt Browser. Deshalb macht RealSync Dynamics AI Governance-Arbeit so
-            bedienbar wie Web-Arbeit: mit Tabs, Address Bar, Arbeitsfläche, Verlauf,
+            Jeder kennt Browser. Deshalb macht der Governance OS Browser Compliance-Arbeit
+            so bedienbar wie Web-Arbeit: mit Tabs, Address Bar, Arbeitsfläche, Verlauf,
             Evidence und KI-Assistent.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-titanium-900">
           {BROWSER_METAPHORS.map(({ icon: Icon, label, mapping }) => (
-            <div key={label} className="bg-obsidian-900 p-4">
-              <Icon className="h-4 w-4 text-cyan-400 mb-2" />
-              <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-1">{label}</p>
-              <p className="text-sm text-titanium-200">{mapping}</p>
+            <div key={label} className="bg-obsidian-900 p-5">
+              <Icon className="h-4 w-4 text-cyan-400 mb-3" />
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">{label}</p>
+              <p className="text-sm text-titanium-200 leading-snug">{mapping}</p>
             </div>
           ))}
-          <div className="bg-obsidian-900 p-4 flex flex-col justify-between">
+          <div className="bg-obsidian-900 p-5 flex flex-col justify-between border-l border-titanium-800">
             <p className="text-sm text-titanium-400 leading-relaxed">
               Governance-Arbeit so vertraut wie Browser-Arbeit.
             </p>
             <Link
               to="/app"
-              className="mt-3 inline-flex items-center gap-1.5 text-cyan-400 text-sm font-medium hover:text-cyan-300 transition-colors"
+              className="mt-4 inline-flex items-center gap-1.5 text-cyan-400 text-sm font-semibold hover:text-cyan-300 transition-colors"
             >
               Governance OS öffnen <ArrowRight className="h-3.5 w-3.5" />
             </Link>

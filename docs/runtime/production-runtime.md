@@ -1,30 +1,28 @@
 # Production Runtime — Source of Truth
 
-> ⚠️ **TEILWEISE ÜBERHOLT (2026-05-28).** Eine Live-Nachprüfung ergab: (1) der Apex
-> `realsyncdynamicsai.de` löst jetzt **direkt auf GitHub Pages** auf und liefert HTTP 200
-> von `GitHub.com` **ohne VPS-Traefik-301-Hop** — das Request-Flow-Diagramm unten ist
-> veraltet; und (2) der Kodee-Subdomain-VPS `187.77.89.1` ist aktuell **nicht erreichbar**,
-> während ein zweiter Host `194.163.130.123` (referenziert in
-> `ollama-traefik/docker-compose.yml`) stattdessen antwortet — die IP-Referenzen
-> widersprechen sich. Gemessener Zustand:
-> [`SYSTEMCHECK-2026-05-28.md`](./SYSTEMCHECK-2026-05-28.md).
-
-**Last verified:** 2026-05-16
-**Verification method:** `curl -sI https://realsyncdynamicsai.de/` returned `server: GitHub.com` and `x-served-by: cache-chi-klot8100052-CHI` (Fastly = GitHub Pages CDN).
-**Authoritative ADR:** [`docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md`](../adr/0001-stay-on-supabase-gh-pages-for-v1.md)
+**Last verified:** 2026-06-05  
+**Authoritative ADR:** [`docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md`](../adr/0001-stay-on-supabase-gh-pages-for-v1.md)  
+**Live check:** [`SYSTEMCHECK-2026-05-28.md`](./SYSTEMCHECK-2026-05-28.md)
 
 ---
 
-## TL;DR — Where things actually live
+## TL;DR — Aktuelle Topology (Stand 2026-06-05)
 
-| Surface | Pipeline | Target | Custom domain |
+| Surface | Pipeline | Target | Domain |
 |---|---|---|---|
-| **Frontend SPA** (the React app) | `.github/workflows/deploy-pages.yml` | **GitHub Pages** at `realsyncdynamics-spec.github.io/RealSyncDynamics.AI/` | `realsyncdynamicsai.de` (via Traefik 301-redirect on the VPS) |
-| **Supabase migrations + Edge Functions** | `.github/workflows/deploy.yml` | Supabase project `ebljyceifhnlzhjfyxup` (Frankfurt) | `*.supabase.co/functions/v1/*` |
-| **Kodee VPS subdomains** (chat, ollama, n8n) | manual via `docker compose up -d` on VPS | Hostinger VPS `srv1622293` at `187.77.89.1` | `chat.realsyncdynamicsai.de`, `ollama.realsyncdynamicsai.de`, `n8n.realsyncdynamicsai.de` |
-| **Tracker pattern DB refresh** | `.github/workflows/tracker-db-update.yml` (cron) | Supabase via `deploy.yml` | n/a |
+| **Frontend SPA** ✅ PRIMARY PRODUCTION | `.github/workflows/deploy-pages.yml` | **GitHub Pages** (Fastly CDN) | `realsyncdynamicsai.de` → direkt auf GitHub Pages Anycast IPs |
+| **Supabase** (DB, Auth, Edge Functions) | `.github/workflows/deploy.yml` | Supabase `ebljyceifhnlzhjfyxup` (eu-central-1) | `*.supabase.co/functions/v1/*` |
+| **VPS-Backend** (chat, ollama, n8n) | `docker compose up -d` auf VPS | Hostinger `srv1622293` `187.77.89.1` | `chat/ollama/n8n.realsyncdynamicsai.de` |
+| **VPS rsync** ⚠ OPTIONAL — nicht Production-Frontend | `.github/workflows/deploy-frontend.yml` | VPS `/var/www/…/dist` | — kein User-facing Traffic |
+| **Tracker DB** | `.github/workflows/tracker-db-update.yml` (cron) | Supabase | n/a |
 
-**The canonical user-facing host is `realsyncdynamicsai.de` — but it serves from GitHub Pages, not from the VPS.**
+**`realsyncdynamicsai.de` wird DIREKT von GitHub Pages ausgeliefert — kein VPS-Hop, kein Traefik-Redirect.**
+
+```
+Browser → DNS A → 185.199.108-111.153 (GitHub Pages Anycast)
+       → HTTP/2 200, server: GitHub.com (Fastly CDN)
+       → SPA shell + content-hashed assets
+```
 
 ---
 
@@ -235,3 +233,17 @@ The current GitHub-Pages-+-Supabase architecture is the documented v1 choice. AD
 | Real-time alerts as Enterprise must-have | hard customer ask |
 
 **Until any trigger fires, this document is the source of truth.** When a trigger does fire, the next iteration of this document SHOULD reference the activation event and link to ADR 0002.
+
+## Bekanntes Problem: VPS SSH-Timeout (2026-06-05)
+
+Port 22 auf `187.77.89.1` (Hostinger `srv1622293`) ist von GitHub Actions IPs nicht erreichbar — `rsync` läuft in Timeout.
+
+**Auswirkung:** Nur `deploy-frontend.yml` (optionaler VPS-Sync) betroffen. Das Live-Frontend auf `realsyncdynamicsai.de` ist NICHT betroffen.
+
+**Empfehlung zur Behebung:**
+1. Im Hostinger-Panel → Firewall: Port 22 für GitHub Actions IP-Ranges freischalten  
+   GitHub Actions IPs: https://api.github.com/meta → `actions`-Block
+2. Alternativ: SSH auf Non-Standard-Port legen (z.B. 2222) und `VPS_SSH_HOST`-Secret mit `:2222` ergänzen
+3. Oder: VPS SSH-Firewall deaktivieren (nur wenn VPS ausschließlich für interne Services)
+
+**Test nach Fix:** `ssh -v deploy@187.77.89.1 -p 22 exit` aus GitHub-Actions-Runner testen via `workflow_dispatch` auf `deploy-frontend.yml`.

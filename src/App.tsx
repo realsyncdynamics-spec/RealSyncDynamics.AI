@@ -228,6 +228,7 @@ function RoutesWithTracking() {
       <Route path="/agents"     element={<AgentsPage />} />
       <Route path="/evidence"   element={<EvidencePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
+      <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />

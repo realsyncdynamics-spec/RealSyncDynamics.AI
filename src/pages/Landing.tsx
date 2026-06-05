@@ -333,7 +333,7 @@ function AiActAutomation() {
             überwacht. Nachweise werden auditfähig dokumentiert — kontinuierlich,
             nicht als einmaliger Bericht.
           </p>
-          <Link to="/ai-governance" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+          <Link to="/ai-act" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">
             {CTA.startAudit} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

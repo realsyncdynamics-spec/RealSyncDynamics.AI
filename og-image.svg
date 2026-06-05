@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A0A0B"/>
+      <stop offset="100%" stop-color="#16161A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7DD3FC"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Top-left grid corner mark (hard-edge industrial) -->
+  <path d="M40 40 L120 40 M40 40 L40 120" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <!-- Top-right corner mark -->
+  <path d="M1160 40 L1080 40 M1160 40 L1160 120" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <!-- Bottom-right corner mark -->
+  <path d="M1160 590 L1080 590 M1160 590 L1160 510" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <!-- Bottom-left corner mark -->
+  <path d="M40 590 L120 590 M40 590 L40 510" stroke="#3F3F46" stroke-width="2" fill="none"/>
+
+  <!-- Logo block: square -->
+  <rect x="80" y="100" width="48" height="48" fill="url(#accent)"/>
+  <text x="148" y="138" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#F4F4F5">
+    RealSync Dynamics
+  </text>
+
+  <!-- Compliance badge row -->
+  <g transform="translate(80, 200)">
+    <rect x="0" y="0" width="180" height="32" fill="none" stroke="#7DD3FC" stroke-width="1"/>
+    <text x="14" y="22" font-family="JetBrains Mono, monospace" font-size="14" fill="#7DD3FC">DSGVO Art. 32</text>
+
+    <rect x="196" y="0" width="120" height="32" fill="none" stroke="#7DD3FC" stroke-width="1"/>
+    <text x="210" y="22" font-family="JetBrains Mono, monospace" font-size="14" fill="#7DD3FC">AI Act</text>
+
+    <rect x="332" y="0" width="100" height="32" fill="none" stroke="#7DD3FC" stroke-width="1"/>
+    <text x="346" y="22" font-family="JetBrains Mono, monospace" font-size="14" fill="#7DD3FC">BAIT</text>
+
+    <rect x="448" y="0" width="120" height="32" fill="none" stroke="#7DD3FC" stroke-width="1"/>
+    <text x="462" y="22" font-family="JetBrains Mono, monospace" font-size="14" fill="#7DD3FC">MaRisk</text>
+  </g>
+
+  <!-- Hero headline -->
+  <text x="80" y="340" font-family="Inter, system-ui, sans-serif" font-size="64" font-weight="800" fill="#F4F4F5">
+    KI nutzen.
+  </text>
+  <text x="80" y="416" font-family="Inter, system-ui, sans-serif" font-size="64" font-weight="800" fill="url(#accent)">
+    Ohne Bußgeld-Risiko.
+  </text>
+
+  <!-- Subline -->
+  <text x="80" y="478" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="400" fill="#A1A1AA">
+    EU-Datenresidenz · Audit-Trail · DSGVO Art. 15 + 17 Selfservice
+  </text>
+
+  <!-- Bottom strip with CTA + URL -->
+  <line x1="80" y1="540" x2="1120" y2="540" stroke="#27272A" stroke-width="1"/>
+  <text x="80" y="578" font-family="JetBrains Mono, monospace" font-size="18" fill="#71717A">
+    realsyncdynamics.ai
+  </text>
+  <text x="1120" y="578" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="600" fill="#7DD3FC" text-anchor="end">
+    Jetzt kostenlos prüfen →
+  </text>
+</svg>

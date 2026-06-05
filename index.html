@@ -3,13 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RealSyncDynamics.AI — DSGVO-konforme KI-Compliance-Plattform</title>
-    <meta name="description" content="EU-konforme KI-Infrastruktur für regulierte Branchen: EU-Datenresidenz, lückenloser Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). DSGVO Art. 32 · AI Act · BAIT · MaRisk konform." />
+    <title>RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform</title>
+    <meta name="description" content="RealSyncDynamics.AI ist eine europäische Runtime-native AI-Governance- und Compliance-Infrastruktur: kontinuierliche Telemetrie für Websites, Daten- und KI-Systeme, regulatorische Risiko-Erkennung und kryptografisch nachvollziehbare Evidenz." />
+    <meta name="keywords" content="AI Governance Runtime, Runtime Compliance, Continuous AI Governance, EU AI Act Monitoring, Agentic Compliance, Evidence Infrastructure, Operational Governance Runtime, DSGVO Monitoring, TTDSG Consent Monitoring" />
     <meta name="theme-color" content="#0A0A0B" />
-    <meta property="og:title" content="RealSyncDynamics.AI — DSGVO-konforme KI für regulierte Branchen" />
-    <meta property="og:description" content="KI nutzen ohne DSGVO-Bußgeld zu riskieren. Audit-Log, EU-Datenresidenz, AVV inklusive. Pakete ab 29 €/Monat." />
+    <meta property="og:title" content="RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform" />
+    <meta property="og:description" content="Europäische Governance-Runtime für Web-, Daten- und KI-Systeme. Kontinuierliche Überwachung, regulatorische Risiko-Erkennung, kryptografisch nachvollziehbare Evidenz. Pläne ab 79 €/Monat." />
+    <meta property="og:site_name" content="RealSyncDynamics.AI" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
+    <meta property="og:url" content="https://realsyncdynamicsai.de/" />
+    <meta property="og:image" content="https://realsyncdynamicsai.de/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform" />
+    <meta name="twitter:description" content="Europäische Governance-Runtime für Web-, Daten- und KI-Systeme. Telemetrie, Policy, Evidence — auditfähig." />
+    <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <!--
       Security headers via meta-equivalents.
       GitHub Pages doesn't let us set HTTP-headers, so we declare what we can:
@@ -17,9 +28,106 @@
       Referrer-Policy für privacy. These improve our own /audit score significantly.
     -->
     <meta http-equiv="Content-Security-Policy"
-          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co https://api.fontshare.com data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://api.fontshare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in" />
+          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co https://api.fontshare.com data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline' https://api.fontshare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="canonical" href="https://realsyncdynamicsai.de/" />
+
+    <!-- Performance: pre-connect zu kritischen Origins damit TLS-Handshake
+         vor dem ersten Request läuft. Nur die origins die wirklich gebraucht
+         werden (Supabase API + Fontshare CDN) — mehr preconnects bremsen. -->
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link rel="dns-prefetch" href="https://api.fontshare.com" />
+    <link rel="dns-prefetch" href="https://supabase.co" />
+    <!--
+      JSON-LD structured data: SoftwareApplication + Organization + FAQ.
+      Enables rich snippets in Google for queries like "DSGVO KI Plattform",
+      "AI Act Compliance Tool". Hard-coded; React doesn't need to manage it.
+    -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://realsyncdynamicsai.de/#org",
+          "name": "RealSync Dynamics",
+          "alternateName": "RealSyncDynamics.AI",
+          "url": "https://realsyncdynamicsai.de/",
+          "logo": "https://realsyncdynamicsai.de/og-image.png",
+          "description": "Europäische Runtime-native AI-Governance-Plattform — kontinuierliche Überwachung von Web-, Daten- und KI-Systemen, regulatorische Risiko-Erkennung und kryptografisch nachvollziehbare Evidenz. EU-Hosting, DSGVO / TTDSG / EU AI Act.",
+          "areaServed": "DE",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Schwarzburger Str. 31",
+            "postalCode": "98724",
+            "addressLocality": "Neuhaus am Rennweg",
+            "addressCountry": "DE"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "email": "hello@realsyncdynamicsai.de",
+            "availableLanguage": ["de", "en"]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://realsyncdynamicsai.de/#website",
+          "url": "https://realsyncdynamicsai.de/",
+          "name": "RealSyncDynamics.AI",
+          "publisher": {"@id": "https://realsyncdynamicsai.de/#org"},
+          "inLanguage": "de-DE"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "RealSyncDynamics.AI",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "description": "Runtime-native AI-Governance- und Compliance-Plattform: kontinuierliche Telemetrie für Web-, Daten- und KI-Systeme, regulatorische Risiko-Erkennung, kryptografisch nachvollziehbare Evidenz, lückenloser Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). EU-Hosting. Konform mit DSGVO Art. 32, EU AI Act, BAIT, MaRisk.",
+          "offers": [
+            {"@type": "Offer", "name": "Free Audit", "price": "0", "priceCurrency": "EUR", "description": "Sofortiger DSGVO-Check ohne Account"},
+            {"@type": "Offer", "name": "Starter", "price": "79", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "79", "priceCurrency": "EUR", "billingDuration": "P1M"}},
+            {"@type": "Offer", "name": "Growth", "price": "249", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "249", "priceCurrency": "EUR", "billingDuration": "P1M"}},
+            {"@type": "Offer", "name": "Agency", "price": "699", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "699", "priceCurrency": "EUR", "billingDuration": "P1M"}},
+            {"@type": "Offer", "name": "Scale", "price": "1999", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "1999", "priceCurrency": "EUR", "billingDuration": "P1M"}, "description": "Multi-Tenant-Dashboard für DSB-Kanzleien (bis zu 50 Mandanten), White-Label, voller API-Zugriff"},
+            {"@type": "Offer", "name": "Enterprise", "priceCurrency": "EUR", "description": "Custom Runtime Environment auf Anfrage — SLA, AI-Act-Modul, DSB-Integration, Evidence Vault, unlimitierte Domains"}
+          ],
+          "publisher": {"@id": "https://realsyncdynamicsai.de/#org"}
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Ist RealSyncDynamics.AI DSGVO-konform?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Ja. EU-Datenresidenz, AVV gemäß DSGVO Art. 28 inklusive, lückenloser Audit-Trail (Art. 32) und automatisierter Selfservice für Auskunfts- und Löschrechte (Art. 15 + 17)."}
+            },
+            {
+              "@type": "Question",
+              "name": "Erfüllt die Plattform den AI Act?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Ja. Risiko-Klassifikation, technische Dokumentation, Transparenzpflichten und Human-Oversight sind in der Plattform integriert."}
+            },
+            {
+              "@type": "Question",
+              "name": "Werden Daten in die USA übertragen?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Standardmäßig nein. EU-Datenresidenz ist Default; Schrems-II-Konformität durch EU-Hosting (Frankfurt) und optional self-hosted Ollama für vollständige Datenhoheit."}
+            },
+            {
+              "@type": "Question",
+              "name": "Was kostet RealSyncDynamics.AI?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Free Audit (0 €, kein Account), Starter (79 €/Monat, 1 Domain), Growth (249 €/Monat, 3 Domains, Continuous Monitoring + Auto-Fix), Agency (699 €/Monat, 10 Kunden-Sites + White-Label), Scale (1.999 €/Monat, bis 50 Mandanten für DSB-Kanzleien + Reseller-Programm), Enterprise (individuell, Custom Runtime Environment, SLA + AI-Act-Modul + DSB-Integration + Evidence Vault)."}
+            },
+            {
+              "@type": "Question",
+              "name": "Wo werden die Server gehostet?",
+              "acceptedAnswer": {"@type": "Answer", "text": "Frankfurt am Main (Hostinger DE / Hetzner Falkenstein). Supabase-Postgres in eu-central-1. Kein US-Cloud-Default. Vollständige AVV nach Art. 28 DSGVO."}
+            }
+          ]
+        }
+      ]
+    }
+    </script>
     <script type="text/javascript">
       // SPA on GitHub Pages — restore deep-link path written by 404.html.
       // Pattern: rafgraph/spa-github-pages
@@ -33,8 +141,14 @@
         }
       }(window.location));
     </script>
-    <script type="module" crossorigin src="/RealSyncDynamics.AI/assets/index-BOakfRvt.js"></script>
-    <link rel="stylesheet" crossorigin href="/RealSyncDynamics.AI/assets/index-BHzX5Qao.css">
+    <script type="module" crossorigin src="/assets/index-DCM0vcNz.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/vendor-react-B6xOqPRo.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-icons-D1lOpLEk.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-router-Ccs0YyBx.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-motion-DdIN7oLM.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-oGhXk4QD.js">
+    <link rel="modulepreload" crossorigin href="/assets/vendor-genai-CuXCPDcK.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-BJkZG9m9.css">
   </head>
   <body>
     <div id="root"></div>
@@ -47,16 +161,15 @@
     <noscript>
       <p>RealSync Dynamics — DSGVO-konforme KI-Compliance-Plattform.</p>
       <ul>
-        <li><a href="/RealSyncDynamics.AI/legal/privacy">Datenschutzerklärung</a></li>
-        <li><a href="/RealSyncDynamics.AI/legal/sub-processors">Sub-Prozessoren / Impressum</a></li>
-        <li><a href="/RealSyncDynamics.AI/pricing">Preise</a></li>
-        <li><a href="/RealSyncDynamics.AI/contact-sales">Kontakt</a></li>
+        <li><a href="/legal/privacy">Datenschutzerklärung</a></li>
+        <li><a href="/legal/sub-processors">Sub-Prozessoren / Impressum</a></li>
+        <li><a href="/pricing">Preise</a></li>
+        <li><a href="/contact-sales">Kontakt</a></li>
       </ul>
     </noscript>
     <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
-      <a href="/RealSyncDynamics.AI/legal/privacy">Datenschutz</a>
-      <a href="/RealSyncDynamics.AI/legal/sub-processors">Impressum</a>
+      <a href="/legal/privacy">Datenschutz</a>
+      <a href="/legal/sub-processors">Impressum</a>
     </div>
   </body>
 </html>
-

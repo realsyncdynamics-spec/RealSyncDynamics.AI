@@ -22,6 +22,8 @@ import { countOpenIncidents } from './incidentsApi';
 import { EnvironmentSwitcher, EnvironmentBanner } from './EnvironmentSwitcher';
 import { AgentWidget } from './AgentWidget/AgentWidget';
 import { GovernanceInspectorPanel, type InspectorSelection } from './GovernanceInspectorPanel';
+import { ModuleStatusBadge } from './ModuleStatusBadge';
+import { getModuleStatus } from './moduleConfig';
 
 import type { GovernanceRiskLevel } from './types';
 
@@ -131,86 +133,19 @@ function Inner() {
           >
             <Library className="h-4 w-4" /> Templates
           </Link>
-          <Link
-            to="/governance/keys"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
-          >
-            <KeyRound className="h-4 w-4" /> Keys
-          </Link>
-          <Link
-            to="/governance/approvals"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
-          >
-            <Gavel className="h-4 w-4" /> Approvals
-            {pendingApprovals > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-amber-500 text-obsidian-950 text-[10px] font-bold rounded-none">
-                {pendingApprovals}
-              </span>
-            )}
-          </Link>
-          <Link
-            to="/governance/dpias"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
-          >
-            <FileCheck2 className="h-4 w-4" /> DPIAs
-            {openDpias > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-amber-500 text-obsidian-950 text-[10px] font-bold rounded-none">{openDpias}</span>
-            )}
-          </Link>
-          <Link
-            to="/governance/dsr"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
-          >
-            <UserCheck className="h-4 w-4" /> DSR
-            {openDsrs.overdue > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-none">{openDsrs.overdue}</span>
-            )}
-          </Link>
-          <Link
-            to="/governance/incidents"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative"
-          >
-            <ShieldAlert className="h-4 w-4" /> Incidents
-            {openIncidents > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-none">{openIncidents}</span>
-            )}
-          </Link>
-          <Link to="/governance/vendors" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
-            <Building2 className="h-4 w-4" /> Vendors
-          </Link>
-          <Link to="/governance/connectors" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
-            <Plug className="h-4 w-4" /> Connectors
-          </Link>
-          <Link to="/governance/costs" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
-            <DollarSign className="h-4 w-4" /> Costs
-          </Link>
-          <Link to="/governance/remediation" className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors">
-            <Wrench className="h-4 w-4" /> Remediation
-          </Link>
-          <Link
-            to="/governance/mappings"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
-          >
-            <Network className="h-4 w-4" /> Matrix
-          </Link>
-          <Link
-            to="/governance/admin-log"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
-          >
-            <ScrollText className="h-4 w-4" /> Log
-          </Link>
-          <Link
-            to="/governance/reports"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
-          >
-            <FileDown className="h-4 w-4" /> Report
-          </Link>
-          <Link
-            to="/governance/webhooks"
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
-          >
-            <Webhook className="h-4 w-4" /> Webhooks
-          </Link>
+          <ModuleLink icon={<KeyRound className="h-4 w-4" />} to="/governance/keys" label="Keys" moduleId="keys" />
+          <ModuleLink icon={<Gavel className="h-4 w-4" />} to="/governance/approvals" label="Approvals" moduleId="approvals" badge={pendingApprovals} />
+          <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/governance/dpias" label="DPIAs" moduleId="dpias" badge={openDpias} />
+          <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/governance/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />
+          <ModuleLink icon={<ShieldAlert className="h-4 w-4" />} to="/governance/incidents" label="Incidents" moduleId="incidents" badge={openIncidents} />
+          <ModuleLink icon={<Building2 className="h-4 w-4" />} to="/governance/vendors" label="Vendors" moduleId="vendors" />
+          <ModuleLink icon={<Plug className="h-4 w-4" />} to="/governance/connectors" label="Connectors" moduleId="connectors" />
+          <ModuleLink icon={<DollarSign className="h-4 w-4" />} to="/governance/costs" label="Costs" moduleId="costs" />
+          <ModuleLink icon={<Wrench className="h-4 w-4" />} to="/governance/remediation" label="Remediation" moduleId="remediation" />
+          <ModuleLink icon={<Network className="h-4 w-4" />} to="/governance/mappings" label="Matrix" moduleId="matrix" />
+          <ModuleLink icon={<ScrollText className="h-4 w-4" />} to="/governance/admin-log" label="Log" moduleId="log" />
+          <ModuleLink icon={<FileDown className="h-4 w-4" />} to="/governance/reports" label="Report" moduleId="report" />
+          <ModuleLink icon={<Webhook className="h-4 w-4" />} to="/governance/webhooks" label="Webhooks" moduleId="webhooks" />
         </div>
       </header>
       <EnvironmentBanner />
@@ -589,5 +524,37 @@ function PolicyRow({ policy, onChange, onInspect }: { policy: DbGovernancePolicy
         </div>
       </div>
     </li>
+  );
+}
+
+interface ModuleLinkProps {
+  icon: React.ReactNode;
+  to: string;
+  label: string;
+  moduleId: string;
+  badge?: number;
+}
+
+function ModuleLink({ icon, to, label, moduleId, badge }: ModuleLinkProps) {
+  const status = getModuleStatus(moduleId);
+  const hasCountBadge = badge !== undefined && badge > 0;
+
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors relative group"
+      title={`${label} (${status})`}
+    >
+      {icon}
+      <span className="flex items-center gap-1.5">
+        {label}
+        <ModuleStatusBadge status={status} compact={true} />
+      </span>
+      {hasCountBadge && (
+        <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-amber-500 text-obsidian-950 text-[10px] font-bold rounded-none">
+          {badge}
+        </span>
+      )}
+    </Link>
   );
 }

@@ -26,13 +26,19 @@ import {
 import { Navbar } from '../components/Navbar';
 import { CTA } from '../content/runtimeVocab';
 import { usePlatformStats, relativeTimeDe } from '../hooks/usePlatformStats';
+import { FoundingAccessBanner } from '../components/sections/FoundingAccessBanner';
+import { ModuleVisibilitySection } from '../components/sections/ModuleVisibilitySection';
+import { RuntimeGovernanceFlowSection } from '../components/sections/RuntimeGovernanceFlowSection';
 
 export function Landing() {
   return (
     <>
       <Navbar />
       <main className="bg-obsidian-950 text-titanium-100 pt-14">
+        <FoundingAccessBanner />
         <Hero />
+        <ModuleVisibilitySection />
+        <RuntimeGovernanceFlowSection />
         <ProblemSection />
         <AutomationFlow />
         <DsgvoAutomation />
@@ -83,30 +89,31 @@ function Hero() {
             Self-Service · EU-souverän · Auditfähig · Jede Branche
           </p>
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
-            Kontinuierliche AI- und Compliance-Governance für jede Branche.
+            DSGVO + EU AI Act Governance für Websites, KI-Systeme und Agenten
           </h1>
           <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-3xl leading-relaxed">
-            RealSyncDynamics.AI <strong className="text-titanium-100">erkennt</strong>,{' '}
-            <strong className="text-titanium-100">überwacht</strong>,{' '}
-            <strong className="text-titanium-100">dokumentiert</strong> und{' '}
-            <strong className="text-titanium-100">beweist</strong> Risiken automatisch —
-            für Betriebe, Shops, Dienstleister, Agenturen und wachsende
-            Unternehmen. Ohne manuelle Dokumentation, mit nachvollziehbarer
-            Evidenz für Websites, Datenflüsse und KI-Systeme.
+            Überwachen, dokumentieren und belegen Sie Compliance automatisiert –
+            mit Runtime-Monitoring, Evidence-Vault und Audit-Trails.
           </p>
 
-          <div className="mt-10 flex flex-wrap gap-3">
+          <div className="mt-10 flex flex-col sm:flex-row flex-wrap gap-3">
             <Link
               to="/audit?source=hero"
-              className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors rounded-none"
             >
               {CTA.startFree} <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/welcome?source=hero"
-              className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
+              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors rounded-none"
             >
-              {CTA.openDashboard}
+              Plattform ansehen
+            </Link>
+            <Link
+              to="/welcome?source=hero&intent=founding"
+              className="inline-flex items-center justify-center gap-2 border border-amber-500 text-amber-300 px-5 py-3 text-sm font-semibold hover:bg-amber-500/10 transition-colors rounded-none"
+            >
+              {CTA.foundingAccess}
             </Link>
           </div>
 

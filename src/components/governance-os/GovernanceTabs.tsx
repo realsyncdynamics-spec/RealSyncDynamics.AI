@@ -19,30 +19,8 @@ const PLAN_LABELS: Record<string, string> = {
   starter: 'Starter', growth: 'Professional', agency: 'Agency', enterprise: 'Enterprise',
 };
 
-function TabItem({ module, active, allowed }: { module: GovernanceModule; active: boolean; allowed: boolean }) {
+function TabItem({ module, active }: { module: GovernanceModule; active: boolean }) {
   const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
-  const minPlan = allowed ? null : minimumPlanForModule(module);
-  const planLabel = minPlan ? (PLAN_LABELS[minPlan] ?? minPlan) : null;
-
-  if (!allowed) {
-    return (
-      <Link
-        to="/pricing"
-        title={`Ab ${planLabel} verfügbar`}
-        className="group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 border-transparent text-titanium-700 hover:text-titanium-500 hover:bg-obsidian-800 transition-colors opacity-60"
-      >
-        <Icon className="h-3.5 w-3.5 shrink-0 text-titanium-800" />
-        <span>{module.label}</span>
-        <Lock className="h-2.5 w-2.5 text-titanium-700" />
-        {planLabel && (
-          <span className="font-mono text-[8px] uppercase tracking-widest text-titanium-700 border border-titanium-800 px-1 py-0.5 hidden sm:inline">
-            {planLabel}
-          </span>
-        )}
-      </Link>
-    );
-  }
-
   return (
     <Link
       to={module.route}
@@ -59,6 +37,23 @@ function TabItem({ module, active, allowed }: { module: GovernanceModule; active
   );
 }
 
+function LockedTabItem({ module }: { module: GovernanceModule }) {
+  const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
+  const minPlan = minimumPlanForModule(module);
+  const planLabel = PLAN_LABELS[minPlan] ?? minPlan;
+  return (
+    <Link
+      to="/pricing"
+      title={`Ab ${planLabel} verfügbar`}
+      className="group flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 border-transparent text-titanium-700 hover:text-titanium-500 hover:bg-obsidian-800 transition-colors"
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0 text-titanium-800" />
+      <span className="opacity-50">{module.label}</span>
+      <Lock className="h-2.5 w-2.5 text-titanium-800" />
+    </Link>
+  );
+}
+
 export function GovernanceTabs() {
   const { pathname } = useLocation();
   const { plan } = useActivePlan();
@@ -67,16 +62,20 @@ export function GovernanceTabs() {
   const isActive = (route: string) =>
     route === '/app' ? pathname === '/app' : pathname.startsWith(route);
 
+  // Accessible tabs shown normally; inaccessible shown as locked ghost tabs
+  const accessibleTabs = TAB_MODULES.filter((m) => canAccessModule(m, plan));
+  const lockedTabs = TAB_MODULES.filter((m) => !canAccessModule(m, plan));
+
   return (
     <div className="relative shrink-0 bg-obsidian-900 border-b border-titanium-900">
       <div className="flex overflow-x-auto scrollbar-none">
-        {TAB_MODULES.map((mod) => (
-          <TabItem
-            key={mod.id}
-            module={mod}
-            active={isActive(mod.route)}
-            allowed={canAccessModule(mod, plan)}
-          />
+        {accessibleTabs.map((mod) => (
+          <TabItem key={mod.id} module={mod} active={isActive(mod.route)} />
+        ))}
+
+        {/* Locked tabs — ghosted, link to /pricing */}
+        {lockedTabs.map((mod) => (
+          <LockedTabItem key={mod.id} module={mod} />
         ))}
 
         {/* Roadmap-Module im More-Menü */}

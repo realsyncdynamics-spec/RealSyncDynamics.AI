@@ -467,44 +467,6 @@ function FinalCta() {
   );
 }
 
-// ─── Founding Access Banner ──────────────────────────────────────────
-
-function FoundingAccessBanner() {
-  return (
-    <section className="border-b border-titanium-900 bg-obsidian-900 px-4 sm:px-6 py-8">
-      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-[9px] uppercase tracking-widest bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5">
-              Founding Access geöffnet
-            </span>
-          </div>
-          <p className="font-display font-semibold text-titanium-50">
-            Die ersten 100 Unternehmen erhalten priorisierten Zugang zum Governance OS Browser.
-          </p>
-          <p className="mt-1 text-sm text-titanium-400">
-            Kostenlos testen. Feedback geben. Plattform aktiv mitgestalten.
-          </p>
-        </div>
-        <div className="flex gap-3 shrink-0">
-          <Link
-            to="/audit?source=founding"
-            className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 transition-colors"
-          >
-            Kostenlosen Audit starten
-          </Link>
-          <Link
-            to="/enterprise-ai-os/founding-access"
-            className="inline-flex items-center gap-2 border border-cyan-800 text-cyan-300 px-4 py-2 text-sm font-semibold hover:border-cyan-600 transition-colors"
-          >
-            Founding Access sichern
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ─── Browser-Metapher-Section ─────────────────────────────────────────
 
 const BROWSER_METAPHORS = [

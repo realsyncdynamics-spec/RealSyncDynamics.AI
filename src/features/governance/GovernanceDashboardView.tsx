@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
-  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign, Wrench,
+  Bot, FileCheck2, Lock, Loader2, KeyRound, GitBranch, Plus, Archive, Webhook, Network, Gavel, ScrollText, Library, FileDown, UserCheck, ShieldAlert, Plug, Building2, DollarSign, Wrench, Sparkles,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -22,6 +22,7 @@ import { countOpenIncidents } from './incidentsApi';
 import { EnvironmentSwitcher, EnvironmentBanner } from './EnvironmentSwitcher';
 import { AgentWidget } from './AgentWidget/AgentWidget';
 import { GovernanceInspectorPanel, type InspectorSelection } from './GovernanceInspectorPanel';
+
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -270,34 +271,75 @@ function Inner() {
 
 function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
   return (
-    <div className="text-center py-16">
-      <div className="w-14 h-14 mx-auto rounded-none bg-obsidian-900 border border-titanium-900 flex items-center justify-center mb-4">
-        <Activity className="h-6 w-6 text-titanium-600" />
+    <div className="text-center py-20 max-w-2xl mx-auto">
+      {/* Icon */}
+      <div className="w-16 h-16 mx-auto rounded-none bg-obsidian-900 border border-titanium-900 flex items-center justify-center mb-6">
+        <Activity className="h-7 w-7 text-titanium-500" />
       </div>
-      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Noch leer</h2>
-      <p className="text-sm text-titanium-400 mb-6 max-w-md mx-auto leading-relaxed">
-        4 geführte Schritte zum produktiven Betrieb — oder direkt eigenes Asset anlegen.
+
+      {/* Headline */}
+      <h2 className="font-display text-2xl font-bold text-titanium-50 mb-3">
+        Governance-Dashboard aufbauen
+      </h2>
+
+      {/* Subheadline */}
+      <p className="text-titanium-300 leading-relaxed mb-8">
+        Starten Sie mit der Registrierung Ihrer ersten Website oder KI-System. RealSyncDynamics.AI überwacht dann automatisch Compliance-Risiken, Datenflüsse, und Governance-Gaps — zentral, nachvollziehbar, mit auditfähiger Evidence.
       </p>
-      <div className="flex items-center justify-center gap-2 flex-wrap">
+
+      {/* Feature Highlights */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+        <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-none bg-obsidian-950 border border-titanium-800 mx-auto mb-3">
+            <Database className="h-5 w-5 text-cyan-400" />
+          </div>
+          <h3 className="font-semibold text-titanium-100 text-sm mb-1">Assets erfassen</h3>
+          <p className="text-xs text-titanium-400">Websites, KI-Systeme, Datenflüsse</p>
+        </div>
+
+        <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-none bg-obsidian-950 border border-titanium-800 mx-auto mb-3">
+            <AlertTriangle className="h-5 w-5 text-amber-400" />
+          </div>
+          <h3 className="font-semibold text-titanium-100 text-sm mb-1">Findings automatisch</h3>
+          <p className="text-xs text-titanium-400">DSGVO, EU AI Act, Vendor-Risiken</p>
+        </div>
+
+        <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-none bg-obsidian-950 border border-titanium-800 mx-auto mb-3">
+            <FileCheck2 className="h-5 w-5 text-emerald-400" />
+          </div>
+          <h3 className="font-semibold text-titanium-100 text-sm mb-1">Evidence nachweisen</h3>
+          <p className="text-xs text-titanium-400">SHA-256, Audit-Trail, auditierbar</p>
+        </div>
+      </div>
+
+      {/* CTAs */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
           to="/governance/onboarding"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-amber-400"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-amber-400 transition-colors"
         >
-          <Plus className="h-4 w-4" /> Onboarding starten
+          <Plus className="h-4 w-4" /> 4-Schritte Onboarding starten
         </Link>
         <button
           onClick={onAddAsset}
-          className="inline-flex items-center gap-1.5 px-4 py-2 border border-titanium-900 hover:border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none"
+          className="inline-flex items-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none hover:border-titanium-500 transition-colors"
         >
-          Nur Asset anlegen
+          <Database className="h-4 w-4" /> Asset direkt anlegen
         </button>
         <Link
           to="/governance-runtime"
-          className="inline-flex items-center gap-1.5 px-4 py-2 border border-titanium-900 hover:border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none"
+          className="inline-flex items-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none hover:border-titanium-500 transition-colors"
         >
-          Beispiel-Ansicht
+          <Sparkles className="h-4 w-4" /> Live-Beispiel anschauen
         </Link>
       </div>
+
+      {/* Secondary Info */}
+      <p className="text-[12px] text-titanium-500 mt-8">
+        💡 <strong>Tipp:</strong> Der 4-Schritte Onboarding führt Sie durch API-Key-Setup, erste Website-Integration und erste Policies — perfekt zum Anfangen.
+      </p>
     </div>
   );
 }

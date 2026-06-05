@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Activity, AlertTriangle, ShieldCheck, Database,
@@ -21,6 +21,7 @@ import { countOpenDsrs } from './dsrApi';
 import { countOpenIncidents } from './incidentsApi';
 import { EnvironmentSwitcher, EnvironmentBanner } from './EnvironmentSwitcher';
 import { AgentWidget } from './AgentWidget/AgentWidget';
+import { GovernanceInspectorPanel, type InspectorSelection } from './GovernanceInspectorPanel';
 import type { GovernanceRiskLevel } from './types';
 
 /**
@@ -48,6 +49,8 @@ function Inner() {
   const [error, setError]       = useState<string | null>(null);
   const [creatingAsset, setCreatingAsset]   = useState(false);
   const [creatingPolicy, setCreatingPolicy] = useState(false);
+  const [inspectorSelection, setInspectorSelection] = useState<InspectorSelection | null>(null);
+  const closeInspector = useCallback(() => setInspectorSelection(null), []);
 
   const reload = () => {
     if (!activeTenantId) return;
@@ -226,6 +229,13 @@ function Inner() {
         />
       )}
 
+      <GovernanceInspectorPanel
+        selection={inspectorSelection}
+        onClose={closeInspector}
+        onChange={reload}
+        onSelect={setInspectorSelection}
+      />
+
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {error && (
           <div className="mb-4 flex items-start gap-2.5 text-sm text-red-300 bg-red-950/50 border border-red-900 rounded-none p-3">
@@ -249,6 +259,7 @@ function Inner() {
             policies={policies!}
             controls={controls ?? []}
             onChange={reload}
+            onInspect={setInspectorSelection}
           />
         )}
       </main>
@@ -292,13 +303,14 @@ function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
 }
 
 function Body({
-  events, assets, policies, controls, onChange,
+  events, assets, policies, controls, onChange, onInspect,
 }: {
   events: DbGovernanceEvent[];
   assets: DbGovernanceAsset[];
   policies: DbGovernancePolicy[];
   controls: DbFrameworkControl[];
   onChange: () => void;
+  onInspect: (s: InspectorSelection) => void;
 }) {
   const criticalEvents = events.filter((e) => e.risk_level === 'critical' || e.risk_level === 'high').length;
   const highRiskAssets = assets.filter((a) => a.risk_score >= 70).length;
@@ -322,9 +334,9 @@ function Body({
           <ul className="space-y-2">
             {events.slice(0, 25).map((ev) => (
               <li key={ev.id}>
-                <Link
-                  to={`/governance/events/${ev.id}`}
-                  className="block border border-titanium-900 bg-obsidian-950/60 p-3 hover:border-amber-500/40 transition-colors"
+                <button
+                  onClick={() => onInspect({ type: 'event', item: ev })}
+                  className="w-full text-left block border border-titanium-900 bg-obsidian-950/60 p-3 hover:border-amber-500/40 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -345,7 +357,7 @@ function Body({
                       </span>
                     </div>
                   )}
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
@@ -356,7 +368,7 @@ function Body({
         {assets.length > 0 && (
           <Panel icon={<Bot className="h-4 w-4" />} title="Governance Assets">
             <ul className="space-y-2">
-              {assets.map((a) => <AssetRow key={a.id} asset={a} onChange={onChange} />)}
+              {assets.map((a) => <AssetRow key={a.id} asset={a} onChange={onChange} onInspect={() => onInspect({ type: 'asset', item: a })} />)}
             </ul>
           </Panel>
         )}
@@ -364,7 +376,7 @@ function Body({
         {policies.length > 0 && (
           <Panel icon={<ShieldCheck className="h-4 w-4" />} title="Policies">
             <ul className="space-y-2">
-              {policies.map((p) => <PolicyRow key={p.id} policy={p} onChange={onChange} />)}
+              {policies.map((p) => <PolicyRow key={p.id} policy={p} onChange={onChange} onInspect={() => onInspect({ type: 'policy', item: p })} />)}
             </ul>
           </Panel>
         )}
@@ -457,13 +469,13 @@ function scoreClass(score: number) {
   return 'text-emerald-300';
 }
 
-function AssetRow({ asset, onChange }: { asset: DbGovernanceAsset; onChange: () => void }) {
+function AssetRow({ asset, onChange, onInspect }: { asset: DbGovernanceAsset; onChange: () => void; onInspect: () => void }) {
   const [busy, setBusy] = useState(false);
   const isArchived = asset.status === 'archived';
   return (
     <li className="border border-titanium-900 bg-obsidian-950/60 hover:border-amber-500/40 transition-colors">
       <div className="flex items-stretch">
-        <Link to={`/governance/assets/${asset.id}`} className="flex-1 min-w-0 p-3 block">
+        <button onClick={onInspect} className="flex-1 min-w-0 p-3 block text-left">
           <div className="font-semibold text-titanium-50 text-sm">{asset.name}</div>
           <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-400 mt-0.5">
             {asset.asset_type} · {asset.ai_act_class} · {asset.status}
@@ -471,14 +483,15 @@ function AssetRow({ asset, onChange }: { asset: DbGovernanceAsset; onChange: () 
           {asset.vendor && (
             <div className="text-[11px] text-titanium-500 mt-0.5">Vendor: {asset.vendor}</div>
           )}
-        </Link>
+        </button>
         <div className="flex items-center gap-2 p-3 shrink-0">
           <span className={`font-mono text-sm font-bold ${scoreClass(asset.risk_score)}`}>
             {asset.risk_score}/100
           </span>
           {!isArchived && (
             <button
-              onClick={async () => {
+              onClick={async (e) => {
+                e.stopPropagation();
                 if (!confirm(`Asset "${asset.name}" archivieren?`)) return;
                 setBusy(true);
                 await archiveAsset(asset.id);
@@ -498,24 +511,25 @@ function AssetRow({ asset, onChange }: { asset: DbGovernanceAsset; onChange: () 
   );
 }
 
-function PolicyRow({ policy, onChange }: { policy: DbGovernancePolicy; onChange: () => void }) {
+function PolicyRow({ policy, onChange, onInspect }: { policy: DbGovernancePolicy; onChange: () => void; onInspect: () => void }) {
   const [busy, setBusy] = useState(false);
   return (
-    <li className="border border-titanium-900 bg-obsidian-950/60 p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <li className="border border-titanium-900 bg-obsidian-950/60 hover:border-amber-500/40 transition-colors">
+      <div className="flex items-stretch">
+        <button onClick={onInspect} className="flex-1 min-w-0 p-3 text-left block">
           <div className="font-semibold text-titanium-50 text-sm">{policy.name}</div>
           {policy.description && (
-            <div className="text-[12px] text-titanium-300 mt-1 leading-relaxed">{policy.description}</div>
+            <div className="text-[12px] text-titanium-300 mt-1 leading-relaxed line-clamp-2">{policy.description}</div>
           )}
           <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-500 mt-1">
             {policy.policy_type} · {policy.action}
           </div>
-        </div>
-        <div className="flex flex-col items-end gap-1">
+        </button>
+        <div className="flex flex-col items-end justify-center gap-1.5 p-3 shrink-0">
           <RiskBadge level={policy.severity} />
           <button
-            onClick={async () => {
+            onClick={async (e) => {
+              e.stopPropagation();
               setBusy(true);
               await togglePolicy(policy.id, !policy.enabled);
               setBusy(false);

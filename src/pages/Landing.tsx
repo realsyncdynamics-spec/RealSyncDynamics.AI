@@ -29,6 +29,7 @@ import { usePlatformStats, relativeTimeDe } from '../hooks/usePlatformStats';
 import { FoundingAccessBanner } from '../components/sections/FoundingAccessBanner';
 import { ModuleVisibilitySection } from '../components/sections/ModuleVisibilitySection';
 import { RuntimeGovernanceFlowSection } from '../components/sections/RuntimeGovernanceFlowSection';
+import { EnhancedPricingTeaserSection } from '../components/sections/EnhancedPricingTeaserSection';
 
 export function Landing() {
   return (
@@ -45,7 +46,7 @@ export function Landing() {
         <AiActAutomation />
         <SecuritySection />
         <AudienceSection />
-        <PricingTeaser />
+        <EnhancedPricingTeaserSection />
         <FinalCta />
         <Footer />
       </main>
@@ -421,46 +422,6 @@ function AudienceSection() {
   );
 }
 
-// ─── 11 · Preise ─────────────────────────────────────────────────────
-
-const PLAN_TEASER = [
-  { name: 'Free',       price: '€0',     note: '1 Scan, Score + Top-Findings', cta: CTA.startFree,          to: '/audit?source=pricing-free' },
-  { name: 'Monitoring', price: 'ab €79', note: '24/7 Drift + Alerts',           cta: CTA.activateMonitoring, to: '/checkout/starter?source=pricing' },
-  { name: 'Governance', price: 'ab €249',note: 'AI-Act-Register + DSFA',        cta: CTA.upgrade,            to: '/checkout/growth?source=pricing' },
-  { name: 'Agency',     price: 'ab €699',note: 'Multi-Domain + White-Label',    cta: CTA.startPlan,          to: '/checkout/agency?source=pricing' },
-];
-
-function PricingTeaser() {
-  return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-2">
-          Preise — self-service, ohne Gespräch
-        </h2>
-        <p className="text-sm text-titanium-400 mb-10 max-w-2xl">
-          Alle Tarife sind direkt buchbar. Nur Enterprise (SSO, On-Premise,
-          Behördenvertrag, Custom-DPA, Purchase Order) läuft über Anfrage.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
-          {PLAN_TEASER.map((p) => (
-            <div key={p.name} className="bg-obsidian-900 p-6 flex flex-col">
-              <h3 className="font-display font-semibold text-titanium-50">{p.name}</h3>
-              <div className="font-display font-bold text-2xl text-titanium-50 mt-1 mb-1">{p.price}</div>
-              <p className="text-xs text-titanium-500 mb-5">{p.note}</p>
-              <Link to={p.to} className="mt-auto inline-flex items-center justify-center gap-2 border border-cyan-400/40 text-cyan-200 px-3 py-2 text-sm font-semibold hover:bg-cyan-400/10 transition-colors">
-                {p.cta}
-              </Link>
-            </div>
-          ))}
-        </div>
-        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-titanium-500">
-          <Link to="/pricing" className="hover:text-titanium-200 underline-offset-4 hover:underline">Alle Tarife & Details</Link>
-          <Link to="/contact-sales?tier=enterprise&source=pricing-teaser" className="hover:text-titanium-200 underline-offset-4 hover:underline">{CTA.enterprise}</Link>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // ─── 12 · Final CTA ──────────────────────────────────────────────────
 
@@ -469,26 +430,36 @@ function FinalCta() {
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-5xl mx-auto text-center">
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
-          In zwei Minuten startklar
+          Starten Sie noch heute — völlig kostenlos
         </h2>
         <p className="text-sm text-titanium-400 max-w-2xl mx-auto mb-8">
-          Domain eintragen, erster Scan läuft automatisch. Score, Befunde
-          und auditfähiger Report stehen im Anschluss bereit.
+          Domain eintragen, Scan startet sofort. Risk-Score, Top-Findings und
+          auditfähiger Report stehen nach wenigen Minuten bereit. Keine Karte, keine versteckten Gebühren.
         </p>
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
           <Link
             to="/audit?source=final-cta"
-            className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors"
+            className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors rounded-none"
           >
             {CTA.startFree} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
+            to="/welcome?source=final-cta&intent=founding"
+            className="inline-flex items-center justify-center gap-2 border border-amber-500 text-amber-300 px-6 py-3 text-sm font-semibold hover:bg-amber-500/10 transition-colors rounded-none"
+          >
+            {CTA.foundingAccess}
+          </Link>
+          <Link
             to="/welcome?source=final-cta"
-            className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
+            className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors rounded-none"
           >
             {CTA.openDashboard}
           </Link>
         </div>
+
+        <p className="text-xs text-titanium-500 mt-6 font-mono uppercase tracking-wider">
+          Keine Kreditkarte erforderlich · EU-Hosting · DSGVO-konform
+        </p>
       </div>
     </section>
   );

@@ -115,6 +115,7 @@ export const CTA = {
   upgrade:            'Jetzt upgraden',
   startPlan:          'Tarif starten',
   enterprise:         'Enterprise anfragen',
+  foundingAccess:     'Founding Access sichern',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];

@@ -9,13 +9,132 @@ import {
   Lock,
   ShieldCheck
 } from "lucide-react";
-import {
-  demoFrameworkControls,
-  demoGovernanceAssets,
-  demoGovernanceEvents,
-  demoGovernancePolicies
-} from "./demoGovernanceData";
 import type { GovernanceRiskLevel } from "./types";
+
+// Inline demo data to avoid import complexity
+const demoGovernanceEvents = [
+  {
+    id: "evt-001",
+    title: "OpenAI API Key Exposure Detected",
+    eventType: "security-scan",
+    eventSource: "website-scanner",
+    riskLevel: "critical" as GovernanceRiskLevel,
+    summary: "Sensitive API key found in public GitHub repository during automated scan.",
+    vendor: "OpenAI",
+    modelName: undefined,
+    policyAction: "notify",
+    dataTypes: ["API Keys", "Secrets"]
+  },
+  {
+    id: "evt-002",
+    title: "Anthropic Model Configuration",
+    eventType: "runtime-event",
+    eventSource: "ai-gateway",
+    riskLevel: "low" as GovernanceRiskLevel,
+    summary: "Claude 3.5 Sonnet instantiated with default system prompt and temperature 0.7.",
+    vendor: "Anthropic",
+    modelName: "claude-3-5-sonnet",
+    policyAction: "log",
+    dataTypes: ["LLM Config"]
+  },
+  {
+    id: "evt-003",
+    title: "GDPR Compliance Audit Trail",
+    eventType: "compliance-report",
+    eventSource: "gdpr-engine",
+    riskLevel: "medium" as GovernanceRiskLevel,
+    summary: "5 data processing activities logged. All subjects have signed consent forms.",
+    vendor: undefined,
+    modelName: undefined,
+    policyAction: "archive",
+    dataTypes: ["Personal Data", "Consent"]
+  }
+];
+
+const demoGovernancePolicies = [
+  {
+    id: "pol-001",
+    name: "Restrict OpenAI Usage",
+    description: "Deprecated provider; migrate to local Ollama.",
+    action: "block-deployment",
+    enabled: true
+  },
+  {
+    id: "pol-002",
+    name: "Enforce DSGVO Audit Trail",
+    description: "Log all data processing to 16d52e table every 30s.",
+    action: "auto-archive",
+    enabled: true
+  },
+  {
+    id: "pol-003",
+    name: "EU AI Act Compliance",
+    description: "High-risk systems require pre-deployment review.",
+    action: "require-approval",
+    enabled: true
+  }
+];
+
+const demoGovernanceAssets = [
+  {
+    id: "ast-001",
+    name: "Chat API",
+    assetType: "edge-function",
+    vendor: "Supabase",
+    riskScore: 45,
+    aiActClass: "Limited Risk",
+    dataTypes: ["Chat Messages", "User Metadata"]
+  },
+  {
+    id: "ast-002",
+    name: "Document Analyzer",
+    assetType: "llm-system",
+    vendor: "Anthropic",
+    riskScore: 72,
+    aiActClass: "High Risk",
+    dataTypes: ["Document Content", "Classification Output"]
+  },
+  {
+    id: "ast-003",
+    name: "Website Scanner",
+    assetType: "crawler",
+    vendor: "Internal",
+    riskScore: 28,
+    aiActClass: "Minimal Risk",
+    dataTypes: ["Public URLs", "HTML Content"]
+  }
+];
+
+const demoFrameworkControls = [
+  {
+    id: "fc-001",
+    framework: "EU AI Act",
+    controlCode: "SEC-4.1",
+    title: "High-Risk System Register",
+    description: "Maintain Registry of AI Systems classified as High-Risk."
+  },
+  {
+    id: "fc-002",
+    framework: "DSGVO",
+    controlCode: "ART-35",
+    title: "Data Protection Impact Assessment",
+    description: "Assess large-scale processing of personal data."
+  },
+  {
+    id: "fc-003",
+    framework: "ISO 42001",
+    controlCode: "5.23",
+    title: "AI Governance Process",
+    description: "Establish processes for managing AI systems."
+  },
+  {
+    id: "fc-004",
+    framework: "SOC 2",
+    controlCode: "CC6.1",
+    title: "Logical Access Controls",
+    description: "Restrict access to assets based on principle of least privilege."
+  }
+];
 
 function riskClass(level: GovernanceRiskLevel) {
   switch (level) {

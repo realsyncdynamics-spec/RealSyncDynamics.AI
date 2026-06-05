@@ -1,23 +1,26 @@
 name: Deploy to GitHub Pages
 
 # ─────────────────────────────────────────────────────────────────
-# STATUS: CANONICAL FRONTEND PIPELINE (verified 2026-05-16)
+# STATUS: PRIMARY PRODUCTION FRONTEND PIPELINE (verified 2026-06-05)
 # ─────────────────────────────────────────────────────────────────
-# This workflow ships the production frontend.
+# This is the SOLE production deploy path for the frontend.
 #
-# `realsyncdynamicsai.de` zeigt DIREKT auf GitHub Pages (Anycast
-# 185.199.108-111.153) und liefert die Bytes von dort via Fastly CDN.
-# HINWEIS (nachgeprüft 2026-05-28): der Apex läuft NICHT mehr über einen
-# VPS-Traefik-301-Hop — `curl -sI` liefert HTTP 200 direkt von GitHub.com,
-# keinen Redirect. Die alte Beschreibung "Apex → VPS → Traefik 301 → Pages"
-# ist veraltet; siehe docs/runtime/SYSTEMCHECK-2026-05-28.md.
+# DNS topology (verified 2026-06-05):
+#   realsyncdynamicsai.de  A → 185.199.108-111.153 (GitHub Pages Anycast)
+#   HTTPS enforce: on · CNAME: public/CNAME = realsyncdynamicsai.de
+#   Fastly CDN serves bytes directly — NO VPS hop, NO Traefik redirect.
+#   curl -sI https://realsyncdynamicsai.de/ → HTTP/2 200, server: GitHub.com
+#
+# VPS (187.77.89.1) serves ONLY backend subdomains:
+#   chat.realsyncdynamicsai.de, ollama.realsyncdynamicsai.de, n8n.realsyncdynamicsai.de
+#   → VPS is NOT in the frontend request path
 #
 # Verify:    curl -sI https://realsyncdynamicsai.de/ | grep server
-#            → server: GitHub.com   (and HTTP/2 200, no 301)
+#            → server: GitHub.com   (HTTP/2 200, no 301)
 #
 # ADR:       docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md
 # Topology:  docs/runtime/production-runtime.md
-#            docs/runtime/SYSTEMCHECK-2026-05-28.md  (latest live state)
+#            docs/runtime/SYSTEMCHECK-2026-05-28.md
 # ─────────────────────────────────────────────────────────────────
 #
 # Builds the Vite SPA and publishes to GitHub Pages.
@@ -140,3 +143,28 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke:
+    name: Smoke-test live routes
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CDN propagation
+        run: sleep 15
+      - name: Check critical routes (must return 200)
+        run: |
+          BASE="https://realsyncdynamicsai.de"
+          ROUTES="/ /pricing /audit /governance-runtime /app"
+          FAILED=""
+          for path in $ROUTES; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 15 "${BASE}${path}" || echo "000")
+            echo "${path}  →  HTTP ${code}"
+            if [ "$code" != "200" ]; then
+              FAILED="$FAILED $path(${code})"
+            fi
+          done
+          if [ -n "$FAILED" ]; then
+            echo "::error::Smoke-test failed for:$FAILED"
+            exit 1
+          fi
+          echo "✓ All routes returned 200"

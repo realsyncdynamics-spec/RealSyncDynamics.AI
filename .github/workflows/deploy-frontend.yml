@@ -1,37 +1,27 @@
-name: Deploy Frontend
+name: Deploy Frontend (VPS Fallback — optional)
 
 # ─────────────────────────────────────────────────────────────────
-# STATUS: AMBIGUOUS — verify before deletion (audited 2026-05-16)
+# STATUS: OPTIONAL / VPS FALLBACK — non-blocking (updated 2026-06-05)
 # ─────────────────────────────────────────────────────────────────
-# This workflow rsyncs `dist/` to /var/www/realsyncdynamicsai.de/dist
-# on the Hostinger VPS. The original comment claims the path is
-# bind-mounted into a `kodee-frontend` nginx container.
+# PRIMARY PRODUCTION FRONTEND = deploy-pages.yml (GitHub Pages)
+# This workflow is NOT the live user-facing frontend path.
 #
-# However: the docker-compose at deploy/ollama-traefik/docker-compose.yml
-# defines `kodee-ollama`, `kodee-chat`, `kodee-apex` (the redirect
-# router), `kodee-n8n` — but NO `kodee-frontend` container. And the
-# `kodee-apex` middleware 301-redirects every Host(realsyncdynamicsai.de)
-# request to GitHub Pages BEFORE any static-file backend is consulted.
+# realsyncdynamicsai.de → GitHub Pages (DNS A 185.199.108-111.153)
+# VPS (187.77.89.1) serves only backend subdomains:
+#   chat/ollama/n8n.realsyncdynamicsai.de
 #
-# Live verification on 2026-05-16:
-#   curl -sI -L https://realsyncdynamicsai.de/  →  server: GitHub.com
-#                                                  x-served-by: cache-chi-klot…
+# This workflow rsyncs `dist/` to the VPS for potential backend-side
+# asset access (e.g. server-side rendering, internal tooling).
+# A failure here DOES NOT affect the live site.
 #
-# So one of two things is true:
-#   A) The shipped dist/ is dead weight and this workflow burns CI
-#      minutes for no production effect — workflow + matching nginx
-#      vhost (deploy/nginx/realsyncdynamicsai.de.conf) should be deleted.
-#   B) There is a separate compose file or systemd-managed nginx on the
-#      VPS (not in git) that serves these files for some surface I
-#      cannot see from the repository — that surface should be added
-#      to docker-compose.yml so the topology is reproducible.
+# ⚠ continue-on-error: true — VPS SSH timeout or missing secrets
+#   will produce a warning, not a red build.
 #
-# DO NOT delete this workflow until an operator has SSH'd into the VPS
-# and confirmed which of the two scenarios is true. See
-# docs/runtime/production-runtime.md §"Ambiguous artifacts".
-# ─────────────────────────────────────────────────────────────────
+# SSH timeout issue (2026-06-05): Port 22 on 187.77.89.1 is timing out.
+# To fix: check Hostinger firewall → ensure port 22 is open for GitHub
+# Actions IPs, or switch to a non-standard SSH port.
 #
-# Builds the Vite app and ships dist/ to the production VPS via SSH+rsync.
+# Builds the Vite app and ships dist/ to the VPS via SSH+rsync.
 # Triggers on push to main when frontend sources change, plus manual dispatch.
 #
 # Required repo secrets:
@@ -72,12 +62,13 @@ concurrency:
 
 jobs:
   deploy:
-    name: Build + ship to VPS
+    name: Build + ship to VPS (optional)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify required secrets
+      - name: Verify required secrets (warn only — non-blocking)
         run: |
           missing=""
           for key in VPS_SSH_HOST VPS_SSH_USER VPS_SSH_KEY VPS_SSH_KNOWN_HOST VPS_FRONTEND_PATH VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY; do
@@ -85,9 +76,8 @@ jobs:
             [ -z "$value" ] && missing="$missing $key"
           done
           if [ -n "$missing" ]; then
-            echo "❌ missing secrets:$missing"
-            echo "set them under repo Settings → Secrets and variables → Actions"
-            exit 1
+            echo "::warning::VPS deploy skipped — missing secrets:$missing"
+            echo "VPS_DEPLOY_SKIP=true" >> "$GITHUB_ENV"
           fi
 
       - uses: actions/setup-node@v4
@@ -124,6 +114,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Configure SSH
+        if: env.VPS_DEPLOY_SKIP != 'true'
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
@@ -131,6 +122,8 @@ jobs:
           echo "${{ secrets.VPS_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Sync dist/ to VPS
+        if: env.VPS_DEPLOY_SKIP != 'true'
+        timeout-minutes: 5
         run: |
           rsync \
             --archive \
@@ -138,16 +131,18 @@ jobs:
             --compress \
             --human-readable \
             --stats \
-            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes" \
+            --timeout=60 \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ConnectTimeout=30" \
             dist/ \
-            "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:${{ secrets.VPS_FRONTEND_PATH }}/"
+            "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:${{ secrets.VPS_FRONTEND_PATH }}/" \
+          || echo "::warning::VPS rsync failed (SSH timeout or unreachable host) — live site on GitHub Pages unaffected"
 
-      - name: Smoke-test the public URL
+      - name: Smoke-test live site (GitHub Pages)
         run: |
-          for i in 1 2 3 4 5; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L https://realsyncdynamicsai.de/ || echo "000")
+          for i in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 15 https://realsyncdynamicsai.de/ || echo "000")
             echo "attempt $i: HTTP $code"
             if [ "$code" = "200" ]; then exit 0; fi
-            sleep 3
+            sleep 5
           done
-          echo "::warning::public URL did not return 200; check Traefik labels on kodee-frontend container + DNS"
+          echo "::warning::public URL did not return 200 — check GitHub Pages deploy-pages.yml"

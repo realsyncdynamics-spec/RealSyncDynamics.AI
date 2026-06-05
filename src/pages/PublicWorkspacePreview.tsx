@@ -99,7 +99,7 @@ export function PublicWorkspacePreview() {
             Governance OS
           </h1>
           <p className="text-titanium-400 max-w-2xl mb-6">
-            EU-souveräne SaaS-Plattform für Creator und Agenturen. Verwalten Sie Websites, KI-Systeme, Risiken und Compliance in einer einheitlichen Oberfläche.
+            Europäisches Governance Operating System für Unternehmen, Agenturen und Behörden. Websites, AI Registry, Risk Register, Evidence Chain und Compliance in einer einheitlichen Oberfläche.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <button

@@ -155,9 +155,9 @@ function renderPanel(selection: InspectorSelection | null, cbs: Callbacks = {}) 
     <MemoryRouter>
       <GovernanceInspectorPanel
         selection={selection}
-        onClose={onClose}
-        onChange={onChange}
-        onSelect={onSelect}
+        onClose={onClose as () => void}
+        onChange={onChange as () => void}
+        onSelect={onSelect as (s: InspectorSelection) => void}
       />
     </MemoryRouter>,
   );

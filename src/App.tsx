@@ -197,6 +197,8 @@ import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
 import { CookieConsent } from './components/CookieConsent';
+import { GovernanceBrowserShell } from './components/governance-os/GovernanceBrowserShell';
+import { RemediationPlaceholder } from './components/governance-os/RemediationPlaceholder';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
@@ -390,16 +392,24 @@ function RoutesWithTracking() {
       {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
           Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
-      <Route path="/app" element={<WorkspaceHome />} />
-      <Route path="/app/company" element={<WorkspaceEmbed title="Mein Unternehmen"><CompanyView /></WorkspaceEmbed>} />
-      <Route path="/app/websites" element={<WorkspaceEmbed title="Websites"><GovernanceDashboardView /></WorkspaceEmbed>} />
-      <Route path="/app/ai-systems" element={<WorkspaceEmbed title="KI-Systeme"><AgentRegistryView /></WorkspaceEmbed>} />
-      <Route path="/app/risks" element={<WorkspaceEmbed title="Risiken"><GovernanceIncidentsView /></WorkspaceEmbed>} />
-      <Route path="/app/compliance" element={<WorkspaceEmbed title="Compliance"><GovernanceComplianceReportView /></WorkspaceEmbed>} />
-      <Route path="/app/evidence" element={<WorkspaceEmbed title="Evidence"><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></WorkspaceEmbed>} />
-      <Route path="/app/monitoring" element={<WorkspaceEmbed title="Monitoring"><MonitoringSurface embedded /></WorkspaceEmbed>} />
-      <Route path="/app/team" element={<WorkspaceEmbed title="Team & Zugriff"><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></WorkspaceEmbed>} />
-      <Route path="/app/settings" element={<WorkspaceEmbed title="Einstellungen"><SettingsView /></WorkspaceEmbed>} />
+      {/* ── Governance OS Browser Shell — alle /app/* Routen ──
+          GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
+          Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
+      <Route path="/app" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
+      <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
+      <Route path="/app/websites" element={<GovernanceBrowserShell><GovernanceDashboardView /></GovernanceBrowserShell>} />
+      <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
+      <Route path="/app/risks" element={<GovernanceBrowserShell><GovernanceIncidentsView /></GovernanceBrowserShell>} />
+      <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
+      <Route path="/app/vendors" element={<GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell>} />
+      <Route path="/app/reports" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
+      <Route path="/app/dpia" element={<GovernanceBrowserShell><GovernanceDpiasView /></GovernanceBrowserShell>} />
+      <Route path="/app/remediation" element={<GovernanceBrowserShell><RemediationPlaceholder /></GovernanceBrowserShell>} />
+      <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).

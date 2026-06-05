@@ -22,6 +22,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, AlertTriangle, ScanLine, Eye, FileStack,
   BadgeCheck, Gavel, Lock, Building2, Briefcase, UserCheck, Landmark, Server,
+  Globe, Bot, FileCheck2, Activity, BarChart3, Shield,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { CTA } from '../content/runtimeVocab';
@@ -38,6 +39,7 @@ export function Landing() {
       <main className="bg-obsidian-950 text-titanium-100 pt-14">
         <FoundingAccessBanner />
         <Hero />
+        <BrowserMetaphorSection />
         <ModuleVisibilitySection />
         <RuntimeGovernanceFlowSection />
         <ProblemSection />
@@ -87,7 +89,7 @@ function Hero() {
         {/* Linke Spalte — Narrative + CTAs + Zielgruppen */}
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-4">
-            Self-Service · EU-souverän · Auditfähig · Jede Branche
+            DSGVO • EU AI Act • Evidence · by RealSync Dynamics AI
           </p>
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
             DSGVO + EU AI Act Governance für Websites, KI-Systeme und Agenten
@@ -102,7 +104,7 @@ function Hero() {
               to="/audit?source=hero"
               className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors rounded-none"
             >
-              {CTA.startFree} <ArrowRight className="h-4 w-4" />
+              Governance OS öffnen <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/welcome?source=hero"
@@ -460,6 +462,95 @@ function FinalCta() {
         <p className="text-xs text-titanium-500 mt-6 font-mono uppercase tracking-wider">
           Keine Kreditkarte erforderlich · EU-Hosting · DSGVO-konform
         </p>
+      </div>
+    </section>
+  );
+}
+
+// ─── Founding Access Banner ──────────────────────────────────────────
+
+function FoundingAccessBanner() {
+  return (
+    <section className="border-b border-titanium-900 bg-obsidian-900 px-4 sm:px-6 py-8">
+      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-mono text-[9px] uppercase tracking-widest bg-cyan-950 text-cyan-300 border border-cyan-800 px-2 py-0.5">
+              Founding Access geöffnet
+            </span>
+          </div>
+          <p className="font-display font-semibold text-titanium-50">
+            Die ersten 100 Unternehmen erhalten priorisierten Zugang zum Governance OS Browser.
+          </p>
+          <p className="mt-1 text-sm text-titanium-400">
+            Kostenlos testen. Feedback geben. Plattform aktiv mitgestalten.
+          </p>
+        </div>
+        <div className="flex gap-3 shrink-0">
+          <Link
+            to="/audit?source=founding"
+            className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 transition-colors"
+          >
+            Kostenlosen Audit starten
+          </Link>
+          <Link
+            to="/enterprise-ai-os/founding-access"
+            className="inline-flex items-center gap-2 border border-cyan-800 text-cyan-300 px-4 py-2 text-sm font-semibold hover:border-cyan-600 transition-colors"
+          >
+            Founding Access sichern
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Browser-Metapher-Section ─────────────────────────────────────────
+
+const BROWSER_METAPHORS = [
+  { icon: Globe,      label: 'Adresszeile',   mapping: 'Website, KI-System oder Risiko prüfen' },
+  { icon: BarChart3,  label: 'Tabs',          mapping: 'Governance-Module: DSGVO, AI Act, Evidence' },
+  { icon: Bot,        label: 'Seitenpanel',   mapping: 'KI-Assistent mit Modulkontext' },
+  { icon: FileCheck2, label: 'Verlauf',       mapping: 'Audit Trail und Evidence-Snapshots' },
+  { icon: Shield,     label: 'Sicherheitsstatus', mapping: 'Compliance Score und Risk-Level' },
+  { icon: FileCheck2, label: 'Downloads',     mapping: 'Compliance-Reports und PDF-Exporte' },
+  { icon: Activity,   label: 'Erweiterungen', mapping: 'Module, Add-ons und Integrationen' },
+];
+
+function BrowserMetaphorSection() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-14 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
+            Warum als Browser?
+          </h2>
+          <p className="text-base text-titanium-400 max-w-2xl leading-relaxed">
+            Jeder kennt Browser. Deshalb macht RealSync Dynamics AI Governance-Arbeit so
+            bedienbar wie Web-Arbeit: mit Tabs, Address Bar, Arbeitsfläche, Verlauf,
+            Evidence und KI-Assistent.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-titanium-900">
+          {BROWSER_METAPHORS.map(({ icon: Icon, label, mapping }) => (
+            <div key={label} className="bg-obsidian-900 p-4">
+              <Icon className="h-4 w-4 text-cyan-400 mb-2" />
+              <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-1">{label}</p>
+              <p className="text-sm text-titanium-200">{mapping}</p>
+            </div>
+          ))}
+          <div className="bg-obsidian-900 p-4 flex flex-col justify-between">
+            <p className="text-sm text-titanium-400 leading-relaxed">
+              Governance-Arbeit so vertraut wie Browser-Arbeit.
+            </p>
+            <Link
+              to="/app"
+              className="mt-3 inline-flex items-center gap-1.5 text-cyan-400 text-sm font-medium hover:text-cyan-300 transition-colors"
+            >
+              Governance OS öffnen <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
       </div>
     </section>
   );

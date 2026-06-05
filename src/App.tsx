@@ -219,7 +219,8 @@ function RoutesWithTracking() {
     <Suspense fallback={<LazyFallback />}>
     <Routes>
       {/* Public */}
-      <Route path="/" element={<PublicWorkspacePreview />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

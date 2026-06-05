@@ -5,14 +5,18 @@
 // wechselt. Bestehende Auth-Views koennen schrittweise hier eingehaengt werden;
 // in P0 rahmt der Shell das neue Status-Home (/app) und verlinkt in die
 // vorhandenen Governance-Routen.
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home, Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
-  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown, Building2,
+  Activity, Users, Settings, Menu, X, Search, Sparkles, ChevronDown, Building2, ChevronRight,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getActivePlanForTenant } from '../../lib/billing/planAccess';
+
+const AgentWidget = lazy(() =>
+  import('../governance/AgentWidget/AgentWidget').then((m) => ({ default: m.AgentWidget }))
+);
 
 interface NavItem { to: string; label: string; icon: typeof Home }
 
@@ -47,6 +51,7 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
   const { pathname } = useLocation();
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
   const [open, setOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
   const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
 
   // Tarif-gesteuerte KMU-Sicht: nur Free/Starter/Growth sehen „Mein Unternehmen".
@@ -150,14 +155,56 @@ export function WorkspaceShell({ children, title }: { children: React.ReactNode;
             {activeTenant && tenants.length <= 1 && (
               <span className="hidden sm:inline text-xs text-titanium-400 font-medium max-w-[140px] truncate">{activeTenant.name}</span>
             )}
-            <Link to="/assistant" title="Assistent" className="p-1.5 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none">
+            <button
+              onClick={() => setAgentOpen((v) => !v)}
+              title="Governance Assistent"
+              className={`p-1.5 rounded-none transition-colors ${agentOpen ? 'text-cyan-300 bg-obsidian-800' : 'text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800'}`}
+            >
               <Sparkles className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </header>
 
         {/* Panel */}
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <div className="flex flex-1 overflow-hidden min-h-0">
+          <main className="flex-1 overflow-y-auto">{children}</main>
+
+          {/* Governance-Assistent — eingeklappt: schmaler Button; ausgeklappt: w-72 Panel */}
+          {agentOpen ? (
+            <aside className="w-72 shrink-0 flex flex-col bg-obsidian-900 border-l border-titanium-900 overflow-hidden">
+              <div className="h-10 shrink-0 flex items-center justify-between px-3 border-b border-titanium-900">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+                  <span className="text-xs font-semibold text-titanium-100">Governance Assistent</span>
+                </div>
+                <button onClick={() => setAgentOpen(false)} className="text-titanium-600 hover:text-titanium-200">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <Suspense fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <Sparkles className="h-5 w-5 text-titanium-700 animate-pulse" />
+                  </div>
+                }>
+                  <AgentWidget mode="tenant" />
+                </Suspense>
+              </div>
+            </aside>
+          ) : (
+            <button
+              onClick={() => setAgentOpen(true)}
+              className="hidden lg:flex flex-col items-center justify-center w-8 shrink-0 bg-obsidian-900 border-l border-titanium-900 text-titanium-600 hover:text-titanium-200 hover:bg-obsidian-800 transition-colors gap-1.5"
+              aria-label="Assistent öffnen"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="font-mono text-[8px] uppercase tracking-widest" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                Assistent
+              </span>
+              <ChevronRight className="h-3 w-3" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -6,9 +6,17 @@ interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
   onToggleMobile: () => void;
   onOpenAssistant: () => void;
+  onLoadUrl: (url: string) => void;
+  activeEmbedUrl?: string;
 }
 
-export function BrowserTopBar({ mobileMenuOpen, onToggleMobile, onOpenAssistant }: BrowserTopBarProps) {
+export function BrowserTopBar({
+  mobileMenuOpen,
+  onToggleMobile,
+  onOpenAssistant,
+  onLoadUrl,
+  activeEmbedUrl,
+}: BrowserTopBarProps) {
   const navigate = useNavigate();
 
   return (
@@ -37,8 +45,8 @@ export function BrowserTopBar({ mobileMenuOpen, onToggleMobile, onOpenAssistant 
         </div>
       </Link>
 
-      {/* Address Bar */}
-      <GovernanceAddressBar />
+      {/* Address Bar — onLoadUrl für echte URLs, sonst Audit-Navigation */}
+      <GovernanceAddressBar onLoadUrl={onLoadUrl} activeUrl={activeEmbedUrl} />
 
       {/* Rechte CTA-Buttons */}
       <div className="flex items-center gap-1.5 shrink-0">

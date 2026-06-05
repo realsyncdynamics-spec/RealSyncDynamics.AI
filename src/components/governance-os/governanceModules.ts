@@ -1,5 +1,14 @@
 import type { GovernanceModule } from './governanceBrowserTypes';
 
+// Tier-Hierarchie (inklusiv: höherer Tier bekommt immer alles aus niedrigeren):
+// free → starter → growth → agency → scale → enterprise
+//
+// Governance OS Browser Plan-Mapping:
+//   Free       = free
+//   Starter    = starter
+//   Professional = growth
+//   Enterprise = agency / scale / enterprise
+
 export const GOVERNANCE_MODULES: GovernanceModule[] = [
   {
     id: 'overview',
@@ -7,7 +16,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Home',
     route: '/app',
     status: 'live',
-    plans: ['free', 'starter', 'professional', 'enterprise'],
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Zentrale Governance-Übersicht',
   },
   {
@@ -16,7 +25,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Globe',
     route: '/app/websites',
     status: 'live',
-    plans: ['free', 'starter', 'professional', 'enterprise'],
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Website-Governance, Scans und Findings',
   },
   {
@@ -25,16 +34,16 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'FileCheck2',
     route: '/app/evidence',
     status: 'live',
-    plans: ['starter', 'professional', 'enterprise'],
-    description: 'Hashes, Snapshots und Audit Trails',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Hashes, Snapshots und Audit Trails (read-only im Free-Plan)',
   },
   {
     id: 'ai-systems',
     label: 'KI-Systeme',
-    icon: 'Bot',
+    icon: 'Cpu',
     route: '/app/ai-systems',
     status: 'beta',
-    plans: ['professional', 'enterprise'],
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'KI-System-Registry und EU-AI-Act-Dokumentation',
   },
   {
@@ -43,7 +52,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'AlertTriangle',
     route: '/app/risks',
     status: 'beta',
-    plans: ['professional', 'enterprise'],
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Risikoidentifikation und Priorisierung',
   },
   {
@@ -52,7 +61,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Activity',
     route: '/app/monitoring',
     status: 'beta',
-    plans: ['starter', 'professional', 'enterprise'],
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Runtime Monitoring und Drift Alerts',
   },
   {
@@ -61,7 +70,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Building2',
     route: '/app/vendors',
     status: 'beta',
-    plans: ['professional', 'enterprise'],
+    plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'Vendor- und DPA-Tracking',
   },
   {
@@ -70,7 +79,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'BarChart3',
     route: '/app/reports',
     status: 'beta',
-    plans: ['starter', 'professional', 'enterprise'],
+    plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'Compliance- und Audit-Reports',
   },
   {
@@ -79,7 +88,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'ClipboardList',
     route: '/app/dpia',
     status: 'roadmap',
-    plans: ['professional', 'enterprise'],
+    plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'DSFA/DPIA Generator',
   },
   {
@@ -88,7 +97,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Wrench',
     route: '/app/remediation',
     status: 'roadmap',
-    plans: ['enterprise'],
+    plans: ['agency', 'scale', 'enterprise'],
     description: 'Auto-Fixes, Pull Requests und Maßnahmen',
   },
   {
@@ -97,7 +106,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Users',
     route: '/app/team',
     status: 'live',
-    plans: ['professional', 'enterprise'],
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Rollen, Team und Zugriff',
   },
   {
@@ -106,17 +115,35 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Settings',
     route: '/app/settings',
     status: 'live',
-    plans: ['free', 'starter', 'professional', 'enterprise'],
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Mandant, Sicherheit und Integrationen',
   },
 ];
 
-// Tabs sichtbar in der Browser-Nav (Live + Beta, kein Roadmap)
+// Alle nicht-Roadmap-Module für die Tab-Leiste
 export const TAB_MODULES = GOVERNANCE_MODULES.filter(
   (m) => m.status === 'live' || m.status === 'beta',
 );
 
-// Roadmap-Module für den ModuleDock
+// Roadmap-Module für den More-Dock
 export const DOCK_MODULES = GOVERNANCE_MODULES.filter(
   (m) => m.status === 'roadmap',
 );
+
+// Tier-Reihenfolge für inklusiven Vergleich
+const TIER_ORDER: GovernanceModule['plans'][number][] = [
+  'free', 'starter', 'growth', 'agency', 'scale', 'enterprise',
+];
+
+/** Gibt true zurück wenn `userPlan` Zugriff auf das Modul hat. */
+export function canAccessModule(module: GovernanceModule, userPlan: string): boolean {
+  return module.plans.includes(userPlan as GovernanceModule['plans'][number]);
+}
+
+/** Mindest-Tier für ein Modul (erster Eintrag im plans-Array nach TIER_ORDER). */
+export function minimumPlanForModule(module: GovernanceModule): string {
+  for (const tier of TIER_ORDER) {
+    if (module.plans.includes(tier)) return tier;
+  }
+  return 'enterprise';
+}

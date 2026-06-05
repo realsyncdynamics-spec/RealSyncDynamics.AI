@@ -1,5 +1,7 @@
+import type { TierId } from '../../config/pricing';
+
 export type ModuleStatus = 'live' | 'beta' | 'roadmap';
-export type Plan = 'free' | 'starter' | 'professional' | 'enterprise';
+export type Plan = TierId;
 
 export interface GovernanceModule {
   id: string;
@@ -7,6 +9,7 @@ export interface GovernanceModule {
   icon: string;
   route: string;
   status: ModuleStatus;
+  /** Tiers that may access this module (inclusive: a higher tier always includes lower). */
   plans: Plan[];
   description: string;
 }

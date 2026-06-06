@@ -15,6 +15,8 @@ import {
 import { archiveAsset, togglePolicy } from './resourcesApi';
 import { CreateAssetModal, CreatePolicyModal } from './GovernanceResourceModals';
 import { GovernanceTrendsPanel } from './GovernanceTrendsPanel';
+import { DsgvoControlPackPanel } from './dsgvo-control-pack/DsgvoControlPackPanel';
+import { DEMO_CONTROL_SIGNALS } from './dsgvo-control-pack/dsgvoControlPackDemo';
 import { countPendingApprovals } from './approvalsApi';
 import { countOpenDpias } from './dpiasApi';
 import { countOpenDsrs } from './dsrApi';
@@ -340,6 +342,8 @@ function Body({
           </ul>
         </Panel>
       )}
+
+      <DsgvoControlPackPanel signals={DEMO_CONTROL_SIGNALS} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {assets.length > 0 && (

@@ -17,6 +17,8 @@ import { countOpenDsrs } from '../governance/dsrApi';
 import { countPendingApprovals } from '../governance/approvalsApi';
 import { countOpenIncidents } from '../governance/incidentsApi';
 import { countVendorsNoDpa } from '../governance/vendorsApi';
+import { DsgvoControlPackPanel } from '../governance/dsgvo-control-pack/DsgvoControlPackPanel';
+import { DEMO_CONTROL_SIGNALS } from '../governance/dsgvo-control-pack/dsgvoControlPackDemo';
 
 interface Counts {
   incidents: number;
@@ -125,6 +127,9 @@ function Inner() {
           <Tile to="/governance/vendors" icon={UserCheck} label="Vendoren ohne DPA" value={counts?.vendorsNoDpa} loading={!counts} accent="amber" />
         </div>
       </section>
+
+      {/* DSGVO Control Pack — Post-Market Monitoring */}
+      <DsgvoControlPackPanel signals={DEMO_CONTROL_SIGNALS} />
 
       {/* Objekte */}
       <section>

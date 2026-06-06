@@ -364,6 +364,35 @@ function Pillars() {
   );
 }
 
+// ─── Business Impact Mapping (statisch, severity-basiert) ────────────────
+const ISSUE_BUSINESS_IMPACT: Record<string, { businessImpact: string; effort: string; action: string }> = {
+  critical: {
+    businessImpact: 'Art. 83(5) DSGVO — Bußgeld bis 4 % des weltweiten Jahresumsatzes möglich.',
+    effort:         '2–5 Stunden',
+    action:         'Sofortige Behebung empfohlen — Evidence dokumentieren.',
+  },
+  high: {
+    businessImpact: 'Aufsichtsbehördliche Prüfung möglich. Nachweis technischer Schutzmaßnahmen nach Art. 32 DSGVO erforderlich.',
+    effort:         '1–2 Stunden',
+    action:         'Innerhalb 72 Stunden beheben und Evidence erzeugen.',
+  },
+  medium: {
+    businessImpact: 'Dokumentationslücke bei internem oder externem Audit. Erschwert Rechenschaftspflicht nach Art. 5 Abs. 2 DSGVO.',
+    effort:         '30 Minuten',
+    action:         'Konfiguration prüfen und Datenschutzerklärung aktualisieren.',
+  },
+  low: {
+    businessImpact: 'Geringes direktes Risiko. Empfohlen zur Stärkung der Compliance-Dokumentation.',
+    effort:         '5–15 Minuten',
+    action:         'Im nächsten Wartungszyklus adressieren.',
+  },
+  info: {
+    businessImpact: 'Kein direktes Risiko. Hinweis zur Transparenz.',
+    effort:         '—',
+    action:         'Optional prüfen.',
+  },
+};
+
 // ─── Report ───────────────────────────────────────────────────────────────
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
@@ -384,6 +413,71 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         </div>
         <p className={`text-sm ${config.color} mt-3 leading-relaxed`}>
           {config.summary(report.issues.length)}
+        </p>
+      </div>
+
+      {/* Business Impact Summary */}
+      {report.issues.length > 0 && (
+        <div className="border border-titanium-900 bg-obsidian-900">
+          <div className="px-4 py-3 border-b border-titanium-900 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-cyan-400" />
+            <span className="font-display font-semibold text-sm text-titanium-50">Geschäftliche Auswirkungen</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 divide-x divide-y divide-titanium-900">
+            <div className="p-4">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">Compliance Score</p>
+              <p className={`font-display font-bold text-2xl ${report.score >= 75 ? 'text-emerald-300' : report.score >= 50 ? 'text-amber-300' : 'text-rose-300'}`}>{report.score}<span className="text-sm text-titanium-500"> /100</span></p>
+            </div>
+            <div className="p-4">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">Geschätztes Risiko</p>
+              <p className={`font-display font-bold text-sm ${report.severity === 'critical' ? 'text-rose-300' : report.severity === 'high' ? 'text-amber-300' : 'text-emerald-300'}`}>
+                {report.severity === 'critical' ? 'Hoch' : report.severity === 'high' ? 'Mittel' : 'Niedrig'}
+              </p>
+            </div>
+            <div className="p-4">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">Kritische Befunde</p>
+              <p className="font-display font-bold text-sm text-titanium-50">
+                {report.issues.filter(i => i.severity === 'critical').length}
+              </p>
+            </div>
+            <div className="p-4">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">Geschätzter Aufwand</p>
+              <p className="font-display font-bold text-sm text-titanium-50">
+                {report.issues.filter(i => i.severity === 'critical' || i.severity === 'high').length > 2 ? '1 Tag' : report.issues.length > 3 ? '2–4 Stunden' : '1–2 Stunden'}
+              </p>
+            </div>
+            <div className="p-4">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">Zeitersparnis mit Monitoring</p>
+              <p className="font-display font-bold text-sm text-cyan-300">≈ 85 % <span className="text-[10px] text-titanium-500 font-normal">Schätzung</span></p>
+            </div>
+            <div className="p-4">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">Nachweisstatus</p>
+              <p className="font-display font-bold text-sm text-amber-300">
+                {report.issues.some(i => i.evidence) ? 'Teilweise dokumentiert' : 'Evidence ausstehend'}
+              </p>
+            </div>
+          </div>
+          <p className="px-4 py-2 font-mono text-[9px] text-titanium-700 border-t border-titanium-900">
+            Schätzwerte dienen der Priorisierung und ersetzen keine rechtliche Beratung.
+          </p>
+        </div>
+      )}
+
+      {/* Audit Lifecycle Flow */}
+      <div className="border border-titanium-900 bg-obsidian-950 px-4 py-5">
+        <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-4">Audit Lifecycle</p>
+        <div className="flex items-center gap-0 overflow-x-auto scrollbar-none">
+          {(['Erkennung', 'Risiko', 'Evidence', 'Maßnahme', 'Monitoring', 'Audit Ready'] as const).map((step, i, arr) => (
+            <div key={step} className="flex items-center shrink-0">
+              <div className={`px-3 py-1.5 text-[10px] font-mono uppercase tracking-wider border ${i === 0 ? 'border-cyan-700 text-cyan-300 bg-cyan-950' : i === arr.length - 1 ? 'border-emerald-700 text-emerald-300 bg-emerald-950' : 'border-titanium-800 text-titanium-400 bg-obsidian-900'}`}>
+                {step}
+              </div>
+              {i < arr.length - 1 && <span className="text-titanium-700 px-1">↓</span>}
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-[11px] text-titanium-500 leading-relaxed">
+          RealSyncDynamics.AI erkennt technische Findings, dokumentiert Risiken, bereitet Nachweise vor und unterstützt Maßnahmen bis zur Audit-Bereitschaft.
         </p>
       </div>
 
@@ -410,6 +504,31 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
               ))}
             </ul>
           )}
+      </div>
+
+      {/* Nächster Schritt CTA */}
+      <div className="border border-titanium-900 bg-obsidian-900 p-4">
+        <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-3">Nächster Schritt</p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Link
+            to="/app/monitoring"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 text-obsidian-950 text-xs font-bold hover:bg-cyan-300 transition-colors"
+          >
+            <Activity className="h-3.5 w-3.5" /> Monitoring aktivieren
+          </Link>
+          <Link
+            to="/app/evidence"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
+          >
+            <FileText className="h-3.5 w-3.5" /> Evidence Vault öffnen
+          </Link>
+          <Link
+            to="/app/compliance"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
+          >
+            <FileText className="h-3.5 w-3.5" /> Report exportieren
+          </Link>
+        </div>
       </div>
 
       <MonitoringActivationBlock report={report} />
@@ -531,8 +650,6 @@ function ShareBlock({ report }: { report: Report }) {
 }
 
 function IssueCard({ issue, onExplain }: { issue: Issue; onExplain?: () => void }) {
-  // Mono-Enterprise: nur `critical` rot, restliche Severities via
-  // Helligkeit und Border-Stärke differenziert (kein Bling-Bling).
   const sevColor: Record<Issue['severity'], string> = {
     critical: 'text-red-300 border-red-900 bg-red-950/30',
     high:     'text-titanium-50 border-titanium-600 bg-obsidian-900',
@@ -547,18 +664,42 @@ function IssueCard({ issue, onExplain }: { issue: Issue; onExplain?: () => void 
     low:      'NIEDRIG',
     info:     'INFO',
   };
+  const impact = ISSUE_BUSINESS_IMPACT[issue.severity];
+  const hasEvidence = !!issue.evidence;
+
   return (
     <li className={`p-4 border ${sevColor[issue.severity]} rounded-none`}>
       <div className="flex items-center gap-2 mb-1.5">
-        <span className={`text-[10px] font-bold uppercase tracking-wider`}>
+        <span className="text-[10px] font-bold uppercase tracking-wider">
           {sevLabel[issue.severity]}
         </span>
         {issue.paragraph_ref && (
           <span className="text-[10px] text-titanium-500 font-mono">{issue.paragraph_ref}</span>
         )}
+        <span className={`ml-auto font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border ${hasEvidence ? 'border-emerald-800 text-emerald-400 bg-emerald-950' : 'border-titanium-800 text-titanium-500 bg-obsidian-950'}`}>
+          {hasEvidence ? 'Evidence verfügbar' : 'Evidence ausstehend'}
+        </span>
       </div>
+
       <div className="font-display font-bold text-titanium-50 mb-1">{issue.title}</div>
-      <div className="text-sm text-titanium-300 leading-relaxed">{issue.detail}</div>
+      <div className="text-sm text-titanium-300 leading-relaxed mb-3">{issue.detail}</div>
+
+      {/* Business Impact Layer */}
+      <div className="border-t border-titanium-900 pt-3 mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-0.5">Geschäftsauswirkung</p>
+          <p className="text-xs text-titanium-300 leading-relaxed">{impact.businessImpact}</p>
+        </div>
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-0.5">Behebungsaufwand</p>
+          <p className="text-xs text-titanium-300">{impact.effort}</p>
+        </div>
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-0.5">Empfohlene Maßnahme</p>
+          <p className="text-xs text-cyan-300">{impact.action}</p>
+        </div>
+      </div>
+
       {onExplain && (
         <button
           type="button"

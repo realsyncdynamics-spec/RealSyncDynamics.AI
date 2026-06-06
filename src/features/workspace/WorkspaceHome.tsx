@@ -131,6 +131,65 @@ function Inner() {
       {/* DSGVO Control Pack — Post-Market Monitoring */}
       <DsgvoControlPackPanel signals={DEMO_CONTROL_SIGNALS} />
 
+      {/* Control Pack Produktfamilie */}
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-3">
+          <ShieldCheck className="h-4 w-4 text-cyan-400" />
+          <h3 className="font-display font-semibold text-titanium-50 text-sm">Control Packs</h3>
+        </div>
+        <div className="border border-titanium-900 divide-y divide-titanium-900">
+          <div className="flex items-center gap-3 px-4 py-3 bg-obsidian-900">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-emerald-400 border border-emerald-800 bg-emerald-950 px-1.5 py-0.5">Aktiv</span>
+            <span className="text-sm font-semibold text-titanium-50">DSGVO Control Pack</span>
+            <span className="ml-auto text-[10px] text-titanium-500 font-mono">Tracking · Consent · Cookies · Evidence</span>
+          </div>
+          {[
+            { label: 'EU AI Act Control Pack', desc: 'Hochrisiko-Klassifikation · Transparenz · Dokumentationspflichten' },
+            { label: 'Vendor Control Pack',     desc: 'DPA-Status · Sub-Prozessoren · Drittlandtransfer' },
+            { label: 'Security Control Pack',   desc: 'TOM-Prüfung · HTTPS · Header · Schwachstellen' },
+          ].map(({ label, desc }) => (
+            <div key={label} className="flex items-center gap-3 px-4 py-3 opacity-60">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-titanium-500 border border-titanium-800 bg-obsidian-950 px-1.5 py-0.5">Coming Next</span>
+              <span className="text-sm text-titanium-300">{label}</span>
+              <span className="ml-auto text-[10px] text-titanium-600 font-mono hidden sm:block">{desc}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Upgrade CTA — dezent */}
+      <section className="mb-8 border border-titanium-900 bg-obsidian-900">
+        <div className="px-4 py-3 border-b border-titanium-900">
+          <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600">Verfügbare Pakete</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-x divide-titanium-900">
+          <div className="px-4 py-4">
+            <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-500 mb-1">Starter</p>
+            <p className="font-display font-bold text-titanium-50 text-sm mb-2">Monitoring</p>
+            <p className="text-[11px] text-titanium-500">Kontinuierliches Website-Monitoring, Alerts, Evidence-Snapshots.</p>
+          </div>
+          <div className="px-4 py-4 border-t sm:border-t-0 border-titanium-900">
+            <p className="font-mono text-[9px] uppercase tracking-widest text-cyan-500 mb-1">Professional</p>
+            <p className="font-display font-bold text-titanium-50 text-sm mb-2">Monitoring + Control Packs</p>
+            <p className="text-[11px] text-titanium-500">DSGVO, EU AI Act und Vendor Control Packs inklusive.</p>
+          </div>
+          <div className="px-4 py-4 border-t sm:border-t-0 border-titanium-900">
+            <p className="font-mono text-[9px] uppercase tracking-widest text-amber-400 mb-1">Enterprise</p>
+            <p className="font-display font-bold text-titanium-50 text-sm mb-2">+ Governance Gates</p>
+            <p className="text-[11px] text-titanium-500">Control Packs · Governance Gates · Custom DPA · SSO.</p>
+          </div>
+        </div>
+        <div className="px-4 py-3 border-t border-titanium-900 flex items-center gap-3">
+          <Link to="/pricing" className="text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors">
+            Pakete vergleichen →
+          </Link>
+          <span className="text-titanium-800">·</span>
+          <Link to="/audit" className="text-xs text-titanium-500 hover:text-titanium-300 transition-colors">
+            Kostenlosen Audit starten
+          </Link>
+        </div>
+      </section>
+
       {/* Objekte */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>

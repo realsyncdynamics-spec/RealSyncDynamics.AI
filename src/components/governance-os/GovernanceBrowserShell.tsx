@@ -12,7 +12,6 @@ import { GovernanceAssistantPanel } from './GovernanceAssistantPanel';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
-import { GovernanceAgentFloat } from './GovernanceAgentFloat';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -66,7 +65,6 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
       <div className="hidden lg:block">
         <GovernanceStatusBar />
       </div>
-      <GovernanceAgentFloat />
     </div>
   );
 }

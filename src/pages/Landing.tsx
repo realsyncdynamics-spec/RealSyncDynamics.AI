@@ -18,7 +18,8 @@
  * Beratungs-/Pilot-/Demo-/Call-/Sales-Sprache. Einzige kontaktbasierte
  * CTA ist „Enterprise anfragen" (SSO/On-Prem/Behörde/Custom-DPA/PO).
  */
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, AlertTriangle, ScanLine, Eye, FileStack,
   BadgeCheck, Gavel, Lock, Building2, Briefcase, UserCheck, Landmark, Server,
@@ -58,146 +59,82 @@ export function Landing() {
 
 // ─── 1 · Hero ────────────────────────────────────────────────────────
 
-// Zielgruppen-Kacheln im Hero — breite Branchenansprache, Hard-Edge.
-const HERO_AUDIENCE = [
-  { title: 'Kleine Betriebe', body: 'Website fortlaufend auf DSGVO-Risiken, Einwilligungen und externe Dienste prüfen.' },
-  { title: 'Online-Shops',    body: 'Tracking, Tools, Formulare und Datenflüsse zentral und nachvollziehbar überwachen.' },
-  { title: 'Dienstleister',   body: 'Risiken, technische Änderungen und Compliance-Nachweise ohne Medienbruch dokumentieren.' },
-  { title: 'Agenturen',       body: 'Mehrere Mandate, Reports und Governance-Prozesse in einer Oberfläche verwalten.' },
-];
-
-const HERO_SIGNALS = [
-  'Kontinuierliche Überwachung',
-  'Regulatorische Risiko-Erkennung',
-  'Kryptografisch nachvollziehbare Evidenz',
-  'EU-gehostete Infrastruktur',
+const HERO_TRUST_SIGNALS = [
+  'Kostenlos · keine Kreditkarte',
+  'Ergebnis in unter 30 Sekunden',
+  'EU-Hosting (Frankfurt)',
+  'Kein Onboarding nötig',
 ];
 
 function Hero() {
-  const { data: stats } = usePlatformStats();
+  const [domain, setDomain] = useState('');
+  const navigate = useNavigate();
 
-  // Echte Plattform-Aggregate (aus public.platform_stats), sonst Fallback.
-  const domains = stats?.domainsScanned ?? 15;
-  const openRisks = stats?.openRisks ?? 51;
-  const evidencePct = stats?.evidencePct ?? 44;
-  const lastScan = stats ? relativeTimeDe(stats.lastScanAt) : '—';
-  const isLive = Boolean(stats);
+  function handleScan(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = domain.trim();
+    if (!trimmed) return;
+    navigate(`/audit?domain=${encodeURIComponent(trimmed)}&source=hero`);
+  }
 
   return (
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-24">
-      <div className="max-w-6xl mx-auto grid gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,400px)] items-start">
-        {/* Linke Spalte — Narrative + CTAs + Zielgruppen */}
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-4">
-            Governance OS Browser · DSGVO · EU AI Act · Evidence · by RealSync Dynamics AI
-          </p>
-          <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.05] max-w-4xl">
-            Der Browser für DSGVO, EU AI Act, KI-Systeme und Evidence.
-          </h1>
-          <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-3xl leading-relaxed">
-            Prüfen Sie Websites, dokumentieren Sie KI-Systeme, bewerten Sie Risiken
-            und erzeugen Sie Audit-Nachweise in einer browserartigen Arbeitsoberfläche.
-          </p>
+      <div className="max-w-3xl mx-auto text-center">
+        {/* Eyebrow */}
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-cyan-400 mb-5">
+          Kostenloser DSGVO Website Check
+        </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row flex-wrap gap-3">
-            <Link
-              to="/audit?source=hero"
-              className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-5 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors rounded-none"
-            >
-              Governance OS öffnen <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/audit"
-              className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
-            >
-              Kostenlosen Audit starten
-            </Link>
-            <Link
-              to="/welcome?intent=founding"
-              className="inline-flex items-center gap-2 border border-cyan-800 text-cyan-300 px-5 py-3 text-sm font-semibold hover:border-cyan-600 transition-colors"
-            >
-              {CTA.foundingAccess}
-            </Link>
-          </div>
+        {/* H1 */}
+        <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.08]">
+          Prüfen Sie Ihre Website<br className="hidden sm:block" /> in 30 Sekunden
+        </h1>
 
-          <p className="mt-6 font-mono text-[11px] text-titanium-500">
-            Keine Karte nötig · EU-Hosting (Frankfurt) · kein Onboarding nötig
-          </p>
+        {/* Subheadline */}
+        <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
+          Wir erkennen Tracker, Cookies, externe Dienste und DSGVO-Risiken —
+          kostenlos, ohne Registrierung, mit auditfähiger Evidenz.
+        </p>
 
-          {/* Zielgruppen-Kacheln */}
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-px bg-titanium-900">
-            {HERO_AUDIENCE.map(({ title, body }) => (
-              <div key={title} className="bg-obsidian-900 p-4">
-                <p className="font-display font-semibold text-titanium-50 text-sm">{title}</p>
-                <p className="mt-2 text-sm text-titanium-400 leading-relaxed">{body}</p>
-              </div>
-            ))}
-          </div>
+        {/* Domain Input */}
+        <form onSubmit={handleScan} className="mt-10 flex flex-col sm:flex-row gap-0 max-w-xl mx-auto">
+          <input
+            type="text"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder="ihre-website.de"
+            className="flex-1 bg-obsidian-900 border border-titanium-700 border-r-0 px-4 py-3 text-sm text-titanium-50 placeholder-titanium-600 font-mono focus:outline-none focus:border-cyan-500"
+          />
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors shrink-0"
+          >
+            Kostenlos prüfen <ArrowRight className="h-4 w-4" />
+          </button>
+        </form>
 
-          {/* Signal-Chips */}
-          <div className="mt-8 flex flex-wrap gap-2 font-mono text-[11px] text-titanium-400">
-            {HERO_SIGNALS.map((s) => (
-              <span key={s} className="border border-titanium-800 px-3 py-1">
-                {s}
-              </span>
-            ))}
-          </div>
+        {/* Trust Signals */}
+        <div className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2">
+          {HERO_TRUST_SIGNALS.map((s) => (
+            <span key={s} className="inline-flex items-center gap-1.5 font-mono text-[11px] text-titanium-500">
+              <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
+              {s}
+            </span>
+          ))}
         </div>
 
-        {/* Rechte Spalte — Live-Risikoübersicht-Widget */}
-        <aside className="border border-titanium-800 bg-obsidian-900 p-5">
-          <div className="flex items-center justify-between border-b border-titanium-800 pb-4">
-            <div>
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-titanium-500">
-                Governance Runtime
-              </p>
-              <p className="mt-1 font-display font-semibold text-titanium-50">
-                Live-Risikoübersicht
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-1.5 border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 font-mono text-[10px] text-emerald-300">
-              <span className="h-1.5 w-1.5 bg-emerald-300" /> {isLive ? 'LIVE' : 'BEISPIEL'}
-            </span>
-          </div>
-
-          <div className="mt-5 space-y-4">
-            <div className="border border-titanium-800 bg-obsidian-950 p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-titanium-500">Domains geprüft</p>
-                  <p className="mt-1 font-display font-bold text-2xl text-titanium-50">{domains}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-titanium-500">Offene Risiken</p>
-                  <p className="mt-1 font-display font-bold text-2xl text-amber-300">{openRisks}</p>
-                </div>
-              </div>
-              <div className="mt-4 h-2 bg-titanium-800">
-                <div className="h-2 bg-cyan-400" style={{ width: `${evidencePct}%` }} />
-              </div>
-              <p className="mt-2 font-mono text-[10px] text-titanium-500">
-                {evidencePct} % der Prüfungen mit auditfähiger Evidenz
-              </p>
-            </div>
-
-            <div className="grid gap-px bg-titanium-900 sm:grid-cols-2">
-              <div className="bg-obsidian-900 p-4">
-                <p className="text-sm text-titanium-500">Letzte Prüfung</p>
-                <p className="mt-2 font-display font-semibold text-titanium-50">{lastScan}</p>
-                <p className="mt-2 text-xs text-titanium-500 leading-5">
-                  Website, Consent-Layer und externe Dienste automatisch neu bewertet.
-                </p>
-              </div>
-              <div className="bg-obsidian-900 p-4">
-                <p className="text-sm text-titanium-500">Evidence Status</p>
-                <p className="mt-2 font-display font-semibold text-titanium-50">Auditierbar</p>
-                <p className="mt-2 text-xs text-titanium-500 leading-5">
-                  Änderungen, Funde und Maßnahmen nachvollziehbar dokumentiert.
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
+        {/* Governance OS mention */}
+        <div className="mt-12 pt-8 border-t border-titanium-900 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <p className="text-sm text-titanium-400">
+            Für Teams: vollständiger Governance OS Browser mit Evidence Vault, KI-Systemen und kontinuierlichem Monitoring.
+          </p>
+          <Link
+            to="/audit?source=hero-os"
+            className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-4 py-2 text-sm font-semibold hover:border-titanium-500 transition-colors shrink-0"
+          >
+            Governance OS öffnen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
     </section>
   );

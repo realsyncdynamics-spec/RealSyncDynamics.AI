@@ -60,10 +60,10 @@ export function Landing() {
 // ─── 1 · Hero ────────────────────────────────────────────────────────
 
 const HERO_TRUST_SIGNALS = [
-  'Kostenlos · keine Kreditkarte',
-  'Ergebnis in unter 30 Sekunden',
-  'EU-Hosting (Frankfurt)',
-  'Kein Onboarding nötig',
+  'Kein Account erforderlich',
+  'Kostenloser Erstcheck',
+  'Sofortiger Compliance Score',
+  'Keine Installation',
 ];
 
 function Hero() {
@@ -73,8 +73,11 @@ function Hero() {
   function handleScan(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = domain.trim();
-    if (!trimmed) return;
-    navigate(`/audit?domain=${encodeURIComponent(trimmed)}&source=hero`);
+    if (trimmed) {
+      navigate(`/audit?domain=${encodeURIComponent(trimmed)}&source=hero`);
+    } else {
+      navigate('/audit?source=hero');
+    }
   }
 
   return (
@@ -92,8 +95,8 @@ function Hero() {
 
         {/* Subheadline */}
         <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
-          Wir erkennen Tracker, Cookies, externe Dienste und DSGVO-Risiken —
-          kostenlos, ohne Registrierung, mit auditfähiger Evidenz.
+          Erkennen Sie Tracker, Cookies, Drittlandtransfers, fehlende Rechtstexte
+          und DSGVO-Risiken automatisch.
         </p>
 
         {/* Domain Input */}
@@ -102,7 +105,7 @@ function Hero() {
             type="text"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
-            placeholder="ihre-website.de"
+            placeholder="ihre-domain.de"
             className="flex-1 bg-obsidian-900 border border-titanium-700 border-r-0 px-4 py-3 text-sm text-titanium-50 placeholder-titanium-600 font-mono focus:outline-none focus:border-cyan-500"
           />
           <button
@@ -124,13 +127,13 @@ function Hero() {
         </div>
 
         {/* Governance OS mention */}
-        <div className="mt-12 pt-8 border-t border-titanium-900 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <p className="text-sm text-titanium-400">
-            Für Teams: vollständiger Governance OS Browser mit Evidence Vault, KI-Systemen und kontinuierlichem Monitoring.
+        <div className="mt-12 pt-8 border-t border-titanium-900">
+          <p className="text-sm text-titanium-400 mb-3">
+            Nach dem Scan wird aus dem Audit ein Governance OS Browser mit Monitoring, Evidence, Reports und Control Packs.
           </p>
           <Link
-            to="/audit?source=hero-os"
-            className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-4 py-2 text-sm font-semibold hover:border-titanium-500 transition-colors shrink-0"
+            to="/audit?source=landing_secondary"
+            className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-100 px-4 py-2 text-sm font-semibold hover:border-titanium-500 transition-colors"
           >
             Governance OS öffnen <ArrowRight className="h-4 w-4" />
           </Link>
@@ -233,7 +236,7 @@ function DsgvoAutomation() {
             werden auditfähig exportierbar bereitgestellt, statt manuell
             gepflegt zu werden.
           </p>
-          <Link to="/audit?source=dsgvo" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+          <Link to="/audit?source=landing_secondary" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">
             {CTA.startAudit} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

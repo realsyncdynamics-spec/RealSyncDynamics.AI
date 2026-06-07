@@ -27,7 +27,7 @@ const PRICING_OPTIONS: PricingOption[] = [
       'Sofort-Export als PDF'
     ],
     cta: 'Kostenlosen Audit starten',
-    ctaUrl: '/audit?source=pricing-landing-free'
+    ctaUrl: '/audit?source=pricing_teaser'
   },
   {
     id: 'monitoring',

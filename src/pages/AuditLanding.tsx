@@ -511,22 +511,22 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
         <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-3">Nächster Schritt</p>
         <div className="flex flex-col sm:flex-row gap-2">
           <Link
-            to="/app/monitoring"
+            to={`/pricing?source=audit_cta_monitoring&audit=${report.audit_id}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 text-obsidian-950 text-xs font-bold hover:bg-cyan-300 transition-colors"
           >
             <Activity className="h-3.5 w-3.5" /> Monitoring aktivieren
           </Link>
           <Link
-            to="/app/evidence"
+            to={`/pricing?source=audit_cta_evidence&audit=${report.audit_id}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
           >
-            <FileText className="h-3.5 w-3.5" /> Evidence Vault öffnen
+            <FileText className="h-3.5 w-3.5" /> Evidence Vault
           </Link>
           <Link
-            to="/app/compliance"
+            to={`/checkout/starter?source=audit_cta_report&audit=${report.audit_id}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
           >
-            <FileText className="h-3.5 w-3.5" /> Report exportieren
+            <FileText className="h-3.5 w-3.5" /> Starter buchen →
           </Link>
         </div>
       </div>
@@ -829,12 +829,10 @@ function NextStepBlock({ report }: { report: Report }) {
   const highRisk = report.severity === 'critical' || report.severity === 'high' || report.score < 60;
   const ctas = highRisk
     ? [
-        { label: 'Monitoring aktivieren',     to: `/pricing?source=audit_report&audit=${report.audit_id}` },
-        { label: 'Fix-Paket ansehen',  to: `/fix-paket?source=audit_report&audit=${report.audit_id}` },
-        { label: 'Tarif starten', to: `/pricing?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Monitoring aktivieren', to: `/pricing?source=audit_report&audit=${report.audit_id}` },
+        { label: 'Tarif wählen',         to: `/pricing?source=audit_report&audit=${report.audit_id}` },
       ]
     : [
-        { label: 'Audit Pro ansehen',  to: `/audit-pro?source=audit_report&audit=${report.audit_id}` },
         { label: 'Monitoring aktivieren', to: `/pricing?source=audit_report&audit=${report.audit_id}` },
       ];
   return (

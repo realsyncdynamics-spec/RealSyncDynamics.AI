@@ -190,6 +190,31 @@ function Inner() {
         </div>
       </section>
 
+      {/* Founding Access — optional, sekundär */}
+      <section className="mb-8 border border-titanium-900 bg-obsidian-950">
+        <div className="px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-600 mb-1">
+              Founding Access Programm · Erste 100 Unternehmen
+            </p>
+            <p className="font-display font-semibold text-titanium-100 text-sm mb-1">
+              Founding Access Programm
+            </p>
+            <p className="text-[11px] text-titanium-500 max-w-xl leading-relaxed">
+              Die ersten 100 Unternehmen können RealSyncDynamicsAI aktiv mitgestalten.
+              Melden Sie Fehler, senden Sie Screenshots und schlagen Sie Funktionen vor.
+              Ihre Rückmeldungen fließen direkt in die Weiterentwicklung der Plattform ein.
+            </p>
+          </div>
+          <Link
+            to="/welcome?source=workspace_founding&intent=founding"
+            className="shrink-0 inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 hover:border-titanium-400 px-4 py-2 text-xs font-semibold transition-colors"
+          >
+            Founding Access aktivieren
+          </Link>
+        </div>
+      </section>
+
       {/* Objekte */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Objekte & Bereiche</h3>

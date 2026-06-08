@@ -269,16 +269,31 @@ function TierCard({ tier }: { tier: PricingTier }) {
         ))}
       </ul>
 
-      <Link
-        to={tier.cta.href}
-        className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-          tier.highlight
-            ? 'surface-mono'
-            : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-        }`}
-      >
-        {tier.cta.label} <ArrowRight className="h-4 w-4" />
-      </Link>
+      {tier.cta.href.startsWith('http') ? (
+        <a
+          href={tier.cta.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+            tier.highlight
+              ? 'surface-mono'
+              : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+          }`}
+        >
+          {tier.cta.label} <ArrowRight className="h-4 w-4" />
+        </a>
+      ) : (
+        <Link
+          to={tier.cta.href}
+          className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+            tier.highlight
+              ? 'surface-mono'
+              : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+          }`}
+        >
+          {tier.cta.label} <ArrowRight className="h-4 w-4" />
+        </Link>
+      )}
     </div>
   );
 }

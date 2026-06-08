@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: 'Jetzt upgraden', href: '/checkout/starter?source=pricing' },
+    cta: { label: '14 Tage gratis testen', href: 'https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Jetzt upgraden', href: '/checkout/growth?source=pricing' },
+    cta: { label: '14 Tage gratis testen', href: 'https://buy.stripe.com/dRmaEZbqE7Kz0oF3Iq6wE01' },
   },
   {
     id: 'agency',
@@ -132,7 +132,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: 'Tarif starten', href: '/checkout/agency?source=pricing' },
+    cta: { label: '14 Tage gratis testen', href: 'https://buy.stripe.com/7sY00lgKY1mb6N3lAi6wE02' },
   },
   {
     id: 'scale',
@@ -190,4 +190,4 @@ export function tierById(id: TierId): PricingTier | undefined {
 
 /** Trust-Note unter Pricing-Cards */
 export const PRICING_TRUST_NOTE =
-  'Free Audit kostenlos · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
+  '14 Tage gratis testen · Keine Kosten bis Tag 15 · Jederzeit kündbar · Made in Germany';

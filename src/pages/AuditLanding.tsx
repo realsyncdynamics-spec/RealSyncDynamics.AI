@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ShieldCheck, AlertTriangle, CheckCircle2, Loader2, Send,
   Globe, Mail, Building2, Gavel, ArrowRight, Linkedin, Share2, FileText,
@@ -393,6 +393,112 @@ const ISSUE_BUSINESS_IMPACT: Record<string, { businessImpact: string; effort: st
   },
 };
 
+// ─── Trial CTA Block ─────────────────────────────────────────────────────────
+//
+// Erscheint direkt nach dem Score — primärer Conversion-Punkt.
+// Speichert audit_id + domain in sessionStorage damit sie nach OAuth/Magic-Link
+// automatisch dem Workspace zugeordnet werden können.
+// DSGVO-Consent für anonymisierte Benchmark-Daten ist optional — Trial
+// funktioniert auch ohne Zustimmung.
+
+const CONSENT_VERSION = '1.0';
+const CONSENT_TYPE = 'platform_improvement_analytics';
+const PENDING_AUDIT_KEY = 'rsd_pending_audit';
+
+function TrialCtaBlock({ report }: { report: Report }) {
+  const navigate = useNavigate();
+  const [analyticsConsent, setAnalyticsConsent] = useState(false);
+
+  function handleActivate() {
+    // Scan-Daten für Post-Auth-Import in sessionStorage speichern
+    try {
+      sessionStorage.setItem(PENDING_AUDIT_KEY, JSON.stringify({
+        audit_id: report.audit_id,
+        domain: report.domain,
+        score: report.score,
+        severity: report.severity,
+        analytics_consent: analyticsConsent,
+        consent_version: CONSENT_VERSION,
+        consent_type: CONSENT_TYPE,
+        ts: Date.now(),
+      }));
+    } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
+
+    navigate(
+      `/welcome?next=${encodeURIComponent(`/checkout/starter?pilot=true&audit_id=${report.audit_id}&source=trial_cta`)}`
+    );
+  }
+
+  const criticalCount = report.issues.filter(i => i.severity === 'critical').length;
+  const highCount     = report.issues.filter(i => i.severity === 'high').length;
+
+  return (
+    <div className="border-2 border-cyan-700 bg-obsidian-900 p-6 sm:p-8">
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-4">
+        <ShieldCheck className="h-6 w-6 text-cyan-400 shrink-0 mt-0.5" />
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-500 mb-1">
+            14 Tage kostenlos · Starter Trial
+          </p>
+          <h2 className="font-display font-bold text-titanium-50 text-xl sm:text-2xl leading-tight">
+            Diesen Befund 14 Tage kostenlos überwachen
+          </h2>
+        </div>
+      </div>
+
+      <p className="text-sm text-titanium-300 leading-relaxed mb-5 max-w-2xl">
+        RealSyncDynamicsAI übernimmt diesen Scan in Ihr Governance-Dashboard und prüft automatisch,
+        ob neue DSGVO-, Security- oder KI-Risiken entstehen.
+        {(criticalCount > 0 || highCount > 0) && (
+          <span className="block mt-2 text-amber-300 font-semibold">
+            {criticalCount > 0 && `${criticalCount} kritische`}
+            {criticalCount > 0 && highCount > 0 && ' + '}
+            {highCount > 0 && `${highCount} hohe`}
+            {' '}Befunde — Monitoring empfohlen.
+          </span>
+        )}
+      </p>
+
+      {/* DSGVO Consent — optional */}
+      <label className="flex items-start gap-3 mb-5 cursor-pointer group">
+        <input
+          type="checkbox"
+          checked={analyticsConsent}
+          onChange={e => setAnalyticsConsent(e.target.checked)}
+          className="mt-0.5 h-4 w-4 accent-cyan-400 shrink-0"
+        />
+        <span className="text-xs text-titanium-400 leading-relaxed group-hover:text-titanium-300 transition-colors">
+          Ich stimme zu, dass <strong className="text-titanium-200">anonymisierte und aggregierte</strong> Scan-Ergebnisse
+          zur Verbesserung der Plattform, zur Risikoanalyse und zur Erstellung von Branchen-Benchmarks
+          verwendet werden dürfen. Keine personenbezogenen Daten. Jederzeit widerrufbar.{' '}
+          <span className="text-titanium-600">(optional — Trial funktioniert auch ohne Zustimmung)</span>
+        </span>
+      </label>
+
+      {/* CTAs */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          onClick={handleActivate}
+          className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-bold hover:bg-cyan-300 transition-colors"
+        >
+          Starter 14 Tage kostenlos aktivieren <ArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          onClick={handleActivate}
+          className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-400 transition-colors"
+        >
+          Monitoring für diese Domain starten
+        </button>
+      </div>
+
+      <p className="mt-3 font-mono text-[10px] text-titanium-600">
+        Keine Demo. Kein Verkaufsgespräch. Direkt starten. · Keine Kreditkarte für 14 Tage.
+      </p>
+    </div>
+  );
+}
+
 // ─── Report ───────────────────────────────────────────────────────────────
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
@@ -415,6 +521,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           {config.summary(report.issues.length)}
         </p>
       </div>
+
+      <TrialCtaBlock report={report} />
 
       {/* Business Impact Summary */}
       {report.issues.length > 0 && (

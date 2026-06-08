@@ -75,6 +75,33 @@ export function Welcome() {
       if (event === 'SIGNED_IN' && session?.user) {
         setEmail((prev) => prev || session.user.email || '');
         setStep((prev) => (prev === 1 ? 2 : prev));
+
+        // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
+        const nextParam = new URLSearchParams(window.location.search).get('next');
+        if (nextParam) {
+          // Consent aus sessionStorage persistieren (fire-and-forget)
+          try {
+            const raw = sessionStorage.getItem('rsd_pending_audit');
+            if (raw) {
+              const pending = JSON.parse(raw) as {
+                audit_id: string; analytics_consent: boolean;
+                consent_version: string; consent_type: string;
+              };
+              if (pending.analytics_consent) {
+                sb.from('user_consents').insert({
+                  user_id: session.user.id,
+                  scan_result_id: pending.audit_id,
+                  consent_type: pending.consent_type,
+                  consent_version: pending.consent_version,
+                  granted: true,
+                }).then(() => {/* fire-and-forget */});
+              }
+              sessionStorage.removeItem('rsd_pending_audit');
+            }
+          } catch { /* sessionStorage nicht verfügbar */ }
+          navigate(nextParam, { replace: true });
+          return;
+        }
       }
     });
 

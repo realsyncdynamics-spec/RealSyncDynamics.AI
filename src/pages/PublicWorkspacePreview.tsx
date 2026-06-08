@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
-  Activity, Users, Settings, ArrowRight, Lock,
+  Activity, Users, Settings, ArrowRight, Lock, Zap,
 } from 'lucide-react';
+import { DemoDashboard } from '../components/DemoDashboard';
+import { useDemoMode } from '../core/demo/DemoModeProvider';
 
 interface Tile {
   id: string;
@@ -85,6 +87,39 @@ const COLOR_MAP: Record<string, { bg: string; icon: string; hover: string }> = {
 
 export function PublicWorkspacePreview() {
   const navigate = useNavigate();
+  const { isDemoMode, setDemoMode } = useDemoMode();
+  const [showDemo, setShowDemo] = useState(false);
+
+  useEffect(() => {
+    if (showDemo && !isDemoMode) {
+      setDemoMode(true);
+    }
+  }, [showDemo, isDemoMode, setDemoMode]);
+
+  if (showDemo && isDemoMode) {
+    return (
+      <div className="flex flex-col h-screen bg-obsidian-950">
+        <div className="flex-1 overflow-y-auto">
+          <DemoDashboard />
+        </div>
+        <div className="shrink-0 flex justify-center gap-3 p-4 bg-obsidian-900 border-t border-titanium-800">
+          <button
+            onClick={() => setShowDemo(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-titanium-700 text-titanium-100 rounded-none hover:bg-obsidian-800 transition-colors"
+          >
+            ← Zurück zu Übersicht
+          </button>
+          <button
+            onClick={() => navigate('/welcome?source=demo-action-blocked')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-cyan-400 text-obsidian-950 rounded-none hover:bg-cyan-300 transition-colors"
+          >
+            Kostenlos registrieren
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -99,15 +134,15 @@ export function PublicWorkspacePreview() {
             Governance OS
           </h1>
           <p className="text-titanium-400 max-w-2xl mb-6">
-            EU-souveräne SaaS-Plattform für Creator und Agenturen. Verwalten Sie Websites, KI-Systeme, Risiken und Compliance in einer einheitlichen Oberfläche.
+            Europäisches Governance Operating System für Unternehmen, Agenturen und Behörden. Websites, AI Registry, Risk Register, Evidence Chain und Compliance in einer einheitlichen Oberfläche.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => navigate('/app')}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-security-600 text-obsidian-950 font-medium rounded-none hover:bg-security-500 transition-colors"
+              onClick={() => setShowDemo(true)}
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-cyan-400 text-obsidian-950 font-medium rounded-none hover:bg-cyan-300 transition-colors"
             >
-              Dashboard öffnen
-              <ArrowRight className="h-4 w-4" />
+              <Zap className="h-4 w-4" />
+              Live Demo anschauen
             </button>
             <button
               onClick={() => navigate('/audit?source=public-workspace')}
@@ -140,6 +175,28 @@ export function PublicWorkspacePreview() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Governance Browser CTA */}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none">
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <h2 className="font-display font-bold text-lg text-titanium-50 mb-2">Governance Browser</h2>
+              <p className="text-sm text-titanium-400 mb-4">
+                Erkunden Sie die vollständige Governance-Architektur mit Agenten, Freigaben, Evidence-Trails, Risiken und Workflows der Demo-Organisation.
+              </p>
+              <button
+                onClick={() => navigate('/governance-browser')}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-cyan-400 hover:text-cyan-300 border-b border-cyan-400/30 hover:border-cyan-400/60 transition-colors"
+              >
+                Governance Browser öffnen
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+            <Bot className="h-8 w-8 text-cyan-400 flex-shrink-0 opacity-60" />
+          </div>
         </div>
       </div>
 

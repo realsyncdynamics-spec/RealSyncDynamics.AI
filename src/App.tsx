@@ -8,6 +8,7 @@ import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
+import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
 import { AgenciesLanding } from './pages/AgenciesLanding';
@@ -201,6 +202,7 @@ import { GovernanceBrowserShell } from './components/governance-os/GovernanceBro
 import { RemediationPlaceholder } from './components/governance-os/RemediationPlaceholder';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
+import { DemoModeProvider } from './core/demo/DemoModeProvider';
 import { EnvironmentProvider } from './features/governance/EnvironmentContext';
 import { useTrackPageview } from './lib/track';
 import { initMarketingPixels } from './lib/pixels';
@@ -224,6 +226,7 @@ function RoutesWithTracking() {
       <Route path="/" element={<Landing />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<Navigate to="/app" replace />} />
@@ -520,13 +523,15 @@ export default function App() {
   return (
     <TenantProvider>
       <EnvironmentProvider>
-        <BrowserRouter basename={ROUTER_BASENAME}>
+        <DemoModeProvider>
+          <BrowserRouter basename={ROUTER_BASENAME}>
           <RoutesWithTracking />
           <CookieConsent />
           <Suspense fallback={null}>
             <AssistentChip />
           </Suspense>
         </BrowserRouter>
+        </DemoModeProvider>
       </EnvironmentProvider>
     </TenantProvider>
   );

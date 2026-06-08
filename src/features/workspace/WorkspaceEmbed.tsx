@@ -11,11 +11,14 @@
 // Die Views bringen ihren AuthGate selbst mit → kein doppelter Gate.
 import React from 'react';
 import { WorkspaceShell } from './WorkspaceShell';
+import { DemoReadOnlyWrapper } from '../../components/DemoReadOnlyWrapper';
 
 export function WorkspaceEmbed({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <WorkspaceShell title={title}>
-      <div className="ws-embed">{children}</div>
+      <DemoReadOnlyWrapper section={title}>
+        <div className="ws-embed">{children}</div>
+      </DemoReadOnlyWrapper>
     </WorkspaceShell>
   );
 }

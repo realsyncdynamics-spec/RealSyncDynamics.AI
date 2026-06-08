@@ -19,12 +19,12 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
 
   // EU-Sovereign-Beschreibung
   await expect(
-    page.getByText(/EU-souveräne SaaS-Plattform/i),
+    page.getByText(/Europäisches Governance Operating System/i),
   ).toBeVisible();
 
-  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app)
+  // Primärer CTA „Live Demo anschauen" (button, zeigt Governance-OS-Demo)
   await expect(
-    page.getByRole('button', { name: /Dashboard öffnen/i }),
+    page.getByRole('button', { name: /Live Demo anschauen/i }),
   ).toBeVisible();
 
   // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)

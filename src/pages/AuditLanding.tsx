@@ -630,12 +630,14 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           >
             <FileText className="h-3.5 w-3.5" /> Evidence Vault
           </Link>
-          <Link
-            to={`/checkout/starter?source=audit_cta_report&audit=${report.audit_id}`}
+          <a
+            href="https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
           >
-            <FileText className="h-3.5 w-3.5" /> Starter buchen →
-          </Link>
+            <FileText className="h-3.5 w-3.5" /> 14 Tage gratis starten →
+          </a>
         </div>
       </div>
 
@@ -652,12 +654,14 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           DSGVO-Selfservice. <strong className="text-titanium-50">In 14 Tagen DSGVO-ready</strong>, nicht in 6 Monaten.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Link
-            to={`/checkout/starter?source=audit_lp&audit=${report.audit_id}`}
+          <a
+            href="https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00"
+            target="_blank"
+            rel="noopener noreferrer"
             className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
           >
-            Monitoring aktivieren <ArrowRight className="h-4 w-4" />
-          </Link>
+            14 Tage gratis testen <ArrowRight className="h-4 w-4" />
+          </a>
           <Link
             to="/pricing"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none"

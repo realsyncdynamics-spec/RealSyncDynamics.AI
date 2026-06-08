@@ -381,6 +381,57 @@ function Body({
         </Panel>
       )}
 
+      {/* Monitoring → Evidence → Report Flow */}
+      <div className="border border-titanium-900 bg-obsidian-950">
+        <div className="px-4 py-3 border-b border-titanium-900">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-titanium-500">
+            Compliance Lifecycle
+          </p>
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-titanium-900">
+          {[
+            { icon: <Activity className="h-4 w-4 text-cyan-400" />, step: '01', label: 'Monitoring', desc: 'Tägliche Scans erkennen Drift, neue Tracker, Consent-Brüche und Third-Party-Änderungen automatisch.' },
+            { icon: <FileCheck2 className="h-4 w-4 text-emerald-400" />, step: '02', label: 'Evidence', desc: 'Jedes Finding wird SHA-256-versiegelt und mit Zeitstempel in den Audit-Trail geschrieben.' },
+            { icon: <ScrollText className="h-4 w-4 text-amber-400" />, step: '03', label: 'Report', desc: 'Auditfähiger PDF-Report für Datenschutzbeauftragte, Behörden und interne Governance-Reviews.' },
+          ].map((s) => (
+            <div key={s.step} className="px-4 py-4">
+              <div className="flex items-center gap-2 mb-2">
+                {s.icon}
+                <span className="font-mono text-[9px] text-titanium-600">{s.step}</span>
+                <span className="font-semibold text-xs text-titanium-100">{s.label}</span>
+              </div>
+              <p className="text-[11px] text-titanium-500 leading-relaxed">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Upgrade-CTAs */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { tier: 'Starter', price: '79 €/Monat', desc: '1 Domain · Monatlicher Re-Scan · DSE-Generator', href: 'https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00', color: 'border-titanium-700 hover:border-titanium-400' },
+          { tier: 'Growth', price: '249 €/Monat', desc: 'Tägliches Monitoring · Fix-Snippets · 3 Domains', href: 'https://buy.stripe.com/dRmaEZbqE7Kz0oF3Iq6wE01', color: 'border-cyan-700 hover:border-cyan-400' },
+          { tier: 'Agency', price: '699 €/Monat', desc: 'White-Label · 10 Domains · API + Webhooks', href: 'https://buy.stripe.com/7sY00lgKY1mb6N3lAi6wE02', color: 'border-titanium-700 hover:border-titanium-400' },
+        ].map((plan) => (
+          <a
+            key={plan.tier}
+            href={plan.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`border ${plan.color} bg-obsidian-900 px-4 py-3 block transition-colors group`}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold text-xs text-titanium-100">{plan.tier}</span>
+              <span className="font-mono text-[10px] text-titanium-400">{plan.price}</span>
+            </div>
+            <p className="text-[11px] text-titanium-500 leading-relaxed mb-2">{plan.desc}</p>
+            <span className="font-mono text-[10px] text-cyan-500 group-hover:text-cyan-300 transition-colors">
+              14 Tage gratis testen →
+            </span>
+          </a>
+        ))}
+      </div>
+
       <div className="border border-amber-500/30 bg-amber-500/5 p-4 text-[13px] text-titanium-300 flex items-start gap-3">
         <GitBranch className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" />
         <div>

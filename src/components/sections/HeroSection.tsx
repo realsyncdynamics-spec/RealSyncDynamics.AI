@@ -192,7 +192,7 @@ export function HeroSection() {
                         {LIVE_PILL_LABELS.map((p) => (
                             <span
                                             key={p.label}
-                                            className={`inline-flex items-center gap-1 px-2 py-0.5 border border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider ${p.color}`}
+                                            className={`inline-flex items-center gap-1 px-2 py-0.5 border border-titanium-900 bg-obsidian-900 font-mono text-[10px] uppercase tracking-wider whitespace-nowrap ${p.color}`}
                                           >
                                           <span className="inline-block w-1 h-1 rounded-full bg-current" />
                               {p.label}

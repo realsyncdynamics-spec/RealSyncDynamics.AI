@@ -18,5 +18,6 @@ CREATE TABLE IF NOT EXISTS public.customer_onboarding (
 
 ALTER TABLE public.customer_onboarding ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "service_role_all" ON public.customer_onboarding
+DROP POLICY IF EXISTS "service_role_all" ON public.customer_onboarding;
+CREATE POLICY "service_role_all" ON public.customer_onboarding
   FOR ALL TO service_role USING (true) WITH CHECK (true);

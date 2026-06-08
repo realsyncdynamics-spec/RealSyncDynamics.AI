@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RealSyncDynamics — Governance OS</title>
+  <style>
+    /* ── Reset & Tokens ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --obsidian:       #0A0A0B;
+      --obsidian-2:     #111113;
+      --obsidian-3:     #18181B;
+      --obsidian-4:     #202025;
+      --titanium:       #E2E2E2;
+      --titanium-dim:   #8A8A8E;
+      --titanium-muted: #3A3A3F;
+      --blue:           #0052FF;
+      --blue-dim:       #003DC0;
+      --blue-glow:      rgba(0,82,255,.18);
+      --green:          #00C87A;
+      --amber:          #F5A623;
+      --red:            #E53935;
+      --mono:           'Courier New', 'Lucida Console', monospace;
+      --sans:           system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --border:         1px solid #2A2A30;
+      --border-blue:    1px solid var(--blue);
+    }
+
+    html, body { height: 100%; background: var(--obsidian); color: var(--titanium); font-family: var(--sans); font-size: 13px; line-height: 1.45; }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .layout { display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 48px 1fr; min-height: 100vh; }
+
+    /* ── Topbar ─────────────────────────────────────────── */
+    .topbar {
+      grid-column: 1 / -1;
+      background: var(--obsidian-2);
+      border-bottom: var(--border);
+      display: flex; align-items: center; gap: 0;
+      padding: 0 20px;
+    }
+    .topbar-logo {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--titanium);
+      border-right: var(--border);
+      padding-right: 20px;
+      margin-right: 20px;
+      white-space: nowrap;
+    }
+    .topbar-logo span { color: var(--blue); }
+    .topbar-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      border: var(--border-blue);
+      color: var(--blue);
+      padding: 2px 8px;
+      margin-right: 12px;
+    }
+    .topbar-spacer { flex: 1; }
+    .topbar-meta {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--titanium-dim);
+      letter-spacing: .06em;
+      display: flex; gap: 20px; align-items: center;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      margin-right: 5px;
+    }
+    .status-dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .status-dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar {
+      background: var(--obsidian-2);
+      border-right: var(--border);
+      padding: 16px 0;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .nav-section-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--titanium-muted);
+      padding: 14px 16px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: background .12s, border-color .12s;
+      font-size: 12px; color: var(--titanium-dim);
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--obsidian-3); color: var(--titanium); }
+    .nav-item.active { border-left-color: var(--blue); background: var(--obsidian-3); color: var(--titanium); }
+    .nav-item .nav-icon { width: 14px; text-align: center; font-size: 13px; flex-shrink: 0; }
+    .nav-badge {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 9px;
+      background: var(--blue);
+      color: #fff;
+      padding: 1px 5px;
+      min-width: 16px;
+      text-align: center;
+    }
+    .nav-badge.warn { background: var(--amber); color: #000; }
+    .nav-badge.crit { background: var(--red); }
+    .sidebar-footer {
+      margin-top: auto;
+      border-top: var(--border);
+      padding: 12px 16px;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--titanium-muted);
+      letter-spacing: .06em;
+    }
+
+    /* ── Main ────────────────────────────────────────────── */
+    .main {
+      overflow-y: auto;
+      padding: 24px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    /* ── Page Header ─────────────────────────────────────── */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      border-bottom: var(--border);
+      padding-bottom: 16px;
+    }
+    .page-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--titanium-dim);
+      margin-bottom: 4px;
+    }
+    .page-headline {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -.01em;
+    }
+    .page-actions { display: flex; gap: 8px; align-items: center; }
+    .btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border: var(--border);
+      background: transparent;
+      color: var(--titanium-dim);
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .btn:hover { background: var(--obsidian-3); color: var(--titanium); }
+    .btn.primary { border-color: var(--blue); color: var(--blue); }
+    .btn.primary:hover { background: var(--blue); color: #fff; }
+
+    /* ── KPI Row ─────────────────────────────────────────── */
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .kpi-card {
+      background: var(--obsidian-2);
+      border: var(--border);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--blue);
+    }
+    .kpi-card.green::before { background: var(--green); }
+    .kpi-card.amber::before { background: var(--amber); }
+    .kpi-card.red::before   { background: var(--red); }
+    .kpi-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--titanium-muted);
+      margin-bottom: 10px;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+      line-height: 1;
+    }
+    .kpi-value.green { color: var(--green); }
+    .kpi-value.amber { color: var(--amber); }
+    .kpi-value.red   { color: var(--red); }
+    .kpi-value.blue  { color: var(--blue); }
+    .kpi-sub {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--titanium-muted);
+      margin-top: 6px;
+    }
+    .kpi-trend {
+      font-family: var(--mono);
+      font-size: 10px;
+      margin-top: 4px;
+    }
+    .kpi-trend.up   { color: var(--green); }
+    .kpi-trend.down { color: var(--red); }
+    .kpi-trend.flat { color: var(--titanium-dim); }
+
+    /* ── Grid Sections ───────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+    .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; }
+
+    /* ── Panel ───────────────────────────────────────────── */
+    .panel {
+      background: var(--obsidian-2);
+      border: var(--border);
+    }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: var(--border);
+      padding: 10px 14px;
+    }
+    .panel-title {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--titanium-dim);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title-icon { color: var(--blue); font-size: 12px; }
+    .panel-action {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--blue);
+      cursor: pointer;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: none; border: none;
+    }
+    .panel-body { padding: 14px; }
+
+    /* ── Compliance Matrix ───────────────────────────────── */
+    .compliance-matrix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .comp-item {
+      border: var(--border);
+      padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .comp-header { display: flex; justify-content: space-between; align-items: center; }
+    .comp-name { font-size: 12px; font-weight: 500; }
+    .comp-pill {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border: 1px solid;
+    }
+    .comp-pill.compliant { color: var(--green); border-color: var(--green); }
+    .comp-pill.partial   { color: var(--amber); border-color: var(--amber); }
+    .comp-pill.pending   { color: var(--titanium-dim); border-color: var(--titanium-muted); }
+    .comp-pill.critical  { color: var(--red); border-color: var(--red); }
+    .comp-bar-track {
+      height: 3px;
+      background: var(--titanium-muted);
+      position: relative;
+    }
+    .comp-bar-fill {
+      position: absolute; top: 0; left: 0; bottom: 0;
+      background: var(--green);
+      transition: width .3s;
+    }
+    .comp-bar-fill.amber { background: var(--amber); }
+    .comp-bar-fill.blue  { background: var(--blue); }
+    .comp-meta { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+
+    /* ── Table ───────────────────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--titanium-muted);
+      text-align: left;
+      padding: 6px 10px;
+      border-bottom: var(--border);
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #1A1A1F;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--obsidian-3); }
+    .mono-cell { font-family: var(--mono); font-size: 10px; color: var(--titanium-dim); }
+    .hash-cell { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+
+    /* ── Status Tags ─────────────────────────────────────── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 1px solid;
+    }
+    .tag.green  { color: var(--green); border-color: var(--green); }
+    .tag.amber  { color: var(--amber); border-color: var(--amber); }
+    .tag.red    { color: var(--red);   border-color: var(--red); }
+    .tag.blue   { color: var(--blue);  border-color: var(--blue); }
+    .tag.muted  { color: var(--titanium-dim); border-color: var(--titanium-muted); }
+
+    /* ── Gauge / Ring ────────────────────────────────────── */
+    .gauge-row { display: flex; gap: 16px; align-items: center; justify-content: space-around; padding: 8px 0; }
+    .gauge-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .gauge-svg { transform: rotate(-90deg); }
+    .gauge-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: var(--titanium-muted); text-align: center; }
+    .gauge-pct   { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--titanium); }
+
+    /* ── Activity Feed ───────────────────────────────────── */
+    .feed { display: flex; flex-direction: column; gap: 0; }
+    .feed-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 8px 14px;
+      border-bottom: 1px solid #1A1A1F;
+      font-size: 12px;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-dot {
+      width: 8px; height: 8px;
+      flex-shrink: 0; margin-top: 4px;
+      border: 1px solid var(--blue);
+      background: var(--blue-glow);
+    }
+    .feed-dot.green { border-color: var(--green); background: rgba(0,200,122,.15); }
+    .feed-dot.amber { border-color: var(--amber); background: rgba(245,166,35,.15); }
+    .feed-dot.red   { border-color: var(--red);   background: rgba(229,57,53,.15); }
+    .feed-time { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); white-space: nowrap; margin-left: auto; padding-left: 10px; }
+    .feed-text { flex: 1; color: var(--titanium-dim); }
+    .feed-text strong { color: var(--titanium); font-weight: 500; }
+
+    /* ── VPS Grid ────────────────────────────────────────── */
+    .vps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .vps-card {
+      border: var(--border);
+      padding: 12px;
+    }
+    .vps-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .vps-name { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+    .vps-region { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+    .vps-metric { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center; }
+    .vps-metric-label { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+    .vps-metric-val { font-family: var(--mono); font-size: 10px; }
+    .mini-bar-track { height: 2px; background: var(--titanium-muted); margin: 3px 0 8px; position: relative; }
+    .mini-bar-fill { position: absolute; top: 0; left: 0; bottom: 0; background: var(--blue); }
+    .mini-bar-fill.warn { background: var(--amber); }
+    .mini-bar-fill.crit { background: var(--red); }
+
+    /* ── AI Provider Matrix ──────────────────────────────── */
+    .provider-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #1A1A1F;
+      font-size: 12px;
+    }
+    .provider-row:last-child { border-bottom: none; }
+    .provider-logo {
+      width: 28px; height: 28px;
+      border: var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .provider-info { flex: 1; }
+    .provider-name { font-weight: 500; margin-bottom: 2px; }
+    .provider-meta { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+    .provider-stats { display: flex; gap: 16px; align-items: center; }
+    .pstat { text-align: right; }
+    .pstat-val { font-family: var(--mono); font-size: 11px; font-weight: 700; }
+    .pstat-lbl { font-family: var(--mono); font-size: 8px; color: var(--titanium-muted); text-transform: uppercase; letter-spacing: .1em; }
+
+    /* ── Tenant Table ────────────────────────────────────── */
+    .tenant-avatar {
+      width: 24px; height: 24px;
+      border: var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 9px; font-weight: 700;
+      color: var(--blue);
+      flex-shrink: 0;
+    }
+    .tenant-name-cell { display: flex; align-items: center; gap: 8px; }
+
+    /* ── Prüfpfad / C2PA ─────────────────────────────────── */
+    .c2pa-entry {
+      border-left: 2px solid var(--titanium-muted);
+      padding: 8px 0 8px 12px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    .c2pa-entry::before {
+      content: '';
+      position: absolute;
+      left: -5px; top: 10px;
+      width: 8px; height: 8px;
+      background: var(--obsidian-2);
+      border: 1px solid var(--titanium-muted);
+    }
+    .c2pa-entry.verified { border-left-color: var(--green); }
+    .c2pa-entry.verified::before { border-color: var(--green); background: rgba(0,200,122,.2); }
+    .c2pa-entry.signed { border-left-color: var(--blue); }
+    .c2pa-entry.signed::before { border-color: var(--blue); background: var(--blue-glow); }
+    .c2pa-header { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+    .c2pa-action { font-size: 12px; font-weight: 500; }
+    .c2pa-hash { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+    .c2pa-meta  { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+
+    /* ── DSGVO Request Cards ─────────────────────────────── */
+    .dsgvo-card {
+      border: var(--border);
+      padding: 12px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .dsgvo-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .dsgvo-type { font-weight: 500; font-size: 12px; }
+    .dsgvo-id { font-family: var(--mono); font-size: 9px; color: var(--titanium-muted); }
+    .dsgvo-desc { font-size: 11px; color: var(--titanium-dim); }
+    .dsgvo-footer { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+    .dsgvo-deadline { font-family: var(--mono); font-size: 9px; color: var(--amber); }
+
+    /* ── Risk Heatmap ────────────────────────────────────── */
+    .heatmap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    .heat-cell {
+      aspect-ratio: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono); font-size: 8px;
+      border: var(--border);
+      cursor: default;
+      position: relative;
+    }
+    .heat-0 { background: var(--obsidian-3); }
+    .heat-1 { background: rgba(0,82,255,.12); }
+    .heat-2 { background: rgba(0,82,255,.25); }
+    .heat-3 { background: rgba(245,166,35,.20); }
+    .heat-4 { background: rgba(229,57,53,.20); }
+    .heat-5 { background: rgba(229,57,53,.45); }
+    .heat-label { font-family: var(--mono); font-size: 8px; color: var(--titanium-muted); text-align: center; }
+
+    /* ── Scrollbar ───────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--obsidian); }
+    ::-webkit-scrollbar-thumb { background: var(--titanium-muted); }
+
+    /* ── Utility ─────────────────────────────────────────── */
+    .text-green { color: var(--green); }
+    .text-amber { color: var(--amber); }
+    .text-red   { color: var(--red); }
+    .text-blue  { color: var(--blue); }
+    .text-dim   { color: var(--titanium-dim); }
+    .text-muted { color: var(--titanium-muted); }
+    .text-mono  { font-family: var(--mono); }
+    .text-xs    { font-size: 10px; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .section-divider {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--titanium-muted);
+      padding: 4px 0;
+      border-bottom: var(--border);
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Topbar ────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-logo">Real<span>Sync</span>Dynamics<span>.AI</span></div>
+    <div class="topbar-badge">Governance OS v2.4</div>
+    <div class="topbar-badge" style="border-color:var(--green);color:var(--green);">EU-Souverän</div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-meta">
+      <span><span class="status-dot"></span>Alle Systeme nominal</span>
+      <span>Tenant-Instanzen: <strong style="color:var(--titanium)">14</strong></span>
+      <span>Epoch: <strong style="color:var(--titanium)" id="epoch">—</strong></span>
+      <span>UTC <span id="clock">—</span></span>
+    </div>
+  </header>
+
+  <!-- ── Sidebar ───────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="nav-section-label">Übersicht</div>
+    <a class="nav-item active" href="#"><span class="nav-icon">▦</span> Governance OS</a>
+    <a class="nav-item" href="#"><span class="nav-icon">◈</span> Executive Dashboard</a>
+
+    <div class="nav-section-label">Compliance</div>
+    <a class="nav-item" href="#"><span class="nav-icon">⊞</span> EU AI Act <span class="nav-badge">3</span></a>
+    <a class="nav-item" href="#"><span class="nav-icon">⊟</span> DSGVO / GDPR <span class="nav-badge warn">2</span></a>
+    <a class="nav-item" href="#"><span class="nav-icon">◧</span> C2PA Prüfpfad</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⊠</span> Risiko-Matrix</a>
+
+    <div class="nav-section-label">Plattform</div>
+    <a class="nav-item" href="#"><span class="nav-icon">◉</span> Multi-Tenant</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⊛</span> AI-Provider</a>
+    <a class="nav-item" href="#"><span class="nav-icon">◎</span> VPS-Operations</a>
+    <a class="nav-item" href="#"><span class="nav-icon">⊕</span> Workflow-Runs</a>
+
+    <div class="nav-section-label">Finanzen</div>
+    <a class="nav-item" href="#"><span class="nav-icon">◐</span> Abrechnung / Stripe</a>
+    <a class="nav-item" href="#"><span class="nav-icon">◑</span> Token-Verbrauch</a>
+
+    <div class="nav-section-label">Sicherheit</div>
+    <a class="nav-item" href="#"><span class="nav-icon">⊗</span> IAM / RLS <span class="nav-badge crit">1</span></a>
+    <a class="nav-item" href="#"><span class="nav-icon">⊘</span> Audit-Log</a>
+
+    <div class="sidebar-footer">
+      v2.4.1 · Build 20260605<br/>
+      EU-Region: Frankfurt / DE<br/>
+      Data Residency: ✓ DSGVO
+    </div>
+  </nav>
+
+  <!-- ── Main ──────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Governance OS · Plattform-Übersicht</div>
+        <div class="page-headline">Compliance &amp; Operations Command Center</div>
+      </div>
+      <div class="page-actions">
+        <button class="btn">Export PDF</button>
+        <button class="btn">Bericht erstellen</button>
+        <button class="btn primary">+ Prüfpfad-Eintrag</button>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi-card green">
+        <div class="kpi-label">Compliance-Score</div>
+        <div class="kpi-value green">96.4%</div>
+        <div class="kpi-trend up">▲ +1.2% letzte Woche</div>
+        <div class="kpi-sub">EU AI Act + DSGVO kombiniert</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Aktive Tenants</div>
+        <div class="kpi-value blue">14</div>
+        <div class="kpi-trend up">▲ +2 diesen Monat</div>
+        <div class="kpi-sub">12 Agenturen · 2 Enterprise</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">AI-Aufrufe (24h)</div>
+        <div class="kpi-value">48 291</div>
+        <div class="kpi-trend up">▲ +8.7%</div>
+        <div class="kpi-sub">Ø 3.2s Latenz · 99.8% OK</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Offene DSGVO-Anfragen</div>
+        <div class="kpi-value amber">7</div>
+        <div class="kpi-trend flat">→ Frist: 5 Tage</div>
+        <div class="kpi-sub">3 Auskunft · 4 Löschung</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">C2PA-Signaturen</div>
+        <div class="kpi-value green">2 841</div>
+        <div class="kpi-trend up">▲ +241 heute</div>
+        <div class="kpi-sub">100% verifiziert</div>
+      </div>
+    </div>
+
+    <!-- Row 2: Compliance + Activity -->
+    <div class="grid-2-1">
+
+      <!-- Compliance Matrix -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">⊞</span> Compliance-Matrix</div>
+          <button class="panel-action">Details →</button>
+        </div>
+        <div class="panel-body">
+          <div class="compliance-matrix">
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">EU AI Act — Art. 13</div>
+                <div class="comp-pill compliant">Konform</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill" style="width:98%"></div></div>
+              <div class="comp-meta">Transparenz-Anforderungen · 98/100 Punkte</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">EU AI Act — Art. 9</div>
+                <div class="comp-pill compliant">Konform</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill" style="width:94%"></div></div>
+              <div class="comp-meta">Risikomanagement-System · 94/100</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">EU AI Act — Art. 10</div>
+                <div class="comp-pill partial">Teilweise</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill amber" style="width:72%"></div></div>
+              <div class="comp-meta">Daten-Governance · 72/100 · 3 offene Punkte</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">DSGVO Art. 5</div>
+                <div class="comp-pill compliant">Konform</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill" style="width:100%"></div></div>
+              <div class="comp-meta">Grundsätze Datenverarbeitung · 100/100</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">DSGVO Art. 17</div>
+                <div class="comp-pill partial">In Bearbeitung</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill amber" style="width:85%"></div></div>
+              <div class="comp-meta">Recht auf Löschung · 7 offene Anfragen</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">DSGVO Art. 25</div>
+                <div class="comp-pill compliant">Konform</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill" style="width:97%"></div></div>
+              <div class="comp-meta">Privacy by Design · RLS aktiviert · 97/100</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">C2PA 1.3 Standard</div>
+                <div class="comp-pill compliant">Zertifiziert</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill" style="width:100%"></div></div>
+              <div class="comp-meta">Herkunftsnachweis · Alle Assets signiert</div>
+            </div>
+
+            <div class="comp-item">
+              <div class="comp-header">
+                <div class="comp-name">ISO 27001</div>
+                <div class="comp-pill pending">Audit Q3/26</div>
+              </div>
+              <div class="comp-bar-track"><div class="comp-bar-fill blue" style="width:68%"></div></div>
+              <div class="comp-meta">Informationssicherheit · 68/100 · Audit Sept.</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Echtzeit-Feed -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">◉</span> Governance-Ereignisse</div>
+          <button class="panel-action">Alle →</button>
+        </div>
+        <div class="feed">
+          <div class="feed-item">
+            <div class="feed-dot green"></div>
+            <div class="feed-text"><strong>C2PA-Signatur</strong> — 14 neue Assets verifiziert · Tenant: ViralWave GmbH</div>
+            <div class="feed-time">vor 2 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot amber"></div>
+            <div class="feed-text"><strong>DSGVO-Anfrage</strong> — Löschanfrage eingegangen · Bearbeitung bis 10.06.</div>
+            <div class="feed-time">vor 8 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot"></div>
+            <div class="feed-text"><strong>AI-Audit</strong> — anthropic/claude-opus-4-8 · 312 Tokens · ai_tool_runs #48291</div>
+            <div class="feed-time">vor 11 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot green"></div>
+            <div class="feed-text"><strong>RLS-Check</strong> — Alle 23 Tabellen Policy-konform · Keine Verstöße</div>
+            <div class="feed-time">vor 18 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot red"></div>
+            <div class="feed-text"><strong>IAM-Alert</strong> — Service-Role-Key außerhalb Edge Function erkannt · Geblockt</div>
+            <div class="feed-time">vor 34 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot green"></div>
+            <div class="feed-text"><strong>Stripe-Webhook</strong> — subscription.updated · CreatorHub Pro · €299/mo</div>
+            <div class="feed-time">vor 41 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot"></div>
+            <div class="feed-text"><strong>n8n Workflow</strong> — content-moderation-pipeline · 847ms · OK</div>
+            <div class="feed-time">vor 55 Min</div>
+          </div>
+          <div class="feed-item">
+            <div class="feed-dot amber"></div>
+            <div class="feed-text"><strong>EU AI Act</strong> — Art. 10 Review: Trainingsdaten-Dokumentation unvollständig</div>
+            <div class="feed-time">vor 1 Std</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Row 3: Tenants + VPS -->
+    <div class="grid-2">
+
+      <!-- Multi-Tenant Übersicht -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">◉</span> Multi-Tenant Status</div>
+          <button class="panel-action">Alle 14 →</button>
+        </div>
+        <div class="panel-body" style="padding:0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tenant</th>
+                <th>Plan</th>
+                <th>AI-Calls/24h</th>
+                <th>Compliance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">VW</div>ViralWave GmbH</div></td>
+                <td class="mono-cell">Enterprise</td>
+                <td class="mono-cell text-blue">12 441</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:98%;background:var(--green)"></div></div><span class="mono-cell">98%</span></div></td>
+                <td><span class="tag green">Aktiv</span></td>
+              </tr>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">CH</div>CreatorHub Pro</div></td>
+                <td class="mono-cell">Pro</td>
+                <td class="mono-cell text-blue">8 204</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:95%;background:var(--green)"></div></div><span class="mono-cell">95%</span></div></td>
+                <td><span class="tag green">Aktiv</span></td>
+              </tr>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">PA</div>PixelAgentur Berlin</div></td>
+                <td class="mono-cell">Pro</td>
+                <td class="mono-cell text-blue">6 112</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:82%;background:var(--amber)"></div></div><span class="mono-cell text-amber">82%</span></div></td>
+                <td><span class="tag amber">Prüfung</span></td>
+              </tr>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">NS</div>NordStream Studios</div></td>
+                <td class="mono-cell">Enterprise</td>
+                <td class="mono-cell text-blue">9 877</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:99%;background:var(--green)"></div></div><span class="mono-cell">99%</span></div></td>
+                <td><span class="tag green">Aktiv</span></td>
+              </tr>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">MF</div>MediaForge AG</div></td>
+                <td class="mono-cell">Starter</td>
+                <td class="mono-cell">1 840</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:91%;background:var(--green)"></div></div><span class="mono-cell">91%</span></div></td>
+                <td><span class="tag green">Aktiv</span></td>
+              </tr>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">RS</div>ReelSync Labs</div></td>
+                <td class="mono-cell">Pro</td>
+                <td class="mono-cell text-blue">4 290</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:97%;background:var(--green)"></div></div><span class="mono-cell">97%</span></div></td>
+                <td><span class="tag green">Aktiv</span></td>
+              </tr>
+              <tr>
+                <td><div class="tenant-name-cell"><div class="tenant-avatar">KA</div>KlickArt Studio</div></td>
+                <td class="mono-cell">Starter</td>
+                <td class="mono-cell">980</td>
+                <td><div style="display:flex;align-items:center;gap:6px"><div style="height:2px;width:50px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:60%;background:var(--red)"></div></div><span class="mono-cell text-red">60%</span></div></td>
+                <td><span class="tag red">Gesperrt</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VPS Operations -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">◎</span> VPS-Operations · EU-Stack</div>
+          <button class="panel-action">Traefik-Logs →</button>
+        </div>
+        <div class="panel-body">
+          <div class="vps-grid">
+
+            <div class="vps-card">
+              <div class="vps-header">
+                <div>
+                  <div class="vps-name">vps-eu-01</div>
+                  <div class="vps-region">Frankfurt · DE</div>
+                </div>
+                <span class="tag green">Online</span>
+              </div>
+              <div class="vps-metric"><span class="vps-metric-label">CPU</span><span class="vps-metric-val text-green">22%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill" style="width:22%"></div></div>
+              <div class="vps-metric"><span class="vps-metric-label">RAM</span><span class="vps-metric-val">58%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill" style="width:58%"></div></div>
+              <div class="vps-metric"><span class="vps-metric-label">Disk</span><span class="vps-metric-val">41%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill" style="width:41%"></div></div>
+              <div class="vps-metric" style="margin-top:4px"><span class="vps-metric-label">Dienste</span><span class="vps-metric-val text-green">Traefik · Ollama · n8n</span></div>
+            </div>
+
+            <div class="vps-card">
+              <div class="vps-header">
+                <div>
+                  <div class="vps-name">vps-eu-02</div>
+                  <div class="vps-region">Amsterdam · NL</div>
+                </div>
+                <span class="tag green">Online</span>
+              </div>
+              <div class="vps-metric"><span class="vps-metric-label">CPU</span><span class="vps-metric-val text-amber">67%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill warn" style="width:67%"></div></div>
+              <div class="vps-metric"><span class="vps-metric-label">RAM</span><span class="vps-metric-val text-amber">74%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill warn" style="width:74%"></div></div>
+              <div class="vps-metric"><span class="vps-metric-label">Disk</span><span class="vps-metric-val">33%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill" style="width:33%"></div></div>
+              <div class="vps-metric" style="margin-top:4px"><span class="vps-metric-label">Dienste</span><span class="vps-metric-val text-amber">Ollama (high load)</span></div>
+            </div>
+
+            <div class="vps-card">
+              <div class="vps-header">
+                <div>
+                  <div class="vps-name">vps-eu-03</div>
+                  <div class="vps-region">Paris · FR</div>
+                </div>
+                <span class="tag amber">Degradiert</span>
+              </div>
+              <div class="vps-metric"><span class="vps-metric-label">CPU</span><span class="vps-metric-val text-red">89%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill crit" style="width:89%"></div></div>
+              <div class="vps-metric"><span class="vps-metric-label">RAM</span><span class="vps-metric-val text-red">91%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill crit" style="width:91%"></div></div>
+              <div class="vps-metric"><span class="vps-metric-label">Disk</span><span class="vps-metric-val text-amber">78%</span></div>
+              <div class="mini-bar-track"><div class="mini-bar-fill warn" style="width:78%"></div></div>
+              <div class="vps-metric" style="margin-top:4px"><span class="vps-metric-label">Dienste</span><span class="vps-metric-val text-red">n8n · OOM-Warnung</span></div>
+            </div>
+
+          </div>
+
+          <!-- Ollama Model Status -->
+          <div style="margin-top:12px">
+            <div class="section-divider">Ollama EU-Lokal · gemma3:4b</div>
+            <table class="data-table">
+              <thead><tr><th>Node</th><th>Modell</th><th>VRAM</th><th>Anfragen/h</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="mono-cell">vps-eu-01</td>
+                  <td class="mono-cell">gemma3:4b</td>
+                  <td class="mono-cell text-green">4.1 GB / 8 GB</td>
+                  <td class="mono-cell text-blue">1 204</td>
+                  <td><span class="tag green">Bereit</span></td>
+                </tr>
+                <tr>
+                  <td class="mono-cell">vps-eu-02</td>
+                  <td class="mono-cell">gemma3:4b</td>
+                  <td class="mono-cell text-amber">7.2 GB / 8 GB</td>
+                  <td class="mono-cell text-blue">2 891</td>
+                  <td><span class="tag amber">Ausgelastet</span></td>
+                </tr>
+                <tr>
+                  <td class="mono-cell">vps-eu-03</td>
+                  <td class="mono-cell">gemma3:4b</td>
+                  <td class="mono-cell text-red">8.0 GB / 8 GB</td>
+                  <td class="mono-cell">—</td>
+                  <td><span class="tag red">OOM</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Row 4: AI Providers + Prüfpfad -->
+    <div class="grid-2">
+
+      <!-- AI Provider Matrix -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">⊛</span> AI-Provider · Kostenübersicht</div>
+          <button class="panel-action">Token-Details →</button>
+        </div>
+        <div class="panel-body">
+
+          <!-- Gauge Row -->
+          <div class="gauge-row" style="margin-bottom:16px">
+            <div class="gauge-item">
+              <svg class="gauge-svg" width="60" height="60" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#2A2A30" stroke-width="6"/>
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#0052FF" stroke-width="6"
+                        stroke-dasharray="138.2" stroke-dashoffset="26" stroke-linecap="square"/>
+              </svg>
+              <div class="gauge-pct">81%</div>
+              <div class="gauge-label">Anthropic</div>
+            </div>
+            <div class="gauge-item">
+              <svg class="gauge-svg" width="60" height="60" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#2A2A30" stroke-width="6"/>
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#00C87A" stroke-width="6"
+                        stroke-dasharray="138.2" stroke-dashoffset="97" stroke-linecap="square"/>
+              </svg>
+              <div class="gauge-pct">30%</div>
+              <div class="gauge-label">Google</div>
+            </div>
+            <div class="gauge-item">
+              <svg class="gauge-svg" width="60" height="60" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#2A2A30" stroke-width="6"/>
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#F5A623" stroke-width="6"
+                        stroke-dasharray="138.2" stroke-dashoffset="111" stroke-linecap="square"/>
+              </svg>
+              <div class="gauge-pct">20%</div>
+              <div class="gauge-label">OpenAI</div>
+            </div>
+            <div class="gauge-item">
+              <svg class="gauge-svg" width="60" height="60" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#2A2A30" stroke-width="6"/>
+                <circle cx="30" cy="30" r="22" fill="none" stroke="#E2E2E2" stroke-width="6"
+                        stroke-dasharray="138.2" stroke-dashoffset="28" stroke-linecap="square"/>
+              </svg>
+              <div class="gauge-pct">80%</div>
+              <div class="gauge-label">Ollama EU</div>
+            </div>
+          </div>
+
+          <div class="provider-row">
+            <div class="provider-logo" style="color:var(--blue)">AN</div>
+            <div class="provider-info">
+              <div class="provider-name">Anthropic Claude</div>
+              <div class="provider-meta">claude-opus-4-8 · claude-sonnet-4-6 · EU-Pipeline</div>
+            </div>
+            <div class="provider-stats">
+              <div class="pstat">
+                <div class="pstat-val text-blue">39 118</div>
+                <div class="pstat-lbl">Calls/24h</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-val">€ 84.20</div>
+                <div class="pstat-lbl">Kosten/24h</div>
+              </div>
+              <span class="tag green">OK</span>
+            </div>
+          </div>
+
+          <div class="provider-row">
+            <div class="provider-logo" style="color:var(--green)">GG</div>
+            <div class="provider-info">
+              <div class="provider-name">Google Gemini</div>
+              <div class="provider-meta">gemini-2.5-pro · gemini-2.0-flash</div>
+            </div>
+            <div class="provider-stats">
+              <div class="pstat">
+                <div class="pstat-val text-blue">5 881</div>
+                <div class="pstat-lbl">Calls/24h</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-val">€ 12.40</div>
+                <div class="pstat-lbl">Kosten/24h</div>
+              </div>
+              <span class="tag green">OK</span>
+            </div>
+          </div>
+
+          <div class="provider-row">
+            <div class="provider-logo" style="color:var(--amber)">OA</div>
+            <div class="provider-info">
+              <div class="provider-name">OpenAI GPT</div>
+              <div class="provider-meta">gpt-4o · gpt-4o-mini</div>
+            </div>
+            <div class="provider-stats">
+              <div class="pstat">
+                <div class="pstat-val text-blue">2 104</div>
+                <div class="pstat-lbl">Calls/24h</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-val">€ 18.90</div>
+                <div class="pstat-lbl">Kosten/24h</div>
+              </div>
+              <span class="tag amber">Rate-Limit 80%</span>
+            </div>
+          </div>
+
+          <div class="provider-row">
+            <div class="provider-logo" style="color:var(--titanium)">OL</div>
+            <div class="provider-info">
+              <div class="provider-name">Ollama EU-Lokal</div>
+              <div class="provider-meta">gemma3:4b · EU-souverän · 3× VPS</div>
+            </div>
+            <div class="provider-stats">
+              <div class="pstat">
+                <div class="pstat-val text-blue">1 188</div>
+                <div class="pstat-lbl">Calls/24h</div>
+              </div>
+              <div class="pstat">
+                <div class="pstat-val text-green">€ 0.00</div>
+                <div class="pstat-lbl">Kosten/24h</div>
+              </div>
+              <span class="tag amber">1× OOM</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- C2PA Prüfpfad -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">◧</span> C2PA-Herkunftsnachweis · Prüfpfad</div>
+          <button class="panel-action">Vollständig →</button>
+        </div>
+        <div class="panel-body">
+
+          <div class="c2pa-entry verified">
+            <div class="c2pa-header">
+              <span class="tag green">Verifiziert</span>
+              <div class="c2pa-action">video_rsd_2026_0605_001.mp4</div>
+              <div class="c2pa-hash">sha256:a3f2b1…8e9c</div>
+            </div>
+            <div class="c2pa-meta">Ersteller: ViralWave GmbH · Zeitstempel: 05.06.2026 09:14 UTC · Signatur: RSA-4096</div>
+          </div>
+
+          <div class="c2pa-entry signed">
+            <div class="c2pa-header">
+              <span class="tag blue">AI-Generiert</span>
+              <div class="c2pa-action">image_ai_gen_batch_447.png</div>
+              <div class="c2pa-hash">sha256:9d4e7f…2a1b</div>
+            </div>
+            <div class="c2pa-meta">Provider: anthropic/claude-opus-4-8 · Workflow: creative-pipeline-v3 · IPTC: c2pa.ai.generated</div>
+          </div>
+
+          <div class="c2pa-entry verified">
+            <div class="c2pa-header">
+              <span class="tag green">Verifiziert</span>
+              <div class="c2pa-action">audio_podcast_ep88_master.wav</div>
+              <div class="c2pa-hash">sha256:f8c3d2…4b7a</div>
+            </div>
+            <div class="c2pa-meta">Ersteller: NordStream Studios · DAW-Metadaten eingebettet · Editierhistorie: 3 Schritte</div>
+          </div>
+
+          <div class="c2pa-entry signed">
+            <div class="c2pa-header">
+              <span class="tag blue">KI-Bearbeitet</span>
+              <div class="c2pa-action">thumbnail_campaign_2406.jpg</div>
+              <div class="c2pa-hash">sha256:b2a9e1…6f3c</div>
+            </div>
+            <div class="c2pa-meta">Basis: Originalfoto (verifiziert) → KI-Hintergrund entfernt → upscaled 4× · Workflow: auto-thumbnail-v2</div>
+          </div>
+
+          <div class="c2pa-entry verified">
+            <div class="c2pa-header">
+              <span class="tag green">Verifiziert</span>
+              <div class="c2pa-action">doc_vertrag_2026_0604.pdf</div>
+              <div class="c2pa-hash">sha256:7e1f4a…9d2e</div>
+            </div>
+            <div class="c2pa-meta">Typ: Rechtsdokument · Qualifizierte eSignatur · eIDAS-konform · Zeitstempel: TSA EU</div>
+          </div>
+
+          <div style="margin-top:12px; padding-top:10px; border-top:var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <span class="text-mono text-xs text-muted">Gesamt signiert: 2 841 Assets · Verifizierungsrate: 100%</span>
+            <span class="tag green">C2PA 1.3 ✓</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Row 5: DSGVO + Risiko + Workflow -->
+    <div class="grid-3">
+
+      <!-- DSGVO Anfragen -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">⊟</span> DSGVO-Anfragen</div>
+          <span class="tag amber">7 offen</span>
+        </div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:8px">
+
+          <div class="dsgvo-card">
+            <div class="dsgvo-header">
+              <div>
+                <div class="dsgvo-type">Auskunftsersuchen</div>
+                <div class="dsgvo-id">GDPR-2026-0601-A · Art. 15</div>
+              </div>
+              <span class="tag amber">Offen</span>
+            </div>
+            <div class="dsgvo-desc">Betroffene Person: max.m@example.de · Tenant: ViralWave · Alle gespeicherten Daten angefordert</div>
+            <div class="dsgvo-footer">
+              <span class="dsgvo-deadline">⚠ Frist: 08.06.2026 (3 Tage)</span>
+              <button class="btn" style="padding:2px 8px;font-size:9px">Bearbeiten</button>
+            </div>
+          </div>
+
+          <div class="dsgvo-card">
+            <div class="dsgvo-header">
+              <div>
+                <div class="dsgvo-type">Löschanfrage</div>
+                <div class="dsgvo-id">GDPR-2026-0602-D · Art. 17</div>
+              </div>
+              <span class="tag amber">In Bearbeitung</span>
+            </div>
+            <div class="dsgvo-desc">Nutzer-ID: usr_8b2e · ai_tool_runs + workflow_runs · Storage-Assets · 3 Tenants betroffen</div>
+            <div class="dsgvo-footer">
+              <span class="dsgvo-deadline">⚠ Frist: 10.06.2026 (5 Tage)</span>
+              <button class="btn" style="padding:2px 8px;font-size:9px">Fortfahren</button>
+            </div>
+          </div>
+
+          <div class="dsgvo-card">
+            <div class="dsgvo-header">
+              <div>
+                <div class="dsgvo-type">Datenübertragbarkeit</div>
+                <div class="dsgvo-id">GDPR-2026-0603-P · Art. 20</div>
+              </div>
+              <span class="tag green">Abgeschlossen</span>
+            </div>
+            <div class="dsgvo-desc">Export als JSON/CSV generiert · Verschlüsselt übertragen · Protokoll archiviert</div>
+            <div class="dsgvo-footer">
+              <span class="text-mono text-xs text-muted">Erledigt: 03.06.2026</span>
+            </div>
+          </div>
+
+          <div style="padding:8px 0; border-top:var(--border); display:flex; justify-content:space-between">
+            <span class="text-mono text-xs text-muted">Ø Bearbeitungszeit: 4.2 Tage</span>
+            <span class="text-mono text-xs text-green">SLA: 93% eingehalten</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risiko-Heatmap -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">⊠</span> Risiko-Heatmap</div>
+          <button class="panel-action">Details →</button>
+        </div>
+        <div class="panel-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span class="text-mono text-xs text-muted">Wahrsch. →</span>
+            <span class="text-mono text-xs text-muted">Risiko-Score: <span class="text-amber">34 / 100</span></span>
+          </div>
+
+          <!-- Axes labels -->
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            <div style="width:60px"></div>
+            <div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:4px">
+              <div class="heat-label">Selten</div>
+              <div class="heat-label">Mögl.</div>
+              <div class="heat-label">Wahrsch.</div>
+              <div class="heat-label">Hoch</div>
+              <div class="heat-label">Sicher</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;flex-direction:column;justify-content:space-around;gap:4px">
+              <div class="heat-label" style="text-align:right;white-space:nowrap">Katastrop.</div>
+              <div class="heat-label" style="text-align:right">Kritisch</div>
+              <div class="heat-label" style="text-align:right">Hoch</div>
+              <div class="heat-label" style="text-align:right">Mittel</div>
+              <div class="heat-label" style="text-align:right">Niedrig</div>
+            </div>
+            <div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:4px">
+              <!-- Row 5 = Catastrophic -->
+              <div class="heat-cell heat-3" title="Datenverlust"></div>
+              <div class="heat-cell heat-4" title="KI-Modell kompromittiert"></div>
+              <div class="heat-cell heat-5" title="Platform Outage"></div>
+              <div class="heat-cell heat-5" title="Datenleck kritisch"></div>
+              <div class="heat-cell heat-5"></div>
+              <!-- Row 4 = Critical -->
+              <div class="heat-cell heat-2"></div>
+              <div class="heat-cell heat-3" title="DSGVO-Verstoß"></div>
+              <div class="heat-cell heat-4"></div>
+              <div class="heat-cell heat-4" title="Tenant-Isolation-Fehler"></div>
+              <div class="heat-cell heat-5"></div>
+              <!-- Row 3 = High -->
+              <div class="heat-cell heat-1"></div>
+              <div class="heat-cell heat-2"></div>
+              <div class="heat-cell heat-3" title="API Rate Limit"></div>
+              <div class="heat-cell heat-3"></div>
+              <div class="heat-cell heat-4"></div>
+              <!-- Row 2 = Medium -->
+              <div class="heat-cell heat-0"></div>
+              <div class="heat-cell heat-1" title="VPS Ausfall"></div>
+              <div class="heat-cell heat-2"></div>
+              <div class="heat-cell heat-2"></div>
+              <div class="heat-cell heat-3"></div>
+              <!-- Row 1 = Low -->
+              <div class="heat-cell heat-0"></div>
+              <div class="heat-cell heat-0"></div>
+              <div class="heat-cell heat-1"></div>
+              <div class="heat-cell heat-1"></div>
+              <div class="heat-cell heat-2"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:rgba(229,57,53,.45)"></div><span class="text-mono text-xs text-muted">Kritisch</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:rgba(245,166,35,.20)"></div><span class="text-mono text-xs text-muted">Hoch</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:rgba(0,82,255,.25)"></div><span class="text-mono text-xs text-muted">Mittel</span></div>
+            <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;background:rgba(0,82,255,.12)"></div><span class="text-mono text-xs text-muted">Niedrig</span></div>
+          </div>
+
+          <!-- Top Risks -->
+          <div style="margin-top:14px">
+            <div class="section-divider">Top-Risiken</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+              <div class="flex-between">
+                <span class="text-xs">OOM auf vps-eu-03</span>
+                <span class="tag red">Kritisch</span>
+              </div>
+              <div class="flex-between">
+                <span class="text-xs">Art. 10 Dokumentationslücke</span>
+                <span class="tag amber">Hoch</span>
+              </div>
+              <div class="flex-between">
+                <span class="text-xs">OpenAI Rate-Limit 80%</span>
+                <span class="tag amber">Mittel</span>
+              </div>
+              <div class="flex-between">
+                <span class="text-xs">KlickArt — Compliance 60%</span>
+                <span class="tag red">Hoch</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Workflow Runs -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><span class="panel-title-icon">⊕</span> Workflow-Runs · n8n</div>
+          <button class="panel-action">Alle Workflows →</button>
+        </div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+            <div style="border:var(--border);padding:10px;text-align:center">
+              <div class="text-mono text-xs text-muted" style="margin-bottom:4px">Erfolg/24h</div>
+              <div style="font-size:22px;font-weight:700;color:var(--green)">2 418</div>
+            </div>
+            <div style="border:var(--border);padding:10px;text-align:center">
+              <div class="text-mono text-xs text-muted" style="margin-bottom:4px">Fehler/24h</div>
+              <div style="font-size:22px;font-weight:700;color:var(--red)">34</div>
+            </div>
+          </div>
+
+          <div class="section-divider">Letzte Ausführungen</div>
+          <table class="data-table" style="margin-top:8px">
+            <thead>
+              <tr><th>Workflow</th><th>Dauer</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono-cell">content-moderation-v3</td>
+                <td class="mono-cell">847 ms</td>
+                <td><span class="tag green">OK</span></td>
+              </tr>
+              <tr>
+                <td class="mono-cell">ai-image-pipeline</td>
+                <td class="mono-cell">3.2 s</td>
+                <td><span class="tag green">OK</span></td>
+              </tr>
+              <tr>
+                <td class="mono-cell">c2pa-sign-batch</td>
+                <td class="mono-cell">1.4 s</td>
+                <td><span class="tag green">OK</span></td>
+              </tr>
+              <tr>
+                <td class="mono-cell">gdpr-delete-job</td>
+                <td class="mono-cell">12.1 s</td>
+                <td><span class="tag amber">Teilfehler</span></td>
+              </tr>
+              <tr>
+                <td class="mono-cell">stripe-invoice-sync</td>
+                <td class="mono-cell">440 ms</td>
+                <td><span class="tag green">OK</span></td>
+              </tr>
+              <tr>
+                <td class="mono-cell">ollama-health-check</td>
+                <td class="mono-cell">—</td>
+                <td><span class="tag red">Timeout</span></td>
+              </tr>
+              <tr>
+                <td class="mono-cell">sentry-error-digest</td>
+                <td class="mono-cell">290 ms</td>
+                <td><span class="tag green">OK</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:14px">
+            <div class="section-divider">Edge Functions · Aufrufe/24h</div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+              <div class="flex-between">
+                <span class="text-xs text-mono">ai-invoke</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="height:2px;width:80px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:88%;background:var(--blue)"></div></div>
+                  <span class="text-mono text-xs">42 310</span>
+                </div>
+              </div>
+              <div class="flex-between">
+                <span class="text-xs text-mono">stripe-webhook</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="height:2px;width:80px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:15%;background:var(--blue)"></div></div>
+                  <span class="text-mono text-xs">1 204</span>
+                </div>
+              </div>
+              <div class="flex-between">
+                <span class="text-xs text-mono">gdpr-delete</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="height:2px;width:80px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:4%;background:var(--amber)"></div></div>
+                  <span class="text-mono text-xs">34</span>
+                </div>
+              </div>
+              <div class="flex-between">
+                <span class="text-xs text-mono">c2pa-verify</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="height:2px;width:80px;background:var(--titanium-muted);position:relative"><div style="position:absolute;top:0;left:0;bottom:0;width:38%;background:var(--blue)"></div></div>
+                  <span class="text-mono text-xs">2 841</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer row -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:var(--border)">
+      <span class="text-mono text-xs text-muted">RealSyncDynamics.AI · Governance OS v2.4.1 · Build 20260605 · EU-Region Frankfurt</span>
+      <div style="display:flex;gap:12px;align-items:center">
+        <span class="text-mono text-xs text-muted">Data Residency: EU ✓</span>
+        <span class="text-mono text-xs text-muted">DSGVO ✓</span>
+        <span class="text-mono text-xs text-muted">C2PA 1.3 ✓</span>
+        <span class="tag green">EU AI Act: Konform</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function updateClock() {
+    const now = new Date();
+    const h = pad(now.getUTCHours());
+    const m = pad(now.getUTCMinutes());
+    const s = pad(now.getUTCSeconds());
+    document.getElementById('clock').textContent = `${h}:${m}:${s}`;
+    document.getElementById('epoch').textContent = Math.floor(now.getTime() / 1000);
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Simulated live metric pulse on feed dots
+  const dots = document.querySelectorAll('.feed-dot');
+  setInterval(() => {
+    const target = dots[Math.floor(Math.random() * dots.length)];
+    const orig = target.style.opacity;
+    target.style.opacity = '0.3';
+    setTimeout(() => { target.style.opacity = ''; }, 300);
+  }, 2200);
+</script>
+</body>
+</html>

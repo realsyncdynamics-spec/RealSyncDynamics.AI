@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: '14 Tage gratis testen', href: 'https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00' },
+    cta: { label: '14 Tage gratis testen', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: '14 Tage gratis testen', href: 'https://buy.stripe.com/dRmaEZbqE7Kz0oF3Iq6wE01' },
+    cta: { label: '14 Tage gratis testen', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -132,7 +132,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Neu'],
     highlight: false,
-    cta: { label: '14 Tage gratis testen', href: 'https://buy.stripe.com/7sY00lgKY1mb6N3lAi6wE02' },
+    cta: { label: '14 Tage gratis testen', href: '/checkout/agency?source=pricing' },
   },
   {
     id: 'scale',

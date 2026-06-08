@@ -124,20 +124,16 @@ export function Impressum() {
           </p>
         </Section>
 
-        <Section title="Umsatzsteuer-Identifikationsnummer">
+        <Section title="Umsatzsteuer">
           {identity.vatId ? (
             <p>
               USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="font-mono text-titanium-50">{identity.vatId}</span>
             </p>
           ) : (
             <p>
-              USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="text-amber-300">wird nach Finanzamt-Fragebogen vergeben</span>
+              Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.
             </p>
           )}
-          <p className="text-xs text-titanium-500">
-            Falls Kleinunternehmer-Regelung (§ 19 UStG) bei Anmeldung gewählt wird: Diesen Block ersetzen durch
-            „Hinweis: Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen."
-          </p>
         </Section>
 
         <Section title="Wirtschafts-ID (sobald vergeben)">

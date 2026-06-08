@@ -55,10 +55,14 @@ export function PrivacyPolicy() {
 
         <Section title="2. Datenschutzbeauftragter">
           <p>
-            Falls bestellungspflichtig nach § 38 BDSG: Kontaktdaten des DSB
-            hier ergänzen. Andernfalls: <em>„Ein Datenschutzbeauftragter ist
-            gesetzlich nicht vorgeschrieben; Anfragen richten Sie bitte an
-            die unter Ziffer 1 genannte Adresse."</em>
+            Ein Datenschutzbeauftragter ist gemäß § 38 BDSG nicht bestellt.
+            Die gesetzlichen Voraussetzungen (u. a. mindestens 20 Personen,
+            die ständig mit der automatisierten Verarbeitung personenbezogener
+            Daten befasst sind) sind nicht erfüllt. Datenschutzbezogene
+            Anfragen richten Sie bitte an:{' '}
+            <a className="text-security-400" href="mailto:privacy@realsyncdynamicsai.de">
+              privacy@realsyncdynamicsai.de
+            </a>
           </p>
         </Section>
 

@@ -101,9 +101,10 @@ Deno.serve(async (req) => {
     stripeCustomerId = customer.id;
   }
 
-  const origin = req.headers.get('origin') ?? body.return_url ?? '';
-  const successUrl = `${origin || ''}/billing/usage?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl  = `${origin || ''}/billing/usage?checkout=cancelled`;
+  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
+  const base = req.headers.get('origin') ?? body.return_url ?? SITE;
+  const successUrl = `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan_key=${encodeURIComponent(body.plan_key!)}`;
+  const cancelUrl  = `${base}/pricing?checkout=cancelled`;
 
   // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
   // Triggered via body.pilot=true (typically set from /contact-sales after

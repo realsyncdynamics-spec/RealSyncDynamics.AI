@@ -48,34 +48,31 @@ export function CheckoutSuccessPage() {
           </div>
 
           <p className="mt-4 text-sm leading-relaxed text-titanium-300">
-            Der Zahlungsstatus wurde von Stripe entgegengenommen. Die Freischaltung
-            kann wenige Sekunden dauern — sobald der Webhook das Abonnement
-            verarbeitet hat, ist dein Plan im Dashboard sichtbar.
+            {planKey === 'starter' || planKey === 'growth'
+              ? 'Ihr 14-Tage-Trial läuft. Keine Kosten bis Tag 15 — jederzeit kündbar.'
+              : 'Der Zahlungsstatus wurde von Stripe entgegengenommen.'
+            }{' '}
+            Die Freischaltung erfolgt sobald der Webhook das Abonnement verarbeitet hat.
           </p>
 
-          {planLabel ? (
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-titanium-500">
-              Plan: {planLabel}
+          {planLabel && (
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-emerald-400">
+              ✓ {planLabel} aktiviert
             </p>
-          ) : null}
-          {sessionId ? (
-            <p className="mt-1 break-all font-mono text-[11px] text-titanium-500">
-              Session: {sessionId}
-            </p>
-          ) : null}
+          )}
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <Link
-              to="/billing/usage"
-              className="inline-flex items-center gap-2 border border-ai-cyan-500/50 bg-ai-cyan-900/20 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-ai-cyan-200 hover:bg-ai-cyan-900/40"
+              to="/app"
+              className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-bold hover:bg-cyan-300 transition-colors"
             >
-              Dashboard oeffnen <ArrowRight className="h-3.5 w-3.5" />
+              Governance Dashboard öffnen <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              to="/"
-              className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-950 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-titanium-200 hover:border-titanium-500 hover:text-titanium-50"
+              to="/app/websites"
+              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-400 transition-colors"
             >
-              Zurueck zur Uebersicht
+              Website-Monitoring starten
             </Link>
           </div>
 

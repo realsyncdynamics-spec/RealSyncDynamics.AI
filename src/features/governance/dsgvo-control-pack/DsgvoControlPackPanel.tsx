@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Activity, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ModuleStatusBadge } from '../../../components/governance-os/ModuleStatusBadge';
+import { ModuleStatusBadge } from '../ModuleStatusBadge';
 import type { ControlSignal, ControlSignalStatus } from './dsgvoControlPackTypes';
 import { DsgvoControlSignalRow } from './DsgvoControlSignalRow';
 
@@ -27,7 +27,6 @@ export function DsgvoControlPackPanel({ signals: initialSignals }: Props) {
 
   return (
     <section className="mb-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-cyan-400" />
@@ -41,7 +40,6 @@ export function DsgvoControlPackPanel({ signals: initialSignals }: Props) {
         </span>
       </div>
 
-      {/* Signal list */}
       <div className="border border-titanium-900 divide-y divide-titanium-900 bg-obsidian-950">
         {signals.map((signal) => (
           <DsgvoControlSignalRow
@@ -52,12 +50,10 @@ export function DsgvoControlPackPanel({ signals: initialSignals }: Props) {
         ))}
       </div>
 
-      {/* Footer */}
       <p className="mt-2 font-mono text-[9px] text-titanium-700">
         Nächster Scan: automatisch · EU-Daten · kein Export an Dritte · Ergebnisse sind keine Rechtsberatung
       </p>
 
-      {/* Roadmap */}
       <div className="mt-6 border border-titanium-900 bg-obsidian-900">
         <div className="px-4 py-2 border-b border-titanium-900 flex items-center gap-2">
           <Lock className="h-3 w-3 text-titanium-600" />

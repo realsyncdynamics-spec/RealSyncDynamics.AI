@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Check } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { usePageMeta } from '../../lib/usePageMeta';
 
@@ -48,31 +48,36 @@ export function CheckoutSuccessPage() {
           </div>
 
           <p className="mt-4 text-sm leading-relaxed text-titanium-300">
-            {planKey === 'starter' || planKey === 'growth'
-              ? 'Ihr 14-Tage-Trial läuft. Keine Kosten bis Tag 15 — jederzeit kündbar.'
-              : 'Der Zahlungsstatus wurde von Stripe entgegengenommen.'
-            }{' '}
-            Die Freischaltung erfolgt sobald der Webhook das Abonnement verarbeitet hat.
+            Der Zahlungsstatus wurde von Stripe entgegengenommen. Die Freischaltung
+            kann wenige Sekunden dauern — sobald der Webhook das Abonnement
+            verarbeitet hat, ist dein Plan im Dashboard sichtbar.
           </p>
 
-          {planLabel && (
-            <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-emerald-400">
-              ✓ {planLabel} aktiviert
+          {planLabel ? (
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-titanium-500">
+              Plan: {planLabel}
             </p>
-          )}
+          ) : null}
+          {sessionId ? (
+            <p className="mt-1 break-all font-mono text-[11px] text-titanium-500">
+              Session: {sessionId}
+            </p>
+          ) : null}
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+          <OnboardingSteps planKey={planKey} />
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to="/app"
-              className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-bold hover:bg-cyan-300 transition-colors"
+              className="inline-flex items-center gap-2 border border-ai-cyan-500/50 bg-ai-cyan-900/20 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-ai-cyan-200 hover:bg-ai-cyan-900/40"
             >
-              Governance Dashboard öffnen <ArrowRight className="h-4 w-4" />
+              Dashboard öffnen <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
-              to="/app/websites"
-              className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-5 py-3 text-sm font-semibold hover:border-titanium-400 transition-colors"
+              to="/pricing"
+              className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-950 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-titanium-200 hover:border-titanium-500 hover:text-titanium-50"
             >
-              Website-Monitoring starten
+              Zurück zur Übersicht
             </Link>
           </div>
 
@@ -86,6 +91,51 @@ export function CheckoutSuccessPage() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+interface OnboardingStep { label: string; detail: string }
+
+const ONBOARDING_STEPS: Record<string, OnboardingStep[]> = {
+  agency: [
+    { label: 'E-Mail prüfen', detail: 'Account-Zugang + API-Key innerhalb von 15 Minuten' },
+    { label: 'Dashboard öffnen', detail: 'White-Label-Panel, Logo, Farben und eigene Domain konfigurieren' },
+    { label: 'Erste Kundenseite hinzufügen', detail: '10 Domains inklusive — Domain-Onboarding im Dashboard unter "Websites"' },
+    { label: 'Optional: Setup-Gespräch', detail: 'Unser Team meldet sich innerhalb von 24 h für ein kostenfreies Onboarding-Call' },
+  ],
+  growth: [
+    { label: 'E-Mail prüfen', detail: 'Account-Zugang innerhalb von 15 Minuten' },
+    { label: 'Domain hinzufügen', detail: 'Bis zu 3 Domains im Dashboard — tägliches Monitoring startet automatisch' },
+    { label: 'Risk-Dashboard öffnen', detail: 'Erste Drift-Events und Consent-Analyse sind sofort sichtbar' },
+  ],
+  starter: [
+    { label: 'E-Mail prüfen', detail: 'Account-Zugang innerhalb von 15 Minuten' },
+    { label: 'Domain hinzufügen', detail: '1 Domain — monatlicher Re-Scan startet automatisch' },
+  ],
+};
+
+function OnboardingSteps({ planKey }: { planKey: string | null }) {
+  const steps = planKey ? ONBOARDING_STEPS[planKey] : null;
+  if (!steps) return null;
+  return (
+    <div className="mt-6 border border-titanium-800 bg-obsidian-950 p-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-titanium-500 mb-3">
+        Nächste Schritte
+      </p>
+      <ol className="space-y-2">
+        {steps.map((s, i) => (
+          <li key={s.label} className="flex items-start gap-3">
+            <span className="shrink-0 font-mono text-[10px] text-titanium-600 mt-0.5 w-4">{i + 1}.</span>
+            <div>
+              <span className="text-xs font-semibold text-titanium-100 flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-emerald-400 shrink-0" /> {s.label}
+              </span>
+              <p className="text-[11px] text-titanium-500 mt-0.5">{s.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

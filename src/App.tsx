@@ -4,6 +4,7 @@
  */
 import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
@@ -513,6 +514,15 @@ function RoutesWithTracking() {
       <Route path="/methodik" element={<LegalMethodology />} />
       <Route path="/grenzen" element={<Limits />} />
       <Route path="/limits" element={<Limits />} />
+
+      {/* Common auth entry points users expect */}
+      <Route path="/login" element={<Navigate to="/welcome" replace />} />
+      <Route path="/signin" element={<Navigate to="/welcome" replace />} />
+      <Route path="/signup" element={<Navigate to="/welcome" replace />} />
+      <Route path="/register" element={<Navigate to="/welcome" replace />} />
+
+      {/* 404 catch-all — must be last */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
     </Suspense>
   );

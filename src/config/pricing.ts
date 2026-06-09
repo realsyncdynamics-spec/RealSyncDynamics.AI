@@ -70,7 +70,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kein Account, kein Setup',
     ],
     highlight: false,
-    cta: { label: 'Kostenlosen Website Check starten', href: '/audit?source=pricing-free' },
+    cta: { label: 'Kostenlos starten', href: '/audit?source=pricing-free' },
   },
   {
     id: 'starter',
@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       '1 Domain',
     ],
     highlight: false,
-    cta: { label: '14 Tage Starter testen', href: 'https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00' },
+    cta: { label: 'Jetzt upgraden', href: '/checkout/starter?source=pricing' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: '14 Tage Growth testen', href: 'https://buy.stripe.com/dRmaEZbqE7Kz0oF3Iq6wE01' },
+    cta: { label: 'Jetzt upgraden', href: '/checkout/growth?source=pricing' },
   },
   {
     id: 'agency',
@@ -130,9 +130,9 @@ export const PRICING_TIERS: PricingTier[] = [
       'Bulk-Audit für Domain-Portfolios',
       'Priority-Support',
     ],
-    badges: ['Neu'],
+    badges: [],
     highlight: false,
-    cta: { label: '14 Tage Agency testen', href: 'https://buy.stripe.com/7sY00lgKY1mb6N3lAi6wE02' },
+    cta: { label: '14 Tage Agency testen', href: '/checkout/agency?source=pricing' },
   },
   {
     id: 'scale',
@@ -190,7 +190,4 @@ export function tierById(id: TierId): PricingTier | undefined {
 
 /** Trust-Note unter Pricing-Cards */
 export const PRICING_TRUST_NOTE =
-  '14 Tage kostenlos testen · Keine Kosten bis Tag 15 · Jederzeit kündbar · Made in Germany';
-
-export const PRICING_TRIAL_NOTE =
-  'Erstcheck kostenlos · kein Account nötig · Abo-Testphase 14 Tage kostenlos · Kreditkarte erst nach Testende fällig';
+  'Free Audit kostenlos · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';

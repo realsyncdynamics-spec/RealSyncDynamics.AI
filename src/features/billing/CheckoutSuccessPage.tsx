@@ -68,16 +68,16 @@ export function CheckoutSuccessPage() {
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              to="/billing/usage"
+              to="/app"
               className="inline-flex items-center gap-2 border border-ai-cyan-500/50 bg-ai-cyan-900/20 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-ai-cyan-200 hover:bg-ai-cyan-900/40"
             >
-              Dashboard oeffnen <ArrowRight className="h-3.5 w-3.5" />
+              Dashboard öffnen <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
-              to="/"
+              to="/pricing"
               className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-950 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-titanium-200 hover:border-titanium-500 hover:text-titanium-50"
             >
-              Zurueck zur Uebersicht
+              Zurück zur Übersicht
             </Link>
           </div>
 

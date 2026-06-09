@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, BarChart3, Cpu, Layers, ShieldCheck, History,
   CheckCircle2, AlertTriangle, Loader2,
@@ -22,9 +22,32 @@ export function UsageView() {
 function UsageInner() {
   const { tenants, activeTenantId, setActiveTenant, entitlements, loading } = useTenant();
   const [tab, setTab] = useState<Tab>('quotas');
+  const [params] = useSearchParams();
+  const checkoutStatus = params.get('checkout'); // 'success' | 'cancelled' | null
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      {checkoutStatus === 'success' && (
+        <div className="bg-emerald-900/40 border-b border-emerald-700/60 px-4 py-3 flex items-center gap-3">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <p className="text-sm text-emerald-200">
+            <strong className="font-semibold">Zahlung eingegangen.</strong>{' '}
+            Dein Plan wird aktiviert, sobald der Stripe-Webhook verarbeitet wurde — das dauert wenige Sekunden.
+          </p>
+          <Link to="/app" className="ml-auto font-mono text-[11px] uppercase tracking-wider text-emerald-300 hover:text-emerald-100 whitespace-nowrap">
+            → Dashboard öffnen
+          </Link>
+        </div>
+      )}
+      {checkoutStatus === 'cancelled' && (
+        <div className="bg-titanium-900/40 border-b border-titanium-800 px-4 py-3 flex items-center gap-3">
+          <AlertTriangle className="h-4 w-4 text-titanium-400 shrink-0" />
+          <p className="text-sm text-titanium-300">
+            Checkout abgebrochen — keine Zahlung ausgelöst.{' '}
+            <Link to="/pricing" className="underline hover:text-titanium-50">Plan erneut wählen →</Link>
+          </p>
+        </div>
+      )}
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
           <Link to="/dashboard" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">

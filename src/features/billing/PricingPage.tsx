@@ -3,7 +3,7 @@ import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
-import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
+import { PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TRIAL_NOTE, type PricingTier, type TierId } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
 
@@ -79,9 +79,12 @@ export function PricingPage() {
             ))}
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-2">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-silver-500">
               {PRICING_TRUST_NOTE}
+            </p>
+            <p className="text-[10px] font-mono text-titanium-600">
+              {PRICING_TRIAL_NOTE}
             </p>
           </div>
 

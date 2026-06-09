@@ -45,7 +45,7 @@ const SEV_COLOR: Record<Severity, string> = {
   critical: 'text-red-300',
   high: 'text-orange-300',
   medium: 'text-amber-300',
-  low: 'text-yellow-300',
+  low: 'text-titanium-300',
   info: 'text-titanium-300',
   pass: 'text-emerald-300',
 };
@@ -89,8 +89,8 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
   function handleUrlSubmit() {
     const trimmed = input.trim();
     if (!trimmed) return;
-    if (!URL_RE.test(trimmed)) {
-      setValidationError('Sieht nicht nach einer gültigen Domain aus. Versuch z. B. „kanzlei-mueller.de".');
+    if (trimmed.includes('@') || !URL_RE.test(trimmed)) {
+      setValidationError('Bitte eine Website-Adresse eingeben, z. B. „kanzlei-mueller.de" — keine E-Mail-Adresse.');
       return;
     }
     const normalized = trimmed.match(/^https?:\/\//i) ? trimmed : `https://${trimmed}`;
@@ -312,11 +312,11 @@ function ScanSummary({ report }: { report: Report }) {
         </div>
       </div>
       {report.coverage === 'limited' && (
-        <div className="flex items-start gap-2 border border-amber-500/40 bg-amber-500/5 px-2.5 py-2 text-[11px] text-amber-200">
-          <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />
+        <div className="flex items-start gap-2 border border-titanium-800 bg-obsidian-950 px-2.5 py-2 text-[11px] text-titanium-400">
+          <span className="shrink-0 mt-px">ℹ</span>
           <span>
             {report.coverage_notice ??
-              'Diese Seite wird client-seitig gerendert — der statische Scan sieht nur das Grundgerüst. Das Ergebnis ist nicht abschließend.'}
+              'Hinweis: Diese Seite nutzt clientseitiges Rendering. Der Scan analysiert das Grundgerüst.'}
           </span>
         </div>
       )}

@@ -237,7 +237,18 @@ export function AuditLanding() {
             </>
           )}
 
-          {report && <div id="report"><ReportView report={report} onRetry={resetForNewScan} /></div>}
+          {report && (
+            <div id="report">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-titanium-900">
+                <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Dein Scan-Ergebnis</div>
+                  <div className="font-display font-bold text-titanium-50 text-lg leading-tight">{report.domain}</div>
+                </div>
+              </div>
+              <ReportView report={report} onRetry={resetForNewScan} />
+            </div>
+          )}
         </div>
       </main>
 

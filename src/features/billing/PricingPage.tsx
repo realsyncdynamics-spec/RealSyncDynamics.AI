@@ -172,8 +172,24 @@ export function PricingPage() {
                 a: 'Für erkannte Probleme liefern wir konkrete technische Fixes: Script-Tags mit type="text/plain" und data-consent-Attribut, Consent-Banner-Code-Snippets, Google-Fonts-Self-Hosting-Script, YouTube-NoCookie-Umstellung. Kein LLM-generiertes "schreib eine Datenschutzerklärung", sondern strukturierte Regel-Engine → Template-System.',
               },
               {
+                q: 'Was passiert nach dem Kauf des Agency-Pakets?',
+                a: 'Nach der Zahlung erhalten Sie innerhalb von 15 Minuten eine E-Mail mit Ihrem Account-Zugang. Im Dashboard finden Sie sofort: Ihren API-Key, das White-Label-Konfigurations-Panel (Logo, Farben, eigene Domain), und die Möglichkeit, die ersten 10 Kundenseiten hinzuzufügen. Unser Onboarding-Team meldet sich innerhalb von 24 Stunden für ein optionales Setup-Gespräch.',
+              },
+              {
+                q: 'Was bedeutet "Priority Support" beim Agency-Paket?',
+                a: 'Priority Support bedeutet: dedizierter Ansprechpartner per E-Mail mit garantierter Antwort innerhalb von 8 Stunden (Werktage). Für kritische Compliance-Fragen (aktiver Aufsichtsbehörden-Kontakt) eskalieren wir auf 4-Stunden-Response. Kontakt: support@realsyncdynamicsai.de mit Betreff [AGENCY].',
+              },
+              {
+                q: 'Wie viele Kundenseiten kann ich im Agency-Paket verwalten?',
+                a: '10 Kundenseiten (Domains) sind im Grundpreis enthalten. Weitere Domains können einzeln hinzugebucht werden. Jede Domain bekommt ihr eigenes Monitoring-Dashboard, White-Label-Report und API-Endpunkt. Die Multi-Tenant-Struktur ist vollständig isoliert — jeder Kunde sieht nur seine eigenen Daten.',
+              },
+              {
+                q: 'Gibt es einen AVV (Auftragsverarbeitungsvertrag)?',
+                a: 'Ja. Als Auftragsverarbeiter stellen wir Ihnen und Ihren Kunden einen EU-konformen AVV bereit. Er ist ab Buchung automatisch aktiv und kann unter /legal/avv eingesehen und heruntergeladen werden. Für Agency-Kunden mit eigenen Endkunden stellen wir zusätzlich eine anpassbare AVV-Vorlage bereit.',
+              },
+              {
                 q: 'Wie kündige ich?',
-                a: 'Monatlich, formlos per E-Mail. Keine Mindestlaufzeit. Daten und Reports bleiben Ihnen 90 Tage exportierbar erhalten.',
+                a: 'Monatlich, formlos per E-Mail an support@realsyncdynamicsai.de. Keine Mindestlaufzeit. Daten und Reports bleiben Ihnen 90 Tage exportierbar erhalten.',
               },
               {
                 q: 'Was ist der Enterprise Evidence Vault?',
@@ -208,6 +224,7 @@ export function PricingPage() {
             <Link to="/legal/privacy" className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum" className="hover:text-titanium-50">Impressum</Link>
             <Link to="/legal/terms" className="hover:text-titanium-50">AGB</Link>
+            <Link to="/legal/avv" className="hover:text-titanium-50">AVV</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-50">Sub-Processors</Link>
             <Link to="/legal/methodology" className="hover:text-titanium-50">Methodik</Link>
             <Link to="/security" className="hover:text-titanium-50">Security</Link>

@@ -370,8 +370,11 @@ function ConsentGateShell({
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-2 text-center">
             {tier.name}
           </h1>
-          <p className="text-center text-silver-300 text-sm sm:text-base mb-6">
+          <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
+          </p>
+          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
+            14 Tage kostenlos testen · keine Kosten bis Tag 15
           </p>
 
           <div className="space-y-3 mb-5">
@@ -446,7 +449,12 @@ function ConsentGateShell({
           <div className="mt-4 text-[11px] font-mono uppercase tracking-wider text-silver-500 text-center">
             Eingeloggt als {userEmail}
           </div>
-          <div className="mt-5 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">
+          <div className="mt-3 text-center">
+            <Link to="/legal/avv" className="text-[11px] text-gold-300 hover:text-gold-200 underline" target="_blank" rel="noopener noreferrer">
+              AVV (Auftragsverarbeitungsvertrag) einsehen
+            </Link>
+          </div>
+          <div className="mt-4 inline-flex items-center gap-1.5 text-xs text-silver-500 w-full justify-center">
             <AlertCircle className="h-3 w-3" />
             <span>Stripe-Hosted-Checkout · Monatlich kündbar · Keine Setup-Gebühren</span>
           </div>

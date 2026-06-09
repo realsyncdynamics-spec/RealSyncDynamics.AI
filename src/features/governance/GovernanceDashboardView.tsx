@@ -409,15 +409,13 @@ function Body({
       {/* Upgrade-CTAs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { tier: 'Starter', price: '79 €/Monat', desc: '1 Domain · Monatlicher Re-Scan · DSE-Generator', href: 'https://buy.stripe.com/b3e14pdyM3uj2wN4Mu6wE00', color: 'border-titanium-700 hover:border-titanium-400' },
-          { tier: 'Growth', price: '249 €/Monat', desc: 'Tägliches Monitoring · Fix-Snippets · 3 Domains', href: 'https://buy.stripe.com/dRmaEZbqE7Kz0oF3Iq6wE01', color: 'border-cyan-700 hover:border-cyan-400' },
-          { tier: 'Agency', price: '699 €/Monat', desc: 'White-Label · 10 Domains · API + Webhooks', href: 'https://buy.stripe.com/7sY00lgKY1mb6N3lAi6wE02', color: 'border-titanium-700 hover:border-titanium-400' },
+          { tier: 'Starter', price: '79 €/Monat', desc: '1 Domain · Monatlicher Re-Scan · DSE-Generator', href: '/checkout/starter?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
+          { tier: 'Growth', price: '249 €/Monat', desc: 'Tägliches Monitoring · Fix-Snippets · 3 Domains', href: '/checkout/growth?source=governance_dashboard', color: 'border-cyan-700 hover:border-cyan-400' },
+          { tier: 'Agency', price: '699 €/Monat', desc: 'White-Label · 10 Domains · API + Webhooks', href: '/checkout/agency?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
         ].map((plan) => (
           <a
             key={plan.tier}
             href={plan.href}
-            target="_blank"
-            rel="noopener noreferrer"
             className={`border ${plan.color} bg-obsidian-900 px-4 py-3 block transition-colors group`}
           >
             <div className="flex items-center justify-between mb-1">

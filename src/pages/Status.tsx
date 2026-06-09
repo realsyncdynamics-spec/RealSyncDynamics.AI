@@ -151,10 +151,10 @@ type CompStatus = 'operational' | 'degraded' | 'outage' | 'maintenance';
 
 function Component({ name, status, detail }: { name: string; status: CompStatus; detail?: string }) {
   const config: Record<CompStatus, { Icon: React.ElementType<{ className?: string }>; color: string; label: string }> = {
-    operational: { Icon: CheckCircle2,    color: 'text-emerald-400', label: 'Operational' },
-    degraded:    { Icon: AlertTriangle,   color: 'text-amber-400',   label: 'Degraded'    },
-    outage:      { Icon: AlertTriangle,   color: 'text-red-400',     label: 'Outage'      },
-    maintenance: { Icon: Clock,           color: 'text-titanium-400',label: 'Maintenance' },
+    operational: { Icon: CheckCircle2,    color: 'text-emerald-400', label: 'Betriebsbereit' },
+    degraded:    { Icon: AlertTriangle,   color: 'text-amber-400',   label: 'Eingeschränkt' },
+    outage:      { Icon: AlertTriangle,   color: 'text-red-400',     label: 'Ausfall'        },
+    maintenance: { Icon: Clock,           color: 'text-titanium-400',label: 'Wartung'        },
   };
   const { Icon, color, label } = config[status];
   return (

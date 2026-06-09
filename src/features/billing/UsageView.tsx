@@ -200,11 +200,11 @@ function HistoryPanel({ tenantId }: { tenantId: string }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Runs"     value={stats.totalRuns.toString()} />
-        <StatCard label="Tokens"   value={stats.totalTokens.toLocaleString('de-DE')} />
-        <StatCard label="Cost"     value={`$${stats.totalCostUsd.toFixed(4)}`} />
+        <StatCard label="Runs"      value={stats.totalRuns.toString()} />
+        <StatCard label="Tokens"    value={stats.totalTokens.toLocaleString('de-DE')} />
+        <StatCard label="Kosten"    value={`$${stats.totalCostUsd.toFixed(4)}`} />
         <StatCard
-          label="Success-Rate"
+          label="Erfolgsrate"
           value={`${stats.totalRuns ? Math.round((stats.successRuns / stats.totalRuns) * 100) : 0}%`}
           tone={stats.errorRuns ? 'amber' : 'emerald'}
         />

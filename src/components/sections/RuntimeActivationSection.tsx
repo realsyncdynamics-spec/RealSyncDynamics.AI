@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import { PRICING_TIERS } from '../../config/pricing';
+import { normalizeAuditTarget } from '../../utils/auditTargetValidation';
 
 // RuntimeActivationSection — "Activate your runtime."
 // Pricing-as-activation. Reads PRICING_TIERS from src/config/pricing.ts so
@@ -11,17 +12,18 @@ import { PRICING_TIERS } from '../../config/pricing';
 
 export function RuntimeActivationSection() {
   const [url, setUrl] = useState('');
+  const [inputError, setInputError] = useState('');
   const navigate = useNavigate();
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const trimmed = url.trim();
-    if (!trimmed) {
-      navigate('/audit?source=activation');
+    setInputError('');
+    const result = normalizeAuditTarget(url);
+    if (!result.ok) {
+      setInputError(result.error ?? '');
       return;
     }
-    const normalized = trimmed.match(/^https?:\/\//i) ? trimmed : `https://${trimmed}`;
-    const q = new URLSearchParams({ url: normalized, source: 'activation' });
+    const q = new URLSearchParams({ url: result.url!, source: 'activation' });
     navigate(`/audit?${q.toString()}`);
   }
 
@@ -78,6 +80,9 @@ export function RuntimeActivationSection() {
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
+          {inputError && (
+            <p className="mt-2 font-mono text-[11px] text-rose-400">{inputError}</p>
+          )}
         </form>
 
         {/* Plan grid */}

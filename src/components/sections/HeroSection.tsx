@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { normalizeAuditTarget } from '../../utils/auditTargetValidation';
 import { ArrowRight, ChevronRight, Activity, Cpu, ShieldCheck, FlaskConical, AlertTriangle, ClipboardCheck, FileSignature, Gauge } from 'lucide-react';
 
 // HeroSection — Infrastructure-feel (Datadog / Vercel / Stripe), kein Legal-
@@ -25,6 +26,7 @@ const LIVE_PILL_LABELS = [
 
 export function HeroSection() {
     const [url, setUrl] = useState('');
+    const [inputError, setInputError] = useState('');
     const navigate = useNavigate();
     const [tick, setTick] = useState(0);
 
@@ -36,13 +38,13 @@ export function HeroSection() {
 
   function onSubmit(e: FormEvent) {
         e.preventDefault();
-        const trimmed = url.trim();
-        if (!trimmed) {
-                navigate('/audit?source=hero');
-                return;
+        setInputError('');
+        const result = normalizeAuditTarget(url);
+        if (!result.ok) {
+          setInputError(result.error ?? '');
+          return;
         }
-        const normalized = trimmed.match(/^https?:\/\//i) ? trimmed : `https://${trimmed}`;
-        const q = new URLSearchParams({ url: normalized, source: 'hero' });
+        const q = new URLSearchParams({ url: result.url!, source: 'hero' });
         navigate(`/audit?${q.toString()}`);
   }
 
@@ -137,6 +139,9 @@ export function HeroSection() {
                                                           <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
                                 </div>
+                        {inputError && (
+                          <p className="mt-2 font-mono text-[11px] text-rose-400">{inputError}</p>
+                        )}
                       </form>
 
                 {/* Secondary CTA + Enterprise-Pfad. */}

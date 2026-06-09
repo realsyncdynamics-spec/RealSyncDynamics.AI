@@ -28,6 +28,11 @@ const corsHeaders = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
+const FREE_EMAIL_DOMAINS = new Set([
+  'gmail.com','yahoo.com','outlook.com','hotmail.com','gmx.de','gmx.net',
+  'web.de','icloud.com','live.com','protonmail.com','t-online.de',
+]);
+const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 
 interface Issue {
   id: string;
@@ -69,6 +74,16 @@ Deno.serve(async (req) => {
   if (!email || !EMAIL_RE.test(email)) return jsonError(400, 'INVALID_EMAIL', 'valid email required');
   if (email.length > 254)               return jsonError(400, 'INVALID_EMAIL', 'email too long');
   if (url.length > 1000)                return jsonError(400, 'INVALID_URL', 'url too long');
+
+  // Reject email addresses submitted as URL, and free-email domains
+  let parsedHost = '';
+  try { parsedHost = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { /* handled below */ }
+  if (EMAIL_RE.test(parsedHost) || FREE_EMAIL_DOMAINS.has(parsedHost)) {
+    return jsonError(400, 'INVALID_URL', 'E-Mail-Adressen können nicht geprüft werden. Bitte Domain angeben.');
+  }
+  if (parsedHost === 'localhost' || IP_RE.test(parsedHost)) {
+    return jsonError(400, 'INVALID_URL', 'Lokale Adressen und IP-Adressen sind nicht erlaubt.');
+  }
 
   const ipHeader = req.headers.get('x-forwarded-for') ?? req.headers.get('cf-connecting-ip') ?? 'unknown';
   const ipHash = await sha256Hex(ipHeader);

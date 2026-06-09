@@ -199,6 +199,7 @@ import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
 import { CookieConsent } from './components/CookieConsent';
+import { ScrollToTop } from './components/ScrollToTop';
 import { GovernanceBrowserShell } from './components/governance-os/GovernanceBrowserShell';
 import { RemediationPlaceholder } from './components/governance-os/RemediationPlaceholder';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
@@ -535,6 +536,7 @@ export default function App() {
       <EnvironmentProvider>
         <DemoModeProvider>
           <BrowserRouter basename={ROUTER_BASENAME}>
+          <ScrollToTop />
           <RoutesWithTracking />
           <CookieConsent />
           <Suspense fallback={null}>

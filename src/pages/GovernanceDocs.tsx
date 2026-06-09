@@ -62,7 +62,7 @@ export function GovernanceDocs() {
           <Section id="quickstart" title="Quickstart">
             <ol className="list-decimal list-inside space-y-3 text-silver-200 leading-relaxed">
               <li>
-                Melde Dich auf <Link to="/welcome" className="text-amber-300 hover:text-amber-200">/welcome</Link> an
+                Melde Dich auf <Link to="/app" className="text-amber-300 hover:text-amber-200">/app</Link> an
                 und wähle Deinen Tenant.
               </li>
               <li>

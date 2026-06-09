@@ -386,13 +386,13 @@ function FinalCta() {
             {CTA.startFree} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/welcome?source=final-cta&intent=founding"
+            to="/app"
             className="inline-flex items-center justify-center gap-2 border border-amber-500 text-amber-300 px-6 py-3 text-sm font-semibold hover:bg-amber-500/10 transition-colors rounded-none"
           >
             {CTA.foundingAccess}
           </Link>
           <Link
-            to="/welcome?source=final-cta"
+            to="/app"
             className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors rounded-none"
           >
             {CTA.openDashboard}

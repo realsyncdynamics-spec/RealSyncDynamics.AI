@@ -149,10 +149,10 @@ export function HeroSection() {
                                           <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-cyan-300 transition-colors" />
                                 </Link>
                                 <Link
-                                            to="/contact-sales?intent=demo&source=hero"
+                                            to="/contact-sales?intent=enterprise&source=hero"
                                             className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-titanium-400 hover:text-titanium-100 transition-colors"
                                           >
-                                          Demo buchen
+                                          Enterprise anfragen
                                           <ChevronRight className="h-3 w-3" />
                                 </Link>
                       </div>

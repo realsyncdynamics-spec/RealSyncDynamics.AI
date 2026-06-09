@@ -25,6 +25,8 @@ import { EnvironmentSwitcher, EnvironmentBanner } from './EnvironmentSwitcher';
 import { AgentWidget } from './AgentWidget/AgentWidget';
 import { GovernanceInspectorPanel, type InspectorSelection } from './GovernanceInspectorPanel';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
+import { DsgvoControlPackPanel } from './dsgvo-control-pack/DsgvoControlPackPanel';
+import { DEMO_CONTROL_SIGNALS } from './dsgvo-control-pack/dsgvoControlPackDemo';
 import { getModuleStatus } from './moduleConfig';
 
 import type { GovernanceRiskLevel } from './types';

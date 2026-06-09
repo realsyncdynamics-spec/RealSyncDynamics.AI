@@ -16,13 +16,13 @@ export function InfrastructureIntegrationsStrip() {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
           <div>
             <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-2">
-              Integrations
+              Integrationen
             </div>
             <h2 className="font-display font-bold text-2xl text-titanium-50">
-              Built for modern infrastructure.
+              Für moderne Infrastruktur gebaut.
             </h2>
             <p className="mt-2 text-sm text-silver-300">
-              More integrations and governance agents coming soon.
+              Weitere Integrationen und Governance-Agenten folgen.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

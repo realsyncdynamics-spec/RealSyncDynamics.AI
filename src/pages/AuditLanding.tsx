@@ -705,7 +705,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
               to={`/audit?plan=starter&source=audit-followup&audit=${report.audit_id}`}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 text-xs font-bold rounded-none"
             >
-              Activate Monitoring <ArrowRight className="h-3 w-3" />
+              Monitoring aktivieren <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </div>

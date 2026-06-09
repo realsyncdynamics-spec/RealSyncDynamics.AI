@@ -2,9 +2,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Globe, FileCheck2, Cpu, AlertCircle } from 'lucide-react';
 
 const BOTTOM_TABS = [
-  { icon: Home,        label: 'Overview',   route: '/app' },
+  { icon: Home,        label: 'Übersicht',  route: '/app' },
   { icon: Globe,       label: 'Websites',   route: '/app/websites' },
-  { icon: FileCheck2,  label: 'Evidence',   route: '/app/evidence' },
+  { icon: FileCheck2,  label: 'Nachweise',  route: '/app/evidence' },
   { icon: Cpu,         label: 'KI-Systeme', route: '/app/ai-systems' },
   { icon: AlertCircle, label: 'Risiken',    route: '/app/risks' },
 ] as const;

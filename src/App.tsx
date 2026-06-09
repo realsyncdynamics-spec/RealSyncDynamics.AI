@@ -57,7 +57,13 @@ import { DokumenteBundle } from './pages/DokumenteBundle';
 import { AiActWorkflows } from './pages/AiActWorkflows';
 import { SaasLanding } from './pages/niche/SaasLanding';
 import { AgenturenLanding } from './pages/niche/AgenturenLanding';
+import { AgenturenConversionLanding } from './pages/niche/AgenturenConversionLanding';
 import { PraxenLanding } from './pages/niche/PraxenLanding';
+import { KanzleienLanding } from './pages/niche/KanzleienLanding';
+import { ArztpraxenLanding } from './pages/niche/ArztpraxenLanding';
+import { WordpressDsgvoLanding } from './pages/niche/WordpressDsgvoLanding';
+import { ChatgptDsgvoLanding } from './pages/niche/ChatgptDsgvoLanding';
+import { ShopifyDsgvoLanding } from './pages/niche/ShopifyDsgvoLanding';
 import { VvtWizard } from './pages/VvtWizard';
 import { AiActClassifier } from './pages/AiActClassifier';
 import { TomGenerator } from './pages/TomGenerator';
@@ -243,6 +249,13 @@ function RoutesWithTracking() {
       <Route path="/fuer-saas"      element={<SaasLanding />} />
       <Route path="/fuer-agenturen" element={<AgenturenLanding />} />
       <Route path="/fuer-praxen"    element={<PraxenLanding />} />
+      {/* GTM-Konversionsseiten — schärfere Conversion-Fokus */}
+      <Route path="/agenturen"       element={<AgenturenConversionLanding />} />
+      <Route path="/kanzleien"       element={<KanzleienLanding />} />
+      <Route path="/arztpraxen"      element={<ArztpraxenLanding />} />
+      <Route path="/wordpress-dsgvo" element={<WordpressDsgvoLanding />} />
+      <Route path="/chatgpt-dsgvo"   element={<ChatgptDsgvoLanding />} />
+      <Route path="/shopify-dsgvo"   element={<ShopifyDsgvoLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />

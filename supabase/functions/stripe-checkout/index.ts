@@ -127,6 +127,8 @@ Deno.serve(async (req) => {
     success_url: successUrl,
     cancel_url: cancelUrl,
     allow_promotion_codes: true,
+    automatic_tax: { enabled: true },
+    tax_id_collection: { enabled: true },
   });
 
   return json({ ok: true, url: session.url, session_id: session.id });

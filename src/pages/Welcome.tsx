@@ -285,12 +285,6 @@ export function Welcome() {
     navigate(target);
   };
 
-  useEffect(() => {
-    if (!sessionId) {
-      setError('Keine Session-ID — bitte über den Email-Link öffnen, den wir nach dem Kauf gesendet haben.');
-    }
-  }, [sessionId]);
-
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
@@ -303,15 +297,28 @@ export function Welcome() {
       <main className="px-4 sm:px-6 py-12 sm:py-16">
         <div className="max-w-2xl mx-auto">
           <div className="mb-12 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <CheckCircle2 className="h-3 w-3" /> Kauf bestätigt · {product}
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight mb-3">
-              Willkommen. Drei Klicks bis zum Setup.
-            </h1>
-            <p className="text-titanium-400 text-base leading-relaxed">
-              Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
-            </p>
+            {sessionId ? (
+              <>
+                <div className="inline-flex items-center gap-2 px-3 py-1 border border-emerald-900 bg-emerald-950/30 text-emerald-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
+                  <CheckCircle2 className="h-3 w-3" /> Kauf bestätigt · {product}
+                </div>
+                <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight mb-3">
+                  Willkommen. Drei Klicks bis zum Setup.
+                </h1>
+                <p className="text-titanium-400 text-base leading-relaxed">
+                  Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-3xl sm:text-4xl font-display font-bold text-titanium-50 tracking-tight mb-3">
+                  Willkommen zurück.
+                </h1>
+                <p className="text-titanium-400 text-base leading-relaxed">
+                  Account bestätigen → API-Key generieren → Snippet einbauen oder Domain prüfen.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="flex items-center justify-center gap-3 mb-12">

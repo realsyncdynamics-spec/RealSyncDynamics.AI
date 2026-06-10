@@ -21,6 +21,8 @@ interface Issue {
 
 interface Report {
   audit_id: string;
+  created_at?: string;
+  email?: string;
   domain: string;
   score: number;
   severity: Severity;

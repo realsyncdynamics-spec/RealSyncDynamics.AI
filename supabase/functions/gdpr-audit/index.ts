@@ -215,6 +215,8 @@ Deno.serve(async (req) => {
   return json({
     ok: true,
     audit_id: auditRow!.id,
+    created_at: new Date().toISOString(),
+    email,
     score,
     severity,
     domain,

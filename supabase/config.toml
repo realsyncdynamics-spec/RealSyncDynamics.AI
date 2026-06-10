@@ -96,6 +96,11 @@ verify_jwt = false
 [functions.gdpr-audit]
 verify_jwt = false
 
+# Audit-Report-Email: fire-and-forget vom Browser nach dem Scan (kein JWT).
+# Sicher: Zugriff nur per UUID, idempotent (email_sent_at-Guard).
+[functions.audit-report-email]
+verify_jwt = false
+
 # Health-Probe — oeffentlich, fuer Uptime-Monitoring und Status-Page.
 # Antwortet 200 / 503; keine sensiblen Daten, keine Auth noetig.
 [functions.health]

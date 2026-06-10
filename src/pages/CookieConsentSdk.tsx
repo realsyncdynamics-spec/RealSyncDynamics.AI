@@ -102,9 +102,7 @@ export function CookieConsentSdk() {
                   <li>· Consent-Audit-Log + CSV-Export</li>
                 </ul>
                 <a
-                  href="https://buy.stripe.com/5kQ6oGeQK44L3Uv3PD8og0f"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/checkout/growth?source=cookie_consent_sdk"
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-none"
                 >
                   Jetzt buchen <ArrowRight className="h-3 w-3" />

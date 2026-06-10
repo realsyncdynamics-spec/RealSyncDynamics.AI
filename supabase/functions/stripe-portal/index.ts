@@ -13,12 +13,24 @@ import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
+// Vault-first, env-fallback — mirrors stripe-webhook's getSecret(). Lets an
+// operator rotate the key via
+//   select public.set_app_secret('stripe_secret_key', 'sk_live_...');
+// without a function redeploy, and overrides a stale placeholder env var.
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
+  try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
+    const { data } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+    if (typeof data === 'string' && data.length > 0) return data;
+  } catch { /* RPC missing or vault empty — fall through to env */ }
+  return Deno.env.get(envVar) ?? null;
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +41,12 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
+
+  const STRIPE_SECRET = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  if (!STRIPE_SECRET) {
+    return jsonError(500, 'NOT_CONFIGURED', 'stripe secret key not configured (neither vault nor env)');
+  }
+  const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');

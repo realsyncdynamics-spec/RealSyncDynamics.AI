@@ -10,6 +10,12 @@ AI-Inferenz, transparentes Billing.
 (EU-Region) · **AI-Stack:** Anthropic / Google / OpenAI für Cloud-Pfad,
 [Ollama](https://ollama.com) (gemma3:4b) für EU-lokal-Pfad.
 
+> **Reifegrad-Quelle:** Verbindlicher Status jedes Governance-Moduls steht
+> in [`docs/runtime-status-matrix.md`](docs/runtime-status-matrix.md). Die
+> „Status"-Spalte unten beschreibt App-Feature-Implementierung; die Matrix
+> definiert audit-festen Reifegrad für externe Kommunikation. Bei
+> Widerspruch gewinnt die Matrix.
+
 ---
 
 ## Was steckt drin

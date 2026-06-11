@@ -502,6 +502,7 @@ function RoutesWithTracking() {
       <Route path="/admin/rebuilds" element={<RebuildsView />} />
       {/* Legal */}
       <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/legal/sub-processors" element={<SubProcessors />} />
       <Route path="/impressum" element={<Impressum />} />
       <Route path="/legal/impressum" element={<Impressum />} />
@@ -509,6 +510,7 @@ function RoutesWithTracking() {
       <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
       <Route path="/legal/terms" element={<LegalTerms />} />
+      <Route path="/terms" element={<LegalTerms />} />
       <Route path="/agb" element={<LegalTerms />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
       <Route path="/legal/methodology" element={<LegalMethodology />} />

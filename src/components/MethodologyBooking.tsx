@@ -47,7 +47,7 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
         const body = encodeURIComponent(
           `Email: ${email}\nFirma: ${company}\nZeit-Slot: ${SLOT_LABEL[slot]}\nThema: ${topic || '—'}\nQuelle: ${source}`,
         );
-        window.location.href = `mailto:hello@realsyncdynamicsai.de?subject=${subject}&body=${body}`;
+        window.location.href = `mailto:support@realsyncdynamicsai.de?subject=${subject}&body=${body}`;
         setStatus('success');
         return;
       }
@@ -191,8 +191,8 @@ export function MethodologyBooking({ source = 'methodology' }: { source?: string
       {status === 'error' && (
         <p className="text-xs text-red-300">
           Übertragung fehlgeschlagen ({errorMsg}). Versuch's nochmal oder schreib direkt an{' '}
-          <a className="text-security-400" href="mailto:hello@realsyncdynamicsai.de">
-            hello@realsyncdynamicsai.de
+          <a className="text-security-400" href="mailto:support@realsyncdynamicsai.de">
+            support@realsyncdynamicsai.de
           </a>
           .
         </p>

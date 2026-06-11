@@ -1,0 +1,49 @@
+{
+  "$comment": "Single source of truth für Stripe-Produkte/Prices. Wird identisch gegen TEST und LIVE gefahren (scripts/stripe-setup.mjs). Beträge in Cent (EUR). Sentinel-Pläne (stripe=false) erzeugen KEINEN Stripe-Call, sondern nur einen products-Seed-Eintrag, damit stripe-checkout nicht gegen die Stripe-API läuft (free=kein Charge, enterprise=manuelle Rechnung).",
+  "webhook": {
+    "pathSuffix": "/functions/v1/stripe-webhook",
+    "events": [
+      "checkout.session.completed",
+      "customer.subscription.created",
+      "customer.subscription.updated",
+      "customer.subscription.deleted",
+      "invoice.payment_succeeded",
+      "invoice.payment_failed"
+    ]
+  },
+  "plans": [
+    {
+      "key": "free",
+      "name": "Free Audit (sentinel)",
+      "stripe": false,
+      "sentinelPriceId": "internal_default_free_audit"
+    },
+    {
+      "key": "starter",
+      "name": "Starter",
+      "amount": 7900,
+      "currency": "eur",
+      "interval": "month"
+    },
+    {
+      "key": "growth",
+      "name": "Growth",
+      "amount": 24900,
+      "currency": "eur",
+      "interval": "month"
+    },
+    {
+      "key": "agency",
+      "name": "Agency",
+      "amount": 69900,
+      "currency": "eur",
+      "interval": "month"
+    },
+    {
+      "key": "enterprise",
+      "name": "Enterprise (sentinel · manual invoicing)",
+      "stripe": false,
+      "sentinelPriceId": "internal_default_enterprise"
+    }
+  ]
+}

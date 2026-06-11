@@ -32,7 +32,7 @@ export function AVVTemplate() {
             <Printer className="h-3.5 w-3.5" /> Drucken / als PDF speichern
           </button>
           <a
-            href="mailto:hi@realsyncdynamicsai.de?subject=AVV%20unterzeichnen"
+            href="mailto:support@realsyncdynamicsai.de?subject=AVV%20unterzeichnen"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-security-500 hover:bg-security-600 text-white rounded-none"
           >
             <Mail className="h-3.5 w-3.5" /> AVV anfragen

@@ -81,8 +81,8 @@ export function LegalTerms() {
             Deutschland
             <br />
             E-Mail:{' '}
-            <a className="text-security-400" href="mailto:hello@realsyncdynamicsai.de">
-              hello@realsyncdynamicsai.de
+            <a className="text-security-400" href="mailto:support@realsyncdynamicsai.de">
+              support@realsyncdynamicsai.de
             </a>
           </p>
           <p>
@@ -330,8 +330,8 @@ export function LegalTerms() {
             Abonnement-Verträge gemäß §&nbsp;312k BGB jederzeit über die
             in der Plattform bereitgestellte Kündigungsmöglichkeit (im
             angemeldeten Bereich, sowie ersatzweise per E-Mail an{' '}
-            <a className="text-security-400" href="mailto:hello@realsyncdynamicsai.de">
-              hello@realsyncdynamicsai.de
+            <a className="text-security-400" href="mailto:support@realsyncdynamicsai.de">
+              support@realsyncdynamicsai.de
             </a>
             ) kündigen. Die Kündigung wird zum nächsten regulären
             Abrechnungstermin wirksam, soweit kein außerordentliches

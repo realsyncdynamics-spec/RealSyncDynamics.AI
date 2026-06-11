@@ -27,7 +27,7 @@ export interface ColdEmail extends ContentAsset {
 const SIGNATURE = `--
 RealSync Dynamics
 Schwarzburger Str. 31, 98724 Neuhaus am Rennweg
-hello@realsyncdynamicsai.de · realsyncdynamicsai.de`;
+support@realsyncdynamicsai.de · realsyncdynamicsai.de`;
 
 export const COLD_EMAILS: ColdEmail[] = [
   // ── Sequenz: Externer DSB ─────────────────────────────────────────────

@@ -11,3 +11,5 @@ export * from './executor';
 export * from './governanceEvents';
 export * from './evidence';
 export * from './remediation';
+export * from './agent-resolver';
+export * from './capability-checker';

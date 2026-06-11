@@ -15,7 +15,7 @@ BEGIN
     SELECT 1 FROM vault.secrets WHERE name = 'business_metrics_shared_secret'
   ) THEN
     PERFORM vault.create_secret(
-      encode(extensions.gen_random_bytes(32), 'hex'),
+      encode(gen_random_bytes(32), 'hex'),
       'business_metrics_shared_secret',
       'Bearer secret for the business-metrics-cron pg_cron job (15min schedule).'
     );

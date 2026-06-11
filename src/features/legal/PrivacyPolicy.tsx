@@ -93,7 +93,11 @@ export function PrivacyPolicy() {
           <p>
             Wesentliche Empfänger: Supabase (Frankfurt), Anthropic / Google / OpenAI
             (USA, mit EU-DPA + SCCs nach Art. 46 DSGVO), Stripe (Irland), Hostinger
-            (Deutschland).
+            (Deutschland), Resend (EU/Irland) für transaktionale E-Mails, GitHub Pages
+            (globales CDN) für statisches Frontend-Hosting sowie Fontshare (Indien)
+            für die Auslieferung der Webfonts. Drittland-Transfers stützen wir auf
+            Standardvertragsklauseln nach Art. 46 DSGVO bzw., wo zertifiziert, auf
+            das EU-US Data Privacy Framework.
           </p>
         </Section>
 

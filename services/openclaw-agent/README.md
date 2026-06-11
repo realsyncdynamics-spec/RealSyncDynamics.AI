@@ -94,52 +94,73 @@ curl -X POST http://localhost:3001/api/chat \
 
 ### Production (Hostinger VPS, 187.77.89.1)
 
+Komplettes Setup per One-Shot-Skript — installiert Docker-Image, env-File,
+systemd-Unit, beide nginx-Configs (Subdomain `api.realsyncdynamicsai.de` +
+Apex-Pfad `/_openclaw/...`), zieht das TLS-Cert via certbot und faehrt
+Health/Auth-Smoke-Tests gegen beide Endpoints.
+
 ```bash
-# 1. Image bauen + pushen
+# Variante A — Image kommt von Docker Hub (Standard, via CI):
+#   Push auf main mit Aenderungen unter services/openclaw-agent/** triggert
+#   .github/workflows/build-openclaw-image.yml; das baut + pusht das Image
+#   nach realsync/openclaw-agent:latest. Repo-Secrets DOCKER_HUB_USERNAME +
+#   DOCKER_HUB_TOKEN muessen einmalig gesetzt sein.
+
+# Variante B — Image lokal auf der Dev-Maschine bauen + pushen:
 docker build -t realsync/openclaw-agent:latest .
 docker push realsync/openclaw-agent:latest
 
-# 2. Auf VPS:
-sudo mkdir -p /etc/openclaw-agent
-sudo tee /etc/openclaw-agent/env >/dev/null <<'EOF'
-OPENAI_API_KEY=sk-...
-OPENCLAW_SECRET=<openssl rand -hex 32 ergebnis>
-OPENCLAW_CORS_ORIGINS=https://realsyncdynamicsai.de,https://www.realsyncdynamicsai.de
-OPENCLAW_RATE_LIMIT_PER_MIN=10
-OPENCLAW_DAILY_TOKEN_CAP=2000000
-SENTRY_DSN=https://...
-PORT=3001
-EOF
-sudo chmod 600 /etc/openclaw-agent/env
+# Variante C — Initial-Bootstrap ohne Docker-Hub-Push: der Installer baut
+#   das Image direkt auf dem VPS aus services/openclaw-agent/Dockerfile,
+#   falls der Pull fehlschlaegt. systemctl-Unit wird automatisch
+#   angepasst (pull-Zeile non-fatal), damit der Restart nicht failed.
 
-sudo cp openclaw-agent.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable openclaw-agent
-sudo systemctl start openclaw-agent
-sudo systemctl status openclaw-agent
+# Dann auf dem VPS (Repo geklont), im Repo-Root:
+sudo OPENAI_API_KEY="sk-..." \
+     CERTBOT_EMAIL="ops@realsyncdynamicsai.de" \
+     bash scripts/install-openclaw-vps.sh
 ```
 
-### Nginx Reverse-Proxy (auf 187.77.89.1)
+Optionale env-Vars: `OPENCLAW_SECRET` (default: `openssl rand -hex 32`),
+`OPENCLAW_CORS_ORIGINS`, `OPENCLAW_RATE_LIMIT_PER_MIN`,
+`OPENCLAW_DAILY_TOKEN_CAP`, `SENTRY_DSN`, `SKIP_CERTBOT=1` (Subdomain ohne TLS).
 
-```nginx
-server {
-    server_name api.realsyncdynamicsai.de;
+Voraussetzung: A-Record `api.realsyncdynamicsai.de → 187.77.89.1` ist live
+(sonst `SKIP_CERTBOT=1` setzen — Apex-Pfad funktioniert trotzdem).
 
-    location / {
-        proxy_pass http://127.0.0.1:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 90s;
-    }
-}
-```
+Das Skript ist idempotent — bei einem zweiten Lauf wird das `OPENCLAW_SECRET`
+aus der existierenden env-Datei uebernommen, sodass aktive Clients ihre Token
+nicht erneuern muessen.
+
+### Endpoints nach dem Setup
+
+| URL                                                | Zweck                                |
+|----------------------------------------------------|--------------------------------------|
+| `https://api.realsyncdynamicsai.de/healthz`        | Liveness (Subdomain)                 |
+| `https://api.realsyncdynamicsai.de/api/chat`       | Chat (Subdomain, Bearer-Auth)        |
+| `https://api.realsyncdynamicsai.de/ws`             | WebSocket (Subdomain)                |
+| `https://realsyncdynamicsai.de/_openclaw/healthz`  | Liveness (Apex-Pfad, kein extra DNS) |
+| `https://realsyncdynamicsai.de/_openclaw/api/chat` | Chat (Apex-Pfad, same-origin)        |
+| `https://realsyncdynamicsai.de/_openclaw/ws`       | WebSocket (Apex-Pfad)                |
+
+Apex-Pfad ist nuetzlich, weil same-origin → kein CORS-Preflight. Subdomain
+ist die kanonische API-URL fuer externe Integrationen.
+
+### Manuelle Schritte (falls das Skript nicht passt)
+
+Die installierten Artefakte:
+
+- `deploy/nginx/api.realsyncdynamicsai.de.conf` — Subdomain-vhost
+- `deploy/nginx/snippets/openclaw-apex.conf` — Apex-Pfad-Snippet
+- `services/openclaw-agent/openclaw-agent.service` — systemd-Unit
+- `/etc/openclaw-agent/env` — env-Datei (chmod 600, vom Skript geschrieben)
+
+Reload-Befehle:
 
 ```bash
-sudo certbot --nginx -d api.realsyncdynamicsai.de
+sudo systemctl daemon-reload
+sudo systemctl restart openclaw-agent
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
 ## Out-of-Scope (Folge-PRs)

@@ -1,0 +1,86 @@
+name: Build OpenClaw Image
+
+# Baut + pusht das realsync/openclaw-agent:latest Docker-Image nach Docker Hub.
+# Wird vom Hostinger-VPS-Installer (scripts/install-openclaw-vps.sh) als
+# realsync/openclaw-agent:latest gepullt.
+#
+# Trigger:
+#   - Push auf main, der services/openclaw-agent/** beruehrt
+#   - Manueller Run via workflow_dispatch (z.B. fuer initialen Push)
+#
+# Benoetigte Repo-Secrets (Settings → Secrets and variables → Actions):
+#   DOCKER_HUB_USERNAME   Docker-Hub-Login
+#   DOCKER_HUB_TOKEN      Access-Token mit Push-Recht auf realsync/openclaw-agent
+#
+# Tags die gepusht werden:
+#   realsync/openclaw-agent:latest
+#   realsync/openclaw-agent:<short-sha>   (fuer Rollback)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/openclaw-agent/**'
+      - '.github/workflows/build-openclaw-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required secrets
+        run: |
+          : "${{ secrets.DOCKER_HUB_USERNAME?DOCKER_HUB_USERNAME secret missing}}"
+          : "${{ secrets.DOCKER_HUB_TOKEN?DOCKER_HUB_TOKEN secret missing}}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        run: |
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          {
+            echo "sha_short=${SHA_SHORT}"
+            echo "tags<<EOF"
+            echo "realsync/openclaw-agent:latest"
+            echo "realsync/openclaw-agent:${SHA_SHORT}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./services/openclaw-agent
+          file: ./services/openclaw-agent/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=registry,ref=realsync/openclaw-agent:latest
+          cache-to: type=inline
+
+      - name: Summary
+        run: |
+          {
+            echo "## OpenClaw image pushed"
+            echo ""
+            echo "- \`realsync/openclaw-agent:latest\`"
+            echo "- \`realsync/openclaw-agent:${{ steps.tags.outputs.sha_short }}\`"
+            echo ""
+            echo "Auf dem VPS einspielen:"
+            echo '```bash'
+            echo "sudo systemctl restart openclaw-agent  # zieht :latest neu (siehe systemd-Unit)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -27,6 +27,12 @@ export interface RuntimeEvent {
   severity: 'info' | 'warning' | 'error' | 'sealed' | 'generated' | 'ok';
     /** Optional secondary detail (target host, hash, etc.) */
   detail?: string;
+    /** Short label rendered in compact list views (MonitoringPage, RuntimeCanvas). */
+  short?: string;
+    /** Primary message body for list rendering. */
+  text?: string;
+    /** Optional resource the event applies to (host, file, etc.). */
+  target?: string;
 }
 
 // ---------------------------------------------------------------------------

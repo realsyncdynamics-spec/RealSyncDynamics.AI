@@ -6,7 +6,7 @@ import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
-import { trackConversion } from '../../lib/pixels';
+import { trackConversion, setEnhancedConversionData } from '../../lib/pixels';
 
 /**
  * /checkout/:planKey — Real-Stripe-Checkout-Bridge.
@@ -99,10 +99,14 @@ export function CheckoutPage() {
     setRedirecting(true);
     setCheckoutErr(null);
     trackMarketingEvent('checkout_started', { plan_key: validPlan });
-    trackConversion('InitiateCheckout', {
-      content_name: validPlan,
-      value: tier?.priceEur ?? 0,
-      currency: 'EUR',
+    // Enhanced Conversions: send hashed email BEFORE the conversion so Google
+    // Ads / Meta can match the conversion to a logged-in user account.
+    void setEnhancedConversionData({ email: auth.userEmail }).then(() => {
+      trackConversion('InitiateCheckout', {
+        content_name: validPlan,
+        value: tier?.priceEur ?? 0,
+        currency: 'EUR',
+      });
     });
     const result = await createCheckoutSession(auth.tenantId, validPlan);
     if (result.ok && result.url) {

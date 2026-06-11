@@ -26,6 +26,8 @@ export function resolveEntitlements(
 
   return {
     planKey: subscription.planKey,
+    status: subscription.status,
+    trialEnd: subscription.trialEnd,
     isActive,
     features: Object.fromEntries(
       Object.entries(base.features).map(([key, enabled]) => {

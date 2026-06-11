@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0A0A0B"/>
+      <stop offset="100%" stop-color="#16161A"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#0F766E"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="400" height="400" fill="url(#bg)"/>
+
+  <!-- Hard-edge corner marks (industrial DNA) -->
+  <path d="M28 28 L80 28 M28 28 L28 80" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <path d="M372 28 L320 28 M372 28 L372 80" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <path d="M372 372 L320 372 M372 372 L372 320" stroke="#3F3F46" stroke-width="2" fill="none"/>
+  <path d="M28 372 L80 372 M28 372 L28 320" stroke="#3F3F46" stroke-width="2" fill="none"/>
+
+  <!-- Shield Icon (geometric, 90° edges) -->
+  <g transform="translate(125, 110)">
+    <path d="M75 0 L150 25 L150 90 Q150 145 75 175 Q0 145 0 90 L0 25 Z" fill="url(#shield)"/>
+    <!-- Checkmark inside shield -->
+    <path d="M40 90 L65 115 L115 65" stroke="white" stroke-width="10" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="200" y="320" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="800" fill="#F4F4F5" text-anchor="middle">RealSync</text>
+  <text x="200" y="352" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="500" fill="#A1A1AA" text-anchor="middle">Dynamics.AI</text>
+</svg>

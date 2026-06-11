@@ -1,0 +1,137 @@
+[
+  {
+    "id": "intercom",
+    "vendor": "Intercom",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["widget.intercom.io", "js.intercomcdn.com"],
+    "domSelectors": ["#intercom-frame", ".intercom-launcher", "iframe[name='intercom-frame']"],
+    "globals":      ["Intercom", "intercomSettings"]
+  },
+  {
+    "id": "drift",
+    "vendor": "Drift",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["js.driftt.com", "widget.drift.com"],
+    "domSelectors": ["#drift-widget", "#drift-frame-controller"],
+    "globals":      ["drift", "driftt"]
+  },
+  {
+    "id": "tidio",
+    "vendor": "Tidio",
+    "type": "chat",
+    "country": "PL",
+    "scriptHosts":  ["code.tidio.co", "widget-mediator.tidiochat.com"],
+    "domSelectors": ["#tidio-chat", "iframe#tidio-chat-iframe"],
+    "globals":      ["tidioChatApi", "TidioChat"]
+  },
+  {
+    "id": "crisp",
+    "vendor": "Crisp",
+    "type": "chat",
+    "country": "FR",
+    "scriptHosts":  ["client.crisp.chat"],
+    "domSelectors": ["#crisp-chatbox", ".crisp-client"],
+    "globals":      ["$crisp", "CRISP_WEBSITE_ID"]
+  },
+  {
+    "id": "tawk",
+    "vendor": "Tawk.to",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["embed.tawk.to"],
+    "domSelectors": [".tawk-min-container", "iframe[title*='Tawk']"],
+    "globals":      ["Tawk_API"]
+  },
+  {
+    "id": "livechat",
+    "vendor": "LiveChat",
+    "type": "chat",
+    "country": "PL",
+    "scriptHosts":  ["cdn.livechatinc.com"],
+    "domSelectors": ["#livechat-eye-catcher", "#chat-widget-container"],
+    "globals":      ["LC_API", "__lc"]
+  },
+  {
+    "id": "zendesk-web-widget",
+    "vendor": "Zendesk",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["static.zdassets.com"],
+    "domSelectors": ["iframe#launcher", "iframe[title*='Zendesk']"],
+    "globals":      ["zE", "zESettings"]
+  },
+  {
+    "id": "hubspot-chat",
+    "vendor": "HubSpot",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["js.hs-scripts.com", "js.hs-banner.com"],
+    "domSelectors": ["#hubspot-messages-iframe-container"],
+    "globals":      ["HubSpotConversations"]
+  },
+  {
+    "id": "freshchat",
+    "vendor": "Freshchat",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["wchat.eu.freshchat.com", "wchat.freshchat.com"],
+    "domSelectors": ["#fc_frame", "iframe#fc_widget"],
+    "globals":      ["fcWidget", "fcSettings"]
+  },
+  {
+    "id": "chatbase",
+    "vendor": "Chatbase",
+    "type": "ai_bot",
+    "country": "US",
+    "scriptHosts":  ["www.chatbase.co"],
+    "domSelectors": ["iframe[src*='chatbase.co']"],
+    "globals":      ["chatbase"]
+  },
+  {
+    "id": "voiceflow",
+    "vendor": "Voiceflow",
+    "type": "ai_bot",
+    "country": "US",
+    "scriptHosts":  ["cdn.voiceflow.com"],
+    "domSelectors": ["#voiceflow-chat", "iframe[src*='voiceflow']"],
+    "globals":      ["voiceflow"]
+  },
+  {
+    "id": "landbot",
+    "vendor": "Landbot",
+    "type": "ai_bot",
+    "country": "ES",
+    "scriptHosts":  ["cdn.landbot.io", "static.landbot.io"],
+    "domSelectors": ["#landbot-container", "iframe[src*='landbot']"],
+    "globals":      ["Landbot"]
+  },
+  {
+    "id": "chatra",
+    "vendor": "Chatra",
+    "type": "chat",
+    "country": "US",
+    "scriptHosts":  ["call.chatra.io"],
+    "domSelectors": ["#chatra", "iframe[name='chatraEmbed']"],
+    "globals":      ["Chatra", "ChatraSetup"]
+  },
+  {
+    "id": "smartsupp",
+    "vendor": "Smartsupp",
+    "type": "chat",
+    "country": "CZ",
+    "scriptHosts":  ["www.smartsuppchat.com"],
+    "domSelectors": ["#smartsupp-widget-container"],
+    "globals":      ["smartsupp", "_smartsupp"]
+  },
+  {
+    "id": "userlike",
+    "vendor": "Userlike",
+    "type": "chat",
+    "country": "DE",
+    "scriptHosts":  ["userlike-cdn-widgets.s3-eu-west-1.amazonaws.com"],
+    "domSelectors": ["#userlike-iframe-wrapper"],
+    "globals":      ["userlike"]
+  }
+]

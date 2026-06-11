@@ -6,12 +6,15 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-26
+
 ### Added
 - `realsync inspect <bundle>` — fast metadata + event-type/severity/source breakdown without running cryptographic checks. Text and `--json` output.
 - `realsync verify --json` — machine-readable verification report for auditor CI pipelines. Schema: `{result, bundle_id, tenant_id, ..., checks: [{name, ok, detail}]}`.
 - `tests/test_cli.py` — exit-code + JSON-schema contract tests for all subcommands.
 - `tests/test_perf.py` — scale demonstrations: 10k events build + chain + verify in < 3s (CI-loose threshold).
-- `.github/workflows/test.yml` — CI matrix across Python 3.10 / 3.11 / 3.12; runs pytest plus end-to-end CLI smoke against the committed sample + tampered bundles.
+- `.github/workflows/test.yml` — CI matrix across Python 3.10 / 3.11 / 3.12; runs pytest plus end-to-end CLI smoke against the committed sample + tampered bundles. Active when this directory is extracted to a standalone repository.
+- Repo-root smoke workflow `.github/workflows/realsync-cli.yml` in the monorepo (gated on `tools/realsync-cli/**`) — runs pytest + verify (positive + negative) + replay on every PR that touches the CLI.
 
 ## [0.1.0] — 2026-05-22
 

@@ -1,12 +1,8 @@
 /**
- * Cloudflare-Proxy vor dem VPS-Origin — echte HTTP-Security-Header.
+ * Cloudflare-Proxy vor GitHub Pages — echte HTTP-Security-Header.
  *
- * Infrastruktur: realsyncdynamicsai.de läuft über Cloudflare-DNS (Nameserver
- * bella.ns.cloudflare.com / clyde.ns.cloudflare.com) auf den Hostinger-VPS
- * 72.61.89.191 (nginx, siehe deploy/README.md). GitHub Pages ist kein
- * produktiver Origin mehr.
- *
- * Schließt die zwei realen (kein-Engine-Artefakt) Audit-Befunde:
+ * Schließt die zwei realen (kein-Engine-Artefakt) Audit-Befunde, die GitHub
+ * Pages prinzipiell nicht setzen kann:
  *   - `no_hsts`   → Strict-Transport-Security (HSTS)
  *   - `no_xframe` → X-Frame-Options (Clickjacking)
  *
@@ -49,8 +45,8 @@ resource "cloudflare_zone_settings_override" "security" {
 
   settings {
     always_use_https = "on"
-    # SSL „full" reicht (VPS liefert per certbot ein gültiges Zertifikat für
-    # die Domain). „strict" ist möglich, wenn das Cert sauber validiert.
+    # SSL „full" reicht (GitHub Pages liefert gültiges Zertifikat für die
+    # Custom Domain). „strict" ist möglich, wenn das Cert sauber validiert.
     ssl = "full"
 
     security_header {

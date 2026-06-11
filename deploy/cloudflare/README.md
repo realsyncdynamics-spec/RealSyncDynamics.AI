@@ -1,7 +1,8 @@
-# Cloudflare-Proxy vor dem VPS — echte Security-Header
+# Cloudflare-Proxy vor GitHub Pages — echte Security-Header
 
-> **Zweck:** Setzt zusätzliche HTTP-Response-Header und schließt damit die
-> zwei **realen** Audit-Befunde aus dem `gdpr-audit`-Scan:
+> **Zweck:** Setzt die HTTP-Response-Header, die GitHub Pages prinzipiell
+> nicht liefern kann, und schließt damit die zwei **realen** Audit-Befunde
+> aus dem `gdpr-audit`-Scan:
 >
 > | Audit-Befund | Header | Mechanismus hier |
 > |---|---|---|
@@ -10,31 +11,26 @@
 >
 > Kontext & Begründung: [`docs/security/production-headers.md`](../../docs/security/production-headers.md) (Open Finding **OF-1**, „Option B"). Werte konsistent zu [`deploy/nginx/realsyncdynamicsai.de.conf`](../nginx/realsyncdynamicsai.de.conf).
 
-## Infrastruktur-Übersicht
-
-- **Domain:** `realsyncdynamicsai.de`
-- **Nameserver:** `bella.ns.cloudflare.com` / `clyde.ns.cloudflare.com`
-  (DNS-Zone liegt vollständig bei Cloudflare, nicht mehr bei Hostinger)
-- **Cloudflare:** DNS + Proxy + Security-Layer (HSTS, Transform-Rules)
-- **Origin:** Hostinger-VPS `72.61.89.191`, ausgeliefert via nginx
-  (siehe [`deploy/README.md`](../README.md) und
-  [`deploy/nginx/realsyncdynamicsai.de.conf`](../nginx/realsyncdynamicsai.de.conf))
-
-GitHub Pages ist **kein** produktiver Origin mehr.
+GitHub Pages liefert **keine** konfigurierbaren Header. HSTS und
+`X-Frame-Options` wirken **nur** als echte HTTP-Header (nicht als `<meta>`).
+Ein Cloudflare-Proxy vor GitHub Pages ist der sauberste Hebel ohne den
+GitHub-Pages-Workflow aufzugeben.
 
 ---
 
 ## Voraussetzungen (einmalig, im Cloudflare-Dashboard)
 
-1. **Domain in Cloudflare aufnehmen** (`realsyncdynamicsai.de`) — Nameserver
-   beim Registrar (Hostinger) sind bereits auf Cloudflare umgestellt.
-2. **DNS-Records auf den VPS zeigen lassen — jeweils _proxied_ (oranger Cloud-Icon):**
-   - A-Record `@` → `72.61.89.191`
-   - A-Record `www` → `72.61.89.191`
-3. **SSL/TLS-Modus = „Full"** (Dashboard → SSL/TLS → Overview), sobald auf
-   dem VPS ein gültiges TLS-Zertifikat (certbot) für `realsyncdynamicsai.de`
-   + `www` vorliegt — sonst „Full" ohne „strict" zwischenzeitlich.
-   ⚠️ NICHT „Flexible" — sonst Redirect-Schleife mit dem nginx-HTTPS-Redirect.
+1. **Domain in Cloudflare aufnehmen** (`realsyncdynamicsai.de`) und die
+   Nameserver beim Registrar auf die von Cloudflare zugewiesenen umstellen.
+2. **DNS-Records auf GitHub Pages zeigen lassen — jeweils _proxied_ (oranger Cloud-Icon):**
+   - Apex `realsyncdynamicsai.de` → vier A-Records auf die GitHub-Pages-IPs:
+     `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+   - `www` → `CNAME` auf `<org-oder-user>.github.io`
+3. **SSL/TLS-Modus = „Full"** (Dashboard → SSL/TLS → Overview).
+   ⚠️ NICHT „Flexible" — das erzeugt mit dem GitHub-Pages-HTTPS-Redirect eine
+   Redirect-Schleife.
+4. Die Datei [`public/CNAME`](../../public/CNAME) (= `realsyncdynamicsai.de`)
+   bleibt unverändert — GitHub Pages braucht sie weiterhin.
 
 > Solange die Records **nicht proxied** sind (graue Wolke), greifen weder
 > Transform Rules noch HSTS — dann bleiben `no_hsts`/`no_xframe` bestehen.

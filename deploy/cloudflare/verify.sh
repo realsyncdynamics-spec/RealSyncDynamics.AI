@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Verifiziert, dass die Security-Header live anliegen — nachdem Cloudflare
-# vor dem VPS-Origin aktiv ist. Spiegelt exakt die Checks der gdpr-audit-Engine
+# vor GitHub Pages aktiv ist. Spiegelt exakt die Checks der gdpr-audit-Engine
 # (no_hsts / no_xframe), sodass „grün hier" = „Befund 5+6 weg im Audit".
 set -euo pipefail
 

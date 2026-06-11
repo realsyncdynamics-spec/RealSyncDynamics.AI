@@ -6,6 +6,9 @@ Automatisiertes DSGVO- und EU-AI-Act-Audit, kontinuierliches Monitoring,
 Evidence-Vault mit Hash-Chain — Multi-Tenant, opt-in EU-lokale
 AI-Inferenz, transparentes Billing.
 
+Positionierung, USP, Zielgruppe und Go-to-Market: siehe
+[`docs/POSITIONING_STRATEGY.md`](docs/POSITIONING_STRATEGY.md).
+
 **Live:** https://realsyncdynamicsai.de · **Backend:** Supabase
 (EU-Region) · **AI-Stack:** Anthropic / Google / OpenAI für Cloud-Pfad,
 [Ollama](https://ollama.com) (gemma3:4b) für EU-lokal-Pfad.

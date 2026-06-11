@@ -4,6 +4,8 @@
 
 > **Scope-Disziplin:** Was im Kern liegt und was bewusst draußen bleibt, ist in [`docs/PRODUCT_FOCUS.md`](docs/PRODUCT_FOCUS.md) festgelegt. Phase A (siehe unten) ist Voraussetzung für Phase 2–4.
 
+> **Positionierung:** USP, Zielgruppe (ICP), Wettbewerbsabgrenzung und Go-to-Market sind kanonisch in [`docs/POSITIONING_STRATEGY.md`](docs/POSITIONING_STRATEGY.md) festgelegt.
+
 ---
 
 ## Phase A — Runtime härten (aktuell)

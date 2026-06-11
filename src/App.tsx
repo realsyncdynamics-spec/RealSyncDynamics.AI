@@ -45,6 +45,7 @@ import { DsgvoToolVergleich } from './pages/DsgvoToolVergleich';
 import { ContactSales } from './pages/ContactSales';
 import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
+import { Beta } from './pages/Beta';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
@@ -275,6 +276,7 @@ function RoutesWithTracking() {
       {/* Enterprise AI OS — Founding Access + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
+      <Route path="/beta" element={<Beta />} />
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
       {/* AI Command Center — kompakte Operating-Layer-UI (frontend-only, no backend) */}
       <Route path="/command-center" element={<Navigate to="/assistant" replace />} />

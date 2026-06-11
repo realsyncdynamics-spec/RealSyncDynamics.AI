@@ -168,6 +168,12 @@ verify_jwt = false
 [functions.agent-os-runner]
 verify_jwt = false
 
+[functions.business-metrics-cron]
+verify_jwt = false
+
+[functions.stripe-meter-sync]
+verify_jwt = false
+
 # ── Enterprise AI OS public surfaces ──
 [functions.enterprise-ai-os-discovery-intake]
 verify_jwt = false
@@ -235,7 +241,7 @@ verify_jwt = false
 
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
-# stripe-meter-sync, governance-agent, governance-remediate,
+# governance-agent, governance-remediate,
 # hostinger-agent-brief, kodee*, audit-report-email, generate-document,
 # shopify-scan, skills, sub-processor-notify, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default

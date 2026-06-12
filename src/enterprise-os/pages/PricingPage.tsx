@@ -56,7 +56,7 @@ export function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link to={plan.id === 'enterprise' ? '/contact-sales' : '/os/checkout?plan=' + plan.id} className="mt-8 block">
+                <Link to={plan.id === 'enterprise' ? '/contact-sales' : '/checkout/' + plan.id} className="mt-8 block">
                   <Button variant={plan.highlighted ? 'primary' : 'secondary'} size="md" className="w-full">
                     {plan.cta} {plan.id !== 'enterprise' && <ArrowRight className="ml-1.5 h-3.5 w-3.5" />}
                   </Button>

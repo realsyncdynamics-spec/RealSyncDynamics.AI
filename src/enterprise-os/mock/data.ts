@@ -297,7 +297,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     cta: '14 Tage kostenlos testen',
   },
   {
-    id: 'professional',
+    id: 'growth',
     name: 'Professional',
     price: '149 €',
     priceSuffix: 'pro Monat',

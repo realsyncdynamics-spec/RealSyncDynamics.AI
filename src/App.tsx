@@ -195,6 +195,12 @@ const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
+// ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
+// neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
+const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
+const EnterpriseAppShell = lazy(() => import('./enterprise-os/layout/AppShell').then((m) => ({ default: m.AppShell })));
+const EnterpriseAppHomePage = lazy(() => import('./enterprise-os/pages/AppHomePage').then((m) => ({ default: m.AppHomePage })));
+const EnterprisePlaceholderPage = lazy(() => import('./enterprise-os/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
@@ -521,6 +527,107 @@ function RoutesWithTracking() {
       <Route path="/signin" element={<Navigate to="/welcome" replace />} />
       <Route path="/signup" element={<Navigate to="/welcome" replace />} />
       <Route path="/register" element={<Navigate to="/welcome" replace />} />
+
+      {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
+          Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.
+          Bestehende /, /app/* Routen bleiben unverändert (siehe oben). */}
+      <Route path="/os" element={<EnterpriseLandingPage />} />
+      <Route
+        path="/os/app"
+        element={
+          <EnterpriseAppShell title="Home" breadcrumb={['Übersicht']}>
+            <EnterpriseAppHomePage />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/websites"
+        element={
+          <EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
+            <EnterprisePlaceholderPage title="Websites" description="Asset-Übersicht aller überwachten Domains mit Scan-Status, Score-Verlauf und Drill-down je Website folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/risks"
+        element={
+          <EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
+            <EnterprisePlaceholderPage title="Risiken" description="Der vollständige Risk Graph mit Filterung, Priorisierung und Remediation-Workflows folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/compliance"
+        element={
+          <EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
+            <EnterprisePlaceholderPage title="Compliance Command Center" description="Die vollständige Übersicht aller DSGVO- und EU-AI-Act-Pflichten mit Status & Fristen folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/evidence"
+        element={
+          <EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
+            <EnterprisePlaceholderPage title="Evidence Vault" description="Das vollständige, durchsuchbare Evidence Vault mit C2PA-Prüfpfad folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/monitoring"
+        element={
+          <EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
+            <EnterprisePlaceholderPage title="Monitoring" description="Die vollständige Monitoring-Timeline mit Live-Ereignissen und Filtern folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/ai-usecases"
+        element={
+          <EnterpriseAppShell title="AI Use Cases" breadcrumb={['Governance']}>
+            <EnterprisePlaceholderPage title="AI Use Case Registry" description="Die vollständige Registry aller KI-Systeme inkl. Risikoklassifizierung nach EU AI Act folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/agents"
+        element={
+          <EnterpriseAppShell title="Agenten" breadcrumb={['Governance']}>
+            <EnterprisePlaceholderPage title="Agenten" description="Die vollständige Agent-Verwaltung mit Konfiguration, Laufzeiten und Logs folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/reports"
+        element={
+          <EnterpriseAppShell title="Reports" breadcrumb={['Governance']}>
+            <EnterprisePlaceholderPage title="Audit Reports" description="Die vollständige Report-Bibliothek mit Export- und Freigabe-Workflows folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/team"
+        element={
+          <EnterpriseAppShell title="Team" breadcrumb={['Organisation']}>
+            <EnterprisePlaceholderPage title="Team & Rollen" description="Die vollständige Team-, Rollen- und Berechtigungsverwaltung folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/billing"
+        element={
+          <EnterpriseAppShell title="Billing" breadcrumb={['Organisation']}>
+            <EnterprisePlaceholderPage title="Billing" description="Die vollständige Abrechnungs- und Plan-Verwaltung folgt in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
+      <Route
+        path="/os/app/settings"
+        element={
+          <EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
+            <EnterprisePlaceholderPage title="Einstellungen" description="Die vollständigen Organisations- und Account-Einstellungen folgen in Phase 3." />
+          </EnterpriseAppShell>
+        }
+      />
 
       {/* 404 catch-all — must be last */}
       <Route path="*" element={<NotFoundPage />} />

@@ -95,6 +95,19 @@
   --color-silver-700: #4a4f57;
   --color-silver-900: #1a1d22;
 
+  /* Risk/Status-Skala — Enterprise Governance OS (Phase 1 Foundation).
+     Konsistent verwendet für Badges, Risk Cards, Score-Ringe, Timelines. */
+  --color-risk-critical:      #ff3b30;
+  --color-risk-critical-soft: #2a1311;
+  --color-risk-high:          #f97316;
+  --color-risk-high-soft:     #271a0d;
+  --color-risk-medium:        #f5b324;
+  --color-risk-medium-soft:   #2a230f;
+  --color-risk-low:           #2dd6bf;
+  --color-risk-low-soft:      #0f2422;
+  --color-risk-passed:        #34d399;
+  --color-risk-passed-soft:   #0f2a1f;
+
   /* Hard-Edge Industrial — kill all rounded-corner utilities except
      -full (legitim für Kreise: Avatare, Status-Dots, Ping-Animationen).
      CLAUDE.md schreibt „keine abgerundeten Ecken" vor. Overriden hier
@@ -282,3 +295,39 @@ html, body {
    hat als root `div.min-h-screen` mit `header.h-14` als erstem Kind. */
 .ws-embed > div.min-h-screen { min-height: 0; }
 .ws-embed > div.min-h-screen > header.h-14 { display: none; }
+
+/* ── Enterprise OS — Light-Mode-Vorbereitung (Phase 1 Foundation) ──
+   Tailwind v4 exponiert @theme-Farben als CSS-Variablen auf :root, die
+   in allen `bg-*`/`text-*`/`border-*`-Utilities via var() referenziert
+   werden. Durch Re-Definition dieser Variablen innerhalb von `.eos-light`
+   kippt die gesamte Obsidian/Titanium-Palette für den Teilbaum — ohne
+   Komponenten-Klassen anzufassen. */
+.eos-light {
+  --color-obsidian-950: #ffffff;
+  --color-obsidian-900: #fafafa;
+  --color-obsidian-800: #f0f0f1;
+  --color-obsidian-700: #e4e4e6;
+  --color-obsidian-600: #d8d8da;
+  --color-obsidian-500: #c2c2c4;
+
+  --color-titanium-50:  #0A0A0B;
+  --color-titanium-100: #16161a;
+  --color-titanium-200: #2a2a30;
+  --color-titanium-300: #3f3f46;
+  --color-titanium-400: #52525a;
+  --color-titanium-500: #71717a;
+  --color-titanium-600: #97979b;
+  --color-titanium-700: #c2c2c4;
+  --color-titanium-800: #d8d8da;
+  --color-titanium-900: #ededee;
+
+  --color-risk-critical-soft: #fdeceb;
+  --color-risk-high-soft:     #fdf0e2;
+  --color-risk-medium-soft:   #fdf5dd;
+  --color-risk-low-soft:      #e2faf6;
+  --color-risk-passed-soft:   #e1f9ef;
+
+  /* Logo-Wordmark "RealSync" nutzt brass-100 (Champagne) für dunkle
+     Hintergründe — auf hellem Grund sonst nicht lesbar. */
+  --color-brass-100: #8a6526;
+}

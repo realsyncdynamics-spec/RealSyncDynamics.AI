@@ -171,6 +171,7 @@ verify_jwt = false
 [functions.business-metrics-cron]
 verify_jwt = false
 
+# Shared-secret auth (business_metrics_shared_secret), not user JWT.
 [functions.stripe-meter-sync]
 verify_jwt = false
 

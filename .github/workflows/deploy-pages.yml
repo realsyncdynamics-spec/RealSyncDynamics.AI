@@ -101,7 +101,7 @@ jobs:
           # Liste mit src/App.tsx synchron halten.
           APP_ROUTES = [
               '/os', '/os/pricing',
-              '/app', '/app/websites', '/app/ai-systems', '/app/risks',
+              '/app', '/app/websites', '/app/ai-systems', '/app/automations', '/app/risks',
               '/app/compliance', '/app/evidence', '/app/monitoring',
               '/app/team', '/app/settings', '/app/company', '/assistant',
               '/dashboard', '/command-center',

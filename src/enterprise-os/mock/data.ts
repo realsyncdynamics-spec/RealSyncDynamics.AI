@@ -164,6 +164,27 @@ export const MONITORING_EVENTS: TimelineEvent[] = [
     timestamp: '10.06.2026 · 03:00',
     level: 'passed',
   },
+  {
+    id: 'mon-6',
+    title: 'Drittland-Transfer auf atelier-nord.de erkannt',
+    description: 'Schriftarten-CDN mit Sitz außerhalb der EU ohne SCC-Nachweis gefunden.',
+    timestamp: '09.06.2026 · 14:20',
+    level: 'medium',
+  },
+  {
+    id: 'mon-7',
+    title: 'Neue Sub-Domain entdeckt',
+    description: 'partner.atelier-nord.de wurde automatisch zum Asset-Inventar hinzugefügt.',
+    timestamp: '08.06.2026 · 10:02',
+    level: 'low',
+  },
+  {
+    id: 'mon-8',
+    title: 'Wöchentlicher Compliance-Report verschickt',
+    description: 'Zusammenfassung an m.brandt@atelier-nord.de und l.vogel@atelier-nord.de gesendet.',
+    timestamp: '07.06.2026 · 07:00',
+    level: 'passed',
+  },
 ];
 
 export interface AiUseCase {
@@ -365,6 +386,91 @@ export const AI_RISK_CLASSES: AiRiskClass[] = [
     badge: 'critical',
     description: 'Einsatz ist nach EU AI Act grundsätzlich untersagt.',
     examples: ['Social Scoring', 'Manipulative Verhaltenssteuerung'],
+  },
+];
+
+export interface ComplianceObligation {
+  id: string;
+  title: string;
+  framework: string;
+  status: RiskLevel;
+  dueDate: string;
+  owner: string;
+  description: string;
+}
+
+export const COMPLIANCE_OBLIGATIONS: ComplianceObligation[] = [
+  {
+    id: 'ob-1',
+    title: 'Verzeichnis von Verarbeitungstätigkeiten (VVT) aktualisieren',
+    framework: 'DSGVO Art. 30',
+    status: 'medium',
+    dueDate: '30.06.2026',
+    owner: 'Lena Vogel',
+    description: 'Sub-Prozessoren-Liste enthält veraltete Anbieter — Aktualisierung erforderlich.',
+  },
+  {
+    id: 'ob-2',
+    title: 'Datenschutz-Folgenabschätzung für Empfehlungsalgorithmus',
+    framework: 'DSGVO Art. 35',
+    status: 'high',
+    dueDate: '15.07.2026',
+    owner: 'Markus Brandt',
+    description: 'DSFA für den neuen Empfehlungsalgorithmus im Shop noch nicht durchgeführt.',
+  },
+  {
+    id: 'ob-3',
+    title: 'Cookie-Banner auf granulare Einwilligung umstellen',
+    framework: 'TTDSG §25',
+    status: 'high',
+    dueDate: '20.06.2026',
+    owner: 'Tarek Younes',
+    description: 'Marketing-Cookies müssen separat ablehnbar sein — derzeit nur „Alle" möglich.',
+  },
+  {
+    id: 'ob-4',
+    title: 'Risikoklassifizierung CV-Screening-Tool dokumentieren',
+    framework: 'EU AI Act Art. 6',
+    status: 'critical',
+    dueDate: '01.08.2026',
+    owner: 'Sofia Pereira',
+    description: 'Hochrisiko-KI-System ohne vollständige Konformitätsbewertung im Einsatz.',
+  },
+  {
+    id: 'ob-5',
+    title: 'Transparenzhinweis für Support-Chatbot ergänzen',
+    framework: 'EU AI Act Art. 52',
+    status: 'low',
+    dueDate: '10.07.2026',
+    owner: 'Lena Vogel',
+    description: 'Nutzer müssen klar erkennen, dass „Kodee" ein KI-System ist.',
+  },
+  {
+    id: 'ob-6',
+    title: 'TOM-Dokumentation jährlich prüfen',
+    framework: 'DSGVO Art. 32',
+    status: 'passed',
+    dueDate: '01.01.2027',
+    owner: 'Markus Brandt',
+    description: 'Technische und organisatorische Maßnahmen wurden für 2026 geprüft und freigegeben.',
+  },
+  {
+    id: 'ob-7',
+    title: 'Auftragsverarbeitungsverträge (AVV) prüfen',
+    framework: 'DSGVO Art. 28',
+    status: 'medium',
+    dueDate: '15.08.2026',
+    owner: 'Tarek Younes',
+    description: 'Neue Sub-Prozessoren benötigen aktualisierte AVV-Dokumente.',
+  },
+  {
+    id: 'ob-8',
+    title: 'Schulung „EU AI Act Grundlagen" für Produktteam',
+    framework: 'EU AI Act Art. 4',
+    status: 'low',
+    dueDate: '30.09.2026',
+    owner: 'Sofia Pereira',
+    description: 'KI-Kompetenz-Schulung für alle Mitarbeitenden, die KI-Systeme entwickeln oder betreiben.',
   },
 ];
 

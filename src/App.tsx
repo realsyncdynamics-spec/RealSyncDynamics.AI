@@ -210,6 +210,13 @@ const EnterpriseAgenciesPage = lazy(() => import('./enterprise-os/pages/Agencies
 const EnterpriseDatenschutzPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.DatenschutzPage })));
 const EnterpriseImpressumPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.ImpressumPage })));
 const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/CheckoutEntryPage').then((m) => ({ default: m.CheckoutEntryPage })));
+
+// Phase 4 — App Workspace (Websites, Risiken, Compliance, Evidence, Monitoring)
+const EnterpriseWebsitesPage = lazy(() => import('./enterprise-os/pages/WebsitesPage').then((m) => ({ default: m.WebsitesPage })));
+const EnterpriseRisksPage = lazy(() => import('./enterprise-os/pages/RisksPage').then((m) => ({ default: m.RisksPage })));
+const EnterpriseCompliancePage = lazy(() => import('./enterprise-os/pages/CompliancePage').then((m) => ({ default: m.CompliancePage })));
+const EnterpriseEvidencePage = lazy(() => import('./enterprise-os/pages/EvidencePage').then((m) => ({ default: m.EvidencePage })));
+const EnterpriseMonitoringPage = lazy(() => import('./enterprise-os/pages/MonitoringPage').then((m) => ({ default: m.MonitoringPage })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
@@ -563,7 +570,7 @@ function RoutesWithTracking() {
         path="/os/app/websites"
         element={
           <EnterpriseAppShell title="Websites" breadcrumb={['Übersicht']}>
-            <EnterprisePlaceholderPage title="Websites" description="Asset-Übersicht aller überwachten Domains mit Scan-Status, Score-Verlauf und Drill-down je Website folgt in Phase 3." />
+            <EnterpriseWebsitesPage />
           </EnterpriseAppShell>
         }
       />
@@ -571,7 +578,7 @@ function RoutesWithTracking() {
         path="/os/app/risks"
         element={
           <EnterpriseAppShell title="Risiken" breadcrumb={['Übersicht']}>
-            <EnterprisePlaceholderPage title="Risiken" description="Der vollständige Risk Graph mit Filterung, Priorisierung und Remediation-Workflows folgt in Phase 3." />
+            <EnterpriseRisksPage />
           </EnterpriseAppShell>
         }
       />
@@ -579,7 +586,7 @@ function RoutesWithTracking() {
         path="/os/app/compliance"
         element={
           <EnterpriseAppShell title="Compliance" breadcrumb={['Governance']}>
-            <EnterprisePlaceholderPage title="Compliance Command Center" description="Die vollständige Übersicht aller DSGVO- und EU-AI-Act-Pflichten mit Status & Fristen folgt in Phase 3." />
+            <EnterpriseCompliancePage />
           </EnterpriseAppShell>
         }
       />
@@ -587,7 +594,7 @@ function RoutesWithTracking() {
         path="/os/app/evidence"
         element={
           <EnterpriseAppShell title="Evidence Vault" breadcrumb={['Governance']}>
-            <EnterprisePlaceholderPage title="Evidence Vault" description="Das vollständige, durchsuchbare Evidence Vault mit C2PA-Prüfpfad folgt in Phase 3." />
+            <EnterpriseEvidencePage />
           </EnterpriseAppShell>
         }
       />
@@ -595,7 +602,7 @@ function RoutesWithTracking() {
         path="/os/app/monitoring"
         element={
           <EnterpriseAppShell title="Monitoring" breadcrumb={['Governance']}>
-            <EnterprisePlaceholderPage title="Monitoring" description="Die vollständige Monitoring-Timeline mit Live-Ereignissen und Filtern folgt in Phase 3." />
+            <EnterpriseMonitoringPage />
           </EnterpriseAppShell>
         }
       />

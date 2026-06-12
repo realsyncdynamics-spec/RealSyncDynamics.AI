@@ -16,7 +16,7 @@ import { getSupabase } from '../lib/supabase';
  * - Drift-Alerts (neue Tracker seit letztem Scan)
  * - Manueller Re-Scan-Button
  *
- * Tier: Growth/Business (199€/Monat) und höher
+ * Tier: Growth/Business (249€/Monat) und höher
  * Route: /risk-dashboard
  */
 

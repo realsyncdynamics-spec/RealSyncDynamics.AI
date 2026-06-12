@@ -101,6 +101,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Auto-Fixes, Pull Requests und Maßnahmen',
   },
   {
+    id: 'agents',
+    label: 'Agents',
+    icon: 'Bot',
+    route: '/app/agents',
+    status: 'beta',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Interne Governance-Agenten: Automation, Support, Voice und Screenshot-Fix',
+  },
+  {
     id: 'team',
     label: 'Team',
     icon: 'Users',

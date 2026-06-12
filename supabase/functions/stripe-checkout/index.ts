@@ -18,13 +18,6 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -34,6 +27,19 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
+
+  // Read secrets per-request rather than at module top-level: a missing
+  // secret here must surface as a JSON 503 response, not a cold-start
+  // crash (which the client sees as a generic "Failed to send a request
+  // to the Edge Function" FunctionsFetchError with no diagnostic info).
+  const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY');
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!STRIPE_SECRET || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    return jsonError(503, 'STRIPE_NOT_CONFIGURED', 'stripe-checkout is missing required secrets');
+  }
+  const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');

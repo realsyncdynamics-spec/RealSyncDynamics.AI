@@ -94,7 +94,7 @@ export function LandingPage() {
               Website-Compliance und KI-Risiken kontinuierlich überwacht, dokumentiert und automatisiert.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link to="/pricing">
+              <Link to="/os/pricing">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto">
                   14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -292,12 +292,12 @@ export function LandingPage() {
             Self-Service-Setup in wenigen Minuten. Keine Kreditkarte für die ersten 14 Tage erforderlich.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/pricing">
+            <Link to="/os/pricing">
               <Button variant="primary" size="lg" className="w-full sm:w-auto">
                 14 Tage kostenlos starten <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/audit">
+            <Link to="/os/audit">
               <Button variant="secondary" size="lg" className="w-full sm:w-auto">
                 Kostenlosen DSGVO-Check starten
               </Button>

@@ -248,6 +248,126 @@ export const AGENT_MESSAGES: AgentMessage[] = [
   },
 ];
 
+export interface PricingPlan {
+  id: string;
+  name: string;
+  price: string;
+  priceSuffix: string;
+  description: string;
+  features: string[];
+  cta: string;
+  highlighted?: boolean;
+}
+
+export const PRICING_PLANS: PricingPlan[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: '49 €',
+    priceSuffix: 'pro Monat',
+    description: 'Für kleine Teams, die mit DSGVO-Grundlagen starten.',
+    features: [
+      '1 Website',
+      'Wöchentliche Scans',
+      'Cookie- & Tracker-Erkennung',
+      'Basis-Report (PDF)',
+      'E-Mail-Support',
+    ],
+    cta: '14 Tage kostenlos testen',
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    price: '149 €',
+    priceSuffix: 'pro Monat',
+    description: 'Für wachsende Unternehmen mit mehreren Websites und KI-Systemen.',
+    features: [
+      'Bis zu 10 Websites',
+      'Tägliche Scans',
+      'AI Use Case Registry',
+      'Evidence Vault (C2PA)',
+      'Compliance Agent',
+      'Priorisierter Support',
+    ],
+    cta: '14 Tage kostenlos testen',
+    highlighted: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 'Individuell',
+    priceSuffix: 'nach Vereinbarung',
+    description: 'Für Konzerne, Agenturen und regulierte Branchen mit Multi-Tenant-Anforderungen.',
+    features: [
+      'Unbegrenzte Websites',
+      'Kontinuierliches Monitoring',
+      'White-Label & Multi-Tenant',
+      'Dedizierter Compliance Agent',
+      'SLA & Audit-Begleitung',
+      'Persönlicher Ansprechpartner',
+    ],
+    cta: 'Vertrieb kontaktieren',
+  },
+];
+
+export const PRICING_FAQ = [
+  {
+    q: 'Brauche ich eine Kreditkarte für die Testphase?',
+    a: 'Nein. Die 14-tägige Testphase ist vollständig kostenlos und ohne Zahlungsdaten nutzbar.',
+  },
+  {
+    q: 'Kann ich jederzeit upgraden oder kündigen?',
+    a: 'Ja, alle Pläne sind monatlich kündbar. Ein Wechsel zwischen Plänen ist jederzeit im Billing-Bereich möglich.',
+  },
+  {
+    q: 'Wo werden meine Daten gespeichert?',
+    a: 'Ausschließlich auf Infrastruktur innerhalb der Europäischen Union — DSGVO-konform by Design.',
+  },
+  {
+    q: 'Ist EU AI Act Governance in jedem Plan enthalten?',
+    a: 'Die AI Use Case Registry ist ab Professional enthalten. Enterprise bietet zusätzlich dedizierte Risikoklassifizierung und Audit-Begleitung.',
+  },
+];
+
+export interface AiRiskClass {
+  id: string;
+  name: string;
+  badge: RiskLevel;
+  description: string;
+  examples: string[];
+}
+
+export const AI_RISK_CLASSES: AiRiskClass[] = [
+  {
+    id: 'minimal',
+    name: 'Minimales Risiko',
+    badge: 'passed',
+    description: 'Keine besonderen Pflichten — freiwillige Verhaltenskodizes empfohlen.',
+    examples: ['Spam-Filter', 'Inventory-Management-KI'],
+  },
+  {
+    id: 'limited',
+    name: 'Begrenztes Risiko',
+    badge: 'low',
+    description: 'Transparenzpflichten — Nutzer müssen erkennen können, dass sie mit einer KI interagieren.',
+    examples: ['Chatbots', 'Empfehlungssysteme'],
+  },
+  {
+    id: 'high',
+    name: 'Hohes Risiko',
+    badge: 'high',
+    description: 'Konformitätsbewertung, Risikomanagement, menschliche Aufsicht und Registrierung erforderlich.',
+    examples: ['CV-Screening', 'Bonitätsprüfung', 'Medizinische Diagnose-Unterstützung'],
+  },
+  {
+    id: 'prohibited',
+    name: 'Verbotene Praktiken',
+    badge: 'critical',
+    description: 'Einsatz ist nach EU AI Act grundsätzlich untersagt.',
+    examples: ['Social Scoring', 'Manipulative Verhaltenssteuerung'],
+  },
+];
+
 export const NAV_GROUPS = [
   {
     label: 'Übersicht',

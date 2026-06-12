@@ -18,24 +18,24 @@ const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
     title: 'Lösungen',
     links: [
-      { label: 'DSGVO Audit', to: '/audit' },
-      { label: 'EU AI Act Governance', to: '/ai-act' },
-      { label: 'Agenturen / White Label', to: '/agencies' },
-      { label: 'Pricing', to: '/pricing' },
+      { label: 'DSGVO Audit', to: '/os/audit' },
+      { label: 'EU AI Act Governance', to: '/os/ai-act' },
+      { label: 'Agenturen / White Label', to: '/os/agencies' },
+      { label: 'Pricing', to: '/os/pricing' },
     ],
   },
   {
     title: 'Rechtliches',
     links: [
-      { label: 'Datenschutz', to: '/datenschutz' },
-      { label: 'Impressum', to: '/impressum' },
+      { label: 'Datenschutz', to: '/os/datenschutz' },
+      { label: 'Impressum', to: '/os/impressum' },
     ],
   },
   {
     title: 'Konto',
     links: [
-      { label: 'Login', to: '/welcome' },
-      { label: 'Registrieren', to: '/welcome' },
+      { label: 'Login', to: '/os/login' },
+      { label: 'Registrieren', to: '/os/signup' },
     ],
   },
 ];

@@ -201,6 +201,15 @@ const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPa
 const EnterpriseAppShell = lazy(() => import('./enterprise-os/layout/AppShell').then((m) => ({ default: m.AppShell })));
 const EnterpriseAppHomePage = lazy(() => import('./enterprise-os/pages/AppHomePage').then((m) => ({ default: m.AppHomePage })));
 const EnterprisePlaceholderPage = lazy(() => import('./enterprise-os/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
+// Phase 2 — Public Pages (Pricing, Audit, AI Governance, Agenturen, Auth, Legal, Checkout)
+const EnterprisePricingPage = lazy(() => import('./enterprise-os/pages/PricingPage').then((m) => ({ default: m.PricingPage })));
+const EnterpriseAuthPage = lazy(() => import('./enterprise-os/pages/AuthPage').then((m) => ({ default: m.AuthPage })));
+const EnterpriseAuditLandingPage = lazy(() => import('./enterprise-os/pages/AuditLandingPage').then((m) => ({ default: m.AuditLandingPage })));
+const EnterpriseAiGovernancePage = lazy(() => import('./enterprise-os/pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
+const EnterpriseAgenciesPage = lazy(() => import('./enterprise-os/pages/AgenciesPage').then((m) => ({ default: m.AgenciesPage })));
+const EnterpriseDatenschutzPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.DatenschutzPage })));
+const EnterpriseImpressumPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.ImpressumPage })));
+const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/CheckoutEntryPage').then((m) => ({ default: m.CheckoutEntryPage })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
@@ -532,6 +541,16 @@ function RoutesWithTracking() {
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.
           Bestehende /, /app/* Routen bleiben unverändert (siehe oben). */}
       <Route path="/os" element={<EnterpriseLandingPage />} />
+      {/* Phase 2 — Public Pages (eigenständig, Mockdaten, kein Backend) */}
+      <Route path="/os/pricing" element={<EnterprisePricingPage />} />
+      <Route path="/os/audit" element={<EnterpriseAuditLandingPage />} />
+      <Route path="/os/ai-act" element={<EnterpriseAiGovernancePage />} />
+      <Route path="/os/agencies" element={<EnterpriseAgenciesPage />} />
+      <Route path="/os/login" element={<EnterpriseAuthPage mode="login" />} />
+      <Route path="/os/signup" element={<EnterpriseAuthPage mode="signup" />} />
+      <Route path="/os/checkout" element={<EnterpriseCheckoutEntryPage />} />
+      <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
+      <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
       <Route
         path="/os/app"
         element={

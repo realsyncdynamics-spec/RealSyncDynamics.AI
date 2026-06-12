@@ -6,10 +6,10 @@ import { Button } from '../components/Button';
 
 const LINKS = [
   { label: 'Plattform', to: '/os/app' },
-  { label: 'DSGVO Audit', to: '/audit' },
-  { label: 'AI Governance', to: '/ai-act' },
-  { label: 'Agenturen', to: '/agencies' },
-  { label: 'Pricing', to: '/pricing' },
+  { label: 'DSGVO Audit', to: '/os/audit' },
+  { label: 'AI Governance', to: '/os/ai-act' },
+  { label: 'Agenturen', to: '/os/agencies' },
+  { label: 'Pricing', to: '/os/pricing' },
 ];
 
 export function PublicNav() {
@@ -35,10 +35,10 @@ export function PublicNav() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link to="/welcome" className="px-3 py-2 text-sm font-medium text-titanium-300 transition-colors hover:text-titanium-50">
+          <Link to="/os/login" className="px-3 py-2 text-sm font-medium text-titanium-300 transition-colors hover:text-titanium-50">
             Login
           </Link>
-          <Link to="/pricing">
+          <Link to="/os/pricing">
             <Button variant="primary" size="sm">
               14 Tage kostenlos starten <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
@@ -69,14 +69,14 @@ export function PublicNav() {
               </Link>
             ))}
             <Link
-              to="/welcome"
+              to="/os/login"
               onClick={() => setOpen(false)}
               className="px-3 py-2.5 text-sm font-medium text-titanium-300 hover:text-titanium-50"
             >
               Login
             </Link>
           </nav>
-          <Link to="/pricing" onClick={() => setOpen(false)} className="mt-3 block">
+          <Link to="/os/pricing" onClick={() => setOpen(false)} className="mt-3 block">
             <Button variant="primary" size="md" className="w-full">
               14 Tage kostenlos starten <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>

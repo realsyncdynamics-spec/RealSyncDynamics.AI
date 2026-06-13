@@ -10,6 +10,7 @@ import { getAffiliateRef } from '../lib/affiliate';
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
+import { postEdgeFunction } from '../lib/edgeFunction';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { AuditChatHero } from '../components/audit/AuditChatHero';
@@ -48,6 +49,8 @@ interface Issue {
 
 interface Report {
   audit_id: string;
+  created_at?: string;
+  email?: string;
   domain: string;
   score: number;
   severity: Severity;
@@ -86,21 +89,15 @@ export function AuditLanding() {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: normalizedUrl,
-          email: email.trim(),
-          company: company.trim() || undefined,
-          referral_code: getAffiliateRef() || undefined,
-          plan,
-          source,
-        }),
+      const data = await postEdgeFunction<Report>('gdpr-audit', {
+        url: normalizedUrl,
+        email: email.trim(),
+        company: company.trim() || undefined,
+        referral_code: getAffiliateRef() || undefined,
+        plan,
+        source,
       });
-      const data = await resp.json();
-      if (!resp.ok || !data.ok) throw new Error(data.error?.message ?? `HTTP ${resp.status}`);
-      setReport(data as Report);
+      setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
@@ -515,8 +512,47 @@ function TrialCtaBlock({ report }: { report: Report }) {
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
   const config = severityConfig(report.severity);
   const [explainIssue, setExplainIssue] = useState<Issue | null>(null);
+  const critCount = report.issues.filter((i) => i.severity === 'critical').length;
+  const medCount = report.issues.filter((i) => i.severity === 'high' || i.severity === 'medium').length;
+  const lowCount = report.issues.filter((i) => i.severity === 'low' || i.severity === 'info').length;
+  const scanTime = report.created_at
+    ? new Date(report.created_at).toLocaleString('de-DE', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      }) + ' Uhr'
+    : null;
   return (
     <div className="space-y-6">
+      {/* Audit-Zusammenfassung — beantwortet sofort: was, wann, wohin, wie kritisch */}
+      <div className="border border-titanium-900 bg-obsidian-900">
+        <div className="px-4 py-3 border-b border-titanium-900 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <span className="font-display font-semibold text-sm text-titanium-50">Audit-Zusammenfassung</span>
+        </div>
+        <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-titanium-900">
+          <dl className="divide-y divide-titanium-900">
+            <SummaryRow icon={<Globe className="h-3.5 w-3.5" />} label="Gescannte Website" value={report.domain} mono />
+            {report.email && <SummaryRow icon={<Mail className="h-3.5 w-3.5" />} label="Report-E-Mail" value={report.email} mono />}
+            {scanTime && <SummaryRow icon={<Activity className="h-3.5 w-3.5" />} label="Scan durchgeführt" value={scanTime} />}
+            <SummaryRow icon={<FileText className="h-3.5 w-3.5" />} label="Scan-ID" value={report.audit_id} mono small />
+          </dl>
+          <dl className="divide-y divide-titanium-900">
+            <SummaryRow icon={<ShieldCheck className="h-3.5 w-3.5" />} label="Compliance Score" value={`${report.score} / 100`} valueClass={config.color} />
+            <SummaryRow icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Status" value={config.label} valueClass={config.color} />
+            <SummaryRow label="Kritische Befunde" value={String(critCount)} valueClass={critCount > 0 ? 'text-rose-300' : 'text-emerald-300'} />
+            <SummaryRow label="Mittlere Befunde" value={String(medCount)} valueClass={medCount > 0 ? 'text-amber-300' : 'text-emerald-300'} />
+            <SummaryRow label="Niedrige Befunde" value={String(lowCount)} valueClass="text-titanium-300" />
+          </dl>
+        </div>
+      </div>
+
+      {/* Ihr Ergebnis in einem Satz — Geschäftsführer-Tauglich, 10-Sekunden-Verständnis */}
+      <div className={`p-4 sm:p-5 border ${config.border} ${config.bg} rounded-none`}>
+        <p className="font-mono text-[9px] uppercase tracking-widest text-titanium-500 mb-1.5">Ihr Ergebnis in einem Satz</p>
+        <p className={`text-sm sm:text-base font-medium leading-relaxed ${config.color}`}>
+          {plainLanguageResult(critCount, medCount, lowCount)}
+        </p>
+      </div>
+
       <div className={`p-6 sm:p-8 ${config.bg} border ${config.border} rounded-none`}>
         <div className="flex items-start justify-between gap-4 mb-2">
           <div>
@@ -856,6 +892,38 @@ function severityConfig(s: Severity): {
     default:         return { label: 'Audit-Ergebnis', bg: 'bg-obsidian-900', border: 'border-titanium-900', color: 'text-titanium-200',
       summary: () => '' };
   }
+}
+
+function SummaryRow({ icon, label, value, valueClass, mono, small }: {
+  icon?: React.ReactNode; label: string; value: string; valueClass?: string; mono?: boolean; small?: boolean;
+}) {
+  return (
+    <div className="px-4 py-2.5 flex items-center justify-between gap-3">
+      <dt className="flex items-center gap-2 text-xs text-titanium-400">
+        {icon}{label}
+      </dt>
+      <dd className={`text-right ${small ? 'text-[10px]' : 'text-sm'} font-semibold ${mono ? 'font-mono' : ''} ${valueClass ?? 'text-titanium-50'} truncate max-w-[60%]`}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+/** "Geschäftsführer-in-10-Sekunden"-Satz — fasst Schwere + Anzahl der Befunde zusammen. */
+function plainLanguageResult(critCount: number, medCount: number, lowCount: number): string {
+  if (critCount === 0 && medCount === 0 && lowCount === 0) {
+    return 'Es wurden keine DSGVO-Verstöße oder technischen Verbesserungspunkte erkannt. Sehr gutes Ergebnis.';
+  }
+  if (critCount > 0) {
+    return `Es wurden ${critCount} kritische DSGVO-Verstöße erkannt, die zeitnah behoben werden sollten` +
+      (medCount + lowCount > 0 ? `. Zusätzlich werden ${medCount + lowCount} weitere Verbesserungen empfohlen.` : '.');
+  }
+  const parts: string[] = [];
+  if (medCount > 0) parts.push(`${medCount} mittlere`);
+  if (lowCount > 0) parts.push(`${lowCount} niedrige`);
+  const findingsText = parts.join(' und ');
+  const plural = medCount + lowCount === 1 ? 'Verbesserung wird' : 'Verbesserungen werden';
+  return `Es wurden keine kritischen DSGVO-Verstöße erkannt. ${findingsText} technische ${plural} empfohlen.`;
 }
 
 // ─── Form-Field-Helper ───────────────────────────────────────────────────

@@ -7,27 +7,28 @@ import { test, expect } from '@playwright/test';
  * braucht einen echten Supabase-Test-Tenant; das ist out of scope für
  * diese Smoke-Spec. Hier prüfen wir das stabile UI-Kontrakt:
  *
- *   - Drei-Schritte-Indikator rendert (1/2/3)
- *   - Headline „Willkommen. Drei Klicks bis zum Setup."
- *   - Ohne session-Query-Param erscheint die Session-Warnung
- *   - Mit session-Query-Param erscheint Step 1 mit Email-Input
+ *   - Ohne session-Query-Param: Headline „Willkommen zurück." + Step 1
+ *     mit Email-Input für Magic-Link
+ *   - Mit session-Query-Param: Headline „Willkommen. Drei Klicks bis zum
+ *     Setup." + Drei-Schritte-Indikator (1/2/3) + Step 1 mit Email-Input
  *
  * Catches Regressions wenn der Wizard auf einer Route ohne session-Guard
  * gemounted oder die Step-Komponente entfernt wird.
  */
 
 test.describe('/welcome', () => {
-  test('zeigt Fehler ohne session-Param', async ({ page }) => {
+  test('ohne session-Param: "Willkommen zurück." + Step 1 mit Email-Input', async ({ page }) => {
     await page.goto('/welcome');
 
     await expect(
       page.getByRole('heading', {
-        name: /Willkommen\. Drei Klicks bis zum Setup\./i,
+        name: /Willkommen zurück\./i,
       }),
     ).toBeVisible();
 
+    // Email-Input für Magic-Link sollte präsent sein (Step 1)
     await expect(
-      page.getByText(/Keine Session-ID/i).first(),
+      page.locator('input[type="email"]').first(),
     ).toBeVisible();
   });
 

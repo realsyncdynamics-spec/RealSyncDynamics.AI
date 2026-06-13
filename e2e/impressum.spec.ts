@@ -11,9 +11,9 @@ import { test, expect } from '@playwright/test';
  *   3. Im PROD-Build erscheint KEIN Alarm-Banner mit „Pflichtangaben
  *      unvollstaendig" oder „USt-IdNr. fehlt" — das wuerde gleichzeitig
  *      gegen scripts/production-readiness-check.mjs Check `impressum-vat`
- *      versto&szlig;en. Solange VITE_BUSINESS_VAT_ID leer ist, kommuniziert
- *      die Page den Status inline und sachlich („wird nach Finanzamt-
- *      Fragebogen vergeben") — nicht als Alarm.
+ *      versto&szlig;en. Solange VITE_BUSINESS_VAT_ID leer ist, weist die
+ *      Umsatzsteuer-Sektion stattdessen sachlich auf die
+ *      Kleinunternehmerregelung (§ 19 UStG) hin — nicht als Alarm.
  *
  *   DEV-Hinweis-Banner ist absichtlich nur in `npm run dev` sichtbar, nicht
  *   im Playwright-Lauf (der gegen den PROD-Build laeuft).
@@ -27,7 +27,7 @@ test.describe('/legal/impressum', () => {
       /Anbieter \/ Verantwortlicher i\. S\. d\. § 5 TMG/i,
       /Kontakt/i,
       /Vertretungsberechtigte/i,
-      /Umsatzsteuer-Identifikationsnummer/i,
+      /Umsatzsteuer/i,
       /Aufsichtsbehörde Datenschutz/i,
       /EU-Streitschlichtung/i,
     ]) {
@@ -51,12 +51,13 @@ test.describe('/legal/impressum', () => {
     expect(body).not.toContain('USt-IdNr. fehlt');
   });
 
-  test('USt-Sektion zeigt inline-Status statt Alarm', async ({ page }) => {
+  test('USt-Sektion zeigt Kleinunternehmer-Hinweis statt Alarm', async ({ page }) => {
     await page.goto('/legal/impressum');
-    // Solange VITE_BUSINESS_VAT_ID nicht gesetzt ist, rendert die Page
-    // den sachlichen Hinweis innerhalb der USt-Sektion.
+    // Solange VITE_BUSINESS_VAT_ID nicht gesetzt ist, rendert die
+    // Umsatzsteuer-Sektion den sachlichen Hinweis auf § 19 UStG
+    // (Kleinunternehmerregelung) statt einer USt-IdNr.
     await expect(
-      page.getByText(/wird nach Finanzamt-Fragebogen vergeben/i).first(),
+      page.getByText(/Kleinunternehmer/i).first(),
     ).toBeVisible();
   });
 });

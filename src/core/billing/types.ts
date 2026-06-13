@@ -64,6 +64,7 @@ export interface SubscriptionSnapshot {
   quantity: number | null;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
+  trialEnd: string | null;
   addOns: string[];
 }
 
@@ -77,10 +78,12 @@ export interface TenantContext {
 
 export interface EntitlementDecision {
   planKey: PlanKey;
+  status: SubscriptionStatus;
   isActive: boolean;
   features: Record<FeatureKey, boolean>;
   limits: UsageLimits;
   seatsAllowed: number | null;
+  trialEnd: string | null;
   overages: {
     seatsExceeded: boolean;
     assetsExceeded: boolean;

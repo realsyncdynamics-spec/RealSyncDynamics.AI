@@ -57,6 +57,20 @@
   --color-brass-800: #6e4f1c;
   --color-brass-900: #5a4218;
 
+  /* Petrol (European Enterprise Trust — primärer Akzent für Landing/Marketing,
+     siehe CLAUDE.md „Design-System"). App/Dashboard bleibt Security-Blue. */
+  --color-petrol-50:  #f0fdfa;
+  --color-petrol-100: #ccfbf1;
+  --color-petrol-200: #99f6e4;
+  --color-petrol-300: #5eead4;
+  --color-petrol-400: #2dd4bf;
+  --color-petrol-500: #14b8a6;
+  --color-petrol-600: #0d9488;
+  --color-petrol-700: #0f766e;
+  --color-petrol-800: #115e59;
+  --color-petrol-900: #134e4a;
+  --color-petrol-950: #042f2e;
+
   /* Gunmetal (deeper-than-obsidian surface for premium 3D backdrops) */
   --color-gunmetal-500: #2a2e35;
   --color-gunmetal-600: #20232a;
@@ -120,6 +134,13 @@
   --radius-2xl: 0;
   --radius-3xl: 0;
   --radius-4xl: 0;
+
+  /* Trust-Radii — gezielte, namentlich eigenständige Ausnahme für die
+     "European Enterprise Trust"-Sprache auf Landing/Marketing-Seiten
+     (10–14px). Greifen NICHT in die rounded-{xs..3xl}-Overrides oben ein. */
+  --radius-chip:  10px;
+  --radius-card:  12px;
+  --radius-panel: 14px;
 
   /* Animations — subtle, performant, GPU-accelerated where possible */
   --animate-glow-pulse:    glow-pulse 2.6s ease-in-out infinite;

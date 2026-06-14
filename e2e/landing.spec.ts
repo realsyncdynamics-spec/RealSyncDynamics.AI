@@ -3,10 +3,11 @@ import { test, expect } from '@playwright/test';
 /**
  * Smoke-E2E für die Startseite (/) und die Marketing-Landing-Seite (/landing).
  *
- * Seit "Landingpage Simplification v2" rendern sowohl "/" als auch "/landing"
- * dieselbe <Landing/>-Komponente mit dem radikal vereinfachten Hero
- * ("DSGVO- und KI-Compliance automatisch überwachen."). Die frühere
- * PublicWorkspacePreview (Governance-OS-Shell) ist unter /preview erreichbar.
+ * Seit "Governance OS v1" rendern sowohl "/" als auch "/landing"
+ * dieselbe <Landing/>-Komponente mit dem Governance-OS-Hero
+ * ("Kontinuierliche Governance für Websites, KI-Systeme und Prozesse.").
+ * Die frühere PublicWorkspacePreview (Governance-OS-Shell) ist unter
+ * /preview erreichbar.
  *
  * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
  * Pilot-/Demo-/Call-/Sales-Sprache.
@@ -14,9 +15,9 @@ import { test, expect } from '@playwright/test';
 test('Landing (/) renders the simplified hero + CTAs', async ({ page }) => {
   await page.goto('/');
 
-  // Hero — vereinfachte Headline
+  // Hero — Governance-OS-Headline
   await expect(
-    page.getByRole('heading', { name: /DSGVO- und KI-Compliance/i }),
+    page.getByRole('heading', { name: /Kontinuierliche Governance/i }),
   ).toBeVisible();
 
   // Subheadline
@@ -60,9 +61,9 @@ test('Landing (/) renders the simplified hero + CTAs', async ({ page }) => {
 test('Marketing landing (/landing) renders the same simplified hero + CTAs', async ({ page }) => {
   await page.goto('/landing');
 
-  // Hero — vereinfachte Headline (identisch zu "/")
+  // Hero — Governance-OS-Headline (identisch zu "/")
   await expect(
-    page.getByRole('heading', { name: /DSGVO- und KI-Compliance/i }),
+    page.getByRole('heading', { name: /Kontinuierliche Governance/i }),
   ).toBeVisible();
 
   // Primary CTA „Kostenlosen Audit starten" → /audit

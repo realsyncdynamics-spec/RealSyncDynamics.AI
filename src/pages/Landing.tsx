@@ -1,17 +1,27 @@
 /**
- * Landing — Self-Service-Startseite (v2: radikal vereinfacht).
+ * Landing — Self-Service-Startseite ("European Enterprise Trust" /
+ * Governance-Operating-System-Positionierung).
  *
  * Vollständig statisch: kein Auto-Scroll, kein IntersectionObserver, keine
- * Animations-Loops.
+ * Animations-Loops (Ausnahme: ein einzelner CSS `animate-pulse`-Status-Dot,
+ * respektiert `prefers-reduced-motion` global).
  *
- * 10-Sekunden-Botschaft: „RealSyncDynamics.AI erkennt Risiken, erzeugt
- * Evidence und hält Websites sowie KI-Systeme audit-ready."
+ * 10-Sekunden-Botschaft: „RealSyncDynamics.AI ist das Governance Operating
+ * System für Websites, KI-Systeme und Unternehmensprozesse — erkennt
+ * Risiken, erzeugt Evidence und hält alles audit-ready."
  *
- * Struktur (5 Blöcke):
- *   1 Hero · 2 Value Cards (Risiken erkennen / Evidence erzeugen /
- *   Audit-ready bleiben) · 3 Automation Skills (Teaser, 6 Kacheln) ·
- *   4 Beta-Programm · 5 Final CTA + Footer
+ * Struktur (9 Blöcke):
+ *   1 Hero (Split: Botschaft + Trust-Chips / Governance-Dashboard-Vorschau)
+ *   2 Trust-Strip (DSGVO · AI Act · EU Hosting · Evidence Vault · Monitoring · Audit Trail)
+ *   3 Produktmechanik (Scan → Evidence → Monitoring → Audit Ready)
+ *   4 Zielgruppen (Einzelunternehmer, Handwerk, Kanzleien, Arztpraxen, Agenturen)
+ *   5 Automation Skills (Katalog-Karten mit Input/Output/Status/Persona)
+ *   6 Governance OS Browser (Modul-Übersicht)
+ *   7 Beta-Programm (Founding Cohort)
+ *   8 Final CTA · 9 Footer mit Compliance-Signalen
  *
+ * Design: siehe AGENTS.md „Ausnahme: Public Landing/Marketing (European
+ * Enterprise Trust)" — Petrol/Teal-Akzente, rounded-chip/card/panel (10–14px).
  * CTA-Disziplin: ausschließlich Strings aus `CTA` (runtimeVocab). Keine
  * Beratungs-/Pilot-/Demo-/Call-/Sales-Sprache.
  */
@@ -19,10 +29,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, FileCheck2, BadgeCheck, Workflow, Sparkles,
+  Globe, Lock, Activity, Scale, Archive, ClipboardCheck, Search, ScanSearch,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { CTA } from '../content/runtimeVocab';
-import { AUTOMATION_SKILLS } from '../content/automationSkills';
+import { AUTOMATION_SKILLS, type AutomationSkillCategory } from '../content/automationSkills';
 import { AutomationSkillStatusBadge } from '../features/automations/AutomationSkillCard';
 
 export function Landing() {
@@ -31,8 +42,11 @@ export function Landing() {
       <Navbar />
       <main className="bg-obsidian-950 text-titanium-100 pt-14">
         <Hero />
-        <ValueCards />
+        <TrustStrip />
+        <ProductMechanics />
+        <AudienceSection />
         <AutomationSkillsTeaser />
+        <GovernanceOsBrowser />
         <BetaProgramSection />
         <FinalCta />
         <Footer />
@@ -42,6 +56,12 @@ export function Landing() {
 }
 
 // ─── 1 · Hero ────────────────────────────────────────────────────────
+
+const HERO_TRUST_ITEMS = [
+  { Icon: Globe, label: 'EU-Hosting' },
+  { Icon: FileCheck2, label: 'Auditierbare Evidence' },
+  { Icon: Lock, label: 'Keine Kreditkarte nötig' },
+] as const;
 
 function Hero() {
   const [domain, setDomain] = useState('');
@@ -59,84 +79,232 @@ function Hero() {
 
   return (
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-24">
-      <div className="max-w-2xl mx-auto text-center">
-        <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.08]">
-          DSGVO- und KI-Compliance<br className="hidden sm:block" /> automatisch überwachen.
-        </h1>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div>
+          <p className="inline-flex items-center rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-petrol-300 mb-5">
+            EU AI Act + DSGVO Governance OS
+          </p>
 
-        <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
-          RealSyncDynamics.AI erkennt Risiken, erzeugt Evidence und hält
-          Websites sowie KI-Systeme audit-ready.
-        </p>
+          <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.08]">
+            Kontinuierliche Governance für<br className="hidden sm:block" /> Websites, KI-Systeme und Prozesse.
+          </h1>
 
-        {/* Primary CTA: Domain-Scan */}
-        <form onSubmit={handleScan} className="mt-10 flex flex-col sm:flex-row gap-0 max-w-xl mx-auto">
-          <input
-            type="text"
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            placeholder="ihre-domain.de"
-            className="flex-1 bg-obsidian-900 border border-titanium-700 border-r-0 px-4 py-3 text-sm text-titanium-50 placeholder-titanium-600 font-mono focus:outline-none focus:border-cyan-500"
-          />
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors shrink-0"
-          >
-            {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
-          </button>
-        </form>
+          <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-xl leading-relaxed">
+            Überwachen Sie DSGVO-, AI-Act- und Compliance-Risiken kontinuierlich
+            statt nur beim Audit — RealSyncDynamics.AI erkennt Risiken, erzeugt
+            Evidence und hält Sie audit-ready.
+          </p>
 
-        {/* Secondary CTA */}
-        <div className="mt-5">
-          <Link
-            to="/automations"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-titanium-300 hover:text-titanium-50 transition-colors"
-          >
-            {CTA.viewAutomationSkills} <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          {/* Primary CTA: Domain-Scan */}
+          <form onSubmit={handleScan} className="mt-10 flex flex-col sm:flex-row max-w-xl rounded-chip border border-titanium-700 overflow-hidden focus-within:border-petrol-400 transition-colors">
+            <input
+              type="text"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              placeholder="ihre-domain.de"
+              className="flex-1 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 placeholder-titanium-600 font-mono focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center gap-2 bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors shrink-0"
+            >
+              {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+
+          {/* Secondary CTA */}
+          <div className="mt-5">
+            <Link
+              to="/automations"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-titanium-300 hover:text-titanium-50 transition-colors"
+            >
+              {CTA.viewAutomationSkills} <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <div className="mt-8 flex flex-wrap gap-2">
+            {HERO_TRUST_ITEMS.map(({ Icon, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 rounded-chip border border-titanium-800 bg-obsidian-900 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-titanium-400"
+              >
+                <Icon className="h-3 w-3 text-petrol-300" /> {label}
+              </span>
+            ))}
+          </div>
         </div>
+
+        <GovernanceDashboardPreview />
       </div>
     </section>
   );
 }
 
-// ─── 2 · Value Cards ─────────────────────────────────────────────────
+// ─── Governance-Dashboard-Vorschau (statisches Beispiel) ────────────
 
-const VALUES = [
-  {
-    Icon: ShieldCheck,
-    title: 'Risiken erkennen',
-    body: 'Tracker, Cookies, Drittlandtransfers und KI-Systeme automatisch scannen.',
-  },
-  {
-    Icon: FileCheck2,
-    title: 'Evidence erzeugen',
-    body: 'Jeder Befund landet versiegelt im Prüfpfad — exportierbar als Report.',
-  },
-  {
-    Icon: BadgeCheck,
-    title: 'Audit-ready bleiben',
-    body: 'Continuous Monitoring statt einmaligem PDF — Drift wird automatisch erkannt.',
-  },
-];
+const DASHBOARD_METRICS = [
+  { label: 'Governance Score', value: '84', suffix: '/100', tone: 'text-petrol-300' },
+  { label: 'Consent Violations', value: '3', suffix: '', tone: 'text-[color:var(--color-risk-medium)]' },
+  { label: 'AI Risks', value: '1', suffix: '', tone: 'text-[color:var(--color-risk-high)]' },
+  { label: 'Evidence Items', value: '248', suffix: '', tone: 'text-titanium-50' },
+] as const;
 
-function ValueCards() {
+function GovernanceDashboardPreview() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
-      <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-px bg-titanium-900">
-        {VALUES.map(({ Icon, title, body }) => (
-          <div key={title} className="bg-obsidian-900 p-6">
-            <Icon className="h-5 w-5 text-cyan-300 mb-4" />
-            <h3 className="font-display font-semibold text-titanium-50 mb-2">{title}</h3>
-            <p className="text-sm text-titanium-400 leading-relaxed">{body}</p>
+    <div className="rounded-panel border border-titanium-800 bg-obsidian-900 p-5 sm:p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Beispiel-Ansicht</p>
+          <p className="font-display font-semibold text-titanium-50 text-sm mt-1">Governance Dashboard · ihre-domain.de</p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-petrol-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-ai-cyan-400 animate-pulse" />
+          Live Scan
+        </span>
+      </div>
+
+      {/* Metrik-Grid */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        {DASHBOARD_METRICS.map(({ label, value, suffix, tone }) => (
+          <div key={label} className="rounded-card border border-titanium-800 bg-obsidian-950 p-4">
+            <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-1.5">{label}</p>
+            <p className={`font-display font-bold text-2xl tabular ${tone}`}>
+              {value}<span className="text-titanium-600 text-sm">{suffix}</span>
+            </p>
           </div>
+        ))}
+      </div>
+
+      {/* Drift Detection + Letzter Scan + EU-Hosting */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-titanium-800 pt-4 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+        <span className="inline-flex items-center gap-1.5">
+          <Activity className="h-3.5 w-3.5 text-ai-cyan-400" /> Drift Detection: Aktiv
+        </span>
+        <span>Letzter Scan: vor 5 Min</span>
+        <span className="inline-flex items-center gap-1.5">
+          <Globe className="h-3.5 w-3.5" /> EU-Frankfurt
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── 2 · Trust-Strip ─────────────────────────────────────────────────
+
+const TRUST_STRIP_ITEMS = [
+  { Icon: ShieldCheck, label: 'DSGVO' },
+  { Icon: Scale, label: 'AI Act' },
+  { Icon: Globe, label: 'EU Hosting' },
+  { Icon: Archive, label: 'Evidence Vault' },
+  { Icon: Activity, label: 'Monitoring' },
+  { Icon: ClipboardCheck, label: 'Audit Trail' },
+] as const;
+
+function TrustStrip() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-6">
+      <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+        {TRUST_STRIP_ITEMS.map(({ Icon, label }) => (
+          <span
+            key={label}
+            className="inline-flex items-center gap-1.5 rounded-chip border border-titanium-800 bg-obsidian-900 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-titanium-400"
+          >
+            <Icon className="h-3.5 w-3.5 text-petrol-300" /> {label}
+          </span>
         ))}
       </div>
     </section>
   );
 }
 
-// ─── 3 · Automation Skills (Teaser) ─────────────────────────────────
+// ─── 3 · Produktmechanik ─────────────────────────────────────────────
+
+const MECHANICS_STEPS = [
+  { Icon: ScanSearch, title: 'Scan', metric: '47 Risiken erkannt' },
+  { Icon: FileCheck2, title: 'Evidence', metric: '312 Nachweise erzeugt' },
+  { Icon: Activity, title: 'Monitoring', metric: '24/7 Überwachung aktiv' },
+  { Icon: BadgeCheck, title: 'Audit Ready', metric: 'Bereit für Prüfung' },
+] as const;
+
+function ProductMechanics() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3 text-center">
+          Produktmechanik
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 text-center mb-10">
+          Vom ersten Scan bis Audit-ready — ein durchgehender Prüfpfad.
+        </h2>
+        <div className="flex flex-col sm:flex-row items-stretch gap-3">
+          {MECHANICS_STEPS.map(({ Icon, title, metric }, i) => (
+            <div key={title} className="flex items-center gap-3 flex-1">
+              <div className="flex-1 rounded-card border border-titanium-800 bg-obsidian-900 p-5">
+                <Icon className="h-5 w-5 text-petrol-300 mb-3" />
+                <h3 className="font-display font-semibold text-titanium-50 mb-1">{title}</h3>
+                <p className="font-mono text-[11px] uppercase tracking-wider text-titanium-400">{metric}</p>
+              </div>
+              {i < MECHANICS_STEPS.length - 1 && (
+                <ArrowRight className="hidden sm:block h-4 w-4 text-titanium-700 shrink-0" />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 4 · Zielgruppen ──────────────────────────────────────────────────
+
+const AUDIENCES = [
+  { title: 'Einzelunternehmer', body: 'Automatische DSGVO-Prüfung ohne Datenschutzabteilung.' },
+  { title: 'Handwerksbetriebe', body: 'Website, Kontaktformulare und Tracking überwachen.' },
+  { title: 'Kanzleien', body: 'Mandanten-Compliance skalierbar überwachen.' },
+  { title: 'Arztpraxen', body: 'Datenschutzrisiken frühzeitig erkennen.' },
+  { title: 'Agenturen', body: 'White-Label Governance für Kunden-Portfolios.' },
+] as const;
+
+function AudienceSection() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3">
+          Für wen
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-10">
+          Für jedes Team, das Verantwortung für Compliance trägt.
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {AUDIENCES.map(({ title, body }) => (
+            <div key={title} className="rounded-card border border-titanium-800 bg-obsidian-900 p-5">
+              <h3 className="font-display font-semibold text-titanium-50 mb-2">{title}</h3>
+              <p className="text-sm text-titanium-400 leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 5 · Automation Skills (Teaser) ─────────────────────────────────
+
+const SKILL_PERSONA: Record<AutomationSkillCategory, string> = {
+  compliance: 'Compliance-Verantwortliche',
+  vertrieb: 'Vertrieb',
+  support: 'Support-Teams',
+  dokumente: 'Rechts- & Datenschutzteam',
+  meetings: 'Projekt- & Teamleads',
+};
+
+const SKILL_INPUT: Record<AutomationSkillCategory, string> = {
+  compliance: 'Website-URL',
+  vertrieb: 'Website-URL (Lead)',
+  support: 'Screenshot',
+  dokumente: 'Audit-Befunde',
+  meetings: 'Notizen / Transkript',
+};
 
 function AutomationSkillsTeaser() {
   return (
@@ -151,23 +319,38 @@ function AutomationSkillsTeaser() {
               Automation Skills
             </h2>
           </div>
-          <Link to="/automations" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">
+          <Link to="/automations" className="inline-flex items-center gap-2 text-sm font-semibold text-petrol-300 hover:text-petrol-200">
             {CTA.viewAutomationSkills} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-titanium-900">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {AUTOMATION_SKILLS.map((skill) => (
             <Link
               key={skill.id}
               to="/automations"
-              className="bg-obsidian-900 p-6 flex flex-col gap-2 hover:bg-obsidian-800 transition-colors"
+              className="rounded-card border border-titanium-800 bg-obsidian-900 p-5 flex flex-col gap-3 hover:border-petrol-500/50 transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
-                <Workflow className="h-5 w-5 text-cyan-300" />
+                <Workflow className="h-5 w-5 text-petrol-300" />
                 <AutomationSkillStatusBadge status={skill.status} />
               </div>
               <h3 className="font-display font-semibold text-titanium-50">{skill.title}</h3>
-              <p className="text-sm text-titanium-400 leading-relaxed line-clamp-2">{skill.shortDescription}</p>
+              <p className="text-sm text-titanium-400 leading-relaxed">{skill.shortDescription}</p>
+
+              <dl className="grid grid-cols-2 gap-2 mt-1 font-mono text-[10px] uppercase tracking-wider">
+                <div>
+                  <dt className="text-titanium-600">Input</dt>
+                  <dd className="text-titanium-300 mt-0.5">{SKILL_INPUT[skill.category]}</dd>
+                </div>
+                <div>
+                  <dt className="text-titanium-600">Output</dt>
+                  <dd className="text-titanium-300 mt-0.5">{skill.output[0]}</dd>
+                </div>
+              </dl>
+
+              <p className="mt-auto pt-2 border-t border-titanium-900 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+                Für: {SKILL_PERSONA[skill.category]}
+              </p>
             </Link>
           ))}
         </div>
@@ -176,16 +359,56 @@ function AutomationSkillsTeaser() {
   );
 }
 
-// ─── 4 · Beta-Programm ───────────────────────────────────────────────
+// ─── 6 · Governance OS Browser ──────────────────────────────────────
+
+const GOVERNANCE_OS_MODULES = [
+  { Icon: ScanSearch, label: 'Scanner' },
+  { Icon: Archive, label: 'Evidence Vault' },
+  { Icon: Scale, label: 'AI Risk Registry' },
+  { Icon: Activity, label: 'Monitoring' },
+  { Icon: ClipboardCheck, label: 'Audit Trail' },
+  { Icon: ShieldCheck, label: 'Policies' },
+] as const;
+
+function GovernanceOsBrowser() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-petrol-300 mb-3">
+          Governance OS Browser
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
+          Nicht nur ein Scanner. Ein Betriebssystem für Compliance, Governance, Evidence und AI-Risikomanagement.
+        </h2>
+        <p className="text-sm text-titanium-400 max-w-xl mb-10 leading-relaxed">
+          Alle Module greifen auf denselben Prüfpfad zu — ein Befund aus dem
+          Scanner wird zur Evidence, die Evidence speist die Audit-Trail-Sicht.
+        </p>
+        <div className="rounded-panel border border-titanium-800 bg-obsidian-900 p-5 sm:p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {GOVERNANCE_OS_MODULES.map(({ Icon, label }) => (
+              <div key={label} className="rounded-card border border-titanium-800 bg-obsidian-950 p-4 flex items-center gap-2.5">
+                <Icon className="h-4 w-4 text-petrol-300 shrink-0" />
+                <span className="font-mono text-[11px] uppercase tracking-wider text-titanium-300">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 7 · Beta-Programm ───────────────────────────────────────────────
 
 const BETA_GEGENLEISTUNG = ['Feedback geben', 'Screenshots senden', 'Fehler berichten'];
 
 function BetaProgramSection() {
   return (
-    <section className="border-b border-titanium-900 bg-obsidian-900/60 px-4 sm:px-6 py-16 sm:py-20">
-      <div className="max-w-3xl mx-auto text-center">
-        <div className="inline-flex items-center gap-2 mb-4 text-amber-300 text-xs font-mono uppercase tracking-wider">
-          <Sparkles className="h-4 w-4" /> Beta-Programm
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-3xl mx-auto rounded-panel border border-petrol-500/30 bg-obsidian-900/60 p-8 sm:p-10 text-center">
+        <div className="inline-flex items-center gap-2 mb-4 rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 text-petrol-300 text-xs font-mono uppercase tracking-wider">
+          <Sparkles className="h-4 w-4" /> Founding Cohort · Beta-Programm
         </div>
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
           5 Unternehmen erhalten 12 Monate Enterprise kostenlos.
@@ -195,7 +418,7 @@ function BetaProgramSection() {
         </p>
         <Link
           to="/welcome?source=landing-beta&intent=founding"
-          className="inline-flex items-center justify-center gap-2 border border-amber-500 text-amber-300 px-6 py-3 text-sm font-semibold hover:bg-amber-500/10 transition-colors"
+          className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
         >
           {CTA.applyForBeta} <ArrowRight className="h-4 w-4" />
         </Link>
@@ -204,7 +427,7 @@ function BetaProgramSection() {
   );
 }
 
-// ─── 5 · Final CTA ───────────────────────────────────────────────────
+// ─── 8 · Final CTA ───────────────────────────────────────────────────
 
 function FinalCta() {
   return (
@@ -219,13 +442,13 @@ function FinalCta() {
         <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
           <Link
             to="/audit?source=final-cta"
-            className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-cyan-300 transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
           >
             {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to="/welcome?source=final-cta"
-            className="inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-100 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
+            className="inline-flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-100 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
           >
             {CTA.openDashboard}
           </Link>
@@ -238,22 +461,34 @@ function FinalCta() {
   );
 }
 
-// ─── Footer ──────────────────────────────────────────────────────────
+// ─── 9 · Footer ──────────────────────────────────────────────────────
 
 function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="px-4 sm:px-6 py-10 text-titanium-500">
-      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[12px]">
-        <div className="font-mono uppercase tracking-[0.2em]">
-          RealSyncDynamics.AI · EU-Frankfurt
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-wrap gap-2 mb-6">
+          {TRUST_STRIP_ITEMS.map(({ Icon, label }) => (
+            <span
+              key={label}
+              className="inline-flex items-center gap-1.5 rounded-chip border border-titanium-900 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide text-titanium-600"
+            >
+              <Icon className="h-3 w-3" /> {label}
+            </span>
+          ))}
         </div>
-        <nav className="flex flex-wrap gap-x-5 gap-y-2">
-          <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
-          <Link to="/datenschutz" className="hover:text-titanium-200">Datenschutz</Link>
-          <Link to="/agb" className="hover:text-titanium-200">AGB</Link>
-          <span className="text-titanium-700">© {year}</span>
-        </nav>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[12px] border-t border-titanium-900 pt-6">
+          <div className="font-mono uppercase tracking-[0.2em]">
+            RealSyncDynamics.AI · EU-Frankfurt
+          </div>
+          <nav className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
+            <Link to="/datenschutz" className="hover:text-titanium-200">Datenschutz</Link>
+            <Link to="/agb" className="hover:text-titanium-200">AGB</Link>
+            <span className="text-titanium-700">© {year}</span>
+          </nav>
+        </div>
       </div>
     </footer>
   );

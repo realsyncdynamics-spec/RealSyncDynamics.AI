@@ -170,7 +170,7 @@ function AssetStep({
         {error && <ErrorBox>{error}</ErrorBox>}
 
         <div className="flex items-center justify-between pt-2">
-          <Link to="/governance/admin" className="text-xs text-titanium-400 hover:text-titanium-200">
+          <Link to="/app/websites" className="text-xs text-titanium-400 hover:text-titanium-200">
             Onboarding abbrechen
           </Link>
           <button
@@ -238,7 +238,7 @@ function PolicyStep({
     >
       <div className="mb-4 border border-amber-500/30 bg-amber-500/5 p-3 text-[12px] text-amber-200 leading-relaxed">
         <strong className="text-amber-100">Tipp:</strong> 10 fertige Best-Practice-Policies (GDPR · AI Act · SOC 2 · Schrems) gibt's in der{' '}
-        <Link to="/governance/policies/templates" className="font-semibold underline underline-offset-2 hover:text-amber-100">
+        <Link to="/app/policies/templates" className="font-semibold underline underline-offset-2 hover:text-amber-100">
           Template-Library
         </Link>{' '}— ein Klick installiert.
       </div>
@@ -464,7 +464,7 @@ function Shell({
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <Link to="/governance/admin" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
+          <Link to="/app/websites" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex items-center gap-2.5">

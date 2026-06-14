@@ -67,7 +67,7 @@ export function RemediationPlanDetailView() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <Link
-        to="/governance/remediation"
+        to="/app/remediation"
         className="mb-4 inline-flex items-center gap-1.5 text-xs text-titanium-400 hover:text-titanium-200"
       >
         <ArrowLeft className="h-3.5 w-3.5" /> Zurück zur Übersicht

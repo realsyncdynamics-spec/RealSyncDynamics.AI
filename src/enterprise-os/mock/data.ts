@@ -366,7 +366,7 @@ export const PRICING_FAQ = [
   },
   {
     q: 'Ist EU AI Act Governance in jedem Plan enthalten?',
-    a: 'Die AI Use Case Registry ist ab Professional enthalten. Enterprise bietet zusätzlich dedizierte Risikoklassifizierung und Audit-Begleitung.',
+    a: 'Die AI Use Case Registry ist ab Growth enthalten. Enterprise bietet zusätzlich dedizierte Risikoklassifizierung und Audit-Begleitung.',
   },
 ];
 

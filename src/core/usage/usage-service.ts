@@ -44,6 +44,7 @@ function freeSnapshot(customerId = ''): SubscriptionSnapshot {
     quantity: null,
     cancelAtPeriodEnd: false,
     currentPeriodEnd: null,
+    trialEnd: null,
     addOns: [],
   };
 }
@@ -72,7 +73,7 @@ export async function getEntitlementsForTenant(tenantId: string): Promise<Entitl
   const [tenantRow, subRow, memberCount, currentRole, usageRows] = await Promise.all([
     sb.from('tenants').select('id,is_public_sector').eq('id', tenantId).maybeSingle(),
     sb.from('subscriptions')
-      .select('stripe_customer_id,stripe_subscription_id,stripe_product_id,stripe_price_id,plan_key,billing_interval,status,quantity,cancel_at_period_end,current_period_end')
+      .select('stripe_customer_id,stripe_subscription_id,stripe_product_id,stripe_price_id,plan_key,billing_interval,status,quantity,cancel_at_period_end,current_period_end,trial_end')
       .eq('tenant_id', tenantId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -103,6 +104,7 @@ export async function getEntitlementsForTenant(tenantId: string): Promise<Entitl
         quantity: subRow.data.quantity,
         cancelAtPeriodEnd: !!subRow.data.cancel_at_period_end,
         currentPeriodEnd: subRow.data.current_period_end,
+        trialEnd: subRow.data.trial_end ?? null,
         addOns: [],
       }
     : freeSnapshot();

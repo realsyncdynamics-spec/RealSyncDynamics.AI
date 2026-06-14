@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide
 import { getSupabase } from '../../lib/supabase';
 import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
+import { classifyStripeError, getStripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
@@ -110,7 +111,8 @@ export function CheckoutPage() {
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {
-      setCheckoutErr(result.error?.message ?? 'Unbekannter Fehler beim Checkout');
+      const diagnostic = getStripeDiagnostic(classifyStripeError(result.error));
+      setCheckoutErr(`${diagnostic.message} ${diagnostic.action}`);
       setRedirecting(false);
     }
   }

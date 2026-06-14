@@ -1,41 +1,43 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für die Startseite (/).
+ * Smoke-E2E für die Startseite (/) und die Marketing-Landing-Seite (/landing).
  *
- * Seit PR #515 zeigt "/" die PublicWorkspacePreview (Governance-OS-Shell),
- * nicht mehr die Landing-Marketing-Seite. Die Landing ist unter /landing erreichbar.
+ * Seit "Landingpage Simplification v2" rendern sowohl "/" als auch "/landing"
+ * dieselbe <Landing/>-Komponente mit dem radikal vereinfachten Hero
+ * ("DSGVO- und KI-Compliance automatisch überwachen."). Die frühere
+ * PublicWorkspacePreview (Governance-OS-Shell) ist unter /preview erreichbar.
  *
  * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
  * Pilot-/Demo-/Call-/Sales-Sprache.
  */
-test('Landing renders the self-service governance-OS narrative + CTAs', async ({ page }) => {
+test('Landing (/) renders the simplified hero + CTAs', async ({ page }) => {
   await page.goto('/');
 
-  // Hero — Governance-OS-Headline
+  // Hero — vereinfachte Headline
   await expect(
-    page.getByRole('heading', { name: /Governance OS/i }),
+    page.getByRole('heading', { name: /DSGVO- und KI-Compliance/i }),
   ).toBeVisible();
 
-  // EU-Sovereign-Beschreibung
+  // Subheadline
   await expect(
-    page.getByText(/Europäisches Governance Operating System/i),
+    page.getByText(/erkennt Risiken, erzeugt Evidence/i),
   ).toBeVisible();
 
-  // Primärer CTA „Live Demo anschauen" (button, zeigt Governance-OS-Demo)
+  // Primärer CTA „Kostenlosen Audit starten" (Button, startet Domain-Scan)
   await expect(
-    page.getByRole('button', { name: /Live Demo anschauen/i }),
+    page.getByRole('button', { name: /Kostenlosen Audit starten/i }),
   ).toBeVisible();
 
-  // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)
-  await expect(
-    page.getByRole('button', { name: /Audit starten/i }),
-  ).toBeVisible();
+  // Sekundärer CTA „Automation Skills ansehen" → /automations
+  const automationsLink = page.getByRole('link', { name: /Automation Skills ansehen/i }).first();
+  await expect(automationsLink).toBeVisible();
+  await expect(automationsLink).toHaveAttribute('href', /\/automations/);
 
-  // Feature-Kacheln sichtbar
-  for (const tile of ['Websites', 'KI-Systeme', 'Risiken', 'Compliance']) {
-    await expect(page.getByText(tile).first()).toBeVisible();
-  }
+  // Beta-Programm-CTA
+  await expect(
+    page.getByRole('link', { name: /Für Beta bewerben/i }),
+  ).toBeVisible();
 
   // Keine alten Vertriebs-/Pilot-CTAs auf der Startseite. Bewusst präzise
   // (Mehrwort-CTA-Phrasen), damit legitime globale Komponenten-Texte — etwa
@@ -52,22 +54,25 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
 });
 
 /**
- * Smoke-E2E für die Marketing-Landing-Seite (/landing).
+ * Smoke-E2E für die Marketing-Landing-Seite (/landing) — identische
+ * <Landing/>-Komponente wie "/", siehe oben.
  */
-test('Marketing landing (/landing) renders governance-OS narrative + CTAs', async ({ page }) => {
+test('Marketing landing (/landing) renders the same simplified hero + CTAs', async ({ page }) => {
   await page.goto('/landing');
 
-  // Hero — branchenoffene Governance-Headline
+  // Hero — vereinfachte Headline (identisch zu "/")
   await expect(
-    page.getByRole('heading', {
-      name: /Kontinuierliche AI- und Compliance-Governance für jede Branche\./i,
-    }),
+    page.getByRole('heading', { name: /DSGVO- und KI-Compliance/i }),
   ).toBeVisible();
 
-  // Primary CTA „Kostenlos starten" → /audit
-  const primary = page.getByRole('link', { name: /^Kostenlos starten$/i }).first();
+  // Primary CTA „Kostenlosen Audit starten" → /audit
+  const primary = page.getByRole('button', { name: /Kostenlosen Audit starten/i }).first();
   await expect(primary).toBeVisible();
-  await expect(primary).toHaveAttribute('href', /\/audit/);
+
+  // Final-CTA „Dashboard öffnen" → /welcome
+  const dashboardCta = page.getByRole('link', { name: /^Dashboard öffnen$/i }).first();
+  await expect(dashboardCta).toBeVisible();
+  await expect(dashboardCta).toHaveAttribute('href', /\/welcome/);
 
   // Footer-Legal-Links
   await expect(page.getByRole('link', { name: /^Impressum$/i })).toBeVisible();

@@ -228,7 +228,7 @@ const WORKFLOWS: WorkflowItem[] = [
     status: 'running',
     lastRun: 'vor 2 min',
     steps: 6,
-    tag: 'Creator',
+    tag: 'Marketing',
   },
   {
     id: 'wf-leadgen',
@@ -264,7 +264,7 @@ const WORKFLOWS: WorkflowItem[] = [
     status: 'idle',
     lastRun: 'gestern',
     steps: 3,
-    tag: 'Creator',
+    tag: 'Marketing',
   },
 ];
 

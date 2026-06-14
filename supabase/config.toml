@@ -168,13 +168,11 @@ verify_jwt = false
 [functions.agent-os-runner]
 verify_jwt = false
 
-# Shared-secret-Auth (pg_cron sendet 'Authorization: Bearer <vault-secret>',
-# kein Supabase-User-JWT) — verify_jwt=true wuerde den Cron-Call am Gateway
-# mit 401 abweisen, bevor die Funktion den Shared-Secret-Check durchfuehrt.
-[functions.stripe-meter-sync]
+[functions.business-metrics-cron]
 verify_jwt = false
 
-[functions.business-metrics-cron]
+# Shared-secret auth (business_metrics_shared_secret), not user JWT.
+[functions.stripe-meter-sync]
 verify_jwt = false
 
 # ── Enterprise AI OS public surfaces ──
@@ -244,8 +242,8 @@ verify_jwt = false
 
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
-# governance-agent, governance-remediate, hostinger-agent-brief, kodee*,
-# audit-report-email, generate-document, shopify-scan, skills,
-# sub-processor-notify, evidence-vault-export, usage-increment,
-# ceo-brief-pdf, pitch-deck-pdf) keep the default verify_jwt = true — they
-# require an authenticated user session.
+# governance-agent, governance-remediate,
+# hostinger-agent-brief, kodee*, audit-report-email, generate-document,
+# shopify-scan, skills, sub-processor-notify, evidence-vault-export,
+# usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default
+# verify_jwt = true — they require an authenticated user session.

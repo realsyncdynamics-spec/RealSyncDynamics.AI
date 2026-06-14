@@ -1,40 +1,37 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für die Startseite (/).
+ * Smoke-E2E für die Startseite (/) und die Marketing-Landing-Seite (/landing).
  *
- * Seit PR #515 zeigt "/" die PublicWorkspacePreview (Governance-OS-Shell),
- * nicht mehr die Landing-Marketing-Seite. Die Landing ist unter /landing erreichbar.
+ * Seit dem Routing-Wechsel rendern sowohl "/" als auch "/landing" dieselbe
+ * <Landing/>-Komponente mit dem auf Audit-Conversion optimierten Hero
+ * ("Prüfen Sie Ihre Website in 30 Sekunden"). Die frühere
+ * PublicWorkspacePreview (Governance-OS-Shell) ist unter /preview erreichbar.
  *
  * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
  * Pilot-/Demo-/Call-/Sales-Sprache.
  */
-test('Landing renders the self-service governance-OS narrative + CTAs', async ({ page }) => {
+test('Landing (/) renders the audit-conversion hero + CTAs', async ({ page }) => {
   await page.goto('/');
 
-  // Hero — Governance-OS-Headline
+  // Hero — Audit-Conversion-Headline
   await expect(
-    page.getByRole('heading', { name: /Governance OS/i }),
+    page.getByRole('heading', { name: /in 30 Sekunden/i }),
   ).toBeVisible();
 
-  // EU-Sovereign-Beschreibung
+  // Subheadline — Tracker/Cookies/Drittlandtransfer-Beschreibung
   await expect(
-    page.getByText(/Europäisches Governance Operating System/i),
+    page.getByText(/Tracker, Cookies, Drittlandtransfers/i),
   ).toBeVisible();
 
-  // Primärer CTA „Live Demo anschauen" (button, zeigt Governance-OS-Demo)
+  // Primärer CTA „Kostenlos prüfen" (Button, startet Domain-Scan)
   await expect(
-    page.getByRole('button', { name: /Live Demo anschauen/i }),
+    page.getByRole('button', { name: /Kostenlos prüfen/i }),
   ).toBeVisible();
 
-  // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)
-  await expect(
-    page.getByRole('button', { name: /Audit starten/i }),
-  ).toBeVisible();
-
-  // Feature-Kacheln sichtbar
-  for (const tile of ['Websites', 'KI-Systeme', 'Risiken', 'Compliance']) {
-    await expect(page.getByText(tile).first()).toBeVisible();
+  // Trust-Signale im Hero
+  for (const signal of ['Kein Account erforderlich', 'Kostenloser Erstcheck']) {
+    await expect(page.getByText(signal).first()).toBeVisible();
   }
 
   // Keine alten Vertriebs-/Pilot-CTAs auf der Startseite. Bewusst präzise
@@ -52,16 +49,15 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
 });
 
 /**
- * Smoke-E2E für die Marketing-Landing-Seite (/landing).
+ * Smoke-E2E für die Marketing-Landing-Seite (/landing) — identische
+ * <Landing/>-Komponente wie "/", siehe oben.
  */
-test('Marketing landing (/landing) renders governance-OS narrative + CTAs', async ({ page }) => {
+test('Marketing landing (/landing) renders the same audit-conversion hero + CTAs', async ({ page }) => {
   await page.goto('/landing');
 
-  // Hero — branchenoffene Governance-Headline
+  // Hero — Audit-Conversion-Headline (identisch zu "/")
   await expect(
-    page.getByRole('heading', {
-      name: /Kontinuierliche AI- und Compliance-Governance für jede Branche\./i,
-    }),
+    page.getByRole('heading', { name: /in 30 Sekunden/i }),
   ).toBeVisible();
 
   // Primary CTA „Kostenlos starten" → /audit

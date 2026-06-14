@@ -59,6 +59,16 @@ resource "cloudflare_zone_settings_override" "security" {
   }
 }
 
+# ── 1b) DNSSEC aktivieren ──────────────────────────────────────────────
+# Erzeugt die DNSSEC-Schlüssel der Zone. Cloudflare zeigt den Status danach
+# als "Pending while we wait for the DS to be added at your registrar" —
+# das ist erwartet. Der DS-Record (siehe outputs.tf) muss zusätzlich manuell
+# beim Registrar (z. B. Hostinger) hinterlegt werden; das kann Terraform
+# nicht automatisieren. Details: README.md, Abschnitt "DNSSEC aktivieren".
+resource "cloudflare_zone_dnssec" "dnssec" {
+  zone_id = var.cloudflare_zone_id
+}
+
 # ── 2) Übrige Security-Header (Response-Header-Transform-Ruleset) ─────────
 # Werte spiegeln deploy/nginx/realsyncdynamicsai.de.conf für Konsistenz.
 resource "cloudflare_ruleset" "security_headers" {

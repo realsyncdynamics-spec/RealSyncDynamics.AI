@@ -98,6 +98,52 @@ behoben in der `gdpr-audit`-Engine).
 
 ---
 
+## DNSSEC aktivieren
+
+> Voraussetzung: Domain nutzt bereits die **Cloudflare-Nameserver** (siehe
+> Voraussetzungen oben, Punkt 1). Liegt die Domain noch (auch teilweise) bei
+> den DNS-Servern des Registrars (z. B. Hostinger), kann Cloudflare DNSSEC
+> nicht aktivieren — dann zuerst vollständig auf Cloudflare-DNS migrieren.
+
+### Schritt 1 — DNSSEC in Cloudflare aktivieren
+
+```bash
+cd deploy/cloudflare
+terraform apply   # erzeugt cloudflare_zone_dnssec.dnssec
+terraform output dnssec_ds_record
+terraform output dnssec_key_tag
+terraform output dnssec_algorithm
+terraform output dnssec_digest_type
+terraform output dnssec_digest
+```
+
+Alternativ im Dashboard: **DNS → DNSSEC → Enable DNSSEC**.
+
+Der Status springt danach auf:
+
+> „Pending while we wait for the DS to be added at your registrar"
+
+Das ist **erwartet** — Cloudflare hat die Schlüssel erzeugt, der DS-Record
+fehlt aber noch beim Registrar.
+
+### Schritt 2 — DS-Record beim Registrar hinterlegen
+
+Im Registrar-Interface (z. B. Hostinger → Domain → DNS/DNSSEC) den DS-Record
+mit den o.g. Werten (Key Tag, Algorithm, Digest Type, Digest) eintragen.
+
+### Schritt 3 — Propagation abwarten
+
+Nach korrektem DS-Eintrag wechselt der Status üblicherweise innerhalb von
+**15 Minuten bis 24 Stunden** von `Pending` auf `Active`.
+
+### Troubleshooting
+
+| Symptom | Ursache | Fix |
+|---|---|---|
+| Status bleibt `Pending` > 24h | DS-Record fehlt/falsch beim Registrar | Werte aus `terraform output` mit Registrar-Eintrag abgleichen |
+| Cloudflare bietet DNSSEC gar nicht an | Domain liegt noch (teilweise) bei Registrar-DNS | DNSSEC deaktivieren, Domain vollständig zu Cloudflare migrieren, Nameserver umstellen, danach erneut aktivieren |
+| Seite nach DNSSEC-Aktivierung nicht erreichbar | DS-Record falsch eingetragen (Validierungsfehler) | DS-Record beim Registrar löschen, mit korrekten Werten neu eintragen |
+
 ## CSP-Hinweis (bewusst kein Header hier)
 
 `index.html` liefert eine wirksame `<meta http-equiv="Content-Security-Policy">`.

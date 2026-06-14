@@ -88,13 +88,13 @@ export function HeroSection() {
                       </div>
               
                       <h1 className="text-center text-4xl sm:text-6xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.08] mb-5 max-w-4xl mx-auto">
-                                Kontinuierliche KI- und DSGVO-Governance{' '}
-                                <span className="text-cyan-300">— mit überprüfbarer Evidence.</span>
+                                Ist Ihre Website heute noch{' '}
+                                <span className="text-cyan-300">DSGVO-konform?</span>
                       </h1>
 
                       <p className="text-center text-titanium-300 text-base sm:text-xl leading-relaxed max-w-3xl mx-auto mb-8">
-                                RealSyncDynamics.AI überwacht Websites, KI-Systeme und Datenflüsse kontinuierlich und
-                                erzeugt kryptographisch überprüfbare Audit-Evidence — ohne manuelle PDF-Audits.
+                                Neue Tracker, Cookies, KI-Tools und Drittanbieter können Ihre Compliance jederzeit
+                                verändern. Prüfen Sie Ihre Website kostenlos in 30 Sekunden.
                       </p>
 
                 {/* Nutzenblock — vier kompakte Vorteile, 5–8 s-Lesbarkeit. */}
@@ -135,7 +135,7 @@ export function HeroSection() {
                                                             type="submit"
                                                             className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan-400 text-obsidian-950 font-semibold text-sm sm:text-base tracking-tight hover:bg-cyan-300 transition-colors whitespace-nowrap"
                                                           >
-                                                          Kostenlosen Audit starten
+                                                          Website kostenlos prüfen
                                                           <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
                                 </div>
@@ -147,17 +147,17 @@ export function HeroSection() {
                 {/* Secondary CTA + Enterprise-Pfad. */}
                       <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5">
                                 <Link
-                                            to="/runtime"
+                                            to="/cookie-scanner"
                                             className="group inline-flex items-center gap-2 px-5 py-2.5 border border-titanium-800 bg-obsidian-900/60 hover:border-cyan-400/50 text-titanium-100 text-sm font-semibold tracking-tight transition-colors"
                                           >
-                                          Runtime ansehen
+                                          Beispielbericht ansehen
                                           <ChevronRight className="h-4 w-4 text-titanium-400 group-hover:text-cyan-300 transition-colors" />
                                 </Link>
                                 <Link
-                                            to="/contact-sales?intent=demo&source=hero"
+                                            to="/contact-sales?intent=enterprise&source=hero"
                                             className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-titanium-400 hover:text-titanium-100 transition-colors"
                                           >
-                                          Demo für Governance Runtime buchen
+                                          Enterprise anfragen
                                           <ChevronRight className="h-3 w-3" />
                                 </Link>
                       </div>

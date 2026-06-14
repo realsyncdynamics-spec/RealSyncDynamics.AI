@@ -209,9 +209,12 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-silver-500">
           <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted</div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link to="/fuer-saas"        className="hover:text-titanium-50">SaaS</Link>
-            <Link to="/fuer-agenturen"   className="hover:text-titanium-50">Agenturen</Link>
-            <Link to="/fuer-praxen"      className="hover:text-titanium-50">Praxen</Link>
+            <Link to="/agenturen"        className="hover:text-titanium-50">Agenturen</Link>
+            <Link to="/kanzleien"        className="hover:text-titanium-50">Kanzleien</Link>
+            <Link to="/arztpraxen"       className="hover:text-titanium-50">Arztpraxen</Link>
+            <Link to="/wordpress-dsgvo"  className="hover:text-titanium-50">WordPress</Link>
+            <Link to="/shopify-dsgvo"    className="hover:text-titanium-50">Shopify</Link>
+            <Link to="/chatgpt-dsgvo"    className="hover:text-titanium-50">ChatGPT</Link>
             <Link to="/cookie-scanner"   className="hover:text-titanium-50 text-gold-400">Cookie-Scanner</Link>
             <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-gold-400">AI-Act Inventar</Link>
             <Link to="/legal/privacy"    className="hover:text-titanium-50">Datenschutz</Link>

@@ -1,0 +1,96 @@
+# Statische Sub-Domains hinter dem bestehenden Host-Traefik.
+#
+#   cdn.realsyncdynamicsai.de      — Public CDN (Consent-SDK, JS/CSS-Bundles)
+#   preview.realsyncdynamicsai.de  — Rebuild-Workflow-Previews (Phase 2)
+#   schemas.realsyncdynamicsai.de  — JSON-Schema-Dokumente ($id-Targets)
+#
+# Architektur:
+#
+#   [internet] ─TLS─→ Host-Traefik ─→ cdn / preview / schemas
+#                                       │
+#                                       ▼
+#                                     nginx-static:80  (interne Compose-Net)
+#                                       │
+#                                       ▼
+#                                     /srv/<host>/  (Bind-Mount auf VPS-Disk)
+#
+# Routing rein über Traefik-Labels — gleicher Pattern wie deploy/ollama-traefik/.
+# Cache-Strategie:
+#   cdn      → immutable, 1 Jahr (versionierte Pfade /v1/, /v2/, …)
+#   schemas  → ETag, 1 Stunde   (selten geändert, aber kein versioniertes Schema)
+#   preview  → no-store         (Rebuild-Bundles dürfen niemals gecached werden)
+#
+# CORS für cdn + schemas offen (Same-Origin nicht erzwingbar — die werden von
+# fremden Domains nachgeladen). Für preview restriktiv (Bundle wird i. d. R.
+# auf der Preview-Domain selbst geladen, keine Cross-Origin-Requests nötig).
+#
+# Voraussetzungen auf dem VPS:
+#   - Docker + docker compose v2
+#   - Bestehender Host-Traefik mit Docker-Provider + Let's-Encrypt-Resolver
+#   - Externes Docker-Netz (TRAEFIK_NETWORK in .env, gleicher Wert wie
+#     deploy/ollama-traefik/.env)
+#   - DNS A-Records cdn / preview / schemas → 187.77.89.1
+#   - Disk-Pfade auf dem Host:
+#       /srv/realsyncdynamicsai/cdn       (Owner: www-data:www-data, 0755)
+#       /srv/realsyncdynamicsai/preview   (idem)
+#       /srv/realsyncdynamicsai/schemas   (idem)
+
+services:
+  static-assets:
+    image: nginx:1.27-alpine
+    container_name: rsd-static-assets
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${CDN_DISK_PATH:-/srv/realsyncdynamicsai/cdn}:/srv/cdn:ro
+      - ${PREVIEW_DISK_PATH:-/srv/realsyncdynamicsai/preview}:/srv/preview:ro
+      - ${SCHEMAS_DISK_PATH:-/srv/realsyncdynamicsai/schemas}:/srv/schemas:ro
+    networks:
+      - traefik_proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: cdn.realsyncdynamicsai.de ────────────────────────────────
+      - "traefik.http.routers.rsd-cdn.rule=Host(`cdn.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.rsd-cdn.entrypoints=websecure"
+      - "traefik.http.routers.rsd-cdn.tls=true"
+      - "traefik.http.routers.rsd-cdn.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.rsd-cdn.service=rsd-static"
+      - "traefik.http.routers.rsd-cdn.middlewares=rsd-cors-public"
+
+      # ── Router: schemas.realsyncdynamicsai.de ────────────────────────────
+      - "traefik.http.routers.rsd-schemas.rule=Host(`schemas.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.rsd-schemas.entrypoints=websecure"
+      - "traefik.http.routers.rsd-schemas.tls=true"
+      - "traefik.http.routers.rsd-schemas.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.rsd-schemas.service=rsd-static"
+      - "traefik.http.routers.rsd-schemas.middlewares=rsd-cors-public"
+
+      # ── Router: preview.realsyncdynamicsai.de ────────────────────────────
+      - "traefik.http.routers.rsd-preview.rule=Host(`preview.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.rsd-preview.entrypoints=websecure"
+      - "traefik.http.routers.rsd-preview.tls=true"
+      - "traefik.http.routers.rsd-preview.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.rsd-preview.service=rsd-static"
+
+      # ── CORS-Middleware (public read) ────────────────────────────────────
+      # cdn + schemas werden von beliebigen Domains nachgeladen — Wildcard,
+      # ohne Credentials. preview ist explizit ausgenommen (kein CORS-Header).
+      - "traefik.http.middlewares.rsd-cors-public.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.rsd-cors-public.headers.accesscontrolallowmethods=GET,HEAD,OPTIONS"
+      - "traefik.http.middlewares.rsd-cors-public.headers.accesscontrolmaxage=86400"
+
+      # ── Service ──────────────────────────────────────────────────────────
+      - "traefik.http.services.rsd-static.loadbalancer.server.port=80"
+
+networks:
+  traefik_proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK}

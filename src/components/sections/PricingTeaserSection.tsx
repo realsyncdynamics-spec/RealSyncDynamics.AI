@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { PRICING_TIERS, PRICING_TRUST_NOTE } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, TIER_ACCENT } from '../../config/pricing';
 
 /**
  * PricingTeaserSection — wiederverwendbarer Preis-Teaser für Long-Form-
@@ -29,15 +29,15 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-            Free Audit · Starter · Growth · Agency · Enterprise
+            Free Audit · Starter · Growth · Agency · Scale
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-          {PRICING_TIERS.map((tier) => (
+          {PUBLIC_PRICING_TIERS.map((tier) => (
             <div
               key={tier.id}
-              className={`relative p-5 sm:p-6 bg-obsidian-900/60 border rounded-none transition-colors ${
+              className={`relative p-5 sm:p-6 bg-obsidian-900/60 border-x border-b border-t-4 rounded-none transition-colors ${TIER_ACCENT[tier.id].border} ${
                 tier.highlight
                   ? 'border-gold-400/80'
                   : 'border-silver-700/30 hover:border-gold-400/60'

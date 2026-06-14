@@ -29,7 +29,7 @@ export function PricingPage() {
       {/* PLANS */}
       <section className="border-b border-titanium-800 py-16 lg:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {PRICING_PLANS.map((plan) => (
               <Card
                 key={plan.id}

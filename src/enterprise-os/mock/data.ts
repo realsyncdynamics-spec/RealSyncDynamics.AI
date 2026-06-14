@@ -280,38 +280,58 @@ export interface PricingPlan {
   highlighted?: boolean;
 }
 
+// Plan-Daten gespiegelt aus src/config/pricing.ts (Single Source of Truth).
+// Diese 3 Karten sind ein Ausschnitt (Starter/Growth/Agency) des dortigen
+// 5-Pakete-Modells (Free → Scale 1.999 €) — Preise/Namen MÜSSEN mit
+// PRICING_TIERS übereinstimmen, sonst entsteht "Durcheinander" zwischen
+// /os/pricing und /pricing.
 export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    price: '49 €',
+    price: '79 €',
     priceSuffix: 'pro Monat',
     description: 'Für kleine Teams, die mit DSGVO-Grundlagen starten.',
     features: [
       '1 Website',
-      'Wöchentliche Scans',
-      'Cookie- & Tracker-Erkennung',
-      'Basis-Report (PDF)',
-      'E-Mail-Support',
+      'Vollständiger DSGVO-Scan mit Paragraphenbezug',
+      'DSE-Generator',
+      'Monatlicher Re-Scan',
+      'E-Mail-Alert bei neuen Findings',
     ],
-    cta: '14 Tage kostenlos testen',
+    cta: 'Jetzt upgraden',
   },
   {
     id: 'growth',
-    name: 'Professional',
-    price: '149 €',
+    name: 'Growth',
+    price: '249 €',
     priceSuffix: 'pro Monat',
     description: 'Für wachsende Unternehmen mit mehreren Websites und KI-Systemen.',
     features: [
-      'Bis zu 10 Websites',
-      'Tägliche Scans',
+      'Bis zu 3 Domains',
+      'Tägliches Monitoring + Drift-Detection',
+      'Consent-Timing-Analyse',
       'AI Use Case Registry',
       'Evidence Vault (C2PA)',
-      'Compliance Agent',
-      'Priorisierter Support',
+      'Risk-Dashboard im Browser',
     ],
-    cta: '14 Tage kostenlos testen',
+    cta: 'Jetzt upgraden',
     highlighted: true,
+  },
+  {
+    id: 'agency',
+    name: 'Agency',
+    price: '699 €',
+    priceSuffix: 'pro Monat',
+    description: 'Für Multi-Domain-Teams und Plattformbetreiber, die mehrere Kundenseiten betreuen.',
+    features: [
+      'Multi-Tenant-Dashboard (10 Kundenseiten)',
+      'White-Label-Reports mit eigenem Logo',
+      'API + Webhooks für CI/CD',
+      'Bulk-Audit für Domain-Portfolios',
+      'Priority-Support',
+    ],
+    cta: '14 Tage Agency testen',
   },
   {
     id: 'enterprise',
@@ -346,7 +366,7 @@ export const PRICING_FAQ = [
   },
   {
     q: 'Ist EU AI Act Governance in jedem Plan enthalten?',
-    a: 'Die AI Use Case Registry ist ab Professional enthalten. Enterprise bietet zusätzlich dedizierte Risikoklassifizierung und Audit-Begleitung.',
+    a: 'Die AI Use Case Registry ist ab Growth enthalten. Enterprise bietet zusätzlich dedizierte Risikoklassifizierung und Audit-Begleitung.',
   },
 ];
 

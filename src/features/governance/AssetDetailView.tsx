@@ -86,7 +86,7 @@ function Inner() {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/governance/admin" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
+        <Link to="/app/websites" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -156,7 +156,7 @@ function NotFound() {
       <p className="text-sm text-titanium-400 mb-4">
         Das Asset existiert nicht oder gehört zu einem anderen Tenant.
       </p>
-      <Link to="/governance/admin" className="text-amber-300 hover:text-amber-200 text-sm font-semibold">
+      <Link to="/app/websites" className="text-amber-300 hover:text-amber-200 text-sm font-semibold">
         → Zurück zum Dashboard
       </Link>
     </div>
@@ -232,14 +232,14 @@ function Body({
 
       {/* Control mappings */}
       <Section icon={<FileCheck2 className="h-4 w-4" />} title={`Framework Mappings (${mappings.length})`} actions={
-        <Link to="/governance/mappings" className="text-[11px] text-amber-300 hover:text-amber-200 font-semibold">
+        <Link to="/app/mappings" className="text-[11px] text-amber-300 hover:text-amber-200 font-semibold">
           Matrix bearbeiten →
         </Link>
       }>
         {mappings.length === 0 ? (
           <div className="text-sm text-titanium-500">
             Noch keine Framework-Controls zugeordnet.{' '}
-            <Link to="/governance/mappings" className="text-amber-300 hover:text-amber-200">→ Matrix öffnen</Link>
+            <Link to="/app/mappings" className="text-amber-300 hover:text-amber-200">→ Matrix öffnen</Link>
           </div>
         ) : (
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -19,49 +19,49 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
   {
     id: 'keys',
     label: 'Keys',
-    path: '/governance/keys',
+    path: '/app/keys',
     status: 'live',
     description: 'API Keys für Governance-Ingest'
   },
   {
     id: 'approvals',
     label: 'Approvals',
-    path: '/governance/approvals',
+    path: '/app/approvals',
     status: 'live',
     description: 'Policy-Entscheidungen mit Audit-Trail'
   },
   {
     id: 'dpias',
     label: 'DPIAs',
-    path: '/governance/dpias',
+    path: '/app/dpia',
     status: 'live',
     description: 'Datenschutz-Impact-Assessments'
   },
   {
     id: 'dsr',
     label: 'DSR',
-    path: '/governance/dsr',
+    path: '/app/dsr',
     status: 'live',
     description: 'Auskunftsanfragen (DSGVO Art. 15)'
   },
   {
     id: 'incidents',
     label: 'Incidents',
-    path: '/governance/incidents',
+    path: '/app/incidents',
     status: 'live',
     description: 'Sicherheitsvorfälle & Verstöße'
   },
   {
     id: 'vendors',
     label: 'Vendors',
-    path: '/governance/vendors',
+    path: '/app/vendors',
     status: 'beta',
     description: 'Vendor-Risiko-Management'
   },
   {
     id: 'connectors',
     label: 'Connectors',
-    path: '/governance/connectors',
+    path: '/app/connectors',
     status: 'beta',
     description: 'Integrationen mit externen Systemen'
   },
@@ -70,42 +70,42 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
   {
     id: 'costs',
     label: 'Costs',
-    path: '/governance/costs',
+    path: '/app/costs',
     status: 'beta',
     description: 'AI-Kostenvergleich & Budgets'
   },
   {
     id: 'remediation',
     label: 'Remediation',
-    path: '/governance/remediation',
+    path: '/app/remediation',
     status: 'roadmap',
     description: 'Automatische Behebung von Findings'
   },
   {
     id: 'matrix',
     label: 'Matrix',
-    path: '/governance/mappings',
+    path: '/app/mappings',
     status: 'live',
     description: 'Framework-Control-Mapping'
   },
   {
     id: 'log',
     label: 'Log',
-    path: '/governance/admin-log',
+    path: '/app/admin-log',
     status: 'live',
     description: 'Audit-Trail aller Änderungen'
   },
   {
     id: 'report',
     label: 'Report',
-    path: '/governance/reports',
+    path: '/app/compliance',
     status: 'beta',
     description: 'Governance-Reports & Export'
   },
   {
     id: 'webhooks',
     label: 'Webhooks',
-    path: '/governance/webhooks',
+    path: '/app/webhooks',
     status: 'beta',
     description: 'Event-Streams für externe Systeme'
   },

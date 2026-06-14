@@ -55,7 +55,7 @@ function Inner() {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/governance/admin" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
+        <Link to="/app/websites" className="p-1.5 rounded-none hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3">
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5">
@@ -105,7 +105,7 @@ function NotFound() {
       <p className="text-sm text-titanium-400 mb-4">
         Das Event existiert nicht oder gehört zu einem anderen Tenant.
       </p>
-      <Link to="/governance/admin" className="text-amber-300 hover:text-amber-200 text-sm font-semibold">
+      <Link to="/app/websites" className="text-amber-300 hover:text-amber-200 text-sm font-semibold">
         → Zurück zum Dashboard
       </Link>
     </div>

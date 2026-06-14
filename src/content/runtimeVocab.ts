@@ -116,6 +116,9 @@ export const CTA = {
   startPlan:          'Tarif starten',
   enterprise:         'Enterprise anfragen',
   foundingAccess:     'Founding Access sichern',
+  startFreeAudit:     'Kostenlosen Audit starten',
+  viewAutomationSkills: 'Automation Skills ansehen',
+  applyForBeta:       'Für Beta bewerben',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];

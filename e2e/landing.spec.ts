@@ -3,36 +3,41 @@ import { test, expect } from '@playwright/test';
 /**
  * Smoke-E2E für die Startseite (/) und die Marketing-Landing-Seite (/landing).
  *
- * Seit dem Routing-Wechsel rendern sowohl "/" als auch "/landing" dieselbe
- * <Landing/>-Komponente mit dem auf Audit-Conversion optimierten Hero
- * ("Prüfen Sie Ihre Website in 30 Sekunden"). Die frühere
+ * Seit "Landingpage Simplification v2" rendern sowohl "/" als auch "/landing"
+ * dieselbe <Landing/>-Komponente mit dem radikal vereinfachten Hero
+ * ("DSGVO- und KI-Compliance automatisch überwachen."). Die frühere
  * PublicWorkspacePreview (Governance-OS-Shell) ist unter /preview erreichbar.
  *
  * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
  * Pilot-/Demo-/Call-/Sales-Sprache.
  */
-test('Landing (/) renders the audit-conversion hero + CTAs', async ({ page }) => {
+test('Landing (/) renders the simplified hero + CTAs', async ({ page }) => {
   await page.goto('/');
 
-  // Hero — Audit-Conversion-Headline
+  // Hero — vereinfachte Headline
   await expect(
-    page.getByRole('heading', { name: /in 30 Sekunden/i }),
+    page.getByRole('heading', { name: /DSGVO- und KI-Compliance/i }),
   ).toBeVisible();
 
-  // Subheadline — Tracker/Cookies/Drittlandtransfer-Beschreibung
+  // Subheadline
   await expect(
-    page.getByText(/Tracker, Cookies, Drittlandtransfers/i),
+    page.getByText(/erkennt Risiken, erzeugt Evidence/i),
   ).toBeVisible();
 
-  // Primärer CTA „Kostenlos prüfen" (Button, startet Domain-Scan)
+  // Primärer CTA „Kostenlosen Audit starten" (Button, startet Domain-Scan)
   await expect(
-    page.getByRole('button', { name: /Kostenlos prüfen/i }),
+    page.getByRole('button', { name: /Kostenlosen Audit starten/i }),
   ).toBeVisible();
 
-  // Trust-Signale im Hero
-  for (const signal of ['Kein Account erforderlich', 'Kostenloser Erstcheck']) {
-    await expect(page.getByText(signal).first()).toBeVisible();
-  }
+  // Sekundärer CTA „Automation Skills ansehen" → /automations
+  const automationsLink = page.getByRole('link', { name: /Automation Skills ansehen/i }).first();
+  await expect(automationsLink).toBeVisible();
+  await expect(automationsLink).toHaveAttribute('href', /\/automations/);
+
+  // Beta-Programm-CTA
+  await expect(
+    page.getByRole('link', { name: /Für Beta bewerben/i }),
+  ).toBeVisible();
 
   // Keine alten Vertriebs-/Pilot-CTAs auf der Startseite. Bewusst präzise
   // (Mehrwort-CTA-Phrasen), damit legitime globale Komponenten-Texte — etwa
@@ -52,18 +57,22 @@ test('Landing (/) renders the audit-conversion hero + CTAs', async ({ page }) =>
  * Smoke-E2E für die Marketing-Landing-Seite (/landing) — identische
  * <Landing/>-Komponente wie "/", siehe oben.
  */
-test('Marketing landing (/landing) renders the same audit-conversion hero + CTAs', async ({ page }) => {
+test('Marketing landing (/landing) renders the same simplified hero + CTAs', async ({ page }) => {
   await page.goto('/landing');
 
-  // Hero — Audit-Conversion-Headline (identisch zu "/")
+  // Hero — vereinfachte Headline (identisch zu "/")
   await expect(
-    page.getByRole('heading', { name: /in 30 Sekunden/i }),
+    page.getByRole('heading', { name: /DSGVO- und KI-Compliance/i }),
   ).toBeVisible();
 
-  // Primary CTA „Kostenlos starten" → /audit
-  const primary = page.getByRole('link', { name: /^Kostenlos starten$/i }).first();
+  // Primary CTA „Kostenlosen Audit starten" → /audit
+  const primary = page.getByRole('button', { name: /Kostenlosen Audit starten/i }).first();
   await expect(primary).toBeVisible();
-  await expect(primary).toHaveAttribute('href', /\/audit/);
+
+  // Final-CTA „Dashboard öffnen" → /welcome
+  const dashboardCta = page.getByRole('link', { name: /^Dashboard öffnen$/i }).first();
+  await expect(dashboardCta).toBeVisible();
+  await expect(dashboardCta).toHaveAttribute('href', /\/welcome/);
 
   // Footer-Legal-Links
   await expect(page.getByRole('link', { name: /^Impressum$/i })).toBeVisible();

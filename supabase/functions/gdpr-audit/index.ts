@@ -19,12 +19,7 @@ import { evaluateAll, RULE_ENGINE_VERSION } from '../_shared/rules/evaluator.ts'
 import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
 import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -51,7 +46,8 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -212,7 +208,7 @@ Deno.serve(async (req) => {
   }).select('id').single();
   if (auditErr) return jsonError(500, 'INTERNAL', auditErr.message);
 
-  return json({
+  return jsonResponse({
     ok: true,
     audit_id: auditRow!.id,
     created_at: new Date().toISOString(),
@@ -831,13 +827,4 @@ function concat(chunks: Uint8Array[]): Uint8Array {
   let off = 0;
   for (const c of chunks) { out.set(c, off); off += c.byteLength; }
   return out;
-}
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
 }

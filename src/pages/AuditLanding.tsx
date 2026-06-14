@@ -10,6 +10,7 @@ import { getAffiliateRef } from '../lib/affiliate';
 import { trackUpgradeClick } from '../lib/trackUpgradeClick';
 import { trackConversion } from '../lib/pixels';
 import { usePageMeta } from '../lib/usePageMeta';
+import { postEdgeFunction } from '../lib/edgeFunction';
 import { LegalDisclaimer } from '../components/LegalDisclaimer';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
 import { AuditChatHero } from '../components/audit/AuditChatHero';
@@ -88,21 +89,15 @@ export function AuditLanding() {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: normalizedUrl,
-          email: email.trim(),
-          company: company.trim() || undefined,
-          referral_code: getAffiliateRef() || undefined,
-          plan,
-          source,
-        }),
+      const data = await postEdgeFunction<Report>('gdpr-audit', {
+        url: normalizedUrl,
+        email: email.trim(),
+        company: company.trim() || undefined,
+        referral_code: getAffiliateRef() || undefined,
+        plan,
+        source,
       });
-      const data = await resp.json();
-      if (!resp.ok || !data.ok) throw new Error(data.error?.message ?? `HTTP ${resp.status}`);
-      setReport(data as Report);
+      setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.

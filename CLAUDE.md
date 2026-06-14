@@ -1,7 +1,14 @@
 # RealSyncDynamics.AI
 
-EU-souveräne SaaS-Plattform für Creator und Agenturen.
-Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
+EU-souveräne **Realtime Governance Runtime** für Unternehmen und Agenturen.
+Macht bestehende Kundensysteme revisionssicher und AI-Governance-fähig: jedes
+Business-Event wird zu einem Governance-Event mit Evidence, Severity und
+(wenn nötig) Remediation. Multi-Tenant, opt-in EU-lokale AI-Inferenz.
+
+> **Kanonische Positionierung:** `docs/PRODUCT_FOCUS.md` (Scope-Disziplin) und
+> `docs/runtime-status-matrix.md` (Reifegrad pro Modul). Bei Widersprüchen
+> gewinnen diese beiden Dokumente. C2PA / Creator-Provenienz ist bewusst
+> **nicht** Kern — siehe PRODUCT_FOCUS, Abschnitt „Was wir nicht sind".
 
 ## Stack
 - Frontend: Vite + React 19, TypeScript, Tailwind 4
@@ -15,7 +22,8 @@ Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
 
 ## Wichtige Ordner
 - `src/`                     — React-SPA
-- `supabase/functions/`      — Edge Functions (ai-invoke, stripe-*, gdpr-*, kodee-*, workflow-*)
+- `supabase/functions/`      — Edge Functions (ai-invoke, governance-*, stripe-*, gdpr-*, kodee-*, workflow-*)
+- `src/core/runtime/`        — Governance-Kern: Event-Schema, Evidence-Chain, Agent-Contracts, Remediation
 - `supabase/migrations/`     — DB-Migrations
 - `services/`, `connectors/` — Backend-Services und Integrationen
 - `worker/`                  — Background-Jobs
@@ -33,7 +41,7 @@ Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
 
 ## Konventionen
 - Sprache: Deutsch (Code-Kommentare und Doku, sofern nicht Standard-Englisch nötig)
-- Terminologie: „Prüfpfad" statt „Audit Trail", „Herkunftsnachweis" statt „Provenance"
+- Terminologie: „Prüfpfad" statt „Audit Trail"; „Evidence" für hashed, append-only Nachweis-Records
 - Design-System: Hard-Edge Industrial UI — keine abgerundeten Ecken, Monospace für Metadaten
 - Farben: Obsidian #0A0A0B · Titanium #E2E2E2 · Security-Blue #0052FF
 - Compliance: EU AI Act + DSGVO; Service-Role-Keys ausschließlich in Edge Functions
@@ -44,3 +52,5 @@ Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
 - Migrations sauber additiv halten (RLS nicht brechen)
 - Tests (vitest/playwright) zu neuen Features ergänzen
 - Refactorings ohne Breaking Changes an öffentlichen Routen
+- Scope-Disziplin wahren: Neues zuerst als Event / Connector / Remediation denken
+  (Heuristik in `docs/PRODUCT_FOCUS.md`), nicht als neuer Kern-Baustein

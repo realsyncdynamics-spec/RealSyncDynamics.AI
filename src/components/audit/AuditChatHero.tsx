@@ -351,8 +351,12 @@ function ScanSummary({ report }: { report: Report }) {
           <Link
             to={`/audit/result/${report.audit_id}`}
             state={{
-              domain:   report.domain,
-              score:    report.score,
+              domain:          report.domain,
+              score:           report.score,
+              email:           report.email,
+              created_at:      report.created_at,
+              coverage:        report.coverage,
+              coverage_notice: report.coverage_notice,
               findings: report.issues.map((i) => ({
                 id:            i.id,
                 severity:      i.severity,

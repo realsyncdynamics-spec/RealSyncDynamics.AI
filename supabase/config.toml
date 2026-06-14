@@ -80,6 +80,9 @@ verify_jwt = false
 [functions.workflow-callback]
 verify_jwt = false
 
+[functions.automation-callback]
+verify_jwt = false
+
 [functions.governance-ingest]
 verify_jwt = false
 

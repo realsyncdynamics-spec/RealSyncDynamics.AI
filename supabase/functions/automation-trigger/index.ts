@@ -9,14 +9,18 @@
 //   2. Load skill from automation_skills + status/plan checks
 //   3. gateFeature('ai.tool.automations') + quota check (limit.automation_runs_monthly)
 //   4. INSERT automation_runs (status='queued') + 'queued' event
-//   5. If skill.n8n_workflow_id is set: POST n8n webhook (async — n8n calls
-//      back via automation-callback). Otherwise: mark run 'error'/NOT_CONNECTED
-//      — the skill exists in the catalog but is not yet wired to n8n.
-//   6. Return { run_id }
+//   5. DIRECT_SKILL_HANDLERS: Skills mit eingebauter Direct-Execution (kein n8n
+//      nötig, z. B. dsgvo-audit → ruft gdpr-audit synchron auf) laufen sofort
+//      durch und liefern result inline zurück.
+//   6. Sonst: wenn skill.n8n_workflow_id gesetzt ist, POST n8n webhook (async —
+//      n8n calls back via automation-callback). Andernfalls: mark run
+//      'error'/NOT_CONNECTED — der Skill existiert im Katalog, ist aber noch
+//      nicht mit n8n verbunden.
+//   7. Return { run_id }
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
-import { getCurrentTotal } from '../_shared/usage.ts';
+import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -121,7 +125,7 @@ Deno.serve(async (req) => {
     triggered_by: userId,
     status: 'queued',
     input: body.input ?? {},
-  }).select('id').single();
+  }).select('id, started_at').single();
   if (runErr || !run) return jsonError(500, 'INTERNAL', runErr?.message ?? 'run insert failed');
 
   await admin.from('automation_run_events').insert({
@@ -129,6 +133,10 @@ Deno.serve(async (req) => {
     event_type: 'queued',
     payload: { skill_id: skill.id },
   });
+
+  if (skill.id === 'dsgvo-audit') {
+    return await runDsgvoAuditDirect(admin, SUPABASE_URL, run, body, userResp.user.email ?? null);
+  }
 
   if (!skill.n8n_workflow_id) {
     await admin.from('automation_runs').update({
@@ -198,6 +206,110 @@ Deno.serve(async (req) => {
 
   return json({ ok: true, run_id: run.id, n8n_execution_id: n8nExecutionId });
 });
+
+// ─── Direct-Execution: dsgvo-audit ──────────────────────────────────────────
+// Ruft die bestehende, öffentliche `gdpr-audit`-Function synchron auf — kein
+// n8n nötig. Der Run wird sofort als 'success'/'error' abgeschlossen, das
+// Ergebnis als automation_outputs (output_type='report') gespeichert und
+// inline zurückgegeben.
+async function runDsgvoAuditDirect(
+  admin: ReturnType<typeof createClient>,
+  SUPABASE_URL: string,
+  run: { id: string; started_at: string },
+  body: { tenant_id?: string; input?: Record<string, unknown> },
+  userEmail: string | null,
+): Promise<Response> {
+  const url = typeof body.input?.url === 'string' ? body.input.url.trim() : '';
+  if (!url) {
+    await failRun(admin, run.id, 'BAD_REQUEST', 'input.url required for skill "dsgvo-audit"');
+    return jsonError(400, 'BAD_REQUEST', 'input.url required for skill "dsgvo-audit"', { run_id: run.id });
+  }
+  if (!userEmail) {
+    await failRun(admin, run.id, 'NO_EMAIL', 'user account has no email address');
+    return jsonError(400, 'NO_EMAIL', 'user account has no email address', { run_id: run.id });
+  }
+
+  // deno-lint-ignore no-explicit-any
+  let data: any;
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, email: userEmail, source: 'automation_skill' }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data?.ok) {
+      const msg = data?.error?.message ?? `gdpr-audit returned ${resp.status}`;
+      await failRun(admin, run.id, 'AUDIT_FAILED', msg);
+      return jsonError(502, 'AUDIT_FAILED', msg, { run_id: run.id });
+    }
+  } catch (e) {
+    await failRun(admin, run.id, 'AUDIT_UNREACHABLE', (e as Error).message);
+    return jsonError(503, 'AUDIT_UNREACHABLE', (e as Error).message, { run_id: run.id });
+  }
+
+  const result = {
+    audit_id: data.audit_id,
+    score: data.score,
+    severity: data.severity,
+    domain: data.domain,
+    issues: data.issues,
+    coverage: data.coverage,
+    coverage_notice: data.coverage_notice,
+  };
+
+  const finishedAt = new Date();
+  const durationMs = finishedAt.getTime() - new Date(run.started_at).getTime();
+
+  await admin.from('automation_runs').update({
+    status: 'success',
+    result,
+    cost_usd: 0,
+    duration_ms: durationMs,
+    finished_at: finishedAt.toISOString(),
+  }).eq('id', run.id);
+  await admin.from('automation_run_events').insert({
+    run_id: run.id,
+    event_type: 'success',
+    payload: {},
+  });
+  await admin.from('automation_outputs').insert({
+    run_id: run.id,
+    tenant_id: body.tenant_id,
+    output_type: 'report',
+    content: result,
+  });
+
+  try {
+    await recordUsage(admin, body.tenant_id!, 'limit.automation_runs_monthly', 1, {
+      run_id: run.id, skill_id: 'dsgvo-audit',
+    });
+  } catch (e) {
+    console.error('recordUsage failed', (e as Error).message);
+  }
+
+  return json({ ok: true, run_id: run.id, status: 'success', result });
+}
+
+async function failRun(
+  admin: ReturnType<typeof createClient>,
+  runId: string,
+  errorCode: string,
+  errorMessage: string,
+): Promise<void> {
+  await admin.from('automation_runs').update({
+    status: 'error',
+    error_code: errorCode,
+    error_message: errorMessage,
+    finished_at: new Date().toISOString(),
+  }).eq('id', runId);
+  await admin.from('automation_run_events').insert({
+    run_id: runId,
+    event_type: 'error',
+    payload: { error_code: errorCode },
+  });
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

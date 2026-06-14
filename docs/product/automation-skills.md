@@ -20,27 +20,40 @@ zusammengefasst nach "Skill auswählen → aktivieren → Ergebnis erhalten".
 
 ## Wie funktionieren sie? (Architektur)
 
-**Phase 1 (aktueller Stand):** rein Frontend. `/app/automations` zeigt das
+**Phase 1 (Ausgangszustand):** rein Frontend. `/app/automations` zeigt das
 fest definierte Skill-Set aus `src/content/automationSkills.ts`. Jeder
 "Skill aktivieren"/"Workflow ansehen"/"Im Dashboard öffnen"-Button verlinkt
 auf eine **bereits vorhandene** Route (z. B. `/audit`, `/dokumente-bundle`,
-`/assistant`). Es werden noch keine echten Backend-Runs ausgeführt.
+`/assistant`).
 
-**Phase 2 (geplant):** Aktivierung eines Skills erzeugt einen echten Lauf:
+**Phase 2 (aktueller Stand):** Backend-Infrastruktur ist live —
+`automation_skills` / `automation_runs` / `automation_run_events` /
+`automation_outputs` (additiv, RLS) plus die Edge Functions
+`automation-trigger` und `automation-callback`:
 
 ```
 /app/automations
   → Skill auswählen
-  → Supabase Edge Function
-  → n8n Workflow
-  → governance-agent / ai-gateway
-  → Supabase Tabellen
+  → Edge Function automation-trigger
+  → entweder: Direct-Execution (synchron, bestehende Edge Function)
+  → oder:     n8n Workflow (n8n_workflow_id gesetzt) — async via automation-callback
+  → automation_runs / automation_run_events / automation_outputs
   → Report / Ticket / Evidence
 ```
 
-Die UI bleibt identisch — es ändert sich nur die Datenquelle (von statischem
-Content zu Supabase-Tabellen) und die CTA-Aktion (von Link-Navigation zu
-`automation_runs`-Insert + n8n-Webhook).
+**DSGVO Audit Skill** ist der erste Skill mit echtem Run: `automation-trigger`
+ruft bei `skill_id = 'dsgvo-audit'` synchron die bestehende `gdpr-audit`-Function
+auf, schreibt das Ergebnis als `automation_outputs` (`output_type = 'report'`)
+und liefert es inline zurück — kein n8n nötig. UI: `/app/automations` zeigt
+für diesen Skill ein URL-Eingabefeld + "Skill aktivieren" mit Inline-Ergebnis
+(Score, Severity, Top-Findings).
+
+Alle anderen Skills haben `n8n_workflow_id = NULL` — `automation-trigger`
+antwortet dafür mit `503 NOT_CONNECTED` und markiert den Run als `error`,
+ohne einen Fake-Erfolg zu erzeugen. Aktivierung = `n8n_workflow_id` in
+`automation_skills` setzen (oder, wie bei DSGVO Audit, einen
+Direct-Execution-Handler in `automation-trigger` ergänzen), danach
+Frontend-Wiring analog zum DSGVO Audit Skill.
 
 ## Welche Skills gibt es?
 

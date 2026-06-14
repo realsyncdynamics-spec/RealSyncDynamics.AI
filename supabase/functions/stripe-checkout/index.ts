@@ -18,12 +18,9 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,9 +28,29 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// Vault-first, env-fallback. Lets an operator provision the live key via
+//   select public.set_app_secret('stripe_secret_key', 'sk_live_...');
+// without a function redeploy. Critically, this must run inside the request
+// handler — a missing key must never throw at module-evaluation time, since
+// that crashes ALL requests (including the OPTIONS preflight) without CORS
+// headers and surfaces to the browser as "Failed to send a request to the
+// Edge Function".
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  if (error) return null;
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
+
+  const stripeSecret = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  if (!stripeSecret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'stripe secret key not configured (neither env nor vault)');
+  const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -101,9 +118,10 @@ Deno.serve(async (req) => {
     stripeCustomerId = customer.id;
   }
 
-  const origin = req.headers.get('origin') ?? body.return_url ?? '';
-  const successUrl = `${origin || ''}/billing/usage?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl  = `${origin || ''}/billing/usage?checkout=cancelled`;
+  const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
+  const base = req.headers.get('origin') ?? body.return_url ?? SITE;
+  const successUrl = `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan_key=${encodeURIComponent(body.plan_key!)}`;
+  const cancelUrl  = `${base}/pricing?checkout=cancelled`;
 
   // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
   // Triggered via body.pilot=true (typically set from /contact-sales after
@@ -126,6 +144,8 @@ Deno.serve(async (req) => {
     success_url: successUrl,
     cancel_url: cancelUrl,
     allow_promotion_codes: true,
+    automatic_tax: { enabled: true },
+    tax_id_collection: { enabled: true },
   });
 
   return json({ ok: true, url: session.url, session_id: session.id });

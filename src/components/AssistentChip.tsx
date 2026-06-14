@@ -25,6 +25,8 @@ const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+  // Legacy: hide on /governance/* subroutes (but not /governance itself) for backwards compatibility
+  if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;
   return false;
 }
 

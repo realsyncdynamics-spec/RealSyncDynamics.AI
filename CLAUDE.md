@@ -1,7 +1,15 @@
 # RealSyncDynamics.AI
 
-EU-souveräne SaaS-Plattform für Creator und Agenturen.
-Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
+EU-souveräne **Realtime-Governance- & Compliance-Infrastruktur** für
+Unternehmen und Agenturen. Jedes Business-Event wird zu einem Governance-Event
+mit Evidence → Severity → Remediation. DSGVO- + EU-AI-Act-Audit,
+kontinuierliches Monitoring, Evidence-Vault — Multi-Tenant.
+
+> **Ziel/Scope verbindlich:** `docs/PROJECT_GOALS.md` (Ziel · Ist-Stand ·
+> Bedarf), `docs/PRODUCT_FOCUS.md` (Scope-Disziplin) und
+> `docs/runtime-status-matrix.md` (Reifegrad je Modul — gewinnt bei
+> Widerspruch). C2PA/CreatorSeal und „Agent OS" sind separate, spätere
+> Positionierungen, nicht der aktuelle Kern.
 
 ## Stack
 - Frontend: Vite + React 19, TypeScript, Tailwind 4

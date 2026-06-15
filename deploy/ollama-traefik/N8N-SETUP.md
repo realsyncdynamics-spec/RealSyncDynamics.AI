@@ -51,13 +51,20 @@ In https://supabase.com/dashboard/project/ebljyceifhnlzhjfyxup/settings/function
 folgende Secrets setzen:
 
 ```
-N8N_INTERNAL_URL          = https://n8n.realsyncdynamicsai.de
-WORKFLOW_CALLBACK_SECRET  = <openssl rand -hex 32>
+N8N_INTERNAL_URL           = https://n8n.realsyncdynamicsai.de
+WORKFLOW_CALLBACK_SECRET   = <openssl rand -hex 32>
+AUTOMATION_CALLBACK_SECRET = <openssl rand -hex 32>
 ```
 
 Den `WORKFLOW_CALLBACK_SECRET` brauchst Du **auch in jedem n8n-Workflow** —
 in n8n unter **Settings → Variables → New** als `CALLBACK_SECRET` anlegen
 (dann via `{{ $vars.CALLBACK_SECRET }}` in Workflow-Nodes referenziert).
+
+`AUTOMATION_CALLBACK_SECRET` ist das Pendant für die Automatisierungs-Skills
+(`automation-trigger` / `automation-callback`, siehe
+`docs/product/automation-skills.md`) — eigenes Secret, getrennt rotierbar,
+analog als `AUTOMATION_CALLBACK_SECRET` in n8n als Variable anlegen, sobald
+der erste Skill-Workflow verdrahtet wird.
 
 ## Trigger / Callback Vertrag
 

@@ -22,9 +22,11 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
     page.getByText(/Europäisches Governance Operating System/i),
   ).toBeVisible();
 
-  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app)
+  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app).
+  // Die Workspace-Vorschau hat Hero- + Footer-CTA mit identischem Label →
+  // .first(), um die Strict-Mode-Mehrfachtreffer aufzulösen.
   await expect(
-    page.getByRole('button', { name: /Dashboard öffnen/i }),
+    page.getByRole('button', { name: /Dashboard öffnen/i }).first(),
   ).toBeVisible();
 
   // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)

@@ -16,6 +16,7 @@ import {
 import { useTenant } from '../../../core/access/TenantProvider';
 import { countOpenIncidents } from '../incidentsApi';
 import { countPendingApprovals } from '../approvalsApi';
+import { countOpenDsrs } from '../dsrApi';
 import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 
 // ─── Typen ─────────────────────────────────────────────────────────────────
@@ -205,7 +206,7 @@ const EVIDENCE_TYPE_COLOR: Record<EvidenceType, string> = {
 
 // ─── Sub-Komponenten ────────────────────────────────────────────────────────
 
-function OsHeaderBar({ tenantName, dateLabel }: { tenantName: string; dateLabel: string }) {
+function OsHeaderBar({ tenantName, dateLabel }: { tenantName: string | null; dateLabel: string }) {
   return (
     <div className="bg-obsidian-900 border-b border-titanium-900 px-6 py-4">
       <div className="flex items-center justify-between gap-4">
@@ -213,8 +214,12 @@ function OsHeaderBar({ tenantName, dateLabel }: { tenantName: string; dateLabel:
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-teal-400 font-mono text-xs whitespace-nowrap">● GOVERNANCE OS</span>
           <span className="text-titanium-900">|</span>
-          <span className="text-titanium-100 font-mono text-sm truncate">{tenantName}</span>
-          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
+          <span className="text-titanium-100 font-mono text-sm truncate">{tenantName ?? 'Demo Workspace'}</span>
+          {tenantName ? (
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
+          ) : (
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Demo</span>
+          )}
         </div>
 
         {/* Mitte */}
@@ -430,6 +435,7 @@ const SEVERITY_TEXT: Record<RiskSeverity, string> = {
 };
 
 function ActiveRisks() {
+  const risks = TOP_RISKS;
   return (
     <div className="bg-obsidian-900 border border-titanium-900 flex flex-col">
       <div className="px-4 py-3 border-b border-titanium-900 flex items-center justify-between">
@@ -437,7 +443,7 @@ function ActiveRisks() {
         <span className="text-[10px] font-mono text-red-400">3 Kritisch · 2 Hoch</span>
       </div>
       <div className="flex-1 divide-y divide-titanium-900/60">
-        {TOP_RISKS.map((risk, i) => (
+        {risks.map((risk, i) => (
           <Link
             key={i}
             to={risk.route}
@@ -490,11 +496,12 @@ function eventToEvidence(ev: DbGovernanceEvent): EvidenceItem {
   return { type, title: ev.title, hash, c2pa: true, ts: relativeTime(ev.created_at) };
 }
 
+
 // ─── Haupt-Komponente ───────────────────────────────────────────────────────
 
 export function GovernanceOsDashboard() {
   const { activeTenantId, tenants } = useTenant();
-  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? 'Atelier Nord GmbH';
+  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
 
   const [activeRisks, setActiveRisks] = useState<number | null>(null);
   const [openActions, setOpenActions] = useState<number | null>(null);
@@ -510,14 +517,15 @@ export function GovernanceOsDashboard() {
     let cancelled = false;
     void (async () => {
       try {
-        const [incidents, approvals, events] = await Promise.all([
+        const [incidents, approvals, dsrs, events] = await Promise.all([
           countOpenIncidents(activeTenantId),
           countPendingApprovals(activeTenantId),
+          countOpenDsrs(activeTenantId),
           fetchTenantEvents(activeTenantId, 5),
         ]);
         if (cancelled) return;
         setActiveRisks(incidents);
-        setOpenActions(approvals);
+        setOpenActions(approvals + dsrs.total);
         setEvidence(events.length > 0 ? events.map(eventToEvidence) : RECENT_EVIDENCE);
       } catch {
         // Fallback bleibt Mockdaten — Dashboard zeigt weiterhin etwas an.

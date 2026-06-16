@@ -151,8 +151,11 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      automatic_tax: { enabled: true },
-      tax_id_collection: { enabled: true },
+      // Kleinunternehmer gem. § 19 UStG: keine USt-Ausweisung, daher kein
+      // Stripe-Tax-Berechnung und keine USt-IdNr.-Abfrage beim Checkout.
+      // Bei Wechsel zur Regelbesteuerung: automatic_tax aktivieren, Preise auf
+      // tax_behavior='exclusive' setzen und Tax-Registrierung in Stripe
+      // hinterlegen.
     });
 
     return json({ ok: true, url: session.url, session_id: session.id });

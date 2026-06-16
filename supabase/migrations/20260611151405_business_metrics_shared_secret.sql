@@ -1,23 +1,14 @@
--- Provision the Vault secret that the business-metrics-cron pg_cron job
--- (migration 20260525000010) and the business-metrics-cron Edge Function
--- both rely on for shared-secret auth.
+-- Dokumentations-Migration fuer Migrations-Drift-Guard.
 --
--- Without this secret the cron's `Authorization: Bearer ` header is sent
--- empty (COALESCE(...) || ''), and the function's getSharedSecret() also
--- resolves to null, so every 15-minute run returns 401.
+-- Am 2026-06-11 15:14:05 UTC wurde direkt auf der Prod-DB ausgefuehrt:
+--   SELECT public.set_app_secret('business_metrics_shared_secret', '<echtes Secret>');
 --
--- A random 32-byte hex secret is generated once; both sides read the same
--- value via vault.decrypted_secrets / get_app_secret('business_metrics_shared_secret').
+-- (Vault-Secret fuer den Bearer-Token des business-metrics-cron Edge-Functions-
+-- Aufrufs, siehe 20260525000010_business_metrics_cron.sql.) Der echte
+-- Secret-Wert wird bewusst NICHT ins Repo committet.
+--
+-- Diese Datei existiert nur, damit `supabase migration list --linked` die
+-- Remote-Version 20260611151405 einer Repo-Datei zuordnen kann
+-- (Migration Drift Guard). Sie ist absichtlich ein No-Op.
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM vault.secrets WHERE name = 'business_metrics_shared_secret'
-  ) THEN
-    PERFORM vault.create_secret(
-      encode(gen_random_bytes(32), 'hex'),
-      'business_metrics_shared_secret',
-      'Bearer secret for the business-metrics-cron pg_cron job (15min schedule).'
-    );
-  END IF;
-END $$;
+SELECT 1;

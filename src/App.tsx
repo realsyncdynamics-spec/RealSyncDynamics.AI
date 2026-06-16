@@ -35,6 +35,7 @@ import { AiActPage } from './pages/AiActPage';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
 import { DigitalSovereignty } from './pages/DigitalSovereignty';
+import { GovernanceScorePage } from './pages/GovernanceScorePage';
 import { FixPaket } from './pages/FixPaket';
 import { PreConsentTracking } from './pages/seo/PreConsentTracking';
 import { GoogleAnalyticsConsent } from './pages/seo/GoogleAnalyticsConsent';
@@ -287,6 +288,8 @@ function RoutesWithTracking() {
       <Route path="/evidence"   element={<EvidencePage />} />
       <Route path="/digitale-souveraenitaet" element={<DigitalSovereignty />} />
       <Route path="/digital-sovereignty"     element={<DigitalSovereignty />} />
+      <Route path="/governance-score"              element={<GovernanceScorePage />} />
+      <Route path="/governance-complexity-score"   element={<GovernanceScorePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       <Route path="/docs"       element={<DocsRuntimePage />} />

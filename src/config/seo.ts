@@ -286,6 +286,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'AI Governance OS', url: '/ai-governance' },
     ]),
   },
+  '/governance-score': {
+    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
+    description:
+      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und finden Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
+    canonical: `${SITE_URL}/governance-score`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Governance Complexity Score', url: '/governance-score' },
+    ]),
+  },
   '/digitale-souveraenitaet': {
     title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
     description:

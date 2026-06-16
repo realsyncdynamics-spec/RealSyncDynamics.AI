@@ -163,6 +163,28 @@ export function PublicWorkspacePreview() {
         </div>
       </div>
 
+      {/* Governance Complexity Score — Einstieg über Governance-Abdeckung statt Webseiten-Anzahl */}
+      <div className="border-b border-titanium-900 bg-obsidian-950">
+        <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-security-400 mb-1">
+              Governance Complexity Score
+            </div>
+            <p className="text-sm text-titanium-300 max-w-xl">
+              Sie wählen Governance-Abdeckung, nicht „Anzahl Webseiten". Acht Fragen zeigen
+              Ihre Komplexität, Risiken und das passende Paket.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/governance-score')}
+            className="shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 border border-titanium-700 text-titanium-100 text-sm font-semibold hover:bg-obsidian-800 transition-colors"
+          >
+            Score ermitteln
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
       {/* Feature Tiles */}
       <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
         <div className="mb-8">

@@ -2,6 +2,10 @@
 --
 -- Setzt pg_cron-Jobs für den governance-monitoring-scheduler.
 -- Voraussetzung: pg_cron Extension muss im Supabase-Projekt aktiviert sein.
+--
+-- Hinweis: cron.schedule(jobname, ...) ersetzt einen bestehenden Job mit gleichem
+-- Namen bereits selbst (Upsert per Name) — ein nachgestelltes "ON CONFLICT" ist
+-- daher kein gültiges SQL und wurde entfernt (brach die Migration-Validation).
 
 BEGIN;
 

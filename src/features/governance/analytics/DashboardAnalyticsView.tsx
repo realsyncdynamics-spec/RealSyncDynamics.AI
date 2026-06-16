@@ -4,7 +4,6 @@ import { useTenant } from '../../core/access/TenantProvider';
 import {
   fetchKpiRange,
   fetchLatestKpi,
-  logAnalyticsQuery,
   snapshotToMetrics,
 } from './analyticsApi';
 import type { FilterState, DbGovernanceKpiSnapshot } from './types';
@@ -47,14 +46,6 @@ export function DashboardAnalyticsView() {
           filters.dateRange.end
         );
         const duration = Math.round(performance.now() - start);
-
-        // Log query for audit trail
-        const dateRangeDays = Math.ceil(
-          (new Date(filters.dateRange.end).getTime() -
-            new Date(filters.dateRange.start).getTime()) /
-            (1000 * 60 * 60 * 24)
-        );
-        await logAnalyticsQuery(activeTenant.id, dateRangeDays, data.length, duration);
 
         setSnapshots(data);
       } catch (err) {

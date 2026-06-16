@@ -197,25 +197,8 @@ export async function exportKpiData(
   return response.data as AnalyticsExportResponse;
 }
 
-// Log analytics query for audit trail
-export async function logAnalyticsQuery(
-  tenantId: string,
-  dateRangeDays: number,
-  rowCount: number,
-  durationMs: number
-): Promise<void> {
-  const { error } = await supabase.rpc('log_governance_analytics_query', {
-    p_tenant_id: tenantId,
-    p_date_range_days: dateRangeDays,
-    p_row_count: rowCount,
-    p_duration_ms: durationMs,
-  });
-
-  if (error) {
-    console.error('Error logging analytics query:', error);
-    // Don't throw - logging failures shouldn't break the feature
-  }
-}
+// Note: Audit logging for analytics queries can be added via ai_tool_runs
+// table when needed. For now, we skip explicit logging to keep the feature simple.
 
 // Calculate trend (percent change between two periods)
 export function calculateTrend(

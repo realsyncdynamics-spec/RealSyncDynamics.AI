@@ -31,7 +31,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   };
 
   return (
-    <div className="h-screen flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
+    <div className="h-screen h-dvh flex flex-col bg-obsidian-950 text-titanium-100 overflow-hidden">
       <BrowserTopBar
         mobileMenuOpen={mobileMenuOpen}
         onToggleMobile={() => setMobileMenuOpen((v) => !v)}

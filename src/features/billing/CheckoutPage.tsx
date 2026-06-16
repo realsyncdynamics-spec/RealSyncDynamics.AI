@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide
 import { getSupabase } from '../../lib/supabase';
 import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
+import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
@@ -35,7 +36,7 @@ export function CheckoutPage() {
   const { planKey } = useParams<{ planKey: string }>();
   const navigate = useNavigate();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
-  const [checkoutErr, setCheckoutErr] = useState<string | null>(null);
+  const [checkoutErr, setCheckoutErr] = useState<StripeDiagnostic | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   // §312k / §356(5) BGB: explicit consent gate. Required for paid recurring
   // SaaS so the §356(5) BGB withdrawal-right-erasure is documentably
@@ -108,7 +109,8 @@ export function CheckoutPage() {
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {
-      setCheckoutErr(result.error?.message ?? 'Unbekannter Fehler beim Checkout');
+      const status = classifyStripeError(result.error);
+      setCheckoutErr(getStripeDiagnostic(status));
       setRedirecting(false);
     }
   }
@@ -344,7 +346,7 @@ function ConsentGateShell({
   acknowledgedWithdrawal:   boolean;
   onAcknowledgedWithdrawal: (value: boolean) => void;
   redirecting:              boolean;
-  checkoutErr:              string | null;
+  checkoutErr:              StripeDiagnostic | null;
   onConfirm:                () => void;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
@@ -421,8 +423,13 @@ function ConsentGateShell({
           </div>
 
           {checkoutErr && (
-            <div className="mb-4 p-3 border border-red-900 bg-red-950/30 text-xs text-red-200">
-              Checkout-Fehler: {checkoutErr}
+            <div className="mb-4 p-3 border border-red-900 bg-red-950/30 text-xs text-red-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-red-100">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {checkoutErr.title}
+              </div>
+              <p className="leading-relaxed">{checkoutErr.message}</p>
+              <p className="text-red-300"><span className="font-semibold">Nächster Schritt:</span> {checkoutErr.action}</p>
             </div>
           )}
 

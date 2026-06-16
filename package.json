@@ -20,6 +20,7 @@
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
     "qa:smoke": "tsx scripts/qa-smoke-test.ts",
     "qa:load": "tsx scripts/qa-load-test.ts",
+    "qa:governance": "tsx scripts/qa-governance-test.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh"
   },

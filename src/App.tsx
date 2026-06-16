@@ -99,6 +99,7 @@ import { PilotReadiness } from './pages/PilotReadiness';
 import { ShopifyIntegrationPage } from './pages/integrations/Shopify';
 import { ShopifySuccessPage } from './pages/integrations/ShopifySuccess';
 import { ShopifyErrorPage } from './pages/integrations/ShopifyError';
+import { TelegramIntegrationPage } from './pages/integrations/TelegramIntegration';
 import { Developers } from './pages/Developers';
 import { AiActGovernancePage } from './pages/content/AiActGovernancePage';
 import { AgentGovernancePage } from './pages/content/AgentGovernancePage';
@@ -363,6 +364,7 @@ function RoutesWithTracking() {
       <Route path="/integrations/shopify" element={<ShopifyIntegrationPage />} />
       <Route path="/shopify/success" element={<ShopifySuccessPage />} />
       <Route path="/shopify/error" element={<ShopifyErrorPage />} />
+      <Route path="/app/settings/integrations/telegram" element={<TelegramIntegrationPage />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/ai-act-governance" element={<AiActGovernancePage />} />
       <Route path="/agent-governance" element={<AgentGovernancePage />} />

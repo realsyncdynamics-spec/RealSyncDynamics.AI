@@ -20,15 +20,6 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Zentrale Governance-Übersicht',
   },
   {
-    id: 'home',
-    label: 'Workspace',
-    icon: 'LayoutDashboard',
-    route: '/app/home',
-    status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Echtzeit-Workspace mit Live-Daten (Auth erforderlich)',
-  },
-  {
     id: 'websites',
     label: 'Websites',
     icon: 'Globe',

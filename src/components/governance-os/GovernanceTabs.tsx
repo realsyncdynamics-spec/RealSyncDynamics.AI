@@ -1,18 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import {
   Home, Globe, FileCheck2, Cpu, AlertTriangle, Activity,
   Building2, BarChart3, Users, Settings, MoreHorizontal, Lock,
+  Bot, GitMerge, FileText, ClipboardCheck, ClipboardList, Wrench,
+  LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react';
 import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import type { GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
-import { useState } from 'react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
-  Home, Globe, FileCheck2, Cpu, Bot: Cpu, AlertTriangle, Activity,
-  Building2, BarChart3, Users, Settings,
+  Home, LayoutDashboard, Globe, FileCheck2, Cpu, AlertTriangle, Activity,
+  Building2, BarChart3, Users, Settings, Bot, GitMerge, FileText,
+  ClipboardCheck, ClipboardList, Wrench,
 };
 
 const PLAN_LABELS: Record<string, string> = {

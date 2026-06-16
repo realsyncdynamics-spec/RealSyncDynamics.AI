@@ -29,7 +29,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, FileCheck2, BadgeCheck, Workflow, Sparkles,
-  Globe, Lock, Activity, Scale, Archive, ClipboardCheck, Search, ScanSearch,
+  Globe, Lock, Activity, Scale, Archive, ClipboardCheck, ScanSearch,
+  Home, Cpu, AlertTriangle, Bot, GitMerge, FileText,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { CTA } from '../content/runtimeVocab';
@@ -95,32 +96,38 @@ function Hero() {
             Evidence und hält Sie audit-ready.
           </p>
 
-          {/* Primary CTA: Domain-Scan */}
-          <form onSubmit={handleScan} className="mt-10 flex flex-col sm:flex-row max-w-xl rounded-chip border border-titanium-700 overflow-hidden focus-within:border-petrol-400 transition-colors">
+          {/* Primary CTA: Governance OS */}
+          <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <Link
+              to="/app"
+              className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
+            >
+              {CTA.startFree} <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/audit?source=hero"
+              className="inline-flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-200 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
+            >
+              {CTA.startFreeAudit}
+            </Link>
+          </div>
+
+          {/* Domain-Scan Teaser */}
+          <form onSubmit={handleScan} className="mt-5 flex flex-col sm:flex-row max-w-sm rounded-chip border border-titanium-800 overflow-hidden focus-within:border-petrol-500/50 transition-colors">
             <input
               type="text"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
-              placeholder="ihre-domain.de"
-              className="flex-1 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 placeholder-titanium-600 font-mono focus:outline-none"
+              placeholder="ihre-domain.de scannen …"
+              className="flex-1 bg-obsidian-900 px-4 py-2 text-xs text-titanium-200 placeholder-titanium-600 font-mono focus:outline-none"
             />
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors shrink-0"
+              className="inline-flex items-center justify-center px-4 py-2 text-xs font-mono text-petrol-300 hover:text-petrol-100 border-l border-titanium-800 transition-colors shrink-0"
             >
-              {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
+              Scan <ArrowRight className="h-3 w-3 ml-1" />
             </button>
           </form>
-
-          {/* Secondary CTA */}
-          <div className="mt-5">
-            <Link
-              to="/automations"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-titanium-300 hover:text-titanium-50 transition-colors"
-            >
-              {CTA.viewAutomationSkills} <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
 
           <div className="mt-8 flex flex-wrap gap-2">
             {HERO_TRUST_ITEMS.map(({ Icon, label }) => (
@@ -362,12 +369,16 @@ function AutomationSkillsTeaser() {
 // ─── 6 · Governance OS Browser ──────────────────────────────────────
 
 const GOVERNANCE_OS_MODULES = [
-  { Icon: ScanSearch, label: 'Scanner' },
-  { Icon: Archive, label: 'Evidence Vault' },
-  { Icon: Scale, label: 'AI Risk Registry' },
-  { Icon: Activity, label: 'Monitoring' },
-  { Icon: ClipboardCheck, label: 'Audit Trail' },
-  { Icon: ShieldCheck, label: 'Policies' },
+  { Icon: Home,          label: 'Übersicht',     route: '/app',           color: 'text-titanium-300' },
+  { Icon: Globe,         label: 'Websites',      route: '/app/websites',  color: 'text-petrol-300' },
+  { Icon: Cpu,           label: 'KI-Systeme',    route: '/app/ai-systems',color: 'text-petrol-300' },
+  { Icon: AlertTriangle, label: 'Risiken',       route: '/app/risks',     color: 'text-red-400' },
+  { Icon: FileCheck2,    label: 'Evidence Vault',route: '/app/evidence',  color: 'text-petrol-300' },
+  { Icon: Activity,      label: 'Monitoring',    route: '/app/monitoring',color: 'text-ai-cyan-400' },
+  { Icon: Bot,           label: 'Agenten',       route: '/app/agents',    color: 'text-petrol-300' },
+  { Icon: GitMerge,      label: 'Workflows',     route: '/app/workflows', color: 'text-titanium-300' },
+  { Icon: FileText,      label: 'Dokumente',     route: '/app/documents', color: 'text-titanium-300' },
+  { Icon: ClipboardCheck,label: 'Audit Export',  route: '/app/audit',     color: 'text-petrol-300' },
 ] as const;
 
 function GovernanceOsBrowser() {
@@ -378,20 +389,33 @@ function GovernanceOsBrowser() {
           Governance OS Browser
         </p>
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
-          Nicht nur ein Scanner. Ein Betriebssystem für Compliance, Governance, Evidence und AI-Risikomanagement.
+          Ein Betriebssystem für Compliance, Evidence und AI-Risikomanagement.
         </h2>
         <p className="text-sm text-titanium-400 max-w-xl mb-10 leading-relaxed">
-          Alle Module greifen auf denselben Prüfpfad zu — ein Befund aus dem
-          Scanner wird zur Evidence, die Evidence speist die Audit-Trail-Sicht.
+          Alle Module greifen auf denselben Prüfpfad zu — ein Befund aus Websites
+          wird zur Evidence, die Evidence speist Risk Center, Monitoring und
+          Audit-Export.
         </p>
         <div className="rounded-panel border border-titanium-800 bg-obsidian-900 p-5 sm:p-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {GOVERNANCE_OS_MODULES.map(({ Icon, label }) => (
-              <div key={label} className="rounded-card border border-titanium-800 bg-obsidian-950 p-4 flex items-center gap-2.5">
-                <Icon className="h-4 w-4 text-petrol-300 shrink-0" />
-                <span className="font-mono text-[11px] uppercase tracking-wider text-titanium-300">{label}</span>
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
+            {GOVERNANCE_OS_MODULES.map(({ Icon, label, route, color }) => (
+              <Link
+                key={label}
+                to={route}
+                className="rounded-card border border-titanium-800 bg-obsidian-950 p-3 flex items-center gap-2 hover:border-petrol-500/40 transition-colors group"
+              >
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
+                <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-400 group-hover:text-titanium-200 transition-colors">{label}</span>
+              </Link>
             ))}
+          </div>
+          <div className="flex justify-end border-t border-titanium-800 pt-4">
+            <Link
+              to="/app"
+              className="inline-flex items-center gap-2 text-xs font-mono text-petrol-300 hover:text-petrol-100 transition-colors"
+            >
+              Governance OS öffnen <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
         </div>
       </div>
@@ -434,23 +458,24 @@ function FinalCta() {
     <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
-          Starten Sie noch heute — völlig kostenlos
+          Governance OS — kostenlos starten
         </h2>
         <p className="text-sm text-titanium-400 max-w-xl mx-auto mb-8">
-          Domain eintragen, Scan startet sofort. Keine Karte, keine versteckten Gebühren.
+          Sofort einsatzbereit. Websites, KI-Systeme und Risiken überwachen —
+          keine Kreditkarte, kein Setup.
         </p>
         <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
           <Link
-            to="/audit?source=final-cta"
+            to="/app"
             className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
           >
-            {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
+            {CTA.startFree} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/welcome?source=final-cta"
+            to="/audit?source=final-cta"
             className="inline-flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-100 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
           >
-            {CTA.openDashboard}
+            {CTA.startFreeAudit}
           </Link>
         </div>
         <p className="text-xs text-titanium-500 mt-6 font-mono uppercase tracking-wider">

@@ -6,7 +6,7 @@
 -- Stores daily aggregated KPI metrics per tenant
 CREATE TABLE IF NOT EXISTS public.governance_kpi_snapshots (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
   -- Bucketed to UTC midnight for deterministic ordering
   captured_date DATE NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS public.governance_kpi_snapshots (
 -- Detailed breakdown by asset type / risk level / event source
 CREATE TABLE IF NOT EXISTS public.governance_kpi_timeseries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   date DATE NOT NULL,
 
   -- Breakdown dimension
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS public.governance_kpi_timeseries (
 -- User-saved filter preferences for analytics dashboard
 CREATE TABLE IF NOT EXISTS public.governance_kpi_filters (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
 
   -- Filter metadata
@@ -130,34 +130,12 @@ CREATE POLICY "service_role_all_timeseries"
 CREATE POLICY "users_select_own_tenant_snapshots"
   ON public.governance_kpi_snapshots
   FOR SELECT
-  USING (
-    auth.role() = 'authenticated'
-    AND tenant_id IN (
-      SELECT id FROM public.workspaces
-      WHERE id = governance_kpi_snapshots.tenant_id
-      AND EXISTS (
-        SELECT 1 FROM public.workspace_members
-        WHERE workspace_id = workspaces.id
-        AND user_id = auth.uid()
-      )
-    )
-  );
+  USING ((SELECT public.is_tenant_member(tenant_id)));
 
 CREATE POLICY "users_select_own_tenant_timeseries"
   ON public.governance_kpi_timeseries
   FOR SELECT
-  USING (
-    auth.role() = 'authenticated'
-    AND tenant_id IN (
-      SELECT id FROM public.workspaces
-      WHERE id = governance_kpi_timeseries.tenant_id
-      AND EXISTS (
-        SELECT 1 FROM public.workspace_members
-        WHERE workspace_id = workspaces.id
-        AND user_id = auth.uid()
-      )
-    )
-  );
+  USING ((SELECT public.is_tenant_member(tenant_id)));
 
 -- RLS Policy: users can manage only their own filters
 CREATE POLICY "users_own_filters_all"
@@ -169,19 +147,7 @@ CREATE POLICY "users_own_filters_all"
 CREATE POLICY "users_select_own_filters"
   ON public.governance_kpi_filters
   FOR SELECT
-  USING (
-    auth.role() = 'authenticated'
-    AND tenant_id IN (
-      SELECT id FROM public.workspaces
-      WHERE id = governance_kpi_filters.tenant_id
-      AND EXISTS (
-        SELECT 1 FROM public.workspace_members
-        WHERE workspace_id = workspaces.id
-        AND user_id = auth.uid()
-      )
-    )
-    AND user_id = auth.uid()
-  );
+  USING ((SELECT public.is_tenant_member(tenant_id)) AND user_id = auth.uid());
 
 -- Create RPC: get latest KPI snapshot for tenant
 CREATE OR REPLACE FUNCTION public.governance_kpi_latest_snapshot(p_tenant_id UUID)

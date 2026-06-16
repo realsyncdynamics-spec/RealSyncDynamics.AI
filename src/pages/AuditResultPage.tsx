@@ -7,12 +7,10 @@ import { AuditResultView, type AuditResultFinding } from '../features/audit/Audi
 // Datenfluss:
 //   1. Warm-Navigation aus dem Audit-Chat: AuditChatHero passt den vollen
 //      Report per `navigate(..., { state })` durch — wir nehmen ihn direkt.
+//      Inklusive PII (email), die in der Permalink-RPC bewusst fehlt.
 //   2. Cold-Load (Reload, Deep-Link, Bookmark, Share, neuer Tab): die
-//      `audit_share_get(uuid)` RPC liefert score + severity + issues +
-//      domain + created_at fuer jede `is_shareable=true` Audit-Row. Das
-//      ist dieselbe Quelle, die /audit/share/:token nutzt — wir spiegeln
-//      sie auf /audit/result/:auditId, damit der Permalink nach dem Scan
-//      bei Reload nicht leer wirkt.
+//      `audit_share_get(uuid)` RPC liefert non-PII Felder (score, severity,
+//      issues, domain, created_at) fuer jede `is_shareable=true` Audit-Row.
 //
 // Damit verschwindet die alte "Keine Befunde geladen" Anzeige bei jedem
 // Reload — vorausgesetzt der Audit existiert und ist nicht revoked.
@@ -21,9 +19,13 @@ const SUPABASE_URL     = import.meta.env.VITE_SUPABASE_URL     as string | undef
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 interface AuditReportState {
-  domain?:   string;
-  score?:    number;
-  findings?: AuditResultFinding[];
+  domain?:          string;
+  score?:           number;
+  email?:           string;
+  created_at?:      string;
+  coverage?:        'full' | 'limited' | 'failed';
+  coverage_notice?: string | null;
+  findings?:        AuditResultFinding[];
 }
 
 interface SharedAuditRow {
@@ -45,11 +47,12 @@ export function AuditResultPage() {
     Array.isArray(initialReport.findings) &&
     initialReport.findings.length > 0;
 
-  const [domain,   setDomain]   = useState<string | undefined>(initialReport.domain);
-  const [score,    setScore]    = useState<number | undefined>(initialReport.score);
-  const [findings, setFindings] = useState<AuditResultFinding[]>(initialReport.findings ?? []);
-  const [loading,  setLoading]  = useState(!hasWarmReport);
-  const [error,    setError]    = useState<string | null>(null);
+  const [domain,    setDomain]    = useState<string | undefined>(initialReport.domain);
+  const [score,     setScore]     = useState<number | undefined>(initialReport.score);
+  const [createdAt, setCreatedAt] = useState<string | undefined>(initialReport.created_at);
+  const [findings,  setFindings]  = useState<AuditResultFinding[]>(initialReport.findings ?? []);
+  const [loading,   setLoading]   = useState(!hasWarmReport);
+  const [error,     setError]     = useState<string | null>(null);
 
   useEffect(() => {
     if (hasWarmReport)           return;
@@ -80,6 +83,7 @@ export function AuditResultPage() {
         if (cancelled) return;
         setDomain(row.domain);
         setScore(row.score);
+        setCreatedAt(row.created_at);
         setFindings(Array.isArray(row.issues) ? row.issues : []);
       } catch (e) {
         if (cancelled) return;
@@ -98,6 +102,10 @@ export function AuditResultPage() {
       auditId={auditId}
       domain={domain}
       score={score}
+      email={initialReport.email}
+      createdAt={createdAt}
+      coverage={initialReport.coverage}
+      coverageNotice={initialReport.coverage_notice ?? undefined}
       findings={findings}
       loading={loading}
       error={error}

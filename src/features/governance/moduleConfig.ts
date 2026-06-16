@@ -109,6 +109,14 @@ export const GOVERNANCE_MODULES: ModuleDefinition[] = [
     status: 'beta',
     description: 'Event-Streams für externe Systeme'
   },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    path: '/app/analytics',
+    status: 'beta',
+    badge: 'NEW',
+    description: 'Real-time KPI-Metriken & Compliance-Reports'
+  },
 ];
 
 export function getModuleStatus(moduleId: string): ModuleStatus {

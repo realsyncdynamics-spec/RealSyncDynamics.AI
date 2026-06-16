@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Workflow } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { useTenant } from '../../core/access/TenantProvider';
 import {
   AUTOMATION_SKILLS,
   AUTOMATION_SKILL_CATEGORIES,
@@ -14,9 +15,10 @@ import { AutomationSkillCard } from './AutomationSkillCard';
 /**
  * /app/automations — Self-Service-Modul "Automatisierungs-Skills".
  *
- * Phase 1: zeigt das fest definierte Skill-Set (AUTOMATION_SKILLS) und
- * verlinkt jeden Skill auf eine bereits vorhandene Route. Es werden noch
- * keine echten automation_runs ausgefuehrt (siehe docs/product/automation-skills.md).
+ * Zeigt das fest definierte Skill-Set (AUTOMATION_SKILLS). Die meisten Skills
+ * verlinken weiterhin auf eine bereits vorhandene Route (Phase 1). Der DSGVO
+ * Audit Skill hat bereits einen echten Direct-Execution-Run über
+ * automation-trigger → gdpr-audit (siehe docs/product/automation-skills.md).
  */
 export function AutomationSkillsView() {
   return <AuthGate>{() => <AutomationSkillsInner />}</AuthGate>;
@@ -25,6 +27,7 @@ export function AutomationSkillsView() {
 function AutomationSkillsInner() {
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get('skill');
+  const { activeTenantId } = useTenant();
 
   const [category, setCategory] = useState<AutomationSkillCategory | 'all'>('all');
   const [status, setStatus] = useState<AutomationSkillStatus | 'all'>('all');
@@ -79,7 +82,7 @@ function AutomationSkillsInner() {
                 keine Beratung, kein individuelles Setup.
               </p>
               <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                phase 1 · verlinkt auf bestehende Tools · echte Runs folgen in Phase 2
+                DSGVO Audit Skill: echter Run direkt hier · weitere Skills verlinken noch auf bestehende Tools (Phase 2 folgt)
               </p>
             </div>
           </div>
@@ -129,7 +132,7 @@ function AutomationSkillsInner() {
                 key={skill.id}
                 className={highlightId === skill.id ? 'ring-1 ring-ai-cyan-500/60' : undefined}
               >
-                <AutomationSkillCard skill={skill} />
+                <AutomationSkillCard skill={skill} tenantId={activeTenantId} />
               </div>
             ))
           )}

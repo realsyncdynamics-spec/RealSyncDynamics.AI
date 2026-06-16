@@ -6,8 +6,10 @@
  * Ampelsystem: Kritisch / Hoch / Mittel / Niedrig
  * DSGVO · EU AI Act · TTDSG · Technische Sicherheit
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTenant } from '../../../core/access/TenantProvider';
+import { fetchTenantIncidents, type DbIncident } from '../incidentsApi';
 import {
   ShieldAlert, Search, ChevronDown, ChevronUp, X,
   ExternalLink, AlertTriangle, CheckCircle2, Clock, Circle,
@@ -927,24 +929,68 @@ function RiskDetailModal({ risk, onClose }: { risk: Risk; onClose: () => void })
   );
 }
 
+// ─── Incident → Risk Mapping ─────────────────────────────────────────────────
+function incidentToRisk(inc: DbIncident): Risk {
+  const severityMap: Record<string, Severity> = {
+    critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig',
+  };
+  const statusMap: Record<string, Status> = {
+    open: 'Offen',
+    investigating: 'In Bearbeitung',
+    contained: 'In Bearbeitung',
+    resolved: 'Behoben',
+    reported_to_authority: 'Behoben',
+  };
+  const detected = new Date(inc.detected_at).toLocaleDateString('de-DE');
+  const due = inc.notification_deadline_at
+    ? new Date(inc.notification_deadline_at).toLocaleDateString('de-DE')
+    : null;
+  return {
+    id: inc.id,
+    severity: severityMap[inc.severity] ?? 'Mittel',
+    title: inc.title,
+    category: 'DSGVO Art. 6',
+    framework: 'DSGVO',
+    systems: [],
+    description: inc.description ?? inc.title,
+    status: statusMap[inc.status] ?? 'Offen',
+    actions: [],
+    evidence: [],
+    detectedAt: detected,
+    owner: inc.assigned_to ?? '–',
+    dueDate: due,
+    probability: 'Mittel',
+    impact: inc.severity === 'critical' || inc.severity === 'high' ? 'Hoch' : 'Mittel',
+  };
+}
+
 // ─── Haupt-View ─────────────────────────────────────────────────────────────
 export function RiskCenterView() {
+  const { activeTenantId } = useTenant();
+  const [activeRisks, setActiveRisks] = useState<Risk[]>(RISKS);
   const [severityFilter, setSeverityFilter] = useState<Severity | 'Alle'>('Alle');
   const [categoryFilter, setCategoryFilter] = useState<Category | 'Alle'>('Alle');
   const [statusFilter,   setStatusFilter]   = useState<Status | 'Alle'>('Alle');
   const [search,         setSearch]         = useState('');
   const [detailRisk,     setDetailRisk]     = useState<Risk | null>(null);
 
+  useEffect(() => {
+    if (!activeTenantId) return;
+    fetchTenantIncidents(activeTenantId).then((incidents) => {
+      if (incidents.length > 0) setActiveRisks(incidents.map(incidentToRisk));
+    }).catch(() => {/* keep mock */});
+  }, [activeTenantId]);
+
   const counts = useMemo(() => ({
-    Kritisch: RISKS.filter((r) => r.severity === 'Kritisch').length,
-    Hoch:     RISKS.filter((r) => r.severity === 'Hoch').length,
-    Mittel:   RISKS.filter((r) => r.severity === 'Mittel').length,
-    Niedrig:  RISKS.filter((r) => r.severity === 'Niedrig').length,
-    Gesamt:   RISKS.length,
-  }), []);
+    Kritisch: activeRisks.filter((r) => r.severity === 'Kritisch').length,
+    Hoch:     activeRisks.filter((r) => r.severity === 'Hoch').length,
+    Mittel:   activeRisks.filter((r) => r.severity === 'Mittel').length,
+    Niedrig:  activeRisks.filter((r) => r.severity === 'Niedrig').length,
+    Gesamt:   activeRisks.length,
+  }), [activeRisks]);
 
   const filtered = useMemo(() => {
-    let list = [...RISKS];
+    let list = [...activeRisks];
     if (severityFilter !== 'Alle') list = list.filter((r) => r.severity === severityFilter);
     if (categoryFilter !== 'Alle') list = list.filter((r) => r.category === categoryFilter);
     if (statusFilter   !== 'Alle') list = list.filter((r) => r.status   === statusFilter);
@@ -958,7 +1004,7 @@ export function RiskCenterView() {
       );
     }
     return list.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
-  }, [severityFilter, categoryFilter, statusFilter, search]);
+  }, [activeRisks, severityFilter, categoryFilter, statusFilter, search]);
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -1003,7 +1049,7 @@ export function RiskCenterView() {
 
         {/* ── Risk Priority Matrix + Kategorien ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <RiskHeatmap risks={RISKS} />
+          <RiskHeatmap risks={activeRisks} />
           <CategoryBarChart />
         </div>
 
@@ -1092,7 +1138,7 @@ export function RiskCenterView() {
 
           {/* Ergebnis-Info */}
           <div className="mt-2 text-[10px] font-mono text-titanium-600">
-            {filtered.length} von {RISKS.length} Risiken
+            {filtered.length} von {activeRisks.length} Risiken
             {(severityFilter !== 'Alle' || categoryFilter !== 'Alle' || statusFilter !== 'Alle' || search) && (
               <button
                 onClick={() => { setSeverityFilter('Alle'); setCategoryFilter('Alle'); setStatusFilter('Alle'); setSearch(''); }}

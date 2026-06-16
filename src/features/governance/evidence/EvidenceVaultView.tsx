@@ -9,7 +9,9 @@
  *   4. Change Tracking — Diff-Ansicht governance-relevanter Artefakte
  *   5. Exports       — Export-Steuerung
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTenant } from '../../../core/access/TenantProvider';
+import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 import {
   Camera,
   Shield,
@@ -230,12 +232,48 @@ function C2paBadge() {
   );
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function eventToEvidenceItem(e: DbGovernanceEvent): EvidenceItem {
+  const typeMap: Record<string, EvidenceType> = {
+    website_scanner:  'Scan Report',
+    browser_extension:'Screenshot',
+    manual:           'Document',
+    agent_runtime:    'AI Classification',
+    api:              'Network Trace',
+    sdk:              'Network Trace',
+    github:           'Network Trace',
+    ci_cd:            'Network Trace',
+  };
+  const diffMs = Date.now() - new Date(e.created_at).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const ts = diffMin < 60
+    ? `vor ${diffMin} Min.`
+    : diffMin < 1440
+    ? `vor ${Math.floor(diffMin / 60)} Std.`
+    : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
+  return {
+    id: e.id,
+    ts,
+    type: typeMap[e.event_source] ?? 'Scan Report',
+    title: e.title,
+    description: e.summary ?? e.title,
+    source: e.event_source,
+    domain: (e.payload?.['url'] as string | undefined) ?? e.vendor ?? e.model_name ?? '-',
+    hash: (e.payload?.['hash'] as string | undefined) ?? `sha256:${e.id.slice(0, 8)}…`,
+    c2pa: (e.payload?.['c2pa'] as boolean | undefined) ?? false,
+  };
+}
+
 // ── Tab 1 — Evidence Timeline ─────────────────────────────────────────────────
 
-function TimelineTab() {
+function TimelineTab({ liveEvents }: { liveEvents: DbGovernanceEvent[] | null }) {
+  const items = liveEvents !== null && liveEvents.length > 0
+    ? liveEvents.map(eventToEvidenceItem)
+    : EVIDENCE_TIMELINE;
   return (
     <div className="divide-y divide-titanium-900">
-      {EVIDENCE_TIMELINE.map((item) => {
+      {items.map((item) => {
         const cfg = evidenceTypeConfig(item.type);
         return (
           <div key={item.id} className="flex gap-4 px-4 py-3 hover:bg-obsidian-900/60 group">
@@ -563,6 +601,15 @@ const METRICS = [
 
 export function EvidenceVaultView() {
   const [activeTab, setActiveTab] = useState<TabId>('timeline');
+  const { activeTenantId } = useTenant();
+  const [liveEvents, setLiveEvents] = useState<DbGovernanceEvent[] | null>(null);
+
+  useEffect(() => {
+    if (!activeTenantId) { setLiveEvents(null); return; }
+    fetchTenantEvents(activeTenantId, 20)
+      .then(setLiveEvents)
+      .catch(() => {});
+  }, [activeTenantId]);
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-obsidian-950 text-titanium-100">
@@ -618,7 +665,7 @@ export function EvidenceVaultView() {
 
       {/* ── Tab-Inhalt ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {activeTab === 'timeline'   && <TimelineTab />}
+        {activeTab === 'timeline'   && <TimelineTab liveEvents={liveEvents} />}
         {activeTab === 'snapshots'  && <SnapshotsTab />}
         {activeTab === 'audittrail' && <AuditTrailTab />}
         {activeTab === 'changes'    && <ChangeTrackingTab />}

@@ -274,8 +274,9 @@ function RoutesWithTracking() {
   return (
     <Suspense fallback={<LazyFallback />}>
     <Routes>
-      {/* Public */}
-      <Route path="/" element={<Landing />} />
+      {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
+          die Marketing-Landing bleibt unter /landing erreichbar. */}
+      <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />

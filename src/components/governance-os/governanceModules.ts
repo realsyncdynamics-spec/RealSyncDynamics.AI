@@ -92,6 +92,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'DSFA/DPIA Generator',
   },
   {
+    id: 'alerts',
+    label: 'Alerts',
+    icon: 'Bell',
+    route: '/app/alerts',
+    status: 'beta',
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Laufzeit-Alerts aus Scans, Policy-Engine und Evidence',
+  },
+  {
     id: 'remediation',
     label: 'Remediation',
     icon: 'Wrench',
@@ -99,6 +108,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'roadmap',
     plans: ['agency', 'scale', 'enterprise'],
     description: 'Auto-Fixes, Pull Requests und Maßnahmen',
+  },
+  {
+    id: 'billing',
+    label: 'Billing',
+    icon: 'CreditCard',
+    route: '/app/billing',
+    status: 'live',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Plan, Abonnement und Abrechnung',
   },
   {
     id: 'team',

@@ -21,7 +21,7 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 //   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting,
 //     the chip fades out so it doesn't compete with the primary CTA.
 
-const HIDDEN_PREFIXES = ['/dashboard', '/checkout', '/audit'];
+const HIDDEN_PREFIXES = ['/dashboard', '/checkout', '/audit', '/app'];
 
 function shouldHide(pathname: string): boolean {
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;

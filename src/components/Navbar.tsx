@@ -8,13 +8,15 @@ import { CTA } from '../content/runtimeVocab';
 // technischen Begriffe in den Labels — Runtime / Evidence / Agent Registry
 // / Governance Engine / AI Governance bleiben Produktbestandteile,
 // erscheinen aber nur auf Unterseiten (unter Produkt), nicht in der
-// Hauptnav. Reihenfolge: Was (Produkt) → für wen (Lösungen) → warum
-// vertrauenswürdig (Sicherheit) → Preise → Dokumentation → Login.
+// Hauptnav. Reihenfolge: Was (Produkt) → strategische Positionierung
+// (digitale Souveränität) → für wen (Lösungen) → Preise → Dokumentation
+// → Login. Sicherheit bleibt als Trust-Seite (/sicherheit) erreichbar
+// (Footer / Querverweise), zählt aber nicht zur 6-Punkte-Hauptnav.
 // Alle Ziele sind existierende Routen.
 const NAV_ITEMS = [
   { label: 'Governance OS',   to: '/runtime' },
+  { label: 'Souveränität',    to: '/digitale-souveraenitaet' },
   { label: 'Für wen?',        to: '/branchen' },
-  { label: 'Sicherheit',      to: '/sicherheit' },
   { label: 'Preise',          to: '/pricing' },
   { label: 'Dokumentation',   to: '/docs' },
   { label: 'Login',           to: '/welcome' },

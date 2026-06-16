@@ -31,6 +31,7 @@ import {
   ArrowRight, ShieldCheck, FileCheck2, BadgeCheck, Workflow, Sparkles,
   Globe, Lock, Activity, Scale, Archive, ClipboardCheck, ScanSearch,
   Home, Cpu, AlertTriangle, Bot, GitMerge, FileText,
+  Boxes, Network, Server, Eye, Package, Landmark,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { CTA } from '../content/runtimeVocab';
@@ -48,6 +49,8 @@ export function Landing() {
         <AudienceSection />
         <AutomationSkillsTeaser />
         <GovernanceOsBrowser />
+        <DigitalSovereigntySection />
+        <SupplyChainGovernanceSection />
         <BetaProgramSection />
         <FinalCta />
         <Footer />
@@ -83,32 +86,32 @@ function Hero() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div>
           <p className="inline-flex items-center rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-petrol-300 mb-5">
-            EU AI Act + DSGVO Governance OS
+            Governance OS · DSGVO · EU AI Act · Digitale Souveränität
           </p>
 
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.08]">
-            Kontinuierliche Governance für<br className="hidden sm:block" /> Websites, KI-Systeme und Prozesse.
+            Das Governance OS für DSGVO, EU AI Act und digitale Souveränität.
           </h1>
 
           <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-xl leading-relaxed">
-            Überwachen Sie DSGVO-, AI-Act- und Compliance-Risiken kontinuierlich
-            statt nur beim Audit — RealSyncDynamics.AI erkennt Risiken, erzeugt
-            Evidence und hält Sie audit-ready.
+            RealSyncDynamics.AI überwacht Websites, KI-Systeme, Drittanbieter,
+            Risiken und Nachweise kontinuierlich — mit Evidence Vault, Governance
+            Agents und auditfähiger Dokumentation im Browser-Format.
           </p>
 
-          {/* Primary CTA: Governance OS */}
+          {/* Primary CTA: Self-Serve, kein Demo-Zwang */}
           <div className="mt-10 flex flex-col sm:flex-row gap-3">
             <Link
               to="/app"
               className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
             >
-              {CTA.startFree} <ArrowRight className="h-4 w-4" />
+              {CTA.startTrial} <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/audit?source=hero"
               className="inline-flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-200 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
             >
-              {CTA.startFreeAudit}
+              {CTA.startGovernanceAudit}
             </Link>
           </div>
 
@@ -418,6 +421,109 @@ function GovernanceOsBrowser() {
             </Link>
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 6b · Digitale Souveränität ─────────────────────────────────────
+
+const SOVEREIGNTY_PILLARS = [
+  { Icon: Network, title: 'Transparente Software- & Anbieterstruktur', body: 'Drittanbieter, Skripte, Tracker und KI-Dienste werden sichtbar gemacht — wer verarbeitet welche Daten, in welcher Region.' },
+  { Icon: ShieldCheck, title: 'Nachweisbare DSGVO- & AI-Act-Governance', body: 'Pflichten werden zu prüfbaren Kontrollen — klassifiziert nach DSGVO-Artikel und EU-AI-Act-Risikoklasse.' },
+  { Icon: Eye, title: 'Kontrolle über Drittanbieter & Datenflüsse', body: 'Tracker, KI-Systeme, externe Schnittstellen und Datentransfers bleiben unter laufender Kontrolle statt im Verborgenen.' },
+  { Icon: Archive, title: 'Evidence Vault für prüfbare Nachweise', body: 'Jeder Befund wird zu auditfähiger Evidence — versioniert, nachvollziehbar und exportierbar für Aufsicht und Audit.' },
+  { Icon: Activity, title: 'Kontinuierliches Monitoring statt Einmal-Audit', body: 'Governance läuft als fortlaufender Prozess weiter — Drift, neue Tracker und Änderungen werden erkannt, sobald sie entstehen.' },
+  { Icon: Bot, title: 'Governance Agents für Prüfungen & Maßnahmen', body: 'Spezialisierte Agents prüfen Befunde, schlagen Maßnahmen vor und schreiben Nachweise in den Prüfpfad.' },
+] as const;
+
+function DigitalSovereigntySection() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-petrol-300 mb-3 inline-flex items-center gap-2">
+          <Landmark className="h-3.5 w-3.5" /> Digitale Souveränität
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
+          Digitale Souveränität als Betriebsmodell.
+        </h2>
+        <p className="text-sm text-titanium-400 max-w-2xl mb-10 leading-relaxed">
+          RealSyncDynamics.AI hilft Unternehmen, digitale Souveränität praktisch
+          umzusetzen — als laufende, nachweisbare Kontrolle über Software,
+          Anbieter, KI-Systeme und Datenflüsse. Europäisch gehostet, auditfähig,
+          ohne Abhängigkeit von Einmal-Prüfungen.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {SOVEREIGNTY_PILLARS.map(({ Icon, title, body }) => (
+            <div key={title} className="rounded-card border border-titanium-800 bg-obsidian-900 p-5">
+              <Icon className="h-5 w-5 text-petrol-300 mb-3" />
+              <h3 className="font-display font-semibold text-titanium-50 mb-2 text-[15px] leading-snug">{title}</h3>
+              <p className="text-sm text-titanium-400 leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8">
+          <Link
+            to="/digitale-souveraenitaet"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-petrol-300 hover:text-petrol-200"
+          >
+            Digitale Souveränität verstehen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 6c · Software- & Anbieter-Governance (Supply Chain) ────────────
+
+const SUPPLY_CHAIN_CAPABILITIES = [
+  { Icon: Network, label: 'Drittanbieter-Erkennung', ready: true },
+  { Icon: ScanSearch, label: 'Tracker- & Script-Erkennung', ready: true },
+  { Icon: Cpu, label: 'KI-System-Dokumentation', ready: true },
+  { Icon: Globe, label: 'Anbieter- & Transferprüfung', ready: true },
+  { Icon: Scale, label: 'Risikoklassifizierung', ready: true },
+  { Icon: ClipboardCheck, label: 'Audit-Trail & Evidence', ready: true },
+  { Icon: Boxes, label: 'SBOM- & Supply-Chain-Governance', ready: false },
+  { Icon: Package, label: 'Open-Source-Komponenten-Inventar', ready: false },
+] as const;
+
+function SupplyChainGovernanceSection() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3 inline-flex items-center gap-2">
+          <Server className="h-3.5 w-3.5 text-petrol-300" /> Software Supply Chain
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
+          Governance für Software, Anbieter und Open-Source-Komponenten.
+        </h2>
+        <p className="text-sm text-titanium-400 max-w-2xl mb-10 leading-relaxed">
+          Wer Software einsetzt, verantwortet auch deren Lieferkette.
+          RealSyncDynamics.AI macht Drittanbieter, Skripte und KI-Dienste sichtbar,
+          bewertet sie evidenzbasiert und ist vorbereitet für SBOM-, Anbieter- und
+          Software-Supply-Chain-Governance.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {SUPPLY_CHAIN_CAPABILITIES.map(({ Icon, label, ready }) => (
+            <div key={label} className="flex items-center gap-3 rounded-card border border-titanium-800 bg-obsidian-900 p-4">
+              <Icon className="h-4 w-4 shrink-0 text-petrol-300" />
+              <span className="flex-1 text-sm text-titanium-200">{label}</span>
+              <span
+                className={`inline-flex items-center rounded-chip border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+                  ready
+                    ? 'border-petrol-500/40 bg-petrol-500/10 text-petrol-300'
+                    : 'border-titanium-700 bg-obsidian-950 text-titanium-500'
+                }`}
+              >
+                {ready ? 'Aktiv' : 'Vorbereitet'}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 font-mono text-[10px] uppercase tracking-wider text-titanium-600">
+          „Vorbereitet" — Roadmap-Funktionen für SBOM- & Software-Supply-Chain-Governance.
+        </p>
       </div>
     </section>
   );

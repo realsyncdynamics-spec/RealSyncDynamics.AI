@@ -12,9 +12,9 @@ import { CTA } from '../content/runtimeVocab';
 // (Automatisierung) → warum vertrauenswürdig (Sicherheit) → Preise →
 // Dokumentation → Login. Alle Ziele sind existierende Routen.
 const NAV_ITEMS = [
-  { label: 'Produkt',         to: '/runtime' },
-  { label: 'Lösungen',        to: '/branchen' },
-  { label: 'Automatisierung', to: '/ai-governance' },
+  { label: 'Governance OS',   to: '/runtime' },
+  { label: 'Für wen?',        to: '/branchen' },
+  { label: 'AI Governance',   to: '/ai-governance' },
   { label: 'Sicherheit',      to: '/sicherheit' },
   { label: 'Preise',          to: '/pricing' },
   { label: 'Dokumentation',   to: '/docs' },

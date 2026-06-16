@@ -108,22 +108,23 @@ export function PublicWorkspacePreview() {
         <div className="max-w-6xl mx-auto">
           <div className="inline-flex items-center gap-2 mb-6 px-3 py-1 border border-titanium-800 bg-obsidian-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-400">Governance OS</span>
+            <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-400">Governance OS · Digitale Souveränität</span>
           </div>
 
           <h1 className="font-display font-bold text-4xl sm:text-5xl mb-4 text-titanium-50 leading-tight">
-            Das Governance OS<br className="hidden sm:block" />
-            <span className="text-security-400"> für moderne Teams.</span>
+            Das Governance OS für DSGVO, EU AI Act<br className="hidden sm:block" />
+            <span className="text-security-400"> und digitale Souveränität.</span>
           </h1>
           <p className="text-titanium-300 text-lg max-w-2xl mb-3 leading-relaxed">
-            Websites, KI-Systeme, Risiken und Compliance —
-            in einer einheitlichen, EU-souveränen Oberfläche.
+            Ein europäisches Governance Operating System für Websites, KI-Systeme,
+            Drittanbieter, Risiken und Nachweise — kontinuierlich überwacht und
+            auditfähig dokumentiert im Browser-Format.
           </p>
           <p className="text-titanium-500 text-sm max-w-xl mb-8 font-mono">
             Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
             <button
               onClick={() => navigate('/app')}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-security-600 text-white font-semibold hover:bg-security-500 transition-colors"
@@ -135,14 +136,14 @@ export function PublicWorkspacePreview() {
               onClick={() => navigate('/audit?source=public-workspace')}
               className="flex items-center justify-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-100 font-medium hover:bg-obsidian-800 transition-colors"
             >
-              Kostenlos prüfen
+              Governance Audit starten
               <ArrowRight className="h-4 w-4" />
             </button>
             <Link
-              to="/docs"
+              to="/digitale-souveraenitaet"
               className="flex items-center justify-center gap-2 px-6 py-3 text-titanium-400 hover:text-titanium-200 text-sm font-medium transition-colors"
             >
-              Dokumentation →
+              Digitale Souveränität →
             </Link>
           </div>
         </div>
@@ -159,6 +160,28 @@ export function PublicWorkspacePreview() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Governance Complexity Score — Einstieg über Governance-Abdeckung statt Webseiten-Anzahl */}
+      <div className="border-b border-titanium-900 bg-obsidian-950">
+        <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-security-400 mb-1">
+              Governance Complexity Score
+            </div>
+            <p className="text-sm text-titanium-300 max-w-xl">
+              Sie wählen Governance-Abdeckung, nicht „Anzahl Webseiten". Acht Fragen zeigen
+              Ihre Komplexität, Risiken und das passende Paket.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/governance-score')}
+            className="shrink-0 flex items-center justify-center gap-2 px-5 py-2.5 border border-titanium-700 text-titanium-100 text-sm font-semibold hover:bg-obsidian-800 transition-colors"
+          >
+            Score ermitteln
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 

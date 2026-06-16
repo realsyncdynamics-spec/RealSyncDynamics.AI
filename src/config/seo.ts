@@ -222,9 +222,9 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'Continuous DSGVO- & AI-Act-Compliance für Websites | RealSyncDynamicsAI',
+    title: 'Governance OS für DSGVO, EU AI Act & digitale Souveränität | RealSyncDynamicsAI',
     description:
-      'Continuous Compliance Monitoring für Websites, KI-Systeme und digitale Prozesse. Tagesgenaue Überwachung gegen DSGVO- und EU-AI-Act-Drift — Free Audit als Einstieg, Drift-Alerts im Abo.',
+      'Das Governance OS für DSGVO, EU AI Act und digitale Souveränität. Überwacht Websites, KI-Systeme, Drittanbieter, Risiken und Nachweise kontinuierlich — mit Evidence Vault, Governance Agents und auditfähiger Dokumentation im Browser-Format.',
     canonical: `${SITE_URL}/`,
   },
   '/pricing': {
@@ -284,6 +284,29 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'AI Governance OS', url: '/ai-governance' },
+    ]),
+  },
+  '/governance-score': {
+    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
+    description:
+      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und finden Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
+    canonical: `${SITE_URL}/governance-score`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Governance Complexity Score', url: '/governance-score' },
+    ]),
+  },
+  '/digitale-souveraenitaet': {
+    title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
+    description:
+      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+    canonical: `${SITE_URL}/digitale-souveraenitaet`,
+    ogTitle: 'Digitale Souveränität als Betriebsmodell',
+    ogDescription:
+      'Souveräne Compliance-Infrastruktur für DSGVO, EU AI Act und Software-Supply-Chain-Governance — kontinuierlich, auditfähig, EU-gehostet.',
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Digitale Souveränität', url: '/digitale-souveraenitaet' },
     ]),
   },
   '/ai-act-faq': {

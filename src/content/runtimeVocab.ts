@@ -119,6 +119,9 @@ export const CTA = {
   startFreeAudit:     'Kostenlosen Audit starten',
   viewAutomationSkills: 'Automation Skills ansehen',
   applyForBeta:       'Für Beta bewerben',
+  // Governance-OS-Positionierung — Self-Serve, kein Demo-/Sales-Zwang.
+  startTrial:         '14 Tage gratis starten',
+  startGovernanceAudit: 'Governance Audit starten',
 } as const;
 
 export type CtaLabel = (typeof CTA)[keyof typeof CTA];

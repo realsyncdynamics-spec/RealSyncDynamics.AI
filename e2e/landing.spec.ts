@@ -22,9 +22,11 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
     page.getByText(/Europäisches Governance Operating System/i),
   ).toBeVisible();
 
-  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app)
+  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app).
+  // Die Workspace-Vorschau hat Hero- + Footer-CTA mit identischem Label →
+  // .first(), um die Strict-Mode-Mehrfachtreffer aufzulösen.
   await expect(
-    page.getByRole('button', { name: /Dashboard öffnen/i }),
+    page.getByRole('button', { name: /Dashboard öffnen/i }).first(),
   ).toBeVisible();
 
   // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)
@@ -57,10 +59,10 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
 test('Marketing landing (/landing) renders governance-OS narrative + CTAs', async ({ page }) => {
   await page.goto('/landing');
 
-  // Hero — branchenoffene Governance-Headline
+  // Hero — Governance-OS-Positionierung (DSGVO · EU AI Act · digitale Souveränität)
   await expect(
     page.getByRole('heading', {
-      name: /Kontinuierliche AI- und Compliance-Governance für jede Branche\./i,
+      name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität\./i,
     }),
   ).toBeVisible();
 

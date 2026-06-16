@@ -3,23 +3,30 @@ import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
-import { PRICING_TIERS, PRICING_TRUST_NOTE, type PricingTier, type TierId } from '../../config/pricing';
+import {
+  PUBLIC_PRICING_TIERS, ENTERPRISE_TIER, PRICING_TRUST_NOTE, TIER_ACCENT,
+  type PricingTier, type TierId,
+} from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
 
 /**
- * /pricing — public Pricing-Page mit 4 Paketen.
+ * /pricing — public Pricing-Page mit 5 Paketen (Free → 1.999 €).
  *
  * Tier-Daten kommen ausschliesslich aus src/config/pricing.ts
  * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
- * 4-Tier-Struktur (Stand 2026-05):
- *   Free Audit  0 €         Lead-Funnel
- *   Starter     79 €/Monat  Einzeldomain
- *   Growth    249 €/Monat  Monitoring + Auto-Fix (HIGHLIGHT)
- *   Agency    699 €/Monat  White-Label, 10 Kunden-Sites, API
- *   Enterprise ab 1.500 €/Monat — SLA, AI Act, Evidence Vault
- *   Enterprise individuell  SLA / AI-Act / DSB / Evidence Vault
+ * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-06):
+ *   Free Audit  0 €          Lead-Funnel, einmalig, kein Account
+ *   Starter    79 €/Monat    Einzeldomain
+ *   Growth    249 €/Monat    Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Agency    699 €/Monat    White-Label, 10 Kunden-Sites, API
+ *   Scale   1.999 €/Monat    DSB-Kanzleien, bis 50 Mandanten
+ *
+ * "Enterprise" (individuell, kein fester Preis) ist KEINE 6. Karte — sonst
+ * entsteht ein 6-in-5-Spalten-Grid. Stattdessen eigener Anfrage-Banner
+ * unterhalb des Grids (ENTERPRISE_TIER). Jede Karte hat eine Akzentfarbe
+ * (TIER_ACCENT) zur visuellen Trennung der Pakete.
  */
 
 const TIER_ICONS: Record<TierId, typeof Cookie> = {
@@ -74,9 +81,25 @@ export function PricingPage() {
       <section className="px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 items-stretch">
-            {PRICING_TIERS.map((tier) => (
+            {PUBLIC_PRICING_TIERS.map((tier) => (
               <TierCard key={tier.id} tier={tier} />
             ))}
+          </div>
+
+          {/* Enterprise — kein Grid-Card, sondern eigener Anfrage-Banner */}
+          <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-obsidian-900/60 border border-titanium-200/30 rounded-none">
+            <div>
+              <div className="font-display font-bold text-titanium-50 text-base mb-1">
+                {ENTERPRISE_TIER.name} — {ENTERPRISE_TIER.priceString}
+              </div>
+              <p className="text-sm text-silver-300">{ENTERPRISE_TIER.tagline}</p>
+            </div>
+            <Link
+              to={ENTERPRISE_TIER.cta.href}
+              className="surface-mono inline-flex shrink-0 items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none whitespace-nowrap"
+            >
+              {ENTERPRISE_TIER.cta.label} <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
           <div className="mt-8 text-center space-y-2">
@@ -84,7 +107,7 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Erstcheck kostenlos · kein Account nötig · Abo-Testphase 14 Tage kostenlos · Kreditkarte erst nach Testende fällig
+              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency/Scale: erste Abbuchung sofort nach Bestellung
             </p>
           </div>
 
@@ -241,9 +264,11 @@ function TierCard({ tier }: { tier: PricingTier }) {
   const priceDisplay =
     tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
 
+  const accent = TIER_ACCENT[tier.id];
+
   return (
     <div
-      className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border rounded-none transition-colors ${
+      className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border-x border-b rounded-none border-t-4 transition-colors ${accent.border} ${
         tier.highlight
           ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
           : 'border-silver-700/30 hover:border-titanium-200/60'
@@ -256,7 +281,7 @@ function TierCard({ tier }: { tier: PricingTier }) {
       )}
 
       <div className="flex items-center gap-2 mb-2 mt-1">
-        <TierIcon className="h-4 w-4 text-titanium-100" />
+        <TierIcon className={`h-4 w-4 ${accent.text}`} />
         <div className="font-display font-bold text-titanium-50 text-lg tracking-tight">{tier.name}</div>
       </div>
 
@@ -320,12 +345,16 @@ function TierCard({ tier }: { tier: PricingTier }) {
 
 // ─── Governance OS Browser — Module-Matrix ───────────────────────────────────
 // Zeigt welche Module in welchem Plan verfügbar sind.
-// Vier Spalten: Free · Starter · Professional (growth) · Enterprise
+// Alle 5 buchbaren Pakete + Enterprise — Namen identisch zu PUBLIC_PRICING_TIERS,
+// damit Pricing-Karten und Modul-Matrix nicht auseinanderlaufen ("Professional"
+// existiert in den Karten nicht — hieß dort schon immer "Growth").
 
 const MATRIX_TIERS: { id: TierId; label: string }[] = [
   { id: 'free',       label: 'Free' },
   { id: 'starter',    label: 'Starter' },
-  { id: 'growth',     label: 'Professional' },
+  { id: 'growth',     label: 'Growth' },
+  { id: 'agency',     label: 'Agency' },
+  { id: 'scale',      label: 'Scale' },
   { id: 'enterprise', label: 'Enterprise' },
 ];
 

@@ -158,7 +158,7 @@ export const PRICING_TIERS: PricingTier[] = [
     // 50-Tenant-Quotas im Backend erzwungen sind, kann die CTA auf
     // /checkout/scale flippen. Bis dahin geht jeder Scale-Interessent
     // durch /contact-sales mit `?tier=scale` für Lead-Routing.
-    cta: { label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=pricing' },
+    cta: { label: 'Scale anfragen', href: '/contact-sales?tier=scale&source=pricing' },
   },
   {
     id: 'enterprise',
@@ -187,6 +187,33 @@ export const PRICING_TIERS: PricingTier[] = [
 export function tierById(id: TierId): PricingTier | undefined {
   return PRICING_TIERS.find((t) => t.id === id);
 }
+
+/**
+ * Die 5 selbst buchbaren Pakete (Free Audit → Scale 1.999 €) für Pricing-
+ * Grids auf Landing/Pricing/Checkout. "Enterprise" (individuell, kein fester
+ * Preis) wird NICHT als 6. Karte gerendert — sonst entsteht ein 6-Karten-
+ * Grid in 5 Spalten ("durcheinander"). Enterprise läuft als eigener
+ * Anfrage-CTA neben/unter dem 5er-Grid, siehe ENTERPRISE_TIER.
+ */
+export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter((t) => t.id !== 'enterprise');
+
+/** Custom/individuell-Tier — separater CTA, kein Grid-Card. */
+export const ENTERPRISE_TIER: PricingTier = PRICING_TIERS.find((t) => t.id === 'enterprise')!;
+
+/**
+ * Akzentfarbe pro Tier — sorgt für farbliche Trennung der Pakete in
+ * Pricing-Grids. Klassen sind als vollstaendige Literale hinterlegt, damit
+ * Tailwinds Content-Scanner sie erkennt (dynamisch zusammengesetzte
+ * Klassennamen wie `border-t-${x}` werden NICHT erkannt).
+ */
+export const TIER_ACCENT: Record<TierId, { border: string; text: string }> = {
+  free:       { border: 'border-t-silver-400',    text: 'text-silver-400' },
+  starter:    { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
+  growth:     { border: 'border-t-security-500',  text: 'text-security-500' },
+  agency:     { border: 'border-t-violet-400',    text: 'text-violet-400' },
+  scale:      { border: 'border-t-gold-400',      text: 'text-gold-400' },
+  enterprise: { border: 'border-t-titanium-200',  text: 'text-titanium-200' },
+};
 
 /** Trust-Note unter Pricing-Cards */
 export const PRICING_TRUST_NOTE =

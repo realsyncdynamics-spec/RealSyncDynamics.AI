@@ -100,7 +100,8 @@ jobs:
           # (statt ueber 404.html-Redirect mit initialem 404-Status zu bouncen).
           # Liste mit src/App.tsx synchron halten.
           APP_ROUTES = [
-              '/app', '/app/websites', '/app/ai-systems', '/app/risks',
+              '/os', '/os/pricing',
+              '/app', '/app/websites', '/app/ai-systems', '/app/automations', '/app/risks',
               '/app/compliance', '/app/evidence', '/app/monitoring',
               '/app/team', '/app/settings', '/app/company', '/assistant',
               '/dashboard', '/command-center',

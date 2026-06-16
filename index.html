@@ -28,16 +28,14 @@
       Referrer-Policy für privacy. These improve our own /audit score significantly.
     -->
     <meta http-equiv="Content-Security-Policy"
-          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co https://api.fontshare.com data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline' https://api.fontshare.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com" />
+          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <link rel="canonical" href="https://realsyncdynamicsai.de/" />
 
     <!-- Performance: pre-connect zu kritischen Origins damit TLS-Handshake
-         vor dem ersten Request läuft. Nur die origins die wirklich gebraucht
-         werden (Supabase API + Fontshare CDN) — mehr preconnects bremsen. -->
-    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
-    <link rel="dns-prefetch" href="https://api.fontshare.com" />
+         vor dem ersten Request läuft. Fonts werden self-hosted (public/fonts/),
+         daher nur noch Supabase als externer Origin relevant. -->
     <link rel="dns-prefetch" href="https://supabase.co" />
     <!--
       JSON-LD structured data: SoftwareApplication + Organization + FAQ.

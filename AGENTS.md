@@ -9,6 +9,15 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
+### Ausnahme: Public Landing/Marketing ("European Enterprise Trust")
+- Öffentliche Marketing-Seiten (z. B. `/`) dürfen ruhige, leicht abgerundete
+  Karten/Chips/Panels nutzen (10–14px via `rounded-chip` / `rounded-card` /
+  `rounded-panel`, definiert in `src/index.css`).
+- Primärakzent dort: Petrol (`petrol-*`, #0F766E) statt Security-Blue, Teal
+  (`ai-cyan-*`, #14C4B3) als Sekundärakzent für Status/Live-Indikatoren.
+- Basis bleibt Obsidian/Titanium + Monospace für Metadaten — die Ausnahme
+  betrifft nur Radius und Akzentfarbe auf Marketing-Oberflächen.
+
 ## Kontext RealSync Dynamics
 1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.
 2. **Kernmodule:** CreatorSeal (Schutz), UFO-Bridge (Legacy-Automatisierung), Licensing Hub (Rechte).

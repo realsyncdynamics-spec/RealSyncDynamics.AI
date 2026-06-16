@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
+import { classifyStripeError, getStripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
@@ -33,6 +34,8 @@ type AuthState =
 
 export function CheckoutPage() {
   const { planKey } = useParams<{ planKey: string }>();
+  const [searchParams] = useSearchParams();
+  const isPilot = searchParams.get('pilot') === 'true';
   const navigate = useNavigate();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
   const [checkoutErr, setCheckoutErr] = useState<string | null>(null);
@@ -108,7 +111,8 @@ export function CheckoutPage() {
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {
-      setCheckoutErr(result.error?.message ?? 'Unbekannter Fehler beim Checkout');
+      const diagnostic = getStripeDiagnostic(classifyStripeError(result.error));
+      setCheckoutErr(`${diagnostic.message} ${diagnostic.action}`);
       setRedirecting(false);
     }
   }
@@ -165,6 +169,7 @@ export function CheckoutPage() {
     <ConsentGateShell
       tier={tier}
       userEmail={auth.userEmail}
+      isPilot={isPilot}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}
@@ -329,6 +334,7 @@ function NoUserShell({
 function ConsentGateShell({
   tier,
   userEmail,
+  isPilot,
   agreedToTerms,
   onAgreedToTerms,
   acknowledgedWithdrawal,
@@ -339,6 +345,7 @@ function ConsentGateShell({
 }: {
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
+  isPilot:                  boolean;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;
   acknowledgedWithdrawal:   boolean;
@@ -373,9 +380,15 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
-            14 Tage kostenlos testen · keine Kosten bis Tag 15
-          </p>
+          {isPilot ? (
+            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
+              14 Tage kostenlos testen · keine Kosten bis Tag 15
+            </p>
+          ) : (
+            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
+              Erste Abbuchung sofort nach Bestellung
+            </p>
+          )}
 
           <div className="space-y-3 mb-5">
             <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">

@@ -18,12 +18,9 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,9 +28,29 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// Vault-first, env-fallback. Lets an operator provision the live key via
+//   select public.set_app_secret('stripe_secret_key', 'sk_live_...');
+// without a function redeploy. Critically, this must run inside the request
+// handler — a missing key must never throw at module-evaluation time, since
+// that crashes ALL requests (including the OPTIONS preflight) without CORS
+// headers and surfaces to the browser as "Failed to send a request to the
+// Edge Function".
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  if (error) return null;
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
+
+  const stripeSecret = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  if (!stripeSecret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'stripe secret key not configured (neither env nor vault)');
+  const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -91,15 +108,6 @@ Deno.serve(async (req) => {
   const { data: existingSub } = await admin
     .from('subscriptions').select('stripe_customer_id')
     .eq('tenant_id', body.tenant_id).limit(1).maybeSingle();
-  if (existingSub?.stripe_customer_id) {
-    stripeCustomerId = existingSub.stripe_customer_id;
-  } else {
-    const customer = await stripe.customers.create({
-      email: userEmail ?? undefined,
-      metadata: { tenant_id: body.tenant_id },
-    });
-    stripeCustomerId = customer.id;
-  }
 
   const SITE = Deno.env.get('PUBLIC_SITE_URL') ?? 'https://realsyncdynamicsai.de';
   const base = req.headers.get('origin') ?? body.return_url ?? SITE;
@@ -118,20 +126,39 @@ Deno.serve(async (req) => {
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: stripeCustomerId!,
-    line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
-    metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
-    subscription_data: subscriptionData,
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    allow_promotion_codes: true,
-    automatic_tax: { enabled: true },
-    tax_id_collection: { enabled: true },
-  });
+  // Stripe-API-Aufrufe in try/catch: ohne Fang würde eine Exception (z.B.
+  // ungültiger STRIPE_SECRET_KEY oder fehlende Stripe-Tax-Adresse) Deno.serve
+  // mit einer Response ohne CORS-/JSON-Header verlassen — supabase-js meldet
+  // das dann nur als generisches "Failed to send a request to the Edge
+  // Function" ohne nutzbare Fehlermeldung im Frontend.
+  try {
+    if (existingSub?.stripe_customer_id) {
+      stripeCustomerId = existingSub.stripe_customer_id;
+    } else {
+      const customer = await stripe.customers.create({
+        email: userEmail ?? undefined,
+        metadata: { tenant_id: body.tenant_id },
+      });
+      stripeCustomerId = customer.id;
+    }
 
-  return json({ ok: true, url: session.url, session_id: session.id });
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      customer: stripeCustomerId!,
+      line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
+      metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
+      subscription_data: subscriptionData,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      allow_promotion_codes: true,
+      automatic_tax: { enabled: true },
+      tax_id_collection: { enabled: true },
+    });
+
+    return json({ ok: true, url: session.url, session_id: session.id });
+  } catch (e) {
+    return jsonError(502, 'STRIPE_ERROR', `stripe checkout failed: ${(e as Error).message}`);
+  }
 });
 
 function json(body: unknown, status = 200): Response {

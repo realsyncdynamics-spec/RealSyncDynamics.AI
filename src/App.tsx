@@ -144,6 +144,9 @@ const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView'
 const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').then((m) => ({ default: m.KeysView })));
 const RuntimeVvtView = lazy(() => import('./features/governance/vvt/RuntimeVvtView').then((m) => ({ default: m.RuntimeVvtView })));
 const AgentRegistryView = lazy(() => import('./features/governance/agents/AgentRegistryView').then((m) => ({ default: m.AgentRegistryView })));
+const GovernanceAgentsCenterView = lazy(() => import('./features/governance/agents/AgentsCenterView').then((m) => ({ default: m.AgentsCenterView })));
+const GovernanceDocumentsView = lazy(() => import('./features/governance/documents/DocumentsView').then((m) => ({ default: m.DocumentsView })));
+const GovernanceAuditExportView = lazy(() => import('./features/governance/audit/AuditExportView').then((m) => ({ default: m.AuditExportView })));
 const AutomationSkillsView = lazy(() => import('./features/automations/AutomationSkillsView').then((m) => ({ default: m.AutomationSkillsView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
@@ -471,6 +474,9 @@ function RoutesWithTracking() {
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/agents" element={<GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell>} />
+      <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
+      <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />
       <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──

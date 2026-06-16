@@ -212,6 +212,11 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             <Link to="/fuer-saas"        className="hover:text-titanium-50">SaaS</Link>
             <Link to="/fuer-agenturen"   className="hover:text-titanium-50">Agenturen</Link>
             <Link to="/fuer-praxen"      className="hover:text-titanium-50">Praxen</Link>
+            <Link to="/kanzleien"        className="hover:text-titanium-50">Kanzleien</Link>
+            <Link to="/arztpraxen"       className="hover:text-titanium-50">Arztpraxen</Link>
+            <Link to="/wordpress-dsgvo"  className="hover:text-titanium-50">WordPress</Link>
+            <Link to="/shopify-dsgvo"    className="hover:text-titanium-50">Shopify</Link>
+            <Link to="/chatgpt-dsgvo"    className="hover:text-titanium-50">ChatGPT</Link>
             <Link to="/cookie-scanner"   className="hover:text-titanium-50 text-gold-400">Cookie-Scanner</Link>
             <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-gold-400">AI-Act Inventar</Link>
             <Link to="/legal/privacy"    className="hover:text-titanium-50">Datenschutz</Link>

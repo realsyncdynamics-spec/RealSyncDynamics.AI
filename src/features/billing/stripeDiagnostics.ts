@@ -12,6 +12,7 @@ export type StripeDiagnosticStatus =
   | 'missing_user'
   | 'missing_tenant'
   | 'edge_function_error'
+  | 'client_network_error'
   | 'webhook_signature_failed'
   | 'unknown';
 
@@ -71,6 +72,17 @@ export function getStripeDiagnostic(status: StripeDiagnosticStatus): StripeDiagn
         runbook: 'docs/runbooks/stripe-production-checkout.md#failure-modes',
       };
 
+    case 'client_network_error':
+      return {
+        status,
+        title: 'Anfrage konnte nicht gesendet werden',
+        message:
+          'Der Browser konnte die Checkout-Anfrage nicht an Supabase senden — die Anfrage hat den Server nicht erreicht.',
+        action:
+          'Werbe-/Tracking-Blocker für diese Seite deaktivieren (Filter wie "*stripe*" oder "*checkout*" blockieren oft den Supabase-Aufruf) und erneut versuchen. Bei VPN/Firewall: Zugriff auf *.supabase.co erlauben.',
+        runbook: 'docs/runbooks/stripe-production-checkout.md#failure-modes',
+      };
+
     case 'webhook_signature_failed':
       return {
         status,
@@ -98,7 +110,13 @@ export function getStripeDiagnostic(status: StripeDiagnosticStatus): StripeDiagn
  */
 export function classifyStripeError(error: unknown): StripeDiagnosticStatus {
   if (!error) return 'unknown';
+  const name = String((error as { name?: unknown }).name ?? '').toLowerCase();
   const msg = String((error as { message?: unknown }).message ?? error).toLowerCase();
+  // supabase-js FunctionsFetchError: the fetch() to the Edge Function itself
+  // failed (request never reached the server) — e.g. ad-/tracking-blocker,
+  // offline, DNS/firewall. Must be checked before the generic 'edge' match
+  // below, since this message also contains "Edge Function".
+  if (name === 'functionsfetcherror' || msg.includes('failed to send a request')) return 'client_network_error';
   if (msg.includes('price') && (msg.includes('not found') || msg.includes('missing'))) return 'missing_price_id';
   if (msg.includes('webhook') && msg.includes('signature')) return 'webhook_signature_failed';
   if (msg.includes('unauthorized') || msg.includes('401')) return 'missing_user';

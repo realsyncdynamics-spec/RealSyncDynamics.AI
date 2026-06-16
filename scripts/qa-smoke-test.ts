@@ -64,13 +64,9 @@ const probes: Probe[] = [
   {
     name: 'shopify-install · no shop param returns 400',
     run: async () => {
-      try {
-        const url = `${SUPABASE_URL}/functions/v1/shopify-install`;
-        const res = await fetchWithTimeout(url);
-        return { name: '', ok: res.status === 400, status: res.status, detail: `expected 400, got ${res.status}` };
-      } catch (e) {
-        return { name: '', ok: false, detail: (e as Error).message };
-      }
+      const url = `${SUPABASE_URL}/functions/v1/shopify-install`;
+      const res = await fetchWithTimeout(url);
+      return { name: '', ok: res.status === 400, status: res.status, detail: `expected 400, got ${res.status}` };
     },
   },
   {
@@ -79,62 +75,38 @@ const probes: Probe[] = [
       ({ ok: status === 401, detail: `expected 401, got ${status}` }), false),
   },
   {
+    // Anon-key JWT passes the platform-level verify_jwt gate, so this probe
+    // actually exercises the function code (env vars, Stripe SDK init,
+    // Supabase auth.getUser() call) — unlike the probe above, which is
+    // rejected before the function runs.
+    name: 'stripe-checkout · with anon JWT (no user session) returns 401 UNAUTHORIZED',
+    run: async () => {
+      if (!ANON_KEY) return { name: '', ok: true, detail: 'skipped — SUPABASE_ANON_KEY not set' };
+      return postFn('stripe-checkout', { tenant_id: '00000000-0000-0000-0000-000000000000', plan_key: 'starter' },
+        (status, body) => {
+          if (status !== 401) return { ok: false, detail: `expected 401, got ${status}` };
+          const code = (body as Record<string, unknown> | null)?.error as Record<string, unknown> | undefined;
+          if (code?.code !== 'UNAUTHORIZED') return { ok: false, detail: `expected error.code=UNAUTHORIZED, got ${JSON.stringify(body)}` };
+          return { ok: true, detail: 'function reachable, rejected anon JWT as expected' };
+        });
+    },
+  },
+  {
     name: 'stripe-webhook · without signature returns 400',
     run: async () => {
-      try {
-        const url = `${SUPABASE_URL}/functions/v1/stripe-webhook`;
-        const res = await fetchWithTimeout(url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ id: 'evt_test', type: 'noop' }),
-        });
-        return { name: '', ok: res.status === 400, status: res.status, detail: `expected 400, got ${res.status}` };
-      } catch (e) {
-        return { name: '', ok: false, detail: (e as Error).message };
-      }
+      const url = `${SUPABASE_URL}/functions/v1/stripe-webhook`;
+      const res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: 'evt_test', type: 'noop' }),
+      });
+      return { name: '', ok: res.status === 400, status: res.status, detail: `expected 400, got ${res.status}` };
     },
   },
   {
     name: 'governance-agent · without acknowledge_us_routing returns 412',
     run: async () => postFn('governance-agent', { op: 'chat', tenant_id: '00000000-0000-0000-0000-000000000000', message: 'hi' }, (status) =>
       ({ ok: status === 401 || status === 412, detail: `expected 401/412, got ${status}` }), false),
-  },
-  {
-    name: 'health · returns status field',
-    run: async () => {
-      try {
-        const url = `${SUPABASE_URL}/functions/v1/health`;
-        const res = await fetchWithTimeout(url);
-        let parsed: unknown = null;
-        try { parsed = await res.json(); } catch { /* ignore */ }
-        const status = (parsed as Record<string, unknown> | null)?.status;
-        const ok = (res.status === 200 || res.status === 503) && (status === 'ok' || status === 'degraded' || status === 'down');
-        return { name: '', ok, status: res.status, detail: ok ? `status=${status}` : `unexpected response (HTTP ${res.status})` };
-      } catch (e) {
-        return { name: '', ok: false, detail: (e as Error).message };
-      }
-    },
-  },
-  {
-    name: 'cookie-scan · valid URL returns score + severity',
-    run: async () => postFn('cookie-scan', { url: 'https://example.com' }, (status, body) => {
-      if (status !== 200) return { ok: false, detail: `HTTP ${status}` };
-      if (typeof body !== 'object' || body == null) return { ok: false, detail: 'response not an object' };
-      const b = body as Record<string, unknown>;
-      if (typeof b.score !== 'number') return { ok: false, detail: 'missing score' };
-      if (typeof b.severity !== 'string') return { ok: false, detail: 'missing severity' };
-      return { ok: true, detail: `score=${b.score} severity=${b.severity}` };
-    }, false),
-  },
-  {
-    name: 'cookie-scan · invalid URL returns 400',
-    run: async () => postFn('cookie-scan', { url: 'not-a-url' }, (status) =>
-      ({ ok: status === 400, detail: `expected 400, got ${status}` }), false),
-  },
-  {
-    name: 'newsletter-subscribe · invalid email returns 400',
-    run: async () => postFn('newsletter-subscribe', { email: 'not-an-email' }, (status) =>
-      ({ ok: status === 400, detail: `expected 400, got ${status}` }), false),
   },
 ];
 

@@ -146,6 +146,10 @@ const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView'
 const GovernanceKeysView = lazy(() => import('./features/governance/KeysView').then((m) => ({ default: m.KeysView })));
 const RuntimeVvtView = lazy(() => import('./features/governance/vvt/RuntimeVvtView').then((m) => ({ default: m.RuntimeVvtView })));
 const AgentRegistryView = lazy(() => import('./features/governance/agents/AgentRegistryView').then((m) => ({ default: m.AgentRegistryView })));
+const AiSystemRegistryView = lazy(() => import('./features/governance/ai-registry/AiSystemRegistryView').then((m) => ({ default: m.AiSystemRegistryView })));
+const GovernanceAgentsCenterView = lazy(() => import('./features/governance/agents/AgentsCenterView').then((m) => ({ default: m.AgentsCenterView })));
+const GovernanceDocumentsView = lazy(() => import('./features/governance/documents/DocumentsView').then((m) => ({ default: m.DocumentsView })));
+const GovernanceAuditExportView = lazy(() => import('./features/governance/audit/AuditExportView').then((m) => ({ default: m.AuditExportView })));
 const AutomationSkillsView = lazy(() => import('./features/automations/AutomationSkillsView').then((m) => ({ default: m.AutomationSkillsView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
@@ -161,13 +165,16 @@ const GovernanceComplianceReportView = lazy(() => import('./features/governance/
 const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView').then((m) => ({ default: m.DpiasView })));
 const GovernanceDsrTrackerView = lazy(() => import('./features/governance/DsrTrackerView').then((m) => ({ default: m.DsrTrackerView })));
 const GovernanceIncidentsView = lazy(() => import('./features/governance/IncidentsView').then((m) => ({ default: m.IncidentsView })));
+const RiskCenterView = lazy(() => import('./features/governance/risks/RiskCenterView').then((m) => ({ default: m.RiskCenterView })));
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
 const GovernanceAuditorConsoleView = lazy(() => import('./features/governance/AuditorConsoleView').then((m) => ({ default: m.AuditorConsoleView })));
+const EvidenceVaultView = lazy(() => import('./features/governance/evidence/EvidenceVaultView').then((m) => ({ default: m.EvidenceVaultView })));
 const GovernanceScansListView = lazy(() => import('./features/governance/scans/ScansListView').then((m) => ({ default: m.ScansListView })));
 const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/ScanDetailView').then((m) => ({ default: m.ScanDetailView })));
 const AiActRiskInventoryView = lazy(() => import('./features/governance/AiActRiskInventoryView').then((m) => ({ default: m.AiActRiskInventoryView })));
+const MonitoringRuntimeView = lazy(() => import('./features/governance/monitoring/MonitoringRuntimeView').then((m) => ({ default: m.MonitoringRuntimeView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
@@ -193,6 +200,7 @@ const SettingsView = lazy(() => import('./features/settings/SettingsView').then(
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
 const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
+const GovernanceOsDashboard = lazy(() => import('./features/governance/dashboard/GovernanceOsDashboard').then((m) => ({ default: m.GovernanceOsDashboard })));
 const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
 const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
@@ -448,15 +456,19 @@ function RoutesWithTracking() {
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
-      <Route path="/app" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
+      <Route path="/app" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
       <Route path="/app/websites" element={<GovernanceBrowserShell><GovernanceDashboardView /></GovernanceBrowserShell>} />
-      <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
+      <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
+      <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
-      <Route path="/app/risks" element={<GovernanceBrowserShell><GovernanceIncidentsView /></GovernanceBrowserShell>} />
+      <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
+      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
-      <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence/auditor" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell>} />
       <Route path="/app/vendors" element={<GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell>} />
       <Route path="/app/reports" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
       <Route path="/app/dpia" element={<GovernanceBrowserShell><GovernanceDpiasView /></GovernanceBrowserShell>} />
@@ -481,6 +493,9 @@ function RoutesWithTracking() {
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/agents" element={<GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell>} />
+      <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
+      <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />
       <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
       <Route path="/app/agents" element={<GovernanceBrowserShell><AgentsOverviewPage /></GovernanceBrowserShell>} />
       <Route path="/app/agents/automation" element={<GovernanceBrowserShell><AutomationAgentPage /></GovernanceBrowserShell>} />

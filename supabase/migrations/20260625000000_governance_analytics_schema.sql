@@ -267,47 +267,7 @@ RETURNS TABLE (
   ORDER BY date DESC, count DESC;
 $$;
 
--- Create audit function to log analytics queries
-CREATE OR REPLACE FUNCTION public.log_governance_analytics_query(
-  p_tenant_id UUID,
-  p_date_range_days INT,
-  p_row_count INT,
-  p_duration_ms INT
-) RETURNS TABLE (
-  id UUID,
-  action TEXT
-) LANGUAGE SQL SECURITY DEFINER AS $$
-  WITH inserted AS (
-    INSERT INTO public.ai_tool_runs (
-      tenant_id,
-      action,
-      tool_name,
-      asset_id,
-      policy_id,
-      status,
-      metadata,
-      created_at
-    ) VALUES (
-      p_tenant_id,
-      'analytics_query',
-      'governance-analytics',
-      NULL,
-      NULL,
-      'success',
-      jsonb_build_object(
-        'dateRangeDays', p_date_range_days,
-        'rowCount', p_row_count,
-        'durationMs', p_duration_ms
-      ),
-      NOW()
-    )
-    RETURNING public.ai_tool_runs.id, public.ai_tool_runs.action
-  )
-  SELECT id, action FROM inserted;
-$$;
-
 -- Grant permissions to authenticated users for RPC functions
 GRANT EXECUTE ON FUNCTION public.governance_kpi_latest_snapshot(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.governance_kpi_range(UUID, DATE, DATE) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.governance_kpi_timeseries_data(UUID, DATE, DATE, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.log_governance_analytics_query(UUID, INT, INT, INT) TO authenticated;

@@ -33,16 +33,17 @@ import {
   Home, Cpu, AlertTriangle, Bot, GitMerge, FileText,
   Boxes, Network, Server, Eye, Package, Landmark,
 } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { LandingNavbar } from '../components/LandingNavbar';
 import { CTA } from '../content/runtimeVocab';
 import { AUTOMATION_SKILLS, type AutomationSkillCategory } from '../content/automationSkills';
 import { AutomationSkillStatusBadge } from '../features/automations/AutomationSkillCard';
+import { AUTOMATION_SKILL_STATUS_LABEL, type AutomationSkillStatus } from '../content/automationSkills';
 
 export function Landing() {
   return (
     <>
-      <Navbar />
-      <main className="bg-obsidian-950 text-titanium-100 pt-14">
+      <LandingNavbar />
+      <main className="bg-white text-slate-900 pt-14">
         <Hero />
         <TrustStrip />
         <ProductMechanics />
@@ -56,6 +57,22 @@ export function Landing() {
         <Footer />
       </main>
     </>
+  );
+}
+
+// ─── Light-mode Skill-Status-Badge ───────────────────────────────────
+
+const LIGHT_STATUS_CLS: Record<AutomationSkillStatus, string> = {
+  available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  beta:      'bg-sky-50 text-sky-700 border-sky-200',
+  planned:   'bg-amber-50 text-amber-700 border-amber-200',
+};
+
+function LightStatusBadge({ status }: { status: AutomationSkillStatus }) {
+  return (
+    <span className={`inline-flex items-center gap-1 border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${LIGHT_STATUS_CLS[status]}`}>
+      {AUTOMATION_SKILL_STATUS_LABEL[status]}
+    </span>
   );
 }
 
@@ -318,14 +335,14 @@ const SKILL_INPUT: Record<AutomationSkillCategory, string> = {
 
 function AutomationSkillsTeaser() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+    <section className="border-b border-slate-100 bg-white px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-end justify-between gap-4 mb-10 flex-wrap">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-slate-400 mb-3">
               Wählen · Aktivieren · Nutzen
             </p>
-            <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50">
+            <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-slate-900">
               Automation Skills
             </h2>
           </div>
@@ -540,10 +557,10 @@ function BetaProgramSection() {
         <div className="inline-flex items-center gap-2 mb-4 rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 text-petrol-300 text-xs font-mono uppercase tracking-wider">
           <Sparkles className="h-4 w-4" /> Founding Cohort · Beta-Programm
         </div>
-        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-slate-900 mb-3">
           5 Unternehmen erhalten 12 Monate Enterprise kostenlos.
         </h2>
-        <p className="text-sm text-titanium-400 max-w-xl mx-auto mb-6">
+        <p className="text-sm text-slate-600 max-w-xl mx-auto mb-6">
           Im Gegenzug: {BETA_GEGENLEISTUNG.join(' · ')}.
         </p>
         <Link
@@ -561,7 +578,7 @@ function BetaProgramSection() {
 
 function FinalCta() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+    <section className="border-b border-slate-100 bg-slate-50 px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
           Governance OS — kostenlos starten
@@ -584,7 +601,7 @@ function FinalCta() {
             {CTA.startFreeAudit}
           </Link>
         </div>
-        <p className="text-xs text-titanium-500 mt-6 font-mono uppercase tracking-wider">
+        <p className="text-xs text-slate-400 mt-6 font-mono uppercase tracking-wider">
           Keine Kreditkarte erforderlich · EU-Hosting · DSGVO-konform
         </p>
       </div>

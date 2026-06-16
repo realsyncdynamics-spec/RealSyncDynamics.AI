@@ -243,6 +243,14 @@ verify_jwt = false
 # Provision secrets directly via `supabase secrets set` or the Vault
 # dashboard.
 
+# ── Analytics ──
+# governance-analytics-aggregator: daily cron job (00:15 UTC), no JWT needed
+[functions.governance-analytics-aggregator]
+verify_jwt = false
+
+# governance-analytics-export: called from authenticated SPA clients with bearer token
+# (no explicit verify_jwt entry = defaults to true, which is correct)
+
 # ── Telegram integration ──
 # telegram-webhook is called by Telegram's servers without any JWT.
 [functions.telegram-webhook]

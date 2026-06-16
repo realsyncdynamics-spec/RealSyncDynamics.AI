@@ -226,6 +226,12 @@ const EnterpriseRisksPage = lazy(() => import('./enterprise-os/pages/RisksPage')
 const EnterpriseCompliancePage = lazy(() => import('./enterprise-os/pages/CompliancePage').then((m) => ({ default: m.CompliancePage })));
 const EnterpriseEvidencePage = lazy(() => import('./enterprise-os/pages/EvidencePage').then((m) => ({ default: m.EvidencePage })));
 const EnterpriseMonitoringPage = lazy(() => import('./enterprise-os/pages/MonitoringPage').then((m) => ({ default: m.MonitoringPage })));
+
+const AgentsOverviewPage = lazy(() => import('./features/agents/AgentsOverviewPage').then((m) => ({ default: m.AgentsOverviewPage })));
+const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgentPage').then((m) => ({ default: m.AutomationAgentPage })));
+const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
+const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
+const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
@@ -474,6 +480,11 @@ function RoutesWithTracking() {
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
+      <Route path="/app/agents" element={<GovernanceBrowserShell><AgentsOverviewPage /></GovernanceBrowserShell>} />
+      <Route path="/app/agents/automation" element={<GovernanceBrowserShell><AutomationAgentPage /></GovernanceBrowserShell>} />
+      <Route path="/app/agents/support" element={<GovernanceBrowserShell><SupportAgentPage /></GovernanceBrowserShell>} />
+      <Route path="/app/agents/susi" element={<GovernanceBrowserShell><CallAgentSusiPage /></GovernanceBrowserShell>} />
+      <Route path="/app/agents/screenshot" element={<GovernanceBrowserShell><ScreenshotAgentPage /></GovernanceBrowserShell>} />
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).

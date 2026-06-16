@@ -10,13 +10,16 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
 ### Ausnahme: Public Landing/Marketing ("European Enterprise Trust")
-- Öffentliche Marketing-Seiten (z. B. `/`) dürfen ruhige, leicht abgerundete
-  Karten/Chips/Panels nutzen (10–14px via `rounded-chip` / `rounded-card` /
-  `rounded-panel`, definiert in `src/index.css`).
-- Primärakzent dort: Petrol (`petrol-*`, #0F766E) statt Security-Blue, Teal
-  (`ai-cyan-*`, #14C4B3) als Sekundärakzent für Status/Live-Indikatoren.
-- Basis bleibt Obsidian/Titanium + Monospace für Metadaten — die Ausnahme
-  betrifft nur Radius und Akzentfarbe auf Marketing-Oberflächen.
+- Öffentliche Marketing-Seiten (z. B. `/`) nutzen ein **Light-Theme**:
+  Slate-Neutrals (`slate-*`: #F8FAFC Background · #0F172A Text · #475569 Body)
+  statt Obsidian/Titanium.
+- Ruhige, leicht abgerundete Karten/Chips/Panels (10–14px via `rounded-chip` /
+  `rounded-card` / `rounded-panel`, definiert in `src/index.css`).
+- Primärakzent: Petrol (`petrol-700`, #0F766E) — dunkel genug für Light-Theme.
+  Security-Blue/Cyan nur im App/Dashboard.
+- Separate `LandingNavbar` (weiß/Slate) statt der dunklen `Navbar`.
+  App/Dashboard verwenden weiterhin die dunkle `Navbar`.
+- Monospace bleibt Pflicht für alle Metadaten, auch im Light-Theme.
 
 ## Kontext RealSync Dynamics
 1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.

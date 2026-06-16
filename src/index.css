@@ -249,6 +249,22 @@
   --color-petrol-900: #134e4a;
   --color-petrol-950: #042f2e;
 
+  /* Slate (Landing-Light-Theme: Stripe/Linear-Neutrals für die öffentliche
+     Startseite — #F8FAFC Background · #0F172A Text · #475569 Body).
+     App/Dashboard bleibt Obsidian/Titanium. */
+  --color-slate-50:  #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+
+
   /* Gunmetal (deeper-than-obsidian surface for premium 3D backdrops) */
   --color-gunmetal-500: #2a2e35;
   --color-gunmetal-600: #20232a;

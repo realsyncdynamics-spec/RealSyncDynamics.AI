@@ -110,6 +110,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Rollen, Team und Zugriff',
   },
   {
+    id: 'workflows',
+    label: 'Workflows',
+    icon: 'GitMerge',
+    route: '/app/workflows',
+    status: 'live',
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'DSGVO-Prozesse automatisieren (n8n-Integration)',
+  },
+  {
     id: 'agents',
     label: 'Agenten',
     icon: 'Bot',

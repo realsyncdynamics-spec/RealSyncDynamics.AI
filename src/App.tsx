@@ -451,6 +451,7 @@ function RoutesWithTracking() {
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
+      <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
       <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />

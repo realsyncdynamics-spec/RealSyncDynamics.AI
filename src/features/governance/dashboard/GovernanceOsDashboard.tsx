@@ -6,6 +6,7 @@
  * Zeigt das vollständige Modul-Landschaft und Health-Score.
  * Ohne Auth: Mockdaten + "Anmelden für Echtdaten"-Banner.
  */
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Globe, Cpu, AlertTriangle, FileCheck2, Activity,
@@ -13,6 +14,10 @@ import {
   TrendingUp, TrendingDown, Shield,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { countOpenIncidents } from '../incidentsApi';
+import { countPendingApprovals } from '../approvalsApi';
+import { countOpenDsrs } from '../dsrApi';
+import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 
 // ─── Typen ─────────────────────────────────────────────────────────────────
 
@@ -201,7 +206,8 @@ const EVIDENCE_TYPE_COLOR: Record<EvidenceType, string> = {
 
 // ─── Sub-Komponenten ────────────────────────────────────────────────────────
 
-function OsHeaderBar() {
+function OsHeaderBar({ tenantName }: { tenantName: string | null }) {
+  const dateStr = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   return (
     <div className="bg-obsidian-900 border-b border-titanium-900 px-6 py-4">
       <div className="flex items-center justify-between gap-4">
@@ -209,8 +215,12 @@ function OsHeaderBar() {
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-teal-400 font-mono text-xs whitespace-nowrap">● GOVERNANCE OS</span>
           <span className="text-titanium-900">|</span>
-          <span className="text-titanium-100 font-mono text-sm truncate">Atelier Nord GmbH</span>
-          <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
+          <span className="text-titanium-100 font-mono text-sm truncate">{tenantName ?? 'Demo Workspace'}</span>
+          {tenantName ? (
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
+          ) : (
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Demo</span>
+          )}
         </div>
 
         {/* Mitte */}
@@ -225,7 +235,7 @@ function OsHeaderBar() {
 
         {/* Rechts */}
         <div className="flex items-center gap-4 flex-shrink-0">
-          <span className="hidden sm:block text-titanium-400 font-mono text-xs">16.06.2026 · 07:45 UTC</span>
+          <span className="hidden sm:block text-titanium-400 font-mono text-xs">{dateStr}</span>
           <span className="text-red-400 font-mono text-xs whitespace-nowrap">4 Aktive Alerts</span>
           <span className="text-teal-400 font-mono text-xs flex items-center gap-1 whitespace-nowrap">
             <span className="animate-pulse">●</span> Monitoring aktiv
@@ -270,7 +280,7 @@ function MetricCard({ label, value, color, trend, trendValue, trendPositive, pro
   );
 }
 
-function KeyMetrics() {
+function KeyMetrics({ incidents, actions }: { incidents: number | null; actions: number | null }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
       <MetricCard
@@ -284,7 +294,7 @@ function KeyMetrics() {
       />
       <MetricCard
         label="Aktive Risiken"
-        value="24"
+        value={String(incidents ?? 24)}
         color="text-red-400"
         trend="down"
         trendValue="▼ –2 seit gestern"
@@ -292,7 +302,7 @@ function KeyMetrics() {
       />
       <MetricCard
         label="Offene Aktionen"
-        value="11"
+        value={String(actions ?? 11)}
         color="text-orange-400"
         trend="up"
         trendValue="▲ +4 seit gestern"
@@ -382,7 +392,27 @@ function EvidenceIcon({ type }: { type: EvidenceType }) {
   );
 }
 
-function RecentEvidence() {
+function formatRelativeTime(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 60) return `vor ${diffMin} Min.`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `vor ${diffH} Std.`;
+  const diffD = Math.floor(diffH / 24);
+  return `vor ${diffD} Tag${diffD !== 1 ? 'en' : ''}`;
+}
+
+function RecentEvidence({ events }: { events: DbGovernanceEvent[] | null }) {
+  const items: EvidenceItem[] = events !== null && events.length > 0
+    ? events.map((e) => ({
+        type: 'Scan' as EvidenceType,
+        title: e.title,
+        hash: (e.payload?.['hash'] as string | undefined) ?? `sha256:${e.id.slice(0, 8)}...`,
+        c2pa: true,
+        ts: formatRelativeTime(e.created_at),
+      }))
+    : RECENT_EVIDENCE;
+
   return (
     <div className="bg-obsidian-900 border border-titanium-900 flex flex-col">
       <div className="px-4 py-3 border-b border-titanium-900 flex items-center justify-between">
@@ -390,7 +420,7 @@ function RecentEvidence() {
         <span className="text-[10px] font-mono text-teal-400">C2PA</span>
       </div>
       <div className="flex-1 divide-y divide-titanium-900/60">
-        {RECENT_EVIDENCE.map((item, i) => (
+        {items.map((item, i) => (
           <div key={i} className="px-4 py-2.5 flex items-start gap-2 hover:bg-obsidian-800/40 transition-colors">
             <EvidenceIcon type={item.type} />
             <div className="flex-1 min-w-0">
@@ -425,7 +455,19 @@ const SEVERITY_TEXT: Record<RiskSeverity, string> = {
   Hoch: 'text-orange-400',
 };
 
-function ActiveRisks() {
+function ActiveRisks({ events }: { events: DbGovernanceEvent[] | null }) {
+  const risks: RiskItem[] = events !== null && events.length > 0
+    ? events
+        .filter((e) => e.risk_level === 'critical' || e.risk_level === 'high')
+        .slice(0, 5)
+        .map((e) => ({
+          severity: (e.risk_level === 'critical' ? 'Kritisch' : 'Hoch') as RiskSeverity,
+          title: e.title,
+          framework: e.vendor ?? 'DSGVO',
+          route: '/app/risks',
+        }))
+    : TOP_RISKS;
+
   return (
     <div className="bg-obsidian-900 border border-titanium-900 flex flex-col">
       <div className="px-4 py-3 border-b border-titanium-900 flex items-center justify-between">
@@ -433,7 +475,7 @@ function ActiveRisks() {
         <span className="text-[10px] font-mono text-red-400">3 Kritisch · 2 Hoch</span>
       </div>
       <div className="flex-1 divide-y divide-titanium-900/60">
-        {TOP_RISKS.map((risk, i) => (
+        {risks.map((risk, i) => (
           <Link
             key={i}
             to={risk.route}
@@ -463,23 +505,47 @@ function ActiveRisks() {
 // ─── Haupt-Komponente ───────────────────────────────────────────────────────
 
 export function GovernanceOsDashboard() {
-  const { activeTenantId } = useTenant();
+  const { activeTenantId, tenants } = useTenant();
+  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
+
+  const [liveIncidents, setLiveIncidents] = useState<number | null>(null);
+  const [liveActions, setLiveActions] = useState<number | null>(null);
+  const [liveEvents, setLiveEvents] = useState<DbGovernanceEvent[] | null>(null);
+
+  useEffect(() => {
+    if (!activeTenantId) {
+      setLiveIncidents(null);
+      setLiveActions(null);
+      setLiveEvents(null);
+      return;
+    }
+    Promise.all([
+      countOpenIncidents(activeTenantId),
+      countPendingApprovals(activeTenantId),
+      countOpenDsrs(activeTenantId),
+      fetchTenantEvents(activeTenantId, 5),
+    ]).then(([incidents, approvals, dsrs, events]) => {
+      setLiveIncidents(incidents);
+      setLiveActions(approvals + dsrs.total);
+      setLiveEvents(events);
+    }).catch(() => {});
+  }, [activeTenantId]);
 
   return (
     <div className="flex flex-col min-h-full bg-obsidian-950">
       {/* Row 1 — OS Header Bar */}
-      <OsHeaderBar />
+      <OsHeaderBar tenantName={tenantName} />
 
       {/* Row 2 — Key Metrics */}
-      <KeyMetrics />
+      <KeyMetrics incidents={liveIncidents} actions={liveActions} />
 
       {/* Row 3 — Module Launcher */}
       <ModuleLauncher />
 
       {/* Row 4 — Two Columns */}
       <div className="px-4 lg:px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RecentEvidence />
-        <ActiveRisks />
+        <RecentEvidence events={liveEvents} />
+        <ActiveRisks events={liveEvents} />
       </div>
 
       {/* Demo Banner */}

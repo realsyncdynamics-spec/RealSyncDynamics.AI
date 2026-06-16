@@ -6,6 +6,7 @@
  * Zeigt das vollständige Modul-Landschaft und Health-Score.
  * Ohne Auth: Mockdaten + "Anmelden für Echtdaten"-Banner.
  */
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Globe, Cpu, AlertTriangle, FileCheck2, Activity,
@@ -13,6 +14,9 @@ import {
   TrendingUp, TrendingDown, Shield,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { countOpenIncidents } from '../incidentsApi';
+import { countPendingApprovals } from '../approvalsApi';
+import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 
 // ─── Typen ─────────────────────────────────────────────────────────────────
 
@@ -201,7 +205,7 @@ const EVIDENCE_TYPE_COLOR: Record<EvidenceType, string> = {
 
 // ─── Sub-Komponenten ────────────────────────────────────────────────────────
 
-function OsHeaderBar() {
+function OsHeaderBar({ tenantName, dateLabel }: { tenantName: string; dateLabel: string }) {
   return (
     <div className="bg-obsidian-900 border-b border-titanium-900 px-6 py-4">
       <div className="flex items-center justify-between gap-4">
@@ -209,7 +213,7 @@ function OsHeaderBar() {
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-teal-400 font-mono text-xs whitespace-nowrap">● GOVERNANCE OS</span>
           <span className="text-titanium-900">|</span>
-          <span className="text-titanium-100 font-mono text-sm truncate">Atelier Nord GmbH</span>
+          <span className="text-titanium-100 font-mono text-sm truncate">{tenantName}</span>
           <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
         </div>
 
@@ -225,7 +229,7 @@ function OsHeaderBar() {
 
         {/* Rechts */}
         <div className="flex items-center gap-4 flex-shrink-0">
-          <span className="hidden sm:block text-titanium-400 font-mono text-xs">16.06.2026 · 07:45 UTC</span>
+          <span className="hidden sm:block text-titanium-400 font-mono text-xs">{dateLabel}</span>
           <span className="text-red-400 font-mono text-xs whitespace-nowrap">4 Aktive Alerts</span>
           <span className="text-teal-400 font-mono text-xs flex items-center gap-1 whitespace-nowrap">
             <span className="animate-pulse">●</span> Monitoring aktiv
@@ -270,7 +274,7 @@ function MetricCard({ label, value, color, trend, trendValue, trendPositive, pro
   );
 }
 
-function KeyMetrics() {
+function KeyMetrics({ activeRisks, openActions }: { activeRisks: number | null; openActions: number | null }) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900">
       <MetricCard
@@ -284,7 +288,7 @@ function KeyMetrics() {
       />
       <MetricCard
         label="Aktive Risiken"
-        value="24"
+        value={activeRisks !== null ? String(activeRisks) : '24'}
         color="text-red-400"
         trend="down"
         trendValue="▼ –2 seit gestern"
@@ -292,7 +296,7 @@ function KeyMetrics() {
       />
       <MetricCard
         label="Offene Aktionen"
-        value="11"
+        value={openActions !== null ? String(openActions) : '11'}
         color="text-orange-400"
         trend="up"
         trendValue="▲ +4 seit gestern"
@@ -382,7 +386,7 @@ function EvidenceIcon({ type }: { type: EvidenceType }) {
   );
 }
 
-function RecentEvidence() {
+function RecentEvidence({ items }: { items: EvidenceItem[] }) {
   return (
     <div className="bg-obsidian-900 border border-titanium-900 flex flex-col">
       <div className="px-4 py-3 border-b border-titanium-900 flex items-center justify-between">
@@ -390,7 +394,7 @@ function RecentEvidence() {
         <span className="text-[10px] font-mono text-teal-400">C2PA</span>
       </div>
       <div className="flex-1 divide-y divide-titanium-900/60">
-        {RECENT_EVIDENCE.map((item, i) => (
+        {items.map((item, i) => (
           <div key={i} className="px-4 py-2.5 flex items-start gap-2 hover:bg-obsidian-800/40 transition-colors">
             <EvidenceIcon type={item.type} />
             <div className="flex-1 min-w-0">
@@ -460,25 +464,87 @@ function ActiveRisks() {
   );
 }
 
+// ─── Helfer (Live-Daten) ─────────────────────────────────────────────────────
+
+function relativeTime(iso: string): string {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'gerade eben';
+  if (min < 60) return `vor ${min} Min.`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `vor ${h} Std.`;
+  const d = Math.round(h / 24);
+  return `vor ${d} Tag${d === 1 ? '' : 'en'}`;
+}
+
+function eventToEvidence(ev: DbGovernanceEvent): EvidenceItem {
+  const rawHash = ev.payload?.content_hash;
+  const hash = typeof rawHash === 'string'
+    ? rawHash
+    : `sha256:${ev.id.slice(0, 4)}…${ev.id.slice(-4)}`;
+  const et = (ev.event_type ?? '').toLowerCase();
+  const type: EvidenceType = ev.model_name ? 'AI'
+    : et.includes('document') ? 'Document'
+    : et.includes('screenshot') ? 'Screenshot'
+    : et.includes('network') ? 'Network'
+    : 'Scan';
+  return { type, title: ev.title, hash, c2pa: true, ts: relativeTime(ev.created_at) };
+}
+
 // ─── Haupt-Komponente ───────────────────────────────────────────────────────
 
 export function GovernanceOsDashboard() {
-  const { activeTenantId } = useTenant();
+  const { activeTenantId, tenants } = useTenant();
+  const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? 'Atelier Nord GmbH';
+
+  const [activeRisks, setActiveRisks] = useState<number | null>(null);
+  const [openActions, setOpenActions] = useState<number | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceItem[]>(RECENT_EVIDENCE);
+
+  useEffect(() => {
+    if (!activeTenantId) {
+      setActiveRisks(null);
+      setOpenActions(null);
+      setEvidence(RECENT_EVIDENCE);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [incidents, approvals, events] = await Promise.all([
+          countOpenIncidents(activeTenantId),
+          countPendingApprovals(activeTenantId),
+          fetchTenantEvents(activeTenantId, 5),
+        ]);
+        if (cancelled) return;
+        setActiveRisks(incidents);
+        setOpenActions(approvals);
+        setEvidence(events.length > 0 ? events.map(eventToEvidence) : RECENT_EVIDENCE);
+      } catch {
+        // Fallback bleibt Mockdaten — Dashboard zeigt weiterhin etwas an.
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
+
+  const dateLabel = `${new Date().toLocaleString('de-DE', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+  })} UTC`;
 
   return (
     <div className="flex flex-col min-h-full bg-obsidian-950">
       {/* Row 1 — OS Header Bar */}
-      <OsHeaderBar />
+      <OsHeaderBar tenantName={tenantName} dateLabel={dateLabel} />
 
       {/* Row 2 — Key Metrics */}
-      <KeyMetrics />
+      <KeyMetrics activeRisks={activeRisks} openActions={openActions} />
 
       {/* Row 3 — Module Launcher */}
       <ModuleLauncher />
 
       {/* Row 4 — Two Columns */}
       <div className="px-4 lg:px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <RecentEvidence />
+        <RecentEvidence items={evidence} />
         <ActiveRisks />
       </div>
 

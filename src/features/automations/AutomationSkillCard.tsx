@@ -20,10 +20,11 @@ const STATUS_CLS: Record<AutomationSkillStatus, string> = {
 
 const PLAN_LABEL: Record<AutomationSkill['planRequired'], string> = {
   free: 'Free',
-  bronze: 'Bronze',
-  silver: 'Silver',
-  gold: 'Gold',
-  enterprise_public: 'Enterprise',
+  starter: 'Starter',
+  growth: 'Growth',
+  agency: 'Agency',
+  scale: 'Scale',
+  enterprise: 'Enterprise',
 };
 
 export function AutomationSkillStatusBadge({ status }: { status: AutomationSkillStatus }) {

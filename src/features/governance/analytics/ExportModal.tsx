@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Download, Loader } from 'lucide-react';
-import { useTenant } from '../../core/access/TenantProvider';
+import { useTenant } from '../../../core/access/TenantProvider';
 import { exportKpiData } from './analyticsApi';
 import type { AnalyticsExportRequest } from './types';
 

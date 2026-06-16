@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { AlertCircle, Download } from 'lucide-react';
-import { useTenant } from '../../core/access/TenantProvider';
+import { useTenant } from '../../../core/access/TenantProvider';
 import {
   fetchKpiRange,
   fetchLatestKpi,

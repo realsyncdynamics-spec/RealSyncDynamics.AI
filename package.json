@@ -19,6 +19,7 @@
     "check:edge-functions": "node scripts/check-edge-function-drift.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
     "qa:governance": "tsx scripts/qa-governance.ts",
+    "qa:governance-test": "tsx scripts/qa-governance-test.ts",
     "qa:smoke": "tsx scripts/qa-smoke-test.ts",
     "qa:load": "tsx scripts/qa-load-test.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",

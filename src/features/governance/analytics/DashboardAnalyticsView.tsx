@@ -15,7 +15,7 @@ import { ExportModal } from './ExportModal';
 import { DATE_RANGE_PRESETS } from './types';
 
 export function DashboardAnalyticsView() {
-  const { activeTenant } = useTenant();
+  const { activeTenantId } = useTenant();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [snapshots, setSnapshots] = useState<DbGovernanceKpiSnapshot[]>([]);
@@ -32,7 +32,7 @@ export function DashboardAnalyticsView() {
 
   // Fetch data on mount and when filters change
   useEffect(() => {
-    if (!activeTenant?.id) return;
+    if (!activeTenantId) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -41,7 +41,7 @@ export function DashboardAnalyticsView() {
       try {
         const start = performance.now();
         const data = await fetchKpiRange(
-          activeTenant.id,
+          activeTenantId,
           filters.dateRange.start,
           filters.dateRange.end
         );
@@ -61,7 +61,7 @@ export function DashboardAnalyticsView() {
     };
 
     fetchData();
-  }, [activeTenant?.id, filters.dateRange]);
+  }, [activeTenantId, filters.dateRange]);
 
   // Get latest metrics for KPI cards
   const latestMetrics = useMemo(() => {
@@ -75,7 +75,7 @@ export function DashboardAnalyticsView() {
     return snapshotToMetrics(snapshots[snapshots.length - 1]);
   }, [snapshots]);
 
-  if (!activeTenant?.id) {
+  if (!activeTenantId) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center text-titanium-400">

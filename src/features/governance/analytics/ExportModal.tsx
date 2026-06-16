@@ -10,7 +10,7 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ open, onOpenChange }: ExportModalProps) {
-  const { activeTenant } = useTenant();
+  const { activeTenantId } = useTenant();
   const [format, setFormat] = useState<'csv' | 'pdf'>('csv');
   const [includeCharts, setIncludeCharts] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,7 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
   const [progress, setProgress] = useState(0);
 
   const handleExport = async () => {
-    if (!activeTenant?.id) return;
+    if (!activeTenantId) return;
 
     setLoading(true);
     setError(null);
@@ -32,7 +32,7 @@ export function ExportModal({ open, onOpenChange }: ExportModalProps) {
 
       const request: AnalyticsExportRequest = {
         format,
-        tenantId: activeTenant.id,
+        tenantId: activeTenantId,
         dateRange: {
           start: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],

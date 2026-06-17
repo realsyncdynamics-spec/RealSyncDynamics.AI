@@ -31,6 +31,8 @@ Eine frühere Bestandsaufnahme stufte 25 Functions als „verwaist" ein, weil si
 
 Beide Tabellen existierten bereits (`20260515200000_dsr_tracker.sql`, `20260515500000_vendors.sql`) — keine neue Migration nötig.
 
+> **Sicherheits-Befund + Fix:** Beide Functions liefen bereits manuell deployt in Prod, aber mit `verify_jwt=false` (am Gateway ohne JWT-Prüfung erreichbar) und ohne Quelle im Repo. Das ist genau die Art Drift, die der Drift-Guard fängt. Behoben: Quelle ins Repo committet **und** beide Functions mit dem sicheren Default `verify_jwt=true` neu deployt (Projekt `RealSyncDynamicsLive`, je v12). Live-Stand und Repo stimmen nun überein.
+
 ## Aktive Functions nach Auslöser
 
 **Frontend (invoke/fetch):** ai-act-risk-inventory, ai-gateway, ai-invoke, classify-document, cookie-scan, evidence-export, evidence-vault-export, gdpr-audit, gdpr-export, gdpr-delete, governance-agent, governance-analytics-export, governance-approvals, governance-connectors, governance-dpias, governance-dsr, governance-incidents, governance-keys, governance-remediate, governance-resources, governance-risk-score, governance-vendors, governance-webhooks, kodee, kodee-advise, kodee-diagnose, kodee-onboard, mfa-recovery-redeem, remediation-agent, stripe-checkout, stripe-portal, tenant-invite, tenant-members, usage-increment

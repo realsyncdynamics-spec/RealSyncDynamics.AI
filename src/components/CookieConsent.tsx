@@ -92,12 +92,12 @@ export function CookieConsent() {
                       Color-Differenzierung bleibt als semantisches Cue, Volumen ist
                       gleich. Verifiziert in e2e/cookie-consent.spec.ts. */}
                   <button onClick={acceptAll}
-                    className="px-3 py-1.5 min-w-[8rem] bg-security-500 hover:bg-security-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
+                    className="flex-1 px-3 py-1.5 min-w-[8rem] bg-security-500 hover:bg-security-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-accept-all">
                     Alles akzeptieren
                   </button>
                   <button onClick={acceptNecessary}
-                    className="px-3 py-1.5 min-w-[8rem] bg-titanium-700 hover:bg-titanium-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
+                    className="flex-1 px-3 py-1.5 min-w-[8rem] bg-titanium-700 hover:bg-titanium-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-reject-all">
                     Alle ablehnen
                   </button>

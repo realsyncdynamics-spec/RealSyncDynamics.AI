@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { label: 'Sicherheit',    to: '/sicherheit' },
   { label: 'Preise',        to: '/pricing' },
   { label: 'Dokumentation', to: '/docs' },
-  { label: 'Login',         to: '/welcome' },
+  { label: 'Login',         to: '/login' },
 ] as const;
 
 export function Navbar() {

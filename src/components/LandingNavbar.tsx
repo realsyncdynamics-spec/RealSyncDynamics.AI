@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Automation Skills', to: '/#automation' },
   { label: 'Preise',           to: '/#preise' },
   { label: 'FAQ',              to: '/#faq' },
-  { label: 'Login',            to: '/welcome' },
+  { label: 'Login',            to: '/login' },
 ] as const;
 
 export function LandingNavbar() {

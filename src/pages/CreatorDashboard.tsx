@@ -6,7 +6,7 @@ import {
   LayoutPanelLeft, CheckCircle2, Shield, Plus,
   MessageSquare, FolderKanban, Star, Copy, Save,
   AlertTriangle, X, Search, Globe, Library, UploadCloud,
-  Server, Receipt, Boxes,
+  Server, Receipt, Boxes, Lock,
 } from 'lucide-react';
 import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gateway';
 import Markdown from 'react-markdown';
@@ -274,19 +274,22 @@ export function CreatorDashboard() {
               {/* Self-Service Schnellaktionen — keine Kontakt-/Beratungsaktionen */}
               <div className="shrink-0 px-4 sm:px-6 py-2 border-b border-titanium-900/50 flex flex-wrap gap-2">
                 {[
-                  { Icon: Globe,       label: 'Website hinzufügen',   to: '/audit?source=dashboard-add' },
-                  { Icon: Search,      label: 'Audit starten',        to: '/audit-pro?source=dashboard-scan' },
-                  { Icon: ShieldCheck, label: 'Monitoring aktivieren', to: '/app/monitoring?source=dashboard' },
-                  { Icon: FileText,    label: 'Report herunterladen', to: '/governance/reports?source=dashboard-report' },
-                  { Icon: Shield,      label: 'Evidence exportieren', to: '/governance/reports' },
-                  { Icon: CreditCard,  label: 'Jetzt upgraden',       to: '/pricing?source=dashboard-upgrade' },
-                ].map(({ Icon, label, to }) => (
+                  { Icon: Globe,       label: 'Website hinzufügen',    to: '/audit?source=dashboard-add' },
+                  { Icon: Search,      label: 'Audit starten',         to: '/governance/scans?source=dashboard-scan' },
+                  { Icon: ShieldCheck, label: 'Monitoring aktivieren', to: '/pricing?source=dashboard-monitoring', locked: true },
+                  { Icon: FileText,    label: 'Report herunterladen',  to: '/governance/reports?source=dashboard-report' },
+                  { Icon: Shield,      label: 'Evidence exportieren',  to: '/governance/reports' },
+                  { Icon: CreditCard,  label: 'Jetzt upgraden',        to: '/pricing?source=dashboard-upgrade' },
+                ].map(({ Icon, label, to, locked }) => (
                   <Link
                     key={label}
                     to={to}
+                    title={locked ? 'Verfügbar ab einem höheren Plan' : undefined}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-none bg-obsidian-800 hover:bg-titanium-900 text-titanium-200 hover:text-titanium-50 text-xs font-semibold border border-titanium-900 transition-colors"
                   >
-                    <Icon className="h-3.5 w-3.5 text-security-400" /> {label}
+                    <Icon className="h-3.5 w-3.5 text-security-400" />
+                    {label}
+                    {locked && <Lock className="h-3 w-3 text-titanium-500 ml-0.5" />}
                   </Link>
                 ))}
               </div>

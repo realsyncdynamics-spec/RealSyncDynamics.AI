@@ -628,7 +628,7 @@ function Footer() {
         </div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[12px] border-t border-titanium-900 pt-6">
           <div className="font-mono uppercase tracking-[0.2em]">
-            RealSyncDynamics.AI · EU-Frankfurt
+            Governance OS · RealSyncDynamics.AI · EU-Frankfurt
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2">
             <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>

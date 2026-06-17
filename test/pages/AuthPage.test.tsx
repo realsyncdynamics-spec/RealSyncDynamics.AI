@@ -27,6 +27,17 @@ describe('AuthPage', () => {
     expect(text).toContain('Passwort');
     expect(text).toContain('Anmelden');
     expect(text).toContain('Passwort vergessen?');
+    expect(text).toContain('Angemeldet bleiben');
+  });
+
+  it('bietet einen Passwort-anzeigen-Umschalter', () => {
+    const result = render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthPage mode="login" />
+      </MemoryRouter>,
+    );
+    // Auge-Toggle ist per aria-label auffindbar
+    expect(result.container.querySelector('[aria-label="Passwort anzeigen"]')).not.toBeNull();
   });
 
   it('bietet Google als OAuth-Option an', () => {

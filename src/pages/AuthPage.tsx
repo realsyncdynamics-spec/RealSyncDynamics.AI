@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2, AlertTriangle, ArrowRight, Mail, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowRight, Mail, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
-import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { getSupabase, isSupabaseConfigured, setRememberMe } from '../lib/supabase';
 import { getAuthRedirectUrl } from '../lib/auth-redirect';
 
 /**
@@ -37,6 +37,8 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -76,6 +78,10 @@ export function AuthPage({ mode }: { mode: Mode }) {
     setInfo(null);
     if (!email || !password) return;
     if (!ensureConfigured()) return;
+
+    // Session-Persistenz vor dem Login festlegen (steuert local- vs.
+    // sessionStorage im Supabase-Client).
+    setRememberMe(remember);
 
     setBusy(true);
     try {
@@ -197,6 +203,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
               </label>
               <input
                 id="auth-email"
+                name="email"
                 type="email"
                 required
                 autoComplete="email"
@@ -222,18 +229,40 @@ export function AuthPage({ mode }: { mode: Mode }) {
                   </button>
                 )}
               </div>
-              <input
-                id="auth-password"
-                type="password"
-                required
-                minLength={isRegister ? 8 : undefined}
-                autoComplete={isRegister ? 'new-password' : 'current-password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={isRegister ? 'Mindestens 8 Zeichen' : '••••••••'}
-                className={inputClass}
-              />
+              <div className="relative">
+                <input
+                  id="auth-password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={isRegister ? 8 : undefined}
+                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={isRegister ? 'Mindestens 8 Zeichen' : '••••••••'}
+                  className={`${inputClass} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                  aria-pressed={showPassword}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-titanium-500 hover:text-titanium-200 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
+
+            <label className="flex items-center gap-2.5 select-none cursor-pointer">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="h-4 w-4 rounded-none border border-titanium-700 bg-obsidian-900 accent-ai-cyan-500"
+              />
+              <span className="text-sm text-titanium-400">Angemeldet bleiben</span>
+            </label>
 
             <button
               type="submit"

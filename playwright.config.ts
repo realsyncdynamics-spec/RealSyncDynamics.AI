@@ -15,11 +15,6 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
-  // governance/inspector-panel.spec.ts braucht eine eingeloggte Session mit
-  // Tenant-Daten (siehe Datei-Header) — im CI-Preview-Server (kein Login)
-  // läuft jeder Test in ein Timeout. Lokal mit authentifizierter Session
-  // weiterhin gezielt ausführbar (--grep "Inspector Panel").
-  testIgnore: process.env.CI ? ['**/governance/**'] : undefined,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // Inspector-panel tests require an authenticated session with real data —

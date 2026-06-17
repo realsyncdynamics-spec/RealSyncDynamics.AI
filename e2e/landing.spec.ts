@@ -17,19 +17,20 @@ test('Landing renders the self-service governance-OS narrative + CTAs', async ({
     page.getByRole('heading', { name: /Governance OS/i }),
   ).toBeVisible();
 
-  // EU-Sovereign-Beschreibung
+  // EU-Sovereign-Beschreibung (Hero-Subline „… EU-souveränen Oberfläche")
   await expect(
-    page.getByText(/EU-souveräne SaaS-Plattform/i),
+    page.getByText(/EU-souverän/i).first(),
   ).toBeVisible();
 
-  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app)
+  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app) — kommt im
+  // Hero und im Footer vor, daher .first().
   await expect(
-    page.getByRole('button', { name: /Dashboard öffnen/i }),
+    page.getByRole('button', { name: /Dashboard öffnen/i }).first(),
   ).toBeVisible();
 
-  // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)
+  // Sekundärer CTA „Kostenlos prüfen" (button, navigiert zu /audit)
   await expect(
-    page.getByRole('button', { name: /Audit starten/i }),
+    page.getByRole('button', { name: /Kostenlos prüfen/i }),
   ).toBeVisible();
 
   // Feature-Kacheln sichtbar

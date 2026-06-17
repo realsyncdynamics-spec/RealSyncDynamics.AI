@@ -255,7 +255,7 @@ const MECHANICS_STEPS = [
 
 function ProductMechanics() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+    <section className="border-b border-slate-100 bg-white px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-5xl mx-auto">
         <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3 text-center">
           Produktmechanik

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X, FileCheck2, FileBarChart2 } from 'lucide-react';
+import { Sparkles, Menu, X, FileCheck2, FileBarChart2, Command } from 'lucide-react';
 import { GovernanceAddressBar } from './GovernanceAddressBar';
+import { GovernanceTenantSwitcher } from './GovernanceTenantSwitcher';
 
 interface BrowserTopBarProps {
   mobileMenuOpen: boolean;
@@ -8,6 +9,7 @@ interface BrowserTopBarProps {
   onOpenAssistant: () => void;
   onLoadUrl: (url: string) => void;
   activeEmbedUrl?: string;
+  onOpenCommandPalette: () => void;
 }
 
 export function BrowserTopBar({
@@ -16,6 +18,7 @@ export function BrowserTopBar({
   onOpenAssistant,
   onLoadUrl,
   activeEmbedUrl,
+  onOpenCommandPalette,
 }: BrowserTopBarProps) {
   const navigate = useNavigate();
 
@@ -45,11 +48,23 @@ export function BrowserTopBar({
         </div>
       </Link>
 
+      {/* Tenant Switcher */}
+      <GovernanceTenantSwitcher />
+
       {/* Address Bar — onLoadUrl für echte URLs, sonst Audit-Navigation */}
       <GovernanceAddressBar onLoadUrl={onLoadUrl} activeUrl={activeEmbedUrl} />
 
       {/* Rechte CTA-Buttons */}
       <div className="flex items-center gap-1.5 shrink-0">
+        {/* ⌘K Command Palette */}
+        <button
+          onClick={onOpenCommandPalette}
+          title="Befehlspalette öffnen (⌘K)"
+          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono text-titanium-400 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-200 transition-colors"
+        >
+          <Command className="h-3 w-3" />
+          <span className="hidden lg:inline text-[10px]">⌘K</span>
+        </button>
         <button
           onClick={() => navigate('/audit')}
           className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-200 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-50 transition-colors"

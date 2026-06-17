@@ -3,7 +3,7 @@
 // Layout: TopBar → Tabs → [Canvas + GovernanceChatSidebar] → MobileBottomNav → StatusBar
 // Embedded Browser: Address-Bar-Eingabe einer echten URL öffnet EmbeddedBrowserCanvas
 // über dem Canvas; Chat-Sidebar bleibt seitlich sichtbar.
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrowserTopBar } from './BrowserTopBar';
 import { GovernanceTabs } from './GovernanceTabs';
@@ -12,6 +12,7 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { GovernanceCommandPalette } from './GovernanceCommandPalette';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -22,6 +23,19 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [embeddedUrl, setEmbeddedUrl] = useState<string | null>(null);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // ⌘K / Ctrl+K öffnet die Befehlspalette
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen((v) => !v);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   const handleLoadUrl = (url: string) => setEmbeddedUrl(url);
   const handleCloseEmbed = () => setEmbeddedUrl(null);
@@ -38,6 +52,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         onOpenAssistant={() => setAssistantOpen((v) => !v)}
         onLoadUrl={handleLoadUrl}
         activeEmbedUrl={embeddedUrl ?? undefined}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
       />
 
       <div className="hidden lg:block">
@@ -67,6 +82,11 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
       <div className="hidden lg:block">
         <GovernanceStatusBar />
       </div>
+
+      <GovernanceCommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+      />
     </div>
   );
 }

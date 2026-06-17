@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, GitMerge, Plus, Play, Pause, ExternalLink,
   CheckCircle2, AlertTriangle, Loader2, History, Activity,
-  Lock, Trash2, ChevronDown, ChevronRight,
+  Lock, Trash2, ChevronDown, ChevronRight, Link2, X,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -168,60 +168,6 @@ function WorkflowList({ tenantId }: { tenantId: string }) {
     await load();
   }
 
-  async function bindN8n(wf: Workflow) {
-    const id = prompt(
-      `n8n-Workflow-ID eintragen.\n\n` +
-      `Anlegen in n8n: ${N8N_BASE}\n` +
-      `Im n8n-Editor → URL enthält die ID nach /workflow/...`,
-      wf.n8n_workflow_id ?? '',
-    );
-    if (!id) return;
-    const { error: e } = await getSupabase()
-      .from('workflows').update({ n8n_workflow_id: id.trim() })
-      .eq('id', wf.id);
-    if (e) { setError(e.message); return; }
-    await load();
-  }
-
-  async function runNow(wf: Workflow) {
-    if (!wf.n8n_workflow_id) {
-      alert('Erst an einen n8n-Workflow binden ("n8n"-Button).');
-      return;
-    }
-    const sb = getSupabase();
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) return;
-    const resp = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/workflow-trigger`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          workflow_id: wf.id,
-          input: {},
-        }),
-      },
-    );
-    const body = await resp.json();
-    if (!resp.ok) {
-      alert(`Fehler: ${body.error?.message ?? resp.statusText}`);
-    } else {
-      alert(`Run gestartet: ${body.run_id}`);
-      await load();
-    }
-  }
-
-  async function deleteWorkflow(wf: Workflow) {
-    if (!confirm(`"${wf.title}" wirklich löschen?\nAlle Run-Einträge werden mitgelöscht.`)) return;
-    const { error: e } = await getSupabase().from('workflows').delete().eq('id', wf.id);
-    if (e) { setError(e.message); return; }
-    await load();
-  }
-
   if (error) return <ErrorBox msg={error} />;
   if (items === null) return <Loading />;
 
@@ -269,10 +215,9 @@ function WorkflowList({ tenantId }: { tenantId: string }) {
           {items.map((wf) => (
             <WorkflowRow
               key={wf.id} wf={wf}
+              tenantId={tenantId}
               onToggle={() => toggleActive(wf)}
-              onBind={() => bindN8n(wf)}
-              onRun={() => runNow(wf)}
-              onDelete={() => deleteWorkflow(wf)}
+              onRefresh={load}
             />
           ))}
         </div>
@@ -282,13 +227,73 @@ function WorkflowList({ tenantId }: { tenantId: string }) {
 }
 
 function WorkflowRow({
-  wf, onToggle, onBind, onRun, onDelete,
+  wf, tenantId, onToggle, onRefresh,
 }: {
   wf: Workflow;
-  onToggle: () => void; onBind: () => void; onRun: () => void; onDelete: () => void;
+  tenantId: string;
+  onToggle: () => void;
+  onRefresh: () => Promise<void>;
 }) {
+  const [bindOpen, setBindOpen] = useState(false);
+  const [bindInput, setBindInput] = useState(wf.n8n_workflow_id ?? '');
+  const [bindSaving, setBindSaving] = useState(false);
+  const [bindError, setBindError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [runState, setRunState] = useState<'idle' | 'running' | 'ok' | 'error'>('idle');
+  const [runMsg, setRunMsg] = useState('');
+
+  async function saveBind() {
+    if (!bindInput.trim()) return;
+    setBindSaving(true); setBindError(null);
+    const { error: e } = await getSupabase()
+      .from('workflows').update({ n8n_workflow_id: bindInput.trim() })
+      .eq('id', wf.id);
+    setBindSaving(false);
+    if (e) { setBindError(e.message); return; }
+    setBindOpen(false);
+    await onRefresh();
+  }
+
+  async function deleteWorkflow() {
+    const { error: e } = await getSupabase().from('workflows').delete().eq('id', wf.id);
+    if (e) { setDeleteConfirm(false); return; }
+    await onRefresh();
+  }
+
+  async function runNow() {
+    setRunState('running'); setRunMsg('');
+    const { data: { session } } = await getSupabase().auth.getSession();
+    if (!session) { setRunState('error'); setRunMsg('Nicht eingeloggt'); return; }
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/workflow-trigger`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ tenant_id: tenantId, workflow_id: wf.id, input: {} }),
+        },
+      );
+      const body = await resp.json();
+      if (!resp.ok) {
+        setRunState('error');
+        setRunMsg(body.error?.message ?? resp.statusText);
+      } else {
+        setRunState('ok');
+        setRunMsg(body.run_id ?? 'gestartet');
+        await onRefresh();
+      }
+    } catch (err) {
+      setRunState('error');
+      setRunMsg(err instanceof Error ? err.message : 'Netzwerkfehler');
+    }
+    setTimeout(() => setRunState('idle'), 5000);
+  }
+
   return (
-    <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
+    <div className="bg-obsidian-900 border border-titanium-900 rounded-none p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -298,7 +303,7 @@ function WorkflowRow({
               : <span className="text-[10px] font-bold uppercase text-titanium-500 bg-obsidian-950 px-1.5 py-0.5">pausiert</span>}
           </div>
           {wf.description && <div className="text-xs text-titanium-400 mb-2 leading-relaxed">{wf.description}</div>}
-          <div className="flex items-center gap-4 text-[11px] text-titanium-500 font-mono">
+          <div className="flex items-center flex-wrap gap-3 text-[11px] text-titanium-500 font-mono">
             <span>v{wf.version}</span>
             <span>{wf.run_count} Runs</span>
             {wf.last_run_at
@@ -312,27 +317,84 @@ function WorkflowRow({
               : <span className="text-amber-400">⚠ nicht verknüpft</span>}
           </div>
         </div>
+
         <div className="flex items-center gap-1.5 shrink-0">
           {wf.n8n_workflow_id && (
-            <button onClick={onRun} title="Run now"
-              className="p-2 bg-security-500 hover:bg-security-600 text-white rounded-none">
-              <Play className="h-3.5 w-3.5" />
+            <button onClick={runNow} disabled={runState === 'running'} title="Jetzt ausführen"
+              className="p-2 bg-security-500 hover:bg-security-600 disabled:opacity-50 text-white rounded-none">
+              {runState === 'running'
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Play className="h-3.5 w-3.5" />}
             </button>
           )}
           <button onClick={onToggle} title={wf.is_active ? 'Pausieren' : 'Aktivieren'}
             className="p-2 bg-obsidian-950 border border-titanium-900 hover:bg-obsidian-800 rounded-none">
             {wf.is_active ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
           </button>
-          <button onClick={onBind} title="n8n-ID setzen"
-            className="p-2 bg-obsidian-950 border border-titanium-900 hover:bg-obsidian-800 rounded-none text-xs font-bold">
-            n8n
+          <button onClick={() => { setBindOpen(!bindOpen); setBindInput(wf.n8n_workflow_id ?? ''); setBindError(null); }}
+            title="n8n-ID verknüpfen"
+            className="p-2 bg-obsidian-950 border border-titanium-900 hover:bg-obsidian-800 rounded-none">
+            <Link2 className="h-3.5 w-3.5" />
           </button>
-          <button onClick={onDelete} title="Löschen"
-            className="p-2 bg-obsidian-950 border border-red-900/50 hover:bg-red-950/30 text-red-400 rounded-none">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          {!deleteConfirm ? (
+            <button onClick={() => setDeleteConfirm(true)} title="Löschen"
+              className="p-2 bg-obsidian-950 border border-red-900/50 hover:bg-red-950/30 text-red-400 rounded-none">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-red-300">Sicher?</span>
+              <button onClick={deleteWorkflow}
+                className="px-2 py-1 text-[11px] bg-red-700 hover:bg-red-600 text-white rounded-none font-bold">Ja</button>
+              <button onClick={() => setDeleteConfirm(false)}
+                className="p-1 text-titanium-400 hover:text-titanium-200 rounded-none">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {bindOpen && (
+        <div className="border-t border-titanium-900 pt-3 space-y-2">
+          <div className="text-[11px] text-titanium-400 font-mono uppercase tracking-wider">
+            n8n-Workflow-ID —{' '}
+            <a href={N8N_BASE} target="_blank" rel="noreferrer" className="text-security-400 hover:underline">
+              n8n öffnen <ExternalLink className="h-2.5 w-2.5 inline" />
+            </a>
+            {' '}· Im Editor: URL enthält ID nach <code>/workflow/</code>
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={bindInput}
+              onChange={(e) => setBindInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && saveBind()}
+              placeholder="z. B. AbCdEfGhIjKlMnOp"
+              className="flex-1 bg-obsidian-950 border border-titanium-900 focus:border-security-500 px-3 py-1.5 text-sm rounded-none outline-none font-mono"
+            />
+            <button onClick={saveBind} disabled={bindSaving || !bindInput.trim()}
+              className="px-3 py-1.5 bg-security-500 hover:bg-security-600 disabled:opacity-50 text-white text-xs font-bold rounded-none">
+              {bindSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Speichern'}
+            </button>
+            <button onClick={() => setBindOpen(false)}
+              className="p-1.5 text-titanium-400 hover:text-titanium-200 rounded-none">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {bindError && <div className="text-xs text-red-300">{bindError}</div>}
+        </div>
+      )}
+
+      {runState === 'ok' && (
+        <div className="text-xs text-emerald-400 font-mono border-t border-titanium-900 pt-2">
+          ✓ Run gestartet · {runMsg}
+        </div>
+      )}
+      {runState === 'error' && (
+        <div className="text-xs text-red-300 font-mono border-t border-titanium-900 pt-2">
+          ✗ {runMsg}
+        </div>
+      )}
     </div>
   );
 }

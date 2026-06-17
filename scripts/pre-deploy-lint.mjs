@@ -256,6 +256,18 @@ const LEGACY_FILENAME_ALLOWLIST = new Set([
   '20260510_ai_governance_core.sql',
 ]);
 
+// Bereits gemergte Migrationen, die sich (durch parallel entwickelte Branches)
+// einen Zeitstempel teilen. Sie liegen unveränderlich in der Historie und sind
+// idempotent/no-op bzw. durch die kanonischen Dateien abgedeckt; ein Umbenennen
+// gemergter Migrationen birgt Re-Apply-Risiken in Produktion. Daher werden genau
+// diese Dateien von der Strikt-monoton-Prüfung ausgenommen. Die Prüfung bleibt
+// für ALLE neuen Migrationen scharf — diese Liste wird bewusst nicht erweitert.
+const STAMP_COLLISION_ALLOWLIST = new Set([
+  '20260624000000_automation_skills_runs.sql',
+  '20260624000000_governance_os_runtime.sql',
+  '20260624000000_stripe_live_price_ids.sql',
+]);
+
 function lintMigrations() {
   const migDir = join(__root, 'supabase/migrations');
   if (!existsSync(migDir)) {
@@ -288,6 +300,12 @@ function lintMigrations() {
     const a = stamps[i - 1];
     const b = stamps[i];
     if (b.stamp <= a.stamp) {
+      if (STAMP_COLLISION_ALLOWLIST.has(b.file)) {
+        push('info', 'migration-order-known-collision',
+          `${b.file} teilt sich Zeitstempel ${b.stamp} mit ${a.file} (bekannte, gemergte Kollision — siehe STAMP_COLLISION_ALLOWLIST)`,
+          `supabase/migrations/${b.file}`);
+        continue;
+      }
       push('error', 'migration-order',
         `migration ${b.file} stamp ${b.stamp} is not strictly greater than predecessor ${a.file} (${a.stamp})`,
         `supabase/migrations/${b.file}`);

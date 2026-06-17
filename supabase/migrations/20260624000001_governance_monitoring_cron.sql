@@ -19,7 +19,7 @@ SELECT cron.schedule(
       body    := '{}'::jsonb
     )
   $$
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);
 
 -- Stündlicher Scan für hourly-Quellen um :15 jeder Stunde
 SELECT cron.schedule(
@@ -35,6 +35,6 @@ SELECT cron.schedule(
       body    := '{"frequency_filter": "hourly"}'::jsonb
     )
   $$
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);
 
 COMMIT;

@@ -2,9 +2,12 @@
 // 24/7 DSGVO & EU AI Act Governance Operating System
 // Abschnitte: Header + Metriken · Asset-Status (Tabs) · Alerts + Regeln · Live Feed
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MonitoringSurface } from '../../../pages/MonitoringPage';
+import { useTenant } from '../../../core/access/TenantProvider';
+import { fetchTenantAssets, fetchTenantEvents } from '../governanceApi';
+import { countOpenIncidents } from '../incidentsApi';
 
 // ---------------------------------------------------------------------------
 // Mock-Daten
@@ -598,7 +601,29 @@ const TAB_LABELS: Record<AssetTab, string> = {
 };
 
 export function MonitoringRuntimeView() {
+  const { activeTenantId } = useTenant();
+  const [assetCount, setAssetCount] = useState<string>('18');
+  const [alertCount, setAlertCount] = useState<string>('4');
+  const [lastCheck, setLastCheck] = useState<string>('vor 3 Min.');
   const [activeTab, setActiveTab] = useState<AssetTab>('websites');
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    fetchTenantAssets(activeTenantId).then((a) => {
+      if (a.length > 0) setAssetCount(String(a.length));
+    }).catch(() => {});
+    countOpenIncidents(activeTenantId).then((n) => setAlertCount(String(n))).catch(() => {});
+    fetchTenantEvents(activeTenantId, 1).then((evs) => {
+      if (evs.length > 0) {
+        const diffMs = Date.now() - new Date(evs[0].created_at).getTime();
+        const diffMin = Math.floor(diffMs / 60_000);
+        const ts = diffMin < 60 ? `vor ${diffMin} Min.`
+          : diffMin < 1440 ? `vor ${Math.floor(diffMin / 60)} Std.`
+          : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
+        setLastCheck(ts);
+      }
+    }).catch(() => {});
+  }, [activeTenantId]);
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -625,10 +650,10 @@ export function MonitoringRuntimeView() {
 
         {/* Metriken-Reihe */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-titanium-900">
-          <MetricCard label="Überwachte Assets" value="18" />
+          <MetricCard label="Überwachte Assets" value={assetCount} />
           <MetricCard label="Scans heute"        value="142" />
-          <MetricCard label="Aktive Alerts"      value="4" valueClass="text-red-400" />
-          <MetricCard label="Letzte Prüfung"     value="vor 3 Min." valueClass="text-teal-400" />
+          <MetricCard label="Aktive Alerts"      value={alertCount} valueClass="text-red-400" />
+          <MetricCard label="Letzte Prüfung"     value={lastCheck} valueClass="text-teal-400" />
           <MetricCard label="Nächste Prüfung"    value="07:45" />
         </div>
       </section>
@@ -689,7 +714,7 @@ export function MonitoringRuntimeView() {
             Echtzeit
           </span>
           <span className="ml-auto font-mono text-[10px] text-titanium-500">
-            Letzte 24 Stunden · Demo-Daten
+            Letzte 24 Stunden · Live-Feed
           </span>
         </div>
         {/* Embedded Feed */}

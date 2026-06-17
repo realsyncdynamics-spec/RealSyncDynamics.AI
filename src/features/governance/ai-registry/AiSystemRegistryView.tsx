@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTenant } from '../../../core/access/TenantProvider';
+import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import {
   ArrowLeft,
   Bot,
@@ -256,36 +258,76 @@ function statusChipCls(s: SystemStatus): string {
   }
 }
 
+// ── Asset → AiSystem Mapping ──────────────────────────────────────────────────
+
+function assetToAiSystem(a: DbGovernanceAsset): AiSystem {
+  const riskMap: Record<string, RiskClass> = {
+    prohibited: 'Verboten', high: 'Hoch', limited: 'Begrenzt',
+    minimal: 'Minimal', unknown: 'Minimal',
+  };
+  const statusMap: Record<string, SystemStatus> = {
+    active: 'In Betrieb', draft: 'In Entwicklung',
+    archived: 'Eingestellt', under_review: 'In Betrieb', approved: 'In Betrieb',
+  };
+  const lastUpdated = new Date(a.updated_at).toLocaleDateString('de-DE');
+  return {
+    id: a.id,
+    name: a.name,
+    description: a.description ?? a.name,
+    provider: a.vendor ?? 'Intern',
+    model: (a.metadata['model_name'] as string | undefined) ?? a.name,
+    riskClass: riskMap[a.ai_act_class] ?? 'Minimal',
+    scope: a.data_types.join(' · ') || 'Allgemein',
+    owner: a.owner_email ?? '–',
+    status: statusMap[a.status] ?? 'In Betrieb',
+    docProgress: 0,
+    docTotal: 1,
+    lastUpdated,
+    obligations: [],
+    obligationsDone: [],
+  };
+}
+
 // ── Haupt-View ────────────────────────────────────────────────────────────────
 
 type FilterTab = 'Alle' | 'Hoch-Risiko' | 'Begrenzt' | 'Minimal' | 'Ausstehend';
 
 export function AiSystemRegistryView() {
+  const { activeTenantId } = useTenant();
+  const [activeAiSystems, setActiveAiSystems] = useState<AiSystem[]>(AI_SYSTEMS);
   const [activeTab, setActiveTab] = useState<FilterTab>('Alle');
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!activeTenantId) return;
+    fetchTenantAssets(activeTenantId).then((assets) => {
+      const aiAssets = assets.filter((a) => a.asset_type === 'ai_system').map(assetToAiSystem);
+      if (aiAssets.length > 0) setActiveAiSystems(aiAssets);
+    }).catch(() => {/* keep mock */});
+  }, [activeTenantId]);
+
   const filtered = useMemo(() => {
     switch (activeTab) {
-      case 'Hoch-Risiko': return AI_SYSTEMS.filter((s) => s.riskClass === 'Hoch' || s.riskClass === 'Verboten');
-      case 'Begrenzt':    return AI_SYSTEMS.filter((s) => s.riskClass === 'Begrenzt');
-      case 'Minimal':     return AI_SYSTEMS.filter((s) => s.riskClass === 'Minimal');
-      case 'Ausstehend':  return AI_SYSTEMS.filter((s) => s.docProgress < s.docTotal);
-      default:            return AI_SYSTEMS;
+      case 'Hoch-Risiko': return activeAiSystems.filter((s) => s.riskClass === 'Hoch' || s.riskClass === 'Verboten');
+      case 'Begrenzt':    return activeAiSystems.filter((s) => s.riskClass === 'Begrenzt');
+      case 'Minimal':     return activeAiSystems.filter((s) => s.riskClass === 'Minimal');
+      case 'Ausstehend':  return activeAiSystems.filter((s) => s.docProgress < s.docTotal);
+      default:            return activeAiSystems;
     }
-  }, [activeTab]);
+  }, [activeTab, activeAiSystems]);
 
   // Metriken
-  const totalSystems     = AI_SYSTEMS.length;
-  const hochrisiko       = AI_SYSTEMS.filter((s) => s.riskClass === 'Hoch').length;
-  const dokumentVollst   = AI_SYSTEMS.filter((s) => s.docProgress === s.docTotal).length;
+  const totalSystems     = activeAiSystems.length;
+  const hochrisiko       = activeAiSystems.filter((s) => s.riskClass === 'Hoch').length;
+  const dokumentVollst   = activeAiSystems.filter((s) => s.docProgress === s.docTotal).length;
   const naechstePruefung = '30.06.2026';
 
   // Risikoverteilung für Balken
-  const verboten   = AI_SYSTEMS.filter((s) => s.riskClass === 'Verboten').length;
-  const hoch       = AI_SYSTEMS.filter((s) => s.riskClass === 'Hoch').length;
-  const begrenzt   = AI_SYSTEMS.filter((s) => s.riskClass === 'Begrenzt').length;
-  const minimal    = AI_SYSTEMS.filter((s) => s.riskClass === 'Minimal').length;
+  const verboten   = activeAiSystems.filter((s) => s.riskClass === 'Verboten').length;
+  const hoch       = activeAiSystems.filter((s) => s.riskClass === 'Hoch').length;
+  const begrenzt   = activeAiSystems.filter((s) => s.riskClass === 'Begrenzt').length;
+  const minimal    = activeAiSystems.filter((s) => s.riskClass === 'Minimal').length;
   const totalForBar = verboten + hoch + begrenzt + minimal;
 
   function showToast(msg: string) {
@@ -396,10 +438,10 @@ export function AiSystemRegistryView() {
               {tab}
               {tab !== 'Alle' && (
                 <span className="ml-1.5 font-mono text-[10px] text-titanium-500">
-                  {tab === 'Hoch-Risiko' ? AI_SYSTEMS.filter((s) => s.riskClass === 'Hoch' || s.riskClass === 'Verboten').length
-                    : tab === 'Begrenzt' ? AI_SYSTEMS.filter((s) => s.riskClass === 'Begrenzt').length
-                    : tab === 'Minimal'  ? AI_SYSTEMS.filter((s) => s.riskClass === 'Minimal').length
-                    : AI_SYSTEMS.filter((s) => s.docProgress < s.docTotal).length}
+                  {tab === 'Hoch-Risiko' ? activeAiSystems.filter((s) => s.riskClass === 'Hoch' || s.riskClass === 'Verboten').length
+                    : tab === 'Begrenzt' ? activeAiSystems.filter((s) => s.riskClass === 'Begrenzt').length
+                    : tab === 'Minimal'  ? activeAiSystems.filter((s) => s.riskClass === 'Minimal').length
+                    : activeAiSystems.filter((s) => s.docProgress < s.docTotal).length}
                 </span>
               )}
             </button>

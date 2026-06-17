@@ -125,7 +125,7 @@ export function AuthPage({ mode }: { mode: Mode }) {
     try {
       const sb = getSupabase();
       const { error: resetErr } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: getAuthRedirectUrl(next),
+        redirectTo: getAuthRedirectUrl('/reset'),
       });
       if (resetErr) throw resetErr;
       setInfo(`Wir haben einen Link zum Zurücksetzen an ${email} gesendet.`);

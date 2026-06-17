@@ -124,6 +124,7 @@ import { Integrations } from './pages/Integrations';
 import { SteuerberaterLanding } from './pages/SteuerberaterLanding';
 import { Welcome } from './pages/Welcome';
 import { AuthPage } from './pages/AuthPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { PartnersPage } from './pages/PartnersPage';
 import { BaitCompliance } from './pages/seo/BaitCompliance';
 import { MariskAudit } from './pages/seo/MariskAudit';
@@ -629,6 +630,7 @@ function RoutesWithTracking() {
       <Route path="/signin" element={<AuthPage mode="login" />} />
       <Route path="/signup" element={<AuthPage mode="register" />} />
       <Route path="/register" element={<AuthPage mode="register" />} />
+      <Route path="/reset" element={<ResetPasswordPage />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.

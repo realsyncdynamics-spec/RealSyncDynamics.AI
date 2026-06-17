@@ -15,8 +15,9 @@ import { CTA } from '../content/runtimeVocab';
 // Alle Ziele sind existierende Routen.
 const NAV_ITEMS = [
   { label: 'Governance OS',   to: '/runtime' },
-  { label: 'Souveränität',    to: '/digitale-souveraenitaet' },
   { label: 'Für wen?',        to: '/branchen' },
+  { label: 'AI Governance',   to: '/ai-governance' },
+  { label: 'Sicherheit',      to: '/sicherheit' },
   { label: 'Preise',          to: '/pricing' },
   { label: 'Dokumentation',   to: '/docs' },
   { label: 'Login',           to: '/welcome' },

@@ -227,6 +227,9 @@ function Inner() {
         </div>
       </section>
 
+      {/* Post-Market Monitoring */}
+      <DsgvoControlPackPanel signals={DEMO_CONTROL_SIGNALS} />
+
       {/* Status-Kacheln */}
       <section>
         <h3 className="font-display font-semibold text-titanium-50 text-sm mb-3">Status</h3>

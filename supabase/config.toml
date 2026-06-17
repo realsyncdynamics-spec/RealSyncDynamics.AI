@@ -260,6 +260,14 @@ verify_jwt = false
 # telegram-channels is called from the SPA with a user Bearer JWT.
 [functions.telegram-channels]
 
+# ── Legal-RAG ──
+# legal-embed is called by cron/admin scripts with a shared LEGAL_EMBED_SECRET,
+# not a user JWT.
+[functions.legal-embed]
+verify_jwt = false
+
+# legal-retrieve is called from the SPA with a user Bearer JWT — default verify_jwt=true applies.
+
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
 # governance-agent, governance-remediate,

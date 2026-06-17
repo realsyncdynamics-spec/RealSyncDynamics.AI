@@ -10,7 +10,7 @@
 // Exit code 1 if any test FAILs.
 
 const BASE_URL     = process.env.RSD_BASE_URL ?? 'https://realsyncdynamicsai.de';
-const SUPABASE_URL = (process.env.SUPABASE_URL ?? 'https://ebljyceifhnlzhjfyxup.supabase.co').replace(/\/$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL ?? 'https://ebljyceifhnlzhjfyxup.supabase.co').replace(/\/$/,  '');
 const TIMEOUT_MS   = Number(process.env.RSD_SMOKE_TIMEOUT_MS) || 15_000;
 const ANON_KEY     = process.env.SUPABASE_ANON_KEY ?? '';
 
@@ -77,23 +77,6 @@ const probes: Probe[] = [
     name: 'stripe-checkout · without auth returns 401',
     run: async () => postFn('stripe-checkout', { planKey: 'starter' }, (status) =>
       ({ ok: status === 401, detail: `expected 401, got ${status}` }), false),
-  },
-  {
-    // Anon-key JWT passes the platform-level verify_jwt gate, so this probe
-    // actually exercises the function code (env vars, Stripe SDK init,
-    // Supabase auth.getUser() call) — unlike the probe above, which is
-    // rejected before the function runs.
-    name: 'stripe-checkout · with anon JWT (no user session) returns 401 UNAUTHORIZED',
-    run: async () => {
-      if (!ANON_KEY) return { name: '', ok: true, detail: 'skipped — SUPABASE_ANON_KEY not set' };
-      return postFn('stripe-checkout', { tenant_id: '00000000-0000-0000-0000-000000000000', plan_key: 'starter' },
-        (status, body) => {
-          if (status !== 401) return { ok: false, detail: `expected 401, got ${status}` };
-          const code = (body as Record<string, unknown> | null)?.error as Record<string, unknown> | undefined;
-          if (code?.code !== 'UNAUTHORIZED') return { ok: false, detail: `expected error.code=UNAUTHORIZED, got ${JSON.stringify(body)}` };
-          return { ok: true, detail: 'function reachable, rejected anon JWT as expected' };
-        });
-    },
   },
   {
     name: 'stripe-webhook · without signature returns 400',

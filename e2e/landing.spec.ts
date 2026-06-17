@@ -1,62 +1,160 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für die Startseite (/).
+ * E2E-Tests für die Landing-Seite (/).
  *
- * Seit PR #515 zeigt "/" die PublicWorkspacePreview (Governance-OS-Shell),
- * nicht mehr die Landing-Marketing-Seite. Die Landing ist unter /landing erreichbar.
+ * Phase 2 (PR #531): `/` zeigt jetzt Landing.tsx mit:
+ *   - FoundingAccessBanner
+ *   - Hero mit Domain-Eingabe
+ *   - ModuleVisibilitySection (8 Module)
+ *   - RuntimeGovernanceFlowSection
+ *   - EnhancedPricingTeaserSection
  *
- * CTA-Disziplin: ausschließlich Self-Service-Strings; keine Beratungs-/
- * Pilot-/Demo-/Call-/Sales-Sprache.
+ * CTA-Disziplin: ausschließlich Self-Service-Strings (runtimeVocab.CTA).
+ * Keine Beratungs-/Pilot-/Demo-/Call-/Sales-Sprache.
  */
-test('Landing renders the self-service governance-OS narrative + CTAs', async ({ page }) => {
-  await page.goto('/');
 
-  // Hero — Governance-OS-Headline
-  await expect(
-    page.getByRole('heading', { name: /Governance OS/i }),
-  ).toBeVisible();
+test.describe('Landing Page (/)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
 
-  // EU-Sovereign-Beschreibung
-  await expect(
-    page.getByText(/Europäisches Governance Operating System/i),
-  ).toBeVisible();
+  test('Hero zeigt Domain-Eingabefeld und Primär-CTA', async ({ page }) => {
+    // Headline
+    await expect(
+      page.getByRole('heading', { name: /Prüfen Sie Ihre Website/i })
+    ).toBeVisible();
 
-  // Primärer CTA „Dashboard öffnen" (button, navigiert zu /app).
-  // Die Workspace-Vorschau hat Hero- + Footer-CTA mit identischem Label →
-  // .first(), um die Strict-Mode-Mehrfachtreffer aufzulösen.
-  await expect(
-    page.getByRole('button', { name: /Dashboard öffnen/i }).first(),
-  ).toBeVisible();
+    // Eingabefeld
+    const input = page.getByPlaceholder(/ihre-domain\.de/i);
+    await expect(input).toBeVisible();
 
-  // Sekundärer CTA „Audit starten" (button, navigiert zu /audit)
-  await expect(
-    page.getByRole('button', { name: /Audit starten/i }),
-  ).toBeVisible();
+    // Submit-Button
+    await expect(
+      page.getByRole('button', { name: /Kostenlos prüfen/i })
+    ).toBeVisible();
 
-  // Feature-Kacheln sichtbar
-  for (const tile of ['Websites', 'KI-Systeme', 'Risiken', 'Compliance']) {
-    await expect(page.getByText(tile).first()).toBeVisible();
-  }
+    // Trust Signals
+    await expect(page.getByText(/Kein Account erforderlich/i)).toBeVisible();
+    await expect(page.getByText(/Kostenloser Erstcheck/i)).toBeVisible();
+  });
 
-  // Keine alten Vertriebs-/Pilot-CTAs auf der Startseite. Bewusst präzise
-  // (Mehrwort-CTA-Phrasen), damit legitime globale Komponenten-Texte — etwa
-  // der Assistent-Disclaimer „Für tiefere Beratung …" oder „ersetzt keine
-  // Rechtsberatung" — NICHT fälschlich als Treffer zählen. Spiegelt die
-  // CI-Gate-Logik aus .github/workflows/cta-enforcement.yml.
-  for (const forbidden of [
-    /Agency Pilot anfragen/i, /Pilot anfragen/i, /Pilot starten/i,
-    /Demo anfragen/i, /Beratung anfragen/i, /Gespräch buchen/i,
-    /Call buchen/i, /Runtime ansehen/i,
-  ]) {
-    await expect(page.getByRole('link', { name: forbidden })).toHaveCount(0);
-  }
+  test('Hero Domain-Eingabe navigiert zum Audit', async ({ page }) => {
+    const input = page.getByPlaceholder(/ihre-domain\.de/i);
+    await input.fill('example.de');
+    await page.getByRole('button', { name: /Kostenlos prüfen/i }).click();
+    await expect(page).toHaveURL(/\/audit/);
+    await expect(page.url()).toContain('domain=example.de');
+  });
+
+  test('Hero ohne Eingabe navigiert zu /audit', async ({ page }) => {
+    await page.getByRole('button', { name: /Kostenlos prüfen/i }).click();
+    await expect(page).toHaveURL(/\/audit/);
+  });
+
+  test('Module Visibility Section zeigt 8 Module mit Status-Badges', async ({ page }) => {
+    // Section-Heading
+    await expect(
+      page.getByRole('heading', { name: /Governance-Module/i })
+    ).toBeVisible();
+
+    // Mindestens 3 Module sichtbar
+    const liveModules = ['Website Governance', 'Evidence Vault'];
+    for (const mod of liveModules) {
+      await expect(page.getByText(mod)).toBeVisible();
+    }
+
+    // Beta-Module sichtbar
+    await expect(page.getByText(/Runtime Monitoring/i)).toBeVisible();
+    await expect(page.getByText(/KI-System Registry/i)).toBeVisible();
+
+    // Roadmap-Module sichtbar
+    await expect(page.getByText(/Auto Remediation/i)).toBeVisible();
+  });
+
+  test('Module Visibility Section enthält Status-Badge-Begriffe', async ({ page }) => {
+    // Live-Badges
+    await expect(page.getByText('Live').first()).toBeVisible();
+    // Beta-Badges
+    await expect(page.getByText('Beta').first()).toBeVisible();
+    // Roadmap-Badges
+    await expect(page.getByText('Roadmap').first()).toBeVisible();
+  });
+
+  test('Runtime Governance Flow Section sichtbar', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: /Governance-Runtime-Flow/i })
+    ).toBeVisible();
+
+    // 6 Schritte vorhanden
+    for (const step of ['Website', 'Scan', 'Finding', 'Risk', 'Evidence', 'Report']) {
+      await expect(page.getByText(step).first()).toBeVisible();
+    }
+
+    // Differenzierer-Abschnitt
+    await expect(page.getByText(/Cookie-Consent-Tools/i)).toBeVisible();
+    await expect(page.getByText(/RealSync Runtime/i).first()).toBeVisible();
+  });
+
+  test('Pricing Section zeigt 4 Tarife', async ({ page }) => {
+    // Scroll zur Pricing-Sektion
+    await page.getByRole('heading', { name: /Preise — self-service/i }).scrollIntoViewIfNeeded();
+    await expect(
+      page.getByRole('heading', { name: /Preise — self-service/i })
+    ).toBeVisible();
+
+    // Tarife sichtbar
+    await expect(page.getByText('Free').first()).toBeVisible();
+    await expect(page.getByText('Monitoring').first()).toBeVisible();
+    await expect(page.getByText('Governance').first()).toBeVisible();
+    await expect(page.getByText('Agency').first()).toBeVisible();
+
+    // Preise sichtbar
+    await expect(page.getByText('€0').first()).toBeVisible();
+    await expect(page.getByText(/ab €79/i).first()).toBeVisible();
+  });
+
+  test('Pricing Governance-Tier als "Most Popular" markiert', async ({ page }) => {
+    await expect(page.getByText(/Most Popular/i)).toBeVisible();
+  });
+
+  test('Final CTA mit 3 Buttons sichtbar', async ({ page }) => {
+    await page.getByRole('heading', { name: /Starten Sie noch heute/i }).scrollIntoViewIfNeeded();
+    await expect(
+      page.getByRole('heading', { name: /Starten Sie noch heute/i })
+    ).toBeVisible();
+
+    // Keine Kreditkarte Trust-Signal
+    await expect(page.getByText(/Keine Kreditkarte erforderlich/i)).toBeVisible();
+  });
+
+  test('Keine verbotenen Sales/Pilot/Demo CTAs auf der Seite', async ({ page }) => {
+    const forbidden = [
+      /Pilot anfragen/i,
+      /Demo anfragen/i,
+      /Demo buchen/i,
+      /Gespräch buchen/i,
+      /Call buchen/i,
+      /Beratung anfragen/i,
+      /Sales kontaktieren/i,
+      /Vertrieb kontaktieren/i,
+    ];
+    for (const pattern of forbidden) {
+      await expect(page.getByRole('link', { name: pattern })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: pattern })).toHaveCount(0);
+    }
+  });
+
+  test('Footer Links (Impressum, Datenschutz) erreichbar', async ({ page }) => {
+    await expect(page.getByRole('link', { name: /^Impressum$/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /^Datenschutz$/i })).toBeVisible();
+  });
 });
 
 /**
- * Smoke-E2E für die Marketing-Landing-Seite (/landing).
+ * Fallback: /landing und /preview sind weiterhin erreichbar.
  */
-test('Marketing landing (/landing) renders governance-OS narrative + CTAs', async ({ page }) => {
+test('/landing alias gibt 200 zurück', async ({ page }) => {
   await page.goto('/landing');
 
   // Hero — Governance-OS-Positionierung (DSGVO · EU AI Act · digitale Souveränität)
@@ -65,13 +163,4 @@ test('Marketing landing (/landing) renders governance-OS narrative + CTAs', asyn
       name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität\./i,
     }),
   ).toBeVisible();
-
-  // Primary CTA „Kostenlos starten" → /audit
-  const primary = page.getByRole('link', { name: /^Kostenlos starten$/i }).first();
-  await expect(primary).toBeVisible();
-  await expect(primary).toHaveAttribute('href', /\/audit/);
-
-  // Footer-Legal-Links
-  await expect(page.getByRole('link', { name: /^Impressum$/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /^Datenschutz$/i })).toBeVisible();
 });

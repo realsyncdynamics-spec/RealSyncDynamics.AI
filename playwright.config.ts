@@ -22,6 +22,9 @@ export default defineConfig({
   testIgnore: process.env.CI ? ['**/governance/**'] : undefined,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // Inspector-panel tests require an authenticated session with real data —
+  // they cannot run against the unauthenticated preview server in CI.
+  testIgnore: process.env.CI ? ['**/governance/inspector-panel.spec.ts'] : [],
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   timeout: process.env.CI ? 60_000 : 30_000,

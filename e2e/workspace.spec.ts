@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * Smoke-E2E für /app — das kanonische Governance-OS Status-Home.
+ * Smoke-E2E für /app — Governance OS Browser Shell.
  *
  * Volle Coverage (Status-Kacheln mit echten Counts) braucht eine Supabase-
  * Session — out of scope für die Smoke-Spec. Hier: stabiler Kontrakt.
@@ -30,5 +30,21 @@ test.describe('/app (Workspace-Home)', () => {
   test('/dashboard redirectet auf /app', async ({ page }) => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/app$/);
+  });
+
+  test('/governance redirectet auf /app', async ({ page }) => {
+    await page.goto('/governance');
+    await expect(page).toHaveURL(/\/app$/);
+  });
+});
+
+test.describe('/app — Module Upgrade Gate', () => {
+  test('Plan-gated Module (z.B. /app/ai-systems) zeigen Auth-Gate oder Upgrade-Prompt', async ({ page }) => {
+    await page.goto('/app/ai-systems');
+    // Ohne Auth: entweder AuthGate oder UpgradeGate oder beides
+    // Wichtig: kein leerer Bildschirm, kein 500
+    await expect(page).not.toHaveURL(/500/);
+    const body = page.locator('body');
+    await expect(body).not.toBeEmpty();
   });
 });

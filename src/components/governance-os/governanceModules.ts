@@ -164,6 +164,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'DSGVO-Dokumentengenerator: DSE, AVV, TOM, VVT, DSFA',
   },
   {
+    id: 'office',
+    label: 'Office',
+    icon: 'Briefcase',
+    route: '/app/office',
+    status: 'beta',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Office OS: Dokumente, Tabellen, Präsentationen, Vorlagen, Meetings, Verträge, Policies',
+  },
+  {
     id: 'audit',
     label: 'Audit Export',
     icon: 'ClipboardCheck',

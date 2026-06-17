@@ -155,6 +155,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Enterprise Skills - 15 spezialisierte Governance-Agenten',
   },
   {
+    id: 'office',
+    label: 'Office',
+    icon: 'Briefcase',
+    route: '/app/office',
+    status: 'live',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Dokumente, Tabellen, Präsentationen, Meetings, Verträge und Policies — versioniert, auditiert, evidence-fähig',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

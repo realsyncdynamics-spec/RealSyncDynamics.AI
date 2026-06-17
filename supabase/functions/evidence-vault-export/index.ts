@@ -23,16 +23,16 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // Diese Funktion exportiert fuer Aufsichtsbehoerden / externe Auditoren.
 // Empfaenger sind Dritte — Klartext-PII darf nicht raus. Policy hart.
 const REDACTION_POLICY: RedactionPolicy = 'always';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, x-rsd-tenant-key',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// Abweichende CORS-Header: diese Function ist nicht JWT-gesichert, sondern
+// via x-rsd-tenant-key. Kein Authorization-Header benötigt.
+const corsHeaders = buildCorsHeaders('POST, OPTIONS');
+corsHeaders['Access-Control-Allow-Headers'] = 'content-type, x-rsd-tenant-key';
 
 interface ExportRequestBody {
   from?: string;
@@ -69,22 +69,23 @@ function pgHexToCleanHex(s: string | null | undefined): string | null {
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return jsonError(405, 'BAD_METHOD', 'POST only');
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonError(405, 'BAD_METHOD', 'POST only', corsHeaders);
 
   const tenantKey = req.headers.get('x-rsd-tenant-key');
-  if (!tenantKey) return jsonError(401, 'UNAUTHORIZED', 'missing x-rsd-tenant-key');
+  if (!tenantKey) return jsonError(401, 'UNAUTHORIZED', 'missing x-rsd-tenant-key', corsHeaders);
 
   const tenantId = tenantKey.match(/^[0-9a-f-]{36}$/i) ? tenantKey : null;
   if (!tenantId) {
-    return jsonError(401, 'UNAUTHORIZED', 'invalid tenant key (expected uuid in this PR)');
+    return jsonError(401, 'UNAUTHORIZED', 'invalid tenant key (expected uuid in this PR)', corsHeaders);
   }
 
   let body: ExportRequestBody;
   try {
     body = (await req.json().catch(() => ({}))) as ExportRequestBody;
   } catch {
-    return jsonError(400, 'BAD_JSON', 'request body must be valid JSON or empty');
+    return jsonError(400, 'BAD_JSON', 'request body must be valid JSON or empty', corsHeaders);
   }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -118,13 +119,13 @@ Deno.serve(async (req) => {
 
   const { data: rows, error } = await q;
   if (error) {
-    return jsonError(500, 'QUERY_FAILED', error.message);
+    return jsonError(500, 'QUERY_FAILED', error.message, corsHeaders);
   }
 
   // SIGNING-KEY laden
   const signingKeyText = Deno.env.get('EVIDENCE_VAULT_SIGNING_KEY');
   if (!signingKeyText) {
-    return jsonError(500, 'CONFIG', 'EVIDENCE_VAULT_SIGNING_KEY not set');
+    return jsonError(500, 'CONFIG', 'EVIDENCE_VAULT_SIGNING_KEY not set', corsHeaders);
   }
   const signingKey = new TextEncoder().encode(signingKeyText);
 
@@ -231,15 +232,5 @@ Deno.serve(async (req) => {
     payload_bytes: JSON.stringify(bundle).length,
   });
 
-  return new Response(JSON.stringify({ ok: true, bundle }), {
-    status: 200,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
+  return jsonResponse({ ok: true, bundle }, 200, corsHeaders);
 });
-
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(
-    JSON.stringify({ ok: false, error: { code, message } }),
-    { status, headers: { ...corsHeaders, 'content-type': 'application/json' } },
-  );
-}

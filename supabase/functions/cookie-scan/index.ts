@@ -20,11 +20,7 @@
 //     severity: 'pass' | 'low' | 'medium' | 'high' | 'critical'
 //   }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 
@@ -340,19 +336,8 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
   }
 }
 
-function jsonResponse(status: number, body: Record<string, unknown>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string) {
-  return jsonResponse(status, { ok: false, error: { code, message } });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: { url?: string };
@@ -443,7 +428,7 @@ Deno.serve(async (req) => {
     unknown_scripts_count: unknownScripts.length,
   };
 
-  return jsonResponse(200, result as unknown as Record<string, unknown>);
+  return jsonResponse(result as unknown as Record<string, unknown>, 200);
 });
 
 /**

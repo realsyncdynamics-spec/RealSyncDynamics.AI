@@ -14,12 +14,9 @@
 // directly after submission, OR a background cron sweeps un-sent audits.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 interface Issue {
   id: string;
@@ -43,12 +40,13 @@ interface AuditRow {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
 
   const url = new URL(req.url);
   const id = url.searchParams.get('id');
   if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    return jsonError(400, 'BAD_ID', 'valid uuid required');
+    return jsonError(400, 'BAD_ID', 'valid uuid required', corsHeaders);
   }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -56,16 +54,16 @@ Deno.serve(async (req) => {
   const supa = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const { data: row, error } = await supa.from('gdpr_audits').select('*').eq('id', id).maybeSingle();
-  if (error || !row) return jsonError(404, 'NOT_FOUND', 'audit not found');
+  if (error || !row) return jsonError(404, 'NOT_FOUND', 'audit not found', corsHeaders);
 
   const audit = row as AuditRow;
   if (audit.email_sent_at) {
-    return json({ ok: true, skipped: 'already_sent', sent_at: audit.email_sent_at });
+    return jsonResponse({ ok: true, skipped: 'already_sent', sent_at: audit.email_sent_at }, 200, corsHeaders);
   }
 
   const apiKey = await getResendKey(supa);
   if (!apiKey) {
-    return json({ ok: true, skipped: 'no_api_key', hint: 'set RESEND_API_KEY env or vault.resend_api_key' });
+    return jsonResponse({ ok: true, skipped: 'no_api_key', hint: 'set RESEND_API_KEY env or vault.resend_api_key' }, 200, corsHeaders);
   }
 
   const html = renderEmail(audit);
@@ -91,13 +89,13 @@ Deno.serve(async (req) => {
 
   if (!resp.ok) {
     const err = await resp.text();
-    return jsonError(502, 'RESEND_FAILED', err.slice(0, 500));
+    return jsonError(502, 'RESEND_FAILED', err.slice(0, 500), corsHeaders);
   }
 
   const sent = await resp.json();
   await supa.from('gdpr_audits').update({ email_sent_at: new Date().toISOString() }).eq('id', id);
 
-  return json({ ok: true, sent_id: sent.id, to: audit.email });
+  return jsonResponse({ ok: true, sent_id: sent.id, to: audit.email }, 200, corsHeaders);
 });
 
 async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
@@ -200,11 +198,3 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

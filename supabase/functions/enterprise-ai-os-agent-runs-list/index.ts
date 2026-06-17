@@ -6,27 +6,18 @@
 // tenant filter via ?tenantId. limit clamped to [1, 100].
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
-}
+const corsHeaders = buildCorsHeaders('GET, OPTIONS');
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'GET') return json(405, { error: 'GET only' });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
+  if (req.method !== 'GET') return jsonResponse({ error: 'GET only' }, 405, corsHeaders);
 
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !serviceKey) return json(500, { error: 'Supabase env vars missing' });
+  if (!url || !serviceKey) return jsonResponse({ error: 'Supabase env vars missing' }, 500, corsHeaders);
 
   const parsedUrl = new URL(req.url);
   const tenantId = parsedUrl.searchParams.get('tenantId');
@@ -43,7 +34,7 @@ Deno.serve(async (req) => {
   if (tenantId) query = query.eq('tenant_id', tenantId);
 
   const { data, error } = await query;
-  if (error) return json(500, { error: error.message });
+  if (error) return jsonResponse({ error: error.message }, 500, corsHeaders);
 
-  return json(200, { runs: data ?? [] });
+  return jsonResponse({ runs: data ?? [] }, 200, corsHeaders);
 });

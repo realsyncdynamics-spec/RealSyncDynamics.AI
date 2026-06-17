@@ -17,19 +17,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { runEnterpriseAgent, type AgentId } from '../_shared/enterprise-ai-os-agents.ts';
-
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
-}
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface IntakeBody {
   tenantId?: string;
@@ -95,23 +83,24 @@ async function persistRun(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'POST') return json(405, { error: 'POST only' });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   let body: IntakeBody;
   try {
     body = (await req.json()) as IntakeBody;
   } catch {
-    return json(400, { error: 'invalid JSON' });
+    return jsonResponse({ error: 'invalid JSON' }, 400);
   }
 
   if (!body.systemName || !body.provider) {
-    return json(400, { error: 'systemName and provider are required' });
+    return jsonResponse({ error: 'systemName and provider are required' }, 400);
   }
 
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !serviceKey) return json(500, { error: 'Supabase env vars missing' });
+  if (!url || !serviceKey) return jsonResponse({ error: 'Supabase env vars missing' }, 500);
 
   const sb = createClient(url, serviceKey);
   const actor = body.actor ?? 'self-assessment';
@@ -139,7 +128,7 @@ Deno.serve(async (req) => {
     .select()
     .single();
 
-  if (regErr) return json(500, { error: `registry insert failed: ${regErr.message}` });
+  if (regErr) return jsonResponse({ error: `registry insert failed: ${regErr.message}` }, 500);
   const registry = registryRow as Record<string, unknown>;
   const registryId = registry.id as string;
 
@@ -187,7 +176,7 @@ Deno.serve(async (req) => {
     },
   });
 
-  return json(200, {
+  return jsonResponse({
     ok: true,
     registry: { ...registry, risk_level: newRiskLevel },
     runs: {
@@ -195,5 +184,5 @@ Deno.serve(async (req) => {
       policy: { id: policyRun.run_id, status: policyRun.status },
       audit: { id: auditRun.run_id, status: auditRun.status },
     },
-  });
+  }, 200);
 });

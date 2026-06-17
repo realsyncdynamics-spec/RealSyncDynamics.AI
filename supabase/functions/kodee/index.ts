@@ -24,20 +24,16 @@ import {
   type KodeeRequest,
   type KodeeResponse,
 } from './types.ts';
+import { corsHeaders, handleOptions } from '../_shared/gateway.ts';
 
 const ALLOWED_ACTIONS: ActionName[] = [
   'vps.status', 'vps.logs.tail', 'vps.disk', 'vps.dns_check', 'vps.tls_check',
   'vps.service.restart', 'vps.compose.up', 'vps.compose.restart',
 ];
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') {
     return jsonError(405, 'BAD_REQUEST', 'POST only');
   }
@@ -121,7 +117,6 @@ Deno.serve(async (req) => {
 
     const ok: KodeeResponse = { ok: true, v: API_VERSION, action: body.action, data, duration_ms };
     return new Response(JSON.stringify(ok), {
-      status: 200,
       headers: { ...corsHeaders, 'content-type': 'application/json' },
     });
   } catch (err) {

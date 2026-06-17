@@ -14,12 +14,7 @@
 //   - Defense-in-depth Metadata-Sanitizer (kein IP, kein UA, keine E-Mail).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // Vom Client erlaubte Events. checkout_completed + subscription_cancelled
 // werden ausschliesslich von vertrauenswuerdigen Server-Pfaden geschrieben
@@ -143,7 +138,7 @@ async function resolveTenantFromJwt(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -204,14 +199,6 @@ Deno.serve(async (req) => {
   });
   if (error) return jsonError(500, 'INTERNAL', error.message);
 
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

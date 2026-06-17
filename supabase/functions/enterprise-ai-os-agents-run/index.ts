@@ -12,32 +12,21 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { runEnterpriseAgent, type AgentId } from '../_shared/enterprise-ai-os-agents.ts';
-
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
-}
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'POST') return json(405, { error: 'POST only' });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   let body: { agentId?: string; tenantId?: string; actor?: string; payload?: Record<string, unknown> };
   try {
     body = await req.json();
   } catch {
-    return json(400, { error: 'invalid JSON' });
+    return jsonResponse({ error: 'invalid JSON' }, 400);
   }
 
-  if (!body.agentId) return json(400, { error: 'agentId is required' });
+  if (!body.agentId) return jsonResponse({ error: 'agentId is required' }, 400);
 
   const input = {
     agentId: body.agentId as AgentId,
@@ -113,5 +102,5 @@ Deno.serve(async (req) => {
     persistError = 'Supabase env vars missing on the function; run not persisted.';
   }
 
-  return json(200, { ...result, run_id: runId, persist_error: persistError });
+  return jsonResponse({ ...result, run_id: runId, persist_error: persistError }, 200);
 });

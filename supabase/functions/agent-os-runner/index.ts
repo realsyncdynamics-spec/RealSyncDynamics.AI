@@ -24,31 +24,20 @@
 // the tenants the runner WOULD have processed.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface RequestBody {
   cadence?:    'hourly' | 'daily';
   tenant_ids?: string[];
 }
 
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
 function jsonError(status: number, code: string, detail: string): Response {
-  return json(status, { error: { code, detail } });
+  return jsonResponse({ error: { code, detail } }, status);
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
 
   const SUPABASE_URL              = Deno.env.get('SUPABASE_URL');
@@ -126,5 +115,5 @@ Deno.serve(async (req: Request) => {
     phase:         'A_SCAFFOLD',
   };
 
-  return json(200, report);
+  return jsonResponse(report);
 });

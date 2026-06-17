@@ -1,160 +1,170 @@
-# 100-Punkte-Plan zum Ziel
+# 100-Punkte-Plan zum Ziel — Governance OS für Europa
 
-> **Ziel:** RealSyncDynamics.AI von „Kern steht, Audit-MVP läuft" zu einer **marktreifen, umsatztragenden EU-souveränen Compliance-Infrastruktur** führen — mit nachweisbarer Auto-Remediation, kontinuierlichem Monitoring, gerichtsfester Evidence und skalierbarem Agency/Enterprise-Geschäft.
+> **Das große Ziel:** RealSyncDynamics.AI von einer Sammlung guter Compliance- und KI-Funktionen zu **einem klaren, nutzbaren und verkaufbaren Governance Operating System** machen — mit echten Kunden, echter Nutzung und **kontinuierlicher Governance statt Einmal-Audits**.
 >
-> Geerdet auf dem aktuellen Stand (`ROADMAP.md`, `supabase/functions/`, `src/`). Jeder Punkt ist ein abschließbares Ergebnis (Definition of Done implizit: getestet, RLS-sicher, geloggt in `ai_tool_runs`/`workflow_runs`).
->
-> Legende: ✅ erledigt · 🟡 teilweise · ⬜ offen
+> **Nicht** mehr: noch mehr Features, noch mehr Agenten, noch mehr Container, noch mehr Landingpages.
+> **Sondern:** *eine* Plattform, *ein* Dashboard, *ein* Billing, *ein* Agent, *ein* Workflow-System — und die ersten **5–10 echten Pilotkunden**.
+
+## Mission
+
+RealSyncDynamics.AI betreibt DSGVO, EU AI Act, Evidence, Monitoring und Automatisierung als **kontinuierlichen Unternehmensprozess** — nicht als Scanner, Cookie-Tool, Datenschutzgenerator oder Chatbot, sondern als **Governance OS**.
+
+## Die wichtigste Kennzahl
+
+> Nicht: „Wie viele Features haben wir?"
+> Sondern: **„Wie viele Unternehmen nutzen RealSyncDynamics.AI aktiv?"**
+
+**Hauptziel jetzt:** 5–10 echte Pilotkunden — kostenloser Enterprise-Zugang, 12 Monate, echtes Feedback, echte Uploads, echte Nutzung. Diese 5 bringen mehr Erkenntnis als 50 weitere Features.
+
+> Legende: ✅ erledigt · 🟡 teilweise · ⬜ offen · Status geerdet auf `ROADMAP.md` + aktuellem Code-Stand.
 
 ---
 
-## A — Runtime & Kern härten (1–10)
+## Block 0 — Nordstern: Pilotkunden & aktive Nutzung (1–8)
 
-1. ⬜ Event-Schema `governanceEvents.ts` mit Versionierung (`v1`) einfrieren und Schema-Drift-Test in CI ergänzen.
-2. ⬜ Evidence-Hashing (`evidence.ts`) gegen Golden-Testvektoren absichern (kanonisches JSON ↔ SHA-256 deterministisch).
-3. ⬜ Agent-Contracts (`core/runtime/types.ts`) als Single Source of Truth dokumentieren + Breaking-Change-Lint.
-4. ⬜ Remediation-Layer (`remediation.ts`) vom Skelett zu typisierten, idempotenten Aktionen ausbauen.
-5. ⬜ Einheitliches Error-/Result-Pattern für alle Edge Functions (`_shared/result.ts`).
-6. ⬜ Strukturiertes Logging + Korrelations-ID über alle Functions (Sentry-Breadcrumbs).
-7. ⬜ Rate-Limiting & Idempotency-Keys für öffentliche Functions (`cookie-scan`, `gdpr-audit`, `sales-lead`).
-8. ⬜ Edge-Function-Drift-Check (`check:edge-functions`) verpflichtend in CI-Gate.
-9. ⬜ `check:production` als Pflicht-Gate vor jedem Release grün halten.
-10. ⬜ Migrations-Hygiene: Duplikate bereinigen, Namens-/Timestamp-Konvention erzwingen (Lint-Skript).
+1. ⬜ Pilot-Definition festschreiben: „aktiver Kunde" = Mandant mit laufendem Monitoring + ≥1 Skill-Nutzung/Woche.
+2. ⬜ Ziel-Liste 15–20 Wunsch-Pilotkunden (Agentur, DSB, Kanzlei, Arztpraxis, Mittelstand) priorisieren.
+3. ⬜ Pilot-Angebot paketieren: kostenloser Enterprise-Zugang, 12 Monate, klare Gegenleistung (Feedback + Uploads + Nutzung).
+4. ⬜ Pilot-Onboarding-Flow (1 geführter Pfad: Account → erster Scan → erster Skill → erstes Monitoring).
+5. ⬜ Aktivierungs-Metrik live: Dashboard „Wie viele Mandanten sind diese Woche aktiv?" (`business-metrics-cron`).
+6. ⬜ Feedback-Schleife: In-App-Feedback (`enterprise-ai-os-feedback`) + 14-tägiges Pilot-Review-Ritual.
+7. ⬜ Pilot-Erfolgskriterien je Kunde definieren (welches Governance-Problem lösen wir messbar?).
+8. ⬜ Referenz-/Case-Study-Vereinbarung mit Piloten (für spätere Vermarktung).
 
-## B — Audit-Engine & Scanner (11–22)
+## Block A — Phase 1: Konsolidieren — *eine* Plattform (9–22)
 
-11. ✅ `cookie-scan` (server-side fetch, Free-Tool).
-12. ✅ `gdpr-audit` (Lead-Magnet, vollständiger Audit).
-13. ✅ Rule Engine (`_shared/rules/evaluator.ts` + `gdpr.json` + `ai-act.json`).
-14. ✅ Tracker-Registry (`tracker-registry.json`).
-15. ⬜ **Playwright-Scanner-Microservice** (`deploy/playwright-scanner/`) deployen (echtes Headless-Browsing).
-16. 🟡 `cookie-scan-deep` produktiv schalten (nutzt Playwright statt fetch).
-17. ⬜ **Consent-Timing-Analyse**: Welche Requests/Tracker laden VOR Consent? (Kern-Differenzierer).
-18. ⬜ Security-Header-Analyse (CSP, HSTS, X-Frame-Options) in Score aufnehmen.
-19. ⬜ Tracker-Registry laufend pflegen (Fingerprints für Top-200-Tools, automatisierte Updates).
-20. ⬜ Compliance-Score-Algorithmus dokumentieren & versionieren (nachvollziehbare Gewichtung).
-21. ⬜ Scanner-Genauigkeit gegen kuratiertes Test-Set messen (Precision/Recall-Dashboard).
-22. ⬜ Multi-Page-/Sitemap-Crawl statt nur Startseite (konfigurierbare Tiefe).
+9. ⬜ Produkt-Narrativ vereinheitlichen: überall „Governance OS", nirgends „Scanner/Cookie-Tool/Generator".
+10. ⬜ **Eine** Landingpage: Nischen-Seiten (Agenturen, Arztpraxen, Kanzleien, Shopify, WordPress, ChatGPT) zu einer Story mit Segment-Sektionen zusammenführen statt parallel pflegen.
+11. ⬜ Plan-/Tier-Namen vereinheitlichen (Single Source of Truth `src/config/pricing.ts`, keine Abweichungen in Doku/UI).
+12. ⬜ **Ein** Dashboard: Governance-OS-Views (Risk, Alerts, Monitoring, DPIAs, Incidents, Approvals) unter einer kohärenten Navigation bündeln.
+13. ⬜ App-Struktur entwirren: `src/enterprise-os` vs. `src/features` vs. `src/lib/enterprise-ai-os` — eine klare Schichtung, dokumentiert.
+14. ⬜ `governance-os-complete.html` (66 KB Prototyp) entweder in die SPA überführen oder archivieren — keine doppelte Wahrheit.
+15. ⬜ Edge-Functions-Landschaft (90+) inventarisieren: aktiv / experimentell / tot — Liste mit Owner & Status.
+16. ⬜ Tote/experimentelle Functions deprecaten (klar markieren, aus Routing nehmen) statt löschen-und-hoffen.
+17. ⬜ Doppelte Migrations (mehrere `20260624000000_*`) bereinigen, Timestamp-Konvention erzwingen.
+18. ⬜ Browser-Extensions (`extension`, `extension-ai-monitor`, `extension-governance`) konsolidieren auf eine.
+19. ⬜ Connector-Wildwuchs (`connectors/`, `services/`, `worker/`) auf ein einheitliches Schnittstellen-Muster bringen.
+20. ⬜ Doku-Konsolidierung: `ROADMAP.md`, `docs/PRODUCT_FOCUS.md`, dieser Plan → eine konsistente Quelle, Widersprüche raus.
+21. ⬜ Terminologie-Lint: „Prüfpfad"/„Herkunftsnachweis" durchgängig erzwingen (CI-Check).
+22. ⬜ Design-System-Konsistenz: App = Hard-Edge Industrial, Landing = Trust-Light — keine Vermischung.
 
-## C — Reporting & Lead-Funnel (23–30)
+## Block B — Phase 1: Aufräumen — PR-Backlog & Schulden (23–32)
 
-23. ✅ `audit-report-pdf` (druckoptimierter HTML-Report).
-24. 🟡 `audit-report-email` — Report automatisch nach Scan zustellen (End-to-End verifizieren).
-25. ✅ `audit-drip-cron` / `audit-monitor-cron` / `audit-recheck-weekly` (Drip & Re-Scan).
-26. ⬜ Free-Audit-Landing als viraler SEO-Funnel optimieren (Core Web Vitals, Schema.org).
-27. ⬜ Public Compliance-Score-Badge („Geprüft von RealSync") als Embed/Backlink-Hebel.
-28. ⬜ Report-Sharing per Token-Link (read-only, ablaufend) ausbauen.
-29. ⬜ Conversion-Tracking Free → Starter (`track-pageview`, `marketing-event`) instrumentieren.
-30. ⬜ A/B-Tests für Audit-CTA & Pricing-Page (Feature-Flag-gesteuert).
+23. ⬜ Offene PRs sichten, triagieren (mergen / schließen / neu aufsetzen) — Backlog auf <10 bringen.
+24. ⬜ CI-Gate verbindlich: build + Migration-Validation + `check:production` müssen grün sein vor Merge.
+25. ⬜ Edge-Function-Drift-Check (`check:edge-functions`) als Pflicht-Gate.
+26. ⬜ Flaky/duplizierte Tests (z. B. doppelte `testIgnore`, siehe Hotfix #621) stabilisieren.
+27. ⬜ Dependency- & Secret-Scanning in CI aktivieren.
+28. ⬜ Dead Code & ungenutzte Routen entfernen (öffentliche Routen unverändert lassen).
+29. ⬜ Einheitliches Error-/Result-Pattern (`_shared/result.ts`) über alle Functions.
+30. ⬜ Strukturiertes Logging + Korrelations-ID + Sentry-Breadcrumbs überall.
+31. ⬜ Rate-Limiting & Idempotency-Keys für öffentliche Endpunkte.
+32. ⬜ Release-Pipeline (`release:merge`/`release:publish`) als einziger Weg nach Prod dokumentieren.
 
-## D — Auto-Remediation (31–40)
+## Block C — Phase 1: *Ein* Agent, *ein* Billing, *ein* Workflow (33–42)
 
-31. ✅ Google-Fonts-Self-Hosting (`_shared/website-rebuild/self-host.ts`).
-32. ✅ Tracker-Removal (`strip-trackers.ts`).
-33. ✅ Consent-SDK-Injection (`inject-consent.ts`).
-34. ⬜ **RealSync CMP**: Cookie-Banner mit Opt-In-Logik + „Alle ablehnen"-Button.
-35. ⬜ Script-Blocking-Standard (`type="text/plain" data-consent="…"`) als Default-Pattern.
-36. ⬜ Formular-Absicherung (Consent-Checkbox + Datenschutzhinweis automatisch).
-37. ⬜ CSP-Templates generieren und injizieren.
-38. ⬜ `rebuild-website` / `checkout-website-rebuild`: 8-Step-Pipeline End-to-End härten.
-39. ⬜ Vorher/Nachher-Diff jeder Remediation als signiertes Evidence-Artefakt speichern.
-40. ⬜ Rollback-Mechanismus für jede Auto-Fix-Aktion (sichere Reversibilität).
+33. ⬜ Agenten-Landschaft (`agent-os-runner`, `governance-agent`, `remediation-agent`, `kodee*`, `enterprise-ai-os-*`) auf **ein** Agent-Konzept mit Skills reduzieren.
+34. ⬜ Agent-Contracts (`core/runtime/types.ts`) als verbindliche Schnittstelle für alle Skills.
+35. ⬜ **Ein** Workflow-System: `automation-*` + `workflow-*` + n8n auf ein klares Modell vereinheitlichen.
+36. ⬜ Jeder externe Call geloggt in `ai_tool_runs` / `workflow_runs` (Lückenlosigkeit verifizieren).
+37. ⬜ **Ein** Billing: Stripe-Stack (`stripe-checkout/portal/webhook/meter-sync`) als einzige Quelle, Live-Price-IDs verifiziert.
+38. ⬜ Pilot-/Enterprise-Free-Tier sauber im Billing abbilden (12 Monate, kein Zahlungsdruck, klares Ablauf-Handling).
+39. ⬜ Usage-Based-Metering (`usage-increment`) an reale Nutzung (Skills/Scans/Monitoring) koppeln.
+40. ⬜ Self-Service Upgrade/Downgrade + Proration im Kundenportal testen.
+41. ⬜ Multi-Tenancy-Audit: alle Tabellen RLS-geschützt, negative Cross-Tenant-Tests je Tabelle.
+42. ⬜ Rollen-Modell finalisieren (Owner/Admin/Member/DSB/ReadOnly) — passend für Agentur + Mandant + DSB.
 
-## E — Continuous Monitoring (41–48)
+## Block D — Phase 2: Automation Skills — *Wählen · Aktivieren · Nutzen* (43–54)
 
-41. ✅ `governance-monitoring-scheduler` + Monitoring-Cron.
-42. ✅ AlertsView / MonitoringSourcesView / RiskCenterView (Governance-OS-Frontend).
-43. ⬜ **Drift Detection**: „Marketing hat Hotjar eingebaut" automatisch erkennen.
-44. ⬜ Webhook-Notifications bei neuen Trackern (`governance-webhooks`) end-to-end.
-45. ⬜ Compliance-Delta (Vorher/Nachher) pro Scan-Lauf visualisieren.
-46. ⬜ Konfigurierbare Scan-Frequenz pro Plan (täglich/Stunden für Enterprise).
-47. ⬜ Eskalations-Routing: Alert → E-Mail/Telegram/Slack/Webhook (`telegram-*`).
-48. ⬜ SLA-/Uptime-Monitoring des Scanners selbst (Self-Health, `health`).
+43. 🟡 Skill-Framework (`supabase/functions/skills`, `automation-skills-runs`) als einheitliche Skill-Runtime festigen.
+44. ⬜ Skill-Katalog-UI: Skills wählen → aktivieren → nutzen, **ohne Beratung**, self-service.
+45. ⬜ **DSGVO-Audit-Skill** (auf bestehender `gdpr-audit`/Rule-Engine) als erster First-Class-Skill.
+46. ⬜ **AI-Act-Skill** (auf `ai-act-classify`/`ai-act-risk-inventory`) — Risk-Level + Disclosure-Check.
+47. ⬜ **Evidence-Skill** — Nachweise erzeugen, hashen, archivieren (auf `evidence-*`).
+48. ⬜ **Screenshot-Skill** — Screenshot-Upload → Governance-Auswertung.
+49. ⬜ **Meeting-Skill** — Meeting/Transkript → Governance-relevante Findings & Aufgaben.
+50. ⬜ **Lead-Risk-Skill** — Risiko-Einschätzung für Leads/Vendoren.
+51. ⬜ Skill-Telemetrie: jede Aktivierung/Nutzung gemessen (Aktivierungs-KPI füttern).
+52. ⬜ Skill-Ergebnisse einheitlich als Evidence-Artefakte ablegen (verkettbar, exportierbar).
+53. ⬜ Skill-Berechtigungen pro Plan/Mandant (welcher Tier darf welche Skills).
+54. ⬜ Skill-SDK/Doku, damit neue Skills nach einem Muster entstehen (kein Wildwuchs mehr).
 
-## F — Evidence Vault & Nachweisbarkeit (49–56)
+## Block E — Phase 3: Kontinuierliches Monitoring — 24/7 Governance Runtime (55–66)
 
-49. ✅ `evidence-export` / `evidence-vault-export` Grundlage.
-50. ⬜ HAR-Files + Screenshots pro Scan archivieren (Supabase Storage EU).
-51. ⬜ Consent-Logs (DSGVO Art. 7: Nachweis der Einwilligung) speichern & exportieren.
-52. ⬜ Audit-Trail-PDF mit Zeitstempel + kryptografischer Signatur.
-53. ⬜ Evidence-Chain (Hash-Verkettung) mit pin'd `search_path` absichern (Migration vorhanden — verifizieren).
-54. ⬜ Konfigurierbare Retention-Policy pro Mandant/Anwendungsfall.
-55. ⬜ Manipulationsnachweis: unabhängige Verifizierbarkeit der Evidence-Hashes (Tool/Doku).
-56. ⬜ Klarer Disclaimer: „technische Unterstützung, keine Rechtsberatung" überall konsistent.
+55. ✅ Monitoring-Scheduler + Cron (`governance-monitoring-scheduler`).
+56. ✅ Alerts-/Monitoring-/Risk-Views im Governance-OS-Frontend.
+57. ⬜ Runtime-Objekte definieren: **Websites · KI-Systeme · Vendoren · Datenflüsse · Dokumente** als überwachbare Entitäten.
+58. ⬜ **Playwright-Scanner-Microservice** (`deploy/playwright-scanner/`) produktiv — echtes Headless-Browsing.
+59. ⬜ **Consent-Timing-Analyse** live (Requests/Tracker VOR Consent) — Kern-Differenzierer.
+60. ⬜ **Drift Detection**: neue Tracker/Tools automatisch erkennen („Marketing hat Hotjar eingebaut").
+61. ⬜ Compliance-Delta (Vorher/Nachher) je Lauf, pro überwachter Entität.
+62. ⬜ Konfigurierbare Scan-Frequenz pro Plan (Enterprise: täglich/stündlich).
+63. ⬜ Eskalations-Routing: Alert → E-Mail/Telegram/Slack/Webhook (`telegram-*`, `governance-webhooks`).
+64. ⬜ Vendoren-/Datenfluss-Monitoring (über Website hinaus) als eigene Runtime-Quelle.
+65. ⬜ Dokument-Monitoring (Änderungen an Verträgen/AVV/Policies erkennen).
+66. ⬜ Selbst-Überwachung der Runtime (Health, Uptime, Scanner-SLA via `health`).
 
-## G — AI Act & Governance-OS (57–66)
+## Block F — Phase 4: Governance Knowledge Cloud + RAG (67–78)
 
-57. ✅ `ai-act-classify` / `ai-act-risk-inventory` (Risk-Level-Klassifizierung).
-58. ✅ Governance-OS-Komponenten + Views (RiskCenter, DPIAs, Incidents, Approvals).
-59. ⬜ AI-Tool-Inventar pro Mandant erfassen & pflegen.
-60. ⬜ Risk-Level-Assessment (minimal/limited/high-risk/banned) als geführter Flow.
-61. ⬜ Disclosure-Check für Chatbots (EU AI Act Art. 52 Transparenzpflicht).
-62. ⬜ DPIA-Generator (`governance-dpias`) mit Template + Freigabe-Workflow.
-63. ⬜ Incident-Management mit Meldepflicht-Timer (72h, DSGVO Art. 33).
-64. ⬜ DSB-Dashboard (Datenschutzbeauftragter-Ansicht) mit Mandanten-Übersicht.
-65. ⬜ Governance-Analytics-Aggregator → Management-Reports (`governance-analytics-export`).
-66. ⬜ `governance-remediate` mit Audit-Engine-Findings verdrahten (Closed-Loop).
+67. ⬜ Knowledge-Base-Architektur: kuratierte Rechtsquellen + Embeddings + RAG (EU-lokal, Ollama gemma3:4b als Souveränitäts-Option).
+68. ⬜ Quellen aufnehmen & pflegen: **DSGVO**.
+69. ⬜ **EU AI Act**.
+70. ⬜ **NIS2**.
+71. ⬜ **DSA · Data Act**.
+72. ⬜ **C2PA · SCC**.
+73. ⬜ **EDPB · BfDI** (Leitlinien/Entscheidungen).
+74. ⬜ **Dokument-Upload** → Analyse gegen Knowledge Base.
+75. ⬜ **Screenshot-Upload** → Auswertung (verzahnt mit Screenshot-Skill).
+76. ⬜ **Meeting-Analyse** → Governance-Findings (verzahnt mit Meeting-Skill).
+77. ⬜ **Governance-Chat** mit Quellen-Zitaten (RAG, keine Halluzination, Herkunftsnachweis pro Antwort).
+78. ⬜ Versionierung der Wissensquellen (Stand/Datum nachweisbar) + Quellen-Disclaimer „keine Rechtsberatung".
 
-## H — CMS-Integrationen (67–74)
+## Block G — Phase 5: Europäische Governance-Plattform & GTM (79–88)
 
-67. ✅ Shopify-Grundlage (`shopify-install`, `shopify-scan`, `shopify-webhooks`, `shopify-callback`).
-68. ⬜ Shopify-App-Store-Submission + Cookie-Banner via Script-Tags-API.
-69. ⬜ Checkout-Compliance (DSGVO-konforme Checkout-Felder) für Shopify.
-70. ⬜ **WordPress-Plugin**: Grundstruktur + Auto-Scan bei Aktivierung.
-71. ⬜ WordPress-Dashboard-Widget mit Compliance-Score + One-Click-Fix.
-72. ⬜ WordPress Re-Scan-Cron (wöchentlich) + Plugin-Verzeichnis-Submission.
-73. ⬜ Webflow/Framer: Embed-Code-Injection (Custom Code) als leichter Connector.
-74. ⬜ Connector-SDK (`connectors/`) vereinheitlichen (eine Schnittstelle, mehrere CMS).
+79. ⬜ Zielsegmente schärfen: Agenturen · DSB · Kanzleien · Arztpraxen · Mittelstand · Enterprise.
+80. ⬜ **White-Label/Multi-Tenant** für Agenturen (eigenes Branding, mehrere Kundendomains).
+81. ⬜ **DSB-Dashboard** (Datenschutzbeauftragter-Ansicht über mehrere Mandanten).
+82. ⬜ Öffentliche **Governance-API** + API-Keys (`governance-keys`) mit Scopes/Quotas für Partner.
+83. ⬜ Partner-/Reseller-Programm (Kanzleien, DSB) operationalisieren (`docs/partner-kanzlei-outreach.md`).
+84. ⬜ Pilot-Outreach starten: 15–20 Erstkontakte → 5–10 unterschriebene Piloten.
+85. ⬜ SEO/Content auf *eine* Story ausrichten (Governance OS), Free-Audit als Einstieg in den Funnel.
+86. ⬜ Trust-Center-Seite (EU-Hosting, Verschlüsselung, Sub-Processor-Liste, Status).
+87. ⬜ Onboarding-Material & Demo-Skript für Piloten (reproduzierbar, kein 1:1-Consulting nötig).
+88. ⬜ Erste Case Studies aus Pilotnutzung veröffentlichen (Referenz für Vertrieb).
 
-## I — Multi-Tenant & Agency/Enterprise-Suite (75–82)
+## Block H — Querschnitt: Trust, Security & EU-Souveränität (89–95)
 
-75. ✅ Tenant-Layer (`tenant-audit`, `tenant-invite`, `tenant-members`).
-76. ⬜ Alle Tabellen-RLS gegen Cross-Tenant-Leaks auditieren (negative Tests je Tabelle).
-77. ⬜ White-Label (eigenes Logo/Domain/Farben) für Agency-Suite.
-78. ⬜ Mehrere Kundendomains pro Agency-Account verwalten.
-79. ⬜ Öffentliche **Compliance-API** + API-Keys (`governance-keys`) mit Scopes & Quotas.
-80. ⬜ Rollen-/Rechte-Modell (Owner/Admin/Member/DSB/ReadOnly) finalisieren.
-81. ⬜ Bulk-/Prioritäts-Scans für Agencies (Queue-Priorisierung).
-82. ⬜ Mandanten-Onboarding-Flow (`enterprise-ai-os-discovery-intake`, `kodee-onboard`) glätten.
+89. ✅ MFA + DSGVO-Betroffenenrechte (`mfa-*`, `gdpr-export`, `gdpr-delete`).
+90. ⬜ Service-Role-Keys-Audit: ausschließlich in Edge Functions, nie im Client (CI-Gate).
+91. ⬜ Penetrationstest vor Pilot-Go-Live.
+92. ⬜ EU-Datenresidenz durchgängig nachweisen (DB, Storage, KI-Inferenz-Optionen).
+93. ⬜ Sub-Processor-Liste + Benachrichtigung (`sub-processor-notify`) + AVV/DPA-Vorlagen für Piloten.
+94. ⬜ Evidence-Chain (Hash-Verkettung, pin'd `search_path`) verifizieren — Manipulationsnachweis.
+95. ⬜ Konsistenter Disclaimer „technische Unterstützung, keine Rechtsberatung" überall.
 
-## J — Billing & Monetarisierung (83–88)
+## Block I — Mess- & Steuerungslogik (96–100)
 
-83. ✅ Stripe-Stack (`stripe-checkout`, `stripe-portal`, `stripe-webhook`, `stripe-meter-sync`).
-84. ✅ Stripe-Tax + Pricing-Tier-Alignment (Migrationen vorhanden).
-85. ⬜ `src/config/pricing.ts` als Single Source of Truth mit Live-Price-IDs verifizieren.
-86. ⬜ Usage-Based-Billing (`usage-increment` + Meter-Sync) für API/Scan-Volumen.
-87. ⬜ Self-Service-Upgrade/Downgrade + Proration im Kundenportal testen.
-88. ⬜ Dunning/Failed-Payment-Flow + MRR/Churn-Dashboard (`business-metrics-cron`).
-
-## K — Security, DSGVO & Trust (89–94)
-
-89. ✅ MFA (`mfa-admin-reset`, `mfa-recovery-redeem`, P0a-Security-Migration).
-90. ✅ DSGVO-Betroffenenrechte (`gdpr-export`, `gdpr-delete`).
-91. ⬜ Service-Role-Keys-Audit: ausschließlich in Edge Functions, nie im Client (Scan + CI-Gate).
-92. ⬜ Penetrationstest + Dependency-/Secret-Scanning in CI.
-93. ⬜ Sub-Processor-Liste + Benachrichtigung (`sub-processor-notify`) + AVV/DPA-Vorlagen.
-94. ⬜ Trust-Center-Seite (Hosting-EU, Verschlüsselung, Zertifikate, Status).
-
-## L — GTM, Growth & Content (95–98)
-
-95. ✅ Nischen-Landing-Pages (Agenturen, Arztpraxen, Kanzleien, ChatGPT, Shopify, WordPress).
-96. ⬜ SEO-Content-Engine: Compliance-Guides je Nische → Free-Audit-Funnel.
-97. ⬜ Partner-/Reseller-Programm (Kanzleien, DSB, Webagenturen) — `docs/partner-kanzlei-outreach.md` operationalisieren.
-98. ⬜ Newsletter- & Outbound-Funnel (`newsletter-*`, `welcome-email`, `sales-lead`) messbar machen.
-
-## M — Ops, Deployment & Launch (99–100)
-
-99. ⬜ VPS-Stack (Traefik + Ollama + n8n, `deploy/`) inkl. Playwright-Scanner produktiv & überwacht; Release-Pipeline (`release:merge`/`release:publish`) automatisiert.
-100. ⬜ **Public Launch**: End-to-End-Abnahme (E2E grün, Lasttest `qa:load`, Security-Review), Pricing live, Monitoring/Alerting scharf → GA-Freigabe.
+96. ⬜ Nord-Stern-Dashboard: aktive Mandanten/Woche als zentrale, sichtbare Zahl.
+97. ⬜ Sekundär-KPIs: Skill-Nutzung, überwachte Entitäten, Time-to-First-Value je Pilot.
+98. ⬜ Scope-Disziplin: vor jedem neuen Feature die Frage „bringt das einen Piloten zur aktiven Nutzung?".
+99. ⬜ Quartals-Review gegen diesen Plan (Status ✅/🟡/⬜ aktualisieren, Ballast streichen).
+100. ⬜ **Meilenstein-Definition „erreicht":** 5–10 Pilotkunden nutzen das Governance OS wöchentlich aktiv und liefern verwertbares Feedback.
 
 ---
 
-### Nächste 5 Schritte (Empfehlung)
+### Was bewusst NICHT passiert
 
-1. **#15/#16/#17** — Playwright-Scanner + Consent-Timing live (der eigentliche Differenzierer).
-2. **#34** — RealSync CMP, weil sie Audit + Remediation zum Produkt verbindet.
-3. **#43** — Drift Detection, der wiederkehrende SaaS-Wert.
-4. **#76/#91** — RLS- & Service-Key-Audit vor jeder Skalierung (Sicherheits-Grundlage).
-5. **#85/#86** — Billing scharf stellen (Umsatz tragfähig machen).
+- ❌ Noch mehr Features bauen, bevor die Plattform konsolidiert ist.
+- ❌ Noch mehr Agenten / Container / Landingpages parallel.
+- ❌ „KI baut Websites" oder „100 % rechtssicher" versprechen.
+- ❌ Erfolg an Feature-Anzahl messen statt an aktiver Nutzung.
 
-*Erstellt: Juni 2026 · Grundlage: ROADMAP.md + aktueller Code-Stand · RealSyncDynamics.AI*
+### Empfohlene erste 5 Schritte
+
+1. **#23 + #15/#16** — PR-Backlog & Edge-Function-Inventar: erst aufräumen, dann bauen.
+2. **#10 + #12** — Eine Landingpage, ein Dashboard: eine kohärente Produkt-Oberfläche.
+3. **#43–#46** — Skill-Runtime + erste 2 First-Class-Skills (DSGVO-Audit, AI-Act) als „Wählen·Aktivieren·Nutzen".
+4. **#58/#59/#60** — 24/7-Runtime mit Playwright + Consent-Timing + Drift: der wiederkehrende Wert.
+5. **#1–#4 + #84** — Pilot-Angebot schnüren und Outreach starten → die ersten 5–10 Kunden.
+
+*Aktualisiert: Juni 2026 · Ausrichtung: Governance OS für Europa · RealSyncDynamics.AI*

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Loader2, AlertTriangle, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -85,8 +85,26 @@ export function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex flex-col">
-      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/" className="flex items-center">
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center gap-1 px-3">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Zurück"
+          title="Zurück"
+          className="p-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(1)}
+          aria-label="Vor"
+          title="Vor"
+          className="p-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none transition-colors"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </button>
+        <Link to="/" className="flex items-center ml-2">
           <Logo size={24} />
         </Link>
       </header>

@@ -40,6 +40,18 @@ describe('AuthPage', () => {
     expect(result.container.querySelector('[aria-label="Passwort anzeigen"]')).not.toBeNull();
   });
 
+  it('hat einen Registrieren-Button und Vor/Zurück-Tasten', () => {
+    const result = render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AuthPage mode="login" />
+      </MemoryRouter>,
+    );
+    const text = result.container.textContent ?? '';
+    expect(text).toContain('Registrieren');
+    expect(result.container.querySelector('[aria-label="Zurück"]')).not.toBeNull();
+    expect(result.container.querySelector('[aria-label="Vor"]')).not.toBeNull();
+  });
+
   it('bietet Google als OAuth-Option an', () => {
     const text = renderText('login');
     expect(text).toContain('Mit Google fortfahren');

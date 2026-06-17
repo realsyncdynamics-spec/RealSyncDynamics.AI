@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2, AlertTriangle, ArrowRight, Mail, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, AlertTriangle, ArrowRight, ArrowLeft, Mail, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured, setRememberMe } from '../lib/supabase';
@@ -149,8 +149,26 @@ export function AuthPage({ mode }: { mode: Mode }) {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100 flex flex-col">
-      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
-        <Link to="/" className="flex items-center">
+      <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center gap-1 px-3">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Zurück"
+          title="Zurück"
+          className="p-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(1)}
+          aria-label="Vor"
+          title="Vor"
+          className="p-2 text-titanium-400 hover:text-titanium-100 hover:bg-obsidian-800 rounded-none transition-colors"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </button>
+        <Link to="/" className="flex items-center ml-2">
           <Logo size={24} />
         </Link>
       </header>
@@ -283,29 +301,24 @@ export function AuthPage({ mode }: { mode: Mode }) {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-titanium-500">
-            {isRegister ? (
-              <>
-                Bereits ein Konto?{' '}
-                <Link
-                  to={`/login${params.toString() ? `?${params.toString()}` : ''}`}
-                  className="text-titanium-200 hover:text-white font-medium"
-                >
-                  Anmelden
-                </Link>
-              </>
-            ) : (
-              <>
-                Noch kein Konto?{' '}
-                <Link
-                  to={`/register${params.toString() ? `?${params.toString()}` : ''}`}
-                  className="text-titanium-200 hover:text-white font-medium"
-                >
-                  Konto erstellen
-                </Link>
-              </>
-            )}
-          </p>
+          <div className="mt-6">
+            <p className="text-center text-xs text-titanium-600 mb-3">
+              {isRegister ? 'Bereits ein Konto?' : 'Noch kein Konto?'}
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  `/${isRegister ? 'login' : 'register'}${
+                    params.toString() ? `?${params.toString()}` : ''
+                  }`,
+                )
+              }
+              className="w-full inline-flex items-center justify-center gap-2 border border-titanium-700 text-titanium-200 hover:border-titanium-500 hover:text-white px-6 py-3 text-sm font-semibold rounded-none transition-colors"
+            >
+              {isRegister ? 'Zur Anmeldung' : 'Registrieren'}
+            </button>
+          </div>
         </div>
       </main>
     </div>

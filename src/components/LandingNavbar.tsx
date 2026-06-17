@@ -4,14 +4,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 
+// Anker-Navigation innerhalb der kanonischen Single-Page-Landing ("/").
+// Kein „30-Seiten-Springen" mehr — die Nav scrollt zu den Abschnitten der
+// Startseite; nur „Login" verlässt die Seite Richtung Auth-Onboarding.
 const NAV_ITEMS = [
-  { label: 'Produkt',         to: '/runtime' },
-  { label: 'Lösungen',        to: '/branchen' },
-  { label: 'Automatisierung', to: '/ai-governance' },
-  { label: 'Sicherheit',      to: '/sicherheit' },
-  { label: 'Preise',          to: '/pricing' },
-  { label: 'Dokumentation',   to: '/docs' },
-  { label: 'Login',           to: '/welcome' },
+  { label: 'Funktionen',       to: '/#funktionen' },
+  { label: 'Automation Skills', to: '/#automation' },
+  { label: 'Preise',           to: '/#preise' },
+  { label: 'FAQ',              to: '/#faq' },
+  { label: 'Login',            to: '/welcome' },
 ] as const;
 
 export function LandingNavbar() {

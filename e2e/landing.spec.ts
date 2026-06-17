@@ -3,11 +3,13 @@ import { test, expect } from '@playwright/test';
 /**
  * E2E für die öffentlichen Einstiegsseiten.
  *
- * Positionierung (PR #591 ff.):
- *   - `/`         → PublicWorkspacePreview (Governance-OS-Workspace-Vorschau)
- *   - `/landing`  → Landing.tsx (Marketing-Landing, „European Enterprise Trust")
+ * Positionierung (Governance-OS-Konsolidierung):
+ *   - `/`         → HomePage (kanonische Single-Page-Landing mit Anker-Nav:
+ *                   Funktionen/Automation/Preise/FAQ/Login)
+ *   - `/preview`  → PublicWorkspacePreview (Governance-OS-Workspace-Vorschau)
+ *   - `/landing`  → Landing.tsx (Legacy-Marketing-Landing)
  *
- * Beide tragen dieselbe Governance-OS-Headline; getestet wird der stabile
+ * Alle tragen dieselbe Governance-OS-Headline; getestet wird der stabile
  * Kontrakt (Hero, Self-Serve-CTAs, Kern-Sektionen) — keine flüchtigen Counts.
  * CTA-Disziplin: ausschließlich Self-Service-Strings, keine Sales-/Pilot-/
  * Demo-/Call-Sprache.
@@ -91,40 +93,46 @@ test.describe('Marketing-Landing (/landing)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Governance-OS Workspace-Vorschau (/)
+// Kanonische Single-Page-Landing (/)
 // ─────────────────────────────────────────────────────────────────────
-test.describe('Workspace-Vorschau (/)', () => {
+test.describe('HomePage (/)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {
+  test('Hero zeigt Governance-OS-Headline und Self-Serve-CTAs', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
         name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität/i,
       }),
     ).toBeVisible();
 
-    await expect(page.getByText(/Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar/i)).toBeVisible();
-
-    await expect(page.getByRole('button', { name: /Dashboard öffnen/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Kostenlos starten/i }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /Governance Audit starten/i })).toBeVisible();
   });
 
-  test('Governance Complexity Score-Einstieg navigiert zum Assessment', async ({ page }) => {
-    await expect(page.getByText(/Governance Complexity Score/i).first()).toBeVisible();
-    await page.getByRole('button', { name: /Score ermitteln/i }).click();
-    await expect(page).toHaveURL(/\/governance-score/);
+  test('Anker-Navigation deckt Funktionen/Automation/Preise/FAQ/Login ab', async ({ page }) => {
+    for (const label of [/^Funktionen$/i, /^Automation Skills$/i, /^Preise$/i, /^FAQ$/i, /^Login$/i]) {
+      await expect(page.getByRole('link', { name: label }).first()).toBeVisible();
+    }
   });
 
-  test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /Alles\. In einer Oberfläche\./i }),
-    ).toBeVisible();
-    // Erkennen · Monitoren · Beweisen — Kern-Value-Props.
-    for (const label of ['Erkennen', 'Monitoren', 'Beweisen']) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+  test('alle Vision-Sektionen sind auf einer Seite vorhanden', async ({ page }) => {
+    for (const heading of [
+      /Ein Betriebssystem für Compliance, Evidence und AI-Risikomanagement/i,
+      /Vordefinierte Workflows statt manueller Arbeit/i,
+      /Self-Service-Tarife/i,
+      /Häufige Fragen/i,
+      /Governance OS — kostenlos starten/i,
+    ]) {
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
     }
+  });
+
+  test('Preise-Sektion rendert das Tarif-Grid', async ({ page }) => {
+    await page.goto('/#preise');
+    await expect(page.getByRole('heading', { name: /Self-Service-Tarife/i })).toBeVisible();
+    await expect(page.getByText(/Empfohlen/i).first()).toBeVisible();
   });
 
   test('Keine verbotenen Sales/Pilot/Demo CTAs', async ({ page }) => {
@@ -132,5 +140,31 @@ test.describe('Workspace-Vorschau (/)', () => {
       await expect(page.getByRole('link', { name: pattern })).toHaveCount(0);
       await expect(page.getByRole('button', { name: pattern })).toHaveCount(0);
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Governance-OS Workspace-Vorschau (/preview)
+// ─────────────────────────────────────────────────────────────────────
+test.describe('Workspace-Vorschau (/preview)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/preview');
+  });
+
+  test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', {
+        name: /Das Governance OS für DSGVO, EU AI Act/i,
+      }),
+    ).toBeVisible();
+
+    await expect(page.getByRole('button', { name: /Dashboard öffnen/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Governance Audit starten/i })).toBeVisible();
+  });
+
+  test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: /Alles\. In einer Oberfläche\./i }),
+    ).toBeVisible();
   });
 });

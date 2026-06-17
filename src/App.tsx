@@ -7,7 +7,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
-// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
+// ── Public entry: kanonische Single-Page-Landing ("/") — Governance-OS-Positionierung
+import { HomePage } from './pages/HomePage';
+// ── Governance-OS Workspace Preview (jetzt unter /preview erreichbar)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
@@ -276,9 +278,11 @@ function RoutesWithTracking() {
   return (
     <Suspense fallback={<LazyFallback />}>
     <Routes>
-      {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
-          die Marketing-Landing bleibt unter /landing erreichbar. */}
-      <Route path="/" element={<PublicWorkspacePreview />} />
+      {/* Public — Startseite ist die EINE kanonische Single-Page-Landing
+          (HomePage) mit Anker-Navigation (Funktionen/Automation/Preise/FAQ/
+          Login). Die Governance-OS-Workspace-Vorschau bleibt unter /preview,
+          die Legacy-Marketing-Landing unter /landing erreichbar. */}
+      <Route path="/" element={<HomePage />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />

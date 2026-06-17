@@ -1,79 +1,93 @@
 # Production Runtime — Source of Truth
 
-**Last verified:** 2026-06-05  
+**Last verified:** 2026-06-14  
 **Authoritative ADR:** [`docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md`](../adr/0001-stay-on-supabase-gh-pages-for-v1.md)  
 **Live check:** [`SYSTEMCHECK-2026-05-28.md`](./SYSTEMCHECK-2026-05-28.md)
 
+> **⚠ Topology-Update 2026-06-14:** Nameserver-Cutover zu Cloudflare ist live.
+> `realsyncdynamicsai.de` läuft jetzt über Cloudflare-Proxy → GitHub Pages (Fastly).
+> NS: `bella.ns.cloudflare.com` / `clyde.ns.cloudflare.com`, A: `172.67.179.238`, `104.21.31.200` (Cloudflare-Anycast).
+> **HSTS/X-Frame-Options noch nicht gesetzt** — erfordert `deploy/cloudflare/main.tf apply`
+> (Phase B, siehe [`docs/runbooks/cloudflare-phase-b-setup.md`](../runbooks/cloudflare-phase-b-setup.md)).
+
 ---
 
-## TL;DR — Aktuelle Topology (Stand 2026-06-05)
+## TL;DR — Aktuelle Topology (Stand 2026-06-14)
 
 | Surface | Pipeline | Target | Domain |
 |---|---|---|---|
-| **Frontend SPA** ✅ PRIMARY PRODUCTION | `.github/workflows/deploy-pages.yml` | **GitHub Pages** (Fastly CDN) | `realsyncdynamicsai.de` → direkt auf GitHub Pages Anycast IPs |
+| **Frontend SPA** ✅ PRIMARY PRODUCTION | `.github/workflows/deploy-pages.yml` | **Cloudflare Proxy → GitHub Pages** (Fastly CDN) | `realsyncdynamicsai.de` → Cloudflare Anycast → origin GitHub Pages |
 | **Supabase** (DB, Auth, Edge Functions) | `.github/workflows/deploy.yml` | Supabase `ebljyceifhnlzhjfyxup` (eu-central-1) | `*.supabase.co/functions/v1/*` |
 | **VPS-Backend** (chat, ollama, n8n) | `docker compose up -d` auf VPS | Hostinger `srv1622293` `187.77.89.1` | `chat/ollama/n8n.realsyncdynamicsai.de` |
 | **VPS rsync** ⚠ OPTIONAL — nicht Production-Frontend | `.github/workflows/deploy-frontend.yml` | VPS `/var/www/…/dist` | — kein User-facing Traffic |
 | **Tracker DB** | `.github/workflows/tracker-db-update.yml` (cron) | Supabase | n/a |
 
-**`realsyncdynamicsai.de` wird DIREKT von GitHub Pages ausgeliefert — kein VPS-Hop, kein Traefik-Redirect.**
+**`realsyncdynamicsai.de` läuft über Cloudflare-Proxy vor GitHub Pages.**
+Nameserver (Hostinger → Cloudflare) cutover live seit 2026-06-14.
 
 ```
-Browser → DNS A → 185.199.108-111.153 (GitHub Pages Anycast)
-       → HTTP/2 200, server: GitHub.com (Fastly CDN)
-       → SPA shell + content-hashed assets
+Browser → DNS A → 172.67.179.238 / 104.21.31.200 (Cloudflare Anycast, proxied)
+       → Cloudflare Edge (server: cloudflare, cf-ray: ...)
+       → Origin: GitHub Pages / Fastly (x-github-request-id sichtbar)
+       → HTTP/2 200, SPA shell + content-hashed assets
 ```
+
+> **Phase B ausstehend:** HSTS, X-Frame-Options und weitere Security-Header
+> sind noch NICHT gesetzt (Cloudflare Transform Rules + SSL/TLS-Setting noch nicht
+> angewendet). Runbook: [`docs/runbooks/cloudflare-phase-b-setup.md`](../runbooks/cloudflare-phase-b-setup.md).
 
 ---
 
 ## How a request to `realsyncdynamicsai.de` actually flows
 
+> Stand 2026-06-14: Apex-Traffic läuft über Cloudflare, nicht mehr über den VPS.
+> Der VPS verarbeitet nur noch die Kodee-Subdomains (chat/ollama/n8n).
+
 ```
-                          ┌──────────────────────────────────────┐
-   Browser → DNS A/AAAA   │  Hostinger VPS  187.77.89.1          │
-                          │  (kodee-stack docker-compose)         │
-                          │                                       │
-                          │  ┌─────────────────────────────────┐  │
-                          │  │       Traefik (TLS, routing)    │  │
-                          │  │                                 │  │
-   request                │  │  Host(realsyncdynamicsai.de)    │  │
-   ───────────────────────┼──┼──→ middleware kodee-apex-redirect │  │
-                          │  │      => 301 PERMANENT to        │  │
-                          │  │      realsyncdynamics-spec      │  │
-                          │  │      .github.io/                │  │
-                          │  │      RealSyncDynamics.AI/$path  │  │
-                          │  │                                 │  │
-                          │  │  Host(chat.realsyncdynamicsai)  │  │
-                          │  │   → kodee-chat container        │  │
-                          │  │  Host(ollama.realsyncdynamicsai)│  │
-                          │  │   → kodee-ollama container      │  │
-                          │  │  Host(n8n.realsyncdynamicsai)   │  │
-                          │  │   → kodee-n8n container         │  │
-                          │  └─────────────────────────────────┘  │
-                          └──────────────────────────────────────┘
-                                         │ 301
-                                         ▼
-                          ┌──────────────────────────────────────┐
-                          │  GitHub Pages (Fastly CDN edge)      │
-                          │                                       │
-                          │  realsyncdynamics-spec.github.io/    │
-                          │   RealSyncDynamics.AI/$path           │
-                          │                                       │
-                          │  serves: dist/ artifact from the      │
-                          │   latest run of                       │
-                          │   .github/workflows/deploy-pages.yml  │
-                          └──────────────────────────────────────┘
-                                         │
-                                         ▼
-                          ┌──────────────────────────────────────┐
-                          │  Browser hydrates the SPA             │
-                          │  └─→ in-app calls go to                │
-                          │       https://ebljyceifhnlzhjfyxup    │
-                          │       .supabase.co/functions/v1/*     │
-                          └──────────────────────────────────────┘
+Browser → DNS A → 172.67.179.238 / 104.21.31.200
+                          │
+                          ▼
+          ┌───────────────────────────────────────┐
+          │  Cloudflare Edge (NS: bella/clyde)    │
+          │                                       │
+          │  Host(realsyncdynamicsai.de) →        │
+          │    proxy zu GitHub Pages origin       │
+          │  ⚠ Phase B ausstehend:                │
+          │    HSTS/X-Frame-Options noch NICHT    │
+          │    gesetzt (kein Transform Rule/HSTS  │
+          │    Setting angewendet)                │
+          │                                       │
+          │  Host(*.realsyncdynamicsai.de) →      │
+          │    DNS-only (grau) → VPS 187.77.89.1 │
+          └───────────────────────────────────────┘
+                          │ origin request
+                          ▼
+          ┌───────────────────────────────────────┐
+          │  GitHub Pages (Fastly CDN edge)       │
+          │  server: GitHub.com                   │
+          │                                       │
+          │  realsyncdynamics-spec.github.io/     │
+          │   RealSyncDynamics.AI/$path            │
+          │                                       │
+          │  serves: dist/ aus deploy-pages.yml   │
+          └───────────────────────────────────────┘
+                          │
+                          ▼
+          ┌───────────────────────────────────────┐
+          │  Browser hydrates the SPA             │
+          │  └─→ in-app calls go to               │
+          │       https://ebljyceifhnlzhjfyxup    │
+          │       .supabase.co/functions/v1/*     │
+          └───────────────────────────────────────┘
 ```
 
-The VPS is essentially a **TLS-terminating apex-redirector + Kodee-subdomain host**. The frontend SPA itself is never served from the VPS in production today.
+```
+Subdomains (chat/ollama/n8n.realsyncdynamicsai.de):
+  DNS → Hostinger VPS 187.77.89.1 → Traefik → jeweiliger Container
+```
+
+Der VPS ist nur noch **Kodee-Subdomain-Host** (chat, ollama, n8n). Apex-Traffic
+läuft seit der NS-Umstellung vollständig über Cloudflare.
 
 ---
 

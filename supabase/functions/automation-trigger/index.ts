@@ -1,40 +1,26 @@
-// Automation Skill trigger — entry point for Phase-2 Automatisierungs-Skills.
+// Automation-Skill trigger — entry point from the RealSync frontend.
 //
 // POST /functions/v1/automation-trigger
 // Authorization: Bearer <user JWT>
 // Body: { tenant_id: uuid, skill_id: string, input?: object }
 //
-// Pipeline:
+// Pipeline (analog workflow-trigger, siehe 20260503100000_workflows_n8n_schema.sql):
 //   1. JWT verify + tenant membership
-//   2. Load skill from automation_skills + status/plan checks
+//   2. Load automation_skills row + status check + n8n-bound check
 //   3. gateFeature('ai.tool.automations') + quota check (limit.automation_runs_monthly)
-//   4. INSERT automation_runs (status='queued') + 'queued' event
-//   5. DIRECT_SKILL_HANDLERS: Skills mit eingebauter Direct-Execution (kein n8n
-//      nötig, z. B. dsgvo-audit → ruft gdpr-audit synchron auf) laufen sofort
-//      durch und liefern result inline zurück.
-//   6. Sonst: wenn skill.n8n_workflow_id gesetzt ist, POST n8n webhook (async —
-//      n8n calls back via automation-callback). Andernfalls: mark run
-//      'error'/NOT_CONNECTED — der Skill existiert im Katalog, ist aber noch
-//      nicht mit n8n verbunden.
+//   4. INSERT automation_runs (status='pending')
+//   5. POST n8n webhook (async — n8n callbacks automation-callback when done)
+//   6. UPDATE automation_runs status='running' on n8n accept, or 'error' on reject
 //   7. Return { run_id }
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
-import { getCurrentTotal, recordUsage } from '../_shared/usage.ts';
+import { getCurrentTotal } from '../_shared/usage.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-// PlanKey rank — must match src/core/billing/types.ts PlanKey order.
-const PLAN_RANK: Record<string, number> = {
-  free: 0,
-  bronze: 1,
-  silver: 2,
-  gold: 3,
-  enterprise_public: 4,
 };
 
 Deno.serve(async (req) => {
@@ -47,7 +33,7 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const N8N_INTERNAL_URL = Deno.env.get('N8N_INTERNAL_URL') ?? 'https://n8n.realsyncdynamicsai.de';
+  const N8N_INTERNAL_URL = Deno.env.get('N8N_INTERNAL_URL') ?? 'https://n8n.RealSyncDynamicsAI.de';
   const AUTOMATION_CALLBACK_SECRET = Deno.env.get('AUTOMATION_CALLBACK_SECRET');
 
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -75,34 +61,19 @@ Deno.serve(async (req) => {
   });
 
   const { data: skill, error: skillErr } = await admin
-    .from('automation_skills').select('*')
+    .from('automation_skills').select('id, status, n8n_workflow_id, title')
     .eq('id', body.skill_id).maybeSingle();
   if (skillErr) return jsonError(500, 'INTERNAL', skillErr.message);
-  if (!skill) return jsonError(404, 'NOT_FOUND', 'skill not found');
-  if (skill.status === 'planned') {
-    return jsonError(409, 'NOT_IMPLEMENTED', `skill "${skill.id}" is not yet available`);
-  }
+  if (!skill) return jsonError(404, 'NOT_FOUND', 'automation skill not found');
+  if (skill.status === 'planned') return jsonError(409, 'NOT_AVAILABLE', 'skill is not yet available');
+  if (!skill.n8n_workflow_id) return jsonError(409, 'NOT_BOUND', 'skill has no n8n_workflow_id — not wired up yet');
 
-  // Entitlement gate (boolean feature)
+  // Entitlement gate
   try {
     await gateFeature(admin, body.tenant_id, 'ai.tool.automations');
   } catch (e) {
     if (e instanceof EntitlementError) return jsonError(403, e.code, e.message);
     throw e;
-  }
-
-  // Plan-rank check (per-skill required_plan vs. tenant's resolved plan_key)
-  const { data: sub } = await admin
-    .from('subscriptions').select('plan_key')
-    .eq('tenant_id', body.tenant_id)
-    .order('updated_at', { ascending: false })
-    .limit(1).maybeSingle();
-  const tenantPlan = sub?.plan_key ?? 'free';
-  const tenantRank = PLAN_RANK[tenantPlan] ?? 0;
-  const requiredRank = PLAN_RANK[skill.required_plan] ?? 0;
-  if (tenantRank < requiredRank) {
-    return jsonError(403, 'PLAN_REQUIRED',
-      `skill "${skill.id}" requires plan "${skill.required_plan}" (tenant is on "${tenantPlan}")`);
   }
 
   // Quota check (monthly run limit)
@@ -118,14 +89,14 @@ Deno.serve(async (req) => {
       `monthly automation run quota reached (${currentRuns}/${runsLimit})`);
   }
 
-  // Insert queued run
+  // Insert pending run
   const { data: run, error: runErr } = await admin.from('automation_runs').insert({
-    tenant_id: body.tenant_id,
     skill_id: skill.id,
+    tenant_id: body.tenant_id,
     triggered_by: userId,
-    status: 'queued',
+    status: 'pending',
     input: body.input ?? {},
-  }).select('id, started_at').single();
+  }).select('id').single();
   if (runErr || !run) return jsonError(500, 'INTERNAL', runErr?.message ?? 'run insert failed');
 
   await admin.from('automation_run_events').insert({
@@ -134,28 +105,10 @@ Deno.serve(async (req) => {
     payload: { skill_id: skill.id },
   });
 
-  if (skill.id === 'dsgvo-audit') {
-    return await runDsgvoAuditDirect(admin, SUPABASE_URL, run, body, userResp.user.email ?? null);
-  }
-
-  if (!skill.n8n_workflow_id) {
-    await admin.from('automation_runs').update({
-      status: 'error',
-      error_code: 'NOT_CONNECTED',
-      error_message: `skill "${skill.id}" is not yet connected to an n8n workflow`,
-      finished_at: new Date().toISOString(),
-    }).eq('id', run.id);
-    await admin.from('automation_run_events').insert({
-      run_id: run.id,
-      event_type: 'error',
-      payload: { error_code: 'NOT_CONNECTED' },
-    });
-    return jsonError(503, 'NOT_CONNECTED', `skill "${skill.id}" is not yet connected to an n8n workflow`, { run_id: run.id });
-  }
-
   const callbackUrl = `${SUPABASE_URL}/functions/v1/automation-callback`;
   const webhookUrl = `${N8N_INTERNAL_URL.replace(/\/$/, '')}/webhook/${skill.n8n_workflow_id}`;
 
+  // Fire n8n — async, n8n calls back when done
   let n8nExecutionId: string | null = null;
   try {
     const n8nResp = await fetch(webhookUrl, {
@@ -167,8 +120,10 @@ Deno.serve(async (req) => {
         callback_secret: AUTOMATION_CALLBACK_SECRET,
         tenant_id: body.tenant_id,
         skill_id: skill.id,
+        skill_title: skill.title,
         input: body.input ?? {},
       }),
+      // n8n's webhook acks fast; if it doesn't, we treat it as failed.
       signal: AbortSignal.timeout(15_000),
     });
     if (!n8nResp.ok) {
@@ -179,7 +134,7 @@ Deno.serve(async (req) => {
         error_message: `n8n returned ${n8nResp.status}: ${errBody.slice(0, 200)}`,
         finished_at: new Date().toISOString(),
       }).eq('id', run.id);
-      return jsonError(502, 'N8N_REJECTED', `n8n returned ${n8nResp.status}`, { run_id: run.id });
+      return jsonError(502, 'N8N_REJECTED', `n8n returned ${n8nResp.status}`);
     }
     // deno-lint-ignore no-explicit-any
     const ack: any = await n8nResp.json().catch(() => ({}));
@@ -191,125 +146,16 @@ Deno.serve(async (req) => {
       error_message: (e as Error).message,
       finished_at: new Date().toISOString(),
     }).eq('id', run.id);
-    return jsonError(503, 'N8N_UNREACHABLE', `n8n unreachable: ${(e as Error).message}`, { run_id: run.id });
+    return jsonError(503, 'N8N_UNREACHABLE', `n8n unreachable: ${(e as Error).message}`);
   }
 
   await admin.from('automation_runs').update({
     status: 'running',
     n8n_execution_id: n8nExecutionId,
   }).eq('id', run.id);
-  await admin.from('automation_run_events').insert({
-    run_id: run.id,
-    event_type: 'running',
-    payload: { n8n_execution_id: n8nExecutionId },
-  });
 
   return json({ ok: true, run_id: run.id, n8n_execution_id: n8nExecutionId });
 });
-
-// ─── Direct-Execution: dsgvo-audit ──────────────────────────────────────────
-// Ruft die bestehende, öffentliche `gdpr-audit`-Function synchron auf — kein
-// n8n nötig. Der Run wird sofort als 'success'/'error' abgeschlossen, das
-// Ergebnis als automation_outputs (output_type='report') gespeichert und
-// inline zurückgegeben.
-async function runDsgvoAuditDirect(
-  admin: ReturnType<typeof createClient>,
-  SUPABASE_URL: string,
-  run: { id: string; started_at: string },
-  body: { tenant_id?: string; input?: Record<string, unknown> },
-  userEmail: string | null,
-): Promise<Response> {
-  const url = typeof body.input?.url === 'string' ? body.input.url.trim() : '';
-  if (!url) {
-    await failRun(admin, run.id, 'BAD_REQUEST', 'input.url required for skill "dsgvo-audit"');
-    return jsonError(400, 'BAD_REQUEST', 'input.url required for skill "dsgvo-audit"', { run_id: run.id });
-  }
-  if (!userEmail) {
-    await failRun(admin, run.id, 'NO_EMAIL', 'user account has no email address');
-    return jsonError(400, 'NO_EMAIL', 'user account has no email address', { run_id: run.id });
-  }
-
-  // deno-lint-ignore no-explicit-any
-  let data: any;
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, email: userEmail, source: 'automation_skill' }),
-      signal: AbortSignal.timeout(20_000),
-    });
-    data = await resp.json().catch(() => ({}));
-    if (!resp.ok || !data?.ok) {
-      const msg = data?.error?.message ?? `gdpr-audit returned ${resp.status}`;
-      await failRun(admin, run.id, 'AUDIT_FAILED', msg);
-      return jsonError(502, 'AUDIT_FAILED', msg, { run_id: run.id });
-    }
-  } catch (e) {
-    await failRun(admin, run.id, 'AUDIT_UNREACHABLE', (e as Error).message);
-    return jsonError(503, 'AUDIT_UNREACHABLE', (e as Error).message, { run_id: run.id });
-  }
-
-  const result = {
-    audit_id: data.audit_id,
-    score: data.score,
-    severity: data.severity,
-    domain: data.domain,
-    issues: data.issues,
-    coverage: data.coverage,
-    coverage_notice: data.coverage_notice,
-  };
-
-  const finishedAt = new Date();
-  const durationMs = finishedAt.getTime() - new Date(run.started_at).getTime();
-
-  await admin.from('automation_runs').update({
-    status: 'success',
-    result,
-    cost_usd: 0,
-    duration_ms: durationMs,
-    finished_at: finishedAt.toISOString(),
-  }).eq('id', run.id);
-  await admin.from('automation_run_events').insert({
-    run_id: run.id,
-    event_type: 'success',
-    payload: {},
-  });
-  await admin.from('automation_outputs').insert({
-    run_id: run.id,
-    tenant_id: body.tenant_id,
-    output_type: 'report',
-    content: result,
-  });
-
-  try {
-    await recordUsage(admin, body.tenant_id!, 'limit.automation_runs_monthly', 1, {
-      run_id: run.id, skill_id: 'dsgvo-audit',
-    });
-  } catch (e) {
-    console.error('recordUsage failed', (e as Error).message);
-  }
-
-  return json({ ok: true, run_id: run.id, status: 'success', result });
-}
-
-async function failRun(
-  admin: ReturnType<typeof createClient>,
-  runId: string,
-  errorCode: string,
-  errorMessage: string,
-): Promise<void> {
-  await admin.from('automation_runs').update({
-    status: 'error',
-    error_code: errorCode,
-    error_message: errorMessage,
-    finished_at: new Date().toISOString(),
-  }).eq('id', runId);
-  await admin.from('automation_run_events').insert({
-    run_id: runId,
-    event_type: 'error',
-    payload: { error_code: errorCode },
-  });
-}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -317,6 +163,6 @@ function json(body: unknown, status = 200): Response {
     headers: { ...corsHeaders, 'content-type': 'application/json' },
   });
 }
-function jsonError(status: number, code: string, message: string, details?: unknown): Response {
-  return json({ ok: false, error: { code, message, details } }, status);
+function jsonError(status: number, code: string, message: string): Response {
+  return json({ ok: false, error: { code, message } }, status);
 }

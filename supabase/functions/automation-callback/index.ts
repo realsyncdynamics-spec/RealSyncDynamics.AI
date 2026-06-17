@@ -1,26 +1,24 @@
-// Automation Skill callback — n8n posts progress/terminal results here.
+// Automation-Skill callback — n8n posts progress/terminal results here.
 //
 // POST /functions/v1/automation-callback
 // Authorization: Bearer <AUTOMATION_CALLBACK_SECRET>
-// Body (progress event): {
-//   run_id: uuid,
-//   event_type: string,
-//   payload?: object,
-// }
-// Body (terminal result): {
-//   run_id: uuid,
-//   status: 'success' | 'error' | 'timeout' | 'cancelled',
-//   result?: object,
-//   outputs?: { output_type: string; content: object; evidence_hash?: string }[],
-//   error_code?: string,
-//   error_message?: string,
-//   cost_usd?: number,
-// }
+// Body (terminal):
+//   {
+//     run_id: uuid,
+//     status: 'success' | 'error' | 'timeout' | 'cancelled',
+//     result?: object,
+//     output_refs?: Array<{ output_type: 'report'|'document'|'ticket'|'protocol', storage_path?: string, metadata?: object }>,
+//     error_code?: string,
+//     error_message?: string,
+//     cost_usd?: number,
+//   }
+// Body (progress, optional, run bleibt 'running'):
+//   { run_id: uuid, event_type: 'progress' | 'log', payload?: object }
 //
-// 1. Validates shared bearer secret (n8n includes it from automation-trigger payload)
-// 2. event_type without status  -> INSERT automation_run_events (progress only)
-// 3. status present              -> UPDATE automation_runs (terminal), INSERT
-//    automation_outputs for each entry in `outputs`, recordUsage on success.
+// 1. Validiert das geteilte Bearer-Secret (n8n erhält es im automation-trigger-Payload)
+// 2. Bei event_type ohne status: INSERT automation_run_events (Fortschritt), Run bleibt unverändert
+// 3. Bei gesetztem status: UPDATE automation_runs (terminal), INSERT automation_run_events + automation_outputs
+// 4. recordUsage('limit.automation_runs_monthly') nur bei status='success'
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { recordUsage } from '../_shared/usage.ts';
@@ -40,11 +38,11 @@ Deno.serve(async (req) => {
 
   let body: {
     run_id?: string;
+    status?: string;
     event_type?: string;
     payload?: Record<string, unknown>;
-    status?: string;
     result?: Record<string, unknown>;
-    outputs?: { output_type: string; content: Record<string, unknown>; evidence_hash?: string }[];
+    output_refs?: Array<{ output_type?: string; storage_path?: string; metadata?: Record<string, unknown> }>;
     error_code?: string;
     error_message?: string;
     cost_usd?: number;
@@ -63,14 +61,22 @@ Deno.serve(async (req) => {
   if (runErr) return jsonError(500, 'INTERNAL', runErr.message);
   if (!run) return jsonError(404, 'NOT_FOUND', 'run not found');
 
-  // Progress event only (no terminal status) — append and return.
+  // Progress-Event ohne status: nur Event protokollieren, Run bleibt 'running'.
   if (!body.status) {
-    if (!body.event_type) return jsonError(400, 'BAD_REQUEST', 'event_type or status required');
-    await admin.from('automation_run_events').insert({
+    const validEvents = ['queued', 'progress', 'log'];
+    const eventType = body.event_type ?? 'progress';
+    if (!validEvents.includes(eventType)) {
+      return jsonError(400, 'BAD_REQUEST', `event_type must be one of: ${validEvents.join(', ')}`);
+    }
+    if (run.status !== 'pending' && run.status !== 'running') {
+      return jsonError(409, 'ALREADY_FINISHED', `run already in status ${run.status}`);
+    }
+    const { error: eventErr } = await admin.from('automation_run_events').insert({
       run_id: run.id,
-      event_type: body.event_type,
+      event_type: eventType,
       payload: body.payload ?? {},
     });
+    if (eventErr) return jsonError(500, 'INTERNAL', eventErr.message);
     return json({ ok: true });
   }
 
@@ -78,7 +84,7 @@ Deno.serve(async (req) => {
   if (!validStatus.includes(body.status)) {
     return jsonError(400, 'BAD_REQUEST', `status must be one of: ${validStatus.join(', ')}`);
   }
-  if (run.status !== 'queued' && run.status !== 'running') {
+  if (run.status !== 'pending' && run.status !== 'running') {
     return jsonError(409, 'ALREADY_FINISHED', `run already in status ${run.status}`);
   }
 
@@ -99,23 +105,25 @@ Deno.serve(async (req) => {
 
   await admin.from('automation_run_events').insert({
     run_id: run.id,
-    event_type: body.status,
-    payload: { error_code: body.error_code ?? null },
+    event_type: body.status === 'success' ? 'result' : 'error',
+    payload: { status: body.status, error_code: body.error_code ?? null, error_message: body.error_message ?? null },
   });
 
-  if (body.outputs?.length) {
-    await admin.from('automation_outputs').insert(
-      body.outputs.map((o) => ({
+  const validOutputTypes = ['report', 'document', 'ticket', 'protocol'];
+  const outputRefs = (body.output_refs ?? []).filter((o) => o.output_type && validOutputTypes.includes(o.output_type));
+  if (outputRefs.length > 0) {
+    const { error: outputErr } = await admin.from('automation_outputs').insert(
+      outputRefs.map((o) => ({
         run_id: run.id,
-        tenant_id: run.tenant_id,
         output_type: o.output_type,
-        content: o.content,
-        evidence_hash: o.evidence_hash ?? null,
+        storage_path: o.storage_path ?? null,
+        metadata: o.metadata ?? {},
       })),
     );
+    if (outputErr) console.error('automation_outputs insert failed', outputErr.message);
   }
 
-  // Quota — only count successful runs against the monthly cap.
+  // Quota — nur erfolgreiche Runs zählen gegen das monatliche Kontingent.
   if (body.status === 'success') {
     try {
       await recordUsage(admin, run.tenant_id, 'limit.automation_runs_monthly', 1, {
@@ -135,6 +143,6 @@ function json(body: unknown, status = 200): Response {
     headers: { 'content-type': 'application/json' },
   });
 }
-function jsonError(status: number, code: string, message: string, details?: unknown): Response {
-  return json({ ok: false, error: { code, message, details } }, status);
+function jsonError(status: number, code: string, message: string): Response {
+  return json({ ok: false, error: { code, message } }, status);
 }

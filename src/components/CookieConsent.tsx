@@ -85,22 +85,22 @@ export function CookieConsent() {
                   Statistik- und Marketing-Cookies mit Deiner Einwilligung. Mehr
                   in der <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link>.
                 </p>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {/* BfDI-Leitlinie + DSGVO Art. 7 III + TTDSG §25: Accept und Reject
-                      müssen UI-gleichwertig sein. Beide Buttons: gleiche min-width
-                      (Bounding-Box-Parität), gleiches Padding, gleicher Font-Weight.
-                      Color-Differenzierung bleibt als semantisches Cue, Volumen ist
-                      gleich. Verifiziert in e2e/cookie-consent.spec.ts. */}
+                {/* BfDI-Leitlinie + DSGVO Art. 7 III + TTDSG §25: Accept und Reject
+                    in eigenem flex-Container, je flex-1 → garantiert gleiche Breite.
+                    Einstellungen separat darunter. */}
+                <div className="flex gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <button onClick={acceptAll}
-                    className="flex-1 px-3 py-1.5 min-w-[8rem] bg-security-500 hover:bg-security-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
+                    className="flex-1 px-3 py-1.5 bg-security-500 hover:bg-security-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-accept-all">
                     Alles akzeptieren
                   </button>
                   <button onClick={acceptNecessary}
-                    className="flex-1 px-3 py-1.5 min-w-[8rem] bg-titanium-700 hover:bg-titanium-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
+                    className="flex-1 px-3 py-1.5 bg-titanium-700 hover:bg-titanium-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-reject-all">
                     Alle ablehnen
                   </button>
+                </div>
+                <div>
                   <button onClick={() => setShowCustom(true)}
                     className="px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-settings">

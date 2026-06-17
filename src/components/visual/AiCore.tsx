@@ -25,7 +25,7 @@ export function AiCore({ size = 360, className }: Props) {
   if (!highEnd) return fallback;
 
   return (
-    <div className={className} style={{ width: size, height: size }}>
+    <div className={className} style={{ width: size, maxWidth: '100%', aspectRatio: '1' }}>
       <Suspense fallback={fallback}>
         <AiCoreScene />
       </Suspense>

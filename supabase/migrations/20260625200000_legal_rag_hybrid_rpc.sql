@@ -6,8 +6,11 @@
 -- Schritt 1: Sicherheitskopie des alten RPC-Namens für Rückwärtskompatibilität
 -- (governance-agent ruft weiterhin `legal_retrieve_chunks` — wir ersetzen
 --  die Funktion in-place ohne Umbenennungs-Breaking-Change).
+-- DROP notwendig weil der Return-Typ sich von REAL (Phase 1) auf FLOAT ändert
+-- — CREATE OR REPLACE schlägt bei Return-Typ-Änderungen fehl.
+DROP FUNCTION IF EXISTS public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT);
 
-CREATE OR REPLACE FUNCTION public.legal_retrieve_chunks(
+CREATE FUNCTION public.legal_retrieve_chunks(
   q                   TEXT,
   k                   INT     DEFAULT 5,
   framework_filter    TEXT    DEFAULT NULL,

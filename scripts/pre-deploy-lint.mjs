@@ -256,6 +256,19 @@ const LEGACY_FILENAME_ALLOWLIST = new Set([
   '20260510_ai_governance_core.sql',
 ]);
 
+// Bekannte Stamp-Duplikate: Merge-Artefakte, die Hotfix #621 (f7e8164)
+// bewusst behalten hat (No-op/Doppel statt Loeschung, um die
+// Migrationshistorie lueckenlos zu halten). Vier verschiedene Migrationen
+// teilen den Stamp 20260624000000; agent_operations_layer_schema bleibt der
+// Baseline-Traeger, die folgenden drei sind hier ausgenommen. Sie sind
+// idempotent und in Prod nicht angewandt. Bis ein dedizierter Migrations-
+// Squash sie aufloest, werden sie von der strikt-monotonen Pruefung befreit.
+const DUPLICATE_STAMP_ALLOWLIST = new Set([
+  '20260624000000_automation_skills_runs.sql',
+  '20260624000000_governance_os_runtime.sql',
+  '20260624000000_stripe_live_price_ids.sql',
+]);
+
 function lintMigrations() {
   const migDir = join(__root, 'supabase/migrations');
   if (!existsSync(migDir)) {
@@ -288,6 +301,12 @@ function lintMigrations() {
     const a = stamps[i - 1];
     const b = stamps[i];
     if (b.stamp <= a.stamp) {
+      if (DUPLICATE_STAMP_ALLOWLIST.has(b.file)) {
+        push('info', 'migration-order-dup-allowlisted',
+          `${b.file} teilt Stamp ${b.stamp} mit ${a.file} — bekanntes #621-Merge-Artefakt, allowlisted (idempotent, in Prod nicht angewandt)`,
+          `supabase/migrations/${b.file}`);
+        continue;
+      }
       push('error', 'migration-order',
         `migration ${b.file} stamp ${b.stamp} is not strictly greater than predecessor ${a.file} (${a.stamp})`,
         `supabase/migrations/${b.file}`);

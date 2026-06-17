@@ -174,6 +174,8 @@ const GovernanceScansListView = lazy(() => import('./features/governance/scans/S
 const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/ScanDetailView').then((m) => ({ default: m.ScanDetailView })));
 const AiActRiskInventoryView = lazy(() => import('./features/governance/AiActRiskInventoryView').then((m) => ({ default: m.AiActRiskInventoryView })));
 const MonitoringRuntimeView = lazy(() => import('./features/governance/monitoring/MonitoringRuntimeView').then((m) => ({ default: m.MonitoringRuntimeView })));
+const GdprHubView = lazy(() => import('./features/governance/gdpr/GdprHubView').then((m) => ({ default: m.GdprHubView })));
+const OfficeView = lazy(() => import('./features/app-office/OfficeView').then((m) => ({ default: m.OfficeView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
@@ -240,6 +242,7 @@ import { AiGovernancePage } from './pages/AiGovernancePage';
 import { CookieConsent } from './components/CookieConsent';
 import { ScrollToTop } from './components/ScrollToTop';
 import { GovernanceBrowserShell } from './components/governance-os/GovernanceBrowserShell';
+import { AppShell } from './components/app-shell/AppShell';
 import { RemediationPlaceholder } from './components/governance-os/RemediationPlaceholder';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
 import { TenantProvider } from './core/access/TenantProvider';
@@ -447,47 +450,51 @@ function RoutesWithTracking() {
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
-      <Route path="/app" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
-      <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
-      <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
-      <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
-      <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
-      <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
-      <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
-      <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
-      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
-      <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence/auditor" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
-      <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringRuntimeView /></GovernanceBrowserShell>} />
-      <Route path="/app/vendors" element={<GovernanceBrowserShell><GovernanceVendorInventoryView /></GovernanceBrowserShell>} />
-      <Route path="/app/reports" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
-      <Route path="/app/dpia" element={<GovernanceBrowserShell><GovernanceDpiasView /></GovernanceBrowserShell>} />
-      <Route path="/app/dsr" element={<GovernanceBrowserShell><GovernanceDsrTrackerView /></GovernanceBrowserShell>} />
-      <Route path="/app/incidents" element={<GovernanceBrowserShell><GovernanceIncidentsView /></GovernanceBrowserShell>} />
-      <Route path="/app/remediation" element={<GovernanceBrowserShell><RemediationPlansView /></GovernanceBrowserShell>} />
-      <Route path="/app/remediation/:planId" element={<GovernanceBrowserShell><RemediationPlanDetailView /></GovernanceBrowserShell>} />
-      <Route path="/app/keys" element={<GovernanceBrowserShell><GovernanceKeysView /></GovernanceBrowserShell>} />
-      <Route path="/app/vvt" element={<GovernanceBrowserShell><RuntimeVvtView /></GovernanceBrowserShell>} />
-      <Route path="/app/webhooks" element={<GovernanceBrowserShell><GovernanceWebhooksView /></GovernanceBrowserShell>} />
-      <Route path="/app/onboarding" element={<GovernanceBrowserShell><GovernanceOnboardingView /></GovernanceBrowserShell>} />
-      <Route path="/app/mappings" element={<GovernanceBrowserShell><GovernanceMappingsView /></GovernanceBrowserShell>} />
-      <Route path="/app/events/:eventId" element={<GovernanceBrowserShell><GovernanceEventDetailView /></GovernanceBrowserShell>} />
-      <Route path="/app/assets/:assetId" element={<GovernanceBrowserShell><GovernanceAssetDetailView /></GovernanceBrowserShell>} />
-      <Route path="/app/approvals" element={<GovernanceBrowserShell><GovernanceApprovalsView /></GovernanceBrowserShell>} />
-      <Route path="/app/admin-log" element={<GovernanceBrowserShell><GovernanceAdminLogView /></GovernanceBrowserShell>} />
-      <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
-      <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
-      <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />
-      <Route path="/app/scans" element={<GovernanceBrowserShell><GovernanceScansListView /></GovernanceBrowserShell>} />
-      <Route path="/app/scans/:scanId" element={<GovernanceBrowserShell><GovernanceScanDetailView /></GovernanceBrowserShell>} />
-      <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
-      <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
-      <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
-      <Route path="/app/agents" element={<GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell>} />
-      <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
-      <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />
-      <Route path="/app/settings" element={<GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell>} />
+      <Route path="/app" element={<AppShell><GovernanceOsDashboard /></AppShell>} />
+      <Route path="/app/home" element={<AppShell><WorkspaceHome /></AppShell>} />
+      <Route path="/app/company" element={<AppShell><CompanyView /></AppShell>} />
+      <Route path="/app/websites" element={<AppShell><WebsiteGovernanceView /></AppShell>} />
+      <Route path="/app/ai-systems" element={<AppShell><AiSystemRegistryView /></AppShell>} />
+      <Route path="/app/ai-systems/agents" element={<AppShell><AgentRegistryView /></AppShell>} />
+      {/* Kanonische OS-Shell-Routen */}
+      <Route path="/app/gdpr" element={<AppShell><GdprHubView /></AppShell>} />
+      <Route path="/app/ai-act" element={<AppShell><AiSystemRegistryView /></AppShell>} />
+      <Route path="/app/office" element={<AppShell><OfficeView /></AppShell>} />
+      <Route path="/app/automations" element={<AppShell><AutomationSkillsView /></AppShell>} />
+      <Route path="/app/workflows" element={<AppShell><WorkflowsView /></AppShell>} />
+      <Route path="/app/risks" element={<AppShell><RiskCenterView /></AppShell>} />
+      <Route path="/app/compliance" element={<AppShell><GovernanceComplianceReportView /></AppShell>} />
+      <Route path="/app/evidence" element={<AppShell><EvidenceVaultView /></AppShell>} />
+      <Route path="/app/evidence/auditor" element={<AppShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></AppShell>} />
+      <Route path="/app/monitoring" element={<AppShell><MonitoringRuntimeView /></AppShell>} />
+      <Route path="/app/vendors" element={<AppShell><GovernanceVendorInventoryView /></AppShell>} />
+      <Route path="/app/reports" element={<AppShell><GovernanceComplianceReportView /></AppShell>} />
+      <Route path="/app/dpia" element={<AppShell><GovernanceDpiasView /></AppShell>} />
+      <Route path="/app/dsr" element={<AppShell><GovernanceDsrTrackerView /></AppShell>} />
+      <Route path="/app/incidents" element={<AppShell><GovernanceIncidentsView /></AppShell>} />
+      <Route path="/app/remediation" element={<AppShell><RemediationPlansView /></AppShell>} />
+      <Route path="/app/remediation/:planId" element={<AppShell><RemediationPlanDetailView /></AppShell>} />
+      <Route path="/app/keys" element={<AppShell><GovernanceKeysView /></AppShell>} />
+      <Route path="/app/vvt" element={<AppShell><RuntimeVvtView /></AppShell>} />
+      <Route path="/app/webhooks" element={<AppShell><GovernanceWebhooksView /></AppShell>} />
+      <Route path="/app/onboarding" element={<AppShell><GovernanceOnboardingView /></AppShell>} />
+      <Route path="/app/mappings" element={<AppShell><GovernanceMappingsView /></AppShell>} />
+      <Route path="/app/events/:eventId" element={<AppShell><GovernanceEventDetailView /></AppShell>} />
+      <Route path="/app/assets/:assetId" element={<AppShell><GovernanceAssetDetailView /></AppShell>} />
+      <Route path="/app/approvals" element={<AppShell><GovernanceApprovalsView /></AppShell>} />
+      <Route path="/app/admin-log" element={<AppShell><GovernanceAdminLogView /></AppShell>} />
+      <Route path="/app/policies/templates" element={<AppShell><GovernancePolicyTemplatesView /></AppShell>} />
+      <Route path="/app/connectors" element={<AppShell><GovernanceConnectorsView /></AppShell>} />
+      <Route path="/app/costs" element={<AppShell><GovernanceCostTrackingView /></AppShell>} />
+      <Route path="/app/scans" element={<AppShell><GovernanceScansListView /></AppShell>} />
+      <Route path="/app/scans/:scanId" element={<AppShell><GovernanceScanDetailView /></AppShell>} />
+      <Route path="/app/risk-inventory" element={<AppShell><AiActRiskInventoryView /></AppShell>} />
+      <Route path="/app/team" element={<AppShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></AppShell>} />
+      <Route path="/app/settings/team" element={<AppShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></AppShell>} />
+      <Route path="/app/agents" element={<AppShell><GovernanceAgentsCenterView /></AppShell>} />
+      <Route path="/app/documents" element={<AppShell><GovernanceDocumentsView /></AppShell>} />
+      <Route path="/app/audit" element={<AppShell><GovernanceAuditExportView /></AppShell>} />
+      <Route path="/app/settings" element={<AppShell><SettingsView /></AppShell>} />
 
       {/* ── Redirects: konkurrierende Einstiege → kanonische Workspace-URL ──
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
@@ -507,6 +514,11 @@ function RoutesWithTracking() {
                 <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       <Route path="/tenant/invites" element={<RequireAal2 action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
+      {/* Kanonische OS-Shell-Redirects */}
+      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+      <Route path="/monitoring" element={<Navigate to="/app/monitoring" replace />} />
+      <Route path="/governance" element={<Navigate to="/app" replace />} />
+      <Route path="/app/dashboard" element={<Navigate to="/app" replace />} />
       {/* Legacy /governance/* routes redirect to canonical /app/* paths (with shell wrapper).
           Backwards compatibility: old bookmarks/links continue to work. */}
       <Route path="/governance/admin" element={<Navigate to="/app/websites" replace />} />

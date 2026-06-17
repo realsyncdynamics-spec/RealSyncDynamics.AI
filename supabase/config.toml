@@ -178,6 +178,7 @@ verify_jwt = false
 [functions.stripe-meter-sync]
 verify_jwt = false
 
+
 # ── Enterprise AI OS public surfaces ──
 [functions.enterprise-ai-os-discovery-intake]
 verify_jwt = false

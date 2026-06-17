@@ -6,21 +6,18 @@ import { CTA } from '../content/runtimeVocab';
 
 // Kundenorientierte Self-Service-Navigation (max. 6 Punkte). Keine
 // technischen Begriffe in den Labels — Runtime / Evidence / Agent Registry
-// / Governance Engine / AI Governance bleiben Produktbestandteile,
+// / Governance Engine / Automatisierung bleiben Produktbestandteile,
 // erscheinen aber nur auf Unterseiten (unter Produkt), nicht in der
-// Hauptnav. Reihenfolge: Was (Produkt) → strategische Positionierung
-// (digitale Souveränität) → für wen (Lösungen) → Preise → Dokumentation
-// → Login. Sicherheit bleibt als Trust-Seite (/sicherheit) erreichbar
-// (Footer / Querverweise), zählt aber nicht zur 6-Punkte-Hauptnav.
+// Hauptnav. Reihenfolge: Was (Produkt) → für wen (Lösungen) → warum
+// vertrauenswürdig (Sicherheit) → Preise → Dokumentation → Login.
 // Alle Ziele sind existierende Routen.
 const NAV_ITEMS = [
-  { label: 'Governance OS',   to: '/runtime' },
-  { label: 'Für wen?',        to: '/branchen' },
-  { label: 'AI Governance',   to: '/ai-governance' },
-  { label: 'Sicherheit',      to: '/sicherheit' },
-  { label: 'Preise',          to: '/pricing' },
-  { label: 'Dokumentation',   to: '/docs' },
-  { label: 'Login',           to: '/welcome' },
+  { label: 'Produkt',       to: '/runtime' },
+  { label: 'Lösungen',      to: '/branchen' },
+  { label: 'Sicherheit',    to: '/sicherheit' },
+  { label: 'Preise',        to: '/pricing' },
+  { label: 'Dokumentation', to: '/docs' },
+  { label: 'Login',         to: '/welcome' },
 ] as const;
 
 export function Navbar() {

@@ -3,51 +3,9 @@
 -- bei vorhandenem query-Vektor FTS + Vektor-Similarity per RRF kombiniert.
 -- Wenn q_vec NULL ist, verhält sich die Funktion identisch zur Phase-1-RPC.
 
--- Schritt 1: Sicherheitskopie des alten RPC-Namens für Rückwärtskompatibilität
--- (governance-agent ruft weiterhin `legal_retrieve_chunks` — wir ersetzen
---  die Funktion in-place ohne Umbenennungs-Breaking-Change).
--- DROP notwendig weil der Return-Typ sich von REAL (Phase 1) auf FLOAT ändert
--- — CREATE OR REPLACE schlägt bei Return-Typ-Änderungen fehl.
-DROP FUNCTION IF EXISTS public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT);
-
-CREATE FUNCTION public.legal_retrieve_chunks(
-  q                   TEXT,
-  k                   INT     DEFAULT 5,
-  framework_filter    TEXT    DEFAULT NULL,
-  jurisdiction_filter TEXT    DEFAULT NULL,
-  language_filter     TEXT    DEFAULT NULL
-)
-RETURNS TABLE (
-  chunk_id          UUID,
-  document_id       UUID,
-  chunk_text        TEXT,
-  heading_path      TEXT,
-  citation_anchor   TEXT,
-  source_url        TEXT,
-  source_identifier TEXT,
-  framework         TEXT,
-  jurisdiction      TEXT,
-  title             TEXT,
-  published_at      DATE,
-  disclaimer        TEXT,
-  rank_score        FLOAT
-)
-LANGUAGE SQL
-SECURITY DEFINER
-STABLE
-AS $$
-  SELECT chunk_id, document_id, chunk_text, heading_path, citation_anchor,
-         source_url, source_identifier, framework, jurisdiction, title,
-         published_at, disclaimer, rank_score
-    FROM public.legal_retrieve_chunks_hybrid(q, NULL, k, framework_filter, jurisdiction_filter, language_filter);
-$$;
-
-REVOKE ALL ON FUNCTION public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT)
-  FROM PUBLIC, anon, authenticated;
-GRANT  EXECUTE ON FUNCTION public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT)
-  TO   service_role;
-
--- Schritt 2: Hybride RPC — nimmt optionalen vorberechneten Query-Vektor.
+-- Schritt 1: Hybride RPC — nimmt optionalen vorberechneten Query-Vektor.
+-- MUSS vor dem Wrapper unten definiert werden, da SQL-Funktionskörper bei
+-- CREATE validiert werden (anders als PL/pgSQL).
 CREATE OR REPLACE FUNCTION public.legal_retrieve_chunks_hybrid(
   q                   TEXT,
   q_vec               vector(1024) DEFAULT NULL,
@@ -166,4 +124,46 @@ END $$;
 REVOKE ALL ON FUNCTION public.legal_retrieve_chunks_hybrid(TEXT, vector, INT, TEXT, TEXT, TEXT)
   FROM PUBLIC, anon, authenticated;
 GRANT  EXECUTE ON FUNCTION public.legal_retrieve_chunks_hybrid(TEXT, vector, INT, TEXT, TEXT, TEXT)
+  TO   service_role;
+
+-- Schritt 2: Rückwärtskompatible Wrapper-RPC für governance-agent etc.
+-- DROP notwendig weil der Return-Typ sich von REAL (Phase 1) auf FLOAT ändert
+-- — CREATE OR REPLACE schlägt bei Return-Typ-Änderungen fehl.
+DROP FUNCTION IF EXISTS public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT);
+
+CREATE FUNCTION public.legal_retrieve_chunks(
+  q                   TEXT,
+  k                   INT     DEFAULT 5,
+  framework_filter    TEXT    DEFAULT NULL,
+  jurisdiction_filter TEXT    DEFAULT NULL,
+  language_filter     TEXT    DEFAULT NULL
+)
+RETURNS TABLE (
+  chunk_id          UUID,
+  document_id       UUID,
+  chunk_text        TEXT,
+  heading_path      TEXT,
+  citation_anchor   TEXT,
+  source_url        TEXT,
+  source_identifier TEXT,
+  framework         TEXT,
+  jurisdiction      TEXT,
+  title             TEXT,
+  published_at      DATE,
+  disclaimer        TEXT,
+  rank_score        FLOAT
+)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+AS $$
+  SELECT chunk_id, document_id, chunk_text, heading_path, citation_anchor,
+         source_url, source_identifier, framework, jurisdiction, title,
+         published_at, disclaimer, rank_score
+    FROM public.legal_retrieve_chunks_hybrid(q, NULL::vector(1024), k, framework_filter, jurisdiction_filter, language_filter);
+$$;
+
+REVOKE ALL ON FUNCTION public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT)
+  FROM PUBLIC, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.legal_retrieve_chunks(TEXT, INT, TEXT, TEXT, TEXT)
   TO   service_role;

@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrowserTopBar } from './BrowserTopBar';
-import { GovernanceTabs } from './GovernanceTabs';
+import { GovernanceSidebar } from './GovernanceSidebar';
 import { GovernanceCanvas } from './GovernanceCanvas';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
@@ -40,11 +40,10 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         activeEmbedUrl={embeddedUrl ?? undefined}
       />
 
-      <div className="hidden lg:block">
-        <GovernanceTabs />
-      </div>
-
       <div className="flex flex-1 overflow-hidden min-h-0">
+        {/* Linke Navigations-Sidebar (Browser-OS-Layout); mobil: BottomNav */}
+        <GovernanceSidebar />
+
         {embeddedUrl ? (
           <EmbeddedBrowserCanvas
             url={embeddedUrl}

@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
  *
  * Der GovernanceBrowserShell umschließt alle /app/* Routen und enthält:
  *   - BrowserTopBar (Address-Bar, Menü, Agent-Toggle)
- *   - GovernanceTabs (Modul-Navigation, Desktop)
+ *   - GovernanceSidebar (Modul-Navigation links, Desktop)
  *   - GovernanceCanvas (Content-Area)
  *   - MobileBottomNavigation (Mobile)
  *   - GovernanceStatusBar (Desktop, unten)

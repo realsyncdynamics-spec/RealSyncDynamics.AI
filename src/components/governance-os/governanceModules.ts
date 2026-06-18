@@ -18,6 +18,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Zentrale Governance-Übersicht',
+    group: 'Übersicht',
   },
   {
     id: 'home',
@@ -27,6 +28,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Echtzeit-Workspace mit Live-Daten (Auth erforderlich)',
+    group: 'Übersicht',
   },
   {
     id: 'websites',
@@ -36,6 +38,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Website-Governance, Scans und Findings',
+    group: 'Governance',
   },
   {
     id: 'evidence',
@@ -45,6 +48,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Hashes, Snapshots und Audit Trails (read-only im Free-Plan)',
+    group: 'Governance',
   },
   {
     id: 'ai-systems',
@@ -54,6 +58,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'KI-System-Registry und EU-AI-Act-Dokumentation',
+    group: 'Governance',
   },
   {
     id: 'risks',
@@ -63,6 +68,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Risikoidentifikation und Priorisierung',
+    group: 'Governance',
   },
   {
     id: 'monitoring',
@@ -72,6 +78,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Runtime Monitoring und Drift Alerts',
+    group: 'Governance',
   },
   {
     id: 'vendors',
@@ -81,6 +88,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'Vendor- und DPA-Tracking',
+    group: 'Governance',
   },
   {
     id: 'reports',
@@ -90,6 +98,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'Compliance- und Audit-Reports',
+    group: 'Governance',
   },
   {
     id: 'dpia',
@@ -99,6 +108,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'roadmap',
     plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'DSFA/DPIA Generator',
+    group: 'Governance',
   },
   {
     id: 'alerts',
@@ -108,6 +118,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'beta',
     plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Laufzeit-Alerts aus Scans, Policy-Engine und Evidence',
+    group: 'Governance',
   },
   {
     id: 'remediation',
@@ -117,42 +128,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'roadmap',
     plans: ['agency', 'scale', 'enterprise'],
     description: 'Auto-Fixes, Pull Requests und Maßnahmen',
-  },
-  {
-    id: 'billing',
-    label: 'Billing',
-    icon: 'CreditCard',
-    route: '/app/billing',
-    status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Plan, Abonnement und Abrechnung',
-  },
-  {
-    id: 'team',
-    label: 'Team',
-    icon: 'Users',
-    route: '/app/team',
-    status: 'live',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Rollen, Team und Zugriff',
-  },
-  {
-    id: 'workflows',
-    label: 'Workflows',
-    icon: 'GitMerge',
-    route: '/app/workflows',
-    status: 'live',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'DSGVO-Prozesse automatisieren (n8n-Integration)',
-  },
-  {
-    id: 'agents',
-    label: 'Agenten',
-    icon: 'Bot',
-    route: '/app/agents',
-    status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Enterprise Skills - 15 spezialisierte Governance-Agenten',
+    group: 'Governance',
   },
   {
     id: 'office',
@@ -162,6 +138,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Dokumente, Tabellen, Präsentationen, Meetings, Verträge und Policies — versioniert, auditiert, evidence-fähig',
+    group: 'Arbeit',
   },
   {
     id: 'documents',
@@ -171,6 +148,27 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'DSGVO-Dokumentengenerator: DSE, AVV, TOM, VVT, DSFA',
+    group: 'Arbeit',
+  },
+  {
+    id: 'workflows',
+    label: 'Workflows',
+    icon: 'GitMerge',
+    route: '/app/workflows',
+    status: 'live',
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'DSGVO-Prozesse automatisieren (n8n-Integration)',
+    group: 'Arbeit',
+  },
+  {
+    id: 'agents',
+    label: 'Agenten',
+    icon: 'Bot',
+    route: '/app/agents',
+    status: 'live',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Enterprise Skills - 15 spezialisierte Governance-Agenten',
+    group: 'Arbeit',
   },
   {
     id: 'audit',
@@ -180,6 +178,27 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['growth', 'agency', 'scale', 'enterprise'],
     description: 'Audit-Ready Reports und Behördenexporte',
+    group: 'Governance',
+  },
+  {
+    id: 'billing',
+    label: 'Billing',
+    icon: 'CreditCard',
+    route: '/app/billing',
+    status: 'live',
+    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Plan, Abonnement und Abrechnung',
+    group: 'Organisation',
+  },
+  {
+    id: 'team',
+    label: 'Team',
+    icon: 'Users',
+    route: '/app/team',
+    status: 'live',
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Rollen, Team und Zugriff',
+    group: 'Organisation',
   },
   {
     id: 'settings',
@@ -189,6 +208,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
     description: 'Mandant, Sicherheit und Integrationen',
+    group: 'Organisation',
   },
 ];
 

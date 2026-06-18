@@ -7,9 +7,9 @@ import {
   ClipboardCheck, ClipboardList, LayoutDashboard, Briefcase,
   type LucideIcon,
 } from 'lucide-react';
-import { TAB_MODULES, DOCK_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
+import { GOVERNANCE_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
-import type { GovernanceModule } from './governanceBrowserTypes';
+import { MODULE_GROUP_ORDER, type GovernanceModule } from './governanceBrowserTypes';
 import { useActivePlan } from '../../hooks/useModuleAccess';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -101,9 +101,6 @@ export function GovernanceSidebar() {
   const isActive = (route: string) =>
     route === '/app' ? pathname === '/app' : pathname.startsWith(route);
 
-  const accessible = TAB_MODULES.filter((m) => canAccessModule(m, plan));
-  const locked = TAB_MODULES.filter((m) => !canAccessModule(m, plan));
-
   return (
     <nav
       className={`hidden lg:flex flex-col shrink-0 bg-obsidian-900 border-r border-titanium-900 transition-[width] duration-150 ${
@@ -127,28 +124,33 @@ export function GovernanceSidebar() {
         </button>
       </div>
 
-      {/* Modul-Liste */}
+      {/* Modul-Liste — nach Gruppen (Übersicht / Governance / Arbeit / Organisation) */}
       <div className="flex-1 overflow-y-auto py-1 scrollbar-none">
-        {accessible.map((mod) => (
-          <NavItem key={mod.id} module={mod} active={isActive(mod.route)} collapsed={collapsed} />
-        ))}
-
-        {(locked.length > 0 || DOCK_MODULES.length > 0) && (
-          <div className="my-1 mx-3 border-t border-titanium-900/60" />
-        )}
-
-        {/* Plan-gesperrte Module — ghosted, Link auf /pricing */}
-        {locked.map((mod) => (
-          <LockedNavItem key={mod.id} module={mod} collapsed={collapsed} />
-        ))}
-
-        {/* Roadmap-Module */}
-        {DOCK_MODULES.map((mod) => {
-          const allowed = canAccessModule(mod, plan);
-          return allowed ? (
-            <NavItem key={mod.id} module={mod} active={isActive(mod.route)} collapsed={collapsed} />
-          ) : (
-            <LockedNavItem key={mod.id} module={mod} collapsed={collapsed} />
+        {MODULE_GROUP_ORDER.map((group, idx) => {
+          const modules = GOVERNANCE_MODULES.filter((m) => m.group === group);
+          if (modules.length === 0) return null;
+          return (
+            <div key={group}>
+              {collapsed ? (
+                idx > 0 && <div className="my-1 mx-3 border-t border-titanium-900/60" />
+              ) : (
+                <div className="px-3 pt-3 pb-1 font-mono text-[9px] uppercase tracking-widest text-titanium-600">
+                  {group}
+                </div>
+              )}
+              {modules.map((mod) =>
+                canAccessModule(mod, plan) ? (
+                  <NavItem
+                    key={mod.id}
+                    module={mod}
+                    active={isActive(mod.route)}
+                    collapsed={collapsed}
+                  />
+                ) : (
+                  <LockedNavItem key={mod.id} module={mod} collapsed={collapsed} />
+                ),
+              )}
+            </div>
           );
         })}
       </div>

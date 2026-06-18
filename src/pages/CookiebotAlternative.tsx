@@ -109,7 +109,7 @@ export function CookiebotAlternative() {
           <Section title="Wann RealSync die richtige Wahl ist">
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst <strong className="text-titanium-50">EU-Hosting ohne Konfigurations-Aufwand</strong> — bei uns Default, nicht Option.</span></li>
-              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst <strong className="text-titanium-50">DACH-Pricing</strong> (49 € statt 110 €/M).</span></li>
+              <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst <strong className="text-titanium-50">DACH-Pricing</strong> (79 € statt 110 €/M).</span></li>
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du nutzt <strong className="text-titanium-50">KI</strong> und brauchst zusätzlich AI-Act-Klassifikator + Audit-Log.</span></li>
               <li className="flex items-start gap-2"><Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span>Du willst <strong className="text-titanium-50">eine Plattform</strong> für AVV, VVT, Cookie und KI — statt 3 Anbietern.</span></li>
             </ul>

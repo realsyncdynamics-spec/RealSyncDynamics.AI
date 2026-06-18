@@ -50,42 +50,6 @@ export const LAYERS = [
 
 export type LayerId = (typeof LAYERS)[number]['id'];
 
-/** 4 plans only — no historic Starter/Growth/Agency/Enterprise mix. */
-export const PLANS = [
-  {
-    id: 'free',
-    name: 'Free',
-    tagline: 'One scan',
-    headline: '€0',
-    bullets: ['1× Free Audit', 'Score + Top-3 Findings', 'Keine Karte nötig'],
-    cta: { label: 'Run scan', to: '/audit?source=pricing-free', kind: 'primary' as const },
-  },
-  {
-    id: 'monitoring',
-    name: 'Monitoring',
-    tagline: 'Continuous runtime',
-    headline: '€49',
-    bullets: ['1 Domain · 24/7 Drift', 'Email + Slack Alerts', 'Weekly Re-Scan', 'Evidence-Chain'],
-    cta: { label: 'Enable monitoring', to: '/audit?plan=monitoring', kind: 'primary' as const },
-  },
-  {
-    id: 'governance',
-    name: 'Governance',
-    tagline: 'AI Act layer',
-    headline: '€199',
-    bullets: ['AI-Usecase-Registry', 'AI-Act-Klassifikation', 'Policies · DPIA-Templates', 'Audit-Trail · §13 Drafts'],
-    cta: { label: 'Enable governance', to: '/audit?plan=governance', kind: 'primary' as const },
-  },
-  {
-    id: 'scale',
-    name: 'Scale',
-    tagline: 'Multi-domain',
-    headline: 'Custom',
-    bullets: ['Unlimited Domains', 'Agent-Customisation', 'SSO · SCIM', 'Dedicated Runtime'],
-    cta: { label: 'Talk to runtime', to: '/contact-sales?intent=scale', kind: 'secondary' as const },
-  },
-] as const;
-
 /**
  * Canonical Self-Service CTA copy (Deutsch). Die EINZIGEN Strings, die auf
  * öffentlichen CTAs erlaubt sind. RealSyncDynamics.AI ist ein vollständig

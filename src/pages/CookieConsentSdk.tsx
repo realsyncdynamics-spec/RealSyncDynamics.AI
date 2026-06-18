@@ -101,12 +101,12 @@ export function CookieConsentSdk() {
                   <li>· Unlimited Visitors</li>
                   <li>· Consent-Audit-Log + CSV-Export</li>
                 </ul>
-                <a
-                  href="/checkout/growth?source=cookie_consent_sdk"
+                <Link
+                  to="/contact-sales?source=cookie-sdk-pro"
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-none"
                 >
                   Jetzt buchen <ArrowRight className="h-3 w-3" />
-                </a>
+                </Link>
               </div>
             </div>
             <p className="text-[11px] text-titanium-500 mt-4">

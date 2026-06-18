@@ -131,6 +131,16 @@ jobs:
           print(f'spa-fallback: {filled} filled · {skipped} kept-prerendered')
           PY
           ls -la dist/
+      - name: Inject deterministic per-route SEO <head> tags
+        # scripts/inject-seo-head.mts schreibt title/description/canonical/OG
+        # je Route aus der Single-Source-of-Truth src/config/seo.ts in jede
+        # dist/<route>/index.html — browser-unabhaengig. Noetig, weil der
+        # Playwright-Prerender im CI nicht zuverlaessig hydriert und sonst
+        # alle Unterseiten den SPA-Shell mit canonical=/ ausliefern (Google
+        # behandelt sie dann als Duplikate von /). Laeuft NACH dem SPA-
+        # Fallback, damit wirklich jede Route eine Datei mit korrektem
+        # Canonical hat; vorhandener Prerender-Body-Content bleibt erhalten.
+        run: npx tsx scripts/inject-seo-head.mts
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -94,7 +94,7 @@ export function CookieConsentSdk() {
               </div>
               <div className="p-4 bg-amber-950/20 border border-amber-700 rounded-none">
                 <div className="text-xs text-amber-400 uppercase tracking-wider mb-1 font-bold">Pro</div>
-                <div className="font-display text-3xl font-bold text-titanium-50 mb-2">49 € <span className="text-sm font-normal text-titanium-400">/M</span></div>
+                <div className="font-display text-3xl font-bold text-titanium-50 mb-2">79 € <span className="text-sm font-normal text-titanium-400">/M</span></div>
                 <ul className="text-xs text-titanium-300 space-y-1 mb-4">
                   <li>· White-Label (kein RSD-Footer)</li>
                   <li>· Custom Theme + Logo</li>
@@ -102,7 +102,7 @@ export function CookieConsentSdk() {
                   <li>· Consent-Audit-Log + CSV-Export</li>
                 </ul>
                 <Link
-                  to="/contact-sales?source=cookie-sdk-pro"
+                  to="/checkout/starter?source=cookie_consent_sdk"
                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-none"
                 >
                   Jetzt buchen <ArrowRight className="h-3 w-3" />

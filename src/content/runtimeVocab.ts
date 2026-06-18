@@ -5,6 +5,8 @@
 // module exists so the next refactor pass can grep the codebase for
 // drift mechanically.
 
+import { PRICING_TIERS } from '../config/pricing';
+
 export const PRODUCT_NAME = 'RealSync Runtime';
 export const BRAND_NAME = 'RealSyncDynamics.AI';
 
@@ -49,6 +51,36 @@ export const LAYERS = [
 ] as const;
 
 export type LayerId = (typeof LAYERS)[number]['id'];
+
+export interface Plan {
+  id: string;
+  name: string;
+  tagline: string;
+  /** Anzeige-Preis im Layer-Narrativ-Format, z.B. "€79" oder "Custom". */
+  headline: string;
+  bullets: string[];
+  cta: { label: string; to: string; kind: 'primary' | 'secondary' };
+}
+
+/**
+ * Self-Service-Tarife fuer oeffentliche Pricing-Anzeigen. ABGELEITET aus
+ * src/config/pricing.ts — DIESE bleibt die Single Source of Truth fuer
+ * Tarif-Namen, Preise und CTAs. Hier nur eine schlanke Projektion ins
+ * Layer-Narrativ-Format (Free / Starter / Growth / Agency / Scale /
+ * Enterprise); niemals Preise hier hart kodieren, sonst entsteht Drift.
+ */
+export const PLANS: Plan[] = PRICING_TIERS.map((tier) => ({
+  id: tier.id,
+  name: tier.name,
+  tagline: tier.tagline,
+  headline: tier.priceString === 'individuell' ? 'Custom' : `€${tier.priceString}`,
+  bullets: [...tier.bullets],
+  cta: {
+    label: tier.cta.label,
+    to: tier.cta.href,
+    kind: tier.highlight ? 'primary' : 'secondary',
+  },
+}));
 
 /**
  * Canonical Self-Service CTA copy (Deutsch). Die EINZIGEN Strings, die auf

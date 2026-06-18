@@ -123,11 +123,15 @@ export interface OAuthProviderButtonsProps {
   redirectAfterAuthTo?: string;
   /** Optional: Variant fuer Container — 'compact' fuer Modals, 'full' fuer Pages. */
   variant?: 'compact' | 'full';
+  /** Optional: Allowlist sichtbarer Provider (in dieser Reihenfolge). Ohne
+   *  Angabe werden alle per env-Flag aktivierten Provider gezeigt. */
+  providers?: Provider[];
 }
 
 export function OAuthProviderButtons({
   redirectAfterAuthTo,
   variant = 'full',
+  providers,
 }: OAuthProviderButtonsProps) {
   const [busyProvider, setBusyProvider] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +171,13 @@ export function OAuthProviderButtons({
   };
 
   const isCompact = variant === 'compact';
-  const visibleProviders = PROVIDERS.filter((p) => PROVIDER_ENABLED[p.id]);
+  // Reihenfolge: wenn eine Allowlist gesetzt ist, folgt die Anzeige ihr;
+  // sonst die Default-Reihenfolge aus PROVIDERS. In beiden Faellen greift
+  // zusaetzlich das env-Flag (defekter Provider bleibt ausblendbar).
+  const order = providers ?? PROVIDERS.map((p) => p.id);
+  const visibleProviders = order
+    .map((id) => PROVIDERS.find((p) => p.id === id))
+    .filter((p): p is ProviderConfig => Boolean(p) && PROVIDER_ENABLED[p!.id]);
 
   // Wenn alle Provider per Flag aus sind, rendern wir nichts statt einer
   // leeren Box — die aufrufenden Seiten haben weiterhin Magic-Link als

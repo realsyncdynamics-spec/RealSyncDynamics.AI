@@ -186,8 +186,12 @@ export function AuthPage({ mode }: { mode: Mode }) {
             </p>
           </div>
 
-          {/* OAuth — Google zuerst (siehe OAuthProviderButtons) */}
-          <OAuthProviderButtons redirectAfterAuthTo={next} variant="compact" />
+          {/* OAuth — Google + Microsoft (Business-Logins) */}
+          <OAuthProviderButtons
+            redirectAfterAuthTo={next}
+            variant="compact"
+            providers={['google', 'azure']}
+          />
 
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-titanium-800" />

@@ -52,9 +52,12 @@ describe('AuthPage', () => {
     expect(result.container.querySelector('[aria-label="Vor"]')).not.toBeNull();
   });
 
-  it('bietet Google als OAuth-Option an', () => {
+  it('zeigt Google + Microsoft als OAuth-Optionen, nicht LinkedIn/GitHub', () => {
     const text = renderText('login');
     expect(text).toContain('Mit Google fortfahren');
+    expect(text).toContain('Mit Microsoft fortfahren');
+    expect(text).not.toContain('Mit LinkedIn fortfahren');
+    expect(text).not.toContain('Mit GitHub fortfahren');
   });
 
   it('zeigt im Register-Modus die Konto-Erstellung', () => {

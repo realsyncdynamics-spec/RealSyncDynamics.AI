@@ -13,6 +13,20 @@ interface Tile {
   color: 'cyan' | 'blue' | 'orange' | 'emerald' | 'purple' | 'amber' | 'rose' | 'indigo' | 'violet';
 }
 
+// Ziel-Route je Tile — die Kacheln sind echte Einstiege ins Workspace,
+// keine toten Dekorationen mehr.
+const TILE_ROUTES: Record<string, string> = {
+  'websites': '/app/websites',
+  'ai-systems': '/app/ai-systems',
+  'risks': '/app/risks',
+  'compliance': '/app/compliance',
+  'evidence': '/app/evidence',
+  'monitoring': '/app/monitoring',
+  'ai-governance': '/app/risk-inventory',
+  'team': '/app/team',
+  'settings': '/app/settings',
+};
+
 const TILES: Tile[] = [
   {
     id: 'websites',
@@ -127,17 +141,17 @@ export function PublicWorkspacePreview() {
 
           <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
             <button
-              onClick={() => navigate('/app')}
+              onClick={() => navigate('/audit?source=public-workspace')}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-security-600 text-white font-semibold hover:bg-security-500 transition-colors"
             >
-              Dashboard öffnen
+              Kostenlosen Governance-Audit starten
               <ArrowRight className="h-4 w-4" />
             </button>
             <button
-              onClick={() => navigate('/audit?source=public-workspace')}
+              onClick={() => navigate('/app')}
               className="flex items-center justify-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-100 font-medium hover:bg-obsidian-800 transition-colors"
             >
-              Governance Audit starten
+              Dashboard ansehen
               <ArrowRight className="h-4 w-4" />
             </button>
             <Link
@@ -201,18 +215,23 @@ export function PublicWorkspacePreview() {
           {TILES.map((tile) => {
             const Icon = tile.icon;
             const colors = COLOR_MAP[tile.color];
+            const route = TILE_ROUTES[tile.id] ?? '/app';
 
             return (
-              <div
+              <Link
                 key={tile.id}
-                className={`p-6 border border-titanium-800 ${colors.bg} ${colors.hover} transition-colors cursor-default group`}
+                to={route}
+                className={`block p-6 border border-titanium-800 ${colors.bg} ${colors.hover} transition-colors group focus:outline-none focus:ring-2 focus:ring-security-500`}
               >
-                <div className={`mb-4 ${colors.icon}`}>
-                  <Icon className="h-6 w-6" />
+                <div className="flex items-start justify-between">
+                  <div className={`mb-4 ${colors.icon}`}>
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-titanium-600 group-hover:text-titanium-300 transition-colors" />
                 </div>
                 <h3 className="font-display font-bold text-titanium-50 mb-1">{tile.label}</h3>
                 <p className="text-sm text-titanium-400 leading-snug">{tile.description}</p>
-              </div>
+              </Link>
             );
           })}
         </div>

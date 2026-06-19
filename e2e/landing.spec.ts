@@ -107,8 +107,8 @@ test.describe('Workspace-Vorschau (/)', () => {
 
     await expect(page.getByText(/Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar/i)).toBeVisible();
 
-    await expect(page.getByRole('button', { name: /Dashboard öffnen/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Governance Audit starten/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Governance-Audit starten/i }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Dashboard ansehen/i })).toBeVisible();
   });
 
   test('Governance Complexity Score-Einstieg navigiert zum Assessment', async ({ page }) => {

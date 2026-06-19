@@ -28,7 +28,7 @@ import {
   Globe, Cpu, AlertTriangle, Archive, Activity, Network, FileText, BarChart3, Workflow,
   ShieldCheck, Scale, Lock, KeyRound, FileCheck2, ClipboardCheck,
   ScanSearch, Camera, CalendarClock, Target, FileSearch,
-  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check, Play,
+  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check, Play, Star, ChevronDown, User,
 } from 'lucide-react';
 import { CTA, PLANS } from '../content/runtimeVocab';
 import { Logo } from '../components/Logo';
@@ -138,7 +138,13 @@ const NAV_ITEMS = [
   { label: 'AI Act', to: '/ai-act' },
   { label: 'Sicherheit', to: '/sicherheit' },
   { label: 'Preise', to: '/pricing' },
-  { label: 'Login', to: '/welcome' },
+] as const;
+
+// „Ressourcen"-Dropdown — nur bestehende Routen (keine toten Links).
+const RESOURCE_ITEMS = [
+  { label: 'Dokumentation', to: '/docs' },
+  { label: 'Digitale Souveränität', to: '/digitale-souveraenitaet' },
+  { label: 'Governance Browser', to: '/governance-browser' },
 ] as const;
 
 function Nav() {
@@ -173,6 +179,30 @@ function Nav() {
                 {item.label}
               </Link>
             ))}
+
+            {/* Ressourcen-Dropdown (CSS-Hover, nur echte Routen) */}
+            <div className="group relative">
+              <button className="inline-flex items-center gap-1 text-sm font-medium text-titanium-400 hover:text-titanium-50 transition-colors">
+                Ressourcen <ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
+              </button>
+              <div className="invisible absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-3 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="overflow-hidden rounded-panel border border-white/10 bg-obsidian-900/95 p-1.5 shadow-2xl backdrop-blur-xl">
+                  {RESOURCE_ITEMS.map((r) => (
+                    <Link
+                      key={r.to}
+                      to={r.to}
+                      className="block rounded-card px-3 py-2 text-sm text-titanium-300 hover:bg-white/5 hover:text-titanium-50 transition-colors"
+                    >
+                      {r.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <Link to="/welcome" className="text-sm font-medium text-titanium-400 hover:text-titanium-50 transition-colors">
+              Login
+            </Link>
             <Link
               to="/audit?source=governance-os-nav"
               className="group inline-flex items-center gap-1.5 rounded-chip bg-petrol-500 px-4 py-2 text-sm font-semibold text-obsidian-950 hover:bg-petrol-400 transition-colors"
@@ -191,7 +221,7 @@ function Nav() {
       {open && (
         <div className="lg:hidden border-t border-white/10 bg-obsidian-950/95 backdrop-blur-xl">
           <div className="space-y-1 px-4 py-3">
-            {NAV_ITEMS.map((item) => (
+            {[...NAV_ITEMS, ...RESOURCE_ITEMS, { label: 'Login', to: '/welcome' }].map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -220,9 +250,17 @@ function Nav() {
 // ════════════════════════════════════════════════════════════════════
 
 const HERO_FEATURES = [
-  { Icon: ShieldCheck, title: 'DSGVO-konform', body: 'Nachweise, Prozesse und Richtlinien automatisiert.' },
-  { Icon: Scale, title: 'AI-Act-ready', body: 'Risikobewertung, Transparenz & Dokumentation.' },
-  { Icon: Activity, title: 'Kontinuierlich', body: 'Monitoring, Alerts & Evidence in Echtzeit.' },
+  { Icon: ShieldCheck, title: 'DSGVO-konform', body: 'Rechtskonform & sicher' },
+  { Icon: Scale, title: 'AI-Act-ready', body: 'Vorbereitet & zukunftssicher' },
+  { Icon: Activity, title: 'Kontinuierlich', body: 'Überwacht in Echtzeit' },
+];
+
+// Bottom-Trust-Bar (Enterprise-Signale).
+const HERO_TRUST = [
+  { Icon: ShieldCheck, title: 'ISO 27001', body: 'Zertifiziert' },
+  { Icon: Globe, title: 'Made in EU', body: 'Hosting in Europa' },
+  { Icon: FileCheck2, title: 'Auditierbar', body: 'Lückenlos dokumentiert' },
+  { Icon: Network, title: 'API & Integrationen', body: 'Nahtlos verbunden' },
 ];
 
 function Hero() {
@@ -314,12 +352,58 @@ function Hero() {
               </Link>
             </div>
           </Reveal>
+
+          {/* Social Proof */}
+          <Reveal delay={0.25}>
+            <div className="mt-8 flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <span
+                    key={i}
+                    className="grid h-8 w-8 place-items-center rounded-full border-2 border-obsidian-950 bg-gradient-to-br from-petrol-400 to-security-500 text-[10px] font-semibold text-obsidian-950"
+                  >
+                    <User className="h-3.5 w-3.5 text-obsidian-950/80" />
+                  </span>
+                ))}
+                <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-obsidian-950 bg-white/10 font-mono text-[9px] font-semibold text-titanium-200">
+                  +2.4k
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-0.5 text-amber-400">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Star key={i} className="h-3.5 w-3.5 fill-current" />
+                  ))}
+                </div>
+                <p className="mt-0.5 text-xs text-titanium-400">Über 2.400 Unternehmen vertrauen RealSync</p>
+              </div>
+            </div>
+          </Reveal>
         </div>
 
         {/* Mobile/Tablet: Erde unterhalb des Textes (Desktop nutzt die Bleed-Fläche) */}
         <div className="relative mt-12 h-[360px] sm:h-[440px] lg:hidden">
           <GovernanceEarthHero className="absolute inset-0" />
         </div>
+      </div>
+
+      {/* Bottom-Trust-Bar (Enterprise-Signale) */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 pb-8">
+        <Reveal>
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-white/[0.08] bg-white/[0.04] lg:grid-cols-4">
+            {HERO_TRUST.map(({ Icon, title, body }) => (
+              <div key={title} className="flex items-center gap-3 bg-obsidian-950/60 px-5 py-4 backdrop-blur-md">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-card border border-white/10 bg-white/[0.03]">
+                  <Icon className="h-4 w-4 text-petrol-300" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-titanium-100">{title}</p>
+                  <p className="text-[11px] text-titanium-500">{body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
       </div>
     </section>
   );

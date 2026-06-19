@@ -1,17 +1,57 @@
 /**
- * FloatingGovernanceLabels — Glassmorphism-Overlay über der 3D-Erde.
+ * FloatingGovernanceLabels — Glassmorphism-HUD über der 3D-Erde.
  *
- * Exakt nach Design-Zielbild: fünf dunkel-transluzente Governance-Karten
- * (DSGVO · Risk Score · EU AI Act · Evidence · Monitoring) mit Teal-Akzent,
- * dazu dezente „User-Nodes" (Personen-Icons) mit Verbindungspunkten rund um
- * die Erde. HTML-Text (kein Canvas) → lesbar & accessible. Auf kleinen
- * Viewports werden Karten reduziert/ausgeblendet.
+ * Premium-„Command Center"-Karten nach Design-Zielbild: DSGVO (Compliance
+ * aktiv), Risk Score 87/100 mit Sparkline, EU AI Act Ready (Check),
+ * Evidence mit Equalizer + Live-Zähler, Monitoring Live mit Sparkline.
+ * Dazu User-Nodes (globale Nutzer) entlang der Orbits. Reines HTML über der
+ * Canvas (lesbar, accessible), responsive reduziert.
  */
 import { motion, useReducedMotion } from 'motion/react';
-import { User } from 'lucide-react';
+import { ShieldCheck, FileText, Activity, Archive, Check, Plus, User } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 
-/** Live hochzählender Evidence-Zähler (Beispiel-Telemetrie, „Nachweise"). */
+const CARD =
+  'rounded-xl border border-[rgba(72,255,226,0.18)] bg-[rgba(8,18,22,0.62)] shadow-[0_10px_40px_-12px_rgba(0,0,0,0.85)] backdrop-blur-xl';
+
+// ── Mini-Charts ──────────────────────────────────────────────────────
+
+function Sparkline({ id }: { id: string }) {
+  return (
+    <svg viewBox="0 0 120 34" className="h-8 w-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2FFFE0" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="#2FFFE0" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="M0 26 L18 22 L36 24 L54 15 L72 18 L90 8 L108 6 L120 3 L120 34 L0 34 Z" fill={`url(#${id})`} />
+      <path d="M0 26 L18 22 L36 24 L54 15 L72 18 L90 8 L108 6 L120 3" fill="none" stroke="#2FFFE0" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function Equalizer() {
+  const bars = [10, 18, 8, 22, 14, 26, 16, 24, 12, 20, 9, 17];
+  return (
+    <svg viewBox="0 0 120 34" className="h-8 w-full" preserveAspectRatio="none">
+      {bars.map((h, i) => (
+        <rect
+          key={i}
+          x={i * 10 + 1}
+          y={34 - h}
+          width="6"
+          height={h}
+          rx="1"
+          fill={i % 3 === 0 ? '#2FFFE0' : 'rgba(47,255,224,0.45)'}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ── Live-Zähler ──────────────────────────────────────────────────────
+
 function useEvidenceCount(start = 1248): string {
   const [n, setN] = useState(start);
   useEffect(() => {
@@ -21,80 +61,98 @@ function useEvidenceCount(start = 1248): string {
   return n.toLocaleString('de-DE');
 }
 
-interface LabelDef {
-  id: string;
-  title: string;
-  value: ReactNode;
-  /** Position in % der Bühne. */
-  pos: { top?: string; bottom?: string; left?: string; right?: string };
-  /** Auf Mobile/Tablet ausblenden? */
-  hideSm?: boolean;
-}
+// ── Karten-Definition ────────────────────────────────────────────────
 
-function buildLabels(evidence: string): LabelDef[] {
-  return [
-    { id: 'dsgvo', title: 'DSGVO', value: 'Compliance', pos: { top: '14%', left: '44%' } },
-    { id: 'risk', title: 'Risk Score', value: (<span><span className="text-2xl font-bold tabular-nums text-titanium-50">87</span><span className="ml-1 text-titanium-500">/100</span></span>), pos: { top: '36%', right: '-2%' } },
-    { id: 'aiact', title: 'EU AI Act', value: <span className="font-semibold text-petrol-300">READY</span>, pos: { top: '58%', right: '-4%' }, hideSm: true },
-    { id: 'evidence', title: 'Evidence', value: (<span><span className="text-lg font-bold tabular-nums text-titanium-50">{evidence}</span><span className="ml-1.5 text-[11px] text-titanium-500">Nachweise</span></span>), pos: { top: '62%', left: '2%' } },
-    { id: 'monitoring', title: 'Monitoring', value: 'live-wave', pos: { bottom: '6%', left: '38%' }, hideSm: true },
-  ];
-}
+interface CardPos { top?: string; bottom?: string; left?: string; right?: string }
 
-// User-Nodes (Personen-Icons) — Skalierungs-Idee „globale Nutzer".
-const NODES: Array<{ top?: string; bottom?: string; left?: string; right?: string; hideSm?: boolean }> = [
-  { top: '40%', left: '40%' },
-  { top: '52%', left: '30%', hideSm: true },
-  { top: '46%', right: '8%' },
-  { top: '70%', right: '14%', hideSm: true },
-  { top: '74%', left: '46%' },
-  { bottom: '14%', left: '52%', hideSm: true },
-];
-
-function Waveform() {
-  return (
-    <svg viewBox="0 0 80 16" className="h-4 w-20 text-petrol-300" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M0 8 H14 L18 2 L24 14 L30 5 L34 8 H44 L48 3 L54 13 L58 8 H80" />
-    </svg>
-  );
-}
-
-function GlassCard({ def, index, reduce }: { def: LabelDef; index: number; reduce: boolean | null }) {
+function Card({
+  pos, index, reduce, hideSm, children,
+}: { pos: CardPos; index: number; reduce: boolean | null; hideSm?: boolean; children: ReactNode }) {
   return (
     <motion.div
-      className={`absolute z-20 ${def.hideSm ? 'hidden lg:block' : ''}`}
-      style={def.pos}
+      className={`absolute z-20 w-[180px] ${hideSm ? 'hidden lg:block' : ''}`}
+      style={pos}
       initial={reduce ? false : { opacity: 0, y: 10 }}
       animate={reduce ? undefined : { opacity: 1, y: [0, -6, 0] }}
       transition={reduce ? undefined : { opacity: { duration: 0.6, delay: 0.3 + index * 0.1 }, y: { duration: 5 + index, repeat: Infinity, ease: 'easeInOut' } }}
     >
-      <div className="rounded-xl border border-white/10 bg-obsidian-900/70 px-3.5 py-2.5 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-        <div className="flex items-center gap-1.5">
-          <span className="h-1.5 w-1.5 rounded-full bg-petrol-400 shadow-[0_0_8px_2px_rgba(45,212,191,0.6)]" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-petrol-200">{def.title}</span>
-        </div>
-        <div className="mt-1 text-sm text-titanium-300">
-          {def.value === 'live-wave' ? (
-            <span className="flex items-center gap-2"><Waveform /><span className="text-titanium-400">Live</span></span>
-          ) : (
-            def.value
-          )}
-        </div>
-      </div>
+      <div className={`${CARD} px-3.5 py-3`}>{children}</div>
     </motion.div>
   );
 }
 
+function CardHeader({ Icon, label, corner }: { Icon: typeof ShieldCheck; label: string; corner?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-petrol-200">
+        <Icon className="h-3.5 w-3.5 text-petrol-300" /> {label}
+      </span>
+      {corner}
+    </div>
+  );
+}
+
+const NODES: Array<CardPos & { hideSm?: boolean }> = [
+  { top: '40%', left: '36%' },
+  { top: '52%', left: '26%', hideSm: true },
+  { top: '30%', right: '6%' },
+  { top: '64%', right: '10%', hideSm: true },
+  { top: '78%', left: '44%' },
+  { bottom: '10%', right: '20%', hideSm: true },
+  { top: '48%', right: '2%' },
+];
+
 export function FloatingGovernanceLabels() {
   const reduce = useReducedMotion();
   const evidence = useEvidenceCount();
-  const labels = buildLabels(evidence);
+
   return (
     <div className="pointer-events-none absolute inset-0">
-      {labels.map((def, i) => (
-        <GlassCard key={def.id} def={def} index={i} reduce={reduce} />
-      ))}
+      {/* DSGVO */}
+      <Card pos={{ top: '15%', left: '8%' }} index={0} reduce={reduce}>
+        <CardHeader Icon={ShieldCheck} label="DSGVO" />
+        <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-titanium-200">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.6)]" />
+          Compliance aktiv
+        </p>
+      </Card>
 
+      {/* RISK SCORE */}
+      <Card pos={{ top: '13%', right: '0%' }} index={1} reduce={reduce}>
+        <CardHeader Icon={Activity} label="Risk Score" corner={<Plus className="h-3.5 w-3.5 text-titanium-500" />} />
+        <p className="mt-1.5">
+          <span className="text-2xl font-bold tabular-nums text-titanium-50">87</span>
+          <span className="ml-1 text-sm text-titanium-500">/ 100</span>
+        </p>
+        <p className="text-[11px] text-petrol-300">Sehr gut</p>
+        <div className="mt-1.5"><Sparkline id="rs-spark" /></div>
+      </Card>
+
+      {/* EU AI ACT */}
+      <Card pos={{ top: '46%', right: '-2%' }} index={2} reduce={reduce} hideSm>
+        <CardHeader Icon={FileText} label="EU AI Act" corner={<span className="grid h-5 w-5 place-items-center rounded-full border border-petrol-400/50"><Check className="h-3 w-3 text-petrol-300" /></span>} />
+        <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-petrol-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Ready
+        </p>
+      </Card>
+
+      {/* EVIDENCE */}
+      <Card pos={{ top: '64%', left: '4%' }} index={3} reduce={reduce}>
+        <CardHeader Icon={Archive} label="Evidence" />
+        <p className="mt-1.5 text-xl font-bold tabular-nums text-titanium-50">{evidence}</p>
+        <p className="text-[11px] text-titanium-500">Nachweise</p>
+        <div className="mt-1.5"><Equalizer /></div>
+      </Card>
+
+      {/* MONITORING */}
+      <Card pos={{ bottom: '7%', right: '4%' }} index={4} reduce={reduce} hideSm>
+        <CardHeader Icon={Activity} label="Monitoring" />
+        <p className="mt-1 text-lg font-bold text-titanium-50">Live</p>
+        <p className="text-[11px] text-titanium-500">Systeme aktiv: 128</p>
+        <div className="mt-1.5"><Sparkline id="mon-spark" /></div>
+      </Card>
+
+      {/* User-Nodes */}
       {NODES.map((pos, i) => (
         <motion.span
           key={`node-${i}`}

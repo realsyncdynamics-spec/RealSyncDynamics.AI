@@ -521,27 +521,74 @@ function Galaxy() {
 
 // ── Hintergrund-Planeten + Mond ──────────────────────────────────────
 
-function Saturn() {
+// Planeten-Reihe quer über den oberen Bildrand (Solarsystem-Tiefe).
+const PLANETS: Array<{ pos: [number, number, number]; r: number; color: string; ring?: boolean }> = [
+  { pos: [-7.5, 2.7, -13], r: 0.5, color: '#cda06a', ring: true }, // Saturn
+  { pos: [-4.2, 3.05, -12], r: 0.2, color: '#9fb3c8' },
+  { pos: [-1.2, 3.2, -12.5], r: 0.28, color: '#c98c6a' },
+  { pos: [2.0, 3.15, -13], r: 0.24, color: '#7f93b5' },
+  { pos: [5.2, 2.9, -14], r: 0.34, color: '#b9c4d4' },
+  { pos: [8.2, 2.5, -15.5], r: 0.2, color: '#c2a07e' },
+];
+
+function PlanetArc() {
   const ringGeo = useMemo(() => new THREE.RingGeometry(0.62, 1.05, 64), []);
   return (
-    <group position={[-8, 2.2, -15]} rotation={[1.1, 0.3, 0.2]}>
-      <mesh>
-        <sphereGeometry args={[0.55, 32, 32]} />
-        <meshStandardMaterial color="#c8a26a" roughness={0.9} metalness={0.1} emissive="#3a2c12" emissiveIntensity={0.25} />
-      </mesh>
-      <mesh geometry={ringGeo} rotation={[Math.PI / 2.1, 0, 0]}>
-        <meshBasicMaterial color="#d8c089" side={THREE.DoubleSide} transparent opacity={0.55} />
-      </mesh>
+    <group>
+      {PLANETS.map((p, i) => (
+        <group key={i} position={p.pos} rotation={[1.0, 0.3, 0.2]}>
+          <mesh>
+            <sphereGeometry args={[p.r, 32, 32]} />
+            <meshStandardMaterial color={p.color} roughness={0.95} metalness={0.1} emissive={p.color} emissiveIntensity={0.12} />
+          </mesh>
+          {p.ring && (
+            <mesh geometry={ringGeo} rotation={[Math.PI / 2.1, 0, 0]} scale={p.r / 0.55}>
+              <meshBasicMaterial color="#d8c089" side={THREE.DoubleSide} transparent opacity={0.5} />
+            </mesh>
+          )}
+        </group>
+      ))}
     </group>
   );
 }
 
-function DistantPlanet() {
+// Sonnen-Starburst (fixe Lichtquelle oben-links, blooming).
+function makeSunFlareTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d')!;
+  const cx = size / 2;
+  const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(0.12, 'rgba(255,247,224,0.95)');
+  g.addColorStop(0.3, 'rgba(255,214,140,0.45)');
+  g.addColorStop(1, 'rgba(255,200,120,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cx, cx, 0, Math.PI * 2); ctx.fill();
+  // Strahlen
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = 'rgba(255,240,210,0.7)';
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const len = i % 2 === 0 ? cx * 0.95 : cx * 0.55;
+    ctx.lineWidth = i % 2 === 0 ? 2.4 : 1.2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cx);
+    ctx.lineTo(cx + Math.cos(a) * len, cx + Math.sin(a) * len);
+    ctx.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
+function HeroSun() {
+  const tex = useMemo(() => makeSunFlareTexture(), []);
   return (
-    <mesh position={[7, -3.5, -18]}>
-      <sphereGeometry args={[0.4, 24, 24]} />
-      <meshStandardMaterial color="#5a6a8a" roughness={1} emissive="#10131c" emissiveIntensity={0.3} />
-    </mesh>
+    <sprite position={[-2.6, 2.5, -3]} scale={[3.2, 3.2, 3.2]}>
+      <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} opacity={0.95} toneMapped={false} />
+    </sprite>
   );
 }
 
@@ -636,8 +683,8 @@ export default function EarthCanvas() {
       <SunController />
       <Starfield />
       <Galaxy />
-      <Saturn />
-      <DistantPlanet />
+      <PlanetArc />
+      <HeroSun />
       <OrbitRings />
       <EarthSystem />
       <Satellites />

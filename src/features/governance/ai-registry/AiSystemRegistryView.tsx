@@ -3,6 +3,14 @@ import { Link } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import {
+  ANNEX_III_CATEGORIES,
+  ANNEX_III_CATEGORY_LABEL,
+  PROVIDER_ROLE_LABEL,
+  PROVIDER_ROLES,
+  type AnnexIIICategory,
+  type ProviderRole,
+} from '../../../lib/ai-act/annexCategories';
+import {
   ArrowLeft,
   Bot,
   Plus,
@@ -36,6 +44,8 @@ interface AiSystem {
   lastUpdated: string;
   obligations: string[];
   obligationsDone: boolean[];
+  annexCategory?: AnnexIIICategory | null;
+  providerRole?: ProviderRole | null;
 }
 
 // ── Mock-Daten ─────────────────────────────────────────────────────────────────
@@ -286,6 +296,8 @@ function assetToAiSystem(a: DbGovernanceAsset): AiSystem {
     lastUpdated,
     obligations: [],
     obligationsDone: [],
+    annexCategory: (a.annex_iii_category as AnnexIIICategory | null) ?? null,
+    providerRole: (a.provider_role as ProviderRole | null) ?? null,
   };
 }
 
@@ -552,6 +564,16 @@ function AiSystemCard({ system }: { system: AiSystem }) {
             {system.riskClass}
           </span>
           <span className="font-mono text-[10px] text-titanium-500">{system.scope}</span>
+          {system.annexCategory && (
+            <span className="border border-purple-900 bg-purple-950/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-purple-300">
+              Annex III · {ANNEX_III_CATEGORY_LABEL[system.annexCategory]}
+            </span>
+          )}
+          {system.providerRole && (
+            <span className="border border-titanium-800 bg-obsidian-950 px-2 py-0.5 font-mono text-[10px] text-titanium-400">
+              {PROVIDER_ROLE_LABEL[system.providerRole]}
+            </span>
+          )}
         </div>
 
         {/* Zeile 5: Verantwortlicher + letzte Aktualisierung */}
@@ -697,11 +719,18 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [scope, setScope]             = useState('');
   const [owner, setOwner]             = useState('');
   const [status, setStatus]           = useState<SystemStatus>('In Betrieb');
+  const [annexCategory, setAnnexCategory] = useState<AnnexIIICategory | ''>('');
+  const [providerRole, setProviderRole]   = useState<ProviderRole>('provider');
+  const [intendedPurpose, setIntendedPurpose] = useState('');
+  const [deploymentContext, setDeploymentContext] = useState('');
+  const [affectedGroups, setAffectedGroups] = useState('');
 
   function handleSave() {
     if (!name.trim()) return;
     onSaved();
   }
+
+  const showAnnexFields = riskClass === 'Hoch' || riskClass === 'Verboten';
 
   return (
     <div
@@ -772,6 +801,63 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
               <option value="Verboten">Verboten</option>
             </select>
           </ModalField>
+
+          <ModalField label="AI-Act-Rolle">
+            <select
+              value={providerRole}
+              onChange={(e) => setProviderRole(e.target.value as ProviderRole)}
+              className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+            >
+              {PROVIDER_ROLES.map((r) => (
+                <option key={r} value={r}>{PROVIDER_ROLE_LABEL[r]}</option>
+              ))}
+            </select>
+          </ModalField>
+
+          {showAnnexFields && (
+            <div className="space-y-4 border border-purple-900/60 bg-purple-950/10 p-3">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-purple-300">
+                Hochrisiko — Annex-III-Kontext (Art. 6)
+              </p>
+              <ModalField label="Annex-III-Kategorie">
+                <select
+                  value={annexCategory}
+                  onChange={(e) => setAnnexCategory(e.target.value as AnnexIIICategory | '')}
+                  className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                >
+                  <option value="">— wählen —</option>
+                  {ANNEX_III_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>{c.annexPoint} · {c.label}</option>
+                  ))}
+                </select>
+              </ModalField>
+              <ModalField label="Zweckbestimmung (intended purpose)">
+                <textarea
+                  value={intendedPurpose}
+                  onChange={(e) => setIntendedPurpose(e.target.value)}
+                  rows={2}
+                  placeholder="Wozu wird das System eingesetzt?"
+                  className="w-full resize-y border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                />
+              </ModalField>
+              <ModalField label="Einsatzkontext">
+                <input
+                  value={deploymentContext}
+                  onChange={(e) => setDeploymentContext(e.target.value)}
+                  placeholder="Domäne / Umgebung des Betriebs"
+                  className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                />
+              </ModalField>
+              <ModalField label="Betroffene Gruppen">
+                <input
+                  value={affectedGroups}
+                  onChange={(e) => setAffectedGroups(e.target.value)}
+                  placeholder="z.B. Bewerber:innen, Kund:innen (kommagetrennt)"
+                  className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                />
+              </ModalField>
+            </div>
+          )}
 
           <ModalField label="Anwendungsbereich">
             <input

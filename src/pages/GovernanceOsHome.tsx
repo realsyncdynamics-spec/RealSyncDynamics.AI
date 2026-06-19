@@ -121,6 +121,8 @@ function PageBackdrop() {
       <div className="absolute -top-40 left-1/2 h-[680px] w-[1100px] -translate-x-1/2 rounded-full bg-petrol-500/[0.10] blur-[160px]" />
       <div className="absolute top-1/3 -right-40 h-[480px] w-[480px] rounded-full bg-security-500/[0.08] blur-[150px]" />
       <div className="absolute bottom-0 -left-32 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.06] blur-[150px]" />
+      {/* Cinematic Vignette — dunkle Ränder für Tiefe (Enterprise-Look) */}
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 90% 80% at 50% 35%, transparent 55%, rgba(0,0,0,0.55) 100%)' }} />
       {/* Film-Grain */}
       <div className="absolute inset-0 opacity-[0.025] mix-blend-soft-light" style={{ backgroundImage: GRAIN_URI }} />
     </div>
@@ -861,7 +863,7 @@ function Footer() {
 
 export function GovernanceOsHome() {
   return (
-    <div className="relative min-h-screen bg-obsidian-950 text-titanium-100 antialiased selection:bg-petrol-500/30">
+    <div className="relative min-h-screen bg-[#04090b] text-titanium-100 antialiased selection:bg-petrol-500/30">
       <PageBackdrop />
       <Nav />
       <main>

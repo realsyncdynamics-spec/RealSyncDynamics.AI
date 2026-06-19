@@ -269,7 +269,7 @@ function Hero() {
               </span>
             </h1>
             <p className="mt-5 font-mono text-[12px] uppercase tracking-[0.32em] text-titanium-500">
-              AI Governance OS for Trust &amp; Value
+              by RealSync Dynamics AI
             </p>
           </Reveal>
 

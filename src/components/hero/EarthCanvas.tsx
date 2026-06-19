@@ -24,6 +24,7 @@ const TEX = {
   night: '/textures/earth/earth-night.png',
   clouds: '/textures/earth/earth-clouds.png',
   normal: '/textures/earth/earth-normal.jpg',
+  specular: '/textures/earth/earth-specular.jpg',
 };
 
 // Sonnenrichtung: zeitabhängige Stärke (solarLighting), aber für die
@@ -115,18 +116,22 @@ function makeGalaxyTexture(): THREE.CanvasTexture {
 // ── Erde (Tag/Nacht-Shader) ──────────────────────────────────────────
 
 function Earth() {
-  const [dayMap, nightMap, normalMap] = useLoader(THREE.TextureLoader, [TEX.day, TEX.night, TEX.normal]);
+  const [dayMap, nightMap, normalMap, specMap] = useLoader(THREE.TextureLoader, [TEX.day, TEX.night, TEX.normal, TEX.specular]);
   const ref = useRef<THREE.Mesh>(null!);
 
   const material = useMemo(() => {
-    [dayMap, nightMap].forEach((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; });
+    [dayMap, nightMap].forEach((t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 16; });
+    [normalMap, specMap].forEach((t) => { t.anisotropy = 16; });
     return new THREE.ShaderMaterial({
       uniforms: {
         dayMap: { value: dayMap },
         nightMap: { value: nightMap },
+        normalMap: { value: normalMap },
+        specMap: { value: specMap },
         sunDir: { value: SUN.clone() },
         cameraPos: { value: new THREE.Vector3() },
         atmoColor: { value: new THREE.Color('#2f7bd6') },
+        bumpScale: { value: 0.85 },
       },
       vertexShader: /* glsl */ `
         varying vec2 vUv;
@@ -143,38 +148,71 @@ function Earth() {
       fragmentShader: /* glsl */ `
         uniform sampler2D dayMap;
         uniform sampler2D nightMap;
+        uniform sampler2D normalMap;
+        uniform sampler2D specMap;
         uniform vec3 sunDir;
         uniform vec3 cameraPos;
         uniform vec3 atmoColor;
+        uniform float bumpScale;
         varying vec2 vUv;
         varying vec3 vWorldNormal;
         varying vec3 vWorldPos;
+
+        // Tangentenraum ohne vorberechnete Tangenten (Schüler / derivative-based).
+        mat3 cotangentFrame(vec3 N, vec3 p, vec2 uv) {
+          vec3 dp1 = dFdx(p);
+          vec3 dp2 = dFdy(p);
+          vec2 duv1 = dFdx(uv);
+          vec2 duv2 = dFdy(uv);
+          vec3 dp2perp = cross(dp2, N);
+          vec3 dp1perp = cross(N, dp1);
+          vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+          vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+          float invmax = inversesqrt(max(dot(T, T), dot(B, B)));
+          return mat3(T * invmax, B * invmax, N);
+        }
+
         void main() {
           vec3 N = normalize(vWorldNormal);
-          float d = dot(N, normalize(sunDir));
+          vec3 V = normalize(cameraPos - vWorldPos);
+
+          // Relief: Normal-Map per Tangentenraum einrechnen → Terrain-Tiefe (3D)
+          vec3 mapN = texture2D(normalMap, vUv).xyz * 2.0 - 1.0;
+          mapN.xy *= bumpScale;
+          vec3 Np = normalize(cotangentFrame(N, -vWorldPos, vUv) * mapN);
+
+          vec3 L = normalize(sunDir);
+          float d = dot(Np, L);
           float day = smoothstep(-0.12, 0.30, d);
 
-          vec3 dayC = texture2D(dayMap, vUv).rgb * 1.04;
+          vec3 dayC = texture2D(dayMap, vUv).rgb * 0.98;
           vec3 nightC = texture2D(nightMap, vUv).rgb;
-          // Stadtlichter verstärken, kühles Restlicht auf der Nachtseite
           nightC = nightC * 1.7 + vec3(0.01, 0.02, 0.04);
 
           vec3 col = mix(nightC, dayC, day);
 
-          // warmer Terminator-Saum (Sonnenaufgangslinie)
+          // Ozean-Glanz (Specular-Glint der Sonne auf Wasserflächen)
+          float ocean = texture2D(specMap, vUv).r;
+          vec3 R = reflect(-L, Np);
+          float spec = pow(max(dot(R, V), 0.0), 22.0);
+          col += vec3(0.85, 0.92, 1.0) * spec * ocean * day * 0.7;
+
+          // warmer Terminator-Saum
           float term = smoothstep(0.0, 0.18, d) * (1.0 - smoothstep(0.18, 0.4, d));
           col += vec3(1.0, 0.55, 0.2) * term * 0.12;
 
           // Atmosphären-Fresnel am Rand (bläulich, sonnenseitig stärker)
-          vec3 V = normalize(cameraPos - vWorldPos);
           float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
           col += atmoColor * fres * (0.25 + 0.5 * day);
+
+          // sanfte Highlight-Kompression gegen Überstrahlung (Wüsten)
+          col = col / (col + 0.55) * 1.55;
 
           gl_FragColor = vec4(col, 1.0);
         }
       `,
     });
-  }, [dayMap, nightMap, normalMap]);
+  }, [dayMap, nightMap, normalMap, specMap]);
 
   useFrame((state, delta) => {
     if (!ref.current) return;
@@ -184,7 +222,7 @@ function Earth() {
 
   return (
     <mesh ref={ref} rotation={[0, EUROPE_ROT_Y, 0]} material={material}>
-      <sphereGeometry args={[1, 96, 96]} />
+      <sphereGeometry args={[1, 160, 160]} />
     </mesh>
   );
 }
@@ -459,7 +497,7 @@ function EarthSystem() {
 export default function EarthCanvas() {
   return (
     <Canvas
-      camera={{ position: [0, 0.12, 3.55], fov: 34 }}
+      camera={{ position: [0, 0.1, 4.75], fov: 30 }}
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       dpr={[1, 1.5]}
       style={{ width: '100%', height: '100%', background: 'transparent' }}

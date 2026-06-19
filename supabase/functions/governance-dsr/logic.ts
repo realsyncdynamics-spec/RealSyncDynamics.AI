@@ -100,3 +100,28 @@ export function buildClosePatch(body: Record<string, unknown>, currentCompletedA
   if ('response_notes' in body) patch.response_notes = clampStr(body.response_notes, 5000);
   return { patch };
 }
+
+// Erasure (Art. 17) is the only request type that enqueues the subject for
+// the automated erasure sweep. Other types are tracked but not auto-erased.
+export function isErasure(requestType: string | null | undefined): boolean {
+  return requestType === 'erasure';
+}
+
+export interface ExportTarget {
+  error?: string;
+  by?: 'id' | 'subject_ref';
+  value?: string;
+}
+
+// Art. 15 export accepts either a DSR id (preferred — resolves its linked
+// subject_ref) or a raw subject_ref (requires tenant_id alongside).
+export function normalizeExportRequest(body: Record<string, unknown>): ExportTarget {
+  const id = typeof body.id === 'string' ? body.id.trim() : '';
+  const sref = typeof body.subject_ref === 'string' ? body.subject_ref.trim() : '';
+  if (id) return { by: 'id', value: id };
+  if (sref) {
+    if (sref.length < 8) return { error: 'subject_ref looks invalid' };
+    return { by: 'subject_ref', value: sref };
+  }
+  return { error: 'id or subject_ref required' };
+}

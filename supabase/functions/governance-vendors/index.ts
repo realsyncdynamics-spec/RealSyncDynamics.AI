@@ -148,6 +148,9 @@ async function emitEvidence(admin: any, args: {
       type: args.eventType,
       severity: args.severity ?? 'info',
       source: 'governance-vendors',
+      // spec_version CHECK is ('0.1','0.2'); set explicitly (column default
+      // is '1.0', fixed in 20260626000000) to stay valid on any deploy order.
+      spec_version: '0.2',
       payload: { vendor_id: args.vendorId, ...args.payload },
       correlation_id: args.vendorId,
     });

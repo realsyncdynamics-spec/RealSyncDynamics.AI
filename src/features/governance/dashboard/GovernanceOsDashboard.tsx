@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import {
   Globe, Cpu, AlertTriangle, FileCheck2, Activity,
   Bot, GitMerge, FileText, Building2, ClipboardCheck,
-  TrendingUp, TrendingDown, Shield,
+  TrendingUp, TrendingDown, Shield, Database,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { countOpenIncidents } from '../incidentsApi';
@@ -132,6 +132,17 @@ const MODULES: ModuleDef[] = [
     lastActivity: 'Scan-Workflow vor 3 Min.',
     alertCount: 0,
     color: 'text-indigo-400',
+  },
+  {
+    id: 'datasets',
+    label: 'Datensätze',
+    icon: Database,
+    route: '/app/datasets',
+    status: 'live',
+    metric: 'Art. 10 · Daten-Governance',
+    lastActivity: 'Trainings-/Test-Daten dokumentieren',
+    alertCount: 0,
+    color: 'text-cyan-400',
   },
   {
     id: 'documents',

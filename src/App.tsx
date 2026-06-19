@@ -180,6 +180,7 @@ const EvidenceVaultView = lazy(() => import('./features/governance/evidence/Evid
 const GovernanceScansListView = lazy(() => import('./features/governance/scans/ScansListView').then((m) => ({ default: m.ScansListView })));
 const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/ScanDetailView').then((m) => ({ default: m.ScanDetailView })));
 const AiActRiskInventoryView = lazy(() => import('./features/governance/AiActRiskInventoryView').then((m) => ({ default: m.AiActRiskInventoryView })));
+const AiActDataGovernanceView = lazy(() => import('./features/governance/data-governance/AiActDataGovernanceView').then((m) => ({ default: m.AiActDataGovernanceView })));
 const MonitoringRuntimeView = lazy(() => import('./features/governance/monitoring/MonitoringRuntimeView').then((m) => ({ default: m.MonitoringRuntimeView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
 const RemediationPlansView      = lazy(() => import('./features/governance/remediation/RemediationPlansView').then((m) => ({ default: m.RemediationPlansView })));
@@ -502,6 +503,7 @@ function RoutesWithTracking() {
       <Route path="/app/scans" element={<GovernanceBrowserShell><GovernanceScansListView /></GovernanceBrowserShell>} />
       <Route path="/app/scans/:scanId" element={<GovernanceBrowserShell><GovernanceScanDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
+      <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />
       <Route path="/app/alerts" element={<GovernanceBrowserShell><GovernanceAlertsView /></GovernanceBrowserShell>} />
       <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />

@@ -219,6 +219,10 @@ const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
+// ── Governance OS 2050 Homepage (/governance-os) — dunkles Premium-Design
+// mit 3D-Europa-Weltkugel. Lazy, da Three.js/R3F im Bundle. ──
+const GovernanceOsHome = lazy(() => import('./pages/GovernanceOsHome').then((m) => ({ default: m.GovernanceOsHome })));
+
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -281,6 +285,7 @@ function RoutesWithTracking() {
       <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/governance-os" element={<GovernanceOsHome />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

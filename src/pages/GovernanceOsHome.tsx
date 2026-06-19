@@ -28,12 +28,11 @@ import {
   Globe, Cpu, AlertTriangle, Archive, Activity, Network, FileText, BarChart3, Workflow,
   ShieldCheck, Scale, Lock, KeyRound, FileCheck2, ClipboardCheck,
   ScanSearch, Camera, CalendarClock, Target, FileSearch,
-  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check,
+  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check, Play,
 } from 'lucide-react';
 import { CTA, PLANS } from '../content/runtimeVocab';
 import { Logo } from '../components/Logo';
-
-const GovernanceGlobe = lazy(() => import('../components/globe/GovernanceGlobe'));
+import { GovernanceEarthHero } from '../components/hero/GovernanceEarthHero';
 
 // ── Reveal-Wrapper (scroll-in, respektiert reduced-motion) ───────────
 
@@ -124,70 +123,6 @@ function PageBackdrop() {
       <div className="absolute bottom-0 -left-32 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.06] blur-[150px]" />
       {/* Film-Grain */}
       <div className="absolute inset-0 opacity-[0.025] mix-blend-soft-light" style={{ backgroundImage: GRAIN_URI }} />
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════
-//  Globe-Mount (lazy + reduced-motion + ErrorBoundary)
-// ════════════════════════════════════════════════════════════════════
-
-class GlobeErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? this.props.fallback : this.props.children; }
-}
-
-/** Statischer CSS/SVG-Globe — Fallback bei reduced-motion oder ohne WebGL. */
-function GlobeFallback() {
-  return (
-    <div className="relative aspect-square w-full max-w-[560px] mx-auto">
-      <div className="absolute inset-[12%] rounded-full bg-[radial-gradient(circle_at_35%_30%,#0d3b38_0%,#070709_70%)] shadow-[0_0_120px_-20px_rgba(20,184,166,0.55)]" />
-      <div className="absolute inset-[12%] rounded-full border border-petrol-500/30" />
-      <div className="absolute inset-[4%] rounded-full border border-petrol-500/10" />
-      <svg viewBox="0 0 100 100" className="absolute inset-[12%] h-auto w-auto opacity-70">
-        <defs>
-          <radialGradient id="g" cx="40%" cy="35%" r="70%">
-            <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-        <circle cx="50" cy="50" r="48" fill="url(#g)" />
-        {[...Array(7)].map((_, i) => (
-          <ellipse key={i} cx="50" cy="50" rx={48} ry={6 + i * 7} fill="none" stroke="#2a3a4a" strokeWidth="0.3" />
-        ))}
-        {[[46, 38], [52, 34], [44, 44], [55, 42], [48, 30], [58, 48]].map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="1.1" fill="#5fe5d1" />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-function GlobeStage() {
-  const reduce = useReducedMotion();
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (!reduce && typeof window !== 'undefined' && window.innerWidth >= 768) {
-      setShow(true);
-    }
-  }, [reduce]);
-
-  return (
-    <div className="relative aspect-square w-full max-w-[620px] mx-auto">
-      <div className="pointer-events-none absolute inset-0 rounded-full bg-petrol-500/10 blur-[100px]" />
-      {show ? (
-        <GlobeErrorBoundary fallback={<GlobeFallback />}>
-          <Suspense fallback={<GlobeFallback />}>
-            <div className="absolute inset-0">
-              <GovernanceGlobe />
-            </div>
-          </Suspense>
-        </GlobeErrorBoundary>
-      ) : (
-        <GlobeFallback />
-      )}
     </div>
   );
 }
@@ -284,71 +219,16 @@ function Nav() {
 //  1 · Hero
 // ════════════════════════════════════════════════════════════════════
 
-const HERO_LABELS = [
-  { label: 'DSGVO', top: '5%', left: '6%' },
-  { label: 'EU AI Act', top: '18%', left: '74%' },
-  { label: 'Evidence', top: '47%', left: '0%' },
-  { label: 'Monitoring', top: '72%', left: '12%' },
-  { label: 'Risk Score', top: '10%', left: '42%' },
-  { label: 'Audit Ready', top: '84%', left: '66%' },
-] as const;
-
-function FloatingLabels() {
-  const reduce = useReducedMotion();
-  return (
-    <div className="pointer-events-none absolute inset-0 hidden md:block">
-      {HERO_LABELS.map((l, i) => (
-        <motion.span
-          key={l.label}
-          className="absolute inline-flex items-center gap-1.5 rounded-chip border border-white/10 bg-white/[0.05] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-titanium-200 backdrop-blur-md"
-          style={{ top: l.top, left: l.left }}
-          animate={reduce ? undefined : { y: [0, -8, 0] }}
-          transition={reduce ? undefined : { duration: 4 + i * 0.6, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-petrol-300" />
-          {l.label}
-        </motion.span>
-      ))}
-    </div>
-  );
-}
-
-/** Schwebende Glas-Produktkarte über dem Globe — gibt Produkt-Glaubwürdigkeit. */
-function HeroScoreCard() {
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      className="absolute bottom-2 left-0 z-10 hidden w-[230px] rounded-panel border border-white/10 bg-obsidian-900/80 p-4 shadow-2xl backdrop-blur-xl sm:block"
-      initial={reduce ? false : { opacity: 0, y: 16 }}
-      animate={reduce ? undefined : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-titanium-500">Beispiel-Ansicht</span>
-        <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-wider text-emerald-300">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Scan
-        </span>
-      </div>
-      <div className="mt-3 flex items-end gap-2">
-        <span className="font-display text-3xl font-bold text-titanium-50 tabular-nums">84</span>
-        <span className="mb-1 font-mono text-[11px] text-titanium-500">/100 Governance Score</span>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-        <div className="h-full w-[84%] rounded-full bg-gradient-to-r from-petrol-500 to-emerald-400" />
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-wider">
-        <span className="text-titanium-400">312 Evidence</span>
-        <span className="text-right text-petrol-300">47 Risiken</span>
-      </div>
-    </motion.div>
-  );
-}
-
-const HERO_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'ePrivacy', 'NIS2', 'C2PA'];
+const HERO_FEATURES = [
+  { Icon: ShieldCheck, title: 'DSGVO-konform', body: 'Nachweise, Prozesse und Richtlinien automatisiert.' },
+  { Icon: Scale, title: 'AI-Act-ready', body: 'Risikobewertung, Transparenz & Dokumentation.' },
+  { Icon: Activity, title: 'Kontinuierlich', body: 'Monitoring, Alerts & Evidence in Echtzeit.' },
+];
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden px-4 sm:px-6 pt-28 pb-20 sm:pt-36 sm:pb-28">
+    <section className="relative overflow-hidden">
+      {/* dezentes Grid hinter dem Text */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div
           className="absolute inset-0 opacity-[0.05]"
@@ -356,13 +236,20 @@ function Hero() {
             backgroundImage:
               'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
             backgroundSize: '64px 64px',
-            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, #000 40%, transparent 100%)',
+            maskImage: 'radial-gradient(ellipse 70% 60% at 30% 40%, #000 40%, transparent 100%)',
           }}
         />
       </div>
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-8">
-        <div>
+      {/* Rechte visuelle Fläche: dynamische 3D-Erde (Desktop, bleed nach rechts) */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[60%] xl:w-[58%] lg:block">
+        <GovernanceEarthHero className="absolute inset-0" />
+        {/* weicher Verlauf zur Textseite, damit die Headline lesbar bleibt */}
+        <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-obsidian-950 to-transparent" />
+      </div>
+
+      <div className="mx-auto grid min-h-[760px] max-w-7xl grid-cols-1 items-center px-4 sm:px-6 pt-28 pb-16 sm:pt-32 lg:grid-cols-2 lg:pb-24">
+        <div className="relative z-10">
           <Reveal>
             <Link
               to="/governance-score"
@@ -375,14 +262,14 @@ function Hero() {
           </Reveal>
 
           <Reveal delay={0.05}>
-            <h1 className="mt-6 text-balance font-display font-bold tracking-tight text-titanium-50 text-[clamp(2.5rem,6vw,4.25rem)] leading-[1.03]">
+            <h1 className="mt-6 text-balance font-display font-bold tracking-tight text-titanium-50 text-[clamp(2.5rem,6vw,4.5rem)] leading-[1.02]">
               Das KI-Betriebssystem für{' '}
               <span className="bg-gradient-to-r from-petrol-300 via-ai-cyan-300 to-emerald-300 bg-clip-text text-transparent">
                 DSGVO &amp; EU AI Act
               </span>
             </h1>
-            <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.28em] text-titanium-500">
-              by RealSync Dynamics AI
+            <p className="mt-5 font-mono text-[12px] uppercase tracking-[0.32em] text-titanium-500">
+              AI Governance OS for Trust &amp; Value
             </p>
           </Reveal>
 
@@ -394,39 +281,44 @@ function Hero() {
           </Reveal>
 
           <Reveal delay={0.15}>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link
-                to="/audit?source=governance-os-hero"
-                className="group inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-500 px-6 py-3.5 text-sm font-semibold text-obsidian-950 hover:bg-petrol-400 transition-colors shadow-[0_0_40px_-8px_rgba(20,184,166,0.6)]"
-              >
-                {CTA.startFreeAudit}
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <a
-                href="#module"
-                className="inline-flex items-center justify-center gap-2 rounded-chip border border-white/15 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-titanium-100 hover:border-white/30 hover:bg-white/[0.06] transition-colors backdrop-blur-md"
-              >
-                Governance OS ansehen
-              </a>
+            <div className="mt-8 grid max-w-xl grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-3">
+              {HERO_FEATURES.map(({ Icon, title, body }) => (
+                <div key={title}>
+                  <span className="grid h-9 w-9 place-items-center rounded-card border border-white/10 bg-white/[0.03]">
+                    <Icon className="h-4 w-4 text-petrol-300" />
+                  </span>
+                  <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.16em] text-petrol-200">{title}</p>
+                  <p className="mt-1.5 text-[13px] leading-snug text-titanium-400">{body}</p>
+                </div>
+              ))}
             </div>
           </Reveal>
 
           <Reveal delay={0.2}>
-            <div className="mt-10 border-t border-white/[0.06] pt-6">
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600">Regelwerke im Prüfpfad</p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-                {HERO_FRAMEWORKS.map((f) => (
-                  <span key={f} className="font-display text-sm font-semibold text-titanium-400">{f}</span>
-                ))}
-              </div>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                to="/audit?source=governance-os-hero"
+                className="group inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-500 px-6 py-3.5 text-sm font-semibold text-obsidian-950 hover:bg-petrol-400 transition-colors shadow-[0_0_40px_-8px_rgba(20,184,166,0.6)]"
+              >
+                {CTA.startFree}
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <Link
+                to="/runtime?source=governance-os-hero"
+                className="group inline-flex items-center justify-center gap-2.5 rounded-chip border border-white/15 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-titanium-100 hover:border-white/30 hover:bg-white/[0.06] transition-colors backdrop-blur-md"
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-full border border-white/20 bg-white/[0.04]">
+                  <Play className="h-3 w-3 fill-current text-petrol-300" />
+                </span>
+                Produkt-Tour ansehen
+              </Link>
             </div>
           </Reveal>
         </div>
 
-        <div className="relative">
-          <GlobeStage />
-          <FloatingLabels />
-          <HeroScoreCard />
+        {/* Mobile/Tablet: Erde unterhalb des Textes (Desktop nutzt die Bleed-Fläche) */}
+        <div className="relative mt-12 h-[360px] sm:h-[440px] lg:hidden">
+          <GovernanceEarthHero className="absolute inset-0" />
         </div>
       </div>
     </section>

@@ -38,17 +38,17 @@ test.describe('Governance-OS-Homepage (/governance-os)', () => {
       }),
     ).toBeVisible();
 
-    // Brand-Attribution sichtbar.
-    await expect(page.getByText(/by RealSync Dynamics AI/i)).toBeVisible();
+    // Sub-Tagline sichtbar.
+    await expect(page.getByText(/AI Governance OS for Trust & Value/i)).toBeVisible();
 
     await expect(page.getByText(/DSGVO-konform, AI-Act-ready und auditierbar/i)).toBeVisible();
 
-    // Primär-CTA: Self-Serve Audit, kein Demo-Zwang.
+    // Primär-CTA: Self-Serve, kein Demo-Zwang.
     await expect(
-      page.getByRole('link', { name: /Kostenlosen Audit starten/i }).first(),
+      page.getByRole('link', { name: /Kostenlos starten/i }).first(),
     ).toBeVisible();
-    // Sekundär-CTA: Sprung zur Modul-Sektion.
-    await expect(page.getByRole('link', { name: /Governance OS ansehen/i })).toBeVisible();
+    // Sekundär-CTA: Produkt-Tour.
+    await expect(page.getByRole('link', { name: /Produkt-Tour ansehen/i })).toBeVisible();
 
     // Trust-Signale im Hero.
     await expect(page.getByText(/EU-Hosting/i).first()).toBeVisible();
@@ -76,7 +76,7 @@ test.describe('Governance-OS-Homepage (/governance-os)', () => {
   });
 
   test('Hero-Audit-CTA navigiert zum Audit', async ({ page }) => {
-    await page.getByRole('link', { name: /Kostenlosen Audit starten/i }).first().click();
+    await page.locator('a[href*="governance-os-hero"]').first().click();
     await expect(page).toHaveURL(/\/audit/);
     expect(page.url()).toContain('source=governance-os-hero');
   });

@@ -38,36 +38,37 @@ export function CeoCockpitView() {
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
-  if (!activeTenantId) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 text-center text-titanium-400">
-        <ShieldCheck className="h-8 w-8 mx-auto mb-3 text-titanium-600" />
-        <p className="text-sm">Bitte melden Sie sich an, um Ihr Governance-Cockpit zu sehen.</p>
-        <Link to="/welcome" className="mt-4 inline-flex items-center gap-2 text-security-500 text-sm font-semibold">
-          Zum Login <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-      {/* Kopf */}
+      {/* Kopf — immer sichtbar (auch ohne Session), damit /app stabil rendert. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-display font-bold text-2xl text-titanium-50 tracking-tight">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-500">Übersicht</p>
+          <h2 className="font-display font-bold text-2xl text-titanium-50 tracking-tight mt-1">
             {tenantName ? `Cockpit · ${tenantName}` : 'Governance-Cockpit'}
           </h2>
           <p className="text-sm text-titanium-400 mt-1">
             Ihr Risiko, Ihre Audit-Readiness und die dringendsten Pflichten — auf einen Blick.
           </p>
         </div>
-        <Link to="/app/cockpit/brief">
-          <Button variant="primary" size="md">
-            <FileCheck2 className="h-4 w-4" /> Prüfer-Mappe (PDF)
-          </Button>
-        </Link>
+        {activeTenantId && (
+          <Link to="/app/cockpit/brief">
+            <Button variant="primary" size="md">
+              <FileCheck2 className="h-4 w-4" /> Prüfer-Mappe (PDF)
+            </Button>
+          </Link>
+        )}
       </div>
+
+      {!activeTenantId && (
+        <div className="py-12 text-center text-titanium-400">
+          <ShieldCheck className="h-8 w-8 mx-auto mb-3 text-titanium-600" />
+          <p className="text-sm">Bitte melden Sie sich an, um Ihr Governance-Cockpit zu sehen.</p>
+          <Link to="/welcome" className="mt-4 inline-flex items-center gap-2 text-security-500 text-sm font-semibold">
+            Zum Login <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 text-sm text-rose-300 bg-rose-950/40 border border-rose-900 p-3">

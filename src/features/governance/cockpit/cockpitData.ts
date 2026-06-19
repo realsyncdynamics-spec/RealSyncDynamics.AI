@@ -3,17 +3,36 @@
 // Lädt ausschliesslich über bestehende, RLS-gescopte APIs und verdichtet zu
 // CockpitData. Resilient (allSettled): ein fehlschlagender Teil leert nicht
 // das gesamte Cockpit.
+import { getSupabase } from '../../../lib/supabase';
 import { countOpenIncidents, fetchTenantIncidents } from '../incidentsApi';
 import { countOpenDpias, listDpias } from '../dpiasApi';
 import { countOpenDsrs, fetchTenantDsrs } from '../dsrApi';
 import { countPendingApprovals } from '../approvalsApi';
 import { countVendorsNoDpa } from '../vendorsApi';
-import { fetchLatestKpi, fetchKpiRange, snapshotToMetrics, calculateTrend } from '../analytics/analyticsApi';
+import type { DbGovernanceKpiSnapshot } from '../analytics/types';
 import {
   computeGovernanceScore, computeAuditReadiness,
   type CockpitCounts, type CockpitPosture,
 } from './cockpitScore';
 import { prioritizeActions, type PriorityAction } from './prioritizeActions';
+
+// KPI-Snapshots über das lazy getSupabase() (NICHT über analyticsApi, das den
+// Client auf Modulebene erzeugt und ohne Env beim Import crasht). Aufrufe
+// laufen in loadCockpitData unter Promise.allSettled — ein fehlender Snapshot
+// (oder fehlende Env) leert das Cockpit nicht.
+async function fetchLatestKpiSnapshot(tenantId: string): Promise<DbGovernanceKpiSnapshot | null> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc('governance_kpi_latest_snapshot', { p_tenant_id: tenantId });
+  if (error) return null;
+  return (data && data.length > 0 ? data[0] : null) as DbGovernanceKpiSnapshot | null;
+}
+
+async function fetchKpiSnapshotRange(tenantId: string, start: string, end: string): Promise<DbGovernanceKpiSnapshot[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb.rpc('governance_kpi_range', { p_tenant_id: tenantId, p_start_date: start, p_end_date: end });
+  if (error) throw error;
+  return (data || []) as DbGovernanceKpiSnapshot[];
+}
 
 export interface CockpitData {
   counts: CockpitCounts;
@@ -42,8 +61,8 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     countOpenDsrs(tenantId),
     countPendingApprovals(tenantId),
     countVendorsNoDpa(tenantId),
-    fetchLatestKpi(tenantId),
-    fetchKpiRange(tenantId, since, today),
+    fetchLatestKpiSnapshot(tenantId),
+    fetchKpiSnapshotRange(tenantId, since, today),
     fetchTenantIncidents(tenantId),
     listDpias(tenantId),
     fetchTenantDsrs(tenantId),
@@ -57,22 +76,23 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     vendorsNoDpa: val(vendorsCount, 0),
   };
 
-  const metrics = snapshotToMetrics(val(latestKpi, null));
-  const posture: CockpitPosture | null = metrics
+  const snap = val(latestKpi, null);
+  const posture: CockpitPosture | null = snap
     ? {
-        policiesEnabledPercent: metrics.policiesEnabledPercent,
-        assetEvidencePercent: metrics.assetEvidencePercent,
-        assetMappingsPercent: metrics.assetMappingsPercent,
+        policiesEnabledPercent: snap.policies_enabled_percent,
+        assetEvidencePercent: snap.assets_with_evidence_percent,
+        assetMappingsPercent: snap.assets_with_mappings_percent,
       }
     : null;
 
   const range = val(kpiRange, []);
   let readinessTrend: CockpitData['readinessTrend'] = null;
   if (range.length >= 2) {
-    const first = range[0];
-    const last = range[range.length - 1];
-    const t = calculateTrend(last.assets_with_mappings_percent, first.assets_with_mappings_percent);
-    readinessTrend = { direction: t.direction, percent: Math.abs(t.percent) };
+    const a = range[0].assets_with_mappings_percent;
+    const b = range[range.length - 1].assets_with_mappings_percent;
+    const direction = b > a ? 'up' : b < a ? 'down' : 'flat';
+    const percent = a === 0 ? (b > 0 ? 100 : 0) : Math.abs(Math.round(((b - a) / a) * 100));
+    readinessTrend = { direction, percent };
   }
 
   const actions = prioritizeActions({
@@ -86,7 +106,7 @@ export async function loadCockpitData(tenantId: string): Promise<CockpitData> {
     score: computeGovernanceScore(counts, posture),
     readiness: computeAuditReadiness(posture),
     readinessTrend, actions,
-    lastUpdated: metrics?.lastUpdated ?? null,
+    lastUpdated: snap?.captured_date ?? null,
   };
 }
 

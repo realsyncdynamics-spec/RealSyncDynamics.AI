@@ -2,23 +2,15 @@ import { Menu, X, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
-import { CTA } from '../content/runtimeVocab';
 
-// Kundenorientierte Self-Service-Navigation (max. 7 Punkte). Keine
-// technischen Begriffe in den Labels — Runtime / Evidence / Agent Registry
-// / Governance Engine bleiben Produktbestandteile, erscheinen aber nur auf
-// Unterseiten (unter Produkt / Automatisierung), nicht in der Hauptnav.
-// Reihenfolge: Was (Produkt) → für wen (Lösungen) → wie automatisch
-// (Automatisierung) → warum vertrauenswürdig (Sicherheit) → Preise →
-// Dokumentation → Login. Alle Ziele sind existierende Routen.
+// Governance-OS-fokussierte Navigation (4 Punkte + CTA).
+// Nischen-/SEO-Seiten bleiben erreichbar, aber die Hauptnav zeigt
+// nur das Wesentliche: App-Einstieg, Preise, Vertrauen, Dokumentation.
 const NAV_ITEMS = [
-  { label: 'Produkt',         to: '/runtime' },
-  { label: 'Lösungen',        to: '/branchen' },
-  { label: 'Automatisierung', to: '/ai-governance' },
-  { label: 'Sicherheit',      to: '/sicherheit' },
-  { label: 'Preise',          to: '/pricing' },
-  { label: 'Dokumentation',   to: '/docs' },
-  { label: 'Login',           to: '/welcome' },
+  { label: 'Governance OS', to: '/app' },
+  { label: 'Preise',        to: '/pricing' },
+  { label: 'Sicherheit',    to: '/sicherheit' },
+  { label: 'Dokumentation', to: '/docs' },
 ] as const;
 
 export function Navbar() {
@@ -62,10 +54,10 @@ export function Navbar() {
               );
             })}
             <Link
-              to="/audit?source=nav-activate"
+              to="/app"
               className="group inline-flex items-center gap-1.5 bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 px-4 py-2 text-sm font-semibold tracking-tight rounded-none transition-colors"
             >
-              {CTA.startFree}
+              App öffnen
               <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -94,11 +86,11 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              to="/audit?source=nav-activate-mobile"
+              to="/app"
               onClick={() => setIsOpen(false)}
               className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold bg-cyan-400 text-obsidian-950 rounded-none"
             >
-              {CTA.startFree} <ArrowRight className="h-4 w-4" />
+              App öffnen <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>

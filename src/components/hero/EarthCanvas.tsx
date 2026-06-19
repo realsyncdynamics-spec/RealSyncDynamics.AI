@@ -522,13 +522,13 @@ function Galaxy() {
 // ── Hintergrund-Planeten + Mond ──────────────────────────────────────
 
 // Planeten-Reihe quer über den oberen Bildrand (Solarsystem-Tiefe).
+// Rechts der Sonne platziert (Sonne belegt oben-links), Bogen zur Galaxie.
 const PLANETS: Array<{ pos: [number, number, number]; r: number; color: string; ring?: boolean }> = [
-  { pos: [-7.5, 2.7, -13], r: 0.5, color: '#cda06a', ring: true }, // Saturn
-  { pos: [-4.2, 3.05, -12], r: 0.2, color: '#9fb3c8' },
-  { pos: [-1.2, 3.2, -12.5], r: 0.28, color: '#c98c6a' },
-  { pos: [2.0, 3.15, -13], r: 0.24, color: '#7f93b5' },
-  { pos: [5.2, 2.9, -14], r: 0.34, color: '#b9c4d4' },
-  { pos: [8.2, 2.5, -15.5], r: 0.2, color: '#c2a07e' },
+  { pos: [1.6, 2.95, -11.5], r: 0.5, color: '#d3a86e', ring: true }, // Saturn
+  { pos: [3.7, 3.15, -12], r: 0.24, color: '#a9bccf' },
+  { pos: [5.5, 3.05, -12.5], r: 0.32, color: '#cf9070' },
+  { pos: [7.1, 2.8, -13.5], r: 0.26, color: '#8aa0c0' },
+  { pos: [8.7, 2.5, -14.5], r: 0.36, color: '#c4cfdd' },
 ];
 
 function PlanetArc() {
@@ -539,11 +539,11 @@ function PlanetArc() {
         <group key={i} position={p.pos} rotation={[1.0, 0.3, 0.2]}>
           <mesh>
             <sphereGeometry args={[p.r, 32, 32]} />
-            <meshStandardMaterial color={p.color} roughness={0.95} metalness={0.1} emissive={p.color} emissiveIntensity={0.12} />
+            <meshStandardMaterial color={p.color} roughness={0.9} metalness={0.15} emissive={p.color} emissiveIntensity={0.28} />
           </mesh>
           {p.ring && (
             <mesh geometry={ringGeo} rotation={[Math.PI / 2.1, 0, 0]} scale={p.r / 0.55}>
-              <meshBasicMaterial color="#d8c089" side={THREE.DoubleSide} transparent opacity={0.5} />
+              <meshBasicMaterial color="#e0c896" side={THREE.DoubleSide} transparent opacity={0.6} />
             </mesh>
           )}
         </group>
@@ -586,8 +586,8 @@ function makeSunFlareTexture(): THREE.CanvasTexture {
 function HeroSun() {
   const tex = useMemo(() => makeSunFlareTexture(), []);
   return (
-    <sprite position={[-2.6, 2.5, -3]} scale={[3.2, 3.2, 3.2]}>
-      <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} opacity={0.95} toneMapped={false} />
+    <sprite position={[-3.0, 2.7, -4]} scale={[2.3, 2.3, 2.3]}>
+      <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} opacity={0.78} toneMapped={false} />
     </sprite>
   );
 }
@@ -654,7 +654,7 @@ function PostFX() {
     const c = new EffectComposer(gl);
     c.addPass(new RenderPass(scene, camera));
     // strength, radius, threshold — nur helle Highlights glühen lassen
-    c.addPass(new UnrealBloomPass(new THREE.Vector2(size.width, size.height), 0.55, 0.42, 0.86));
+    c.addPass(new UnrealBloomPass(new THREE.Vector2(size.width, size.height), 0.46, 0.4, 0.88));
     return c;
   }, [gl, scene, camera]); // size via setSize unten
   useEffect(() => {

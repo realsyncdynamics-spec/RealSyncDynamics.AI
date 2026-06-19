@@ -11,6 +11,10 @@ import {
   type DbGovernanceAsset, type DbGovernancePolicy, type DbGovernanceEvent,
 } from '../governanceApi';
 import { countOpenIncidents } from '../incidentsApi';
+import {
+  loadAlertRules, setAlertRuleActive, addCustomAlertRule, deleteAlertRule,
+  type AlertRule,
+} from './alertRulesApi';
 
 // ---------------------------------------------------------------------------
 // Datentypen + Mapper — echte Governance-Assets/Policies/Events → Tabellenzeilen
@@ -525,49 +529,89 @@ function ActiveAlertsPanel({ alerts, loading }: { alerts: AlertRow[]; loading: b
 // ---------------------------------------------------------------------------
 // Sektion 3: Alert-Regeln
 // ---------------------------------------------------------------------------
-interface AlertRuleRow {
-  id: string;
-  name: string;
-  active: boolean;
-  channels: string;
-}
+function AlertRulesPanel({ tenantId }: { tenantId: string | null }) {
+  const [rules, setRules] = useState<AlertRule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [busy, setBusy] = useState(false);
 
-// Standard-Regelvorlagen. Die Persistenz pro Tenant ist noch nicht angebunden —
-// daher als „Vorlagen" gekennzeichnet und die Umschalter wirken nur lokal.
-const DEFAULT_ALERT_RULES: AlertRuleRow[] = [
-  { id: 'r-1', name: 'Neuer Tracker erkannt',        active: true,  channels: 'E-Mail + Dashboard' },
-  { id: 'r-2', name: 'Pre-Consent Tracking',         active: true,  channels: 'E-Mail + Dashboard' },
-  { id: 'r-3', name: 'Risk Score über 60',           active: true,  channels: 'Dashboard'          },
-  { id: 'r-4', name: 'KI-System ohne Dokumentation', active: true,  channels: 'E-Mail'             },
-  { id: 'r-5', name: 'Dokument abgelaufen',          active: false, channels: 'E-Mail'             },
-  { id: 'r-6', name: 'Drittland-Transfer ohne SCC',  active: true,  channels: 'E-Mail + Dashboard' },
-  { id: 'r-7', name: 'SSL-Zertifikat < 30 Tage',     active: true,  channels: 'Dashboard'          },
-];
+  useEffect(() => {
+    if (!tenantId) { setRules([]); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    loadAlertRules(tenantId)
+      .then((r) => { if (!cancelled) setRules(r); })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Laden fehlgeschlagen'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [tenantId]);
 
-function AlertRulesPanel() {
-  const [rules, setRules] = useState<AlertRuleRow[]>(DEFAULT_ALERT_RULES);
+  async function toggleRule(rule: AlertRule) {
+    const next = !rule.active;
+    // Optimistisch umschalten, bei Fehler zurückrollen.
+    setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, active: next } : r)));
+    try {
+      await setAlertRuleActive(rule.id, next);
+    } catch {
+      setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, active: rule.active } : r)));
+      setError('Speichern fehlgeschlagen.');
+    }
+  }
 
-  function toggleRule(id: string) {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r)),
-    );
+  async function confirmAdd() {
+    const name = newName.trim();
+    if (!name || !tenantId) return;
+    setBusy(true);
+    try {
+      const created = await addCustomAlertRule(tenantId, name, 'Dashboard');
+      setRules((prev) => [...prev, created]);
+      setNewName('');
+      setAdding(false);
+    } catch {
+      setError('Regel konnte nicht angelegt werden.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeRule(rule: AlertRule) {
+    const snapshot = rules;
+    setRules((prev) => prev.filter((r) => r.id !== rule.id));
+    try {
+      await deleteAlertRule(rule.id);
+    } catch {
+      setRules(snapshot);
+      setError('Löschen fehlgeschlagen.');
+    }
   }
 
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-titanium-900">
         <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">
-          Alert-Regeln · Vorlagen
+          Alert-Regeln
         </span>
       </div>
       <div className="divide-y divide-titanium-900 flex-1">
+        {loading && (
+          <div className="px-4 py-6 font-mono text-[11px] text-titanium-500">Wird geladen …</div>
+        )}
+        {!loading && !tenantId && (
+          <div className="px-4 py-6 font-mono text-[11px] text-titanium-500">Kein aktiver Arbeitsbereich.</div>
+        )}
+        {!loading && tenantId && rules.length === 0 && (
+          <div className="px-4 py-6 font-mono text-[11px] text-titanium-500">Noch keine Regeln.</div>
+        )}
         {rules.map((rule) => (
-          <div key={rule.id} className="px-4 py-2.5 hover:bg-obsidian-900/50 transition-colors">
+          <div key={rule.id} className="px-4 py-2.5 hover:bg-obsidian-900/50 transition-colors group">
             <div className="flex items-center gap-3">
               {/* Toggle */}
               <button
                 type="button"
-                onClick={() => toggleRule(rule.id)}
+                onClick={() => toggleRule(rule)}
                 className={`relative inline-flex h-4 w-7 shrink-0 items-center border-0 transition-colors focus:outline-none ${
                   rule.active ? 'bg-teal-500' : 'bg-titanium-700'
                 }`}
@@ -587,17 +631,63 @@ function AlertRulesPanel() {
                   {rule.channels}
                 </span>
               </div>
+              {rule.is_custom && (
+                <button
+                  type="button"
+                  onClick={() => removeRule(rule)}
+                  className="font-mono text-[11px] text-titanium-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Regel entfernen"
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
         ))}
       </div>
+      {error && (
+        <div className="px-4 py-2 font-mono text-[10px] text-red-400 border-t border-red-900/50">{error}</div>
+      )}
       <div className="px-4 py-3 border-t border-titanium-900">
-        <button
-          type="button"
-          className="w-full font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors"
-        >
-          + Regel hinzufügen
-        </button>
+        {adding ? (
+          <div className="flex flex-col gap-2">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') confirmAdd(); if (e.key === 'Escape') { setAdding(false); setNewName(''); } }}
+              placeholder="Regelname …"
+              autoFocus
+              className="w-full bg-obsidian-950 border border-titanium-800 px-2 py-1.5 text-[12px] text-titanium-100 placeholder:text-titanium-600 focus:outline-none focus:border-teal-700"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={confirmAdd}
+                disabled={busy || !newName.trim()}
+                className="flex-1 font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors disabled:opacity-40"
+              >
+                {busy ? 'Speichert …' : 'Anlegen'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAdding(false); setNewName(''); }}
+                className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 hover:text-titanium-300 border border-titanium-800 px-3 py-1.5 transition-colors"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            disabled={!tenantId}
+            className="w-full font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors disabled:opacity-40"
+          >
+            + Regel hinzufügen
+          </button>
+        )}
       </div>
     </div>
   );
@@ -747,7 +837,7 @@ export function MonitoringRuntimeView() {
           </div>
           {/* Rechte Spalte — Alert-Regeln (1/3) */}
           <div>
-            <AlertRulesPanel />
+            <AlertRulesPanel tenantId={activeTenantId} />
           </div>
         </div>
       </section>

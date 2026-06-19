@@ -114,15 +114,18 @@ Deno.serve(async (req) => {
   const successUrl = `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan_key=${encodeURIComponent(body.plan_key!)}`;
   const cancelUrl  = `${base}/pricing?checkout=cancelled`;
 
-  // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
-  // Triggered via body.pilot=true (typically set from /contact-sales after
-  // a sales call agreed on the pilot terms in marketing/demo-skript.md).
-  // Stripe will not charge until day 15 — user can cancel anytime in trial.
+  // 14-Tage-Trial standardmäßig für ALLE Self-Serve-Abos (Starter/Growth/
+  // Agency). Stripe bucht erst ab Tag 15 ab; Kündigung jederzeit im Trial
+  // möglich. Deckt das Marketing-Versprechen „14 Tage testen" ein.
+  // Zahlungsmethode wird beim Checkout erhoben (Default bei Trials), damit
+  // nach Trial-Ende nahtlos abgebucht werden kann. `pilot` bleibt nur noch
+  // als Marker (Sales-Konditionen), ändert die Trial-Dauer nicht mehr.
+  const TRIAL_DAYS = 14;
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+    trial_period_days: TRIAL_DAYS,
   };
   if (body.pilot === true) {
-    subscriptionData.trial_period_days = 14;
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 

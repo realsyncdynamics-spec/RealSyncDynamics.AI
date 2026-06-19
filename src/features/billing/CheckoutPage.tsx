@@ -380,15 +380,9 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot ? (
-            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
-              14 Tage kostenlos testen · keine Kosten bis Tag 15
-            </p>
-          ) : (
-            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
-              Erste Abbuchung sofort nach Bestellung
-            </p>
-          )}
+          <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
+            14 Tage kostenlos testen · keine Kosten bis Tag 15 · jederzeit im Trial kündbar
+          </p>
 
           <div className="space-y-3 mb-5">
             <label className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">

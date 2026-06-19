@@ -1,12 +1,13 @@
 // GovernanceBrowserShell — browserartiger Governance-OS-Rahmen für alle /app/* Routen.
 //
-// Layout: TopBar → Tabs → [Canvas + GovernanceChatSidebar] → MobileBottomNav → StatusBar
+// Layout: TopBar → [Sidebar + Canvas + GovernanceChatSidebar] → MobileBottomNav/Drawer → StatusBar
 // Embedded Browser: Address-Bar-Eingabe einer echten URL öffnet EmbeddedBrowserCanvas
 // über dem Canvas; Chat-Sidebar bleibt seitlich sichtbar.
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BrowserTopBar } from './BrowserTopBar';
 import { GovernanceSidebar } from './GovernanceSidebar';
+import { GovernanceMobileNav } from './GovernanceMobileNav';
 import { GovernanceCanvas } from './GovernanceCanvas';
 import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
@@ -62,6 +63,12 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
       </div>
 
       <MobileBottomNavigation />
+
+      {/* Mobiles Navigations-Drawer (volle Modul-Liste) — Toggle in der TopBar */}
+      <GovernanceMobileNav
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+      />
 
       <div className="hidden lg:block">
         <GovernanceStatusBar />

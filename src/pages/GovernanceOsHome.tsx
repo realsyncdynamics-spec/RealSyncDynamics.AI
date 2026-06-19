@@ -1,15 +1,17 @@
 /**
  * GovernanceOsHome — „Governance OS 2050" Enterprise-Homepage.
  *
- * Dunkles Premium-Design mit interaktiver 3D-Europa-Weltkugel, Glasflächen,
- * Datenströmen und Petrol/Smaragd-Akzenten. Positionierung: AI-Betriebssystem
- * für europäische Governance (DSGVO · EU AI Act · Continuous Compliance).
+ * Dunkles Premium-Design auf dem Niveau führender SaaS-Seiten 2025/26
+ * (Linear · Vercel · Stripe · Palantir · Vision-Pro-Ästhetik): feines
+ * Film-Grain, Gradient-Mesh, Glasflächen mit Cursor-Spotlight, Bento-Grid,
+ * Stats-Band und eine interaktive 3D-Europa-Weltkugel mit schwebender
+ * Produkt-Glaskarte. Positionierung: AI-Betriebssystem für europäische
+ * Governance (DSGVO · EU AI Act · Continuous Compliance).
  *
- * Eigene dunkle Navigation (kein weißer LandingNavbar — bewusster Kontrast
- * zum Light-Theme der Marketing-Landings). Self-Service-Sprache: keine
- * Beratungs-/Call-/„Wir-melden-uns"-Logik. CTA-Vokabular aus runtimeVocab.
+ * Eigene dunkle Navigation mit der Brand-Marke (Logo). Self-Service-Sprache:
+ * keine Beratungs-/Call-/„Wir-melden-uns"-Logik. CTA-Vokabular aus runtimeVocab.
  *
- * Performance: die 3D-Kugel (Three.js/R3F) wird code-split lazy geladen,
+ * Performance/A11y: die 3D-Kugel (Three.js/R3F) wird code-split lazy geladen,
  * respektiert `prefers-reduced-motion` (statischer CSS-Globe als Fallback)
  * und ist von einer ErrorBoundary umschlossen (Fallback bei fehlendem WebGL).
  *
@@ -17,7 +19,7 @@
  */
 import {
   Component, Suspense, lazy, useEffect, useRef, useState,
-  type ReactNode,
+  type ReactNode, type MouseEvent,
 } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
@@ -26,9 +28,10 @@ import {
   Globe, Cpu, AlertTriangle, Archive, Activity, Network, FileText, BarChart3, Workflow,
   ShieldCheck, Scale, Lock, KeyRound, FileCheck2, ClipboardCheck,
   ScanSearch, Camera, CalendarClock, Target, FileSearch,
-  Hash, ServerCog, Sparkles, Building2,
+  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check,
 } from 'lucide-react';
 import { CTA, PLANS } from '../content/runtimeVocab';
+import { Logo } from '../components/Logo';
 
 const GovernanceGlobe = lazy(() => import('../components/globe/GovernanceGlobe'));
 
@@ -43,24 +46,85 @@ function Reveal({ children, delay = 0, className }: { children: ReactNode; delay
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>
   );
 }
 
+// ── Eyebrow-Pill (kleines Label über jeder Section) ──────────────────
+
+function Eyebrow({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-chip border border-white/10 bg-white/[0.03] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.24em] text-petrol-200 backdrop-blur-md">
+      <span className="h-1 w-1 rounded-full bg-petrol-300" />
+      {children}
+    </span>
+  );
+}
+
 // ── Section-Heading ──────────────────────────────────────────────────
 
-function SectionHeading({ eyebrow, title, intro }: { eyebrow: string; title: string; intro?: string }) {
+function SectionHeading({ eyebrow, title, intro, center }: { eyebrow: string; title: string; intro?: string; center?: boolean }) {
   return (
-    <Reveal className="max-w-2xl mb-12">
-      <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-petrol-300 mb-4">{eyebrow}</p>
-      <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight text-titanium-50 leading-[1.1]">
+    <Reveal className={`mb-14 ${center ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'}`}>
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className="mt-5 text-balance font-display font-bold text-[clamp(1.75rem,3.5vw,2.75rem)] leading-[1.08] tracking-tight text-titanium-50">
         {title}
       </h2>
-      {intro && <p className="mt-5 text-base text-titanium-400 leading-relaxed">{intro}</p>}
+      {intro && <p className="mt-5 text-pretty text-base leading-relaxed text-titanium-400">{intro}</p>}
     </Reveal>
+  );
+}
+
+// ── Spotlight-Karte (Cursor-folgender Glanz, premium hover) ──────────
+
+function SpotlightCard({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+
+  function onMove(e: MouseEvent<HTMLDivElement>) {
+    if (reduce || !ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    ref.current.style.setProperty('--mx', `${e.clientX - r.left}px`);
+    ref.current.style.setProperty('--my', `${e.clientY - r.top}px`);
+  }
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={onMove}
+      className={`group relative overflow-hidden rounded-panel border border-white/[0.08] bg-white/[0.02] transition-colors duration-300 hover:border-petrol-500/40 ${className}`}
+    >
+      {/* Cursor-Spotlight */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background:
+            'radial-gradient(420px circle at var(--mx,50%) var(--my,0%), rgba(45,212,191,0.10), transparent 60%)',
+        }}
+      />
+      {children}
+    </div>
+  );
+}
+
+// ── Premium-Hintergrund: Grain + Gradient-Mesh ───────────────────────
+
+const GRAIN_URI =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
+
+function PageBackdrop() {
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* sanftes Mesh */}
+      <div className="absolute -top-40 left-1/2 h-[680px] w-[1100px] -translate-x-1/2 rounded-full bg-petrol-500/[0.10] blur-[160px]" />
+      <div className="absolute top-1/3 -right-40 h-[480px] w-[480px] rounded-full bg-security-500/[0.08] blur-[150px]" />
+      <div className="absolute bottom-0 -left-32 h-[420px] w-[420px] rounded-full bg-emerald-500/[0.06] blur-[150px]" />
+      {/* Film-Grain */}
+      <div className="absolute inset-0 opacity-[0.025] mix-blend-soft-light" style={{ backgroundImage: GRAIN_URI }} />
+    </div>
   );
 }
 
@@ -90,7 +154,7 @@ function GlobeFallback() {
         </defs>
         <circle cx="50" cy="50" r="48" fill="url(#g)" />
         {[...Array(7)].map((_, i) => (
-          <ellipse key={i} cx="50" cy="50" rx={48 - i * 0} ry={6 + i * 7} fill="none" stroke="#2a3a4a" strokeWidth="0.3" />
+          <ellipse key={i} cx="50" cy="50" rx={48} ry={6 + i * 7} fill="none" stroke="#2a3a4a" strokeWidth="0.3" />
         ))}
         {[[46, 38], [52, 34], [44, 44], [55, 42], [48, 30], [58, 48]].map(([x, y], i) => (
           <circle key={i} cx={x} cy={y} r="1.1" fill="#5fe5d1" />
@@ -105,7 +169,6 @@ function GlobeStage() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Nur auf hinreichend breiten Viewports & bei erlaubter Motion 3D mounten.
     if (!reduce && typeof window !== 'undefined' && window.innerWidth >= 768) {
       setShow(true);
     }
@@ -113,7 +176,6 @@ function GlobeStage() {
 
   return (
     <div className="relative aspect-square w-full max-w-[620px] mx-auto">
-      {/* Glow-Backdrop */}
       <div className="pointer-events-none absolute inset-0 rounded-full bg-petrol-500/10 blur-[100px]" />
       {show ? (
         <GlobeErrorBoundary fallback={<GlobeFallback />}>
@@ -157,18 +219,13 @@ function Nav() {
   return (
     <nav
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-obsidian-950/80 backdrop-blur-xl border-b border-white/10' : 'border-b border-transparent'
+        scrolled ? 'bg-obsidian-950/70 backdrop-blur-xl border-b border-white/10' : 'border-b border-transparent'
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 select-none">
-            <span className="grid h-7 w-7 place-items-center rounded-md bg-petrol-500/15 ring-1 ring-petrol-400/40">
-              <Globe className="h-4 w-4 text-petrol-300" />
-            </span>
-            <span className="font-display font-bold tracking-tight text-titanium-50">
-              RealSync<span className="text-petrol-300">Dynamics</span>
-            </span>
+          <Link to="/" className="select-none">
+            <Logo size={30} />
           </Link>
 
           <div className="hidden lg:flex items-center gap-7">
@@ -228,13 +285,12 @@ function Nav() {
 // ════════════════════════════════════════════════════════════════════
 
 const HERO_LABELS = [
-  { label: 'DSGVO', top: '6%', left: '8%' },
-  { label: 'EU AI Act', top: '20%', left: '72%' },
-  { label: 'Evidence', top: '48%', left: '2%' },
-  { label: 'Monitoring', top: '70%', left: '14%' },
-  { label: 'Risk Score', top: '12%', left: '44%' },
-  { label: 'Audit Ready', top: '82%', left: '64%' },
-  { label: 'AI Governance', top: '54%', left: '82%' },
+  { label: 'DSGVO', top: '5%', left: '6%' },
+  { label: 'EU AI Act', top: '18%', left: '74%' },
+  { label: 'Evidence', top: '47%', left: '0%' },
+  { label: 'Monitoring', top: '72%', left: '12%' },
+  { label: 'Risk Score', top: '10%', left: '42%' },
+  { label: 'Audit Ready', top: '84%', left: '66%' },
 ] as const;
 
 function FloatingLabels() {
@@ -244,7 +300,7 @@ function FloatingLabels() {
       {HERO_LABELS.map((l, i) => (
         <motion.span
           key={l.label}
-          className="absolute inline-flex items-center gap-1.5 rounded-chip border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-titanium-200 backdrop-blur-md"
+          className="absolute inline-flex items-center gap-1.5 rounded-chip border border-white/10 bg-white/[0.05] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-titanium-200 backdrop-blur-md"
           style={{ top: l.top, left: l.left }}
           animate={reduce ? undefined : { y: [0, -8, 0] }}
           transition={reduce ? undefined : { duration: 4 + i * 0.6, repeat: Infinity, ease: 'easeInOut' }}
@@ -257,15 +313,45 @@ function FloatingLabels() {
   );
 }
 
+/** Schwebende Glas-Produktkarte über dem Globe — gibt Produkt-Glaubwürdigkeit. */
+function HeroScoreCard() {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      className="absolute bottom-2 left-0 z-10 hidden w-[230px] rounded-panel border border-white/10 bg-obsidian-900/80 p-4 shadow-2xl backdrop-blur-xl sm:block"
+      initial={reduce ? false : { opacity: 0, y: 16 }}
+      animate={reduce ? undefined : { opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-titanium-500">Beispiel-Ansicht</span>
+        <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-wider text-emerald-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Scan
+        </span>
+      </div>
+      <div className="mt-3 flex items-end gap-2">
+        <span className="font-display text-3xl font-bold text-titanium-50 tabular-nums">84</span>
+        <span className="mb-1 font-mono text-[11px] text-titanium-500">/100 Governance Score</span>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-full w-[84%] rounded-full bg-gradient-to-r from-petrol-500 to-emerald-400" />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-[10px] uppercase tracking-wider">
+        <span className="text-titanium-400">312 Evidence</span>
+        <span className="text-right text-petrol-300">47 Risiken</span>
+      </div>
+    </motion.div>
+  );
+}
+
+const HERO_FRAMEWORKS = ['DSGVO', 'EU AI Act', 'ePrivacy', 'NIS2', 'C2PA'];
+
 function Hero() {
   return (
     <section className="relative overflow-hidden px-4 sm:px-6 pt-28 pb-20 sm:pt-36 sm:pb-28">
-      {/* Hintergrund-Gradients */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 rounded-full bg-petrol-500/10 blur-[140px]" />
-        <div className="absolute right-0 top-40 h-[400px] w-[400px] rounded-full bg-security-500/10 blur-[120px]" />
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0 opacity-[0.05]"
           style={{
             backgroundImage:
               'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
@@ -278,23 +364,30 @@ function Hero() {
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-8">
         <div>
           <Reveal>
-            <span className="inline-flex items-center gap-2 rounded-chip border border-petrol-500/30 bg-petrol-500/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-petrol-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Governance OS · Continuous Compliance
-            </span>
+            <Link
+              to="/governance-score"
+              className="group inline-flex items-center gap-2 rounded-chip border border-petrol-500/30 bg-petrol-500/10 py-1 pl-1 pr-3 font-mono text-[10px] uppercase tracking-[0.18em] text-petrol-200 transition-colors hover:border-petrol-400/50"
+            >
+              <span className="rounded-chip bg-petrol-500 px-2 py-0.5 text-[9px] font-semibold text-obsidian-950">Neu</span>
+              Governance Complexity Score
+              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </Reveal>
 
           <Reveal delay={0.05}>
-            <h1 className="mt-6 font-display font-bold tracking-tight text-titanium-50 text-4xl sm:text-6xl leading-[1.05]">
-              Das AI-Betriebssystem für{' '}
+            <h1 className="mt-6 text-balance font-display font-bold tracking-tight text-titanium-50 text-[clamp(2.5rem,6vw,4.25rem)] leading-[1.03]">
+              Das KI-Betriebssystem für{' '}
               <span className="bg-gradient-to-r from-petrol-300 via-ai-cyan-300 to-emerald-300 bg-clip-text text-transparent">
-                europäische Governance
+                DSGVO &amp; EU AI Act
               </span>
             </h1>
+            <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.28em] text-titanium-500">
+              by RealSync Dynamics AI
+            </p>
           </Reveal>
 
           <Reveal delay={0.1}>
-            <p className="mt-6 max-w-xl text-lg text-titanium-300 leading-relaxed">
+            <p className="mt-6 max-w-xl text-pretty text-lg text-titanium-300 leading-relaxed">
               RealSync Dynamics AI überwacht Websites, KI-Systeme, Risiken und Nachweise
               kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar.
             </p>
@@ -319,15 +412,13 @@ function Hero() {
           </Reveal>
 
           <Reveal delay={0.2}>
-            <div className="mt-8 flex flex-wrap gap-2">
-              {['EU-Hosting', 'Tenant Isolation', 'Auditierbare Evidence', 'Keine Kreditkarte'].map((t) => (
-                <span
-                  key={t}
-                  className="inline-flex items-center gap-1.5 rounded-chip border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-titanium-400"
-                >
-                  <ShieldCheck className="h-3 w-3 text-petrol-300" /> {t}
-                </span>
-              ))}
+            <div className="mt-10 border-t border-white/[0.06] pt-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-titanium-600">Regelwerke im Prüfpfad</p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                {HERO_FRAMEWORKS.map((f) => (
+                  <span key={f} className="font-display text-sm font-semibold text-titanium-400">{f}</span>
+                ))}
+              </div>
             </div>
           </Reveal>
         </div>
@@ -335,6 +426,38 @@ function Hero() {
         <div className="relative">
           <GlobeStage />
           <FloatingLabels />
+          <HeroScoreCard />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Stats-Band
+// ════════════════════════════════════════════════════════════════════
+
+const STATS = [
+  { Icon: Layers, value: '9', label: 'Module · ein Prüfpfad' },
+  { Icon: Clock, value: '24/7', label: 'Continuous Monitoring' },
+  { Icon: Globe, value: '100%', label: 'EU-Hosting · Frankfurt' },
+  { Icon: Zap, value: '< 60s', label: 'Erst-Audit pro Domain' },
+];
+
+function StatsBand() {
+  return (
+    <section className="relative px-4 sm:px-6 py-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-white/[0.08] bg-white/[0.04] lg:grid-cols-4">
+          {STATS.map(({ Icon, value, label }, i) => (
+            <Reveal key={label} delay={i * 0.05}>
+              <div className="flex h-full flex-col gap-2 bg-obsidian-950 p-6">
+                <Icon className="h-4 w-4 text-petrol-300" />
+                <span className="font-display text-3xl font-bold tracking-tight text-titanium-50 tabular-nums">{value}</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">{label}</span>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
@@ -365,14 +488,14 @@ function MonitorSection() {
         />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MONITORS.map(({ Icon, title, body }, i) => (
-            <Reveal key={title} delay={i * 0.05}>
-              <div className="group h-full rounded-panel border border-white/10 bg-white/[0.02] p-6 transition-colors hover:border-petrol-500/40 hover:bg-white/[0.04]">
+            <Reveal key={title} delay={(i % 3) * 0.05}>
+              <SpotlightCard className="h-full p-6">
                 <span className="grid h-11 w-11 place-items-center rounded-card bg-petrol-500/10 ring-1 ring-petrol-400/30">
                   <Icon className="h-5 w-5 text-petrol-300" />
                 </span>
                 <h3 className="mt-5 font-display font-semibold text-titanium-50">{title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-titanium-400">{body}</p>
-              </div>
+              </SpotlightCard>
             </Reveal>
           ))}
         </div>
@@ -382,16 +505,15 @@ function MonitorSection() {
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  3 · Governance OS Module
+//  3 · Governance OS Module (Bento-Grid)
 // ════════════════════════════════════════════════════════════════════
 
 const MODULES = [
-  { Icon: Globe, label: 'Websites', to: '/app/websites' },
   { Icon: Cpu, label: 'KI-Systeme', to: '/app/ai-systems' },
   { Icon: AlertTriangle, label: 'Risiken', to: '/app/risks' },
-  { Icon: Archive, label: 'Evidence Vault', to: '/app/evidence' },
   { Icon: Activity, label: 'Monitoring', to: '/app/monitoring' },
   { Icon: Network, label: 'Vendors', to: '/app/vendors' },
+  { Icon: Globe, label: 'Websites', to: '/app/websites' },
   { Icon: FileText, label: 'Dokumente', to: '/app/documents' },
   { Icon: BarChart3, label: 'Reports', to: '/app/reports' },
   { Icon: Workflow, label: 'Automation Skills', to: '/automations' },
@@ -400,7 +522,6 @@ const MODULES = [
 function ModuleSection() {
   return (
     <section id="module" className="relative px-4 sm:px-6 py-20 sm:py-28">
-      {/* Trennlinie oben */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-petrol-500/30 to-transparent" />
       <div className="mx-auto max-w-7xl">
         <SectionHeading
@@ -408,21 +529,51 @@ function ModuleSection() {
           title="Ein Betriebssystem — neun Module, ein Prüfpfad"
           intro="Jedes Modul greift auf dieselbe Evidence-Chain zu. Ein Befund aus Websites wird zur Evidence, die Evidence speist Risiken, Monitoring und Reports."
         />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Feature-Tile: Evidence Vault (groß, 2×2) */}
+          <Reveal className="col-span-2 row-span-2">
+            <Link
+              to="/app/evidence"
+              className="group relative flex h-full flex-col justify-between overflow-hidden rounded-panel border border-petrol-500/30 bg-gradient-to-br from-petrol-500/[0.10] to-transparent p-6 transition-all hover:border-petrol-500/60 sm:p-8"
+            >
+              <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-petrol-500/15 blur-3xl" />
+              <div>
+                <span className="grid h-12 w-12 place-items-center rounded-card border border-white/10 bg-obsidian-900">
+                  <Archive className="h-5 w-5 text-petrol-300" />
+                </span>
+                <h3 className="mt-6 font-display text-xl font-bold text-titanium-50">Evidence Vault</h3>
+                <p className="mt-2 max-w-sm text-sm leading-relaxed text-titanium-400">
+                  Der versiegelte Kern: jeder Befund wird gehasht, versioniert und auditfähig
+                  abgelegt — die Quelle, aus der Risiken, Reports und Audit-Exporte gespeist werden.
+                </p>
+              </div>
+              <div className="mt-8 flex flex-wrap items-center gap-2">
+                {['Hash-Anchoring', 'Versioniert', 'Export-ready'].map((t) => (
+                  <span key={t} className="rounded-chip border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-titanium-300">
+                    {t}
+                  </span>
+                ))}
+                <span className="ml-auto inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-petrol-300">
+                  Öffnen <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </Link>
+          </Reveal>
+
           {MODULES.map(({ Icon, label, to }, i) => (
-            <Reveal key={label} delay={(i % 3) * 0.05}>
+            <Reveal key={label} delay={(i % 4) * 0.04}>
               <Link
                 to={to}
-                className="group relative block h-full overflow-hidden rounded-panel border border-white/10 bg-gradient-to-br from-white/[0.05] to-white/[0.01] p-6 transition-all hover:border-petrol-500/50 hover:-translate-y-1"
+                className="group relative flex h-full flex-col justify-between overflow-hidden rounded-panel border border-white/[0.08] bg-white/[0.02] p-5 transition-all hover:-translate-y-1 hover:border-petrol-500/50"
               >
-                <div className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-petrol-500/10 blur-2xl opacity-0 transition-opacity group-hover:opacity-100" />
-                <span className="grid h-12 w-12 place-items-center rounded-card border border-white/10 bg-obsidian-900">
-                  <Icon className="h-5 w-5 text-petrol-300" />
+                <span className="grid h-10 w-10 place-items-center rounded-card border border-white/10 bg-obsidian-900">
+                  <Icon className="h-4 w-4 text-petrol-300" />
                 </span>
-                <h3 className="mt-6 font-display font-semibold text-titanium-50">{label}</h3>
-                <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-titanium-500 group-hover:text-petrol-300 transition-colors">
-                  Öffnen <ArrowRight className="h-3 w-3" />
-                </span>
+                <div className="mt-5 flex items-center justify-between">
+                  <h3 className="font-display text-sm font-semibold text-titanium-50">{label}</h3>
+                  <ArrowRight className="h-3.5 w-3.5 text-titanium-600 transition-all group-hover:translate-x-0.5 group-hover:text-petrol-300" />
+                </div>
               </Link>
             </Reveal>
           ))}
@@ -457,7 +608,7 @@ function SkillsSection() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {SKILLS.map(({ Icon, title, problem, auto, result }, i) => (
             <Reveal key={title} delay={(i % 3) * 0.05}>
-              <div className="flex h-full flex-col rounded-panel border border-white/10 bg-white/[0.02] p-6">
+              <SpotlightCard className="flex h-full flex-col p-6">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-card bg-emerald-500/10 ring-1 ring-emerald-400/30">
                     <Icon className="h-5 w-5 text-emerald-300" />
@@ -484,7 +635,7 @@ function SkillsSection() {
                 >
                   Skill aktivieren <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
-              </div>
+              </SpotlightCard>
             </Reveal>
           ))}
         </div>
@@ -510,6 +661,7 @@ function EvidenceSection() {
     <section className="relative px-4 sm:px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-5xl">
         <SectionHeading
+          center
           eyebrow="Evidence Chain"
           title="Evidence statt Behauptungen"
           intro="Jeder Befund wird nachvollziehbar dokumentiert, mit Zeitstempel versehen und für Reports exportierbar gemacht."
@@ -553,6 +705,7 @@ const TRUST = [
   { Icon: KeyRound, label: 'Role-Based Access' },
   { Icon: FileCheck2, label: 'Evidence Export' },
   { Icon: ShieldCheck, label: 'DSGVO & AI Act Fokus' },
+  { Icon: Gauge, label: 'Drift Detection' },
 ];
 
 function SecuritySection() {
@@ -598,6 +751,7 @@ function PricingSection() {
     <section className="relative px-4 sm:px-6 py-20 sm:py-28">
       <div className="mx-auto max-w-7xl">
         <SectionHeading
+          center
           eyebrow="Preise"
           title="Self-Service vom ersten Scan an"
           intro="Ohne Setup, ohne Kreditkarte starten — jederzeit self-serve upgraden."
@@ -626,7 +780,7 @@ function PricingSection() {
                   <ul className="mt-5 flex-1 space-y-2.5">
                     {plan.bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2 text-sm text-titanium-300">
-                        <FileCheck2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-petrol-300" />
+                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-petrol-300" />
                         {b}
                       </li>
                     ))}
@@ -662,9 +816,18 @@ function FinalCta() {
         <div className="absolute left-1/2 top-1/2 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-petrol-500/10 blur-[140px]" />
       </div>
       <Reveal className="mx-auto max-w-3xl text-center">
-        <div className="rounded-panel border border-white/10 bg-white/[0.02] p-10 sm:p-14 backdrop-blur-md">
+        <div className="relative overflow-hidden rounded-panel border border-white/10 bg-white/[0.02] p-10 sm:p-14 backdrop-blur-md">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+              maskImage: 'radial-gradient(ellipse 60% 60% at 50% 50%, #000 20%, transparent 80%)',
+            }}
+          />
           <ServerCog className="mx-auto h-8 w-8 text-petrol-300" />
-          <h2 className="mt-6 font-display font-bold text-3xl sm:text-4xl tracking-tight text-titanium-50">
+          <h2 className="mt-6 text-balance font-display font-bold text-3xl sm:text-4xl tracking-tight text-titanium-50">
             Starten Sie Ihr Governance OS
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-titanium-400">
@@ -700,12 +863,10 @@ function Footer() {
   return (
     <footer className="border-t border-white/10 px-4 sm:px-6 py-12">
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-7 w-7 place-items-center rounded-md bg-petrol-500/15 ring-1 ring-petrol-400/40">
-            <Globe className="h-4 w-4 text-petrol-300" />
-          </span>
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-titanium-500">
-            Governance OS · RealSyncDynamics.AI · EU-Frankfurt
+        <div className="flex flex-col gap-3">
+          <Logo size={28} />
+          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-titanium-600">
+            Governance OS · EU-Frankfurt · Continuous Compliance
           </span>
         </div>
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-titanium-500">
@@ -725,10 +886,12 @@ function Footer() {
 
 export function GovernanceOsHome() {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100 antialiased selection:bg-petrol-500/30">
+    <div className="relative min-h-screen bg-obsidian-950 text-titanium-100 antialiased selection:bg-petrol-500/30">
+      <PageBackdrop />
       <Nav />
       <main>
         <Hero />
+        <StatsBand />
         <MonitorSection />
         <ModuleSection />
         <SkillsSection />

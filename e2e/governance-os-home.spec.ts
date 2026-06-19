@@ -33,10 +33,13 @@ test.describe('Governance-OS-Homepage (/governance-os)', () => {
   test('Hero zeigt 2050-Headline und Self-Serve-CTAs', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
-        name: /Das AI-Betriebssystem für europäische Governance/i,
+        name: /Das KI-Betriebssystem für DSGVO & EU AI Act/i,
         level: 1,
       }),
     ).toBeVisible();
+
+    // Brand-Attribution sichtbar.
+    await expect(page.getByText(/by RealSync Dynamics AI/i)).toBeVisible();
 
     await expect(page.getByText(/DSGVO-konform, AI-Act-ready und auditierbar/i)).toBeVisible();
 

@@ -324,6 +324,7 @@ function ModuleCard({ mod }: { mod: ModuleDef }) {
   return (
     <Link
       to={mod.route}
+      aria-label={`${mod.label} — ${mod.metric}`}
       className="relative bg-obsidian-900/60 border border-titanium-900 p-4 flex flex-col gap-3 hover:bg-obsidian-800/60 transition-colors cursor-pointer group"
     >
       {/* Alert Badge */}
@@ -565,7 +566,7 @@ export function GovernanceOsDashboard() {
           </div>
           <Link
             to="/welcome"
-            className="border border-teal-600 text-teal-300 text-xs font-mono px-4 py-2 hover:bg-teal-900/40 transition-colors"
+            className="bg-teal-600 text-obsidian-950 font-semibold text-xs font-mono px-4 py-2 hover:bg-teal-500 transition-colors"
           >
             → Anmelden
           </Link>

@@ -93,3 +93,16 @@ test.describe('Governance-OS-Homepage (/governance-os)', () => {
     }
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// Startseite "/" = KI-Betriebssystem (erstes Produkt)
+// ─────────────────────────────────────────────────────────────────────
+test.describe('Startseite (/)', () => {
+  test('Root zeigt das KI-Betriebssystem', async ({ page }) => {
+    await page.goto('/');
+    await expect(
+      page.getByRole('heading', { name: /Das KI-Betriebssystem für DSGVO & EU AI Act/i, level: 1 }),
+    ).toBeVisible();
+    await expect(page.getByText(/AI Governance OS for Trust & Value/i)).toBeVisible();
+  });
+});

@@ -91,11 +91,13 @@ test.describe('Marketing-Landing (/landing)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Governance-OS Workspace-Vorschau (/)
+// Governance-OS Workspace-Vorschau (/preview)
+// (Startseite "/" zeigt jetzt das KI-Betriebssystem — siehe
+//  governance-os-home.spec.ts; die Workspace-Vorschau lebt unter /preview.)
 // ─────────────────────────────────────────────────────────────────────
-test.describe('Workspace-Vorschau (/)', () => {
+test.describe('Workspace-Vorschau (/preview)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/preview');
   });
 
   test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {

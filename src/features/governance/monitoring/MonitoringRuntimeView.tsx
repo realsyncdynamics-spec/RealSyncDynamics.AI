@@ -15,6 +15,7 @@ import {
   loadAlertRules, setAlertRuleActive, addCustomAlertRule, deleteAlertRule,
   type AlertRule,
 } from './alertRulesApi';
+import { fetchTenantDocuments, DOC_TYPE_LABEL, type TenantDocument } from './documentsApi';
 
 // ---------------------------------------------------------------------------
 // Datentypen + Mapper — echte Governance-Assets/Policies/Events → Tabellenzeilen
@@ -386,21 +387,60 @@ function AiSystemsTab({ rows, loading, hasTenant }: { rows: AiSystemRow[]; loadi
 // ---------------------------------------------------------------------------
 // Tab: Dokumente
 // ---------------------------------------------------------------------------
-function DokumenteTab() {
-  // Für Dokumente existiert noch keine Live-Datenquelle in dieser Ansicht
-  // (generated_documents ist noch nicht angebunden). Statt fabrizierter
-  // Beispiel-Dokumente ein ehrlicher Hinweis mit Verweis auf die echte Ansicht.
+function DokumenteTab({ rows, loading, hasTenant }: { rows: TenantDocument[]; loading: boolean; hasTenant: boolean }) {
+  // Echte erzeugte Compliance-Dokumente des Tenants (generated_documents).
+  // Sind keine vorhanden, ein ehrlicher Hinweis statt fabrizierter Beispiele.
+  if (!loading && hasTenant && rows.length === 0) {
+    return (
+      <div className="px-6 py-10 text-center">
+        <p className="font-mono text-[12px] text-titanium-400">
+          Noch keine erzeugten Dokumente in diesem Arbeitsbereich.
+        </p>
+        <p className="mt-1 font-mono text-[11px] text-titanium-600">
+          Dokumente entstehen aus einem Audit — los geht's unter{' '}
+          <Link to="/app/documents" className="text-teal-400 hover:text-teal-300 underline">
+            Dokumente
+          </Link>.
+        </p>
+      </div>
+    );
+  }
   return (
-    <div className="px-6 py-10 text-center">
-      <p className="font-mono text-[12px] text-titanium-400">
-        Dokumenten-Monitoring wird hier in Kürze live angebunden.
-      </p>
-      <p className="mt-1 font-mono text-[11px] text-titanium-600">
-        Deine erzeugten Compliance-Dokumente findest du bereits unter{' '}
-        <Link to="/app/documents" className="text-teal-400 hover:text-teal-300 underline">
-          Dokumente
-        </Link>.
-      </p>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b border-titanium-900">
+            <Th>Dokument</Th>
+            <Th>Typ</Th>
+            <Th>Domain</Th>
+            <Th>Erstellt</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <TabEmpty colSpan={4} label="Wird geladen …" />
+          ) : !hasTenant ? (
+            <TabEmpty colSpan={4} label="Kein aktiver Arbeitsbereich." />
+          ) : (
+            rows.map((doc) => (
+              <tr key={doc.id} className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors">
+                <td className="px-3 py-2.5 text-titanium-100 text-[12px]">
+                  {DOC_TYPE_LABEL[doc.doc_type] ?? doc.doc_type}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] uppercase text-titanium-500">
+                  {doc.doc_type}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {doc.domain}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {new Date(doc.created_at).toLocaleDateString('de-DE')}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -719,6 +759,7 @@ export function MonitoringRuntimeView() {
   const [aiSystemRows, setAiSystemRows] = useState<AiSystemRow[]>([]);
   const [policyRows, setPolicyRows] = useState<PolicyRow[]>([]);
   const [alertRows, setAlertRows] = useState<AlertRow[]>([]);
+  const [docRows, setDocRows] = useState<TenantDocument[]>([]);
 
   useEffect(() => {
     if (!activeTenantId) {
@@ -729,6 +770,7 @@ export function MonitoringRuntimeView() {
       setAiSystemRows([]);
       setPolicyRows([]);
       setAlertRows([]);
+      setDocRows([]);
       setLoading(false);
       return;
     }
@@ -759,6 +801,10 @@ export function MonitoringRuntimeView() {
           .slice(0, 8)
           .map(eventToAlertRow),
       );
+    }).catch(() => {});
+
+    fetchTenantDocuments(activeTenantId).then((docs) => {
+      if (!cancelled) setDocRows(docs);
     }).catch(() => {});
 
     return () => { cancelled = true; };
@@ -823,7 +869,7 @@ export function MonitoringRuntimeView() {
         <div className="py-2">
           {activeTab === 'websites'    && <WebsitesTab rows={websiteRows} loading={loading} hasTenant={!!activeTenantId} />}
           {activeTab === 'ki-systeme'  && <AiSystemsTab rows={aiSystemRows} loading={loading} hasTenant={!!activeTenantId} />}
-          {activeTab === 'dokumente'   && <DokumenteTab />}
+          {activeTab === 'dokumente'   && <DokumenteTab rows={docRows} loading={loading} hasTenant={!!activeTenantId} />}
           {activeTab === 'richtlinien' && <RichtlinienTab rows={policyRows} loading={loading} hasTenant={!!activeTenantId} />}
         </div>
       </section>

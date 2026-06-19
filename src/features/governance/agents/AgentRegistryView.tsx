@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, AlertTriangle, Bot } from 'lucide-react';
-import { DEMO_AGENTS } from './demoAgents';
 import { AgentCard } from './AgentCard';
 import { AuthGate } from '../../kodee/connections/AuthGate';
+import { useTenant } from '../../../core/access/TenantProvider';
+import { loadAgents } from './agentsApi';
 import type { AgentStatus, GovernanceAgent } from './types';
 
 /**
@@ -12,19 +13,33 @@ import type { AgentStatus, GovernanceAgent } from './types';
  * Auth-gated: das Register ist eine Workspace-Sicht, keine oeffentliche
  * Seite — ohne Session erscheint der AuthGate, nicht das Demo-Set.
  *
- * Phase A: rendert das fest definierte Initial-Set (DEMO_AGENTS), das im
- * View klar als Beispiel-Set markiert ist. Spaeter laed der View aus einer
- * Supabase-Tabelle (z. B. governance_agents), die dieselbe Typdefinition
- * haelt. Die View bleibt identisch — es aendert sich nur die Datenquelle.
+ * Lädt das Register pro Tenant aus public.governance_agents. Existiert noch
+ * keines, legt der API-Layer das Default-Set einmalig an (seed-on-read) —
+ * danach ist es echte, pro Arbeitsbereich gespeicherte Konfiguration.
  */
 export function AgentRegistryView() {
   return <AuthGate>{() => <AgentRegistryInner />}</AuthGate>;
 }
 
 function AgentRegistryInner() {
+  const { activeTenantId } = useTenant();
   const [filter, setFilter] = useState<AgentStatus | 'all'>('all');
+  const [agents, setAgents] = useState<GovernanceAgent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const agents: GovernanceAgent[] = DEMO_AGENTS;
+  useEffect(() => {
+    if (!activeTenantId) { setAgents([]); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    loadAgents(activeTenantId)
+      .then((a) => { if (!cancelled) setAgents(a); })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Laden fehlgeschlagen'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
+
   const filtered = useMemo(() => {
     if (filter === 'all') return agents;
     return agents.filter((a) => a.status === filter);
@@ -70,12 +85,9 @@ function AgentRegistryInner() {
                 duerfen, was sie nicht duerfen, und wann Human Review zwingend ist.
               </p>
               <p className="mt-1 text-[12px] text-titanium-300">
-                Phase A: Anzeige aus dem Initial-Set. Die spaetere Runtime-Ausfuehrung (n8n /
-                Edge-Functions) liest dieselbe Datenstruktur und ist an die hier definierten
-                Restriktionen gebunden.
-              </p>
-              <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                demo runtime · sample agent registry · not live customer data
+                Pro Arbeitsbereich gespeichert. Die Runtime-Ausfuehrung (n8n / Edge-Functions)
+                liest dieselbe Datenstruktur und ist an die hier definierten Restriktionen
+                gebunden.
               </p>
             </div>
           </div>
@@ -99,9 +111,17 @@ function AgentRegistryInner() {
         </div>
 
         <div className="space-y-3">
-          {filtered.length === 0 ? (
+          {loading ? (
             <p className="border border-titanium-800 bg-obsidian-900 p-6 text-center text-sm text-titanium-400">
-              Keine Agenten in dieser Ansicht.
+              Wird geladen …
+            </p>
+          ) : error ? (
+            <p className="border border-red-900/50 bg-red-950/20 p-6 text-center text-sm text-red-300">
+              {error}
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="border border-titanium-800 bg-obsidian-900 p-6 text-center text-sm text-titanium-400">
+              {agents.length === 0 ? 'Noch keine Agenten registriert.' : 'Keine Agenten in dieser Ansicht.'}
             </p>
           ) : (
             filtered.map((agent) => <AgentCard key={agent.id} agent={agent} />)

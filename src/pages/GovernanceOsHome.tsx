@@ -248,7 +248,7 @@ function Hero() {
         <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-obsidian-950 to-transparent" />
       </div>
 
-      <div className="mx-auto grid min-h-[760px] max-w-7xl grid-cols-1 items-center px-4 sm:px-6 pt-28 pb-16 sm:pt-32 lg:grid-cols-2 lg:pb-24">
+      <div className="mx-auto grid min-h-[880px] max-w-7xl grid-cols-1 items-center px-4 sm:px-6 pt-28 pb-16 sm:pt-32 lg:grid-cols-2 lg:pb-24">
         <div className="relative z-10">
           <Reveal>
             <Link
@@ -269,7 +269,7 @@ function Hero() {
               </span>
             </h1>
             <p className="mt-5 font-mono text-[12px] uppercase tracking-[0.32em] text-titanium-500">
-              by RealSync Dynamics AI
+              AI Governance OS for Trust &amp; Value
             </p>
           </Reveal>
 

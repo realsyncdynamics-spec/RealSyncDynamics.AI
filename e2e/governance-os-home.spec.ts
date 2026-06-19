@@ -39,7 +39,7 @@ test.describe('Governance-OS-Homepage (/governance-os)', () => {
     ).toBeVisible();
 
     // Sub-Tagline sichtbar.
-    await expect(page.getByText(/by RealSync Dynamics AI/i)).toBeVisible();
+    await expect(page.getByText(/AI Governance OS for Trust & Value/i)).toBeVisible();
 
     await expect(page.getByText(/DSGVO-konform, AI-Act-ready und auditierbar/i)).toBeVisible();
 
@@ -103,6 +103,6 @@ test.describe('Startseite (/)', () => {
     await expect(
       page.getByRole('heading', { name: /Das KI-Betriebssystem für DSGVO & EU AI Act/i, level: 1 }),
     ).toBeVisible();
-    await expect(page.getByText(/by RealSync Dynamics AI/i)).toBeVisible();
+    await expect(page.getByText(/AI Governance OS for Trust & Value/i)).toBeVisible();
   });
 });

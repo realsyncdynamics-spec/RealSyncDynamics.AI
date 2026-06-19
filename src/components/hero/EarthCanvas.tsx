@@ -14,9 +14,12 @@
  * Default-Export → code-split via React.lazy (nur auf fähigen Viewports und
  * bei erlaubter Motion gemountet). DPR begrenzt, Geometrie moderat.
  */
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { getSunDirection } from '../../lib/solarLighting';
 
 const TEX = {
@@ -549,6 +552,26 @@ function EarthSystem() {
   );
 }
 
+// ── Post-Processing: cinematic Bloom (Stadtlichter/Atmosphäre/Flare) ─
+
+function PostFX() {
+  const { gl, scene, camera, size } = useThree();
+  const composer = useMemo(() => {
+    const c = new EffectComposer(gl);
+    c.addPass(new RenderPass(scene, camera));
+    // strength, radius, threshold — nur helle Highlights glühen lassen
+    c.addPass(new UnrealBloomPass(new THREE.Vector2(size.width, size.height), 0.62, 0.5, 0.82));
+    return c;
+  }, [gl, scene, camera]); // size via setSize unten
+  useEffect(() => {
+    composer.setSize(size.width, size.height);
+    composer.setPixelRatio(Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.5));
+  }, [composer, size]);
+  // priority > 0 → R3F überlässt das Rendern dem Composer
+  useFrame(() => composer.render(), 1);
+  return null;
+}
+
 // ── Szene ────────────────────────────────────────────────────────────
 
 export default function EarthCanvas() {
@@ -573,6 +596,7 @@ export default function EarthCanvas() {
       <Satellites />
       <SunFlare />
       <Moon />
+      <PostFX />
     </Canvas>
   );
 }

@@ -32,10 +32,12 @@ interface LogoProps {
 const BLADE_COUNT = 6;
 
 /**
- * Eine Klinge im lokalen Koordinatensystem (Spitze nach oben), Zentrum 24/24.
- * Asymmetrisch gewölbt → wirbelnde „Schaufel". Wird sechsfach rotiert.
+ * Eine wirbelnde Sichel-Klinge im lokalen Koordinatensystem (Spitze oben-
+ * rechts versetzt → rotationaler Schwung). Wird sechsfach rotiert = Pinwheel.
  */
-const BLADE_PATH = 'M24 24 C33 19 31 8 24 4 C21 9 21 17 24 24 Z';
+const BLADE_PATH = 'M24 24 C28 18 31 10 28 4 C24 5 22 14 24 24 Z';
+/** Spitze der Klinge (Endpunkt des ersten Bogens) — Sitz des Akzentpunkts. */
+const BLADE_TIP = { cx: 28, cy: 4 };
 
 export function Logo({ size = 28, iconOnly = false, textClassName }: LogoProps) {
   const id = `rsd-logo-${size}`;
@@ -93,9 +95,9 @@ export function Logo({ size = 28, iconOnly = false, textClassName }: LogoProps) 
           {Array.from({ length: BLADE_COUNT }).map((_, i) => (
             <circle
               key={`tip-${i}`}
-              cx="24"
-              cy="6.2"
-              r="1.7"
+              cx={BLADE_TIP.cx}
+              cy={BLADE_TIP.cy}
+              r="1.5"
               fill="#7dffe8"
               transform={`rotate(${(360 / BLADE_COUNT) * i} 24 24)`}
             />

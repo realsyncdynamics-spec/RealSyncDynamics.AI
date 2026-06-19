@@ -27,18 +27,24 @@ const TEX = {
   specular: '/textures/earth/earth-specular.jpg',
 };
 
-// Sonnenrichtung: zeitabhängige Stärke (solarLighting), aber für die
-// Hero-Komposition fest in den oberen-linken Frontquadranten gelegt — so
-// liegt das frontal stehende Mitteleuropa stets im Tageslicht und der
-// Sonnenflare sitzt links oben (wie im Design-Zielbild), Stadtlichter am
-// rechten/hinteren Terminator.
-const SUN = (() => {
-  const s = getSunDirection({ frontBias: 0.5 });
-  return new THREE.Vector3(
-    -(0.4 + Math.abs(s.x) * 0.35),
-    0.34 + Math.abs(s.y) * 0.35,
-    0.74,
-  ).normalize();
+// ── LIVE-Sonne: echter Tag/Nacht-Terminator aus der realen Uhrzeit ───
+// Die Sonnenrichtung wird live aus der aktuellen Zeit berechnet (solarLighting,
+// Default Deutschland) und driftet beschleunigt weiter (TIME_SCALE) → sichtbar
+// „lebende" Erde mit wanderndem Terminator. frontBias hält Mitteleuropa auch
+// abends/morgens lesbar im Streiflicht.
+const BASE_TIME = Date.now();
+const TIME_SCALE = 220; // 1 s Echtzeit ≈ 3,7 min Sonnenlauf — ruhige Live-Drift
+const FRONT_BIAS = 0.34;
+
+function computeSun(elapsed: number): { x: number; y: number; z: number } {
+  const d = new Date(BASE_TIME + elapsed * 1000 * TIME_SCALE);
+  return getSunDirection({ date: d, frontBias: FRONT_BIAS });
+}
+
+// Gemeinsam genutzte, pro Frame aktualisierte Sonnenrichtung (Weltkoordinaten).
+const LIVE_SUN = (() => {
+  const s = computeSun(0);
+  return new THREE.Vector3(s.x, s.y, s.z).normalize();
 })();
 
 // Europa (≈12°E) frontal zur Kamera. Aus der three.js-Kugel-UV-Projektion:
@@ -46,7 +52,16 @@ const SUN = (() => {
 // wenn rotation.y = π/2 − θ. Für L≈12°E ⇒ ≈ −1.78 rad.
 const EUROPE_ROT_Y = -1.78;
 const EARTH_TILT = 0.44; // Nordhalbkugel (Europa) zur Bildmitte
-const SPIN = 0.012; // sehr langsam
+const SPIN = 0.006; // sehr langsam (Europa bleibt im Fokus)
+
+/** Aktualisiert LIVE_SUN pro Frame (eine Quelle für alle Layer). */
+function SunController() {
+  useFrame((state) => {
+    const s = computeSun(state.clock.elapsedTime);
+    LIVE_SUN.set(s.x, s.y, s.z).normalize();
+  });
+  return null;
+}
 
 // ── Geo-Helfer ───────────────────────────────────────────────────────
 function latLonToVec3(lat: number, lon: number, r: number): THREE.Vector3 {
@@ -128,7 +143,7 @@ function Earth() {
         nightMap: { value: nightMap },
         normalMap: { value: normalMap },
         specMap: { value: specMap },
-        sunDir: { value: SUN.clone() },
+        sunDir: { value: LIVE_SUN.clone() },
         cameraPos: { value: new THREE.Vector3() },
         atmoColor: { value: new THREE.Color('#2f7bd6') },
         bumpScale: { value: 0.85 },
@@ -187,7 +202,8 @@ function Earth() {
 
           vec3 dayC = texture2D(dayMap, vUv).rgb * 0.98;
           vec3 nightC = texture2D(nightMap, vUv).rgb;
-          nightC = nightC * 1.7 + vec3(0.01, 0.02, 0.04);
+          // Stadtlichter heller (warm) für das „Live Earth bei Nacht"-Bild
+          nightC = nightC * vec3(2.4, 2.1, 1.5) + vec3(0.012, 0.022, 0.05);
 
           vec3 col = mix(nightC, dayC, day);
 
@@ -218,6 +234,7 @@ function Earth() {
     if (!ref.current) return;
     ref.current.rotation.y += delta * SPIN;
     material.uniforms.cameraPos.value.copy(state.camera.position);
+    material.uniforms.sunDir.value.copy(LIVE_SUN);
   });
 
   return (
@@ -235,7 +252,7 @@ function Clouds() {
 
   const material = useMemo(() => {
     return new THREE.ShaderMaterial({
-      uniforms: { cloudMap: { value: cloudMap }, sunDir: { value: SUN.clone() } },
+      uniforms: { cloudMap: { value: cloudMap }, sunDir: { value: LIVE_SUN.clone() } },
       transparent: true,
       depthWrite: false,
       vertexShader: /* glsl */ `
@@ -265,6 +282,7 @@ function Clouds() {
 
   useFrame((_, delta) => {
     if (ref.current) ref.current.rotation.y += delta * (SPIN * 1.25);
+    material.uniforms.sunDir.value.copy(LIVE_SUN);
   });
 
   return (
@@ -280,7 +298,7 @@ function Atmosphere() {
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: { glow: { value: new THREE.Color('#3aa0ff') }, sunDir: { value: SUN.clone() } },
+        uniforms: { glow: { value: new THREE.Color('#3aa0ff') }, sunDir: { value: LIVE_SUN.clone() } },
         side: THREE.BackSide,
         blending: THREE.AdditiveBlending,
         transparent: true,
@@ -305,6 +323,7 @@ function Atmosphere() {
       }),
     [],
   );
+  useFrame(() => { material.uniforms.sunDir.value.copy(LIVE_SUN); });
   return (
     <mesh material={material}>
       <sphereGeometry args={[1.16, 48, 48]} />
@@ -312,17 +331,55 @@ function Atmosphere() {
   );
 }
 
-// ── Sonnenflare (additives Sprite am Rand) ───────────────────────────
+// ── Sonnenflare (additives Sprite, folgt der Live-Sonne am Limb) ─────
 
 function SunFlare() {
   const tex = useMemo(() => makeRadialTexture('rgba(255,247,224,1)', 'rgba(255,221,150,0.55)'), []);
-  // Am oberen-linken Limb platziert (Sonne „crestet" über dem Horizont),
-  // knapp auf der Oberfläche statt vor der Kugel → Rand-Flare statt Blob.
-  const pos = useMemo(() => new THREE.Vector3(-0.72, 0.62, 0.48).normalize().multiplyScalar(1.04), []);
+  const ref = useRef<THREE.Sprite>(null!);
+  useFrame(() => {
+    if (ref.current) ref.current.position.copy(LIVE_SUN).multiplyScalar(1.16);
+  });
   return (
-    <sprite position={pos} scale={[1.15, 1.15, 1.15]}>
+    <sprite ref={ref} scale={[1.2, 1.2, 1.2]}>
       <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} opacity={0.5} toneMapped={false} />
     </sprite>
+  );
+}
+
+// ── Satelliten (orbitierende Live-Punkte mit Spur) ───────────────────
+
+function Satellites() {
+  const dotTex = useMemo(() => makeRadialTexture('rgba(220,245,255,1)', 'rgba(120,200,255,0.5)'), []);
+  const refs = useRef<Array<THREE.Group | null>>([]);
+  const sats = useMemo(
+    () => [
+      { r: 1.42, tilt: 0.9, speed: 0.22, offset: 0.0, color: '#9ad8ff' },
+      { r: 1.7, tilt: -0.6, speed: 0.16, offset: 2.1, color: '#7dffe8' },
+      { r: 1.34, tilt: 1.5, speed: 0.28, offset: 4.0, color: '#cfe8ff' },
+    ],
+    [],
+  );
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    sats.forEach((s, i) => {
+      const g = refs.current[i];
+      if (!g) return;
+      const a = t * s.speed + s.offset;
+      g.position.set(Math.cos(a) * s.r, Math.sin(a) * s.r * 0.35, Math.sin(a) * s.r);
+    });
+  });
+  return (
+    <group>
+      {sats.map((s, i) => (
+        <group key={i} rotation={[s.tilt, i * 1.2, 0]}>
+          <group ref={(el) => { refs.current[i] = el; }}>
+            <sprite scale={[0.07, 0.07, 0.07]}>
+              <spriteMaterial map={dotTex} color={s.color} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+            </sprite>
+          </group>
+        </group>
+      ))}
+    </group>
   );
 }
 
@@ -503,15 +560,17 @@ export default function EarthCanvas() {
       style={{ width: '100%', height: '100%', background: 'transparent' }}
     >
       <ambientLight intensity={0.25} />
-      <directionalLight position={SUN.clone().multiplyScalar(5)} intensity={2.2} color="#fff4e0" />
+      <directionalLight position={LIVE_SUN.clone().multiplyScalar(5)} intensity={2.2} color="#fff4e0" />
       <directionalLight position={[-4, -2, 2]} intensity={0.4} color="#1a6fff" />
 
+      <SunController />
       <Starfield />
       <Galaxy />
       <Saturn />
       <DistantPlanet />
       <OrbitRings />
       <EarthSystem />
+      <Satellites />
       <SunFlare />
       <Moon />
     </Canvas>

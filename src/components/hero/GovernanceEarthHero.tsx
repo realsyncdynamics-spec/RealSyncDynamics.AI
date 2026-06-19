@@ -8,11 +8,13 @@
  */
 import { DynamicEarthScene } from './DynamicEarthScene';
 import { FloatingGovernanceLabels } from './FloatingGovernanceLabels';
+import { LiveEarthHud } from './LiveEarthHud';
 
 export function GovernanceEarthHero({ className = '' }: { className?: string }) {
   return (
     <div className={`relative h-full w-full ${className}`} aria-hidden>
       <DynamicEarthScene />
+      <LiveEarthHud />
       <FloatingGovernanceLabels />
     </div>
   );

@@ -749,6 +749,11 @@ export default function App() {
         <DemoModeProvider>
           <BrowserRouter basename={ROUTER_BASENAME}>
           <ScrollToTop />
+          {/* Globaler, config-getriebener Meta-Tag-Manager: setzt für JEDE
+              Route title/description/canonical/OG/Twitter/JSON-LD anhand
+              src/config/seo.ts (Fallback DEFAULT_SEO). Seiten mit eigenem
+              <SEOHead …/> (z.B. dynamische Detail-Pages) überschreiben das. */}
+          <SEOHead />
           <RoutesWithTracking />
           <CookieConsent />
           <Suspense fallback={null}>

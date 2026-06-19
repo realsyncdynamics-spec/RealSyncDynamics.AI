@@ -6,11 +6,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MonitoringSurface } from '../../../pages/MonitoringPage';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { fetchTenantAssets, fetchTenantEvents } from '../governanceApi';
+import {
+  fetchTenantAssets, fetchTenantEvents, fetchTenantPolicies,
+  type DbGovernanceAsset, type DbGovernancePolicy, type DbGovernanceEvent,
+} from '../governanceApi';
 import { countOpenIncidents } from '../incidentsApi';
 
 // ---------------------------------------------------------------------------
-// Mock-Daten
+// Datentypen + Mapper — echte Governance-Assets/Policies/Events → Tabellenzeilen
+// (zuvor standen hier hartkodierte Beispiel-Arrays, die eingeloggten Tenants
+//  fabrizierte Monitoring-Zahlen zeigten — entfernt, Audit-Befund K1.)
 // ---------------------------------------------------------------------------
 
 type DomainStatus = 'ok' | 'warning' | 'error' | 'critical';
@@ -19,71 +24,25 @@ interface WebsiteRow {
   domain: string;
   status: DomainStatus;
   score: number;
-  findings: number;
   lastScan: string;
-  nextScan: string;
-  frequency: string;
 }
-
-const WEBSITE_STATUS: WebsiteRow[] = [
-  { domain: 'atelier-nord.de',         status: 'ok',       score: 92, findings: 1, lastScan: 'vor 3 Min.', nextScan: '07:45', frequency: 'Täglich 06:00' },
-  { domain: 'shop.atelier-nord.de',    status: 'warning',  score: 68, findings: 4, lastScan: 'vor 3 Min.', nextScan: '07:45', frequency: 'Täglich 06:00' },
-  { domain: 'blog.atelier-nord.de',    status: 'error',    score: 54, findings: 6, lastScan: 'vor 3 Min.', nextScan: '07:45', frequency: 'Täglich 06:00' },
-  { domain: 'app.atelier-nord.de',     status: 'critical', score: 38, findings: 9, lastScan: 'vor 3 Min.', nextScan: '07:45', frequency: 'Täglich 06:00' },
-  { domain: 'partner.atelier-nord.de', status: 'ok',       score: 88, findings: 2, lastScan: 'vor 3 Min.', nextScan: '07:45', frequency: 'Täglich 06:00' },
-];
 
 interface AiSystemRow {
   name: string;
   model: string;
   riskClass: string;
-  compliance: number;
+  riskScore: number;
   lastCheck: string;
   status: DomainStatus;
 }
-
-const AI_SYSTEM_STATUS: AiSystemRow[] = [
-  { name: 'CV-Screening HR-Tool',        model: 'HR-AI Suite v4.1',   riskClass: 'Hoch',      compliance: 33,  lastCheck: 'vor 1 Std.',  status: 'critical' },
-  { name: 'Fraud Detection',             model: 'FraudGuard API v2',  riskClass: 'Hoch',      compliance: 58,  lastCheck: 'vor 1 Std.',  status: 'warning'  },
-  { name: 'Produktempfehlung Shop',      model: 'Custom v2.3',        riskClass: 'Begrenzt',  compliance: 75,  lastCheck: 'vor 2 Std.',  status: 'warning'  },
-  { name: 'Support-Chatbot Kodee',       model: 'claude-haiku-4-5',   riskClass: 'Begrenzt',  compliance: 100, lastCheck: 'vor 2 Std.',  status: 'ok'       },
-  { name: 'Content-Moderations-KI',      model: 'gpt-4o-mini',        riskClass: 'Begrenzt',  compliance: 88,  lastCheck: 'vor 3 Std.',  status: 'ok'       },
-];
-
-interface DocumentRow {
-  name: string;
-  version: string;
-  lastChanged: string;
-  validUntil: string | null;
-  owner: string;
-  status: DomainStatus;
-}
-
-const DOCUMENT_STATUS: DocumentRow[] = [
-  { name: 'Datenschutzerklärung',            version: 'v3.2',      lastChanged: '14.06.2026', validUntil: '14.06.2027', owner: 'L. Vogel',  status: 'ok'       },
-  { name: 'AVV — Brevo',                     version: 'v1',        lastChanged: '05.06.2026', validUntil: '05.06.2027', owner: 'M. Brandt', status: 'ok'       },
-  { name: 'Verarbeitungsverzeichnis',         version: 'v2025.4',  lastChanged: '01.03.2026', validUntil: '01.03.2027', owner: 'L. Vogel',  status: 'warning'  },
-  { name: 'TOM-Dokumentation',               version: 'v2026.1',  lastChanged: '08.06.2026', validUntil: '08.06.2027', owner: 'M. Brandt', status: 'ok'       },
-  { name: 'Impressum',                       version: 'v2.1',     lastChanged: '01.01.2026', validUntil: null,          owner: 'T. Younes', status: 'warning'  },
-  { name: 'DSFA Empfehlungsalgorithmus',      version: 'Entwurf',  lastChanged: '—',          validUntil: null,          owner: 'M. Brandt', status: 'critical' },
-];
 
 interface PolicyRow {
   name: string;
   framework: string;
-  status: DomainStatus | 'error';
+  enabled: boolean;
+  status: DomainStatus;
   lastCheck: string;
-  nextCheck: string;
 }
-
-const POLICY_STATUS: PolicyRow[] = [
-  { name: 'Cookie Consent Policy',             framework: 'TTDSG §25',          status: 'error',   lastCheck: '16.06.2026', nextCheck: '23.06.2026' },
-  { name: 'Drittlandtransfer Policy',          framework: 'DSGVO Art. 44-46',   status: 'warning', lastCheck: '16.06.2026', nextCheck: '23.06.2026' },
-  { name: 'Datenschutz-Grundsätze',            framework: 'DSGVO Art. 5',       status: 'ok',      lastCheck: '16.06.2026', nextCheck: '30.06.2026' },
-  { name: 'EU AI Act Compliance Policy',        framework: 'EU AI Act Art. 6',   status: 'warning', lastCheck: '16.06.2026', nextCheck: '23.06.2026' },
-  { name: 'Incident Response Plan',            framework: 'DSGVO Art. 33',      status: 'ok',      lastCheck: '08.06.2026', nextCheck: '08.07.2026' },
-  { name: 'Sub-Prozessoren-Vertragspflichten', framework: 'DSGVO Art. 28',      status: 'warning', lastCheck: '05.06.2026', nextCheck: '05.07.2026' },
-];
 
 interface AlertRow {
   id: string;
@@ -94,29 +53,78 @@ interface AlertRow {
   link: string;
 }
 
-const ACTIVE_ALERTS: AlertRow[] = [
-  { id: 'al-1', severity: 'Kritisch', title: 'Meta Pixel Pre-Consent auf app.atelier-nord.de',  asset: 'app.atelier-nord.de',  detected: 'vor 2 Std.',    link: '/app/risks' },
-  { id: 'al-2', severity: 'Hoch',     title: 'Cookie-Banner ohne granulare Kategorien',          asset: 'blog.atelier-nord.de', detected: 'vor 9 Std.',    link: '/app/risks' },
-  { id: 'al-3', severity: 'Hoch',     title: 'Unbekannter Tracker analytics.partner.io',         asset: 'shop.atelier-nord.de', detected: 'vor 4 Std.',    link: '/app/risks' },
-  { id: 'al-4', severity: 'Mittel',   title: 'Google Fonts Drittlandtransfer ohne SCC',          asset: 'atelier-nord.de',      detected: 'vor 3 Tagen',   link: '/app/risks' },
-];
-
-interface AlertRuleRow {
-  id: string;
-  name: string;
-  active: boolean;
-  channels: string;
+// risk_score: höher = höheres Risiko (siehe governance-risk-score). Daraus die
+// Ampel ableiten, damit die Farben der echten Datenlage entsprechen.
+function statusFromRisk(score: number): DomainStatus {
+  if (score >= 80) return 'critical';
+  if (score >= 60) return 'error';
+  if (score >= 40) return 'warning';
+  return 'ok';
 }
 
-const INITIAL_ALERT_RULES: AlertRuleRow[] = [
-  { id: 'r-1', name: 'Neuer Tracker erkannt',        active: true,  channels: 'E-Mail + Dashboard' },
-  { id: 'r-2', name: 'Pre-Consent Tracking',         active: true,  channels: 'E-Mail + Dashboard' },
-  { id: 'r-3', name: 'Score unter 60',               active: true,  channels: 'Dashboard'          },
-  { id: 'r-4', name: 'KI-System ohne Dokumentation', active: true,  channels: 'E-Mail'             },
-  { id: 'r-5', name: 'Dokument abgelaufen',          active: false, channels: 'E-Mail'             },
-  { id: 'r-6', name: 'Drittland-Transfer ohne SCC',  active: true,  channels: 'E-Mail + Dashboard' },
-  { id: 'r-7', name: 'SSL-Zertifikat < 30 Tage',    active: true,  channels: 'Dashboard'          },
-];
+function relTime(iso: string): string {
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (diffMin < 1) return 'gerade eben';
+  if (diffMin < 60) return `vor ${diffMin} Min.`;
+  if (diffMin < 1440) return `vor ${Math.floor(diffMin / 60)} Std.`;
+  const d = Math.floor(diffMin / 1440);
+  return `vor ${d} Tag${d !== 1 ? 'en' : ''}`;
+}
+
+const AI_ACT_LABEL: Record<string, string> = {
+  prohibited: 'Verboten', high: 'Hoch', limited: 'Begrenzt', minimal: 'Minimal', unknown: 'Unbekannt',
+};
+
+const POLICY_TYPE_LABEL: Record<string, string> = {
+  data_transfer: 'Datentransfer', model_usage: 'Modellnutzung', human_review: 'Menschliche Prüfung',
+  logging_required: 'Logging-Pflicht', vendor_restriction: 'Anbieter-Restriktion', retention: 'Aufbewahrung',
+  security: 'Sicherheit', ai_act: 'EU AI Act', gdpr: 'DSGVO',
+};
+
+const RISK_LEVEL_TO_SEVERITY: Record<string, AlertRow['severity']> = {
+  critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig', info: 'Niedrig',
+};
+
+function assetToWebsiteRow(a: DbGovernanceAsset): WebsiteRow {
+  return {
+    domain: a.system_url || a.name,
+    status: statusFromRisk(a.risk_score),
+    score: a.risk_score,
+    lastScan: relTime(a.updated_at),
+  };
+}
+
+function assetToAiSystemRow(a: DbGovernanceAsset): AiSystemRow {
+  return {
+    name: a.name,
+    model: (a.metadata['model_name'] as string | undefined) ?? a.vendor ?? '–',
+    riskClass: AI_ACT_LABEL[a.ai_act_class] ?? 'Unbekannt',
+    riskScore: a.risk_score,
+    lastCheck: relTime(a.updated_at),
+    status: statusFromRisk(a.risk_score),
+  };
+}
+
+function policyToRow(p: DbGovernancePolicy): PolicyRow {
+  return {
+    name: p.name,
+    framework: POLICY_TYPE_LABEL[p.policy_type] ?? p.policy_type,
+    enabled: p.enabled,
+    status: p.enabled ? 'ok' : 'warning',
+    lastCheck: relTime(p.updated_at),
+  };
+}
+
+function eventToAlertRow(e: DbGovernanceEvent): AlertRow {
+  return {
+    id: e.id,
+    severity: RISK_LEVEL_TO_SEVERITY[e.risk_level] ?? 'Niedrig',
+    title: e.title,
+    asset: e.vendor || e.event_source || '–',
+    detected: relTime(e.created_at),
+    link: e.asset_id ? `/app/assets/${e.asset_id}` : '/app/risks',
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Hilfsfunktionen
@@ -169,16 +177,12 @@ function severityDotClass(severity: AlertRow['severity']): string {
   }
 }
 
-function scoreColor(score: number): string {
-  if (score >= 80) return 'text-teal-400';
-  if (score >= 60) return 'text-amber-400';
-  return 'text-red-400';
-}
-
-function complianceColor(pct: number): string {
-  if (pct >= 80) return 'text-teal-400';
-  if (pct >= 60) return 'text-amber-400';
-  return 'text-red-400';
+// Risk-Score-Färbung: höher = höheres Risiko = wärmere Farbe.
+function riskScoreColor(score: number): string {
+  if (score >= 80) return 'text-red-500';
+  if (score >= 60) return 'text-red-400';
+  if (score >= 40) return 'text-amber-400';
+  return 'text-teal-400';
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +235,18 @@ function StatusCell({ status }: { status: DomainStatus }) {
 // ---------------------------------------------------------------------------
 // Tab: Websites
 // ---------------------------------------------------------------------------
-function WebsitesTab() {
+/** Leerzeile/Hinweis innerhalb einer Tabelle */
+function TabEmpty({ colSpan, label }: { colSpan: number; label: string }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="px-3 py-10 text-center font-mono text-[12px] text-titanium-500">
+        {label}
+      </td>
+    </tr>
+  );
+}
+
+function WebsitesTab({ rows, loading, hasTenant }: { rows: WebsiteRow[]; loading: boolean; hasTenant: boolean }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm border-collapse">
@@ -239,55 +254,49 @@ function WebsitesTab() {
           <tr className="border-b border-titanium-900">
             <Th>Status</Th>
             <Th>Domain</Th>
-            <Th>Letzter Scan</Th>
-            <Th>Score</Th>
-            <Th>Findings</Th>
-            <Th>Nächster Scan</Th>
-            <Th>Frequenz</Th>
+            <Th>Letzte Aktualisierung</Th>
+            <Th>Risk Score</Th>
             <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
-          {WEBSITE_STATUS.map((row) => (
-            <tr
-              key={row.domain}
-              className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
-            >
-              <td className="px-3 py-2.5">
-                <StatusCell status={row.status} />
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[12px] text-titanium-100">
-                {row.domain}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.lastScan}
-              </td>
-              <td className="px-3 py-2.5">
-                <span className={`font-mono text-[12px] font-semibold ${scoreColor(row.score)}`}>
-                  {row.score}
-                </span>
-              </td>
-              <td className="px-3 py-2.5">
-                <span className={`font-mono text-[12px] ${row.findings > 0 ? 'text-amber-400' : 'text-teal-400'}`}>
-                  {row.findings}
-                </span>
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.nextScan}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-500">
-                {row.frequency}
-              </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Details
-                </button>
-              </td>
-            </tr>
-          ))}
+          {loading ? (
+            <TabEmpty colSpan={5} label="Wird geladen …" />
+          ) : !hasTenant ? (
+            <TabEmpty colSpan={5} label="Kein aktiver Arbeitsbereich." />
+          ) : rows.length === 0 ? (
+            <TabEmpty colSpan={5} label="Noch keine Websites registriert — über Scans hinzufügen." />
+          ) : (
+            rows.map((row) => (
+              <tr
+                key={row.domain}
+                className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
+              >
+                <td className="px-3 py-2.5">
+                  <StatusCell status={row.status} />
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[12px] text-titanium-100">
+                  {row.domain}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {row.lastScan}
+                </td>
+                <td className="px-3 py-2.5">
+                  <span className={`font-mono text-[12px] font-semibold ${riskScoreColor(row.score)}`}>
+                    {row.score}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5">
+                  <Link
+                    to="/app/scans"
+                    className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  >
+                    Details
+                  </Link>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -297,7 +306,7 @@ function WebsitesTab() {
 // ---------------------------------------------------------------------------
 // Tab: KI-Systeme
 // ---------------------------------------------------------------------------
-function AiSystemsTab() {
+function AiSystemsTab({ rows, loading, hasTenant }: { rows: AiSystemRow[]; loading: boolean; hasTenant: boolean }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm border-collapse">
@@ -306,56 +315,64 @@ function AiSystemsTab() {
             <Th>Status</Th>
             <Th>System</Th>
             <Th>Modell</Th>
-            <Th>Letzte Prüfung</Th>
+            <Th>Letzte Aktualisierung</Th>
             <Th>Risk Class</Th>
-            <Th>Compliance</Th>
+            <Th>Risk Score</Th>
             <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
-          {AI_SYSTEM_STATUS.map((row) => (
-            <tr
-              key={row.name}
-              className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
-            >
-              <td className="px-3 py-2.5">
-                <StatusCell status={row.status} />
-              </td>
-              <td className="px-3 py-2.5 text-titanium-100 text-[12px]">
-                {row.name}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.model}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.lastCheck}
-              </td>
-              <td className="px-3 py-2.5">
-                <span
-                  className={`font-mono text-[10px] px-1.5 py-0.5 border ${
-                    row.riskClass === 'Hoch'
-                      ? 'text-red-400 border-red-900 bg-red-950/30'
-                      : 'text-amber-400 border-amber-900 bg-amber-950/30'
-                  }`}
-                >
-                  {row.riskClass}
-                </span>
-              </td>
-              <td className="px-3 py-2.5">
-                <span className={`font-mono text-[12px] font-semibold ${complianceColor(row.compliance)}`}>
-                  {row.compliance}%
-                </span>
-              </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Details
-                </button>
-              </td>
-            </tr>
-          ))}
+          {loading ? (
+            <TabEmpty colSpan={7} label="Wird geladen …" />
+          ) : !hasTenant ? (
+            <TabEmpty colSpan={7} label="Kein aktiver Arbeitsbereich." />
+          ) : rows.length === 0 ? (
+            <TabEmpty colSpan={7} label="Noch keine KI-Systeme registriert — im KI-System-Register anlegen." />
+          ) : (
+            rows.map((row) => (
+              <tr
+                key={row.name}
+                className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
+              >
+                <td className="px-3 py-2.5">
+                  <StatusCell status={row.status} />
+                </td>
+                <td className="px-3 py-2.5 text-titanium-100 text-[12px]">
+                  {row.name}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {row.model}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {row.lastCheck}
+                </td>
+                <td className="px-3 py-2.5">
+                  <span
+                    className={`font-mono text-[10px] px-1.5 py-0.5 border ${
+                      row.riskClass === 'Hoch' || row.riskClass === 'Verboten'
+                        ? 'text-red-400 border-red-900 bg-red-950/30'
+                        : 'text-amber-400 border-amber-900 bg-amber-950/30'
+                    }`}
+                  >
+                    {row.riskClass}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5">
+                  <span className={`font-mono text-[12px] font-semibold ${riskScoreColor(row.riskScore)}`}>
+                    {row.riskScore}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5">
+                  <Link
+                    to="/app/ai-systems"
+                    className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  >
+                    Details
+                  </Link>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -366,56 +383,20 @@ function AiSystemsTab() {
 // Tab: Dokumente
 // ---------------------------------------------------------------------------
 function DokumenteTab() {
+  // Für Dokumente existiert noch keine Live-Datenquelle in dieser Ansicht
+  // (generated_documents ist noch nicht angebunden). Statt fabrizierter
+  // Beispiel-Dokumente ein ehrlicher Hinweis mit Verweis auf die echte Ansicht.
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="border-b border-titanium-900">
-            <Th>Status</Th>
-            <Th>Dokument</Th>
-            <Th>Version</Th>
-            <Th>Letzte Änderung</Th>
-            <Th>Gültig bis</Th>
-            <Th>Verantwortlicher</Th>
-            <Th>Aktionen</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {DOCUMENT_STATUS.map((row) => (
-            <tr
-              key={row.name}
-              className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
-            >
-              <td className="px-3 py-2.5">
-                <StatusCell status={row.status} />
-              </td>
-              <td className="px-3 py-2.5 text-titanium-100 text-[12px]">
-                {row.name}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.version}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.lastChanged}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.validUntil ?? '—'}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.owner}
-              </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Ansehen
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="px-6 py-10 text-center">
+      <p className="font-mono text-[12px] text-titanium-400">
+        Dokumenten-Monitoring wird hier in Kürze live angebunden.
+      </p>
+      <p className="mt-1 font-mono text-[11px] text-titanium-600">
+        Deine erzeugten Compliance-Dokumente findest du bereits unter{' '}
+        <Link to="/app/documents" className="text-teal-400 hover:text-teal-300 underline">
+          Dokumente
+        </Link>.
+      </p>
     </div>
   );
 }
@@ -423,7 +404,7 @@ function DokumenteTab() {
 // ---------------------------------------------------------------------------
 // Tab: Richtlinien
 // ---------------------------------------------------------------------------
-function RichtlinienTab() {
+function RichtlinienTab({ rows, loading, hasTenant }: { rows: PolicyRow[]; loading: boolean; hasTenant: boolean }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm border-collapse">
@@ -431,43 +412,51 @@ function RichtlinienTab() {
           <tr className="border-b border-titanium-900">
             <Th>Status</Th>
             <Th>Richtlinie</Th>
-            <Th>Framework</Th>
-            <Th>Letzte Prüfung</Th>
-            <Th>Nächste Prüfung</Th>
+            <Th>Typ</Th>
+            <Th>Letzte Änderung</Th>
+            <Th>Aktiv</Th>
             <Th>Aktionen</Th>
           </tr>
         </thead>
         <tbody>
-          {POLICY_STATUS.map((row) => (
-            <tr
-              key={row.name}
-              className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
-            >
-              <td className="px-3 py-2.5">
-                <StatusCell status={row.status as DomainStatus} />
-              </td>
-              <td className="px-3 py-2.5 text-titanium-100 text-[12px]">
-                {row.name}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-500">
-                {row.framework}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.lastCheck}
-              </td>
-              <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
-                {row.nextCheck}
-              </td>
-              <td className="px-3 py-2.5">
-                <button
-                  type="button"
-                  className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
-                >
-                  Prüfen
-                </button>
-              </td>
-            </tr>
-          ))}
+          {loading ? (
+            <TabEmpty colSpan={6} label="Wird geladen …" />
+          ) : !hasTenant ? (
+            <TabEmpty colSpan={6} label="Kein aktiver Arbeitsbereich." />
+          ) : rows.length === 0 ? (
+            <TabEmpty colSpan={6} label="Noch keine Richtlinien definiert." />
+          ) : (
+            rows.map((row) => (
+              <tr
+                key={row.name}
+                className="border-b border-titanium-900 hover:bg-obsidian-900/50 transition-colors"
+              >
+                <td className="px-3 py-2.5">
+                  <StatusCell status={row.status} />
+                </td>
+                <td className="px-3 py-2.5 text-titanium-100 text-[12px]">
+                  {row.name}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-500">
+                  {row.framework}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {row.lastCheck}
+                </td>
+                <td className="px-3 py-2.5 font-mono text-[11px] text-titanium-400">
+                  {row.enabled ? 'Ja' : 'Nein'}
+                </td>
+                <td className="px-3 py-2.5">
+                  <Link
+                    to="/app/policies/templates"
+                    className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 transition-colors"
+                  >
+                    Prüfen
+                  </Link>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -477,7 +466,7 @@ function RichtlinienTab() {
 // ---------------------------------------------------------------------------
 // Sektion 3: Aktive Alerts
 // ---------------------------------------------------------------------------
-function ActiveAlertsPanel() {
+function ActiveAlertsPanel({ alerts, loading }: { alerts: AlertRow[]; loading: boolean }) {
   return (
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-titanium-900">
@@ -485,11 +474,19 @@ function ActiveAlertsPanel() {
           Aktive Alerts
         </span>
         <span className="ml-2 font-mono text-[10px] text-red-400 bg-red-950/40 border border-red-900 px-1.5 py-0.5">
-          {ACTIVE_ALERTS.length}
+          {alerts.length}
         </span>
       </div>
       <div className="divide-y divide-titanium-900 flex-1">
-        {ACTIVE_ALERTS.map((alert) => (
+        {loading && (
+          <div className="px-4 py-6 font-mono text-[11px] text-titanium-500">Wird geladen …</div>
+        )}
+        {!loading && alerts.length === 0 && (
+          <div className="px-4 py-6 font-mono text-[11px] text-titanium-500">
+            Keine offenen Alerts — keine kritischen oder hohen Ereignisse in den letzten Meldungen.
+          </div>
+        )}
+        {alerts.map((alert) => (
           <div key={alert.id} className="px-4 py-3 hover:bg-obsidian-900/50 transition-colors">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-2 min-w-0">
@@ -528,8 +525,27 @@ function ActiveAlertsPanel() {
 // ---------------------------------------------------------------------------
 // Sektion 3: Alert-Regeln
 // ---------------------------------------------------------------------------
+interface AlertRuleRow {
+  id: string;
+  name: string;
+  active: boolean;
+  channels: string;
+}
+
+// Standard-Regelvorlagen. Die Persistenz pro Tenant ist noch nicht angebunden —
+// daher als „Vorlagen" gekennzeichnet und die Umschalter wirken nur lokal.
+const DEFAULT_ALERT_RULES: AlertRuleRow[] = [
+  { id: 'r-1', name: 'Neuer Tracker erkannt',        active: true,  channels: 'E-Mail + Dashboard' },
+  { id: 'r-2', name: 'Pre-Consent Tracking',         active: true,  channels: 'E-Mail + Dashboard' },
+  { id: 'r-3', name: 'Risk Score über 60',           active: true,  channels: 'Dashboard'          },
+  { id: 'r-4', name: 'KI-System ohne Dokumentation', active: true,  channels: 'E-Mail'             },
+  { id: 'r-5', name: 'Dokument abgelaufen',          active: false, channels: 'E-Mail'             },
+  { id: 'r-6', name: 'Drittland-Transfer ohne SCC',  active: true,  channels: 'E-Mail + Dashboard' },
+  { id: 'r-7', name: 'SSL-Zertifikat < 30 Tage',     active: true,  channels: 'Dashboard'          },
+];
+
 function AlertRulesPanel() {
-  const [rules, setRules] = useState<AlertRuleRow[]>(INITIAL_ALERT_RULES);
+  const [rules, setRules] = useState<AlertRuleRow[]>(DEFAULT_ALERT_RULES);
 
   function toggleRule(id: string) {
     setRules((prev) =>
@@ -541,7 +557,7 @@ function AlertRulesPanel() {
     <div className="flex flex-col h-full">
       <div className="px-4 py-3 border-b border-titanium-900">
         <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">
-          Alert-Regeln
+          Alert-Regeln · Vorlagen
         </span>
       </div>
       <div className="divide-y divide-titanium-900 flex-1">
@@ -603,35 +619,59 @@ const TAB_LABELS: Record<AssetTab, string> = {
 export function MonitoringRuntimeView() {
   const { activeTenantId } = useTenant();
   // Echte Werte: Default '–' statt fabrizierter Zahlen. Erst nach dem Laden
-  // werden reale Counts gesetzt; ohne Tenant/Daten bleibt '–' sichtbar.
+  // werden reale Counts/Zeilen gesetzt; ohne Tenant/Daten bleibt '–' sichtbar.
   const [assetCount, setAssetCount] = useState<string>('–');
   const [alertCount, setAlertCount] = useState<string>('–');
   const [lastCheck, setLastCheck] = useState<string>('–');
   const [activeTab, setActiveTab] = useState<AssetTab>('websites');
+  const [loading, setLoading] = useState(true);
+  const [websiteRows, setWebsiteRows] = useState<WebsiteRow[]>([]);
+  const [aiSystemRows, setAiSystemRows] = useState<AiSystemRow[]>([]);
+  const [policyRows, setPolicyRows] = useState<PolicyRow[]>([]);
+  const [alertRows, setAlertRows] = useState<AlertRow[]>([]);
 
   useEffect(() => {
     if (!activeTenantId) {
       setAssetCount('–');
       setAlertCount('–');
       setLastCheck('–');
+      setWebsiteRows([]);
+      setAiSystemRows([]);
+      setPolicyRows([]);
+      setAlertRows([]);
+      setLoading(false);
       return;
     }
+    let cancelled = false;
+    setLoading(true);
+
     fetchTenantAssets(activeTenantId).then((a) => {
+      if (cancelled) return;
       setAssetCount(String(a.length));
+      setWebsiteRows(a.filter((x) => x.asset_type === 'website').map(assetToWebsiteRow));
+      setAiSystemRows(a.filter((x) => x.asset_type === 'ai_system').map(assetToAiSystemRow));
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoading(false); });
+
+    fetchTenantPolicies(activeTenantId).then((p) => {
+      if (!cancelled) setPolicyRows(p.map(policyToRow));
     }).catch(() => {});
-    countOpenIncidents(activeTenantId).then((n) => setAlertCount(String(n))).catch(() => {});
-    fetchTenantEvents(activeTenantId, 1).then((evs) => {
-      if (evs.length > 0) {
-        const diffMs = Date.now() - new Date(evs[0].created_at).getTime();
-        const diffMin = Math.floor(diffMs / 60_000);
-        const ts = diffMin < 60 ? `vor ${diffMin} Min.`
-          : diffMin < 1440 ? `vor ${Math.floor(diffMin / 60)} Std.`
-          : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
-        setLastCheck(ts);
-      } else {
-        setLastCheck('Keine Prüfung');
-      }
+
+    countOpenIncidents(activeTenantId).then((n) => {
+      if (!cancelled) setAlertCount(String(n));
     }).catch(() => {});
+
+    fetchTenantEvents(activeTenantId, 50).then((evs) => {
+      if (cancelled) return;
+      if (evs.length > 0) setLastCheck(relTime(evs[0].created_at));
+      else setLastCheck('Keine Prüfung');
+      setAlertRows(
+        evs.filter((e) => e.risk_level === 'critical' || e.risk_level === 'high')
+          .slice(0, 8)
+          .map(eventToAlertRow),
+      );
+    }).catch(() => {});
+
+    return () => { cancelled = true; };
   }, [activeTenantId]);
 
 
@@ -670,13 +710,6 @@ export function MonitoringRuntimeView() {
 
       {/* ── Sektion 2: Asset Monitoring Status (Tabs) ── */}
       <section className="border-b border-titanium-900">
-        {/* Ehrlichkeits-Hinweis: Die folgenden Tabs/Panels zeigen noch
-            Beispieldaten (statische Tabellen), bis die Live-Verdrahtung pro
-            Asset-Typ steht. So wird der eingeloggte Nutzer nicht über echte
-            Monitoring-Zahlen getäuscht. Folge-Issue: Live-Wiring der Tabs. */}
-        <div className="mx-6 mt-4 border border-amber-900/60 bg-amber-950/20 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-amber-400">
-          Beispielansicht · Live-Daten pro Asset-Typ in Vorbereitung
-        </div>
         {/* Tab-Leiste */}
         <div className="flex border-b border-titanium-900 px-6 pt-4">
           {(Object.keys(TAB_LABELS) as AssetTab[]).map((tab) => (
@@ -698,10 +731,10 @@ export function MonitoringRuntimeView() {
 
         {/* Tab-Inhalt */}
         <div className="py-2">
-          {activeTab === 'websites'    && <WebsitesTab />}
-          {activeTab === 'ki-systeme'  && <AiSystemsTab />}
+          {activeTab === 'websites'    && <WebsitesTab rows={websiteRows} loading={loading} hasTenant={!!activeTenantId} />}
+          {activeTab === 'ki-systeme'  && <AiSystemsTab rows={aiSystemRows} loading={loading} hasTenant={!!activeTenantId} />}
           {activeTab === 'dokumente'   && <DokumenteTab />}
-          {activeTab === 'richtlinien' && <RichtlinienTab />}
+          {activeTab === 'richtlinien' && <RichtlinienTab rows={policyRows} loading={loading} hasTenant={!!activeTenantId} />}
         </div>
       </section>
 
@@ -710,7 +743,7 @@ export function MonitoringRuntimeView() {
         <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-titanium-900">
           {/* Linke Spalte — Aktive Alerts (2/3) */}
           <div className="lg:col-span-2">
-            <ActiveAlertsPanel />
+            <ActiveAlertsPanel alerts={alertRows} loading={loading} />
           </div>
           {/* Rechte Spalte — Alert-Regeln (1/3) */}
           <div>

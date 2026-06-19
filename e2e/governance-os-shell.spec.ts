@@ -21,8 +21,10 @@ const APP_URLS = [
   { path: '/app/websites', label: 'Websites' },
   { path: '/app/evidence', label: 'Evidence' },
   { path: '/app/ai-systems', label: 'KI-Systeme' },
-  { path: '/app/risks', label: 'Risiken' },
+  { path: '/app/risks', label: 'Risk Center' },
   { path: '/app/monitoring', label: 'Monitoring' },
+  { path: '/app/alerts', label: 'Alerts' },
+  { path: '/app/billing', label: 'Billing' },
 ];
 
 test.describe('Governance OS Browser Shell — Auth Redirect', () => {

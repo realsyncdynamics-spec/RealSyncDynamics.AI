@@ -28,7 +28,7 @@ import {
   Globe, Cpu, AlertTriangle, Archive, Activity, Network, FileText, BarChart3, Workflow,
   ShieldCheck, Scale, Lock, KeyRound, FileCheck2, ClipboardCheck,
   ScanSearch, Camera, CalendarClock, Target, FileSearch,
-  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check, Play, Star, ChevronDown, User,
+  Hash, ServerCog, Sparkles, Building2, Zap, Clock, Layers, Gauge, Check, Play, ChevronDown, User,
 } from 'lucide-react';
 import { CTA, PLANS } from '../content/runtimeVocab';
 import { Logo } from '../components/Logo';
@@ -257,7 +257,7 @@ const HERO_FEATURES = [
 
 // Bottom-Trust-Bar (Enterprise-Signale).
 const HERO_TRUST = [
-  { Icon: ShieldCheck, title: 'ISO 27001', body: 'Zertifiziert' },
+  { Icon: ShieldCheck, title: 'ISO 27001', body: 'Security by Design' },
   { Icon: Globe, title: 'Made in EU', body: 'Hosting in Europa' },
   { Icon: FileCheck2, title: 'Auditierbar', body: 'Lückenlos dokumentiert' },
   { Icon: Network, title: 'API & Integrationen', body: 'Nahtlos verbunden' },
@@ -353,29 +353,28 @@ function Hero() {
             </div>
           </Reveal>
 
-          {/* Social Proof */}
+          {/* Social Proof — ehrliche Beta-/Founding-Positionierung (keine
+              unbelegten Kundenzahlen oder Bewertungen) */}
           <Reveal delay={0.25}>
             <div className="mt-8 flex items-center gap-3">
               <div className="flex -space-x-2">
                 {[0, 1, 2, 3].map((i) => (
                   <span
                     key={i}
-                    className="grid h-8 w-8 place-items-center rounded-full border-2 border-obsidian-950 bg-gradient-to-br from-petrol-400 to-security-500 text-[10px] font-semibold text-obsidian-950"
+                    className="grid h-8 w-8 place-items-center rounded-full border-2 border-obsidian-950 bg-gradient-to-br from-petrol-400 to-security-500"
                   >
                     <User className="h-3.5 w-3.5 text-obsidian-950/80" />
                   </span>
                 ))}
-                <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-obsidian-950 bg-white/10 font-mono text-[9px] font-semibold text-titanium-200">
-                  +2.4k
+                <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-obsidian-950 bg-white/10 font-mono text-[9px] font-semibold text-petrol-200">
+                  EU
                 </span>
               </div>
               <div>
-                <div className="flex items-center gap-0.5 text-amber-400">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <Star key={i} className="h-3.5 w-3.5 fill-current" />
-                  ))}
-                </div>
-                <p className="mt-0.5 text-xs text-titanium-400">Über 2.400 Unternehmen vertrauen RealSync</p>
+                <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-titanium-100">
+                  <Sparkles className="h-3.5 w-3.5 text-petrol-300" /> Founding Cohort · Early Access
+                </p>
+                <p className="mt-0.5 text-xs text-titanium-400">Governance für Europas Unternehmen — jetzt dabei sein.</p>
               </div>
             </div>
           </Reveal>

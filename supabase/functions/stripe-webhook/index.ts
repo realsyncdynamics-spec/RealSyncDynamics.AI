@@ -107,6 +107,30 @@ Deno.serve(async (req) => {
         break;
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Fallback-Freischaltung: Subscription sofort aus der Session nachziehen.
+        // Falls `customer.subscription.created` nicht abonniert ist oder ein
+        // Race auftritt, würde der Kunde sonst zahlen, ohne dass eine Zeile in
+        // `subscriptions` (= Feature-Gating-Quelle) entsteht. Hier ziehen wir
+        // sie verlässlich nach. Idempotent via upsert on stripe_subscription_id.
+        if (session.mode === 'subscription' && session.subscription) {
+          const subId = typeof session.subscription === 'string'
+            ? session.subscription
+            : session.subscription.id;
+          try {
+            const sub = await stripe.subscriptions.retrieve(subId, { expand: ['customer'] });
+            // tenant_id ist normalerweise via subscription_data.metadata gesetzt;
+            // falls nicht, aus der Session-Metadata übernehmen.
+            if (!sub.metadata?.tenant_id && session.metadata?.tenant_id) {
+              sub.metadata = { ...(sub.metadata ?? {}), tenant_id: session.metadata.tenant_id };
+            }
+            await syncSubscription(admin, sub);
+          } catch (e) {
+            // Nicht fatal: der reguläre customer.subscription.* Handler zieht
+            // ohnehin nach. Loggen statt den Webhook scheitern zu lassen
+            // (sonst Retry → ggf. doppelte Onboarding-Mail).
+            console.error(`checkout.session.completed sub-sync fallback failed for ${subId}: ${(e as Error).message}`);
+          }
+        }
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
         await reportPurchaseToAdPlatforms(session, req);

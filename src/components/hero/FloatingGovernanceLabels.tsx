@@ -9,7 +9,17 @@
  */
 import { motion, useReducedMotion } from 'motion/react';
 import { User } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+
+/** Live hochzählender Evidence-Zähler (Beispiel-Telemetrie, „Nachweise"). */
+function useEvidenceCount(start = 1248): string {
+  const [n, setN] = useState(start);
+  useEffect(() => {
+    const id = window.setInterval(() => setN((v) => v + 1 + Math.floor(Math.random() * 3)), 2600);
+    return () => window.clearInterval(id);
+  }, []);
+  return n.toLocaleString('de-DE');
+}
 
 interface LabelDef {
   id: string;
@@ -21,13 +31,15 @@ interface LabelDef {
   hideSm?: boolean;
 }
 
-const LABELS: LabelDef[] = [
-  { id: 'dsgvo', title: 'DSGVO', value: 'Compliance', pos: { top: '14%', left: '44%' } },
-  { id: 'risk', title: 'Risk Score', value: (<span><span className="text-2xl font-bold tabular-nums text-titanium-50">87</span><span className="ml-1 text-titanium-500">/100</span></span>), pos: { top: '36%', right: '-2%' } },
-  { id: 'aiact', title: 'EU AI Act', value: <span className="font-semibold text-petrol-300">READY</span>, pos: { top: '58%', right: '-4%' }, hideSm: true },
-  { id: 'evidence', title: 'Evidence', value: (<span><span className="text-lg font-bold tabular-nums text-titanium-50">1.248</span><span className="ml-1.5 text-[11px] text-titanium-500">Nachweise</span></span>), pos: { top: '62%', left: '2%' } },
-  { id: 'monitoring', title: 'Monitoring', value: 'live-wave', pos: { bottom: '6%', left: '38%' }, hideSm: true },
-];
+function buildLabels(evidence: string): LabelDef[] {
+  return [
+    { id: 'dsgvo', title: 'DSGVO', value: 'Compliance', pos: { top: '14%', left: '44%' } },
+    { id: 'risk', title: 'Risk Score', value: (<span><span className="text-2xl font-bold tabular-nums text-titanium-50">87</span><span className="ml-1 text-titanium-500">/100</span></span>), pos: { top: '36%', right: '-2%' } },
+    { id: 'aiact', title: 'EU AI Act', value: <span className="font-semibold text-petrol-300">READY</span>, pos: { top: '58%', right: '-4%' }, hideSm: true },
+    { id: 'evidence', title: 'Evidence', value: (<span><span className="text-lg font-bold tabular-nums text-titanium-50">{evidence}</span><span className="ml-1.5 text-[11px] text-titanium-500">Nachweise</span></span>), pos: { top: '62%', left: '2%' } },
+    { id: 'monitoring', title: 'Monitoring', value: 'live-wave', pos: { bottom: '6%', left: '38%' }, hideSm: true },
+  ];
+}
 
 // User-Nodes (Personen-Icons) — Skalierungs-Idee „globale Nutzer".
 const NODES: Array<{ top?: string; bottom?: string; left?: string; right?: string; hideSm?: boolean }> = [
@@ -75,9 +87,11 @@ function GlassCard({ def, index, reduce }: { def: LabelDef; index: number; reduc
 
 export function FloatingGovernanceLabels() {
   const reduce = useReducedMotion();
+  const evidence = useEvidenceCount();
+  const labels = buildLabels(evidence);
   return (
     <div className="pointer-events-none absolute inset-0">
-      {LABELS.map((def, i) => (
+      {labels.map((def, i) => (
         <GlassCard key={def.id} def={def} index={i} reduce={reduce} />
       ))}
 

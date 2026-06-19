@@ -93,6 +93,21 @@ function makeRadialTexture(inner: string, mid: string): THREE.CanvasTexture {
   return t;
 }
 
+function makeRingTexture(): THREE.CanvasTexture {
+  const size = 128;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.strokeStyle = 'rgba(125,255,232,1)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2 - 8, 0, Math.PI * 2);
+  ctx.stroke();
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
 function makeGalaxyTexture(): THREE.CanvasTexture {
   const size = 256;
   const c = document.createElement('canvas');
@@ -539,6 +554,37 @@ function Moon() {
   );
 }
 
+// ── Radar-Ping: expandierende Scan-Ringe über Deutschland/Europa ─────
+
+function RadarPing() {
+  const tex = useMemo(() => makeRingTexture(), []);
+  const pos = useMemo(
+    () => latLonToVec3(51, 10, 1.02).applyAxisAngle(new THREE.Vector3(0, 1, 0), EUROPE_ROT_Y),
+    [],
+  );
+  const refs = useRef<Array<THREE.Sprite | null>>([]);
+  const N = 3;
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    refs.current.forEach((s, i) => {
+      if (!s) return;
+      const phase = (t * 0.32 + i / N) % 1;
+      const sc = 0.05 + phase * 0.55;
+      s.scale.setScalar(sc);
+      (s.material as THREE.SpriteMaterial).opacity = (1 - phase) * 0.65;
+    });
+  });
+  return (
+    <group position={pos}>
+      {Array.from({ length: N }).map((_, i) => (
+        <sprite key={i} ref={(el) => { refs.current[i] = el; }}>
+          <spriteMaterial map={tex} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+        </sprite>
+      ))}
+    </group>
+  );
+}
+
 // ── Erd-Gruppe (Tilt) ────────────────────────────────────────────────
 
 function EarthSystem() {
@@ -548,6 +594,7 @@ function EarthSystem() {
       <Clouds />
       <Atmosphere />
       <NetworkLayer />
+      <RadarPing />
     </group>
   );
 }
@@ -560,7 +607,7 @@ function PostFX() {
     const c = new EffectComposer(gl);
     c.addPass(new RenderPass(scene, camera));
     // strength, radius, threshold — nur helle Highlights glühen lassen
-    c.addPass(new UnrealBloomPass(new THREE.Vector2(size.width, size.height), 0.62, 0.5, 0.82));
+    c.addPass(new UnrealBloomPass(new THREE.Vector2(size.width, size.height), 0.55, 0.42, 0.86));
     return c;
   }, [gl, scene, camera]); // size via setSize unten
   useEffect(() => {

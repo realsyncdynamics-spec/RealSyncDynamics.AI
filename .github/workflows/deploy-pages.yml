@@ -131,6 +131,16 @@ jobs:
           print(f'spa-fallback: {filled} filled · {skipped} kept-prerendered')
           PY
           ls -la dist/
+      - name: Inject deterministic /pricing body content
+        # scripts/inject-pricing-body.mts schreibt die Tarif-Karten (Namen,
+        # Preise, Bullets, CTAs) aus der Single-Source-of-Truth
+        # src/config/pricing.ts statisch ins <div id="root"> von
+        # dist/pricing/index.html — browser-unabhaengig. Noetig, weil der
+        # Playwright-Prerender im CI nicht zuverlaessig hydriert und dann der
+        # eigentliche Pricing-Content client-only bleibt (Befund 1). Laeuft
+        # NACH dem SPA-Fallback (Datei existiert garantiert) und fuellt nur ein
+        # LEERES #root — vorhandener Prerender-Content bleibt unangetastet.
+        run: npx tsx scripts/inject-pricing-body.mts
       - name: Inject deterministic per-route SEO <head> tags
         # scripts/inject-seo-head.mts schreibt title/description/canonical/OG
         # je Route aus der Single-Source-of-Truth src/config/seo.ts in jede

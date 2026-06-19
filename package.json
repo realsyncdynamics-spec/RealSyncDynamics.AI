@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
-    "build:full": "vite build && npm run prerender && npm run seo:inject",
+    "build:full": "vite build && npm run prerender && npm run pricing:inject && npm run seo:inject",
     "prerender": "node scripts/prerender.mjs",
+    "pricing:inject": "tsx scripts/inject-pricing-body.mts",
     "seo:inject": "tsx scripts/inject-seo-head.mts",
     "preview": "vite preview",
     "clean": "rm -rf dist",

@@ -14,7 +14,9 @@ import {
   buildClosePatch,
   buildCreate,
   buildUpdatePatch,
+  isErasure,
   isWriterRole,
+  normalizeExportRequest,
   sanitizeAssets,
 } from '../../supabase/functions/governance-dsr/logic';
 
@@ -101,5 +103,29 @@ describe('governance-dsr logic — guards', () => {
     expect(isWriterRole('member')).toBe(true);
     expect(isWriterRole('viewer')).toBe(false);
     expect(isWriterRole(null)).toBe(false);
+  });
+});
+
+describe('governance-dsr logic — erasure enqueue gate', () => {
+  it('only erasure enqueues the subject', () => {
+    expect(isErasure('erasure')).toBe(true);
+    expect(isErasure('access')).toBe(false);
+    expect(isErasure('portability')).toBe(false);
+    expect(isErasure(undefined)).toBe(false);
+  });
+});
+
+describe('governance-dsr logic — normalizeExportRequest (Art. 15)', () => {
+  it('prefers a DSR id when both are present', () => {
+    expect(normalizeExportRequest({ id: 'dsr-1', subject_ref: 'abcd1234ef' })).toEqual({ by: 'id', value: 'dsr-1' });
+  });
+  it('accepts a raw subject_ref', () => {
+    expect(normalizeExportRequest({ subject_ref: 'abcd1234ef' })).toEqual({ by: 'subject_ref', value: 'abcd1234ef' });
+  });
+  it('rejects a too-short subject_ref', () => {
+    expect(normalizeExportRequest({ subject_ref: 'short' }).error).toMatch(/subject_ref/);
+  });
+  it('rejects an empty request', () => {
+    expect(normalizeExportRequest({}).error).toMatch(/id or subject_ref/);
   });
 });

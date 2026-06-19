@@ -171,6 +171,11 @@ verify_jwt = false
 [functions.agent-os-runner]
 verify_jwt = false
 
+# governance-erasure-sweeper: pg_cron-triggered (daily 03:00 UTC). No user JWT;
+# validates a Vault bearer token (governance_erasure_sweeper_token) itself.
+[functions.governance-erasure-sweeper]
+verify_jwt = false
+
 [functions.business-metrics-cron]
 verify_jwt = false
 

@@ -602,15 +602,22 @@ const TAB_LABELS: Record<AssetTab, string> = {
 
 export function MonitoringRuntimeView() {
   const { activeTenantId } = useTenant();
-  const [assetCount, setAssetCount] = useState<string>('18');
-  const [alertCount, setAlertCount] = useState<string>('4');
-  const [lastCheck, setLastCheck] = useState<string>('vor 3 Min.');
+  // Echte Werte: Default '–' statt fabrizierter Zahlen. Erst nach dem Laden
+  // werden reale Counts gesetzt; ohne Tenant/Daten bleibt '–' sichtbar.
+  const [assetCount, setAssetCount] = useState<string>('–');
+  const [alertCount, setAlertCount] = useState<string>('–');
+  const [lastCheck, setLastCheck] = useState<string>('–');
   const [activeTab, setActiveTab] = useState<AssetTab>('websites');
 
   useEffect(() => {
-    if (!activeTenantId) return;
+    if (!activeTenantId) {
+      setAssetCount('–');
+      setAlertCount('–');
+      setLastCheck('–');
+      return;
+    }
     fetchTenantAssets(activeTenantId).then((a) => {
-      if (a.length > 0) setAssetCount(String(a.length));
+      setAssetCount(String(a.length));
     }).catch(() => {});
     countOpenIncidents(activeTenantId).then((n) => setAlertCount(String(n))).catch(() => {});
     fetchTenantEvents(activeTenantId, 1).then((evs) => {
@@ -621,6 +628,8 @@ export function MonitoringRuntimeView() {
           : diffMin < 1440 ? `vor ${Math.floor(diffMin / 60)} Std.`
           : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
         setLastCheck(ts);
+      } else {
+        setLastCheck('Keine Prüfung');
       }
     }).catch(() => {});
   }, [activeTenantId]);
@@ -652,15 +661,22 @@ export function MonitoringRuntimeView() {
         {/* Metriken-Reihe */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-titanium-900">
           <MetricCard label="Überwachte Assets" value={assetCount} />
-          <MetricCard label="Scans heute"        value="142" />
+          <MetricCard label="Scans heute"        value="–" />
           <MetricCard label="Aktive Alerts"      value={alertCount} valueClass="text-red-400" />
           <MetricCard label="Letzte Prüfung"     value={lastCheck} valueClass="text-teal-400" />
-          <MetricCard label="Nächste Prüfung"    value="07:45" />
+          <MetricCard label="Nächste Prüfung"    value="–" />
         </div>
       </section>
 
       {/* ── Sektion 2: Asset Monitoring Status (Tabs) ── */}
       <section className="border-b border-titanium-900">
+        {/* Ehrlichkeits-Hinweis: Die folgenden Tabs/Panels zeigen noch
+            Beispieldaten (statische Tabellen), bis die Live-Verdrahtung pro
+            Asset-Typ steht. So wird der eingeloggte Nutzer nicht über echte
+            Monitoring-Zahlen getäuscht. Folge-Issue: Live-Wiring der Tabs. */}
+        <div className="mx-6 mt-4 border border-amber-900/60 bg-amber-950/20 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-amber-400">
+          Beispielansicht · Live-Daten pro Asset-Typ in Vorbereitung
+        </div>
         {/* Tab-Leiste */}
         <div className="flex border-b border-titanium-900 px-6 pt-4">
           {(Object.keys(TAB_LABELS) as AssetTab[]).map((tab) => (

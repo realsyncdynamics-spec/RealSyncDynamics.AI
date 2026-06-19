@@ -83,437 +83,18 @@ const STATUS_CFG: Record<Status, { cls: string; icon: React.ReactNode }> = {
 
 const SEVERITY_ORDER: Record<Severity, number> = { Kritisch: 0, Hoch: 1, Mittel: 2, Niedrig: 3 };
 
-// ─── Mock-Daten ─────────────────────────────────────────────────────────────
-const RISKS: Risk[] = [
-  // KRITISCH (3)
-  {
-    id: 'risk-001',
-    severity: 'Kritisch',
-    title: 'Meta Pixel ohne Einwilligung auf app.atelier-nord.de',
-    category: 'Cookie & Consent',
-    framework: 'DSGVO Art. 6 · TTDSG §25',
-    systems: ['app.atelier-nord.de'],
-    description: 'Meta Pixel wird unabhängig vom Consent-Status geladen. Tracking-Daten fließen vor Einwilligung nach Meta (USA). Sofortige Abstellung erforderlich.',
-    status: 'Offen',
-    actions: ['Consent-Mode v2 aktivieren', 'Tag-Trigger an analytics_storage = granted koppeln', 'Meta Pixel Test ohne Consent durchführen'],
-    evidence: ['ev-005', 'ev-007'],
-    detectedAt: '14.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '21.06.2026',
-    probability: 'Hoch',
-    impact: 'Hoch',
-  },
-  {
-    id: 'risk-002',
-    severity: 'Kritisch',
-    title: 'CV-Screening KI ohne Konformitätsbewertung im Betrieb',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 6 · Anhang III',
-    systems: ['HR-AI Suite v4.1', 'Team People'],
-    description: 'Hochrisiko-KI-System gemäß EU AI Act Anhang III (Beschäftigung) wird ohne vollständige Konformitätsbewertung betrieben. Bußgeld bis 30 Mio. € oder 6% Jahresumsatz.',
-    status: 'In Bearbeitung',
-    actions: ['Konformitätsbewertung beauftragen', 'Technische Dokumentation vervollständigen', 'Benannte Stelle konsultieren', 'Registrierung EU-KI-Datenbank vorbereiten'],
-    evidence: ['ev-011', 'ev-016'],
-    detectedAt: '09.06.2026',
-    owner: 'Markus Brandt',
-    dueDate: '01.08.2026',
-    probability: 'Hoch',
-    impact: 'Hoch',
-  },
-  {
-    id: 'risk-003',
-    severity: 'Kritisch',
-    title: 'Fehlende Rechtsgrundlage für Profiling im Shop',
-    category: 'DSGVO Art. 6',
-    framework: 'DSGVO Art. 6 · Art. 22',
-    systems: ['shop.atelier-nord.de', 'Produktempfehlung Shop'],
-    description: 'Automatisierte Entscheidung durch Empfehlungsalgorithmus ohne explizite Einwilligung oder AVV. Betrifft EU-Nutzer mit Kaufhistorie-Verarbeitung.',
-    status: 'Offen',
-    actions: ['Einwilligung für Profiling einholen', 'Widerspruchsrecht implementieren', 'Datenschutzerklärung erweitern'],
-    evidence: [],
-    detectedAt: '12.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '30.06.2026',
-    probability: 'Mittel',
-    impact: 'Hoch',
-  },
-  // HOCH (6)
-  {
-    id: 'risk-004',
-    severity: 'Hoch',
-    title: 'Cookie-Banner ohne granulare Kategorien — blog.atelier-nord.de',
-    category: 'Cookie & Consent',
-    framework: 'TTDSG §25 · DSGVO Art. 7',
-    systems: ['blog.atelier-nord.de'],
-    description: 'Nur „Alle akzeptieren" oder „Alle ablehnen" möglich. Getrennte Ablehnung nach Kategorie (Analytics, Marketing) fehlt. EuGH-Rechtsprechung Planet49 missachtet.',
-    status: 'In Bearbeitung',
-    actions: ['Cookie-Banner auf Kategorien umstellen', 'Marketing-Cookies separat ablehnbar machen', 'Banner-Screenshot als Nachweis erstellen'],
-    evidence: ['ev-013'],
-    detectedAt: '07.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '20.06.2026',
-    probability: 'Hoch',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-005',
-    severity: 'Hoch',
-    title: 'Drittlandtransfer US-CDN ohne SCC — atelier-nord.de',
-    category: 'Drittlandtransfer',
-    framework: 'DSGVO Art. 44 · Art. 46',
-    systems: ['atelier-nord.de'],
-    description: 'Google Fonts werden direkt von fonts.googleapis.com (USA) geladen. IP-Adressen der EU-Nutzer werden dabei übertragen. Kein SCC-Nachweis vorhanden.',
-    status: 'Offen',
-    actions: ['Google Fonts lokal hosten', 'oder Transfer Impact Assessment durchführen', 'SCC mit Google LLC abschließen und dokumentieren'],
-    evidence: ['ev-007'],
-    detectedAt: '13.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '27.06.2026',
-    probability: 'Hoch',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-006',
-    severity: 'Hoch',
-    title: 'DSFA für Empfehlungsalgorithmus nicht durchgeführt',
-    category: 'DSGVO Art. 6',
-    framework: 'DSGVO Art. 35',
-    systems: ['shop.atelier-nord.de', 'Produktempfehlung Shop'],
-    description: 'Datenschutz-Folgenabschätzung für systematisches Profiling im Shop wurde nicht durchgeführt, obwohl Art. 35 Abs. 3 lit. a) sie vorschreibt.',
-    status: 'In Bearbeitung',
-    actions: ['DSFA-Wizard starten', 'Verarbeitungszwecke dokumentieren', 'Risikobewertung durch DPO'],
-    evidence: [],
-    detectedAt: '11.06.2026',
-    owner: 'Markus Brandt',
-    dueDate: '15.07.2026',
-    probability: 'Mittel',
-    impact: 'Hoch',
-  },
-  {
-    id: 'risk-007',
-    severity: 'Hoch',
-    title: 'Veraltete Sub-Prozessoren in Datenschutzerklärung',
-    category: 'Dokumentation',
-    framework: 'DSGVO Art. 13 · Art. 14',
-    systems: ['atelier-nord.de'],
-    description: 'Mailchimp noch als Sub-Prozessor gelistet, obwohl auf Brevo gewechselt. Datenschutzerklärung spiegelt die tatsächliche Verarbeitung nicht wider.',
-    status: 'Offen',
-    actions: ['DSE sub-Prozessoren-Liste aktualisieren', 'Brevo AVV prüfen und dokumentieren', 'Website-Update deployen'],
-    evidence: ['ev-006'],
-    detectedAt: '08.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '22.06.2026',
-    probability: 'Mittel',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-008',
-    severity: 'Hoch',
-    title: 'Google Analytics vor Consent-Bestätigung (Δt = -2.3s)',
-    category: 'Cookie & Consent',
-    framework: 'DSGVO Art. 6 · TTDSG §25',
-    systems: ['blog.atelier-nord.de'],
-    description: 'GA4 feuert Events 2.3 Sekunden vor Consent-Interaktion. Pre-Consent-Tracking liegt vor. Messung bestätigt durch Network Trace.',
-    status: 'Offen',
-    actions: ['Consent-Mode v2 aktivieren', 'GA4 Tag-Trigger auf Consent-Signal setzen', 'Consent-Timing-Test wiederholen'],
-    evidence: ['ev-014'],
-    detectedAt: '06.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '20.06.2026',
-    probability: 'Hoch',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-009',
-    severity: 'Hoch',
-    title: 'Fraud Detection ohne vollständige Konformitätsdokumentation',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 6 · Art. 11',
-    systems: ['FraudGuard API v2'],
-    description: 'Hochrisiko-KI (Bonitätsprüfung/Zahlungssicherheit) ohne vollständige technische Dokumentation. 5 von 12 Konformitätspflichten noch offen.',
-    status: 'In Bearbeitung',
-    actions: ['Technische Dokumentation des Anbieters anfordern', 'Konformitätsbewertung koordinieren', 'Post-Market Monitoring-Plan erstellen'],
-    evidence: [],
-    detectedAt: '07.06.2026',
-    owner: 'Markus Brandt',
-    dueDate: '31.07.2026',
-    probability: 'Mittel',
-    impact: 'Hoch',
-  },
-  // MITTEL (9)
-  {
-    id: 'risk-010',
-    severity: 'Mittel',
-    title: 'VVT-Aktualisierung nach Anbieter-Wechsel ausstehend',
-    category: 'Dokumentation',
-    framework: 'DSGVO Art. 30',
-    systems: ['Organisation'],
-    description: 'Verarbeitungsverzeichnis enthält noch Mailchimp, nicht Brevo. Art. 30 fordert aktuelles VVT.',
-    status: 'Offen',
-    actions: ['VVT-Wizard aufrufen', 'Sub-Prozessoren aktualisieren', 'Version freigeben und signieren'],
-    evidence: ['ev-017'],
-    detectedAt: '08.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '30.06.2026',
-    probability: 'Niedrig',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-011',
-    severity: 'Mittel',
-    title: 'Chatbot ohne sichtbaren Transparenzhinweis "KI"',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 52',
-    systems: ['Support-Chatbot "Kodee"'],
-    description: 'Nutzer können nicht sofort erkennen, dass sie mit einer KI interagieren. Transparenzpflicht nach Art. 52 EU AI Act verletzt.',
-    status: 'In Bearbeitung',
-    actions: ['Hinweis "Dieser Chat wird von KI unterstützt" hinzufügen', 'UI-Anpassung deployen'],
-    evidence: [],
-    detectedAt: '09.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '10.07.2026',
-    probability: 'Mittel',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-012',
-    severity: 'Mittel',
-    title: 'Referrer-Policy fehlt auf atelier-nord.de',
-    category: 'Technische Sicherheit',
-    framework: 'DSGVO Art. 32 · OWASP',
-    systems: ['atelier-nord.de'],
-    description: 'Kein Referrer-Policy Header gesetzt. Interne URLs könnten an Dritte weitergegeben werden.',
-    status: 'Offen',
-    actions: ['Referrer-Policy: strict-origin-when-cross-origin setzen', 'nginx/Traefik Config anpassen'],
-    evidence: ['ev-018'],
-    detectedAt: '02.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '30.06.2026',
-    probability: 'Niedrig',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-013',
-    severity: 'Mittel',
-    title: 'AVV-Prüfung neue Sub-Prozessoren ausstehend',
-    category: 'Dokumentation',
-    framework: 'DSGVO Art. 28',
-    systems: ['Organisation'],
-    description: '3 neue Dienstleister (Brevo, Vercel, Cloudflare) benötigen AVV-Update. Verträge vorhanden, aber Anlage A (Verarbeitungstätigkeiten) veraltet.',
-    status: 'In Bearbeitung',
-    actions: ['AVV-Generator für Brevo starten', 'Vercel DPA prüfen', 'Cloudflare DPA ergänzen'],
-    evidence: ['ev-015'],
-    detectedAt: '05.06.2026',
-    owner: 'Markus Brandt',
-    dueDate: '15.08.2026',
-    probability: 'Niedrig',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-014',
-    severity: 'Mittel',
-    title: 'EU AI Act Schulung für Produktteam fehlt',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 4',
-    systems: ['Organisation', 'Team Commerce', 'Team People'],
-    description: 'KI-Kompetenz-Schulung für alle Mitarbeitenden, die KI-Systeme entwickeln oder einsetzen, noch nicht durchgeführt (Pflicht ab 02.08.2026).',
-    status: 'Offen',
-    actions: ['Schulungsplan erstellen', 'E-Learning-Modul beauftragen', 'Teilnahme dokumentieren'],
-    evidence: [],
-    detectedAt: '04.06.2026',
-    owner: 'Sofia Pereira',
-    dueDate: '30.09.2026',
-    probability: 'Niedrig',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-015',
-    severity: 'Mittel',
-    title: 'Neuer Tracker analytics.partner.io auf shop.atelier-nord.de',
-    category: 'Cookie & Consent',
-    framework: 'TTDSG §25 · DSGVO Art. 6',
-    systems: ['shop.atelier-nord.de'],
-    description: 'Unbekanntes Skript analytics.partner.io wurde neu eingebunden. Zweck und Anbieter nicht dokumentiert.',
-    status: 'Offen',
-    actions: ['Anbieter identifizieren', 'Einwilligung prüfen oder Skript entfernen', 'Datenschutzerklärung aktualisieren'],
-    evidence: [],
-    detectedAt: '12.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '19.06.2026',
-    probability: 'Mittel',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-016',
-    severity: 'Mittel',
-    title: 'DSFA für Fraud Detection nicht initiiert',
-    category: 'DSGVO Art. 6',
-    framework: 'DSGVO Art. 35',
-    systems: ['FraudGuard API v2'],
-    description: 'Automatisierte Entscheidungsfindung bei Zahlungen erfordert DSFA nach Art. 35 Abs. 3.',
-    status: 'Offen',
-    actions: ['DSFA-Fragebogen für Zahlungssysteme starten'],
-    evidence: [],
-    detectedAt: '07.06.2026',
-    owner: 'Markus Brandt',
-    dueDate: '01.08.2026',
-    probability: 'Niedrig',
-    impact: 'Mittel',
-  },
-  {
-    id: 'risk-017',
-    severity: 'Mittel',
-    title: 'Content-Moderations-KI ohne Nutzer-Information',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 52',
-    systems: ['Content-Moderations-KI'],
-    description: 'Nutzergenerierte Inhalte werden automatisch moderiert ohne Hinweis an betroffene Nutzer.',
-    status: 'In Bearbeitung',
-    actions: ['Transparenzhinweis in Community Guidelines ergänzen', 'Einspruchsverfahren definieren'],
-    evidence: [],
-    detectedAt: '05.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '20.07.2026',
-    probability: 'Mittel',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-018',
-    severity: 'Mittel',
-    title: 'SSL-Zertifikat partner.atelier-nord.de läuft in 45 Tagen ab',
-    category: 'Technische Sicherheit',
-    framework: 'DSGVO Art. 32',
-    systems: ['partner.atelier-nord.de'],
-    description: 'Zertifikat läuft am 31.07.2026 ab. Keine automatische Erneuerung konfiguriert.',
-    status: 'Offen',
-    actions: ["Let's Encrypt Auto-Renewal konfigurieren", 'Monitoring-Alert setzen'],
-    evidence: [],
-    detectedAt: '16.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '25.07.2026',
-    probability: 'Hoch',
-    impact: 'Niedrig',
-  },
-  // NIEDRIG (6)
-  {
-    id: 'risk-019',
-    severity: 'Niedrig',
-    title: 'Datenschutzerklärung ohne Aktualisierungsdatum',
-    category: 'Dokumentation',
-    framework: 'DSGVO Art. 13',
-    systems: ['atelier-nord.de'],
-    description: 'DSE zeigt kein „Stand: …"-Datum. Best Practice Verletzung, aber kein unmittelbarer Verstoß.',
-    status: 'Offen',
-    actions: ['Stand-Datum einfügen', 'Changelog-Abschnitt ergänzen'],
-    evidence: [],
-    detectedAt: '14.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '30.07.2026',
-    probability: 'Niedrig',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-020',
-    severity: 'Niedrig',
-    title: 'Cookie-Anzahl um 1 gestiegen — atelier-nord.de',
-    category: 'Cookie & Consent',
-    framework: 'TTDSG §25',
-    systems: ['atelier-nord.de'],
-    description: 'Monitoring erkannte Cookie-Count von 11 auf 12 gestiegen. Neues Cookie noch nicht klassifiziert.',
-    status: 'In Bearbeitung',
-    actions: ['Neues Cookie identifizieren und kategorisieren', 'Cookie-Banner ggf. aktualisieren'],
-    evidence: ['ev-003'],
-    detectedAt: '15.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '30.06.2026',
-    probability: 'Niedrig',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-021',
-    severity: 'Niedrig',
-    title: 'Impressum-Angaben auf Unterseiten unvollständig',
-    category: 'Dokumentation',
-    framework: 'TMG §5',
-    systems: ['blog.atelier-nord.de'],
-    description: 'Impressum fehlt im Footer des Blogs. TMG §5 fordert leicht auffindbare Anbieterkennzeichnung auf jeder Seite.',
-    status: 'Offen',
-    actions: ['Impressum-Link im Blog-Footer ergänzen'],
-    evidence: [],
-    detectedAt: '10.06.2026',
-    owner: 'Lena Vogel',
-    dueDate: '25.06.2026',
-    probability: 'Niedrig',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-022',
-    severity: 'Niedrig',
-    title: 'Churn-Prognose-KI ohne Verhaltenskodex-Dokumentation',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 95',
-    systems: ['Churn Model v1.2'],
-    description: 'Minimales-Risiko-KI-System ohne freiwilligen Verhaltenskodex. Empfehlung: Kodex implementieren.',
-    status: 'Offen',
-    actions: ['Freiwilligen Verhaltenskodex für Minimal-Risiko-KI erstellen'],
-    evidence: [],
-    detectedAt: '01.06.2026',
-    owner: 'Sofia Pereira',
-    dueDate: '30.09.2026',
-    probability: 'Niedrig',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-023',
-    severity: 'Niedrig',
-    title: 'X-Content-Type-Options fehlt auf partner.atelier-nord.de',
-    category: 'Technische Sicherheit',
-    framework: 'DSGVO Art. 32 · OWASP',
-    systems: ['partner.atelier-nord.de'],
-    description: 'Security Header X-Content-Type-Options: nosniff nicht gesetzt. Niedriges MIME-Sniffing-Risiko.',
-    status: 'Offen',
-    actions: ['Header in Serverconfig ergänzen'],
-    evidence: [],
-    detectedAt: '12.06.2026',
-    owner: 'Tarek Younes',
-    dueDate: '30.07.2026',
-    probability: 'Niedrig',
-    impact: 'Niedrig',
-  },
-  {
-    id: 'risk-024',
-    severity: 'Niedrig',
-    title: 'SEO-Content-KI ohne Verhaltenskodex',
-    category: 'EU AI Act',
-    framework: 'EU AI Act Art. 95',
-    systems: ['SEO Content Assistant'],
-    description: 'claude-sonnet-4-6 für SEO-Texte ohne dokumentierten Verhaltenskodex.',
-    status: 'Akzeptiert',
-    actions: ['Verhaltenskodex optional erstellen'],
-    evidence: [],
-    detectedAt: '03.06.2026',
-    owner: 'Team Marketing',
-    dueDate: null,
-    probability: 'Niedrig',
-    impact: 'Niedrig',
-  },
-];
+// ─── Mock-Daten (entfernt) ───────────────────────────────────────────────────
+// Frueher stand hier ein hartkodiertes 24-Eintrag-RISKS-Array, das eingeloggten
+// Tenants ohne eigene Daten erfundene Risiken anzeigte. In einem Governance-/
+// Compliance-Tool ist fabriziertes Risiko-Reporting ein Vertrauens- und
+// Haftungsrisiko — daher entfernt. Die View laedt jetzt ausschliesslich echte
+// Incidents (fetchTenantIncidents) und rendert einen ehrlichen Empty-State.
 
 const CATEGORIES: Category[] = [
   'DSGVO Art. 6', 'Cookie & Consent', 'EU AI Act',
   'Drittlandtransfer', 'Technische Sicherheit', 'Dokumentation',
 ];
 
-const CATEGORY_COUNTS: Record<Category, number> = {
-  'DSGVO Art. 6': 5,
-  'Cookie & Consent': 6,
-  'EU AI Act': 4,
-  'Drittlandtransfer': 3,
-  'Technische Sicherheit': 3,
-  'Dokumentation': 3,
-};
-
-const CATEGORY_MAX = Math.max(...Object.values(CATEGORY_COUNTS));
 
 // ─── Heatmap-Daten: [wahrscheinlichkeit][auswirkung] → Risk-IDs ────────────
 // Reihenfolge: y = ['Hoch','Mittel','Niedrig'], x = ['Niedrig','Mittel','Hoch']
@@ -620,7 +201,12 @@ function RiskHeatmap({ risks }: { risks: Risk[] }) {
 }
 
 // Balkendiagramm Kategorie
-function CategoryBarChart() {
+function CategoryBarChart({ risks }: { risks: Risk[] }) {
+  const counts = CATEGORIES.reduce<Record<Category, number>>((acc, cat) => {
+    acc[cat] = risks.filter((r) => r.category === cat).length;
+    return acc;
+  }, {} as Record<Category, number>);
+  const max = Math.max(1, ...Object.values(counts));
   return (
     <div className="border border-titanium-900 bg-obsidian-900 p-4 flex flex-col gap-3">
       <div className="text-[11px] font-mono uppercase tracking-widest text-titanium-500">
@@ -628,8 +214,8 @@ function CategoryBarChart() {
       </div>
       <div className="flex flex-col gap-2.5">
         {CATEGORIES.map((cat) => {
-          const count = CATEGORY_COUNTS[cat];
-          const pct   = Math.round((count / CATEGORY_MAX) * 100);
+          const count = counts[cat];
+          const pct   = Math.round((count / max) * 100);
           return (
             <div key={cat} className="flex flex-col gap-0.5">
               <div className="flex items-center justify-between">
@@ -967,7 +553,9 @@ function incidentToRisk(inc: DbIncident): Risk {
 // ─── Haupt-View ─────────────────────────────────────────────────────────────
 export function RiskCenterView() {
   const { activeTenantId } = useTenant();
-  const [activeRisks, setActiveRisks] = useState<Risk[]>(RISKS);
+  const [activeRisks, setActiveRisks] = useState<Risk[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [severityFilter, setSeverityFilter] = useState<Severity | 'Alle'>('Alle');
   const [categoryFilter, setCategoryFilter] = useState<Category | 'Alle'>('Alle');
   const [statusFilter,   setStatusFilter]   = useState<Status | 'Alle'>('Alle');
@@ -975,10 +563,25 @@ export function RiskCenterView() {
   const [detailRisk,     setDetailRisk]     = useState<Risk | null>(null);
 
   useEffect(() => {
-    if (!activeTenantId) return;
+    if (!activeTenantId) {
+      setActiveRisks([]);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     fetchTenantIncidents(activeTenantId).then((incidents) => {
-      if (incidents.length > 0) setActiveRisks(incidents.map(incidentToRisk));
-    }).catch(() => {/* keep mock */});
+      if (cancelled) return;
+      setActiveRisks(incidents.map(incidentToRisk));
+    }).catch(() => {
+      if (cancelled) return;
+      setLoadError('Risiken konnten nicht geladen werden.');
+      setActiveRisks([]);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
   }, [activeTenantId]);
 
   const counts = useMemo(() => ({
@@ -1038,6 +641,19 @@ export function RiskCenterView() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
+        {/* ── Status-Hinweise (echte Datenlage, kein Mock) ── */}
+        {!activeTenantId && (
+          <div className="border border-titanium-800 bg-obsidian-900 px-4 py-3 text-[12px] font-mono text-titanium-400">
+            Kein aktiver Arbeitsbereich. Melde dich an und wähle eine Organisation,
+            um echte Risiken aus Scans und Vorfällen zu sehen.
+          </div>
+        )}
+        {loadError && (
+          <div className="border border-red-900 bg-red-950/30 px-4 py-3 text-[12px] font-mono text-red-300">
+            {loadError}
+          </div>
+        )}
+
         {/* ── Metrics Row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           <MetricCard label="Gesamt Risiken" value={counts.Gesamt}   colorCls="text-titanium-100" />
@@ -1050,7 +666,7 @@ export function RiskCenterView() {
         {/* ── Risk Priority Matrix + Kategorien ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <RiskHeatmap risks={activeRisks} />
-          <CategoryBarChart />
+          <CategoryBarChart risks={activeRisks} />
         </div>
 
         {/* ── Filterleiste ── */}
@@ -1151,7 +767,29 @@ export function RiskCenterView() {
         </div>
 
         {/* ── Risk-Liste ── */}
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="border border-titanium-900 bg-obsidian-900 py-16 flex flex-col items-center gap-3">
+            <Clock className="h-8 w-8 text-titanium-700 animate-pulse" />
+            <p className="text-sm text-titanium-500 font-mono">Risiken werden geladen …</p>
+          </div>
+        ) : activeRisks.length === 0 ? (
+          <div className="border border-titanium-900 bg-obsidian-900 py-16 flex flex-col items-center gap-3 text-center px-6">
+            <CheckCircle2 className="h-8 w-8 text-teal-600" />
+            <p className="text-sm text-titanium-300 font-mono">Keine Risiken erfasst</p>
+            <p className="text-[12px] text-titanium-500 max-w-md">
+              Sobald Scans laufen oder Vorfälle dokumentiert werden, erscheinen
+              hier die echten Risiken deiner Organisation — priorisiert nach Ampelsystem.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 mt-1">
+              <Link to="/app/scans" className="border border-titanium-700 hover:border-titanium-500 px-3 py-1.5 text-xs font-mono text-titanium-200">
+                Scan starten
+              </Link>
+              <Link to="/app/incidents" className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400">
+                Vorfall erfassen
+              </Link>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="border border-titanium-900 bg-obsidian-900 py-16 flex flex-col items-center gap-3">
             <AlertTriangle className="h-8 w-8 text-titanium-700" />
             <p className="text-sm text-titanium-500 font-mono">Keine Risiken für diesen Filter</p>

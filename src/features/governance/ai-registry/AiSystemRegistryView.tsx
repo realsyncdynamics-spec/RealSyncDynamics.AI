@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
+import { createAsset } from '../resourcesApi';
+import type { AiActClass } from '../types';
 import {
   ArrowLeft,
   Bot,
@@ -37,197 +39,6 @@ interface AiSystem {
   obligations: string[];
   obligationsDone: boolean[];
 }
-
-// ── Mock-Daten ─────────────────────────────────────────────────────────────────
-
-const AI_SYSTEMS: AiSystem[] = [
-  {
-    id: 'ais-001',
-    name: 'Produktempfehlung Shop',
-    description: 'Personalisierte Produktvorschläge im Checkout-Prozess auf Basis des Browserverhaltens',
-    provider: 'Intern',
-    model: 'Custom Recommendation Engine v2.3',
-    riskClass: 'Begrenzt',
-    scope: 'E-Commerce · Shop-Personalisierung',
-    owner: 'Team Commerce',
-    status: 'In Betrieb',
-    docProgress: 6,
-    docTotal: 8,
-    lastUpdated: '15.06.2026',
-    obligations: ['Transparenzhinweis', 'Nutzer-Information'],
-    obligationsDone: [true, true],
-  },
-  {
-    id: 'ais-002',
-    name: 'Support-Chatbot "Kodee"',
-    description: 'Automatisierte Erstantwort im Kundensupport, eskaliert bei komplexen Anfragen an Mensch',
-    provider: 'Anthropic',
-    model: 'claude-haiku-4-5-20251001',
-    riskClass: 'Begrenzt',
-    scope: 'Kundenservice · Erstantwort',
-    owner: 'Team Support',
-    status: 'In Betrieb',
-    docProgress: 8,
-    docTotal: 8,
-    lastUpdated: '10.06.2026',
-    obligations: ['Transparenzhinweis', 'Nutzer-Information'],
-    obligationsDone: [true, true],
-  },
-  {
-    id: 'ais-003',
-    name: 'CV-Screening HR-Tool',
-    description: 'Automatische Vorauswahl von Bewerbungsunterlagen anhand definierter Kriterien',
-    provider: 'Extern',
-    model: 'HR-AI Suite v4.1',
-    riskClass: 'Hoch',
-    scope: 'Human Resources · Recruiting',
-    owner: 'Team People',
-    status: 'In Betrieb',
-    docProgress: 4,
-    docTotal: 12,
-    lastUpdated: '09.06.2026',
-    obligations: [
-      'Konformitätsbewertung', 'Risikomanagement-System', 'Datenverwaltung',
-      'Technische Dokumentation', 'Transparenz', 'Menschliche Aufsicht',
-      'Robustheit & Sicherheit', 'Genauigkeit', 'Registrierung EU-Datenbank',
-      'Konformitätserklärung', 'CE-Kennzeichnung', 'Post-Market Monitoring',
-    ],
-    obligationsDone: [false, false, true, false, false, false, false, true, false, false, false, false],
-  },
-  {
-    id: 'ais-004',
-    name: 'Dynamic Pricing Engine',
-    description: 'Automatische Preisanpassung basierend auf Nachfrage, Wettbewerb und Lagerbestand',
-    provider: 'Intern',
-    model: 'Pricing ML v1.7',
-    riskClass: 'Begrenzt',
-    scope: 'E-Commerce · Preisgestaltung',
-    owner: 'Team Commerce',
-    status: 'In Betrieb',
-    docProgress: 5,
-    docTotal: 8,
-    lastUpdated: '08.06.2026',
-    obligations: ['Transparenzhinweis', 'Nutzer-Information'],
-    obligationsDone: [false, true],
-  },
-  {
-    id: 'ais-005',
-    name: 'Compliance Monitor',
-    description: 'KI-gestützte Überwachung von Website-Compliance und Datenschutz-Verstößen',
-    provider: 'RealSync',
-    model: 'Governance Engine v3',
-    riskClass: 'Minimal',
-    scope: 'Compliance · Monitoring',
-    owner: 'Team Compliance',
-    status: 'In Betrieb',
-    docProgress: 3,
-    docTotal: 3,
-    lastUpdated: '16.06.2026',
-    obligations: ['Freiwilliger Verhaltenskodex'],
-    obligationsDone: [true],
-  },
-  {
-    id: 'ais-006',
-    name: 'Fraud Detection',
-    description: 'Echtzeit-Erkennung von betrügerischen Transaktionen im Shop',
-    provider: 'Extern',
-    model: 'FraudGuard API v2',
-    riskClass: 'Hoch',
-    scope: 'Zahlungsabwicklung · Sicherheit',
-    owner: 'Team Commerce',
-    status: 'In Betrieb',
-    docProgress: 7,
-    docTotal: 12,
-    lastUpdated: '07.06.2026',
-    obligations: [
-      'Konformitätsbewertung', 'Risikomanagement-System', 'Datenverwaltung',
-      'Technische Dokumentation', 'Transparenz', 'Menschliche Aufsicht',
-      'Robustheit & Sicherheit', 'Genauigkeit', 'Registrierung EU-Datenbank',
-      'Konformitätserklärung', 'CE-Kennzeichnung', 'Post-Market Monitoring',
-    ],
-    obligationsDone: [true, true, true, true, false, true, true, false, false, false, false, false],
-  },
-  {
-    id: 'ais-007',
-    name: 'Content-Moderations-KI',
-    description: 'Automatische Prüfung von nutzergenerierten Inhalten auf Richtlinienkonformität',
-    provider: 'OpenAI',
-    model: 'gpt-4o-mini',
-    riskClass: 'Begrenzt',
-    scope: 'Content · Moderation',
-    owner: 'Team Platform',
-    status: 'In Betrieb',
-    docProgress: 7,
-    docTotal: 8,
-    lastUpdated: '05.06.2026',
-    obligations: ['Transparenzhinweis', 'Nutzer-Information'],
-    obligationsDone: [true, false],
-  },
-  {
-    id: 'ais-008',
-    name: 'Inventory Forecast',
-    description: 'Bestandsprognose und automatische Nachbestellungsempfehlungen',
-    provider: 'Intern',
-    model: 'Forecast ML v2.0',
-    riskClass: 'Minimal',
-    scope: 'Logistik · Bestandsmanagement',
-    owner: 'Team Operations',
-    status: 'In Betrieb',
-    docProgress: 3,
-    docTotal: 3,
-    lastUpdated: '04.06.2026',
-    obligations: ['Freiwilliger Verhaltenskodex'],
-    obligationsDone: [true],
-  },
-  {
-    id: 'ais-009',
-    name: 'SEO Content Assistant',
-    description: 'KI-Unterstützung bei der Erstellung von SEO-optimierten Produktbeschreibungen',
-    provider: 'Anthropic',
-    model: 'claude-sonnet-4-6',
-    riskClass: 'Minimal',
-    scope: 'Marketing · Content',
-    owner: 'Team Marketing',
-    status: 'In Betrieb',
-    docProgress: 3,
-    docTotal: 3,
-    lastUpdated: '03.06.2026',
-    obligations: ['Freiwilliger Verhaltenskodex'],
-    obligationsDone: [true],
-  },
-  {
-    id: 'ais-010',
-    name: 'Kundenabwanderungs-Prognose',
-    description: 'Vorhersage der Wahrscheinlichkeit, dass Kunden ihren Vertrag kündigen',
-    provider: 'Intern',
-    model: 'Churn Model v1.2',
-    riskClass: 'Minimal',
-    scope: 'CRM · Kundenbindung',
-    owner: 'Team Customer Success',
-    status: 'In Entwicklung',
-    docProgress: 1,
-    docTotal: 3,
-    lastUpdated: '01.06.2026',
-    obligations: ['Freiwilliger Verhaltenskodex'],
-    obligationsDone: [false],
-  },
-  {
-    id: 'ais-011',
-    name: 'Smart Email Campaign AI',
-    description: 'Automatische Personalisierung und Sendzeitoptimierung für E-Mail-Kampagnen',
-    provider: 'Extern',
-    model: 'Brevo AI',
-    riskClass: 'Minimal',
-    scope: 'Marketing · E-Mail',
-    owner: 'Team Marketing',
-    status: 'In Betrieb',
-    docProgress: 3,
-    docTotal: 3,
-    lastUpdated: '28.05.2026',
-    obligations: ['Freiwilliger Verhaltenskodex'],
-    obligationsDone: [true],
-  },
-];
 
 // ── Farb-Helfer ───────────────────────────────────────────────────────────────
 
@@ -296,18 +107,36 @@ type FilterTab = 'Alle' | 'Hoch-Risiko' | 'Begrenzt' | 'Minimal' | 'Ausstehend';
 
 export function AiSystemRegistryView() {
   const { activeTenantId } = useTenant();
-  const [activeAiSystems, setActiveAiSystems] = useState<AiSystem[]>(AI_SYSTEMS);
+  const [activeAiSystems, setActiveAiSystems] = useState<AiSystem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<FilterTab>('Alle');
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!activeTenantId) return;
+  const reload = React.useCallback(() => {
+    if (!activeTenantId) {
+      setActiveAiSystems([]);
+      setLoading(false);
+      return () => {};
+    }
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(null);
     fetchTenantAssets(activeTenantId).then((assets) => {
-      const aiAssets = assets.filter((a) => a.asset_type === 'ai_system').map(assetToAiSystem);
-      if (aiAssets.length > 0) setActiveAiSystems(aiAssets);
-    }).catch(() => {/* keep mock */});
+      if (cancelled) return;
+      setActiveAiSystems(assets.filter((a) => a.asset_type === 'ai_system').map(assetToAiSystem));
+    }).catch(() => {
+      if (cancelled) return;
+      setLoadError('KI-Systeme konnten nicht geladen werden.');
+      setActiveAiSystems([]);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
   }, [activeTenantId]);
+
+  useEffect(() => reload(), [reload]);
 
   const filtered = useMemo(() => {
     switch (activeTab) {
@@ -450,15 +279,52 @@ export function AiSystemRegistryView() {
           ))}
         </div>
 
+        {!activeTenantId && (
+          <div className="border border-titanium-800 bg-obsidian-900 px-4 py-3 font-mono text-[12px] text-titanium-400">
+            Kein aktiver Arbeitsbereich. Melde dich an und wähle eine Organisation,
+            um dein KI-System-Register zu sehen und zu pflegen.
+          </div>
+        )}
+        {loadError && (
+          <div className="border border-red-900 bg-red-950/30 px-4 py-3 font-mono text-[12px] text-red-300">
+            {loadError}
+          </div>
+        )}
+
         {/* System-Karten */}
         <div className="space-y-3">
-          {filtered.map((system) => (
-            <AiSystemCard key={system.id} system={system} />
-          ))}
-          {filtered.length === 0 && (
+          {loading ? (
             <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
-              <p className="text-sm text-titanium-400">Keine KI-Systeme in dieser Ansicht.</p>
+              <p className="font-mono text-sm text-titanium-500">KI-Systeme werden geladen …</p>
             </div>
+          ) : activeAiSystems.length === 0 ? (
+            <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
+              <Bot className="mx-auto mb-3 h-8 w-8 text-titanium-700" />
+              <p className="text-sm text-titanium-300">Noch keine KI-Systeme registriert</p>
+              <p className="mx-auto mt-1 max-w-md text-[12px] text-titanium-500">
+                Erfasse die KI-Systeme deiner Organisation, um sie nach EU-AI-Act-Risikoklassen
+                zu dokumentieren und nachweisbar zu machen.
+              </p>
+              {activeTenantId && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="mt-4 inline-flex items-center gap-1.5 border border-titanium-700 px-3 py-1.5 font-mono text-xs text-titanium-200 hover:border-titanium-500"
+                >
+                  <Plus className="h-3.5 w-3.5" /> KI-System registrieren
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {filtered.map((system) => (
+                <AiSystemCard key={system.id} system={system} />
+              ))}
+              {filtered.length === 0 && (
+                <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
+                  <p className="text-sm text-titanium-400">Keine KI-Systeme in dieser Ansicht.</p>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -497,12 +363,14 @@ export function AiSystemRegistryView() {
       </main>
 
       {/* Add Modal */}
-      {showAddModal && (
+      {showAddModal && activeTenantId && (
         <AddSystemModal
+          tenantId={activeTenantId}
           onClose={() => setShowAddModal(false)}
           onSaved={() => {
             setShowAddModal(false);
             showToast('KI-System gespeichert');
+            reload();
           }}
         />
       )}
@@ -688,7 +556,7 @@ function ActionBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
 
 // ── Add-System-Modal ──────────────────────────────────────────────────────────
 
-function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function AddSystemModal({ tenantId, onClose, onSaved }: { tenantId: string; onClose: () => void; onSaved: () => void }) {
   const [name, setName]               = useState('');
   const [description, setDescription] = useState('');
   const [provider, setProvider]       = useState('');
@@ -697,9 +565,33 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [scope, setScope]             = useState('');
   const [owner, setOwner]             = useState('');
   const [status, setStatus]           = useState<SystemStatus>('In Betrieb');
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState<string | null>(null);
 
-  function handleSave() {
-    if (!name.trim()) return;
+  const RISK_TO_CLASS: Record<RiskClass, AiActClass> = {
+    Verboten: 'prohibited', Hoch: 'high', Begrenzt: 'limited', Minimal: 'minimal',
+  };
+
+  async function handleSave() {
+    if (!name.trim() || saving) return;
+    setSaving(true);
+    setError(null);
+    const res = await createAsset({
+      tenant_id: tenantId,
+      asset_type: 'ai_system',
+      name: name.trim(),
+      description: description.trim() || undefined,
+      owner_email: owner.trim() || undefined,
+      vendor: provider.trim() || undefined,
+      data_types: scope.trim() ? scope.split(/[·,]/).map((s) => s.trim()).filter(Boolean) : undefined,
+      ai_act_class: RISK_TO_CLASS[riskClass],
+      metadata: { model_name: model.trim() || undefined, lifecycle_status: status },
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setError(res.error?.message ?? 'Speichern fehlgeschlagen.');
+      return;
+    }
     onSaved();
   }
 
@@ -806,6 +698,11 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         </div>
 
         {/* Modal-Footer */}
+        {error && (
+          <div className="border-t border-red-900 bg-red-950/30 px-4 py-2 font-mono text-[11px] text-red-300">
+            {error}
+          </div>
+        )}
         <div className="flex items-center justify-end gap-2 border-t border-titanium-900 px-4 py-3">
           <button
             type="button"
@@ -817,10 +714,10 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           <button
             type="button"
             onClick={handleSave}
-            disabled={!name.trim()}
+            disabled={!name.trim() || saving}
             className="border border-teal-700 bg-teal-900/40 px-4 py-1.5 font-mono text-xs text-teal-200 hover:bg-teal-800/60 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Speichern
+            {saving ? 'Speichern …' : 'Speichern'}
           </button>
         </div>
       </div>

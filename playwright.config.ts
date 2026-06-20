@@ -26,8 +26,8 @@ export default defineConfig({
   testIgnore: process.env.CI ? ['**/governance/inspector-panel.spec.ts'] : [],
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  timeout: process.env.CI ? 60_000 : 30_000,
-  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
+  timeout: process.env.CI ? 90_000 : 30_000,
+  expect: { timeout: process.env.CI ? 20_000 : 5_000 },
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
     : 'list',

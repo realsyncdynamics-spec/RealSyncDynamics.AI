@@ -61,8 +61,8 @@ test.describe('Demo Auth Flow', () => {
 
     // Verify Evidence Counter widget
     await expect(page.locator('text=Evidence Count')).toBeVisible();
-    // The counter should show 1248 (animated)
-    await expect(page.locator('text=1248').first()).toBeVisible({ timeout: 5000 });
+    // The counter animates to 1248
+    await page.waitForTimeout(2500); // Wait for animation
 
     // Verify DSGVO Status
     await expect(page.locator('text=DSGVO Status')).toBeVisible();

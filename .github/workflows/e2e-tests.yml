@@ -30,19 +30,29 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Start dev server
+      - name: Start preview server and run E2E
         run: |
-          npm run dev &
-          sleep 3
-        env:
-          VITE_DEMO_MODE: true
+          # Start the dev server in background with explicit logging
+          npm run dev -- --host > /tmp/server.log 2>&1 &
+          SERVER_PID=$!
 
-      - name: Wait for server to be ready
-        run: |
-          npx wait-on http://localhost:3000 --timeout 60000
+          # Wait for server to start (up to 60 seconds)
+          for i in {1..60}; do
+            if curl -s http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Server is ready"
+              break
+            fi
+            echo "⏳ Waiting for server... ($i/60)"
+            sleep 1
+          done
 
-      - name: Run E2E tests
-        run: npm run e2e
+          # Run tests
+          npm run e2e
+          TEST_EXIT=$?
+
+          # Kill server
+          kill $SERVER_PID || true
+          exit $TEST_EXIT
         env:
           CI: true
           E2E_BASE_URL: http://localhost:3000
@@ -55,10 +65,10 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload test videos
-        if: always()
+      - name: Upload server logs on failure
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-videos
-          path: test-results/
+          name: server-logs
+          path: /tmp/server.log
           retention-days: 7

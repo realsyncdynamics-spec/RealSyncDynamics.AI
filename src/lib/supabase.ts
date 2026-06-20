@@ -58,6 +58,10 @@ const hybridStorage = {
     try {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
+      // Beim Abmelden (Supabase ruft removeItem für den Auth-Token-Key) auch
+      // die „Angemeldet bleiben"-Präferenz zurücksetzen — sonst erbt der
+      // nächste Nutzer auf einem geteilten Browser die alte Einstellung.
+      localStorage.removeItem(REMEMBER_KEY);
     } catch {
       /* ignorieren */
     }

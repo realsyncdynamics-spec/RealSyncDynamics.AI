@@ -47,7 +47,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     route: '/app/evidence',
     status: 'live',
     plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Hashes, Snapshots und Audit Trails (read-only im Free-Plan)',
+    description: 'Hashes, Snapshots und Prüfpfade (read-only im Free-Plan)',
     group: 'Governance',
   },
   {

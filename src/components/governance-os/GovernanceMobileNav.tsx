@@ -1,26 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import {
-  Home, Globe, FileCheck2, Cpu, AlertTriangle, Activity,
-  Building2, BarChart3, Users, Settings, Lock, X,
-  Bell, CreditCard, Wrench, Bot, GitMerge, FileText,
-  ClipboardCheck, ClipboardList, LayoutDashboard, Briefcase,
-  type LucideIcon,
-} from 'lucide-react';
+import { Lock, X, Home, type LucideIcon } from 'lucide-react';
 import { GOVERNANCE_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import { MODULE_GROUP_ORDER } from './governanceBrowserTypes';
+import { NAV_ICON_MAP, PLAN_LABELS, isModuleActive } from './navConfig';
 import { useActivePlan } from '../../hooks/useModuleAccess';
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Home, Globe, FileCheck2, Cpu, Bot, AlertTriangle, Activity,
-  Building2, BarChart3, Users, Settings, Bell, CreditCard, Wrench,
-  GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard, Briefcase,
-};
-
-const PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter', growth: 'Professional', agency: 'Agency', enterprise: 'Enterprise',
-};
 
 interface GovernanceMobileNavProps {
   open: boolean;
@@ -46,8 +31,7 @@ export function GovernanceMobileNav({ open, onClose }: GovernanceMobileNavProps)
 
   if (!open) return null;
 
-  const isActive = (route: string) =>
-    route === '/app' ? pathname === '/app' : pathname.startsWith(route);
+  const isActive = (route: string) => isModuleActive(route, pathname);
 
   return (
     <div className="lg:hidden fixed inset-0 z-50 flex">
@@ -79,7 +63,7 @@ export function GovernanceMobileNav({ open, onClose }: GovernanceMobileNavProps)
                   {group}
                 </div>
                 {modules.map((mod) => {
-                  const Icon: LucideIcon = ICON_MAP[mod.icon] ?? Home;
+                  const Icon: LucideIcon = NAV_ICON_MAP[mod.icon] ?? Home;
                   const allowed = canAccessModule(mod, plan);
                   if (!allowed) {
                     const planLabel = PLAN_LABELS[minimumPlanForModule(mod)] ?? minimumPlanForModule(mod);

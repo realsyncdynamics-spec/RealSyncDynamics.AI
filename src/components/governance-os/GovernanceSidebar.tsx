@@ -1,26 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import {
-  Home, Globe, FileCheck2, Cpu, AlertTriangle, Activity,
-  Building2, BarChart3, Users, Settings, Lock, PanelLeftClose, PanelLeft,
-  Bell, CreditCard, Wrench, Bot, GitMerge, FileText,
-  ClipboardCheck, ClipboardList, LayoutDashboard, Briefcase,
-  type LucideIcon,
-} from 'lucide-react';
+import { Lock, PanelLeftClose, PanelLeft, Home, type LucideIcon } from 'lucide-react';
 import { GOVERNANCE_MODULES, canAccessModule, minimumPlanForModule } from './governanceModules';
 import { ModuleStatusBadge } from './ModuleStatusBadge';
 import { MODULE_GROUP_ORDER, type GovernanceModule } from './governanceBrowserTypes';
+import { NAV_ICON_MAP, PLAN_LABELS, isModuleActive } from './navConfig';
 import { useActivePlan } from '../../hooks/useModuleAccess';
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Home, Globe, FileCheck2, Cpu, Bot, AlertTriangle, Activity,
-  Building2, BarChart3, Users, Settings, Bell, CreditCard, Wrench,
-  GitMerge, FileText, ClipboardCheck, ClipboardList, LayoutDashboard, Briefcase,
-};
-
-const PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter', growth: 'Professional', agency: 'Agency', enterprise: 'Enterprise',
-};
 
 const COLLAPSE_KEY = 'rsd_nav_collapsed';
 
@@ -33,7 +18,7 @@ function NavItem({
   active: boolean;
   collapsed: boolean;
 }) {
-  const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
+  const Icon: LucideIcon = NAV_ICON_MAP[module.icon] ?? Home;
   return (
     <Link
       to={module.route}
@@ -56,7 +41,7 @@ function NavItem({
 }
 
 function LockedNavItem({ module, collapsed }: { module: GovernanceModule; collapsed: boolean }) {
-  const Icon: LucideIcon = ICON_MAP[module.icon] ?? Home;
+  const Icon: LucideIcon = NAV_ICON_MAP[module.icon] ?? Home;
   const minPlan = minimumPlanForModule(module);
   const planLabel = PLAN_LABELS[minPlan] ?? minPlan;
   return (
@@ -98,8 +83,7 @@ export function GovernanceSidebar() {
     }
   }, [collapsed]);
 
-  const isActive = (route: string) =>
-    route === '/app' ? pathname === '/app' : pathname.startsWith(route);
+  const isActive = (route: string) => isModuleActive(route, pathname);
 
   return (
     <nav

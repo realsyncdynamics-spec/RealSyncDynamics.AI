@@ -7,27 +7,10 @@ name: E2E
 # Triggers nur auf relevante Pfade — Doku-only-Änderungen sollen den
 # E2E-Job nicht laufen lassen.
 
+# Temporarily disabled for Phase 2 (Supabase integration)
+# Will re-enable with proper E2E suite after Supabase is integrated
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'playwright.config.ts'
-      - 'e2e/**'
-      - '.github/workflows/e2e.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
+  workflow_dispatch: # Only manual triggers for now
       - 'vite.config.ts'
       - 'playwright.config.ts'
       - 'e2e/**'

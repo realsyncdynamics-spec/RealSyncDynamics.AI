@@ -11,6 +11,7 @@ import { DemoAuthProvider } from './features/demo/DemoAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
+import { DemoLandingPage } from './pages/DemoLandingPage';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
@@ -282,6 +283,7 @@ function RoutesWithTracking() {
     <Suspense fallback={<LazyFallback />}>
     <Routes>
       {/* Demo Routes — Mock Auth + Governance Dashboard */}
+      <Route path="/demo-landing" element={<DemoLandingPage />} />
       <Route path="/demo-login" element={<DemoLoginPage />} />
       <Route
         path="/demo-app"

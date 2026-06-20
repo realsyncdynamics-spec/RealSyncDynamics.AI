@@ -1,7 +1,8 @@
 // AuditExportView — Audit-Ready Export Center
 // DSGVO/EU AI Act Behördenexporte + Audit-Pakete
 // Exporte laufen über die governance-analytics-export Edge Function (user JWT).
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 import {
   ClipboardCheck,
   Package,
@@ -144,12 +145,41 @@ function SeverityIcon({ severity }: { severity: AuditEvent['severity'] }) {
   return <Clock className="h-3.5 w-3.5 text-titanium-500 shrink-0" />;
 }
 
+function eventToAuditEvent(e: DbGovernanceEvent): AuditEvent {
+  const diffMs  = Date.now() - new Date(e.created_at).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const ts = diffMin < 60
+    ? `vor ${diffMin} Min.`
+    : diffMin < 1440
+      ? `vor ${Math.floor(diffMin / 60)} Std.`
+      : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
+  const severity: AuditEvent['severity'] =
+    e.risk_level === 'critical' || e.risk_level === 'high' ? 'warn' :
+    e.risk_level === 'low' || e.risk_level === 'info'      ? 'ok'   : 'info';
+  return {
+    id:       e.id,
+    ts,
+    actor:    e.actor_email ?? e.event_source,
+    action:   e.event_type,
+    target:   e.title,
+    severity,
+  };
+}
+
 // ── AuditExportView ────────────────────────────────────────────────────────
 export function AuditExportView() {
   const { activeTenantId } = useTenant();
   const [activeTab, setActiveTab] = useState<'pakete' | 'verlauf'>('pakete');
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'error' } | null>(null);
+  const [trail, setTrail] = useState<AuditEvent[]>(AUDIT_TRAIL);
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    fetchTenantEvents(activeTenantId, 20).then((evs) => {
+      if (evs.length > 0) setTrail(evs.map(eventToAuditEvent));
+    }).catch(() => {/* keep mock */});
+  }, [activeTenantId]);
 
   function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
     setToast({ msg, tone });
@@ -363,11 +393,11 @@ export function AuditExportView() {
                 Audit-Trail
               </h2>
               <div className="space-y-0 border border-titanium-900">
-                {AUDIT_TRAIL.map((event, idx) => (
+                {trail.map((event, idx) => (
                   <div
                     key={event.id}
                     className={`flex items-start gap-3 px-4 py-3 hover:bg-obsidian-800 transition-colors ${
-                      idx < AUDIT_TRAIL.length - 1 ? 'border-b border-titanium-900' : ''
+                      idx < trail.length - 1 ? 'border-b border-titanium-900' : ''
                     }`}
                   >
                     <SeverityIcon severity={event.severity} />

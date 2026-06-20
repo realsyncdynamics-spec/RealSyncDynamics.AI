@@ -2,6 +2,7 @@
 // Dokument-Management mit Generierungsfunktion, angebunden an die
 // generate-document Edge Function und public.generated_documents (RLS).
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FileText,
   Plus,
@@ -16,8 +17,8 @@ import {
   XCircle,
   Loader2,
   X,
+  ExternalLink,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
   fetchTenantDocuments,
@@ -32,6 +33,8 @@ import {
   type GeneratableDocType,
   type DbGeneratedDocument,
 } from './documentsApi';
+import { listDpias, type DbDpia } from '../dpiasApi';
+import type { DpiaStatus } from '../types';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
 type DocStatus = 'aktuell' | 'veraltet' | 'entwurf' | 'fehlend';
@@ -311,6 +314,64 @@ function Toast({ message, tone }: { message: string; tone: 'ok' | 'error' }) {
   );
 }
 
+// ── DSFA Status Badge ──────────────────────────────────────────────────────
+const DPIA_STATUS_MAP: Record<DpiaStatus, { label: string; docStatus: DocStatus }> = {
+  draft:     { label: 'Entwurf',      docStatus: 'entwurf' },
+  in_review: { label: 'In Prüfung',   docStatus: 'entwurf' },
+  approved:  { label: 'Genehmigt',    docStatus: 'aktuell' },
+  rejected:  { label: 'Abgelehnt',    docStatus: 'fehlend' },
+};
+
+function DsfaCard({ dpia }: { dpia: DbDpia }) {
+  const cfg = DPIA_STATUS_MAP[dpia.status] ?? { label: dpia.status, docStatus: 'entwurf' as DocStatus };
+  return (
+    <div className="bg-obsidian-900 border border-titanium-900 hover:border-titanium-700 transition-colors">
+      <div className="flex items-start gap-3 p-4 border-b border-titanium-900">
+        <div className="h-9 w-9 shrink-0 flex items-center justify-center bg-obsidian-800 border border-titanium-800">
+          <FileText className="h-4 w-4 text-blue-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold text-titanium-100 leading-tight">{dpia.title}</h3>
+              <p className="font-mono text-[10px] text-titanium-500 mt-0.5">Art. 35 DSGVO · DSFA</p>
+            </div>
+            <StatusBadge status={cfg.docStatus} />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-titanium-900 border-b border-titanium-900">
+        <div className="px-3 py-2">
+          <div className="font-mono text-[10px] text-titanium-600 uppercase">Status</div>
+          <div className="font-mono text-xs text-titanium-200 mt-0.5">{cfg.label}</div>
+        </div>
+        <div className="px-3 py-2">
+          <div className="font-mono text-[10px] text-titanium-600 uppercase">Erstellt</div>
+          <div className="font-mono text-xs text-titanium-200 mt-0.5">
+            {new Date(dpia.created_at).toLocaleDateString('de-DE')}
+          </div>
+        </div>
+        <div className="px-3 py-2">
+          <div className="font-mono text-[10px] text-titanium-600 uppercase">DPO konsultiert</div>
+          <div className="font-mono text-xs text-titanium-200 mt-0.5">{dpia.dpo_consulted ? 'Ja' : 'Nein'}</div>
+        </div>
+      </div>
+      <div className="flex items-center p-3 gap-2">
+        <Link
+          to="/app/dpia"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono text-titanium-300 border border-titanium-800 hover:bg-obsidian-800 transition-colors"
+        >
+          <ExternalLink className="h-3 w-3" />
+          DSFA öffnen
+        </Link>
+        <span className="font-mono text-[10px] text-titanium-600 ml-auto">
+          {dpia.asset ? dpia.asset.name : '–'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // ── DocumentsView ──────────────────────────────────────────────────────────
 export function DocumentsView() {
   const { activeTenantId } = useTenant();
@@ -323,6 +384,14 @@ export function DocumentsView() {
   const [viewer, setViewer] = useState<GovernanceDoc | null>(null);
   const [editor, setEditor] = useState<{ doc: GovernanceDoc; html: string } | null>(null);
   const [picker, setPicker] = useState(false);
+  const [liveDpias, setLiveDpias] = useState<DbDpia[]>([]);
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    listDpias(activeTenantId).then((res) => {
+      if (res.ok && res.dpias && res.dpias.length > 0) setLiveDpias(res.dpias);
+    }).catch(() => {/* keep empty */});
+  }, [activeTenantId]);
 
   function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
     setToast({ msg, tone });
@@ -475,13 +544,28 @@ export function DocumentsView() {
       </div>
 
       {/* Dokument-Grid */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {filtered.map((doc) => (
             <DocumentCard key={doc.id} doc={doc} handlers={handlers} />
           ))}
         </div>
-        {filtered.length === 0 && (
+
+        {/* Live DSFA-Einträge */}
+        {liveDpias.length > 0 && (
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-widest text-titanium-600 mb-3">
+              DSFA-Einträge (Live · {liveDpias.length})
+            </div>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {liveDpias.map((dpia) => (
+                <DsfaCard key={dpia.id} dpia={dpia} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {filtered.length === 0 && liveDpias.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <FileText className="h-10 w-10 text-titanium-700 mb-3" />
             <p className="text-sm text-titanium-500">Keine Dokumente gefunden</p>

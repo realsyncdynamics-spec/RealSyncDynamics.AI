@@ -4,6 +4,7 @@ import {
   Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
   Activity, Users, Settings, ArrowRight, Brain, Server, ShieldCheck,
 } from 'lucide-react';
+import { AiCore } from '../components/visual/AiCore';
 
 interface Tile {
   id: string;
@@ -105,7 +106,8 @@ export function PublicWorkspacePreview() {
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       {/* Hero */}
       <div className="bg-gradient-to-b from-obsidian-900 to-obsidian-950 border-b border-titanium-900 px-4 py-14 sm:py-20">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+         <div>
           <div className="inline-flex items-center gap-2 mb-6 px-3 py-1 border border-titanium-800 bg-obsidian-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-400">Governance OS · Digitale Souveränität</span>
@@ -145,6 +147,12 @@ export function PublicWorkspacePreview() {
             >
               Digitale Souveränität →
             </Link>
+          </div>
+         </div>
+
+          {/* Governance-OS-Kern als 3D-Szene (Fallback: animierte SVG auf schwachen/mobilen Geräten) */}
+          <div className="flex justify-center lg:justify-end">
+            <AiCore size={380} />
           </div>
         </div>
       </div>

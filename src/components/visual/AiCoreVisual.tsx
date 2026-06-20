@@ -23,13 +23,13 @@ export function AiCoreVisual({ size = 320, className }: Props) {
   return (
     <div
       className={className}
-      style={{ width: size, height: size }}
+      style={{ width: size, maxWidth: '100%', aspectRatio: '1' }}
       aria-hidden="true"
     >
       <svg
         viewBox="0 0 320 320"
-        width={size}
-        height={size}
+        width="100%"
+        height="100%"
         xmlns="http://www.w3.org/2000/svg"
         style={{ display: 'block' }}
       >

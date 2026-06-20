@@ -24,7 +24,7 @@ import { getSunDirection } from '../../lib/solarLighting';
 
 const TEX = {
   day: '/textures/earth/earth-day.jpg',
-  night: '/textures/earth/earth-night.png',
+  night: '/textures/earth/earth-night-hi.jpg',
   clouds: '/textures/earth/earth-clouds.png',
   normal: '/textures/earth/earth-normal.jpg',
   specular: '/textures/earth/earth-specular.jpg',

@@ -7,12 +7,17 @@
  * DSGVO · EU AI Act · TTDSG · Technische Sicherheit
  */
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { fetchTenantIncidents, type DbIncident } from '../incidentsApi';
+import {
+  fetchTenantIncidents,
+  transitionIncident,
+  type DbIncident,
+} from '../incidentsApi';
+import type { IncidentStatus } from '../types';
 import {
   ShieldAlert, Search, ChevronDown, ChevronUp, X,
-  ExternalLink, AlertTriangle, CheckCircle2, Clock, Circle,
+  ExternalLink, AlertTriangle, CheckCircle2, Clock, Circle, Loader2, ShieldCheck, FileCheck2,
 } from 'lucide-react';
 
 // ─── Typen ─────────────────────────────────────────────────────────────────
@@ -38,7 +43,18 @@ interface Risk {
   dueDate: string | null;
   probability: Probability;
   impact: Impact;
+  // Laufzeit: wenn das Risiko aus einem echten Incident stammt, kann der
+  // Status über die governance-incidents Edge Function persistiert werden.
+  incidentId?: string;
 }
+
+// Status-Übergänge für echte Incidents (governance-incidents transition)
+const INCIDENT_TRANSITIONS: { label: string; status: IncidentStatus }[] = [
+  { label: 'In Untersuchung', status: 'investigating' },
+  { label: 'Eingedämmt', status: 'contained' },
+  { label: 'Behoben', status: 'resolved' },
+  { label: 'Behörde gemeldet', status: 'reported_to_authority' },
+];
 
 // ─── Farbdefinitionen ──────────────────────────────────────────────────────
 const SEVERITY_CFG: Record<Severity, {
@@ -661,10 +677,21 @@ function StatusBadge({ status }: { status: Status }) {
   );
 }
 
+// Aktions-Callbacks für Risiko-Karten und Detail-Modal
+interface RiskActions {
+  onMassnahme: (r: Risk) => void;
+  onNachweis: (r: Risk) => void;
+  onStatus: (r: Risk, status: IncidentStatus) => void;
+  onClose: (r: Risk) => void;
+  busyId: string | null;
+}
+
 // Einzelne Risk-Card
-function RiskCard({ risk, onOpen }: { risk: Risk; onOpen: (r: Risk) => void }) {
+function RiskCard({ risk, onOpen, actions }: { risk: Risk; onOpen: (r: Risk) => void; actions: RiskActions }) {
   const cfg = SEVERITY_CFG[risk.severity];
   const [expanded, setExpanded] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const busy = actions.busyId === risk.id;
 
   return (
     <div className={`border ${cfg.card} flex cursor-default`}>
@@ -771,15 +798,42 @@ function RiskCard({ risk, onOpen }: { risk: Risk; onOpen: (r: Risk) => void }) {
             )}
           </div>
           <div className="flex gap-2 flex-wrap">
-            <button className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400 hover:text-titanium-200">
+            <button
+              onClick={() => actions.onMassnahme(risk)}
+              className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400 hover:text-titanium-200"
+            >
               Maßnahme
             </button>
-            <button className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400 hover:text-titanium-200">
+            <button
+              onClick={() => actions.onNachweis(risk)}
+              className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400 hover:text-titanium-200"
+            >
               Nachweis
             </button>
-            <button className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400 hover:text-titanium-200">
-              Status
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setStatusOpen((v) => !v)}
+                disabled={busy}
+                className="flex items-center gap-1 border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-400 hover:text-titanium-200 disabled:opacity-50"
+              >
+                {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                Status
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {statusOpen && (
+                <div className="absolute right-0 bottom-full mb-1 z-20 w-44 bg-obsidian-900 border border-titanium-800 shadow-lg">
+                  {INCIDENT_TRANSITIONS.map((t) => (
+                    <button
+                      key={t.status}
+                      onClick={() => { setStatusOpen(false); actions.onStatus(risk, t.status); }}
+                      className="block w-full text-left px-3 py-1.5 text-[11px] font-mono text-titanium-300 hover:bg-obsidian-800"
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -788,9 +842,10 @@ function RiskCard({ risk, onOpen }: { risk: Risk; onOpen: (r: Risk) => void }) {
 }
 
 // Risk Detail Modal
-function RiskDetailModal({ risk, onClose }: { risk: Risk; onClose: () => void }) {
+function RiskDetailModal({ risk, onClose, actions }: { risk: Risk; onClose: () => void; actions: RiskActions }) {
   const cfg = SEVERITY_CFG[risk.severity];
   const [checkedActions, setCheckedActions] = useState<Set<number>>(new Set());
+  const busy = actions.busyId === risk.id;
 
   const toggleAction = (i: number) => {
     setCheckedActions((prev) => {
@@ -914,13 +969,26 @@ function RiskDetailModal({ risk, onClose }: { risk: Risk; onClose: () => void })
 
         {/* Footer-Aktionen */}
         <div className="border-t border-titanium-800 px-5 py-3 flex flex-wrap gap-2">
-          <button className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-300 hover:text-titanium-100">
+          <button
+            onClick={() => actions.onNachweis(risk)}
+            className="flex items-center gap-1.5 border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-300 hover:text-titanium-100"
+          >
+            <FileCheck2 className="h-3 w-3" />
             Nachweis hinzufügen
           </button>
-          <button className="border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-300 hover:text-titanium-100">
+          <button
+            onClick={() => actions.onMassnahme(risk)}
+            className="flex items-center gap-1.5 border border-titanium-800 hover:border-titanium-600 px-3 py-1.5 text-xs font-mono text-titanium-300 hover:text-titanium-100"
+          >
+            <ShieldCheck className="h-3 w-3" />
             Maßnahme dokumentieren
           </button>
-          <button className="ml-auto border border-red-900 hover:border-red-700 px-3 py-1.5 text-xs font-mono text-red-400 hover:text-red-300">
+          <button
+            onClick={() => actions.onClose(risk)}
+            disabled={busy}
+            className="ml-auto flex items-center gap-1.5 border border-red-900 hover:border-red-700 px-3 py-1.5 text-xs font-mono text-red-400 hover:text-red-300 disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
             Risk schließen
           </button>
         </div>
@@ -947,6 +1015,7 @@ function incidentToRisk(inc: DbIncident): Risk {
     : null;
   return {
     id: inc.id,
+    incidentId: inc.id,
     severity: severityMap[inc.severity] ?? 'Mittel',
     title: inc.title,
     category: 'DSGVO Art. 6',
@@ -967,19 +1036,62 @@ function incidentToRisk(inc: DbIncident): Risk {
 // ─── Haupt-View ─────────────────────────────────────────────────────────────
 export function RiskCenterView() {
   const { activeTenantId } = useTenant();
+  const navigate = useNavigate();
   const [activeRisks, setActiveRisks] = useState<Risk[]>(RISKS);
   const [severityFilter, setSeverityFilter] = useState<Severity | 'Alle'>('Alle');
   const [categoryFilter, setCategoryFilter] = useState<Category | 'Alle'>('Alle');
   const [statusFilter,   setStatusFilter]   = useState<Status | 'Alle'>('Alle');
   const [search,         setSearch]         = useState('');
   const [detailRisk,     setDetailRisk]     = useState<Risk | null>(null);
+  const [busyId,         setBusyId]         = useState<string | null>(null);
+  const [toast,          setToast]          = useState<{ msg: string; tone: 'ok' | 'error' } | null>(null);
 
-  useEffect(() => {
+  function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
+    setToast({ msg, tone });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  function reload() {
     if (!activeTenantId) return;
     fetchTenantIncidents(activeTenantId).then((incidents) => {
       if (incidents.length > 0) setActiveRisks(incidents.map(incidentToRisk));
     }).catch(() => {/* keep mock */});
+  }
+
+  useEffect(() => {
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTenantId]);
+
+  async function applyTransition(risk: Risk, status: IncidentStatus) {
+    if (!risk.incidentId) {
+      showToast('Demo-Risiko ohne Incident-Bezug — Status wird nicht persistiert.', 'error');
+      return;
+    }
+    setBusyId(risk.id);
+    try {
+      const res = await transitionIncident(risk.incidentId, status);
+      if (!res.ok) {
+        showToast(res.error?.message ?? 'Statuswechsel fehlgeschlagen.', 'error');
+        return;
+      }
+      showToast('Status aktualisiert.');
+      setDetailRisk(null);
+      reload();
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const actions: RiskActions = {
+    busyId,
+    onMassnahme: () => navigate('/app/remediation'),
+    onNachweis: () => navigate('/app/evidence'),
+    onStatus: (risk, status) => void applyTransition(risk, status),
+    onClose: (risk) => void applyTransition(risk, 'resolved'),
+  };
 
   const counts = useMemo(() => ({
     Kritisch: activeRisks.filter((r) => r.severity === 'Kritisch').length,
@@ -1159,7 +1271,7 @@ export function RiskCenterView() {
         ) : (
           <div className="space-y-2">
             {filtered.map((risk) => (
-              <RiskCard key={risk.id} risk={risk} onOpen={setDetailRisk} />
+              <RiskCard key={risk.id} risk={risk} onOpen={setDetailRisk} actions={actions} />
             ))}
           </div>
         )}
@@ -1167,7 +1279,17 @@ export function RiskCenterView() {
 
       {/* ── Risk Detail Modal ── */}
       {detailRisk && (
-        <RiskDetailModal risk={detailRisk} onClose={() => setDetailRisk(null)} />
+        <RiskDetailModal risk={detailRisk} onClose={() => setDetailRisk(null)} actions={actions} />
+      )}
+
+      {/* ── Toast ── */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 border font-mono text-xs shadow-lg ${
+          toast.tone === 'error' ? 'bg-red-950 border-red-800 text-red-200' : 'bg-obsidian-800 border-teal-700 text-teal-300'
+        }`}>
+          {toast.tone === 'error' ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+          {toast.msg}
+        </div>
       )}
     </div>
   );

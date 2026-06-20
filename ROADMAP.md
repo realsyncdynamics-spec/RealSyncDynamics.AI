@@ -4,6 +4,8 @@
 
 > **Scope-Disziplin:** Was im Kern liegt und was bewusst draußen bleibt, ist in [`docs/PRODUCT_FOCUS.md`](docs/PRODUCT_FOCUS.md) festgelegt. Phase A (siehe unten) ist Voraussetzung für Phase 2–4.
 
+> **Priorisierung:** Die geschärfte Phasen-Reihenfolge und offene Gabelungen (u. a. Evidence-Trail bereits im ersten zahlenden Tier statt erst Phase 4) sind in [`docs/PRODUCT_PRIORITIZATION.md`](docs/PRODUCT_PRIORITIZATION.md) festgehalten.
+
 ---
 
 ## Phase A — Runtime härten (aktuell)

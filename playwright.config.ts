@@ -1,17 +1,21 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright config — minimal smoke-E2E setup.
+ * Playwright config — E2E test suite for Demo Auth + Dashboard
  *
  * Run locally:
  *   npx playwright install chromium    one-time browser binary install
  *   npm run dev                        in one terminal
  *   npm run e2e                        in another terminal
  *
- * Not wired into CI yet — Playwright in GH Actions needs the playwright
- * docker image or a setup-step (~30 s) to install browsers, which is
- * disproportionate to the single smoke spec right now. Promote to CI once
- * the spec count justifies it.
+ * CI/CD:
+ *   Runs on GitHub Actions via .github/workflows/e2e-tests.yml
+ *   Tests include:
+ *   - Demo Auth Flow (login/logout)
+ *   - Dashboard Load (widgets, metrics)
+ *   - Landing Page CTAs
+ *   - Session Persistence
+ *   - Protected Routes
  */
 export default defineConfig({
   testDir: './e2e',

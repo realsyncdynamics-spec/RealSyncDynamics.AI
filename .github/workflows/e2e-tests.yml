@@ -32,30 +32,45 @@ jobs:
 
       - name: Start preview server and run E2E
         run: |
-          # Start the dev server in background with explicit logging
-          npm run dev -- --host > /tmp/server.log 2>&1 &
+          # Start the preview server (serves built app, more reliable than dev)
+          echo "Starting preview server..."
+          npm run preview > /tmp/server.log 2>&1 &
           SERVER_PID=$!
+          echo "Server PID: $SERVER_PID"
 
-          # Wait for server to start (up to 60 seconds)
-          for i in {1..60}; do
-            if curl -s http://localhost:3000 > /dev/null 2>&1; then
-              echo "✅ Server is ready"
+          # Wait for server to be ready (health check)
+          echo "Waiting for server..."
+          SERVER_READY=0
+          for i in {1..90}; do
+            if curl -f -s http://localhost:4173/ > /dev/null 2>&1; then
+              echo "✅ Server is ready at http://localhost:4173"
+              SERVER_READY=1
               break
             fi
-            echo "⏳ Waiting for server... ($i/60)"
+            echo "⏳ Attempt $i/90..."
             sleep 1
           done
 
-          # Run tests
-          npm run e2e
-          TEST_EXIT=$?
+          if [ $SERVER_READY -eq 0 ]; then
+            echo "❌ Server failed to start"
+            cat /tmp/server.log
+            kill $SERVER_PID || true
+            exit 1
+          fi
 
-          # Kill server
+          # Run E2E tests
+          echo "Running E2E tests..."
+          npm run e2e || TEST_EXIT=$?
+          TEST_EXIT=${TEST_EXIT:-0}
+
+          # Cleanup
           kill $SERVER_PID || true
+          sleep 1
+
           exit $TEST_EXIT
         env:
           CI: true
-          E2E_BASE_URL: http://localhost:3000
+          E2E_BASE_URL: http://localhost:4173
 
       - name: Upload test report
         if: always()

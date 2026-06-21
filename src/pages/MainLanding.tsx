@@ -352,7 +352,7 @@ function Pricing() {
           </div>
         </div>
         <SmartLink to="/contact-sales" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap">
-          Sales kontaktieren<ArrowRight className="w-4 h-4" />
+          Enterprise anfragen<ArrowRight className="w-4 h-4" />
         </SmartLink>
       </div>
     </Section>

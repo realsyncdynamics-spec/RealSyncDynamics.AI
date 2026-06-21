@@ -110,11 +110,11 @@ test.describe('Bolt Design Landing (/)', () => {
   });
 
   test('Animated Counter und Hexagon-Elemente sichtbar', async ({ page }) => {
-    // Evidence Vault Counter
-    await expect(page.getByText(/EVIDENCE VAULT/i)).toBeVisible();
+    // Evidence Vault Counter — speziell den im Hexagon (font-mono)
+    await expect(page.getByText(/EVIDENCE VAULT/i).first()).toBeVisible();
 
-    // Risk Score Counter
-    await expect(page.getByText(/RISK SCORE/i)).toBeVisible();
+    // Risk Score Counter — speziell den im Hexagon (font-mono)
+    await expect(page.getByText(/RISK SCORE/i).first()).toBeVisible();
 
     // Brand Logo
     await expect(page.getByText(/RealSync Dynamics/i)).toBeVisible();

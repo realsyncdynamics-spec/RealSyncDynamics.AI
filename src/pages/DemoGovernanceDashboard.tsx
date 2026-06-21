@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDemoAuth } from '../features/demo/DemoAuthContext';
+import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
+import { useDashboardData } from '../features/supabase/useDashboardData';
 import { ChevronRight, LogOut, AlertCircle, CheckCircle } from 'lucide-react';
 
 // Animated counter component
@@ -139,23 +140,21 @@ function EvidenceItem({
 
 export function DemoGovernanceDashboard() {
   const navigate = useNavigate();
-  const { logout, user } = useDemoAuth();
+  const { logout, user } = useSupabaseAuth();
+  const { data: dashboardData } = useDashboardData(user?.id);
 
   const handleLogout = async () => {
     await logout();
     navigate('/demo-login', { replace: true });
   };
 
-  // Mock data
-  const mockRiskScore = 87;
-  const mockEvidenceCount = 1248;
-  const mockEvidenceItems = [
-    { id: '1', title: 'GDPR Compliance Audit', date: 'Jun 15, 2024', status: 'verified' as const },
-    { id: '2', title: 'AI Act Risk Assessment', date: 'Jun 12, 2024', status: 'verified' as const },
-    { id: '3', title: 'Data Processing Agreement', date: 'Jun 10, 2024', status: 'pending' as const },
-    { id: '4', title: 'Privacy Impact Assessment', date: 'Jun 8, 2024', status: 'verified' as const },
-    { id: '5', title: 'Consent Management Policy', date: 'Jun 5, 2024', status: 'expired' as const },
-  ];
+  // Convert evidence list to the format needed by EvidenceItem
+  const evidenceItems = dashboardData.evidenceList.map((item) => ({
+    id: item.id,
+    title: item.title,
+    date: item.date,
+    status: 'verified' as const,
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-obsidian-950 via-obsidian-900 to-obsidian-950">
@@ -192,12 +191,12 @@ export function DemoGovernanceDashboard() {
             </div>
 
             <div className="flex items-baseline gap-1 mb-4">
-              <span className="text-4xl font-bold text-titanium-100">{mockRiskScore}</span>
+              <span className="text-4xl font-bold text-titanium-100">{dashboardData.riskScore}</span>
               <span className="text-titanium-500">/100</span>
             </div>
 
             <div className="mb-3">
-              <AnimatedProgressBar value={mockRiskScore} />
+              <AnimatedProgressBar value={dashboardData.riskScore} />
             </div>
 
             <p className="text-titanium-500 text-xs">Strong governance posture</p>
@@ -213,7 +212,7 @@ export function DemoGovernanceDashboard() {
             </div>
 
             <div className="text-4xl font-bold text-titanium-100 mb-4">
-              <AnimatedCounter target={mockEvidenceCount} duration={2000} />
+              <AnimatedCounter target={dashboardData.evidenceCount} duration={2000} />
             </div>
 
             <p className="text-titanium-500 text-xs">Compliance artifacts collected</p>
@@ -279,14 +278,14 @@ export function DemoGovernanceDashboard() {
             </div>
 
             <div className="space-y-0">
-              {mockEvidenceItems.map((item) => (
+              {evidenceItems.map((item) => (
                 <EvidenceItem key={item.id} {...item} />
               ))}
             </div>
 
             {/* Pagination */}
             <div className="mt-6 flex items-center justify-between text-titanium-400 text-sm">
-              <span>Showing 1-5 of {mockEvidenceCount}</span>
+              <span>Showing 1-{evidenceItems.length} of {dashboardData.evidenceCount}</span>
               <div className="flex gap-2">
                 <button className="px-3 py-1 bg-obsidian-800/50 border border-titanium-700/30 rounded hover:bg-obsidian-700 transition-colors disabled:opacity-50" disabled>
                   Previous

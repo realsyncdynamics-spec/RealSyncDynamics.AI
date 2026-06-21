@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDemoAuth } from '../features/demo/DemoAuthContext';
+import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
 
 export function DemoLoginPage() {
   const navigate = useNavigate();
-  const { login } = useDemoAuth();
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('password123');
+  const { login } = useSupabaseAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,7 +57,8 @@ export function DemoLoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 className="w-full px-4 py-2 bg-obsidian-800/50 border border-titanium-700/30 rounded text-titanium-100 placeholder-titanium-600 focus:outline-none focus:border-blue-500/50 transition-colors disabled:opacity-50"
-                placeholder="test@example.com"
+                placeholder="your@email.com"
+                required
               />
             </div>
 
@@ -95,7 +96,7 @@ export function DemoLoginPage() {
 
           {/* Demo Hint */}
           <div className="mt-6 p-3 bg-blue-500/10 border border-blue-500/30 rounded text-blue-300 text-xs">
-            <strong>Demo:</strong> Use test@example.com / password123
+            <strong>Note:</strong> Sign in with your Supabase account or create a new one
           </div>
         </div>
       </div>

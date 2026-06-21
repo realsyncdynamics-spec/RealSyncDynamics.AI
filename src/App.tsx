@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
-import { DemoAuthProvider } from './features/demo/DemoAuthContext';
+import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
@@ -765,7 +765,7 @@ export default function App() {
     <TenantProvider>
       <EnvironmentProvider>
         <DemoModeProvider>
-          <DemoAuthProvider>
+          <SupabaseAuthProvider>
             <BrowserRouter basename={ROUTER_BASENAME}>
             <ScrollToTop />
             <RoutesWithTracking />
@@ -774,7 +774,7 @@ export default function App() {
               <AssistentChip />
             </Suspense>
           </BrowserRouter>
-          </DemoAuthProvider>
+          </SupabaseAuthProvider>
         </DemoModeProvider>
       </EnvironmentProvider>
     </TenantProvider>

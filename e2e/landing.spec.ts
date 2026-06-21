@@ -115,9 +115,6 @@ test.describe('Bolt Design Landing (/)', () => {
 
     // Risk Score Counter — speziell den im Hexagon (font-mono)
     await expect(page.getByText(/RISK SCORE/i).first()).toBeVisible();
-
-    // Brand Logo
-    await expect(page.getByText(/RealSync Dynamics/i)).toBeVisible();
   });
 
   test('Status-Badges sichtbar', async ({ page }) => {

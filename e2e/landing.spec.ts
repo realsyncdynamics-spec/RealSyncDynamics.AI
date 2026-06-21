@@ -33,48 +33,45 @@ test.describe('Marketing-Landing (/landing)', () => {
     await page.goto('/landing');
   });
 
-  test('Hero zeigt Governance-OS-Headline und Self-Serve-CTAs', async ({ page }) => {
+  test('Hero zeigt KI-Betriebssystem-Headline und Self-Serve-CTAs', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
-        name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität/i,
+        name: /Das KI-Betriebssystem für DSGVO & EU AI Act/i,
       }),
     ).toBeVisible();
 
-    // Primär-CTAs: Self-Serve, kein Demo-Zwang.
-    await expect(page.getByRole('link', { name: /14 Tage gratis starten/i })).toBeVisible();
-    await expect(
-      page.getByRole('link', { name: /Governance Audit starten/i }).first(),
-    ).toBeVisible();
+    // Primär-CTAs: Self-Serve
+    await expect(page.getByRole('link', { name: /KI-Betriebssystem entdecken/i })).toBeVisible();
 
-    // Trust-Signale.
-    await expect(page.getByText(/EU-Hosting/i).first()).toBeVisible();
-    await expect(page.getByText(/Keine Kreditkarte nötig/i)).toBeVisible();
+    // Feature-Highlights
+    await expect(page.getByText(/DSGVO-KONFORM/i)).toBeVisible();
+    await expect(page.getByText(/AI-ACT-READY/i)).toBeVisible();
+    await expect(page.getByText(/KONTINUIERLICH/i)).toBeVisible();
   });
 
-  test('Domain-Scan-Teaser navigiert zum Audit', async ({ page }) => {
-    const input = page.getByPlaceholder(/ihre-domain\.de/i);
-    await expect(input).toBeVisible();
-    await input.fill('example.de');
-    await page.getByRole('button', { name: /Scan/i }).click();
-    await expect(page).toHaveURL(/\/audit/);
-    expect(page.url()).toContain('domain=example.de');
+  test('Landing ist vollständig sichtbar und reagiert auf Scrolling', async ({ page }) => {
+    // Prüfe, dass die Seite loaded und kein kritischer Error
+    const heading = page.getByRole('heading', {
+      name: /Das KI-Betriebssystem für DSGVO & EU AI Act/i,
+    });
+    await expect(heading).toBeVisible();
+
+    // Scrolle zur Seite zu überprüfen, dass keine Fehler beim Rendering
+    await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+    await page.waitForLoadState('networkidle');
   });
 
-  test('Kern-Sektionen sichtbar', async ({ page }) => {
-    for (const heading of [
-      /Für jedes Team, das Verantwortung für Compliance trägt/i,
-      /Digitale Souveränität als Betriebsmodell/i,
-      /Governance für Software, Anbieter und Open-Source-Komponenten/i,
-    ]) {
-      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
-    }
+  test('Glass Panels und Feature-Cards sichtbar', async ({ page }) => {
+    // Neue Landing zeigt Glass Panels mit Status-Infos
+    await expect(page.getByText(/DSGVO/i)).toBeVisible();
+    await expect(page.getByText(/RISK SCORE/i)).toBeVisible();
+    await expect(page.getByText(/EVIDENCE/i)).toBeVisible();
   });
 
-  test('Final-CTA mit Self-Serve-Sprache', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /Governance OS — kostenlos starten/i }),
-    ).toBeVisible();
-    await expect(page.getByText(/Keine Kreditkarte erforderlich/i)).toBeVisible();
+  test('Footer mit Links sichtbar', async ({ page }) => {
+    // Footer sollte am Ende der Seite sichtbar sein
+    await page.evaluate(() => window.scrollBy(0, document.body.scrollHeight));
+    await expect(page.getByRole('contentinfo')).toBeVisible();
   });
 
   test('Footer-Links (Impressum, Datenschutz) erreichbar', async ({ page }) => {

@@ -283,8 +283,8 @@ function RoutesWithTracking() {
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
-      <Route path="/realsyncai" element={<RealSyncDynamicsLanding />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/landing/realsync" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

@@ -48,19 +48,33 @@ export function useDashboardData(userId: string | undefined) {
         setIsLoading(true);
         setError(null);
 
+        // First, get the user's tenant_id from profiles
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          console.warn('Could not fetch user profile, using user_id as fallback:', profileError);
+        }
+
+        // Use tenant_id (or user_id as fallback) to query governance_evidence
+        const tenantId = profileData?.id || userId;
+
         // Fetch evidence count
         const { count: evidenceCount, error: countError } = await supabase
-          .from('evidence')
+          .from('governance_evidence')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', userId);
+          .eq('tenant_id', tenantId);
 
         if (countError) throw countError;
 
         // Fetch recent evidence items (limit 5 for dashboard)
         const { data: evidenceData, error: dataError } = await supabase
-          .from('evidence')
+          .from('governance_evidence')
           .select('id, title, evidence_type, created_at')
-          .eq('user_id', userId)
+          .eq('tenant_id', tenantId)
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -90,16 +104,16 @@ export function useDashboardData(userId: string | undefined) {
 
     fetchData();
 
-    // Subscribe to real-time updates on evidence table
+    // Subscribe to real-time updates on governance_evidence table
     const subscription = supabase
-      .channel(`evidence:${userId}`)
+      .channel(`governance_evidence:${userId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'evidence',
-          filter: `user_id=eq.${userId}`,
+          table: 'governance_evidence',
+          filter: `tenant_id=eq.${userId}`,
         },
         () => {
           fetchData();

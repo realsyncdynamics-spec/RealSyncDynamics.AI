@@ -7,7 +7,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
-// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
+// ── Public entry: Bolt Design Landing (new homepage)
+import { BoltDesignLanding } from './pages/BoltDesignLanding';
+// ── Governance-OS Workspace Preview (kept for /preview)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
@@ -277,9 +279,9 @@ function RoutesWithTracking() {
   return (
     <Suspense fallback={<LazyFallback />}>
     <Routes>
-      {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
-          die Marketing-Landing bleibt unter /landing erreichbar. */}
-      <Route path="/" element={<PublicWorkspacePreview />} />
+      {/* Public — Startseite ist das neue Bolt Design Landing;
+          die Workspace-Vorschau bleibt unter /preview erreichbar. */}
+      <Route path="/" element={<BoltDesignLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />

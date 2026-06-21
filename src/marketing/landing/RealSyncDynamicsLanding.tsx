@@ -65,10 +65,11 @@ export const RealSyncDynamicsLanding = () => {
           <div className="max-w-6xl text-center">
             <h2 className="text-6xl font-bold mb-6">RealSyncDynamics.AI</h2>
             <p className="text-2xl text-petrol mb-8">
-              EU-souveräne SaaS-Plattform für Creator und Agenturen
+              EU-souveräne Runtime für AI-Governance &amp; Compliance
             </p>
             <p className="text-xl text-titanium/80 mb-12 max-w-2xl mx-auto">
-              Provenienz-Nachweis (C2PA), KI-Workflows, VPS-Operations. Multi-Tenant. DSGVO & EU AI Act ready.
+              Kontinuierliche Telemetrie für Web-, Daten- und KI-Systeme — DSGVO, TTDSG &amp; EU AI Act.
+              Risiko-Erkennung, Auto-Fix und kryptografisch nachvollziehbarer Prüfpfad.
             </p>
             <button className="bg-security-blue hover:bg-blue-600 text-obsidian font-bold py-4 px-8 rounded text-lg transition">
               Demo anfordern
@@ -88,24 +89,27 @@ export const RealSyncDynamicsLanding = () => {
             <h2 className="text-4xl font-bold text-center mb-16">Was wir bieten</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
+                <div className="text-4xl mb-4">🔍</div>
+                <h3 className="text-2xl font-bold text-security-blue mb-4">Continuous Monitoring</h3>
+                <p className="text-titanium/80">
+                  Websites, Cookies und Tracking laufend überwacht — DSGVO &amp; TTDSG. Risiko-Erkennung in Echtzeit
+                  statt einmaliger Audits.
+                </p>
+              </div>
+              <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
+                <div className="text-4xl mb-4">⚙️</div>
+                <h3 className="text-2xl font-bold text-security-blue mb-4">Auto-Fix Engine</h3>
+                <p className="text-titanium/80">
+                  Nicht nur „hier ist das Problem", sondern der Fix: Script-Blocking, Consent-Injection und
+                  Font-Self-Hosting — automatisiert per Regel-Engine.
+                </p>
+              </div>
+              <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
                 <div className="text-4xl mb-4">🔐</div>
-                <h3 className="text-2xl font-bold text-security-blue mb-4">Provenienz-Nachweis</h3>
+                <h3 className="text-2xl font-bold text-security-blue mb-4">Evidence-Vault</h3>
                 <p className="text-titanium/80">
-                  C2PA-zertifizierte Herkunftsverfolgung für alle Content-Assets. Transparenz und Authentizität.
-                </p>
-              </div>
-              <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
-                <div className="text-4xl mb-4">🤖</div>
-                <h3 className="text-2xl font-bold text-security-blue mb-4">KI-Workflows</h3>
-                <p className="text-titanium/80">
-                  Anthropic, Google, OpenAI & lokale EU-Alternative Ollama. Vollständige Kontrolle über deine KI.
-                </p>
-              </div>
-              <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
-                <div className="text-4xl mb-4">☁️</div>
-                <h3 className="text-2xl font-bold text-security-blue mb-4">Multi-Tenant VPS</h3>
-                <p className="text-titanium/80">
-                  Dezentralisierte Infrastruktur mit vollständiger Kontrolle. Deine Daten, deine Regeln.
+                  Kryptografisch nachvollziehbarer Prüfpfad für jeden Scan und jede Änderung — auditfähige
+                  Nachweise für Behörden und Mandanten.
                 </p>
               </div>
             </div>
@@ -121,11 +125,19 @@ export const RealSyncDynamicsLanding = () => {
             <h2 className="text-4xl font-bold text-center mb-16">Was wir können</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
-                <h3 className="text-xl font-bold text-security-blue mb-4">KI-Provider Integration</h3>
+                <h3 className="text-xl font-bold text-security-blue mb-4">Regulatorik-Abdeckung</h3>
                 <ul className="space-y-3 text-titanium/80">
-                  <li>✓ Cloud-Provider: Anthropic, Google, OpenAI</li>
-                  <li>✓ On-Premise EU: Ollama gemma3:4b</li>
-                  <li>✓ Nahtlose Fallbacks und Load-Balancing</li>
+                  <li>✓ EU AI Act — Klassifizierung &amp; Monitoring</li>
+                  <li>✓ DSGVO — Verarbeitung &amp; Betroffenenrechte</li>
+                  <li>✓ TTDSG — Consent &amp; Tracking</li>
+                </ul>
+              </div>
+              <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
+                <h3 className="text-xl font-bold text-security-blue mb-4">Telemetrie &amp; Risk-Detection</h3>
+                <ul className="space-y-3 text-titanium/80">
+                  <li>✓ Kontinuierliche Scans statt Stichprobe</li>
+                  <li>✓ Risk-Score je Domain &amp; System</li>
+                  <li>✓ Cookie- &amp; Tracking-Inventar</li>
                 </ul>
               </div>
               <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
@@ -133,23 +145,15 @@ export const RealSyncDynamicsLanding = () => {
                 <ul className="space-y-3 text-titanium/80">
                   <li>✓ Row-Level Security auf allen Tabellen</li>
                   <li>✓ Keine Admin-Backdoors</li>
-                  <li>✓ Vollständige Tenant-Isolation</li>
+                  <li>✓ Vollständige Mandanten-Isolation</li>
                 </ul>
               </div>
               <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
-                <h3 className="text-xl font-bold text-security-blue mb-4">Automation & Monitoring</h3>
+                <h3 className="text-xl font-bold text-security-blue mb-4">Automation &amp; Reporting</h3>
                 <ul className="space-y-3 text-titanium/80">
                   <li>✓ n8n Workflow-Automation</li>
+                  <li>✓ White-Label-Reports &amp; API</li>
                   <li>✓ Sentry Real-Time Monitoring</li>
-                  <li>✓ Stripe Billing Integration</li>
-                </ul>
-              </div>
-              <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
-                <h3 className="text-xl font-bold text-security-blue mb-4">Edge Functions</h3>
-                <ul className="space-y-3 text-titanium/80">
-                  <li>✓ Supabase Edge Functions</li>
-                  <li>✓ Serverless Architecture</li>
-                  <li>✓ Global Low Latency</li>
                 </ul>
               </div>
             </div>
@@ -175,10 +179,10 @@ export const RealSyncDynamicsLanding = () => {
                 </div>
               </div>
               <div className="bg-obsidian p-6 rounded-lg border-l-4 border-petrol flex gap-6">
-                <div className="text-3xl min-w-fit">✓</div>
+                <div className="text-3xl min-w-fit">⚙️</div>
                 <div>
-                  <h3 className="text-xl font-bold text-petrol mb-2">DSGVO + EU AI Act Ready</h3>
-                  <p className="text-titanium/80">Von Tag 1 konform. RLS auf allen Daten, Audit Trail auf alles, keine Backdoors.</p>
+                  <h3 className="text-xl font-bold text-petrol mb-2">Auto-Fix statt nur Diagnose</h3>
+                  <p className="text-titanium/80">Andere zeigen nur das Problem. Wir liefern den einsetzbaren Fix-Code — Consent-Banner, Script-Blocking, Font-Self-Hosting.</p>
                 </div>
               </div>
               <div className="bg-obsidian p-6 rounded-lg border-l-4 border-petrol flex gap-6">
@@ -191,15 +195,15 @@ export const RealSyncDynamicsLanding = () => {
               <div className="bg-obsidian p-6 rounded-lg border-l-4 border-petrol flex gap-6">
                 <div className="text-3xl min-w-fit">🌍</div>
                 <div>
-                  <h3 className="text-xl font-bold text-petrol mb-2">KI lokal laufen lassen</h3>
-                  <p className="text-titanium/80">Ollama gemma3:4b – deine eigene KI, auf deinen Servern, ohne externe APIs.</p>
+                  <h3 className="text-xl font-bold text-petrol mb-2">EU-Datenresidenz &amp; lokale KI</h3>
+                  <p className="text-titanium/80">Sensible Compliance-Daten ohne US-APIs verarbeiten — optional mit EU-lokaler KI (Ollama) on-premise.</p>
                 </div>
               </div>
               <div className="bg-obsidian p-6 rounded-lg border-l-4 border-petrol flex gap-6">
-                <div className="text-3xl min-w-fit">📋</div>
+                <div className="text-3xl min-w-fit">🔄</div>
                 <div>
-                  <h3 className="text-xl font-bold text-petrol mb-2">C2PA Provenance Tracking</h3>
-                  <p className="text-titanium/80">Vollständige Herkunftsverfolgung aller Inhalte. Wer, wann, wie, womit generiert.</p>
+                  <h3 className="text-xl font-bold text-petrol mb-2">Runtime-native, nicht einmalig</h3>
+                  <p className="text-titanium/80">Compliance ist kein PDF von gestern. Kontinuierliche Telemetrie erkennt Drift, sobald sie passiert — mit lückenlosem Prüfpfad.</p>
                 </div>
               </div>
             </div>
@@ -217,17 +221,17 @@ export const RealSyncDynamicsLanding = () => {
               <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
                 <h3 className="text-2xl font-bold text-security-blue mb-2">Q3 2026</h3>
                 <ul className="space-y-2 text-titanium/80">
-                  <li>✓ Erweiterte Workflow-Templates</li>
-                  <li>✓ Batch-Processing für große Datenmengen</li>
-                  <li>✓ API v2 Release</li>
+                  <li>✓ Erweiterte Policy-Templates (DSGVO/AI-Act)</li>
+                  <li>✓ Batch-Scans für Domain-Portfolios</li>
+                  <li>✓ Public API v2</li>
                 </ul>
               </div>
               <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
                 <h3 className="text-2xl font-bold text-security-blue mb-2">Q4 2026</h3>
                 <ul className="space-y-2 text-titanium/80">
-                  <li>✓ Native Video C2PA Zertifizierung</li>
-                  <li>✓ Advanced Analytics Dashboard</li>
-                  <li>✓ Multi-Language Support</li>
+                  <li>✓ Automatisierte AI-Act-Risikoklassifizierung</li>
+                  <li>✓ Advanced Compliance-Analytics</li>
+                  <li>✓ Multi-Language-Reports</li>
                 </ul>
               </div>
               <div className="bg-slate-800 p-8 rounded-lg border-l-4 border-security-blue">
@@ -242,7 +246,7 @@ export const RealSyncDynamicsLanding = () => {
                 <h3 className="text-2xl font-bold text-security-blue mb-2">Q2 2027</h3>
                 <ul className="space-y-2 text-titanium/80">
                   <li>✓ Enterprise SSO & SAML 2.0</li>
-                  <li>✓ Advanced Audit Logging</li>
+                  <li>✓ Erweiterter Prüfpfad-Export</li>
                   <li>✓ Custom SLA Agreements</li>
                 </ul>
               </div>

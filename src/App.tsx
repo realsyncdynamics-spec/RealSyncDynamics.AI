@@ -12,7 +12,6 @@ import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
-import { LandingBolt } from './pages/LandingBolt';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
 import { AutomationsLanding } from './pages/AutomationsLanding';
@@ -283,7 +282,6 @@ function RoutesWithTracking() {
       <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
-      <Route path="/landing-bolt" element={<LandingBolt />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

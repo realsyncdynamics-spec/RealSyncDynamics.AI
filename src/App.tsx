@@ -284,7 +284,7 @@ function RoutesWithTracking() {
       <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
-      <Route path="/landing/realsync" element={<RealSyncDynamicsLanding />} />
+      <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

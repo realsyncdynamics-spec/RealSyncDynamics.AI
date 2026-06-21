@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, Mail, Github } from 'lucide-react';
 
 export const RealSyncDynamicsLanding = () => {
@@ -31,7 +32,7 @@ export const RealSyncDynamicsLanding = () => {
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-security-blue">RealSyncDynamics.AI</h1>
             <div className="flex gap-4">
-              <a href="mailto:realsyncdynamics@gmail.com" className="hover:text-security-blue transition">
+              <a href="mailto:hello@realsyncdynamicsai.de" className="hover:text-security-blue transition">
                 <Mail size={20} />
               </a>
             </div>
@@ -254,51 +255,95 @@ export const RealSyncDynamicsLanding = () => {
           id="section-5"
           className="min-h-screen flex items-center justify-center bg-slate-900 px-6 py-20"
         >
-          <div className="max-w-6xl">
-            <h2 className="text-4xl font-bold text-center mb-16">Preismodelle</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
-                <h3 className="text-2xl font-bold text-security-blue mb-4">STARTER</h3>
-                <p className="text-3xl font-bold text-titanium mb-6">Auf Anfrage</p>
-                <ul className="space-y-3 text-titanium/80 mb-8">
-                  <li>✓ Basis-Features</li>
-                  <li>✓ Bis zu 10 Workflows</li>
-                  <li>✓ Community Support</li>
-                  <li>✓ 5 GB Storage</li>
+          <div className="max-w-6xl w-full">
+            <h2 className="text-4xl font-bold text-center mb-4">Preismodelle</h2>
+            <p className="text-center text-titanium/80 mb-16 text-lg">
+              Vom kostenlosen Erst-Scan bis zur kompletten Governance-Runtime — alle Pläne EU-gehostet.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+              <div className="bg-obsidian p-6 rounded-lg border border-titanium/20 flex flex-col">
+                <h3 className="text-lg font-bold text-titanium mb-2">Free Audit</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">0 €</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">einmalig</p>
+                <ul className="space-y-2 text-sm text-titanium/80 mb-6 flex-1">
+                  <li>✓ Sofort-Risk-Score</li>
+                  <li>✓ Kein Account nötig</li>
+                  <li>✓ Einzeldomain-Scan</li>
                 </ul>
-                <button className="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded transition">
-                  Anfrage stellen
+                <button className="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded text-sm transition">
+                  Scan starten
                 </button>
               </div>
-              <div className="bg-security-blue/10 p-8 rounded-lg border-2 border-security-blue transform scale-105">
-                <div className="bg-security-blue text-obsidian text-center py-2 rounded mb-4 font-bold">
+              <div className="bg-obsidian p-6 rounded-lg border border-titanium/20 flex flex-col">
+                <h3 className="text-lg font-bold text-security-blue mb-2">Starter</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">79 €</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
+                <ul className="space-y-2 text-sm text-titanium/80 mb-6 flex-1">
+                  <li>✓ Einzeldomain</li>
+                  <li>✓ Compliance-Monitoring</li>
+                  <li>✓ Evidence-Export</li>
+                </ul>
+                <button className="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded text-sm transition">
+                  Buchen
+                </button>
+              </div>
+              <div className="bg-security-blue/10 p-6 rounded-lg border-2 border-security-blue flex flex-col relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-security-blue text-obsidian text-xs px-3 py-1 rounded font-bold whitespace-nowrap">
                   EMPFOHLEN
                 </div>
-                <h3 className="text-2xl font-bold text-security-blue mb-4">PRO</h3>
-                <p className="text-3xl font-bold text-titanium mb-6">Auf Anfrage</p>
-                <ul className="space-y-3 text-titanium/80 mb-8">
-                  <li>✓ Erweiterte AI-Features</li>
-                  <li>✓ Unlimited Workflows</li>
-                  <li>✓ Priority Support</li>
-                  <li>✓ 100 GB Storage</li>
+                <h3 className="text-lg font-bold text-security-blue mb-2 mt-2">Growth</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">249 €</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
+                <ul className="space-y-2 text-sm text-titanium/80 mb-6 flex-1">
+                  <li>✓ Monitoring + Auto-Fix</li>
+                  <li>✓ Mehrere Domains</li>
+                  <li>✓ Prioritäts-Support</li>
                 </ul>
-                <button className="w-full bg-security-blue hover:bg-blue-600 text-obsidian font-bold py-2 rounded transition">
-                  Anfrage stellen
+                <button className="w-full bg-security-blue hover:bg-blue-600 text-obsidian font-bold py-2 rounded text-sm transition">
+                  Buchen
                 </button>
               </div>
-              <div className="bg-obsidian p-8 rounded-lg border border-titanium/20">
-                <h3 className="text-2xl font-bold text-security-blue mb-4">ENTERPRISE</h3>
-                <p className="text-3xl font-bold text-titanium mb-6">Custom</p>
-                <ul className="space-y-3 text-titanium/80 mb-8">
-                  <li>✓ Custom Deployment</li>
-                  <li>✓ EU-VPS Infrastruktur</li>
-                  <li>✓ 24/7 Support</li>
-                  <li>✓ White-Label Optionen</li>
+              <div className="bg-obsidian p-6 rounded-lg border border-titanium/20 flex flex-col">
+                <h3 className="text-lg font-bold text-titanium mb-2">Agency</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">699 €</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
+                <ul className="space-y-2 text-sm text-titanium/80 mb-6 flex-1">
+                  <li>✓ White-Label</li>
+                  <li>✓ 10 Kunden-Sites</li>
+                  <li>✓ API-Zugang</li>
                 </ul>
-                <button className="w-full bg-petrol hover:bg-teal-700 text-obsidian font-bold py-2 rounded transition">
-                  Kontakt
+                <button className="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded text-sm transition">
+                  Buchen
                 </button>
               </div>
+              <div className="bg-obsidian p-6 rounded-lg border border-titanium/20 flex flex-col">
+                <h3 className="text-lg font-bold text-titanium mb-2">Scale</h3>
+                <p className="text-3xl font-bold text-titanium mb-1">1.999 €</p>
+                <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
+                <ul className="space-y-2 text-sm text-titanium/80 mb-6 flex-1">
+                  <li>✓ DSB-Kanzleien</li>
+                  <li>✓ Bis 50 Mandanten</li>
+                  <li>✓ Evidence-Vault</li>
+                </ul>
+                <button className="w-full bg-slate-700 hover:bg-slate-600 py-2 rounded text-sm transition">
+                  Buchen
+                </button>
+              </div>
+            </div>
+            {/* Enterprise — individueller Anfrage-Banner */}
+            <div className="bg-petrol/10 border border-petrol rounded-lg p-8 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-bold text-petrol mb-2">Enterprise — individuell</h3>
+                <p className="text-titanium/80">
+                  Custom Deployment, EU-VPS, Evidence-Vault, SLA &amp; White-Label nach Bedarf.
+                </p>
+              </div>
+              <a
+                href="mailto:hello@realsyncdynamicsai.de"
+                className="bg-petrol hover:bg-teal-700 text-obsidian font-bold py-3 px-8 rounded transition whitespace-nowrap"
+              >
+                Anfrage stellen
+              </a>
             </div>
           </div>
         </section>
@@ -362,38 +407,49 @@ export const RealSyncDynamicsLanding = () => {
           className="min-h-screen flex items-center justify-center bg-slate-900 px-6 py-20"
         >
           <div className="max-w-4xl">
-            <h2 className="text-4xl font-bold mb-12">Impressum</h2>
+            <h2 className="text-4xl font-bold mb-4">Impressum</h2>
+            <p className="text-titanium/60 text-sm mb-12 font-mono">§ 5 TMG · § 18 MStV</p>
             <div className="space-y-8 text-titanium/80">
               <div>
-                <h3 className="text-xl font-bold text-titanium mb-3">Anbieter</h3>
+                <h3 className="text-xl font-bold text-titanium mb-3">Anbieter / Verantwortlicher</h3>
                 <p>
-                  <strong>RealSyncDynamics.AI</strong> <br />
-                  [Unternehmensname hier eintragen]
+                  <strong className="text-titanium">RealSync Dynamics</strong> <br />
+                  Schwarzburger Str. 31 <br />
+                  98724 Neuhaus am Rennweg <br />
+                  Thüringen, Deutschland
+                </p>
+                <p className="mt-2">
+                  Einzelunternehmen, vertreten durch den Inhaber <strong className="text-titanium">Dominik Steiner</strong>.
                 </p>
               </div>
               <div>
                 <h3 className="text-xl font-bold text-titanium mb-3">Kontakt</h3>
                 <p>
-                  <strong>E-Mail:</strong> realsyncdynamics@gmail.com <br />
-                  <strong>Telefon:</strong> [Telefonnummer hier eintragen]
+                  <strong>Telefon:</strong>{' '}
+                  <a href="tel:+4917640132161" className="text-security-blue hover:text-blue-400">+49 176 4013 2161</a> <br />
+                  <strong>E-Mail:</strong>{' '}
+                  <a href="mailto:hello@realsyncdynamicsai.de" className="text-security-blue hover:text-blue-400">hello@realsyncdynamicsai.de</a> <br />
+                  <strong>Datenschutz:</strong>{' '}
+                  <a href="mailto:privacy@realsyncdynamicsai.de" className="text-security-blue hover:text-blue-400">privacy@realsyncdynamicsai.de</a>
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-titanium mb-3">Geschäftsführer</h3>
-                <p>[Name und Vorname hier eintragen]</p>
+                <h3 className="text-xl font-bold text-titanium mb-3">Umsatzsteuer</h3>
+                <p>Kleinunternehmer i. S. v. § 19 UStG — es wird keine Umsatzsteuer ausgewiesen.</p>
               </div>
               <div>
-                <h3 className="text-xl font-bold text-titanium mb-3">Umsatzsteuer-Identifikationsnummer</h3>
-                <p>[USt-ID hier eintragen]</p>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-titanium mb-3">Registergericht</h3>
-                <p>[Registergericht und Handelsregisternummer hier eintragen]</p>
+                <h3 className="text-xl font-bold text-titanium mb-3">Aufsichtsbehörde Datenschutz</h3>
+                <p>
+                  Thüringer Landesbeauftragter für den Datenschutz und die Informationsfreiheit (TLfDI),
+                  Häßlerstraße 8, 99096 Erfurt.
+                </p>
               </div>
               <div className="bg-obsidian p-6 rounded border-l-4 border-security-blue mt-12">
                 <p className="text-sm text-titanium/70">
-                  <strong>Hinweis:</strong> Dieses Impressum ist ein Template. Bitte füllen Sie alle markierten Felder mit Ihren
-                  tatsächlichen Daten aus und überprüfen Sie die rechtliche Vollständigkeit mit einem Rechtsanwalt.
+                  Das vollständige Impressum mit allen Pflichtangaben (Haftung, Urheberrecht, EU-Streitschlichtung) findest Du hier:{' '}
+                  <Link to="/legal/impressum" className="text-security-blue hover:text-blue-400 font-bold">
+                    /legal/impressum →
+                  </Link>
                 </p>
               </div>
             </div>
@@ -429,15 +485,18 @@ export const RealSyncDynamicsLanding = () => {
                 </p>
               </div>
               <div className="bg-slate-800 p-6 rounded">
-                <h3 className="text-xl font-bold text-titanium mb-3">4. Kündigung</h3>
+                <h3 className="text-xl font-bold text-titanium mb-3">4. Kündigung &amp; Laufzeit</h3>
                 <p>
-                  [Kündigungsregelungen eintragen] Kündigung ist mit [Frist] zum Ende eines Kalendermonats möglich.
+                  Abonnements sind monatlich kündbar. Details zu Laufzeit, Zahlungsbedingungen und
+                  Widerrufsrecht regeln die vollständigen Nutzungsbedingungen.
                 </p>
               </div>
               <div className="bg-obsidian p-6 rounded border-l-4 border-security-blue mt-12">
                 <p className="text-sm text-titanium/70">
-                  <strong>Hinweis:</strong> Dies ist ein Template-Dokument. Ihre vollständigen AGB müssen von einem
-                  Rechtsanwalt erstellt und überprüft werden. Diese Seite ist nicht rechtsverbindlich.
+                  Die rechtsverbindlichen, vollständigen Nutzungsbedingungen (AGB) findest Du hier:{' '}
+                  <Link to="/legal/terms" className="text-security-blue hover:text-blue-400 font-bold">
+                    /legal/terms →
+                  </Link>
                 </p>
               </div>
             </div>
@@ -456,16 +515,19 @@ export const RealSyncDynamicsLanding = () => {
                 <Mail size={48} className="mx-auto mb-4 text-security-blue" />
                 <h3 className="text-xl font-bold mb-4">E-Mail</h3>
                 <a
-                  href="mailto:realsyncdynamics@gmail.com"
+                  href="mailto:hello@realsyncdynamicsai.de"
                   className="text-security-blue hover:text-blue-400 transition"
                 >
-                  realsyncdynamics@gmail.com
+                  hello@realsyncdynamicsai.de
                 </a>
+                <p className="text-titanium/60 text-sm mt-2">Telefon: +49 176 4013 2161</p>
               </div>
               <div className="bg-obsidian p-8 rounded-lg border border-titanium/20 text-center">
                 <Github size={48} className="mx-auto mb-4 text-security-blue" />
                 <h3 className="text-xl font-bold mb-4">Dokumentation</h3>
-                <p className="text-titanium/80 mb-4">[Link zu Docs eintragen]</p>
+                <Link to="/docs" className="text-security-blue hover:text-blue-400 transition">
+                  /docs →
+                </Link>
               </div>
             </div>
 
@@ -496,19 +558,19 @@ export const RealSyncDynamicsLanding = () => {
                   <h4 className="font-bold text-titanium mb-4">Legal</h4>
                   <ul className="space-y-2 text-titanium/80 text-sm">
                     <li>
-                      <button onClick={() => scrollToSection(7)} className="hover:text-security-blue transition">
+                      <Link to="/legal/impressum" className="hover:text-security-blue transition">
                         Impressum
-                      </button>
+                      </Link>
                     </li>
                     <li>
-                      <button onClick={() => scrollToSection(8)} className="hover:text-security-blue transition">
-                        AGB
-                      </button>
+                      <Link to="/legal/terms" className="hover:text-security-blue transition">
+                        AGB / Nutzungsbedingungen
+                      </Link>
                     </li>
                     <li>
-                      <a href="#" className="hover:text-security-blue transition">
+                      <Link to="/legal/privacy" className="hover:text-security-blue transition">
                         Datenschutz
-                      </a>
+                      </Link>
                     </li>
                   </ul>
                 </div>
@@ -516,20 +578,20 @@ export const RealSyncDynamicsLanding = () => {
                   <h4 className="font-bold text-titanium mb-4">Kontakt</h4>
                   <ul className="space-y-2 text-titanium/80 text-sm">
                     <li>
-                      <a href="mailto:realsyncdynamics@gmail.com" className="hover:text-security-blue transition">
-                        Email
+                      <a href="mailto:hello@realsyncdynamicsai.de" className="hover:text-security-blue transition">
+                        hello@realsyncdynamicsai.de
                       </a>
                     </li>
                     <li>
-                      <a href="#" className="hover:text-security-blue transition">
-                        Support
-                      </a>
+                      <Link to="/pricing" className="hover:text-security-blue transition">
+                        Preise &amp; Pläne
+                      </Link>
                     </li>
                   </ul>
                 </div>
               </div>
               <div className="text-center text-titanium/60 text-sm border-t border-titanium/20 pt-8">
-                <p>© {new Date().getFullYear()} RealSyncDynamics.AI. Alle Rechte vorbehalten.</p>
+                <p>© {new Date().getFullYear()} RealSync Dynamics · Dominik Steiner. Alle Rechte vorbehalten.</p>
               </div>
             </div>
           </div>

@@ -91,39 +91,38 @@ test.describe('Marketing-Landing (/landing)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Governance-OS Workspace-Vorschau (/)
+// Bolt Design Landing (/)
 // ─────────────────────────────────────────────────────────────────────
-test.describe('Workspace-Vorschau (/)', () => {
+test.describe('Bolt Design Landing (/)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {
+  test('Hero zeigt KI-Betriebssystem-Headline und CTA', async ({ page }) => {
     await expect(
       page.getByRole('heading', {
-        name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität/i,
+        name: /Das KI-Betriebssystem für DSGVO & EU AI Act/i,
       }),
     ).toBeVisible();
 
-    await expect(page.getByText(/Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar/i)).toBeVisible();
-
-    await expect(page.getByRole('button', { name: /Dashboard öffnen/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Governance Audit starten/i })).toBeVisible();
+    // CTA für KI-OS Entdecken
+    await expect(page.getByRole('button', { name: /KI-OS entdecken/i })).toBeVisible();
   });
 
-  test('Governance Complexity Score-Einstieg navigiert zum Assessment', async ({ page }) => {
-    await expect(page.getByText(/Governance Complexity Score/i).first()).toBeVisible();
-    await page.getByRole('button', { name: /Score ermitteln/i }).click();
-    await expect(page).toHaveURL(/\/governance-score/);
+  test('Animated Counter und Hexagon-Elemente sichtbar', async ({ page }) => {
+    // Evidence Vault Counter
+    await expect(page.getByText(/EVIDENCE VAULT/i)).toBeVisible();
+
+    // Risk Score Counter
+    await expect(page.getByText(/RISK SCORE/i)).toBeVisible();
+
+    // Brand Logo
+    await expect(page.getByText(/RealSync Dynamics/i)).toBeVisible();
   });
 
-  test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /Alles\. In einer Oberfläche\./i }),
-    ).toBeVisible();
-    // Erkennen · Monitoren · Beweisen — Kern-Value-Props.
-    for (const label of ['Erkennen', 'Monitoren', 'Beweisen']) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+  test('Status-Badges sichtbar', async ({ page }) => {
+    for (const badge of ['DSGVO Compliant', 'EU AI ACT READY', 'MONITORING LIVE']) {
+      await expect(page.getByText(badge)).toBeVisible();
     }
   });
 

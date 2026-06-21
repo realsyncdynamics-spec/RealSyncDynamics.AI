@@ -12,7 +12,7 @@ import React from 'react';
 import { ArrowRight, PlayCircle, ShieldCheck, BrainCircuit, TrendingUp, UserRound, Activity, MessageSquare } from 'lucide-react';
 import bgImageUrl from '../assets/images/europe_centric_globe_1781964649365.jpg';
 
-export function LandingBolt() {
+export function Landing() {
   return (
     <div className="relative min-h-screen flex flex-col bg-[#030712] overflow-hidden selection:bg-[#00f0ff]/30 selection:text-white font-sans text-white">
       {/* Background */}

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import {
   Snowflake,
   ShieldCheck,
@@ -16,6 +17,34 @@ import {
 } from 'lucide-react';
 
 /**
+ * SmartLink — interne Routen ("/...") via react-router-Link (SPA),
+ * Anker ("#...") und externe Links via <a>. Hält die Navigation
+ * rechtssicher erreichbar ohne Full-Reload.
+ */
+function SmartLink({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (to.startsWith('/')) {
+    return (
+      <Link to={to} className={className}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  );
+}
+
+/**
  * MainLanding — Unternehmenshauptseite (Enterprise-Ausbau der Vercel-Hauptseite rx35).
  * Design: Obsidian-Hintergrund (rgb(3,7,18)), Earth-at-Night-Hero (Europa),
  * Petrol/Cyan-Akzent, Plus Jakarta Sans + JetBrains Mono (Metadaten).
@@ -27,7 +56,14 @@ import {
 const BG = 'rgb(3, 7, 18)';
 const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 
-const NAV_LINKS = ['Produkt', 'Automatisierung', 'Evidence', 'AI Act', 'Sicherheit', 'Preise'];
+const NAV_LINKS = [
+  { label: 'Produkt', to: '#produkt' },
+  { label: 'Automatisierung', to: '/automations' },
+  { label: 'Evidence', to: '/evidence' },
+  { label: 'AI Act', to: '/ai-act' },
+  { label: 'Sicherheit', to: '#sicherheit' },
+  { label: 'Preise', to: '#preise' },
+];
 
 const HERO_FEATURES = [
   { icon: ShieldCheck, label: 'DSGVO-KONFORM', text: 'Nachweise, Prozesse und Richtlinien automatisiert.' },
@@ -85,10 +121,10 @@ const STEPS = [
 ];
 
 const PRICING = [
-  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: 'Starten' },
-  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Priorisierter Support'], cta: 'Wählen', featured: true },
-  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Multi-Tenant-Dashboard', 'API-Zugriff'], cta: 'Wählen' },
-  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Wählen' },
+  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: 'Starten', to: '/audit' },
+  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Priorisierter Support'], cta: 'Wählen', featured: true, to: '/audit' },
+  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Multi-Tenant-Dashboard', 'API-Zugriff'], cta: 'Wählen', to: '/agencies' },
+  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Wählen', to: '/contact-sales' },
 ];
 
 export function MainLanding() {
@@ -121,13 +157,13 @@ function Header() {
         </a>
         <nav className="hidden lg:flex items-center gap-8">
           {NAV_LINKS.map((l) => (
-            <a key={l} href="#" className="text-sm text-white/70 hover:text-white transition-colors">{l}</a>
+            <SmartLink key={l.label} to={l.to} className="text-sm text-white/70 hover:text-white transition-colors">{l.label}</SmartLink>
           ))}
-          <a href="#" className="text-sm text-white/70 hover:text-white transition-colors">Login</a>
+          <SmartLink to="/app" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
-        <a href="#" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+        <SmartLink to="/app" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
           KI-OS entdecken<ArrowRight className="w-4 h-4" />
-        </a>
+        </SmartLink>
       </div>
     </header>
   );
@@ -178,12 +214,12 @@ function Hero() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
                 KI-Betriebssystem entdecken<ArrowRight className="w-4 h-4" />
-              </a>
-              <a href="#" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+              </SmartLink>
+              <SmartLink to="/docs" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
                 <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
-              </a>
+              </SmartLink>
             </div>
           </div>
 
@@ -298,9 +334,9 @@ function Pricing() {
                 </li>
               ))}
             </ul>
-            <a href="#" className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-colors ${p.featured ? 'text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300' : 'text-white border border-white/20 hover:border-white/40 hover:bg-white/5'}`}>
+            <SmartLink to={p.to} className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-colors ${p.featured ? 'text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300' : 'text-white border border-white/20 hover:border-white/40 hover:bg-white/5'}`}>
               {p.cta}<ArrowRight className="w-4 h-4" />
-            </a>
+            </SmartLink>
           </div>
         ))}
       </div>
@@ -315,9 +351,9 @@ function Pricing() {
             <p className="text-sm text-white/60">Custom Runtime, SLA, AI-Act-Modul, DSB-Integration, unlimitierte Domains.</p>
           </div>
         </div>
-        <a href="#" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap">
+        <SmartLink to="/contact-sales" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap">
           Sales kontaktieren<ArrowRight className="w-4 h-4" />
-        </a>
+        </SmartLink>
       </div>
     </Section>
   );
@@ -358,12 +394,12 @@ function FinalCta() {
             Starten Sie mit einem kostenlosen Audit — ohne Account, in unter fünf Minuten. Sehen Sie Ihren Governance Complexity Score sofort.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#" className="inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+            <SmartLink to="/audit" className="inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
               Kostenloses Audit starten<ArrowRight className="w-4 h-4" />
-            </a>
-            <a href="#" className="inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+            </SmartLink>
+            <SmartLink to="/contact-sales" className="inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
               Mit Sales sprechen
-            </a>
+            </SmartLink>
           </div>
         </div>
       </div>
@@ -374,22 +410,56 @@ function FinalCta() {
 /* ── FOOTER ─────────────────────────────────────────────── */
 function Footer() {
   const cols = [
-    { title: 'Produkt', links: ['Runtime-Monitoring', 'Evidence Vault', 'AI-Act-Klassifizierung', 'Automatisierung'] },
-    { title: 'Lösungen', links: ['Agenturen', 'DSB-Kanzleien', 'Healthcare', 'Public Sector'] },
-    { title: 'Ressourcen', links: ['Dokumentation', 'Roadmap', 'Blog', 'Case Studies'] },
-    { title: 'Unternehmen', links: ['Über uns', 'Kontakt', 'Impressum', 'AGB & Datenschutz'] },
+    {
+      title: 'Produkt',
+      links: [
+        { label: 'Runtime-Monitoring', to: '/runtime' },
+        { label: 'Evidence Vault', to: '/evidence-vault' },
+        { label: 'AI-Act-Klassifizierung', to: '/ai-act-klassifikator' },
+        { label: 'Automatisierung', to: '/automations' },
+      ],
+    },
+    {
+      title: 'Lösungen',
+      links: [
+        { label: 'Agenturen', to: '/agencies' },
+        { label: 'DSB-Kanzleien', to: '/legaltech' },
+        { label: 'Branchen', to: '/branchen' },
+        { label: 'Case Studies', to: '/case-studies' },
+      ],
+    },
+    {
+      title: 'Ressourcen',
+      links: [
+        { label: 'Dokumentation', to: '/docs' },
+        { label: 'Roadmap', to: '/roadmap' },
+        { label: 'Blog', to: '/blog' },
+        { label: 'Sicherheit', to: '/security' },
+      ],
+    },
+    {
+      title: 'Unternehmen',
+      links: [
+        { label: 'Über uns', to: '/about' },
+        { label: 'Kontakt', to: '/contact-sales' },
+        { label: 'Impressum', to: '/impressum' },
+        { label: 'Datenschutz', to: '/datenschutz' },
+        { label: 'AGB', to: '/agb' },
+      ],
+    },
   ];
   return (
     <footer className="relative z-10 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-14">
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-10">
           <div className="col-span-2 lg:col-span-1">
-            <a href="/" className="flex items-center gap-2.5 mb-4">
+            <Link to="/" className="flex items-center gap-2.5 mb-4">
               <Snowflake className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
               <span className="font-semibold tracking-tight">RealSync Dynamics.AI</span>
-            </a>
+            </Link>
             <p className="text-xs text-white/50 leading-relaxed max-w-xs">
               Europäische Runtime-native AI-Governance- und Compliance-Plattform.
+              Digitalisierung &amp; KI-Betriebssystem im Mittelpunkt.
             </p>
           </div>
           {cols.map((c) => (
@@ -397,15 +467,21 @@ function Footer() {
               <h4 className="font-mono text-[11px] tracking-widest text-white/40 uppercase mb-4">{c.title}</h4>
               <ul className="space-y-2.5">
                 {c.links.map((l) => (
-                  <li key={l}><a href="#" className="text-sm text-white/60 hover:text-white transition-colors">{l}</a></li>
+                  <li key={l.label}><SmartLink to={l.to} className="text-sm text-white/60 hover:text-white transition-colors">{l.label}</SmartLink></li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="font-mono text-xs text-white/50">© 2026 RealSync Dynamics. SaaS &amp; KI-Innovationen.</p>
-          <p className="font-mono text-xs text-white/40">EU-Hosting · DSGVO · EU AI Act</p>
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link to="/impressum" className="font-mono text-xs text-white/50 hover:text-white transition-colors">Impressum</Link>
+            <Link to="/datenschutz" className="font-mono text-xs text-white/50 hover:text-white transition-colors">Datenschutz</Link>
+            <Link to="/agb" className="font-mono text-xs text-white/50 hover:text-white transition-colors">AGB</Link>
+            <Link to="/legal/avv" className="font-mono text-xs text-white/50 hover:text-white transition-colors">AVV</Link>
+            <span className="font-mono text-xs text-white/40">EU-Hosting · DSGVO · EU AI Act</span>
+          </nav>
         </div>
       </div>
     </footer>

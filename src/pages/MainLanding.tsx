@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { SEOHead } from '../components/SEOHead';
 import {
   Snowflake,
   ShieldCheck,
@@ -130,6 +131,8 @@ const PRICING = [
 export function MainLanding() {
   return (
     <div className="min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
+      {/* Config-driven SEO/OG/JSON-LD — zieht den '/'-Eintrag aus src/config/seo.ts */}
+      <SEOHead />
       <Header />
       <Hero />
       <TrustStrip />

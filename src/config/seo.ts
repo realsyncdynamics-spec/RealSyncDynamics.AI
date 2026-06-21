@@ -222,10 +222,13 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'Governance OS für DSGVO, EU AI Act & digitale Souveränität | RealSyncDynamicsAI',
+    title: 'KI-Betriebssystem für DSGVO & EU AI Act | RealSyncDynamicsAI',
     description:
-      'Das Governance OS für DSGVO, EU AI Act und digitale Souveränität. Überwacht Websites, KI-Systeme, Drittanbieter, Risiken und Nachweise kontinuierlich — mit Evidence Vault, Governance Agents und auditfähiger Dokumentation im Browser-Format.',
+      'Das KI-Betriebssystem für DSGVO & EU AI Act: überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready, auditierbar. EU-Hosting.',
     canonical: `${SITE_URL}/`,
+    ogTitle: 'Das KI-Betriebssystem für DSGVO & EU AI Act',
+    ogDescription:
+      'RealSyncDynamics.AI überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

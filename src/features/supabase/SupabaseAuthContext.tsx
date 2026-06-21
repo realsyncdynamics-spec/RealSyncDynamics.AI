@@ -21,11 +21,13 @@ const SupabaseAuthContext = createContext<SupabaseAuthContextType | null>(null);
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Gracefully handle missing Supabase config — use dummy client if not configured
+// This allows the app to render even without Supabase credentials
+const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  : createClient('https://placeholder.supabase.co', 'placeholder-key');
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -36,6 +38,12 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        if (!isSupabaseConfigured) {
+          console.warn('Supabase not configured — demo mode only');
+          setIsLoading(false);
+          return;
+        }
+
         const {
           data: { session: currentSession },
         } = await supabase.auth.getSession();
@@ -55,6 +63,9 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
     };
 
     initializeAuth();
+
+    // Only listen for auth changes if Supabase is configured
+    if (!isSupabaseConfigured) return;
 
     // Listen for auth state changes
     const {

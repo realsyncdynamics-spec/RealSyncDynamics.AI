@@ -66,6 +66,32 @@ function SunController() {
   return null;
 }
 
+/**
+ * Scroll-Zoom-Story: beim Scrollen dollyt die Kamera sanft zurück — die Erde
+ * tritt zurück, mehr Solarsystem/Weltraum wird sichtbar (Erde → Universum).
+ * Passiver Scroll-Listener (Ref, keine Re-Renders), Lerp im Frameloop.
+ */
+function ScrollDolly() {
+  const { camera } = useThree();
+  const progress = useRef(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const denom = Math.max(1, window.innerHeight * 0.9);
+      progress.current = Math.min(1, Math.max(0, window.scrollY / denom));
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  useFrame(() => {
+    const targetZ = 4.75 + progress.current * 4.2; // zoom out bis ~9
+    camera.position.z += (targetZ - camera.position.z) * 0.08;
+    camera.position.y += (0.1 + progress.current * 0.6 - camera.position.y) * 0.08;
+    camera.lookAt(0, 0, 0);
+  });
+  return null;
+}
+
 // ── Geo-Helfer ───────────────────────────────────────────────────────
 function latLonToVec3(lat: number, lon: number, r: number): THREE.Vector3 {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -681,6 +707,7 @@ export default function EarthCanvas() {
       <directionalLight position={[-4, -2, 2]} intensity={0.4} color="#1a6fff" />
 
       <SunController />
+      <ScrollDolly />
       <Starfield />
       <Galaxy />
       <PlanetArc />

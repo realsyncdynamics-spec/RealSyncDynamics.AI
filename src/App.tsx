@@ -7,7 +7,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
-// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
+// ── Public entry: AetherOS Landing (RealSync Dynamics AI) replaces Governance-OS Preview
+import { AetherOSLanding } from './pages/AetherOSLanding';
+// ── Governance-OS Workspace Preview (moved to /preview)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
@@ -279,7 +281,7 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
-      <Route path="/" element={<PublicWorkspacePreview />} />
+      <Route path="/" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />

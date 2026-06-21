@@ -61,13 +61,9 @@ export function AetherOSLanding() {
 
       {/* HERO SECTION */}
       <section className="relative h-screen flex items-center justify-center z-10">
-        {/* Hero Image - Split Earth */}
+        {/* Placeholder Hero Image - Gradient (echtes hero-earth-split.jpg später ergänzen) */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="/hero-earth-split.jpg"
-            alt="RealSync Dynamics AI - Split Earth"
-            className="w-full h-full object-cover opacity-90"
-          />
+          <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" />
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/70 to-black" />
         </div>
 

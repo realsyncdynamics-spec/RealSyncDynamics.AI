@@ -241,7 +241,6 @@ import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
 import { CookieConsent } from './components/CookieConsent';
 import { ScrollToTop } from './components/ScrollToTop';
-import { GovernanceBrowserShell } from './components/governance-os/GovernanceBrowserShell';
 import { AppShell } from './components/app-shell/AppShell';
 import { RemediationPlaceholder } from './components/governance-os/RemediationPlaceholder';
 const AssistentChip = lazy(() => import('./components/AssistentChip').then((m) => ({ default: m.AssistentChip })));
@@ -447,8 +446,8 @@ function RoutesWithTracking() {
       {/* ── Kanonische Workspace-Routen (/app/*) — Governance OS ──
           Wiederverwendung bestehender Views; alte Pfade redirecten unten.
           Chat (CreatorDashboard) bleibt als Assistent unter /assistant. */}
-      {/* ── Governance OS Browser Shell — alle /app/* Routen ──
-          GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
+      {/* ── AppShell — alle /app/* Routen ──
+          AppShell: BrowserTopBar + AppSidebar (links) + GovernanceCanvas + AgentSidebar (rechts).
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
       <Route path="/app" element={<AppShell><GovernanceOsDashboard /></AppShell>} />
       <Route path="/app/home" element={<AppShell><WorkspaceHome /></AppShell>} />

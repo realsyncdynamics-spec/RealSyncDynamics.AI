@@ -151,21 +151,21 @@ export function MainLanding() {
 function Header() {
   return (
     <header className="absolute top-0 left-0 right-0 z-30">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2.5">
-          <Snowflake className="w-6 h-6 text-cyan-400" strokeWidth={1.5} />
-          <span className="text-lg font-semibold tracking-tight">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 sm:h-20 flex items-center justify-between">
+        <a href="/" className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          <Snowflake className="w-5 sm:w-6 h-5 sm:h-6 text-cyan-400" strokeWidth={1.5} />
+          <span className="text-sm sm:text-lg font-semibold tracking-tight">
             RealSync <span className="font-normal text-white/90">Dynamics.AI</span>
           </span>
         </a>
-        <nav className="hidden lg:flex items-center gap-8">
+        <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
           {NAV_LINKS.map((l) => (
             <SmartLink key={l.label} to={l.to} className="text-sm text-white/70 hover:text-white transition-colors">{l.label}</SmartLink>
           ))}
           <SmartLink to="/app" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
-        <SmartLink to="/app" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-          KI-OS entdecken<ArrowRight className="w-4 h-4" />
+        <SmartLink to="/app" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
+          KI-OS<span className="hidden sm:inline"> entdecken</span><ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </SmartLink>
       </div>
     </header>
@@ -185,42 +185,42 @@ function Hero() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2.5 px-3 py-1.5 mb-8 border border-cyan-500/40 bg-cyan-500/5 rounded-full">
-              <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
-              <span className="font-mono text-xs tracking-widest text-cyan-300 flex items-center gap-1.5">
-                GOVERNANCE COMPLEXITY SCORE<ArrowRight className="w-3 h-3" />
+            <div className="inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 rounded-full">
+              <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
+              <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
+                GOVERNANCE COMPLEXITY SCORE<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.05] tracking-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] sm:leading-[1.05] tracking-tight mb-4 sm:mb-6">
               Das KI-<br />Betriebssystem für<br />DSGVO &amp; <span className="text-cyan-400">EU AI Act</span>
             </h1>
 
-            <p className="font-mono text-sm tracking-[0.25em] text-cyan-400/90 mb-6">
+            <p className="font-mono text-[11px] sm:text-sm tracking-[0.25em] text-cyan-400/90 mb-4 sm:mb-6">
               AI GOVERNANCE OS FOR TRUST &amp; VALUE
             </p>
 
-            <p className="text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-10">
+            <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-8 sm:mb-10">
               <span className="font-semibold text-white/90">RealSync Dynamics</span> entwickelt SaaS &amp; KI-Innovationen für die Zukunft. Unser erstes Produkt überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar.
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-6 mb-10 max-w-2xl">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 max-w-2xl">
               {HERO_FEATURES.map(({ icon: Icon, label, text }) => (
                 <div key={label}>
                   <div className="flex items-center gap-2 mb-2">
                     <Icon className="w-4 h-4 text-cyan-400" strokeWidth={1.75} />
-                    <span className="font-mono text-xs font-medium tracking-wider text-white">{label}</span>
+                    <span className="font-mono text-[10px] sm:text-xs font-medium tracking-wider text-white">{label}</span>
                   </div>
-                  <p className="text-xs text-white/60 leading-relaxed">{text}</p>
+                  <p className="text-[11px] sm:text-xs text-white/60 leading-relaxed">{text}</p>
                 </div>
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
                 KI-Betriebssystem entdecken<ArrowRight className="w-4 h-4" />
               </SmartLink>
-              <SmartLink to="/docs" className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+              <SmartLink to="/docs" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
                 <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
               </SmartLink>
             </div>
@@ -235,7 +235,7 @@ function Hero() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-12 lg:hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 lg:hidden">
           {METRICS.map((m) => (<MetricCard key={m.label} metric={m} />))}
         </div>
       </div>
@@ -247,10 +247,10 @@ function Hero() {
 function TrustStrip() {
   return (
     <section className="relative z-10 border-y border-white/10 bg-white/[0.02]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        <span className="font-mono text-[11px] tracking-widest text-white/40 uppercase">Konform mit</span>
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-5 sm:py-6 flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-8 lg:gap-x-10 gap-y-2.5 sm:gap-y-3">
+        <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase">Konform mit</span>
         {TRUST.map((t) => (
-          <span key={t} className="font-mono text-xs tracking-wider text-white/60">{t}</span>
+          <span key={t} className="font-mono text-[11px] sm:text-xs tracking-wider text-white/60">{t}</span>
         ))}
       </div>
     </section>
@@ -261,9 +261,9 @@ function TrustStrip() {
 function Platform() {
   return (
     <Section id="produkt" eyebrow="DIE PLATTFORM" title="Eine Runtime für vollständige KI-Governance" subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur.">
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {PLATFORM.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="group p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
+          <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
             <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
               <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
             </div>
@@ -302,12 +302,12 @@ function ProofBand() {
     { value: 'Art. 15+17', label: 'DSGVO-Selfservice automatisiert' },
   ];
   return (
-    <section className="relative z-10 py-16 border-y border-white/10 bg-gradient-to-r from-cyan-500/[0.04] via-transparent to-cyan-500/[0.04]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 grid grid-cols-2 lg:grid-cols-4 gap-8">
+    <section className="relative z-10 py-12 sm:py-16 border-y border-white/10 bg-gradient-to-r from-cyan-500/[0.04] via-transparent to-cyan-500/[0.04]">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
         {stats.map(({ value, label }) => (
           <div key={label} className="text-center">
-            <div className="font-mono text-3xl md:text-4xl font-bold text-cyan-400 mb-2">{value}</div>
-            <div className="text-sm text-white/60">{label}</div>
+            <div className="font-mono text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-2">{value}</div>
+            <div className="text-xs sm:text-sm text-white/60 leading-relaxed">{label}</div>
           </div>
         ))}
       </div>
@@ -319,7 +319,7 @@ function ProofBand() {
 function Pricing() {
   return (
     <Section id="preise" eyebrow="PREISE" title="Transparente Pläne mit klarer Wertschöpfung" subtitle="Vom Einzel-Creator bis zur DSB-Kanzlei. Metered Billing, jederzeit kündbar.">
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {PRICING.map((p) => (
           <div key={p.name} className={`relative flex flex-col p-7 rounded-2xl border ${p.featured ? 'border-cyan-400/60 bg-cyan-500/[0.06]' : 'border-white/10 bg-white/[0.02]'}`}>
             {p.featured && (
@@ -344,17 +344,17 @@ function Pricing() {
         ))}
       </div>
 
-      <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-7 rounded-2xl border border-white/10 bg-white/[0.02]">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-white/5 border border-white/10">
+      <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-4 p-6 sm:p-7 rounded-2xl border border-white/10 bg-white/[0.02]">
+        <div className="flex items-start sm:items-center gap-4 flex-1">
+          <div className="w-10 sm:w-11 h-10 sm:h-11 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 flex-shrink-0">
             <Building2 className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold">Enterprise</h3>
-            <p className="text-sm text-white/60">Custom Runtime, SLA, AI-Act-Modul, DSB-Integration, unlimitierte Domains.</p>
+            <h3 className="text-base sm:text-lg font-semibold">Enterprise</h3>
+            <p className="text-xs sm:text-sm text-white/60 leading-relaxed">Custom Runtime, SLA, AI-Act-Modul, DSB-Integration, unlimitierte Domains.</p>
           </div>
         </div>
-        <SmartLink to="/contact-sales" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap">
+        <SmartLink to="/contact-sales" className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap flex-shrink-0">
           Enterprise anfragen<ArrowRight className="w-4 h-4" />
         </SmartLink>
       </div>
@@ -387,20 +387,20 @@ function Security() {
 /* ── FINAL-CTA ──────────────────────────────────────────── */
 function FinalCta() {
   return (
-    <section className="relative z-10 py-24">
+    <section className="relative z-10 py-16 md:py-24">
       <div className="max-w-5xl mx-auto px-6 lg:px-10">
-        <div className="relative overflow-hidden rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-12 md:p-16 text-center">
-          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-5">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
             Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit funktioniert?
           </h2>
-          <p className="text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-10">
+          <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
             Starten Sie mit einem kostenlosen Audit — ohne Account, in unter fünf Minuten. Sehen Sie Ihren Governance Complexity Score sofort.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <SmartLink to="/audit" className="inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <SmartLink to="/audit" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
               Kostenloses Audit starten<ArrowRight className="w-4 h-4" />
             </SmartLink>
-            <SmartLink to="/contact-sales" className="inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+            <SmartLink to="/contact-sales" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
               Mit Sales sprechen
             </SmartLink>
           </div>
@@ -453,37 +453,37 @@ function Footer() {
   ];
   return (
     <footer className="relative z-10 border-t border-white/10">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-14">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-10">
-          <div className="col-span-2 lg:col-span-1">
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10 sm:py-14">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8 lg:gap-10">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             <Link to="/" className="flex items-center gap-2.5 mb-4">
               <Snowflake className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
-              <span className="font-semibold tracking-tight">RealSync Dynamics.AI</span>
+              <span className="text-sm sm:text-base font-semibold tracking-tight">RealSync Dynamics.AI</span>
             </Link>
-            <p className="text-xs text-white/50 leading-relaxed max-w-xs">
+            <p className="text-[11px] sm:text-xs text-white/50 leading-relaxed max-w-xs">
               Europäische Runtime-native AI-Governance- und Compliance-Plattform.
               Digitalisierung &amp; KI-Betriebssystem im Mittelpunkt.
             </p>
           </div>
           {cols.map((c) => (
             <div key={c.title}>
-              <h4 className="font-mono text-[11px] tracking-widest text-white/40 uppercase mb-4">{c.title}</h4>
-              <ul className="space-y-2.5">
+              <h4 className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase mb-3 sm:mb-4">{c.title}</h4>
+              <ul className="space-y-2">
                 {c.links.map((l) => (
-                  <li key={l.label}><SmartLink to={l.to} className="text-sm text-white/60 hover:text-white transition-colors">{l.label}</SmartLink></li>
+                  <li key={l.label}><SmartLink to={l.to} className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">{l.label}</SmartLink></li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="font-mono text-xs text-white/50">© 2026 RealSync Dynamics. SaaS &amp; KI-Innovationen.</p>
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <Link to="/impressum" className="font-mono text-xs text-white/50 hover:text-white transition-colors">Impressum</Link>
-            <Link to="/datenschutz" className="font-mono text-xs text-white/50 hover:text-white transition-colors">Datenschutz</Link>
-            <Link to="/agb" className="font-mono text-xs text-white/50 hover:text-white transition-colors">AGB</Link>
-            <Link to="/legal/avv" className="font-mono text-xs text-white/50 hover:text-white transition-colors">AVV</Link>
-            <span className="font-mono text-xs text-white/40">EU-Hosting · DSGVO · EU AI Act</span>
+        <div className="mt-10 sm:mt-12 pt-5 sm:pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-center sm:text-left">
+          <p className="font-mono text-[10px] sm:text-xs text-white/50">© 2026 RealSync Dynamics. SaaS &amp; KI-Innovationen.</p>
+          <nav className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 sm:gap-x-5 gap-y-2">
+            <Link to="/impressum" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">Impressum</Link>
+            <Link to="/datenschutz" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">Datenschutz</Link>
+            <Link to="/agb" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">AGB</Link>
+            <Link to="/legal/avv" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">AVV</Link>
+            <span className="font-mono text-[10px] sm:text-xs text-white/40">EU-Hosting · DSGVO · EU AI Act</span>
           </nav>
         </div>
       </div>
@@ -494,12 +494,12 @@ function Footer() {
 /* ── HELPERS ────────────────────────────────────────────── */
 function Section({ id, eyebrow, title, subtitle, children }: { id?: string; eyebrow: string; title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="relative z-10 py-20 md:py-28">
+    <section id={id} className="relative z-10 py-16 md:py-24 lg:py-28">
       <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="max-w-2xl mb-12">
-          <p className="font-mono text-xs tracking-[0.25em] text-cyan-400/90 mb-4">{eyebrow}</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">{title}</h2>
-          <p className="text-base text-white/60 leading-relaxed">{subtitle}</p>
+        <div className="max-w-2xl mb-10 md:mb-12">
+          <p className="font-mono text-[10px] sm:text-xs tracking-[0.25em] text-cyan-400/90 mb-3 sm:mb-4">{eyebrow}</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-3 sm:mb-4">{title}</h2>
+          <p className="text-sm sm:text-base text-white/60 leading-relaxed">{subtitle}</p>
         </div>
         {children}
       </div>
@@ -511,14 +511,14 @@ type Metric = { label: string; value: string; suffix?: string; accent?: boolean;
 
 function MetricCard({ metric, className = '' }: { metric: Metric; className?: string }) {
   return (
-    <div className={`px-5 py-4 border border-white/10 bg-white/5 backdrop-blur-md rounded-xl shadow-2xl ${className}`}>
-      <div className="flex items-center gap-2 mb-1.5">
+    <div className={`px-4 py-3 sm:px-5 sm:py-4 border border-white/10 bg-white/5 backdrop-blur-md rounded-xl shadow-2xl ${className}`}>
+      <div className="flex items-center gap-2 mb-2">
         {metric.live && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
-        <span className="font-mono text-[10px] tracking-widest text-white/50">{metric.label}</span>
+        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">{metric.label}</span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className={`font-mono font-bold ${metric.accent || metric.live ? 'text-cyan-400 text-lg' : 'text-white text-2xl'}`}>{metric.value}</span>
-        {metric.suffix && <span className="font-mono text-xs text-white/40">{metric.suffix}</span>}
+        <span className={`font-mono font-bold ${metric.accent || metric.live ? 'text-cyan-400 text-base sm:text-lg' : 'text-white text-xl sm:text-2xl'}`}>{metric.value}</span>
+        {metric.suffix && <span className="font-mono text-[11px] sm:text-xs text-white/40">{metric.suffix}</span>}
       </div>
     </div>
   );

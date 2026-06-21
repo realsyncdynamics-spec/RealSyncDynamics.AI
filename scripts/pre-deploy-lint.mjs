@@ -256,6 +256,18 @@ const LEGACY_FILENAME_ALLOWLIST = new Set([
   '20260510_ai_governance_core.sql',
 ]);
 
+// Migrations that knowingly share a timestamp with a predecessor. These
+// duplicate 20260624000000 stamps were deliberately re-introduced (hotfix
+// f7e8164) because the migrations were already applied; renaming them would
+// desync the Supabase migration history. They are functionally independent
+// (no inter-dependency on apply order), so the order check downgrades them
+// from error to info instead of blocking deploys.
+const DUPLICATE_STAMP_ALLOWLIST = new Set([
+  '20260624000000_automation_skills_runs.sql',
+  '20260624000000_governance_os_runtime.sql',
+  '20260624000000_stripe_live_price_ids.sql',
+]);
+
 function lintMigrations() {
   const migDir = join(__root, 'supabase/migrations');
   if (!existsSync(migDir)) {
@@ -288,8 +300,10 @@ function lintMigrations() {
     const a = stamps[i - 1];
     const b = stamps[i];
     if (b.stamp <= a.stamp) {
-      push('error', 'migration-order',
-        `migration ${b.file} stamp ${b.stamp} is not strictly greater than predecessor ${a.file} (${a.stamp})`,
+      const severity = DUPLICATE_STAMP_ALLOWLIST.has(b.file) ? 'info' : 'error';
+      push(severity, 'migration-order',
+        `migration ${b.file} stamp ${b.stamp} is not strictly greater than predecessor ${a.file} (${a.stamp})`
+        + (severity === 'info' ? ' — allowlisted known duplicate' : ''),
         `supabase/migrations/${b.file}`);
     }
   }

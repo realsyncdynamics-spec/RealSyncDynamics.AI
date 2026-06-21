@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
+import { useHealthStatus } from '../hooks/useHealthStatus';
 import {
   Snowflake,
   ShieldCheck,
@@ -72,12 +73,15 @@ const HERO_FEATURES = [
   { icon: Activity, label: 'KONTINUIERLICH', text: 'Monitoring, Alerts & Evidence in Echtzeit.' },
 ];
 
-const METRICS = [
+// Showcase-Metriken. DSGVO/EU-AI-Act sind Statusbadges; RISK SCORE & EVIDENCE
+// sind illustrative Produkt-Showcase-Werte (keine tenant-/RLS-Daten auf der
+// oeffentlichen Seite). MONITORING wird zur Laufzeit aus dem echten /health-
+// Endpoint befuellt — siehe Hero() + useHealthStatus.
+const STATIC_METRICS: Metric[] = [
   { label: 'DSGVO', value: 'Compliant', accent: true },
   { label: 'EU AI ACT', value: 'READY', accent: true },
   { label: 'RISK SCORE', value: '87', suffix: '/100' },
   { label: 'EVIDENCE', value: '1.248', suffix: 'Nachweise' },
-  { label: 'MONITORING', value: 'LIVE', live: true },
 ];
 
 const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TTDSG', 'BAIT', 'MaRisk', 'EU-Hosting'];
@@ -174,6 +178,13 @@ function Header() {
 
 /* ── HERO ───────────────────────────────────────────────── */
 function Hero() {
+  // MONITORING-Karte: echtes Live-Signal aus dem oeffentlichen /health-Endpoint.
+  const { label: monitoringLabel, pulse } = useHealthStatus();
+  const metrics: Metric[] = [
+    ...STATIC_METRICS,
+    { label: 'MONITORING', value: monitoringLabel, live: pulse },
+  ];
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -227,16 +238,16 @@ function Hero() {
           </div>
 
           <div className="relative hidden lg:block min-h-[520px]">
-            <MetricCard className="absolute top-4 right-8" metric={METRICS[0]} />
-            <MetricCard className="absolute top-32 right-44" metric={METRICS[1]} />
-            <MetricCard className="absolute top-52 right-4" metric={METRICS[2]} />
-            <MetricCard className="absolute bottom-24 right-32" metric={METRICS[3]} />
-            <MetricCard className="absolute bottom-4 right-10" metric={METRICS[4]} />
+            <MetricCard className="absolute top-4 right-8" metric={metrics[0]} />
+            <MetricCard className="absolute top-32 right-44" metric={metrics[1]} />
+            <MetricCard className="absolute top-52 right-4" metric={metrics[2]} />
+            <MetricCard className="absolute bottom-24 right-32" metric={metrics[3]} />
+            <MetricCard className="absolute bottom-4 right-10" metric={metrics[4]} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 lg:hidden">
-          {METRICS.map((m) => (<MetricCard key={m.label} metric={m} />))}
+          {metrics.map((m) => (<MetricCard key={m.label} metric={m} />))}
         </div>
       </div>
     </section>

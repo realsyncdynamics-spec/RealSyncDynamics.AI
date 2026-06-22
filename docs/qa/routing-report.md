@@ -17,12 +17,22 @@ Geprüfte Routen u. a.: `/`, `/pricing`, `/audit`, `/tools`, `/about`, `/ai-act`
 
 | Host | Fallback-Mechanismus | Status |
 |---|---|---|
-| GitHub Pages (Primary) | `public/404.html`-Pattern + Deep-Link-Restore-Script in `index.html` | VERIFIED |
-| Vercel | `vercel.json` → `rewrites: [{ source:"/(.*)", destination:"/index.html" }]` | VERIFIED |
-| Cloudflare-Format | `_redirects`: `/*  /index.html  200` | VERIFIED (Config vorhanden) |
-| nginx (VPS-Fallback) | `try_files $uri $uri/ /index.html` | VERIFIED |
+| GitHub Pages (Primary) | `public/404.html`-Pattern + Deep-Link-Restore-Script in `index.html` | VERIFIED (Config) |
+| Vercel | `vercel.json` → `rewrites: [{ source:"/(.*)", destination:"/index.html" }]` | VERIFIED (Config) |
+| Cloudflare Pages | `_redirects`: `/*  /index.html  200` (liegt in `dist/`) | ⚠️ **LIVE-PROBE: GREIFT NICHT** — siehe R4 |
+| nginx (VPS-Fallback) | `try_files $uri $uri/ /index.html` | VERIFIED (Config) |
 
-Direkter Aufruf + Reload auf `/pricing` liefert im Preview-Server 200 + clientseitiges Render — kein Server-404. **In Production hängt das korrekte Verhalten vom tatsächlichen Host ab** (GitHub Pages: über `404.html`-Restore; siehe `infrastructure-tour.md`).
+Direkter Aufruf + Reload auf `/pricing` liefert im **Vite-Preview-Server** 200 + clientseitiges Render — kein Server-404.
+
+**Live-Probe (2026-06-22) gegen Cloudflare-Pages-Deployments** (prod `realsyncdynamics-ai.pages.dev`, Hash- und Branch-Alias):
+
+| URL | Root `/` | Deep-Link `/pricing`, `/audit` |
+|---|---|---|
+| `realsyncdynamics-ai.pages.dev` | **200** | **404** |
+| `bcf8bb96.realsyncdynamics-ai.pages.dev` | 200 | **404** |
+| `claude-gallant-brown-o7ci7m.…pages.dev` | 200 | **404** |
+
+Trotz korrektem `dist/_redirects` (`/*  /index.html  200`) liefern Deep-Links auf Cloudflare **HTTP 404** und servieren das `dist/404.html` (GitHub-Pages-Shim: `window.location.replace('/?_path=…')`). Ein JS-fähiger Browser landet danach via Client-Redirect doch in der App — **aber** der HTTP-Status ist 404 (schlecht für SEO/Crawler/Prerender) und der saubere `_redirects`-200-Rewrite greift **nicht**. Der `_redirects`-Catch-all wird durch die Anwesenheit von `404.html` ausgehebelt. Siehe **R4**.
 
 ## Auth- / Tenant-Verhalten
 
@@ -37,6 +47,8 @@ Direkter Aufruf + Reload auf `/pricing` liefert im Preview-Server 200 + clientse
 | R1 | **Duplizierte Route `/app/agents`** in `src/App.tsx` (zwei Definitionen). Die zweite ist toter Code. | NIEDRIG (P3) | Eine Definition entfernen, Zielkomponente final festlegen (`GovernanceAgentsCenterView` vs. `AgentsOverviewPage`). |
 | R2 | 318 eindeutige Pfade, viele Aliase. | INFO | Konsistenz-Tests für Preis/Claim über Shared-Shells beibehalten. |
 | R3 | `/os/*`-Prototyp ist öffentlich erreichbar (Mockdata). | NIEDRIG | Hinter Feature-Flag / `noindex` legen (robots deckt `/os` aktuell nicht explizit ab — prüfen). |
+| R4 | **Cloudflare-Pages SPA-Deep-Links liefern HTTP 404** (prod + preview), trotz korrektem `dist/_redirects`. `dist/404.html` (GitHub-Pages-Shim) hebelt den `_redirects`-200-Rewrite aus. Browser landen via JS-Redirect dennoch in der App, aber Status = 404. | MITTEL (P2) | Host-Strategie klären (siehe `infrastructure-tour.md`): Falls Cloudflare Pages kanonisch wird → `404.html` aus dem CF-Build entfernen ODER `_routes.json` ergänzen, damit `_redirects` greift. Falls GitHub Pages kanonisch → CF-Befund akzeptieren/CF deaktivieren. **Nicht durch diesen PR verursacht.** |
+| R5 | **Custom-Domain `realsyncdynamicsai.de` liefert HTTP 500** auf allen Pfaden (Edge = Cloudflare, `cf-cache-status: DYNAMIC`). | **HOCH (P1) — Produktions-Health** | Live-Domain errort. Origin/Worker/Pages-Function-Konfiguration prüfen. **Nicht durch diesen PR verursacht** (PR-Branch ist nicht auf die Prod-Domain deployt). Vor jedem Merge/Go-Live verifizieren. |
 
 ## 404-Verhalten
 `path="*"` → `NotFoundPage` als letzte Route. E2E bestätigt: Unsinns-Pfad rendert NotFound-Marker; gültige Pfade nicht.

@@ -1,0 +1,70 @@
+version: '3.8'
+
+# realsync-runtime-core — Deployment via Docker (Coolify / Traefik-VPS-Stack).
+#
+# Dieser Fastify-Service (Tenant-, Policy-, Event-Orchestrierung) ist ein
+# langlaufender Backend-Dienst mit Postgres-, Redis- und NATS-Abhaengigkeiten
+# und gehoert NICHT auf Vercel (Vercel ist fuer das statische SPA-Frontend da,
+# das ohnehin auf Cloudflare Pages / GitHub Pages laeuft). Vercel-Deployments
+# fuer dieses Verzeichnis sind per vercel.json (git.deploymentEnabled=false)
+# deaktiviert.
+#
+# Deploy-Pfad: Coolify baut das Dockerfile und routet ueber den bestehenden
+# Host-Traefik (gleiche Konvention wie deploy/ollama-traefik/).
+#
+# Voraussetzungen auf dem VPS:
+#   - Externes Traefik-Netz (TRAEFIK_NETWORK) mit Let's-Encrypt-Resolver
+#   - Erreichbare Postgres-, Redis- und NATS-Instanzen (siehe .env.example)
+#   - DNS A-Record runtime-core.realsyncdynamicsai.de → VPS
+
+services:
+  runtime-core:
+    build: .
+    image: realsync/runtime-core:latest
+    container_name: realsync-runtime-core
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+    expose:
+      - "4000"
+    # Resource-Limits — schuetzt den Host vor Runaway
+    mem_limit: 512m
+    cpus: 0.75
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 3
+    # Logs — bei Coolify automatisch aggregiert
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+    networks:
+      - internal
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: runtime-core.realsyncdynamicsai.de ───────────────────────
+      - "traefik.http.routers.realsync-runtime-core.rule=Host(`runtime-core.realsyncdynamicsai.de`)"
+      - "traefik.http.routers.realsync-runtime-core.entrypoints=websecure"
+      - "traefik.http.routers.realsync-runtime-core.tls=true"
+      - "traefik.http.routers.realsync-runtime-core.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      - "traefik.http.routers.realsync-runtime-core.service=realsync-runtime-core"
+
+      # ── Service ──────────────────────────────────────────────────────────
+      - "traefik.http.services.realsync-runtime-core.loadbalancer.server.port=4000"
+
+networks:
+  internal:
+    driver: bridge
+  traefik_proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK}

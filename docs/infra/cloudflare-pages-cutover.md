@@ -14,27 +14,36 @@ Domain `HTTP 200`, `server: GitHub.com` über GitHub Pages.
 | --- | --- | --- |
 | `curl -I https://realsyncdynamicsai.de/` | `HTTP 404/500`, `server: cloudflare`, `cf-ray`, `cache-control: no-store` | DNS zeigt **nicht mehr** auf GitHub Pages, sondern proxied auf Cloudflare (104.21.x / 172.67.x). |
 | `curl https://realsyncdynamics-ai.pages.dev/` | `HTTP 200` | Das Cloudflare-Pages-Projekt **existiert** und liefert die Root aus. |
-| `curl https://realsyncdynamics-ai.pages.dev/landing` | `HTTP 404` | Der **SPA-Fallback (`_redirects`) ist im Production-Deployment nicht aktiv** — Deep-Links brechen. |
+| `curl https://realsyncdynamics-ai.pages.dev/landing` | `HTTP 404` (Body = `404.html`) | Deep-Links liefern 404; die `_redirects`-200-Rewrite greift **nicht**. |
 | `curl https://<branch>.realsyncdynamics-ai.pages.dev/` | `HTTP 200` | Branch-Previews (Cloudflare Git-Integration) funktionieren. |
+| `curl https://claude-cloudflare-deploy.<…>.pages.dev/landing` | `HTTP 404` | **Auch ein frischer Build MIT `_redirects` liefert 404** — widerlegt „stale deployment". |
+| `curl …/landing` Body | `public/404.html` = JS-Shim `location.replace('/?_path='+path)` | Deep-Links funktionieren im Browser nur über den **spa-github-pages-404-Hack** (404 + Client-Redirect), nicht über `_redirects`. |
 | Cloudflare Worker `realsyncdynamics` | `return new Response("Hello world")` | Platzhalter-Worker, **nicht** auf der Apex-Route → nicht die 404-Ursache. |
-| `public/_redirects` auf `main` | `/* /index.html 200` ✓ vorhanden | SPA-Fallback ist im Repo korrekt; das Production-Deployment ist also veraltet/ohne `_redirects` gebaut. |
 
 **Zwei Ursachen:**
 
-1. **Apex nicht an Pages gebunden.** `realsyncdynamicsai.de` ist proxied über
-   Cloudflare, aber die **Custom Domain ist nicht im Pages-Projekt
+1. **Apex nicht an Pages gebunden (Production-Blocker).** `realsyncdynamicsai.de`
+   ist proxied über Cloudflare, aber die **Custom Domain ist nicht im Pages-Projekt
    `realsyncdynamics-ai` registriert** (und auf keiner Worker-Route). Cloudflare
    hat nichts auszuliefern → Edge-404/500.
-2. **Stale Production-Deployment.** Das aktuelle Pages-Production-Deployment
-   honoriert `_redirects` nicht (Deep-Links → 404), obwohl `main` die Datei
-   enthält. Ein frischer Build aus `main` behebt das.
+2. **`_redirects`-200-Rewrite greift auf diesem Pages-Projekt nicht (sekundär,
+   SEO).** `public/_redirects` (`/* /index.html 200`) ist im Build vorhanden,
+   wird auf Cloudflare Pages aber **nicht** angewandt — empirisch verifiziert: ein
+   frischer Branch-Preview MIT `_redirects` liefert Deep-Links weiterhin als 404.
+   Statt der 200-Rewrite serviert Cloudflare die `public/404.html` (JS-Redirect-
+   Shim aus der GitHub-Pages-Ära). Browser landen letztlich im SPA, aber mit
+   HTTP-404-Status + Redirect-Hop (schlecht für Crawler/Social-Previews).
+   **Ein frischer Build allein behebt das NICHT** — Ursache liegt in der Pages-
+   Projekt-Konfiguration (vermutlich die mitgelieferte `404.html` bzw. das
+   Build-Output-/SPA-Setting), die nur im Cloudflare-Dashboard prüfbar ist.
 
 ## 3. Was in diesem Branch vorbereitet ist
 
 - `.github/workflows/deploy-cloudflare-pages.yml` — CI-Deploy der SPA nach
   Cloudflare Pages. **Secret-gated**: überspringt sich sauber (Warnung, kein
   roter Build), solange Secrets fehlen. Baut frisch inkl. `_redirects`/`_headers`/
-  `404.html` und verifiziert deren Vorhandensein → behebt Ursache (2).
+  `404.html` und verifiziert deren Vorhandensein. ⚠ Liefert ein **reproduzierbares
+  Production-Deployment**, behebt aber Ursache (2) NICHT allein — siehe Abschnitt 2.
 - `public/_redirects` (`/* /index.html 200`), `public/_headers`,
   `public/404.html` — bereits im Repo, im `dist/`-Build verifiziert vorhanden.
 - `wrangler.toml` — vorhanden (Legacy-Pages-Format `[build.upload] dir = "dist"`).
@@ -61,17 +70,32 @@ Behebt Ursache (1):
 4. Nach Bindung verifizieren:
    ```
    curl -sI https://realsyncdynamicsai.de/        # erwartet: HTTP 200
-   curl -sI https://realsyncdynamicsai.de/landing # erwartet: HTTP 200 (SPA-Fallback)
+   curl -sI https://realsyncdynamicsai.de/landing # heute: 404 (404.html-Shim), Ziel: 200
    ```
+
+## 5b. Saubere Deep-Link-200 (Ursache 2 — Pages-SPA-Config)
+
+Damit Deep-Links echte `HTTP 200` liefern statt `404 + JS-Redirect`:
+
+1. Im Cloudflare-Pages-Dashboard das **Build-Output-Directory** prüfen (muss `dist`
+   sein, damit `_redirects` im Root liegt).
+2. Test: **`public/404.html` entfernen** und neu deployen. Hypothese: die
+   mitgelieferte `404.html` verhindert, dass Cloudflare die `_redirects`-200-Rewrite
+   als Catch-all nutzt. Ohne `404.html` sollte `/* /index.html 200` greifen.
+3. Verifizieren: `curl -sI …pages.dev/landing` → `HTTP 200`.
+4. Bleibt es bei 404, ist im Pages-Projekt das **SPA-/Framework-Preset** zu prüfen.
+
+(Dieser Schritt ist im Repo NICHT vorausgeändert, weil `404.html` auf GitHub Pages
+gebraucht wird — siehe Rollback. Erst nach erfolgreichem Cloudflare-Test entfernen.)
 
 ## 6. Reihenfolge bis Livegang (GitHub Pages bleibt parallel)
 
 1. Repo-Secrets setzen (Abschnitt 4).
 2. Workflow `Deploy to Cloudflare Pages` manuell via `workflow_dispatch` triggern
-   → frisches Production-Deployment mit aktivem `_redirects`.
-3. Pages-Deployment auf `*.pages.dev` prüfen: Root **und** Deep-Link = 200.
-4. Custom Domain im Dashboard binden (Abschnitt 5).
-5. Apex `realsyncdynamicsai.de` verifizieren = 200.
+   → frisches, reproduzierbares Production-Deployment.
+3. Custom Domain im Dashboard binden (Abschnitt 5) → Apex = 200.
+4. Deep-Link-200 herstellen (Abschnitt 5b) und prüfen.
+5. Apex `realsyncdynamicsai.de` Root **und** Deep-Link verifizieren = 200.
 6. **Erst dann** GitHub Pages deaktivieren: `public/CNAME` entfernen und
    `deploy-pages.yml` archivieren/abschalten. (Noch NICHT in diesem Branch —
    GitHub Pages bleibt bis zur verifizierten Cloudflare-Production aktiv.)

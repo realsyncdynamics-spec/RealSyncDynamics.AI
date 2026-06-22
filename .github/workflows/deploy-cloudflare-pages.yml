@@ -14,10 +14,12 @@ name: Deploy to Cloudflare Pages
 #      nicht aktiv hat (Deep-Links wie /landing -> 404 auf *.pages.dev).
 # Siehe docs/infra/cloudflare-pages-cutover.md fuer die vollstaendige Analyse.
 #
-# Dieser Workflow behebt Punkt (2): jeder Push auf main baut frisch (inkl.
-# public/_redirects, public/_headers, 404.html) und deployt nach Cloudflare
-# Pages. Punkt (1) — Custom-Domain-Bindung — ist eine einmalige Aktion im
-# Cloudflare-Dashboard und in der Doku beschrieben.
+# Dieser Workflow liefert ein reproduzierbares Production-Deployment: jeder Push
+# auf main baut frisch (inkl. public/_redirects, public/_headers, 404.html) und
+# deployt nach Cloudflare Pages. WICHTIG: er behebt Punkt (2) NICHT allein — ein
+# frischer Build MIT _redirects liefert Deep-Links weiterhin als 404 (am Branch-
+# Preview verifiziert). Punkt (1) Custom-Domain-Bindung und Punkt (2) saubere
+# Deep-Link-200 sind Cloudflare-Dashboard-Aktionen (siehe Doku Abschnitt 5/5b).
 #
 # SICHERHEIT: Keine geheimen Werte im Repo. Der Job ueberspringt sich selbst
 # sauber (Warnung statt rotem Build), solange folgende Repo-Secrets fehlen:

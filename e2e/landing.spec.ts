@@ -98,17 +98,21 @@ test.describe('Workspace-Vorschau (/)', () => {
     await page.goto('/');
   });
 
-  test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {
+  test('Hero zeigt AI-OS-Headline und Self-Serve-CTAs', async ({ page }) => {
+    // Europa-Erde-Hero (Zielbild): englische AI-OS-Positionierung.
     await expect(
       page.getByRole('heading', {
-        name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität/i,
+        name: /The AI Operating System for GDPR, EU AI Act/i,
       }),
     ).toBeVisible();
 
-    await expect(page.getByText(/Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar/i)).toBeVisible();
+    await expect(
+      page.getByText(/AI Governance & Code Optimization OS for Trust & Value/i),
+    ).toBeVisible();
 
-    await expect(page.getByRole('button', { name: /Dashboard öffnen/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Governance Audit starten/i })).toBeVisible();
+    // Self-Serve-CTAs (kein Demo-/Sales-Zwang); „Start for Free" auch in der Nav.
+    await expect(page.getByRole('link', { name: /Start for Free/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /View Product Tour/i })).toBeVisible();
   });
 
   test('Governance Complexity Score-Einstieg navigiert zum Assessment', async ({ page }) => {

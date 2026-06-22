@@ -109,11 +109,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify user has access to tenant
+    // Verify user has access to tenant (RLS-scoped membership check).
     const { data: member } = await userClient
-      .from('workspace_members')
+      .from('memberships')
       .select('id')
-      .eq('workspace_id', body.tenant_id)
+      .eq('tenant_id', body.tenant_id)
       .eq('user_id', userResp.user.id)
       .maybeSingle();
 

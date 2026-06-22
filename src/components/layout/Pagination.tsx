@@ -10,7 +10,7 @@ interface PaginationProps {
   showFirstLast?: boolean;
 }
 
-export const Pagination = React.forwardRef<HTMLNavElement, PaginationProps>(
+export const Pagination = React.forwardRef<HTMLElement, PaginationProps>(
   (
     {
       currentPage,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useForm } from './FormContext';
 
-interface FormFieldProps extends React.HTMLAttributes<HTMLDivElement> {
+interface FormFieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   name: string;
   children: (fieldProps: {
     value: any;

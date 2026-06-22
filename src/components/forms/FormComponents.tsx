@@ -48,7 +48,7 @@ export const FormHelper = React.forwardRef<HTMLParagraphElement, FormHelperProps
 
 FormHelper.displayName = 'FormHelper';
 
-interface FieldsetProps extends React.FieldSetHTMLAttributes<HTMLFieldSetElement> {
+interface FieldsetProps extends React.FieldsetHTMLAttributes<HTMLFieldSetElement> {
   legend?: string;
   children: React.ReactNode;
 }

@@ -5,7 +5,7 @@
 ## P0 — blockiert Nutzerfluss
 | # | Lücke | Beleg | Status |
 |---|---|---|---|
-| P0-1 | **`tsc`/Lint rot (16 Fehler)** im neuen Design-System (PR #663). Build grün (esbuild typecheckt nicht), aber CI-`ci.yml` (`tsc`) sollte rot sein und blockiert saubere Releases. | `npm run lint` → 16 `error TS`, alle in `src/components/{ui,forms,data,layout,navigation}` | **offen** (Komponenten nirgends importiert → isoliert, aber Typensauberkeit gebrochen) |
+| P0-1 | **`tsc`/Lint rot (16 Fehler)** im neuen Design-System (PR #663). Build grün (esbuild typecheckt nicht), aber CI-`ci.yml` (`tsc`) war rot und blockierte saubere Releases. | `npm run lint` → 16 `error TS`, alle in `src/components/{ui,forms,data,layout,navigation}` | ✅ **behoben** in diesem Audit (nicht-existente DOM-Typen `HTML{Nav,Aside}Element`→`HTMLElement`, `Ul/FieldSetHTMLAttributes`→korrekt, `size`-Prop-Kollision via `Omit`, doppelter `FormError`-Export aliasiert, `useRef`-Initialwert, `TimelineItemProps`-Export). `tsc` jetzt 0 Fehler. |
 | P0-2 | ~~Telemetrie-404 auf jeder Seite (env-lose Builds)~~ | `src/lib/track.ts` | ✅ **behoben** in diesem Audit |
 
 > Hinweis: Es wurden **keine** harten Routing-/Render-Blocker auf öffentlichen Seiten gefunden (E2E 48/48 grün). P0-1 ist „Release-Hygiene"-blockierend, kein Nutzer-Render-Blocker.

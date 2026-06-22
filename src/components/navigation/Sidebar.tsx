@@ -17,7 +17,7 @@ interface SidebarProps {
   onItemClick?: (item: SidebarItem) => void;
 }
 
-export const Sidebar = React.forwardRef<HTMLAsideElement, SidebarProps>(
+export const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
   (
     {
       items,

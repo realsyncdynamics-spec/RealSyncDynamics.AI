@@ -10,8 +10,10 @@ import { useLocation } from 'react-router-dom';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const ENDPOINT = `${SUPABASE_URL}/functions/v1/track-pageview`;
 
-// Skip in dev to avoid polluting analytics with HMR refreshes.
-const ENABLED = import.meta.env.PROD;
+// Skip in dev to avoid polluting analytics with HMR refreshes. Auch
+// deaktivieren, wenn VITE_SUPABASE_URL fehlt — sonst feuert der Tracker
+// gegen `undefined/functions/v1/track-pageview` (404, Konsolen-Error).
+const ENABLED = import.meta.env.PROD && Boolean(SUPABASE_URL);
 
 function readUtm(): { utm_source?: string; utm_medium?: string; utm_campaign?: string } {
   if (typeof window === 'undefined') return {};

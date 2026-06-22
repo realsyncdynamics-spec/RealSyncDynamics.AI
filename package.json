@@ -22,7 +22,8 @@
     "qa:governance-test": "tsx scripts/qa-governance-test.ts",
     "qa:smoke": "tsx scripts/qa-smoke-test.ts",
     "qa:load": "tsx scripts/qa-load-test.ts",
-    "qa:governance": "tsx scripts/qa-governance-test.ts",
+    "qa:backend-inventory": "node scripts/qa/backend-function-inventory.mjs",
+    "qa:backend-smoke": "node scripts/qa/backend-smoke-test.mjs",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh"
   },

@@ -48,9 +48,9 @@ export type CTAKey =
 export const CTA_TARGETS: Record<CTAKey, { label: string; href: string }> = {
   free_audit:     { label: 'Kostenlosen Check starten', href: '/audit' },
   pricing:        { label: 'Pläne ansehen',             href: '/pricing' },
-  partners:       { label: 'Partner-Pilot anfragen',    href: '/partners' },
+  partners:       { label: 'Partner-Programm ansehen',  href: '/partners' },
   docs_evidence:  { label: 'Evidence-Modell lesen',     href: '/evidence' },
-  contact_sales:  { label: 'Sales kontaktieren',        href: '/contact-sales' },
+  contact_sales:  { label: 'Enterprise anfragen',       href: '/contact-sales' },
 };
 
 export interface ContentAsset {

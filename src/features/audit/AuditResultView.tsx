@@ -496,7 +496,7 @@ function MonitoringCta() {
               to="/contact-sales?source=audit-result"
               className="inline-flex items-center gap-1.5 border border-titanium-700 bg-obsidian-950 px-4 py-2 text-sm font-semibold text-titanium-200 hover:border-titanium-500"
             >
-              Demo-Call buchen
+              Enterprise anfragen
             </Link>
           </div>
         </div>

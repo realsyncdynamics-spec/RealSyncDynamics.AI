@@ -5,6 +5,7 @@ import {
   Activity, Users, Settings, ArrowRight, Brain, Server, ShieldCheck,
 } from 'lucide-react';
 import { AiCore } from '../components/visual/AiCore';
+import { AiOsHeroSection } from '../components/sections/AiOsHeroSection';
 
 interface Tile {
   id: string;
@@ -104,58 +105,8 @@ export function PublicWorkspacePreview() {
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
-      {/* Hero */}
-      <div className="bg-gradient-to-b from-obsidian-900 to-obsidian-950 border-b border-titanium-900 px-4 py-14 sm:py-20">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-         <div>
-          <div className="inline-flex items-center gap-2 mb-6 px-3 py-1 border border-titanium-800 bg-obsidian-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-400">Governance OS · Digitale Souveränität</span>
-          </div>
-
-          <h1 className="font-display font-bold text-4xl sm:text-5xl mb-4 text-titanium-50 leading-tight">
-            Das Governance OS für DSGVO, EU AI Act<br className="hidden sm:block" />
-            <span className="text-security-400"> und digitale Souveränität.</span>
-          </h1>
-          <p className="text-titanium-300 text-lg max-w-2xl mb-3 leading-relaxed">
-            Ein europäisches Governance Operating System für Websites, KI-Systeme,
-            Drittanbieter, Risiken und Nachweise — kontinuierlich überwacht und
-            auditfähig dokumentiert im Browser-Format.
-          </p>
-          <p className="text-titanium-500 text-sm max-w-xl mb-8 font-mono">
-            Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar
-          </p>
-
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
-            <button
-              onClick={() => navigate('/app')}
-              className="flex items-center justify-center gap-2 px-6 py-3 bg-security-600 text-white font-semibold hover:bg-security-500 transition-colors"
-            >
-              Dashboard öffnen
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => navigate('/audit?source=public-workspace')}
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-100 font-medium hover:bg-obsidian-800 transition-colors"
-            >
-              Governance Audit starten
-              <ArrowRight className="h-4 w-4" />
-            </button>
-            <Link
-              to="/digitale-souveraenitaet"
-              className="flex items-center justify-center gap-2 px-6 py-3 text-titanium-400 hover:text-titanium-200 text-sm font-medium transition-colors"
-            >
-              Digitale Souveränität →
-            </Link>
-          </div>
-         </div>
-
-          {/* Governance-OS-Kern als 3D-Szene (Fallback: animierte SVG auf schwachen/mobilen Geräten) */}
-          <div className="flex justify-center lg:justify-end">
-            <AiCore size={380} />
-          </div>
-        </div>
-      </div>
+      {/* Hero — Europa-Erde-Centerpiece (verbindliches Zielbild) */}
+      <AiOsHeroSection />
 
       {/* Trust Strip */}
       <div className="border-b border-titanium-900 bg-obsidian-900">
@@ -249,6 +200,34 @@ export function PublicWorkspacePreview() {
                 <p className="text-sm text-titanium-400 leading-relaxed">{copy}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Runtime-Kern — der bisherige Watchmaker-AiCore lebt als Technologie-
+          Detail weiter (nicht gelöscht, nur in eine Produktsektion verschoben). */}
+      <div className="border-t border-titanium-900 bg-obsidian-950">
+        <div className="max-w-6xl mx-auto px-4 py-14 sm:py-20 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          <div className="flex justify-center lg:justify-start order-2 lg:order-1">
+            <AiCore size={300} />
+          </div>
+          <div className="order-1 lg:order-2">
+            <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-security-400 mb-2">
+              Runtime-Kern
+            </div>
+            <h2 className="font-display font-bold text-2xl text-titanium-50 mb-3">
+              Ein deterministischer Compliance-Motor — kein Black-Box-Modell.
+            </h2>
+            <p className="text-titanium-300 leading-relaxed mb-5 max-w-xl">
+              Policy Engine, Evidence-Chain und Monitoring laufen als nachvollziehbarer
+              Runtime-Kern. Jede Entscheidung ist reproduzierbar und auditierbar.
+            </p>
+            <Link
+              to="/runtime"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-security-400 hover:text-security-300 transition-colors"
+            >
+              Runtime ansehen <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>

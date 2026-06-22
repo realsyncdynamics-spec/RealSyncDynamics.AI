@@ -458,6 +458,48 @@ html, body {
 /* Hero-only Logo-Animation — applied to the centered Logo in <HeroOnly>. */
 .logo-pulse { animation: var(--animate-logo-pulse); }
 
+/* ─── Earth-Hero — Space-Tiefe + schwebende Runtime-Widgets ───────────── */
+/* Alle Animationen werden durch die prefers-reduced-motion-Regel oben
+   automatisch eingefroren (globaler *-Selektor mit !important). */
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@keyframes hero-twinkle {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.9; }
+}
+@keyframes hero-orbit-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes hero-nebula-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+  50%      { transform: translate3d(2%, -2%, 0) scale(1.06); opacity: 0.8; }
+}
+
+.hero-float      { animation: hero-float 7s ease-in-out infinite; }
+.hero-float-slow { animation: hero-float 9.5s ease-in-out infinite; }
+.hero-float-fast { animation: hero-float 5.5s ease-in-out infinite; }
+.hero-twinkle    { animation: hero-twinkle 4s ease-in-out infinite; }
+.hero-orbit-spin { animation: hero-orbit-spin 140s linear infinite; transform-origin: center; }
+.hero-nebula     { animation: hero-nebula-drift 18s ease-in-out infinite; }
+
+/* CSS-Sternenfeld (Fallback-Tiefe hinter der Erde, sehr günstig) */
+.hero-starfield {
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1px 1px at 70% 62%, rgba(190,220,255,0.7), transparent),
+    radial-gradient(1.6px 1.6px at 40% 80%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 85% 20%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 55% 14%, rgba(180,210,255,0.6), transparent),
+    radial-gradient(1px 1px at 12% 70%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1.6px 1.6px at 90% 86%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 33% 50%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 64% 36%, rgba(220,235,255,0.55), transparent),
+    radial-gradient(1px 1px at 8% 18%, rgba(255,255,255,0.5), transparent);
+  background-repeat: repeat;
+}
+
 
 /* Hero-only Gold-Surface — primary CTA-Button-Background mit Hover-Glow.
    Nur noch auf Free-Tools / Special-CTAs verwenden; für die neue

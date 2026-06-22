@@ -19,7 +19,7 @@ interface NavbarProps {
   className?: string;
 }
 
-export const Navbar = React.forwardRef<HTMLNavElement, NavbarProps>(
+export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
   (
     {
       logo,

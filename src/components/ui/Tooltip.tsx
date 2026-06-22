@@ -23,7 +23,7 @@ export const Tooltip = React.forwardRef<HTMLDivElement, TooltipProps>(
     const [computedPosition, setComputedPosition] = useState(position);
     const triggerRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
     const showTooltip = () => {
       timeoutRef.current = setTimeout(() => {

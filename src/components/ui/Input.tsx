@@ -1,7 +1,7 @@
 import React from 'react';
 import { INPUT_VARIANTS } from '../../styles/design-tokens';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   variant?: 'outline' | 'ghost' | 'filled';
   size?: 'sm' | 'md' | 'lg';
   error?: boolean;

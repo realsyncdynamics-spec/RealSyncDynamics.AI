@@ -482,6 +482,11 @@ html, body {
 .hero-float-fast { animation: hero-float 5.5s ease-in-out infinite; }
 .hero-twinkle    { animation: hero-twinkle 4s ease-in-out infinite; }
 .hero-orbit-spin { animation: hero-orbit-spin 140s linear infinite; transform-origin: center; }
+/* Orbit-Avatare: Container dreht langsam, Avatare gegen-rotieren → bleiben aufrecht.
+   prefers-reduced-motion friert beide ein (globale Regel) → statische Punkte. */
+@keyframes hero-orbit-rev { to { transform: rotate(-360deg); } }
+.hero-avatar-orbit     { animation: hero-orbit-spin 160s linear infinite; transform-origin: center; }
+.hero-avatar-orbit-rev { animation: hero-orbit-rev 160s linear infinite; transform-origin: center; }
 .hero-nebula     { animation: hero-nebula-drift 18s ease-in-out infinite; }
 
 /* CSS-Sternenfeld (Fallback-Tiefe hinter der Erde, sehr günstig) */

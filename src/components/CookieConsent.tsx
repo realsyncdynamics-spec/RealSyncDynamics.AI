@@ -69,8 +69,10 @@ export function CookieConsent() {
 
   if (decided === null || decided === true) return null;
 
+  // Desktop: unten LINKS (Textspalten-Seite) — überdeckt nie die Hero-/Erd-
+  // Widgets rechts. Mobile/Tablet: zentriert über volle Breite wie gehabt.
   return (
-    <div className="fixed inset-x-0 bottom-12 lg:bottom-4 lg:inset-x-auto lg:right-4 z-50 p-2 sm:p-4 lg:p-0">
+    <div className="fixed inset-x-0 bottom-12 lg:bottom-4 lg:inset-x-auto lg:left-4 lg:right-auto z-50 p-2 sm:p-4 lg:p-0">
       <div className="max-w-3xl lg:max-w-sm mx-auto lg:mx-0 bg-obsidian-900 border border-titanium-700 shadow-2xl rounded-none max-h-[60vh] sm:max-h-[75vh] overflow-y-auto">
         <div className="flex items-start gap-2.5 p-3 sm:p-5">
           <div className="hidden sm:flex shrink-0 w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-none items-center justify-center">

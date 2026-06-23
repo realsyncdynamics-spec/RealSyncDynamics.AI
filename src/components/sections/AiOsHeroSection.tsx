@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Activity, ArrowRight, BadgeCheck, Code2, FileCheck2, Menu, Play,
-  Scale, ShieldCheck, Sparkles, X,
+  Scale, ShieldCheck, Sparkles, User, X,
 } from 'lucide-react';
 import { Logo } from '../Logo';
 import { EarthCore } from '../visual/EarthCore';
@@ -217,6 +217,26 @@ export function AiOsHeroSection() {
               <ellipse cx="300" cy="300" rx="240" ry="240" fill="none" stroke="rgba(120,200,220,0.16)" strokeWidth="1" />
               <ellipse cx="300" cy="300" rx="290" ry="200" fill="none" stroke="rgba(120,200,220,0.12)" strokeWidth="1" transform="rotate(24 300 300)" />
             </svg>
+          </div>
+
+          {/* Orbit-Avatare — subtil, max. 5, langsame Orbit-Bewegung, aufrecht
+              durch Gegenrotation; bei reduced-motion statisch. Nur ab lg. */}
+          <div aria-hidden className="pointer-events-none absolute inset-0 hidden items-center justify-center lg:flex">
+            <div className="hero-avatar-orbit relative h-[640px] w-[640px]">
+              {[200, 256, 312, 24, 128].map((deg) => (
+                <div
+                  key={deg}
+                  className="absolute left-1/2 top-1/2"
+                  style={{ transform: `rotate(${deg}deg) translateY(-300px)` }}
+                >
+                  <div style={{ transform: `rotate(${-deg}deg)` }}>
+                    <div className="hero-avatar-orbit-rev -ml-4 -mt-4 flex h-8 w-8 items-center justify-center rounded-full border border-cyan-300/25 bg-white/10 backdrop-blur-sm">
+                      <User className="h-3.5 w-3.5 text-cyan-200/80" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Erde */}

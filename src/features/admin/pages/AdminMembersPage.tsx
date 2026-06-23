@@ -4,7 +4,6 @@ import { Loader2, AlertTriangle, Trash2, UserPlus } from 'lucide-react';
 import { SovereignButton } from '../../../components/ui/SovereignButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
-import { Table } from '../../../components/ui/Table';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { AdminLayout } from '../layouts/AdminLayout';
 import { listMembers, removeMember, setMemberRole, type Member } from '../../tenants/membersApi';

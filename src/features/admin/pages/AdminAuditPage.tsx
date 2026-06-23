@@ -25,7 +25,7 @@ export function AdminAuditPage() {
     [tenants, activeTenantId]
   );
 
-  const isAuditor = activeTenant?.role === 'owner' || activeTenant?.role === 'admin' || activeTenant?.role === 'dpo';
+  const isAuditor = !!(activeTenant?.role && (activeTenant.role === 'owner' || activeTenant.role === 'admin' || (activeTenant.role as string) === 'dpo'));
 
   // Mock audit events
   const events: AuditEvent[] = [

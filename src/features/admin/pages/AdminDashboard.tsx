@@ -138,7 +138,7 @@ export function AdminDashboard() {
         </div>
 
         {/* Workspace Info */}
-        <Card variant="subtle">
+        <Card variant="glass">
           <CardHeader>
             <CardTitle className="text-base">Workspace-Informationen</CardTitle>
           </CardHeader>

@@ -12,13 +12,18 @@
 | --- | --- |
 | **Security-Fix extrahiert + gemerged** | **#672** (aus #632) — **MERGED** |
 | **Gemerged** | #672 (Security), #634 (QA-Tooling), #670 (Cloudflare-Doku), #671 (bereits vorher gemerged) |
-| **Rebased / merge-bereit gemacht** | **#660** (Homepage-Gewinner) — `dirty` → `unstable` (konfliktfrei) |
+| **Rebased + gemerged** | **#660** (Homepage-Gewinner) — **MERGED** (`/` = MainLanding) |
 | **Geschlossen (ersetzt/obsolet)** | #656, #629, #657, #646 |
-| **Offen gehalten — mit Begründung** | #632, #669, #658, #667, #661, #666, #638, #665, #640, #637 |
+| **Offen gehalten — mit Begründung** | #632, #669, #658, #661, #666, #638, #665, #640, #637 (#667 inzwischen separat gemerged) |
 
 > **Nachtrag 2026-06-23 (Entscheidung „#672 mergen, dann #660 bewerten"):**
 > - **#672 gemerged** (squash, `449688c`). Alle echten Checks grün (build · playwright · Migration validation · Cloudflare · Vercel); nur `-remu` rot = dokumentierter Alt-Noise. `main` pinnt jetzt `react-router-dom ^7.17.0`.
-> - **#660 neu bewertet:** **nicht** durch #672 ersetzt (Security-Dep vs. Homepage — unabhängig), klarer Mehrwert → **rebased** (via `merge origin/main`; eine Konfliktrunde: `package.json` + `src/App.tsx`). `/` → `MainLanding` erhalten, `/realsync-landing` (neu auf main) erhalten, react-router ^7.17.0 geerbt. Verifiziert: `tsc` grün · `build`+Prerender grün. Ergebnis: `mergeable_state: unstable` (konfliktfrei, nur `-remu`-Noise) → **merge-bereit**. Kein Merge ausgeführt (war nicht beauftragt).
+> - **#660 neu bewertet:** **nicht** durch #672 ersetzt (Security-Dep vs. Homepage — unabhängig), klarer Mehrwert → **rebased** (via `merge origin/main`; eine Konfliktrunde: `package.json` + `src/App.tsx`). `/` → `MainLanding` erhalten, `/realsync-landing` (neu auf main) erhalten, react-router ^7.17.0 geerbt. Verifiziert: `tsc` grün · `build`+Prerender grün → **merge-bereit**.
+>
+> **Nachtrag 2026-06-23 (Entscheidung „#660 jetzt mergen"):**
+> - `main` war erneut weit voraus (#667 Trust-Layer, #674/#675/#679/#680 Cloudflare/Deploy, #283/284/286 Homepage-DE). #660 **erneut auf aktuellen `main` (`529bcc7`) gemergt** — diesmal **konfliktfrei**; `public/404.html` + `public/CNAME` bewusst **gelöscht belassen** (main-Cloudflare-Deep-Link-Fix #674, nicht wiederbelebt). `tsc` + `build` + Prerender grün.
+> - **#660 gemerged** (squash, `7c757b3`). **`/` ist jetzt MainLanding (Earth-at-Night).**
+> - **Folge der `/`-Überschneidung:** `PublicWorkspacePreview` (mit dem live #669-Earth-Hero) liegt jetzt unter **`/preview`**, nicht mehr auf `/`. Offener Folge-Schritt: #669s 3D-Earth-Hero ggf. als Upgrade in den `/`-Hero von MainLanding portieren.
 
 ---
 

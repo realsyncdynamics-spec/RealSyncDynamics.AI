@@ -7,7 +7,7 @@
 | Bereich | Score | Kurzbegründung |
 |---|---:|---|
 | Frontend | 82 | Build grün, E2E 48/48 grün, **16 `tsc`-Fehler behoben** (PR #668); große Bundles bleiben |
-| Routing | 82 | 318 Pfade, 404 sauber, 1 Duplicate-Route; **Live-Probe: Cloudflare-SPA-Deep-Links → HTTP 404** (R4) — Fallback nur via `404.html`-JS-Redirect, nicht via `_redirects`-200 |
+| Routing | 86 | 318 Pfade, 404 sauber, 1 Duplicate-Route; **R4 behoben & live-verifiziert** — Cloudflare-SPA-Deep-Links liefern jetzt 200 (`scripts/cf-pages-cleanup.mjs`) |
 | Buttons/CTAs | 80 | keine toten Buttons; 4 verbotene CTAs (1 Hauptpfad behoben, Rest dokumentiert/CI-Lücke) |
 | Auth | 70 | Supabase-Auth + AAL2 vorhanden, aber AAL2 **observe-only**; kein SSO/SCIM |
 | Tenant/RBAC | 80 | RLS durchgängig, owner/admin-Checks, Tenant-Functions; live nur code-verifiziert |
@@ -21,13 +21,13 @@
 | Monitoring | 70 | Cron-basiert (nicht real-time); UI vorhanden |
 | Evidence | 80 | Export + Vault + Hash + Audit-Log |
 | Enterprise Agent | 45 | `/os`-App = Mockdata, keine echte Datenanbindung |
-| Infrastructure | 58 | GitHub Pages + Supabase solide; `_headers` auf GH-Pages wirkungslos (RISK); **Live-Probe: Custom-Domain `realsyncdynamicsai.de` → HTTP 500 (R5, P1)**, Cloudflare-SPA-Fallback greift nicht (R4); 3 parallele Vercel-Projekte erzeugen Deploy-Rauschen (`deployment-noise-register.md`) |
+| Infrastructure | 60 | Pages-Build gesund (`pages.dev`=200) + Supabase solide; `_headers` auf GH-Pages wirkungslos (RISK); **Custom-Domain `realsyncdynamicsai.de` → HTTP 500 (R5, P1, offen)** — nur Domain-Routing defekt, Stub-Worker-Lead; R4-SPA-Fallback **behoben**; 3 parallele Vercel-Projekte erzeugen Deploy-Rauschen (`deployment-noise-register.md`) |
 | Security | 62 | HSTS/RLS gut; CSP `unsafe-inline`, AAL2 nicht erzwungen, kein Pen-Test-Nachweis |
 | Operations | 58 | tägl. VPS-Backup; kein PITR/Restore-Drill/On-Call/Playbook im Repo |
 | Enterprise Readiness | 50 | kein SSO/SCIM/PO-Billing/White-Label-Beleg/Zertifikate |
 | Government Readiness | 42 | FRIA/Annex-IV/KRITIS/NIS2-Funktionen fehlen |
 
-## Gesamtscore: **70/100** (ungewichteter Mittelwert ≈ 70,3 nach Live-Probe-Korrekturen R4/R5)
+## Gesamtscore: **71/100** (ungewichteter Mittelwert ≈ 70,6; R4-SPA-Fallback behoben & verifiziert, R5-Custom-Domain-500 noch offen)
 
 ## Top 10 funktionierende Bereiche
 1. Routing (82) — 318 Pfade, 404 sauber (Cloudflare-Deep-Link-404 separat als R4 erfasst)

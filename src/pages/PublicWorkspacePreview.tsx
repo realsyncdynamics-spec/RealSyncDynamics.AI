@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Globe, Bot, AlertTriangle, ClipboardCheck, FileCheck2,
-  Activity, Users, Settings, ArrowRight, Brain, Server, ShieldCheck,
+  Activity, Users, Settings, ArrowRight, Brain, Server, ShieldCheck, Lock,
 } from 'lucide-react';
 import { AiCore } from '../components/visual/AiCore';
 
@@ -93,10 +93,23 @@ const COLOR_MAP: Record<string, { bg: string; icon: string; hover: string }> = {
 };
 
 const TRUST_ITEMS = [
-  { icon: Server,      label: 'EU-Hosting · Frankfurt' },
-  { icon: ShieldCheck, label: 'DSGVO + EU AI Act konform' },
-  { icon: FileCheck2,  label: 'C2PA Evidence Chain' },
-  { icon: Brain,       label: 'On-Premise-fähig' },
+  { icon: Server,      label: 'Gehostet in Frankfurt · 🇩🇪' },
+  { icon: ShieldCheck, label: 'EU-souveräne Runtime' },
+  { icon: Lock,        label: 'Verschlüsselter Evidence Vault' },
+  { icon: Brain,       label: 'On-Premise verfügbar' },
+] as const;
+
+// Plattform-Kennzahlen — bewusst KEINE erfundenen Nutzungs-/Kundenzahlen,
+// sondern aus dem Code verifizierbare Produkttiefe (Stand: Repository).
+//   85+  → supabase/functions/ (Edge Functions, ohne _-Präfix: 87)
+//   180+ → distinct CREATE TABLE in supabase/migrations/ (184)
+//   9    → Plattform-Module (TILES)
+//   3    → abgedeckte Frameworks: DSGVO · TTDSG · EU AI Act
+const PLATFORM_METRICS = [
+  { value: '85+',  label: 'Edge Functions', sub: 'Automation & Runtime' },
+  { value: '180+', label: 'RLS-Tabellen',   sub: 'Governance-Datenmodell' },
+  { value: '9',    label: 'Plattform-Module', sub: 'Eine Oberfläche' },
+  { value: '3',    label: 'Frameworks',     sub: 'DSGVO · TTDSG · EU AI Act' },
 ] as const;
 
 export function PublicWorkspacePreview() {
@@ -165,6 +178,28 @@ export function PublicWorkspacePreview() {
               <div key={label} className="flex items-center gap-2 text-titanium-500 text-xs font-mono">
                 <Icon className="h-3.5 w-3.5 text-security-400 shrink-0" />
                 <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Plattform in Zahlen — verifizierbare Produkttiefe statt erfundener Nutzungszahlen */}
+      <div className="border-b border-titanium-900 bg-obsidian-950">
+        <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10">
+          <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-titanium-500 mb-6">
+            Plattform in Zahlen
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-titanium-900 border border-titanium-900">
+            {PLATFORM_METRICS.map(({ value, label, sub }) => (
+              <div key={label} className="bg-obsidian-950 px-5 py-6">
+                <div className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 tabular-nums">
+                  {value}
+                </div>
+                <div className="mt-1 text-sm font-semibold text-titanium-200">{label}</div>
+                <div className="mt-0.5 text-[11px] font-mono uppercase tracking-wider text-titanium-500">
+                  {sub}
+                </div>
               </div>
             ))}
           </div>

@@ -11,7 +11,9 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { MainLanding } from './pages/MainLanding';
 // ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
 import { AetherOSLanding } from './pages/AetherOSLanding';
-// ── Governance-OS Workspace Preview (moved to /preview)
+// ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
+import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
+// ── Governance-OS Workspace Preview (moved to /preview) ──
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
@@ -287,6 +289,7 @@ function RoutesWithTracking() {
       <Route path="/aetheros" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

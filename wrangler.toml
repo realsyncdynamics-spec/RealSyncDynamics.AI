@@ -1,4 +1,4 @@
-# Cloudflare Pages deployment configuration
+# Cloudflare Pages deployment — secrets configured, custom domains bound
 name = "realsyncdynamics-ai"
 
 [build]

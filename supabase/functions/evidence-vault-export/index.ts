@@ -21,8 +21,27 @@
 // Der Signing-Key kommt aus EVIDENCE_VAULT_SIGNING_KEY env. In Production
 // pro Tenant via tenant_signing_keys-Tabelle (Folge-PR). Aktuell global.
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
+
+// Tier-Gate: Der Audit-Export ist die Kaufbegründung des ersten zahlenden
+// Tiers (siehe docs/PRODUCT_PRIORITIZATION.md). Free-Tenants sehen den Trail
+// in der App read-only, exportieren können erst zahlende Tiers. Synchron zu
+// src/lib/billing/planAccess.ts (Feature 'evidence_export' ab Starter).
+const PAID_PLANS = new Set(['starter', 'growth', 'agency', 'scale', 'enterprise']);
+
+async function tenantHasPaidPlan(admin: SupabaseClient, tenantId: string): Promise<boolean> {
+  const { data, error } = await admin
+    .from('subscriptions')
+    .select('plan_key, status')
+    .eq('tenant_id', tenantId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return false;
+  if (data.status !== 'active' && data.status !== 'trialing') return false;
+  return PAID_PLANS.has(String(data.plan_key));
+}
 
 // Diese Funktion exportiert fuer Aufsichtsbehoerden / externe Auditoren.
 // Empfaenger sind Dritte — Klartext-PII darf nicht raus. Policy hart.
@@ -92,6 +111,11 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
+
+  // Tier-Gate: Export ist ab Starter verfügbar; Free-Tenants nur read-only in der App.
+  if (!(await tenantHasPaidPlan(admin, tenantId))) {
+    return jsonError(403, 'PLAN_REQUIRED', 'Audit-Export ab Starter-Tarif verfügbar');
+  }
 
   // Defaults: letzte 90 Tage wenn keine Range explizit
   const to = body.to ? new Date(body.to) : new Date();

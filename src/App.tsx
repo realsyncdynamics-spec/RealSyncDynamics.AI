@@ -281,8 +281,10 @@ function LazyFallback() {
 function RoutesWithTracking() {
   useTrackPageview();
   return (
-    <Suspense fallback={<LazyFallback />}>
-    <Routes>
+    <>
+      <SEOHead />
+      <Suspense fallback={<LazyFallback />}>
+        <Routes>
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
@@ -745,8 +747,9 @@ function RoutesWithTracking() {
 
       {/* 404 catch-all — must be last */}
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

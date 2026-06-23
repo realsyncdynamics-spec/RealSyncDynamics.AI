@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
@@ -274,7 +274,27 @@ function LazyFallback() {
   );
 }
 
+/**
+ * Stellt die Deep-Link-Route wieder her, die der GitHub-Pages-SPA-Fallback
+ * (public/404.html) in `?_path=` zwischengeparkt hat. GitHub Pages liefert für
+ * unbekannte Pfade `404.html` (HTTP 404); dessen Script leitet auf
+ * `/?_path=<pfad>` um. Ohne diese Wiederherstellung landet ein direkter Aufruf
+ * von z. B. /ai-act auf der Startseite. Läuft genau einmal beim Mount.
+ */
+function useSpaPathRestore() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const target = params.get('_path');
+    if (target && target.startsWith('/') && !target.startsWith('//')) {
+      navigate(target, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
+
 function RoutesWithTracking() {
+  useSpaPathRestore();
   useTrackPageview();
   return (
     <Suspense fallback={<LazyFallback />}>

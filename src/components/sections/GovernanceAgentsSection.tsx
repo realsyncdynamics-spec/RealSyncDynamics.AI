@@ -123,14 +123,14 @@ export function GovernanceAgentsSection() {
       <div className="max-w-7xl mx-auto">
         <div className="max-w-3xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-            04 · govern + automate
+            04 · steuern + automatisieren
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            AI systems are governed operationally.
+            KI-Systeme werden operativ gesteuert.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
-            Four agents share the same runtime: detection, classification, evidence and policy.
-            They run continuously, write to the audit-trail and escalate high-risk decisions for human review per governance policy.
+            Vier Agents teilen dieselbe Runtime: Erkennung, Klassifikation, Evidence und Policy.
+            Sie laufen kontinuierlich, schreiben in den Audit-Trail und eskalieren Hochrisiko-Entscheidungen zur manuellen Freigabe.
           </p>
         </div>
 

@@ -7,9 +7,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
-// ── RealSyncDynamics Landing Page ──
+// ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
+import { MainLanding } from './pages/MainLanding';
+// ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
+import { AetherOSLanding } from './pages/AetherOSLanding';
+// ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
 import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
-// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
+// ── Governance-OS Workspace Preview (moved to /preview) ──
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
@@ -281,7 +285,8 @@ function RoutesWithTracking() {
     <Routes>
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
-      <Route path="/" element={<PublicWorkspacePreview />} />
+      <Route path="/" element={<MainLanding />} />
+      <Route path="/aetheros" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />

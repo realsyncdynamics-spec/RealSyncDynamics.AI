@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "postbuild": "node scripts/cf-pages-cleanup.mjs",
     "build:full": "vite build && npm run prerender",
     "prerender": "node scripts/prerender.mjs",
     "preview": "vite preview",

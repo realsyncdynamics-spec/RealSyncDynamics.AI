@@ -3,10 +3,10 @@ name: Deploy Frontend (VPS Fallback — optional)
 # ─────────────────────────────────────────────────────────────────
 # STATUS: OPTIONAL / VPS FALLBACK — non-blocking (updated 2026-06-05)
 # ─────────────────────────────────────────────────────────────────
-# PRIMARY PRODUCTION FRONTEND = deploy-pages.yml (GitHub Pages)
+# PRIMARY PRODUCTION FRONTEND = deploy-cloudflare-pages.yml (Cloudflare Pages)
 # This workflow is NOT the live user-facing frontend path.
 #
-# realsyncdynamicsai.de → GitHub Pages (DNS A 185.199.108-111.153)
+# realsyncdynamicsai.de → Cloudflare Pages (project: realsyncdynamics-ai)
 # VPS (187.77.89.1) serves only backend subdomains:
 #   chat/ollama/n8n.realsyncdynamicsai.de
 #
@@ -135,9 +135,9 @@ jobs:
             -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=yes -o ConnectTimeout=30" \
             dist/ \
             "${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:${{ secrets.VPS_FRONTEND_PATH }}/" \
-          || echo "::warning::VPS rsync failed (SSH timeout or unreachable host) — live site on GitHub Pages unaffected"
+          || echo "::warning::VPS rsync failed (SSH timeout or unreachable host) — live site on Cloudflare Pages unaffected"
 
-      - name: Smoke-test live site (GitHub Pages)
+      - name: Smoke-test live site (Cloudflare Pages)
         run: |
           for i in 1 2 3; do
             code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 15 https://realsyncdynamicsai.de/ || echo "000")
@@ -145,4 +145,4 @@ jobs:
             if [ "$code" = "200" ]; then exit 0; fi
             sleep 5
           done
-          echo "::warning::public URL did not return 200 — check GitHub Pages deploy-pages.yml"
+          echo "::warning::public URL did not return 200 — check Cloudflare Pages deploy-cloudflare-pages.yml"

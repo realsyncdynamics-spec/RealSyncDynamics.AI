@@ -32,7 +32,7 @@ Kernprobleme:
 
 ## Vorgehen (phasiert, risikoarm)
 
-### Phase 1 — Toten/kaputten Code entfernen (niedriges Risiko)
+### Phase 1 — Toten/kaputten Code entfernen (niedriges Risiko) — ✅ UMGESETZT
 1. Route `/realsync-landing` aus `App.tsx` entfernen; Komponente
    `marketing/landing/RealSyncDynamicsLanding.tsx` löschen (0 Refs).
 2. `public/realsync-landing.html` löschen (toter `?_landing`-Redirect).
@@ -40,7 +40,7 @@ Kernprobleme:
    nicht gelistet) — sonst entfernen.
 - **Tests:** keine e2e-Abdeckung für `/realsync-landing` → kein Testbruch.
 
-### Phase 2 — Aliase auf kanonisch umlenken (niedriges Risiko)
+### Phase 2 — Aliase auf kanonisch umlenken (niedriges Risiko) — ✅ UMGESETZT
 4. `/preview` → `<Navigate to="/" replace />` (statt dupliziertem Element).
 - **Tests:** `e2e/landing.spec.ts` testet `/` (nicht `/preview`) → kein Bruch.
 

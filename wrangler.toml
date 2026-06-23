@@ -1,3 +1,7 @@
-name = "realsyncdynamicsai"
-compatibility_date = "2024-01-01"
-pages_build_output_dir = "dist"
+name = "realsyncdynamics-ai"
+
+[build]
+command = "npm run build"
+
+[build.upload]
+dir = "dist"

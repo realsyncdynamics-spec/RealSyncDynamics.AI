@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
+// ── RealSyncDynamics Landing Page ──
+import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
@@ -282,6 +284,7 @@ function RoutesWithTracking() {
       <Route path="/" element={<PublicWorkspacePreview />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />

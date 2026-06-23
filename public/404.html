@@ -1,59 +1,17 @@
-<!doctype html>
-<html lang="de">
+<!DOCTYPE html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>404 — RealSyncDynamics.AI</title>
-    <meta name="description" content="Seite nicht gefunden — RealSyncDynamics.AI DSGVO-konforme KI-Compliance-Plattform" />
-    <meta name="robots" content="noindex" />
-    <style>
-      :root { color-scheme: dark; }
-      html, body { margin: 0; padding: 0; background: #0A0A0B; color: #F4F4F5; font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif; min-height: 100vh; }
-      .wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; text-align: center; }
-      .badge { display: inline-block; padding: 4px 12px; border: 1px solid #064E3B; background: rgba(6, 78, 59, 0.3); color: #6EE7B7; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 24px; }
-      h1 { font-size: clamp(48px, 12vw, 96px); font-weight: 800; margin: 0 0 8px 0; color: #F4F4F5; letter-spacing: -0.02em; }
-      .sub { font-size: 20px; color: #A1A1AA; margin: 0 0 32px 0; max-width: 480px; line-height: 1.5; }
-      .links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-      a { display: inline-block; padding: 10px 18px; text-decoration: none; font-weight: 600; font-size: 14px; }
-      .primary { background: #0284C7; color: white; }
-      .primary:hover { background: #0369A1; }
-      .secondary { background: #18181B; border: 1px solid #3F3F46; color: #E4E4E7; }
-      .secondary:hover { border-color: #71717A; }
-      footer { margin-top: 48px; font-size: 11px; color: #52525B; }
-    </style>
-    <script type="text/javascript">
-      // SPA on GitHub Pages — preserve deep-link path before showing 404 UI.
-      // Site is served at the apex of the custom domain RealSyncDynamicsAI.de
-      // (no project-base segment), so pathSegmentsToKeep = 0.
-      // Pattern: rafgraph/spa-github-pages.
-      (function () {
-        var pathSegmentsToKeep = 0;
-        var l = window.location;
-        var path = l.pathname.split('/').slice(1 + pathSegmentsToKeep).join('/');
-        if (path && path !== '404.html') {
-          l.replace(
-            l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-            l.pathname.split('/').slice(0, 1 + pathSegmentsToKeep).join('/') + '/?/' +
-            path.replace(/&/g, '~and~') +
-            (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
-            l.hash
-          );
-        }
-      })();
+    <title>Redirecting...</title>
+    <script>
+      const path = window.location.pathname;
+      if (path && path !== '/' && !path.includes('.')) {
+        window.location.replace('/?_path=' + encodeURIComponent(path));
+      }
     </script>
   </head>
   <body>
-    <div class="wrap">
-      <span class="badge">404 · Seite nicht gefunden</span>
-      <h1>404</h1>
-      <p class="sub">Die Seite, die Du suchst, existiert nicht — oder wurde verschoben. Hier sind die wichtigsten Einstiegspunkte:</p>
-      <div class="links">
-        <a class="primary" href="/">Zur Startseite</a>
-        <a class="secondary" href="/audit">DSGVO-Audit starten</a>
-        <a class="secondary" href="/dsgvo-ki-checkliste">DSGVO-KI-Checkliste</a>
-        <a class="secondary" href="/pricing">Preise</a>
-      </div>
-      <footer>RealSync Dynamics · Made in Germany · EU-Hosted</footer>
-    </div>
+    Redirecting...
   </body>
 </html>

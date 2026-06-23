@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface ListItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+interface ListItemProps extends React.HTMLAttributes<HTMLLIElement> {
   icon?: React.ReactNode;
   title?: string;
   description?: string;
@@ -44,7 +44,7 @@ export const ListItem = React.forwardRef<HTMLLIElement, ListItemProps>(
 
 ListItem.displayName = 'ListItem';
 
-interface ListProps extends React.UlHTMLAttributes<HTMLUListElement> {
+interface ListProps extends React.HTMLAttributes<HTMLUListElement> {
   variant?: 'default' | 'compact';
   children: React.ReactNode;
 }

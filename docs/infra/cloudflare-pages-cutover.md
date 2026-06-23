@@ -37,13 +37,19 @@ Domain `HTTP 200`, `server: GitHub.com` über GitHub Pages.
    Projekt-Konfiguration (vermutlich die mitgelieferte `404.html` bzw. das
    Build-Output-/SPA-Setting), die nur im Cloudflare-Dashboard prüfbar ist.
 
-## 3. Was in diesem Branch vorbereitet ist
+## 3. Deploy-Pipeline auf `main` (via #671)
 
-- `.github/workflows/deploy-cloudflare-pages.yml` — CI-Deploy der SPA nach
-  Cloudflare Pages. **Secret-gated**: überspringt sich sauber (Warnung, kein
-  roter Build), solange Secrets fehlen. Baut frisch inkl. `_redirects`/`_headers`/
-  `404.html` und verifiziert deren Vorhandensein. ⚠ Liefert ein **reproduzierbares
-  Production-Deployment**, behebt aber Ursache (2) NICHT allein — siehe Abschnitt 2.
+- `.github/workflows/deploy-cloudflare-pages.yml` — **liegt seit #671 auf `main`**
+  (dieses Dokument ändert den Workflow NICHT). Verhalten: bei Push auf `main`
+  (bzw. `workflow_dispatch`) läuft `npm run lint` → `npm run build`
+  (`VITE_BASE=/`) → Prerender → SPA-Fallback (`cp index.html 404.html` + Routen
+  aus `sitemap.xml`) → Deploy via `cloudflare/pages-action@v1` → Smoke-Test gegen
+  `https://realsyncdynamicsai.de`.
+  ⚠ **Nicht secret-gated**: ohne `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`
+  schlägt der Deploy-Schritt fehl, und der Smoke-Test ist rot, solange die
+  Custom Domain nicht gebunden ist (404). Reihenfolge in Abschnitt 6 beachten.
+  ⚠ Liefert ein reproduzierbares Production-Deployment, behebt aber Ursache (2)
+  NICHT allein — siehe Abschnitt 2.
 - `public/_redirects` (`/* /index.html 200`), `public/_headers`,
   `public/404.html` — bereits im Repo, im `dist/`-Build verifiziert vorhanden.
 - `wrangler.toml` — vorhanden (Legacy-Pages-Format `[build.upload] dir = "dist"`).

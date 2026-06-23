@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface TimelineItemProps {
+export interface TimelineItemProps {
   title: string;
   description?: string;
   icon?: React.ReactNode;

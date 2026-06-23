@@ -24,7 +24,7 @@ interface FormErrorProps extends React.HTMLAttributes<HTMLParagraphElement> {
   children: React.ReactNode;
 }
 
-export const FormError = React.forwardRef<HTMLParagraphElement, FormErrorProps>(
+export const FormErrorMessage = React.forwardRef<HTMLParagraphElement, FormErrorProps>(
   ({ children, className = '', ...props }, ref) => (
     <p ref={ref} className={`text-xs text-red-400 font-mono ${className}`} {...props}>
       {children}
@@ -32,7 +32,7 @@ export const FormError = React.forwardRef<HTMLParagraphElement, FormErrorProps>(
   )
 );
 
-FormError.displayName = 'FormError';
+FormErrorMessage.displayName = 'FormErrorMessage';
 
 interface FormHelperProps extends React.HTMLAttributes<HTMLParagraphElement> {
   children: React.ReactNode;
@@ -48,7 +48,7 @@ export const FormHelper = React.forwardRef<HTMLParagraphElement, FormHelperProps
 
 FormHelper.displayName = 'FormHelper';
 
-interface FieldsetProps extends React.FieldSetHTMLAttributes<HTMLFieldSetElement> {
+interface FieldsetProps extends React.HTMLAttributes<HTMLFieldSetElement> {
   legend?: string;
   children: React.ReactNode;
 }

@@ -167,7 +167,7 @@ export const PRICING_TIERS: PricingTier[] = [
     planKey: 'enterprise',
     priceEur: 0,
     priceString: 'individuell',
-    priceSuffix: 'Custom Runtime Environment',
+    priceSuffix: 'Individuelle Laufzeitumgebung',
     recurring: true,
     tagline: 'Für regulierte Unternehmen, größere Mittelständler und Organisationen mit SLA-, DSB- oder AI-Act-Anforderungen',
     bullets: [

@@ -878,6 +878,66 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Compliance-Matrix', url: '/legal/compliance-matrix' },
     ]),
   },
+
+  // ─── DE/EN-Alias-Einträge (fehlende Canonicals — fix #286) ──────────────
+  // Jeder EN-Alias zeigt canonical auf die DE-Primär-URL, damit Google
+  // nur eine URL indexiert. Die EN-Routen laufen weiter (keine 301-Weiterleitungen
+  // nötig), aber Google konsolidiert Link-Equity auf die DE-URL.
+
+  '/versicherungen': {
+    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSyncDynamics.AI',
+    description:
+      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
+    canonical: `${SITE_URL}/insurance`,
+  },
+  '/presse': {
+    title: 'Presse | RealSyncDynamics.AI',
+    description:
+      'Pressemitteilungen, Medienanfragen und Logos von RealSyncDynamics.AI — EU-native DSGVO- und AI-Act-Compliance-Plattform.',
+    canonical: `${SITE_URL}/presse`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Presse', url: '/presse' },
+    ]),
+  },
+  '/press': {
+    title: 'Press | RealSyncDynamics.AI',
+    description:
+      'Press releases, media inquiries and logos for RealSyncDynamics.AI — EU-native GDPR + AI Act compliance platform.',
+    canonical: `${SITE_URL}/presse`,
+  },
+  '/integrationen': {
+    title: 'Integrationen — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    description:
+      'Alle Integrationen auf einen Blick: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD-Webhooks. DSGVO-konforme Datenflüsse, keine Setup-Gebühr.',
+    canonical: `${SITE_URL}/integrationen`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Integrationen', url: '/integrationen' },
+    ]),
+  },
+  '/integrations': {
+    title: 'Integrations — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    description:
+      'All integrations at a glance: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD webhooks. GDPR-compliant data flows, no setup fee.',
+    canonical: `${SITE_URL}/integrationen`,
+  },
+  '/marktanalyse': {
+    title: 'DSGVO-Tool-Marktanalyse — DACH 2026 | RealSyncDynamics.AI',
+    description:
+      'Marktanalyse: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard im Vergleich. Preise, Features, DACH-Tauglichkeit, AI-Act-Readiness — Stand 2026.',
+    canonical: `${SITE_URL}/marktanalyse`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Marktanalyse', url: '/marktanalyse' },
+    ]),
+  },
+  '/market-analysis': {
+    title: 'GDPR Tool Market Analysis — DACH 2026 | RealSyncDynamics.AI',
+    description:
+      'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
+    canonical: `${SITE_URL}/marktanalyse`,
+  },
 };
 
 /**

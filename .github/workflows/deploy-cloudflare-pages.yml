@@ -143,14 +143,34 @@ jobs:
           name: dist
           path: dist/
 
+      # Fail-fast mit klarer Meldung, wenn die Cloudflare-Credentials fehlen.
+      # Ohne diese deployt Pages NICHT — die Live-Site bleibt dann HTTP 500.
+      # Haeufige Ursache: Secret als *Environment*-Secret statt Repo-Secret
+      # hinterlegt (dann muesste der Job `environment:` deklarieren), oder
+      # unter abweichendem Namen. Erwartet: Repo → Settings → Secrets and
+      # variables → Actions → CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID.
+      - name: Verify Cloudflare credentials present
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=""
+          [ -z "$CF_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "$CF_ACCOUNT_ID" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Fehlende GitHub-Actions-Secrets:$missing — bitte unter Repo → Settings → Secrets and variables → Actions als Repository-Secret hinterlegen. Ohne sie kann Cloudflare Pages nicht deployen und die Live-Site bleibt HTTP 500."
+            exit 1
+          fi
+          echo "✓ Cloudflare-Credentials vorhanden"
+
+      # cloudflare/pages-action@v1 ist deprecated (lehnt u. a. `productionBranch`
+      # ab). Maintainter Weg: wrangler-action@v3 mit `pages deploy`.
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: realsyncdynamics-ai
-          directory: dist
-          productionBranch: main
+          command: pages deploy dist --project-name=realsyncdynamics-ai --branch=main
 
   smoke-test:
     name: Smoke test live routes

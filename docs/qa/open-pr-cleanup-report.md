@@ -10,10 +10,15 @@
 
 | Aktion | PRs |
 | --- | --- |
-| **Security-Fix extrahiert** (neuer PR) | **#672** (aus #632) |
-| **Gemerged** | #634 (QA-Tooling), #670 (Cloudflare-Doku), #671 (bereits vorher gemerged) |
+| **Security-Fix extrahiert + gemerged** | **#672** (aus #632) — **MERGED** |
+| **Gemerged** | #672 (Security), #634 (QA-Tooling), #670 (Cloudflare-Doku), #671 (bereits vorher gemerged) |
+| **Rebased / merge-bereit gemacht** | **#660** (Homepage-Gewinner) — `dirty` → `unstable` (konfliktfrei) |
 | **Geschlossen (ersetzt/obsolet)** | #656, #629, #657, #646 |
-| **Offen gehalten — mit Begründung** | #632, #669, #658, #667, #661, #666, #638, #665, #640, #637, #671→done |
+| **Offen gehalten — mit Begründung** | #632, #669, #658, #667, #661, #666, #638, #665, #640, #637 |
+
+> **Nachtrag 2026-06-23 (Entscheidung „#672 mergen, dann #660 bewerten"):**
+> - **#672 gemerged** (squash, `449688c`). Alle echten Checks grün (build · playwright · Migration validation · Cloudflare · Vercel); nur `-remu` rot = dokumentierter Alt-Noise. `main` pinnt jetzt `react-router-dom ^7.17.0`.
+> - **#660 neu bewertet:** **nicht** durch #672 ersetzt (Security-Dep vs. Homepage — unabhängig), klarer Mehrwert → **rebased** (via `merge origin/main`; eine Konfliktrunde: `package.json` + `src/App.tsx`). `/` → `MainLanding` erhalten, `/realsync-landing` (neu auf main) erhalten, react-router ^7.17.0 geerbt. Verifiziert: `tsc` grün · `build`+Prerender grün. Ergebnis: `mergeable_state: unstable` (konfliktfrei, nur `-remu`-Noise) → **merge-bereit**. Kein Merge ausgeführt (war nicht beauftragt).
 
 ---
 

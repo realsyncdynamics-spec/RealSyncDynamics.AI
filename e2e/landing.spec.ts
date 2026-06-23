@@ -3,12 +3,13 @@ import { test, expect } from '@playwright/test';
 /**
  * E2E für die öffentlichen Einstiegsseiten.
  *
- * Positionierung (PR #591 ff.):
- *   - `/`         → PublicWorkspacePreview (Governance-OS-Workspace-Vorschau)
+ * Positionierung (seit #660):
+ *   - `/`         → MainLanding (Enterprise-Hauptseite, Earth-at-Night-Hero)
+ *   - `/preview`  → PublicWorkspacePreview (Governance-OS-Workspace-Vorschau)
  *   - `/landing`  → Landing.tsx (Marketing-Landing, „European Enterprise Trust")
  *
- * Beide tragen dieselbe Governance-OS-Headline; getestet wird der stabile
- * Kontrakt (Hero, Self-Serve-CTAs, Kern-Sektionen) — keine flüchtigen Counts.
+ * Getestet wird der stabile Kontrakt (Hero, Self-Serve-CTAs, Kern-Sektionen)
+ * — keine flüchtigen Counts.
  * CTA-Disziplin: ausschließlich Self-Service-Strings, keine Sales-/Pilot-/
  * Demo-/Call-Sprache.
  */
@@ -91,11 +92,47 @@ test.describe('Marketing-Landing (/landing)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Governance-OS Workspace-Vorschau (/)
+// MainLanding — Enterprise-Hauptseite (/) — seit #660 die Root-Route
 // ─────────────────────────────────────────────────────────────────────
-test.describe('Workspace-Vorschau (/)', () => {
+test.describe('MainLanding (/)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+  });
+
+  test('Hero zeigt KI-Betriebssystem-Headline und Self-Serve-CTAs', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Betriebssystem/i }),
+    ).toBeVisible();
+
+    // Self-Serve-CTAs (kein Demo-/Sales-Zwang).
+    await expect(
+      page.getByRole('link', { name: /KI-Betriebssystem entdecken/i }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /Produkt-Tour ansehen/i }).first(),
+    ).toBeVisible();
+  });
+
+  test('Plattform-Sektion sichtbar', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: /Eine Runtime für vollständige KI-Governance/i }),
+    ).toBeVisible();
+  });
+
+  test('Keine verbotenen Sales/Pilot/Demo CTAs', async ({ page }) => {
+    for (const pattern of FORBIDDEN_CTA) {
+      await expect(page.getByRole('link', { name: pattern })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: pattern })).toHaveCount(0);
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Governance-OS Workspace-Vorschau (/preview) — vormals /, seit #660 verschoben
+// ─────────────────────────────────────────────────────────────────────
+test.describe('Workspace-Vorschau (/preview)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/preview');
   });
 
   test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {

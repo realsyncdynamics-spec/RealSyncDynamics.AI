@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { useHealthStatus } from '../hooks/useHealthStatus';
+import { EarthCore } from '../components/visual/EarthCore';
 import {
   Snowflake,
   ShieldCheck,
@@ -188,7 +189,11 @@ function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" className="w-full h-full object-cover object-right" />
+        {/* Animierte 3D-Europa-Erde (Tag/Nacht, City-Lights) — lazy + nur WebGL ab Desktop;
+            auf Mobile/reduced-motion/Prerender automatisch der leichte SVG-Fallback. */}
+        <div className="absolute inset-y-0 right-0 flex items-center justify-end pointer-events-none">
+          <EarthCore size={760} className="translate-x-1/4 opacity-90" />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-r from-[rgb(3,7,18)] via-[rgb(3,7,18)]/85 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-[rgb(3,7,18)]/40" />
       </div>

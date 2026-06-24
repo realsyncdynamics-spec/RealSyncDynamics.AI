@@ -2,19 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Check } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
+import { FunnelFooter } from '../../components/FunnelFooter';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 /**
- * /checkout/success — bestaetigt einen erfolgreich uebermittelten
+ * /checkout/success — bestätigt einen erfolgreich übermittelten
  * Stripe-Checkout. Wichtig: kein Zahlungs-Garantie-Wording.
- * Die endgueltige Aktivierung erfolgt erst, wenn der Webhook
+ * Die endgültige Aktivierung erfolgt erst, wenn der Webhook
  * `checkout.session.completed` und `customer.subscription.created`
  * verarbeitet hat — das kann wenige Sekunden dauern.
  */
 export function CheckoutSuccessPage() {
   usePageMeta({
-    title: 'Aktivierung laeuft — RealSyncDynamics.AI',
-    description: 'Dein Stripe-Checkout wurde uebermittelt. Die Runtime-Freischaltung erfolgt sobald der Zahlungsstatus bestaetigt ist.',
+    title: 'Aktivierung läuft — RealSyncDynamics.AI',
+    description: 'Dein Stripe-Checkout wurde übermittelt. Die Runtime-Freischaltung erfolgt sobald der Zahlungsstatus bestätigt ist.',
     url: 'https://realsyncdynamicsai.de/checkout/success',
   });
 
@@ -91,6 +92,7 @@ export function CheckoutSuccessPage() {
           </div>
         </div>
       </main>
+      <FunnelFooter />
     </div>
   );
 }

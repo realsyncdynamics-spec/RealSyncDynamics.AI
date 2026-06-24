@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, XCircle } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
+import { FunnelFooter } from '../../components/FunnelFooter';
 import { usePageMeta } from '../../lib/usePageMeta';
 
 /**
@@ -27,7 +28,7 @@ export function CheckoutCancelledPage() {
           </div>
 
           <p className="mt-4 text-sm leading-relaxed text-titanium-300">
-            Es wurde keine Zahlung ausgeloest. Du kannst den Plan jederzeit
+            Es wurde keine Zahlung ausgelöst. Du kannst den Plan jederzeit
             erneut aktivieren — der Free-Audit bleibt parallel ohne Account nutzbar.
           </p>
 
@@ -36,7 +37,7 @@ export function CheckoutCancelledPage() {
               to="/pricing"
               className="inline-flex items-center gap-2 border border-ai-cyan-500/50 bg-ai-cyan-900/20 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-ai-cyan-200 hover:bg-ai-cyan-900/40"
             >
-              Plaene ansehen <ArrowRight className="h-3.5 w-3.5" />
+              Pläne ansehen <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to="/audit"
@@ -47,6 +48,7 @@ export function CheckoutCancelledPage() {
           </div>
         </div>
       </main>
+      <FunnelFooter />
     </div>
   );
 }

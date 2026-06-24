@@ -42,6 +42,10 @@ const DOMAIN_HINTS: Record<SkillKey, DomainHint> = {
     capabilities: ['read:finance_records', 'pii:process'],
     pii_class: 'identifier',
   },
+  'gdpr-audit': {
+    capabilities: ['network:external', 'read:website_content'],
+    pii_class: 'none',
+  },
   'legal-compliance': {
     capabilities: ['read:legal_resources', 'network:external'],
     pii_class: 'none',

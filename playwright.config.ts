@@ -32,7 +32,9 @@ export default defineConfig({
     // Erzwingt den leichten SVG-Fallback statt WebGL (EarthScene/Three.js auf /)
     // und friert Animationen ein: deterministisch + kein GPU/CPU-Spike im
     // headless CI-Container (sonst flaky 15s-Timeouts → 10-Min-Job-Abbruch).
-    reducedMotion: 'reduce',
+    // Als contextOptions gesetzt (top-level `reducedMotion` ist in dieser
+    // @playwright/test-Version nicht in den UseOptions-Typen).
+    contextOptions: { reducedMotion: 'reduce' },
     trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
     screenshot: process.env.CI ? 'only-on-failure' : 'off',
     video: process.env.CI ? 'retain-on-failure' : 'off',

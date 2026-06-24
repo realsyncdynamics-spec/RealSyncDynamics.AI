@@ -9,8 +9,6 @@ import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
-// ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
-import { AetherOSLanding } from './pages/AetherOSLanding';
 // ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
 import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
 // ── Governance-OS Workspace Preview (moved to /preview) ──
@@ -57,6 +55,10 @@ import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAcce
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
+// AetherOS-Landing (3D-Konzept) zieht das komplette three.js/@react-three-
+// Bundle → lazy laden, damit es nicht im eager Entry-Chunk landet (sonst lädt
+// jede Seite inkl. Mobile ~1 MB WebGL-Code, den nur /aetheros braucht).
+const AetherOSLanding = lazy(() => import('./pages/AetherOSLanding').then((m) => ({ default: m.AetherOSLanding })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy

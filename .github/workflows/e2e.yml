@@ -41,7 +41,9 @@ concurrency:
 jobs:
   playwright:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 10 min war im 2-Core-Container zu knapp (Suite wuchs; Retries bei flaky
+    # Timeouts → Job-Abbruch statt Ergebnis). 20 min gibt verlässlich Spielraum.
+    timeout-minutes: 20
     # Pre-baked browsers + matching deps in the official image — skips the
     # `playwright install --with-deps` step (~30 s) on every run.
     container:

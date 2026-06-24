@@ -8,6 +8,24 @@ Stand: 2026-06-22 · Branch: `claude/cloudflare-deploy`
 ebenfalls. Vorher (2026-06-05, dokumentiert in `deploy-pages.yml`) lieferte die
 Domain `HTTP 200`, `server: GitHub.com` über GitHub Pages.
 
+## 1b. Live-Baseline vor Cutover (gemessen 2026-06-23 02:07 UTC)
+
+Momentaufnahme unmittelbar vor der Domain-Bindung — als Referenzzustand:
+
+| URL | Ergebnis | Befund |
+| --- | --- | --- |
+| `realsyncdynamicsai.de` (+ `/pricing`, `/audit`, `/app`) | **HTTP 500**, `server: cloudflare`, `cf-cache-status: DYNAMIC`, leerer Body | **Kein 404, sondern 500** — auf der Apex *läuft* etwas und wirft einen Fehler. Signatur eines aktiven, fehlerhaften **Workers** → die Worker-Route `realsyncdynamicsai.de/*` (Platzhalter `realsyncdynamics`) ist die **aktive** 500-Ursache, nicht nur die fehlende Pages-Bindung. |
+| `www.realsyncdynamicsai.de` | **HTTP 301 → Apex**, Header `via: varnish`, `x-served-by: cache-chi…`, `x-github-request-id` | **`www` hängt noch an GitHub Pages / Fastly.** DNS ist gemischt: Apex auf Cloudflare (kaputt), `www` auf GitHub Pages (funktioniert, dient als Fallback). |
+| `realsyncdynamics-ai.pages.dev` | **HTTP 200** | Pages-Projekt selbst ist gesund. |
+
+**Konsequenzen für den Cutover:**
+1. **P0-3 (Worker-Route entfernen) ist kritisch, nicht optional** — eine
+   Worker-Route auf `realsyncdynamicsai.de/*` kann **Vorrang vor der
+   Pages-Custom-Domain** behalten; sonst greift die Bindung (P0-2) evtl. nicht.
+2. **`www` muss mit umziehen** — Custom Domain für **Apex *und* `www`** binden.
+3. **GitHub Pages erst zuletzt abschalten** — solange `www`/GitHub Pages noch
+   200 liefert, ist es das einzige funktionierende Fallback.
+
 ## 2. Root-Cause-Analyse (verifiziert per Live-Checks)
 
 | Check | Ergebnis | Bedeutung |

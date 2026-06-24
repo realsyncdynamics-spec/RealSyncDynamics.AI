@@ -57,6 +57,7 @@ import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAcce
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
+import { EnterpriseLanding } from './pages/EnterpriseLanding';
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -348,6 +349,7 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/enterprise" element={<EnterpriseLanding />} />
       {/* Enterprise AI OS — Founding Access + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />

@@ -10,8 +10,16 @@
  *   5. Exports       — Export-Steuerung
  */
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
+import {
+  exportAnalytics,
+  triggerBlobDownload,
+  buildExportFilename,
+  defaultRange,
+  type ExportFormat,
+} from '../audit/auditExportApi';
 import {
   Camera,
   Shield,
@@ -33,6 +41,7 @@ import {
   GitCompare,
   Plus,
   Minus,
+  Loader2,
 } from 'lucide-react';
 
 // ── Typen ────────────────────────────────────────────────────────────────────
@@ -267,8 +276,17 @@ function eventToEvidenceItem(e: DbGovernanceEvent): EvidenceItem {
 
 // ── Tab 1 — Evidence Timeline ─────────────────────────────────────────────────
 
-function TimelineTab({ liveEvents }: { liveEvents: DbGovernanceEvent[] | null }) {
-  const items = liveEvents !== null && liveEvents.length > 0
+interface EvidenceHandlers {
+  onExport: (prefix: string, format: ExportFormat, key: string) => void;
+  onViewEvidence: (id: string, isLive: boolean) => void;
+  onCompare: () => void;
+  onShowTimeline: () => void;
+  busy: string | null;
+}
+
+function TimelineTab({ liveEvents, handlers }: { liveEvents: DbGovernanceEvent[] | null; handlers: EvidenceHandlers }) {
+  const isLive = liveEvents !== null && liveEvents.length > 0;
+  const items = isLive
     ? liveEvents.map(eventToEvidenceItem)
     : EVIDENCE_TIMELINE;
   return (
@@ -305,7 +323,10 @@ function TimelineTab({ liveEvents }: { liveEvents: DbGovernanceEvent[] | null })
                 {item.type}
               </span>
               <span className="font-mono text-[10px] text-titanium-500">{item.hash}</span>
-              <button className="text-[10px] font-mono text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => handlers.onViewEvidence(item.id, isLive)}
+                className="text-[10px] font-mono text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
                 Ansehen
               </button>
             </div>
@@ -318,7 +339,7 @@ function TimelineTab({ liveEvents }: { liveEvents: DbGovernanceEvent[] | null })
 
 // ── Tab 2 — Snapshots ─────────────────────────────────────────────────────────
 
-function SnapshotsTab() {
+function SnapshotsTab({ handlers }: { handlers: EvidenceHandlers }) {
   return (
     <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {SNAPSHOTS.map((snap) => {
@@ -365,13 +386,23 @@ function SnapshotsTab() {
 
             {/* Aktionen */}
             <div className="border-t border-titanium-900 px-3 py-2 flex items-center gap-2">
-              <button className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1">
-                <Download className="h-3 w-3" />Herunterladen
+              <button
+                onClick={() => handlers.onExport(`Snapshot-${snap.domain}`, 'pdf', `snap-${snap.id}`)}
+                disabled={handlers.busy === `snap-${snap.id}`}
+                className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1 disabled:opacity-50"
+              >
+                {handlers.busy === `snap-${snap.id}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}Herunterladen
               </button>
-              <button className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1">
+              <button
+                onClick={handlers.onCompare}
+                className="flex-1 text-[10px] font-mono text-titanium-400 hover:text-titanium-200 border border-titanium-900 hover:border-titanium-700 py-1 flex items-center justify-center gap-1"
+              >
                 <GitCompare className="h-3 w-3" />Vergleichen
               </button>
-              <button className="flex-1 text-[10px] font-mono text-teal-500 hover:text-teal-300 border border-teal-900 hover:border-teal-700 py-1 flex items-center justify-center gap-1">
+              <button
+                onClick={handlers.onShowTimeline}
+                className="flex-1 text-[10px] font-mono text-teal-500 hover:text-teal-300 border border-teal-900 hover:border-teal-700 py-1 flex items-center justify-center gap-1"
+              >
                 <Eye className="h-3 w-3" />Nachweis
               </button>
             </div>
@@ -479,15 +510,15 @@ function ChangeTrackingTab() {
 
 // ── Tab 5 — Exports ───────────────────────────────────────────────────────────
 
-const QUICK_EXPORTS = [
-  { label: 'PDF Paket',           icon: <FileText className="h-3.5 w-3.5" /> },
-  { label: 'CSV Evidence',        icon: <Activity className="h-3.5 w-3.5" /> },
-  { label: 'JSON-LD (DSR)',       icon: <Package className="h-3.5 w-3.5" /> },
-  { label: 'Behörden-Bundle',     icon: <Shield className="h-3.5 w-3.5" /> },
-  { label: 'Wirtschaftsprüfer-ZIP', icon: <Download className="h-3.5 w-3.5" /> },
+const QUICK_EXPORTS: { label: string; icon: React.ReactNode; format: ExportFormat }[] = [
+  { label: 'PDF Paket',           icon: <FileText className="h-3.5 w-3.5" />, format: 'pdf' },
+  { label: 'CSV Evidence',        icon: <Activity className="h-3.5 w-3.5" />, format: 'csv' },
+  { label: 'JSON-LD (DSR)',       icon: <Package className="h-3.5 w-3.5" />, format: 'csv' },
+  { label: 'Behörden-Bundle',     icon: <Shield className="h-3.5 w-3.5" />, format: 'pdf' },
+  { label: 'Wirtschaftsprüfer-ZIP', icon: <Download className="h-3.5 w-3.5" />, format: 'pdf' },
 ];
 
-function ExportsTab() {
+function ExportsTab({ handlers }: { handlers: EvidenceHandlers }) {
   return (
     <div className="p-4 space-y-6">
       {/* Aktive Jobs */}
@@ -521,9 +552,11 @@ function ExportsTab() {
           {QUICK_EXPORTS.map((qe) => (
             <button
               key={qe.label}
-              className="flex items-center gap-2 border border-titanium-900 hover:border-teal-700 bg-obsidian-900 hover:bg-obsidian-800 px-3 py-2 text-[11px] font-mono text-titanium-300 hover:text-titanium-100 transition-colors"
+              onClick={() => handlers.onExport(qe.label, qe.format, `qe-${qe.label}`)}
+              disabled={handlers.busy === `qe-${qe.label}`}
+              className="flex items-center gap-2 border border-titanium-900 hover:border-teal-700 bg-obsidian-900 hover:bg-obsidian-800 px-3 py-2 text-[11px] font-mono text-titanium-300 hover:text-titanium-100 transition-colors disabled:opacity-50"
             >
-              <span className="text-teal-500">{qe.icon}</span>
+              <span className="text-teal-500">{handlers.busy === `qe-${qe.label}` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : qe.icon}</span>
               {qe.label}
             </button>
           ))}
@@ -565,8 +598,12 @@ function ExportsTab() {
                     )}
                   </td>
                   <td className="py-2.5 px-3">
-                    <button className="text-[10px] font-mono text-teal-500 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 flex items-center gap-1">
-                      <Download className="h-3 w-3" />
+                    <button
+                      onClick={() => handlers.onExport(exp.name, exp.type.toUpperCase().includes('CSV') ? 'csv' : 'pdf', `re-${exp.id}`)}
+                      disabled={handlers.busy === `re-${exp.id}`}
+                      className="text-[10px] font-mono text-teal-500 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-2 py-0.5 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {handlers.busy === `re-${exp.id}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                       <ChevronRight className="h-3 w-3" />
                     </button>
                   </td>
@@ -602,7 +639,15 @@ const METRICS = [
 export function EvidenceVaultView() {
   const [activeTab, setActiveTab] = useState<TabId>('timeline');
   const { activeTenantId } = useTenant();
+  const navigate = useNavigate();
   const [liveEvents, setLiveEvents] = useState<DbGovernanceEvent[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'error' } | null>(null);
+
+  function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
+    setToast({ msg, tone });
+    setTimeout(() => setToast(null), 3500);
+  }
 
   useEffect(() => {
     if (!activeTenantId) { setLiveEvents(null); return; }
@@ -610,6 +655,39 @@ export function EvidenceVaultView() {
       .then(setLiveEvents)
       .catch(() => {});
   }, [activeTenantId]);
+
+  async function runExport(prefix: string, format: ExportFormat, key: string) {
+    if (!activeTenantId) {
+      showToast('Kein aktiver Mandant — bitte anmelden.', 'error');
+      return;
+    }
+    setBusy(key);
+    const range = defaultRange();
+    try {
+      const res = await exportAnalytics({ tenantId: activeTenantId, format, range });
+      if (!res.ok || !res.blob) {
+        showToast(res.error ?? 'Export fehlgeschlagen.', 'error');
+        return;
+      }
+      triggerBlobDownload(res.blob, buildExportFilename(prefix, format, range));
+      showToast(`${prefix} (${format.toUpperCase()}) exportiert.`);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const handlers: EvidenceHandlers = {
+    busy,
+    onExport: (prefix, format, key) => void runExport(prefix, format, key),
+    onViewEvidence: (id, isLive) => {
+      if (isLive) navigate(`/app/events/${id}`);
+      else showToast('Demo-Nachweis ohne hinterlegtes Ereignis.', 'error');
+    },
+    onCompare: () => setActiveTab('changes'),
+    onShowTimeline: () => setActiveTab('timeline'),
+  };
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-obsidian-950 text-titanium-100">
@@ -625,8 +703,12 @@ export function EvidenceVaultView() {
               Herkunftsnachweise · DSGVO · EU AI Act · C2PA-signiert
             </p>
           </div>
-          <button className="flex items-center gap-2 border border-teal-800 hover:border-teal-600 bg-teal-950/40 hover:bg-teal-950 px-3 py-1.5 text-[11px] font-mono text-teal-300 hover:text-teal-100 transition-colors">
-            <Download className="h-3.5 w-3.5" />
+          <button
+            onClick={() => runExport('Evidence-Vault', 'csv', 'hdr-export')}
+            disabled={busy === 'hdr-export'}
+            className="flex items-center gap-2 border border-teal-800 hover:border-teal-600 bg-teal-950/40 hover:bg-teal-950 px-3 py-1.5 text-[11px] font-mono text-teal-300 hover:text-teal-100 transition-colors disabled:opacity-50"
+          >
+            {busy === 'hdr-export' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             Evidence exportieren
           </button>
         </div>
@@ -665,12 +747,22 @@ export function EvidenceVaultView() {
 
       {/* ── Tab-Inhalt ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {activeTab === 'timeline'   && <TimelineTab liveEvents={liveEvents} />}
-        {activeTab === 'snapshots'  && <SnapshotsTab />}
+        {activeTab === 'timeline'   && <TimelineTab liveEvents={liveEvents} handlers={handlers} />}
+        {activeTab === 'snapshots'  && <SnapshotsTab handlers={handlers} />}
         {activeTab === 'audittrail' && <AuditTrailTab />}
         {activeTab === 'changes'    && <ChangeTrackingTab />}
-        {activeTab === 'exports'    && <ExportsTab />}
+        {activeTab === 'exports'    && <ExportsTab handlers={handlers} />}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 border font-mono text-xs shadow-lg ${
+          toast.tone === 'error' ? 'bg-red-950 border-red-800 text-red-200' : 'bg-obsidian-800 border-teal-700 text-teal-300'
+        }`}>
+          {toast.tone === 'error' ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

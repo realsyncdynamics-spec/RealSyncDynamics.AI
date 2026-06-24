@@ -1,32 +1,26 @@
-name: Deploy to GitHub Pages
+name: Deploy to Cloudflare Pages
 
 # ─────────────────────────────────────────────────────────────────
-# STATUS: PRIMARY PRODUCTION FRONTEND PIPELINE (verified 2026-06-05)
+# CLOUDFLARE PAGES DEPLOYMENT PIPELINE
 # ─────────────────────────────────────────────────────────────────
-# This is the SOLE production deploy path for the frontend.
+# Replaces GitHub Pages. Automatic deploy on push to main.
 #
-# DNS topology (verified 2026-06-05):
-#   realsyncdynamicsai.de  A → 185.199.108-111.153 (GitHub Pages Anycast)
-#   HTTPS enforce: on · CNAME: public/CNAME = realsyncdynamicsai.de
-#   Fastly CDN serves bytes directly — NO VPS hop, NO Traefik redirect.
-#   curl -sI https://realsyncdynamicsai.de/ → HTTP/2 200, server: GitHub.com
+# Setup required (one-time):
+# 1. Create Cloudflare Pages project (see deploy/cloudflare-pages/README.md)
+# 2. Add secrets to GitHub (Settings > Secrets and variables > Actions):
+#    - CLOUDFLARE_API_TOKEN
+#    - CLOUDFLARE_ACCOUNT_ID
+# 3. Add environment variables to GitHub Actions:
+#    - VITE_SUPABASE_URL
+#    - VITE_SUPABASE_ANON_KEY
+#    - VITE_SENTRY_DSN (optional)
+#    - VITE_STRIPE_PRICE_* (required)
 #
-# VPS (187.77.89.1) serves ONLY backend subdomains:
-#   chat.realsyncdynamicsai.de, ollama.realsyncdynamicsai.de, n8n.realsyncdynamicsai.de
-#   → VPS is NOT in the frontend request path
-#
-# Verify:    curl -sI https://realsyncdynamicsai.de/ | grep server
-#            → server: GitHub.com   (HTTP/2 200, no 301)
-#
-# ADR:       docs/adr/0001-stay-on-supabase-gh-pages-for-v1.md
-# Topology:  docs/runtime/production-runtime.md
-#            docs/runtime/SYSTEMCHECK-2026-05-28.md
+# DNS setup:
+# - Domain: realsyncdynamicsai.de
+# - Current: GitHub Pages (185.199.108-111.153)
+# - Target: Cloudflare Pages (via nameserver delegation)
 # ─────────────────────────────────────────────────────────────────
-#
-# Builds the Vite SPA and publishes to GitHub Pages.
-# With custom domain realsyncdynamicsai.de, VITE_BASE must be /
-# Supabase secrets are optional -- if missing the app builds fine
-# and runs in offline/demo mode.
 
 on:
   push:
@@ -39,66 +33,65 @@ on:
       - 'package-lock.json'
       - 'vite.config.ts'
       - 'tsconfig.json'
-      - '.github/workflows/deploy-pages.yml'
+      - 'wrangler.toml'
+      - '_redirects'
+      - '_headers'
+      - '.github/workflows/deploy-cloudflare-pages.yml'
   workflow_dispatch:
 
 concurrency:
-  group: pages
+  group: cloudflare-pages
   cancel-in-progress: false
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
+    name: Build SPA
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '20'
           cache: 'npm'
+
       - name: Install
         run: npm ci
-      - name: Build
+
+      - name: Lint TypeScript
+        run: npm run lint
+
+      - name: Build Vite
         env:
           VITE_BASE: /
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_STRIPE_PRICE_STARTER: ${{ secrets.VITE_STRIPE_PRICE_STARTER }}
+          VITE_STRIPE_PRICE_GROWTH: ${{ secrets.VITE_STRIPE_PRICE_GROWTH }}
+          VITE_STRIPE_PRICE_AGENCY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY }}
         run: npm run build
-      - name: Install Playwright Chromium for prerender
-        run: npx playwright install --with-deps chromium
-      - name: Real prerender (Playwright) for high-priority routes
-        # Verwendet scripts/prerender.mjs (PR #131) — startet vite preview,
-        # rendert jede sitemap-Route mit priority >= 0.6 in Headless-Chromium
-        # und schreibt das vollstaendig hydrierte HTML als dist/<route>/index.html.
-        # Crawler / Social-Bots / Slack-Preview sehen damit den echten
-        # Section-Content statt nur des SPA-Shells.
-        run: npm run prerender
-      - name: SPA-fallback fuer Routes ohne Prerender + .nojekyll
+
+      - name: Prerender high-priority routes
         run: |
-          # 404.html fuer SPA-fallback bei dynamischen Routes (z.B. /audit/share/:token)
+          npx playwright install --with-deps chromium
+          npm run prerender
+
+      - name: Generate SPA fallback for dynamic routes
+        run: |
           cp dist/index.html dist/404.html
-          touch dist/.nojekyll
-          # Routes mit priority < 0.6 sind nicht prerendered. Damit sie nicht
-          # 404 liefern, bekommen sie eine Kopie des SPA-Shells (HTTP 200 +
-          # client-side React-Hydration). Existierende prerendered Files werden
-          # NICHT ueberschrieben — sie behalten ihren Real-Content.
           python3 - <<'PY'
           import os, re, shutil
+          # Prerender routes from sitemap
           with open('public/sitemap.xml', 'r', encoding='utf-8') as f:
               xml = f.read()
           paths = re.findall(r'https?://realsyncdynamicsai\.de(/[^<\s]*)', xml)
           paths = set(p.rstrip('/') for p in paths if p and p != '/')
 
-          # Authentifizierte Workspace-/App-Routen stehen NICHT in der Sitemap
-          # (kein SEO), brauchen aber denselben 200-Shell-Fallback, damit
-          # Direktaufruf + Refresh + Bookmark + E-Mail-Deep-Link sauber laden
-          # (statt ueber 404.html-Redirect mit initialem 404-Status zu bouncen).
-          # Liste mit src/App.tsx synchron halten.
+          # App routes (authenticated, not in sitemap)
           APP_ROUTES = [
               '/os', '/os/pricing',
               '/app', '/app/websites', '/app/ai-systems', '/app/automations', '/app/risks',
@@ -122,37 +115,72 @@ jobs:
               dest_dir = 'dist' + p
               dest_file = os.path.join(dest_dir, 'index.html')
               if os.path.exists(dest_file):
-                  skipped += 1   # Real-prerendered, nicht anfassen
+                  skipped += 1
                   continue
               os.makedirs(dest_dir, exist_ok=True)
               shutil.copyfile(src, dest_file)
               filled += 1
-              print(f'spa-fallback {p}')
           print(f'spa-fallback: {filled} filled · {skipped} kept-prerendered')
           PY
-          ls -la dist/
-      - uses: actions/upload-pages-artifact@v3
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          path: dist
+          name: dist
+          path: dist/
+          retention-days: 1
 
   deploy:
+    name: Deploy to Cloudflare Pages
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-  smoke:
-    name: Smoke-test live routes
+      - name: Download build artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dist
+          path: dist/
+
+      # Fail-fast mit klarer Meldung, wenn die Cloudflare-Credentials fehlen.
+      # Ohne diese deployt Pages NICHT — die Live-Site bleibt dann HTTP 500.
+      # Haeufige Ursache: Secret als *Environment*-Secret statt Repo-Secret
+      # hinterlegt (dann muesste der Job `environment:` deklarieren), oder
+      # unter abweichendem Namen. Erwartet: Repo → Settings → Secrets and
+      # variables → Actions → CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID.
+      - name: Verify Cloudflare credentials present
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=""
+          [ -z "$CF_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "$CF_ACCOUNT_ID" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Fehlende GitHub-Actions-Secrets:$missing — bitte unter Repo → Settings → Secrets and variables → Actions als Repository-Secret hinterlegen. Ohne sie kann Cloudflare Pages nicht deployen und die Live-Site bleibt HTTP 500."
+            exit 1
+          fi
+          echo "✓ Cloudflare-Credentials vorhanden"
+
+      # cloudflare/pages-action@v1 ist deprecated (lehnt u. a. `productionBranch`
+      # ab). Maintainter Weg: wrangler-action@v3 mit `pages deploy`.
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=realsyncdynamics-ai --branch=main
+
+  smoke-test:
+    name: Smoke test live routes
     needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Wait for CDN propagation
         run: sleep 15
-      - name: Check critical routes (must return 200)
+
+      - name: Check critical routes
         run: |
           BASE="https://realsyncdynamicsai.de"
           ROUTES="/ /pricing /audit /governance-runtime /app"

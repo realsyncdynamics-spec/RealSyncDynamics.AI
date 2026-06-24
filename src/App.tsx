@@ -7,7 +7,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
-// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
+// ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
+import { MainLanding } from './pages/MainLanding';
+// ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
+import { AetherOSLanding } from './pages/AetherOSLanding';
+// ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
+import { RealSyncDynamicsLanding } from './marketing/landing/RealSyncDynamicsLanding';
+// ── Governance-OS Workspace Preview (moved to /preview) ──
 import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
@@ -51,6 +57,7 @@ import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAcce
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
+import { EnterpriseLanding } from './pages/EnterpriseLanding';
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -158,6 +165,7 @@ const GovernanceAuditExportView = lazy(() => import('./features/governance/audit
 const AutomationSkillsView = lazy(() => import('./features/automations/AutomationSkillsView').then((m) => ({ default: m.AutomationSkillsView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
+const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
@@ -275,13 +283,17 @@ function LazyFallback() {
 function RoutesWithTracking() {
   useTrackPageview();
   return (
-    <Suspense fallback={<LazyFallback />}>
-    <Routes>
+    <>
+      <SEOHead />
+      <Suspense fallback={<LazyFallback />}>
+        <Routes>
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
-      <Route path="/" element={<PublicWorkspacePreview />} />
+      <Route path="/" element={<MainLanding />} />
+      <Route path="/aetheros" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
@@ -338,6 +350,7 @@ function RoutesWithTracking() {
       <Route path="/audit-pro" element={<AuditPro />} />
       <Route path="/dsgvo-tool-vergleich" element={<DsgvoToolVergleich />} />
       <Route path="/contact-sales" element={<ContactSales />} />
+      <Route path="/enterprise" element={<EnterpriseLanding />} />
       {/* Enterprise AI OS — Founding Access + Dashboard */}
       <Route path="/enterprise-ai-os" element={<EnterpriseAiOs />} />
       <Route path="/enterprise-ai-os/founding-access" element={<EnterpriseAiOsFoundingAccess />} />
@@ -471,7 +484,7 @@ function RoutesWithTracking() {
       <Route path="/app" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
-      <Route path="/app/websites" element={<GovernanceBrowserShell><GovernanceDashboardView /></GovernanceBrowserShell>} />
+      <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
@@ -738,8 +751,9 @@ function RoutesWithTracking() {
 
       {/* 404 catch-all — must be last */}
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

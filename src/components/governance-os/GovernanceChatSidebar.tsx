@@ -161,7 +161,7 @@ export function GovernanceChatSidebar({ open, onClose }: GovernanceChatSidebarPr
         </div>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => { /* neue Konversation */ }}
+            onClick={() => setActiveConversationId(null)}
             className="p-1.5 text-titanium-600 hover:text-titanium-200 hover:bg-obsidian-800 transition-colors"
             aria-label="Neue Konversation"
             title="Neue Konversation"

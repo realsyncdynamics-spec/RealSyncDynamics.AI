@@ -1,6 +1,8 @@
 // AuditExportView — Audit-Ready Export Center
 // DSGVO/EU AI Act Behördenexporte + Audit-Pakete
-import React, { useState } from 'react';
+// Exporte laufen über die governance-analytics-export Edge Function (user JWT).
+import React, { useState, useEffect } from 'react';
+import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 import {
   ClipboardCheck,
   Package,
@@ -13,7 +15,17 @@ import {
   Briefcase,
   BarChart3,
   AlertCircle,
+  Loader2,
+  AlertTriangle,
 } from 'lucide-react';
+import { useTenant } from '../../../core/access/TenantProvider';
+import {
+  exportAnalytics,
+  triggerBlobDownload,
+  buildExportFilename,
+  defaultRange,
+  type ExportFormat,
+} from './auditExportApi';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
 type PackageStatus = 'bereit' | 'in-vorbereitung' | 'archiviert';
@@ -133,9 +145,68 @@ function SeverityIcon({ severity }: { severity: AuditEvent['severity'] }) {
   return <Clock className="h-3.5 w-3.5 text-titanium-500 shrink-0" />;
 }
 
+function eventToAuditEvent(e: DbGovernanceEvent): AuditEvent {
+  const diffMs  = Date.now() - new Date(e.created_at).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const ts = diffMin < 60
+    ? `vor ${diffMin} Min.`
+    : diffMin < 1440
+      ? `vor ${Math.floor(diffMin / 60)} Std.`
+      : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
+  const severity: AuditEvent['severity'] =
+    e.risk_level === 'critical' || e.risk_level === 'high' ? 'warn' :
+    e.risk_level === 'low' || e.risk_level === 'info'      ? 'ok'   : 'info';
+  return {
+    id:       e.id,
+    ts,
+    actor:    e.actor_email ?? e.event_source,
+    action:   e.event_type,
+    target:   e.title,
+    severity,
+  };
+}
+
 // ── AuditExportView ────────────────────────────────────────────────────────
 export function AuditExportView() {
+  const { activeTenantId } = useTenant();
   const [activeTab, setActiveTab] = useState<'pakete' | 'verlauf'>('pakete');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; tone: 'ok' | 'error' } | null>(null);
+  const [trail, setTrail] = useState<AuditEvent[]>(AUDIT_TRAIL);
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    fetchTenantEvents(activeTenantId, 20).then((evs) => {
+      if (evs.length > 0) setTrail(evs.map(eventToAuditEvent));
+    }).catch(() => {/* keep mock */});
+  }, [activeTenantId]);
+
+  function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
+    setToast({ msg, tone });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function runExport(prefix: string, format: ExportFormat, busyKey: string) {
+    if (!activeTenantId) {
+      showToast('Kein aktiver Mandant — bitte anmelden.', 'error');
+      return;
+    }
+    setBusy(busyKey);
+    const range = defaultRange();
+    try {
+      const res = await exportAnalytics({ tenantId: activeTenantId, format, range });
+      if (!res.ok || !res.blob) {
+        showToast(res.error ?? 'Export fehlgeschlagen.', 'error');
+        return;
+      }
+      triggerBlobDownload(res.blob, buildExportFilename(prefix, format, range));
+      showToast(`${prefix} (${format.toUpperCase()}) exportiert.`);
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-obsidian-950 text-titanium-100">
@@ -151,12 +222,20 @@ export function AuditExportView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-titanium-300 border border-titanium-800 hover:bg-obsidian-800 transition-colors">
-              <FileDown className="h-3.5 w-3.5" />
+            <button
+              onClick={() => runExport('Evidence-Export', 'csv', 'hdr-csv')}
+              disabled={busy === 'hdr-csv'}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono text-titanium-300 border border-titanium-800 hover:bg-obsidian-800 transition-colors disabled:opacity-50"
+            >
+              {busy === 'hdr-csv' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
               CSV Evidence Export
             </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono bg-teal-600 text-white hover:bg-teal-500 transition-colors">
-              <Package className="h-3.5 w-3.5" />
+            <button
+              onClick={() => runExport('Audit-Paket', 'pdf', 'hdr-pdf')}
+              disabled={busy === 'hdr-pdf'}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono bg-teal-600 text-white hover:bg-teal-500 transition-colors disabled:opacity-50"
+            >
+              {busy === 'hdr-pdf' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Package className="h-3.5 w-3.5" />}
               PDF Paket exportieren
             </button>
           </div>
@@ -165,17 +244,21 @@ export function AuditExportView() {
 
       {/* Quick Export Buttons */}
       <div className="grid grid-cols-4 divide-x divide-titanium-900 border-b border-titanium-900 shrink-0">
-        {[
-          { icon: <FileText className="h-4 w-4" />, label: 'PDF Paket', sub: 'Vollständiger Audit', color: 'text-teal-400' },
-          { icon: <BarChart3 className="h-4 w-4" />, label: 'CSV Evidence', sub: 'Evidence-Rohdaten', color: 'text-blue-400' },
-          { icon: <Shield className="h-4 w-4" />, label: 'Behörden-Export', sub: 'BSI / DSB Format', color: 'text-amber-400' },
-          { icon: <Briefcase className="h-4 w-4" />, label: 'WP-Bundle', sub: 'Wirtschaftsprüfer', color: 'text-violet-400' },
-        ].map(({ icon, label, sub, color }) => (
+        {([
+          { icon: <FileText className="h-4 w-4" />, label: 'PDF Paket', sub: 'Vollständiger Audit', color: 'text-teal-400', format: 'pdf' as ExportFormat },
+          { icon: <BarChart3 className="h-4 w-4" />, label: 'CSV Evidence', sub: 'Evidence-Rohdaten', color: 'text-blue-400', format: 'csv' as ExportFormat },
+          { icon: <Shield className="h-4 w-4" />, label: 'Behörden-Export', sub: 'BSI / DSB Format', color: 'text-amber-400', format: 'pdf' as ExportFormat },
+          { icon: <Briefcase className="h-4 w-4" />, label: 'WP-Bundle', sub: 'Wirtschaftsprüfer', color: 'text-violet-400', format: 'pdf' as ExportFormat },
+        ]).map(({ icon, label, sub, color, format }) => (
           <button
             key={label}
-            className="flex flex-col items-center justify-center gap-1.5 py-4 px-4 hover:bg-obsidian-900 transition-colors group"
+            onClick={() => runExport(label, format, `tile-${label}`)}
+            disabled={busy === `tile-${label}`}
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-4 hover:bg-obsidian-900 transition-colors group disabled:opacity-50"
           >
-            <span className={`${color} group-hover:scale-110 transition-transform`}>{icon}</span>
+            <span className={`${color} group-hover:scale-110 transition-transform`}>
+              {busy === `tile-${label}` ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+            </span>
             <span className="text-xs font-semibold text-titanium-100">{label}</span>
             <span className="font-mono text-[9px] text-titanium-600">{sub}</span>
           </button>
@@ -231,18 +314,21 @@ export function AuditExportView() {
                   <span className="font-mono text-[10px] text-titanium-600">Erstellt: {pkg.createdAt}</span>
                   <div className="ml-auto flex items-center gap-2">
                     <button
-                      disabled={pkg.status !== 'bereit'}
+                      onClick={() => runExport(pkg.name, 'pdf', `pkg-pdf-${pkg.id}`)}
+                      disabled={pkg.status !== 'bereit' || busy === `pkg-pdf-${pkg.id}`}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono text-titanium-300 border border-titanium-800 hover:bg-obsidian-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Download className="h-3 w-3" />
+                      {busy === `pkg-pdf-${pkg.id}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                       PDF herunterladen
                     </button>
                     <button
-                      disabled={pkg.status !== 'bereit'}
+                      onClick={() => runExport(`${pkg.name}-Behoerde`, 'pdf', `pkg-auth-${pkg.id}`)}
+                      disabled={pkg.status !== 'bereit' || busy === `pkg-auth-${pkg.id}`}
+                      title="Erzeugt das Behörden-Bundle zum Versand"
                       className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono text-teal-400 border border-teal-700 hover:bg-teal-700/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Shield className="h-3 w-3" />
-                      Behörde senden
+                      {busy === `pkg-auth-${pkg.id}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Shield className="h-3 w-3" />}
+                      Behörden-Bundle
                     </button>
                   </div>
                 </div>
@@ -285,8 +371,12 @@ export function AuditExportView() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <button className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-titanium-300 border border-titanium-800 hover:bg-obsidian-800 transition-colors ml-auto">
-                            <Download className="h-3 w-3" />
+                          <button
+                            onClick={() => runExport(exp.name, exp.type.toLowerCase() === 'csv' ? 'csv' : 'pdf', `exp-${exp.id}`)}
+                            disabled={busy === `exp-${exp.id}`}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono text-titanium-300 border border-titanium-800 hover:bg-obsidian-800 transition-colors ml-auto disabled:opacity-50"
+                          >
+                            {busy === `exp-${exp.id}` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
                             Download
                           </button>
                         </td>
@@ -303,11 +393,11 @@ export function AuditExportView() {
                 Audit-Trail
               </h2>
               <div className="space-y-0 border border-titanium-900">
-                {AUDIT_TRAIL.map((event, idx) => (
+                {trail.map((event, idx) => (
                   <div
                     key={event.id}
                     className={`flex items-start gap-3 px-4 py-3 hover:bg-obsidian-800 transition-colors ${
-                      idx < AUDIT_TRAIL.length - 1 ? 'border-b border-titanium-900' : ''
+                      idx < trail.length - 1 ? 'border-b border-titanium-900' : ''
                     }`}
                   >
                     <SeverityIcon severity={event.severity} />
@@ -328,6 +418,16 @@ export function AuditExportView() {
           </div>
         )}
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 border font-mono text-xs shadow-lg ${
+          toast.tone === 'error' ? 'bg-red-950 border-red-800 text-red-200' : 'bg-obsidian-800 border-teal-700 text-teal-300'
+        }`}>
+          {toast.tone === 'error' ? <AlertTriangle className="h-3.5 w-3.5" /> : <CheckCircle className="h-3.5 w-3.5" />}
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

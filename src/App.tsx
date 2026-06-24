@@ -273,6 +273,7 @@ const EnterpriseAgenciesPage = lazy(() => import('./enterprise-os/pages/Agencies
 const EnterpriseDatenschutzPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.DatenschutzPage })));
 const EnterpriseImpressumPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.ImpressumPage })));
 const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/CheckoutEntryPage').then((m) => ({ default: m.CheckoutEntryPage })));
+const EnterpriseWelcomeWizardPage = lazy(() => import('./enterprise-os/pages/WelcomeWizardPage').then((m) => ({ default: m.WelcomeWizardPage })));
 
 // Phase 4 — App Workspace (Websites, Risiken, Compliance, Evidence, Monitoring)
 const EnterpriseWebsitesPage = lazy(() => import('./enterprise-os/pages/WebsitesPage').then((m) => ({ default: m.WebsitesPage })));
@@ -724,6 +725,7 @@ function RoutesWithTracking() {
       <Route path="/os/login" element={<EnterpriseAuthPage mode="login" />} />
       <Route path="/os/signup" element={<EnterpriseAuthPage mode="signup" />} />
       <Route path="/os/checkout" element={<EnterpriseCheckoutEntryPage />} />
+      <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
       <Route

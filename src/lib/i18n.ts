@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
-import de from './translations/de.json';
-import en from './translations/en.json';
 
 export type Language = 'de' | 'en';
 
@@ -12,7 +10,69 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations: Record<Language, Record<string, string>> = { de, en };
+// Translations defined inline (TypeScript, not JSON import)
+const translations: Record<Language, Record<string, string>> = {
+  de: {
+    'common.language': 'Sprache',
+    'common.deutsch': 'Deutsch',
+    'common.english': 'English',
+    'common.loading': 'Wird geladen…',
+    'common.error': 'Fehler',
+    'common.success': 'Erfolg',
+    'common.confirm': 'Bestätigen',
+    'common.cancel': 'Abbrechen',
+    'common.save': 'Speichern',
+    'common.delete': 'Löschen',
+    'common.edit': 'Bearbeiten',
+    'common.back': 'Zurück',
+    'common.next': 'Weiter',
+    'common.logout': 'Abmelden',
+    'landing.hero.title': 'EU-souveräne Compliance-Infrastruktur',
+    'landing.hero.subtitle': 'Automatisierte DSGVO- und EU-AI-Act-Audits für Unternehmen und Agenturen',
+    'landing.hero.cta': 'Kostenlos starten',
+    'pricing.title': 'Transparente Preise für Ihr Governance OS',
+    'pricing.subtitle': 'Starten Sie kostenlos, wachsen Sie ohne Überraschungen. Alle Pläne beinhalten Hosting & Betrieb in der EU.',
+    'checkout.title': 'Zahlungsabwicklung',
+    'checkout.confirm_and_pay': 'Bestellung bestätigen und zahlen',
+    'checkout.processing': 'Zahlung wird verarbeitet…',
+    'checkout.success.title': 'Zahlung erfolgreich',
+    'checkout.success.message': 'Vielen Dank! Ihre Zahlung wurde verarbeitet.',
+    'dashboard.welcome': 'Willkommen, {name}',
+    'auth.login': 'Einloggen',
+    'auth.signup': 'Registrieren',
+    'error.404': 'Seite nicht gefunden',
+  },
+  en: {
+    'common.language': 'Language',
+    'common.deutsch': 'Deutsch',
+    'common.english': 'English',
+    'common.loading': 'Loading…',
+    'common.error': 'Error',
+    'common.success': 'Success',
+    'common.confirm': 'Confirm',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.delete': 'Delete',
+    'common.edit': 'Edit',
+    'common.back': 'Back',
+    'common.next': 'Next',
+    'common.logout': 'Log Out',
+    'landing.hero.title': 'EU-sovereign Compliance Infrastructure',
+    'landing.hero.subtitle': 'Automated GDPR and EU AI Act audits for enterprises and agencies',
+    'landing.hero.cta': 'Get started free',
+    'pricing.title': 'Transparent Pricing for Your Governance OS',
+    'pricing.subtitle': 'Start free, grow without surprises. All plans include EU hosting & operations.',
+    'checkout.title': 'Payment',
+    'checkout.confirm_and_pay': 'Confirm and Pay',
+    'checkout.processing': 'Processing payment…',
+    'checkout.success.title': 'Payment Successful',
+    'checkout.success.message': 'Thank you! Your payment has been processed.',
+    'dashboard.welcome': 'Welcome, {name}',
+    'auth.login': 'Log In',
+    'auth.signup': 'Sign Up',
+    'error.404': 'Page Not Found',
+  },
+};
 
 export function useLanguage(): LanguageContextType {
   const context = useContext(LanguageContext);

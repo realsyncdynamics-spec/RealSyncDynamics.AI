@@ -46,7 +46,7 @@ export function EnterpriseLanding() {
               to="/contact-sales?intent=enterprise"
               className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
             >
-              Demo anfordern <ArrowRight className="h-4 w-4" />
+              Enterprise anfragen <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/pricing"
@@ -317,7 +317,7 @@ export function EnterpriseLanding() {
             Bereit für Enterprise-Grade Governance?
           </h2>
           <p className="text-lg text-silver-300 mb-8 leading-relaxed">
-            Demo buchen, Fragen stellen, oder Technical Deep-Dive mit unserem Team.
+            Termin vereinbaren, Fragen stellen, oder Technical Deep-Dive mit unserem Team.
           </p>
           <Link
             to="/contact-sales?intent=enterprise"

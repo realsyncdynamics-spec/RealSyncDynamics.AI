@@ -25,7 +25,7 @@ import { trackConversion } from '../../lib/pixels';
  */
 
 const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency']);
-
+// DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
   | { status: 'no_user' }

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
+import { LanguageProvider } from './lib/i18n';
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
 // ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
@@ -756,19 +757,21 @@ function RoutesWithTracking() {
 export default function App() {
   useEffect(() => { initMarketingPixels(); }, []);
   return (
-    <TenantProvider>
-      <EnvironmentProvider>
-        <DemoModeProvider>
-          <BrowserRouter basename={ROUTER_BASENAME}>
-          <ScrollToTop />
-          <RoutesWithTracking />
-          <CookieConsent />
-          <Suspense fallback={null}>
-            <AssistentChip />
-          </Suspense>
-        </BrowserRouter>
-        </DemoModeProvider>
-      </EnvironmentProvider>
-    </TenantProvider>
+    <LanguageProvider>
+      <TenantProvider>
+        <EnvironmentProvider>
+          <DemoModeProvider>
+            <BrowserRouter basename={ROUTER_BASENAME}>
+            <ScrollToTop />
+            <RoutesWithTracking />
+            <CookieConsent />
+            <Suspense fallback={null}>
+              <AssistentChip />
+            </Suspense>
+          </BrowserRouter>
+          </DemoModeProvider>
+        </EnvironmentProvider>
+      </TenantProvider>
+    </LanguageProvider>
   );
 }

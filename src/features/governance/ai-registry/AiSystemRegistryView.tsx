@@ -10,6 +10,8 @@ import {
   type AnnexIIICategory,
   type ProviderRole,
 } from '../../../lib/ai-act/annexCategories';
+import { downloadConformityDossier } from '../../../lib/ai-act/conformityDossier';
+import { listDatasets } from '../aiActDataGovernanceApi';
 import {
   ArrowLeft,
   Bot,
@@ -20,6 +22,7 @@ import {
   CheckCircle2,
   Circle,
   FileText,
+  FileDown,
   Tag,
   Shield,
 } from 'lucide-react';
@@ -46,6 +49,9 @@ interface AiSystem {
   obligationsDone: boolean[];
   annexCategory?: AnnexIIICategory | null;
   providerRole?: ProviderRole | null;
+  intendedPurpose?: string | null;
+  deploymentContext?: string | null;
+  affectedGroups?: string[];
 }
 
 // ── Mock-Daten ─────────────────────────────────────────────────────────────────
@@ -298,6 +304,9 @@ function assetToAiSystem(a: DbGovernanceAsset): AiSystem {
     obligationsDone: [],
     annexCategory: (a.annex_iii_category as AnnexIIICategory | null) ?? null,
     providerRole: (a.provider_role as ProviderRole | null) ?? null,
+    intendedPurpose: a.intended_purpose ?? null,
+    deploymentContext: a.deployment_context ?? null,
+    affectedGroups: a.affected_groups ?? [],
   };
 }
 
@@ -347,6 +356,44 @@ export function AiSystemRegistryView() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleDossier(system: AiSystem) {
+    let datasets: Array<{ name: string; role: string; containsPersonalData: boolean; legalBasis: string | null; biasAssessment: string | null }> = [];
+    if (activeTenantId) {
+      try {
+        const rows = await listDatasets(activeTenantId);
+        datasets = rows
+          .filter((d) => (d.ai_system_ref ?? '').toLowerCase() === system.name.toLowerCase())
+          .map((d) => ({
+            name: d.name,
+            role: d.dataset_role,
+            containsPersonalData: d.contains_personal_data,
+            legalBasis: d.legal_basis,
+            biasAssessment: d.bias_assessment,
+          }));
+      } catch {/* Dossier wird ohne Datensätze erzeugt */}
+    }
+    downloadConformityDossier({
+      system: {
+        name: system.name,
+        provider: system.provider,
+        model: system.model,
+        riskLabel: system.riskClass,
+        annexCategory: system.annexCategory ? ANNEX_III_CATEGORY_LABEL[system.annexCategory] : null,
+        providerRole: system.providerRole ? PROVIDER_ROLE_LABEL[system.providerRole] : null,
+        intendedPurpose: system.intendedPurpose,
+        deploymentContext: system.deploymentContext,
+        affectedGroups: system.affectedGroups,
+        scope: system.scope,
+        owner: system.owner,
+      },
+      datasets,
+      obligations: system.obligations.map((label, i) => ({
+        label, article: '—', done: system.obligationsDone[i] ?? false,
+      })),
+    });
+    showToast('Annex-IV-Dossier erstellt');
   }
 
   const TABS: FilterTab[] = ['Alle', 'Hoch-Risiko', 'Begrenzt', 'Minimal', 'Ausstehend'];
@@ -465,7 +512,7 @@ export function AiSystemRegistryView() {
         {/* System-Karten */}
         <div className="space-y-3">
           {filtered.map((system) => (
-            <AiSystemCard key={system.id} system={system} />
+            <AiSystemCard key={system.id} system={system} onDossier={handleDossier} />
           ))}
           {filtered.length === 0 && (
             <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
@@ -531,7 +578,7 @@ export function AiSystemRegistryView() {
 
 // ── System-Karte ──────────────────────────────────────────────────────────────
 
-function AiSystemCard({ system }: { system: AiSystem }) {
+function AiSystemCard({ system, onDossier }: { system: AiSystem; onDossier: (s: AiSystem) => void }) {
   const [expanded, setExpanded] = useState(false);
   const docPct = system.docTotal > 0 ? (system.docProgress / system.docTotal) * 100 : 0;
   const doneCnt = system.obligationsDone.filter(Boolean).length;
@@ -637,6 +684,7 @@ function AiSystemCard({ system }: { system: AiSystem }) {
           <ActionBtn icon={<FileText className="h-3 w-3" />} label="Dokumentieren" />
           <ActionBtn icon={<Tag className="h-3 w-3" />}      label="Klassifizieren" />
           <ActionBtn icon={<Shield className="h-3 w-3" />}   label="Nachweis erstellen" />
+          <ActionBtn icon={<FileDown className="h-3 w-3" />} label="Annex-IV-Dossier" onClick={() => onDossier(system)} />
         </div>
       </div>
     </div>
@@ -696,10 +744,11 @@ function RiskInfoCard({
   );
 }
 
-function ActionBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
+function ActionBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex items-center gap-1 border border-titanium-800 bg-obsidian-950 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-titanium-400 hover:border-titanium-600 hover:text-titanium-100"
     >
       {icon}

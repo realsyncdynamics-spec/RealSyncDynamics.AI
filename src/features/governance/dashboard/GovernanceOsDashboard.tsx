@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import {
   Globe, Cpu, AlertTriangle, FileCheck2, Activity,
   Bot, GitMerge, FileText, Building2, ClipboardCheck,
-  TrendingUp, TrendingDown, Shield,
+  TrendingUp, TrendingDown, Shield, Database,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { countOpenIncidents } from '../incidentsApi';
@@ -132,6 +132,17 @@ const MODULES: ModuleDef[] = [
     lastActivity: 'Scan-Workflow vor 3 Min.',
     alertCount: 0,
     color: 'text-indigo-400',
+  },
+  {
+    id: 'datasets',
+    label: 'Datensätze',
+    icon: Database,
+    route: '/app/datasets',
+    status: 'live',
+    metric: 'Art. 10 · Daten-Governance',
+    lastActivity: 'Trainings-/Test-Daten dokumentieren',
+    alertCount: 0,
+    color: 'text-cyan-400',
   },
   {
     id: 'documents',
@@ -324,6 +335,7 @@ function ModuleCard({ mod }: { mod: ModuleDef }) {
   return (
     <Link
       to={mod.route}
+      aria-label={`${mod.label} — ${mod.metric}`}
       className="relative bg-obsidian-900/60 border border-titanium-900 p-4 flex flex-col gap-3 hover:bg-obsidian-800/60 transition-colors cursor-pointer group"
     >
       {/* Alert Badge */}
@@ -565,7 +577,7 @@ export function GovernanceOsDashboard() {
           </div>
           <Link
             to="/welcome"
-            className="border border-teal-600 text-teal-300 text-xs font-mono px-4 py-2 hover:bg-teal-900/40 transition-colors"
+            className="bg-teal-600 text-obsidian-950 font-semibold text-xs font-mono px-4 py-2 hover:bg-teal-500 transition-colors"
           >
             → Anmelden
           </Link>

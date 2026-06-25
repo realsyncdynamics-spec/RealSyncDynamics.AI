@@ -14,7 +14,7 @@ import { trackConversion } from '../../lib/pixels';
  *
  * Flow:
  *   1. Tier aus URL-Param laden (free / starter / growth / agency / enterprise)
- *   2. Auth-State pruefen via Supabase
+ *   2. Auth-State prüfen via Supabase
  *   3a. Wenn nicht eingeloggt: Link auf /welcome mit ?next=/checkout/:planKey
  *   3b. Wenn eingeloggt + Tenant vorhanden: createCheckoutSession() rufen,
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
@@ -245,7 +245,7 @@ function ShellWithMessage({
 
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500">
             <AlertCircle className="h-3 w-3" />
-            <span>Stripe-Hosted-Checkout · Monatlich kuendbar · Keine Setup-Gebuehren</span>
+            <span>Stripe-Hosted-Checkout · Monatlich kündbar · Keine Setup-Gebühren</span>
           </div>
         </div>
       </main>
@@ -465,7 +465,7 @@ function ConsentGateShell({
           </button>
 
           <div className="mt-4 text-[11px] font-mono uppercase tracking-wider text-silver-500 text-center">
-            Eingeloggt als {userEmail}
+            Angemeldet als {userEmail}
           </div>
           <div className="mt-3 text-center">
             <Link to="/legal/avv" className="text-[11px] text-gold-300 hover:text-gold-200 underline" target="_blank" rel="noopener noreferrer">

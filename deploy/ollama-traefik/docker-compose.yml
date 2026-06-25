@@ -97,19 +97,23 @@ services:
       - "traefik.http.services.kodee-chat.loadbalancer.server.port=8080"
 
       # ── Router: realsyncdynamicsai.de (Apex) → 301 zu GH-Pages ───────────
-      # Frontend wird auf GH-Pages gehostet (free SSL, automatisches Deploy
-      # via deploy-pages.yml). Diese Apex-Redirect-Route stellt sicher, dass
-      # realsyncdynamicsai.de auch mit gültigem Let's-Encrypt-Cert antwortet
-      # (Traefik macht den Cert-Issue an dieser Route fest).
-      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.regex=^https?://(www\\.)?realsyncdynamicsai\\.de(.*)$"
-      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.replacement=https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI$${2}"
-      - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.permanent=true"
-      - "traefik.http.routers.kodee-apex.rule=Host(`realsyncdynamicsai.de`) || Host(`www.realsyncdynamicsai.de`)"
-      - "traefik.http.routers.kodee-apex.entrypoints=websecure"
-      - "traefik.http.routers.kodee-apex.tls=true"
-      - "traefik.http.routers.kodee-apex.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
-      - "traefik.http.routers.kodee-apex.middlewares=kodee-apex-redirect"
-      - "traefik.http.routers.kodee-apex.service=kodee-chat"
+      # ⛔ DEAKTIVIERT (2026-06-25): Diese Route leitete Apex/`www` hart per 301
+      # auf `realsyncdynamics-spec.github.io` um. Das Frontend liegt NICHT mehr
+      # auf GitHub Pages, sondern auf Cloudflare Pages
+      # (realsyncdynamics-ai.pages.dev). Solange diese Route aktiv ist, ist sie
+      # eine Landmine: zeigt DNS je auf diesen VPS, reißt sie die Domain zurück
+      # auf den eingefrorenen GH-Pages-Build (Split-Brain — siehe
+      # docs/infra/apex-still-on-github-pages-2026-06-25.md). Bewusst
+      # auskommentiert statt gelöscht, damit die Historie nachvollziehbar bleibt.
+      # - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.regex=^https?://(www\\.)?realsyncdynamicsai\\.de(.*)$"
+      # - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.replacement=https://realsyncdynamics-spec.github.io/RealSyncDynamics.AI$${2}"
+      # - "traefik.http.middlewares.kodee-apex-redirect.redirectregex.permanent=true"
+      # - "traefik.http.routers.kodee-apex.rule=Host(`realsyncdynamicsai.de`) || Host(`www.realsyncdynamicsai.de`)"
+      # - "traefik.http.routers.kodee-apex.entrypoints=websecure"
+      # - "traefik.http.routers.kodee-apex.tls=true"
+      # - "traefik.http.routers.kodee-apex.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+      # - "traefik.http.routers.kodee-apex.middlewares=kodee-apex-redirect"
+      # - "traefik.http.routers.kodee-apex.service=kodee-chat"
       # service zeigt auf kodee-chat als no-op backend — middleware fängt
       # alles vorher ab und sendet 301, der service wird nie wirklich gehit.
 

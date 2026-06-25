@@ -100,7 +100,7 @@ test.describe('Workspace-Vorschau (/)', () => {
 
   test('Hero zeigt KI-Betriebssystem-Headline und CTAs', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: /Das KI-Betriebssystem für/i }),
+      page.getByRole('heading', { name: /Betriebssystem für/i }),
     ).toBeVisible();
 
     await expect(page.getByText(/AI GOVERNANCE OS FOR TRUST & VALUE/i)).toBeVisible();

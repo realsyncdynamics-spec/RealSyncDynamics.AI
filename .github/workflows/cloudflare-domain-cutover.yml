@@ -15,10 +15,13 @@ name: Cloudflare Domain Cutover (one-shot)
 # DNS-Rechten nicht hart fehl, sondern berichtet, was das Token kann.
 # ─────────────────────────────────────────────────────────────────────────
 
+# ⚠️ Erfordert ein CLOUDFLARE_API_TOKEN (Scopes: Pages:Edit, Zone DNS:Edit,
+# Cache Purge:Purge, Zone:Read) als Repository-Secret. Stand 2026-06-25 ist
+# dieses Secret in Actions NICHT gesetzt (Live-Deploys laufen ueber Cloudflares
+# Git-Integration, die kein Repo-Secret braucht). Daher laeuft dieser Workflow
+# NUR manuell (workflow_dispatch) — kein Auto-Trigger, damit kein Dauer-Rot.
+# Sobald das Secret gesetzt ist: Actions → "Cloudflare Domain Cutover" → Run.
 on:
-  push:
-    branches: ['claude/function-chaos-investigation-0u1r68']
-    paths: ['.github/workflows/cloudflare-domain-cutover.yml']
   workflow_dispatch:
 
 permissions:

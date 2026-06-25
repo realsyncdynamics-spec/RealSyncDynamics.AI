@@ -16,6 +16,16 @@ import {
   ServerCog,
   Check,
   Building2,
+  HeartPulse,
+  Landmark,
+  ShoppingCart,
+  Factory,
+  UserCheck,
+  Megaphone,
+  Cloud,
+  Zap,
+  GraduationCap,
+  Truck,
 } from 'lucide-react';
 
 /**
@@ -119,6 +129,23 @@ const PLATFORM = [
   },
 ];
 
+// Branchen — DSGVO & EU AI Act kennen keine Branchengrenzen. Jede Karte spricht
+// eine Zielgruppe konkret mit ihrem regulatorischen Schmerzpunkt an.
+const INDUSTRIES = [
+  { icon: HeartPulse, title: 'Gesundheitswesen', text: 'Patientendaten, Praxis- & Klinik-Software, KI-Diagnostik — Art. 9 DSGVO und Hochrisiko-KI lückenlos belegt.' },
+  { icon: Landmark, title: 'Banken & Versicherungen', text: 'BAIT, MaRisk und Scoring-Modelle: KI-Entscheidungen nachvollziehbar, prüfbar und aufsichtskonform.' },
+  { icon: ShoppingCart, title: 'Handel & E-Commerce', text: 'Consent, Tracking und Empfehlungs-KI im Griff — vom Cookie-Banner bis zur Produktempfehlung.' },
+  { icon: UserCheck, title: 'HR & Recruiting', text: 'Bewerber- und Personal-KI gilt als Hochrisiko nach EU AI Act — automatisch klassifiziert und dokumentiert.' },
+  { icon: Building2, title: 'Öffentlicher Sektor', text: 'Bürgerdaten, Transparenzpflichten und KRITIS — Souveränität durch EU-Hosting und lokale Modelle.' },
+  { icon: Factory, title: 'Industrie & Fertigung', text: 'IoT-Telemetrie, Predictive Maintenance und Lieferketten — Datenflüsse und KI revisionssicher belegt.' },
+  { icon: Scale, title: 'Recht & DSB-Kanzleien', text: 'Compliance als Service für Ihre Mandanten — Multi-Tenant-Dashboard im White-Label-Kanzlei-Modus.' },
+  { icon: Megaphone, title: 'Marketing & Agenturen', text: 'Tracking, Consent und Kampagnen-KI für viele Kunden — mandantengetrennt und White-Label.' },
+  { icon: Cloud, title: 'SaaS & Technologie', text: 'Eigene KI-Features auditierbar machen — Transparenz- und Dokumentationspflichten erfüllt by Design.' },
+  { icon: Zap, title: 'Energie & Versorger', text: 'Kritische Infrastruktur und KRITIS — kontinuierliches Monitoring statt jährlicher Stichprobe.' },
+  { icon: GraduationCap, title: 'Bildung & Forschung', text: 'Lernplattformen, Forschungs- und Minderjährigendaten — sensibel verarbeitet, sauber nachgewiesen.' },
+  { icon: Truck, title: 'Logistik & Mobilität', text: 'Telematik, Tracking und Routing-KI — personenbezogene Bewegungsdaten DSGVO-konform behandelt.' },
+];
+
 const STEPS = [
   { no: '01', title: 'Verbinden', text: 'Domains, KI-Systeme und Datenflüsse in Minuten anbinden — ohne Code.' },
   { no: '02', title: 'Überwachen', text: 'Die Runtime erfasst kontinuierlich Telemetrie und bewertet Risiken in Echtzeit.' },
@@ -141,6 +168,7 @@ export function MainLanding() {
       <Hero />
       <TrustStrip />
       <Platform />
+      <Industries />
       <Runtime />
       <ProofBand />
       <Pricing />
@@ -212,7 +240,8 @@ function Hero() {
             </p>
 
             <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-8 sm:mb-10">
-              <span className="font-semibold text-white/90">RealSync Dynamics</span> entwickelt SaaS &amp; KI-Innovationen für die Zukunft. Unser erstes Produkt überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar.
+              <span className="font-semibold text-white">Andere scannen und liefern ein PDF. Wir betreiben Ihre Compliance.</span>{' '}
+              RealSync Dynamics setzt DSGVO und EU AI Act <span className="text-white/90">zur Laufzeit durch</span> — überwacht Websites, Daten und KI-Systeme rund um die Uhr, erkennt Risiken, <span className="text-white/90">bevor sie zum Bußgeld werden</span>, und macht aus jeder Maßnahme einen revisionssicheren Nachweis. Ein Betriebssystem für Compliance, das nie schläft.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 max-w-2xl">
@@ -271,7 +300,7 @@ function TrustStrip() {
 /* ── PLATTFORM ──────────────────────────────────────────── */
 function Platform() {
   return (
-    <Section id="produkt" eyebrow="DIE PLATTFORM" title="Eine Runtime für vollständige KI-Governance" subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur.">
+    <Section id="produkt" eyebrow="DIE PLATTFORM" title="Eine Runtime. Vollständige KI-Governance." subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur. Kein Tool-Wildwuchs, keine Lücken zwischen Verantwortung und Beweis.">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {PLATFORM.map(({ icon: Icon, title, text }) => (
           <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
@@ -287,10 +316,40 @@ function Platform() {
   );
 }
 
+/* ── BRANCHEN ───────────────────────────────────────────── */
+function Industries() {
+  return (
+    <Section
+      eyebrow="FÜR WEN"
+      title="Für jeden, der Daten verarbeitet oder KI einsetzt"
+      subtitle="DSGVO und EU AI Act kennen keine Branchengrenzen. Überall, wo personenbezogene Daten fließen oder Algorithmen entscheiden, sorgt dieselbe Runtime für Nachweisbarkeit — branchenspezifisch, nicht generisch."
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
+        {INDUSTRIES.map(({ icon: Icon, title, text }) => (
+          <div key={title} className="group flex gap-4 p-5 sm:p-6 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
+            <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
+              <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold mb-1.5">{title}</h3>
+              <p className="text-xs sm:text-[13px] text-white/60 leading-relaxed">{text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-6 text-xs sm:text-sm text-white/50 text-center">
+        Ihre Branche ist nicht dabei? Die Runtime ist branchenagnostisch —{' '}
+        <SmartLink to="/branchen" className="text-cyan-400 hover:text-cyan-300 transition-colors">alle Branchen ansehen</SmartLink>{' '}
+        oder <SmartLink to="/contact-sales" className="text-cyan-400 hover:text-cyan-300 transition-colors">mit uns sprechen</SmartLink>.
+      </p>
+    </Section>
+  );
+}
+
 /* ── GOVERNANCE-RUNTIME ─────────────────────────────────── */
 function Runtime() {
   return (
-    <Section eyebrow="SO FUNKTIONIERT ES" title="In drei Schritten zur kontinuierlichen Compliance" subtitle="Keine Projektphasen, keine statischen PDFs — Governance läuft ab dem ersten Tag zur Laufzeit.">
+    <Section eyebrow="SO FUNKTIONIERT ES" title="Compliance, die ab Minute eins läuft" subtitle="Keine Monate-Projekte, keine statischen PDFs, kein Berater-Backlog — Governance läuft ab dem ersten Tag zur Laufzeit.">
       <div className="grid md:grid-cols-3 gap-6">
         {STEPS.map(({ no, title, text }) => (
           <div key={no} className="relative p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
@@ -329,7 +388,7 @@ function ProofBand() {
 /* ── PRICING ────────────────────────────────────────────── */
 function Pricing() {
   return (
-    <Section id="preise" eyebrow="PREISE" title="Transparente Pläne mit klarer Wertschöpfung" subtitle="Vom Einzel-Creator bis zur DSB-Kanzlei. Metered Billing, jederzeit kündbar.">
+    <Section id="preise" eyebrow="PREISE" title="Preise, die mit Ihrer Verantwortung skalieren" subtitle="Vom Einzel-Creator bis zur DSB-Kanzlei mit 50 Mandanten. Transparent, metered, jederzeit kündbar — ohne Setup-Gebühr und ohne Berater-Tagessätze.">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {PRICING.map((p) => (
           <div key={p.name} className={`relative flex flex-col p-7 rounded-2xl border ${p.featured ? 'border-cyan-400/60 bg-cyan-500/[0.06]' : 'border-white/10 bg-white/[0.02]'}`}>

@@ -4,8 +4,8 @@ name: Tracker-DB Version Update
 # basierend auf EasyList-Last-Modified-Header. Schreibt
 # public/tracker-db-version.json und committet die Änderung.
 #
-# Triggert dadurch den Deploy-Workflow (deploy-pages.yml watcht public/**),
-# sodass /audit-Reports automatisch neue Versions-Pills zeigen.
+# Triggert dadurch den Frontend-Deploy (deploy-cloudflare-pages.yml watcht
+# public/**), sodass /audit-Reports automatisch neue Versions-Pills zeigen.
 
 on:
   schedule:

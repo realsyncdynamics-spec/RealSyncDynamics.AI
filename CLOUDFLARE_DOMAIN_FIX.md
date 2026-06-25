@@ -1,5 +1,41 @@
 # Cloudflare-Domain-Fix — realsyncdynamicsai.de (HTTP 500 → 200)
 
+> ## ⏱️ UPDATE 2026-06-25 — HTTP-500 behoben; diese Anleitung ist GRÖSSTENTEILS überholt
+>
+> Der unten beschriebene **uniforme HTTP-500** existiert **nicht mehr**. Live verifiziert:
+> `realsyncdynamicsai.de/` und Deep-Links (`/pricing/`, `/audit`) liefern **HTTP 200**.
+>
+> **Wichtig — die Ziel-Architektur unten stimmt nicht mehr mit dem Live-Zustand überein:**
+> Der Apex wird aktuell **nicht** von Cloudflare Pages, sondern von **GitHub Pages**
+> hinter dem Cloudflare-Proxy bedient (Header `x-github-request-id`, `via: 1.1 varnish`).
+> Die Schritte 1–2 unten (Cloudflare-Pages-Custom-Domain neu binden) treffen den aktuellen
+> Pfad daher **nicht**. Vor weiterer Arbeit zuerst entscheiden, ob der Apex bewusst auf
+> **GitHub Pages** (Ist-Zustand) oder auf **Cloudflare Pages** (Ziel laut
+> `deploy-cloudflare-pages.yml`) laufen soll — und nur **eine** Quelle binden.
+>
+> **Aktuelles offenes Problem ist nicht der 500, sondern DNSSEC** (Ursache des
+> `DNS_LOOKUP_FAILED`-Screenshots): Die Zone ist DNSSEC-**signiert** (DNSKEY + gültige
+> RRSIG), aber beim `.de`-Registrar (DENIC, via Hostinger) fehlt der **DS-Record**
+> (`AD=false`). Solange das so ist, kann ein fehlender/abweichender DS bei
+> validierenden Resolvern zeitweise `SERVFAIL` → `DNS_LOOKUP_FAILED` erzeugen.
+>
+> ### Korrektur-Schritte (statt Schritt 1–2 unten)
+> 1. **DNSSEC begradigen (zuerst):** Cloudflare → **DNS → Settings → DNSSEC** → DS-Record
+>    kopieren und **exakt** bei **Hostinger (.de-Registrar) → Domain → DNSSEC** hinterlegen.
+>    Wenn DNSSEC nicht gewünscht ist: in Cloudflare **deaktivieren** (Zone hört auf zu
+>    signieren). **Nicht** halb-aktiviert lassen. Prüfen: `https://dnsviz.net/d/realsyncdynamicsai.de/dnssec/`
+> 2. **Hosting-Ziel binden:** Apex an genau **eine** Quelle (GitHub Pages *oder* Cloudflare
+>    Pages) binden; konkurrierende Bindungen/Worker-Routen entfernen (Schritt 2 unten bleibt
+>    als Split-Brain-Checkliste gültig).
+> 3. **Verifikation:** `npm run diagnose:domain` (jetzt inkl. DNSSEC-/DS-Check) und die
+>    `curl`-Matrix in Abschnitt 6.
+>
+> Die Schritte 3–6 unten (DNS-Records, SSL/TLS Full(strict), Cache-Purge, Verifikation)
+> bleiben als allgemeine Cloudflare-Hygiene gültig.
+>
+> ---
+> _Historischer Stand (HTTP-500-Diagnose, überholt — zur Nachverfolgung erhalten):_
+
 Ziel-Architektur (bestätigt):
 `Cloudflare Nameserver → Cloudflare DNS → Cloudflare Pages (realsyncdynamics-ai) → realsyncdynamicsai.de`
 

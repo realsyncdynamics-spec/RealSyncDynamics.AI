@@ -1,5 +1,34 @@
 # Domain-/Edge-Diagnose — realsyncdynamicsai.de vs pages.dev
 
+> ## ⏱️ UPDATE 2026-06-25 — Apex-500 aufgelöst; Befund verschiebt sich auf DNS/DNSSEC
+>
+> Die „Split-Brain / uniformer Apex-500"-Diagnose unten (Stand 2026-06-23) ist
+> **überholt**. Aktueller, live verifizierter Stand:
+>
+> | Base | 2026-06-23 (alt) | 2026-06-25 (aktuell) |
+> |---|---|---|
+> | `realsyncdynamics-ai.pages.dev` | ✅ 200 (alle Routen) | ✅ 200 (Referenz) |
+> | `realsyncdynamicsai.de` (Apex) | ❌ uniform 500 (`cf-cache: DYNAMIC`, leer) | ✅ **200**, bedient von **GitHub Pages** (`x-github-request-id`, `via: 1.1 varnish`) |
+>
+> **Neuer, gemessener Befund (DoH, Google + Cloudflare):**
+> - NS: `bella`/`clyde.ns.cloudflare.com` ✓ · A: Cloudflare-Proxy-IPs ✓ · Auflösung weltweit OK.
+> - **DNSSEC unvollständig:** Zone publiziert **DNSKEY + gültige RRSIG** (algo 13), aber
+>   die `.de`-Registry (DENIC) hat **keinen DS-Record** → `AD=false`. Auflösung erfolgt
+>   derzeit als *insecure* (funktioniert), die Vertrauenskette ist aber **nicht geschlossen**.
+> - Aktuell **kein** `SERVFAIL` (do=1/cd=0 → Status 0). Das gemeldete `DNS_LOOKUP_FAILED`
+>   ist damit konsistent mit einem **transienten** validierungsbedingten Fehlfenster
+>   (z. B. stale/abweichender DS während der Hostinger→Cloudflare-Umstellung oder
+>   Carrier-Resolver), nicht mit einem dauerhaften Server-/Repo-Fehler.
+>
+> **Konsequenz:** Der frühere „Custom-Domain-Binding"-Fokus (Schritte 1–2 in
+> `CLOUDFLARE_DOMAIN_FIX.md`) ist nicht mehr die akute Baustelle. Die akute Baustelle ist
+> die **DNSSEC-/DS-Konsistenz** plus die Entscheidung GitHub Pages vs. Cloudflare Pages.
+> Automatischer Check: `npm run diagnose:domain` enthält jetzt einen DNSSEC-/DS-Audit
+> (DoH-basiert) und gibt OK / WARN / FAIL aus.
+>
+> ---
+> _Historischer Stand 2026-06-23 (Apex-500-Diagnose, überholt — zur Nachverfolgung erhalten):_
+
 Stand: 2026-06-23 · Tool: `npm run diagnose:domain` (`scripts/diagnose-domain-routing.mjs`)
 
 ## Ergebnis in einem Satz

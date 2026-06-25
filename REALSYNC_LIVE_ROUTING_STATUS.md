@@ -1,6 +1,45 @@
 # Live-Routing-Status — realsyncdynamicsai.de
 
-Stand: 2026-06-23 · nach Merge PR #674 (`public/404.html` entfernt)
+> ## ⏱️ UPDATE 2026-06-25 — der HTTP-500 ist WEG; neuer Befund: DNSSEC-Kette unvollständig
+>
+> Die Messung weiter unten (Stand 2026-06-23, „Apex liefert überall 500") ist
+> **überholt**. Aktuell verifiziert (live `curl` + DoH):
+>
+> | Prüfpunkt | 2026-06-23 (alt) | 2026-06-25 (aktuell) |
+> |---|---|---|
+> | Apex `/` | ❌ 500 | ✅ **200** `text/html` |
+> | Apex `/pricing/`, `/audit` | ❌ 500 | ✅ **200** |
+> | `www` | — | ✅ 301 → Apex |
+> | Ausliefernder Origin | (Cloudflare Pages, defekt) | ⚠️ **GitHub Pages** hinter Cloudflare-Proxy (`x-github-request-id`, `via: 1.1 varnish`) |
+> | DNSSEC | — | ⚠️ Zone **signiert** (DNSKEY + gültige RRSIG), aber **kein DS bei DENIC** → `AD=false` |
+>
+> **Was das bedeutet:**
+> 1. Die Domain ist **live erreichbar** (200 auf allen geprüften Routen). Die
+>    Cloudflare-Pages-Bindung aus `CLOUDFLARE_DOMAIN_FIX.md` ist **nicht mehr** der
+>    aktive Pfad — der Apex wird derzeit von **GitHub Pages** bedient. Die im
+>    Workflow `deploy-cloudflare-pages.yml` beschriebene Migration GitHub Pages →
+>    Cloudflare Pages ist also **halbfertig** (NS bei Cloudflare, Origin noch GitHub Pages).
+> 2. Das Screenshot-Symptom **`DNS_LOOKUP_FAILED`** ist **kein** Server-500 und **kein**
+>    Repo-Fehler, sondern ein Resolver-seitiger Auflösungsfehler. Hauptverdacht:
+>    **unvollständige DNSSEC-Kette** — die Zone publiziert Signaturen, aber beim
+>    `.de`-Registrar (DENIC, via Hostinger) fehlt der **DS-Record**. Validierende
+>    Resolver (viele Mobilfunk-Carrier) liefern bei einem fehlenden/abweichenden
+>    DS zeitweise `SERVFAIL` → Browser zeigt `DNS_LOOKUP_FAILED`. Aktuell löst die
+>    Domain weltweit auf (insecure, `AD=false`), d. h. der Zustand ist *funktionierend
+>    aber latent fragil*.
+>
+> **Nächste Aktion (Dashboard/Registrar, NICHT per Repo lösbar):**
+> - DNSSEC begradigen: in Cloudflare den DS-Record holen und **exakt** bei Hostinger
+>   (.de-Registrar) hinterlegen — **oder** DNSSEC in Cloudflare deaktivieren, damit
+>   die Zone keine Signaturen mehr publiziert. **Nicht** halb-aktiviert lassen.
+>   Verifikation: `https://dnsviz.net/d/realsyncdynamicsai.de/dnssec/`
+> - Hosting-Ziel festlegen: Apex entweder bewusst auf **GitHub Pages** (aktuell) **oder**
+>   **Cloudflare Pages** (Workflow-Ziel) binden — nur an **einer** Stelle.
+> - Automatische Prüfung: `npm run diagnose:domain` enthält jetzt einen DNSSEC-/DS-Check
+>   (Abschnitt „DNSSEC-/DS-Konsistenz").
+>
+> ---
+> _Historischer Stand 2026-06-23 (überholt, zur Nachverfolgung erhalten):_
 
 ## TL;DR
 

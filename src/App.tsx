@@ -87,6 +87,7 @@ import { ToolsHub } from './pages/ToolsHub';
 // Industry + Competitor Doorways
 import { HealthTechLanding } from './pages/HealthTechLanding';
 import { Branchen } from './pages/Branchen';
+import { IndustryDetail } from './pages/branchen/IndustryDetail';
 import { LegalTechLanding } from './pages/LegalTechLanding';
 import { OneTrustAlternative } from './pages/OneTrustAlternative';
 import { FinTechLanding } from './pages/FinTechLanding';
@@ -367,6 +368,7 @@ function RoutesWithTracking() {
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}
       <Route path="/branchen" element={<Branchen />} />
+      <Route path="/branchen/:slug" element={<IndustryDetail />} />
       <Route path="/healthtech" element={<HealthTechLanding />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}

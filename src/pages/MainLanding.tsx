@@ -16,17 +16,8 @@ import {
   ServerCog,
   Check,
   Building2,
-  HeartPulse,
-  Landmark,
-  ShoppingCart,
-  Factory,
-  UserCheck,
-  Megaphone,
-  Cloud,
-  Zap,
-  GraduationCap,
-  Truck,
 } from 'lucide-react';
+import { LANDING_INDUSTRIES } from '../content/landingIndustries';
 
 /**
  * SmartLink — interne Routen ("/...") via react-router-Link (SPA),
@@ -127,23 +118,6 @@ const PLATFORM = [
     title: 'Multi-Tenancy',
     text: 'RLS-geschützte Mandantentrennung mit White-Label für DSB-Kanzleien und Agenturen.',
   },
-];
-
-// Branchen — DSGVO & EU AI Act kennen keine Branchengrenzen. Jede Karte spricht
-// eine Zielgruppe konkret mit ihrem regulatorischen Schmerzpunkt an.
-const INDUSTRIES = [
-  { icon: HeartPulse, title: 'Gesundheitswesen', text: 'Patientendaten, Praxis- & Klinik-Software, KI-Diagnostik — Art. 9 DSGVO und Hochrisiko-KI lückenlos belegt.' },
-  { icon: Landmark, title: 'Banken & Versicherungen', text: 'BAIT, MaRisk und Scoring-Modelle: KI-Entscheidungen nachvollziehbar, prüfbar und aufsichtskonform.' },
-  { icon: ShoppingCart, title: 'Handel & E-Commerce', text: 'Consent, Tracking und Empfehlungs-KI im Griff — vom Cookie-Banner bis zur Produktempfehlung.' },
-  { icon: UserCheck, title: 'HR & Recruiting', text: 'Bewerber- und Personal-KI gilt als Hochrisiko nach EU AI Act — automatisch klassifiziert und dokumentiert.' },
-  { icon: Building2, title: 'Öffentlicher Sektor', text: 'Bürgerdaten, Transparenzpflichten und KRITIS — Souveränität durch EU-Hosting und lokale Modelle.' },
-  { icon: Factory, title: 'Industrie & Fertigung', text: 'IoT-Telemetrie, Predictive Maintenance und Lieferketten — Datenflüsse und KI revisionssicher belegt.' },
-  { icon: Scale, title: 'Recht & DSB-Kanzleien', text: 'Compliance als Service für Ihre Mandanten — Multi-Tenant-Dashboard im White-Label-Kanzlei-Modus.' },
-  { icon: Megaphone, title: 'Marketing & Agenturen', text: 'Tracking, Consent und Kampagnen-KI für viele Kunden — mandantengetrennt und White-Label.' },
-  { icon: Cloud, title: 'SaaS & Technologie', text: 'Eigene KI-Features auditierbar machen — Transparenz- und Dokumentationspflichten erfüllt by Design.' },
-  { icon: Zap, title: 'Energie & Versorger', text: 'Kritische Infrastruktur und KRITIS — kontinuierliches Monitoring statt jährlicher Stichprobe.' },
-  { icon: GraduationCap, title: 'Bildung & Forschung', text: 'Lernplattformen, Forschungs- und Minderjährigendaten — sensibel verarbeitet, sauber nachgewiesen.' },
-  { icon: Truck, title: 'Logistik & Mobilität', text: 'Telematik, Tracking und Routing-KI — personenbezogene Bewegungsdaten DSGVO-konform behandelt.' },
 ];
 
 const STEPS = [
@@ -325,16 +299,19 @@ function Industries() {
       subtitle="DSGVO und EU AI Act kennen keine Branchengrenzen. Überall, wo personenbezogene Daten fließen oder Algorithmen entscheiden, sorgt dieselbe Runtime für Nachweisbarkeit — branchenspezifisch, nicht generisch."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
-        {INDUSTRIES.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="group flex gap-4 p-5 sm:p-6 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
+        {LANDING_INDUSTRIES.map(({ icon: Icon, title, text, slug }) => (
+          <SmartLink key={slug} to={`/branchen/${slug}`} className="group flex gap-4 p-5 sm:p-6 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
             <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
               <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
             </div>
             <div>
-              <h3 className="text-sm sm:text-base font-semibold mb-1.5">{title}</h3>
+              <h3 className="flex items-center gap-1.5 text-sm sm:text-base font-semibold mb-1.5">
+                {title}
+                <ArrowRight className="w-3.5 h-3.5 text-cyan-400/0 group-hover:text-cyan-400/90 -translate-x-1 group-hover:translate-x-0 transition-all" />
+              </h3>
               <p className="text-xs sm:text-[13px] text-white/60 leading-relaxed">{text}</p>
             </div>
-          </div>
+          </SmartLink>
         ))}
       </div>
       <p className="mt-6 text-xs sm:text-sm text-white/50 text-center">

@@ -88,13 +88,19 @@ create index if not exists idx_browser_actions_evidence
 
 -- ─── 2. evidence_events (Enhanced for browser actions) ───────────────────────
 
--- Add browser_action_id foreign key to evidence_events if it doesn't exist
-alter table if exists public.evidence_events
-  add column if not exists browser_action_id uuid references public.browser_actions(id) on delete set null;
+-- Add browser_action_id foreign key to evidence_events if table exists
+-- (it may not exist in all schema versions; soft-fail if table doesn't exist)
+do $$
+begin
+  if to_regclass('public.evidence_events') is not null then
+    alter table public.evidence_events
+      add column if not exists browser_action_id uuid references public.browser_actions(id) on delete set null;
 
-create index if not exists idx_evidence_events_browser_action
-  on public.evidence_events (browser_action_id)
-  where browser_action_id is not null;
+    create index if not exists idx_evidence_events_browser_action
+      on public.evidence_events (browser_action_id)
+      where browser_action_id is not null;
+  end if;
+end $$;
 
 -- ─── 3. RLS Policies ─────────────────────────────────────────────────────────
 

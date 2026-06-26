@@ -143,10 +143,7 @@ select
     when ba.actor_id is not null
     then (select count(1) from public.browser_actions where actor_id = ba.actor_id)
     else 0
-  end as actor_action_count,
-
-  -- Evidence trail
-  (select count(1) from public.evidence_events where browser_action_id = ba.id) as evidence_count
+  end as actor_action_count
 
 from public.browser_actions ba
 left join public.workflows wf on wf.id = ba.workflow_id

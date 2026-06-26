@@ -34,12 +34,9 @@ import {
   type WindowState,
 } from '../_shared/aiGateway/rateLimit.ts';
 import { sha256Hex } from '../_shared/hash.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 const ALLOWED_OPS = new Set(['health', 'generate', 'extract_json', 'embed']);
 
@@ -88,14 +85,15 @@ async function enforceRateLimit(req: Request, feature: string): Promise<Response
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
 
   const route = routeOf(req.url);
 
   try {
     // OpenAI-compatible shell
     if (route === '/v1/models' && req.method === 'GET') {
-      return json(modelsResponse());
+      return jsonResponse(modelsResponse());
     }
     if (route === '/v1/chat/completions' && req.method === 'POST') {
       return await handleOpenAIChatCompletions(req);
@@ -131,7 +129,7 @@ async function handleOpBased(req: Request): Promise<Response> {
 
   if (op === 'health') {
     const health = await gateway.health();
-    return json({ ok: health.ok, ...health });
+    return jsonResponse({ ok: health.ok, ...health });
   }
 
   const request = body as unknown as AiGatewayRequest;
@@ -142,9 +140,9 @@ async function handleOpBased(req: Request): Promise<Response> {
   const limited = await enforceRateLimit(req, request.feature);
   if (limited) return limited;
 
-  if (op === 'generate')     return json({ ok: true, ...(await gateway.generate(request)) });
-  if (op === 'extract_json') return json({ ok: true, ...(await gateway.extractJson(request)) });
-  if (op === 'embed')        return json({ ok: true, ...(await gateway.embed(request)) });
+  if (op === 'generate')     return jsonResponse({ ok: true, ...(await gateway.generate(request)) });
+  if (op === 'extract_json') return jsonResponse({ ok: true, ...(await gateway.extractJson(request)) });
+  if (op === 'embed')        return jsonResponse({ ok: true, ...(await gateway.embed(request)) });
 
   return jsonError(400, 'BAD_REQUEST', `unknown op: ${op}`);
 }
@@ -172,7 +170,7 @@ async function handleOpenAIChatCompletions(req: Request): Promise<Response> {
     const response = parsed.wantsJson
       ? await gateway.extractJson(parsed.request)
       : await gateway.generate(parsed.request);
-    return json(formatChatResponse(response, parsed.request.model_profile));
+    return jsonResponse(formatChatResponse(response, parsed.request.model_profile));
   } catch (error) {
     const mapped = mapInferenceError(error);
     return jsonError(mapped.status, mapped.code, mapped.message);
@@ -249,13 +247,3 @@ async function readVaultSecret(name: string): Promise<string | null> {
   }
 }
 
-function json(payload: unknown, status = 200): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

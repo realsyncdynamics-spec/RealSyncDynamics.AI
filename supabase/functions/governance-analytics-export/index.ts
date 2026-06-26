@@ -5,12 +5,7 @@
 // Body: { format: 'csv'|'pdf', tenant_id: uuid, date_range: { start, end }, include_charts?: boolean }
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface ExportRequest {
   format: 'csv' | 'pdf';
@@ -72,19 +67,20 @@ function generateCsv(snapshots: any[]): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'POST only' }), { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return new Response(JSON.stringify({ error: 'Missing environment variables' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'Missing environment variables' }, 500);
   }
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Missing bearer token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'Missing bearer token' }, 401);
   }
 
   const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -94,18 +90,18 @@ Deno.serve(async (req) => {
 
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
   if (userErr || !userResp.user) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'Invalid token' }, 401);
   }
 
   let body: ExportRequest;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'Invalid JSON' }, 400);
   }
 
   if (!body.format || !body.tenant_id || !body.date_range) {
-    return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'Missing required fields' }, 400);
   }
 
   try {
@@ -118,7 +114,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!member) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return jsonResponse({ error: 'Unauthorized' }, 403);
     }
 
     // Fetch KPI data for date range
@@ -160,11 +156,8 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error('Export error:', err);
-    return new Response(
-      JSON.stringify({
-        error: err instanceof Error ? err.message : 'Export failed',
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse({
+      error: err instanceof Error ? err.message : 'Export failed',
+    }, 500);
   }
 });

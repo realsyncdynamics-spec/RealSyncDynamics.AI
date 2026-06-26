@@ -16,15 +16,11 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { getCurrentTotal } from '../_shared/usage.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -154,15 +150,5 @@ Deno.serve(async (req) => {
     n8n_execution_id: n8nExecutionId,
   }).eq('id', run.id);
 
-  return json({ ok: true, run_id: run.id, n8n_execution_id: n8nExecutionId });
+  return jsonResponse({ ok: true, run_id: run.id, n8n_execution_id: n8nExecutionId });
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

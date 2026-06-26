@@ -21,11 +21,7 @@
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -138,7 +134,8 @@ async function createAlert(
 // ── Hauptlogik ───────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -151,16 +148,11 @@ Deno.serve(async (req) => {
     .limit(50);
 
   if (fetchErr) {
-    return new Response(JSON.stringify({ error: fetchErr.message }), {
-      status: 500,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: fetchErr.message }, 500);
   }
 
   if (!sources || sources.length === 0) {
-    return new Response(JSON.stringify({ processed: 0, message: 'Keine fälligen Quellen' }), {
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ processed: 0, message: 'Keine fälligen Quellen' });
   }
 
   const results: Array<{ id: string; name: string; status: string; score?: number }> = [];
@@ -255,8 +247,5 @@ Deno.serve(async (req) => {
     results.push({ id: source.id, name: source.name, status: 'ok', score: newScore ?? undefined });
   }
 
-  return new Response(
-    JSON.stringify({ processed: results.length, results }),
-    { headers: { ...CORS, 'Content-Type': 'application/json' } },
-  );
+  return jsonResponse({ processed: results.length, results });
 });

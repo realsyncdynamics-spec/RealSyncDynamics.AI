@@ -7,12 +7,7 @@
 // Authorization: service_role (automatic)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface KpiSnapshot {
   tenant_id: string;
@@ -168,14 +163,15 @@ async function computeSnapshotForTenant(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'POST only' }), { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return new Response(JSON.stringify({ error: 'Missing environment variables' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return jsonResponse({ error: 'Missing environment variables' }, 500);
   }
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -200,16 +196,13 @@ Deno.serve(async (req) => {
     }
 
     if (!tenants || tenants.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          processed: 0,
-          failed: 0,
-          duration_ms: Date.now() - startTime,
-          message: 'No active tenants found',
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse({
+        success: true,
+        processed: 0,
+        failed: 0,
+        duration_ms: Date.now() - startTime,
+        message: 'No active tenants found',
+      });
     }
 
     // Compute and upsert snapshot for each tenant
@@ -238,27 +231,21 @@ Deno.serve(async (req) => {
     }
 
     const duration = Date.now() - startTime;
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processed,
-        failed,
-        duration_ms: duration,
-        errors: errors.length > 0 ? errors.slice(0, 5) : undefined, // Return first 5 errors
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse({
+      success: true,
+      processed,
+      failed,
+      duration_ms: duration,
+      errors: errors.length > 0 ? errors.slice(0, 5) : undefined, // Return first 5 errors
+    });
   } catch (err) {
     console.error('Aggregator failed:', err);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-        processed,
-        failed,
-        duration_ms: Date.now() - startTime,
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse({
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      processed,
+      failed,
+      duration_ms: Date.now() - startTime,
+    }, 500);
   }
 });

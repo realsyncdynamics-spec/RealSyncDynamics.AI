@@ -9,12 +9,7 @@
 // 4. Return ok regardless of email-send (don't expose IF email exists)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -27,7 +22,7 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -63,7 +58,7 @@ Deno.serve(async (req) => {
   let confirmToken: string;
   if (existing) {
     if (existing.status === 'confirmed') {
-      return json({ ok: true, already_confirmed: true });
+      return jsonResponse({ ok: true, already_confirmed: true });
     }
     confirmToken = existing.confirm_token;
   } else {
@@ -97,7 +92,7 @@ Deno.serve(async (req) => {
     }).catch(() => { /* swallow — user gets ok status anyway */ });
   }
 
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 });
 
 async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
@@ -143,9 +138,3 @@ function escapeHtml(s: string): string {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

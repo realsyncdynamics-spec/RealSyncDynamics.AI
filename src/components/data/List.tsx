@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface ListItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+interface ListItemProps extends React.HTMLAttributes<HTMLLIElement> {
   icon?: React.ReactNode;
   title?: string;
   description?: string;

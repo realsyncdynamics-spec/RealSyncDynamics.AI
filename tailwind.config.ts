@@ -27,9 +27,13 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        // Design-Vereinheitlichung: Plus Jakarta Sans (die Landing-Schrift) ist
+        // jetzt app-weit der Standard für Body UND Headlines. Inter /
+        // Space Grotesk bleiben nur noch als Fallback. Die MainLanding setzt die
+        // Schrift ohnehin inline — sie bleibt also unangetastet.
+        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
-        display: ['Space Grotesk', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'Space Grotesk', 'sans-serif'],
       },
       fontSize: {
         xs: ['12px', { lineHeight: '16px' }],

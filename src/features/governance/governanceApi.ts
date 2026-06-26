@@ -35,6 +35,13 @@ export interface DbGovernanceAsset {
   risk_score: number;
   ai_act_class: AiActClass;
   status: GovernanceAssetStatus;
+  // Strukturierte Annex-III- / Art.-11-Felder (Migration 20260625200000).
+  // Optional, da Bestandszeilen und ältere Mock-Literale sie nicht setzen.
+  annex_iii_category?: string | null;
+  provider_role?: string | null;
+  intended_purpose?: string | null;
+  deployment_context?: string | null;
+  affected_groups?: string[];
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;

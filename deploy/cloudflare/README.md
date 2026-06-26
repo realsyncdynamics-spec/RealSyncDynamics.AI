@@ -1,5 +1,25 @@
 # Cloudflare-Proxy vor GitHub Pages — echte Security-Header
 
+> ## ⛔ DEPRECATED (Stand 2026-06-25) — NICHT mehr anwenden
+>
+> Diese Anleitung beschreibt den **Legacy-Pfad** „Cloudflare-Proxy **vor**
+> GitHub Pages" (Apex-A-Records auf GitHub-Pages-IPs `185.199.108–111.153`,
+> `www → *.github.io`). Genau diese Konfiguration ist die **Ursache des
+> aktuellen Split-Brains**: Die Live-Domain serviert dadurch weiter einen
+> eingefrorenen GitHub-Pages-Build, während der aktuelle Stand auf
+> `realsyncdynamics-ai.pages.dev` liegt. Wer diese Records (re-)setzt, **stellt
+> das Problem wieder her.**
+>
+> **Maßgeblich ist stattdessen:**
+> - Deploy: [`deploy/cloudflare-pages/README.md`](../cloudflare-pages/README.md)
+>   + `.github/workflows/deploy-cloudflare-pages.yml`
+> - Cutover/Fix: [`docs/infra/cloudflare-pages-cutover.md`](../../docs/infra/cloudflare-pages-cutover.md)
+>   und [`docs/infra/apex-still-on-github-pages-2026-06-25.md`](../../docs/infra/apex-still-on-github-pages-2026-06-25.md)
+>
+> Die Security-Header (HSTS, `X-Frame-Options`) werden im Pages-Setup über
+> `public/_headers` ausgeliefert — kein Proxy-vor-GH-Pages nötig. Der restliche
+> Text bleibt nur noch zu Referenzzwecken erhalten.
+
 > **Zweck:** Setzt die HTTP-Response-Header, die GitHub Pages prinzipiell
 > nicht liefern kann, und schließt damit die zwei **realen** Audit-Befunde
 > aus dem `gdpr-audit`-Scan:

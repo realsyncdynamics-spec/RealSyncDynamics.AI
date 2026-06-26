@@ -29,12 +29,7 @@
 // `createTaxDocument` API which is RLS-scoped.
 
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const MAX_TEXT_LENGTH = 20_000;
 
@@ -101,7 +96,8 @@ Regeln:
 - Beträge: nur die Gesamtsumme (brutto), keine Zwischensummen.`;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST required');
 
   let body: { text?: unknown; hint?: unknown; tenant_id?: unknown };
@@ -122,7 +118,7 @@ Deno.serve(async (req) => {
   const anonKey    = Deno.env.get('SUPABASE_ANON_KEY')
                   ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!supabaseUrl || !anonKey) {
-    return jsonOk(fallbackResult('AI_GATEWAY_NOT_CONFIGURED — SUPABASE_URL/ANON_KEY missing'));
+    return jsonResponse(fallbackResult('AI_GATEWAY_NOT_CONFIGURED — SUPABASE_URL/ANON_KEY missing'));
   }
 
   const client = new AiGatewayEdgeClient({ supabaseUrl, apiKey: anonKey });
@@ -147,14 +143,14 @@ Deno.serve(async (req) => {
     });
 
     const result = normalizeOutput(resp.output);
-    return jsonOk(result);
+    return jsonResponse(result);
   } catch (err) {
     const reason = err instanceof AiGatewayEdgeError
       ? `${err.code}: ${err.message}`
       : err instanceof Error
         ? err.message
         : 'unknown';
-    return jsonOk(fallbackResult(reason));
+    return jsonResponse(fallbackResult(reason));
   }
 });
 
@@ -226,16 +222,3 @@ export function fallbackResult(reason: string): ClassificationResult {
   };
 }
 
-function jsonOk(body: ClassificationResult): Response {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ ok: false, error: { code, message } }), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}

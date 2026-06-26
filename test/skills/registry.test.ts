@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { ALL_SKILLS, SKILL_REGISTRY } from '../../src/lib/skills/registry';
 
 describe('SKILL_REGISTRY', () => {
-  it('exposes exactly 7 skills', () => {
-    expect(ALL_SKILLS).toHaveLength(7);
+  it('exposes exactly 8 skills', () => {
+    expect(ALL_SKILLS).toHaveLength(8);
+  });
+
+  it('includes the gdpr-audit skill with the no-legal-opinion guardrail', () => {
+    const s = SKILL_REGISTRY['gdpr-audit'];
+    expect(s).toBeTruthy();
+    expect(s.guardrails.some((g) => g.includes('Rechtsberatung'))).toBe(true);
+    expect(s.reviewRequired).toBe(true); // high-risk
   });
 
   it('does NOT contain a cx-ticket-triage duplicate', () => {

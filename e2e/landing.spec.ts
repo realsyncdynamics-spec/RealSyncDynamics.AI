@@ -98,31 +98,35 @@ test.describe('Workspace-Vorschau (/)', () => {
     await page.goto('/');
   });
 
-  test('Hero zeigt Governance-OS-Headline und Workspace-CTAs', async ({ page }) => {
+  test('Hero zeigt KI-Betriebssystem-Headline und CTAs', async ({ page }) => {
     await expect(
-      page.getByRole('heading', {
-        name: /Das Governance OS für DSGVO, EU AI Act und digitale Souveränität/i,
-      }),
+      page.getByRole('heading', { name: /Betriebssystem für/i }),
     ).toBeVisible();
 
-    await expect(page.getByText(/Automatisch erkennen · Kontinuierlich monitoren · Immer nachweisbar/i)).toBeVisible();
+    await expect(page.getByText(/AI GOVERNANCE OS FOR TRUST & VALUE/i)).toBeVisible();
 
-    await expect(page.getByRole('button', { name: /Dashboard öffnen/i }).first()).toBeVisible();
-    await expect(page.getByRole('button', { name: /Governance Audit starten/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /KI-Betriebssystem entdecken/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Produkt-Tour ansehen/i })).toBeVisible();
   });
 
-  test('Governance Complexity Score-Einstieg navigiert zum Assessment', async ({ page }) => {
-    await expect(page.getByText(/Governance Complexity Score/i).first()).toBeVisible();
-    await page.getByRole('button', { name: /Score ermitteln/i }).click();
-    await expect(page).toHaveURL(/\/governance-score/);
+  test('Branchen-Sektion verlinkt auf die Detailseite', async ({ page }) => {
+    await expect(
+      page.getByRole('heading', { name: /Für jeden, der Daten verarbeitet oder KI einsetzt/i }),
+    ).toBeVisible();
+    // "FÜR WEN"-Karte navigiert in die jeweilige Branchen-Detailseite (/branchen/:slug).
+    await page.getByRole('link', { name: /Gesundheitswesen/i }).click();
+    await expect(page).toHaveURL(/\/branchen\/gesundheitswesen/);
+    await expect(
+      page.getByRole('heading', { name: /Compliance für Gesundheitsdaten und KI-Diagnostik/i }),
+    ).toBeVisible();
   });
 
   test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: /Alles\. In einer Oberfläche\./i }),
+      page.getByRole('heading', { name: /Eine Runtime\. Vollständige KI-Governance\./i }),
     ).toBeVisible();
-    // Erkennen · Monitoren · Beweisen — Kern-Value-Props.
-    for (const label of ['Erkennen', 'Monitoren', 'Beweisen']) {
+    // Eindeutige Plattform-Karten-Titel (nicht im Footer dupliziert).
+    for (const label of ['Governance-Runtime', 'Multi-Tenancy']) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
   });

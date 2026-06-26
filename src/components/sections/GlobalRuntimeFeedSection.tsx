@@ -51,7 +51,7 @@ export function GlobalRuntimeFeedSection() {
       <div className="max-w-7xl mx-auto">
         <div className="max-w-3xl mb-10">
           <div className="text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-500 mb-3">
-            03 · monitor
+            03 · überwachen
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
             Events laufen kontinuierlich.

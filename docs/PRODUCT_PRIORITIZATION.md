@@ -115,12 +115,16 @@ Bau-Aufgabe → nachgezogen als offener Punkt unten.
 
 ---
 
-## Offene Bau-Aufgaben aus den Entscheidungen
+## Bau-Aufgaben aus den Entscheidungen
 
-- [ ] **Landingpage-Konsolidierung** (aus K3): Nischen-Seiten zu *einer* Story
-  mit Segment-Sektionen zusammenführen (deckt sich mit `PLAN_100.md` #10).
-- [ ] **Evidence-Trail ins erste zahlende Tier** (aus S3): schlanker
-  append-only Prüfpfad mit exportierbarem PDF, *nicht* das volle Vault.
+- [x] **Landingpage-Konsolidierung** (aus K3): Branchen-Seiten auf
+  `BranchenLanding`-Shell (PR #655), Alternative-Seiten auf
+  `AlternativeLanding`-Shell (PR #658); `niche/` war bereits konsolidiert.
+- [x] **Evidence-Trail ins erste zahlende Tier** (aus S3): Der hash-verkettete
+  Trail existierte bereits (`governance_evidence` + `evidence-vault-export`).
+  Geliefert via **Tier-Gating** statt Neubau — Free sieht den Trail read-only,
+  der **Audit-Export** ist ab Starter freigeschaltet (Feature `evidence_export`,
+  Client + Edge-Function), Pricing-Wording entsprechend geschärft.
 
 ---
 

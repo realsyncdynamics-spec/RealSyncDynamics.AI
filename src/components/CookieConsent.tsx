@@ -4,6 +4,17 @@ import { Cookie, X } from 'lucide-react';
 import { emitConsentChanged } from '../lib/pixels';
 
 const STORAGE_KEY = 'realsync.cookie-consent.v1';
+const OPEN_SETTINGS_EVENT = 'realsync:open-cookie-settings';
+
+/**
+ * Öffnet den Cookie-Banner erneut — DSGVO Art. 7(3) Widerruf.
+ * Kann aus Footer, Datenschutzseite usw. aufgerufen werden.
+ */
+export function openCookieSettings(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_EVENT));
+  }
+}
 
 type Consent = {
   decided_at: string;
@@ -32,6 +43,13 @@ export function CookieConsent() {
     } catch {
       setDecided(false);
     }
+  }, []);
+
+  // DSGVO Art. 7(3): Widerruf jederzeit ermöglichen — Banner auf Event wieder einblenden.
+  useEffect(() => {
+    const handler = () => setDecided(false);
+    window.addEventListener(OPEN_SETTINGS_EVENT, handler);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, handler);
   }, []);
 
   function save(consent: Consent) {

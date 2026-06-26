@@ -7,22 +7,13 @@
 // exists for external API consumers.
 
 import { enterpriseAgents } from '../_shared/enterprise-ai-os-agents.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, OPTIONS');
 
 Deno.serve((req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'GET')
-    return new Response(JSON.stringify({ error: 'GET only' }), {
-      status: 405,
-      headers: { ...cors, 'Content-Type': 'application/json' },
-    });
-  return new Response(JSON.stringify({ agents: enterpriseAgents }), {
-    status: 200,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
+  if (req.method !== 'GET') return jsonResponse({ error: 'GET only' }, 405, corsHeaders);
+  return jsonResponse({ agents: enterpriseAgents }, 200, corsHeaders);
 });

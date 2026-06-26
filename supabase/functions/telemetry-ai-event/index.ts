@@ -21,12 +21,10 @@ import {
   type PolicyRule,
   type RuntimeEventInput,
 } from '../_shared/policy-engine.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, x-rsd-tenant-key',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('POST, OPTIONS');
+corsHeaders['Access-Control-Allow-Headers'] = 'content-type, x-rsd-tenant-key';
 
 // ─── Schema-Validation ───────────────────────────────────────────────────────
 
@@ -116,26 +114,27 @@ function validate(payload: unknown): ValidationResult {
 // ─── Handler ─────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
   if (req.method !== 'POST') {
-    return jsonError(405, 'BAD_METHOD', 'POST only');
+    return jsonError(405, 'BAD_METHOD', 'POST only', corsHeaders);
   }
 
   const tenantKey = req.headers.get('x-rsd-tenant-key');
   if (!tenantKey) {
-    return jsonError(401, 'UNAUTHORIZED', 'missing x-rsd-tenant-key');
+    return jsonError(401, 'UNAUTHORIZED', 'missing x-rsd-tenant-key', corsHeaders);
   }
 
   let payload: unknown;
   try {
     payload = await req.json();
   } catch {
-    return jsonError(400, 'BAD_JSON', 'request body must be valid JSON');
+    return jsonError(400, 'BAD_JSON', 'request body must be valid JSON', corsHeaders);
   }
 
   const validation = validate(payload);
   if (!validation.ok) {
-    return jsonError(400, 'VALIDATION', validation.errors!.join(' · '));
+    return jsonError(400, 'VALIDATION', validation.errors!.join(' · '), corsHeaders);
   }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -149,7 +148,7 @@ Deno.serve(async (req) => {
   // ergaenzt die Lookup-Tabelle + HMAC-Signing.
   const tenantId = tenantKey.match(/^[0-9a-f-]{36}$/i) ? tenantKey : null;
   if (!tenantId) {
-    return jsonError(401, 'UNAUTHORIZED', 'invalid tenant key (expected uuid in this PR)');
+    return jsonError(401, 'UNAUTHORIZED', 'invalid tenant key (expected uuid in this PR)', corsHeaders);
   }
 
   const p = payload as TelemetryPayload;
@@ -213,7 +212,7 @@ Deno.serve(async (req) => {
     .single();
 
   if (insertErr || !insertedEvent) {
-    return jsonError(500, 'INSERT_FAILED', insertErr?.message ?? 'unknown insert error');
+    return jsonError(500, 'INSERT_FAILED', insertErr?.message ?? 'unknown insert error', corsHeaders);
   }
 
   // Auto-Evidence: hohe Risiken oder Policy-Verletzungen landen im Vault.
@@ -241,15 +240,12 @@ Deno.serve(async (req) => {
     });
   }
 
-  return new Response(
-    JSON.stringify({
-      ok: true,
-      event_id: insertedEvent.id,
-      policy_status: enginePolicyStatus,
-      policy_id: enginePolicyId ?? null,
-    }),
-    { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } },
-  );
+  return jsonResponse({
+    ok: true,
+    event_id: insertedEvent.id,
+    policy_status: enginePolicyStatus,
+    policy_id: enginePolicyId ?? null,
+  }, 200, corsHeaders);
 });
 
 function buildEvidenceSummary(
@@ -266,9 +262,3 @@ function buildEvidenceSummary(
   return `${subject} — Runtime Event (${p.event_type})`;
 }
 
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(
-    JSON.stringify({ ok: false, error: { code, message } }),
-    { status, headers: { ...corsHeaders, 'content-type': 'application/json' } },
-  );
-}

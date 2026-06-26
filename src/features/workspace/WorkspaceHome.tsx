@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ClipboardCheck, UserCheck, FileCheck2, Inbox,
   Globe, Bot, Activity, ArrowRight, Loader2, Plus, Search, ShieldCheck,
+  Bell, TrendingDown, TrendingUp, Clock, ShieldX, CheckCircle2,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
@@ -19,6 +20,8 @@ import { countOpenIncidents } from '../governance/incidentsApi';
 import { countVendorsNoDpa } from '../governance/vendorsApi';
 import { DsgvoControlPackPanel } from '../governance/dsgvo-control-pack/DsgvoControlPackPanel';
 import { DEMO_CONTROL_SIGNALS } from '../governance/dsgvo-control-pack/dsgvoControlPackDemo';
+import { TrialBanner } from './TrialBanner';
+import { getSupabase } from '../../lib/supabase';
 
 interface Counts {
   incidents: number;
@@ -26,6 +29,19 @@ interface Counts {
   dsr: { total: number; overdue: number };
   approvals: number;
   vendorsNoDpa: number;
+}
+
+interface Summary24h {
+  new_risks: number;
+  resolved_risks: number;
+  new_evidence: number;
+  open_alerts: number;
+  new_alerts_24h: number;
+  critical_alerts: number;
+  failed_scans: number;
+  active_sources: number;
+  pending_sources: number;
+  next_scan_at: string | null;
 }
 
 export function WorkspaceHome() {
@@ -44,22 +60,30 @@ function Inner() {
   const { activeTenantId, tenants } = useTenant();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [counts, setCounts] = useState<Counts | null>(null);
+  const [summary, setSummary] = useState<Summary24h | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    if (!activeTenantId) { setCounts(null); return; }
-    setCounts(null); setError(null);
+    if (!activeTenantId) { setCounts(null); setSummary(null); return; }
+    setCounts(null); setSummary(null); setError(null);
     (async () => {
       try {
-        const [incidents, dpias, dsr, approvals, vendorsNoDpa] = await Promise.all([
+        const sb = getSupabase();
+        const [incidents, dpias, dsr, approvals, vendorsNoDpa, summaryRes] = await Promise.all([
           countOpenIncidents(activeTenantId),
           countOpenDpias(activeTenantId),
           countOpenDsrs(activeTenantId),
           countPendingApprovals(activeTenantId),
           countVendorsNoDpa(activeTenantId),
+          sb.rpc('governance_24h_summary', { p_tenant_id: activeTenantId }),
         ]);
-        if (!cancelled) setCounts({ incidents, dpias, dsr, approvals, vendorsNoDpa });
+        if (!cancelled) {
+          setCounts({ incidents, dpias, dsr, approvals, vendorsNoDpa });
+          if (summaryRes.data && !summaryRes.error) {
+            setSummary(summaryRes.data as Summary24h);
+          }
+        }
       } catch (e) {
         if (!cancelled) setError((e as Error)?.message ?? String(e));
       }
@@ -68,13 +92,12 @@ function Inner() {
   }, [activeTenantId]);
 
   const inboxTotal = counts ? counts.approvals + counts.dsr.overdue + counts.incidents : 0;
-  // Transparenter Self-Assessment-Score aus den BEREITS geladenen Counts —
-  // keine zusätzlichen Fetches, keine erfundenen Zahlen. Gewichtung: überfällige
-  // DSR und offene Vorfälle wiegen am schwersten. 100 = nichts offen.
   const score = computeComplianceScore(counts);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <TrialBanner />
+
       {/* Begrüßung + Schnellaktionen */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -99,6 +122,93 @@ function Inner() {
       {/* Compliance-Score (Self-Assessment, aus offenen Posten abgeleitet) */}
       <ScoreCard score={score} loading={!counts} />
 
+      {/* 24h Governance Status — Kernstück des Governance OS */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-cyan-400" />
+            <h3 className="font-display font-semibold text-titanium-50 text-sm">
+              Letzte 24 Stunden
+            </h3>
+          </div>
+          {summary?.next_scan_at && (
+            <span className="font-mono text-[9px] text-titanium-600 uppercase tracking-widest">
+              Nächster Scan: {new Date(summary.next_scan_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-px bg-titanium-900">
+          <SummaryCard
+            to="/app/risks"
+            icon={TrendingUp}
+            label="Neue Risiken"
+            value={summary?.new_risks ?? null}
+            loading={!summary && !!activeTenantId}
+            accent={summary?.new_risks ? 'rose' : 'neutral'}
+          />
+          <SummaryCard
+            to="/app/risks"
+            icon={CheckCircle2}
+            label="Behobene Risiken"
+            value={summary?.resolved_risks ?? null}
+            loading={!summary && !!activeTenantId}
+            accent="emerald"
+          />
+          <SummaryCard
+            to="/app/alerts"
+            icon={Bell}
+            label="Offene Alerts"
+            value={summary?.open_alerts ?? null}
+            loading={!summary && !!activeTenantId}
+            accent={summary?.critical_alerts ? 'rose' : summary?.open_alerts ? 'amber' : 'neutral'}
+            sub={summary?.critical_alerts ? `${summary.critical_alerts} kritisch` : undefined}
+          />
+          <SummaryCard
+            to="/app/evidence"
+            icon={FileCheck2}
+            label="Neue Evidence"
+            value={summary?.new_evidence ?? null}
+            loading={!summary && !!activeTenantId}
+            accent="cyan"
+          />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-titanium-900 mt-px">
+          <SummaryCard
+            to="/app/monitoring"
+            icon={Activity}
+            label="Aktive Quellen"
+            value={summary?.active_sources ?? null}
+            loading={!summary && !!activeTenantId}
+            accent="neutral"
+            sub={summary?.pending_sources ? `${summary.pending_sources} ausstehend` : undefined}
+          />
+          <SummaryCard
+            to="/app/monitoring"
+            icon={ShieldX}
+            label="Fehler-Scans"
+            value={summary?.failed_scans ?? null}
+            loading={!summary && !!activeTenantId}
+            accent={summary?.failed_scans ? 'rose' : 'neutral'}
+          />
+          <SummaryCard
+            to="/app/alerts"
+            icon={AlertTriangle}
+            label="Neue Alerts 24h"
+            value={summary?.new_alerts_24h ?? null}
+            loading={!summary && !!activeTenantId}
+            accent={summary?.new_alerts_24h ? 'amber' : 'neutral'}
+          />
+          <SummaryCard
+            to="/app/evidence"
+            icon={TrendingDown}
+            label="Behoben gesamt"
+            value={summary?.resolved_risks ?? null}
+            loading={!summary && !!activeTenantId}
+            accent="emerald"
+          />
+        </div>
+      </section>
+
       {/* Aktions-Inbox (Linear-artig) */}
       <section className="border border-titanium-800 bg-obsidian-900">
         <div className="flex items-center justify-between px-4 py-3 border-b border-titanium-900">
@@ -116,9 +226,6 @@ function Inner() {
           <InboxRow to="/governance/incidents" label="Offene Vorfälle / Meldefristen" count={counts?.incidents} loading={!counts} icon={AlertTriangle} severity={!!counts?.incidents} />
         </div>
       </section>
-
-      {/* Post-Market Monitoring */}
-      <DsgvoControlPackPanel signals={DEMO_CONTROL_SIGNALS} />
 
       {/* Status-Kacheln */}
       <section>
@@ -323,7 +430,33 @@ function InboxRow({ to, label, count, loading, icon: Icon, severity }: { to: str
 
 const ACCENT: Record<string, string> = {
   rose: 'text-rose-300', cyan: 'text-cyan-300', amber: 'text-amber-300',
+  emerald: 'text-emerald-300', neutral: 'text-titanium-400',
 };
+
+function SummaryCard({
+  to, icon: Icon, label, value, sub, loading, accent,
+}: {
+  to: string;
+  icon: typeof Bell;
+  label: string;
+  value: number | null;
+  sub?: string;
+  loading: boolean;
+  accent: keyof typeof ACCENT;
+}) {
+  return (
+    <Link to={to} className="bg-obsidian-900 p-4 hover:bg-obsidian-800 transition-colors">
+      <Icon className={`h-4 w-4 mb-2 ${ACCENT[accent] ?? 'text-titanium-400'}`} />
+      <div className={`font-display font-bold text-2xl tabular-nums ${ACCENT[accent] ?? 'text-titanium-400'}`}>
+        {loading
+          ? <Loader2 className="h-5 w-5 animate-spin text-titanium-600" />
+          : (value ?? 0)}
+      </div>
+      <div className="text-xs text-titanium-500 mt-1">{label}</div>
+      {sub && <div className="text-[10px] text-rose-300 mt-0.5">{sub}</div>}
+    </Link>
+  );
+}
 
 function Tile({ to, icon: Icon, label, value, sub, loading, accent }: { to: string; icon: typeof AlertTriangle; label: string; value?: number; sub?: string; loading: boolean; accent: keyof typeof ACCENT }) {
   return (

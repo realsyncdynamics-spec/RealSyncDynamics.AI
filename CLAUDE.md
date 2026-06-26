@@ -34,8 +34,8 @@ Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
 ## Konventionen
 - Sprache: Deutsch (Code-Kommentare und Doku, sofern nicht Standard-Englisch nötig)
 - Terminologie: „Prüfpfad" statt „Audit Trail", „Herkunftsnachweis" statt „Provenance"
-- Design-System: Hard-Edge Industrial UI — keine abgerundeten Ecken, Monospace für Metadaten
-- Farben: Obsidian #0A0A0B · Titanium #E2E2E2 · Security-Blue #0052FF
+- Design-System: App/Dashboard = Hard-Edge Industrial UI (keine abgerundeten Ecken, Obsidian/Titanium-Palette). Öffentliche Landing-/Marketing-Seiten nutzen „European Enterprise Trust" Light-Theme: Slate-Neutrals, ruhige Karten/Chips/Panels mit 10–14px Radius (`rounded-chip` / `rounded-card` / `rounded-panel`), Petrol #0F766E als Akzent, separate `LandingNavbar` (weiß). Monospace bleibt überall Pflicht für Metadaten.
+- Farben: Obsidian #0A0A0B · Titanium #E2E2E2 · Security-Blue #0052FF (App/Dashboard). Landing: Slate `slate-*` (#F8FAFC–#0F172A) · Petrol `petrol-700` (#0F766E)
 - Compliance: EU AI Act + DSGVO; Service-Role-Keys ausschließlich in Edge Functions
 - Multi-Tenancy: alle Tabellen RLS-geschützt; jeder externe Call wird in `ai_tool_runs` / `workflow_runs` geloggt
 

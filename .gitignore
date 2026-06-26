@@ -15,8 +15,12 @@ playwright/.cache/
 # nicht Teil des Produktcodes.
 .agents/
 .claude/skills/
+.claude/worktrees/
 skills-lock.json
 
 # Ops-Skripte: lokal generierte Drift-Vorschläge — projekt- und zeitabhängig,
 # nicht commitbar (enthält evtl. Migration-IDs aus Live-Drift).
 scripts/ops/.migration-drift-suggested.sh
+
+# Agent-Worktrees (isolierte Subagent-Checkouts) — lokal, nicht commitbar.
+.claude/worktrees/

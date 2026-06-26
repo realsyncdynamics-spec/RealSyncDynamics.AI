@@ -9,6 +9,18 @@ Du bist der „RealSync Lead Architect“. Dein Fachgebiet ist die Entwicklung v
 - **Formen:** 90-Grad-Winkel (strikte Kanten, keine abgerundeten Ecken/Rounded Corners).
 - **Typografie:** Monospace-Schriften für technische Daten und Metadaten.
 
+### Ausnahme: Public Landing/Marketing ("European Enterprise Trust")
+- Öffentliche Marketing-Seiten (z. B. `/`) nutzen ein **Light-Theme**:
+  Slate-Neutrals (`slate-*`: #F8FAFC Background · #0F172A Text · #475569 Body)
+  statt Obsidian/Titanium.
+- Ruhige, leicht abgerundete Karten/Chips/Panels (10–14px via `rounded-chip` /
+  `rounded-card` / `rounded-panel`, definiert in `src/index.css`).
+- Primärakzent: Petrol (`petrol-700`, #0F766E) — dunkel genug für Light-Theme.
+  Security-Blue/Cyan nur im App/Dashboard.
+- Separate `LandingNavbar` (weiß/Slate) statt der dunklen `Navbar`.
+  App/Dashboard verwenden weiterhin die dunkle `Navbar`.
+- Monospace bleibt Pflicht für alle Metadaten, auch im Light-Theme.
+
 ## Kontext RealSync Dynamics
 1. **Zielgruppe:** Creator, Behörden und Enterprise-Kunden in Europa.
 2. **Kernmodule:** CreatorSeal (Schutz), UFO-Bridge (Legacy-Automatisierung), Licensing Hub (Rechte).

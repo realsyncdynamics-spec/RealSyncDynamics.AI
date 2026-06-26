@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { AudioLines, Loader2, AlertTriangle, ShieldCheck, ArrowRight, Send, ExternalLink } from 'lucide-react';
 import { trackConversion } from '../../lib/pixels';
 import { getAffiliateRef } from '../../lib/affiliate';
+import { postEdgeFunction } from '../../lib/edgeFunction';
 import { startAuditScanAnon } from '../../features/governance/AgentWidget/agentApi';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -143,21 +144,14 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
          * real report. Failures here MUST NOT block the scan. */
       });
 
-      const resp = await fetch(`${SUPABASE_URL}/functions/v1/gdpr-audit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          email: trimmed,
-          referral_code: getAffiliateRef() || undefined,
-          plan,
-          source,
-        }),
+      const report = await postEdgeFunction<Report>('gdpr-audit', {
+        url,
+        email: trimmed,
+        referral_code: getAffiliateRef() || undefined,
+        plan,
+        source,
       });
-      const data = await resp.json();
-      if (!resp.ok || !data.ok) throw new Error(data.error?.message ?? `HTTP ${resp.status}`);
 
-      const report = data as Report;
       setBubbles((prev) => [
         ...prev.filter((b) => b.id !== 'scanning'),
         {
@@ -357,8 +351,12 @@ function ScanSummary({ report }: { report: Report }) {
           <Link
             to={`/audit/result/${report.audit_id}`}
             state={{
-              domain:   report.domain,
-              score:    report.score,
+              domain:          report.domain,
+              score:           report.score,
+              email:           report.email,
+              created_at:      report.created_at,
+              coverage:        report.coverage,
+              coverage_notice: report.coverage_notice,
               findings: report.issues.map((i) => ({
                 id:            i.id,
                 severity:      i.severity,

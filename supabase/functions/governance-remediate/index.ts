@@ -18,15 +18,10 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { renderTemplate, KNOWN_PATTERNS, type Pattern } from '../_shared/remediation-templates.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -77,7 +72,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
   if (body.asset_id) q = q.eq('asset_id', body.asset_id);
   const { data, error } = await q;
   if (error) throw error;
-  return json({ ok: true, snippets: data ?? [] });
+  return jsonResponse({ ok: true, snippets: data ?? [] });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -136,7 +131,7 @@ async function handleGenerate(admin: any, userId: string, userEmail: string | nu
     action: 'remediation.generate', target_type: 'remediation_snippet', target_id: data.id,
     payload: { pattern, asset_id, event_id },
   });
-  return json({ ok: true, snippet: data });
+  return jsonResponse({ ok: true, snippet: data });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -156,7 +151,7 @@ async function handleMarkApplied(admin: any, userId: string, userEmail: string |
     action: 'remediation.mark_applied', target_type: 'remediation_snippet', target_id: id,
     payload: { applied_by: appliedBy },
   });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -173,7 +168,7 @@ async function handleReject(admin: any, userId: string, userEmail: string | null
     action: 'remediation.reject', target_type: 'remediation_snippet', target_id: id,
     payload: { reason: body.reason ?? null },
   });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -190,7 +185,7 @@ async function handleSupersede(admin: any, userId: string, userEmail: string | n
     action: 'remediation.supersede', target_type: 'remediation_snippet', target_id: id,
     payload: {},
   });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -205,9 +200,3 @@ async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Pro
   return data?.role === 'owner' || data?.role === 'admin';
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'content-type': 'application/json' } });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

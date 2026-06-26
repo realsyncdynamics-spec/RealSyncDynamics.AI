@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
-import { PRICING_TIERS } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, TIER_ACCENT } from '../../config/pricing';
 import { normalizeAuditTarget } from '../../utils/auditTargetValidation';
 
 // RuntimeActivationSection — "Activate your runtime."
@@ -47,12 +47,15 @@ export function RuntimeActivationSection() {
             Runtime aktivieren
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            Runtime aktivieren — vom kostenlosen Audit bis Enterprise.
+            Runtime aktivieren — vom kostenlosen Audit bis Scale.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
             Das kostenlose Audit ist der Einstieg ohne Karte. Starter aktiviert kontinuierliches Monitoring.
             Growth ergänzt die AI-Act-Governance-Schicht. Agency liefert Multi-Domain-Whitelabel.
-            Enterprise ist eine dedizierte Runtime-Umgebung.
+            Scale bedient DSB-Kanzleien mit bis zu 50 Mandanten. Individuelle Anforderungen?{' '}
+            <Link to="/contact-sales?tier=enterprise&source=activation" className="underline hover:text-titanium-50">
+              Enterprise anfragen
+            </Link>.
           </p>
         </div>
 
@@ -87,11 +90,12 @@ export function RuntimeActivationSection() {
 
         {/* Plan grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-px bg-titanium-900">
-          {PRICING_TIERS.map((tier) => (
+          {PUBLIC_PRICING_TIERS.map((tier) => (
             <article
               key={tier.id}
               className={[
-                'bg-obsidian-950 p-5 flex flex-col gap-3',
+                'bg-obsidian-950 p-5 flex flex-col gap-3 border-t-2',
+                TIER_ACCENT[tier.id].border,
                 tier.highlight ? 'ring-1 ring-cyan-500/40 relative' : '',
               ].join(' ')}
             >

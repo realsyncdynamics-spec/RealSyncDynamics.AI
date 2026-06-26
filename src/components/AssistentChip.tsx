@@ -15,16 +15,17 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 // Visual model unchanged from Phase 1:
 //   - Position: BOTTOM-CENTER, fixed, respects iOS safe-area-inset-bottom.
 //   - Look: schwarzer Mic-Circle + "Assistent"-Label, glassmorphism.
-//   - Routes: auto-hide on /dashboard, /governance/*, /checkout/* and
+//   - Routes: auto-hide on /dashboard, /app/*, /checkout/* and
 //     /audit — those surfaces already have their own assistant context
 //     (tenant widget or audit-copilot panel).
 //   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting,
 //     the chip fades out so it doesn't compete with the primary CTA.
 
-const HIDDEN_PREFIXES = ['/dashboard', '/checkout', '/audit'];
+const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+  // Legacy: hide on /governance/* subroutes (but not /governance itself) for backwards compatibility
   if (pathname !== '/governance' && pathname.startsWith('/governance/')) return true;
   return false;
 }

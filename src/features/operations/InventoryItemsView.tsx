@@ -58,7 +58,8 @@ function Inner() {
       {items.length === 0 ? (
         <EmptyHint onCreate={() => setCreating(true)} />
       ) : (
-        <table className="w-full text-sm bg-obsidian-900 border border-titanium-900">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm bg-obsidian-900 border border-titanium-900 min-w-[360px]">
           <thead className="bg-obsidian-950 text-[11px] uppercase tracking-wider text-titanium-400">
             <tr>
               <th className="text-left px-3 py-2">SKU</th>
@@ -84,6 +85,7 @@ function Inner() {
             })}
           </tbody>
         </table>
+        </div>
       )}
 
       {creating && (

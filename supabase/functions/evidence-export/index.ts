@@ -38,6 +38,7 @@ import {
   type TaxDocument,
 } from '../_shared/evidenceExport/index.ts';
 import type { RedactionPolicy } from '../_shared/redact.ts';
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // Steuerberater muessen Beleg-Inhalte im Klartext sehen (Betraege,
 // Rechnungsadressen, IBANs). Eine PII-Redaction wuerde die berufsrechtliche
@@ -45,16 +46,11 @@ import type { RedactionPolicy } from '../_shared/redact.ts';
 // 'never'-Entscheidung trotzdem fuer den DSB-Audit.
 const REDACTION_POLICY: RedactionPolicy = 'never';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
 const BUCKET = 'tax-evidence-exports';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST required');
 
   let body: { export_id?: unknown };
@@ -217,7 +213,7 @@ Deno.serve(async (req) => {
     notes:           '§ 32 StBerG — Steuerberater-Bundle benoetigt Klartext.',
   });
 
-  return jsonOk({
+  return jsonResponse({
     ok: true,
     export_id:      exportId,
     status:         'ready',
@@ -237,18 +233,4 @@ async function markFailed(
   await admin.from('tax_evidence_exports')
     .update({ status: 'failed', notes: reason })
     .eq('id', exportId);
-}
-
-function jsonOk(body: Record<string, unknown>): Response {
-  return new Response(JSON.stringify(body), {
-    status: 200,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ ok: false, error: { code, message } }), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ArrowLeft, AlertTriangle, type LucideIcon } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { PricingTeaserSection } from '../../components/sections/PricingTeaserSection';
 
@@ -68,6 +68,10 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             </div>
             <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400">
               {config.eyebrow}
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-amber-800 bg-amber-950/40 text-amber-300 text-[10px] font-mono uppercase tracking-wider">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              Pilotphase — wir starten gerade in diesem Segment
             </div>
           </div>
 
@@ -212,6 +216,11 @@ export function NicheLanding({ config }: { config: NicheConfig }) {
             <Link to="/fuer-saas"        className="hover:text-titanium-50">SaaS</Link>
             <Link to="/fuer-agenturen"   className="hover:text-titanium-50">Agenturen</Link>
             <Link to="/fuer-praxen"      className="hover:text-titanium-50">Praxen</Link>
+            <Link to="/kanzleien"        className="hover:text-titanium-50">Kanzleien</Link>
+            <Link to="/arztpraxen"       className="hover:text-titanium-50">Arztpraxen</Link>
+            <Link to="/wordpress-dsgvo"  className="hover:text-titanium-50">WordPress</Link>
+            <Link to="/shopify-dsgvo"    className="hover:text-titanium-50">Shopify</Link>
+            <Link to="/chatgpt-dsgvo"    className="hover:text-titanium-50">ChatGPT</Link>
             <Link to="/cookie-scanner"   className="hover:text-titanium-50 text-gold-400">Cookie-Scanner</Link>
             <Link to="/ai-act-workflows" className="hover:text-titanium-50 text-gold-400">AI-Act Inventar</Link>
             <Link to="/legal/privacy"    className="hover:text-titanium-50">Datenschutz</Link>

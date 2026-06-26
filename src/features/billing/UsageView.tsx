@@ -210,8 +210,8 @@ function HistoryPanel({ tenantId }: { tenantId: string }) {
         />
       </div>
 
-      <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-obsidian-900 border border-titanium-900 rounded-none overflow-x-auto">
+        <table className="w-full text-sm min-w-[480px]">
           <thead className="bg-obsidian-950 text-[11px] font-bold text-titanium-400 uppercase tracking-wider">
             <tr>
               <th className="text-left px-3 py-2">Tool</th>

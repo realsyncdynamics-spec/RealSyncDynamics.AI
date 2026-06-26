@@ -80,6 +80,9 @@ verify_jwt = false
 [functions.workflow-callback]
 verify_jwt = false
 
+[functions.automation-callback]
+verify_jwt = false
+
 [functions.governance-ingest]
 verify_jwt = false
 
@@ -168,6 +171,19 @@ verify_jwt = false
 [functions.agent-os-runner]
 verify_jwt = false
 
+# governance-erasure-sweeper: pg_cron-triggered (daily 03:00 UTC). No user JWT;
+# validates a Vault bearer token (governance_erasure_sweeper_token) itself.
+[functions.governance-erasure-sweeper]
+verify_jwt = false
+
+[functions.business-metrics-cron]
+verify_jwt = false
+
+# Shared-secret auth (business_metrics_shared_secret), not user JWT.
+[functions.stripe-meter-sync]
+verify_jwt = false
+
+
 # ── Enterprise AI OS public surfaces ──
 [functions.enterprise-ai-os-discovery-intake]
 verify_jwt = false
@@ -215,14 +231,16 @@ verify_jwt = false
 [functions.governance-connectors]
 verify_jwt = false
 
-# governance-dsr and governance-vendors were declared here without
-# corresponding supabase/functions/<name>/index.ts, which broke
-# `supabase functions deploy` (entrypoint path does not exist). UI
-# code in src/features/governance/{dsrApi,vendorsApi}.ts still
-# invokes these names — those calls return 404 today and will keep
-# returning 404 until the functions are actually implemented. The
-# right fix when picking that up is to implement both functions (or
-# remove the dead UI calls). For now we keep the deploy unblocked.
+# governance-dsr and governance-vendors do their own JWT + tenant-membership
+# validation inside the function (same pattern as governance-dpias above),
+# so the platform JWT gate is disabled here. Both are invoked from the SPA
+# (src/features/governance/{dsrApi,vendorsApi}.ts) with the user's bearer
+# token attached by supabase.functions.invoke.
+[functions.governance-dsr]
+verify_jwt = false
+
+[functions.governance-vendors]
+verify_jwt = false
 
 # ── Legacy debug/setup helpers ──
 # Previously held `verify_jwt = false` entries for `debug-secret-shape`,
@@ -233,9 +251,33 @@ verify_jwt = false
 # Provision secrets directly via `supabase secrets set` or the Vault
 # dashboard.
 
+# ── Analytics ──
+# governance-analytics-aggregator: daily cron job (00:15 UTC), no JWT needed
+[functions.governance-analytics-aggregator]
+verify_jwt = false
+
+# governance-analytics-export: called from authenticated SPA clients with bearer token
+# (no explicit verify_jwt entry = defaults to true, which is correct)
+
+# ── Telegram integration ──
+# telegram-webhook is called by Telegram's servers without any JWT.
+[functions.telegram-webhook]
+verify_jwt = false
+
+# telegram-channels is called from the SPA with a user Bearer JWT.
+[functions.telegram-channels]
+
+# ── Legal-RAG ──
+# legal-embed is called by cron/admin scripts with a shared LEGAL_EMBED_SECRET,
+# not a user JWT.
+[functions.legal-embed]
+verify_jwt = false
+
+# legal-retrieve is called from the SPA with a user Bearer JWT — default verify_jwt=true applies.
+
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,
-# stripe-meter-sync, governance-agent, governance-remediate,
+# governance-agent, governance-remediate,
 # hostinger-agent-brief, kodee*, audit-report-email, generate-document,
 # shopify-scan, skills, sub-processor-notify, evidence-vault-export,
 # usage-increment, ceo-brief-pdf, pitch-deck-pdf) keep the default

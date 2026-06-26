@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capture Evidence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0A0A0B 0%, #1a1a1c 100%);
+      color: #E2E2E2;
+      width: 400px;
+      padding: 20px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      border-bottom: 1px solid rgba(226, 226, 226, 0.1);
+      padding-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #E2E2E2;
+      margin: 0;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input,
+    textarea,
+    select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(226, 226, 226, 0.15);
+      color: #E2E2E2;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #666;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #0052FF;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+      font-size: 12px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    button {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #0052FF;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #0040cc;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #E2E2E2;
+      border: 1px solid rgba(226, 226, 226, 0.15);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #0052FF;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .error {
+      display: none;
+      background: rgba(255, 59, 48, 0.1);
+      border: 1px solid rgba(255, 59, 48, 0.3);
+      color: #ff3b30;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .error.active {
+      display: block;
+    }
+
+    .success {
+      display: none;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      color: #34d399;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .success.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Evidence Tracker</h1>
+      <div class="status" id="status">Not authenticated</div>
+    </header>
+
+    <form id="evidenceForm">
+      <div class="form-group">
+        <label for="title">Evidence Title *</label>
+        <input
+          type="text"
+          id="title"
+          placeholder="e.g., GDPR Compliance Check"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="type">Evidence Type *</label>
+        <select id="type" required>
+          <option value="">Select type...</option>
+          <option value="screenshot">Screenshot</option>
+          <option value="pdf">PDF Document</option>
+          <option value="log">System Log</option>
+          <option value="policy">Policy Snapshot</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" placeholder="Add any relevant notes..."></textarea>
+      </div>
+
+      <div class="button-group">
+        <button
+          type="button"
+          class="btn-secondary"
+          id="screenshotBtn"
+        >
+          📸 Screenshot
+        </button>
+        <button
+          type="submit"
+          class="btn-primary"
+          id="submitBtn"
+        >
+          Save Evidence
+        </button>
+      </div>
+
+      <div id="loading" class="loading">Uploading...</div>
+      <div id="error" class="error"></div>
+      <div id="success" class="success">✓ Evidence saved successfully</div>
+    </form>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

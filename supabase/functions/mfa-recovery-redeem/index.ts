@@ -9,12 +9,7 @@
 // Authorization: Bearer <user JWT>   (verify_jwt=true, Default)
 // Body: { code: string }
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 async function sha256Hex(input: string): Promise<string> {
   const norm = input.replace(/[\s-]+/g, '').toUpperCase();
@@ -22,18 +17,13 @@ async function sha256Hex(input: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return json({ error: 'missing_authorization' }, 401);
+  if (!auth?.startsWith('Bearer ')) return jsonResponse({ error: 'missing_authorization' }, 401);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -43,16 +33,16 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: auth } }, auth: { persistSession: false },
   });
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return json({ error: 'invalid_token' }, 401);
+  if (userErr || !userResp.user) return jsonResponse({ error: 'invalid_token' }, 401);
   const user = userResp.user;
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
   try {
     let body: Record<string, unknown>;
-    try { body = await req.json(); } catch { return json({ error: 'invalid_json' }, 400); }
+    try { body = await req.json(); } catch { return jsonResponse({ error: 'invalid_json' }, 400); }
     const code = body.code as string | undefined;
-    if (!code || typeof code !== 'string') return json({ error: 'missing_code' }, 400);
+    if (!code || typeof code !== 'string') return jsonResponse({ error: 'missing_code' }, 400);
 
     const codeHash = await sha256Hex(code);
 
@@ -65,7 +55,7 @@ Deno.serve(async (req) => {
       .is('used_at', null)
       .maybeSingle();
 
-    if (!row) return json({ error: 'invalid_code' }, 401);
+    if (!row) return jsonResponse({ error: 'invalid_code' }, 401);
 
     // Code verbrauchen.
     await admin.from('mfa_recovery_codes').update({ used_at: new Date().toISOString() }).eq('id', row.id);
@@ -79,8 +69,8 @@ Deno.serve(async (req) => {
       await (admin as any).auth.admin.mfa.deleteFactor({ userId: user.id, id: f.id });
     }
 
-    return json({ ok: true, removed_factors: list.length });
+    return jsonResponse({ ok: true, removed_factors: list.length });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    return jsonResponse({ error: String(e) }, 500);
   }
 });

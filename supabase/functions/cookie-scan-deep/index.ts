@@ -16,11 +16,7 @@
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -347,9 +343,7 @@ function buildIssues(trackers: TrackerHit[], url: string): RiskIssue[] {
 // ---------------------------------------------------------------------------
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS });
-  }
+  const preflight = handleOptions(req); if (preflight) return preflight;
 
   try {
     const body = (await req.json()) as DeepScanRequest;
@@ -357,10 +351,7 @@ Deno.serve(async (req: Request) => {
     const scanDepth = body.scan_depth ?? 1;
 
     if (!rawUrl) {
-      return new Response(JSON.stringify({ error: 'url required' }), {
-        status: 400,
-        headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'url required' }, 400);
     }
 
     // Normalize URL
@@ -372,10 +363,7 @@ Deno.serve(async (req: Request) => {
     const playwrightKey = Deno.env.get('PLAYWRIGHT_SCANNER_KEY');
 
     if (!playwrightUrl) {
-      return new Response(
-        JSON.stringify({ error: 'PLAYWRIGHT_SCANNER_URL not configured. Deploy playwright-scanner microservice first.' }),
-        { status: 503, headers: { ...CORS, 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse({ error: 'PLAYWRIGHT_SCANNER_URL not configured. Deploy playwright-scanner microservice first.' }, 503);
     }
 
     const t0 = Date.now();
@@ -392,10 +380,7 @@ Deno.serve(async (req: Request) => {
 
     if (!pwResp.ok) {
       const errText = await pwResp.text();
-      return new Response(
-        JSON.stringify({ error: `Playwright scanner error: ${pwResp.status} — ${errText}` }),
-        { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } }
-      );
+      return jsonResponse({ error: `Playwright scanner error: ${pwResp.status} — ${errText}` }, 502);
     }
 
     const pwData = (await pwResp.json()) as PlaywrightScanResult;
@@ -457,15 +442,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse(result as unknown as Record<string, unknown>);
   } catch (err) {
     console.error('[cookie-scan-deep] error:', err);
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } }
-    );
+    return jsonResponse({ error: String(err) }, 500);
   }
 });

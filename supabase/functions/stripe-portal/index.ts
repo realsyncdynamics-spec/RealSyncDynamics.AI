@@ -12,23 +12,29 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-06-20' });
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// Vault-first, env-fallback — see stripe-checkout/index.ts for rationale.
+async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
+  const fromEnv = Deno.env.get(envVar);
+  if (fromEnv) return fromEnv;
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+  if (error) return null;
+  return typeof data === 'string' && data.length > 0 ? data : null;
+}
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
+
+  const stripeSecret = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
+  if (!stripeSecret) return jsonError(500, 'STRIPE_NOT_CONFIGURED', 'stripe secret key not configured (neither env nor vault)');
+  const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
 
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -75,17 +81,9 @@ Deno.serve(async (req) => {
       customer: sub.stripe_customer_id,
       return_url: body.return_url ?? 'https://RealSyncDynamicsAI.de/billing/usage',
     });
-    return json({ url: session.url });
+    return jsonResponse({ url: session.url });
   } catch (e) {
     return jsonError(502, 'STRIPE_ERROR', (e as Error).message);
   }
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

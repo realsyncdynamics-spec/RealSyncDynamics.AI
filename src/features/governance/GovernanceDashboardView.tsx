@@ -130,24 +130,24 @@ function Inner() {
             <Plus className="h-4 w-4" /> Policy
           </button>
           <Link
-            to="/governance/policies/templates"
+            to="/app/policies/templates"
             className="flex items-center gap-1.5 px-3 py-1.5 border border-titanium-900 hover:border-amber-500 text-titanium-200 hover:text-amber-200 text-sm font-semibold rounded-none transition-colors"
           >
             <Library className="h-4 w-4" /> Templates
           </Link>
-          <ModuleLink icon={<KeyRound className="h-4 w-4" />} to="/governance/keys" label="Keys" moduleId="keys" />
-          <ModuleLink icon={<Gavel className="h-4 w-4" />} to="/governance/approvals" label="Approvals" moduleId="approvals" badge={pendingApprovals} />
-          <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/governance/dpias" label="DPIAs" moduleId="dpias" badge={openDpias} />
-          <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/governance/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />
-          <ModuleLink icon={<ShieldAlert className="h-4 w-4" />} to="/governance/incidents" label="Incidents" moduleId="incidents" badge={openIncidents} />
-          <ModuleLink icon={<Building2 className="h-4 w-4" />} to="/governance/vendors" label="Vendors" moduleId="vendors" />
-          <ModuleLink icon={<Plug className="h-4 w-4" />} to="/governance/connectors" label="Connectors" moduleId="connectors" />
-          <ModuleLink icon={<DollarSign className="h-4 w-4" />} to="/governance/costs" label="Costs" moduleId="costs" />
-          <ModuleLink icon={<Wrench className="h-4 w-4" />} to="/governance/remediation" label="Remediation" moduleId="remediation" />
-          <ModuleLink icon={<Network className="h-4 w-4" />} to="/governance/mappings" label="Matrix" moduleId="matrix" />
-          <ModuleLink icon={<ScrollText className="h-4 w-4" />} to="/governance/admin-log" label="Log" moduleId="log" />
-          <ModuleLink icon={<FileDown className="h-4 w-4" />} to="/governance/reports" label="Report" moduleId="report" />
-          <ModuleLink icon={<Webhook className="h-4 w-4" />} to="/governance/webhooks" label="Webhooks" moduleId="webhooks" />
+          <ModuleLink icon={<KeyRound className="h-4 w-4" />} to="/app/keys" label="Keys" moduleId="keys" />
+          <ModuleLink icon={<Gavel className="h-4 w-4" />} to="/app/approvals" label="Approvals" moduleId="approvals" badge={pendingApprovals} />
+          <ModuleLink icon={<FileCheck2 className="h-4 w-4" />} to="/app/dpia" label="DPIAs" moduleId="dpias" badge={openDpias} />
+          <ModuleLink icon={<UserCheck className="h-4 w-4" />} to="/app/dsr" label="DSR" moduleId="dsr" badge={openDsrs.overdue} />
+          <ModuleLink icon={<ShieldAlert className="h-4 w-4" />} to="/app/incidents" label="Incidents" moduleId="incidents" badge={openIncidents} />
+          <ModuleLink icon={<Building2 className="h-4 w-4" />} to="/app/vendors" label="Vendors" moduleId="vendors" />
+          <ModuleLink icon={<Plug className="h-4 w-4" />} to="/app/connectors" label="Connectors" moduleId="connectors" />
+          <ModuleLink icon={<DollarSign className="h-4 w-4" />} to="/app/costs" label="Costs" moduleId="costs" />
+          <ModuleLink icon={<Wrench className="h-4 w-4" />} to="/app/remediation" label="Remediation" moduleId="remediation" />
+          <ModuleLink icon={<Network className="h-4 w-4" />} to="/app/mappings" label="Matrix" moduleId="matrix" />
+          <ModuleLink icon={<ScrollText className="h-4 w-4" />} to="/app/admin-log" label="Log" moduleId="log" />
+          <ModuleLink icon={<FileDown className="h-4 w-4" />} to="/app/compliance" label="Report" moduleId="report" />
+          <ModuleLink icon={<Webhook className="h-4 w-4" />} to="/app/webhooks" label="Webhooks" moduleId="webhooks" />
         </div>
       </header>
       <EnvironmentBanner />
@@ -254,7 +254,7 @@ function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
       {/* CTAs */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
-          to="/governance/onboarding"
+          to="/app/onboarding"
           className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-obsidian-950 text-sm font-semibold rounded-none hover:bg-amber-400 transition-colors"
         >
           <Plus className="h-4 w-4" /> 4-Schritte Onboarding starten
@@ -266,7 +266,7 @@ function EmptyState({ onAddAsset }: { onAddAsset: () => void }) {
           <Database className="h-4 w-4" /> Asset direkt anlegen
         </button>
         <Link
-          to="/governance-runtime"
+          to="/runtime"
           className="inline-flex items-center gap-2 px-6 py-3 border border-titanium-700 text-titanium-200 text-sm font-semibold rounded-none hover:border-titanium-500 transition-colors"
         >
           <Sparkles className="h-4 w-4" /> Live-Beispiel anschauen
@@ -409,9 +409,9 @@ function Body({
       {/* Upgrade-CTAs */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
-          { tier: 'Starter', price: '79 €/Monat', desc: '1 Domain · Monatlicher Re-Scan · DSE-Generator', href: '/checkout/starter?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
-          { tier: 'Growth', price: '249 €/Monat', desc: 'Tägliches Monitoring · Fix-Snippets · 3 Domains', href: '/checkout/growth?source=governance_dashboard', color: 'border-cyan-700 hover:border-cyan-400' },
-          { tier: 'Agency', price: '699 €/Monat', desc: 'White-Label · 10 Domains · API + Webhooks', href: '/checkout/agency?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
+          { tier: 'Starter', price: '79 €/Monat', desc: 'DSGVO-Monitoring · Evidence Vault · DSE-Generator', href: '/checkout/starter?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
+          { tier: 'Growth', price: '249 €/Monat', desc: 'KI-Governance · Continuous Monitoring · Fix-Snippets', href: '/checkout/growth?source=governance_dashboard', color: 'border-cyan-700 hover:border-cyan-400' },
+          { tier: 'Agency', price: '699 €/Monat', desc: 'Governance Agents · Branchenbibliothek · Audit-Trail', href: '/checkout/agency?source=governance_dashboard', color: 'border-titanium-700 hover:border-titanium-400' },
         ].map((plan) => (
           <a
             key={plan.tier}

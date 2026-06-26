@@ -80,14 +80,14 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '79',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für kleine Unternehmen, lokale Betriebe und Einzel-Domains, die laufend überwacht werden sollen',
+    tagline: 'Für Unternehmen mit niedriger Governance-Komplexität, die ein klares, nachweisbares Fundament wollen',
     bullets: [
       'Vollständiger DSGVO-Scan mit Paragraphenbezug',
       'DSE-Generator',
       'Technische Consent-Setup-Empfehlungen',
-      'Monatlicher Re-Scan',
+      'Kontinuierliches DSGVO-Monitoring',
+      'Lückenloser Evidence-Trail (Hash-Chain) + Audit-Export',
       'E-Mail-Alert bei neuen Findings',
-      '1 Domain',
     ],
     highlight: false,
     cta: { label: 'Jetzt upgraden', href: '/checkout/starter?source=pricing' },
@@ -100,14 +100,14 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '249',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für wachsende Unternehmen, Shops und Mittelstand mit täglichem Monitoring und konkreten Fix-Hinweisen',
+    tagline: 'Für mittlere Governance-Komplexität: KI-Governance, AI Risk Register und kontinuierliches Monitoring',
     bullets: [
       'Alles aus Starter',
+      'KI-Governance + AI Risk Register',
       'Tägliches Monitoring + Drift-Detection',
       'Consent-Timing-Analyse (pre-consent requests)',
       'Fix-Empfehlungen mit Code-Snippets zum Copy-Paste',
       'Risk-Dashboard im Browser',
-      'Bis zu 3 Domains',
     ],
     badges: ['Empfohlen'],
     highlight: true,
@@ -121,13 +121,14 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '699',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für Multi-Domain-Teams und Plattformbetreiber, die mehrere Kundenseiten betreuen',
+    tagline: 'Für hohe Governance-Komplexität: Branchenbibliothek, Governance Agents und auditfähige Automatisierung',
     bullets: [
       'Alles aus Growth',
+      'Branchenbibliothek (vorkonfigurierte Governance-Profile)',
+      'Governance Agents für Prüfungen & Maßnahmen',
+      'Automatische Dokumentation + Audit-Trail',
       'White-Label-Reports mit eigenem Logo',
-      'Multi-Tenant-Dashboard (10 Kundenseiten inklusive)',
       'API + Webhooks für CI/CD-Integration',
-      'Bulk-Audit für Domain-Portfolios',
       'Priority-Support',
     ],
     badges: [],
@@ -158,7 +159,7 @@ export const PRICING_TIERS: PricingTier[] = [
     // 50-Tenant-Quotas im Backend erzwungen sind, kann die CTA auf
     // /checkout/scale flippen. Bis dahin geht jeder Scale-Interessent
     // durch /contact-sales mit `?tier=scale` für Lead-Routing.
-    cta: { label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=pricing' },
+    cta: { label: 'Scale anfragen', href: '/contact-sales?tier=scale&source=pricing' },
   },
   {
     id: 'enterprise',
@@ -166,7 +167,7 @@ export const PRICING_TIERS: PricingTier[] = [
     planKey: 'enterprise',
     priceEur: 0,
     priceString: 'individuell',
-    priceSuffix: 'Custom Runtime Environment',
+    priceSuffix: 'Individuelle Laufzeitumgebung',
     recurring: true,
     tagline: 'Für regulierte Unternehmen, größere Mittelständler und Organisationen mit SLA-, DSB- oder AI-Act-Anforderungen',
     bullets: [
@@ -174,7 +175,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'SLA und dedizierter Runtime-Kanal',
       'EU AI Act Governance-Modul',
       'DSB-Integration (interner oder externer DSB)',
-      'Evidence Vault (Hash-Chain + HMAC-Signaturen)',
+      'Volles Evidence Vault (HMAC-Signaturen + Langzeit-Retention)',
       'Unlimitierte Domains + unlimitierte Mitarbeiter',
       'Individuelle Vertragsgestaltung / DPA',
     ],
@@ -187,6 +188,33 @@ export const PRICING_TIERS: PricingTier[] = [
 export function tierById(id: TierId): PricingTier | undefined {
   return PRICING_TIERS.find((t) => t.id === id);
 }
+
+/**
+ * Die 5 selbst buchbaren Pakete (Free Audit → Scale 1.999 €) für Pricing-
+ * Grids auf Landing/Pricing/Checkout. "Enterprise" (individuell, kein fester
+ * Preis) wird NICHT als 6. Karte gerendert — sonst entsteht ein 6-Karten-
+ * Grid in 5 Spalten ("durcheinander"). Enterprise läuft als eigener
+ * Anfrage-CTA neben/unter dem 5er-Grid, siehe ENTERPRISE_TIER.
+ */
+export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter((t) => t.id !== 'enterprise');
+
+/** Custom/individuell-Tier — separater CTA, kein Grid-Card. */
+export const ENTERPRISE_TIER: PricingTier = PRICING_TIERS.find((t) => t.id === 'enterprise')!;
+
+/**
+ * Akzentfarbe pro Tier — sorgt für farbliche Trennung der Pakete in
+ * Pricing-Grids. Klassen sind als vollstaendige Literale hinterlegt, damit
+ * Tailwinds Content-Scanner sie erkennt (dynamisch zusammengesetzte
+ * Klassennamen wie `border-t-${x}` werden NICHT erkannt).
+ */
+export const TIER_ACCENT: Record<TierId, { border: string; text: string }> = {
+  free:       { border: 'border-t-silver-400',    text: 'text-silver-400' },
+  starter:    { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
+  growth:     { border: 'border-t-security-500',  text: 'text-security-500' },
+  agency:     { border: 'border-t-violet-400',    text: 'text-violet-400' },
+  scale:      { border: 'border-t-gold-400',      text: 'text-gold-400' },
+  enterprise: { border: 'border-t-titanium-200',  text: 'text-titanium-200' },
+};
 
 /** Trust-Note unter Pricing-Cards */
 export const PRICING_TRUST_NOTE =

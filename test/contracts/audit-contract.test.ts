@@ -53,9 +53,15 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
     }
   });
 
-  it('every tier has a CTA href that is internal (/) or contact-sales', () => {
+  it('every tier has a CTA href that is internal (/) or a Stripe Payment Link', () => {
+    // Payment-Links als CTA (`https://buy.stripe.com/...`) sind seit dem
+    // Pricing-Refresh erlaubt — alles andere Externe bleibt verboten, damit
+    // keine versehentlichen Off-Site-Redirects in der Pricing-Card landen.
+    const STRIPE_PAYMENT_LINK_PREFIX = 'https://buy.stripe.com/';
     for (const t of PRICING_TIERS) {
-      expect(t.cta.href.startsWith('/')).toBe(true);
+      const href = t.cta.href;
+      const ok = href.startsWith('/') || href.startsWith(STRIPE_PAYMENT_LINK_PREFIX);
+      expect(ok, `${t.id}.cta.href is not internal or a Stripe Payment Link: ${href}`).toBe(true);
     }
   });
 });

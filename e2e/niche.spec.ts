@@ -83,10 +83,10 @@ for (const n of NICHES) {
 
     // Pricing-Teaser-Section (geteilte Component aus #111-Refactor,
     // 5-Tier-Modell seit #145: Free Audit / Starter 79€ / Growth 249€ /
-    // Agency 699€ / Enterprise)
+    // Agency 699€ / Scale 1.999€)
     await expect(
       page.getByRole('heading', {
-        name: /Free Audit · Starter · Growth · Agency · Enterprise/i,
+        name: /Free Audit · Starter · Growth · Agency · Scale/i,
       }),
     ).toBeVisible();
     await expect(page.getByText(/79 €/).first()).toBeVisible();

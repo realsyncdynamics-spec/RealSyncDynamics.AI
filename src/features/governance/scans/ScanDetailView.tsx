@@ -272,7 +272,7 @@ function Header() {
   return (
     <header className="h-14 border-b border-titanium-900 bg-obsidian-900 flex items-center px-4">
       <Link
-        to="/governance/scans"
+        to="/app/scans"
         className="p-1.5 hover:bg-obsidian-800 text-titanium-400 hover:text-titanium-200 mr-3"
         aria-label="Zurück zur Liste"
       >

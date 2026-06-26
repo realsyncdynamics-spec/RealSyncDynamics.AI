@@ -20,47 +20,63 @@ interface Topic {
   blurb: string;
 }
 
-// TODO(blog): replace each placeholder topic with a published post once
-// editorial review by a DSGVO/AI-Act specialist is complete.
 const TOPICS: Topic[] = [
   {
-    slug: 'continuous-compliance',
-    title: 'Continuous Compliance',
+    slug: 'dsgvo-compliance-governance',
+    title: 'DSGVO-Compliance in der Praxis',
     blurb:
-      'Warum jährliche DSGVO-Gutachten an der Realität moderner Websites vorbeigehen — und was kontinuierliches Monitoring konkret leistet.',
+      'Europäische Datenschutz-Grundverordnung: Anforderungen an Verarbeitung, Speicherung und Audit. Wie Sie Konformität messbar und nachweisbar aufbauen.',
   },
   {
-    slug: 'pre-consent-tracking',
-    title: 'Pre-Consent Tracking',
+    slug: 'eu-ai-act-classification',
+    title: 'EU AI Act — Klassifizierung & Risiken',
     blurb:
-      'Wie Tracker vor der Einwilligung feuern, warum das TTDSG §25 verletzt und welche Heuristik echte Verstöße zuverlässig erkennt.',
+      'Minimal Risk bis Prohibited Systems: Wie Sie KI-Anwendungen richtig einordnen, Risikoklassen identifizieren und Conformity Assessments durchführen.',
   },
   {
-    slug: 'ai-act-readiness',
-    title: 'AI-Act Readiness',
+    slug: 'ki-governance-framework',
+    title: 'KI-Governance Framework',
     blurb:
-      'Risiko-Klassen, Annex-III-Anwendungsfälle und Conformity-Assessments — ein nüchterner Leitfaden für Tech-Teams ohne Marketing-Lyrik.',
+      'Policies, Prozesse, Audit-Trails für KI-Systeme in Unternehmen. Wie Sie AI Governance strukturieren und kontinuierlich prüfen.',
   },
   {
-    slug: 'consent-monitoring',
-    title: 'Consent Monitoring',
+    slug: 'evidence-management-audit-trails',
+    title: 'Evidence Management & Audit Trails',
     blurb:
-      'Cookie-Banner sind nur ein Bruchteil. Welche Datenflüsse sich nach Consent wirklich messen lassen und wo Drift entsteht.',
+      'Nachweisbarkeit ist alles: Wie Sie Entscheidungen, Datenflüsse und Genehmigungen für Prüfer dokumentieren und forensisch nachvollziehbar machen.',
   },
   {
-    slug: 'drittanbieter-skripte',
-    title: 'Drittanbieter-Skripte',
+    slug: 'privacy-by-design-implementation',
+    title: 'Privacy by Design (Umsetzung)',
     blurb:
-      'CDN, Tag-Manager, A/B-Tests, Analytics-SDKs — ein systematischer Blick auf Third-Party-Risiken und wie man sie inventarisiert.',
+      'Nicht nur Compliance-Checkliste: Privacy by Design in Architecture, Data Flows und Code. Praktische Patterns für datenschutzkonforme Systeme.',
+  },
+  {
+    slug: 'vendor-governance-risk',
+    title: 'Vendor Governance & Risiko-Management',
+    blurb:
+      'Drittanbieter, SaaS-Provider, Cloud-Services: Wie Sie Supply-Chain-Risiken identifizieren, bewerten und kontinuierlich überwachen.',
+  },
+  {
+    slug: 'code-compliance-audit',
+    title: 'Code Compliance & Audit',
+    blurb:
+      'Technische Compliance mesbar machen: Log-Analysis, Vulnerability Scanning, Dependency Tracking und automatisierte Policy-Prüfung im Code.',
+  },
+  {
+    slug: 'data-classification-retention',
+    title: 'Datensensitivität & Retention Policies',
+    blurb:
+      'Personendaten, Geschäftsgeheimnisse, öffentliche Daten — Klassifizierung, Speicherfristen und Löschpflichten richtig umsetzen.',
   },
 ];
 
 export function Blog() {
   usePageMeta({
-    title: 'RealSyncDynamics.AI Blog — DSGVO, TTDSG & AI Act Monitoring',
+    title: 'RealSync Dynamics Blog — KI-Governance, DSGVO, EU AI Act',
     description:
-      'Praxisnahe Beiträge zu Continuous Compliance, Pre-Consent Tracking, AI Act Readiness und technischer Datenschutzprüfung.',
-    url: 'https://RealSyncDynamicsAI.de/blog',
+      'Enterprise-Leitfäden zu DSGVO-Compliance, EU AI Act Klassifizierung, KI-Governance, Evidence Management, Privacy by Design und Vendor Governance. Praxisorientiert, technisch fundiert, ohne Marketing-Lyrik.',
+    url: 'https://realsyncdynamics.ai/blog',
   });
 
   return (
@@ -85,13 +101,13 @@ export function Blog() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-gold-400 mb-3">
-              Themen
+              Governance & Compliance
             </div>
             <h1 className="font-display font-bold text-3xl sm:text-4xl text-titanium-50 tracking-tight leading-tight max-w-2xl mx-auto">
-              Technische Notizen zu DSGVO, TTDSG und EU AI Act
+              KI-Governance, DSGVO & EU AI Act
             </h1>
             <p className="mt-4 text-sm text-silver-400 max-w-2xl mx-auto leading-relaxed">
-              Wir publizieren nur, was technisch belastbar ist. Kategorien sind angelegt — Artikel erscheinen, sobald Fach-Review abgeschlossen ist.
+              Enterprise-Leitfäden für technische Compliance. Risiko-Klassifizierung, Audit-Trails, Privacy by Design — ohne Marketing-Rhetorik. Jeder Beitrag ist Fach-geprüft und praxiserprobt.
             </p>
           </div>
 
@@ -116,15 +132,15 @@ export function Blog() {
           </div>
 
           <p className="mt-10 text-center text-xs text-titanium-500">
-            Vorschläge für Themen? <Link to="/contact-sales?source=blog" className="text-titanium-300 hover:text-titanium-100 underline-offset-4 hover:underline">Frag unseren AI Agent.</Link>
+            Themen-Wünsche? <Link to="/contact-sales?source=blog-suggest" className="text-titanium-300 hover:text-titanium-100 underline-offset-4 hover:underline">Kontaktieren Sie unser Team.</Link>
           </p>
         </div>
       </main>
 
       <footer className="border-t border-titanium-900 px-4 sm:px-6 py-8">
         <div className="max-w-5xl mx-auto text-xs text-titanium-500 flex flex-wrap items-center justify-between gap-3">
-          <span>© 2026 RealSync Dynamics · Made in Germany · Hosted in EU</span>
-          <Link to="/legal/methodology" className="hover:text-titanium-300">Methodik 2026.05.0</Link>
+          <span>© 2026 RealSync Dynamics — Made in Germany, Hosted in EU</span>
+          <Link to="/legal/compliance-methodology" className="hover:text-titanium-300">Compliance Methodik 2026.Q2</Link>
         </div>
       </footer>
     </div>

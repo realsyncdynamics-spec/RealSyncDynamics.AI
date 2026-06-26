@@ -10,21 +10,18 @@
 //   - cadence defaults to 'hourly'.
 //   - tenant_ids defaults to ALL tenants from public.tenants.
 //
-// PHASE-A SCAFFOLDING: The runner currently has nothing persistent to
-// run against — agent state lives in process memory in the Phase-A
-// classes (HermesAgent, MonitoringAgent, DecisionAgent). Until Phase B
-// Postgres adapters land, this endpoint exists to:
-//   1. validate the cron-auth pattern (Bearer secret from Vault)
-//   2. provide the URL that pg_cron will hit
-//   3. produce a structured RunReport-shaped response so observers
-//      can wire dashboards now
+// PHASE B · Schritt 1: The runner executes the deterministic Deadline-
+// Sentinel per tenant — it flags overdue / due-soon governance obligations
+// (incidents past their 72h notification deadline, DPIA reviews, DSRs) into
+// the agent-OS substrate (agent_observations + agent_events) and surfaces
+// severe findings as governance_alerts (visible in /app/alerts). No LLM.
 //
-// The actual agent imports are commented out and reactivated when the
-// Phase B adapters exist. Today the response is a stub report listing
-// the tenants the runner WOULD have processed.
+// Still stubbed (separate next steps): the LLM-driven Hermes daily brief and
+// the Monitoring SLO agent — their report fields stay 0/false for now.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
+import { runDeadlineSentinelForTenant } from '../_shared/agents/deadlineSentinelRunner.ts';
 
 interface RequestBody {
   cadence?:    'hourly' | 'daily';
@@ -76,43 +73,48 @@ Deno.serve(async (req: Request) => {
 
   const started_at = new Date().toISOString();
   const t0 = Date.now();
+  const now = new Date();
 
-  // PHASE-A SCAFFOLDING ONLY. The actual Phase-B implementation will:
-  //
-  //   import { HermesAgent }     from '../../../src/core/hermes-agent/hermes';
-  //   import { MonitoringAgent } from '../../../src/core/monitoring-agent/monitoring';
-  //   import { DecisionAgent }   from '../../../src/core/decision-agent/decision';
-  //   import { AgentOsStore }    from '../../../src/core/agent-os/store';
-  //   import { runHourly, runDaily }
-  //     from '../../../src/core/orchestrator-runner/runner';
-  //
-  //   const store      = new AgentOsStore({ persistHook: postgresStoreHook(admin) });
-  //   const hermes     = new HermesAgent();      hermes.setPersistHook(...);
-  //   const monitoring = new MonitoringAgent();  monitoring.setPersistHook(...);
-  //   const decision   = new DecisionAgent();    decision.setPersistHook(...);
-  //
-  //   const fn = cadence === 'daily' ? runDaily : runHourly;
-  //   const report = await fn({ hermes, monitoring, decision, store }, { tenant_ids });
-  //
-  // Until those adapters exist, return a stub report so the cron
-  // endpoint is exercisable end-to-end.
+  // PHASE B · Schritt 1 — Deadline-Sentinel (deterministisch, kein LLM):
+  // flaggt überfällige/fristnahe Pflichten pro Tenant ins Agent-OS-Substrat
+  // (agent_observations + agent_events) und macht schwere Funde als
+  // governance_alerts sichtbar. Hermes-/Monitoring-Agenten folgen als
+  // eigene Schritte (heute bewusst 0/false).
+  const tenants = await Promise.all(tenant_ids.map(async (tenant_id) => {
+    try {
+      const sentinel = await runDeadlineSentinelForTenant(admin, tenant_id, now);
+      return {
+        tenant_id,
+        hermes_brief_created:      false,
+        hermes_brief_id:           null,
+        monitoring_slos_evaluated: 0,
+        monitoring_slos_breached:  0,
+        decision_overdue_flagged:  sentinel.decision_overdue_flagged,
+        alerts_created:            sentinel.alerts_created,
+        errors:                    sentinel.errors,
+      };
+    } catch (e) {
+      return {
+        tenant_id,
+        hermes_brief_created:      false,
+        hermes_brief_id:           null,
+        monitoring_slos_evaluated: 0,
+        monitoring_slos_breached:  0,
+        decision_overdue_flagged:  0,
+        alerts_created:            0,
+        errors:                    [`sentinel_failed: ${(e as Error)?.message ?? String(e)}`],
+      };
+    }
+  }));
 
   const report = {
     cadence,
     started_at,
     completed_at:  new Date().toISOString(),
     duration_ms:   Date.now() - t0,
-    tenants: tenant_ids.map(tenant_id => ({
-      tenant_id,
-      hermes_brief_created:      false,
-      hermes_brief_id:           null,
-      monitoring_slos_evaluated: 0,
-      monitoring_slos_breached:  0,
-      decision_overdue_flagged:  0,
-      errors:                    ['phase_a_scaffold: agent persistence not yet wired'],
-    })),
-    total_errors:  tenant_ids.length,
-    phase:         'A_SCAFFOLD',
+    tenants,
+    total_errors:  tenants.reduce((n, t) => n + t.errors.length, 0),
+    phase:         'B_DEADLINE_SENTINEL',
   };
 
   return jsonResponse(report);

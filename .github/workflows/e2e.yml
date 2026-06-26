@@ -1,104 +1,74 @@
-name: E2E
+name: E2E Tests (Playwright)
 
-# Playwright Smoke-Tests gegen den dev-server. Separater Workflow, damit
-# das `build`-job in ci.yml nicht durch den Browser-Install-Overhead
-# (~30 s) und Server-Boot (~5 s) verlangsamt wird.
-#
-# Triggers nur auf relevante Pfade — Doku-only-Änderungen sollen den
-# E2E-Job nicht laufen lassen.
-
-# Phase 2: Supabase integration enables real E2E tests
-# Tests authenticate with Supabase and verify live data fetching
-# Requirements:
-#   - Test account must exist in Supabase project
-#   - GitHub secrets: E2E_TEST_EMAIL, E2E_TEST_PASSWORD
 on:
   push:
-    branches: [main, claude/**, feature/**]
-    paths:
-      - 'vite.config.ts'
-      - 'playwright.config.ts'
-      - 'e2e/**'
-      - 'src/features/supabase/**'
-      - 'src/pages/Demo*.tsx'
-      - '.github/workflows/e2e.yml'
+    branches:
+      - main
+      - 'feature/**'
   pull_request:
-    branches: [main]
-    paths:
-      - 'vite.config.ts'
-      - 'playwright.config.ts'
-      - 'e2e/**'
-      - 'src/features/supabase/**'
-      - 'src/pages/Demo*.tsx'
-      - '.github/workflows/e2e.yml'
-  workflow_dispatch: # Allow manual trigger
-
-concurrency:
-  # Cancel in-progress runs on the same branch when a new commit lands.
-  group: e2e-${{ github.ref }}
-  cancel-in-progress: true
+    branches:
+      - main
 
 jobs:
-  playwright:
+  e2e:
+    name: Playwright E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Pre-baked browsers + matching deps in the official image — skips the
-    # `playwright install --with-deps` step (~30 s) on every run.
-    container:
-      image: mcr.microsoft.com/playwright:v1.59.1-noble
-      options: --user 1001
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    timeout-minutes: 30
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+    env:
+      # CI testet den PR-eigenen Build über einen lokalen Preview-Server.
+      # Die Live-Produktion ist als Ziel ungeeignet: ihr Bot-Schutz liefert
+      # dem headless-Browser 403. Für manuelle Läufe gegen Live/Staging:
+      #   TEST_BASE_URL=https://… npm run test:e2e
+      TEST_BASE_URL: ${{ secrets.TEST_BASE_URL || 'http://localhost:4173' }}
+      STRIPE_TEST_MODE: 'true'
+      TEST_EMAIL: ${{ secrets.TEST_EMAIL || '' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '20'
-          cache: npm
+          cache: 'npm'
 
-      - run: npm ci
+      - name: Install Dependencies
+        run: npm ci
 
-      - name: Build production bundle
+      - name: Build Application
         run: npm run build
 
-      - name: Start preview server in background
-        env:
-          # `npm run preview` defaults to :4173, but our playwright.config.ts
-          # baseURL points at :3000. Override via E2E_BASE_URL so we don't
-          # need to ship dual configs.
-          PORT: 3000
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Start Preview Server
         run: |
-          npx vite preview --port=3000 --host=0.0.0.0 &
-          # Poll until the server answers — usually <2 s. Bail after 30 s.
+          npx vite preview --port 4173 --host 127.0.0.1 > preview-server.log 2>&1 &
+          echo "PREVIEW_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for Preview Server
+        run: |
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:3000/ > /dev/null; then
-              echo "preview server up after ${i}s"
+            if curl -sf http://localhost:4173 > /dev/null; then
+              echo "Preview-Server ist erreichbar."
               exit 0
             fi
-            sleep 1
+            sleep 2
           done
-          echo "::error::preview server did not come up in 30s"
+          echo "Preview-Server nicht erreichbar — Log:"; cat preview-server.log
           exit 1
 
-      - name: Run Playwright tests
+      - name: Run E2E Tests
+        run: npm run test:e2e
         env:
-          E2E_BASE_URL: http://localhost:3000
-          CI: 'true'
-          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
-          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
-        run: |
-          if [ -z "$E2E_TEST_EMAIL" ] || [ -z "$E2E_TEST_PASSWORD" ]; then
-            echo "⚠️  Skipping E2E tests: E2E_TEST_EMAIL or E2E_TEST_PASSWORD not set in GitHub Secrets"
-            echo "To enable E2E tests:"
-            echo "  1. Create test account in Supabase project"
-            echo "  2. Add secrets: E2E_TEST_EMAIL, E2E_TEST_PASSWORD"
-            exit 0
-          fi
-          npx playwright test
+          CI: true
 
-      - name: Upload Playwright report on failure
-        if: failure()
+      - name: Upload Playwright Report
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 7
+          retention-days: 30

@@ -300,24 +300,21 @@ function LazyFallback() {
 function RoutesWithTracking() {
   useTrackPageview();
   return (
-    <Suspense fallback={<LazyFallback />}>
-    <Routes>
-      {/* Demo Routes — Mock Auth + Governance Dashboard */}
-      <Route path="/demo-landing" element={<DemoLandingPage />} />
-      <Route path="/demo-login" element={<DemoLoginPage />} />
-      <Route
-        path="/demo-app"
-        element={
-          <ProtectedRoute>
-            <DemoGovernanceDashboard />
-          </ProtectedRoute>
-        }
-      />
-
     <>
       <SEOHead />
       <Suspense fallback={<LazyFallback />}>
         <Routes>
+          {/* Demo Routes — Mock Auth + Governance Dashboard */}
+          <Route path="/demo-landing" element={<DemoLandingPage />} />
+          <Route path="/demo-login" element={<DemoLoginPage />} />
+          <Route
+            path="/demo-app"
+            element={
+              <ProtectedRoute>
+                <DemoGovernanceDashboard />
+              </ProtectedRoute>
+            }
+          />
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />

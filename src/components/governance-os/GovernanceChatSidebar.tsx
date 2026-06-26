@@ -60,6 +60,7 @@ interface ContextEntry {
 const CONTEXT_MAP: Record<string, ContextEntry> = {
   '/app/websites':   { label: 'Websites',         quickActions: ['Scan starten', 'Cookies prüfen', 'Tracker anzeigen', 'Bericht'] },
   '/app/ai-systems': { label: 'KI-Systeme',       quickActions: ['Risikoklasse prüfen', 'Pflichten anzeigen', 'Dokumentieren'] },
+  '/app/datasets':   { label: 'Daten-Governance', quickActions: ['Art-10-Lücken prüfen', 'Bias dokumentieren', 'Datensatz anlegen'] },
   '/app/evidence':   { label: 'Evidence Vault',   quickActions: ['Snapshot erstellen', 'Lücken anzeigen', 'Export vorbereiten'] },
   '/app/risks':      { label: 'Risiken',          quickActions: ['Risiken priorisieren', 'Maßnahmen erstellen', 'Triage'] },
   '/app/monitoring': { label: 'Monitoring',       quickActions: ['Drift prüfen', 'Events zusammenfassen', 'Alert konfigurieren'] },

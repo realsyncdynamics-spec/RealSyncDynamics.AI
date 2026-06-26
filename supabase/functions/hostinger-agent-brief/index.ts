@@ -9,27 +9,20 @@
 // Schema:   read-only against gdpr_audits / sales_leads / ceo_briefs.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const MAX_PROMPT_LEN = 950;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') {
-    return json({ ok: false, error: 'POST only' }, 405);
+    return jsonResponse({ ok: false, error: 'POST only' }, 405);
   }
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    return json({ ok: false, error: 'env missing' }, 500);
+    return jsonResponse({ ok: false, error: 'env missing' }, 500);
   }
 
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -56,7 +49,7 @@ Deno.serve(async (req) => {
   ]);
 
   if (auditsRes.error || leadsRes.error || briefsRes.error) {
-    return json({
+    return jsonResponse({
       ok: false,
       error: 'db read failed',
       details: {
@@ -84,7 +77,7 @@ Deno.serve(async (req) => {
     scout: clamp(buildScout()),
   };
 
-  return json({
+  return jsonResponse({
     ok: true,
     source: {
       audit_count: auditCount,
@@ -210,9 +203,3 @@ STRATEGIE: 1 Pillar-Page pro Keyword + 3 Cluster-Pages. Schema.org: WebApplicati
 NICHT TARGETIEREN: "was ist dsgvo" (info-only), "datenschutz" (zu generisch), Markennamen ohne Buying-Intent.`;
 }
 
-function json(payload: unknown, status = 200): Response {
-  return new Response(JSON.stringify(payload, null, 2), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}

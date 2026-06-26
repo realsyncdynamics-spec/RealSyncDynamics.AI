@@ -18,7 +18,7 @@ export function Branchen() {
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-none bg-gradient-to-br from-brass-500 to-brass-700 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-none bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center">
             <Building2 className="h-4 w-4 text-obsidian-950" />
           </div>
           <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Branchen</div>
@@ -28,7 +28,7 @@ export function Branchen() {
       <main className="px-4 sm:px-6 py-12 sm:py-16">
         <div className="max-w-5xl mx-auto space-y-12">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-brass-700/50 bg-brass-950/20 text-brass-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 border border-cyan-700/50 bg-cyan-950/20 text-cyan-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
               <ShieldCheck className="h-3 w-3" /> 9 Industry-Profile · Compliance-Pfade
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
@@ -43,7 +43,7 @@ export function Branchen() {
           {/* Re-uses the existing 9-tile component as the page's main content */}
           <IdealCustomers />
 
-          <div className="bg-obsidian-900 border border-titanium-900 border-l-2 border-l-brass-700/60 rounded-none p-6 sm:p-8">
+          <div className="bg-obsidian-900 border border-titanium-900 border-l-2 border-l-cyan-700/60 rounded-none p-6 sm:p-8">
             <h2 className="font-display font-bold text-titanium-50 text-xl mb-3">
               Deine Branche fehlt?
             </h2>

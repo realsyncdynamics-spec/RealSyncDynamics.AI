@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantAssets, type DbGovernanceAsset } from '../governanceApi';
 import {
+  ANNEX_III_CATEGORIES,
+  ANNEX_III_CATEGORY_LABEL,
+  PROVIDER_ROLE_LABEL,
+  PROVIDER_ROLES,
+  type AnnexIIICategory,
+  type ProviderRole,
+} from '../../../lib/ai-act/annexCategories';
+import { downloadConformityDossier } from '../../../lib/ai-act/conformityDossier';
+import { listDatasets } from '../aiActDataGovernanceApi';
+import {
   ArrowLeft,
   Bot,
   Plus,
@@ -12,6 +22,7 @@ import {
   CheckCircle2,
   Circle,
   FileText,
+  FileDown,
   Tag,
   Shield,
 } from 'lucide-react';
@@ -36,6 +47,11 @@ interface AiSystem {
   lastUpdated: string;
   obligations: string[];
   obligationsDone: boolean[];
+  annexCategory?: AnnexIIICategory | null;
+  providerRole?: ProviderRole | null;
+  intendedPurpose?: string | null;
+  deploymentContext?: string | null;
+  affectedGroups?: string[];
 }
 
 // ── Mock-Daten ─────────────────────────────────────────────────────────────────
@@ -286,6 +302,11 @@ function assetToAiSystem(a: DbGovernanceAsset): AiSystem {
     lastUpdated,
     obligations: [],
     obligationsDone: [],
+    annexCategory: (a.annex_iii_category as AnnexIIICategory | null) ?? null,
+    providerRole: (a.provider_role as ProviderRole | null) ?? null,
+    intendedPurpose: a.intended_purpose ?? null,
+    deploymentContext: a.deployment_context ?? null,
+    affectedGroups: a.affected_groups ?? [],
   };
 }
 
@@ -335,6 +356,44 @@ export function AiSystemRegistryView() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleDossier(system: AiSystem) {
+    let datasets: Array<{ name: string; role: string; containsPersonalData: boolean; legalBasis: string | null; biasAssessment: string | null }> = [];
+    if (activeTenantId) {
+      try {
+        const rows = await listDatasets(activeTenantId);
+        datasets = rows
+          .filter((d) => (d.ai_system_ref ?? '').toLowerCase() === system.name.toLowerCase())
+          .map((d) => ({
+            name: d.name,
+            role: d.dataset_role,
+            containsPersonalData: d.contains_personal_data,
+            legalBasis: d.legal_basis,
+            biasAssessment: d.bias_assessment,
+          }));
+      } catch {/* Dossier wird ohne Datensätze erzeugt */}
+    }
+    downloadConformityDossier({
+      system: {
+        name: system.name,
+        provider: system.provider,
+        model: system.model,
+        riskLabel: system.riskClass,
+        annexCategory: system.annexCategory ? ANNEX_III_CATEGORY_LABEL[system.annexCategory] : null,
+        providerRole: system.providerRole ? PROVIDER_ROLE_LABEL[system.providerRole] : null,
+        intendedPurpose: system.intendedPurpose,
+        deploymentContext: system.deploymentContext,
+        affectedGroups: system.affectedGroups,
+        scope: system.scope,
+        owner: system.owner,
+      },
+      datasets,
+      obligations: system.obligations.map((label, i) => ({
+        label, article: '—', done: system.obligationsDone[i] ?? false,
+      })),
+    });
+    showToast('Annex-IV-Dossier erstellt');
   }
 
   const TABS: FilterTab[] = ['Alle', 'Hoch-Risiko', 'Begrenzt', 'Minimal', 'Ausstehend'];
@@ -453,7 +512,7 @@ export function AiSystemRegistryView() {
         {/* System-Karten */}
         <div className="space-y-3">
           {filtered.map((system) => (
-            <AiSystemCard key={system.id} system={system} />
+            <AiSystemCard key={system.id} system={system} onDossier={handleDossier} />
           ))}
           {filtered.length === 0 && (
             <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
@@ -519,7 +578,7 @@ export function AiSystemRegistryView() {
 
 // ── System-Karte ──────────────────────────────────────────────────────────────
 
-function AiSystemCard({ system }: { system: AiSystem }) {
+function AiSystemCard({ system, onDossier }: { system: AiSystem; onDossier: (s: AiSystem) => void }) {
   const [expanded, setExpanded] = useState(false);
   const docPct = system.docTotal > 0 ? (system.docProgress / system.docTotal) * 100 : 0;
   const doneCnt = system.obligationsDone.filter(Boolean).length;
@@ -552,6 +611,16 @@ function AiSystemCard({ system }: { system: AiSystem }) {
             {system.riskClass}
           </span>
           <span className="font-mono text-[10px] text-titanium-500">{system.scope}</span>
+          {system.annexCategory && (
+            <span className="border border-purple-900 bg-purple-950/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-purple-300">
+              Annex III · {ANNEX_III_CATEGORY_LABEL[system.annexCategory]}
+            </span>
+          )}
+          {system.providerRole && (
+            <span className="border border-titanium-800 bg-obsidian-950 px-2 py-0.5 font-mono text-[10px] text-titanium-400">
+              {PROVIDER_ROLE_LABEL[system.providerRole]}
+            </span>
+          )}
         </div>
 
         {/* Zeile 5: Verantwortlicher + letzte Aktualisierung */}
@@ -615,6 +684,7 @@ function AiSystemCard({ system }: { system: AiSystem }) {
           <ActionBtn icon={<FileText className="h-3 w-3" />} label="Dokumentieren" />
           <ActionBtn icon={<Tag className="h-3 w-3" />}      label="Klassifizieren" />
           <ActionBtn icon={<Shield className="h-3 w-3" />}   label="Nachweis erstellen" />
+          <ActionBtn icon={<FileDown className="h-3 w-3" />} label="Annex-IV-Dossier" onClick={() => onDossier(system)} />
         </div>
       </div>
     </div>
@@ -674,10 +744,11 @@ function RiskInfoCard({
   );
 }
 
-function ActionBtn({ icon, label }: { icon: React.ReactNode; label: string }) {
+function ActionBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex items-center gap-1 border border-titanium-800 bg-obsidian-950 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-titanium-400 hover:border-titanium-600 hover:text-titanium-100"
     >
       {icon}
@@ -697,11 +768,18 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [scope, setScope]             = useState('');
   const [owner, setOwner]             = useState('');
   const [status, setStatus]           = useState<SystemStatus>('In Betrieb');
+  const [annexCategory, setAnnexCategory] = useState<AnnexIIICategory | ''>('');
+  const [providerRole, setProviderRole]   = useState<ProviderRole>('provider');
+  const [intendedPurpose, setIntendedPurpose] = useState('');
+  const [deploymentContext, setDeploymentContext] = useState('');
+  const [affectedGroups, setAffectedGroups] = useState('');
 
   function handleSave() {
     if (!name.trim()) return;
     onSaved();
   }
+
+  const showAnnexFields = riskClass === 'Hoch' || riskClass === 'Verboten';
 
   return (
     <div
@@ -772,6 +850,63 @@ function AddSystemModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
               <option value="Verboten">Verboten</option>
             </select>
           </ModalField>
+
+          <ModalField label="AI-Act-Rolle">
+            <select
+              value={providerRole}
+              onChange={(e) => setProviderRole(e.target.value as ProviderRole)}
+              className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+            >
+              {PROVIDER_ROLES.map((r) => (
+                <option key={r} value={r}>{PROVIDER_ROLE_LABEL[r]}</option>
+              ))}
+            </select>
+          </ModalField>
+
+          {showAnnexFields && (
+            <div className="space-y-4 border border-purple-900/60 bg-purple-950/10 p-3">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-purple-300">
+                Hochrisiko — Annex-III-Kontext (Art. 6)
+              </p>
+              <ModalField label="Annex-III-Kategorie">
+                <select
+                  value={annexCategory}
+                  onChange={(e) => setAnnexCategory(e.target.value as AnnexIIICategory | '')}
+                  className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                >
+                  <option value="">— wählen —</option>
+                  {ANNEX_III_CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>{c.annexPoint} · {c.label}</option>
+                  ))}
+                </select>
+              </ModalField>
+              <ModalField label="Zweckbestimmung (intended purpose)">
+                <textarea
+                  value={intendedPurpose}
+                  onChange={(e) => setIntendedPurpose(e.target.value)}
+                  rows={2}
+                  placeholder="Wozu wird das System eingesetzt?"
+                  className="w-full resize-y border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                />
+              </ModalField>
+              <ModalField label="Einsatzkontext">
+                <input
+                  value={deploymentContext}
+                  onChange={(e) => setDeploymentContext(e.target.value)}
+                  placeholder="Domäne / Umgebung des Betriebs"
+                  className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                />
+              </ModalField>
+              <ModalField label="Betroffene Gruppen">
+                <input
+                  value={affectedGroups}
+                  onChange={(e) => setAffectedGroups(e.target.value)}
+                  placeholder="z.B. Bewerber:innen, Kund:innen (kommagetrennt)"
+                  className="w-full border border-titanium-800 bg-obsidian-950 px-3 py-2 text-sm text-titanium-100 outline-none focus:border-teal-600"
+                />
+              </ModalField>
+            </div>
+          )}
 
           <ModalField label="Anwendungsbereich">
             <input

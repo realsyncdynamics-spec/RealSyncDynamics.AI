@@ -50,6 +50,16 @@ describe('planAccess', () => {
     expect(hasFeature('enterprise', 'fifty_clients')).toBe(false);
   });
 
+  it('evidence_export ist die Kaufbegründung des ersten zahlenden Tiers', () => {
+    // Free sieht den Trail read-only, exportieren erst ab Starter.
+    expect(hasFeature('free', 'evidence_export')).toBe(false);
+    expect(hasFeature('starter', 'evidence_export')).toBe(true);
+    expect(hasFeature('growth', 'evidence_export')).toBe(true);
+    expect(hasFeature('agency', 'evidence_export')).toBe(true);
+    expect(hasFeature('scale', 'evidence_export')).toBe(true);
+    expect(hasFeature('enterprise', 'evidence_export')).toBe(true);
+  });
+
   it('null/undefined Plan -> kein Zugriff (defensiv)', () => {
     expect(hasFeature(null, 'one_time_scan')).toBe(false);
     expect(hasFeature(undefined, 'monthly_scan')).toBe(false);

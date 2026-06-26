@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
+import { useActivePlan } from '../../hooks/useModuleAccess';
+import { hasFeature, type PlanKey } from '../../lib/billing/planAccess';
 import { WorkspaceShell } from '../workspace/WorkspaceShell';
 import { getSupabase } from '../../lib/supabase';
 
@@ -77,6 +79,10 @@ export function EvidenceVaultView() {
 
 function Inner() {
   const { activeTenantId } = useTenant();
+  const { plan } = useActivePlan();
+  // Trail ist read-only ab Free sichtbar; der Export ist die Kaufbegründung
+  // des ersten zahlenden Tiers (siehe docs/PRODUCT_PRIORITIZATION.md).
+  const canExport = hasFeature(plan as PlanKey, 'evidence_export');
   const [records, setRecords]     = useState<EvidenceRecord[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -110,6 +116,7 @@ function Inner() {
 
   const handleExport = async () => {
     if (!activeTenantId) return;
+    if (!canExport) { setExportMsg('Fehler: Export ist ab dem Starter-Tarif verfügbar.'); return; }
     setExporting(true); setExportMsg(null);
     try {
       const sb = getSupabase();
@@ -173,20 +180,45 @@ function Inner() {
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
             Laden
           </button>
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 transition-colors font-semibold disabled:opacity-50"
-          >
-            <Download className="h-3.5 w-3.5" />
-            {exporting ? 'Exportiert…' : 'Bundle exportieren'}
-          </button>
+          {canExport ? (
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-cyan-400 text-obsidian-950 hover:bg-cyan-300 transition-colors font-semibold disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? 'Exportiert…' : 'Bundle exportieren'}
+            </button>
+          ) : (
+            <Link
+              to="/app/billing"
+              title="Audit-Export ist ab dem Starter-Tarif verfügbar"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono border border-cyan-800 text-cyan-300 hover:bg-cyan-950/40 transition-colors font-semibold"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export ab Starter
+            </Link>
+          )}
         </div>
       </div>
 
       {exportMsg && (
         <div className={`text-xs font-mono px-3 py-2 border ${exportMsg.startsWith('Fehler') ? 'border-rose-800 text-rose-300 bg-rose-950/30' : 'border-emerald-800 text-emerald-300 bg-emerald-950/30'}`}>
           {exportMsg}
+        </div>
+      )}
+
+      {!canExport && (
+        <div className="flex flex-wrap items-center gap-2 text-xs px-3 py-2 border border-cyan-900 bg-cyan-950/20 text-cyan-200">
+          <ShieldCheck className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+          <span>
+            Der Prüfpfad ist hier einsehbar. Der revisionssichere{' '}
+            <strong className="text-cyan-100">Audit-Export</strong> (gerichtsfestes Bundle mit
+            Hash-Chain) ist ab dem Starter-Tarif verfügbar.
+          </span>
+          <Link to="/app/billing" className="underline text-cyan-300 hover:text-cyan-200">
+            Tarif ansehen →
+          </Link>
         </div>
       )}
 

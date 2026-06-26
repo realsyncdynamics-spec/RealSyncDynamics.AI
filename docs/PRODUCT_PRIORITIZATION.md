@@ -75,38 +75,56 @@ Monetarisierungsachsen).
 
 ---
 
-## Offene Gabelungen — Founder-Entscheid nötig
+## Entschiedene Gabelungen — Founder-Entscheid vom 2026-06-20
 
-> Diese drei Punkte des Memos widersprechen bereits dokumentierten
-> Entscheidungen. Bewusst **nicht** eigenmächtig geändert. Empfehlung je Punkt.
+> Diese drei Punkte des Memos widersprachen bereits dokumentierten
+> Entscheidungen. Bewusst **nicht** eigenmächtig geändert, sondern dem Founder
+> vorgelegt. **Entscheid am 2026-06-20: alle drei wie empfohlen.**
 
-### K1 — Preis 49 € vs. 79 €  · Empfehlung: bei 79 € bleiben
-Das Memo nennt einen 49-€-Monitoring-Einstieg. `src/config/pricing.ts`
+### K1 — Preis 49 € vs. 79 €  · ✅ ENTSCHIEDEN: 79 €
+Das Memo nannte einen 49-€-Monitoring-Einstieg. `src/config/pricing.ts`
 dokumentiert eine **bewusste Rebalance vom 2026-05-10** (Test-Kunden-Critique):
 *„Starter 49 → 79: 49 wirkt wie Hobby-Tool. 79 ist der DACH-Compliance-
 Sweet-Spot (Cookiebot ~110, Iubenda ~280)."* → 49 € ist eine **bereits
-verworfene** Option. Reaktivierung nur mit neuer Evidenz. `pricing.ts` ist
-Single Source of Truth und bleibt unverändert.
+verworfene** Option.
 
-### K2 — Zielgruppe „Handwerker" vs. reguliertes KMU  · Empfehlung: up-market bleiben
+**Entscheid:** Bei **79 €** bleiben. `pricing.ts` bleibt Single Source of
+Truth und unverändert. Keine Code-Änderung nötig — bestätigt den Status quo.
+
+### K2 — Zielgruppe „Handwerker" vs. reguliertes KMU  · ✅ ENTSCHIEDEN: up-market
 Das dokumentierte ICP (`marketing/icp-und-sales-navigator.md`) zielt auf
 **regulierte KMU, 5–500 MA** (Kanzlei, Arztpraxis, FinTech, Verwaltung) und
 **disqualifiziert Solo-Freelancer / reine Privatpraxen explizit**. Der
-„Handwerker"-Frame zieht down-market — dorthin, wo der Evidence-Moat **wenig
+„Handwerker"-Frame zog down-market — dorthin, wo der Evidence-Moat **wenig
 wert** ist (ein Handwerker braucht eine Datenschutzerklärung, keinen
 gerichtsfesten Prüfpfad). Die ganze Architektur (Evidence, AI-Act, DSB) ist
 up-market gebaut.
 
-→ **Empfehlung:** Die *Mechanik* des Memos übernehmen (Gratis-Scan als Lead,
-ein Produkt, Evidence früh als Kaufgrund), aber die *Zielgruppe* beim
-dokumentierten regulierten KMU lassen. Dort ist Compliance existenziell und
-der Evidence-Trail zahlungswirksam.
+**Entscheid:** **Up-market / reguliertes KMU.** Die *Mechanik* des Memos wird
+übernommen (Gratis-Scan als Lead, ein Produkt, Evidence früh als Kaufgrund),
+aber die *Zielgruppe* bleibt das dokumentierte regulierte KMU. Dort ist
+Compliance existenziell und der Evidence-Trail zahlungswirksam. ICP unverändert.
 
-### K3 — „Zwei Landingpages" vs. „eine Landingpage"  · Empfehlung: eine Seite, Segment-Sektionen
+### K3 — „Zwei Landingpages" vs. „eine Landingpage"  · ✅ ENTSCHIEDEN: eine Seite
 `PLAN_100.md` #10 fordert explizit Konsolidierung auf **eine** Landingpage
-(Nischen als Segment-Sektionen) statt paralleler Pflege. Zwei Frames im
-Marketing sind ok — aber als Sektionen einer Story, nicht als zwei separat zu
-pflegende Seiten.
+(Nischen als Segment-Sektionen) statt paralleler Pflege.
+
+**Entscheid:** **Eine Landingpage** mit Segment-Sektionen statt zwei separat
+gepflegter Seiten. Dies ist die einzige der drei Entscheidungen mit konkreter
+Bau-Aufgabe → nachgezogen als offener Punkt unten.
+
+---
+
+## Bau-Aufgaben aus den Entscheidungen
+
+- [x] **Landingpage-Konsolidierung** (aus K3): Branchen-Seiten auf
+  `BranchenLanding`-Shell (PR #655), Alternative-Seiten auf
+  `AlternativeLanding`-Shell (PR #658); `niche/` war bereits konsolidiert.
+- [x] **Evidence-Trail ins erste zahlende Tier** (aus S3): Der hash-verkettete
+  Trail existierte bereits (`governance_evidence` + `evidence-vault-export`).
+  Geliefert via **Tier-Gating** statt Neubau — Free sieht den Trail read-only,
+  der **Audit-Export** ist ab Starter freigeschaltet (Feature `evidence_export`,
+  Client + Edge-Function), Pricing-Wording entsprechend geschärft.
 
 ---
 
@@ -119,4 +137,4 @@ pflegende Seiten.
 
 ---
 
-*Erstellt: 2026-06-20 · ergänzt `ROADMAP.md` + `docs/PRODUCT_FOCUS.md`*
+*Erstellt: 2026-06-20 · Gabelungen entschieden: 2026-06-20 · ergänzt `ROADMAP.md` + `docs/PRODUCT_FOCUS.md`*

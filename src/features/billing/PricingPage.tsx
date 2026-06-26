@@ -13,7 +13,7 @@ import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance
 /**
  * /pricing — public Pricing-Page mit 5 Paketen (Free → 1.999 €).
  *
- * Tier-Daten kommen ausschliesslich aus src/config/pricing.ts
+ * Tier-Daten kommen ausschließlich aus src/config/pricing.ts
  * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
  * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-06):

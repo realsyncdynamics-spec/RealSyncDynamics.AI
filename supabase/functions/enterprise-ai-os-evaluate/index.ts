@@ -5,11 +5,7 @@
 //
 // Pure evaluation, no DB writes. Mirrors src/lib/enterprise-ai-os/policy-engine.ts.
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 type AiRiskLevel = 'minimal' | 'limited' | 'high' | 'prohibited' | 'unknown';
 
@@ -85,25 +81,19 @@ function evaluateAgentAction(input: EvalInput) {
   return { allowed, requiresApproval, auditRequired, reasons };
 }
 
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'POST') return json(405, { error: 'POST only' });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   let body: Partial<EvalInput> & { policy?: Partial<PolicyInput> };
   try {
     body = await req.json();
   } catch {
-    return json(400, { error: 'invalid JSON' });
+    return jsonResponse({ error: 'invalid JSON' }, 400);
   }
 
-  if (!body.model) return json(400, { error: 'model is required' });
+  if (!body.model) return jsonResponse({ error: 'model is required' }, 400);
 
   const policy: PolicyInput = {
     allowed_models: body.policy?.allowed_models ?? [],
@@ -120,5 +110,5 @@ Deno.serve(async (req) => {
     policy,
   });
 
-  return json(200, result);
+  return jsonResponse(result, 200);
 });

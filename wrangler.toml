@@ -1,3 +1,12 @@
-name = "realsyncdynamicsai"
-compatibility_date = "2024-01-01"
+# Cloudflare Pages deployment config (modernes Pages-Format).
+#
+# Frueher standen hier die Legacy-Felder `[build] command` und
+# `[build.upload] dir` — das ist Workers-Sites-Syntax und fuer Pages NICHT
+# gueltig; moderne `wrangler pages deploy`-Aufrufe brechen daran ab.
+#
+# Pages erwartet stattdessen `pages_build_output_dir`. Der eigentliche Build
+# laeuft in CI (npm run build → dist/), deployt wird das Artefakt via
+# `wrangler pages deploy dist` (siehe .github/workflows/deploy-cloudflare-pages.yml).
+name = "realsyncdynamics-ai"
 pages_build_output_dir = "dist"
+compatibility_date = "2026-06-23"

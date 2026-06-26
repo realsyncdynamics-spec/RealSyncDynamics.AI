@@ -222,10 +222,13 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'Governance OS für DSGVO, EU AI Act & digitale Souveränität | RealSyncDynamicsAI',
+    title: 'KI-Betriebssystem für DSGVO & EU AI Act | RealSyncDynamicsAI',
     description:
-      'Das Governance OS für DSGVO, EU AI Act und digitale Souveränität. Überwacht Websites, KI-Systeme, Drittanbieter, Risiken und Nachweise kontinuierlich — mit Evidence Vault, Governance Agents und auditfähiger Dokumentation im Browser-Format.',
+      'Das KI-Betriebssystem für DSGVO & EU AI Act: überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready, auditierbar. EU-Hosting.',
     canonical: `${SITE_URL}/`,
+    ogTitle: 'Das KI-Betriebssystem für DSGVO & EU AI Act',
+    ogDescription:
+      'RealSyncDynamics.AI überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
@@ -874,6 +877,66 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Legal', url: '/legal/sub-processors' },
       { name: 'Compliance-Matrix', url: '/legal/compliance-matrix' },
     ]),
+  },
+
+  // ─── DE/EN-Alias-Einträge (fehlende Canonicals — fix #286) ──────────────
+  // Jeder EN-Alias zeigt canonical auf die DE-Primär-URL, damit Google
+  // nur eine URL indexiert. Die EN-Routen laufen weiter (keine 301-Weiterleitungen
+  // nötig), aber Google konsolidiert Link-Equity auf die DE-URL.
+
+  '/versicherungen': {
+    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSyncDynamics.AI',
+    description:
+      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
+    canonical: `${SITE_URL}/insurance`,
+  },
+  '/presse': {
+    title: 'Presse | RealSyncDynamics.AI',
+    description:
+      'Pressemitteilungen, Medienanfragen und Logos von RealSyncDynamics.AI — EU-native DSGVO- und AI-Act-Compliance-Plattform.',
+    canonical: `${SITE_URL}/presse`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Presse', url: '/presse' },
+    ]),
+  },
+  '/press': {
+    title: 'Press | RealSyncDynamics.AI',
+    description:
+      'Press releases, media inquiries and logos for RealSyncDynamics.AI — EU-native GDPR + AI Act compliance platform.',
+    canonical: `${SITE_URL}/presse`,
+  },
+  '/integrationen': {
+    title: 'Integrationen — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    description:
+      'Alle Integrationen auf einen Blick: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD-Webhooks. DSGVO-konforme Datenflüsse, keine Setup-Gebühr.',
+    canonical: `${SITE_URL}/integrationen`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Integrationen', url: '/integrationen' },
+    ]),
+  },
+  '/integrations': {
+    title: 'Integrations — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    description:
+      'All integrations at a glance: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD webhooks. GDPR-compliant data flows, no setup fee.',
+    canonical: `${SITE_URL}/integrationen`,
+  },
+  '/marktanalyse': {
+    title: 'DSGVO-Tool-Marktanalyse — DACH 2026 | RealSyncDynamics.AI',
+    description:
+      'Marktanalyse: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard im Vergleich. Preise, Features, DACH-Tauglichkeit, AI-Act-Readiness — Stand 2026.',
+    canonical: `${SITE_URL}/marktanalyse`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Marktanalyse', url: '/marktanalyse' },
+    ]),
+  },
+  '/market-analysis': {
+    title: 'GDPR Tool Market Analysis — DACH 2026 | RealSyncDynamics.AI',
+    description:
+      'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
+    canonical: `${SITE_URL}/marktanalyse`,
   },
 };
 

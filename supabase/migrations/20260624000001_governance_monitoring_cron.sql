@@ -2,10 +2,17 @@
 --
 -- Setzt pg_cron-Jobs für den governance-monitoring-scheduler.
 -- Voraussetzung: pg_cron Extension muss im Supabase-Projekt aktiviert sein.
+-- Idempotent: bestehende Jobs werden zuerst entfernt, dann neu angelegt.
 
 BEGIN;
 
 -- Täglicher Scan um 02:00 UTC
+DO $$
+BEGIN
+  PERFORM cron.unschedule('governance-monitoring-daily');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 SELECT cron.schedule(
   'governance-monitoring-daily',
   '0 2 * * *',
@@ -19,9 +26,15 @@ SELECT cron.schedule(
       body    := '{}'::jsonb
     )
   $$
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);
 
 -- Stündlicher Scan für hourly-Quellen um :15 jeder Stunde
+DO $$
+BEGIN
+  PERFORM cron.unschedule('governance-monitoring-hourly');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
 SELECT cron.schedule(
   'governance-monitoring-hourly',
   '15 * * * *',
@@ -35,6 +48,6 @@ SELECT cron.schedule(
       body    := '{"frequency_filter": "hourly"}'::jsonb
     )
   $$
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);
 
 COMMIT;

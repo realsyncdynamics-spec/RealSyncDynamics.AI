@@ -23,8 +23,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
       - name: Link project
@@ -33,11 +33,17 @@ jobs:
       # Migrationsfehler still verschluckt (Job blieb gruen). Genau das hat den
       # P0a-Constraint-Fehler zunaechst unsichtbar gemacht.
       #
-      # Neu: Exit-Code wird erfasst und als ::error + Step-Summary sichtbar
-      # gemacht. Der Job faellt dabei (noch) NICHT hart, weil der Remote-Ledger
-      # projektweit out-of-band gepflegt wird (Repo-Migrationen unter
-      # Apply-Datums-Versionen statt Dateinamen-Versionen). Ein hartes Gate
-      # erfordert zuerst eine vollstaendige Ledger-Reconciliation (Infra-Task).
+      # Eine spaetere Zwischenstufe erfasste den Exit-Code zwar als ::error +
+      # Step-Summary, liess den Job aber NICHT hart fehlschlagen — eine
+      # ::error::-Annotation allein faellt den Job nicht, nur ein Exit-Code != 0.
+      # Damit blieb der Job gruen, obwohl KEINE Migration deployt wurde
+      # (P0.2 / 20260626000000 erreichte Prod nie).
+      #
+      # Neu: bei jedem db-push-Fehler exit != 0 -> der Job faellt hart. Solange
+      # der Remote-Ledger-Drift (Orphan-Version 20260510, siehe
+      # docs/infra/migration-drift.md) nicht reconciled ist, schlaegt dieser Job
+      # bewusst fehl — das ist der ehrliche Zustand: Migrationen deployen derzeit
+      # NICHT. functions-deploy laeuft unabhaengig (kein needs) weiter.
       - name: Push migrations
         run: |
           set +e
@@ -48,6 +54,7 @@ jobs:
             echo "::error::supabase db push exited with code $code — Migration nicht sauber durchgelaufen (siehe Log)."
             echo "## db push fehlgeschlagen (exit $code)" >> "$GITHUB_STEP_SUMMARY"
             tail -n 20 /tmp/db-push.log >> "$GITHUB_STEP_SUMMARY"
+            exit "$code"
           else
             echo "db push erfolgreich" >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -59,8 +66,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
       - name: Deploy edge functions

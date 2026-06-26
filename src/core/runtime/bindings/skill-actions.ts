@@ -17,6 +17,10 @@ import {
   recommendSampleSize,
 } from '../../../lib/skills/financeAuditSupport';
 import {
+  classifyAuditFinding,
+  buildWebsiteAuditPlan,
+} from '../../../lib/skills/gdprAudit';
+import {
   buildDsarChecklist,
   buildDpaReviewChecklist,
 } from '../../../lib/skills/legalCompliance';
@@ -73,6 +77,11 @@ export const SKILL_ACTIONS: Record<SkillKey, ActionMap> = {
         requireString(args, 'control_frequency') as never,
         requireString(args, 'risk_level') as never,
       ),
+  },
+
+  'gdpr-audit': {
+    classify_finding: (args) => classifyAuditFinding(requireString(args, 'category')),
+    build_audit_plan: (args) => buildWebsiteAuditPlan(requireString(args, 'url')),
   },
 
   'legal-compliance': {

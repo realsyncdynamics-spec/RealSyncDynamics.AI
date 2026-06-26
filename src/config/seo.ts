@@ -222,10 +222,13 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'Continuous DSGVO- & AI-Act-Compliance für Websites | RealSyncDynamicsAI',
+    title: 'KI-Betriebssystem für DSGVO & EU AI Act | RealSyncDynamicsAI',
     description:
-      'Continuous Compliance Monitoring für Websites, KI-Systeme und digitale Prozesse. Tagesgenaue Überwachung gegen DSGVO- und EU-AI-Act-Drift — Free Audit als Einstieg, Drift-Alerts im Abo.',
+      'Das KI-Betriebssystem für DSGVO & EU AI Act: überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready, auditierbar. EU-Hosting.',
     canonical: `${SITE_URL}/`,
+    ogTitle: 'Das KI-Betriebssystem für DSGVO & EU AI Act',
+    ogDescription:
+      'RealSyncDynamics.AI überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',
@@ -284,6 +287,29 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
       { name: 'AI Governance OS', url: '/ai-governance' },
+    ]),
+  },
+  '/governance-score': {
+    title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
+    description:
+      'Ermitteln Sie Ihren Governance Complexity Score aus Branche, Datenkategorien, KI-Nutzung, Drittanbietern, Tracking und Dokumentationspflichten — und finden Sie die passende Governance-Abdeckung statt einer Anzahl Webseiten.',
+    canonical: `${SITE_URL}/governance-score`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Governance Complexity Score', url: '/governance-score' },
+    ]),
+  },
+  '/digitale-souveraenitaet': {
+    title: 'Digitale Souveränität als Betriebsmodell | RealSyncDynamics.AI',
+    description:
+      'Digitale Souveränität praktisch umsetzen: transparente Anbieterstruktur, nachweisbare DSGVO- & AI-Act-Governance, Kontrolle über Drittanbieter und Datenflüsse, Evidence Vault und kontinuierliches Monitoring — das Governance OS im Browser-Format.',
+    canonical: `${SITE_URL}/digitale-souveraenitaet`,
+    ogTitle: 'Digitale Souveränität als Betriebsmodell',
+    ogDescription:
+      'Souveräne Compliance-Infrastruktur für DSGVO, EU AI Act und Software-Supply-Chain-Governance — kontinuierlich, auditfähig, EU-gehostet.',
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Digitale Souveränität', url: '/digitale-souveraenitaet' },
     ]),
   },
   '/ai-act-faq': {
@@ -851,6 +877,66 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Legal', url: '/legal/sub-processors' },
       { name: 'Compliance-Matrix', url: '/legal/compliance-matrix' },
     ]),
+  },
+
+  // ─── DE/EN-Alias-Einträge (fehlende Canonicals — fix #286) ──────────────
+  // Jeder EN-Alias zeigt canonical auf die DE-Primär-URL, damit Google
+  // nur eine URL indexiert. Die EN-Routen laufen weiter (keine 301-Weiterleitungen
+  // nötig), aber Google konsolidiert Link-Equity auf die DE-URL.
+
+  '/versicherungen': {
+    title: 'Versicherungs-Compliance — VAIT, BaFin, AI-Act | RealSyncDynamics.AI',
+    description:
+      'Für Versicherer: VAIT-konforme IT-Governance, BaFin-Audit-Trail, AI-Act-Klassifikation für Tarif- und Schadenmodelle. Schrems-II-konformes EU-Hosting.',
+    canonical: `${SITE_URL}/insurance`,
+  },
+  '/presse': {
+    title: 'Presse | RealSyncDynamics.AI',
+    description:
+      'Pressemitteilungen, Medienanfragen und Logos von RealSyncDynamics.AI — EU-native DSGVO- und AI-Act-Compliance-Plattform.',
+    canonical: `${SITE_URL}/presse`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Presse', url: '/presse' },
+    ]),
+  },
+  '/press': {
+    title: 'Press | RealSyncDynamics.AI',
+    description:
+      'Press releases, media inquiries and logos for RealSyncDynamics.AI — EU-native GDPR + AI Act compliance platform.',
+    canonical: `${SITE_URL}/presse`,
+  },
+  '/integrationen': {
+    title: 'Integrationen — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    description:
+      'Alle Integrationen auf einen Blick: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD-Webhooks. DSGVO-konforme Datenflüsse, keine Setup-Gebühr.',
+    canonical: `${SITE_URL}/integrationen`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Integrationen', url: '/integrationen' },
+    ]),
+  },
+  '/integrations': {
+    title: 'Integrations — Shopify, WordPress, Matomo, n8n | RealSyncDynamics.AI',
+    description:
+      'All integrations at a glance: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD webhooks. GDPR-compliant data flows, no setup fee.',
+    canonical: `${SITE_URL}/integrationen`,
+  },
+  '/marktanalyse': {
+    title: 'DSGVO-Tool-Marktanalyse — DACH 2026 | RealSyncDynamics.AI',
+    description:
+      'Marktanalyse: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard im Vergleich. Preise, Features, DACH-Tauglichkeit, AI-Act-Readiness — Stand 2026.',
+    canonical: `${SITE_URL}/marktanalyse`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Marktanalyse', url: '/marktanalyse' },
+    ]),
+  },
+  '/market-analysis': {
+    title: 'GDPR Tool Market Analysis — DACH 2026 | RealSyncDynamics.AI',
+    description:
+      'Market analysis: Cookiebot, OneTrust, Usercentrics, iubenda, DataGuard compared. Pricing, features, DACH suitability, AI Act readiness — as of 2026.',
+    canonical: `${SITE_URL}/marktanalyse`,
   },
 };
 

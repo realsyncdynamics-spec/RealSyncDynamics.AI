@@ -4,6 +4,17 @@ import { Cookie, X } from 'lucide-react';
 import { emitConsentChanged } from '../lib/pixels';
 
 const STORAGE_KEY = 'realsync.cookie-consent.v1';
+const OPEN_SETTINGS_EVENT = 'realsync:open-cookie-settings';
+
+/**
+ * Öffnet den Cookie-Banner erneut — DSGVO Art. 7(3) Widerruf.
+ * Kann aus Footer, Datenschutzseite usw. aufgerufen werden.
+ */
+export function openCookieSettings(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_EVENT));
+  }
+}
 
 type Consent = {
   decided_at: string;
@@ -32,6 +43,13 @@ export function CookieConsent() {
     } catch {
       setDecided(false);
     }
+  }, []);
+
+  // DSGVO Art. 7(3): Widerruf jederzeit ermöglichen — Banner auf Event wieder einblenden.
+  useEffect(() => {
+    const handler = () => setDecided(false);
+    window.addEventListener(OPEN_SETTINGS_EVENT, handler);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, handler);
   }, []);
 
   function save(consent: Consent) {
@@ -70,40 +88,39 @@ export function CookieConsent() {
   if (decided === null || decided === true) return null;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 p-4 sm:p-6">
-      <div className="max-w-3xl mx-auto bg-obsidian-900 border border-titanium-700 shadow-2xl rounded-none">
-        <div className="flex items-start gap-3 p-4 sm:p-5">
-          <div className="shrink-0 w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-none flex items-center justify-center">
+    <div className="fixed inset-x-0 bottom-12 lg:bottom-4 lg:inset-x-auto lg:right-4 z-50 p-2 sm:p-4 lg:p-0">
+      <div className="max-w-3xl lg:max-w-sm mx-auto lg:mx-0 bg-obsidian-900 border border-titanium-700 shadow-2xl rounded-none max-h-[60vh] sm:max-h-[75vh] overflow-y-auto">
+        <div className="flex items-start gap-2.5 p-3 sm:p-5">
+          <div className="hidden sm:flex shrink-0 w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-none items-center justify-center">
             <Cookie className="h-4 w-4 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             {!showCustom ? (
               <>
-                <h2 className="font-display font-bold text-titanium-50 mb-1.5">Datenschutz auf RealSyncDynamicsAI.de</h2>
-                <p className="text-xs text-titanium-300 leading-relaxed mb-3">
-                  Wir setzen technisch notwendige Cookies für Login + Session.
-                  Optional können wir mit Deiner Einwilligung anonyme Statistik-
-                  und Marketing-Cookies setzen, um die App zu verbessern. Mehr
+                <h2 className="font-display font-bold text-sm sm:text-base text-titanium-50 mb-1">Datenschutz auf RealSyncDynamicsAI.de</h2>
+                <p className="text-[11px] sm:text-xs text-titanium-300 leading-snug sm:leading-relaxed mb-2 sm:mb-3">
+                  Technisch notwendige Cookies für Login + Session. Optional:
+                  Statistik- und Marketing-Cookies mit Deiner Einwilligung. Mehr
                   in der <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link>.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {/* BfDI-Leitlinie + DSGVO Art. 7 III + TTDSG §25: Accept und Reject
-                      müssen UI-gleichwertig sein. Beide Buttons: gleiche min-width
-                      (Bounding-Box-Parität), gleiches Padding, gleicher Font-Weight.
-                      Color-Differenzierung bleibt als semantisches Cue, Volumen ist
-                      gleich. Verifiziert in e2e/cookie-consent.spec.ts. */}
+                {/* BfDI-Leitlinie + DSGVO Art. 7 III + TTDSG §25: Accept und Reject
+                    in eigenem flex-Container, je flex-1 → garantiert gleiche Breite.
+                    Einstellungen separat darunter. */}
+                <div className="flex gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <button onClick={acceptAll}
-                    className="px-4 py-2 min-w-[10rem] bg-security-500 hover:bg-security-600 text-white text-xs font-bold rounded-none"
+                    className="flex-1 px-3 py-1.5 bg-security-500 hover:bg-security-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-accept-all">
                     Alles akzeptieren
                   </button>
                   <button onClick={acceptNecessary}
-                    className="px-4 py-2 min-w-[10rem] bg-titanium-700 hover:bg-titanium-600 text-white text-xs font-bold rounded-none"
+                    className="flex-1 px-3 py-1.5 bg-titanium-700 hover:bg-titanium-600 text-white text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-reject-all">
                     Alle ablehnen
                   </button>
+                </div>
+                <div>
                   <button onClick={() => setShowCustom(true)}
-                    className="px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-xs font-bold rounded-none"
+                    className="px-3 py-1.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-500 text-titanium-200 text-[11px] sm:text-xs font-bold rounded-none"
                     data-testid="consent-settings">
                     Einstellungen
                   </button>
@@ -111,7 +128,7 @@ export function CookieConsent() {
               </>
             ) : (
               <>
-                <h2 className="font-display font-bold text-titanium-50 mb-2">Cookie-Auswahl</h2>
+                <h2 className="font-display font-bold text-sm sm:text-base text-titanium-50 mb-2">Cookie-Auswahl</h2>
                 <div className="space-y-2 mb-3 text-xs">
                   <CookieRow
                     label="Notwendig" desc="Login, Session, CSRF — ohne diese funktioniert die App nicht."

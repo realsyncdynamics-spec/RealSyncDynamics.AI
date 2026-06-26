@@ -4,7 +4,7 @@ import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide
 import { getSupabase } from '../../lib/supabase';
 import { tierById, type TierId } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
-import { classifyStripeError, getStripeDiagnostic } from './stripeDiagnostics';
+import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
 import { trackConversion } from '../../lib/pixels';
@@ -14,7 +14,7 @@ import { trackConversion } from '../../lib/pixels';
  *
  * Flow:
  *   1. Tier aus URL-Param laden (free / starter / growth / agency / enterprise)
- *   2. Auth-State pruefen via Supabase
+ *   2. Auth-State prüfen via Supabase
  *   3a. Wenn nicht eingeloggt: Link auf /welcome mit ?next=/checkout/:planKey
  *   3b. Wenn eingeloggt + Tenant vorhanden: createCheckoutSession() rufen,
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
@@ -25,7 +25,7 @@ import { trackConversion } from '../../lib/pixels';
  */
 
 const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency']);
-
+// DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
   | { status: 'no_user' }
@@ -38,7 +38,7 @@ export function CheckoutPage() {
   const isPilot = searchParams.get('pilot') === 'true';
   const navigate = useNavigate();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
-  const [checkoutErr, setCheckoutErr] = useState<string | null>(null);
+  const [checkoutErr, setCheckoutErr] = useState<StripeDiagnostic | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   // §312k / §356(5) BGB: explicit consent gate. Required for paid recurring
   // SaaS so the §356(5) BGB withdrawal-right-erasure is documentably
@@ -111,8 +111,8 @@ export function CheckoutPage() {
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {
-      const diagnostic = getStripeDiagnostic(classifyStripeError(result.error));
-      setCheckoutErr(`${diagnostic.message} ${diagnostic.action}`);
+      const status = classifyStripeError(result.error);
+      setCheckoutErr(getStripeDiagnostic(status));
       setRedirecting(false);
     }
   }
@@ -245,7 +245,7 @@ function ShellWithMessage({
 
           <div className="mt-6 inline-flex items-center gap-1.5 text-xs text-silver-500">
             <AlertCircle className="h-3 w-3" />
-            <span>Stripe-Hosted-Checkout · Monatlich kuendbar · Keine Setup-Gebuehren</span>
+            <span>Stripe-Hosted-Checkout · Monatlich kündbar · Keine Setup-Gebühren</span>
           </div>
         </div>
       </main>
@@ -351,7 +351,7 @@ function ConsentGateShell({
   acknowledgedWithdrawal:   boolean;
   onAcknowledgedWithdrawal: (value: boolean) => void;
   redirecting:              boolean;
-  checkoutErr:              string | null;
+  checkoutErr:              StripeDiagnostic | null;
   onConfirm:                () => void;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
@@ -434,8 +434,13 @@ function ConsentGateShell({
           </div>
 
           {checkoutErr && (
-            <div className="mb-4 p-3 border border-red-900 bg-red-950/30 text-xs text-red-200">
-              Checkout-Fehler: {checkoutErr}
+            <div className="mb-4 p-3 border border-red-900 bg-red-950/30 text-xs text-red-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-red-100">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                {checkoutErr.title}
+              </div>
+              <p className="leading-relaxed">{checkoutErr.message}</p>
+              <p className="text-red-300"><span className="font-semibold">Nächster Schritt:</span> {checkoutErr.action}</p>
             </div>
           )}
 
@@ -460,7 +465,7 @@ function ConsentGateShell({
           </button>
 
           <div className="mt-4 text-[11px] font-mono uppercase tracking-wider text-silver-500 text-center">
-            Eingeloggt als {userEmail}
+            Angemeldet als {userEmail}
           </div>
           <div className="mt-3 text-center">
             <Link to="/legal/avv" className="text-[11px] text-gold-300 hover:text-gold-200 underline" target="_blank" rel="noopener noreferrer">

@@ -6,15 +6,11 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -53,7 +49,7 @@ Deno.serve(async (req) => {
     const r = await runAiTool(admin, body.tenant_id, userId, body.tool_key, body.input, {
       metadata: body.metadata ?? {},
     });
-    return json({
+    return jsonResponse({
       ok: true,
       run_id: r.runId,
       output: r.output,
@@ -62,17 +58,7 @@ Deno.serve(async (req) => {
       duration_ms: r.durationMs,
     });
   } catch (e) {
-    if (e instanceof AiInvokeError) return jsonError(e.status, e.code, e.message, e.details);
+    if (e instanceof AiInvokeError) return jsonError(e.status, e.code, e.message, undefined, e.details);
     return jsonError(500, 'INTERNAL', (e as Error).message);
   }
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string, details?: unknown): Response {
-  return json({ ok: false, error: { code, message, details } }, status);
-}

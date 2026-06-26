@@ -7,16 +7,11 @@
 // Public/anon — uses service-role key internally to insert with RLS bypass.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const FOUNDING_ACCESS_LIMIT = 100;
 const FOUNDING_ACCESS_FREE_UNTIL = '2026-08-02';
 const HARD_LIMIT_ISO = `${FOUNDING_ACCESS_FREE_UNTIL}T23:59:59.999Z`;
-
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 function calculateExpiry(start = new Date()): Date {
   const expires = new Date(start);
@@ -29,32 +24,26 @@ function isAvailable(count: number, now = new Date()): boolean {
   return count < FOUNDING_ACCESS_LIMIT && now <= new Date(HARD_LIMIT_ISO);
 }
 
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'POST') return json(405, { error: 'POST only' });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   let body: { company_name?: string; contact_email?: string; website_url?: string };
   try {
     body = await req.json();
   } catch {
-    return json(400, { error: 'invalid JSON' });
+    return jsonResponse({ error: 'invalid JSON' }, 400);
   }
 
   if (!body.company_name || !body.contact_email) {
-    return json(400, { error: 'company_name and contact_email are required' });
+    return jsonResponse({ error: 'company_name and contact_email are required' }, 400);
   }
 
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !serviceKey) {
-    return json(500, { error: 'Supabase env vars missing on the function' });
+    return jsonResponse({ error: 'Supabase env vars missing on the function' }, 500);
   }
 
   const sb = createClient(url, serviceKey);
@@ -63,15 +52,15 @@ Deno.serve(async (req) => {
     .from('enterprise_founders_access')
     .select('*', { count: 'exact', head: true });
 
-  if (countError) return json(500, { error: countError.message });
+  if (countError) return jsonResponse({ error: countError.message }, 500);
 
   const currentCount = count ?? 0;
   if (!isAvailable(currentCount)) {
-    return json(403, {
+    return jsonResponse({
       error: 'Founding Access is no longer available.',
       limit: FOUNDING_ACCESS_LIMIT,
       free_until: FOUNDING_ACCESS_FREE_UNTIL,
-    });
+    }, 403);
   }
 
   const expiry = calculateExpiry();
@@ -89,11 +78,11 @@ Deno.serve(async (req) => {
     .select()
     .single();
 
-  if (error) return json(500, { error: error.message });
+  if (error) return jsonResponse({ error: error.message }, 500);
 
-  return json(200, {
+  return jsonResponse({
     ok: true,
     access: data,
     remaining_slots: FOUNDING_ACCESS_LIMIT - currentCount - 1,
-  });
+  }, 200);
 });

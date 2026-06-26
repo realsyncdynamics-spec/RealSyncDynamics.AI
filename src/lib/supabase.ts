@@ -7,9 +7,13 @@ let cached: SupabaseClient | null = null;
 
 export function getSupabase(): SupabaseClient {
   if (!url || !anonKey) {
-    throw new Error(
-      'Supabase nicht konfiguriert: VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in .env.local setzen.',
-    );
+    // Create dummy client instead of throwing — allows app to work in demo mode
+    if (!cached) {
+      cached = createClient('https://placeholder.supabase.co', 'placeholder-key', {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      });
+    }
+    return cached;
   }
   if (!cached) {
     cached = createClient(url, anonKey, {

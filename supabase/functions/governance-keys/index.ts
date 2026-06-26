@@ -15,12 +15,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const ALLOWED_SOURCES = [
   'website_scanner', 'browser_extension', 'sdk', 'api',
@@ -28,7 +23,7 @@ const ALLOWED_SOURCES = [
 ] as const;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -100,7 +95,7 @@ async function handleCreate(admin: any, userId: string, body: Record<string, unk
     .single();
   if (error) throw error;
 
-  return json({ ok: true, key: data, token });
+  return jsonResponse({ ok: true, key: data, token });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -115,7 +110,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
     .eq('tenant_id', tenant_id)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return json({ ok: true, keys: data ?? [] });
+  return jsonResponse({ ok: true, keys: data ?? [] });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -127,7 +122,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
     .select('tenant_id, revoked_at')
     .eq('id', key_id).maybeSingle();
   if (!keyRow) return jsonError(404, 'NOT_FOUND', 'key not found');
-  if (keyRow.revoked_at) return json({ ok: true, already_revoked: true });
+  if (keyRow.revoked_at) return jsonResponse({ ok: true, already_revoked: true });
 
   if (!(await isOwnerOrAdmin(admin, userId, keyRow.tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
@@ -137,7 +132,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
     .update({ revoked_at: new Date().toISOString() })
     .eq('id', key_id);
   if (error) throw error;
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -153,12 +148,3 @@ function clampInt(v: unknown, fallback: number, min: number, max: number): numbe
   return Math.min(Math.max(Math.trunc(n), min), max);
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

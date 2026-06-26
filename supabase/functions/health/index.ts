@@ -9,17 +9,15 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { checkHealth, type HealthDbClient } from '../_shared/health.ts';
+import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const VERSION = '2026.05.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, OPTIONS');
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
   if (req.method !== 'GET') {
     return json({ status: 'down', error: 'method not allowed' }, 405);
   }
@@ -38,12 +36,9 @@ Deno.serve(async (req) => {
   });
 
   const status = summary.status === 'down' ? 503 : 200;
-  return json(summary, status);
+  return jsonResponse(summary, status, corsHeaders);
 });
 
 function json(body: unknown, status: number): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
+  return jsonResponse(body, status, corsHeaders);
 }

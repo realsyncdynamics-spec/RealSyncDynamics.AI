@@ -39,12 +39,7 @@ import {
   formatPayload,
   type WebhookEnvelope,
 } from '../_shared/webhookFormat.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const ALLOWED_SOURCES = [
   'website_scanner', 'browser_extension', 'sdk', 'api',
@@ -97,7 +92,7 @@ interface IngestItem {
 const MAX_BATCH = 50;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -361,7 +356,7 @@ Deno.serve(async (req) => {
     /* swallow */
   }
 
-  return json({
+  return jsonResponse({
     ok: true,
     event_ids: insertedEvents!.map((e) => e.id),
     evidence_ids: insertedEvidence.map((e) => e.id),
@@ -529,12 +524,3 @@ function uniq<T>(arr: T[]): T[] {
   return Array.from(new Set(arr));
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

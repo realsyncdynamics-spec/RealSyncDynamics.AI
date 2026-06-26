@@ -9,12 +9,11 @@
 // into Slide 2 for instant pain-validation.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { buildCorsHeaders, handleOptions } from '../_shared/gateway.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+// Abweichende CORS-Header: kein x-client-info/apikey benötigt für PDF-View
+const corsHeaders = buildCorsHeaders('GET, OPTIONS');
+corsHeaders['Access-Control-Allow-Headers'] = 'authorization, content-type';
 
 interface AuditSnap {
   domain: string;
@@ -24,7 +23,8 @@ interface AuditSnap {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
   if (req.method !== 'GET') return text('GET only', 405);
 
   const url = new URL(req.url);

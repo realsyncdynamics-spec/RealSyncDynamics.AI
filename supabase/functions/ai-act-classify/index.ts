@@ -24,12 +24,7 @@ import {
   type WindowState,
 } from '../_shared/aiGateway/rateLimit.ts';
 import { sha256Hex } from '../_shared/hash.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 // Per-instance rate-limit windows. Same pattern as ai-gateway: this
 // endpoint is verify_jwt=false and called from the browser, every call
@@ -47,7 +42,8 @@ interface SignalMatch {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: { description?: string; registry_version?: string };
@@ -126,11 +122,11 @@ Deno.serve(async (req) => {
   const validIds = new Set(registry.use_cases.map((uc) => uc.id));
   const filtered = llmOutput.matches.filter((m) => validIds.has(m.useCaseId));
 
-  return new Response(JSON.stringify({
+  return jsonResponse({
     matches: filtered,
     hint: llmOutput.hint,
     registry_version: registry.version,
-  }), { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } });
+  });
 });
 
 async function getSecret(admin: ReturnType<typeof createClient>, name: string): Promise<string | null> {
@@ -237,9 +233,7 @@ async function callAnthropic(apiKey: string, systemPrompt: string, userText: str
 }
 
 function jsonError(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ error: { code, message } }), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
+  return jsonResponse({ error: { code, message } }, status);
 }
 
 // ---------------------------------------------------------------------------

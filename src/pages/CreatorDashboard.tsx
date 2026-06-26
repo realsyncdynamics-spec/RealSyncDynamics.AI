@@ -6,7 +6,7 @@ import {
   LayoutPanelLeft, CheckCircle2, Shield, Plus,
   MessageSquare, FolderKanban, Star, Copy, Save,
   AlertTriangle, X, Search, Globe, Library, UploadCloud,
-  Server, Receipt, Boxes,
+  Server, Receipt, Boxes, Lock,
 } from 'lucide-react';
 import { processAIGatewayRequest, ModelProvider } from '../core/ai-gateway/gateway';
 import Markdown from 'react-markdown';
@@ -169,7 +169,7 @@ export function CreatorDashboard() {
             </div>
             <nav className="space-y-0.5 px-2 text-sm text-titanium-300 font-medium">
               <button onClick={() => setActiveView('chat')} className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-titanium-900 rounded-none transition-colors">
-                <Star className="h-3.5 w-3.5 text-amber-400" /> Maschinenbau GmbH
+                <Star className="h-3.5 w-3.5 text-amber-400" /> Neuer Chat
               </button>
               <button onClick={() => setActiveView('chat')} className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-titanium-900 rounded-none transition-colors">
                 <Star className="h-3.5 w-3.5 text-amber-400" /> Policy Blueprint Q2
@@ -239,7 +239,7 @@ export function CreatorDashboard() {
               <div className="shrink-0 pt-4 px-4 sm:px-6 pb-2 border-b border-titanium-900/50">
                 <div className="flex items-center justify-between mb-3">
                   <h1 className="text-xl font-display font-bold text-titanium-50 tracking-tight flex items-center gap-2 cursor-text hover:bg-obsidian-950 p-1 -ml-1 rounded transition-colors group">
-                    Kunde: Maschinenbau GmbH – Discovery <div className="invisible group-hover:visible h-4 w-4 bg-titanium-900 rounded shrink-0 flex items-center justify-center"><ChevronDown className="h-3 w-3" /></div>
+                    Neuer Governance-Run <div className="invisible group-hover:visible h-4 w-4 bg-titanium-900 rounded shrink-0 flex items-center justify-center"><ChevronDown className="h-3 w-3" /></div>
                   </h1>
                   <div className="flex items-center gap-2">
                     <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-none bg-obsidian-800 text-titanium-300 text-xs font-semibold border border-titanium-900">
@@ -261,8 +261,7 @@ export function CreatorDashboard() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-security-900/30/50 border border-security-800/50 rounded-none px-3 py-1.5 text-xs">
                   <div className="flex flex-wrap items-center gap-2 text-titanium-300">
                     <span className="font-semibold text-security-300 hidden sm:inline">Kontext:</span>
-                    <span className="flex items-center gap-1 bg-obsidian-900 px-2 py-0.5 rounded border border-titanium-900 shadow-sm"><Globe className="h-3 w-3 text-titanium-500" /> maschinenbau-gmbh.de/agb</span>
-                    <span className="flex items-center gap-1 bg-obsidian-900 px-2 py-0.5 rounded border border-titanium-900 shadow-sm"><FileText className="h-3 w-3 text-titanium-500" /> last_audit.pdf</span>
+                    <span className="flex items-center gap-1 bg-obsidian-900 px-2 py-0.5 rounded border border-titanium-900 shadow-sm"><Globe className="h-3 w-3 text-titanium-500" /> Kein Kontext gewählt</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button className="text-security-400 font-medium hover:underline">Bearbeiten</button>
@@ -275,19 +274,22 @@ export function CreatorDashboard() {
               {/* Self-Service Schnellaktionen — keine Kontakt-/Beratungsaktionen */}
               <div className="shrink-0 px-4 sm:px-6 py-2 border-b border-titanium-900/50 flex flex-wrap gap-2">
                 {[
-                  { Icon: Globe,       label: 'Website hinzufügen',   to: '/audit?source=dashboard-add' },
-                  { Icon: Search,      label: 'Audit starten',        to: '/audit-pro?source=dashboard-scan' },
-                  { Icon: ShieldCheck, label: 'Monitoring aktivieren', to: '/app/monitoring?source=dashboard' },
-                  { Icon: FileText,    label: 'Report herunterladen', to: '/governance/reports?source=dashboard-report' },
-                  { Icon: Shield,      label: 'Evidence exportieren', to: '/governance/reports' },
-                  { Icon: CreditCard,  label: 'Jetzt upgraden',       to: '/pricing?source=dashboard-upgrade' },
-                ].map(({ Icon, label, to }) => (
+                  { Icon: Globe,       label: 'Website hinzufügen',    to: '/audit?source=dashboard-add' },
+                  { Icon: Search,      label: 'Audit starten',         to: '/governance/scans?source=dashboard-scan' },
+                  { Icon: ShieldCheck, label: 'Monitoring aktivieren', to: '/pricing?source=dashboard-monitoring', locked: true },
+                  { Icon: FileText,    label: 'Report herunterladen',  to: '/governance/reports?source=dashboard-report' },
+                  { Icon: Shield,      label: 'Evidence exportieren',  to: '/governance/reports' },
+                  { Icon: CreditCard,  label: 'Jetzt upgraden',        to: '/pricing?source=dashboard-upgrade' },
+                ].map(({ Icon, label, to, locked }) => (
                   <Link
                     key={label}
                     to={to}
+                    title={locked ? 'Verfügbar ab einem höheren Plan' : undefined}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-none bg-obsidian-800 hover:bg-titanium-900 text-titanium-200 hover:text-titanium-50 text-xs font-semibold border border-titanium-900 transition-colors"
                   >
-                    <Icon className="h-3.5 w-3.5 text-security-400" /> {label}
+                    <Icon className="h-3.5 w-3.5 text-security-400" />
+                    {label}
+                    {locked && <Lock className="h-3 w-3 text-titanium-500 ml-0.5" />}
                   </Link>
                 ))}
               </div>
@@ -303,7 +305,7 @@ export function CreatorDashboard() {
                     <h2 className="text-2xl font-display font-bold text-titanium-50 mb-8 text-center px-4">Was möchtest du heute machen?</h2>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl px-4">
-                      <button onClick={() => handleSend("Starte eine Discovery für den Kunden Maschinenbau GmbH based auf deren AGBs.")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-blue-400 hover:shadow-md transition-all text-left group">
+                      <button onClick={() => handleSend("Starte eine Compliance-Discovery für eine Domain und analysiere DSGVO- und AI-Act-Risiken.")} className="flex items-center gap-3 p-4 bg-obsidian-900 border border-titanium-900 rounded-none hover:border-blue-400 hover:shadow-md transition-all text-left group">
                         <div className="p-2 bg-security-900/30 text-security-400 rounded-none group-hover:bg-security-500 group-hover:text-white transition-colors"><Search className="h-4 w-4" /></div>
                         <div>
                           <h4 className="font-semibold text-titanium-50 text-sm">Discovery starten</h4>
@@ -509,8 +511,7 @@ export function CreatorDashboard() {
                         <div className="flex items-center gap-2 text-xs font-bold text-titanium-500 uppercase tracking-wider mb-2">
                           <Globe className="h-3.5 w-3.5" /> Aktuelle Domain
                         </div>
-                        <p className="text-sm font-medium text-titanium-50 truncate">maschinenbau-gmbh.de</p>
-                        <p className="text-xs text-titanium-400 mt-1.5 leading-relaxed line-clamp-3">"Allgemeine Geschäftsbedingungen der Maschinenbau GmbH für digitale Dienstleistungen. Stand: Q2/2026. Diese Richtlinie regelt die Verarbeitung..."</p>
+                        <p className="text-sm font-medium text-titanium-400 truncate italic">Noch keine Domain hinzugefügt</p>
                         <div className="mt-4 flex gap-2">
                           <button className="flex-1 py-1.5 bg-security-900/30 text-security-300 text-xs font-semibold rounded-none hover:bg-security-900/40 transition-colors">Sammeln</button>
                           <button className="flex-1 py-1.5 bg-obsidian-800 text-titanium-200 text-xs font-semibold rounded-none hover:bg-titanium-900 transition-colors">Zusammenfassen</button>

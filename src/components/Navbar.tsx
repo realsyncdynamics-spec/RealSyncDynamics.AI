@@ -4,21 +4,20 @@ import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 
-// Kundenorientierte Self-Service-Navigation (max. 7 Punkte). Keine
+// Kundenorientierte Self-Service-Navigation (max. 6 Punkte). Keine
 // technischen Begriffe in den Labels — Runtime / Evidence / Agent Registry
-// / Governance Engine bleiben Produktbestandteile, erscheinen aber nur auf
-// Unterseiten (unter Produkt / Automatisierung), nicht in der Hauptnav.
-// Reihenfolge: Was (Produkt) → für wen (Lösungen) → wie automatisch
-// (Automatisierung) → warum vertrauenswürdig (Sicherheit) → Preise →
-// Dokumentation → Login. Alle Ziele sind existierende Routen.
+// / Governance Engine / Automatisierung bleiben Produktbestandteile,
+// erscheinen aber nur auf Unterseiten (unter Produkt), nicht in der
+// Hauptnav. Reihenfolge: Was (Produkt) → für wen (Lösungen) → warum
+// vertrauenswürdig (Sicherheit) → Preise → Dokumentation → Login.
+// Alle Ziele sind existierende Routen.
 const NAV_ITEMS = [
-  { label: 'Produkt',         to: '/runtime' },
-  { label: 'Lösungen',        to: '/branchen' },
-  { label: 'Automatisierung', to: '/ai-governance' },
-  { label: 'Sicherheit',      to: '/sicherheit' },
-  { label: 'Preise',          to: '/pricing' },
-  { label: 'Dokumentation',   to: '/docs' },
-  { label: 'Login',           to: '/welcome' },
+  { label: 'Produkt',       to: '/runtime' },
+  { label: 'Lösungen',      to: '/branchen' },
+  { label: 'Sicherheit',    to: '/sicherheit' },
+  { label: 'Preise',        to: '/pricing' },
+  { label: 'Dokumentation', to: '/docs' },
+  { label: 'Login',         to: '/welcome' },
 ] as const;
 
 export function Navbar() {

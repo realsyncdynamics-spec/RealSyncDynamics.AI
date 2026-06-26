@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, GitMerge, Plus, Play, Pause, ExternalLink,
   CheckCircle2, AlertTriangle, Loader2, History, Activity,
-  Lock, Trash2,
+  Lock, Trash2, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -342,6 +342,7 @@ function WorkflowRow({
 function RunHistory({ tenantId }: { tenantId: string }) {
   const [runs, setRuns] = useState<(WorkflowRun & { workflow: { title: string } | null })[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -376,6 +377,7 @@ function RunHistory({ tenantId }: { tenantId: string }) {
       <table className="w-full text-sm">
         <thead className="bg-obsidian-950 text-[11px] font-bold text-titanium-400 uppercase tracking-wider">
           <tr>
+            <th className="w-8 px-3 py-2"></th>
             <th className="text-left px-3 py-2">Workflow</th>
             <th className="text-left px-3 py-2 hidden sm:table-cell">Wann</th>
             <th className="text-right px-3 py-2 hidden md:table-cell">Dauer</th>
@@ -384,27 +386,83 @@ function RunHistory({ tenantId }: { tenantId: string }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-titanium-900">
-          {runs.map((r) => (
-            <tr key={r.id} className="hover:bg-obsidian-950">
-              <td className="px-3 py-2 text-titanium-200 truncate max-w-[200px]">
-                {r.workflow?.title ?? '(gelöscht)'}
-              </td>
-              <td className="px-3 py-2 text-titanium-400 text-xs hidden sm:table-cell">
-                {new Date(r.started_at).toLocaleString('de-DE')}
-              </td>
-              <td className="px-3 py-2 text-right text-titanium-400 hidden md:table-cell tabular-nums">
-                {r.duration_ms ? `${r.duration_ms} ms` : '–'}
-              </td>
-              <td className="px-3 py-2 text-right text-titanium-200 tabular-nums">
-                ${Number(r.cost_usd).toFixed(4)}
-              </td>
-              <td className="px-3 py-2 text-center">
-                <StatusBadge status={r.status} title={r.error_message ?? r.error_code ?? r.status} />
-              </td>
-            </tr>
-          ))}
+          {runs.map((r) => {
+            const isOpen = expanded === r.id;
+            return (
+              <React.Fragment key={r.id}>
+                <tr
+                  className="hover:bg-obsidian-950 cursor-pointer"
+                  onClick={() => setExpanded(isOpen ? null : r.id)}
+                >
+                  <td className="px-3 py-2 text-titanium-500">
+                    {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  </td>
+                  <td className="px-3 py-2 text-titanium-200 truncate max-w-[200px]">
+                    {r.workflow?.title ?? '(gelöscht)'}
+                  </td>
+                  <td className="px-3 py-2 text-titanium-400 text-xs hidden sm:table-cell">
+                    {new Date(r.started_at).toLocaleString('de-DE')}
+                  </td>
+                  <td className="px-3 py-2 text-right text-titanium-400 hidden md:table-cell tabular-nums">
+                    {r.duration_ms ? `${r.duration_ms} ms` : '–'}
+                  </td>
+                  <td className="px-3 py-2 text-right text-titanium-200 tabular-nums">
+                    ${Number(r.cost_usd).toFixed(4)}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    <StatusBadge status={r.status} title={r.error_message ?? r.error_code ?? r.status} />
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr className="bg-obsidian-950">
+                    <td colSpan={6} className="px-3 py-3">
+                      <RunDetail run={r} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function RunDetail({ run }: { run: WorkflowRun }) {
+  return (
+    <div className="space-y-3 text-xs font-mono">
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="text-titanium-500 space-y-1">
+          <div>Run-ID: <span className="text-titanium-300">{run.id}</span></div>
+          {run.n8n_execution_id && (
+            <div>n8n-Execution: <span className="text-titanium-300">{run.n8n_execution_id}</span></div>
+          )}
+          {run.finished_at && (
+            <div>Beendet: <span className="text-titanium-300">{new Date(run.finished_at).toLocaleString('de-DE')}</span></div>
+          )}
+        </div>
+        {(run.error_code || run.error_message) && (
+          <div className="text-red-300 space-y-1">
+            {run.error_code && <div>Fehler-Code: {run.error_code}</div>}
+            {run.error_message && <div>{run.error_message}</div>}
+          </div>
+        )}
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <div className="text-titanium-500 uppercase tracking-wider mb-1">Input</div>
+          <pre className="bg-obsidian-900 border border-titanium-900 p-2 overflow-x-auto max-h-48 text-titanium-200">
+            {JSON.stringify(run.input_payload, null, 2)}
+          </pre>
+        </div>
+        <div>
+          <div className="text-titanium-500 uppercase tracking-wider mb-1">Output</div>
+          <pre className="bg-obsidian-900 border border-titanium-900 p-2 overflow-x-auto max-h-48 text-titanium-200">
+            {run.output_payload ? JSON.stringify(run.output_payload, null, 2) : '–'}
+          </pre>
+        </div>
+      </div>
     </div>
   );
 }

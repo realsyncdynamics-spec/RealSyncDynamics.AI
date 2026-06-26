@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Lock, MapPin } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { openCookieSettings } from '../../components/CookieConsent';
 
 const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
@@ -83,9 +84,17 @@ export function PublicFooter() {
           <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-600">
             © {new Date().getFullYear()} RealSync Dynamics.AI — Alle Rechte vorbehalten.
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-600">
-            Made & hosted in the European Union
-          </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={openCookieSettings}
+              className="font-mono text-[10px] uppercase tracking-wider text-titanium-600 hover:text-titanium-300 bg-transparent border-0 p-0 cursor-pointer"
+            >
+              Cookie-Einstellungen
+            </button>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-600">
+              Made & hosted in the European Union
+            </p>
+          </div>
         </div>
       </div>
     </footer>

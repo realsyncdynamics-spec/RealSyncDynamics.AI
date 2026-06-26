@@ -2,7 +2,7 @@
 
 import type { ObservationSeverity } from '../agent-os/types';
 
-export type ChannelKind = 'slack' | 'email' | 'webhook' | 'in_app';
+export type ChannelKind = 'slack' | 'email' | 'webhook' | 'in_app' | 'telegram';
 
 export interface ChannelRecord {
   id:                  string;

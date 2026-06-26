@@ -63,7 +63,7 @@ test.describe('Governance OS Browser Shell — Public Route Structure', () => {
     await page.goto('/pricing');
     await expect(page).not.toHaveURL(/404/);
     await expect(
-      page.getByRole('heading', { name: /welcher plan/i })
+      page.getByRole('heading', { name: /governance-abdeckung/i })
     ).toBeVisible();
     // Tarife sichtbar
     await expect(page.getByText('Free').first()).toBeVisible();
@@ -118,17 +118,18 @@ test.describe('Governance OS — Mobile Responsive', () => {
   });
 
   test('Landing Page Mobile: Founding Cohort Banner sichtbar', async ({ page }) => {
-    await page.goto('/');
+    // Marketing-Landing liegt seit dem Governance-OS-Startseiten-Wechsel unter /landing.
+    await page.goto('/landing');
     await expect(page.getByText(/Founding Cohort · Beta-Programm/i)).toBeVisible();
   });
 
   test('Landing Page Mobile: Hero Domain-Eingabe sichtbar', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/landing');
     await expect(page.getByPlaceholder(/ihre-domain\.de/i).first()).toBeVisible();
   });
 
   test('Landing Page Mobile: Governance OS Browser Module-Grid keine abgeschnittenen Badges', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/landing');
     // Governance OS Browser Section lädt
     await expect(page.getByText(/Governance OS Browser/i)).toBeVisible();
     // Kein horizontaler Overflow

@@ -5,7 +5,7 @@
 // dargestellt wird. CTAs verlinken auf BEREITS VORHANDENE Routen — Phase 1
 // fuehrt keine echten Backend-Runs aus (siehe docs/product/automation-skills.md).
 
-import type { PlanKey } from '../core/billing/types';
+import type { TierId } from '../config/pricing';
 
 export type AutomationSkillCategory = 'compliance' | 'vertrieb' | 'support' | 'dokumente' | 'meetings';
 export type AutomationSkillStatus = 'available' | 'beta' | 'planned';
@@ -27,7 +27,7 @@ export interface AutomationSkill {
   workflow: string[];
   /** Was liefert der Skill am Ende? */
   output: string[];
-  planRequired: PlanKey;
+  planRequired: TierId;
   cta: AutomationSkillCta;
 }
 
@@ -77,7 +77,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
       'Dokumente generieren',
     ],
     output: ['Datenschutzerklärung', 'AVV', 'VVT', 'TOM', 'Audit-Zusammenfassung'],
-    planRequired: 'bronze',
+    planRequired: 'starter',
     cta: { label: 'Skill aktivieren', href: '/dokumente-bundle' },
   },
   {
@@ -94,7 +94,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
       'AI-Act-relevante Entscheidungen markieren',
     ],
     output: ['Protokoll', 'To-dos', 'Compliance-Hinweise'],
-    planRequired: 'silver',
+    planRequired: 'growth',
     cta: { label: 'Workflow ansehen', href: '/app/automations?skill=meeting' },
   },
   {
@@ -112,7 +112,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
       'Ticket erzeugen',
     ],
     output: ['Bug-Ticket', 'Priorität', 'Betroffene Seite', 'Fehlerbeschreibung', 'Weiterleitung an GitHub/n8n'],
-    planRequired: 'silver',
+    planRequired: 'growth',
     cta: { label: 'Workflow ansehen', href: '/app/automations?skill=feedback' },
   },
   {
@@ -129,7 +129,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
       'Angebotsempfehlung ableiten',
     ],
     output: ['DSGVO-Risiken', 'Outreach-Text', 'Angebotsempfehlung'],
-    planRequired: 'bronze',
+    planRequired: 'starter',
     cta: { label: 'Skill aktivieren', href: '/audit' },
   },
   {
@@ -146,7 +146,7 @@ export const AUTOMATION_SKILLS: AutomationSkill[] = [
       'Ticket erstellen, falls nötig',
     ],
     output: ['Antwort', 'Quellen', 'Ticket falls nötig'],
-    planRequired: 'gold',
+    planRequired: 'agency',
     cta: { label: 'Im Dashboard öffnen', href: '/assistant' },
   },
 ];

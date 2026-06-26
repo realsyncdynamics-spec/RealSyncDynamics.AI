@@ -15,17 +15,12 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { observeAal2 } from '../_shared/requireAal2.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 type Role = 'admin' | 'editor' | 'viewer_auditor';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -97,7 +92,7 @@ async function handleCreate(admin: any, userId: string, body: Record<string, unk
   }).select('id,tenant_id,email,role,expires_at,created_at').single();
   if (error) throw error;
 
-  return json({ ok: true, invite: data, token });
+  return jsonResponse({ ok: true, invite: data, token });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -112,7 +107,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
     .eq('tenant_id', tenant_id)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return json({ ok: true, invites: data ?? [] });
+  return jsonResponse({ ok: true, invites: data ?? [] });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -125,7 +120,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
     .eq('id', invite_id).maybeSingle();
   if (!invite) return jsonError(404, 'NOT_FOUND', 'invite not found');
   if (invite.accepted_at) return jsonError(409, 'CONFLICT', 'invite already accepted');
-  if (invite.revoked_at)  return json({ ok: true, already_revoked: true });
+  if (invite.revoked_at)  return jsonResponse({ ok: true, already_revoked: true });
 
   if (!(await isOwnerOrAdmin(admin, userId, invite.tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
@@ -135,7 +130,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
     .update({ revoked_at: new Date().toISOString() })
     .eq('id', invite_id);
   if (error) throw error;
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -170,7 +165,7 @@ async function handleAccept(admin: any, userId: string, userEmail: string, body:
     .eq('id', invite.id);
   if (updErr) throw updErr;
 
-  return json({ ok: true, tenant_id: invite.tenant_id, role: invite.role });
+  return jsonResponse({ ok: true, tenant_id: invite.tenant_id, role: invite.role });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -180,12 +175,3 @@ async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Pro
   return data?.role === 'owner' || data?.role === 'admin';
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

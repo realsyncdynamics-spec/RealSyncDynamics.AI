@@ -91,12 +91,13 @@ describe('skill bindings end-to-end', () => {
   let rt: ReturnType<typeof makeRuntime>;
   beforeEach(() => { rt = makeRuntime(); });
 
-  it('registers all 7 skills under skills.<snake_case> ids', () => {
-    expect(rt.bindings.length).toBe(7);
+  it('registers all 8 skills under skills.<snake_case> ids', () => {
+    expect(rt.bindings.length).toBe(8);
     const ids = rt.registry.list().map((m) => m.id).sort();
     expect(ids).toContain('skills.marketing_performance_analytics');
     expect(ids).toContain('skills.data_exploration');
     expect(ids).toContain('skills.sales_draft_outreach');
+    expect(ids).toContain('skills.gdpr_audit');
   });
 
   it('executes a low-risk skill (marketing.calculate_conversion_rate) inline', async () => {

@@ -12,17 +12,13 @@
 // the audit trail captures who decided, when, and why.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const ALLOWED_STATUS = ['pending', 'approved', 'rejected', 'expired'];
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -83,7 +79,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
     .order('created_at', { ascending: false })
     .limit(200);
   if (error) throw error;
-  return json({ ok: true, approvals: data ?? [] });
+  return jsonResponse({ ok: true, approvals: data ?? [] });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -141,7 +137,7 @@ async function handleResolve(
     },
   });
 
-  return json({ ok: true, status: target, resolved_at: resolvedAt });
+  return jsonResponse({ ok: true, status: target, resolved_at: resolvedAt });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -151,12 +147,3 @@ async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Pro
   return data?.role === 'owner' || data?.role === 'admin';
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

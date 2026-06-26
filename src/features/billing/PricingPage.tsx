@@ -13,7 +13,7 @@ import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance
 /**
  * /pricing — public Pricing-Page mit 5 Paketen (Free → 1.999 €).
  *
- * Tier-Daten kommen ausschliesslich aus src/config/pricing.ts
+ * Tier-Daten kommen ausschließlich aus src/config/pricing.ts
  * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
  * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-06):
@@ -67,13 +67,21 @@ export function PricingPage() {
             </div>
           </div>
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Welcher Plan passt zu Ihrem Setup?
+            Welche Governance-Abdeckung passt zu Ihnen?
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
             Vom kostenlosen Erst-Scan bis zur kompletten Governance-Runtime — alle Pläne sind EU-gehostet,
-            alle Pläne enthalten den AVV. Wählen Sie nach Anzahl der Domains und nach Tiefe der gewünschten
-            Continuous-Compliance-Schicht.
+            alle Pläne enthalten den AVV. Sie wählen nicht nach Anzahl der Webseiten, sondern nach Ihrer
+            Governance-Komplexität: Branche, Datenkategorien, KI-Nutzung, Drittanbieter und Dokumentationspflichten.
           </p>
+
+          {/* GCS-Teaser — Paketempfehlung nach Governance-Komplexität */}
+          <Link
+            to="/governance-score"
+            className="mt-7 inline-flex items-center gap-2 surface-mono px-5 py-3 text-sm font-bold rounded-none"
+          >
+            Governance Complexity Score ermitteln <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 

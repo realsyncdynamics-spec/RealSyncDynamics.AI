@@ -68,7 +68,7 @@ export function BrowserTopBar({
           className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-titanium-200 bg-obsidian-800 border border-titanium-800 hover:border-titanium-600 hover:text-titanium-50 transition-colors"
         >
           <FileBarChart2 className="h-3.5 w-3.5" />
-          Report
+          Bericht
         </button>
         <button
           onClick={onOpenAssistant}

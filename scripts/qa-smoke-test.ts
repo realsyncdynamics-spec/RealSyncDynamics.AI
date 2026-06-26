@@ -10,7 +10,7 @@
 // Exit code 1 if any test FAILs.
 
 const BASE_URL     = process.env.RSD_BASE_URL ?? 'https://realsyncdynamicsai.de';
-const SUPABASE_URL = (process.env.SUPABASE_URL ?? 'https://ebljyceifhnlzhjfyxup.supabase.co').replace(/\/$/, '');
+const SUPABASE_URL = (process.env.SUPABASE_URL ?? 'https://ebljyceifhnlzhjfyxup.supabase.co').replace(/\/$/,  '');
 const TIMEOUT_MS   = Number(process.env.RSD_SMOKE_TIMEOUT_MS) || 15_000;
 const ANON_KEY     = process.env.SUPABASE_ANON_KEY ?? '';
 

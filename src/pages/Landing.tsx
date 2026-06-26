@@ -29,29 +29,51 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, FileCheck2, BadgeCheck, Workflow, Sparkles,
-  Globe, Lock, Activity, Scale, Archive, ClipboardCheck, Search, ScanSearch,
+  Globe, Lock, Activity, Scale, Archive, ClipboardCheck, ScanSearch,
+  Home, Cpu, AlertTriangle, Bot, GitMerge, FileText,
+  Boxes, Network, Server, Eye, Package, Landmark,
 } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { LandingNavbar } from '../components/LandingNavbar';
+import { openCookieSettings } from '../components/CookieConsent';
 import { CTA } from '../content/runtimeVocab';
 import { AUTOMATION_SKILLS, type AutomationSkillCategory } from '../content/automationSkills';
 import { AutomationSkillStatusBadge } from '../features/automations/AutomationSkillCard';
+import { AUTOMATION_SKILL_STATUS_LABEL, type AutomationSkillStatus } from '../content/automationSkills';
 
 export function Landing() {
   return (
     <>
-      <Navbar />
-      <main className="bg-obsidian-950 text-titanium-100 pt-14">
+      <LandingNavbar />
+      <main className="bg-white text-slate-900 pt-14">
         <Hero />
         <TrustStrip />
         <ProductMechanics />
         <AudienceSection />
         <AutomationSkillsTeaser />
         <GovernanceOsBrowser />
+        <DigitalSovereigntySection />
+        <SupplyChainGovernanceSection />
         <BetaProgramSection />
         <FinalCta />
         <Footer />
       </main>
     </>
+  );
+}
+
+// ─── Light-mode Skill-Status-Badge ───────────────────────────────────
+
+const LIGHT_STATUS_CLS: Record<AutomationSkillStatus, string> = {
+  available: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  beta:      'bg-sky-50 text-sky-700 border-sky-200',
+  planned:   'bg-amber-50 text-amber-700 border-amber-200',
+};
+
+function LightStatusBadge({ status }: { status: AutomationSkillStatus }) {
+  return (
+    <span className={`inline-flex items-center gap-1 border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide ${LIGHT_STATUS_CLS[status]}`}>
+      {AUTOMATION_SKILL_STATUS_LABEL[status]}
+    </span>
   );
 }
 
@@ -82,45 +104,51 @@ function Hero() {
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div>
           <p className="inline-flex items-center rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.22em] text-petrol-300 mb-5">
-            EU AI Act + DSGVO Governance OS
+            Governance OS · DSGVO · EU AI Act · Digitale Souveränität
           </p>
 
           <h1 className="font-display font-bold tracking-tight text-titanium-50 text-3xl sm:text-5xl leading-[1.08]">
-            Kontinuierliche Governance für<br className="hidden sm:block" /> Websites, KI-Systeme und Prozesse.
+            Das Governance OS für DSGVO, EU AI Act und digitale Souveränität.
           </h1>
 
           <p className="mt-6 text-base sm:text-lg text-titanium-300 max-w-xl leading-relaxed">
-            Überwachen Sie DSGVO-, AI-Act- und Compliance-Risiken kontinuierlich
-            statt nur beim Audit — RealSyncDynamics.AI erkennt Risiken, erzeugt
-            Evidence und hält Sie audit-ready.
+            RealSyncDynamics.AI überwacht Websites, KI-Systeme, Drittanbieter,
+            Risiken und Nachweise kontinuierlich — mit Evidence Vault, Governance
+            Agents und auditfähiger Dokumentation im Browser-Format.
           </p>
 
-          {/* Primary CTA: Domain-Scan */}
-          <form onSubmit={handleScan} className="mt-10 flex flex-col sm:flex-row max-w-xl rounded-chip border border-titanium-700 overflow-hidden focus-within:border-petrol-400 transition-colors">
+          {/* Primary CTA: Self-Serve, kein Demo-Zwang */}
+          <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <Link
+              to="/app"
+              className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
+            >
+              {CTA.startTrial} <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              to="/audit?source=hero"
+              className="inline-flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-200 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
+            >
+              {CTA.startGovernanceAudit}
+            </Link>
+          </div>
+
+          {/* Domain-Scan Teaser */}
+          <form onSubmit={handleScan} className="mt-5 flex flex-col sm:flex-row max-w-sm rounded-chip border border-titanium-800 overflow-hidden focus-within:border-petrol-500/50 transition-colors">
             <input
               type="text"
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
-              placeholder="ihre-domain.de"
-              className="flex-1 bg-obsidian-900 px-4 py-3 text-sm text-titanium-50 placeholder-titanium-600 font-mono focus:outline-none"
+              placeholder="ihre-domain.de scannen …"
+              className="flex-1 bg-obsidian-900 px-4 py-2 text-xs text-titanium-200 placeholder-titanium-600 font-mono focus:outline-none"
             />
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors shrink-0"
+              className="inline-flex items-center justify-center px-4 py-2 text-xs font-mono text-petrol-300 hover:text-petrol-100 border-l border-titanium-800 transition-colors shrink-0"
             >
-              {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
+              Scan <ArrowRight className="h-3 w-3 ml-1" />
             </button>
           </form>
-
-          {/* Secondary CTA */}
-          <div className="mt-5">
-            <Link
-              to="/automations"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-titanium-300 hover:text-titanium-50 transition-colors"
-            >
-              {CTA.viewAutomationSkills} <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
 
           <div className="mt-8 flex flex-wrap gap-2">
             {HERO_TRUST_ITEMS.map(({ Icon, label }) => (
@@ -228,7 +256,7 @@ const MECHANICS_STEPS = [
 
 function ProductMechanics() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+    <section className="border-b border-slate-100 bg-white px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-5xl mx-auto">
         <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3 text-center">
           Produktmechanik
@@ -308,14 +336,14 @@ const SKILL_INPUT: Record<AutomationSkillCategory, string> = {
 
 function AutomationSkillsTeaser() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+    <section className="border-b border-slate-100 bg-white px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-end justify-between gap-4 mb-10 flex-wrap">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-slate-400 mb-3">
               Wählen · Aktivieren · Nutzen
             </p>
-            <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50">
+            <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-slate-900">
               Automation Skills
             </h2>
           </div>
@@ -362,12 +390,16 @@ function AutomationSkillsTeaser() {
 // ─── 6 · Governance OS Browser ──────────────────────────────────────
 
 const GOVERNANCE_OS_MODULES = [
-  { Icon: ScanSearch, label: 'Scanner' },
-  { Icon: Archive, label: 'Evidence Vault' },
-  { Icon: Scale, label: 'AI Risk Registry' },
-  { Icon: Activity, label: 'Monitoring' },
-  { Icon: ClipboardCheck, label: 'Audit Trail' },
-  { Icon: ShieldCheck, label: 'Policies' },
+  { Icon: Home,          label: 'Übersicht',     route: '/app',           color: 'text-titanium-300' },
+  { Icon: Globe,         label: 'Websites',      route: '/app/websites',  color: 'text-petrol-300' },
+  { Icon: Cpu,           label: 'KI-Systeme',    route: '/app/ai-systems',color: 'text-petrol-300' },
+  { Icon: AlertTriangle, label: 'Risiken',       route: '/app/risks',     color: 'text-red-400' },
+  { Icon: FileCheck2,    label: 'Evidence Vault',route: '/app/evidence',  color: 'text-petrol-300' },
+  { Icon: Activity,      label: 'Monitoring',    route: '/app/monitoring',color: 'text-ai-cyan-400' },
+  { Icon: Bot,           label: 'Agenten',       route: '/app/agents',    color: 'text-petrol-300' },
+  { Icon: GitMerge,      label: 'Workflows',     route: '/app/workflows', color: 'text-titanium-300' },
+  { Icon: FileText,      label: 'Dokumente',     route: '/app/documents', color: 'text-titanium-300' },
+  { Icon: ClipboardCheck,label: 'Audit Export',  route: '/app/audit',     color: 'text-petrol-300' },
 ] as const;
 
 function GovernanceOsBrowser() {
@@ -378,22 +410,138 @@ function GovernanceOsBrowser() {
           Governance OS Browser
         </p>
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
-          Nicht nur ein Scanner. Ein Betriebssystem für Compliance, Governance, Evidence und AI-Risikomanagement.
+          Ein Betriebssystem für Compliance, Evidence und AI-Risikomanagement.
         </h2>
         <p className="text-sm text-titanium-400 max-w-xl mb-10 leading-relaxed">
-          Alle Module greifen auf denselben Prüfpfad zu — ein Befund aus dem
-          Scanner wird zur Evidence, die Evidence speist die Audit-Trail-Sicht.
+          Alle Module greifen auf denselben Prüfpfad zu — ein Befund aus Websites
+          wird zur Evidence, die Evidence speist Risk Center, Monitoring und
+          Audit-Export.
         </p>
         <div className="rounded-panel border border-titanium-800 bg-obsidian-900 p-5 sm:p-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {GOVERNANCE_OS_MODULES.map(({ Icon, label }) => (
-              <div key={label} className="rounded-card border border-titanium-800 bg-obsidian-950 p-4 flex items-center gap-2.5">
-                <Icon className="h-4 w-4 text-petrol-300 shrink-0" />
-                <span className="font-mono text-[11px] uppercase tracking-wider text-titanium-300">{label}</span>
-              </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
+            {GOVERNANCE_OS_MODULES.map(({ Icon, label, route, color }) => (
+              <Link
+                key={label}
+                to={route}
+                className="rounded-card border border-titanium-800 bg-obsidian-950 p-3 flex items-center gap-2 hover:border-petrol-500/40 transition-colors group"
+              >
+                <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} />
+                <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-400 group-hover:text-titanium-200 transition-colors">{label}</span>
+              </Link>
             ))}
           </div>
+          <div className="flex justify-end border-t border-titanium-800 pt-4">
+            <Link
+              to="/app"
+              className="inline-flex items-center gap-2 text-xs font-mono text-petrol-300 hover:text-petrol-100 transition-colors"
+            >
+              Governance OS öffnen <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 6b · Digitale Souveränität ─────────────────────────────────────
+
+const SOVEREIGNTY_PILLARS = [
+  { Icon: Network, title: 'Transparente Software- & Anbieterstruktur', body: 'Drittanbieter, Skripte, Tracker und KI-Dienste werden sichtbar gemacht — wer verarbeitet welche Daten, in welcher Region.' },
+  { Icon: ShieldCheck, title: 'Nachweisbare DSGVO- & AI-Act-Governance', body: 'Pflichten werden zu prüfbaren Kontrollen — klassifiziert nach DSGVO-Artikel und EU-AI-Act-Risikoklasse.' },
+  { Icon: Eye, title: 'Kontrolle über Drittanbieter & Datenflüsse', body: 'Tracker, KI-Systeme, externe Schnittstellen und Datentransfers bleiben unter laufender Kontrolle statt im Verborgenen.' },
+  { Icon: Archive, title: 'Evidence Vault für prüfbare Nachweise', body: 'Jeder Befund wird zu auditfähiger Evidence — versioniert, nachvollziehbar und exportierbar für Aufsicht und Audit.' },
+  { Icon: Activity, title: 'Kontinuierliches Monitoring statt Einmal-Audit', body: 'Governance läuft als fortlaufender Prozess weiter — Drift, neue Tracker und Änderungen werden erkannt, sobald sie entstehen.' },
+  { Icon: Bot, title: 'Governance Agents für Prüfungen & Maßnahmen', body: 'Spezialisierte Agents prüfen Befunde, schlagen Maßnahmen vor und schreiben Nachweise in den Prüfpfad.' },
+] as const;
+
+function DigitalSovereigntySection() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-petrol-300 mb-3 inline-flex items-center gap-2">
+          <Landmark className="h-3.5 w-3.5" /> Digitale Souveränität
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
+          Digitale Souveränität als Betriebsmodell.
+        </h2>
+        <p className="text-sm text-titanium-400 max-w-2xl mb-10 leading-relaxed">
+          RealSyncDynamics.AI hilft Unternehmen, digitale Souveränität praktisch
+          umzusetzen — als laufende, nachweisbare Kontrolle über Software,
+          Anbieter, KI-Systeme und Datenflüsse. Europäisch gehostet, auditfähig,
+          ohne Abhängigkeit von Einmal-Prüfungen.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {SOVEREIGNTY_PILLARS.map(({ Icon, title, body }) => (
+            <div key={title} className="rounded-card border border-titanium-800 bg-obsidian-900 p-5">
+              <Icon className="h-5 w-5 text-petrol-300 mb-3" />
+              <h3 className="font-display font-semibold text-titanium-50 mb-2 text-[15px] leading-snug">{title}</h3>
+              <p className="text-sm text-titanium-400 leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8">
+          <Link
+            to="/digitale-souveraenitaet"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-petrol-300 hover:text-petrol-200"
+          >
+            Digitale Souveränität verstehen <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── 6c · Software- & Anbieter-Governance (Supply Chain) ────────────
+
+const SUPPLY_CHAIN_CAPABILITIES = [
+  { Icon: Network, label: 'Drittanbieter-Erkennung', ready: true },
+  { Icon: ScanSearch, label: 'Tracker- & Script-Erkennung', ready: true },
+  { Icon: Cpu, label: 'KI-System-Dokumentation', ready: true },
+  { Icon: Globe, label: 'Anbieter- & Transferprüfung', ready: true },
+  { Icon: Scale, label: 'Risikoklassifizierung', ready: true },
+  { Icon: ClipboardCheck, label: 'Audit-Trail & Evidence', ready: true },
+  { Icon: Boxes, label: 'SBOM- & Supply-Chain-Governance', ready: false },
+  { Icon: Package, label: 'Open-Source-Komponenten-Inventar', ready: false },
+] as const;
+
+function SupplyChainGovernanceSection() {
+  return (
+    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+      <div className="max-w-5xl mx-auto">
+        <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-3 inline-flex items-center gap-2">
+          <Server className="h-3.5 w-3.5 text-petrol-300" /> Software Supply Chain
+        </p>
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3 max-w-2xl">
+          Governance für Software, Anbieter und Open-Source-Komponenten.
+        </h2>
+        <p className="text-sm text-titanium-400 max-w-2xl mb-10 leading-relaxed">
+          Wer Software einsetzt, verantwortet auch deren Lieferkette.
+          RealSyncDynamics.AI macht Drittanbieter, Skripte und KI-Dienste sichtbar,
+          bewertet sie evidenzbasiert und ist vorbereitet für SBOM-, Anbieter- und
+          Software-Supply-Chain-Governance.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {SUPPLY_CHAIN_CAPABILITIES.map(({ Icon, label, ready }) => (
+            <div key={label} className="flex items-center gap-3 rounded-card border border-titanium-800 bg-obsidian-900 p-4">
+              <Icon className="h-4 w-4 shrink-0 text-petrol-300" />
+              <span className="flex-1 text-sm text-titanium-200">{label}</span>
+              <span
+                className={`inline-flex items-center rounded-chip border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+                  ready
+                    ? 'border-petrol-500/40 bg-petrol-500/10 text-petrol-300'
+                    : 'border-titanium-700 bg-obsidian-950 text-titanium-500'
+                }`}
+              >
+                {ready ? 'Aktiv' : 'Vorbereitet'}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 font-mono text-[10px] uppercase tracking-wider text-titanium-600">
+          „Vorbereitet" — Roadmap-Funktionen für SBOM- & Software-Supply-Chain-Governance.
+        </p>
       </div>
     </section>
   );
@@ -410,10 +558,10 @@ function BetaProgramSection() {
         <div className="inline-flex items-center gap-2 mb-4 rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 text-petrol-300 text-xs font-mono uppercase tracking-wider">
           <Sparkles className="h-4 w-4" /> Founding Cohort · Beta-Programm
         </div>
-        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
+        <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-slate-900 mb-3">
           5 Unternehmen erhalten 12 Monate Enterprise kostenlos.
         </h2>
-        <p className="text-sm text-titanium-400 max-w-xl mx-auto mb-6">
+        <p className="text-sm text-slate-600 max-w-xl mx-auto mb-6">
           Im Gegenzug: {BETA_GEGENLEISTUNG.join(' · ')}.
         </p>
         <Link
@@ -431,29 +579,30 @@ function BetaProgramSection() {
 
 function FinalCta() {
   return (
-    <section className="border-b border-titanium-900 px-4 sm:px-6 py-16 sm:py-20">
+    <section className="border-b border-slate-100 bg-slate-50 px-4 sm:px-6 py-16 sm:py-20">
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
-          Starten Sie noch heute — völlig kostenlos
+          Governance OS — kostenlos starten
         </h2>
         <p className="text-sm text-titanium-400 max-w-xl mx-auto mb-8">
-          Domain eintragen, Scan startet sofort. Keine Karte, keine versteckten Gebühren.
+          Sofort einsatzbereit. Websites, KI-Systeme und Risiken überwachen —
+          keine Kreditkarte, kein Setup.
         </p>
         <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3">
           <Link
-            to="/audit?source=final-cta"
+            to="/app"
             className="inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-400 text-obsidian-950 px-6 py-3 text-sm font-semibold hover:bg-petrol-300 transition-colors"
           >
-            {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
+            {CTA.startFree} <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/welcome?source=final-cta"
+            to="/audit?source=final-cta"
             className="inline-flex items-center justify-center gap-2 rounded-chip border border-titanium-700 text-titanium-100 px-6 py-3 text-sm font-semibold hover:border-titanium-500 transition-colors"
           >
-            {CTA.openDashboard}
+            {CTA.startFreeAudit}
           </Link>
         </div>
-        <p className="text-xs text-titanium-500 mt-6 font-mono uppercase tracking-wider">
+        <p className="text-xs text-slate-400 mt-6 font-mono uppercase tracking-wider">
           Keine Kreditkarte erforderlich · EU-Hosting · DSGVO-konform
         </p>
       </div>
@@ -480,12 +629,18 @@ function Footer() {
         </div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[12px] border-t border-titanium-900 pt-6">
           <div className="font-mono uppercase tracking-[0.2em]">
-            RealSyncDynamics.AI · EU-Frankfurt
+            Governance OS · RealSyncDynamics.AI · EU-Frankfurt
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-2">
             <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-titanium-200">Datenschutz</Link>
             <Link to="/agb" className="hover:text-titanium-200">AGB</Link>
+            <button
+              onClick={openCookieSettings}
+              className="hover:text-titanium-200 cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[inherit]"
+            >
+              Cookie-Einstellungen
+            </button>
             <span className="text-titanium-700">© {year}</span>
           </nav>
         </div>

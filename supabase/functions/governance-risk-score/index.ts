@@ -25,12 +25,7 @@
 // event ids.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 interface AssetRow {
   id: string;
@@ -49,7 +44,7 @@ interface EventRow {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -65,13 +60,13 @@ Deno.serve(async (req) => {
   try {
     if (body.recalculate_all && body.tenant_id) {
       const out = await recalcTenant(admin, body.tenant_id as string);
-      return json({ ok: true, ...out });
+      return jsonResponse({ ok: true, ...out });
     }
     const asset_id = body.asset_id as string;
     if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required (or recalculate_all+tenant_id)');
     const out = await recalcOne(admin, asset_id);
     if (!out) return jsonError(404, 'NOT_FOUND', 'asset not found');
-    return json({ ok: true, ...out });
+    return jsonResponse({ ok: true, ...out });
   } catch (e) {
     return jsonError(500, 'INTERNAL', (e as Error).message);
   }
@@ -166,12 +161,3 @@ async function recalcOne(admin: any, assetId: string): Promise<{ score: number; 
   return { score, previous, delta: score - previous, reason };
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

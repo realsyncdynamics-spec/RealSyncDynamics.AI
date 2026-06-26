@@ -6,6 +6,11 @@ import {
   type AutomationSkill,
   type AutomationSkillStatus,
 } from '../../content/automationSkills';
+import { AutomationSkillRunner } from './AutomationSkillRunner';
+
+// Skills mit Direct-Execution in automation-trigger (kein n8n nötig, siehe
+// supabase/functions/automation-trigger/index.ts).
+const DIRECT_RUN_SKILLS = new Set(['dsgvo-audit']);
 
 const STATUS_CLS: Record<AutomationSkillStatus, string> = {
   available: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
@@ -15,10 +20,11 @@ const STATUS_CLS: Record<AutomationSkillStatus, string> = {
 
 const PLAN_LABEL: Record<AutomationSkill['planRequired'], string> = {
   free: 'Free',
-  bronze: 'Bronze',
-  silver: 'Silver',
-  gold: 'Gold',
-  enterprise_public: 'Enterprise',
+  starter: 'Starter',
+  growth: 'Growth',
+  agency: 'Agency',
+  scale: 'Scale',
+  enterprise: 'Enterprise',
 };
 
 export function AutomationSkillStatusBadge({ status }: { status: AutomationSkillStatus }) {
@@ -29,7 +35,9 @@ export function AutomationSkillStatusBadge({ status }: { status: AutomationSkill
   );
 }
 
-export function AutomationSkillCard({ skill }: { skill: AutomationSkill }) {
+export function AutomationSkillCard({ skill, tenantId }: { skill: AutomationSkill; tenantId: string | null }) {
+  const canRunDirect = tenantId && DIRECT_RUN_SKILLS.has(skill.id) && skill.status !== 'planned';
+
   return (
     <article id={skill.id} className="border border-titanium-800 bg-obsidian-900">
       <header className="flex items-start justify-between gap-3 border-b border-titanium-800 p-4">
@@ -57,6 +65,8 @@ export function AutomationSkillCard({ skill }: { skill: AutomationSkill }) {
           <Tags items={skill.output} />
         </Section>
       </div>
+
+      {canRunDirect && <AutomationSkillRunner tenantId={tenantId!} />}
 
       <footer className="flex items-center justify-end border-t border-titanium-800 p-3">
         <Link

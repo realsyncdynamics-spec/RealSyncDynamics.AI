@@ -187,6 +187,7 @@ const GovernanceDpiasView = lazy(() => import('./features/governance/DpiasView')
 const GovernanceDsrTrackerView = lazy(() => import('./features/governance/DsrTrackerView').then((m) => ({ default: m.DsrTrackerView })));
 const GovernanceIncidentsView = lazy(() => import('./features/governance/IncidentsView').then((m) => ({ default: m.IncidentsView })));
 const RiskCenterView = lazy(() => import('./features/governance/risks/RiskCenterView').then((m) => ({ default: m.RiskCenterView })));
+const SecuritySignalsView = lazy(() => import('./features/governance/security-signals/SecuritySignalsView').then((m) => ({ default: m.SecuritySignalsView })));
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
@@ -525,6 +526,7 @@ function RoutesWithTracking() {
       <Route path="/app/evidence/audit" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/legacy" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
+      <Route path="/app/security-signals" element={<GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell>} />
       <Route path="/app/legal-rag" element={<LegalRagView />} />
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />

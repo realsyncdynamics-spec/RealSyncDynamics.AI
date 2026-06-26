@@ -4,6 +4,7 @@
 // Output: HTML-Report in Storage + 24h Signed-URL
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // Owner-Daten (email/company/domain des Audit-Anforderers) bleiben Klartext.
 // Geschwaerzt werden NUR die issues[].title/detail/paragraph_ref — dort
@@ -11,11 +12,6 @@ import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts
 // Scanner einsammelt und die nicht in einem geteilten Report landen sollen.
 const REDACTION_POLICY: RedactionPolicy = 'third_party_only';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface Issue {
@@ -85,23 +81,17 @@ ${actionsHtml}
 </body></html>`;
 }
 
-function okJson(body: unknown): Response {
-  return new Response(JSON.stringify(body), { headers: { ...corsHeaders, 'content-type': 'application/json' } });
-}
-function errorJson(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ ok: false, error: { code, message } }), { status, headers: { ...corsHeaders, 'content-type': 'application/json' } });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return errorJson(405, 'BAD_REQUEST', 'POST only');
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
   const SUPA = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
   let body: { audit_id?: string };
-  try { body = await req.json(); } catch { return errorJson(400, 'BAD_JSON', 'invalid json'); }
+  try { body = await req.json(); } catch { return jsonError(400, 'BAD_JSON', 'invalid json'); }
   const auditId = (body.audit_id ?? '').trim();
-  if (!UUID_RE.test(auditId)) return errorJson(400, 'INVALID_AUDIT_ID', 'valid uuid required');
+  if (!UUID_RE.test(auditId)) return jsonError(400, 'INVALID_AUDIT_ID', 'valid uuid required');
   const admin = createClient(SUPA, SRK, { auth: { persistSession: false } });
   const jwt = req.headers.get('authorization')?.replace('Bearer ', '').trim() ?? '';
   let callerEmail: string | null = null;
@@ -113,11 +103,11 @@ Deno.serve(async (req) => {
   const { data: audit, error: auditErr } = await admin.from('gdpr_audits')
     .select('id,url,domain,email,company,score,severity,issues,fetched_status,fetched_at,created_at')
     .eq('id', auditId).single();
-  if (auditErr || !audit) return errorJson(404, 'NOT_FOUND', 'audit not found');
+  if (auditErr || !audit) return jsonError(404, 'NOT_FOUND', 'audit not found');
   if (callerEmail && callerEmail.toLowerCase() !== audit.email.toLowerCase()) {
     const { data: profile } = await admin.from('profiles').select('is_super_admin')
       .eq('id', (await admin.auth.admin.getUserByEmail(callerEmail)).data.user?.id ?? '').single();
-    if (!profile?.is_super_admin) return errorJson(403, 'FORBIDDEN', 'not your audit');
+    if (!profile?.is_super_admin) return jsonError(403, 'FORBIDDEN', 'not your audit');
   }
   // PII-Redaction nur auf den issues-Teilbaum. Owner-Felder (email, company,
   // domain) bleiben Klartext — der Bericht ist fuer den Owner selbst.
@@ -129,9 +119,9 @@ Deno.serve(async (req) => {
   const htmlBytes = new TextEncoder().encode(buildHtml(redactedAudit, `https://realsyncdynamicsai.de/audit/report/${auditId}`));
   const { error: upErr } = await admin.storage.from('documents')
     .upload(storagePath, htmlBytes, { contentType: 'text/html; charset=utf-8', upsert: true, cacheControl: '3600' });
-  if (upErr) return errorJson(500, 'UPLOAD_FAILED', upErr.message);
+  if (upErr) return jsonError(500, 'UPLOAD_FAILED', upErr.message);
   const { data: signed, error: signErr } = await admin.storage.from('documents').createSignedUrl(storagePath, 86400);
-  if (signErr || !signed) return errorJson(500, 'SIGNED_URL_FAILED', signErr?.message ?? 'unknown');
+  if (signErr || !signed) return jsonError(500, 'SIGNED_URL_FAILED', signErr?.message ?? 'unknown');
   await admin.from('gdpr_audits').update({
     methodology: { audit_engine: '2026.05.0', report_generated_at: new Date().toISOString(), report_storage_path: storagePath },
   }).eq('id', auditId);
@@ -145,7 +135,7 @@ Deno.serve(async (req) => {
     payload_bytes: htmlBytes.byteLength,
   });
   const issueStats = (audit.issues as Issue[]).reduce((acc, i) => { acc[i.severity] = (acc[i.severity] ?? 0) + 1; return acc; }, {} as Record<string, number>);
-  return okJson({
+  return jsonResponse({
     ok: true,
     audit_id: auditId,
     domain: audit.domain,

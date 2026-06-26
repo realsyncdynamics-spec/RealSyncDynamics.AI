@@ -14,15 +14,13 @@
 //     $$ SELECT net.http_get('https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/daily-digest') $$);
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -38,7 +36,7 @@ Deno.serve(async (req) => {
 
   const apiKey = await getResendKey(supa);
   if (!apiKey) {
-    return json({ ok: true, skipped: 'no_api_key', stats });
+    return jsonResponse({ ok: true, skipped: 'no_api_key', stats }, 200, corsHeaders);
   }
 
   const html = renderEmail(stats);
@@ -58,11 +56,11 @@ Deno.serve(async (req) => {
 
   if (!resp.ok) {
     const err = await resp.text();
-    return jsonError(502, 'RESEND_FAILED', err.slice(0, 500));
+    return jsonError(502, 'RESEND_FAILED', err.slice(0, 500), corsHeaders);
   }
 
   const sent = await resp.json();
-  return json({ ok: true, sent_id: sent.id, to: recipient, stats });
+  return jsonResponse({ ok: true, sent_id: sent.id, to: recipient, stats }, 200, corsHeaders);
 });
 
 async function fetchStatsDirect(supa: ReturnType<typeof createClient>) {
@@ -178,9 +176,3 @@ function renderEmail(stats: any): string {
 </body></html>`;
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

@@ -18,17 +18,12 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const RISK_LEVELS = ['info', 'low', 'medium', 'high', 'critical'];
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -99,7 +94,7 @@ async function handleCreate(admin: any, userId: string, body: Record<string, unk
     .single();
   if (error) throw error;
 
-  return json({ ok: true, webhook: data, secret });
+  return jsonResponse({ ok: true, webhook: data, secret });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -114,7 +109,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
     .eq('tenant_id', tenant_id)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return json({ ok: true, webhooks: data ?? [] });
+  return jsonResponse({ ok: true, webhooks: data ?? [] });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -133,7 +128,7 @@ async function handleToggle(admin: any, userId: string, body: Record<string, unk
   const { error } = await admin.from('governance_webhooks')
     .update({ enabled }).eq('id', webhook_id);
   if (error) throw error;
-  return json({ ok: true, enabled });
+  return jsonResponse({ ok: true, enabled });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -144,7 +139,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
   const { data: row } = await admin.from('governance_webhooks')
     .select('tenant_id, revoked_at').eq('id', webhook_id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'webhook not found');
-  if (row.revoked_at) return json({ ok: true, already_revoked: true });
+  if (row.revoked_at) return jsonResponse({ ok: true, already_revoked: true });
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) {
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
   }
@@ -153,7 +148,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
     .update({ revoked_at: new Date().toISOString(), enabled: false })
     .eq('id', webhook_id);
   if (error) throw error;
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -163,12 +158,3 @@ async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Pro
   return data?.role === 'owner' || data?.role === 'admin';
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

@@ -16,12 +16,7 @@
 //      (User druckt dann via Browser → PDF)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DOC_TYPES = ['dse', 'avv', 'vvt', 'tom'] as const;
@@ -389,18 +384,9 @@ function render(docType: DocType, audit: AuditRow): string {
   }
 }
 
-function jsonResponse(status: number, body: Record<string, unknown>): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string) {
-  return jsonResponse(status, { ok: false, error: { code, message } });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: { audit_id?: string; doc_type?: string; tenant_id?: string };
@@ -446,7 +432,7 @@ Deno.serve(async (req) => {
     .single();
   if (insertErr || !doc) return jsonError(500, 'INSERT_FAILED', insertErr?.message ?? 'insert failed');
 
-  return jsonResponse(200, {
+  return jsonResponse({
     ok: true,
     document_id: doc.id,
     doc_type: docType,

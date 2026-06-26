@@ -8,12 +8,9 @@
 // Continuous-Compliance-MVP — Real-Time-Monitoring per Daily-Recheck.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { buildCorsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 interface DueSubscription {
   id: string;
@@ -38,7 +35,8 @@ const SCORE_DRIFT_THRESHOLD = -10;
 const RECHECK_INTERVAL_DAYS = 7;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -57,7 +55,7 @@ Deno.serve(async (req) => {
     .limit(25);
 
   if (dueErr) {
-    return jsonResp({ ok: false, error: dueErr.message }, 500);
+    return jsonResponse({ ok: false, error: dueErr.message }, 500, corsHeaders);
   }
 
   const due = (dueRaw ?? []) as DueSubscription[];

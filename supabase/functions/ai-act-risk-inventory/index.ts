@@ -17,12 +17,7 @@
 // ("jeder externe Call wird in ai_tool_runs / workflow_runs geloggt").
 
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 type Severity = 'prohibited' | 'high' | 'limited' | 'minimal';
 const SEVERITIES: readonly Severity[] = ['prohibited', 'high', 'limited', 'minimal'] as const;
@@ -62,7 +57,8 @@ interface BaseRequest {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -146,7 +142,7 @@ async function opList(admin: SupabaseClient, tenantId: string): Promise<Response
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false });
   if (error) return jsonError(500, 'DB_ERROR', error.message);
-  return json({ ok: true, items: data as InventoryRow[] });
+  return jsonResponse({ ok: true, items: data as InventoryRow[] });
 }
 
 async function opGet(admin: SupabaseClient, id: string): Promise<Response> {
@@ -157,7 +153,7 @@ async function opGet(admin: SupabaseClient, id: string): Promise<Response> {
     .maybeSingle();
   if (error)  return jsonError(500, 'DB_ERROR', error.message);
   if (!data)  return jsonError(404, 'NOT_FOUND', 'Eintrag nicht gefunden');
-  return json({ ok: true, item: data as InventoryRow });
+  return jsonResponse({ ok: true, item: data as InventoryRow });
 }
 
 async function opCreate(
@@ -213,7 +209,7 @@ async function opCreate(
   }).then(() => {/* ignore audit-log failures */}, () => {/* swallow */});
 
   if (error) return jsonError(500, 'DB_ERROR', error.message);
-  return json({ ok: true, item: data as InventoryRow }, 201);
+  return jsonResponse({ ok: true, item: data as InventoryRow }, 201);
 }
 
 async function opUpdate(admin: SupabaseClient, id: string, body: BaseRequest): Promise<Response> {
@@ -247,13 +243,13 @@ async function opUpdate(admin: SupabaseClient, id: string, body: BaseRequest): P
     .select('*')
     .single();
   if (error) return jsonError(500, 'DB_ERROR', error.message);
-  return json({ ok: true, item: data as InventoryRow });
+  return jsonResponse({ ok: true, item: data as InventoryRow });
 }
 
 async function opDelete(admin: SupabaseClient, id: string): Promise<Response> {
   const { error } = await admin.from('ai_act_risk_inventory').delete().eq('id', id);
   if (error) return jsonError(500, 'DB_ERROR', error.message);
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 function trimOrNull(v: unknown): string | null {
@@ -271,16 +267,3 @@ function isUuid(s: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ ok: false, error: { code, message } }), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}

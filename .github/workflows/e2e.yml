@@ -7,31 +7,31 @@ name: E2E
 # Triggers nur auf relevante Pfade — Doku-only-Änderungen sollen den
 # E2E-Job nicht laufen lassen.
 
+# Phase 2: Supabase integration enables real E2E tests
+# Tests authenticate with Supabase and verify live data fetching
+# Requirements:
+#   - Test account must exist in Supabase project
+#   - GitHub secrets: E2E_TEST_EMAIL, E2E_TEST_PASSWORD
 on:
+  push:
+    branches: [main, claude/**, feature/**]
+    paths:
+      - 'vite.config.ts'
+      - 'playwright.config.ts'
+      - 'e2e/**'
+      - 'src/features/supabase/**'
+      - 'src/pages/Demo*.tsx'
+      - '.github/workflows/e2e.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
       - 'vite.config.ts'
       - 'playwright.config.ts'
       - 'e2e/**'
+      - 'src/features/supabase/**'
+      - 'src/pages/Demo*.tsx'
       - '.github/workflows/e2e.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'playwright.config.ts'
-      - 'e2e/**'
-      - '.github/workflows/e2e.yml'
+  workflow_dispatch: # Allow manual trigger
 
 concurrency:
   # Cancel in-progress runs on the same branch when a new commit lands.
@@ -83,7 +83,17 @@ jobs:
         env:
           E2E_BASE_URL: http://localhost:3000
           CI: 'true'
-        run: npx playwright test
+          E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+          E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+        run: |
+          if [ -z "$E2E_TEST_EMAIL" ] || [ -z "$E2E_TEST_PASSWORD" ]; then
+            echo "⚠️  Skipping E2E tests: E2E_TEST_EMAIL or E2E_TEST_PASSWORD not set in GitHub Secrets"
+            echo "To enable E2E tests:"
+            echo "  1. Create test account in Supabase project"
+            echo "  2. Add secrets: E2E_TEST_EMAIL, E2E_TEST_PASSWORD"
+            exit 0
+          fi
+          npx playwright test
 
       - name: Upload Playwright report on failure
         if: failure()

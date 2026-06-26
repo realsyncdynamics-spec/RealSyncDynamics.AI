@@ -35,6 +35,7 @@
     "services/realsync-runtime-core",
     "services/realsync-evidence-runtime",
     "worker",
-    "apps/agent-runtime"
+    "apps/agent-runtime",
+    "extension"
   ]
 }

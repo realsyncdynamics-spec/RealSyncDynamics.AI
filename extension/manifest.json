@@ -1,31 +1,48 @@
 {
   "manifest_version": 3,
-  "name": "AI Assistant (Sider Clone)",
-  "version": "1.0.0",
-  "description": "Multi-model AI assistant in your browser sidebar.",
+  "name": "RealSyncDynamics Evidence Tracker",
+  "version": "0.1.0",
+  "description": "Capture and track evidence for AI governance compliance",
+
   "permissions": [
-    "activeTab",
-    "contextMenus",
     "storage",
-    "sidePanel",
-    "scripting"
+    "scripting",
+    "activeTab"
   ],
+
   "host_permissions": [
     "<all_urls>"
   ],
+
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/index.js"
   },
+
   "action": {
-    "default_title": "Open AI Sidebar"
+    "default_popup": "src/popup/index.html",
+    "default_title": "RealSyncDynamics Evidence Tracker"
   },
-  "side_panel": {
-    "default_path": "sidebar.html"
-  },
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["src/content/index.js"],
+      "run_at": "document_end"
+    }
+  ],
+
+  "options_page": "src/options/index.html",
+
+  "icons": {
+    "16": "public/icon-16.png",
+    "48": "public/icon-48.png",
+    "128": "public/icon-128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["public/*.png"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

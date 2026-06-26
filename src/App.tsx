@@ -7,6 +7,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
+import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
+import { ProtectedRoute } from './features/demo/ProtectedRoute';
+import { DemoLoginPage } from './pages/DemoLoginPage';
+import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
+import { DemoLandingPage } from './pages/DemoLandingPage';
+// ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
 // ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
@@ -298,6 +304,17 @@ function RoutesWithTracking() {
       <SEOHead />
       <Suspense fallback={<LazyFallback />}>
         <Routes>
+          {/* Demo Routes — Mock Auth + Governance Dashboard */}
+          <Route path="/demo-landing" element={<DemoLandingPage />} />
+          <Route path="/demo-login" element={<DemoLoginPage />} />
+          <Route
+            path="/demo-app"
+            element={
+              <ProtectedRoute>
+                <DemoGovernanceDashboard />
+              </ProtectedRoute>
+            }
+          />
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
@@ -785,14 +802,16 @@ export default function App() {
     <TenantProvider>
       <EnvironmentProvider>
         <DemoModeProvider>
-          <BrowserRouter basename={ROUTER_BASENAME}>
-          <ScrollToTop />
-          <RoutesWithTracking />
-          <CookieConsent />
-          <Suspense fallback={null}>
-            <AssistentChip />
-          </Suspense>
-        </BrowserRouter>
+          <SupabaseAuthProvider>
+            <BrowserRouter basename={ROUTER_BASENAME}>
+            <ScrollToTop />
+            <RoutesWithTracking />
+            <CookieConsent />
+            <Suspense fallback={null}>
+              <AssistentChip />
+            </Suspense>
+          </BrowserRouter>
+          </SupabaseAuthProvider>
         </DemoModeProvider>
       </EnvironmentProvider>
     </TenantProvider>

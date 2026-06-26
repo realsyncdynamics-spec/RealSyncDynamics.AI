@@ -519,6 +519,12 @@ function RoutesWithTracking() {
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
+      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
+      <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence/audit" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
+      <Route path="/app/monitoring/legacy" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
       <Route path="/app/legal-rag" element={<LegalRagView />} />
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
@@ -548,10 +554,10 @@ function RoutesWithTracking() {
       <Route path="/app/scans" element={<GovernanceBrowserShell><GovernanceScansListView /></GovernanceBrowserShell>} />
       <Route path="/app/scans/:scanId" element={<GovernanceBrowserShell><GovernanceScanDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
-      <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
-      <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />
       <Route path="/app/alerts" element={<GovernanceBrowserShell><GovernanceAlertsView /></GovernanceBrowserShell>} />
       <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
+      <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/sources" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />

@@ -1,8 +1,5 @@
--- Repair: generated_documents table was recorded as migrated
--- (20260508030000) but was absent in the live database, so the
--- generate-document Edge Function and the Dokumente dashboard could
--- not persist or read documents. Re-create idempotently (table +
--- indexes + RLS), matching 20260508030000_generated_documents.sql.
+-- Repair: generated_documents table was recorded as migrated (20260508030000)
+-- but is absent in production. Re-create idempotently (table + RLS).
 
 CREATE TABLE IF NOT EXISTS public.generated_documents (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -134,7 +134,7 @@ select
 
   -- Correlation
   wf.id as workflow_id,
-  wf.name as workflow_name,
+  wf.title as workflow_name,
   wr.id as run_id,
   wr.status as run_status,
 

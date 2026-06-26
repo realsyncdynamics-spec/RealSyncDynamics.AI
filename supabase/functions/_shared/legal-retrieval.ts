@@ -1,4 +1,4 @@
-// Legal-RAG retrieval adapter — internal Phase 1 surface.
+// Legal-RAG retrieval adapter — Phase 1+2 surface.
 //
 // Backed by migration 20260614000000_legal_rag_foundation.sql:
 //   - public.legal_documents / legal_chunks / legal_ingest_runs /
@@ -9,14 +9,15 @@
 //   2. Every result carries the parent document's disclaimer.
 //   3. Every retrieval call writes a legal_retrieval_log row BEFORE
 //      returning to the caller (mandatory audit substrate).
-//   4. Phase 1: caller_type must be 'internal' AND tenant_id must be
-//      null. Phase 2 will relax this for authenticated tenant calls.
+//   4. Phase 1: caller_type='internal', tenant_id=null (governance-agent).
+//      Phase 2: caller_type='tenant', tenant_id set (legal-retrieve fn).
 //   5. top_k is clamped to [1, 50].
+//   6. If query_embedding is provided, hybrid RPC (vector+FTS) is used.
+//      Otherwise falls back to FTS-only (Phase 1 default).
 //
 // Out of scope:
-//   - Embedding generation (separate service in a follow-up PR)
-//   - Hybrid scoring with reranker (Phase 2)
-//   - Public API exposure (Phase 3)
+//   - Embedding generation (see supabase/functions/legal-embed)
+//   - Public API exposure (legal-retrieve edge function)
 
 export type LegalCallerType = 'internal' | 'tenant' | 'api';
 
@@ -46,15 +47,16 @@ export interface AdminLike {
 }
 
 export interface LegalRetrievalRequest {
-  query:           string;
-  top_k?:          number;
-  framework?:      LegalFramework;
-  jurisdiction?:   LegalJurisdiction;
-  language?:       string;
-  caller_type:     LegalCallerType;
-  caller_ref?:     string;
-  tenant_id?:      string | null;
-  correlation_id?: string | null;
+  query:            string;
+  top_k?:           number;
+  framework?:       LegalFramework;
+  jurisdiction?:    LegalJurisdiction;
+  language?:        string;
+  caller_type:      LegalCallerType;
+  caller_ref?:      string;
+  tenant_id?:       string | null;
+  correlation_id?:  string | null;
+  query_embedding?: number[] | null;
 }
 
 export interface LegalRetrievalResultItem {
@@ -108,25 +110,17 @@ export class LegalRetrievalGuardrailError extends Error {
 }
 
 /**
- * Internal-phase retrieval. Phase 1 contract:
- *   - caller_type === 'internal'
- *   - tenant_id === null
- *   - returns log_id even when results=[] (audit-completeness)
- *   - throws on missing source_url or disclaimer on any returned chunk
- *
- * The actual ranking happens in the DB via `legal_retrieve_chunks` RPC
- * (defined in a follow-up PR alongside the embedding service); this
- * helper is the safety layer around that RPC call.
- *
- * For unit-testability, the RPC fan-out is on `admin.rpc(...)` and
- * the audit-log write is on `admin.from('legal_retrieval_log')`.
- * Both can be mocked structurally.
+ * Retrieval entry point. Supports:
+ *   - Phase 1: caller_type='internal', tenant_id=null, FTS-only
+ *   - Phase 2: caller_type='tenant', tenant_id set, hybrid vector+FTS
+ *     when query_embedding is provided (pre-computed by caller via
+ *     OpenAI text-embedding-3-small @ 1024 dims).
  */
 export async function retrieveLegalContext(
   admin: AdminLike,
   req:   LegalRetrievalRequest,
 ): Promise<LegalRetrievalResult> {
-  enforcePhase1(req);
+  enforceCaller(req);
 
   const top_k = clampTopK(req.top_k);
   const query = (req.query ?? '').trim();
@@ -135,17 +129,19 @@ export async function retrieveLegalContext(
   }
 
   const startedAt = Date.now();
+  const useHybrid = Array.isArray(req.query_embedding) && req.query_embedding.length === 1024;
 
-  // The DB-side RPC accepts the same filter envelope; signature is
-  // (q text, k int, framework text, jurisdiction text, lang text)
-  // and returns rows already joined with parent legal_documents.
-  const { data, error } = await admin.rpc('legal_retrieve_chunks', {
-    q: query,
-    k: top_k,
+  const rpcName = useHybrid ? 'legal_retrieve_chunks_hybrid' : 'legal_retrieve_chunks';
+  const rpcArgs: Record<string, unknown> = {
+    q:                   query,
+    k:                   top_k,
     framework_filter:    req.framework    ?? null,
     jurisdiction_filter: req.jurisdiction ?? null,
     language_filter:     req.language     ?? null,
-  });
+  };
+  if (useHybrid) rpcArgs.q_vec = req.query_embedding;
+
+  const { data, error } = await admin.rpc(rpcName, rpcArgs);
 
   if (error) {
     // Even on retrieval failure we still log the attempt so the audit
@@ -201,15 +197,26 @@ export function clampTopK(k: number | undefined): number {
   return Math.min(Math.max(v, 1), 50);
 }
 
+/** @deprecated use enforceCaller */
 export function enforcePhase1(req: LegalRetrievalRequest): void {
-  if (req.caller_type !== 'internal') {
+  enforceCaller(req);
+}
+
+export function enforceCaller(req: LegalRetrievalRequest): void {
+  const valid: LegalCallerType[] = ['internal', 'tenant', 'api'];
+  if (!valid.includes(req.caller_type)) {
     throw new LegalRetrievalPhaseError(
-      `Phase 1 accepts caller_type='internal' only (got '${req.caller_type}')`,
+      `Unknown caller_type '${req.caller_type}'`,
     );
   }
-  if (req.tenant_id != null) {
+  if (req.caller_type === 'internal' && req.tenant_id != null) {
     throw new LegalRetrievalPhaseError(
-      'Phase 1 forbids tenant-scoped calls (tenant_id must be null)',
+      "caller_type='internal' requires tenant_id=null",
+    );
+  }
+  if (req.caller_type === 'tenant' && !req.tenant_id) {
+    throw new LegalRetrievalPhaseError(
+      "caller_type='tenant' requires a non-null tenant_id",
     );
   }
 }

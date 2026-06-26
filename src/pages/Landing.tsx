@@ -34,6 +34,7 @@ import {
   Boxes, Network, Server, Eye, Package, Landmark,
 } from 'lucide-react';
 import { LandingNavbar } from '../components/LandingNavbar';
+import { openCookieSettings } from '../components/CookieConsent';
 import { CTA } from '../content/runtimeVocab';
 import { AUTOMATION_SKILLS, type AutomationSkillCategory } from '../content/automationSkills';
 import { AutomationSkillStatusBadge } from '../features/automations/AutomationSkillCard';
@@ -634,6 +635,12 @@ function Footer() {
             <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-titanium-200">Datenschutz</Link>
             <Link to="/agb" className="hover:text-titanium-200">AGB</Link>
+            <button
+              onClick={openCookieSettings}
+              className="hover:text-titanium-200 cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[inherit]"
+            >
+              Cookie-Einstellungen
+            </button>
             <span className="text-titanium-700">© {year}</span>
           </nav>
         </div>

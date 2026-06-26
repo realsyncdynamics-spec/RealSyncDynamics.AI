@@ -28,6 +28,7 @@ export type FeatureKey =
   | 'monthly_scan'
   | 'dse_generator'
   | 'basic_alerts'
+  | 'evidence_export'
   // growth
   | 'daily_monitoring'
   | 'drift_detection'
@@ -62,6 +63,10 @@ const PLAN_DIRECT_FEATURES: Record<PlanKey, FeatureKey[]> = {
     'monthly_scan',
     'dse_generator',
     'basic_alerts',
+    // Evidence-Trail-Export ist die Kaufbegründung des ersten zahlenden
+    // Tiers (siehe docs/PRODUCT_PRIORITIZATION.md). Free sieht den Trail
+    // read-only, exportieren kann erst ab Starter.
+    'evidence_export',
   ],
   growth: [
     'daily_monitoring',

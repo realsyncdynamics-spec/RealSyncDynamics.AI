@@ -26,12 +26,7 @@
 // Agent contract: src/runtime/agents/developerRemediationAgent.contract.ts
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const ALLOWED_OPS = new Set([
   'create_remediation_plan',
@@ -50,7 +45,7 @@ const TECHNOLOGIES = new Set([
 // ── HTTP entrypoint ────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: Record<string, unknown>;
@@ -167,7 +162,7 @@ async function handleCreatePlan(admin: any, tenant_id: string, userId: string, b
     reviewer_roles: ['owner', 'admin', 'developer', 'technical_owner'],
   });
 
-  return json({
+  return jsonResponse({
     ok: true,
     event_type: 'remediation.plan.created',
     review_required: true,
@@ -265,7 +260,7 @@ async function handleGenerateSnippet(admin: any, tenant_id: string, userId: stri
 
   await emitEvent(admin, tenant_id, plan_id, userId, 'fix.snippet.generated', { snippet });
 
-  return json({
+  return jsonResponse({
     ok: true,
     event_type: 'fix.snippet.generated',
     review_required: true,
@@ -322,7 +317,7 @@ async function handlePrepareIssue(admin: any, tenant_id: string, userId: string,
 
   await emitEvent(admin, tenant_id, plan_id, userId, 'github.issue.prepared', { issue });
 
-  return json({
+  return jsonResponse({
     ok: true,
     event_type: 'github.issue.prepared',
     review_required: true,
@@ -380,7 +375,7 @@ async function handlePrepareComment(admin: any, tenant_id: string, userId: strin
 
   await emitEvent(admin, tenant_id, plan_id, userId, 'pull_request.comment.created', { comment });
 
-  return json({
+  return jsonResponse({
     ok: true,
     event_type: 'pull_request.comment.created',
     review_required: true,
@@ -479,14 +474,3 @@ async function emitEvent(
 }
 
 // ── Response helpers ───────────────────────────────────────────────
-
-function json(payload: unknown, status = 200): Response {
-  return new Response(JSON.stringify(payload), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

@@ -20,11 +20,7 @@
  */
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -151,7 +147,8 @@ function shouldScan(d: MonitoredDomain): boolean {
 // Main Handler
 // ---------------------------------------------------------------------------
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
   const t0 = Date.now();
   const log: Array<{ domain: string; ok: boolean; drift: boolean; alerted: boolean; err?: string }> = [];
@@ -161,10 +158,7 @@ Deno.serve(async (req: Request) => {
       .from('monitored_domains').select('*').eq('active', true)
       .order('last_scan_at', { ascending: true, nullsFirst: true });
     if (dbErr) throw dbErr;
-    if (!domains?.length) return new Response(
-      JSON.stringify({ ok: true, message: 'no domains', ms: Date.now()-t0 }),
-      { headers: { ...CORS, 'Content-Type': 'application/json' } }
-    );
+    if (!domains?.length) return jsonResponse({ ok: true, message: 'no domains', ms: Date.now()-t0 });
 
     console.log(`[monitor] ${domains.length} domains to check`);
 
@@ -205,14 +199,13 @@ Deno.serve(async (req: Request) => {
       await new Promise(r => setTimeout(r, 2000));
     }
 
-    return new Response(JSON.stringify({
+    return jsonResponse({
       ok: true, ms: Date.now()-t0, timestamp: new Date().toISOString(),
       scanned: log.filter(r=>r.ok).length, drifts: log.filter(r=>r.drift).length,
       alerts: log.filter(r=>r.alerted).length, errors: log.filter(r=>!r.ok).length, log,
-    }), { headers: { ...CORS, 'Content-Type': 'application/json' } });
+    });
 
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: String(err) }),
-      { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
+    return jsonResponse({ ok: false, error: String(err) }, 500);
   }
 });

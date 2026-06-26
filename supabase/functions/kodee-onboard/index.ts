@@ -10,12 +10,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { encryptPrivateKey } from '../kodee/secrets.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 interface CreateOp {
   op: 'create';
@@ -46,7 +41,7 @@ interface UpdateOp {
 type OnboardRequest = CreateOp | ListOp | DeleteOp | UpdateOp;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -90,7 +85,7 @@ Deno.serve(async (req) => {
           .or(filter)
           .order('created_at', { ascending: false });
         if (error) throw error;
-        return json({ ok: true, connections: data ?? [] });
+        return jsonResponse({ ok: true, connections: data ?? [] });
       }
       case 'create': {
         if (!body.label || !body.host || !body.username || !body.private_key) {
@@ -137,7 +132,7 @@ Deno.serve(async (req) => {
           throw keyErr;
         }
 
-        return json({ ok: true, connection: conn });
+        return jsonResponse({ ok: true, connection: conn });
       }
       case 'update': {
         if (!body.connection_id) return jsonError(400, 'BAD_REQUEST', 'connection_id required');
@@ -179,7 +174,7 @@ Deno.serve(async (req) => {
             });
           if (error) throw error;
         }
-        return json({ ok: true });
+        return jsonResponse({ ok: true });
       }
       case 'delete': {
         if (!body.connection_id) return jsonError(400, 'BAD_REQUEST', 'connection_id required');
@@ -189,7 +184,7 @@ Deno.serve(async (req) => {
           .eq('id', body.connection_id)
           .eq('owner_id', userId);
         if (error) throw error;
-        return json({ ok: true });
+        return jsonResponse({ ok: true });
       }
       default:
         return jsonError(400, 'BAD_REQUEST', 'unknown op');
@@ -198,13 +193,3 @@ Deno.serve(async (req) => {
     return jsonError(500, 'INTERNAL', (e as Error).message ?? String(e));
   }
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

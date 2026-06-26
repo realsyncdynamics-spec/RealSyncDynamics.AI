@@ -8,12 +8,12 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
-
-const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 const STATUS = ['draft','in_review','approved','rejected'];
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -50,7 +50,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
     .select('*, asset:governance_assets(id,name,asset_type,ai_act_class)')
     .eq('tenant_id', tenant_id).order('created_at', { ascending: false }).limit(200);
   if (error) throw error;
-  return json({ ok: true, dpias: data ?? [] });
+  return jsonResponse({ ok: true, dpias: data ?? [] });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -85,7 +85,7 @@ async function handleCreate(admin: any, userId: string, userEmail: string | null
   }).select('*').single();
   if (error) throw error;
   await audit(admin, { tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dpia.create', target_type: 'dpia', target_id: data.id, payload: { title, asset_id: body.asset_id } });
-  return json({ ok: true, dpia: data });
+  return jsonResponse({ ok: true, dpia: data });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -105,7 +105,7 @@ async function handleUpdate(admin: any, userId: string, userEmail: string | null
   const { data, error } = await admin.from('dpias').update(patch).eq('id', id).select('*').single();
   if (error) throw error;
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dpia.update', target_type: 'dpia', target_id: id, payload: patch });
-  return json({ ok: true, dpia: data });
+  return jsonResponse({ ok: true, dpia: data });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -119,7 +119,7 @@ async function handleApprove(admin: any, userId: string, userEmail: string | nul
   const { error } = await admin.from('dpias').update({ status: 'approved', approved_by: userEmail ?? userId, approved_at: now }).eq('id', id);
   if (error) throw error;
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'dpia.approve', target_type: 'dpia', target_id: id, payload: { approved_at: now } });
-  return json({ ok: true, approved_at: now });
+  return jsonResponse({ ok: true, approved_at: now });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -128,5 +128,3 @@ async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Pro
   return data?.role === 'owner' || data?.role === 'admin';
 }
 
-function json(body: unknown, status = 200): Response { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'content-type': 'application/json' } }); }
-function jsonError(status: number, code: string, message: string): Response { return json({ ok: false, error: { code, message } }, status); }

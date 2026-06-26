@@ -18,6 +18,7 @@ import {
   Megaphone,
   Cloud,
 } from 'lucide-react';
+import { LANDING_INDUSTRIES } from '../content/landingIndustries';
 
 /**
  * SmartLink — interne Routen ("/...") via react-router-Link (SPA),

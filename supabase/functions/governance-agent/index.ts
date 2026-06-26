@@ -43,12 +43,7 @@ import {
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../_shared/aiGateway/edgeClient.ts';
 import type { ModelProfile } from '../_shared/aiGateway/types.ts';
 import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/llm-quota.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const MAX_ITERATIONS = 8;
 const MAX_HISTORY_TURNS = 20;
@@ -263,7 +258,8 @@ Direkt, klar, handlungsorientiert. Keine Floskeln. Antworte auf Deutsch, außer 
 type SimpleMsg = { role: 'user' | 'assistant'; content: string };
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: Record<string, unknown>;
@@ -554,7 +550,7 @@ async function handleChat(
     });
   }
 
-  return json({
+  return jsonResponse({
     ok: outcome === 'success',
     session_id: sessionId,
     response: finalText,
@@ -576,7 +572,7 @@ async function handleReset(admin: any, userId: string, body: Record<string, unkn
     .update({ history: [], last_turn_at: new Date().toISOString() })
     .eq('id', session_id).eq('user_id', userId).eq('tenant_id', tenant_id);
   if (error) throw error;
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -589,14 +585,14 @@ async function handleHistory(admin: any, userId: string, body: Record<string, un
     const { data } = await admin.from('agent_sessions')
       .select('id, history, last_turn_at, created_at')
       .eq('id', session_id).eq('user_id', userId).eq('tenant_id', tenant_id).maybeSingle();
-    return json({ ok: true, session: data ?? null });
+    return jsonResponse({ ok: true, session: data ?? null });
   }
 
   const { data } = await admin.from('agent_runs')
     .select('id, session_id, user_message, final_response, outcome, tool_calls, input_tokens, output_tokens, cost_usd, created_at')
     .eq('tenant_id', tenant_id).eq('actor_user_id', userId)
     .order('created_at', { ascending: false }).limit(limit);
-  return json({ ok: true, runs: data ?? [] });
+  return jsonResponse({ ok: true, runs: data ?? [] });
 }
 
 // op:'chat_history' — tenant-scoped per-run history from llm_query_history.
@@ -628,7 +624,7 @@ async function handleChatHistoryTenant(admin: any, userId: string, body: Record<
   const cap  = typeof capRows  === 'number' ? capRows  : (capRows?.[0]  as number | undefined) ?? 10;
   const used = typeof usedRows === 'number' ? usedRows : (usedRows?.[0] as number | undefined) ?? 0;
 
-  return json({
+  return jsonResponse({
     ok: true,
     runs: data ?? [],
     quota: { cap, used, unlimited: cap === -1 },
@@ -655,7 +651,7 @@ async function handleChatHistoryAnon(body: Record<string, unknown>): Promise<Res
     .order('occurred_at', { ascending: false }).limit(limit);
   if (error) return jsonError(500, 'INTERNAL', error.message);
 
-  return json({
+  return jsonResponse({
     ok: true,
     runs: data ?? [],
     // Anon cap is constant; usage requires the IP hash which we don't
@@ -777,7 +773,7 @@ async function handleChatAnon(req: Request, body: Record<string, unknown>): Prom
     correlation_id: requestId,
   });
 
-  return json({
+  return jsonResponse({
     ok: true,
     session_id: sessionId,
     response: finalText,
@@ -937,7 +933,7 @@ async function handleStartAuditScanAnon(req: Request, body: Record<string, unkno
 
   await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
 
-  return json({
+  return jsonResponse({
     ok: true,
     status: 'queued',
     audit_id: `mock-${crypto.randomUUID()}`,
@@ -990,7 +986,7 @@ async function handleExplainFindingAnon(req: Request, body: Record<string, unkno
 
   await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
 
-  return json({
+  return jsonResponse({
     ok: true,
     audit_id: auditId,
     finding_id: findingId,
@@ -1029,7 +1025,7 @@ async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, u
 
   await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
 
-  return json({
+  return jsonResponse({
     ok: true,
     audit_id: auditId,
     finding_id: findingId,
@@ -1044,13 +1040,3 @@ async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, u
   });
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

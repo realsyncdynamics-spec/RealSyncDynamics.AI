@@ -87,6 +87,7 @@ import { ToolsHub } from './pages/ToolsHub';
 // Industry + Competitor Doorways
 import { HealthTechLanding } from './pages/HealthTechLanding';
 import { Branchen } from './pages/Branchen';
+import { IndustryDetail } from './pages/branchen/IndustryDetail';
 import { LegalTechLanding } from './pages/LegalTechLanding';
 import { OneTrustAlternative } from './pages/OneTrustAlternative';
 import { FinTechLanding } from './pages/FinTechLanding';
@@ -163,6 +164,7 @@ const GovernanceAgentsCenterView = lazy(() => import('./features/governance/agen
 const GovernanceDocumentsView = lazy(() => import('./features/governance/documents/DocumentsView').then((m) => ({ default: m.DocumentsView })));
 const GovernanceAuditExportView = lazy(() => import('./features/governance/audit/AuditExportView').then((m) => ({ default: m.AuditExportView })));
 const AutomationSkillsView = lazy(() => import('./features/automations/AutomationSkillsView').then((m) => ({ default: m.AutomationSkillsView })));
+const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
@@ -216,6 +218,8 @@ const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
 const WorkspaceHome = lazy(() => import('./features/workspace/WorkspaceHome').then((m) => ({ default: m.WorkspaceHome })));
 const GovernanceOsDashboard = lazy(() => import('./features/governance/dashboard/GovernanceOsDashboard').then((m) => ({ default: m.GovernanceOsDashboard })));
+const CeoCockpitView = lazy(() => import('./features/governance/cockpit/CeoCockpitView').then((m) => ({ default: m.CeoCockpitView })));
+const CeoBriefPrintView = lazy(() => import('./features/governance/cockpit/CeoBriefPrintView').then((m) => ({ default: m.CeoBriefPrintView })));
 const WorkspaceEmbed = lazy(() => import('./features/workspace/WorkspaceEmbed').then((m) => ({ default: m.WorkspaceEmbed })));
 const CompanyView = lazy(() => import('./features/company/CompanyView').then((m) => ({ default: m.CompanyView })));
 const WorkflowsView = lazy(() => import('./features/workflows/WorkflowsView').then((m) => ({ default: m.WorkflowsView })));
@@ -228,6 +232,13 @@ const SystemHealthView = lazy(() => import('./features/admin/SystemHealthView').
 const CustomersView = lazy(() => import('./features/admin/CustomersView').then((m) => ({ default: m.CustomersView })));
 const OnboardingView = lazy(() => import('./features/admin/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const RebuildsView = lazy(() => import('./features/admin/RebuildsView').then((m) => ({ default: m.RebuildsView })));
+// ── Tenant Admin Panel (Phase 1) ──
+const AdminDashboard = lazy(() => import('./features/admin/pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const AdminMembersPage = lazy(() => import('./features/admin/pages/AdminMembersPage').then((m) => ({ default: m.AdminMembersPage })));
+const AdminSettingsPage = lazy(() => import('./features/admin/pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage })));
+const AdminBillingPage = lazy(() => import('./features/admin/pages/AdminBillingPage').then((m) => ({ default: m.AdminBillingPage })));
+const AdminAPIKeysPage = lazy(() => import('./features/admin/pages/AdminAPIKeysPage').then((m) => ({ default: m.AdminAPIKeysPage })));
+const AdminAuditPage = lazy(() => import('./features/admin/pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -367,6 +378,7 @@ function RoutesWithTracking() {
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}
       <Route path="/branchen" element={<Branchen />} />
+      <Route path="/branchen/:slug" element={<IndustryDetail />} />
       <Route path="/healthtech" element={<HealthTechLanding />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}
@@ -481,13 +493,16 @@ function RoutesWithTracking() {
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
-      <Route path="/app" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app" element={<GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell>} />
+      <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
+      <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
       <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
+      <Route path="/app/legal-rag" element={<LegalRagView />} />
       <Route path="/app/workflows" element={<GovernanceBrowserShell><WorkflowsView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
@@ -523,6 +538,13 @@ function RoutesWithTracking() {
       <Route path="/app/monitoring/sources" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
+      {/* Admin Panel Routes */}
+      <Route path="/app/admin" element={<AdminDashboard />} />
+      <Route path="/app/admin/members" element={<AdminMembersPage />} />
+      <Route path="/app/admin/settings" element={<AdminSettingsPage />} />
+      <Route path="/app/admin/billing" element={<AdminBillingPage />} />
+      <Route path="/app/admin/api-keys" element={<AdminAPIKeysPage />} />
+      <Route path="/app/admin/audit" element={<AdminAuditPage />} />
       <Route path="/app/agents" element={<GovernanceBrowserShell><GovernanceAgentsCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/documents" element={<GovernanceBrowserShell><GovernanceDocumentsView /></GovernanceBrowserShell>} />
       <Route path="/app/audit" element={<GovernanceBrowserShell><GovernanceAuditExportView /></GovernanceBrowserShell>} />

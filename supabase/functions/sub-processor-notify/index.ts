@@ -7,12 +7,7 @@
 // Pflicht nach Art. 28 Abs. 2 DSGVO + Audit-Trail-fähig.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface Change {
   id: string;
@@ -30,7 +25,8 @@ interface Subscription {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -42,11 +38,11 @@ Deno.serve(async (req) => {
 
   // 1. Pending changes
   const { data: changes, error: chgErr } = await admin.rpc('sub_processor_changes_pending');
-  if (chgErr) return jsonResp({ ok: false, error: chgErr.message }, 500);
+  if (chgErr) return jsonResponse({ ok: false, error: chgErr.message }, 500);
 
   const pending = (changes ?? []) as Change[];
   if (pending.length === 0) {
-    return jsonResp({ ok: true, message: 'no pending changes', notifications: 0 });
+    return jsonResponse({ ok: true, message: 'no pending changes', notifications: 0 });
   }
 
   // 2. Aktive Subscriptions (verified, not unsubscribed)
@@ -54,7 +50,7 @@ Deno.serve(async (req) => {
     .from('sub_processor_subscriptions')
     .select('id, email, unsub_token')
     .is('unsubscribed_at', null);
-  if (subErr) return jsonResp({ ok: false, error: subErr.message }, 500);
+  if (subErr) return jsonResponse({ ok: false, error: subErr.message }, 500);
 
   const subs = (subsRaw ?? []) as Subscription[];
   if (subs.length === 0) {
@@ -62,7 +58,7 @@ Deno.serve(async (req) => {
     for (const c of pending) {
       await admin.rpc('sub_processor_change_mark_notified', { p_id: c.id });
     }
-    return jsonResp({ ok: true, message: 'no subscribers, changes marked notified', notifications: 0 });
+    return jsonResponse({ ok: true, message: 'no subscribers, changes marked notified', notifications: 0 });
   }
 
   // 3. Pro Change × Subscription Notification-Mail senden, Audit-Trail loggen
@@ -143,7 +139,7 @@ Deno.serve(async (req) => {
     await admin.rpc('sub_processor_change_mark_notified', { p_id: change.id });
   }
 
-  return jsonResp({
+  return jsonResponse({
     ok: true,
     changes_processed: pending.length,
     subscriptions: subs.length,
@@ -201,9 +197,3 @@ function renderChangeEmail(ctx: EmailCtx): string {
 </html>`;
 }
 
-function jsonResp(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}

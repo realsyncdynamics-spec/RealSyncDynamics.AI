@@ -15,30 +15,16 @@
 // Every write is audited into governance_admin_log (best effort).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const ROLES = ['owner', 'admin', 'dpo', 'editor', 'viewer_auditor'];
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function err(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return err(405, 'BAD_REQUEST', 'POST only');
+  const preflight = handleOptions(req); if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return err(401, 'UNAUTHORIZED', 'missing bearer token');
+  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -48,7 +34,7 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: auth } }, auth: { persistSession: false },
   });
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return err(401, 'UNAUTHORIZED', 'invalid token');
+  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
   const actorId = userResp.user.id;
   // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
   observeAal2(auth, 'tenant-members');
@@ -56,17 +42,17 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
   let body: Record<string, unknown>;
-  try { body = await req.json(); } catch { return err(400, 'BAD_REQUEST', 'invalid json'); }
+  try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   try {
     switch (body.op) {
       case 'list':     return await handleList(admin, actorId, body);
       case 'set_role': return await handleSetRole(admin, actorId, body);
       case 'remove':   return await handleRemove(admin, actorId, body);
-      default:         return err(400, 'BAD_REQUEST', 'unknown op');
+      default:         return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {
-    return err(500, 'INTERNAL', (e as Error).message);
+    return jsonError(500, 'INTERNAL', (e as Error).message);
   }
 });
 
@@ -96,10 +82,10 @@ async function audit(admin: any, tenantId: string, actorId: string, action: stri
 // deno-lint-ignore no-explicit-any
 async function handleList(admin: any, actorId: string, body: Record<string, unknown>) {
   const tenantId = body.tenant_id as string;
-  if (!tenantId) return err(400, 'BAD_REQUEST', 'tenant_id required');
+  if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   // Any member of the tenant may read the roster.
   const role = await callerRole(admin, actorId, tenantId);
-  if (!role) return err(403, 'FORBIDDEN', 'not a member of this tenant');
+  if (!role) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
 
   const { data, error } = await admin.from('memberships')
     .select('user_id, role, created_at')
@@ -118,7 +104,7 @@ async function handleList(admin: any, actorId: string, body: Record<string, unkn
     } catch { /* ignore */ }
     members.push({ user_id: m.user_id, role: m.role, created_at: m.created_at, email, is_self: m.user_id === actorId });
   }
-  return json({ ok: true, members, caller_role: role });
+  return jsonResponse({ ok: true, members, caller_role: role });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -126,28 +112,28 @@ async function handleSetRole(admin: any, actorId: string, body: Record<string, u
   const tenantId = body.tenant_id as string;
   const targetUserId = body.target_user_id as string;
   const role = body.role as string;
-  if (!tenantId || !targetUserId || !role) return err(400, 'BAD_REQUEST', 'tenant_id, target_user_id, role required');
-  if (!ROLES.includes(role)) return err(400, 'BAD_ROLE', `role must be one of ${ROLES.join(', ')}`);
+  if (!tenantId || !targetUserId || !role) return jsonError(400, 'BAD_REQUEST', 'tenant_id, target_user_id, role required');
+  if (!ROLES.includes(role)) return jsonError(400, 'BAD_ROLE', `role must be one of ${ROLES.join(', ')}`);
 
   const callerR = await callerRole(admin, actorId, tenantId);
-  if (callerR !== 'owner' && callerR !== 'admin') return err(403, 'FORBIDDEN', 'must be owner or admin');
+  if (callerR !== 'owner' && callerR !== 'admin') return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
 
   // Only an owner may grant or revoke the owner role.
   if ((role === 'owner' || (await targetRole(admin, targetUserId, tenantId)) === 'owner') && callerR !== 'owner') {
-    return err(403, 'FORBIDDEN', 'only an owner may change owner role');
+    return jsonError(403, 'FORBIDDEN', 'only an owner may change owner role');
   }
 
   const target = await targetMembership(admin, targetUserId, tenantId);
-  if (!target) return err(404, 'NOT_FOUND', 'target is not a member of this tenant');
+  if (!target) return jsonError(404, 'NOT_FOUND', 'target is not a member of this tenant');
 
   // Last-owner protection: demoting the final owner is forbidden.
   if (target.role === 'owner' && role !== 'owner' && (await ownerCount(admin, tenantId)) <= 1) {
-    return err(409, 'LAST_OWNER', 'cannot demote the last owner');
+    return jsonError(409, 'LAST_OWNER', 'cannot demote the last owner');
   }
   // Self-demote protection for the acting admin/owner.
   if (targetUserId === actorId && role !== callerR && (callerR === 'owner' || callerR === 'admin')) {
     if (callerR === 'owner' && (await ownerCount(admin, tenantId)) <= 1) {
-      return err(409, 'SELF_DEMOTE', 'last owner cannot demote themselves');
+      return jsonError(409, 'SELF_DEMOTE', 'last owner cannot demote themselves');
     }
   }
 
@@ -156,30 +142,30 @@ async function handleSetRole(admin: any, actorId: string, body: Record<string, u
   if (error) throw error;
 
   await audit(admin, tenantId, actorId, 'membership.set_role', targetUserId, { from: target.role, to: role });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
 async function handleRemove(admin: any, actorId: string, body: Record<string, unknown>) {
   const tenantId = body.tenant_id as string;
   const targetUserId = body.target_user_id as string;
-  if (!tenantId || !targetUserId) return err(400, 'BAD_REQUEST', 'tenant_id, target_user_id required');
+  if (!tenantId || !targetUserId) return jsonError(400, 'BAD_REQUEST', 'tenant_id, target_user_id required');
 
   const callerR = await callerRole(admin, actorId, tenantId);
-  if (callerR !== 'owner' && callerR !== 'admin') return err(403, 'FORBIDDEN', 'must be owner or admin');
+  if (callerR !== 'owner' && callerR !== 'admin') return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
 
   const target = await targetMembership(admin, targetUserId, tenantId);
-  if (!target) return err(404, 'NOT_FOUND', 'target is not a member of this tenant');
+  if (!target) return jsonError(404, 'NOT_FOUND', 'target is not a member of this tenant');
 
   // Only an owner may remove another owner.
-  if (target.role === 'owner' && callerR !== 'owner') return err(403, 'FORBIDDEN', 'only an owner may remove an owner');
+  if (target.role === 'owner' && callerR !== 'owner') return jsonError(403, 'FORBIDDEN', 'only an owner may remove an owner');
   // Last-owner protection.
   if (target.role === 'owner' && (await ownerCount(admin, tenantId)) <= 1) {
-    return err(409, 'LAST_OWNER', 'cannot remove the last owner');
+    return jsonError(409, 'LAST_OWNER', 'cannot remove the last owner');
   }
   // Self-remove of the last owner blocked (other self-removes allowed = "leave tenant").
   if (targetUserId === actorId && target.role === 'owner' && (await ownerCount(admin, tenantId)) <= 1) {
-    return err(409, 'SELF_REMOVE', 'last owner cannot remove themselves');
+    return jsonError(409, 'SELF_REMOVE', 'last owner cannot remove themselves');
   }
 
   const { error } = await admin.from('memberships')
@@ -187,7 +173,7 @@ async function handleRemove(admin: any, actorId: string, body: Record<string, un
   if (error) throw error;
 
   await audit(admin, tenantId, actorId, 'membership.remove', targetUserId, { role: target.role });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any

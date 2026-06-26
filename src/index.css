@@ -199,9 +199,14 @@
 }
 
 @theme {
-  /* Hard-Edge Industrial DNA — see AGENTS.md */
-  --font-sans:    "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  /* Hard-Edge Industrial DNA — see AGENTS.md.
+     Design-Vereinheitlichung (2026-06): Plus Jakarta Sans (die Landing-Schrift)
+     ist app-weit der Standard für Body UND Headlines. Inter/Space Grotesk nur
+     noch Fallback. Die MainLanding setzt die Schrift ohnehin inline und bleibt
+     unangetastet. (Tailwind 4 nutzt @theme als maßgebliche Quelle, nicht die
+     fontFamily-Angaben in tailwind.config.ts.) */
+  --font-sans:    "Plus Jakarta Sans", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono:    "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   /* Obsidian (background + surfaces) */

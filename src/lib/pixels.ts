@@ -144,6 +144,18 @@ let pixelsLoaded = { analytics: false, marketing: false };
  */
 export function applyConsent(): void {
   const consent = readConsent();
+
+  // Consent Mode v2: Signale bei jeder Consent-Änderung aktualisieren —
+  // auch bei Widerruf. no-op wenn gtag noch nicht geladen wurde.
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('consent', 'update', {
+      analytics_storage: consent?.analytics ? 'granted' : 'denied',
+      ad_storage: consent?.marketing ? 'granted' : 'denied',
+      ad_user_data: consent?.marketing ? 'granted' : 'denied',
+      ad_personalization: consent?.marketing ? 'granted' : 'denied',
+    });
+  }
+
   if (!consent) return;
 
   const env = import.meta.env;

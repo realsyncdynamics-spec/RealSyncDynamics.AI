@@ -19,6 +19,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import type { RedactionPolicy } from '../_shared/redact.ts';
+import { buildCorsHeaders, handleOptions, jsonError } from '../_shared/gateway.ts';
 
 // DSGVO Art. 15 garantiert dem Betroffenen Auskunft ueber SEINE eigenen
 // Daten im Klartext. Eine Redaction wuerde dieses Recht aushebeln.
@@ -26,18 +27,15 @@ import type { RedactionPolicy } from '../_shared/redact.ts';
 // zeigt, dass 'never' bewusst gewaehlt wurde.
 const REDACTION_POLICY: RedactionPolicy = 'never';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-};
+const corsHeaders = buildCorsHeaders('GET, OPTIONS');
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'GET') return jsonError(405, 'BAD_REQUEST', 'GET only');
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
+  if (req.method !== 'GET') return jsonError(405, 'BAD_REQUEST', 'GET only', corsHeaders);
 
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
+  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token', corsHeaders);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -48,7 +46,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
+  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token', corsHeaders);
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
   // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
@@ -141,9 +139,3 @@ Deno.serve(async (req) => {
   });
 });
 
-function jsonError(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ ok: false, error: { code, message } }), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}

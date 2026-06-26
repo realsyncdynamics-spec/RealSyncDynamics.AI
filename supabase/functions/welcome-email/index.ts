@@ -13,12 +13,7 @@
 // Idempotent. Graceful no-op if RESEND_API_KEY missing.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 interface UserRow {
   id: string;
@@ -33,7 +28,7 @@ interface ProfileRow {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   let body: { user_id?: string };
@@ -58,12 +53,12 @@ Deno.serve(async (req) => {
   const p = (profile ?? null) as ProfileRow | null;
 
   if (p?.welcome_email_sent_at) {
-    return json({ ok: true, skipped: 'already_sent', sent_at: p.welcome_email_sent_at });
+    return jsonResponse({ ok: true, skipped: 'already_sent', sent_at: p.welcome_email_sent_at });
   }
 
   const apiKey = await getResendKey(supa);
   if (!apiKey) {
-    return json({ ok: true, skipped: 'no_api_key', hint: 'set RESEND_API_KEY env or vault.resend_api_key' });
+    return jsonResponse({ ok: true, skipped: 'no_api_key', hint: 'set RESEND_API_KEY env or vault.resend_api_key' });
   }
 
   const meta = user.raw_user_meta_data ?? {};
@@ -101,7 +96,7 @@ Deno.serve(async (req) => {
   const sent = await resp.json();
   await supa.from('profiles').update({ welcome_email_sent_at: new Date().toISOString() }).eq('id', userId);
 
-  return json({ ok: true, sent_id: sent.id, to: user.email });
+  return jsonResponse({ ok: true, sent_id: sent.id, to: user.email });
 });
 
 async function getResendKey(supa: ReturnType<typeof createClient>): Promise<string | null> {
@@ -162,11 +157,3 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json', ...corsHeaders },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

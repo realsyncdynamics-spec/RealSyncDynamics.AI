@@ -10,25 +10,15 @@
 // Body: { tenant_id: string, target_user_id: string }
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return json({ error: 'missing_authorization' }, 401);
+  if (!auth?.startsWith('Bearer ')) return jsonResponse({ error: 'missing_authorization' }, 401);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -38,7 +28,7 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: auth } }, auth: { persistSession: false },
   });
   const { data: userResp, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userResp.user) return json({ error: 'invalid_token' }, 401);
+  if (userErr || !userResp.user) return jsonResponse({ error: 'invalid_token' }, 401);
   const user = userResp.user;
   // P0d Phase 1 — OBSERVE ONLY: AAL2-Status protokollieren, NICHT blocken.
   observeAal2(auth, 'mfa-admin-reset');
@@ -47,10 +37,10 @@ Deno.serve(async (req) => {
 
   try {
     let body: Record<string, unknown>;
-    try { body = await req.json(); } catch { return json({ error: 'invalid_json' }, 400); }
+    try { body = await req.json(); } catch { return jsonResponse({ error: 'invalid_json' }, 400); }
     const tenantId = body.tenant_id as string | undefined;
     const targetUserId = body.target_user_id as string | undefined;
-    if (!tenantId || !targetUserId) return json({ error: 'missing_fields' }, 400);
+    if (!tenantId || !targetUserId) return jsonResponse({ error: 'missing_fields' }, 400);
 
     // Autorisierung: Plattform-super_admin ODER owner/admin des Tenants.
     const { data: caller } = await admin.from('profiles').select('is_super_admin').eq('id', user.id).maybeSingle();
@@ -60,14 +50,14 @@ Deno.serve(async (req) => {
       const { data: m } = await admin
         .from('memberships').select('role')
         .eq('tenant_id', tenantId).eq('user_id', user.id).maybeSingle();
-      if (!m || !['owner', 'admin'].includes(m.role as string)) return json({ error: 'forbidden' }, 403);
+      if (!m || !['owner', 'admin'].includes(m.role as string)) return jsonResponse({ error: 'forbidden' }, 403);
     }
 
     // Ziel muss Mitglied desselben Tenants sein (kein Cross-Tenant-Reset).
     const { data: targetMembership } = await admin
       .from('memberships').select('id')
       .eq('tenant_id', tenantId).eq('user_id', targetUserId).maybeSingle();
-    if (!targetMembership) return json({ error: 'target_not_in_tenant' }, 404);
+    if (!targetMembership) return jsonResponse({ error: 'target_not_in_tenant' }, 404);
 
     // Offene Recovery-Codes des Ziels invalidieren.
     await admin.from('mfa_recovery_codes')
@@ -93,8 +83,8 @@ Deno.serve(async (req) => {
       payload: { removed_factors: list.length, by_super_admin: isSuperAdmin },
     }).then(() => {}, () => {});
 
-    return json({ ok: true, removed_factors: list.length });
+    return jsonResponse({ ok: true, removed_factors: list.length });
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    return jsonResponse({ error: String(e) }, 500);
   }
 });

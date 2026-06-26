@@ -11,22 +11,17 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { normalizeShopDomain } from '../_shared/shopify-oauth.ts';
 import { runShopifyStorefrontScan } from '../_shared/shopify-scanner.ts';
 import { compareShopifyScans } from '../_shared/shopify-drift.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (req.method !== 'POST') return json({ ok: false, error: { code: 'BAD_REQUEST', message: 'POST only' } }, 405);
+  const preflight = handleOptions(req); if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ ok: false, error: { code: 'BAD_REQUEST', message: 'POST only' } }, 405);
 
   let body: { shop?: string };
-  try { body = await req.json(); } catch { return json({ ok: false, error: { code: 'BAD_REQUEST', message: 'invalid json' } }, 400); }
+  try { body = await req.json(); } catch { return jsonResponse({ ok: false, error: { code: 'BAD_REQUEST', message: 'invalid json' } }, 400); }
 
   const shop = normalizeShopDomain(body.shop ?? '');
-  if (!shop) return json({ ok: false, error: { code: 'BAD_REQUEST', message: 'invalid shop' } }, 400);
+  if (!shop) return jsonResponse({ ok: false, error: { code: 'BAD_REQUEST', message: 'invalid shop' } }, 400);
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -35,7 +30,7 @@ Deno.serve(async (req) => {
   const { data: shopRow } = await admin.from('shopify_shops')
     .select('*').eq('shop_domain', shop).eq('status', 'installed').maybeSingle();
   if (!shopRow) {
-    return json({
+    return jsonResponse({
       ok: false,
       error: { code: 'SHOP_NOT_INSTALLED', message: 'Shop ist nicht (mehr) installiert.' },
       cta: { label: 'Shopify Store verbinden', href: `/functions/v1/shopify-install?shop=${encodeURIComponent(shop)}` },
@@ -48,7 +43,7 @@ Deno.serve(async (req) => {
     status: 'running',
     started_at: new Date().toISOString(),
   }).select('*').single();
-  if (runErr) return json({ ok: false, error: { code: 'DB', message: runErr.message } }, 500);
+  if (runErr) return jsonResponse({ ok: false, error: { code: 'DB', message: runErr.message } }, 500);
 
   // Previous scan for drift
   const { data: prev } = await admin.from('shopify_scan_runs')
@@ -91,17 +86,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ ok: true, scan_run_id: run.id, result });
+    return jsonResponse({ ok: true, scan_run_id: run.id, result });
   } catch (e) {
     await admin.from('shopify_scan_runs').update({
       status: 'failed',
       error_message: (e as Error).message,
       completed_at: new Date().toISOString(),
     }).eq('id', run.id);
-    return json({ ok: false, error: { code: 'SCAN_FAILED', message: (e as Error).message } }, 500);
+    return jsonResponse({ ok: false, error: { code: 'SCAN_FAILED', message: (e as Error).message } }, 500);
   }
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'content-type': 'application/json' } });
-}

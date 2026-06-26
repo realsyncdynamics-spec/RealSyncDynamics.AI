@@ -196,10 +196,6 @@ const EvidenceVaultView = lazy(() => import('./features/governance/evidence/Evid
 const GovernanceScansListView = lazy(() => import('./features/governance/scans/ScansListView').then((m) => ({ default: m.ScansListView })));
 const GovernanceScanDetailView = lazy(() => import('./features/governance/scans/ScanDetailView').then((m) => ({ default: m.ScanDetailView })));
 const AiActRiskInventoryView = lazy(() => import('./features/governance/AiActRiskInventoryView').then((m) => ({ default: m.AiActRiskInventoryView })));
-const GovernanceAlertsView = lazy(() => import('./features/governance/AlertsView').then((m) => ({ default: m.AlertsView })));
-const EvidenceVaultView = lazy(() => import('./features/governance/EvidenceVaultView').then((m) => ({ default: m.EvidenceVaultView })));
-const MonitoringSourcesView = lazy(() => import('./features/governance/MonitoringSourcesView').then((m) => ({ default: m.MonitoringSourcesView })));
-const RiskCenterView = lazy(() => import('./features/governance/RiskCenterView').then((m) => ({ default: m.RiskCenterView })));
 const AiActDataGovernanceView = lazy(() => import('./features/governance/data-governance/AiActDataGovernanceView').then((m) => ({ default: m.AiActDataGovernanceView })));
 const MonitoringRuntimeView = lazy(() => import('./features/governance/monitoring/MonitoringRuntimeView').then((m) => ({ default: m.MonitoringRuntimeView })));
 const AdminSocialPreviewPage = lazy(() => import('./features/admin/social/SocialPreviewPage').then((m) => ({ default: m.AdminSocialPreviewPage })));
@@ -562,8 +558,6 @@ function RoutesWithTracking() {
       <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />
-      <Route path="/app/alerts" element={<GovernanceBrowserShell><GovernanceAlertsView /></GovernanceBrowserShell>} />
-      <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/sources" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />

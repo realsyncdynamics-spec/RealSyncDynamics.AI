@@ -246,6 +246,8 @@ const AdminSettingsPage = lazy(() => import('./features/admin/pages/AdminSetting
 const AdminBillingPage = lazy(() => import('./features/admin/pages/AdminBillingPage').then((m) => ({ default: m.AdminBillingPage })));
 const AdminAPIKeysPage = lazy(() => import('./features/admin/pages/AdminAPIKeysPage').then((m) => ({ default: m.AdminAPIKeysPage })));
 const AdminAuditPage = lazy(() => import('./features/admin/pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
+// ── Platform Super-Admin (Phase 2) ──
+const SuperAdminDashboard = lazy(() => import('./features/admin/SuperAdminDashboard').then((m) => ({ default: m.SuperAdminDashboard })));
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -656,6 +658,7 @@ function RoutesWithTracking() {
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />
       {/* Admin */}
+      <Route path="/admin" element={<SuperAdminDashboard />} />
       <Route path="/admin/analytics" element={<AnalyticsView />} />
       <Route path="/admin/leads" element={<LeadsView />} />
       <Route path="/admin/system" element={<SystemHealthView />} />

@@ -74,6 +74,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Runtime Monitoring und Drift Alerts',
   },
   {
+    id: 'security-signals',
+    label: 'Security Signals',
+    icon: 'ShieldAlert',
+    route: '/app/security-signals',
+    status: 'beta',
+    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    description: 'Externe Security-Findings (blacklens, Cloudflare, GitHub, SIEM) → Governance',
+  },
+  {
     id: 'vendors',
     label: 'Vendors',
     icon: 'Building2',

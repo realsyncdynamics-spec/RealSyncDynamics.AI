@@ -115,6 +115,12 @@ verify_jwt = false
 [functions.cookie-scan-deep]
 verify_jwt = false
 
+# Browser-action-log — governance observability. Called from browser without JWT
+# (EmbeddedBrowserCanvas). Auth + tenant-scope checked inside the function via
+# service_role calls to Supabase (browser passes tenantId, which is validated by RLS).
+[functions.browser-action-log]
+verify_jwt = false
+
 # AI Gateway — provider-neutral inference endpoint. Public per spec
 # (frontend talks to it directly without bearer tokens). The actual auth
 # + rate-limit + tenant-scope checks live inside the function once it

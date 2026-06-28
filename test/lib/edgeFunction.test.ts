@@ -38,10 +38,17 @@ describe('postEdgeFunction', () => {
     await expect(postEdgeFunction('gdpr-audit', {})).rejects.toThrow(/Ungültige Server-Antwort/);
   });
 
-  it('throws immediately when VITE_SUPABASE_URL is not configured', async () => {
+  it('falls back to the production Supabase URL when VITE_SUPABASE_URL is not configured', async () => {
     vi.stubEnv('VITE_SUPABASE_URL', '');
-    global.fetch = vi.fn();
-    await expect(postEdgeFunction('gdpr-audit', {})).rejects.toThrow('VITE_SUPABASE_URL');
-    expect(global.fetch).not.toHaveBeenCalled();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, score: 42 }), { status: 200 }),
+    );
+    global.fetch = fetchMock;
+    const data = await postEdgeFunction<{ score: number }>('gdpr-audit', {});
+    expect(data.score).toBe(42);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/gdpr-audit',
+      expect.objectContaining({ method: 'POST' }),
+    );
   });
 });

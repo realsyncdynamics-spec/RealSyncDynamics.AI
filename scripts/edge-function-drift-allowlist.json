@@ -5,6 +5,7 @@
     "vault-set-secret",
     "debug-secret-shape",
     "stripe-webhook-fixer",
+    "stripe-webhook-provision",
     "governance-dsr",
     "governance-incidents",
     "governance-connectors",

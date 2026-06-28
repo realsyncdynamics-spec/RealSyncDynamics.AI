@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   X, RefreshCw, ExternalLink, Shield, ScanLine, FileCheck2,
   AlertTriangle, Loader2,
 } from 'lucide-react';
+import { getSupabase } from '../../lib/supabase';
 
 interface EmbeddedBrowserCanvasProps {
   url: string;
@@ -16,19 +17,39 @@ export function EmbeddedBrowserCanvas({ url, onClose, onScan }: EmbeddedBrowserC
   const [evidenceLogged, setEvidenceLogged] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
+  const logToolRun = async (toolKey: string, status: 'success' | 'error', metadata?: Record<string, unknown>) => {
+    try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const resp = await fetch('/functions/v1/log-tool-run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ tool_key: toolKey, status, metadata }),
+      });
+      if (!resp.ok) console.warn('Failed to log tool run:', resp.status);
+    } catch (err) {
+      console.warn('Error logging tool run:', err);
+    }
+  };
+
   const handleLoad = () => {
     setLoading(false);
     setLoadError(false);
-    // Evidence-Eintrag: Vorschau geladen
     if (!evidenceLogged) {
       setEvidenceLogged(true);
-      // TODO: ai_tool_runs / workflow_runs Eintrag via Edge Function
+      logToolRun('browser-preview-load', 'success', { url });
     }
   };
 
   const handleError = () => {
     setLoading(false);
     setLoadError(true);
+    logToolRun('browser-preview-load', 'error', { url, error: 'iframe load failed' });
   };
 
   const reload = () => {

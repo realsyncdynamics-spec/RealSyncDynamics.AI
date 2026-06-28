@@ -64,6 +64,9 @@ import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 import { EnterpriseLanding } from './pages/EnterpriseLanding';
+import { GovernanceOSPricing } from './pages/GovernanceOSPricing';
+import { SaaSSolution } from './pages/solutions/SaaSSolution';
+import { AgenciesSolution } from './pages/solutions/AgenciesSolution';
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -595,6 +598,9 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/governance-os-pricing" element={<GovernanceOSPricing />} />
+      <Route path="/solutions/saas" element={<SaaSSolution />} />
+      <Route path="/solutions/agencies" element={<AgenciesSolution />} />
                 <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                 <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
                 <Route path="/checkout/:planKey" element={<CheckoutPage />} />

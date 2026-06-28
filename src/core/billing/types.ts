@@ -1,11 +1,29 @@
 export type PlanKey =
+  // Provenance plans
   | 'free'
   | 'bronze'
   | 'silver'
   | 'gold'
-  | 'enterprise_public';
+  | 'enterprise_public'
+  // Governance OS plans
+  | 'starter_governance'
+  | 'professional_governance'
+  | 'governance_os'
+  | 'enterprise_regulated';
 
 export type BillingInterval = 'month' | 'year' | 'custom';
+
+export type ProductType = 'provenance' | 'governance' | 'both';
+
+export interface PlanMetadata {
+  productType: ProductType;
+  displayName: string;
+  description: string;
+  monthlyPrice: number | null;
+  yearlyPrice: number | null;
+  target: string;
+  maxAssets: number | null;
+}
 
 export type SubscriptionStatus =
   | 'inactive'
@@ -24,6 +42,7 @@ export type TenantRole =
   | 'viewer_auditor';
 
 export type FeatureKey =
+  // Provenance features (legacy)
   | 'asset.register'
   | 'asset.verify'
   | 'watermark.apply'
@@ -31,6 +50,21 @@ export type FeatureKey =
   | 'provenance.basic'
   | 'provenance.advanced'
   | 'c2pa.export'
+  // Governance OS features
+  | 'website.scan'
+  | 'website.resan'
+  | 'cookie.tracking'
+  | 'dsgvo.basic'
+  | 'dsgvo.monitoring'
+  | 'aiact.classification'
+  | 'aiact.deeprisk'
+  | 'evidence.vault'
+  | 'policy.engine'
+  | 'dpia.assessment'
+  | 'vendor.screening'
+  | 'automation.basic'
+  | 'agents.industry'
+  // Core cross-product
   | 'team.members'
   | 'api.access'
   | 'bulk.jobs'
@@ -51,6 +85,7 @@ export interface UsageLimits {
 export interface PlanFeatures {
   features: Record<FeatureKey, boolean>;
   limits: UsageLimits;
+  metadata?: PlanMetadata;
 }
 
 export interface SubscriptionSnapshot {

@@ -22,6 +22,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 import { runDeadlineSentinelForTenant } from '../_shared/agents/deadlineSentinelRunner.ts';
+import { generateGovernanceBriefForTenant } from '../_shared/agents/governanceBriefRunner.ts';
 
 interface RequestBody {
   cadence?:    'hourly' | 'daily';
@@ -83,10 +84,24 @@ Deno.serve(async (req: Request) => {
   const tenants = await Promise.all(tenant_ids.map(async (tenant_id) => {
     try {
       const sentinel = await runDeadlineSentinelForTenant(admin, tenant_id, now);
+
+      // PHASE B · Schritt 2 — Hermes Governance-Brief (LLM, nur daily).
+      // Fehler dürfen den Sentinel-Lauf nicht abbrechen.
+      let hermes_brief_created = false;
+      let hermes_brief_id: string | null = null;
+      if (cadence === 'daily') {
+        try {
+          const brief = await generateGovernanceBriefForTenant(admin, tenant_id, now);
+          if (brief) { hermes_brief_created = true; hermes_brief_id = brief.id; }
+        } catch (e) {
+          sentinel.errors.push(`brief_failed: ${(e as Error)?.message ?? String(e)}`);
+        }
+      }
+
       return {
         tenant_id,
-        hermes_brief_created:      false,
-        hermes_brief_id:           null,
+        hermes_brief_created,
+        hermes_brief_id,
         monitoring_slos_evaluated: 0,
         monitoring_slos_breached:  0,
         decision_overdue_flagged:  sentinel.decision_overdue_flagged,
@@ -114,7 +129,7 @@ Deno.serve(async (req: Request) => {
     duration_ms:   Date.now() - t0,
     tenants,
     total_errors:  tenants.reduce((n, t) => n + t.errors.length, 0),
-    phase:         'B_DEADLINE_SENTINEL',
+    phase:         'B_RUNTIME',
   };
 
   return jsonResponse(report);

@@ -180,7 +180,7 @@ export function GovernanceOSPricing() {
               },
               {
                 q: 'Können wir die Preise verhandeln?',
-                a: 'Bei Governance OS und Enterprise: ja. Schreib uns eine Nachricht oder kontaktiere unsere Sales.',
+                a: 'Bei Governance OS und Enterprise: ja. Nutze Enterprise anfragen oder schreib uns eine Nachricht über das Kontaktformular.',
               },
             ].map((faq, i) => (
               <div key={i} className="border border-silver-700 p-6">
@@ -209,10 +209,10 @@ export function GovernanceOSPricing() {
               Kostenlos auditen
             </Link>
             <Link
-              to="/contact-sales?context=governance-demo"
+              to="/contact-sales?context=governance-enterprise"
               className="border border-silver-400 px-6 py-3 font-bold text-sm text-silver-300 hover:text-titanium-50"
             >
-              Demo buchen
+              Enterprise anfragen
             </Link>
           </div>
         </div>

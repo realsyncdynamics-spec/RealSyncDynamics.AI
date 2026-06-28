@@ -45,7 +45,7 @@ export function SaaSSolution() {
               to="/audit?source=saas-hero"
               className="surface-mono px-6 py-3 font-bold text-sm inline-flex items-center justify-center gap-2"
             >
-              Kostenlos Demo <ArrowRight className="h-4 w-4" />
+              Kostenlos auditen <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/contact-sales?product=saas-governance"
@@ -214,7 +214,7 @@ export function SaaSSolution() {
           </div>
 
           <p className="text-silver-400 text-sm mb-6">
-            Für größere Deployments? Skaliere auf <Link to="/governance-os-pricing" className="text-security-500 hover:text-security-400">Governance OS</Link> oder kontaktiere unser Sales-Team.
+            Für größere Deployments? Skaliere auf <Link to="/governance-os-pricing" className="text-security-500 hover:text-security-400">Governance OS</Link> oder frag <Link to="/contact-sales?product=saas" className="text-security-500 hover:text-security-400">Enterprise an</Link>.
           </p>
         </div>
       </section>
@@ -232,7 +232,7 @@ export function SaaSSolution() {
             to="/contact-sales?product=saas&source=solution-page"
             className="surface-mono px-8 py-3 font-bold inline-flex items-center gap-2"
           >
-            Gespräch buchen <ArrowRight className="h-4 w-4" />
+            Enterprise anfragen <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </section>

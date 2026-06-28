@@ -45,7 +45,7 @@ export function AgenciesSolution() {
               to="/audit?source=agency-hero"
               className="surface-mono px-6 py-3 font-bold text-sm inline-flex items-center justify-center gap-2"
             >
-              Live-Demo <ArrowRight className="h-4 w-4" />
+              Kostenlos auditen <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/contact-sales?product=agency-white-label"
@@ -217,7 +217,7 @@ export function AgenciesSolution() {
           </div>
 
           <p className="text-silver-400 text-sm">
-            Bist du bereit für 50+ Kunden-Websites? Skaliere auf <strong>Scale €1.999/Monat</strong> oder nimm direkten Kontakt zu unserem Sales auf.
+            Bist du bereit für 50+ Kunden-Websites? Skaliere auf <strong>Scale €1.999/Monat</strong> oder frag <Link to="/contact-sales?product=agency&tier=scale" className="text-security-500 hover:text-security-400">Enterprise an</Link>.
           </p>
         </div>
       </section>

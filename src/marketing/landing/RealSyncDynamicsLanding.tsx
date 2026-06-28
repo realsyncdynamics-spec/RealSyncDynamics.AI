@@ -729,6 +729,11 @@ export const RealSyncDynamicsLanding = () => {
                       </Link>
                     </li>
                     <li>
+                      <Link to="/legal/widerruf" className="hover:text-petrol transition">
+                        Widerrufsbelehrung
+                      </Link>
+                    </li>
+                    <li>
                       <Link to="/legal/privacy" className="hover:text-petrol transition">
                         Datenschutz
                       </Link>

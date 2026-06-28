@@ -119,9 +119,6 @@ export function Impressum() {
               (Registergericht Jena oder zuständiges Amtsgericht) ergänzt.
             </p>
           )}
-          <p className="text-xs text-titanium-500">
-            Falls Einzelunternehmen bleibt: dieser Abschnitt kann entfernt werden, der Hinweis „Nicht im Handelsregister eingetragen" reicht.
-          </p>
         </Section>
 
         <Section title="Umsatzsteuer">

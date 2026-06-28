@@ -165,7 +165,7 @@ export function Resources() {
           <div>© 2026 RealSync Dynamics · Made in Germany · EU-Hosted (Frankfurt)</div>
           <div className="flex flex-wrap gap-3">
             <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-            <Link to="/legal/sub-processors" className="hover:text-titanium-300">Impressum</Link>
+            <Link to="/impressum" className="hover:text-titanium-300">Impressum</Link>
           </div>
         </div>
       </footer>

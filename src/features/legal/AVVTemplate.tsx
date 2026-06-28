@@ -65,8 +65,8 @@ export function AVVTemplate() {
             <p className="mb-3"><strong>Auftragsverarbeiter:</strong></p>
             <div className="border border-titanium-800 print:border-titanium-300 p-3 text-sm">
               RealSync Dynamics<br />
-              Inhaber: Dominik Seed<br />
-              Anschrift: <em>[wird durch RealSync ausgefüllt]</em><br />
+              Inhaber: Dominik Steiner<br />
+              Schwarzburger Str. 31, 98724 Neuhaus am Rennweg, Thüringen, Deutschland<br />
               E-Mail: <a href="mailto:privacy@realsyncdynamicsai.de" className="text-security-400 print:text-[#1f6feb]">privacy@realsyncdynamicsai.de</a><br />
               („<em>RealSync</em>")
             </div>

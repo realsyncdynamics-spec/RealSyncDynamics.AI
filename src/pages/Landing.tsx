@@ -635,6 +635,7 @@ function Footer() {
             <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
             <Link to="/datenschutz" className="hover:text-titanium-200">Datenschutz</Link>
             <Link to="/agb" className="hover:text-titanium-200">AGB</Link>
+            <Link to="/legal/widerruf" className="hover:text-titanium-200">Widerruf</Link>
             <button
               onClick={openCookieSettings}
               className="hover:text-titanium-200 cursor-pointer bg-transparent border-0 p-0 font-[inherit] text-[inherit]"

@@ -115,12 +115,12 @@ export function GovernanceOSPricing() {
                 </div>
 
                 <div className="space-y-3 mb-6">
-                  {[
+                  {([
                     planKey === 'starter_governance' && ['Website DSGVO-Scan', '1 Domain', 'Basic-Report'],
                     planKey === 'professional_governance' && ['Alles aus Starter', 'bis 10 Domains', 'AI-Act-Check', 'Team-Zugang'],
                     planKey === 'governance_os' && ['Alles aus Professional', 'bis 50+ Assets', 'Policy Engine', 'Automatisierung', 'Evidence Vault'],
                     planKey === 'enterprise_regulated' && ['Alles aus Governance OS', 'Unbegrenzte Assets', 'Branchen-Agenten', 'High-Risk-AI-Tiefe', 'SLA & Dedicated Support'],
-                  ].flat() as string[].map((feature, i) => (
+                  ].flat() as string[]).map((feature, i) => (
                     <div key={i} className="flex items-start gap-2 text-sm">
                       <Check className="h-4 w-4 text-security-500 flex-shrink-0 mt-0.5" />
                       <span className="text-silver-300">{feature}</span>

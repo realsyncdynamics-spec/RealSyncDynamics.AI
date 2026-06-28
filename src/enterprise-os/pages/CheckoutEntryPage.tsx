@@ -1,29 +1,27 @@
 import React from 'react';
-import { Navigate, useSearchParams, useParams } from 'react-router-dom';
-import { CheckoutPageWrapper } from './CheckoutPageWrapper';
+import { Navigate, useSearchParams } from 'react-router-dom';
 
 /**
- * /os/checkout oder /checkout/:planKey mit Enterprise-OS Design
+ * /os/checkout Entry Point mit Plan-Validierung
  *
  * Routing:
- *   1. /os/checkout?plan=starter  → Shows CheckoutPageWrapper (new design)
- *   2. /checkout/starter (direct)  → Shows CheckoutPageWrapper (new design)
- *   3. enterprise oder invalid     → Redirect zu /contact-sales oder /os/pricing
+ *   1. /os/checkout?plan=starter  → Redirect zu /checkout/starter (canonical route)
+ *   2. enterprise oder invalid     → Redirect zu /contact-sales oder /os/pricing
+ *
+ * Canonical route /checkout/:planKey wird direkt durch CheckoutPageWrapper angezeigt.
+ * Diese Entry Page dient nur zur Query-Parameter-Normalisierung.
  */
 const VALID_PLAN_KEYS = new Set(['starter', 'growth', 'agency']);
 
 export function CheckoutEntryPage() {
   const [params] = useSearchParams();
-  const { planKey } = useParams<{ planKey?: string }>();
-
-  // Support both /os/checkout?plan=X and /checkout/:planKey
-  const plan = planKey || params.get('plan') || '';
+  const plan = params.get('plan') || '';
 
   if (plan === 'enterprise') {
     return <Navigate to="/contact-sales?intent=enterprise&source=os-checkout-redirect" replace />;
   }
   if (VALID_PLAN_KEYS.has(plan)) {
-    return <CheckoutPageWrapper />;
+    return <Navigate to={`/checkout/${plan}`} replace />;
   }
   return <Navigate to="/os/pricing" replace />;
 }

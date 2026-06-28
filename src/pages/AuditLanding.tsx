@@ -249,11 +249,14 @@ export function AuditLanding() {
         </div>
       </main>
 
-      <ReportPreviewSection
-        eyebrow="Beispiel-Report · Was Sie nach dem Scan bekommen"
-        headline="Ihr eigener Audit sieht genauso aus."
-        subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
-      />
+      {/* Demo-Report nur zeigen wenn noch kein echter Scan läuft oder abgeschlossen ist */}
+      {!report && !loading && (
+        <ReportPreviewSection
+          eyebrow="Beispielreport · So sieht Ihr Audit-Ergebnis aus"
+          headline="Ihr eigener Audit sieht genauso aus."
+          subline="Das ist ein Beispiel-Output — keine echten Daten. Nach Ihrem Scan erscheint Ihr eigener Report an dieser Stelle."
+        />
+      )}
 
       <Footer />
     </div>

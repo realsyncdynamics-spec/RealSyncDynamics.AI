@@ -241,8 +241,13 @@ export function ReportPreviewSection({
                           {/* Header: Domain + Risk-Score */}
                                   <header className="border-b border-silver-700/30 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                               <div>
-                                                            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-silver-500 mb-1">
-                                                                            Audit-Report
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-silver-500">
+                                                                Audit-Report
+                                                              </div>
+                                                              <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-amber-800 bg-amber-950 text-amber-400">
+                                                                Beispieldaten
+                                                              </span>
                                                             </div>
                                                             <div className="font-display font-bold text-titanium-50 text-lg sm:text-xl tracking-tight">
                                                               {SAMPLE_DOMAIN}
@@ -342,8 +347,8 @@ export function ReportPreviewSection({
                         
                           {/* Footer */}
                                   <footer className="border-t border-silver-700/30 p-4 sm:p-5 text-center">
-                                              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-silver-500">
-                                                            Beispiel-Output · echte Reports inkl. Code-Snippet-Empfehlungen + PDF-Export
+                                              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-600">
+                                                            Beispieldaten — kein echter Scan · Ihr eigener Report ersetzt diesen Bereich nach dem Audit
                                               </div>
                                   </footer>
                         </div>

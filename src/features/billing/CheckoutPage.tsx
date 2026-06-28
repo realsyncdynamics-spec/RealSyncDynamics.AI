@@ -427,6 +427,10 @@ function ConsentGateShell({
                 (§§ 356 Abs. 5, 327 BGB; siehe{' '}
                 <Link to="/legal/terms" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
                   AGB § 12
+                </Link>{' '}
+                und{' '}
+                <Link to="/legal/widerruf" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                  Widerrufsbelehrung
                 </Link>
                 ).
               </span>

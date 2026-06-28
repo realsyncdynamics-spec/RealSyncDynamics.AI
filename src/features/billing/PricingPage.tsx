@@ -117,6 +117,9 @@ export function PricingPage() {
             <p className="text-[10px] font-mono text-titanium-600">
               Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency/Scale: erste Abbuchung sofort nach Bestellung
             </p>
+            <p className="text-[10px] font-mono text-titanium-600">
+              Alle Preise in EUR. Keine Umsatzsteuer ausgewiesen — Kleinunternehmer gemäß § 19 UStG.
+            </p>
           </div>
 
           {/* Disclaimer */}
@@ -255,6 +258,7 @@ export function PricingPage() {
             <Link to="/legal/privacy" className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum" className="hover:text-titanium-50">Impressum</Link>
             <Link to="/legal/terms" className="hover:text-titanium-50">AGB</Link>
+            <Link to="/legal/widerruf" className="hover:text-titanium-50">Widerruf</Link>
             <Link to="/legal/avv" className="hover:text-titanium-50">AVV</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-50">Sub-Processors</Link>
             <Link to="/legal/methodology" className="hover:text-titanium-50">Methodik</Link>

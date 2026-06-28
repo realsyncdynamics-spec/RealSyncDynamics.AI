@@ -359,7 +359,10 @@ export function LegalTerms() {
             ausdrücklich zugestimmt und seine Kenntnis vom Erlöschen
             des Widerrufsrechts mit Beginn der Vertragsausführung
             bestätigt hat. Die entsprechende Bestätigung wird im
-            Checkout-Prozess als separates Häkchen abgefragt.
+            Checkout-Prozess als separates Häkchen abgefragt. Die
+            vollständige, formale Belehrung samt Muster-Widerrufsformular
+            findest Du unter{' '}
+            <Link to="/legal/widerruf" className="text-security-400">Widerrufsbelehrung</Link>.
           </p>
         </Section>
 
@@ -420,6 +423,7 @@ export function LegalTerms() {
         <div className="flex flex-wrap items-center gap-4 text-xs text-titanium-400 pt-6 border-t border-titanium-900">
           <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
           <Link to="/legal/privacy" className="hover:text-titanium-200">Datenschutzerklärung</Link>
+          <Link to="/legal/widerruf" className="hover:text-titanium-200">Widerrufsbelehrung</Link>
           <Link to="/legal/avv" className="hover:text-titanium-200">AVV</Link>
           <Link to="/legal/sub-processors" className="hover:text-titanium-200">Sub-Prozessoren</Link>
         </div>

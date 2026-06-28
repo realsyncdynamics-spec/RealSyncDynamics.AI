@@ -37,17 +37,17 @@ export function useGovernanceOnboarding(
 
   // Build governance profile
   const profile = useMemo((): GovernanceProfile => {
-    const dimensionScores = dimensions.map((dim) => ({
-      dimension: dim,
-      criticalityScore: scoreDimensionCriticality(classified, dim),
-      needsAddressing: grouped.get(dim)!.some((f) => f.urgency !== 'eventual'),
-      recommendedPlan: (() => {
-        const score = scoreDimensionCriticality(classified, dim);
-        if (score >= 70) return 'governance_os';
-        if (score >= 40) return 'professional_governance';
-        return 'starter_governance';
-      })(),
-    }));
+    const dimensionScores = dimensions.map((dim) => {
+      const score = scoreDimensionCriticality(classified, dim);
+      const recommendedPlan: 'starter_governance' | 'professional_governance' | 'governance_os' =
+        score >= 70 ? 'governance_os' : score >= 40 ? 'professional_governance' : 'starter_governance';
+      return {
+        dimension: dim,
+        criticalityScore: score,
+        needsAddressing: grouped.get(dim)!.some((f) => f.urgency !== 'eventual'),
+        recommendedPlan,
+      };
+    });
 
     return {
       scanId,

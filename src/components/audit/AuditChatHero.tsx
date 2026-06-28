@@ -4,9 +4,10 @@ import { AudioLines, Loader2, AlertTriangle, ShieldCheck, ArrowRight, Send, Exte
 import { trackConversion } from '../../lib/pixels';
 import { getAffiliateRef } from '../../lib/affiliate';
 import { postEdgeFunction } from '../../lib/edgeFunction';
+import { getSupabaseUrl } from '../../lib/supabaseUrl';
 import { startAuditScanAnon } from '../../features/governance/AgentWidget/agentApi';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = getSupabaseUrl();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^[^\s]+\.[a-z]{2,}/i;
 

@@ -71,17 +71,18 @@ export function Widerrufsbelehrung() {
         <Section title="Folgen des Widerrufs">
           <p>
             Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen,
-            die wir von Ihnen erhalten haben, einschließlich der Lieferkosten
-            (mit Ausnahme der zusätzlichen Kosten, die sich daraus ergeben, dass
-            Sie eine andere Art der Lieferung als die von uns angebotene,
-            günstigste Standardlieferung gewählt haben), unverzüglich und
-            spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem
-            die Mitteilung über Ihren Widerruf dieses Vertrags bei uns
-            eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe
-            Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt
-            haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes
-            vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung
-            Entgelte berechnet.
+            die wir von Ihnen erhalten haben, unverzüglich und spätestens binnen
+            vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über
+            Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese
+            Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der
+            ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen
+            wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden
+            Ihnen wegen dieser Rückzahlung Entgelte berechnet.
+          </p>
+          <p className="text-xs text-titanium-500">
+            Hinweis: RealSync erbringt ausschließlich digitale Dienstleistungen
+            (Software-as-a-Service). Es fallen keine Liefer- oder
+            Rücksendekosten an.
           </p>
         </Section>
 

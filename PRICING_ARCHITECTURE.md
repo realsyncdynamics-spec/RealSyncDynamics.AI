@@ -233,24 +233,58 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS
 
 ---
 
-## Implementation: Phase 2 (Next)
+## Implementation: Phase 2 (In Progress)
 
-### TODO:
-1. **Stripe Integration**:
+### ✅ Completed (Guided Post-Scan Onboarding Flow):
+1. **Core Infrastructure**:
+   - ✅ Type system (`src/core/onboarding/types.ts`): RiskLevel, GovernanceDimension, ScanFinding, ClassifiedFinding, GovernanceProfile, Recommendation
+   - ✅ Finding Classifier (`src/core/onboarding/findingClassifier.ts`): Maps scan findings to governance dimensions with business context
+   - ✅ Question Engine (`src/core/onboarding/questionEngine.ts`): Generates contextual questions (80+ templates) based on findings
+   - ✅ Recommendation Engine (`src/core/onboarding/recommendationEngine.ts`): Scores dimensions, recommends plan tier, estimates time-to-value
+   - ✅ Hook (`src/hooks/useGovernanceOnboarding.ts`): Orchestrates entire flow
+
+2. **Pages & Routing**:
+   - ✅ `/onboarding/:scanId` — Sector selection → contextual questions → summary
+   - ✅ `/recommendation/:scanId` — Shows personalized recommendation with reasoning
+   - ✅ Routes added to `App.tsx`
+
+3. **Flow Architecture**:
+   ```
+   Free Website Audit (/audit)
+          ↓ (with findings)
+   Onboarding Flow (/onboarding/:scanId)
+     - Step 1: Sector selection (SaaS, Agency, Healthcare, Public Sector, Generic)
+     - Step 2: 5-10 contextual questions based on findings
+     - Step 3: Summary with profile preview
+          ↓
+   Recommendation Page (/recommendation/:scanId)
+     - Recommended plan tier (Starter, Professional, Governance OS, Enterprise)
+     - Why this plan (dimension breakdown + urgency)
+     - Time-to-value estimate
+     - CTA to checkout
+   ```
+
+### TODO (Remaining Phase 2):
+1. **UI/UX Polish**:
+   - Integrate with existing audit page (add CTA button to onboarding flow)
+   - Add transition from AuditLanding → GovernanceOnboarding
+   - Progress indicators and visual feedback
+
+2. **Stripe Integration**:
    - Create Stripe products & prices for governance tiers
    - Map Stripe prices to plan_keys in Supabase
    - Update checkout flow to support governance plans
 
-2. **Subscription Logic**:
+3. **Subscription Logic**:
    - Edge Function to map Stripe subscription → plan_key → features
    - RLS policies to enforce feature access per tenant
 
-3. **Feature Enforcement**:
+4. **Feature Enforcement**:
    - Add feature gates to all governance features in the app
    - Block access to unavailable features based on subscription
    - Show upgrade prompts when users hit limits
 
-4. **Industry Agents** (Phase 3):
+5. **Industry Agents** (Phase 3):
    - SaaS/Tech Agent (system inventory, AI-Act classification)
    - Agency/White-Label Agent
    - Healthcare Agent

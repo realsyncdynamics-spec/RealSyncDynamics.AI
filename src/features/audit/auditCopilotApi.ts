@@ -1,4 +1,5 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../../core/ai-gateway/edgeClient';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 
 // Audit-Copilot helpers. Talk to the `ai-gateway` Edge Function via
 // `AiGatewayEdgeClient` and return structured payloads for the panel UI.
@@ -48,11 +49,14 @@ export interface AiGatewayClientDeps {
 
 function resolveClient(deps?: AiGatewayClientDeps): AiGatewayEdgeClient {
   if (deps?.client) return deps.client;
-  const url = deps?.supabaseUrl     ?? (import.meta.env.VITE_SUPABASE_URL      as string | undefined);
-  const key = deps?.supabaseAnonKey ?? (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
+  // Zentrale Auflösung mit öffentlichem Produktions-Fallback (siehe
+  // lib/supabaseUrl.ts), damit der Audit-Co-Pilot auch in Deploys ohne
+  // gesetzte VITE_*-Build-Env erreichbar bleibt.
+  const url = deps?.supabaseUrl     ?? getSupabaseUrl();
+  const key = deps?.supabaseAnonKey ?? getSupabaseAnonKey();
   if (!url || !key) {
     throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
-      'VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY fehlen — ai-gateway nicht aufrufbar.');
+      'Supabase-Zugangsdaten fehlen — ai-gateway nicht aufrufbar.');
   }
   return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key });
 }

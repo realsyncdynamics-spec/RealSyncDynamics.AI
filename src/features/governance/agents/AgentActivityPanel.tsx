@@ -53,6 +53,21 @@ export function AgentActivityPanel() {
         </span>
       </div>
 
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 border-b border-titanium-900 px-4 py-2">
+          {(['critical', 'high', 'medium', 'low', 'info'] as ObservationSeverity[])
+            .filter((s) => summary[s] > 0)
+            .map((s) => (
+              <span
+                key={s}
+                className={`inline-flex items-center gap-1 border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${SEVERITY_STYLE[s]}`}
+              >
+                {summary[s]} {s}
+              </span>
+            ))}
+        </div>
+      )}
+
       {loading && rows.length === 0 ? (
         <div className="flex items-center gap-2 px-4 py-6 text-xs text-titanium-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Lädt …

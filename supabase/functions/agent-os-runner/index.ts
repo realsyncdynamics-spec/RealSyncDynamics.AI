@@ -22,6 +22,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 import { runDeadlineSentinelForTenant } from '../_shared/agents/deadlineSentinelRunner.ts';
+import { runMonitoringSloForTenant } from '../_shared/agents/monitoringSloRunner.ts';
 import { generateGovernanceBriefForTenant } from '../_shared/agents/governanceBriefRunner.ts';
 
 interface RequestBody {
@@ -85,6 +86,18 @@ Deno.serve(async (req: Request) => {
     try {
       const sentinel = await runDeadlineSentinelForTenant(admin, tenant_id, now);
 
+      // PHASE B · Schritt 3 — Monitoring-SLO (deterministisch, jede Cadence):
+      // prüft, ob die Überwachung selbst ihr SLO hält (überfällige/fehlerhafte
+      // Quellen). Fehler dürfen den Lauf nicht abbrechen.
+      let slo = { monitoring_slos_evaluated: 0, monitoring_slos_breached: 0 };
+      try {
+        const r = await runMonitoringSloForTenant(admin, tenant_id, now);
+        slo = { monitoring_slos_evaluated: r.monitoring_slos_evaluated, monitoring_slos_breached: r.monitoring_slos_breached };
+        sentinel.errors.push(...r.errors);
+      } catch (e) {
+        sentinel.errors.push(`monitoring_slo_failed: ${(e as Error)?.message ?? String(e)}`);
+      }
+
       // PHASE B · Schritt 2 — Hermes Governance-Brief (LLM, nur daily).
       // Fehler dürfen den Sentinel-Lauf nicht abbrechen.
       let hermes_brief_created = false;
@@ -102,8 +115,8 @@ Deno.serve(async (req: Request) => {
         tenant_id,
         hermes_brief_created,
         hermes_brief_id,
-        monitoring_slos_evaluated: 0,
-        monitoring_slos_breached:  0,
+        monitoring_slos_evaluated: slo.monitoring_slos_evaluated,
+        monitoring_slos_breached:  slo.monitoring_slos_breached,
         decision_overdue_flagged:  sentinel.decision_overdue_flagged,
         alerts_created:            sentinel.alerts_created,
         errors:                    sentinel.errors,

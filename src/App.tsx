@@ -205,6 +205,9 @@ const RemediationPlansView      = lazy(() => import('./features/governance/remed
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
 const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
 const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
+const BotsView                  = lazy(() => import('./features/bots/BotsView').then((m) => ({ default: m.BotsView })));
+const BotBuilderView            = lazy(() => import('./features/bots/BotBuilderView').then((m) => ({ default: m.BotBuilderView })));
+const BotInboxView              = lazy(() => import('./features/bots/BotInboxView').then((m) => ({ default: m.BotInboxView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
 const OperationsSuppliersView   = lazy(() => import('./features/operations/SuppliersView').then((m) => ({ default: m.SuppliersView })));
 const OperationsLocationsView   = lazy(() => import('./features/operations/LocationsView').then((m) => ({ default: m.LocationsView })));
@@ -523,6 +526,9 @@ function RoutesWithTracking() {
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
       <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />

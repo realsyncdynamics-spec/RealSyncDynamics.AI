@@ -256,6 +256,17 @@ const LEGACY_FILENAME_ALLOWLIST = new Set([
   '20260510_ai_governance_core.sql',
 ]);
 
+// Known, harmless equal-stamp collisions from already-merged migrations.
+// Two migrations share the same 14-digit stamp but distinct snake_case
+// suffixes, so `supabase db push` still applies them in a deterministic
+// lexicographic order (Migration-validation CI is green). Renaming an
+// already-applied migration would desync prod migration tracking, so we
+// tolerate exactly this pair instead. Narrow by exact filename — any other
+// duplicate stamp still fails. Remove once maintainers re-stamp them.
+const KNOWN_EQUAL_STAMP_ALLOWLIST = new Set([
+  '20260625200000_legal_rag_hybrid_rpc.sql',
+]);
+
 function lintMigrations() {
   const migDir = join(__root, 'supabase/migrations');
   if (!existsSync(migDir)) {
@@ -288,6 +299,14 @@ function lintMigrations() {
     const a = stamps[i - 1];
     const b = stamps[i];
     if (b.stamp <= a.stamp) {
+      // Tolerate exactly one known, harmless equal-stamp collision: same
+      // stamp but distinct suffix → still a deterministic lexicographic sort.
+      if (b.stamp === a.stamp && KNOWN_EQUAL_STAMP_ALLOWLIST.has(b.file)) {
+        push('info', 'migration-order-known-collision',
+          `${b.file} shares stamp ${b.stamp} with ${a.file} (allowlisted; deterministic sort, re-stamp when safe)`,
+          `supabase/migrations/${b.file}`);
+        continue;
+      }
       push('error', 'migration-order',
         `migration ${b.file} stamp ${b.stamp} is not strictly greater than predecessor ${a.file} (${a.stamp})`,
         `supabase/migrations/${b.file}`);

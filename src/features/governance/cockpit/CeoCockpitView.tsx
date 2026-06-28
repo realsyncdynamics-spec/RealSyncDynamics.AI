@@ -17,6 +17,7 @@ import { Button } from '../../../enterprise-os/components/Button';
 import { StatusBadge } from '../../../enterprise-os/components/Badge';
 import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
+import { GovernanceBriefCard } from './GovernanceBriefCard';
 
 export function CeoCockpitView() {
   const { activeTenantId, tenants } = useTenant();
@@ -59,6 +60,8 @@ export function CeoCockpitView() {
           </Link>
         )}
       </div>
+
+      <GovernanceBriefCard />
 
       {!activeTenantId && (
         <div className="py-12 text-center text-titanium-400">

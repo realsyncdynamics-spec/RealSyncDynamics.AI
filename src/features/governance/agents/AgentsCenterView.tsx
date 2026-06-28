@@ -26,6 +26,7 @@ import {
   type AgentRunRow,
 } from './agentsApi';
 import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/agents/types';
+import { AgentActivityPanel } from './AgentActivityPanel';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {
@@ -278,12 +279,13 @@ export function AgentsCenterView() {
         <span className="ml-auto font-mono text-[10px] text-titanium-600">{filtered.length} Agenten</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {filtered.map((agent) => (
             <AgentCard key={agent.id} agent={agent} handlers={handlers} />
           ))}
         </div>
+        <AgentActivityPanel />
       </div>
 
       {/* Run-Result-Modal */}

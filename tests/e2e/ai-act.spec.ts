@@ -4,30 +4,30 @@ import { aiActUsecases } from '../fixtures/ai-act-usecases';
 const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
 
 test.describe('[GOV-004/005] EU AI Act Seite', () => {
-  test('[GOV-004] AI-Act-Seite lädt und enthält Einstieg', async ({ page }) => {
+  test('[GOV-004] AI-Act-Seite stellt Risikoklassen-Hierarchie dar', async ({ page }) => {
     await page.goto(BASE_URL + '/ai-act/', { waitUntil: 'domcontentloaded' });
 
     await expect(page).toHaveTitle(/.+/);
 
-    // Seite muss irgendeinen Inhaltsblock haben
-    const content = page.locator('main, [role="main"], article, section').first();
-    await expect(content).toBeVisible({ timeout: 10000 });
+    // Konkrete Hero-Headline statt generischem Inhaltsblock.
+    await expect(
+      page.getByRole('heading', { level: 1, name: /AI Act compliance without a consulting engagement/i }),
+    ).toBeVisible({ timeout: 10000 });
+
+    // EU-AI-Act-Risikoklassen (minimal / limited / high / prohibited) als
+    // Pflichtenhierarchie sichtbar.
+    await expect(
+      page.getByText(/minimal \/ limited \/ high \/ prohibited/i),
+    ).toBeVisible();
   });
 
-  test('[GOV-005] Mindestens ein Usecase-Element ist vorhanden', async ({ page }) => {
+  test('[GOV-005] Oversight-, Policy- und Evidence-Hinweise sichtbar', async ({ page }) => {
     await page.goto(BASE_URL + '/ai-act/', { waitUntil: 'domcontentloaded' });
 
-    // Sucht nach Usecase-Karten, Listen oder Buttons
-    const usecaseEl = page
-      .locator('[data-testid*="usecase"], .usecase, li, .card, [class*="risk"], [class*="usecase"]')
-      .first();
-
-    if (await usecaseEl.count() === 0) {
-      test.skip(true, 'Keine Usecase-Elemente gefunden – ggf. Selector anpassen');
-      return;
-    }
-
-    await expect(usecaseEl).toBeVisible();
+    // Risikobasierte Pflichten: menschliche Freigabe, Oversight, Evidence-Chain.
+    await expect(page.getByText(/menschlicher Freigabe/i)).toBeVisible();
+    await expect(page.getByText(/Oversight/i).first()).toBeVisible();
+    await expect(page.getByText(/Evidence-Chain/i)).toBeVisible();
   });
 
   // Fixture-Daten für spätere Erweiterung

@@ -76,6 +76,10 @@ export function AuditLanding() {
   const [classicForm, setClassicForm] = useState(false);
   const [chatGen, setChatGen] = useState(0);
 
+  // Hero-Scan-Übergabe von der Startseite: /audit?url=example.de übernimmt die
+  // URL direkt in den Chat-Assistenten, sodass der Funnel nahtlos weiterläuft.
+  const initialUrl = new URLSearchParams(window.location.search).get('url')?.trim().slice(0, 200) || undefined;
+
   function resetForNewScan() {
     setReport(null);
     setChatGen((n) => n + 1);
@@ -154,6 +158,7 @@ export function AuditLanding() {
             <>
               <AuditChatHero
                 key={chatGen}
+                initialUrl={chatGen === 0 ? initialUrl : undefined}
                 onScanComplete={(r) => {
                   setReport(r);
                   trackConversion('Lead', { content_name: 'dsgvo_audit' });

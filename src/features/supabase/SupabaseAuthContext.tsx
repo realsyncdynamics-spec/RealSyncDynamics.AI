@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { createClient, Session, User } from '@supabase/supabase-js';
+import { createClient, Session } from '@supabase/supabase-js';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 
 export interface AuthUser {
   id: string;
@@ -18,16 +19,18 @@ interface SupabaseAuthContextType {
 
 const SupabaseAuthContext = createContext<SupabaseAuthContextType | null>(null);
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// URL und anon-Key werden zentral über `supabaseUrl.ts` aufgelöst und greifen
+// auf die öffentlichen Produktions-Projektwerte zurück, falls
+// `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` in einem Deploy nicht gesetzt
+// sind. Dadurch funktioniert die Anmeldung auch ohne gesetzte Frontend-Env-
+// Variablen — vorher lief die SPA mit Platzhalter-Client im Demo-Modus und der
+// Login schlug stillschweigend fehl.
+const supabaseUrl = getSupabaseUrl();
+const supabaseAnonKey = getSupabaseAnonKey();
 
-// Gracefully handle missing Supabase config — use dummy client if not configured
-// This allows the app to render even without Supabase credentials
 const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
-  : createClient('https://placeholder.supabase.co', 'placeholder-key');
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);

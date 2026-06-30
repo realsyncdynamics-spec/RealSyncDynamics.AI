@@ -63,49 +63,16 @@ const SEV_LABEL: Record<Severity, string> = {
   pass: 'OK',
 };
 
-export function AuditChatHero({
-  onScanComplete,
-  initialUrl,
-}: {
-  onScanComplete: (report: Report) => void;
-  /** Vorausgefüllte URL (z. B. vom Hero-Scan-Feld der Startseite via ?url=).
-   *  Wird einmalig automatisch übernommen, sodass der Nutzer direkt bei der
-   *  E-Mail-Frage landet — „URL eingeben → Scan starten" ohne Doppel-Eingabe. */
-  initialUrl?: string;
-}) {
-  // Eine valide initialUrl überspringt die URL-Frage und startet bei der E-Mail.
-  const prefilled = initialUrl?.trim() && URL_RE.test(initialUrl.trim()) && !initialUrl.includes('@')
-    ? initialUrl.trim()
-    : null;
-  const prefilledNormalized = prefilled
-    ? (prefilled.match(/^https?:\/\//i) ? prefilled : `https://${prefilled}`)
-    : '';
-
-  const [phase, setPhase] = useState<Phase>(prefilled ? 'ask-email' : 'ask-url');
-  const [url, setUrl] = useState(prefilledNormalized);
-  const [bubbles, setBubbles] = useState<Bubble[]>(
-    prefilled
-      ? [
-          {
-            id: 'intro',
-            role: 'bot',
-            text: 'Hi! Ich bin der DSGVO-Audit-Assistent. Welche Website soll ich für Dich scannen?',
-          },
-          { id: 'prefill', role: 'user', text: prefilled },
-          {
-            id: 'ask-email',
-            role: 'bot',
-            text: 'Alles klar. An welche E-Mail-Adresse darf ich den vollständigen Report schicken?',
-          },
-        ]
-      : [
-          {
-            id: 'intro',
-            role: 'bot',
-            text: 'Hi! Ich bin der DSGVO-Audit-Assistent. Welche Website soll ich für Dich scannen?',
-          },
-        ],
-  );
+export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Report) => void }) {
+  const [phase, setPhase] = useState<Phase>('ask-url');
+  const [url, setUrl] = useState('');
+  const [bubbles, setBubbles] = useState<Bubble[]>([
+    {
+      id: 'intro',
+      role: 'bot',
+      text: 'Hi! Ich bin der DSGVO-Audit-Assistent. Welche Website soll ich für Dich scannen?',
+    },
+  ]);
   const [input, setInput] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);

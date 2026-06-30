@@ -273,6 +273,8 @@ const EnterpriseAgenciesPage = lazy(() => import('./enterprise-os/pages/Agencies
 const EnterpriseDatenschutzPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.DatenschutzPage })));
 const EnterpriseImpressumPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.ImpressumPage })));
 const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/CheckoutEntryPage').then((m) => ({ default: m.CheckoutEntryPage })));
+const EnterpriseCheckoutPageWrapper = lazy(() => import('./enterprise-os/pages/CheckoutPageWrapper').then((m) => ({ default: m.CheckoutPageWrapper })));
+const EnterpriseWelcomeWizardPage = lazy(() => import('./enterprise-os/pages/WelcomeWizardPage').then((m) => ({ default: m.WelcomeWizardPage })));
 
 // Phase 4 — App Workspace (Websites, Risiken, Compliance, Evidence, Monitoring)
 const EnterpriseWebsitesPage = lazy(() => import('./enterprise-os/pages/WebsitesPage').then((m) => ({ default: m.WebsitesPage })));
@@ -617,7 +619,7 @@ function RoutesWithTracking() {
       <Route path="/solutions/agencies" element={<AgenciesSolution />} />
                 <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                 <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
-                <Route path="/checkout/:planKey" element={<CheckoutPage />} />
+                <Route path="/checkout/:planKey" element={<EnterpriseCheckoutPageWrapper />} />
       <Route path="/tenant/invites" element={<RequireAal2 action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
       {/* Legacy /governance/* routes redirect to canonical /app/* paths (with shell wrapper).
@@ -707,10 +709,10 @@ function RoutesWithTracking() {
       <Route path="/limits" element={<Limits />} />
 
       {/* Common auth entry points users expect */}
-      <Route path="/login" element={<Navigate to="/welcome" replace />} />
-      <Route path="/signin" element={<Navigate to="/welcome" replace />} />
-      <Route path="/signup" element={<Navigate to="/welcome" replace />} />
-      <Route path="/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/login" element={<Navigate to="/os/login" replace />} />
+      <Route path="/signin" element={<Navigate to="/os/login" replace />} />
+      <Route path="/signup" element={<Navigate to="/os/signup" replace />} />
+      <Route path="/register" element={<Navigate to="/os/signup" replace />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.
@@ -724,6 +726,7 @@ function RoutesWithTracking() {
       <Route path="/os/login" element={<EnterpriseAuthPage mode="login" />} />
       <Route path="/os/signup" element={<EnterpriseAuthPage mode="signup" />} />
       <Route path="/os/checkout" element={<EnterpriseCheckoutEntryPage />} />
+      <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
       <Route

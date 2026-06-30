@@ -2,22 +2,26 @@ import React from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 
 /**
- * /os/checkout — leitet auf den echten Stripe-Checkout-Flow unter
- * /checkout/:planKey weiter (siehe src/features/billing/CheckoutPage.tsx).
- * Gültige Plan-Keys: starter, growth, agency. Enterprise & unbekannte
- * Plan-IDs landen auf /contact-sales.
+ * /os/checkout Entry Point mit Plan-Validierung
+ *
+ * Routing:
+ *   1. /os/checkout?plan=starter  → Redirect zu /checkout/starter (canonical route)
+ *   2. enterprise oder invalid     → Redirect zu /contact-sales oder /os/pricing
+ *
+ * Canonical route /checkout/:planKey wird direkt durch CheckoutPageWrapper angezeigt.
+ * Diese Entry Page dient nur zur Query-Parameter-Normalisierung.
  */
 const VALID_PLAN_KEYS = new Set(['starter', 'growth', 'agency']);
 
 export function CheckoutEntryPage() {
   const [params] = useSearchParams();
-  const planId = params.get('plan') ?? '';
+  const plan = params.get('plan') || '';
 
-  if (planId === 'enterprise') {
+  if (plan === 'enterprise') {
     return <Navigate to="/contact-sales?intent=enterprise&source=os-checkout-redirect" replace />;
   }
-  if (VALID_PLAN_KEYS.has(planId)) {
-    return <Navigate to={`/checkout/${planId}`} replace />;
+  if (VALID_PLAN_KEYS.has(plan)) {
+    return <Navigate to={`/checkout/${plan}`} replace />;
   }
   return <Navigate to="/os/pricing" replace />;
 }

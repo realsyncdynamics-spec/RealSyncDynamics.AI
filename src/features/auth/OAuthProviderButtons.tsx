@@ -19,11 +19,18 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
  * Magic-Link bleibt als Fallback in Welcome.tsx erhalten — diese Component
  * ergaenzt es, ersetzt es nicht.
  *
- * Provider-Sichtbarkeit ist per env-Flag steuerbar (Default: an). Setze
+ * Provider-Sichtbarkeit ist per env-Flag steuerbar. Setze
  * VITE_AUTH_<PROVIDER>_ENABLED=false im Hosting-Dashboard, um einen
  * defekten Provider auszublenden, ohne Deploy auszuloesen. Beispiel:
  * VITE_AUTH_GOOGLE_ENABLED=false blendet den Google-Button aus, wenn
  * die OAuth-Client-ID in der Google Cloud Console ungueltig ist.
+ *
+ * Ausnahme LinkedIn: Der Provider `linkedin_oidc` ist im Supabase-Projekt
+ * (noch) nicht aktiviert — ein Klick liefe sonst in „Unsupported provider".
+ * Daher ist LinkedIn opt-IN: der Button erscheint nur, wenn explizit
+ * VITE_AUTH_LINKEDIN_ENABLED=true gesetzt ist. Sobald LinkedIn in Supabase
+ * (Auth → Providers → LinkedIn OIDC) mit Client-ID/Secret eingerichtet ist,
+ * genuegt dieses eine Flag, um den Button wieder zu zeigen.
  */
 
 type Provider = 'google' | 'azure' | 'linkedin_oidc' | 'github';
@@ -34,10 +41,17 @@ function flagOn(value: string | undefined): boolean {
   return value !== 'false';
 }
 
+// Opt-IN: nur bei explizitem "true" an (Default aus). Fuer Provider, die
+// serverseitig noch nicht eingerichtet sind und sonst einen kaputten Button
+// zeigen wuerden.
+function flagOptIn(value: string | undefined): boolean {
+  return value === 'true';
+}
+
 const PROVIDER_ENABLED: Record<Provider, boolean> = {
   google:        flagOn(import.meta.env.VITE_AUTH_GOOGLE_ENABLED),
   azure:         flagOn(import.meta.env.VITE_AUTH_AZURE_ENABLED),
-  linkedin_oidc: flagOn(import.meta.env.VITE_AUTH_LINKEDIN_ENABLED),
+  linkedin_oidc: flagOptIn(import.meta.env.VITE_AUTH_LINKEDIN_ENABLED),
   github:        flagOn(import.meta.env.VITE_AUTH_GITHUB_ENABLED),
 };
 

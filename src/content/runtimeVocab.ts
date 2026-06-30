@@ -106,6 +106,8 @@ export const PLANS = [
  */
 export const CTA = {
   startFree:          'Kostenlos starten',
+  scanWebsite:        'Website scannen',
+  startTrialFree:     '14 Tage kostenlos testen',
   startAudit:         'Audit starten',
   addWebsite:         'Website hinzufügen',
   activateMonitoring: 'Monitoring aktivieren',

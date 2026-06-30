@@ -44,6 +44,7 @@ import { RuntimePage } from './pages/RuntimePage';
 import { MonitoringPage, MonitoringSurface } from './pages/MonitoringPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
+import { AiDsgvoBotPage } from './pages/AiDsgvoBotPage';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
 import { DigitalSovereignty } from './pages/DigitalSovereignty';
@@ -341,6 +342,7 @@ function RoutesWithTracking() {
       <Route path="/governance-complexity-score"   element={<GovernanceScorePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
+      <Route path="/ai-dsgvo-bot" element={<AiDsgvoBotPage />} />
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />

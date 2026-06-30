@@ -402,51 +402,37 @@ function DsgvoBot() {
 /* ── PRICING ────────────────────────────────────────────── */
 const PRICING = [
   {
-    name: 'Free Trial',
-    price: '0 €',
-    cadence: '14 Tage kostenlos',
-    features: ['Website scannen', 'DSGVO-Risiken sehen', 'AI DSGVO Bot testen', 'Kein automatisches Abo'],
-    cta: '14 Tage testen',
-    to: TRIAL_CTA,
-  },
-  {
-    name: 'Governance Starter',
+    name: 'Starter',
     price: '79 €',
     cadence: '/Monat',
-    features: ['1–3 Domains', 'DSGVO Website Audit', 'Basic Runtime-Telemetry', 'AI DSGVO Bot', 'PDF/CSV Reports'],
+    features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'],
     cta: 'Starten',
-    to: TRIAL_CTA,
+    to: '/audit',
   },
   {
-    name: 'Governance Pro',
-    price: '149–249 €',
+    name: 'Growth',
+    price: '249 €',
     cadence: '/Monat',
-    features: [
-      'Mehrere Domains',
-      'AI-Act-Pflichtenmatrix',
-      'Erweiterte Audit-Logs',
-      'Alerts',
-      'Mehrmandanten-Support',
-      'AI DSGVO Bot erweitert',
-    ],
-    cta: 'Pro wählen',
-    to: TRIAL_CTA,
+    features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Priorisierter Support'],
+    cta: 'Wählen',
+    to: '/audit',
     featured: true,
   },
   {
-    name: 'Enterprise',
-    price: 'Auf Anfrage',
-    cadence: 'Private Cloud / On-Prem',
-    features: [
-      'Private Cloud / On-Prem',
-      'SSO',
-      'Individuelle Integrationen',
-      'BAIT / MaRisk / ISO 27001 Anschlussfähigkeit',
-      'Erweiterte Governance-Workflows',
-      'Dedizierte Enterprise-Demo',
-    ],
-    cta: 'Enterprise anfragen',
-    to: DEMO_CTA,
+    name: 'Agency',
+    price: '699 €',
+    cadence: '/Monat',
+    features: ['25 Domains', 'White-Label', 'Multi-Tenant-Dashboard', 'API-Zugriff'],
+    cta: 'Wählen',
+    to: '/agencies',
+  },
+  {
+    name: 'Scale',
+    price: '1.999 €',
+    cadence: '/Monat',
+    features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'],
+    cta: 'Wählen',
+    to: '/contact-sales',
   },
 ];
 
@@ -455,7 +441,7 @@ function Pricing() {
     <Section
       eyebrow="Preise"
       title="Transparente Preise, die mit Ihrer Verantwortung skalieren"
-      subtitle="Self-Service ab 79 €/Monat — inklusive AI DSGVO Bot. Für regulierte Anforderungen: Enterprise mit Private Cloud und individuellen Integrationen."
+      subtitle="Vom Einzel-Creator bis zur DSB-Kanzlei mit 50 Mandanten. Transparent, jederzeit kündbar — ohne Setup-Gebühr und ohne Berater-Tagessätze."
       tint
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

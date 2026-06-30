@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { CTA } from '../content/runtimeVocab';
+import { PUBLIC_PRICING_TIERS } from '../config/pricing';
 import {
   Snowflake,
   ArrowRight,
@@ -435,47 +436,20 @@ function Accordion({ question, answer, defaultOpen = false }: { question: string
 }
 
 /* ── PRICING ────────────────────────────────────────────── */
-type Plan = {
-  name: string;
-  price: string;
-  cadence: string;
-  audience: string;
-  bullets: string[];
-  cta: string;
-  to: string;
-  featured?: boolean;
-};
+// Vier self-buchbare Tarife (79 / 249 / 699 / 1.999 €) direkt aus der
+// kanonischen Preis-Config — Preise & Checkout-Links bleiben so synchron zu
+// Stripe und der /pricing-Seite. Free Audit und Enterprise werden bewusst
+// nicht als Karte gerendert (Free = Hero-Scan, Enterprise = separater CTA).
+const HOME_TIERS = PUBLIC_PRICING_TIERS.filter((t) => t.id !== 'free');
 
-const PLANS: Plan[] = [
-  {
-    name: 'Starter',
-    price: '79 €',
-    cadence: '/ Monat',
-    audience: 'Für KMU, Agenturen, Websites und erste AI-Usecases.',
-    bullets: ['AI-Inventar & Klassifikation', 'Basic Runtime-Telemetry', 'Exportfähige Reports'],
-    cta: CTA.startTrialFree,
-    to: '/checkout/starter?source=home-pricing',
-  },
-  {
-    name: 'Pro',
-    price: '149–249 €',
-    cadence: '/ Monat',
-    audience: 'Für mehrere Domains, Teams und laufende Compliance.',
-    bullets: ['AI-Act-Pflichtenmatrix', 'Erweiterte Audit-Logs & Alerts', 'Mehrmandanten-Support'],
-    cta: CTA.startTrialFree,
-    to: '/checkout/growth?source=home-pricing',
-    featured: true,
-  },
-  {
-    name: 'Enterprise / On-Prem',
-    price: 'auf Anfrage',
-    cadence: '',
-    audience: 'Für regulierte Branchen, Private Cloud und interne Integrationen.',
-    bullets: ['Private Cloud / On-Prem', 'Individuelle Integrationen', 'Erweiterte Governance-Workflows'],
-    cta: CTA.enterprise,
-    to: '/contact-sales?tier=enterprise&source=home-pricing',
-  },
-];
+// CTA-Labels conversion-fokussiert überschreiben — der 249-€-Tarif (Growth)
+// ist der hervorgehobene „14 Tage gratis testen"-Einstieg nach dem Free-Scan.
+const HOME_CTA_LABEL: Record<string, string> = {
+  starter: CTA.startTrialFree,
+  growth: CTA.startTrialFree,
+  agency: CTA.startTrialFree,
+  scale: 'Scale anfragen',
+};
 
 function Pricing() {
   return (
@@ -484,12 +458,12 @@ function Pricing() {
       title="Preise, die mit Ihrer Verantwortung skalieren"
       subtitle="Transparent, monatlich kündbar, ohne Setup-Gebühr. Starten Sie self-service — kein Verkaufsgespräch nötig."
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        {PLANS.map((p) => {
-          const featured = !!p.featured;
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+        {HOME_TIERS.map((t) => {
+          const featured = t.highlight;
           return (
             <div
-              key={p.name}
+              key={t.id}
               className={`relative flex flex-col p-7 rounded-2xl border ${
                 featured ? 'border-cyan-400/60 bg-cyan-500/[0.06]' : 'border-white/10 bg-white/[0.02]'
               }`}
@@ -497,36 +471,36 @@ function Pricing() {
               {featured && (
                 <span className="absolute -top-3 left-7 px-3 py-1 text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded-full">BELIEBT</span>
               )}
-              <h3 className="text-lg font-semibold mb-1">{p.name}</h3>
+              <h3 className="text-lg font-semibold mb-1">{t.name}</h3>
               <div className="flex items-baseline gap-1 mb-3">
-                <span className="font-mono text-3xl font-bold">{p.price}</span>
-                {p.cadence && <span className="font-mono text-xs text-white/40">{p.cadence}</span>}
+                <span className="font-mono text-3xl font-bold">{t.priceString} €</span>
+                <span className="font-mono text-xs text-white/40">{t.priceSuffix}</span>
               </div>
-              <p className="text-sm text-white/60 leading-relaxed mb-5">{p.audience}</p>
+              <p className="text-sm text-white/60 leading-relaxed mb-5">{t.tagline}</p>
               <ul className="flex-1 space-y-3 mb-7">
-                {p.bullets.map((b) => (
+                {t.bullets.slice(0, 4).map((b) => (
                   <li key={b} className="flex items-start gap-2.5 text-sm text-white/70">
                     <Check className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" strokeWidth={2} />{b}
                   </li>
                 ))}
               </ul>
               <SmartLink
-                to={p.to}
+                to={t.cta.href}
                 className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-colors ${
                   featured
                     ? 'text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300'
                     : 'text-white border border-white/20 hover:border-white/40 hover:bg-white/5'
                 }`}
               >
-                {p.cta}<ArrowRight className="w-4 h-4" />
+                {HOME_CTA_LABEL[t.id] ?? t.cta.label}<ArrowRight className="w-4 h-4" />
               </SmartLink>
             </div>
           );
         })}
       </div>
       <p className="mt-6 text-center text-sm text-white/50">
-        Alle Tarife und Details auf der{' '}
-        <SmartLink to="/pricing" className="font-semibold text-cyan-400 hover:text-cyan-300">Preisübersicht</SmartLink>.
+        Enterprise / On-Prem auf Anfrage ·{' '}
+        <SmartLink to="/pricing" className="font-semibold text-cyan-400 hover:text-cyan-300">alle Tarife &amp; Details ansehen</SmartLink>.
       </p>
     </Section>
   );

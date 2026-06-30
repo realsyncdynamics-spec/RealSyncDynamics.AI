@@ -440,7 +440,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
     } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
 
     navigate(
-      `/welcome?next=${encodeURIComponent(`/checkout/starter?pilot=true&audit_id=${report.audit_id}&source=trial_cta`)}`
+      `/welcome?next=${encodeURIComponent(`/checkout/growth?pilot=true&audit_id=${report.audit_id}&source=trial_cta`)}`
     );
   }
 
@@ -454,7 +454,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
         <ShieldCheck className="h-6 w-6 text-cyan-400 shrink-0 mt-0.5" />
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-500 mb-1">
-            14 Tage kostenlos · Starter Trial
+            14 Tage kostenlos · Growth Trial · 249 €/Monat
           </p>
           <h2 className="font-display font-bold text-titanium-50 text-xl sm:text-2xl leading-tight">
             Diesen Befund 14 Tage kostenlos überwachen
@@ -497,7 +497,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
           onClick={handleActivate}
           className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-bold hover:bg-cyan-300 transition-colors"
         >
-          Starter 14 Tage kostenlos aktivieren <ArrowRight className="h-4 w-4" />
+          Growth 14 Tage kostenlos aktivieren <ArrowRight className="h-4 w-4" />
         </button>
         <button
           onClick={handleActivate}

@@ -708,11 +708,16 @@ function RoutesWithTracking() {
       <Route path="/grenzen" element={<Limits />} />
       <Route path="/limits" element={<Limits />} />
 
-      {/* Common auth entry points users expect */}
-      <Route path="/login" element={<Navigate to="/os/login" replace />} />
-      <Route path="/signin" element={<Navigate to="/os/login" replace />} />
-      <Route path="/signup" element={<Navigate to="/os/signup" replace />} />
-      <Route path="/register" element={<Navigate to="/os/signup" replace />} />
+      {/* Common auth entry points users expect.
+          Ziel ist /welcome — die echte Supabase-Anmeldung (OAuth + Magic-Link),
+          die auch die Navbars verwenden und die nach Login auf /app führt.
+          NICHT auf /os/login leiten: das ist der Klick-Prototyp ohne Backend,
+          dort entsteht keine Session → der User landet im Mock-/os/app und muss
+          sich in der echten App erneut anmelden. */}
+      <Route path="/login" element={<Navigate to="/welcome" replace />} />
+      <Route path="/signin" element={<Navigate to="/welcome" replace />} />
+      <Route path="/signup" element={<Navigate to="/welcome" replace />} />
+      <Route path="/register" element={<Navigate to="/welcome" replace />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.

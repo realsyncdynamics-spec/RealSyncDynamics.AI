@@ -5,13 +5,13 @@ import { Logo } from './Logo';
 import { CTA } from '../content/runtimeVocab';
 
 const NAV_ITEMS = [
-  { label: 'Startseite',          to: '/' },
-  { label: 'Runtime SaaS',        to: '/runtime' },
-  { label: 'AI Act & Governance', to: '/ai-act' },
-  { label: 'DSGVO Website Audit', to: '/audit' },
-  { label: 'Preise',              to: '/pricing' },
-  { label: 'Ressourcen',          to: '/ressourcen' },
-  { label: 'Login / App',         to: '/app' },
+  { label: 'Produkt',         to: '/runtime' },
+  { label: 'Lösungen',        to: '/branchen' },
+  { label: 'Automatisierung', to: '/ai-governance' },
+  { label: 'Sicherheit',      to: '/sicherheit' },
+  { label: 'Preise',          to: '/pricing' },
+  { label: 'Dokumentation',   to: '/docs' },
+  { label: 'Login',           to: '/welcome' },
 ] as const;
 
 export function LandingNavbar() {
@@ -59,10 +59,10 @@ export function LandingNavbar() {
               );
             })}
             <Link
-              to="/audit?source=nav-scan"
+              to="/audit?source=nav-activate"
               className="group inline-flex items-center gap-1.5 rounded-chip bg-petrol-700 text-white hover:bg-petrol-600 px-4 py-2 text-sm font-semibold tracking-tight transition-colors"
             >
-              {CTA.scanWebsite}
+              {CTA.startFree}
               <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
@@ -91,11 +91,11 @@ export function LandingNavbar() {
               </Link>
             ))}
             <Link
-              to="/audit?source=nav-scan-mobile"
+              to="/audit?source=nav-activate-mobile"
               onClick={() => setIsOpen(false)}
               className="flex justify-between items-center px-3 py-3 mt-2 text-base font-semibold rounded-chip bg-petrol-700 text-white"
             >
-              {CTA.scanWebsite} <ArrowRight className="h-4 w-4" />
+              {CTA.startFree} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>

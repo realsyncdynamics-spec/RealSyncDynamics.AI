@@ -1,625 +1,610 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { SEOHead } from '../components/SEOHead';
-import { useHealthStatus } from '../hooks/useHealthStatus';
 import {
-  Snowflake,
-  ShieldCheck,
   ArrowRight,
-  PlayCircle,
-  Radar,
-  FileLock2,
-  GitBranch,
-  Scale,
-  Lock,
-  ServerCog,
   Check,
   Building2,
+  Rocket,
   Landmark,
-  Megaphone,
-  Cloud,
+  Radar,
+  FileLock2,
+  Scale,
+  ServerCog,
+  Bot,
+  ShieldCheck,
+  Globe,
+  ClipboardList,
+  Plus,
+  Minus,
 } from 'lucide-react';
-import { LANDING_INDUSTRIES } from '../content/landingIndustries';
+import {
+  SmartLink,
+  LandingHeader,
+  LandingFooter,
+  TRIAL_CTA,
+  DEMO_CTA,
+  SCAN_CTA,
+} from '../components/landing/LandingShell';
 
 /**
- * SmartLink — interne Routen ("/...") via react-router-Link (SPA),
- * Anker ("#...") und externe Links via <a>. Hält die Navigation
- * rechtssicher erreichbar ohne Full-Reload.
+ * MainLanding — öffentliche Startseite im „European Enterprise Trust"-Light-Theme.
+ *
+ * Bildet zwei klar getrennte Buyer Journeys ab:
+ *   1. Self-Service-Trial für Mittelstand, KMU & Agenturen (primärer Funnel)
+ *   2. Demo-/Enterprise-Leads für regulierte Branchen (sekundärer Funnel)
+ *
+ * Funnel: Besucher → Nutzen verstehen → URL scannen → DSGVO-/AI-Governance-
+ * Ergebnis sehen → 14 Tage testen. Trial-CTA dominiert, Enterprise-Demo bleibt
+ * sichtbar sekundär.
  */
-function SmartLink({
-  to,
-  className,
-  children,
-}: {
-  to: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  if (to.startsWith('/')) {
-    return (
-      <Link to={to} className={className}>
-        {children}
-      </Link>
-    );
-  }
+
+const HERO_TRUST = [
+  'In Deutschland entwickelt',
+  'AI-Act-Pflichtenmatrix inklusive',
+  'URL eingeben – Runtime scannt',
+  'Exportierbare Reports für DSB, Revision und Aufsicht',
+];
+
+export function MainLanding() {
   return (
-    <a href={to} className={className}>
-      {children}
-    </a>
+    <div className="min-h-screen bg-white text-slate-900 antialiased font-sans">
+      <SEOHead />
+      <LandingHeader />
+      <Hero />
+      <Splitter />
+      <Funnel />
+      <Platform />
+      <DsgvoBot />
+      <Pricing />
+      <Standards />
+      <Faq />
+      <FinalCta />
+      <LandingFooter />
+    </div>
   );
 }
 
-/**
- * MainLanding — Unternehmenshauptseite (Enterprise-Ausbau der Vercel-Hauptseite rx35).
- * Design: Obsidian-Hintergrund (rgb(3,7,18)), Earth-at-Night-Hero (Europa),
- * Petrol/Cyan-Akzent, Plus Jakarta Sans + JetBrains Mono (Metadaten).
- *
- * Sektionen: Header · Hero · Trust-Strip · Produktbeweis · Plattform ·
- *            Governance-Runtime · Für-Wen · Proof-Band · Pricing ·
- *            Technologien & Standards · Security · Final-CTA · Footer
- */
+/* ── HERO ───────────────────────────────────────────────── */
+function Hero() {
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-28">
+        <div className="max-w-3xl">
+          <span className="inline-flex items-center gap-2 rounded-chip border border-petrol-200 bg-petrol-50 px-3 py-1 mb-7">
+            <span className="font-mono text-[11px] tracking-widest text-petrol-700 uppercase">
+              KI-Governance · DSGVO · EU AI Act
+            </span>
+          </span>
 
-const BG = 'rgb(3, 7, 18)';
-const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08] text-slate-900">
+            Die KI-Governance-Plattform für{' '}
+            <span className="text-petrol-700">Mittelstand und regulierte Unternehmen</span>
+          </h1>
 
-const NAV_LINKS = [
-  { label: 'Produkt', to: '#produkt' },
-  { label: 'Automatisierung', to: '/automations' },
-  { label: 'Evidence', to: '/evidence' },
-  { label: 'AI Act', to: '/ai-act' },
-  { label: 'Sicherheit', to: '#sicherheit' },
-  { label: 'Preise', to: '#preise' },
+          <p className="mt-6 text-lg sm:text-xl text-slate-600 leading-relaxed max-w-2xl">
+            RealSyncDynamics macht Websites, KI-Usecases und digitale Workflows prüfbar –
+            mit DSGVO-Checks, AI-Act-Klassifikation, Runtime-Telemetrie und auditierbarer Evidenz.
+          </p>
+
+          <div className="mt-9 flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <SmartLink
+              to={TRIAL_CTA}
+              className="group inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-700 px-7 py-4 text-base font-semibold text-white hover:bg-petrol-600 transition-colors"
+            >
+              14 Tage kostenlos testen
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </SmartLink>
+            <SmartLink
+              to={DEMO_CTA}
+              className="inline-flex items-center justify-center gap-2 rounded-chip border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors"
+            >
+              Enterprise-Demo anfragen
+            </SmartLink>
+          </div>
+
+          <ul className="mt-9 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 max-w-2xl">
+            {HERO_TRUST.map((t) => (
+              <li key={t} className="flex items-start gap-2.5 text-sm text-slate-600">
+                <Check className="mt-0.5 h-4 w-4 text-petrol-600 shrink-0" strokeWidth={2.5} />
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── SPLITTER: ZWEI BUYER JOURNEYS ──────────────────────── */
+const SPLITTER_CARDS = [
+  {
+    icon: Rocket,
+    label: 'Self-Service SaaS',
+    title: 'Mittelstand & KMU',
+    text: 'Starten Sie ohne Onboarding-Call. Website scannen, Risiken erkennen und DSGVO-/AI-Act-Maßnahmen direkt ableiten.',
+    bullets: [
+      'Ab 79 €/Monat',
+      '14 Tage kostenlos testen',
+      'Website- und KI-Governance in Minuten starten',
+      'Exportfähige Reports',
+    ],
+    cta: 'Jetzt testen',
+    to: TRIAL_CTA,
+    primary: true,
+  },
+  {
+    icon: Landmark,
+    label: 'Enterprise / Private Cloud',
+    title: 'Regulierte Branchen',
+    text: 'Für Organisationen mit erhöhten Anforderungen an Governance, Nachvollziehbarkeit, Datenresidenz, Auditfähigkeit und interne Kontrollsysteme.',
+    bullets: [
+      'BAIT, MaRisk, ISO 27001 anschlussfähig',
+      'Private Cloud / On-Prem optional',
+      'Erweiterte Audit-Logs',
+      'Individuelle Integrationen',
+    ],
+    cta: 'Enterprise-Demo anfragen',
+    to: DEMO_CTA,
+    primary: false,
+  },
 ];
 
-const HERO_CHECKS = [
-  'Runtime-Monitoring',
-  'AI-Act-Klassifizierung',
-  'DSGVO-Überwachung',
-  'Auditierbare Evidenz',
-  'EU-Hosting',
+function Splitter() {
+  return (
+    <Section eyebrow="Buyer Journeys" title="Für wen ist RealSyncDynamics?">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {SPLITTER_CARDS.map((c) => (
+          <div
+            key={c.title}
+            className={`flex flex-col rounded-panel border bg-white p-8 ${
+              c.primary ? 'border-petrol-300 ring-1 ring-petrol-200' : 'border-slate-200'
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-card bg-petrol-50 border border-petrol-100">
+                <c.icon className="h-5 w-5 text-petrol-700" strokeWidth={1.75} />
+              </span>
+              <span className="font-mono text-[11px] tracking-widest text-slate-400 uppercase">{c.label}</span>
+            </div>
+            <h3 className="text-2xl font-bold tracking-tight text-slate-900 mb-3">{c.title}</h3>
+            <p className="text-slate-600 leading-relaxed mb-6">{c.text}</p>
+            <ul className="space-y-3 mb-8 flex-1">
+              {c.bullets.map((b) => (
+                <li key={b} className="flex items-start gap-2.5 text-sm text-slate-700">
+                  <Check className="mt-0.5 h-4 w-4 text-petrol-600 shrink-0" strokeWidth={2.5} />
+                  {b}
+                </li>
+              ))}
+            </ul>
+            <SmartLink
+              to={c.to}
+              className={`group inline-flex items-center justify-center gap-2 rounded-chip px-6 py-3.5 text-sm font-semibold transition-colors ${
+                c.primary
+                  ? 'bg-petrol-700 text-white hover:bg-petrol-600'
+                  : 'border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              {c.cta}
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            </SmartLink>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ── FUNNEL: URL SCANNEN → ERGEBNIS → TESTEN ────────────── */
+const FUNNEL_STEPS = [
+  {
+    no: '01',
+    icon: Globe,
+    title: 'URL eingeben',
+    text: 'Geben Sie eine Website-Adresse ein. Die Runtime scannt Tracker, Einwilligungen, KI-Komponenten und Datenflüsse.',
+  },
+  {
+    no: '02',
+    icon: ClipboardList,
+    title: 'Governance-Ergebnis sehen',
+    text: 'Sie erhalten priorisierte DSGVO-Risiken, eine AI-Act-Klassifikation und konkrete Maßnahmen — verständlich aufbereitet.',
+  },
+  {
+    no: '03',
+    icon: Rocket,
+    title: '14 Tage testen',
+    text: 'Aktivieren Sie kontinuierliches Monitoring, exportierbare Reports und den AI DSGVO Bot — ohne automatisches Abo.',
+  },
 ];
 
-// Showcase-Metriken. DSGVO/EU-AI-Act sind Statusbadges; RISK SCORE & EVIDENCE
-// sind illustrative Produkt-Showcase-Werte (keine tenant-/RLS-Daten auf der
-// oeffentlichen Seite). MONITORING wird zur Laufzeit aus dem echten /health-
-// Endpoint befuellt — siehe Hero() + useHealthStatus.
-const STATIC_METRICS: Metric[] = [
-  { label: 'DSGVO', value: 'Compliant', accent: true },
-  { label: 'EU AI ACT', value: 'READY', accent: true },
-  { label: 'RISK SCORE', value: '87', suffix: '/100' },
-  { label: 'EVIDENCE', value: '1.248', suffix: 'Nachweise' },
-];
+function Funnel() {
+  return (
+    <Section
+      eyebrow="So funktioniert es"
+      title="Von der URL zum prüfbaren Governance-Ergebnis"
+      subtitle="Kein Sales-Gespräch nötig. Scannen Sie eine Website, sehen Sie das DSGVO-/AI-Governance-Ergebnis und starten Sie in den 14-Tage-Test."
+      tint
+    >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {FUNNEL_STEPS.map((s) => (
+          <div key={s.no} className="rounded-panel border border-slate-200 bg-white p-7">
+            <div className="flex items-center justify-between mb-5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-card bg-petrol-50 border border-petrol-100">
+                <s.icon className="h-5 w-5 text-petrol-700" strokeWidth={1.75} />
+              </span>
+              <span className="font-mono text-3xl font-bold text-slate-200">{s.no}</span>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-2">{s.title}</h3>
+            <p className="text-sm text-slate-600 leading-relaxed">{s.text}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <SmartLink
+          to={SCAN_CTA}
+          className="group inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-700 px-6 py-3.5 text-sm font-semibold text-white hover:bg-petrol-600 transition-colors"
+        >
+          Jetzt URL scannen
+          <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+        </SmartLink>
+        <SmartLink
+          to={TRIAL_CTA}
+          className="inline-flex items-center justify-center gap-2 rounded-chip border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors"
+        >
+          14 Tage kostenlos testen
+        </SmartLink>
+      </div>
+    </Section>
+  );
+}
 
-const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TTDSG', 'BAIT', 'MaRisk', 'EU-Hosting'];
-
+/* ── PLATTFORM / FEATURE-GRID ───────────────────────────── */
 const PLATFORM = [
   {
     icon: Radar,
-    title: 'Runtime-Monitoring',
-    text: 'Kontinuierliche Telemetrie über Websites, Daten- und KI-Systeme — regulatorische Risiken werden erkannt, sobald sie entstehen.',
+    title: 'Runtime-Telemetrie',
+    text: 'Kontinuierliche Überwachung von Websites, Daten- und KI-Systemen — Risiken werden erkannt, sobald sie entstehen.',
+  },
+  {
+    icon: Scale,
+    title: 'AI-Act-Klassifikation',
+    text: 'Automatische Einstufung von KI-Usecases nach Risikoklasse inklusive Pflichtenmatrix und Dokumentationspflichten.',
   },
   {
     icon: FileLock2,
     title: 'Evidence Vault',
-    text: 'Kryptografisch nachvollziehbare Nachweise mit lückenlosem Prüfpfad. Audit-fähig, unveränderlich, exportierbar.',
+    text: 'Kryptografisch nachvollziehbare Nachweise mit lückenlosem Prüfpfad — auditierbar, unveränderlich, exportierbar.',
   },
   {
-    icon: Scale,
-    title: 'AI-Act-Klassifizierung',
-    text: 'Automatische Einstufung von KI-Systemen nach Risikoklasse inklusive Transparenz- und Dokumentationspflichten.',
+    icon: ShieldCheck,
+    title: 'DSGVO Website Audit',
+    text: 'Tracker, Einwilligungen und Datenflüsse werden geprüft und priorisiert — mit exportierbaren Reports für DSB und Aufsicht.',
+  },
+  {
+    icon: Bot,
+    title: 'AI DSGVO Bot',
+    text: 'Der Compliance Copilot beantwortet DSGVO- und AI-Act-Fragen, erklärt Scan-Ergebnisse und leitet Maßnahmen ab.',
+    to: '/ai-dsgvo-bot',
   },
   {
     icon: ServerCog,
     title: 'Governance-Runtime',
     text: 'Policies werden zur Laufzeit durchgesetzt — nicht nur dokumentiert. Jeder externe Call wird geloggt und bewertet.',
   },
-  {
-    icon: GitBranch,
-    title: 'Automatisierung',
-    text: 'DSGVO-Selfservice (Art. 15 + 17), Workflows und Alerts — orchestriert über n8n, nahtlos integriert.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Multi-Tenancy',
-    text: 'RLS-geschützte Mandantentrennung mit White-Label für DSB-Kanzleien und Agenturen.',
-  },
 ];
 
-// Vier Kernsegmente — bewusst fokussiert statt Branchen-Gießkanne. Jede Karte
-// spricht eine Zielgruppe konkret mit ihrem regulatorischen Schmerzpunkt an und
-// verlinkt auf die spezialisierte Landingpage.
-const CORE_SEGMENTS = [
-  { icon: Megaphone, title: 'Agenturen', text: 'Tracking, Consent und Kampagnen-KI für viele Kunden — mandantengetrennt, White-Label und in einem Dashboard.', to: '/agenturen' },
-  { icon: Scale, title: 'Datenschutz- & KI-Kanzleien', text: 'Compliance as a Service für Ihre Mandanten — Multi-Tenant im White-Label-Kanzlei-Modus, auditfest dokumentiert.', to: '/kanzleien' },
-  { icon: Cloud, title: 'SaaS & Technologie', text: 'Eigene KI-Features auditierbar machen — Transparenz- und Dokumentationspflichten nach EU AI Act erfüllt by Design.', to: '/fuer-saas' },
-  { icon: Landmark, title: 'Regulierte Unternehmen', text: 'BAIT, MaRisk, KRITIS und Scoring-Modelle — KI-Entscheidungen nachvollziehbar, prüfbar und aufsichtskonform.', to: '/branchen' },
-];
-
-// Weitere Branchen — nachrangig dargestellt, Conversion bleibt auf den Kernsegmenten.
-const MORE_INDUSTRIES = [
-  'Gesundheitswesen', 'Banken & Versicherungen', 'Handel & E-Commerce', 'HR & Recruiting',
-  'Öffentlicher Sektor', 'Industrie & Fertigung', 'Energie & Versorger', 'Bildung & Forschung',
-  'Logistik & Mobilität',
-];
-
-const STEPS = [
-  { no: '01', title: 'Verbinden', text: 'Domains, KI-Systeme und Datenflüsse in Minuten anbinden — ohne Code.' },
-  { no: '02', title: 'Überwachen', text: 'Die Runtime erfasst kontinuierlich Telemetrie und bewertet Risiken in Echtzeit.' },
-  { no: '03', title: 'Nachweisen', text: 'Jede Maßnahme landet als kryptografische Evidenz im auditfähigen Prüfpfad.' },
-];
-
-const PRICING = [
-  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: 'Starten', to: '/audit' },
-  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Priorisierter Support'], cta: 'Wählen', featured: true, to: '/audit' },
-  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Multi-Tenant-Dashboard', 'API-Zugriff'], cta: 'Wählen', to: '/agencies' },
-  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Wählen', to: '/contact-sales' },
-];
-
-export function MainLanding() {
+function Platform() {
   return (
-    <div className="min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
-      {/* Config-driven SEO/OG/JSON-LD — zieht den '/'-Eintrag aus src/config/seo.ts */}
-      <SEOHead />
-      <Header />
-      <Hero />
-      <TrustStrip />
-      <ProductProof />
-      <Platform />
-      <Runtime />
-      <Industries />
-      <ProofBand />
-      <Pricing />
-      <TechStandards />
-      <Security />
-      <FinalCta />
-      <Footer />
-    </div>
-  );
-}
-
-/* ── HEADER ─────────────────────────────────────────────── */
-function Header() {
-  return (
-    <header className="absolute top-0 left-0 right-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 sm:h-20 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-          <Snowflake className="w-5 sm:w-6 h-5 sm:h-6 text-cyan-400" strokeWidth={1.5} />
-          <span className="text-sm sm:text-lg font-semibold tracking-tight">
-            RealSync <span className="font-normal text-white/90">Dynamics.AI</span>
-          </span>
-        </a>
-        <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
-          {NAV_LINKS.map((l) => (
-            <SmartLink key={l.label} to={l.to} className="text-sm text-white/70 hover:text-white transition-colors">{l.label}</SmartLink>
-          ))}
-          <SmartLink to="/app" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
-        </nav>
-        <SmartLink to="/app" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
-          KI-OS<span className="hidden sm:inline"> entdecken</span><ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-        </SmartLink>
-      </div>
-    </header>
-  );
-}
-
-/* ── HERO ───────────────────────────────────────────────── */
-function Hero() {
-  // MONITORING-Karte: echtes Live-Signal aus dem oeffentlichen /health-Endpoint.
-  const { label: monitoringLabel, pulse } = useHealthStatus();
-  const metrics: Metric[] = [
-    ...STATIC_METRICS,
-    { label: 'MONITORING', value: monitoringLabel, live: pulse },
-  ];
-
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" className="w-full h-full object-cover object-right" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[rgb(3,7,18)] via-[rgb(3,7,18)]/85 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-[rgb(3,7,18)]/40" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 rounded-full">
-              <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
-              <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
-                GOVERNANCE COMPLEXITY SCORE<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+    <Section
+      eyebrow="Die Plattform"
+      title="Eine Runtime für prüfbare KI- und Datengovernance"
+      subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur."
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {PLATFORM.map((p) => {
+          const inner = (
+            <>
+              <span className="flex h-11 w-11 items-center justify-center rounded-card bg-petrol-50 border border-petrol-100 mb-5">
+                <p.icon className="h-5 w-5 text-petrol-700" strokeWidth={1.75} />
               </span>
+              <h3 className="flex items-center gap-1.5 text-lg font-semibold text-slate-900 mb-2">
+                {p.title}
+                {p.to && <ArrowRight className="h-4 w-4 text-petrol-600" />}
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">{p.text}</p>
+            </>
+          );
+          return p.to ? (
+            <SmartLink
+              key={p.title}
+              to={p.to}
+              className="group rounded-panel border border-slate-200 bg-white p-7 hover:border-petrol-300 hover:bg-petrol-50/30 transition-colors"
+            >
+              {inner}
+            </SmartLink>
+          ) : (
+            <div key={p.title} className="rounded-panel border border-slate-200 bg-white p-7">
+              {inner}
             </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] sm:leading-[1.05] tracking-tight mb-4 sm:mb-6">
-              Das KI-<br />Betriebssystem für<br />DSGVO &amp; <span className="text-cyan-400">EU AI Act</span>
-            </h1>
+/* ── AI DSGVO BOT (PRODUKTMODUL) ────────────────────────── */
+const BOT_FEATURES = [
+  'Beantwortet DSGVO- und AI-Act-Fragen auf Basis der Plattformdaten',
+  'Erklärt Scan-Ergebnisse verständlich',
+  'Erstellt Maßnahmenvorschläge für Website, KI-Usecases und Workflows',
+  'Unterstützt bei Datenschutztexten, TOMs, AVV-Checklisten und internen Richtlinien',
+  'Verknüpft Antworten mit Evidence Vault, Reports und Risiko-Klassifikation',
+  'Kein Ersatz für Rechtsberatung, sondern Governance-Assistenzsystem',
+];
 
-            <p className="font-mono text-[11px] sm:text-sm tracking-[0.25em] text-cyan-400/90 mb-4 sm:mb-6">
-              AI GOVERNANCE OS FOR TRUST &amp; VALUE
+function DsgvoBot() {
+  return (
+    <section className="bg-slate-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-chip border border-petrol-500/40 bg-petrol-500/10 px-3 py-1 mb-6">
+              <Bot className="h-3.5 w-3.5 text-petrol-300" />
+              <span className="font-mono text-[11px] tracking-widest text-petrol-200 uppercase">
+                Produktmodul · Compliance Copilot
+              </span>
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-5">AI DSGVO Bot</h2>
+            <p className="text-lg text-slate-300 leading-relaxed mb-8">
+              Der AI DSGVO Bot unterstützt Unternehmen dabei, DSGVO-, AI-Act- und
+              Compliance-Fragen strukturiert zu prüfen, Dokumente vorzubereiten,
+              Risiken zu erklären und Maßnahmen aus den Runtime-Scans abzuleiten.
             </p>
-
-            <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-7 sm:mb-8">
-              Kontinuierliche Governance für Websites, KI-Systeme und Datenflüsse.
-              Erkennen Sie Risiken in Echtzeit, erzeugen Sie prüffähige Evidenz und
-              automatisieren Sie Compliance — <span className="text-white/90">statt nur PDFs zu erzeugen.</span>
-            </p>
-
-            <ul className="flex flex-wrap gap-x-5 gap-y-2.5 mb-8 sm:mb-10 max-w-xl">
-              {HERO_CHECKS.map((c) => (
-                <li key={c} className="flex items-center gap-2 text-xs sm:text-sm text-white/80">
-                  <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" strokeWidth={2.5} />{c}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <SmartLink
+                to="/ai-dsgvo-bot"
+                className="group inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-600 px-6 py-3.5 text-sm font-semibold text-white hover:bg-petrol-500 transition-colors"
+              >
+                AI DSGVO Bot entdecken
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              </SmartLink>
+              <SmartLink
+                to={SCAN_CTA}
+                className="inline-flex items-center justify-center gap-2 rounded-chip border border-white/20 px-6 py-3.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              >
+                Website zuerst scannen
+              </SmartLink>
+            </div>
+          </div>
+          <div className="rounded-panel border border-white/10 bg-white/[0.04] p-7 sm:p-8">
+            <ul className="space-y-4">
+              {BOT_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-3 text-sm text-slate-200 leading-relaxed">
+                  <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-card bg-petrol-500/15 border border-petrol-500/30 shrink-0">
+                    <Check className="h-3 w-3 text-petrol-300" strokeWidth={3} />
+                  </span>
+                  {f}
                 </li>
               ))}
             </ul>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/audit" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-                Kostenloses Audit starten<ArrowRight className="w-4 h-4" />
-              </SmartLink>
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-                <PlayCircle className="w-4 h-4" />Governance OS entdecken
-              </SmartLink>
-            </div>
-          </div>
-
-          <div className="relative hidden lg:block min-h-[520px]">
-            <MetricCard className="absolute top-4 right-8" metric={metrics[0]} />
-            <MetricCard className="absolute top-32 right-44" metric={metrics[1]} />
-            <MetricCard className="absolute top-52 right-4" metric={metrics[2]} />
-            <MetricCard className="absolute bottom-24 right-32" metric={metrics[3]} />
-            <MetricCard className="absolute bottom-4 right-10" metric={metrics[4]} />
+            <p className="mt-6 pt-5 border-t border-white/10 text-xs text-slate-400 leading-relaxed">
+              Der AI DSGVO Bot ersetzt keine anwaltliche Beratung. Er dient der
+              strukturierten Vorprüfung, Dokumentation und Governance-Unterstützung.
+            </p>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 lg:hidden">
-          {metrics.map((m) => (<MetricCard key={m.label} metric={m} />))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── TRUST-STRIP ────────────────────────────────────────── */
-function TrustStrip() {
-  return (
-    <section className="relative z-10 border-y border-white/10 bg-white/[0.02]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-5 sm:py-6 flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-8 lg:gap-x-10 gap-y-2.5 sm:gap-y-3">
-        <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase">Konform mit</span>
-        {TRUST.map((t) => (
-          <span key={t} className="font-mono text-[11px] sm:text-xs tracking-wider text-white/60">{t}</span>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ── PRODUKTBEWEIS ──────────────────────────────────────── */
-// Sichtbares System statt Vision: ein produktnaher Mockup der Governance-
-// Runtime. Kein Kundenscreenshot (es gibt noch keine Referenzkunden) — die
-// Karten zeigen die echten Produkt-Oberflächen (Dashboard, Evidence Vault,
-// Runtime-Feed, AI-Act-Klassifizierung) im Originaldesign.
-const PROOF_CHECKS = [
-  'Neue Tracker erkannt',
-  'Neue KI-Modelle erkannt',
-  'Fehlende Einwilligungen erkannt',
-  'Auditierbare Evidenz automatisch erzeugt',
-  'Risiken werden automatisch priorisiert',
-];
-
-const RUNTIME_FEED = [
-  { dot: 'bg-amber-400', text: 'Neuer Tracker erkannt — meta-pixel.js', meta: 'klassifiziert · Consent fehlt' },
-  { dot: 'bg-cyan-400', text: 'KI-Modell registriert — gpt-4o (Chat-Widget)', meta: 'AI Act · begrenztes Risiko' },
-  { dot: 'bg-rose-400', text: 'Einwilligung fehlt — Newsletter-Double-Opt-in', meta: 'Art. 7 DSGVO · priorisiert' },
-  { dot: 'bg-emerald-400', text: 'Evidenz erzeugt — Prüfpfad #1248 signiert', meta: 'unveränderlich · exportiert' },
-];
-
-function ProductProof() {
-  const { label: monitoringLabel, pulse } = useHealthStatus();
-  return (
-    <Section
-      eyebrow="GOVERNANCE RUNTIME IN AKTION"
-      title="Unternehmen kaufen keine Visionen — sie kaufen sichtbare Systeme"
-      subtitle="Überwachen Sie Ihre Governance in Echtzeit. Kein PDF-Export am Quartalsende, sondern ein laufendes System, das Risiken erkennt, priorisiert und beweist — während sie entstehen."
-    >
-      <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <ul className="space-y-3.5 order-2 lg:order-1">
-          {PROOF_CHECKS.map((c) => (
-            <li key={c} className="flex items-start gap-3 text-sm sm:text-base text-white/80">
-              <span className="mt-0.5 w-5 h-5 flex items-center justify-center rounded-md bg-cyan-500/10 border border-cyan-500/30 shrink-0">
-                <Check className="w-3 h-3 text-cyan-400" strokeWidth={3} />
-              </span>
-              {c}
-            </li>
-          ))}
-          <li className="pt-3">
-            <SmartLink to="/audit" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
-              Beispiel-Report aus einem Live-Audit ansehen<ArrowRight className="w-4 h-4" />
-            </SmartLink>
-          </li>
-        </ul>
-
-        {/* Produkt-Mockup: Browser-Chrome + Live-Feed der Governance-Runtime */}
-        <div className="order-1 lg:order-2 rounded-2xl border border-white/10 bg-white/[0.03] shadow-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-white/[0.02]">
-            <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
-            <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
-            <span className="w-2.5 h-2.5 rounded-full bg-white/15" />
-            <span className="ml-2 font-mono text-[10px] sm:text-[11px] tracking-wider text-white/40">app.realsyncdynamics.ai / governance</span>
-            <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-cyan-400">
-              {pulse && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}{monitoringLabel}
-            </span>
-          </div>
-          <div className="p-4 sm:p-5">
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { k: 'RISK SCORE', v: '87', s: '/100' },
-                { k: 'EVIDENZ', v: '1.248', s: 'Nachweise' },
-                { k: 'KI-SYSTEME', v: '12', s: 'klassifiziert' },
-              ].map((m) => (
-                <div key={m.k} className="px-3 py-2.5 rounded-lg border border-white/10 bg-white/[0.02]">
-                  <div className="font-mono text-[9px] tracking-widest text-white/40 mb-1">{m.k}</div>
-                  <div className="font-mono font-bold text-cyan-400 text-lg leading-none">{m.v}<span className="text-[10px] text-white/40 ml-1">{m.s}</span></div>
-                </div>
-              ))}
-            </div>
-            <div className="font-mono text-[9px] tracking-widest text-white/40 mb-2.5 px-1">RUNTIME-FEED · LIVE</div>
-            <div className="space-y-2">
-              {RUNTIME_FEED.map((f) => (
-                <div key={f.text} className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg border border-white/10 bg-white/[0.02]">
-                  <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${f.dot}`} />
-                  <div className="min-w-0">
-                    <div className="text-[12px] sm:text-[13px] text-white/85 truncate">{f.text}</div>
-                    <div className="font-mono text-[10px] text-white/40 mt-0.5">{f.meta}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-/* ── PLATTFORM ──────────────────────────────────────────── */
-function Platform() {
-  return (
-    <Section id="produkt" eyebrow="DIE PLATTFORM" title="Eine Runtime. Vollständige KI-Governance." subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur. Kein Tool-Wildwuchs, keine Lücken zwischen Verantwortung und Beweis.">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
-        {PLATFORM.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
-            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
-              <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
-            <p className="text-sm text-white/60 leading-relaxed">{text}</p>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/* ── BRANCHEN ───────────────────────────────────────────── */
-function Industries() {
-  return (
-    <Section
-      eyebrow="FÜR WEN"
-      title="Gebaut für vier Profile, die Governance betreiben müssen"
-      subtitle="Statt Branchen-Gießkanne: vier Zielgruppen, für die kontinuierliche Governance kein Nice-to-have, sondern Pflicht ist. Dieselbe Runtime — auf den jeweiligen regulatorischen Schmerzpunkt zugeschnitten."
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
-        {CORE_SEGMENTS.map(({ icon: Icon, title, text, to }) => (
-          <SmartLink key={title} to={to} className="group flex gap-4 p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
-            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
-              <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
-            </div>
-            <div>
-              <h3 className="flex items-center gap-1.5 text-base sm:text-lg font-semibold mb-1.5">
-                {title}
-                <ArrowRight className="w-4 h-4 text-cyan-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
-              </h3>
-              <p className="text-xs sm:text-sm text-white/60 leading-relaxed">{text}</p>
-            </div>
-          </SmartLink>
-        ))}
-      </div>
-      <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase">+ Weitere Branchen</span>
-        {MORE_INDUSTRIES.map((b) => (
-          <span key={b} className="font-mono text-[11px] sm:text-xs text-white/50 px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.02]">{b}</span>
-        ))}
-        <SmartLink to="/branchen" className="font-mono text-[11px] sm:text-xs text-cyan-400 hover:text-cyan-300 transition-colors">alle ansehen →</SmartLink>
-      </div>
-    </Section>
-  );
-}
-
-/* ── GOVERNANCE-RUNTIME ─────────────────────────────────── */
-function Runtime() {
-  return (
-    <Section eyebrow="SO FUNKTIONIERT ES" title="Compliance, die ab Minute eins läuft" subtitle="Keine Monate-Projekte, keine statischen PDFs, kein Berater-Backlog — Governance läuft ab dem ersten Tag zur Laufzeit.">
-      {/* Kontrast-Band — die eigentliche Marktlücke: Runtime statt Scan→PDF→Fertig */}
-      <div className="mb-10 sm:mb-12 p-7 sm:p-10 rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.06] via-white/[0.02] to-transparent">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5">
-          {['Erkennen', 'Überwachen', 'Dokumentieren', 'Reagieren'].map((w, i) => (
-            <span key={w} className="flex items-center gap-3">
-              <span className="font-mono text-sm sm:text-base font-bold tracking-wide text-cyan-400">{w}.</span>
-              {i < 3 && <ArrowRight className="w-3.5 h-3.5 text-cyan-400/40" />}
-            </span>
-          ))}
-        </div>
-        <p className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight leading-snug">
-          Andere liefern Berichte.<br className="hidden sm:block" />{' '}
-          <span className="text-cyan-400">RealSync Dynamics betreibt Ihre Governance.</span>
-        </p>
-        <p className="mt-4 text-sm sm:text-base text-white/60 max-w-2xl leading-relaxed">
-          Fast jeder Wettbewerber arbeitet nach dem Muster <span className="font-mono text-white/80">Scan → PDF → Fertig</span>.
-          Governance endet dort nach dem Audit. Bei uns beginnt sie genau dann — in der Laufzeit.
-        </p>
-      </div>
-      <div className="grid md:grid-cols-3 gap-6">
-        {STEPS.map(({ no, title, text }) => (
-          <div key={no} className="relative p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
-            <span className="font-mono text-5xl font-bold text-cyan-400/20">{no}</span>
-            <h3 className="text-xl font-semibold mt-4 mb-2.5">{title}</h3>
-            <p className="text-sm text-white/60 leading-relaxed">{text}</p>
-          </div>
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/* ── PROOF-BAND ─────────────────────────────────────────── */
-function ProofBand() {
-  const stats = [
-    { value: '24/7', label: 'Kontinuierliches Monitoring' },
-    { value: '100%', label: 'EU-Hosting & Datenresidenz' },
-    { value: '< 5 Min', label: 'Bis zum ersten Nachweis' },
-    { value: 'Art. 15+17', label: 'DSGVO-Selfservice automatisiert' },
-  ];
-  return (
-    <section className="relative z-10 py-12 sm:py-16 border-y border-white/10 bg-gradient-to-r from-cyan-500/[0.04] via-transparent to-cyan-500/[0.04]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-        {stats.map(({ value, label }) => (
-          <div key={label} className="text-center">
-            <div className="font-mono text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-2">{value}</div>
-            <div className="text-xs sm:text-sm text-white/60 leading-relaxed">{label}</div>
-          </div>
-        ))}
       </div>
     </section>
   );
 }
 
 /* ── PRICING ────────────────────────────────────────────── */
+const PRICING = [
+  {
+    name: 'Free Trial',
+    price: '0 €',
+    cadence: '14 Tage kostenlos',
+    features: ['Website scannen', 'DSGVO-Risiken sehen', 'AI DSGVO Bot testen', 'Kein automatisches Abo'],
+    cta: '14 Tage testen',
+    to: TRIAL_CTA,
+  },
+  {
+    name: 'Governance Starter',
+    price: '79 €',
+    cadence: '/Monat',
+    features: ['1–3 Domains', 'DSGVO Website Audit', 'Basic Runtime-Telemetry', 'AI DSGVO Bot', 'PDF/CSV Reports'],
+    cta: 'Starten',
+    to: TRIAL_CTA,
+  },
+  {
+    name: 'Governance Pro',
+    price: '149–249 €',
+    cadence: '/Monat',
+    features: [
+      'Mehrere Domains',
+      'AI-Act-Pflichtenmatrix',
+      'Erweiterte Audit-Logs',
+      'Alerts',
+      'Mehrmandanten-Support',
+      'AI DSGVO Bot erweitert',
+    ],
+    cta: 'Pro wählen',
+    to: TRIAL_CTA,
+    featured: true,
+  },
+  {
+    name: 'Enterprise',
+    price: 'Auf Anfrage',
+    cadence: 'Private Cloud / On-Prem',
+    features: [
+      'Private Cloud / On-Prem',
+      'SSO',
+      'Individuelle Integrationen',
+      'BAIT / MaRisk / ISO 27001 Anschlussfähigkeit',
+      'Erweiterte Governance-Workflows',
+      'Dedizierte Enterprise-Demo',
+    ],
+    cta: 'Enterprise-Demo anfragen',
+    to: DEMO_CTA,
+  },
+];
+
 function Pricing() {
   return (
-    <Section id="preise" eyebrow="PREISE" title="Preise, die mit Ihrer Verantwortung skalieren" subtitle="Vom Einzel-Creator bis zur DSB-Kanzlei mit 50 Mandanten. Transparent, metered, jederzeit kündbar — ohne Setup-Gebühr und ohne Berater-Tagessätze.">
+    <Section
+      eyebrow="Preise"
+      title="Transparente Preise, die mit Ihrer Verantwortung skalieren"
+      subtitle="Self-Service ab 79 €/Monat — inklusive AI DSGVO Bot. Für regulierte Anforderungen: Enterprise mit Private Cloud und individuellen Integrationen."
+      tint
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {PRICING.map((p) => (
-          <div key={p.name} className={`relative flex flex-col p-7 rounded-2xl border ${p.featured ? 'border-cyan-400/60 bg-cyan-500/[0.06]' : 'border-white/10 bg-white/[0.02]'}`}>
+          <div
+            key={p.name}
+            className={`relative flex flex-col rounded-panel border bg-white p-7 ${
+              p.featured ? 'border-petrol-300 ring-1 ring-petrol-200 shadow-sm' : 'border-slate-200'
+            }`}
+          >
             {p.featured && (
-              <span className="absolute -top-3 left-7 px-3 py-1 text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded-full">BELIEBT</span>
+              <span className="absolute -top-3 left-7 rounded-chip bg-petrol-700 px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase">
+                Beliebt
+              </span>
             )}
-            <h3 className="text-lg font-semibold mb-1">{p.name}</h3>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="font-mono text-3xl font-bold">{p.price} €</span>
-              <span className="font-mono text-xs text-white/40">{p.cadence}</span>
+            <h3 className="text-lg font-semibold text-slate-900 mb-1">{p.name}</h3>
+            <div className="flex items-baseline gap-1.5 mb-6">
+              <span className="font-mono text-2xl font-bold text-slate-900">{p.price}</span>
+              <span className="font-mono text-xs text-slate-400">{p.cadence}</span>
             </div>
             <ul className="flex-1 space-y-3 mb-7">
               {p.features.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-sm text-white/70">
-                  <Check className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" strokeWidth={2} />{f}
+                <li key={f} className="flex items-start gap-2.5 text-sm text-slate-600">
+                  <Check className="mt-0.5 h-4 w-4 text-petrol-600 shrink-0" strokeWidth={2} />
+                  {f}
                 </li>
               ))}
             </ul>
-            <SmartLink to={p.to} className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-colors ${p.featured ? 'text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300' : 'text-white border border-white/20 hover:border-white/40 hover:bg-white/5'}`}>
-              {p.cta}<ArrowRight className="w-4 h-4" />
+            <SmartLink
+              to={p.to}
+              className={`inline-flex items-center justify-center gap-2 rounded-chip px-5 py-3 text-sm font-semibold transition-colors ${
+                p.featured
+                  ? 'bg-petrol-700 text-white hover:bg-petrol-600'
+                  : 'border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50'
+              }`}
+            >
+              {p.cta}
+              <ArrowRight className="h-4 w-4" />
             </SmartLink>
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 sm:gap-4 p-6 sm:p-7 rounded-2xl border border-white/10 bg-white/[0.02]">
-        <div className="flex items-start sm:items-center gap-4 flex-1">
-          <div className="w-10 sm:w-11 h-10 sm:h-11 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 flex-shrink-0">
-            <Building2 className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
-          </div>
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold">Enterprise</h3>
-            <p className="text-xs sm:text-sm text-white/60 leading-relaxed">Custom Runtime, SLA, AI-Act-Modul, DSB-Integration, unlimitierte Domains.</p>
-          </div>
-        </div>
-        <SmartLink to="/contact-sales" className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap flex-shrink-0">
-          Enterprise anfragen<ArrowRight className="w-4 h-4" />
-        </SmartLink>
       </div>
     </Section>
   );
 }
 
-/* ── TECHNOLOGIEN & STANDARDS (Authority-Layer) ─────────── */
-// Ersetzt fehlende Kundenlogos: Vertrauen über die zugrundeliegenden Standards
-// und einen geprüften Tech-Stack, nicht über Referenzkunden, die es noch nicht gibt.
-const TECH_STACK = ['React', 'TypeScript', 'Supabase', 'Row-Level Security', 'Open Policy Agent', 'Playwright', 'Stripe', 'EU AI Act', 'DSGVO'];
-const GOV_TRUST = [
-  'EU-Hosting & Datenresidenz',
-  'Kryptografische Evidenz',
-  'Vollständige Prüfpfade',
-  'Service-Role-Isolation',
-  'Row-Level Security',
-  'Datenschutz by Design',
+/* ── STANDARDS / TRUST ──────────────────────────────────── */
+const STANDARDS = ['DSGVO Art. 32', 'EU AI Act', 'TTDSG', 'BAIT', 'MaRisk', 'ISO 27001', 'EU-Hosting'];
+
+function Standards() {
+  return (
+    <Section eyebrow="Vertrauen durch Standards" title="Anschlussfähig an regulatorische Anforderungen">
+      <div className="flex flex-wrap items-center gap-2.5">
+        {STANDARDS.map((s) => (
+          <span
+            key={s}
+            className="font-mono text-xs tracking-wider text-slate-600 rounded-chip border border-slate-200 bg-slate-50 px-3.5 py-1.5"
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ── FAQ (ACCORDION) ────────────────────────────────────── */
+const FAQ = [
+  {
+    q: 'Brauche ich für den Start ein Sales-Gespräch?',
+    a: 'Nein. Mittelstand und KMU starten im Self-Service: Website scannen, Ergebnis sehen und 14 Tage kostenlos testen — ohne Onboarding-Call und ohne automatisches Abo.',
+  },
+  {
+    q: 'Was unterscheidet den Enterprise-Pfad?',
+    a: 'Regulierte Branchen wie Banken, Versicherungen, Behörden, Kanzleien und Gesundheitswesen erhalten Private Cloud / On-Prem, SSO, erweiterte Audit-Logs sowie Anschlussfähigkeit an BAIT, MaRisk und ISO 27001. Hier startet der Weg über eine Enterprise-Demo.',
+  },
+  {
+    q: 'Was kann der AI DSGVO Bot?',
+    a: 'Der AI DSGVO Bot (Compliance Copilot) beantwortet DSGVO- und AI-Act-Fragen, erklärt Scan-Ergebnisse, leitet Maßnahmen ab und unterstützt bei Datenschutztexten, TOMs und AVV-Checklisten. Er ersetzt keine anwaltliche Beratung, sondern dient der strukturierten Vorprüfung und Dokumentation.',
+  },
+  {
+    q: 'Wo werden meine Daten verarbeitet?',
+    a: 'Hosting, Verarbeitung und Modelle laufen innerhalb der EU. Optional stehen lokale Modelle für maximale Datenkontrolle bereit. Sensible Keys verbleiben serverseitig, jede Tabelle ist mandantengetrennt geschützt.',
+  },
 ];
 
-function TechStandards() {
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
   return (
-    <section className="relative z-10 py-16 md:py-20 border-y border-white/10 bg-white/[0.015]">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="text-center mb-8">
-          <p className="font-mono text-[10px] sm:text-xs tracking-[0.25em] text-cyan-400/90 mb-3">ENTWICKELT FÜR EUROPÄISCHE GOVERNANCE</p>
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight">Vertrauen durch offene Standards — nicht durch Versprechen</h2>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2.5 mb-10">
-          {TECH_STACK.map((t) => (
-            <span key={t} className="font-mono text-[11px] sm:text-xs tracking-wider text-white/70 px-3.5 py-1.5 rounded-full border border-white/10 bg-white/[0.03]">{t}</span>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3.5 max-w-3xl mx-auto">
-          {GOV_TRUST.map((g) => (
-            <div key={g} className="flex items-center gap-2.5 text-xs sm:text-sm text-white/75">
-              <Check className="w-4 h-4 text-cyan-400 shrink-0" strokeWidth={2.5} />{g}
+    <Section eyebrow="Häufige Fragen" title="Was Sie vor dem Start wissen sollten" tint>
+      <div className="max-w-3xl divide-y divide-slate-200 rounded-panel border border-slate-200 bg-white">
+        {FAQ.map((item, i) => {
+          const isOpen = open === i;
+          return (
+            <div key={item.q}>
+              <button
+                onClick={() => setOpen(isOpen ? null : i)}
+                className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+                aria-expanded={isOpen}
+              >
+                <span className="text-base font-semibold text-slate-900">{item.q}</span>
+                {isOpen ? (
+                  <Minus className="h-5 w-5 text-petrol-600 shrink-0" />
+                ) : (
+                  <Plus className="h-5 w-5 text-slate-400 shrink-0" />
+                )}
+              </button>
+              {isOpen && (
+                <p className="px-6 pb-5 -mt-1 text-sm text-slate-600 leading-relaxed">{item.a}</p>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ── SECURITY ───────────────────────────────────────────── */
-function Security() {
-  const points = [
-    { icon: Lock, title: 'EU-Souveränität', text: 'Hosting, Verarbeitung und Modelle innerhalb der EU. Optional lokale Modelle (Ollama) für maximale Datenkontrolle.' },
-    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis ist signiert und unveränderlich — ein lückenloser Prüfpfad für Audits und Aufsichtsbehörden.' },
-    { icon: ShieldCheck, title: 'Service-Role-Isolation', text: 'Sensible Keys ausschließlich serverseitig in Edge Functions. RLS schützt jede Tabelle auf Mandantenebene.' },
-  ];
-  return (
-    <Section id="sicherheit" eyebrow="SICHERHEIT & COMPLIANCE" title="Vertrauen ist in die Architektur eingebaut" subtitle="Nicht nachgelagert, sondern Fundament: Souveränität, Nachweisbarkeit und Isolation by Design.">
-      <div className="grid md:grid-cols-3 gap-6">
-        {points.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
-            <Icon className="w-6 h-6 text-cyan-400 mb-5" strokeWidth={1.5} />
-            <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
-            <p className="text-sm text-white/60 leading-relaxed">{text}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Section>
   );
 }
 
-/* ── FINAL-CTA ──────────────────────────────────────────── */
+/* ── FINAL CTA ──────────────────────────────────────────── */
 function FinalCta() {
   return (
-    <section className="relative z-10 py-16 md:py-24">
-      <div className="max-w-5xl mx-auto px-6 lg:px-10">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
-            Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit funktioniert?
+    <section className="bg-white">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
+        <div className="rounded-panel border border-petrol-200 bg-petrol-50 p-10 sm:p-14 text-center">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-4">
+            Governance, die ab Minute eins läuft
           </h2>
-          <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-            Starten Sie mit einem kostenlosen Audit — ohne Account, in unter fünf Minuten. Sehen Sie Ihren Governance Complexity Score sofort.
+          <p className="mx-auto max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed mb-9">
+            Scannen Sie eine Website, sehen Sie Ihr DSGVO-/AI-Governance-Ergebnis und
+            starten Sie in den 14-Tage-Test. Regulierte Anforderungen? Fordern Sie eine Enterprise-Demo an.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <SmartLink to="/audit" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-              Kostenloses Audit starten<ArrowRight className="w-4 h-4" />
+            <SmartLink
+              to={TRIAL_CTA}
+              className="group inline-flex items-center justify-center gap-2 rounded-chip bg-petrol-700 px-8 py-4 text-base font-semibold text-white hover:bg-petrol-600 transition-colors"
+            >
+              14 Tage kostenlos testen
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </SmartLink>
-            <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-              <PlayCircle className="w-4 h-4" />Governance OS entdecken
+            <SmartLink
+              to={DEMO_CTA}
+              className="inline-flex items-center justify-center gap-2 rounded-chip border border-slate-300 bg-white px-8 py-4 text-base font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors"
+            >
+              <Building2 className="h-4 w-4" />
+              Enterprise-Demo anfragen
             </SmartLink>
           </div>
-          <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
-            Self-Service · ohne Account · kein Sales-Gespräch nötig
+          <p className="mt-6 font-mono text-[11px] tracking-wider text-slate-400">
+            Self-Service · ohne automatisches Abo · kein Sales-Gespräch nötig
           </p>
         </div>
       </div>
@@ -627,116 +612,32 @@ function FinalCta() {
   );
 }
 
-/* ── FOOTER ─────────────────────────────────────────────── */
-function Footer() {
-  const cols = [
-    {
-      title: 'Produkt',
-      links: [
-        { label: 'Runtime-Monitoring', to: '/runtime' },
-        { label: 'Evidence Vault', to: '/evidence-vault' },
-        { label: 'AI-Act-Klassifizierung', to: '/ai-act-klassifikator' },
-        { label: 'Automatisierung', to: '/automations' },
-      ],
-    },
-    {
-      title: 'Lösungen',
-      links: [
-        { label: 'Agenturen', to: '/agencies' },
-        { label: 'DSB-Kanzleien', to: '/legaltech' },
-        { label: 'Branchen', to: '/branchen' },
-        { label: 'Case Studies', to: '/case-studies' },
-      ],
-    },
-    {
-      title: 'Ressourcen',
-      links: [
-        { label: 'Dokumentation', to: '/docs' },
-        { label: 'Roadmap', to: '/roadmap' },
-        { label: 'Blog', to: '/blog' },
-        { label: 'Sicherheit', to: '/security' },
-      ],
-    },
-    {
-      title: 'Unternehmen',
-      links: [
-        { label: 'Über uns', to: '/about' },
-        { label: 'Kontakt', to: '/contact-sales' },
-        { label: 'Impressum', to: '/impressum' },
-        { label: 'Datenschutz', to: '/datenschutz' },
-        { label: 'AGB', to: '/agb' },
-      ],
-    },
-  ];
+/* ── HELPER ─────────────────────────────────────────────── */
+function Section({
+  id,
+  eyebrow,
+  title,
+  subtitle,
+  tint,
+  children,
+}: {
+  id?: string;
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  tint?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <footer className="relative z-10 border-t border-white/10">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-10 sm:py-14">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 sm:gap-8 lg:gap-10">
-          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2.5 mb-4">
-              <Snowflake className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
-              <span className="text-sm sm:text-base font-semibold tracking-tight">RealSync Dynamics.AI</span>
-            </Link>
-            <p className="text-[11px] sm:text-xs text-white/50 leading-relaxed max-w-xs">
-              Europäische Runtime-native AI-Governance- und Compliance-Plattform.
-              Digitalisierung &amp; KI-Betriebssystem im Mittelpunkt.
-            </p>
-          </div>
-          {cols.map((c) => (
-            <div key={c.title}>
-              <h4 className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase mb-3 sm:mb-4">{c.title}</h4>
-              <ul className="space-y-2">
-                {c.links.map((l) => (
-                  <li key={l.label}><SmartLink to={l.to} className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">{l.label}</SmartLink></li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="mt-10 sm:mt-12 pt-5 sm:pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-center sm:text-left">
-          <p className="font-mono text-[10px] sm:text-xs text-white/50">© 2026 RealSync Dynamics. SaaS &amp; KI-Innovationen.</p>
-          <nav className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 sm:gap-x-5 gap-y-2">
-            <Link to="/impressum" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">Impressum</Link>
-            <Link to="/datenschutz" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">Datenschutz</Link>
-            <Link to="/agb" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">AGB</Link>
-            <Link to="/legal/avv" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">AVV</Link>
-            <span className="font-mono text-[10px] sm:text-xs text-white/40">EU-Hosting · DSGVO · EU AI Act</span>
-          </nav>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-/* ── HELPERS ────────────────────────────────────────────── */
-function Section({ id, eyebrow, title, subtitle, children }: { id?: string; eyebrow: string; title: string; subtitle: string; children: React.ReactNode }) {
-  return (
-    <section id={id} className="relative z-10 py-16 md:py-24 lg:py-28">
-      <div className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="max-w-2xl mb-10 md:mb-12">
-          <p className="font-mono text-[10px] sm:text-xs tracking-[0.25em] text-cyan-400/90 mb-3 sm:mb-4">{eyebrow}</p>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-3 sm:mb-4">{title}</h2>
-          <p className="text-sm sm:text-base text-white/60 leading-relaxed">{subtitle}</p>
+    <section id={id} className={tint ? 'bg-slate-50' : 'bg-white'}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24">
+        <div className="max-w-2xl mb-12">
+          <p className="font-mono text-[11px] tracking-[0.25em] text-petrol-700 uppercase mb-4">{eyebrow}</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">{title}</h2>
+          {subtitle && <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">{subtitle}</p>}
         </div>
         {children}
       </div>
     </section>
-  );
-}
-
-type Metric = { label: string; value: string; suffix?: string; accent?: boolean; live?: boolean };
-
-function MetricCard({ metric, className = '' }: { metric: Metric; className?: string }) {
-  return (
-    <div className={`px-4 py-3 sm:px-5 sm:py-4 border border-white/10 bg-white/5 backdrop-blur-md rounded-xl shadow-2xl ${className}`}>
-      <div className="flex items-center gap-2 mb-2">
-        {metric.live && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
-        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">{metric.label}</span>
-      </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className={`font-mono font-bold ${metric.accent || metric.live ? 'text-cyan-400 text-base sm:text-lg' : 'text-white text-xl sm:text-2xl'}`}>{metric.value}</span>
-        {metric.suffix && <span className="font-mono text-[11px] sm:text-xs text-white/40">{metric.suffix}</span>}
-      </div>
-    </div>
   );
 }

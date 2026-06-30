@@ -98,7 +98,7 @@ function Hero() {
               to={DEMO_CTA}
               className="inline-flex items-center justify-center gap-2 rounded-chip border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors"
             >
-              Enterprise-Demo anfragen
+              Enterprise anfragen
             </SmartLink>
           </div>
 
@@ -144,7 +144,7 @@ const SPLITTER_CARDS = [
       'Erweiterte Audit-Logs',
       'Individuelle Integrationen',
     ],
-    cta: 'Enterprise-Demo anfragen',
+    cta: 'Enterprise anfragen',
     to: DEMO_CTA,
     primary: false,
   },
@@ -445,7 +445,7 @@ const PRICING = [
       'Erweiterte Governance-Workflows',
       'Dedizierte Enterprise-Demo',
     ],
-    cta: 'Enterprise-Demo anfragen',
+    cta: 'Enterprise anfragen',
     to: DEMO_CTA,
   },
 ];
@@ -600,7 +600,7 @@ function FinalCta() {
               className="inline-flex items-center justify-center gap-2 rounded-chip border border-slate-300 bg-white px-8 py-4 text-base font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 transition-colors"
             >
               <Building2 className="h-4 w-4" />
-              Enterprise-Demo anfragen
+              Enterprise anfragen
             </SmartLink>
           </div>
           <p className="mt-6 font-mono text-[11px] tracking-wider text-slate-400">

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
-    "build:full": "vite build && npm run generate:legal-pages && npm run prerender",
+    "build:full": "vite build && npm run prerender && npm run generate:legal-pages",
     "generate:legal-pages": "node scripts/generate-static-legal-pages.mjs",
     "prerender": "node scripts/prerender.mjs",
     "preview": "vite preview",

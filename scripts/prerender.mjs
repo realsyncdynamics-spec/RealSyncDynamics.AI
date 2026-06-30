@@ -154,18 +154,49 @@ async function main() {
   const previewProc = await startPreviewServer();
 
   let stats = { done: 0, failed: 0, skipped: 0 };
+  let browser;
   try {
-    const browser = await chromium.launch({ headless: true });
     try {
+      browser = await chromium.launch({ headless: true });
+    } catch (err) {
+      // Fallback: if Playwright chromium fails, use fetch-based prerender
+      console.log('[prerender] Chromium launch failed, using fetch-based fallback');
+      const criticalRoutes = ['/trust', '/pilot-readiness', '/legal/impressum', '/legal/sub-processors'];
+      for (const route of criticalRoutes) {
+        try {
+          const res = await fetch(BASE_URL + route);
+          if (res.ok) {
+            const html = await res.text();
+            await writeRoute(route, html);
+            stats.done++;
+            console.log(`[prerender] ✓ ${route} (fetch fallback)`);
+          }
+        } catch (e) {
+          stats.failed++;
+          console.error(`[prerender] FAIL ${route}: ${e.message}`);
+        }
+      }
+      throw new Error('Chromium unavailable, used fetch fallback');
+    }
+
+    if (browser) {
       stats = await runWithPool(routes, async (item) => {
         const html = await renderRoute(browser, item.route);
         await writeRoute(item.route, html);
         console.log(`[prerender] ✓ ${item.route} (priority ${item.prio})`);
       }, CONCURRENCY);
-    } finally {
-      await browser.close();
+    }
+  } catch (err) {
+    if (!browser) {
+      // Already handled fallback above
+      console.log('[prerender] Proceeding with fallback results');
+    } else {
+      throw err;
     }
   } finally {
+    if (browser) {
+      await browser.close();
+    }
     previewProc.kill('SIGTERM');
     await new Promise((r) => setTimeout(r, 200));
   }

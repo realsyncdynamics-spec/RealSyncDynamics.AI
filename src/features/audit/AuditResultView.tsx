@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, AlertTriangle, FileText, Loader2, ShieldCheck, ArrowRight,
-  Linkedin, Share2, Globe, Mail, Clock, Copy, Check,
+  Linkedin, Share2, Globe, Mail, Clock, Copy, Check, Zap,
 } from 'lucide-react';
 import { AgentWidget } from '../governance/AgentWidget/AgentWidget';
+import type { ScanFinding } from '../../core/onboarding/types';
 
 /**
  * AuditResultView — Render-Surface fuer ein Audit-Ergebnis an
@@ -158,6 +159,8 @@ export function AuditResultView({
   auditId, domain, score, email, createdAt, coverageNotice,
   findings = [], loading = false, error = null,
 }: AuditResultViewProps) {
+  const navigate = useNavigate();
+
   const grouped = useMemo(() => {
     const g: Record<AuditResultFinding['severity'], AuditResultFinding[]> = {
       critical: [], high: [], medium: [], low: [], info: [], pass: [],
@@ -175,6 +178,22 @@ export function AuditResultView({
   }, [findings]);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  const handleGovernanceOnboarding = () => {
+    const scanFindings: ScanFinding[] = findings
+      .filter((f) => f.severity !== 'pass')
+      .map((f) => ({
+        id: f.id,
+        severity: f.severity as Exclude<typeof f.severity, 'pass'>,
+        title: f.title,
+        detail: f.detail || '',
+        paragraph_ref: f.paragraph_ref,
+      }));
+
+    navigate(`/onboarding/${auditId}`, {
+      state: { findings: scanFindings, domain },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -244,7 +263,12 @@ export function AuditResultView({
                 <FindingsBySeverity grouped={grouped} />
               )}
 
-              {findings.length > 0 && <MonitoringCta />}
+              {findings.length > 0 && (
+                <>
+                  <GovernanceOnboardingCta onStart={handleGovernanceOnboarding} />
+                  <MonitoringCta />
+                </>
+              )}
             </>
           )}
         </section>
@@ -470,6 +494,40 @@ function scoreSevColor(sev: AuditResultFinding['severity']): string {
     info:     'text-sky-300',
     pass:     'text-emerald-300',
   }[sev];
+}
+
+function GovernanceOnboardingCta({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="border border-cyan-600/60 bg-gradient-to-br from-obsidian-900 to-obsidian-950 p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        <Zap className="mt-0.5 h-5 w-5 shrink-0 text-cyan-400" />
+        <div>
+          <h3 className="font-display text-base font-bold text-titanium-50 sm:text-lg">
+            Personalisierte Governance-Empfehlung
+          </h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-titanium-300">
+            Basierend auf Deinen Befunden analysieren wir Dein Governance-Profil und empfehlen
+            den passenden Plan für Deine Needs — mit Zeit-to-Value und konkreten Handlungsschritten.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onStart}
+              className="inline-flex items-center gap-1.5 bg-cyan-500 px-4 py-2 text-sm font-bold text-obsidian-950 hover:bg-cyan-400"
+            >
+              Analyse starten <ArrowRight className="h-4 w-4" />
+            </button>
+            <Link
+              to="/governance-os-pricing"
+              className="inline-flex items-center gap-1.5 border border-titanium-700 bg-obsidian-950 px-4 py-2 text-sm font-semibold text-titanium-200 hover:border-titanium-500"
+            >
+              Alle Pläne vergleichen
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function MonitoringCta() {

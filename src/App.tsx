@@ -65,6 +65,11 @@ import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 import { EnterpriseLanding } from './pages/EnterpriseLanding';
+import { GovernanceOSPricing } from './pages/GovernanceOSPricing';
+import { SaaSSolution } from './pages/solutions/SaaSSolution';
+import { AgenciesSolution } from './pages/solutions/AgenciesSolution';
+import { GovernanceOnboarding } from './pages/GovernanceOnboarding';
+import { GovernanceRecommendation } from './pages/GovernanceRecommendation';
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -365,6 +370,9 @@ function RoutesWithTracking() {
       <Route path="/shopify-dsgvo"   element={<ShopifyDsgvoLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
+      {/* Guided post-scan onboarding flow — Phase 2 */}
+      <Route path="/onboarding/:scanId" element={<GovernanceOnboarding />} />
+      <Route path="/recommendation/:scanId" element={<GovernanceRecommendation />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
@@ -604,6 +612,9 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/governance-os-pricing" element={<GovernanceOSPricing />} />
+      <Route path="/solutions/saas" element={<SaaSSolution />} />
+      <Route path="/solutions/agencies" element={<AgenciesSolution />} />
                 <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                 <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
                 <Route path="/checkout/:planKey" element={<CheckoutPage />} />

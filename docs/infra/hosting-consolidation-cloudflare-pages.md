@@ -27,10 +27,37 @@ PR-Status, verbrauchen Build-Minuten und verschleiern, welcher Build „live" is
 - Traefik-Router `kodee-apex` (301 → github.io) **deaktiviert**.
 - Stale `deploy-pages.yml`-Referenz in `tracker-db-update.yml` korrigiert.
 
-## Dashboard-seitig nötig (nicht per Repo automatisierbar)
+## Repo-seitiger Vercel-Kill-Switch (Update 2026-07-01)
+
+Der geblockte Vercel-Account (`realsynchost`) erzeugte weiterhin **rote
+PR-Status-Checks** („Account is blocked" / „Deployment has failed"), die den
+Merge über `mergeable_state: unstable` blockierten. Anders als das reine
+*Löschen* von `vercel.json` respektiert die Vercel-Git-Integration die
+**explizite** Einstellung im Repo:
+
+```json
+// vercel.json (Repo-Root)
+{ "git": { "deploymentEnabled": false } }
+```
+
+Damit erstellt Vercel für Pushes/PRs **keine Deployments und keine
+Commit-Status mehr** — der rote Check verschwindet, ohne Dashboard-Zugriff.
+
+> **Scope:** Eine Root-`vercel.json` wird nur von Projekten mit
+> `rootDirectory = <Repo-Root>` gelesen — also den beiden Frontend-Duplikaten
+> `real-sync-dynamics-ai` und `real-sync-dynamics-ai-9ue5`. Das Backend-Projekt
+> `-remu` (`rootDirectory = services/realsync-runtime-core`) liest eine andere
+> Config-Datei und bleibt **unberührt**. Frontend-Hosting bleibt allein
+> **Cloudflare Pages**.
+
+Der Dashboard-seitige Disconnect (unten) bleibt der saubere Endzustand; der
+Kill-Switch ist die sofort wirksame Repo-Lösung bis dahin.
+
+## Dashboard-seitig nötig (endgültiger Disconnect)
 
 Die drei Vercel-Projekte sind über die **Vercel-Git-Integration** verbunden, nicht
-über Repo-Dateien — `vercel.json` zu löschen stoppt sie **nicht**. Manuell:
+über Repo-Dateien — `vercel.json` zu *löschen* stoppt sie **nicht** (siehe
+Kill-Switch oben für die Repo-Lösung). Für den endgültigen Disconnect manuell:
 
 ### Vercel (Account `realsynchost`)
 Für **jedes** der drei Projekte (`real-sync-dynamics-ai`,

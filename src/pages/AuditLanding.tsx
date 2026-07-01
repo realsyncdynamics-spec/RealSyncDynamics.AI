@@ -434,8 +434,9 @@ function TrialCtaBlock({ report }: { report: Report }) {
       }));
     } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
 
+    // Kanonischer Weg: immer über die eine Paket-Auswahl (/pricing).
     navigate(
-      `/welcome?next=${encodeURIComponent(`/checkout/starter?pilot=true&audit_id=${report.audit_id}&source=trial_cta`)}`
+      `/pricing?plan=growth&audit_id=${report.audit_id}&source=trial_cta`
     );
   }
 
@@ -679,12 +680,12 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           >
             <FileText className="h-3.5 w-3.5" /> Evidence Vault
           </Link>
-          <a
-            href="/checkout/starter?source=audit_cta"
+          <Link
+            to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit_cta`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
           >
             <FileText className="h-3.5 w-3.5" /> 14 Tage gratis starten →
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -701,12 +702,12 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           DSGVO-Selfservice. <strong className="text-titanium-50">In 14 Tagen DSGVO-ready</strong>, nicht in 6 Monaten.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
-          <a
-            href="/checkout/starter?source=audit_report"
+          <Link
+            to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit_report`}
             className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
           >
             14 Tage gratis testen <ArrowRight className="h-4 w-4" />
-          </a>
+          </Link>
           <Link
             to="/pricing"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none"
@@ -736,7 +737,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
               Drift und schreibt jeden Befund in die Evidence-Chain.
             </p>
             <Link
-              to={`/audit?plan=starter&source=audit-followup&audit=${report.audit_id}`}
+              to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit-followup`}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 text-xs font-bold rounded-none"
             >
               Monitoring aktivieren <ArrowRight className="h-3 w-3" />

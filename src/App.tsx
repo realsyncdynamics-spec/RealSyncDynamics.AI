@@ -189,6 +189,11 @@ const OptimizerLanding = lazy(() => import('./pages/optimizer/OptimizerLanding')
 const OptimizerScan = lazy(() => import('./pages/optimizer/OptimizerScan').then((m) => ({ default: m.OptimizerScan })));
 const OptimizerScanning = lazy(() => import('./pages/optimizer/OptimizerScanning').then((m) => ({ default: m.OptimizerScanning })));
 const OptimizerResults = lazy(() => import('./pages/optimizer/OptimizerResults').then((m) => ({ default: m.OptimizerResults })));
+// Cloud Code Optimizer — Phase 2 (Auth, Pricing, Dashboard).
+const OptimizerAuth = lazy(() => import('./pages/optimizer/OptimizerAuth').then((m) => ({ default: m.OptimizerAuth })));
+const OptimizerVerify = lazy(() => import('./pages/optimizer/OptimizerVerify').then((m) => ({ default: m.OptimizerVerify })));
+const OptimizerPricing = lazy(() => import('./pages/optimizer/OptimizerPricing').then((m) => ({ default: m.OptimizerPricing })));
+const OptimizerDashboard = lazy(() => import('./pages/optimizer/OptimizerDashboard').then((m) => ({ default: m.OptimizerDashboard })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
@@ -366,6 +371,10 @@ function RoutesWithTracking() {
       <Route path="/optimizer/scan" element={<OptimizerScan />} />
       <Route path="/optimizer/scanning" element={<OptimizerScanning />} />
       <Route path="/optimizer/results" element={<OptimizerResults />} />
+      <Route path="/optimizer/auth" element={<OptimizerAuth />} />
+      <Route path="/optimizer/auth/verify" element={<OptimizerVerify />} />
+      <Route path="/optimizer/pricing" element={<OptimizerPricing />} />
+      <Route path="/optimizer/dashboard" element={<OptimizerDashboard />} />
       <Route path="/automations" element={<AutomationsLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />

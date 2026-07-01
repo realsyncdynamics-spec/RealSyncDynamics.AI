@@ -120,10 +120,10 @@ export function OptimizerLanding() {
       {/* Footer-Link */}
       <div className="mt-10 pt-6 border-t border-titanium-900">
         <Link
-          to="/pricing"
+          to="/optimizer/auth"
           className="inline-flex items-center gap-1.5 text-sm text-titanium-400 hover:text-titanium-100 transition-colors"
         >
-          <LogIn className="h-4 w-4" /> Bereits Kunde? Pakete &amp; Login ansehen
+          <LogIn className="h-4 w-4" /> Bereits Kunde? Direkt einloggen
         </Link>
       </div>
     </OptimizerLayout>

@@ -8,9 +8,8 @@
  * Typ: FEEDBACK + ACTION. Zeigt Score + Severity-Zählungen, aber KEINE
  * Detail-Findings. Primärer CTA → Bericht freischalten, sekundär → Pakete.
  *
- * Phase 2 verdrahtet die CTAs auf /optimizer/auth bzw. /optimizer/pricing.
- * Bis dahin zeigen sie auf die bestehenden, realen Routen (/audit, /pricing),
- * damit der Flow ohne 404 durchläuft.
+ * CTAs führen in den Phase-2-Flow: Bericht freischalten → /optimizer/auth,
+ * Pakete vergleichen → /optimizer/pricing.
  */
 
 import { useMemo, useState } from 'react';
@@ -138,18 +137,16 @@ export function OptimizerResults() {
           ))}
         </ul>
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* TODO(Phase 2): → /optimizer/auth */}
           <button
             type="button"
-            onClick={() => navigate('/audit')}
+            onClick={() => navigate('/optimizer/auth')}
             className="inline-flex items-center justify-center gap-2 bg-security-500 hover:bg-security-400 text-white font-bold px-6 py-3 rounded-none transition-colors"
           >
             Jetzt anmelden &amp; Bericht erhalten <ArrowRight className="h-4 w-4" />
           </button>
-          {/* TODO(Phase 2): → /optimizer/pricing */}
           <button
             type="button"
-            onClick={() => navigate('/pricing')}
+            onClick={() => navigate('/optimizer/pricing')}
             className="inline-flex items-center justify-center gap-2 border border-titanium-700 hover:border-titanium-500 text-titanium-100 font-bold px-6 py-3 rounded-none transition-colors"
           >
             Pakete vergleichen

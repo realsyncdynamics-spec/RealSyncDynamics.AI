@@ -17,6 +17,7 @@ import type { OptimizerScanResult } from './types';
 
 const URL_KEY = 'rsd.optimizer.targetUrl';
 const RESULT_KEY = 'rsd.optimizer.scanResult';
+const PENDING_EMAIL_KEY = 'rsd.optimizer.pendingEmail';
 
 function safeSession(): Storage | null {
   try {
@@ -62,6 +63,15 @@ export function getScanResult(): OptimizerScanResult | null {
   } catch {
     return null;
   }
+}
+
+/** E-Mail, die gerade registriert wird (für „Bestätigung erneut senden"). */
+export function setPendingEmail(email: string): void {
+  safeSession()?.setItem(PENDING_EMAIL_KEY, email);
+}
+
+export function getPendingEmail(): string | null {
+  return safeSession()?.getItem(PENDING_EMAIL_KEY) ?? null;
 }
 
 /** Räumt Flow-State auf (z. B. bei „Neuer Scan"). */

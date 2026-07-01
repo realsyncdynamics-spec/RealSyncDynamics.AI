@@ -209,6 +209,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Massen-Scan vieler Domains: CSV-Import, Prioritäts-Queue, Retry, Fortschritt',
   },
   {
+    id: 'scheduler',
+    label: 'Scheduler',
+    icon: 'CalendarClock',
+    route: '/app/scheduler',
+    status: 'live',
+    plans: ['agency', 'scale', 'enterprise'],
+    description: 'Geplante Scans (täglich/wöchentlich/monatlich) mit Slack/Teams/Webhook-Benachrichtigung',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

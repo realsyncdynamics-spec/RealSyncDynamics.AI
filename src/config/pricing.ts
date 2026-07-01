@@ -138,6 +138,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Automatisierungs-Skills bis 500 Läufe/Monat',
       'Herkunftsnachweis (C2PA-angelehnt): Signatur, Chain-of-Custody & Trust-Score',
       'Bulk-Jobs: Massen-Scan vieler Domains (CSV-Import, Prioritäts-Queue, Retry)',
+      'Scheduler: geplante Scans (täglich/wöchentlich/monatlich) + Slack/Teams/Webhook-Alerts',
       'Priority-Support',
     ],
     badges: [],

@@ -137,6 +137,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kodee VPS-Assistent (Server-Ops per SSH: Status, Logs, TLS/DNS + Risiko-Advisor)',
       'Automatisierungs-Skills bis 500 Läufe/Monat',
       'Herkunftsnachweis (C2PA-angelehnt): Signatur, Chain-of-Custody & Trust-Score',
+      'Bulk-Jobs: Massen-Scan vieler Domains (CSV-Import, Prioritäts-Queue, Retry)',
       'Priority-Support',
     ],
     badges: [],

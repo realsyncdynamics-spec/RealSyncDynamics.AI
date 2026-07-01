@@ -140,6 +140,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Bulk-Jobs: Massen-Scan vieler Domains (CSV-Import, Prioritäts-Queue, Retry)',
       'Scheduler: geplante Scans (täglich/wöchentlich/monatlich) + Slack/Teams/Webhook-Alerts',
       'Evidence Vault Advanced: versionierte Immutable Snapshots, Retention & Legal-Hold',
+      'Policy Packs: DSGVO, EU AI Act, NIS2, DORA, ISO 27001, TISAX (aktivierbar)',
       'Priority-Support',
     ],
     badges: [],

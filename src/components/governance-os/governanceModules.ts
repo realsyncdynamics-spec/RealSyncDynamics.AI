@@ -227,6 +227,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Evidence Vault Advanced: versionierte Immutable Snapshots, Retention, Legal-Hold, Audit-Timeline',
   },
   {
+    id: 'policy-packs',
+    label: 'Policy Packs',
+    icon: 'Library',
+    route: '/app/policy-packs',
+    status: 'live',
+    plans: ['agency', 'scale', 'enterprise'],
+    description: 'Aktivierbare Compliance-Regelwerke: DSGVO, EU AI Act, NIS2, DORA, ISO 27001, TISAX',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

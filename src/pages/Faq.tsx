@@ -249,6 +249,26 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Gibt es vorkonfigurierte Compliance-Regelwerke (DSGVO, AI Act, NIS2, DORA, ISO 27001, TISAX)?',
+    a: (
+      <>
+        <p>
+          Ja — <strong className="text-titanium-50">Policy Packs</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Statt bei null anzufangen, aktivierst du ein kuratiertes Regelwerk mit einem Klick; die Controls landen in deiner
+          Kontroll-Matrix und die <strong className="text-titanium-50">Abdeckung</strong> wird gegen deine dokumentierten Maßnahmen berechnet.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Packs u. a.: DSGVO Essentials · EU AI Act (High-Risk, Art. 9–15) · NIS2 · DORA · ISO 27001 Foundation · TISAX (Automotive) · FinTech-Kombi (DSGVO + NIS2 + DORA).</li>
+          <li>Jederzeit aktivier-/deaktivierbar; individuelle Unternehmensrichtlinien ergänzbar.</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/policy-packs" className="text-security-400">/app/policy-packs</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

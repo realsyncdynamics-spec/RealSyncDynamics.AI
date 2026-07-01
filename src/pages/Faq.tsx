@@ -207,6 +207,26 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Kann ich Scans automatisch planen (täglich/wöchentlich/monatlich)?',
+    a: (
+      <>
+        <p>
+          Ja — der <strong className="text-titanium-50">Scheduler</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Du legst pro Mandant Zeitpläne an (täglich, wöchentlich oder monatlich zu fester UTC-Uhrzeit); zum geplanten
+          Zeitpunkt wird automatisch ein Bulk-Scan der hinterlegten Domains ausgeführt. Pausieren/Fortsetzen jederzeit.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Benachrichtigung bei Lauf: <strong className="text-titanium-50">Slack</strong>, <strong className="text-titanium-50">Teams</strong> oder generischer <strong className="text-titanium-50">Webhook</strong> (HMAC-signiert).</li>
+          <li>„Nächster Lauf" wird vorab angezeigt; Ausführung via pg_cron-Dispatch.</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/scheduler" className="text-security-400">/app/scheduler</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

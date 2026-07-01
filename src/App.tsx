@@ -69,6 +69,9 @@ import { SaaSSolution } from './pages/solutions/SaaSSolution';
 import { AgenciesSolution } from './pages/solutions/AgenciesSolution';
 import { GovernanceOnboarding } from './pages/GovernanceOnboarding';
 import { GovernanceRecommendation } from './pages/GovernanceRecommendation';
+// ── Geführter, seitenbasierter Flow (/flow/*) ──
+import { FlowProvider } from './flow/FlowContext';
+import { FlowStepRoute } from './flow/FlowStepRoute';
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -835,6 +838,11 @@ function RoutesWithTracking() {
         }
       />
 
+      {/* Geführter Flow — erklärt jeden Klick auf einer eigenen Seite.
+          `/flow/*` fängt auch verschachtelte Slugs wie `checkout/starter`. */}
+      <Route path="/flow" element={<Navigate to="/flow/start-scan" replace />} />
+      <Route path="/flow/*" element={<FlowStepRoute />} />
+
       {/* 404 catch-all — must be last */}
       <Route path="*" element={<NotFoundPage />} />
         </Routes>
@@ -852,7 +860,9 @@ export default function App() {
           <SupabaseAuthProvider>
             <BrowserRouter basename={ROUTER_BASENAME}>
             <ScrollToTop />
+            <FlowProvider>
             <RoutesWithTracking />
+            </FlowProvider>
             <CookieConsent />
             <Suspense fallback={null}>
               <AssistentChip />

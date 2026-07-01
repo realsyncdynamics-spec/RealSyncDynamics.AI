@@ -10,6 +10,7 @@ import {
 } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
+import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
 
 /**
  * /pricing — public Pricing-Page mit 5 Paketen (Free → 1.999 €).
@@ -93,6 +94,13 @@ export function PricingPage() {
           >
             Governance Complexity Score ermitteln <ArrowRight className="h-4 w-4" />
           </Link>
+
+          {/* 14-Tage-Trial klar sichtbar — Starter/Growth/Agency starten mit
+              ?pilot=true in den 14-Tage-Testmodus (siehe CheckoutPage). */}
+          <p className="mt-5 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-300">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            14 Tage kostenlos testen · keine Kosten bis Tag 15 · monatlich kündbar
+          </p>
         </div>
       </section>
 
@@ -126,7 +134,7 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency/Scale: erste Abbuchung sofort nach Bestellung
+              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency: 14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Scale/Enterprise: nach Anfrage
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
               Alle Preise in EUR. Keine Umsatzsteuer ausgewiesen — Kleinunternehmer gemäß § 19 UStG.
@@ -424,7 +432,10 @@ function GovernanceModuleMatrix() {
                   className={`border-b border-titanium-900 ${i % 2 === 0 ? 'bg-obsidian-950' : 'bg-obsidian-900'}`}
                 >
                   <td className="py-2.5 pr-4 font-medium text-titanium-100 whitespace-nowrap">
-                    {mod.label}
+                    <span className="inline-flex items-center gap-2">
+                      {mod.label}
+                      {mod.status !== 'live' && <ModuleStatusBadge status={mod.status} />}
+                    </span>
                   </td>
                   {MATRIX_TIERS.map((t) => {
                     const ok = canAccessModule(mod, t.id);

@@ -108,6 +108,8 @@ export const PRICING_TIERS: PricingTier[] = [
       'Consent-Timing-Analyse (pre-consent requests)',
       'Fix-Empfehlungen mit Code-Snippets zum Copy-Paste',
       'Risk-Dashboard im Browser',
+      'Konversations-Bots für Chat, Telegram & WhatsApp (bis 2 Bots, 2.000 Antworten/Monat)',
+      'Bot-Fähigkeiten: Terminbuchung & Bestellannahme',
     ],
     badges: ['Empfohlen'],
     highlight: true,
@@ -124,6 +126,7 @@ export const PRICING_TIERS: PricingTier[] = [
     tagline: 'Für hohe Governance-Komplexität: Branchenbibliothek, Governance Agents und auditfähige Automatisierung',
     bullets: [
       'Alles aus Growth',
+      'Bot-Telefonie (Voice) + höhere Bot-Kontingente (10 Bots, 10.000 Antworten, 500 Voice-Minuten/Monat)',
       'Branchenbibliothek (vorkonfigurierte Governance-Profile)',
       'Governance Agents für Prüfungen & Maßnahmen',
       'Automatische Dokumentation + Audit-Trail',

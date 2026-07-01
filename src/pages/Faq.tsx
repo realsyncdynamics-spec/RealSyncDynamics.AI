@@ -109,6 +109,29 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Kann ich Konversations-Bots (Chat, Telefonie, WhatsApp) einsetzen?',
+    a: (
+      <>
+        <p>
+          Ja — ab dem <strong className="text-titanium-50">Growth</strong>-Tier sind Konversations-Bots inklusive.
+          Du legst sie selbst im Bot-Builder an (Persona, Begrüßung, Kanal) und bindest sie per Web-Endpoint
+          bzw. Twilio-Webhook ein. Optional aktivierbar: <strong className="text-titanium-50">Terminbuchung</strong> und
+          <strong className="text-titanium-50"> Bestellannahme</strong>.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li><strong className="text-titanium-50">Growth</strong> — Chat, Telegram & WhatsApp · bis 2 Bots · 2.000 Antworten/Monat</li>
+          <li><strong className="text-titanium-50">Agency</strong> — zusätzlich Telefonie (Voice) · bis 10 Bots · 10.000 Antworten + 500 Voice-Minuten/Monat</li>
+          <li><strong className="text-titanium-50">Scale</strong> — bis 50 Bots · 50.000 Antworten + 2.500 Voice-Minuten/Monat</li>
+          <li><strong className="text-titanium-50">Enterprise</strong> — ohne Limit</li>
+        </ul>
+        <p className="mt-2">
+          Jede Bot-Antwort ist RLS-geschützt, gedeckelt und mit Prüfpfad geloggt. Anlegen im Dashboard: <Link to="/app/bots" className="text-security-400">/app/bots</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

@@ -164,6 +164,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Enterprise Skills - 15 spezialisierte Governance-Agenten',
   },
   {
+    id: 'bots',
+    label: 'Bots',
+    icon: 'MessagesSquare',
+    route: '/app/bots',
+    status: 'live',
+    plans: ['growth', 'agency', 'scale', 'enterprise'],
+    description: 'Konversations-Bots für Chat, Telefonie, Telegram & WhatsApp (inkl. Terminbuchung & Bestellannahme)',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

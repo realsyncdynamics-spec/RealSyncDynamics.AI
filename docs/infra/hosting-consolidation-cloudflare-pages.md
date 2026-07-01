@@ -51,7 +51,16 @@ Commit-Status mehr** — der rote Check verschwindet, ohne Dashboard-Zugriff.
 > **Cloudflare Pages**.
 
 Der Dashboard-seitige Disconnect (unten) bleibt der saubere Endzustand; der
-Kill-Switch ist die sofort wirksame Repo-Lösung bis dahin.
+Kill-Switch ist die Repo-Absicht bis dahin.
+
+> **Befund 2026-07-01 (PR #750):** Solange der Vercel-Account **geblockt**
+> ist, greift der Kill-Switch **nicht** — Vercel postet den Status
+> „Account is blocked" auf **Account-Ebene**, *bevor* die Projekt-Config /
+> `vercel.json` gelesen wird. Der rote PR-Check verschwindet also erst mit
+> dem **Disconnect unten** (oder wenn der Account entsperrt wird; dann greift
+> zusätzlich der Kill-Switch). Der PR bleibt trotzdem mergebar:
+> `mergeable_state` ist `unstable` (nicht `blocked`), sofern die
+> „Vercel …"-Checks nicht als *required* in der Branch-Protection stehen.
 
 ## Dashboard-seitig nötig (endgültiger Disconnect)
 
@@ -71,6 +80,15 @@ Für **jedes** der drei Projekte (`real-sync-dynamics-ai`,
 > Hinweis `-remu`: `rootDirectory = services/realsync-runtime-core` — falls dieser
 > Service bewusst auf Vercel laufen soll, NICHT trennen; dann ist es kein
 > Frontend-Duplikat, sondern ein eigenständiger Backend-Deploy. Vorher klären.
+
+**Konkret für die roten PR-Checks (Stand PR #750):** Die beiden failenden
+Status stammen aus den Frontend-Projekten `real-sync-dynamics-ai` und
+`real-sync-dynamics-ai-9ue5`. Diese beiden trennen (Disconnect) genügt, damit
+kein „Vercel …"-Check mehr auf PRs erscheint. `-remu` nur nach obiger Klärung.
+
+**Verifizieren nach dem Disconnect:** Neuen Commit auf einen offenen PR pushen
+(oder PR neu öffnen) und prüfen, dass unter *Checks* keine „Vercel …"-Kontexte
+mehr auftauchen — nur noch GitHub Actions + Cloudflare Pages.
 
 ### GitHub Pages
 1. GitHub → Repo → **Settings → Pages → Source = None** (deaktivieren).

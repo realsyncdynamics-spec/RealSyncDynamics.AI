@@ -218,4 +218,4 @@ export const TIER_ACCENT: Record<TierId, { border: string; text: string }> = {
 
 /** Trust-Note unter Pricing-Cards */
 export const PRICING_TRUST_NOTE =
-  'Free Audit kostenlos · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
+  'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';

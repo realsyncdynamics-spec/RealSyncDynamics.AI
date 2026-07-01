@@ -191,6 +191,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Kodee VPS-Assistent: Server-Ops per SSH (Status, Logs, TLS/DNS) inkl. Risiko-Advisor',
   },
   {
+    id: 'provenance',
+    label: 'Herkunft',
+    icon: 'ShieldCheck',
+    route: '/app/provenance',
+    status: 'live',
+    plans: ['agency', 'scale', 'enterprise'],
+    description: 'Herkunftsnachweis (C2PA-angelehnt): Content Credentials, Chain-of-Custody, Trust-Score',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

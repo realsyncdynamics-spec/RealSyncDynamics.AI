@@ -166,6 +166,27 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Könnt ihr die Herkunft KI-generierter Inhalte nachweisen (C2PA / Content Credentials)?',
+    a: (
+      <>
+        <p>
+          Ja — der <strong className="text-titanium-50">Herkunftsnachweis</strong> (ab <strong className="text-titanium-50">Agency</strong>) bindet
+          jedes Asset über eine unveränderliche <strong className="text-titanium-50">Chain-of-Custody</strong> (SHA-256-Hash-Kette) an einen
+          signierten Manifest-Eintrag. Manipulation bricht die Kette und wird beim Verifizieren sofort erkannt.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Inhalts-Hash wird <strong className="text-titanium-50">lokal im Browser</strong> berechnet — die Datei verlässt dein Gerät nicht.</li>
+          <li><strong className="text-titanium-50">Trust-Score</strong> (0–100) aus Signatur, Ketten-Kontinuität, Metadaten- und Eigentümer-Konsistenz.</li>
+          <li>Jede Custody-Aktion ist mandantengetrennt (RLS) und im Prüfpfad geloggt.</li>
+        </ul>
+        <p className="mt-2">
+          Datenmodell C2PA-angelehnt (Content Credentials); Zugang im Dashboard: <Link to="/app/provenance" className="text-security-400">/app/provenance</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

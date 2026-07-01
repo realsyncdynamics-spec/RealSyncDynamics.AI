@@ -107,7 +107,7 @@ export function CheckoutPage() {
       value: tier?.priceEur ?? 0,
       currency: 'EUR',
     });
-    const result = await createCheckoutSession(auth.tenantId, validPlan);
+    const result = await createCheckoutSession(auth.tenantId, validPlan, isPilot);
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {

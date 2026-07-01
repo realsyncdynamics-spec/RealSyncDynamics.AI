@@ -90,7 +90,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'E-Mail-Alert bei neuen Findings',
     ],
     highlight: false,
-    cta: { label: 'Jetzt upgraden', href: '/checkout/starter?source=pricing' },
+    cta: { label: '14 Tage kostenlos testen', href: '/checkout/starter?source=pricing&pilot=true' },
   },
   {
     id: 'growth',
@@ -111,7 +111,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: ['Empfohlen'],
     highlight: true,
-    cta: { label: 'Jetzt upgraden', href: '/checkout/growth?source=pricing' },
+    cta: { label: '14 Tage kostenlos testen', href: '/checkout/growth?source=pricing&pilot=true' },
   },
   {
     id: 'agency',
@@ -133,7 +133,7 @@ export const PRICING_TIERS: PricingTier[] = [
     ],
     badges: [],
     highlight: false,
-    cta: { label: '14 Tage Agency testen', href: '/checkout/agency?source=pricing' },
+    cta: { label: '14 Tage Agency testen', href: '/checkout/agency?source=pricing&pilot=true' },
   },
   {
     id: 'scale',

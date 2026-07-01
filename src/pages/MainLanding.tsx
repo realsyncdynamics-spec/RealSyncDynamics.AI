@@ -23,6 +23,11 @@ import {
 } from 'lucide-react';
 
 /**
+ * ⛔ DESIGN-LOCK (genehmigte Baseline, Commit 3b972f3) — siehe CLAUDE.md.
+ * Nur TEXTE/COPY und BUTTON-Beschriftungen (Strings) sowie Button-Link-Ziele
+ * dürfen ohne Rückfrage geändert werden. JEDE Design-/Layout-/Struktur-/
+ * Farb-/Komponenten-/Spacing-/Icon-Änderung braucht ausdrückliche Genehmigung.
+ *
  * MainLanding — Unternehmenshauptseite (Root-Route).
  * Design: Obsidian-Hintergrund (rgb(3,7,18)), Earth-at-Night-Hero (Europa),
  * Cyan-Akzent, Plus Jakarta Sans + JetBrains Mono (Metadaten).

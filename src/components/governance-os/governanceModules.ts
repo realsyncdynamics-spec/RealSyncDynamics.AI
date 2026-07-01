@@ -200,6 +200,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Herkunftsnachweis (C2PA-angelehnt): Content Credentials, Chain-of-Custody, Trust-Score',
   },
   {
+    id: 'bulk',
+    label: 'Bulk-Jobs',
+    icon: 'Layers',
+    route: '/app/bulk',
+    status: 'live',
+    plans: ['agency', 'scale', 'enterprise'],
+    description: 'Massen-Scan vieler Domains: CSV-Import, Prioritäts-Queue, Retry, Fortschritt',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

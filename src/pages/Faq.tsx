@@ -187,6 +187,26 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Kann ich hunderte Domains auf einmal scannen (Bulk-Jobs)?',
+    a: (
+      <>
+        <p>
+          Ja — <strong className="text-titanium-50">Bulk-Jobs</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Du fügst Domains per Liste oder <strong className="text-titanium-50">CSV-Import</strong> ein; sie werden lokal geprüft
+          (dedupliziert, ungültige markiert) und als Batch in eine <strong className="text-titanium-50">Prioritäts-Queue</strong> mit
+          automatischem Retry eingereiht. Fortschritt je Batch ist live sichtbar, Abbrechen jederzeit möglich.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Kontingent: <strong className="text-titanium-50">Agency</strong> 50 · <strong className="text-titanium-50">Scale</strong> 500 · <strong className="text-titanium-50">Enterprise</strong> unbegrenzt Batches/Monat</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/bulk" className="text-security-400">/app/bulk</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

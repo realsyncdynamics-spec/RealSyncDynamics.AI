@@ -6,6 +6,7 @@ import { PublicFooter } from '../layout/PublicFooter';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { Card } from '../components/Card';
+import { GlobeVisualization } from '../../components/visual/GlobeVisualization';
 import { PRICING_PLANS, PRICING_FAQ } from '../mock/data';
 
 export function PricingPage() {
@@ -14,15 +15,25 @@ export function PricingPage() {
       <PublicNav />
 
       {/* HERO */}
-      <section className="border-b border-titanium-800 py-16 lg:py-20">
-        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-          <Badge className="mb-6">Pricing</Badge>
-          <h1 className="font-display text-4xl font-bold leading-tight text-titanium-50 sm:text-5xl">
-            Transparente Preise für Ihr Governance OS
-          </h1>
-          <p className="mt-5 text-base leading-relaxed text-titanium-400 sm:text-lg">
-            Starten Sie kostenlos, wachsen Sie ohne Überraschungen. Alle Pläne beinhalten Hosting & Betrieb in der EU.
-          </p>
+      <section className="border-b border-titanium-800 py-16 lg:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
+            {/* Globe visualization */}
+            <div className="h-96 w-full lg:h-full">
+              <GlobeVisualization />
+            </div>
+
+            {/* Text content */}
+            <div className="flex flex-col justify-center">
+              <Badge className="mb-6 w-fit">Pricing</Badge>
+              <h1 className="font-display text-4xl font-bold leading-tight text-titanium-50 sm:text-5xl">
+                Transparente Preise für Ihr Governance OS
+              </h1>
+              <p className="mt-5 text-base leading-relaxed text-titanium-400 sm:text-lg">
+                Starten Sie kostenlos, wachsen Sie ohne Überraschungen. Alle Pläne beinhalten Hosting & Betrieb in der EU.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

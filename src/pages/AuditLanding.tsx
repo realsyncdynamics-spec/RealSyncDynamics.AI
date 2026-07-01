@@ -510,6 +510,56 @@ function TrialCtaBlock({ report }: { report: Report }) {
   );
 }
 
+// ─── Guided Plan Finder ─────────────────────────────────────────────────────
+//
+// Führt nach dem Scan in den geführten Onboarding-Flow
+// (/onboarding/:scanId → /recommendation/:scanId → /pricing). Findings/Domain
+// werden via Router-State übergeben, damit die Empfehlung ohne Backend-Roundtrip
+// rechnet. Nur sichtbar, wenn es Befunde gibt (sonst hat das Onboarding keine
+// Datenbasis).
+function GuidedPlanBlock({ report }: { report: Report }) {
+  const findings = report.issues.map((i) => ({
+    id: i.id,
+    severity: i.severity,
+    title: i.title,
+    detail: i.detail,
+    paragraph_ref: i.paragraph_ref,
+  }));
+  return (
+    <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none">
+      <div className="flex items-start gap-3 mb-3">
+        <Sparkles className="h-5 w-5 text-violet-300 shrink-0 mt-0.5" />
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">
+            Geführte Empfehlung · 2 Minuten
+          </div>
+          <h3 className="font-display font-bold text-titanium-50 text-lg">
+            Nicht sicher, welches Paket passt?
+          </h3>
+        </div>
+      </div>
+      <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
+        Beantworten Sie ein paar kurze Fragen zu Branche und Governance-Bedarf — auf Basis
+        Ihrer {report.issues.length} Befunde empfehlen wir das passende Paket und führen Sie
+        direkt zur Auswahl.
+      </p>
+      <Link
+        to={`/onboarding/${report.audit_id}`}
+        state={{
+          findings,
+          domain: report.domain,
+          score: report.score,
+          severity: report.severity,
+          auditId: report.audit_id,
+        }}
+        className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
+      >
+        Passende Pakete finden <ArrowRight className="h-4 w-4" />
+      </Link>
+    </div>
+  );
+}
+
 // ─── Report ───────────────────────────────────────────────────────────────
 
 function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }) {
@@ -573,6 +623,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       </div>
 
       <TrialCtaBlock report={report} />
+
+      {report.issues.length > 0 && <GuidedPlanBlock report={report} />}
 
       {/* Business Impact Summary */}
       {report.issues.length > 0 && (

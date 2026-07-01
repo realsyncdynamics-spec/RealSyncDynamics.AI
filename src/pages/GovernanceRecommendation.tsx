@@ -57,9 +57,20 @@ export function GovernanceRecommendation() {
   const planConfig = PLAN_CONFIG[recommendation.recommendedPlan];
   const timeToValue = estimateTimeToValue(recommendation.recommendedPlan, profile.dimensions[0]?.criticalityScore || 0);
 
+  // Governance-Empfehlungs-Keys → kanonische Pricing-Tiers. So landet der
+  // geführte Flow auf der EINEN Paket-Auswahl (/pricing) mit vorgewähltem
+  // Paket — statt in einem ungültigen /checkout/<*_governance> (das der
+  // Checkout ablehnt).
+  const GOV_TO_TIER: Record<string, string> = {
+    starter_governance: 'starter',
+    professional_governance: 'growth',
+    governance_os: 'agency',
+    enterprise_regulated: 'enterprise',
+  };
   const handleCheckout = () => {
+    const tier = GOV_TO_TIER[recommendation.recommendedPlan] ?? 'growth';
     navigate(
-      `/checkout/${recommendation.recommendedPlan}?source=governance_recommendation&scan_id=${scanId}&sector=${profile.sector}`
+      `/pricing?plan=${tier}&source=governance_recommendation&audit_id=${scanId}&sector=${profile.sector}`
     );
   };
 
@@ -226,7 +237,7 @@ export function GovernanceRecommendation() {
               </a>
             )}
             <button
-              onClick={() => navigate('/governance-os-pricing')}
+              onClick={() => navigate('/pricing')}
               className="flex-1 border border-titanium-700 text-titanium-200 px-8 py-4 font-bold text-lg rounded-none hover:border-titanium-400 transition-colors"
             >
               Alle Pläne vergleichen

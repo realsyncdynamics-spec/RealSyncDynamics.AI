@@ -218,6 +218,15 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     description: 'Geplante Scans (täglich/wöchentlich/monatlich) mit Slack/Teams/Webhook-Benachrichtigung',
   },
   {
+    id: 'evidence-vault',
+    label: 'Vault',
+    icon: 'Archive',
+    route: '/app/evidence-vault',
+    status: 'live',
+    plans: ['agency', 'scale', 'enterprise'],
+    description: 'Evidence Vault Advanced: versionierte Immutable Snapshots, Retention, Legal-Hold, Audit-Timeline',
+  },
+  {
     id: 'documents',
     label: 'Dokumente',
     icon: 'FileText',

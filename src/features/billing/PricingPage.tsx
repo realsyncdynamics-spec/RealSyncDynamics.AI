@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
 } from 'lucide-react';
@@ -39,6 +40,16 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
 };
 
 export function PricingPage() {
+  // Deep-Link von Startseite/Audit: ?plan=<id> hebt das gewählte Paket hervor
+  // und scrollt es in den Blick — so bleibt der Weg zur Paket-Auswahl eindeutig.
+  const [params] = useSearchParams();
+  const selectedPlan = params.get('plan');
+  useEffect(() => {
+    if (!selectedPlan) return;
+    const el = document.getElementById(`plan-${selectedPlan}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [selectedPlan]);
+
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar */}
@@ -90,7 +101,7 @@ export function PricingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 items-stretch">
             {PUBLIC_PRICING_TIERS.map((tier) => (
-              <TierCard key={tier.id} tier={tier} />
+              <TierCard key={tier.id} tier={tier} selected={tier.id === selectedPlan} />
             ))}
           </div>
 
@@ -271,7 +282,7 @@ export function PricingPage() {
   );
 }
 
-function TierCard({ tier }: { tier: PricingTier }) {
+function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
   const TierIcon = TIER_ICONS[tier.id];
   const priceDisplay =
     tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
@@ -280,11 +291,12 @@ function TierCard({ tier }: { tier: PricingTier }) {
 
   return (
     <div
+      id={`plan-${tier.id}`}
       className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border-x border-b rounded-none border-t-4 transition-colors ${accent.border} ${
         tier.highlight
           ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
           : 'border-silver-700/30 hover:border-titanium-200/60'
-      }`}
+      }${selected ? ' ring-2 ring-cyan-400/70' : ''}`}
     >
       {tier.highlight && (
         <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">

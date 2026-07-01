@@ -65,7 +65,6 @@ import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 import { EnterpriseLanding } from './pages/EnterpriseLanding';
-import { GovernanceOSPricing } from './pages/GovernanceOSPricing';
 import { SaaSSolution } from './pages/solutions/SaaSSolution';
 import { AgenciesSolution } from './pages/solutions/AgenciesSolution';
 import { GovernanceOnboarding } from './pages/GovernanceOnboarding';
@@ -265,7 +264,6 @@ const EnterpriseAppShell = lazy(() => import('./enterprise-os/layout/AppShell').
 const EnterpriseAppHomePage = lazy(() => import('./enterprise-os/pages/AppHomePage').then((m) => ({ default: m.AppHomePage })));
 const EnterprisePlaceholderPage = lazy(() => import('./enterprise-os/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
 // Phase 2 — Public Pages (Pricing, Audit, AI Governance, Agenturen, Auth, Legal, Checkout)
-const EnterprisePricingPage = lazy(() => import('./enterprise-os/pages/PricingPage').then((m) => ({ default: m.PricingPage })));
 const EnterpriseAuthPage = lazy(() => import('./enterprise-os/pages/AuthPage').then((m) => ({ default: m.AuthPage })));
 const EnterpriseAuditLandingPage = lazy(() => import('./enterprise-os/pages/AuditLandingPage').then((m) => ({ default: m.AuditLandingPage })));
 const EnterpriseAiGovernancePage = lazy(() => import('./enterprise-os/pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
@@ -614,7 +612,8 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/governance-os-pricing" element={<GovernanceOSPricing />} />
+      {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}
+      <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/solutions/saas" element={<SaaSSolution />} />
       <Route path="/solutions/agencies" element={<AgenciesSolution />} />
                 <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
@@ -719,7 +718,7 @@ function RoutesWithTracking() {
           Bestehende /, /app/* Routen bleiben unverändert (siehe oben). */}
       <Route path="/os" element={<EnterpriseLandingPage />} />
       {/* Phase 2 — Public Pages (eigenständig, Mockdaten, kein Backend) */}
-      <Route path="/os/pricing" element={<EnterprisePricingPage />} />
+      <Route path="/os/pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/os/audit" element={<EnterpriseAuditLandingPage />} />
       <Route path="/os/ai-act" element={<EnterpriseAiGovernancePage />} />
       <Route path="/os/agencies" element={<EnterpriseAgenciesPage />} />

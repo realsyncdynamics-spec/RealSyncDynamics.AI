@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, ShieldCheck, Activity, FileCheck2, Brain, Code2,
   Users, Building2, Cog, AlertTriangle, CheckCircle2, Globe, Database,
-  GitBranch, Bell, FileText, MessagesSquare,
+  GitBranch, Bell, FileText, MessagesSquare, Server,
 } from 'lucide-react';
 import { LiveFindingsSection } from '../components/sections/LiveFindingsSection';
 import { ReportPreviewSection } from '../components/sections/ReportPreviewSection';
@@ -102,6 +102,19 @@ export function Features() {
                 'Fähigkeiten zuschaltbar: Terminbuchung und Bestellannahme',
                 'Persona, Begrüßung und Kanal pro Bot; Einbindung per Web-Endpoint bzw. Twilio-Webhook',
                 'Jede Antwort DSGVO-konform gedeckelt, mandantengetrennt (RLS) und mit Prüfpfad geloggt',
+              ]}
+            />
+          </div>
+          <div className="md:col-span-2">
+            <FeatureBlock
+              icon={<Server className="h-5 w-5 text-emerald-400" />}
+              title="Kodee — VPS-Assistent (ab Agency)"
+              wide
+              bullets={[
+                'Verbindet sich per SSH mit deinem Server — Status, Logs, Disk, DNS- und TLS-Prüfung',
+                'Deployment-Hilfe: Reverse Proxy, Zertifikate, Docker/PM2/systemd, Backups',
+                'Risiko-Advisor bewertet Schreib-Aktionen (Neustart, Compose-Up) vor der Ausführung',
+                'Mandantengetrennt, SSH-Keys verschlüsselt, jede Aktion im Prüfpfad geloggt',
               ]}
             />
           </div>

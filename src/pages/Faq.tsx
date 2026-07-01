@@ -132,6 +132,40 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Kann ich wiederkehrende Compliance-Aufgaben automatisieren?',
+    a: (
+      <>
+        <p>
+          Ja — über <strong className="text-titanium-50">Automatisierungs-Skills</strong> (DSGVO-Audit, Dokumenten-Generierung,
+          Lead-Risk u. a.). Jeder Lauf wird mit Kosten und Prüfpfad protokolliert. Kontingente pro Monat:
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li><strong className="text-titanium-50">Free</strong> 3 · <strong className="text-titanium-50">Starter</strong> 25 · <strong className="text-titanium-50">Growth</strong> 100 · <strong className="text-titanium-50">Agency</strong> 500 · <strong className="text-titanium-50">Scale</strong> 2.500 · <strong className="text-titanium-50">Enterprise</strong> unbegrenzt</li>
+        </ul>
+        <p className="mt-2">
+          Übersicht der Skills: <Link to="/automations" className="text-security-400">/automations</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Gibt es einen Assistenten für Server-/VPS-Betrieb?',
+    a: (
+      <>
+        <p>
+          Ja — <strong className="text-titanium-50">Kodee</strong>, der VPS-Assistent, ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Er verbindet sich per SSH mit deinem Server und hilft bei Status- und Log-Checks, DNS/TLS-Prüfung sowie
+          Deployment-Aufgaben — inklusive Risiko-Advisor, der Schreib-Aktionen (z. B. Neustarts) vorab bewertet.
+        </p>
+        <p className="mt-2">
+          Jede Aktion ist mandantengetrennt, verschlüsselt und im Prüfpfad geloggt. Zugang: <Link to="/kodee" className="text-security-400">/kodee</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

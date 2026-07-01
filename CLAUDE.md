@@ -39,6 +39,11 @@ Provenienz (C2PA), AI-Workflows, VPS-Operations — Multi-Tenant.
 - Compliance: EU AI Act + DSGVO; Service-Role-Keys ausschließlich in Edge Functions
 - Multi-Tenancy: alle Tabellen RLS-geschützt; jeder externe Call wird in `ai_tool_runs` / `workflow_runs` geloggt
 
+## Design-Lock: Startseite (`src/pages/MainLanding.tsx`)
+- **GESPERRT (Baseline: Commit `3b972f3`).** Das aktuelle Startseiten-Design ist der genehmigte, eingefrorene Stand („Das KI-Betriebssystem für DSGVO, EU AI Act & Code-Compliance" — Obsidian/Cyan-Globe-Hero mit Claude-Code-Metrik-Karten).
+- **Erlaubt ohne Rückfrage:** nur Änderungen an **Texten/Copy** und **Button-Beschriftungen** (Strings) sowie an Link-Zielen der Buttons.
+- **Nur mit ausdrücklicher Genehmigung:** jegliche Design-/Layout-/Struktur-/Farb-/Komponenten-/Spacing-/Icon-Änderung, Umbau der Sektionen, Theme-Wechsel oder Ersetzen der Seite. Im Zweifel: erst fragen, nicht ändern.
+
 ## Ziele für Claude
 - Features in Edge Functions + SPA umsetzen
 - Migrations sauber additiv halten (RLS nicht brechen)

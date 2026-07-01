@@ -227,6 +227,28 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Wie stellt ihr sicher, dass Nachweise unveränderlich und revisionssicher sind?',
+    a: (
+      <>
+        <p>
+          Der <strong className="text-titanium-50">Evidence Vault Advanced</strong> (ab <strong className="text-titanium-50">Agency</strong>) legt Nachweise als
+          <strong className="text-titanium-50"> versionierte, unveränderliche Snapshots</strong> ab: jeder Stand ist über eine SHA-256-Kette
+          (prev_hash) mit dem Vorgänger verknüpft und wird per Datenbank-Trigger gegen Änderung/Löschung gesperrt (append-only).
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li><strong className="text-titanium-50">Aufbewahrungsrichtlinien</strong> (7 J / 3 J / 1 J / 90 T / … / unbegrenzt) pro Snapshot.</li>
+          <li><strong className="text-titanium-50">Legal-Hold</strong> sperrt den Ablauf/die Löschung, solange aktiv — für laufende Verfahren.</li>
+          <li>Der Inhalts-Hash wird <strong className="text-titanium-50">lokal im Browser</strong> berechnet; optional HMAC-signiert.</li>
+          <li>Lückenlose <strong className="text-titanium-50">Audit-Timeline</strong> mit Version, Hash und Aufbewahrungsstatus.</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/evidence-vault" className="text-security-400">/app/evidence-vault</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

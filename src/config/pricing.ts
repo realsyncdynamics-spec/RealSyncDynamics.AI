@@ -139,6 +139,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Herkunftsnachweis (C2PA-angelehnt): Signatur, Chain-of-Custody & Trust-Score',
       'Bulk-Jobs: Massen-Scan vieler Domains (CSV-Import, Prioritäts-Queue, Retry)',
       'Scheduler: geplante Scans (täglich/wöchentlich/monatlich) + Slack/Teams/Webhook-Alerts',
+      'Evidence Vault Advanced: versionierte Immutable Snapshots, Retention & Legal-Hold',
       'Priority-Support',
     ],
     badges: [],

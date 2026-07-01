@@ -554,7 +554,7 @@ function GuidedPlanBlock({ report }: { report: Report }) {
         }}
         className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
       >
-        Passendes Paket finden <ArrowRight className="h-4 w-4" />
+        Passende Pakete finden <ArrowRight className="h-4 w-4" />
       </Link>
     </div>
   );

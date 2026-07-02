@@ -1,13 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Archive, AlertTriangle, FileUp, Fingerprint, Lock, LockOpen, RefreshCw, Camera } from 'lucide-react';
+import { ArrowLeft, Archive, AlertTriangle, FileUp, Fingerprint, Lock, LockOpen, RefreshCw, Camera, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { sha256Hex } from '../../lib/provenance';
 import { describeRetention, RETENTION_CLASSES, type RetentionClass } from '../../lib/evidence/retention';
-import { createSnapshot, setLegalHold, listTimeline, type TimelineEntry, type VaultError } from './evidenceVaultApi';
+import { verifyAllChains, type ChainReport } from '../../lib/evidence/verifyChain';
+import { createSnapshot, setLegalHold, listTimeline, listSnapshotsForVerification, type TimelineEntry, type VaultError } from './evidenceVaultApi';
+
+// WebCrypto-Adapter für die Verifizierung (string → hex), teilt sich die
+// SHA-256-Implementierung mit der Snapshot-Erzeugung.
+const hashHex = (input: string) => sha256Hex(new TextEncoder().encode(input));
 
 /**
  * /app/evidence-vault — Evidence Vault Advanced: versionierte, unveränderliche
@@ -39,6 +44,8 @@ function VaultInner() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
+  const [verifying, setVerifying] = useState(false);
+  const [reports, setReports] = useState<ChainReport[] | null>(null);
 
   const reload = useCallback(async () => {
     if (!activeTenantId) { setTimeline([]); return; }
@@ -77,6 +84,18 @@ function VaultInner() {
     reload();
   }
 
+  async function onVerify() {
+    if (!activeTenantId) return;
+    setVerifying(true); setError(null); setReports(null);
+    try {
+      const snapshots = await listSnapshotsForVerification(activeTenantId);
+      setReports(await verifyAllChains(snapshots, hashHex));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    setVerifying(false);
+  }
+
   const inputCls = 'w-full border border-titanium-700 bg-obsidian-900 px-3 py-2 text-sm text-titanium-100 placeholder:text-titanium-600 focus:border-security-500 focus:outline-none';
   const labelCls = 'mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500';
 
@@ -99,7 +118,12 @@ function VaultInner() {
             </div>
           </div>
         </div>
-        <Button variant="secondary" size="sm" onClick={reload}><RefreshCw className="h-3.5 w-3.5" /> Aktualisieren</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={onVerify} disabled={verifying || !activeTenantId}>
+            <ShieldCheck className="h-3.5 w-3.5" /> {verifying ? 'Prüfe…' : 'Integrität prüfen'}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={reload}><RefreshCw className="h-3.5 w-3.5" /> Aktualisieren</Button>
+        </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-6 sm:px-6">
@@ -161,6 +185,8 @@ function VaultInner() {
           </CardBody>
         </Card>
 
+        {reports && <VerificationPanel reports={reports} />}
+
         <div>
           <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500">Audit-Timeline</div>
           {timeline.length === 0 ? (
@@ -191,6 +217,55 @@ function VaultInner() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function VerificationPanel({ reports }: { reports: ChainReport[] }) {
+  if (reports.length === 0) {
+    return (
+      <div className="border border-titanium-800 bg-obsidian-900 px-4 py-3 font-mono text-xs text-titanium-500">
+        Keine Snapshots zum Prüfen vorhanden.
+      </div>
+    );
+  }
+  const allOk = reports.every((r) => r.ok);
+  const totalVerified = reports.reduce((n, r) => n + r.cryptoVerified, 0);
+  const totalLegacy = reports.reduce((n, r) => n + r.legacy, 0);
+
+  return (
+    <div className={`border ${allOk ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-risk-critical/50 bg-risk-critical/5'}`}>
+      <div className="flex items-center gap-2 border-b border-titanium-900 px-4 py-2.5">
+        {allOk ? <ShieldCheck className="h-4 w-4 text-emerald-400" /> : <ShieldAlert className="h-4 w-4 text-risk-critical" />}
+        <span className={`font-mono text-[11px] font-semibold uppercase tracking-wider ${allOk ? 'text-emerald-300' : 'text-risk-critical'}`}>
+          {allOk ? 'Integrität bestätigt' : 'Integrität verletzt'}
+        </span>
+        <span className="font-mono text-[10px] text-titanium-500">
+          {reports.length} Kette{reports.length === 1 ? '' : 'n'} · {totalVerified} kryptografisch geprüft{totalLegacy > 0 ? ` · ${totalLegacy} Legacy` : ''}
+        </span>
+      </div>
+      <ul className="divide-y divide-titanium-900">
+        {reports.map((r) => (
+          <li key={r.subjectRef} className="px-4 py-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="truncate font-mono text-xs text-titanium-200">{r.subjectRef}</span>
+              <span className={`shrink-0 border px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ${r.ok ? 'border-emerald-500/40 text-emerald-300' : 'border-risk-critical/50 text-risk-critical'}`}>
+                {r.ok ? `v1–${r.count} intakt` : `${r.issues.length} Problem${r.issues.length === 1 ? '' : 'e'}`}
+              </span>
+            </div>
+            {r.issues.length > 0 && (
+              <ul className="mt-1.5 space-y-1">
+                {r.issues.map((iss, idx) => (
+                  <li key={idx} className="flex items-start gap-1.5 font-mono text-[11px] text-risk-critical">
+                    <ShieldAlert className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>v{iss.version} · {iss.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

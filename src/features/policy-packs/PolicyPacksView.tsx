@@ -101,13 +101,18 @@ function PacksInner() {
 
   // Auto-Empfehlung: rankt den Katalog gegen die Tenant-Signale (Branche,
   // in-scope Frameworks + Hochrisiko-KI), schließt bereits aktivierte Packs aus.
+  const openGapControls = mappings
+    .filter((m) => m.status === 'gap' || m.status === 'not_started')
+    .map((m) => ({ framework: m.framework, control_code: m.control_code }));
+
   const recommendations: PackRecommendation[] = topRecommendations(
-    catalog.map((p) => ({ id: p.id, name: p.name, industry: p.industry, frameworks: p.frameworks })),
+    catalog.map((p) => ({ id: p.id, name: p.name, industry: p.industry, frameworks: p.frameworks, controls: p.controls })),
     {
       activeFrameworks: deriveActiveFrameworks(mappings),
       hasHighRiskAI: highRisk > 0,
       highRiskCount: highRisk,
       industry,
+      openGapControls,
     },
     { excludePackIds: Array.from(active), limit: 4 },
   );

@@ -14,17 +14,19 @@
  * vs. „Wie gut decke ich einen aktivierten Pack ab?" (coverage).
  */
 
-import { frameworkLabel } from './coverage';
+import { frameworkLabel, type PackControlRef } from './coverage';
 
 export type RecommendationTier = 'essential' | 'recommended' | 'optional';
 
-/** Reduzierte Pack-Sicht für die Empfehlung — nur Metadaten, keine Controls nötig. */
+/** Reduzierte Pack-Sicht für die Empfehlung. */
 export interface PackForRecommend {
   id: string;
   name: string;
   /** 'all' | 'ai' | 'fintech' | 'automotive' | 'critical-infrastructure' | … */
   industry: string;
   frameworks: string[];
+  /** Optional: Controls des Packs — nur für die Lücken-basierte Empfehlung nötig. */
+  controls?: PackControlRef[];
 }
 
 export interface RecommendationSignals {
@@ -36,6 +38,8 @@ export interface RecommendationSignals {
   highRiskCount?: number;
   /** Branche des Tenants, falls bekannt (sonst null/undefined). */
   industry?: string | null;
+  /** Offene Control-Lücken des Tenants (status gap/not_started) aus dem Mapping. */
+  openGapControls?: PackControlRef[];
 }
 
 export interface PackRecommendation {
@@ -54,6 +58,8 @@ const W_INDUSTRY = 40;       // Pack-Branche == Tenant-Branche
 const W_GDPR_BASELINE = 25;  // Pack enthält DSGVO → gilt für jede EU-Organisation
 const W_FOUNDATION = 20;     // 'all'-Branchen-Pack → generelles Fundament
 const W_FRAMEWORK_IN_USE = 12; // je Framework, das bereits in-scope ist
+const W_GAP_PER_CONTROL = 8; // je offene Lücke, die der Pack abdecken würde
+const W_GAP_CAP = 48;        // Deckel für den Lücken-Beitrag (max. ~6 Lücken)
 
 const INDUSTRY_LABEL: Record<string, string> = {
   ai: 'KI/AI',
@@ -110,6 +116,7 @@ export function recommendPacks(
   const exclude = new Set(opts.excludePackIds ?? []);
   const activeFw = new Set(signals.activeFrameworks ?? []);
   const industry = signals.industry ?? null;
+  const gapKeys = new Set((signals.openGapControls ?? []).map((c) => `${c.framework}::${c.control_code}`));
 
   const recs: PackRecommendation[] = [];
 
@@ -155,6 +162,20 @@ export function recommendPacks(
       reasons.push(
         `Bereits in Nutzung: ${overlap.map(frameworkLabel).join(', ')}`,
       );
+    }
+
+    // Offene Lücken, die dieser Pack unter Verwaltung bringen würde.
+    if (gapKeys.size > 0 && pack.controls && pack.controls.length > 0) {
+      const seenGap = new Set<string>();
+      let gapHits = 0;
+      for (const c of pack.controls) {
+        const k = `${c.framework}::${c.control_code}`;
+        if (gapKeys.has(k) && !seenGap.has(k)) { seenGap.add(k); gapHits++; }
+      }
+      if (gapHits > 0) {
+        score += Math.min(W_GAP_CAP, W_GAP_PER_CONTROL * gapHits);
+        reasons.unshift(`Deckt ${gapHits} Ihrer offenen Lücke${gapHits === 1 ? '' : 'n'} ab`);
+      }
     }
 
     if (score <= 0) continue; // kein Signal → keine Empfehlung

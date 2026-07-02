@@ -1,11 +1,16 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ShieldCheck, AlertTriangle, Check, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, AlertTriangle, Check, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { computeCoverage, coverageBand, frameworkLabel, type MappingStatus } from '../../lib/policy-packs/coverage';
+import {
+  topRecommendations, deriveActiveFrameworks, RECOMMENDATION_TIER_LABEL,
+  type PackRecommendation,
+} from '../../lib/policy-packs/recommend';
+import { countRiskInventory } from '../governance/aiActRiskInventoryApi';
 import { listCatalog, listActivations, listTenantMappings, setPackActive, type PolicyPack, type PacksError } from './policyPacksApi';
 
 /**
@@ -37,6 +42,7 @@ function PacksInner() {
   const [catalog, setCatalog] = useState<PolicyPack[]>([]);
   const [active, setActive] = useState<Set<string>>(new Set());
   const [mappings, setMappings] = useState<MappingStatus[]>([]);
+  const [highRisk, setHighRisk] = useState<number>(0);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +51,12 @@ function PacksInner() {
       const cat = await listCatalog();
       setCatalog(cat);
       if (activeTenantId) {
-        const [acts, maps] = await Promise.all([listActivations(activeTenantId), listTenantMappings(activeTenantId)]);
-        setActive(acts); setMappings(maps);
+        const [acts, maps, counts] = await Promise.all([
+          listActivations(activeTenantId),
+          listTenantMappings(activeTenantId),
+          countRiskInventory(activeTenantId),
+        ]);
+        setActive(acts); setMappings(maps); setHighRisk(counts?.high_risk ?? 0);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -67,6 +77,24 @@ function PacksInner() {
     }
     setBusy(null);
   }
+
+  const activateById = (packId: string) => {
+    const pack = catalog.find((p) => p.id === packId);
+    if (pack) void onToggle(pack);
+  };
+
+  // Auto-Empfehlung: rankt den Katalog gegen die Tenant-Signale (in-scope
+  // Frameworks + Hochrisiko-KI), schließt bereits aktivierte Packs aus.
+  const recommendations: PackRecommendation[] = topRecommendations(
+    catalog.map((p) => ({ id: p.id, name: p.name, industry: p.industry, frameworks: p.frameworks })),
+    {
+      activeFrameworks: deriveActiveFrameworks(mappings),
+      hasHighRiskAI: highRisk > 0,
+      highRiskCount: highRisk,
+      industry: null,
+    },
+    { excludePackIds: Array.from(active), limit: 4 },
+  );
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -102,6 +130,56 @@ function PacksInner() {
         )}
 
         {error && <div className="border border-risk-critical/40 bg-risk-critical/5 px-4 py-3 text-xs text-risk-critical">{error}</div>}
+
+        {enabled && recommendations.length > 0 && (
+          <section className="border border-indigo-500/30 bg-indigo-500/5">
+            <div className="flex items-center gap-2 border-b border-indigo-500/20 px-4 py-2.5">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+              <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-indigo-300">
+                Empfohlen für Sie
+              </h2>
+              <span className="font-mono text-[10px] text-titanium-500">
+                auf Basis Ihrer genutzten Frameworks &amp; KI-Systeme
+              </span>
+            </div>
+            <div className="grid gap-px bg-titanium-900 sm:grid-cols-2">
+              {recommendations.map((rec) => (
+                <div key={rec.packId} className="flex flex-col gap-2 bg-obsidian-950 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-semibold text-titanium-50">{rec.name}</div>
+                      <span
+                        className={`mt-0.5 inline-block px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+                          rec.tier === 'essential'
+                            ? 'bg-security-500/15 text-security-400'
+                            : 'bg-indigo-500/15 text-indigo-300'
+                        }`}
+                      >
+                        {RECOMMENDATION_TIER_LABEL[rec.tier]}
+                      </span>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => activateById(rec.packId)}
+                      disabled={busy === rec.packId || !activeTenantId}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> {busy === rec.packId ? 'Aktiviere…' : 'Aktivieren'}
+                    </Button>
+                  </div>
+                  <ul className="space-y-1">
+                    {rec.reasons.map((reason, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-[11px] text-titanium-400">
+                        <Check className="mt-0.5 h-3 w-3 shrink-0 text-indigo-400" />
+                        <span>{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           {catalog.map((pack) => {

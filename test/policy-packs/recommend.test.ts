@@ -9,11 +9,11 @@ import {
 
 // Katalog analog zur Migration 20260701150000_policy_packs.sql.
 const CATALOG: PackForRecommend[] = [
-  { id: 'dsgvo-essentials',     name: 'DSGVO Essentials',      industry: 'all',                     frameworks: ['GDPR'] },
+  { id: 'dsgvo-essentials',     name: 'DSGVO – Vollständig',   industry: 'all',                     frameworks: ['GDPR'] },
   { id: 'eu-ai-act-high-risk',  name: 'EU AI Act – High-Risk', industry: 'ai',                      frameworks: ['EU_AI_ACT'] },
   { id: 'nis2-cybersecurity',   name: 'NIS2 Cybersicherheit',  industry: 'critical-infrastructure', frameworks: ['NIS2'] },
   { id: 'dora-financial',       name: 'DORA – Resilienz',      industry: 'fintech',                 frameworks: ['DORA'] },
-  { id: 'iso-27001-foundation', name: 'ISO 27001 Foundation',  industry: 'all',                     frameworks: ['ISO_27001'] },
+  { id: 'iso-27001-foundation', name: 'ISO 27001 – Annex A (2022)', industry: 'all',                frameworks: ['ISO_27001'] },
   { id: 'tisax-automotive',     name: 'TISAX Automotive',      industry: 'automotive',              frameworks: ['TISAX'] },
   { id: 'fintech-compliance',   name: 'FinTech Compliance',    industry: 'fintech',                 frameworks: ['GDPR', 'NIS2', 'DORA'] },
 ];

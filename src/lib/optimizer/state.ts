@@ -18,6 +18,7 @@ import type { OptimizerScanResult } from './types';
 const URL_KEY = 'rsd.optimizer.targetUrl';
 const RESULT_KEY = 'rsd.optimizer.scanResult';
 const PENDING_EMAIL_KEY = 'rsd.optimizer.pendingEmail';
+const POST_CHECKOUT_KEY = 'rsd.optimizer.postCheckoutReturn';
 
 function safeSession(): Storage | null {
   try {
@@ -72,6 +73,29 @@ export function setPendingEmail(email: string): void {
 
 export function getPendingEmail(): string | null {
   return safeSession()?.getItem(PENDING_EMAIL_KEY) ?? null;
+}
+
+/**
+ * Merkt sich vor der Übergabe an den kanonischen Stripe-Checkout, dass der
+ * Nutzer aus dem Optimizer-Flow kommt. `sessionStorage` übersteht den
+ * Stripe-Redirect-Round-Trip (gleicher Tab/Origin) — die Success-Seite
+ * bietet dann die Rückführung ins Optimizer-Dashboard an. Nur interne,
+ * relative Pfade werden akzeptiert (kein Open-Redirect).
+ */
+export function setPostCheckoutReturn(path: string): void {
+  if (path.startsWith('/') && !path.startsWith('//')) {
+    safeSession()?.setItem(POST_CHECKOUT_KEY, path);
+  }
+}
+
+export function getPostCheckoutReturn(): string | null {
+  const path = safeSession()?.getItem(POST_CHECKOUT_KEY) ?? null;
+  // Defense-in-depth: nur interne Pfade zurückgeben.
+  return path && path.startsWith('/') && !path.startsWith('//') ? path : null;
+}
+
+export function clearPostCheckoutReturn(): void {
+  safeSession()?.removeItem(POST_CHECKOUT_KEY);
 }
 
 /** Räumt Flow-State auf (z. B. bei „Neuer Scan"). */

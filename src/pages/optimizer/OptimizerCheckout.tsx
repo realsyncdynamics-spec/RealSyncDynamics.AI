@@ -22,6 +22,7 @@ import { tierById } from '../../config/pricing';
 import {
   optimizerTierById, isSelfServeCheckout, realPriceEur, type OptimizerTierId,
 } from '../../lib/optimizer/tiers';
+import { setPostCheckoutReturn } from '../../lib/optimizer/state';
 
 type Billing = 'monthly' | 'yearly';
 
@@ -122,7 +123,11 @@ export function OptimizerCheckout() {
       {/* Übergabe an kanonischen Checkout */}
       <button
         type="button"
-        onClick={() => navigate(`/checkout/${tier.planKey}`)}
+        onClick={() => {
+          // Nach erfolgreicher Zahlung zurück in den Optimizer-Flow.
+          setPostCheckoutReturn('/optimizer/dashboard');
+          navigate(`/checkout/${tier.planKey}`);
+        }}
         className="inline-flex items-center gap-2 bg-security-500 hover:bg-security-400 text-white font-bold px-6 py-3 rounded-none transition-colors"
       >
         Weiter zur sicheren Zahlung <ArrowRight className="h-4 w-4" />

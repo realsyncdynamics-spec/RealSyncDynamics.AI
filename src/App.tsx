@@ -46,6 +46,7 @@ import { MonitoringPage, MonitoringSurface } from './pages/MonitoringPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
 import { AiDsgvoBotPage } from './pages/AiDsgvoBotPage';
+import { ClaudeCodeOptimizer } from './pages/ClaudeCodeOptimizer';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
 import { DigitalSovereignty } from './pages/DigitalSovereignty';
@@ -633,6 +634,7 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}
       <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/solutions/saas" element={<SaaSSolution />} />

@@ -243,6 +243,16 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       ]),
     ],
   },
+  '/claude-code-optimizer': {
+    title: 'Claude Code Optimizer — DSGVO- & AI-Act-Audit direkt im Code | RealSyncDynamics.AI',
+    description:
+      'Der Claude Code Optimizer prüft Ihr Repository auf Datenschutz- und AI-Act-Verstöße, liefert einfügbaren Fix-Code und sichert jeden Merge als auditfähige Evidenz. 14 Tage kostenlos testen.',
+    canonical: `${SITE_URL}/claude-code-optimizer`,
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Claude Code Optimizer', url: '/claude-code-optimizer' },
+    ]),
+  },
   '/features': {
     title: 'Funktionen: Website-Scan, AI-Act-Inventar, Audit-Trail | RealSyncDynamics.AI',
     description:

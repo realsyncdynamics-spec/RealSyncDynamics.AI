@@ -17,7 +17,7 @@ import { Check, ArrowRight, Info } from 'lucide-react';
 import { OptimizerLayout } from './OptimizerLayout';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import {
-  OPTIMIZER_TIERS, formatTierPrice, isPaidTier, MIN_TIER_FOR_FULL_REPORT,
+  OPTIMIZER_TIERS, formatTierPrice, isPaidTier, isSelfServeCheckout, MIN_TIER_FOR_FULL_REPORT,
   type OptimizerTier,
 } from '../../lib/optimizer/tiers';
 
@@ -26,18 +26,22 @@ export function OptimizerPricing() {
   const { isAuthenticated } = useSupabaseAuth();
 
   function choose(tier: OptimizerTier) {
-    if (tier.id === 'gratis') {
+    if (tier.planKey === 'free') {
       // Gratis braucht keinen Checkout — direkt zum (bei Auth) Bericht.
       navigate(isAuthenticated ? '/optimizer/dashboard' : '/optimizer/auth');
+      return;
+    }
+    if (!isSelfServeCheckout(tier.planKey)) {
+      // scale/enterprise laufen über den Sales-/Kontakt-Pfad.
+      navigate(`/contact-sales?intent=${tier.planKey}&source=optimizer-pricing`);
       return;
     }
     if (!isAuthenticated) {
       navigate('/optimizer/auth');
       return;
     }
-    // TODO(Phase 3): → /optimizer/checkout?tier=<id>
-    // Bis dahin: kanonische Paket-/Checkout-Strecke (echtes Stripe).
-    navigate('/pricing');
+    // Optimizer-Checkout-Zusammenfassung → kanonischer Stripe-Checkout.
+    navigate(`/optimizer/checkout?tier=${tier.id}`);
   }
 
   const minTier = OPTIMIZER_TIERS.find((t) => t.id === MIN_TIER_FOR_FULL_REPORT);
@@ -97,7 +101,11 @@ export function OptimizerPricing() {
                   : 'border border-titanium-700 hover:border-titanium-500 text-titanium-100')
               }
             >
-              {tier.id === 'gratis' ? 'Kostenlos starten' : 'Paket wählen'}
+              {tier.planKey === 'free'
+                ? 'Kostenlos starten'
+                : isSelfServeCheckout(tier.planKey)
+                  ? 'Paket wählen'
+                  : 'Anfragen'}
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

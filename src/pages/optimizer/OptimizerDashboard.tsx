@@ -8,9 +8,9 @@
  * Typ: FEEDBACK. Auth-gated: ohne Session → /optimizer/auth.
  *
  * Zeigt alle Befunde mit Details (un-gated) plus tier-abhängige nächste
- * Schritte. Der reale Tier kommt aus dem Nutzer-Profil — bis die
- * Profil-/Billing-Anbindung steht (Phase 3) wird optimistisch „Gratis"
- * angenommen und ein Upsell eingeblendet.
+ * Schritte. Der reale Plan kommt aus `useOptimizerEntitlement`
+ * (memberships → subscriptions, kanonische planAccess-Logik) — keine
+ * Platzhalter mehr.
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -24,7 +24,8 @@ import { ScoreGauge } from './components/ScoreGauge';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { getScanResult, clearOptimizerState } from '../../lib/optimizer/state';
 import { bucketForSeverity, type OptimizerIssue, type SeverityBucket } from '../../lib/optimizer/types';
-import { OPTIMIZER_TIERS, isPaidTier, type OptimizerTierId } from '../../lib/optimizer/tiers';
+import { useOptimizerEntitlement, type OptimizerCapabilities } from '../../lib/optimizer/entitlement';
+import { tierById } from '../../config/pricing';
 
 const BUCKET_ORDER: SeverityBucket[] = ['kritisch', 'wichtig', 'info'];
 const BUCKET_META: Record<SeverityBucket, { label: string; icon: typeof ShieldAlert; dot: string; border: string }> = {
@@ -33,14 +34,12 @@ const BUCKET_META: Record<SeverityBucket, { label: string; icon: typeof ShieldAl
   info: { label: 'Info', icon: Info, dot: 'text-titanium-400', border: 'border-titanium-800' },
 };
 
-/** Was der Optimizer je Tier als nächstes tun kann. */
-function nextActionForTier(tier: OptimizerTierId): string {
-  switch (tier) {
-    case 'gratis': return 'Bericht lesen und Befunde manuell beheben.';
-    case 'bronze': return 'Geführte Fix-Schritte pro Befund durcharbeiten.';
-    case 'silber': return 'Auto-Fix für ausgewählte Probleme starten.';
-    default: return 'Auto-Fix starten und kontinuierliches Monitoring aktivieren.';
-  }
+/** Was der Optimizer je nach freigeschalteten Fähigkeiten als nächstes tun kann. */
+function nextActionForCaps(caps: OptimizerCapabilities): string {
+  if (caps.autoOptimize && caps.monitoring) return 'Auto-Optimierung starten und Monitoring aktivieren.';
+  if (caps.autoOptimize) return 'Auto-Optimierung für priorisierte Befunde starten.';
+  if (caps.fullReport) return 'Vollständigen Bericht durcharbeiten und Befunde beheben.';
+  return 'Bericht lesen und Befunde manuell beheben.';
 }
 
 export function OptimizerDashboard() {
@@ -48,8 +47,8 @@ export function OptimizerDashboard() {
   const { isAuthenticated, isLoading } = useSupabaseAuth();
   const [result] = useState(() => getScanResult());
 
-  // TODO(Phase 3): realen Tier aus dem Profil laden (profiles.subscription_tier).
-  const tier: OptimizerTierId = 'gratis';
+  // Realer Plan + abgeleitete Fähigkeiten.
+  const { loading: entLoading, planKey, capabilities } = useOptimizerEntitlement();
 
   // Auth-Gate: nach Ladeende ohne Session → Anmeldung.
   useEffect(() => {
@@ -62,7 +61,7 @@ export function OptimizerDashboard() {
     return map;
   }, [result]);
 
-  if (isLoading) {
+  if (isLoading || entLoading) {
     return (
       <OptimizerLayout step={6} pageType="feedback" metaTitle="Bericht wird geladen …" metaDescription="Dein Optimierungsbericht.">
         <div className="flex items-center justify-center gap-2 text-titanium-400 py-16">
@@ -96,8 +95,8 @@ export function OptimizerDashboard() {
     );
   }
 
-  const tierName = OPTIMIZER_TIERS.find((t) => t.id === tier)?.name ?? 'Gratis';
-  const paid = isPaidTier(tier);
+  const tierName = planKey ? (tierById(planKey)?.name ?? planKey) : 'Free';
+  const paid = capabilities.fullReport;
 
   return (
     <OptimizerLayout
@@ -114,7 +113,7 @@ export function OptimizerDashboard() {
           </h1>
           <p className="font-mono text-sm text-security-300 mt-1 break-all">{result.domain}</p>
           <p className="text-sm text-titanium-400 mt-1">
-            Paket: <span className="text-titanium-100 font-semibold">{tierName}</span> · {nextActionForTier(tier)}
+            Paket: <span className="text-titanium-100 font-semibold">{tierName}</span> · {nextActionForCaps(capabilities)}
           </p>
         </div>
       </div>
@@ -143,39 +142,39 @@ export function OptimizerDashboard() {
         );
       })}
 
-      {/* Upsell (nur Gratis) */}
-      {!paid && (
+      {/* Upsell — solange die Auto-Optimierung nicht freigeschaltet ist. */}
+      {!capabilities.autoOptimize && (
         <div className="border border-security-800 bg-security-900/20 rounded-none p-6 mb-8">
           <h2 className="inline-flex items-center gap-2 font-display font-bold text-titanium-50 mb-2">
-            <Sparkles className="h-5 w-5 text-security-400" aria-hidden /> Mit Bronze alle Fixes automatisieren
+            <Sparkles className="h-5 w-5 text-security-400" aria-hidden /> Fixes automatisieren
           </h2>
           <p className="text-sm text-titanium-300 mb-5">
-            Im Gratis-Paket liest du den Bericht und behebst Befunde selbst. Ab Bronze bekommst du
-            geführte Fix-Schritte, ab Silber automatisches Beheben.
+            {paid
+              ? 'Dein Paket zeigt den vollständigen Bericht. Für automatisierte Fix-Snippets und tägliches Monitoring wechselst du auf Silber (Growth).'
+              : 'Aktuell liest du den Bericht und behebst Befunde selbst. Ab Bronze bekommst du den vollständigen Bericht, ab Silber automatisierte Fix-Snippets.'}
           </p>
           <button
             type="button"
             onClick={() => navigate('/optimizer/pricing')}
             className="inline-flex items-center gap-2 bg-security-500 hover:bg-security-400 text-white font-bold px-6 py-3 rounded-none transition-colors"
           >
-            Upgrade auf Bronze <ArrowUpRight className="h-4 w-4" />
+            {paid ? 'Upgrade auf Silber' : 'Pakete ansehen'} <ArrowUpRight className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      {/* Paid: Auto-Optimierung (Phase 3) */}
-      {paid && (
+      {/* Auto-Optimierung — freigeschaltet ab Fix-Snippets-Fähigkeit (growth+) */}
+      {capabilities.autoOptimize && (
         <div className="border border-petrol/50 bg-petrol/10 rounded-none p-6 mb-8">
           <h2 className="font-display font-bold text-titanium-50 mb-2">Auto-Optimierung</h2>
           <p className="text-sm text-titanium-300 mb-5">
-            Dein Paket erlaubt automatisches Beheben. Starte den Optimierungslauf.
+            Dein Paket schaltet Fix-Snippets frei. Wir stellen dir einen priorisierten
+            Optimierungsplan aus den Befunden zusammen.
           </p>
-          {/* TODO(Phase 3): → /optimizer/optimizing */}
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-2 bg-petrol/60 text-white/80 font-bold px-6 py-3 rounded-none cursor-not-allowed"
-            title="Verfügbar in Phase 3"
+            onClick={() => navigate('/optimizer/optimizing')}
+            className="inline-flex items-center gap-2 bg-petrol hover:bg-petrol/80 text-white font-bold px-6 py-3 rounded-none transition-colors"
           >
             Auto-Optimierung starten <ArrowRight className="h-4 w-4" />
           </button>

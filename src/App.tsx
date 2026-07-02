@@ -194,6 +194,10 @@ const OptimizerAuth = lazy(() => import('./pages/optimizer/OptimizerAuth').then(
 const OptimizerVerify = lazy(() => import('./pages/optimizer/OptimizerVerify').then((m) => ({ default: m.OptimizerVerify })));
 const OptimizerPricing = lazy(() => import('./pages/optimizer/OptimizerPricing').then((m) => ({ default: m.OptimizerPricing })));
 const OptimizerDashboard = lazy(() => import('./pages/optimizer/OptimizerDashboard').then((m) => ({ default: m.OptimizerDashboard })));
+// Cloud Code Optimizer — Phase 3 (Checkout-Handoff, Auto-Optimizer).
+const OptimizerCheckout = lazy(() => import('./pages/optimizer/OptimizerCheckout').then((m) => ({ default: m.OptimizerCheckout })));
+const OptimizerOptimizing = lazy(() => import('./pages/optimizer/OptimizerOptimizing').then((m) => ({ default: m.OptimizerOptimizing })));
+const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete').then((m) => ({ default: m.OptimizerComplete })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
@@ -375,6 +379,9 @@ function RoutesWithTracking() {
       <Route path="/optimizer/auth/verify" element={<OptimizerVerify />} />
       <Route path="/optimizer/pricing" element={<OptimizerPricing />} />
       <Route path="/optimizer/dashboard" element={<OptimizerDashboard />} />
+      <Route path="/optimizer/checkout" element={<OptimizerCheckout />} />
+      <Route path="/optimizer/optimizing" element={<OptimizerOptimizing />} />
+      <Route path="/optimizer/complete" element={<OptimizerComplete />} />
       <Route path="/automations" element={<AutomationsLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />

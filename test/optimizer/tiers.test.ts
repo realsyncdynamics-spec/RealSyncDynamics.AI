@@ -6,18 +6,31 @@
 import { describe, it, expect } from 'vitest';
 
 import {
-  OPTIMIZER_TIERS, tierRank, isPaidTier, tierCovers, formatTierPrice,
+  OPTIMIZER_TIERS, tierRank, isPaidTier, tierCovers, formatTierPrice, isSelfServeCheckout,
   MIN_TIER_FOR_FULL_REPORT,
 } from '../../src/lib/optimizer/tiers';
 
 describe('OPTIMIZER_TIERS', () => {
-  it('enthält alle sechs Tiers in aufsteigender Preisreihenfolge', () => {
+  it('enthält alle sechs Tiers in fester Reihenfolge', () => {
     expect(OPTIMIZER_TIERS.map((t) => t.id)).toEqual([
       'gratis', 'bronze', 'silber', 'gold', 'platin', 'diamant',
     ]);
-    const prices = OPTIMIZER_TIERS.map((t) => t.priceMonthly);
-    const sorted = [...prices].sort((a, b) => a - b);
-    expect(prices).toEqual(sorted);
+  });
+  it('ist mit realen Plan-Keys aufsteigend verknüpft', () => {
+    expect(OPTIMIZER_TIERS.map((t) => t.planKey)).toEqual([
+      'free', 'starter', 'growth', 'agency', 'scale', 'enterprise',
+    ]);
+  });
+});
+
+describe('isSelfServeCheckout', () => {
+  it('nur starter/growth/agency sind self-service', () => {
+    expect(isSelfServeCheckout('starter')).toBe(true);
+    expect(isSelfServeCheckout('growth')).toBe(true);
+    expect(isSelfServeCheckout('agency')).toBe(true);
+    expect(isSelfServeCheckout('free')).toBe(false);
+    expect(isSelfServeCheckout('scale')).toBe(false);
+    expect(isSelfServeCheckout('enterprise')).toBe(false);
   });
 });
 
@@ -42,12 +55,16 @@ describe('tierCovers', () => {
 });
 
 describe('formatTierPrice', () => {
-  it('zeigt „Kostenlos" für Gratis', () => {
+  it('zeigt „Kostenlos" für Gratis (free)', () => {
     const gratis = OPTIMIZER_TIERS[0];
     expect(formatTierPrice(gratis)).toBe('Kostenlos');
   });
-  it('formatiert Monatspreis', () => {
-    const silber = OPTIMIZER_TIERS.find((t) => t.id === 'silber')!;
-    expect(formatTierPrice(silber)).toBe('€49 / Monat');
+  it('nutzt den realen Preis aus der Pricing-Config', () => {
+    const bronze = OPTIMIZER_TIERS.find((t) => t.id === 'bronze')!; // → starter €79
+    expect(formatTierPrice(bronze)).toBe('€79 / Monat');
+  });
+  it('zeigt „Individuell" für Enterprise', () => {
+    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise
+    expect(formatTierPrice(diamant)).toBe('Individuell');
   });
 });

@@ -24,6 +24,8 @@ export interface TenantSummary {
   tenantId: string;
   name: string;
   isPublicSector: boolean;
+  /** Branche des Tenants (für Policy-Pack-Empfehlung), null wenn nicht gesetzt. */
+  industry: string | null;
   role: TenantRole;
 }
 
@@ -32,7 +34,7 @@ export async function listMyTenants(): Promise<TenantSummary[]> {
   const sb = getSupabase();
   const { data, error } = await sb
     .from('memberships')
-    .select('role,tenant:tenants(id,name,is_public_sector)')
+    .select('role,tenant:tenants(id,name,is_public_sector,industry)')
     .order('created_at', { ascending: true });
   if (error) throw error;
   return (data ?? [])
@@ -41,6 +43,7 @@ export async function listMyTenants(): Promise<TenantSummary[]> {
       tenantId: row.tenant?.id,
       name: row.tenant?.name ?? '(unbenannt)',
       isPublicSector: !!row.tenant?.is_public_sector,
+      industry: (row.tenant?.industry as string | null) ?? null,
       role: row.role as TenantRole,
     }))
     .filter((t) => t.tenantId);

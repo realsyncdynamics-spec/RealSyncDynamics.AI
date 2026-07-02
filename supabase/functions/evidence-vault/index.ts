@@ -118,6 +118,7 @@ Deno.serve(async (req) => {
       label: typeof body.label === 'string' ? body.label.trim().slice(0, 200) || null : null,
       version, content_sha256: normalizeHex(contentSha), prev_hash: prevHash, event_hash: eventHash,
       signature, retention_class: retentionClass, retained_until: retUntil, created_by: userId,
+      event_timestamp: nowIso,
     }).select('id').single();
     if (error || !created) return jsonError(500, 'INTERNAL', 'could not create snapshot');
 

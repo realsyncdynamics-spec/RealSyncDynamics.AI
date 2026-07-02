@@ -24,6 +24,7 @@ import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
+import { LandingPagesOverview } from './pages/LandingPagesOverview';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
 import { AutomationsLanding } from './pages/AutomationsLanding';
@@ -342,6 +343,8 @@ function RoutesWithTracking() {
       <Route path="/aetheros" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/landingpages" element={<LandingPagesOverview />} />
+      <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
       <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />

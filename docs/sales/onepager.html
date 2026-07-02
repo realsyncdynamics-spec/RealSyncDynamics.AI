@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>RealSyncDynamics.AI — Vertriebs- & Feature-Onepager</title>
+<style>
+  @page { size: A4; margin: 12mm 12mm; }
+  * { box-sizing: border-box; }
+  :root{
+    --slate-900:#0F172A; --slate-800:#1E293B; --slate-700:#334155; --slate-600:#475569;
+    --slate-500:#64748B; --slate-400:#94A3B8; --slate-300:#CBD5E1; --slate-200:#E2E8F0;
+    --slate-100:#F1F5F9; --slate-50:#F8FAFC; --petrol:#0F766E; --petrol-dark:#115E59; --petrol-50:#F0FDFA;
+  }
+  html,body{ margin:0; padding:0; background:#fff; color:var(--slate-800);
+    font-family:'Inter','Helvetica Neue',Arial,sans-serif; font-size:9.2px; line-height:1.42; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .mono{ font-family:'SFMono-Regular',ui-monospace,'JetBrains Mono',Menlo,Consolas,monospace; }
+  .page{ width:186mm; margin:0 auto; }
+  /* Header */
+  header{ display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--petrol); padding-bottom:9px; margin-bottom:11px; }
+  .brand{ font-size:16px; font-weight:800; letter-spacing:-.02em; color:var(--slate-900); }
+  .brand span{ color:var(--petrol); }
+  .tagline{ font-size:10px; color:var(--slate-600); margin-top:2px; max-width:118mm; }
+  .kicker{ text-transform:uppercase; letter-spacing:.18em; font-size:7px; color:var(--slate-500); }
+  .meta{ text-align:right; font-size:7.5px; color:var(--slate-500); }
+  .chips{ display:flex; flex-wrap:wrap; gap:4px; margin:9px 0 12px; }
+  .chip{ border:1px solid var(--slate-200); background:var(--slate-50); border-radius:10px; padding:2px 8px; font-size:7.5px; color:var(--slate-700); letter-spacing:.03em; }
+  .chip.acc{ border-color:var(--petrol); background:var(--petrol-50); color:var(--petrol-dark); font-weight:600; }
+  h2{ font-size:10.5px; text-transform:uppercase; letter-spacing:.14em; color:var(--slate-500); margin:0 0 7px; font-weight:700; }
+  /* Pricing cards */
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:12px; }
+  .card{ border:1px solid var(--slate-200); border-radius:12px; padding:9px 10px; background:#fff; }
+  .card.hl{ border-color:var(--petrol); box-shadow:0 0 0 1px var(--petrol); }
+  .card .nm{ font-weight:800; color:var(--slate-900); font-size:11px; display:flex; justify-content:space-between; align-items:baseline; }
+  .badge{ font-size:6.5px; text-transform:uppercase; letter-spacing:.12em; background:var(--petrol); color:#fff; border-radius:6px; padding:1px 5px; font-weight:700; }
+  .price{ margin:3px 0 1px; }
+  .price b{ font-size:15px; color:var(--slate-900); } .price .suf{ font-size:7.5px; color:var(--slate-500); }
+  .tl{ font-size:7.5px; color:var(--slate-500); min-height:20px; margin-bottom:4px; }
+  ul{ margin:0; padding:0; list-style:none; }
+  li{ position:relative; padding-left:11px; margin-bottom:2.2px; font-size:8px; color:var(--slate-700); }
+  li::before{ content:''; position:absolute; left:0; top:4.5px; width:5px; height:5px; border-radius:50%; background:var(--petrol); }
+  /* Feature matrix */
+  table{ width:100%; border-collapse:collapse; font-size:8px; }
+  th,td{ text-align:center; padding:3px 2px; border-bottom:1px solid var(--slate-100); }
+  th{ text-transform:uppercase; letter-spacing:.08em; font-size:6.8px; color:var(--slate-500); }
+  td.f, th.f{ text-align:left; color:var(--slate-800); font-weight:600; width:38%; }
+  .yes{ color:var(--petrol); font-weight:800; } .no{ color:var(--slate-300); }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:11px; }
+  .ent{ border:1px solid var(--slate-200); border-radius:12px; padding:10px 12px; background:var(--slate-50); }
+  .ent .nm{ font-weight:800; color:var(--slate-900); font-size:11px; }
+  footer{ border-top:1px solid var(--slate-200); margin-top:6px; padding-top:6px; display:flex; justify-content:space-between; font-size:7px; color:var(--slate-500); }
+  .note{ font-size:7.5px; color:var(--slate-600); background:var(--petrol-50); border:1px solid var(--petrol); border-radius:8px; padding:5px 8px; margin-bottom:11px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div>
+      <div class="kicker">EU-souveräne AI-Governance-Plattform</div>
+      <div class="brand">RealSync<span>Dynamics.AI</span></div>
+      <div class="tagline">Das KI-Betriebssystem für DSGVO, EU AI Act &amp; Code-Compliance — Governance-Runtime mit lückenlosem Prüfpfad, Herkunftsnachweis und aktivierbaren Compliance-Regelwerken. Made in Germany, EU-gehostet.</div>
+    </div>
+    <div class="meta">
+      <div class="mono">Vertriebs- &amp; Feature-Onepager</div>
+      <div class="mono">Stand 2026-07 · v1</div>
+      <div class="mono">realsyncdynamicsai.de</div>
+    </div>
+  </header>
+
+  <div class="chips">
+    <span class="chip acc">DSGVO</span><span class="chip acc">EU AI Act</span><span class="chip acc">NIS2</span>
+    <span class="chip acc">DORA</span><span class="chip acc">ISO 27001</span><span class="chip acc">TISAX</span>
+    <span class="chip">EU-Hosting (Frankfurt)</span><span class="chip">EU-lokale KI (Ollama)</span><span class="chip">AVV in allen Plänen</span>
+    <span class="chip">Evidence Vault (Hash-Chain)</span><span class="chip">C2PA-Herkunftsnachweis</span>
+  </div>
+
+  <div class="note mono">14 Tage kostenlos testen (Starter/Growth/Agency) · monatlich kündbar · keine Setup-Gebühr · erste Abbuchung erst nach Tag 14.</div>
+
+  <h2>Pakete &amp; Preise</h2>
+  <div class="grid">
+    <div class="card">
+      <div class="nm">Free Audit <span class="mono" style="font-size:8px;color:var(--slate-500)">0 €</span></div>
+      <div class="price"><b>0 €</b> <span class="suf">einmalig · kein Account</span></div>
+      <div class="tl">Erst-Scan: gibt es offensichtliche DSGVO-Risiken?</div>
+      <ul><li>URL-Scan mit Compliance-Score 0–100</li><li>Top-3-Risiken sichtbar</li><li>Mini-PDF-Report</li><li>Kein Account, kein Setup</li></ul>
+    </div>
+    <div class="card">
+      <div class="nm">Starter</div>
+      <div class="price"><b>79 €</b> <span class="suf">/ Monat</span></div>
+      <div class="tl">Klares, nachweisbares Compliance-Fundament.</div>
+      <ul><li>Vollständiger DSGVO-Scan mit Paragraphenbezug</li><li>DSE-Generator · Consent-Setup</li><li>Kontinuierliches Monitoring</li><li>Evidence-Trail (Hash-Chain) + Audit-Export</li><li>Automatisierungs-Skills — 25 Läufe/Monat</li></ul>
+    </div>
+    <div class="card hl">
+      <div class="nm">Growth <span class="badge">Empfohlen</span></div>
+      <div class="price"><b>249 €</b> <span class="suf">/ Monat</span></div>
+      <div class="tl">KI-Governance, Risk-Register, tägliches Monitoring.</div>
+      <ul><li>Alles aus Starter</li><li>KI-Governance + AI Risk Register</li><li>Tägliches Monitoring + Drift-Detection</li><li>Fix-Empfehlungen (Copy-Paste-Snippets)</li><li>Konversations-Bots (Chat/Telegram/WhatsApp)</li><li>Termin- &amp; Bestellannahme · 100 Automations/Monat</li></ul>
+    </div>
+    <div class="card">
+      <div class="nm">Agency</div>
+      <div class="price"><b>699 €</b> <span class="suf">/ Monat</span></div>
+      <div class="tl">Hohe Komplexität: volles Enterprise-Toolset.</div>
+      <ul><li>Alles aus Growth + Voice-Bots</li><li>Branchenbibliothek · Governance Agents</li><li>White-Label-Reports · API + Webhooks</li><li>Kodee VPS-Assistent · Bulk-Jobs · Scheduler</li><li>C2PA-Herkunftsnachweis · Evidence Vault Advanced</li><li>Policy Packs (DSGVO/AI-Act/NIS2/DORA/ISO/TISAX)</li></ul>
+    </div>
+    <div class="card">
+      <div class="nm">Scale <span class="badge" style="background:var(--slate-600)">Reseller</span></div>
+      <div class="price"><b>1.999 €</b> <span class="suf">/ Monat</span></div>
+      <div class="tl">DSB-Kanzleien: 11–50 Mandanten parallel.</div>
+      <ul><li>Alles aus Agency</li><li>Multi-Tenant-Dashboard (bis 50 Mandanten)</li><li>Eigene Sub-Domain · White-Label PDFs</li><li>Voller API-Zugriff</li><li>SLA 4 h auf Bug-Reports</li></ul>
+    </div>
+    <div class="card" style="background:var(--slate-900); color:#fff; border-color:var(--slate-900)">
+      <div class="nm" style="color:#fff">Enterprise</div>
+      <div class="price"><b style="color:#fff">individuell</b> <span class="suf" style="color:var(--slate-300)">Individuelle Laufzeitumgebung</span></div>
+      <div class="tl" style="color:var(--slate-300)">Regulierte Unternehmen, SLA-, DSB-, AI-Act-Pflicht.</div>
+      <ul style="color:var(--slate-200)">
+        <li style="color:var(--slate-200)">Alle Agency-Funktionen + SLA + dedizierter Runtime-Kanal</li>
+        <li style="color:var(--slate-200)">EU AI Act Governance-Modul · DSB-Integration</li>
+        <li style="color:var(--slate-200)">Volles Evidence Vault (HMAC + Langzeit-Retention)</li>
+        <li style="color:var(--slate-200)">On-Premises / Private Cloud · SSO</li>
+        <li style="color:var(--slate-200)">Unlimitierte Domains + Mitarbeiter · individuelle DPA</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="two">
+    <div>
+      <h2>Feature-Matrix</h2>
+      <table>
+        <thead><tr><th class="f">Fähigkeit</th><th>Free</th><th>Start.</th><th>Growth</th><th>Agency</th><th>Scale</th><th>Ent.</th></tr></thead>
+        <tbody>
+          <tr><td class="f">DSGVO-Scan &amp; Monitoring</td><td class="yes">◑</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Evidence-Trail (Hash-Chain)</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">KI-Governance + AI Risk Register</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Konversations-Bots (Chat/Voice)</td><td class="no">–</td><td class="no">–</td><td class="yes">◑</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Automations / Workflows</td><td class="yes">3</td><td class="yes">25</td><td class="yes">100</td><td class="yes">500</td><td class="yes">2.5k</td><td class="yes">∞</td></tr>
+          <tr><td class="f">Kodee VPS-Assistent</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">C2PA-Herkunftsnachweis</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Bulk-Jobs (Massen-Scan)</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">50</td><td class="yes">500</td><td class="yes">∞</td></tr>
+          <tr><td class="f">Scheduler (geplante Scans)</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Evidence Vault Advanced</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Policy Packs (6 Frameworks)</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">White-Label · API + Webhooks</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">Multi-Tenant (bis 50 Mandanten)</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+          <tr><td class="f">SLA · SSO · On-Premises</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="no">–</td><td class="yes">◑</td><td class="yes">✓</td></tr>
+        </tbody>
+      </table>
+      <div class="mono" style="font-size:6.8px;color:var(--slate-400);margin-top:3px">✓ enthalten · ◑ eingeschränkt/Einstieg · Zahl = Kontingent/Monat · – nicht enthalten</div>
+    </div>
+
+    <div>
+      <h2>Enterprise-Fähigkeiten</h2>
+      <div class="ent">
+        <div class="nm">Governance-Runtime für regulierte Organisationen</div>
+        <ul style="margin-top:5px">
+          <li><b>SLA &amp; dedizierter Runtime-Kanal</b> — 4 h-Response, priorisierte Behandlung.</li>
+          <li><b>On-Premises / Private Cloud</b> — eigene Laufzeitumgebung, EU-lokale KI (Ollama).</li>
+          <li><b>SSO</b> — Single Sign-On für Team-Zugriff.</li>
+          <li><b>DSB-Integration</b> — interner oder externer Datenschutzbeauftragter.</li>
+          <li><b>Volles Evidence Vault</b> — HMAC-Signaturen, versionierte Immutable Snapshots, Retention &amp; Legal-Hold, Langzeit-Aufbewahrung.</li>
+          <li><b>Policy Packs</b> — DSGVO, EU AI Act, NIS2, DORA, ISO 27001, TISAX + individuelle Unternehmensrichtlinien.</li>
+          <li><b>Unlimitiert</b> — Domains, Mitarbeiter, Bulk-/API-Kontingente.</li>
+          <li><b>Individuelle Vertragsgestaltung / DPA</b> — auf Ausschreibungen (EVB-IT) zugeschnitten.</li>
+        </ul>
+      </div>
+      <h2 style="margin-top:10px">Differenzierung</h2>
+      <div class="ent" style="background:#fff">
+        <ul>
+          <li><b>Herkunftsnachweis + Governance in einer Plattform</b> — C2PA-angelehnte Chain-of-Custody für KI-Content, verbunden mit durchgängigem Prüfpfad.</li>
+          <li><b>Runtime statt nur Audit</b> — kontinuierliches Monitoring, Drift-Detection, Auto-Remediation.</li>
+          <li><b>EU-souverän</b> — Frankfurt-Hosting, EU-lokaler KI-Pfad, keine US-Cloud-Pflicht.</li>
+          <li><b>Nachweisbarkeit</b> — kryptografische Evidence, revisionssicher, aufsichtsbehörden-tauglich.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span class="mono">© 2026 RealSync Dynamics · Made in Germany · EU-Hosting (Supabase Frankfurt)</span>
+    <span class="mono">Kontakt: realsyncdynamicsai.de · Enterprise: /contact-sales</span>
+  </footer>
+
+</div>
+</body>
+</html>

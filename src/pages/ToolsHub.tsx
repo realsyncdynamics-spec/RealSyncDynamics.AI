@@ -6,6 +6,17 @@ export function ToolsHub() {
 
   const tools = [
     {
+      icon: '🤖',
+      title: 'Claude Code Optimizer',
+      subtitle: 'Website scannen → Fehler beheben → überwachen',
+      desc: 'Geführter Flow: URL eingeben, Fehlerliste erhalten und Schritt für Schritt optimieren. Jede Aktion führt zur nächsten, erklärten Seite.',
+      href: '/claude-code-optimizer',
+      badge: 'Geführt · Free-Scan',
+      badgeColor: '#0e2f2b',
+      textColor: '#5eead4',
+      popular: true,
+    },
+    {
       icon: '📄',
       title: 'DSGVO-Dokumente generieren',
       subtitle: '5 PDFs in 60 Sekunden — DSE / AVV / VVT / TOM / DSFA',

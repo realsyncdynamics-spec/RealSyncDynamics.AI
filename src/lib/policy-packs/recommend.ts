@@ -62,11 +62,34 @@ const INDUSTRY_LABEL: Record<string, string> = {
   'critical-infrastructure': 'Kritische Infrastruktur',
   health: 'Gesundheitswesen',
   ecommerce: 'E-Commerce',
+  saas: 'SaaS/Software',
+  manufacturing: 'Fertigung/Industrie',
+  'public-sector': 'Öffentlicher Sektor',
+  other: 'Andere',
 };
 
-function industryLabel(id: string): string {
+export function industryLabel(id: string): string {
   return INDUSTRY_LABEL[id] ?? id;
 }
+
+/**
+ * Kuratierte Branchen-Auswahl fürs Frontend (tenants.industry). Die ersten vier
+ * matchen direkt auf Pack-Branchen (policy_pack_catalog.industry) und lösen
+ * eine Branchen-Empfehlung aus; die übrigen liefern (noch) keinen Pack-Match,
+ * die framework-/KI-basierten Signale greifen aber weiterhin.
+ */
+export const TENANT_INDUSTRY_OPTIONS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: 'ai', label: INDUSTRY_LABEL.ai },
+  { id: 'fintech', label: INDUSTRY_LABEL.fintech },
+  { id: 'automotive', label: INDUSTRY_LABEL.automotive },
+  { id: 'critical-infrastructure', label: INDUSTRY_LABEL['critical-infrastructure'] },
+  { id: 'health', label: INDUSTRY_LABEL.health },
+  { id: 'ecommerce', label: INDUSTRY_LABEL.ecommerce },
+  { id: 'saas', label: INDUSTRY_LABEL.saas },
+  { id: 'manufacturing', label: INDUSTRY_LABEL.manufacturing },
+  { id: 'public-sector', label: INDUSTRY_LABEL['public-sector'] },
+  { id: 'other', label: INDUSTRY_LABEL.other },
+];
 
 function tierForScore(score: number): RecommendationTier {
   if (score >= 70) return 'essential';

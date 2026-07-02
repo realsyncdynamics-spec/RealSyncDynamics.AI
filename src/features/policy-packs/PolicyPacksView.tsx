@@ -8,9 +8,11 @@ import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card'
 import { computeCoverage, coverageBand, frameworkLabel, type MappingStatus } from '../../lib/policy-packs/coverage';
 import {
   topRecommendations, deriveActiveFrameworks, RECOMMENDATION_TIER_LABEL,
+  TENANT_INDUSTRY_OPTIONS,
   type PackRecommendation,
 } from '../../lib/policy-packs/recommend';
 import { countRiskInventory } from '../governance/aiActRiskInventoryApi';
+import { getSupabase } from '../../lib/supabase';
 import { listCatalog, listActivations, listTenantMappings, setPackActive, type PolicyPack, type PacksError } from './policyPacksApi';
 
 /**
@@ -36,8 +38,12 @@ function bandColor(b: 'high' | 'medium' | 'low'): string {
 }
 
 function PacksInner() {
-  const { activeTenantId, hasFeature } = useTenant();
+  const { activeTenantId, hasFeature, tenants, refresh } = useTenant();
   const enabled = hasFeature('policy.packs');
+  const activeTenant = tenants.find((t) => t.tenantId === activeTenantId) ?? null;
+  const canEditIndustry = activeTenant?.role === 'owner';
+  const industry = activeTenant?.industry ?? null;
+  const [savingIndustry, setSavingIndustry] = useState(false);
 
   const [catalog, setCatalog] = useState<PolicyPack[]>([]);
   const [active, setActive] = useState<Set<string>>(new Set());
@@ -83,15 +89,25 @@ function PacksInner() {
     if (pack) void onToggle(pack);
   };
 
-  // Auto-Empfehlung: rankt den Katalog gegen die Tenant-Signale (in-scope
-  // Frameworks + Hochrisiko-KI), schließt bereits aktivierte Packs aus.
+  async function onIndustryChange(next: string) {
+    if (!activeTenantId || !canEditIndustry) return;
+    setSavingIndustry(true); setError(null);
+    const value = next === '' ? null : next;
+    const { error: e } = await getSupabase().from('tenants').update({ industry: value }).eq('id', activeTenantId);
+    if (e) setError(e.message);
+    else await refresh();
+    setSavingIndustry(false);
+  }
+
+  // Auto-Empfehlung: rankt den Katalog gegen die Tenant-Signale (Branche,
+  // in-scope Frameworks + Hochrisiko-KI), schließt bereits aktivierte Packs aus.
   const recommendations: PackRecommendation[] = topRecommendations(
     catalog.map((p) => ({ id: p.id, name: p.name, industry: p.industry, frameworks: p.frameworks })),
     {
       activeFrameworks: deriveActiveFrameworks(mappings),
       hasHighRiskAI: highRisk > 0,
       highRiskCount: highRisk,
-      industry: null,
+      industry,
     },
     { excludePackIds: Array.from(active), limit: 4 },
   );
@@ -130,6 +146,36 @@ function PacksInner() {
         )}
 
         {error && <div className="border border-risk-critical/40 bg-risk-critical/5 px-4 py-3 text-xs text-risk-critical">{error}</div>}
+
+        {enabled && (
+          <div className="flex flex-wrap items-center gap-3 border border-titanium-900 bg-obsidian-900 px-4 py-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Branche</span>
+            {canEditIndustry ? (
+              <select
+                value={industry ?? ''}
+                onChange={(e) => onIndustryChange(e.target.value)}
+                disabled={savingIndustry}
+                className="border border-titanium-800 bg-obsidian-950 px-2 py-1 text-xs text-titanium-200 outline-none disabled:opacity-50"
+              >
+                <option value="">— nicht gesetzt —</option>
+                {TENANT_INDUSTRY_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-xs text-titanium-300">
+                {TENANT_INDUSTRY_OPTIONS.find((o) => o.id === industry)?.label ?? 'nicht gesetzt'}
+              </span>
+            )}
+            <span className="text-[11px] text-titanium-500">
+              {industry
+                ? 'schärft die Empfehlungen um passende Branchen-Packs'
+                : canEditIndustry
+                  ? 'Branche wählen für passgenauere Pack-Empfehlungen'
+                  : 'nur der Workspace-Owner kann die Branche setzen'}
+            </span>
+          </div>
+        )}
 
         {enabled && recommendations.length > 0 && (
           <section className="border border-indigo-500/30 bg-indigo-500/5">

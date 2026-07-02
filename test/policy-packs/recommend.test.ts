@@ -101,6 +101,52 @@ describe('recommendPacks', () => {
   });
 });
 
+describe('recommendPacks — offene Lücken (gap coverage)', () => {
+  const packs = [
+    { id: 'p-gdpr', name: 'DSGVO', industry: 'all', frameworks: ['GDPR'], controls: [
+      { framework: 'GDPR', control_code: 'Art.5' },
+      { framework: 'GDPR', control_code: 'Art.30' },
+      { framework: 'GDPR', control_code: 'Art.32' },
+    ] },
+    { id: 'p-iso', name: 'ISO', industry: 'automotive', frameworks: ['ISO_27001'], controls: [
+      { framework: 'ISO_27001', control_code: 'A.8.24' },
+    ] },
+  ];
+
+  it('bewertet Packs höher, die offene Lücken abdecken, und begründet es zuerst', () => {
+    const recs = recommendPacks(packs, {
+      openGapControls: [
+        { framework: 'GDPR', control_code: 'Art.5' },
+        { framework: 'GDPR', control_code: 'Art.30' },
+      ],
+    });
+    const gdpr = recs.find((r) => r.packId === 'p-gdpr')!;
+    // all-Fundament 20 + GDPR-Baseline 25 + 2 Lücken × 8 = 61
+    expect(gdpr.score).toBe(61);
+    expect(gdpr.reasons[0]).toBe('Deckt 2 Ihrer offenen Lücken ab');
+  });
+
+  it('formuliert die Singular-Begründung bei genau einer Lücke', () => {
+    const recs = recommendPacks(packs, { openGapControls: [{ framework: 'ISO_27001', control_code: 'A.8.24' }] });
+    const iso = recs.find((r) => r.packId === 'p-iso')!;
+    expect(iso.reasons[0]).toBe('Deckt 1 Ihrer offenen Lücke ab');
+  });
+
+  it('dedupliziert Lücken und deckelt den Beitrag', () => {
+    const many = Array.from({ length: 10 }, (_, i) => ({ framework: 'X', control_code: `C${i}` }));
+    const pack = [{ id: 'big', name: 'Big', industry: 'other', frameworks: ['X'], controls: many }];
+    const recs = recommendPacks(pack, { openGapControls: [...many, ...many] }); // Duplikate
+    // Deckel W_GAP_CAP = 48 (statt 10×8=80)
+    expect(recs[0].score).toBe(48);
+  });
+
+  it('ignoriert Lücken ohne Signal, wenn der Pack keine passenden Controls hat', () => {
+    const recs = recommendPacks(packs, { openGapControls: [{ framework: 'NIS2', control_code: 'Art.20' }] });
+    // Keine Überschneidung → kein Lücken-Beitrag; p-iso (automotive, kein Signal) fällt raus
+    expect(recs.find((r) => r.packId === 'p-iso')).toBeUndefined();
+  });
+});
+
 describe('topRecommendations', () => {
   it('liefert nur essential/recommended und respektiert das Limit', () => {
     const top = topRecommendations(CATALOG, {

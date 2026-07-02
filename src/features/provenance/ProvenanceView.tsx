@@ -176,6 +176,18 @@ function ProvenanceInner() {
                     <EvidenceChip ok={result.evidence_components.metadataIntegrity} label="Metadaten-Integrität" />
                     <EvidenceChip ok={result.evidence_components.ownershipConsistency} label="Eigentümer-Konsistenz" />
                     <EvidenceChip ok={result.evidence_components.provenanceContinuity} label="Ketten-Kontinuität" />
+                    {result.signature?.algorithm && (
+                      <span
+                        title={result.signature.externally_verifiable
+                          ? 'Ed25519-Signatur — mit dem öffentlichen Schlüssel unabhängig prüfbar'
+                          : 'HMAC-Signatur (Legacy) — nur intern prüfbar'}
+                        className={`border px-2 py-1 ${result.signature.externally_verifiable
+                          ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-300'
+                          : 'border-titanium-700 text-titanium-400'}`}
+                      >
+                        {result.signature.externally_verifiable ? 'Ed25519 · extern prüfbar' : `${result.signature.algorithm} · intern`}
+                      </span>
+                    )}
                   </div>
                   {result.trust.riskLabels.length > 0 && (
                     <div className="flex flex-wrap gap-2">

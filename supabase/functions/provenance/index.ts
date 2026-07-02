@@ -3,9 +3,9 @@
 // POST /functions/v1/provenance
 // Auth: Authorization: Bearer <user JWT>
 // Body: {
-//   op: 'register' | 'append' | 'verify',
-//   tenant_id: string,
-//   asset_ref: string,
+//   op: 'register' | 'append' | 'verify' | 'pubkey',
+//   tenant_id: string,   // nicht für 'pubkey'
+//   asset_ref: string,   // nicht für 'pubkey'
 //   content_sha256?: string,   // register/append: Pflicht; verify: optional (Gegenprobe)
 //   action?: 'registered' | 'updated' | 'licensed' | 'audited',
 //   issuer?: string
@@ -65,8 +65,10 @@ function claimHash(c: Claim): Promise<string> {
   return sha256Hex(canonicalClaimBytes(c));
 }
 
-// ── Optionale HMAC-Signatur über den event_hash ──────────────────────────────
-async function signHash(eventHash: string): Promise<{ signature: string | null; keyId: string | null }> {
+type SignatureAlg = 'ed25519' | 'hmac-sha256';
+
+// ── Legacy-HMAC-Signatur über den event_hash (symmetrisch) ────────────────────
+async function signHmac(eventHash: string): Promise<{ signature: string | null; keyId: string | null }> {
   const secret = Deno.env.get('PROVENANCE_SIGNING_SECRET');
   if (!secret) return { signature: null, keyId: null };
   const key = await crypto.subtle.importKey(
@@ -74,6 +76,61 @@ async function signHash(eventHash: string): Promise<{ signature: string | null; 
   );
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(eventHash));
   return { signature: bufToHex(new Uint8Array(sig)), keyId: Deno.env.get('PROVENANCE_SIGNING_KEY_ID') ?? 'rsd-hmac-1' };
+}
+
+// ── Ed25519-Signatur (asymmetrisch, mit öffentlichem Schlüssel extern prüfbar) ─
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64.trim());
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function hexToBytes(hex: string): Uint8Array {
+  const h = hex.trim().toLowerCase().replace(/^0x/, '');
+  const out = new Uint8Array(h.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+let _edPriv: CryptoKey | null | undefined;
+let _edPub: CryptoKey | null | undefined;
+async function edPrivateKey(): Promise<CryptoKey | null> {
+  if (_edPriv !== undefined) return _edPriv;
+  const b64 = Deno.env.get('PROVENANCE_ED25519_PRIVATE_KEY');
+  _edPriv = b64 ? await crypto.subtle.importKey('pkcs8', b64ToBytes(b64), { name: 'Ed25519' }, false, ['sign']) : null;
+  return _edPriv;
+}
+async function edPublicKey(): Promise<CryptoKey | null> {
+  if (_edPub !== undefined) return _edPub;
+  const b64 = Deno.env.get('PROVENANCE_ED25519_PUBLIC_KEY');
+  _edPub = b64 ? await crypto.subtle.importKey('spki', b64ToBytes(b64), { name: 'Ed25519' }, true, ['verify']) : null;
+  return _edPub;
+}
+function edKeyId(): string { return Deno.env.get('PROVENANCE_ED25519_KEY_ID') ?? 'rsd-ed25519-1'; }
+
+// Signiert den event_hash — Ed25519 bevorzugt, sonst Legacy-HMAC, sonst keine.
+async function signEvent(eventHash: string): Promise<{ signature: string | null; keyId: string | null; alg: SignatureAlg | null }> {
+  const priv = await edPrivateKey();
+  if (priv) {
+    const sig = await crypto.subtle.sign({ name: 'Ed25519' }, priv, new TextEncoder().encode(eventHash));
+    return { signature: bufToHex(new Uint8Array(sig)), keyId: edKeyId(), alg: 'ed25519' };
+  }
+  const hmac = await signHmac(eventHash);
+  return { signature: hmac.signature, keyId: hmac.keyId, alg: hmac.signature ? 'hmac-sha256' : null };
+}
+
+// Prüft die Signatur eines Events. true=gültig, false=ungültig, null=nicht prüfbar (überspringen).
+async function verifyEventSig(ev: { event_hash: string; signature: string | null; signature_alg: string | null }): Promise<boolean | null> {
+  if (!ev.signature) return null;
+  const alg = (ev.signature_alg as SignatureAlg | null) ?? 'hmac-sha256';
+  if (alg === 'ed25519') {
+    const pub = await edPublicKey();
+    if (!pub) return null; // kein öffentlicher Schlüssel konfiguriert → nicht prüfbar
+    try { return await crypto.subtle.verify({ name: 'Ed25519' }, pub, hexToBytes(ev.signature), new TextEncoder().encode(ev.event_hash)); }
+    catch { return false; }
+  }
+  const { signature } = await signHmac(ev.event_hash);
+  if (!signature) return null; // Secret nicht vorhanden → nicht prüfbar
+  return signature === ev.signature;
 }
 
 // ── Trust-Score (Spiegel von src/lib/provenance/trustScore.ts) ───────────────
@@ -101,6 +158,7 @@ function computeTrust(input: {
 interface CustodyRow {
   seq: number; action: Action; actor: string; content_sha256: string;
   event_ts: string; prev_hash: string | null; event_hash: string; signature: string | null;
+  signature_alg: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -117,7 +175,20 @@ Deno.serve(async (req) => {
   const op = String(body.op ?? '');
   const tenantId = String(body.tenant_id ?? '');
   const assetRef = String(body.asset_ref ?? '');
-  if (!['register', 'append', 'verify'].includes(op)) return jsonError(400, 'BAD_REQUEST', 'op must be register|append|verify');
+  if (!['register', 'append', 'verify', 'pubkey'].includes(op)) return jsonError(400, 'BAD_REQUEST', 'op must be register|append|verify|pubkey');
+
+  // Öffentlicher Signaturschlüssel — kein Geheimnis, keine Tenant-Bindung.
+  // Ermöglicht unabhängige Prüfung der Ed25519-Signaturen (Client/Verify-Seite).
+  if (op === 'pubkey') {
+    const spki = Deno.env.get('PROVENANCE_ED25519_PUBLIC_KEY') ?? null;
+    return jsonResponse({
+      ok: true,
+      alg: spki ? 'ed25519' : null,
+      key_id: spki ? edKeyId() : null,
+      public_key_spki_b64: spki,
+    });
+  }
+
   if (!tenantId || !assetRef) return jsonError(400, 'BAD_REQUEST', 'tenant_id and asset_ref required');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -186,16 +257,16 @@ Deno.serve(async (req) => {
 
       const claim: Claim = { assetRef, contentSha256: normalizeHex(contentSha), issuer, action, timestamp: nowIso, prevHash };
       const eventHash = await claimHash(claim);
-      const { signature, keyId } = await signHash(eventHash);
+      const { signature, keyId, alg } = await signEvent(eventHash);
 
       const { error: evErr } = await admin.from('provenance_custody_events').insert({
         manifest_id: manifestId, tenant_id: tenantId, seq, action, actor: issuer,
-        content_sha256: normalizeHex(contentSha), event_ts: nowIso, prev_hash: prevHash, event_hash: eventHash, signature,
+        content_sha256: normalizeHex(contentSha), event_ts: nowIso, prev_hash: prevHash, event_hash: eventHash, signature, signature_alg: alg,
       });
       if (evErr) return jsonError(500, 'INTERNAL', 'could not append custody event');
 
       await admin.from('provenance_manifests').update({
-        content_sha256: normalizeHex(contentSha), latest_hash: eventHash, signature, signing_key_id: keyId, updated_at: nowIso,
+        content_sha256: normalizeHex(contentSha), latest_hash: eventHash, signature, signing_key_id: keyId, signature_alg: alg, updated_at: nowIso,
       }).eq('id', manifestId!);
 
       await audit(admin, {
@@ -213,7 +284,7 @@ Deno.serve(async (req) => {
     if (!manifest) return jsonError(404, 'NOT_FOUND', 'no manifest for this asset');
 
     const { data: events } = await admin
-      .from('provenance_custody_events').select('seq, action, actor, content_sha256, event_ts, prev_hash, event_hash, signature')
+      .from('provenance_custody_events').select('seq, action, actor, content_sha256, event_ts, prev_hash, event_hash, signature, signature_alg')
       .eq('manifest_id', manifest.id).order('seq', { ascending: true });
     const rows = (events ?? []) as CustodyRow[];
 
@@ -232,10 +303,8 @@ Deno.serve(async (req) => {
         assetRef, contentSha256: ev.content_sha256, issuer: ev.actor, action: ev.action, timestamp: ev.event_ts, prevHash: ev.prev_hash,
       });
       if (recomputed !== ev.event_hash) { custodyState = 'tampered'; brokenAtSeq = ev.seq; break; }
-      if (ev.signature) {
-        const { signature } = await signHash(ev.event_hash);
-        if (signature && signature !== ev.signature) signaturesOk = false;
-      }
+      const sigResult = await verifyEventSig(ev);
+      if (sigResult === false) signaturesOk = false;
       expectedPrev = ev.event_hash;
     }
 
@@ -262,7 +331,11 @@ Deno.serve(async (req) => {
       ok: true, asset_ref: assetRef,
       tamper_state: custodyState, broken_at_seq: brokenAtSeq,
       trust: { assetId: assetRef, trustScore: trust.trustScore, riskLabels: trust.riskLabels, escalationTriggered: trust.escalationTriggered, evaluatedAt: nowIso },
-      custody: rows.map((r) => ({ seq: r.seq, action: r.action, actor: r.actor, timestamp: r.event_ts, event_hash: r.event_hash, signed: r.signature !== null })),
+      custody: rows.map((r) => ({ seq: r.seq, action: r.action, actor: r.actor, timestamp: r.event_ts, event_hash: r.event_hash, signed: r.signature !== null, signature_alg: r.signature_alg })),
+      signature: {
+        algorithm: rows.length > 0 ? (rows[rows.length - 1].signature_alg ?? (rows[rows.length - 1].signature ? 'hmac-sha256' : null)) : null,
+        externally_verifiable: rows.length > 0 && rows[rows.length - 1].signature_alg === 'ed25519',
+      },
       evidence_components: { metadataIntegrity, ownershipConsistency, provenanceContinuity: custodyState === 'intact' },
     });
   } catch (e) {

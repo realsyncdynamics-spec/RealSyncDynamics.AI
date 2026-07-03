@@ -223,7 +223,11 @@ describe('autoMap — Phase 2 Edge-Cases', () => {
       ];
 
       const first = computeAutoMappings(profile, controls, []);
-      const second = computeAutoMappings(profile, controls, first as CurrentMapping[]);
+      const firstAsCurrentMappings: CurrentMapping[] = first.map((p) => ({
+        ...p,
+        source: 'auto' as const,
+      }));
+      const second = computeAutoMappings(profile, controls, firstAsCurrentMappings);
 
       // Second run should be empty (idempotent)
       expect(second.length).toBe(0);

@@ -15,6 +15,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { audit } from '../_shared/auditLog.ts';
+import { appendCustodyEvent } from '../_shared/provenanceCore.ts';
 
 type RetentionClass = 'forever' | '7y' | '3y' | '1y' | '90d' | '30d' | '7d' | 'ephemeral';
 const RET_CLASSES: RetentionClass[] = ['forever', '7y', '3y', '1y', '90d', '30d', '7d', 'ephemeral'];
@@ -124,7 +125,22 @@ Deno.serve(async (req) => {
 
     await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.snapshot', target_type: 'evidence_snapshot', target_id: created.id, payload: { subject_ref: subjectRef, version, retention_class: retentionClass, signed: signature !== null } });
 
-    return jsonResponse({ ok: true, id: created.id, subject_ref: subjectRef, version, event_hash: eventHash, retained_until: retUntil, signed: signature !== null });
+    // Phase 2b — Auto-Erfassung im Herkunftsnachweis: jeder Snapshot hängt ein
+    // Custody-Event an die Provenance-Kette desselben Subjects an. Best-effort:
+    // der Snapshot (Primärfunktion) darf niemals hieran scheitern.
+    let provenanceLinked = false;
+    try {
+      const r = await appendCustodyEvent(admin, {
+        tenantId, assetRef: subjectRef, contentSha256: normalizeHex(contentSha),
+        action: 'audited', issuer: `tenant:${tenantId}`, timestamp: nowIso,
+      });
+      provenanceLinked = true;
+      await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'provenance.auto', target_type: 'provenance_manifest', target_id: subjectRef, payload: { seq: r.seq, source: 'evidence.snapshot', event_hash: r.eventHash, signed: r.signed } });
+    } catch (provErr) {
+      console.error(JSON.stringify({ level: 'warn', scope: 'provenance_auto_link_failed', subject_ref: subjectRef, error: (provErr as Error)?.message ?? String(provErr) }));
+    }
+
+    return jsonResponse({ ok: true, id: created.id, subject_ref: subjectRef, version, event_hash: eventHash, retained_until: retUntil, signed: signature !== null, provenance_linked: provenanceLinked });
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'evidence_vault_failed', op, error: (e as Error)?.message ?? String(e) }));
     return jsonError(500, 'INTERNAL', 'evidence-vault operation failed');

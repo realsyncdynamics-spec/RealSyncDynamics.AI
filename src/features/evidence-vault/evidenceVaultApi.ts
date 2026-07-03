@@ -28,6 +28,8 @@ export interface SnapshotResult {
   event_hash: string;
   retained_until: string | null;
   signed: boolean;
+  /** Phase 2b: Snapshot wurde automatisch in der Herkunftskette erfasst. */
+  provenance_linked?: boolean;
 }
 
 export type VaultError =

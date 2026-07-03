@@ -69,7 +69,7 @@ function VaultInner() {
     setBusy(true); setError(null); setNotice(null);
     const r = await createSnapshot({ tenant_id: activeTenantId, subject_ref: subjectRef.trim(), content_sha256: digest, label: label.trim() || undefined, retention_class: retention });
     if (r.kind === 'ok') {
-      setNotice(`Snapshot v${r.data.version} angelegt${r.data.signed ? ' (signiert)' : ''} · Hash ${r.data.event_hash.slice(0, 16)}…`);
+      setNotice(`Snapshot v${r.data.version} angelegt${r.data.signed ? ' (signiert)' : ''}${r.data.provenance_linked ? ' · Herkunftskette aktualisiert' : ''} · Hash ${r.data.event_hash.slice(0, 16)}…`);
       setDigest(null); setFileName(null); setLabel('');
       reload();
     } else {

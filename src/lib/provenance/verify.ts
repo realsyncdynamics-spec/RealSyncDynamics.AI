@@ -51,7 +51,7 @@ export interface ProvenanceManifest {
 /**
  * Compute SHA-256 of event for hash-chain verification.
  */
-function computeEventHash(event: Partial<CustodyEvent>): string {
+function computeEventHash(event: Pick<CustodyEvent, 'seq' | 'action' | 'actor' | 'contentSha256' | 'eventTs' | 'prevHash'>): string {
   const data = canonicalClaimBytes(event);
   return createHash('sha256').update(data).digest('hex').toLowerCase();
 }

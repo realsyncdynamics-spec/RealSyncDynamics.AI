@@ -11,6 +11,7 @@
  */
 
 import { createHash } from 'crypto';
+import { verifyEd25519Signature, verifyHmacSignature, canonicalClaimBytes } from './sign';
 
 export interface VerificationResult {
   valid: boolean;
@@ -46,21 +47,6 @@ export interface ProvenanceManifest {
   events: CustodyEvent[];
 }
 
-/**
- * Canonical Claim Format für Signature Verification.
- * Muss mit src/lib/provenance.ts identisch sein.
- */
-function canonicalClaimBytes(event: Partial<CustodyEvent>): string {
-  const fields = [
-    event.seq?.toString() ?? '0',
-    event.action ?? '',
-    event.actor ?? '',
-    event.contentSha256 ?? '',
-    Math.floor((event.eventTs?.getTime() ?? 0) / 1000).toString(),
-    event.prevHash ?? '',
-  ];
-  return fields.join('\x00');
-}
 
 /**
  * Compute SHA-256 of event for hash-chain verification.
@@ -112,18 +98,22 @@ function verifyHashChain(events: CustodyEvent[]): {
 }
 
 /**
- * Signature verification — returns true if signature is valid.
- * For now: basic format check. In production, integrate with NaCl/Crypto.
+ * Verify signature on a custody event.
+ * Supports Ed25519 and HMAC-SHA256.
+ *
+ * Note: For Ed25519, public key must be provided (from signing_keys table).
+ * For HMAC, secret must be provided (from tenant credentials).
  *
  * Returns: (valid, reason?)
  * - null signature = not signed (skip, don't fail)
- * - non-empty signature + alg = looks valid (format check pass)
- * - empty/invalid signature = fail
+ * - valid signature = cryptographically verified
+ * - invalid signature = tampering detected
  */
 function verifySignature(
   event: CustodyEvent,
   signature: string | null,
   alg: 'ed25519' | 'hmac-sha256' | null,
+  publicKeyOrSecret?: string,
 ): {
   valid: boolean;
   reason?: string;
@@ -138,18 +128,46 @@ function verifySignature(
     return { valid: false, reason: 'Signature present but no algorithm specified' };
   }
 
-  // Ed25519 format check: should be non-empty
+  // Ed25519: verify with public key
   if (alg === 'ed25519') {
     if (signature.length === 0) return { valid: false, reason: 'Empty Ed25519 signature' };
-    // TODO: in production, verify with public key using crypto.verify()
-    return { valid: true };
+    if (!publicKeyOrSecret) return { valid: false, reason: 'Ed25519 public key not provided' };
+
+    const eventData = {
+      seq: event.seq,
+      action: event.action,
+      actor: event.actor,
+      contentSha256: event.contentSha256,
+      eventTs: event.eventTs,
+      prevHash: event.prevHash,
+    };
+
+    const isValid = verifyEd25519Signature(eventData, signature, publicKeyOrSecret);
+    return {
+      valid: isValid,
+      reason: isValid ? 'Signature verified (Ed25519)' : 'Signature verification failed (Ed25519)',
+    };
   }
 
-  // HMAC-SHA256 format check
+  // HMAC-SHA256: verify with secret
   if (alg === 'hmac-sha256') {
     if (signature.length === 0) return { valid: false, reason: 'Empty HMAC-SHA256 signature' };
-    // TODO: in production, verify HMAC(secret, canonical_bytes) == signature
-    return { valid: true };
+    if (!publicKeyOrSecret) return { valid: false, reason: 'HMAC secret not provided' };
+
+    const eventData = {
+      seq: event.seq,
+      action: event.action,
+      actor: event.actor,
+      contentSha256: event.contentSha256,
+      eventTs: event.eventTs,
+      prevHash: event.prevHash,
+    };
+
+    const isValid = verifyHmacSignature(eventData, signature, publicKeyOrSecret);
+    return {
+      valid: isValid,
+      reason: isValid ? 'Signature verified (HMAC-SHA256)' : 'Signature verification failed (HMAC-SHA256)',
+    };
   }
 
   // Unknown algorithm
@@ -183,8 +201,16 @@ function calculateTrustScore(verification: {
 
 /**
  * Main verification function: verify entire provenance manifest.
+ *
+ * Optional parameters for signature verification:
+ * - organizationPublicKey: Ed25519 public key for signed events
+ * - hmacSecret: Shared secret for HMAC-signed events
  */
-export function verifyProvenance(manifest: ProvenanceManifest): VerificationResult {
+export function verifyProvenance(
+  manifest: ProvenanceManifest,
+  organizationPublicKey?: string,
+  hmacSecret?: string,
+): VerificationResult {
   const issues: string[] = [];
   let tamperState: 'intact' | 'tampered' | 'unverifiable' = 'intact';
   const now = new Date();
@@ -200,18 +226,14 @@ export function verifyProvenance(manifest: ProvenanceManifest): VerificationResu
     };
   }
 
-  // 1. Verify individual event hashes (optional in basic mode, requires canonical format match)
-  // NOTE: Full verification requires access to the exact canonical claim bytes used at signing.
-  // For now, we focus on chain linking (prev_hash) which is more robust.
-
-  // 2. Verify hash-chain linking
+  // 1. Verify hash-chain linking
   const chainCheck = verifyHashChain(manifest.events);
   if (!chainCheck.valid) {
     issues.push(...chainCheck.issues);
     tamperState = 'tampered';
   }
 
-  // 3. Verify latest_hash matches last event's event_hash
+  // 2. Verify latest_hash matches last event's event_hash
   const lastEvent = manifest.events[manifest.events.length - 1];
   if (lastEvent.eventHash.toLowerCase() !== manifest.latestHash.toLowerCase()) {
     issues.push(
@@ -220,21 +242,24 @@ export function verifyProvenance(manifest: ProvenanceManifest): VerificationResu
     tamperState = 'tampered';
   }
 
-  // 4. Verify signatures (if present)
+  // 3. Verify signatures (if present and keys provided)
   let signedCount = 0;
   for (const event of manifest.events) {
     if (event.signature) {
       signedCount++;
-      const sigCheck = verifySignature(event, event.signature, event.signatureAlg ?? null);
+      const publicKeyOrSecret =
+        event.signatureAlg === 'ed25519' ? organizationPublicKey : hmacSecret;
+      const sigCheck = verifySignature(event, event.signature, event.signatureAlg ?? null, publicKeyOrSecret);
       if (!sigCheck.valid) {
         issues.push(`Event #${event.seq} — signature invalid: ${sigCheck.reason}`);
+        tamperState = 'tampered';
       }
     }
   }
 
   const hasLatestSignature = lastEvent.signature !== null && lastEvent.signature !== undefined;
 
-  // 5. Calculate Trust Score
+  // 4. Calculate Trust Score
   const trustScore = calculateTrustScore({
     chainValid: chainCheck.valid,
     signedCount,

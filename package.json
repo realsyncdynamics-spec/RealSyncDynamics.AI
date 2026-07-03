@@ -28,6 +28,7 @@
     "qa:governance-test": "tsx scripts/qa-governance-test.ts",
     "qa:smoke": "tsx scripts/qa-smoke-test.ts",
     "qa:load": "tsx scripts/qa-load-test.ts",
+    "seed:beta": "tsx scripts/seed-beta-tenant.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh"
   },

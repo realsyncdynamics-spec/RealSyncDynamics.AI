@@ -219,6 +219,11 @@ async function autoMap(admin: any, userId: string, userEmail: string | null, b: 
     return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
   }
 
+  // Tenant-Industrie laden (für Industry-spezifische Controls)
+  const { data: tenant } = await admin.from('tenants')
+    .select('industry').eq('id', asset.tenant_id).maybeSingle();
+  const tenantIndustry = tenant?.industry ?? undefined;
+
   // Katalog (id ↔ framework/control_code) + Ist-Zustand laden.
   const { data: controls } = await admin.from('framework_controls').select('id, framework, control_code');
   const ctrlList: Array<{ id: string; framework: string; control_code: string }> = controls ?? [];
@@ -237,6 +242,7 @@ async function autoMap(admin: any, userId: string, userEmail: string | null, b: 
     assetType: asset.asset_type ?? '',
     aiActClass: asset.ai_act_class ?? 'unknown',
     dataTypes: Array.isArray(asset.data_types) ? asset.data_types.map(String) : [],
+    tenantIndustry,
   };
   const refs: ControlRef[] = ctrlList.map((c) => ({ framework: c.framework, control_code: c.control_code }));
 

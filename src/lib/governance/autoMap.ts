@@ -22,6 +22,8 @@ export interface AssetProfile {
   aiActClass: string;
   /** governance_assets.data_types */
   dataTypes: string[];
+  /** tenants.industry — optional Branche für Industry-spezifische Controls */
+  tenantIndustry?: string;
 }
 
 export interface ControlRef {
@@ -52,7 +54,14 @@ const PERSONAL_DATA_HINTS = [
   'mitarbeiter', 'health', 'gesundheit', 'email', 'e-mail', 'phone', 'telefon',
   'address', 'adresse', 'name', 'biometric', 'biometr', 'iban', 'payment',
   'zahlung', 'credit', 'ssn', 'passport', 'dob', 'birth', 'geburt',
+  'diagnosis', 'diagnose', 'treatment', 'therapie', 'genetic', 'genetisch',
+  'race', 'ethnicity', 'religion', 'political', 'sexual', 'orientation',
 ];
+
+// Industry-spezifische Control-Frameworks
+const HEALTHCARE_INDICATORS = new Set(['healthcare', 'medical', 'pharma', 'klinik', 'praxis']);
+const FINANCE_INDICATORS = new Set(['finance', 'banking', 'insurance', 'finanz', 'versicherung']);
+const LEGAL_INDICATORS = new Set(['legal', 'law', 'jura', 'rechtsanwalt', 'anwaltskanzlei']);
 
 function key(c: ControlRef): string {
   return `${c.framework}::${c.control_code}`;
@@ -69,6 +78,20 @@ function hasPersonalData(dataTypes: string[]): boolean {
   });
 }
 
+function hasSpecialCategoryData(dataTypes: string[]): boolean {
+  // DSGVO Art. 9 — Besondere Kategorien personenbezogener Daten
+  const specialCategoryHints = ['health', 'gesundheit', 'diagnosis', 'diagnose', 'genetic', 'genetisch', 'race', 'ethnicity', 'religion', 'political', 'sexual', 'biometric', 'biometr'];
+  return dataTypes.some((dt) => {
+    const d = dt.toLowerCase();
+    return specialCategoryHints.some((h) => d.includes(h));
+  });
+}
+
+function isHealthcareIndustry(industry?: string): boolean {
+  if (!industry) return false;
+  return HEALTHCARE_INDICATORS.has(industry.toLowerCase());
+}
+
 /**
  * Leitet aus dem Asset-Profil Status-Vorschläge für die übergebenen Controls ab.
  * Deckt EU AI Act (aus ai_act_class) und DSGVO (aus data_types) ab — dort sind
@@ -81,11 +104,14 @@ export function proposeControlStatuses(profile: AssetProfile, controls: ControlR
   const ai = isAiAsset(profile);
   const highRiskAi = profile.aiActClass === 'high' || profile.aiActClass === 'prohibited';
   const pii = hasPersonalData(profile.dataTypes);
+  const specialData = hasSpecialCategoryData(profile.dataTypes);
+  const isHealthcare = isHealthcareIndustry(profile.tenantIndustry);
 
   for (const c of controls) {
     const k = key(c);
     if (seen.has(k)) continue;
 
+    // EU AI Act — Risikobasiert
     if (c.framework === 'EU_AI_ACT') {
       if (highRiskAi) {
         out.push({ ...c, status: 'gap', rationale: `Asset als ${profile.aiActClass === 'prohibited' ? 'verbotenes' : 'Hochrisiko-'}KI-System klassifiziert — EU-AI-Act-Pflicht offen.` });
@@ -101,8 +127,23 @@ export function proposeControlStatuses(profile: AssetProfile, controls: ControlR
       continue;
     }
 
-    if (c.framework === 'GDPR' && pii) {
-      out.push({ ...c, status: 'gap', rationale: 'Asset verarbeitet personenbezogene Daten — DSGVO-Control offen.' });
+    // GDPR — Standard + Besondere Kategorien
+    if (c.framework === 'GDPR') {
+      if (specialData) {
+        out.push({ ...c, status: 'gap', rationale: 'Asset verarbeitet besondere Kategorien gem. DSGVO Art. 9 — strikte Compliance erforderlich.' });
+        seen.add(k);
+        continue;
+      }
+      if (pii) {
+        out.push({ ...c, status: 'gap', rationale: 'Asset verarbeitet personenbezogene Daten — DSGVO-Control offen.' });
+        seen.add(k);
+        continue;
+      }
+    }
+
+    // Industry-spezifische Controls
+    if (isHealthcare && c.framework === 'HEALTHCARE') {
+      out.push({ ...c, status: 'gap', rationale: 'Healthcare-Industry — regulatorische Compliance erforderlich.' });
       seen.add(k);
       continue;
     }

@@ -112,6 +112,7 @@ export function CheckoutFlow({
         onSelectPlan={handleSelectPlan}
         isLoading={isLoading}
         disabled={isLoading}
+        testIdPrefix="checkout"
       />
 
       {/* Back Button */}

@@ -15,6 +15,7 @@ export interface PlanSelectorProps {
   isLoading?: boolean;
   disabled?: boolean;
   showEnterprise?: boolean;
+  testIdPrefix?: 'pricing' | 'checkout';
 }
 
 export function PlanSelector({
@@ -23,6 +24,7 @@ export function PlanSelector({
   isLoading = false,
   disabled = false,
   showEnterprise = true,
+  testIdPrefix = 'pricing',
 }: PlanSelectorProps) {
   return (
     <div className="w-full bg-obsidian-900 py-16 px-4 sm:px-6 lg:px-8">
@@ -54,7 +56,7 @@ export function PlanSelector({
             return (
               <div
                 key={tier.id}
-                data-testid={`pricing-card-${tier.id}`}
+                data-testid={`${testIdPrefix}-card-${tier.id}`}
                 className={`relative rounded-none transition-all ${
                   tier.highlight ? 'ring-2 ring-security-500 lg:scale-105' : ''
                 } ${isSelected ? 'ring-2 ring-ai-cyan-400' : ''}`}
@@ -113,7 +115,7 @@ export function PlanSelector({
 
                   {/* CTA Button */}
                   <button
-                    data-testid={`pricing-book-${tier.id}`}
+                    data-testid={testIdPrefix === 'pricing' ? `pricing-book-${tier.id}` : `checkout-plan-${tier.id}`}
                     onClick={() => onSelectPlan(tier.id)}
                     disabled={disabled || isLoading}
                     className={`w-full py-3 px-4 font-bold uppercase tracking-wider transition-all ${

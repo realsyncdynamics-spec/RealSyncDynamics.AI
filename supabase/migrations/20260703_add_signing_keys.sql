@@ -32,28 +32,10 @@ CREATE INDEX idx_signing_keys_tenant_active ON signing_keys(tenant_id, is_active
 CREATE INDEX idx_signing_keys_expires_at ON signing_keys(expires_at);
 
 -- RLS: Tenants can only access their own signing keys
+-- NOTE: RLS policies are created in supabase/post-setup/signing_keys_rls.sql
+--       because they depend on auth.jwt() which is only available in Supabase,
+--       not in local PostgreSQL test environments.
 ALTER TABLE signing_keys ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Tenants can view their signing keys"
-  ON signing_keys FOR SELECT
-  USING (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  );
-
-CREATE POLICY "Tenants can create signing keys"
-  ON signing_keys FOR INSERT
-  WITH CHECK (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  );
-
-CREATE POLICY "Tenants can update their signing keys"
-  ON signing_keys FOR UPDATE
-  USING (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  )
-  WITH CHECK (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  );
 
 -- Comment for documentation
 COMMENT ON TABLE signing_keys IS 'Cryptographic signing keys for provenance verification. Public keys only; private keys in secure vault.';

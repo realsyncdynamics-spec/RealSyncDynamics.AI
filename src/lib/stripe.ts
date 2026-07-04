@@ -91,10 +91,15 @@ export function isStripeConfigured(): boolean {
 }
 
 /**
- * Formats price in EUR with proper currency symbol and decimals
+ * Formats price in EUR with proper German currency formatting
+ * Examples: 79,00 € | 249,00 € | 1.999,00 €
  */
 export function formatPrice(eurAmount: number, includeSymbol = true): string {
-  const formatted = eurAmount.toFixed(2).replace('.', ',');
+  // Format as German locale: decimal comma, thousand dots
+  const formatted = new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(eurAmount);
   return includeSymbol ? `${formatted} €` : formatted;
 }
 

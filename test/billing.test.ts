@@ -60,7 +60,7 @@ describe('Pricing Tiers (5-Tier Model)', () => {
 
   it('should have public tiers (excluding enterprise)', () => {
     expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
-    expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(['free_audit', 'starter', 'growth', 'agency', 'scale']);
+    expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(['free', 'starter', 'growth', 'agency', 'scale']);
   });
 
   it('should have enterprise tier as separate constant', () => {
@@ -69,7 +69,7 @@ describe('Pricing Tiers (5-Tier Model)', () => {
   });
 
   it('free_audit should have no account required', () => {
-    const free = tierById('free_audit')!;
+    const free = tierById('free')!;
     expect(free.recurring).toBe(false);
     expect(free.priceEur).toBe(0);
   });
@@ -125,14 +125,15 @@ describe('Pricing Tiers (5-Tier Model)', () => {
 // ─── Stripe Integration Tests ───────────────────────────────────────────────
 
 describe('Stripe Integration', () => {
-  it('should format EUR prices with decimal comma', () => {
+  it('should format EUR prices with decimal comma and German thousands separator', () => {
     expect(formatPrice(79)).toBe('79,00 €');
     expect(formatPrice(249)).toBe('249,00 €');
-    expect(formatPrice(1999)).toBe('1.999,00 €');
+    expect(formatPrice(1999)).toBe('1.999,00 €'); // German style: dot for thousands
   });
 
   it('should format prices without symbol on demand', () => {
     expect(formatPrice(79, false)).toBe('79,00');
+    expect(formatPrice(1999, false)).toBe('1.999,00');
   });
 
   it('should retrieve plans by ID', () => {
@@ -202,7 +203,7 @@ describe('Compliance & Legal Notices', () => {
 
 describe('Billing Workflows', () => {
   it('free audit should not require checkout', () => {
-    const free = tierById('free_audit')!;
+    const free = tierById('free')!;
     expect(free.cta.href).toContain('/audit');
     expect(free.cta.href).not.toContain('/checkout');
   });
@@ -242,7 +243,7 @@ describe('Billing Workflows', () => {
 
 describe('Feature Quotas by Tier', () => {
   it('free audit should have no productive bots', () => {
-    const free = tierById('free_audit')!;
+    const free = tierById('free')!;
     expect(free.botsQuota.maxBots).toBe(0);
   });
 

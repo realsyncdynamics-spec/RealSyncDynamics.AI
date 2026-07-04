@@ -17,6 +17,7 @@ import {
   randomBytes,
   sign as cryptoSign,
   verify as cryptoVerify,
+  createPublicKey,
 } from 'crypto';
 
 export interface SigningKey {
@@ -113,13 +114,9 @@ export function verifyEd25519Signature(
     const publicKeyPem = Buffer.from(publicKeyBase64, 'base64').toString('utf-8');
     const signature = Buffer.from(signatureBase64, 'base64');
 
-<<<<<<< HEAD
-    return cryptoVerify(null, Buffer.from(claim), publicKeyPem, signature);
-=======
     // Verify with Ed25519 using KeyObject
-    const publicKey = crypto.createPublicKey(publicKeyPem);
-    return crypto.verify(null, Buffer.from(claim), publicKey, signature);
->>>>>>> 6614193 (feat: comprehensive pricing detail pages with tests)
+    const publicKey = createPublicKey(publicKeyPem);
+    return cryptoVerify(null, Buffer.from(claim), publicKey, signature);
   } catch (err) {
     console.error('Ed25519 verification failed:', err);
     return false;

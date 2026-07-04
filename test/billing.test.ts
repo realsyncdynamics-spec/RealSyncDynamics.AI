@@ -143,7 +143,7 @@ describe('Stripe Integration', () => {
   });
 
   it('should identify fixed-price plans', () => {
-    expect(isPlanFixedPrice('free_audit')).toBe(false); // €0
+    expect(isPlanFixedPrice('free')).toBe(false); // €0
     expect(isPlanFixedPrice('starter')).toBe(true); // €79
     expect(isPlanFixedPrice('enterprise')).toBe(false); // €0 (custom)
   });

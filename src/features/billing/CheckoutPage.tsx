@@ -69,21 +69,41 @@ export function CheckoutPage() {
   useEffect(() => {
     if (!validPlan) return;
     let cancelled = false;
+
+    // Sicherheitsnetz gegen unbegrenzten „Lade…"-Zustand: Falls die
+    // Auth-Auflösung (z. B. eine hängende Membership-Abfrage oder Client-
+    // Initialisierung) nicht zeitnah zurückkommt, fällt die Seite in den
+    // Login-Zustand zurück — recoverbar per Klick statt endloser Spinner.
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        setAuth((prev) => (prev.status === 'loading' ? { status: 'no_user' } : prev));
+      }
+    }, 8000);
+
     (async () => {
       const sb = getSupabase();
-      const { data: userData } = await sb.auth.getUser();
+      // getSession() liest die Session lokal aus dem Storage und ist damit
+      // praktisch sofort verfügbar. Das vorherige getUser() machte einen
+      // Netzwerk-Roundtrip zum Auth-Server (/auth/v1/user), der beim ersten
+      // Aufruf mehrere Sekunden hängen konnte („Lade…", erst nach Reload ok).
+      // Die eigentliche Autorisierung passiert ohnehin serverseitig in
+      // createCheckoutSession() (Edge Function + RLS auf memberships).
+      const { data: sessionData } = await sb.auth.getSession();
       if (cancelled) return;
-      if (!userData?.user) {
+      const user = sessionData?.session?.user;
+      if (!user) {
+        clearTimeout(timeout);
         setAuth({ status: 'no_user' });
         return;
       }
-      const userEmail = userData.user.email ?? '';
+      const userEmail = user.email ?? '';
       const { data: memberships } = await sb
         .from('memberships')
         .select('tenant_id, role')
         .in('role', ['owner', 'admin'])
         .limit(1);
       if (cancelled) return;
+      clearTimeout(timeout);
       const firstTenant = memberships?.[0];
       if (!firstTenant?.tenant_id) {
         setAuth({ status: 'no_tenant', userEmail });
@@ -91,7 +111,7 @@ export function CheckoutPage() {
       }
       setAuth({ status: 'ready', userEmail, tenantId: firstTenant.tenant_id });
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [validPlan]);
 
   // 4. Manual trigger on user submit — see consent gate render below.

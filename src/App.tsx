@@ -155,6 +155,10 @@ import { PricingPage } from './features/billing/PricingPage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CheckoutSuccessPage } from './features/billing/CheckoutSuccessPage';
 import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage';
+// Pricing detail pages — new detail routes for plans/features/checkout
+import { PricingDetailPageWrapper } from './pages/pricing/PricingDetailPage';
+import { FeatureDetailPageWrapper } from './pages/pricing/FeatureDetailPage';
+import { CheckoutDetailPageWrapper } from './pages/pricing/CheckoutDetailPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
@@ -634,6 +638,11 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
+      {/* Pricing Detail Routes */}
+      <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
+      <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />
+      <Route path="/checkout/:slug" element={<CheckoutDetailPageWrapper />} />
+      {/* End of Pricing Detail Routes */}
       <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}
       <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />

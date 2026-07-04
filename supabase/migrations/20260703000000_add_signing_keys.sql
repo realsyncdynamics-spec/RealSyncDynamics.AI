@@ -31,29 +31,27 @@ CREATE INDEX idx_signing_keys_tenant_id ON signing_keys(tenant_id);
 CREATE INDEX idx_signing_keys_tenant_active ON signing_keys(tenant_id, is_active);
 CREATE INDEX idx_signing_keys_expires_at ON signing_keys(expires_at);
 
--- RLS: Tenants can only access their own signing keys
+-- RLS: Tenants can only access their own signing keys.
+-- Nutzt den etablierten Helper public.is_tenant_member(tenant_id) (definiert in
+-- 20260430180000_tenant_rls_and_webhook_events.sql) statt auth.jwt() — der
+-- Helper prüft die Membership über auth.uid() und ist der repo-weite Standard.
+-- auth.jwt() ist im Migrations-Validierungs-Postgres nicht verfügbar und der
+-- vorige Vergleich (id = auth.jwt() -> 'tenant_id') war zudem ein jsonb/uuid-
+-- Typfehler.
 ALTER TABLE signing_keys ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Tenants can view their signing keys"
   ON signing_keys FOR SELECT
-  USING (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  );
+  USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Tenants can create signing keys"
   ON signing_keys FOR INSERT
-  WITH CHECK (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  );
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Tenants can update their signing keys"
   ON signing_keys FOR UPDATE
-  USING (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  )
-  WITH CHECK (
-    tenant_id IN (SELECT id FROM tenants WHERE id = auth.jwt() -> 'tenant_id')
-  );
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- Comment for documentation
 COMMENT ON TABLE signing_keys IS 'Cryptographic signing keys for provenance verification. Public keys only; private keys in secure vault.';

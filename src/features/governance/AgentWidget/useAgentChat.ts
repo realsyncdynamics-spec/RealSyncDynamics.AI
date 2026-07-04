@@ -17,7 +17,7 @@ const WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Hallo. Ich bin der Compliance-Assistent für eure Governance-Runtime. Ich kann eure Assets, Risk-Scores, DPIAs, Incidents und Vendoren abfragen sowie technische Zusammenfassungen zu DSGVO, TTDSG und EU AI Act geben (keine Rechtsberatung). Womit fange ich an?',
+    'Hallo. Ich bin der Compliance-Assistent für eure Governance-Runtime. Ich kann eure Assets, Risk-Scores, DPIAs, Incidents und Vendoren abfragen sowie technische Zusammenfassungen zu DSGVO, TDDDG und EU AI Act geben (keine Rechtsberatung). Womit fange ich an?',
   ts: Date.now(),
 };
 
@@ -186,7 +186,7 @@ const ANON_WELCOME: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Hallo! Ich bin der öffentliche Compliance-Assistent von RealSyncDynamics.AI. Ich beantworte allgemeine Fragen zu DSGVO, TTDSG und EU AI Act — keine Rechtsberatung. Womit kann ich helfen?',
+    'Hallo! Ich bin der öffentliche Compliance-Assistent von RealSyncDynamics.AI. Ich beantworte allgemeine Fragen zu DSGVO, TDDDG und EU AI Act — keine Rechtsberatung. Womit kann ich helfen?',
   ts: Date.now(),
 };
 

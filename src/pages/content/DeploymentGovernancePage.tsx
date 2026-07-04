@@ -38,7 +38,7 @@ export function DeploymentGovernancePage() {
         Die Engine berechnet drei Scores: Pre-Deploy-Risk (aktueller Stand), Post-Deploy-Risk
         (projiziert nach Merge), Delta. Konkret: ein neuer US-Vendor erhöht den Score um eine
         konfigurierte Konstante; ein neues Modell ohne <code>ai_act_class</code>-Tag triggert eine
-        Reclassifikation; ein Tracker ohne Consent-Gate erhöht den Score um die TTDSG-§25-Penalty.
+        Reclassifikation; ein Tracker ohne Consent-Gate erhöht den Score um die TDDDG-§25-Penalty.
         Das Delta ist die Zahl, die in der Check-Box steht.
       </P>
 

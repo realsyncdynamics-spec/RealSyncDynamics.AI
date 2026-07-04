@@ -24,7 +24,7 @@ export const DEFAULT_COMPLIANCE_FAQ: FaqEntry[] = [
   {
     question: 'Was ist Pre-Consent Tracking?',
     answer:
-      'Pre-Consent Tracking bezeichnet das Laden von Tracking-Diensten (z. B. Analytics, Pixel, externe Skripte) bevor die Nutzerin oder der Nutzer eine wirksame Einwilligung erteilt hat. Je nach Konfiguration und Rechtsgrundlage kann das ein DSGVO-/TTDSG-Risiko darstellen.',
+      'Pre-Consent Tracking bezeichnet das Laden von Tracking-Diensten (z. B. Analytics, Pixel, externe Skripte) bevor die Nutzerin oder der Nutzer eine wirksame Einwilligung erteilt hat. Je nach Konfiguration und Rechtsgrundlage kann das ein DSGVO-/TDDDG-Risiko darstellen.',
   },
   {
     question: 'Ersetzt der Audit eine Rechtsberatung?',

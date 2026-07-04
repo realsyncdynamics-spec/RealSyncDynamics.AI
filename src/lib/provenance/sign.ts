@@ -11,7 +11,13 @@
  *   const canonical = canonicalClaimBytes(event);
  */
 
-import { createHash, createHmac, createSign, randomBytes } from 'crypto';
+import {
+  createHmac,
+  generateKeyPairSync,
+  randomBytes,
+  sign as cryptoSign,
+  verify as cryptoVerify,
+} from 'crypto';
 
 export interface SigningKey {
   publicKey: string; // Base64-encoded Ed25519 public key
@@ -50,9 +56,7 @@ export function canonicalClaimBytes(event: {
  * Returns { publicKey, privateKey } in Base64.
  */
 export function generateEd25519KeyPair(): { publicKey: string; privateKey: string } {
-  // Use Node.js crypto.generateKeyPairSync for Ed25519
-  const crypto = require('crypto');
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+  const { publicKey, privateKey } = generateKeyPairSync('ed25519', {
     publicKeyEncoding: { type: 'spki', format: 'pem' },
     privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   });
@@ -79,17 +83,11 @@ export function signEventEd25519(
   },
   privateKeyBase64: string,
 ): string {
-  const crypto = require('crypto');
   const claim = canonicalClaimBytes(event);
-
-  // Decode Base64 PEM
   const privateKeyPem = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
 
-  // Sign with Ed25519
-  const sign = createSign('sha256');
-  sign.update(claim);
-  const signature = sign.sign(privateKeyPem);
-
+  // Ed25519 nutzt die One-Shot-API mit algorithm=null (createSign unterstützt Ed25519 nicht)
+  const signature = cryptoSign(null, Buffer.from(claim), privateKeyPem);
   return signature.toString('base64');
 }
 
@@ -110,17 +108,11 @@ export function verifyEd25519Signature(
   publicKeyBase64: string,
 ): boolean {
   try {
-    const crypto = require('crypto');
     const claim = canonicalClaimBytes(event);
-
-    // Decode Base64 PEM
     const publicKeyPem = Buffer.from(publicKeyBase64, 'base64').toString('utf-8');
     const signature = Buffer.from(signatureBase64, 'base64');
 
-    // Verify with Ed25519
-    const verify = crypto.createVerify('sha256');
-    verify.update(claim);
-    return verify.verify(publicKeyPem, signature);
+    return cryptoVerify(null, Buffer.from(claim), publicKeyPem, signature);
   } catch (err) {
     console.error('Ed25519 verification failed:', err);
     return false;

@@ -9,7 +9,7 @@ import type { SocialPublisher, SocialPost, PublishResult } from './types';
  * Requires: X_ACCESS_TOKEN in Supabase Vault.
  */
 export class XPublisher implements SocialPublisher {
-  public readonly channel = 'x' as const;
+  public readonly channel = 'x.alert' as const;
   private accessToken: string;
 
   constructor(accessToken: string) {

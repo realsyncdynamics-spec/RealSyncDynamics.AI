@@ -309,6 +309,7 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
           ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
           : 'border-silver-700/30 hover:border-titanium-200/60'
       }${selected ? ' ring-2 ring-cyan-400/70' : ''}`}
+      data-testid={`pricing-card-${tier.id}`}
     >
       {tier.highlight && (
         <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
@@ -350,31 +351,45 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
         ))}
       </ul>
 
-      {tier.cta.href.startsWith('http') ? (
-        <a
-          href={tier.cta.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-            tier.highlight
-              ? 'surface-mono'
-              : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-          }`}
-        >
-          {tier.cta.label} <ArrowRight className="h-4 w-4" />
-        </a>
-      ) : (
+      <div className="flex flex-col gap-3">
+        {/* Primary CTA: Book / Start */}
+        {tier.cta.href.startsWith('http') ? (
+          <a
+            href={tier.cta.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+              tier.highlight
+                ? 'surface-mono'
+                : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+            }`}
+            data-testid={`pricing-book-${tier.id}`}
+          >
+            {tier.cta.label} <ArrowRight className="h-4 w-4" />
+          </a>
+        ) : (
+          <Link
+            to={tier.cta.href}
+            className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+              tier.highlight
+                ? 'surface-mono'
+                : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+            }`}
+            data-testid={`pricing-book-${tier.id}`}
+          >
+            {tier.cta.label} <ArrowRight className="h-4 w-4" />
+          </Link>
+        )}
+
+        {/* Secondary: More Info button (links to plan detail page) */}
         <Link
-          to={tier.cta.href}
-          className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-            tier.highlight
-              ? 'surface-mono'
-              : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-          }`}
+          to={`/pricing/${tier.id}`}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold rounded-none border border-titanium-200/30 text-titanium-300 hover:text-titanium-50 hover:border-titanium-200/60 transition-colors"
+          data-testid={`pricing-info-${tier.id}`}
         >
-          {tier.cta.label} <ArrowRight className="h-4 w-4" />
+          Mehr erfahren
         </Link>
-      )}
+      </div>
     </div>
   );
 }

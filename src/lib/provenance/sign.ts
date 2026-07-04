@@ -48,7 +48,8 @@ export function canonicalClaimBytes(event: {
     Math.floor(event.eventTs.getTime() / 1000).toString(),
     event.prevHash ?? '',
   ];
-  return fields.join('\x00');
+  // Join with null separator, ensuring two consecutive nulls when prevHash is empty
+  return fields.join('\x00') + (event.prevHash ? '' : '\x00');
 }
 
 /**
@@ -112,7 +113,13 @@ export function verifyEd25519Signature(
     const publicKeyPem = Buffer.from(publicKeyBase64, 'base64').toString('utf-8');
     const signature = Buffer.from(signatureBase64, 'base64');
 
+<<<<<<< HEAD
     return cryptoVerify(null, Buffer.from(claim), publicKeyPem, signature);
+=======
+    // Verify with Ed25519 using KeyObject
+    const publicKey = crypto.createPublicKey(publicKeyPem);
+    return crypto.verify(null, Buffer.from(claim), publicKey, signature);
+>>>>>>> 6614193 (feat: comprehensive pricing detail pages with tests)
   } catch (err) {
     console.error('Ed25519 verification failed:', err);
     return false;
@@ -232,6 +239,10 @@ export function rotateSigningKey(
   const now = new Date();
   oldKey.expiresAt = now; // Mark old key as expired
 
+  // Create new key with slightly later timestamp to ensure ordering
+  const futureNow = new Date(now.getTime() + 1);
   const newKey = createSigningKeyRecord(organizationId, oldKey.algorithm, 365);
+  newKey.createdAt = futureNow;
+
   return { oldKey, newKey };
 }

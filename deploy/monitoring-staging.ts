@@ -8,6 +8,7 @@
  */
 
 import * as Sentry from '@sentry/node';
+import { httpIntegration, postgresIntegration } from '@sentry/node';
 
 interface MonitoringConfig {
   environment: 'staging';
@@ -49,12 +50,10 @@ export function initializeSentryStaging() {
     environment: STAGING_CONFIG.environment,
     tracesSampleRate: STAGING_CONFIG.sampleRate,
     profilesSampleRate: 0.1, // 10% profiling in staging
-    replaysSessionSampleRate: STAGING_CONFIG.enableReplayRecording ? 0.1 : 0,
-    replaysOnErrorSampleRate: 1.0, // Capture 100% of error sessions
 
     integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.PostgresIntegration(),
+      httpIntegration(),
+      postgresIntegration(),
     ],
 
     beforeSend(event, hint) {

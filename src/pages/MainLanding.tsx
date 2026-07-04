@@ -55,7 +55,7 @@ const HERO_FEATURES = [
   { icon: LineChart, title: 'KONTINUIERLICH', text: 'Monitoring, Alerts & Evidenz in Echtzeit.' },
 ];
 
-const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TTDSG', 'BAIT', 'MaRisk', 'EU-Hosting'];
+const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TDDDG', 'BAIT', 'MaRisk', 'EU-Hosting'];
 
 const PLATFORM = [
   {

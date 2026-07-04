@@ -69,7 +69,7 @@ export function LegalMethodology() {
             </p>
             <div className="grid sm:grid-cols-2 gap-3 mt-3">
               {[
-                { t: 'Primäre Rechtstexte', d: 'DSGVO, BDSG, TTDSG, MStV, AI Act EU 2024/1689, BAIT, MaRisk, IDD, KWG, StBerG, BRAO, § 203 StGB' },
+                { t: 'Primäre Rechtstexte', d: 'DSGVO, BDSG, TDDDG, MStV, AI Act EU 2024/1689, BAIT, MaRisk, IDD, KWG, StBerG, BRAO, § 203 StGB' },
                 { t: 'Aufsichtsbehörden', d: 'BfDI 2024 Guidelines · DSK-Beschlüsse · Landesbeauftragten-Hinweise · BaFin-Rundschreiben · BMF-Schreiben · KMK' },
                 { t: 'Rechtsprechung', d: 'EuGH (Schrems I/II), BGH, BVerwG, OVG-Entscheidungen, einschlägige Datenschutz-Urteile (LG Düsseldorf 2024 etc.)' },
                 { t: 'EDPB / EU-Stellen', d: 'EDPB-Empfehlungen 01/2020 (Transfer Impact Assessment), Annex III AI Act, AI-Office-Guidance' },

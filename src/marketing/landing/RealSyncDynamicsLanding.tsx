@@ -93,7 +93,7 @@ export const RealSyncDynamicsLanding = () => {
               für<span className="bg-gradient-to-r from-petrol via-security-blue to-petrol bg-clip-text text-transparent"> Compliance</span>
             </h2>
             <p className="text-2xl text-titanium/80 mb-12 max-w-3xl mx-auto leading-relaxed">
-              EU-souveräne Runtime-native Governance für DSGVO, TTDSG &amp; EU AI Act. Kontinuierliche Telemetrie statt Stichproben.
+              EU-souveräne Runtime-native Governance für DSGVO, TDDDG &amp; EU AI Act. Kontinuierliche Telemetrie statt Stichproben.
               Auto-Fix statt nur Diagnose.
             </p>
 
@@ -215,7 +215,7 @@ export const RealSyncDynamicsLanding = () => {
                     <ul className="space-y-2 text-titanium/70 text-sm">
                       <li className="flex gap-2"><span className="text-security-blue">✓</span> EU AI Act — Klassifizierung &amp; Monitoring</li>
                       <li className="flex gap-2"><span className="text-security-blue">✓</span> DSGVO — Verarbeitung &amp; Betroffenenrechte</li>
-                      <li className="flex gap-2"><span className="text-security-blue">✓</span> TTDSG — Consent &amp; Tracking</li>
+                      <li className="flex gap-2"><span className="text-security-blue">✓</span> TDDDG — Consent &amp; Tracking</li>
                     </ul>
                   </div>
                 </div>

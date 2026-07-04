@@ -35,7 +35,7 @@ export function AuditCTA({
         </h2>
         <p className="text-sm sm:text-base text-silver-300 leading-relaxed max-w-xl mx-auto mb-6">
           Starten Sie den kostenlosen Audit und erhalten Sie eine strukturierte Einschätzung möglicher
-          DSGVO-, TTDSG- und Tracking-Risiken.
+          DSGVO-, TDDDG- und Tracking-Risiken.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link

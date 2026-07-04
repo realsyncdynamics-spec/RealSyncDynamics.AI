@@ -23,7 +23,7 @@ const PERSONAS: readonly Persona[] = [
     eyebrow: 'für Datenschutzbeauftragte',
     title:   'Audit-Ordner füllt sich selbst.',
     bullets: [
-      'Pre-Consent-Tracker, Drittland-Transfers und §13-TTDSG-Risiken werden mit Paragraphenbezug erkannt — kein Excel-Pflegen mehr.',
+      'Pre-Consent-Tracker, Drittland-Transfers und §13-TDDDG-Risiken werden mit Paragraphenbezug erkannt — kein Excel-Pflegen mehr.',
       'AVV-Deltas und Datenschutzhinweis-Updates entstehen als Diff auf Knopfdruck.',
       'Bei einer DSB-Anfrage exportieren Sie ein signiertes Evidence-Bundle in 60 s.',
     ],

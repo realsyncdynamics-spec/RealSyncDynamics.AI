@@ -107,7 +107,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     eyebrow: 'HANDEL & E-COMMERCE',
     headline: 'Consent, Tracking und Empfehlungs-KI sauber belegt',
     intro: 'Jeder Shop kombiniert Tracking, Consent-Management und zunehmend Empfehlungs- und Pricing-KI. RealSync überwacht Cookie-Banner, Tags und Algorithmen kontinuierlich und verhindert, dass aus einem fehlenden Consent eine Abmahnung wird.',
-    refs: ['DSGVO Art. 6', 'TTDSG', 'EU AI Act', 'P2B-Verordnung'],
+    refs: ['DSGVO Art. 6', 'TDDDG', 'EU AI Act', 'P2B-Verordnung'],
     risks: [
       'Tracking/Analytics vor Einwilligung (Consent-Verstoß)',
       'Cookie-Banner ohne wirksame Ablehnen-Option',
@@ -212,7 +212,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     eyebrow: 'MARKETING & AGENTUREN',
     headline: 'Tracking & Kampagnen-KI für viele Kunden im Griff',
     intro: 'Agenturen verantworten Tracking, Consent und zunehmend Kampagnen-KI auf fremden Domains. RealSync überwacht alle Kundenauftritte mandantengetrennt, deckt Consent-Lücken auf und liefert den Nachweis — White-Label im eigenen Auftritt.',
-    refs: ['DSGVO Art. 28', 'TTDSG', 'EU AI Act', 'Consent-Mode'],
+    refs: ['DSGVO Art. 28', 'TDDDG', 'EU AI Act', 'Consent-Mode'],
     risks: [
       'Tracking auf Kundenseiten ohne wirksamen Consent',
       'Fehlende Auftragsverarbeitungsverträge',
@@ -275,7 +275,7 @@ export const LANDING_INDUSTRIES: LandingIndustry[] = [
     eyebrow: 'BILDUNG & FORSCHUNG',
     headline: 'Schutz für Lern-, Forschungs- und Minderjährigendaten',
     intro: 'Lernplattformen verarbeiten oft Daten Minderjähriger, Forschung sensible Datensätze, und KI hält in Prüfung und Bewertung Einzug. RealSync überwacht diese Verarbeitungen kontinuierlich und sorgt für saubere, nachweisbare Grundlagen.',
-    refs: ['DSGVO Art. 8', 'EU AI Act', 'Forschungsklauseln', 'TTDSG'],
+    refs: ['DSGVO Art. 8', 'EU AI Act', 'Forschungsklauseln', 'TDDDG'],
     risks: [
       'Daten Minderjähriger ohne wirksame Einwilligung',
       'Lernplattform-Tracking ohne Consent',

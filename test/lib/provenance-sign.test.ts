@@ -47,7 +47,8 @@ describe('Provenance Signing', () => {
 
     it('should handle null prevHash', () => {
       const canonical = canonicalClaimBytes({ ...mockEvent, prevHash: null });
-      expect(canonical).toContain('\x00\x00'); // Empty prevHash
+      // prevHash ist das letzte Feld — null wird zu leerem String nach dem letzten Separator
+      expect(canonical.endsWith('\x00')).toBe(true);
     });
 
     it('should handle non-null prevHash', () => {
@@ -221,8 +222,8 @@ describe('Provenance Signing', () => {
       expect(rotatedOld.expiresAt).toBeInstanceOf(Date);
       expect(rotatedOld.expiresAt?.getTime()).toBeLessThanOrEqual(new Date().getTime());
 
-      // New key should be active
-      expect(newKey.createdAt.getTime()).toBeGreaterThan(rotatedOld.createdAt.getTime());
+      // New key should be active (Rotation kann innerhalb derselben Millisekunde erfolgen)
+      expect(newKey.createdAt.getTime()).toBeGreaterThanOrEqual(rotatedOld.createdAt.getTime());
       expect(newKey.issuer).toBe(orgId);
       expect(newKey.algorithm).toBe('ed25519');
     });
@@ -235,7 +236,8 @@ describe('Provenance Signing', () => {
       // Should be able to track rotation relationship
       expect(key2.issuer).toBe(key1Rotated.issuer);
       expect(key1Rotated.expiresAt).toBeTruthy();
-      expect(key2.createdAt.getTime()).toBeGreaterThan(key1Rotated.createdAt.getTime());
+      // Rotation kann innerhalb derselben Millisekunde erfolgen
+      expect(key2.createdAt.getTime()).toBeGreaterThanOrEqual(key1Rotated.createdAt.getTime());
     });
   });
 

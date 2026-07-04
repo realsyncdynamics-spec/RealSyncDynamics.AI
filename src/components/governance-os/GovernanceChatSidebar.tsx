@@ -45,7 +45,7 @@ const GOVERNANCE_AGENTS = [
 // ── Mock-Konversationsverlauf ──────────────────────────────────────────────
 const MOCK_CONVERSATIONS = [
   { id: '1', title: 'Meta Pixel Analyse',        preview: 'Scan abgeschlossen, 2 Verstöße erkannt',  timestamp: 'Heute 09:14', agent: 'Cookie Agent' },
-  { id: '2', title: 'Cookie-Banner TTDSG §25',   preview: 'Granulare Kategorien fehlen',             timestamp: 'Gestern',     agent: 'DSGVO Agent' },
+  { id: '2', title: 'Cookie-Banner TDDDG §25',   preview: 'Granulare Kategorien fehlen',             timestamp: 'Gestern',     agent: 'DSGVO Agent' },
   { id: '3', title: 'DSFA Empfehlungsalgorithmus', preview: 'Fragebogen zu 60% ausgefüllt',           timestamp: '12.06.',      agent: 'Risk Agent' },
   { id: '4', title: 'VVT Aktualisierung Q2',     preview: 'Sub-Prozessoren-Liste exportiert',        timestamp: '11.06.',      agent: 'VVZ Agent' },
   { id: '5', title: 'EU AI Act CV-Screening',    preview: 'Hochrisiko-Klassifizierung bestätigt',    timestamp: '10.06.',      agent: 'AI Act Agent' },

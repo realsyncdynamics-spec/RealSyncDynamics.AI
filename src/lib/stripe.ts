@@ -7,6 +7,7 @@
 
 import { COMPANY } from '../config/company';
 import { PRICING_TIERS, type TierId } from '../config/pricing';
+import { getSupabase } from './supabase';
 
 export interface CreateCheckoutSessionRequest {
   planId: TierId;
@@ -26,7 +27,7 @@ export interface CreateCheckoutSessionResponse {
 
 /**
  * Creates a Stripe Checkout session for a given plan.
- * Redirects to Stripe-hosted checkout page.
+ * Redirects to Stripe-hosted checkout page via Supabase Edge Function.
  */
 export async function createCheckoutSession(
   request: CreateCheckoutSessionRequest
@@ -36,51 +37,43 @@ export async function createCheckoutSession(
     throw new Error(`Unknown pricing tier: ${request.planId}`);
   }
 
-  const response = await fetch('/.netlify/functions/create-checkout-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      plan_id: request.planId,
+  const planKey = tier.planKey || request.planId;
+  const pilot = request.trialDays ? request.trialDays >= 14 : false;
+
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('stripe-checkout', {
+    body: {
       tenant_id: request.tenantId,
-      user_id: request.userId,
-      email: request.email,
-      success_url: request.successUrl,
-      cancel_url: request.cancelUrl,
-      trial_days: request.trialDays || 0,
-      metadata: {
-        plan_name: tier.name,
-        company: COMPANY.companyName,
-        ...request.metadata,
-      },
-    }),
+      plan_key: planKey,
+      return_url: typeof window !== 'undefined' ? window.location.origin : request.successUrl,
+      pilot,
+    },
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Checkout creation failed: ${error}`);
+  if (error) {
+    throw new Error(`Checkout creation failed: ${error.message}`);
   }
 
-  const data = (await response.json()) as CreateCheckoutSessionResponse;
-  return data;
+  return {
+    sessionId: data.session_id || '',
+    checkoutUrl: data.url || '',
+  };
 }
 
 /**
  * Redirects user to Stripe Customer Portal for subscription management
  */
 export async function openCustomerPortal(sessionId: string): Promise<string> {
-  const response = await fetch('/.netlify/functions/customer-portal-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: sessionId }),
+  const sb = getSupabase();
+  const { data, error } = await sb.functions.invoke('stripe-portal', {
+    body: { session_id: sessionId },
   });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Portal session creation failed: ${error}`);
+  if (error) {
+    throw new Error(`Portal session creation failed: ${error.message}`);
   }
 
-  const data = (await response.json()) as { url: string };
-  return data.url;
+  return data.url || '';
 }
 
 /**

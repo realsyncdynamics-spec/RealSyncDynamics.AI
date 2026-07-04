@@ -119,6 +119,7 @@ export function CheckoutSuccessPage() {
 
         <div className="flex gap-3">
           <button
+            data-testid="checkout-book-button"
             onClick={() => navigate('/app')}
             className="flex-1 px-6 py-3 bg-security-500 text-white font-bold uppercase hover:bg-security-600"
           >

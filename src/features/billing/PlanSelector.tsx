@@ -54,6 +54,7 @@ export function PlanSelector({
             return (
               <div
                 key={tier.id}
+                data-testid={`pricing-card-${tier.id}`}
                 className={`relative rounded-none transition-all ${
                   tier.highlight ? 'ring-2 ring-security-500 lg:scale-105' : ''
                 } ${isSelected ? 'ring-2 ring-ai-cyan-400' : ''}`}
@@ -112,6 +113,7 @@ export function PlanSelector({
 
                   {/* CTA Button */}
                   <button
+                    data-testid={`pricing-book-${tier.id}`}
                     onClick={() => onSelectPlan(tier.id)}
                     disabled={disabled || isLoading}
                     className={`w-full py-3 px-4 font-bold uppercase tracking-wider transition-all ${

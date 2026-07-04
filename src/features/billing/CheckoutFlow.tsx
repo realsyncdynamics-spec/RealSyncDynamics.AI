@@ -117,6 +117,7 @@ export function CheckoutFlow({
       {/* Back Button */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <button
+          data-testid="checkout-back"
           onClick={onCancel ? onCancel : () => navigate(-1)}
           className="text-titanium-400 hover:text-titanium-200 text-sm font-medium"
         >

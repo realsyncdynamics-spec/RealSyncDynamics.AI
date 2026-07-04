@@ -19,6 +19,7 @@ export function CheckoutCancelPage() {
 
         <div className="space-y-3">
           <button
+            data-testid="checkout-back"
             onClick={() => navigate('/checkout')}
             className="w-full px-6 py-3 bg-security-500 text-white font-bold uppercase hover:bg-security-600"
           >

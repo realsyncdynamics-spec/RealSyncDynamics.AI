@@ -9,6 +9,7 @@ import {
   type PricingTier, type TierId,
 } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
+import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
 import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
 
@@ -158,6 +159,9 @@ export function PricingPage() {
       {/* Beispielhafte Kostenrechnung — Procurement-Anker, klar als Beispiel
           gekennzeichnet, keine Einsparzusagen. */}
       <PricingRoiExampleSection />
+
+      {/* Governance-Bots Section — Bot-Quotas + Add-ons */}
+      <GovernanceBotsSection />
 
       {/* Differenzierer */}
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">

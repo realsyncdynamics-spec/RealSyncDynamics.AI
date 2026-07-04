@@ -1,62 +1,46 @@
--- Performance optimization: add strategic indices for governance queries
--- Targets: governance-agent (2-5s → <2s), database queries (p95 <200ms)
+-- Performance optimization: add strategic indices for governance queries.
+-- Targets: governance-agent (2-5s → <2s), database queries (p95 <200ms).
+--
+-- WICHTIG: Indizes referenzieren ausschließlich real existierende Tabellen und
+-- Spalten des aktuellen Governance-Schemas (siehe 20260512000000_governance_events.sql).
+-- Frühere Fassung indizierte spekulative, nie angelegte Tabellen
+-- (governance_controls, governance_admin_audit_log, governance_policy_packs,
+-- governance_current_mappings, governance_auto_mappings) und eine nicht
+-- vorhandene Spalte governance_assets.asset_ref — dadurch schlug die
+-- Migrations-Validierung fehl.
+--
+-- Kein CONCURRENTLY: Die Migrations-Runner (Supabase CLI) kapseln Migrationen in
+-- eine Transaktion, in der CONCURRENTLY nicht erlaubt ist. Auf frischen/kleinen
+-- Tabellen ist der Sperr-Vorteil ohnehin vernachlässigbar.
 
--- Asset reference lookups (used in auto-mapping, policy pack operations)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_assets_tenant_ref
-  ON governance_assets(tenant_id, asset_ref) WHERE status != 'archived';
+-- Asset-Lookups nach Tenant + Status (Auto-Mapping, Dashboard-Listen)
+CREATE INDEX IF NOT EXISTS idx_governance_assets_tenant_status
+  ON public.governance_assets(tenant_id, status) WHERE status != 'archived';
 
--- Control lookups by tenant and type (policy pack operations)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_controls_tenant_type
-  ON governance_controls(tenant_id, control_type) WHERE is_active = TRUE;
+-- Asset-Filter nach Typ (Auto-Mapping-Signal, Registry-Ansichten)
+CREATE INDEX IF NOT EXISTS idx_governance_assets_tenant_type
+  ON public.governance_assets(tenant_id, asset_type) WHERE status != 'archived';
 
--- Custody chain queries (provenance verification)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_audit_log_asset
-  ON governance_admin_audit_log(asset_id, created_at DESC);
+-- Event-Historie je Asset (Custody-/Prüfpfad-Abfragen)
+CREATE INDEX IF NOT EXISTS idx_governance_events_asset_time
+  ON public.governance_events(asset_id, created_at DESC);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_audit_log_tenant_time
-  ON governance_admin_audit_log(tenant_id, created_at DESC);
+-- Event-Historie je Tenant über Zeitfenster (Audit-Log-Abfragen)
+CREATE INDEX IF NOT EXISTS idx_governance_events_tenant_time
+  ON public.governance_events(tenant_id, created_at DESC);
 
--- Policy pack queries (auto-activation, recommendations)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_policy_packs_tenant
-  ON governance_policy_packs(tenant_id, priority DESC) WHERE is_active = TRUE;
+-- Tenant-Industrie-Erkennung (Signal für industriespezifisches Auto-Mapping)
+CREATE INDEX IF NOT EXISTS idx_tenants_industry
+  ON public.tenants(industry) WHERE industry IS NOT NULL;
 
--- Current mapping lookups (fast control status queries)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_current_mappings_asset_control
-  ON governance_current_mappings(asset_id, control_id) WHERE status != 'not_applicable';
+-- Planner-Statistiken aktualisieren (nur real existierende Tabellen)
+ANALYZE public.governance_assets;
+ANALYZE public.governance_events;
+ANALYZE public.tenants;
 
--- Recommendation confidence filtering
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_auto_map_confidence
-  ON governance_auto_mappings(asset_id, confidence DESC) WHERE confidence > 75;
-
--- Tenant industry detection (for auto-mapping signal)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tenants_industry
-  ON tenants(id, industry) WHERE industry IS NOT NULL;
-
--- Signing keys lookups (provenance verification)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_signing_keys_active
-  ON signing_keys(tenant_id, is_active) WHERE is_active = TRUE;
-
--- Composite index for fast asset + control + tenant queries
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_governance_assets_controls_composite
-  ON governance_assets(tenant_id, asset_ref, id) WHERE status != 'archived';
-
--- Analyse tables to update planner statistics
-ANALYZE governance_assets;
-ANALYZE governance_controls;
-ANALYZE governance_admin_audit_log;
-ANALYZE governance_policy_packs;
-ANALYZE governance_current_mappings;
-ANALYZE governance_auto_mappings;
-ANALYZE tenants;
-ANALYZE signing_keys;
-
--- Comment on indices
-COMMENT ON INDEX idx_governance_assets_tenant_ref IS 'Supports fast asset lookups by tenant during auto-mapping';
-COMMENT ON INDEX idx_governance_controls_tenant_type IS 'Supports control filtering by type during policy pack operations';
-COMMENT ON INDEX idx_governance_audit_log_asset IS 'Supports provenance chain queries for custody verification';
-COMMENT ON INDEX idx_governance_audit_log_tenant_time IS 'Supports audit log filtering by tenant and time range';
-COMMENT ON INDEX idx_governance_policy_packs_tenant IS 'Supports policy pack recommendation queries';
-COMMENT ON INDEX idx_governance_current_mappings_asset_control IS 'Supports fast control status lookups';
-COMMENT ON INDEX idx_governance_auto_map_confidence IS 'Supports high-confidence mapping filtering';
-COMMENT ON INDEX idx_tenants_industry IS 'Supports industry-based auto-mapping recommendations';
-COMMENT ON INDEX idx_signing_keys_active IS 'Supports fast active key lookups for signature verification';
+-- Kommentare zur Dokumentation
+COMMENT ON INDEX idx_governance_assets_tenant_status IS 'Schnelle Asset-Lookups nach Tenant + Status beim Auto-Mapping';
+COMMENT ON INDEX idx_governance_assets_tenant_type IS 'Asset-Filter nach Typ (Auto-Mapping-Signal, Registry)';
+COMMENT ON INDEX idx_governance_events_asset_time IS 'Custody-/Prüfpfad-Abfragen je Asset';
+COMMENT ON INDEX idx_governance_events_tenant_time IS 'Audit-Log-Abfragen je Tenant über Zeitfenster';
+COMMENT ON INDEX idx_tenants_industry IS 'Industriebasierte Auto-Mapping-Empfehlungen';

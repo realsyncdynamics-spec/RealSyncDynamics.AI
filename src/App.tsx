@@ -641,10 +641,9 @@ function RoutesWithTracking() {
       {/* Pricing Detail Routes */}
       <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
       <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />
-      {/* Checkout routes - specific paths must come before parameterized :slug */}
+      {/* Checkout routes - specific paths must come before parameterized routes */}
       <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
       <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
-      <Route path="/checkout/:planKey" element={<EnterpriseCheckoutPageWrapper />} />
       <Route path="/checkout/:slug" element={<CheckoutDetailPageWrapper />} />
       {/* End of Pricing Detail Routes */}
       <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />

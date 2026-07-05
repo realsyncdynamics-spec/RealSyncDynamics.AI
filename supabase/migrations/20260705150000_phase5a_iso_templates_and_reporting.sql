@@ -180,40 +180,40 @@ CREATE POLICY iso_control_mappings_read_all ON iso_control_mappings
 -- RLS Policy: compliance_reports (tenant isolation)
 CREATE POLICY compliance_reports_select_tenant ON compliance_reports
   FOR SELECT USING (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY compliance_reports_insert_tenant ON compliance_reports
   FOR INSERT WITH CHECK (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 -- RLS Policy: report_schedules (tenant isolation)
 CREATE POLICY report_schedules_select_tenant ON report_schedules
   FOR SELECT USING (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY report_schedules_insert_tenant ON report_schedules
   FOR INSERT WITH CHECK (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 -- RLS Policy: compliance_metrics_snapshots (tenant isolation)
 CREATE POLICY compliance_metrics_snapshots_select_tenant ON compliance_metrics_snapshots
   FOR SELECT USING (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 -- RLS Policy: control_maturity_tracking (tenant isolation)
 CREATE POLICY control_maturity_tracking_select_tenant ON control_maturity_tracking
   FOR SELECT USING (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY control_maturity_tracking_insert_tenant ON control_maturity_tracking
   FOR INSERT WITH CHECK (
-    tenant_id = (SELECT id FROM tenants WHERE id = auth.uid()::uuid LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 -- Create function for updating updated_at timestamp

@@ -7,7 +7,10 @@ export function CheckoutDetailPageWrapper() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
 
-  if (!slug || !ALL_PLAN_SLUGS.includes(slug)) {
+  // Remove trailing slash if present (React Router may include it)
+  const cleanSlug = slug?.replace(/\/$/, '');
+
+  if (!cleanSlug || !ALL_PLAN_SLUGS.includes(cleanSlug)) {
     return (
       <div className="w-full bg-obsidian-900 min-h-screen flex items-center justify-center px-4 py-16">
         <div className="bg-obsidian-800 border border-titanium-700 rounded p-8 max-w-md text-center">
@@ -36,5 +39,5 @@ export function CheckoutDetailPageWrapper() {
     );
   }
 
-  return <CheckoutPlanPage planSlug={slug} />;
+  return <CheckoutPlanPage planSlug={cleanSlug} />;
 }

@@ -341,12 +341,12 @@ describe('Governance RLS Security - Multi-Tenant Isolation', () => {
       const { data: alert } = await supabase
         .from('governance_alerts')
         .insert({
-          type: 'nis2_deadline',
+          title: 'NIS2 Deadline',
+          message: 'Tenant1 NIS2 deadline critical',
+          category: 'compliance',
           severity: 'critical',
           tenant_id: tenant1Id,
-          target_id: 'incident-123',
-          message: 'Tenant1 NIS2 deadline critical',
-          triggered_at: new Date().toISOString(),
+          status: 'open',
         })
         .select();
 
@@ -385,11 +385,11 @@ describe('Governance RLS Security - Multi-Tenant Isolation', () => {
         .insert({
           tenant_id: tenant1Id,
           user_id: user1Id,
-          tool_name: 'compliance_scorer',
+          tool_key: 'compliance_scorer',
           input_tokens: 1200,
           output_tokens: 800,
-          latency_ms: 2500,
-          success: true,
+          duration_ms: 2500,
+          status: 'success',
           metadata: { operation: 'daily_score_calc' },
         })
         .select();

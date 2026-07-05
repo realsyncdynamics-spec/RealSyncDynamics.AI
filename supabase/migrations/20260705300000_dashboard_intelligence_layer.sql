@@ -3,6 +3,8 @@
 -- Real-time analytics and AI-powered insights for compliance dashboards.
 -- Tracks KPIs, compliance scores, risk trends, and actionable recommendations.
 
+BEGIN;
+
 -- 1. Compliance score history (daily snapshots)
 CREATE TABLE IF NOT EXISTS public.compliance_score_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -384,3 +386,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.add_dashboard_insight(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, INT, BOOLEAN, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.add_dashboard_insight(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, INT, BOOLEAN, TEXT) TO anon, authenticated, service_role;
+
+COMMIT;

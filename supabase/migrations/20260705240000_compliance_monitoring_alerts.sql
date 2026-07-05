@@ -3,6 +3,8 @@
 -- Real-time risk detection, escalation, and auto-remediation for compliance issues.
 -- Triggers alerts on audit changes, creates escalation chains, handles remediation.
 
+BEGIN;
+
 -- 1. Compliance alert rules (tenant-configurable thresholds)
 CREATE TABLE IF NOT EXISTS public.compliance_alert_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -284,3 +286,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_unresolved_alerts(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_unresolved_alerts(UUID) TO anon, authenticated, service_role;
+
+COMMIT;

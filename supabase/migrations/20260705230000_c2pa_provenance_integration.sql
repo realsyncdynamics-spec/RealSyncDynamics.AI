@@ -5,6 +5,8 @@
 --
 -- Enables cryptographic proof of content origin, history, and integrity.
 
+BEGIN;
+
 -- 1. Extend audit_reports table with C2PA manifest (if table exists)
 DO $$
 BEGIN
@@ -234,3 +236,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_provenance_chain(TEXT, TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_provenance_chain(TEXT, TEXT) TO anon, authenticated, service_role;
+
+COMMIT;

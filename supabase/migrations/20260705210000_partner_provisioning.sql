@@ -4,6 +4,8 @@
 -- Partners authenticate with API keys and can create up to N tenants per month.
 -- Each provisioned tenant gets custom branding, domain, and billing passthrough.
 
+BEGIN;
+
 -- 1. Partners table (resellers, agencies, white-label distributors)
 CREATE TABLE IF NOT EXISTS public.partners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -143,3 +145,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.partner_increment_quota(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.partner_increment_quota(UUID) TO anon, authenticated, service_role;
+
+COMMIT;

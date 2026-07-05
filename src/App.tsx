@@ -206,6 +206,10 @@ const RemediationPlanViewNew = lazy(() => import('./features/governance/Remediat
 const AuditReportAdvancedViewNew = lazy(() => import('./features/governance/AuditReportAdvancedView').then((m) => ({ default: m.AuditReportAdvancedView })));
 const GovernanceApiKeysView = lazy(() => import('./features/governance/GovernanceApiKeysView').then((m) => ({ default: m.GovernanceApiKeysView })));
 const GovernanceWorkflowRecommendation = lazy(() => import('./features/governance/GovernanceWorkflowRecommendation').then((m) => ({ default: m.GovernanceWorkflowRecommendation })));
+// ── Phase 5A: ISO Templates & Advanced Reporting (3 new views)
+const IsoControlLibraryView = lazy(() => import('./features/governance/IsoControlLibraryView').then((m) => ({ default: m.IsoControlLibraryView })));
+const ReportBuilderView = lazy(() => import('./features/governance/ReportBuilderView').then((m) => ({ default: m.ReportBuilderView })));
+const ComplianceRoadmapView = lazy(() => import('./features/governance/ComplianceRoadmapView').then((m) => ({ default: m.ComplianceRoadmapView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
@@ -584,6 +588,10 @@ function RoutesWithTracking() {
       <Route path="/app/governance/audit-reports" element={<GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/api-keys" element={<GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/recommendation" element={<GovernanceWorkflowRecommendation />} />
+      {/* Phase 5A: ISO Templates & Advanced Reporting */}
+      <Route path="/app/governance/iso-control-library" element={<GovernanceBrowserShell><IsoControlLibraryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/report-builder" element={<GovernanceBrowserShell><ReportBuilderView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/compliance-roadmap" element={<GovernanceBrowserShell><ComplianceRoadmapView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />

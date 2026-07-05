@@ -12,17 +12,28 @@
 
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'http://localhost:3000';
+/**
+ * E2E Flow Navigation Tests — Browser-basierte Validierung
+ *
+ * Testet die vollständige User Journey im Browser:
+ * 1. Landing → Scan-Erklärung → Scanner → Ergebnis → Maßnahmen → Paket → Checkout → Dashboard
+ * 2. Alternative Pfade (Skip, Zurück, Direktzugriff)
+ * 3. State-Persistierung nach Reload
+ * 4. Externe Route-Integration (Handoff zu /audit, /pricing, etc.)
+ *
+ * Verwendet Playwright baseURL aus playwright.config.ts
+ * (http://localhost:3000 lokal, http://localhost:4173 in CI)
+ */
 
 test.describe('E2E Flow Navigation — Golden Path', () => {
   test('should navigate from landing through scan to result', async ({ page }) => {
-    // Start: Landing
-    await page.goto(`${BASE_URL}/`);
+    // Start: Landing (uses baseURL from playwright config)
+    await page.goto('/');
     await expect(page).toHaveTitle(/RealSyncDynamics|Governance/);
 
     // Flow Entry: „Scan starten"
     await page.click('text=Scan starten');
-    await page.waitForURL(`**/flow/**`);
+    await page.waitForURL(/\/flow\/.*/);
     await expect(page).toHaveURL(/\/flow\/start-scan/);
     await expect(page.locator('h1')).toContainText('Compliance-Scan starten');
 
@@ -39,7 +50,7 @@ test.describe('E2E Flow Navigation — Golden Path', () => {
 
   test('should navigate pricing flow', async ({ page }) => {
     // Start: Preise
-    await page.goto(`${BASE_URL}/flow/pricing-intro`);
+    await page.goto('/flow/pricing-intro');
     await expect(page.locator('h1')).toContainText('Preise & Pakete');
 
     // Paket-Wahl
@@ -58,7 +69,7 @@ test.describe('E2E Flow Navigation — Golden Path', () => {
 
   test('should handle checkout cancellation', async ({ page }) => {
     // Navigate to checkout flow
-    await page.goto(`${BASE_URL}/flow/checkout/starter`);
+    await page.goto('/flow/checkout/starter');
     await expect(page.locator('h1')).toContainText('Starter');
 
     // Click cancellation option
@@ -74,7 +85,7 @@ test.describe('E2E Flow Navigation — Golden Path', () => {
 
 test.describe('E2E Flow Navigation — Alternative Paths', () => {
   test('should allow skipping from pricing to login', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/pricing-intro`);
+    await page.goto('/flow/pricing-intro');
 
     // Skip to login
     const extraActions = await page.locator('button, a').all();
@@ -98,7 +109,7 @@ test.describe('E2E Flow Navigation — Alternative Paths', () => {
     ];
 
     for (const step of testSteps) {
-      await page.goto(`${BASE_URL}${step}`);
+      await page.goto(step);
 
       // Look for secondary/back button
       const backButton = await page.locator('button, a').filter({
@@ -111,7 +122,7 @@ test.describe('E2E Flow Navigation — Alternative Paths', () => {
   });
 
   test('should return to home from any step', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/choose-plan`);
+    await page.goto('/flow/choose-plan');
 
     // Find home link
     const homeLinks = await page.locator('a[href="/"]').all();
@@ -119,15 +130,15 @@ test.describe('E2E Flow Navigation — Alternative Paths', () => {
 
     // Click it
     await homeLinks[0].click();
-    await page.waitForURL(BASE_URL);
-    await expect(page).toHaveURL(`${BASE_URL}/`);
+    await page.waitForURL('/');
+    await expect(page).toHaveURL('/');
   });
 });
 
 test.describe('E2E Flow State Persistence', () => {
   test('should persist state after page reload', async ({ page }) => {
     // Navigate to a flow step
-    await page.goto(`${BASE_URL}/flow/scan-running`);
+    await page.goto('/flow/scan-running');
     await expect(page.locator('h1')).toContainText('Der Scan läuft');
 
     // Check localStorage
@@ -148,7 +159,7 @@ test.describe('E2E Flow State Persistence', () => {
 
   test('should preserve flow context across pages', async ({ page }) => {
     // Navigate through multiple steps
-    await page.goto(`${BASE_URL}/flow/choose-plan`);
+    await page.goto('/flow/choose-plan');
     await page.click('text=Growth wählen');
     await expect(page).toHaveURL(/checkout\/growth/);
 
@@ -162,7 +173,7 @@ test.describe('E2E Flow State Persistence', () => {
 
   test('should reset state on explicit reset', async ({ page }) => {
     // Navigate and set state
-    await page.goto(`${BASE_URL}/flow/choose-plan`);
+    await page.goto('/flow/choose-plan');
 
     // Reset (simulated via localStorage clear)
     await page.evaluate(() => {
@@ -177,7 +188,7 @@ test.describe('E2E Flow State Persistence', () => {
 
 test.describe('E2E Flow Error Handling', () => {
   test('should handle invalid slug gracefully', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/invalid-slug-xyz`);
+    await page.goto('/flow/invalid-slug-xyz');
 
     // Should show error page with navigation options
     await expect(page.locator('text=Dieser Schritt existiert nicht')).toBeVisible();
@@ -196,7 +207,7 @@ test.describe('E2E Flow Error Handling', () => {
 
   test('should handle missing navigation gracefully', async ({ page }) => {
     // Navigate to a flow page
-    await page.goto(`${BASE_URL}/flow/start-scan`);
+    await page.goto('/flow/start-scan');
 
     // Even if primary action is missing (edge case), should render
     const page_content = await page.content();
@@ -216,7 +227,7 @@ test.describe('E2E Flow Progress Tracking', () => {
     ];
 
     for (const step of steps) {
-      await page.goto(`${BASE_URL}${step.url}`);
+      await page.goto(step.url);
 
       // Progress should indicate stage
       const progressIndicator = page.locator(
@@ -234,7 +245,7 @@ test.describe('E2E Flow Progress Tracking', () => {
     const steps = ['/flow/start-scan', '/flow/scan-domain', '/flow/pricing-intro'];
 
     for (const step of steps) {
-      await page.goto(`${BASE_URL}${step}`);
+      await page.goto(step);
     }
 
     // Check visited in state
@@ -249,7 +260,7 @@ test.describe('E2E Flow Progress Tracking', () => {
 
 test.describe('E2E External Route Integration', () => {
   test('should link to real audit page', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/scan-domain`);
+    await page.goto('/flow/scan-domain');
 
     const auditLink = page.locator('a[href="/audit"]');
     const exists = await auditLink.count();
@@ -258,7 +269,7 @@ test.describe('E2E External Route Integration', () => {
   });
 
   test('should link to real pricing page', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/pricing-intro`);
+    await page.goto('/flow/pricing-intro');
 
     const pricingLink = page.locator('a[href="/pricing"]');
     const exists = await pricingLink.count();
@@ -267,7 +278,7 @@ test.describe('E2E External Route Integration', () => {
   });
 
   test('should link to checkout routes', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/checkout/starter`);
+    await page.goto('/flow/checkout/starter');
 
     const checkoutLink = page.locator('a[href*="/checkout"]');
     const exists = await checkoutLink.count();
@@ -278,7 +289,7 @@ test.describe('E2E External Route Integration', () => {
 
 test.describe('E2E Accessibility', () => {
   test('should have semantic HTML structure', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/start-scan`);
+    await page.goto('/flow/start-scan');
 
     // Should have main and nav
     const main = page.locator('main');
@@ -289,7 +300,7 @@ test.describe('E2E Accessibility', () => {
   });
 
   test('should have accessible button labels', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/choose-plan`);
+    await page.goto('/flow/choose-plan');
 
     // All buttons should have text content
     const buttons = await page.locator('button, a[role="button"]').all();
@@ -301,7 +312,7 @@ test.describe('E2E Accessibility', () => {
   });
 
   test('should be keyboard navigable', async ({ page }) => {
-    await page.goto(`${BASE_URL}/flow/start-scan`);
+    await page.goto('/flow/start-scan');
 
     // Tab to first button
     await page.keyboard.press('Tab');

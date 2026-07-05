@@ -158,7 +158,6 @@ import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage'
 // Pricing detail pages — new detail routes for plans/features/checkout
 import { PricingDetailPageWrapper } from './pages/pricing/PricingDetailPage';
 import { FeatureDetailPageWrapper } from './pages/pricing/FeatureDetailPage';
-import { CheckoutDetailPageWrapper } from './pages/pricing/CheckoutDetailPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
@@ -641,16 +640,16 @@ function RoutesWithTracking() {
       {/* Pricing Detail Routes */}
       <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
       <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />
-      <Route path="/checkout/:slug" element={<CheckoutDetailPageWrapper />} />
+      {/* Checkout routes - specific paths must come before parameterized routes */}
+      <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+      <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
+      <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       {/* End of Pricing Detail Routes */}
       <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}
       <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/solutions/saas" element={<SaaSSolution />} />
       <Route path="/solutions/agencies" element={<AgenciesSolution />} />
-                <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-                <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
-                <Route path="/checkout/:planKey" element={<EnterpriseCheckoutPageWrapper />} />
       <Route path="/tenant/invites" element={<RequireAal2 action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
       {/* Legacy /governance/* routes redirect to canonical /app/* paths (with shell wrapper).

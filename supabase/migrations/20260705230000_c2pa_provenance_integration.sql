@@ -158,7 +158,7 @@ CREATE OR REPLACE FUNCTION public.log_c2pa_provenance(
   p_signer_contact TEXT
 )
 RETURNS UUID
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   v_log_id UUID;
   v_assertion_hash TEXT;
@@ -193,7 +193,7 @@ CREATE OR REPLACE FUNCTION public.verify_c2pa_assertion(
   p_stored_hash TEXT
 )
 RETURNS BOOLEAN
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   v_computed_hash TEXT;
 BEGIN

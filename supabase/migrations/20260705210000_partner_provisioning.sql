@@ -95,7 +95,7 @@ CREATE POLICY partner_quota_service_role_all ON public.partner_provisioning_quot
 -- 5. Helper: validate partner API key and return partner_id
 CREATE OR REPLACE FUNCTION public.partner_validate_key(p_key TEXT)
 RETURNS UUID
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 DECLARE
   v_hash TEXT;
   v_partner_id UUID;

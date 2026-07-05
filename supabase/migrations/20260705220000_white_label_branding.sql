@@ -17,7 +17,7 @@ ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS custom_css JSONB DEFAULT '{}
 -- 2. Create branding presets (color themes) for quick setup
 CREATE TABLE IF NOT EXISTS public.branding_presets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
   description TEXT,
   brand_colors JSONB NOT NULL DEFAULT '{}'::jsonb,
   preview_image_url TEXT,

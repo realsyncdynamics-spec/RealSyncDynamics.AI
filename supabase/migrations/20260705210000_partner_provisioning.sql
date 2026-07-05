@@ -4,6 +4,8 @@
 -- Partners authenticate with API keys and can create up to N tenants per month.
 -- Each provisioned tenant gets custom branding, domain, and billing passthrough.
 
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 BEGIN;
 
 -- 1. Partners table (resellers, agencies, white-label distributors)

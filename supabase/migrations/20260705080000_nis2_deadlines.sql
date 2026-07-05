@@ -1,7 +1,6 @@
 -- NIS2 Incident Reporting Deadlines
 -- Tracks NIS2-specific incident reporting obligations and deadlines
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 1. NIS2 Incident Deadlines ───
 

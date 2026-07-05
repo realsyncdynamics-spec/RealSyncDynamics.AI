@@ -1,8 +1,6 @@
 -- AI Act Risk Assessment & Tracking
 -- Extends ai_systems with detailed risk assessment data
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ─── 0. Base AI System Registry ───
 
 CREATE TABLE IF NOT EXISTS public.ai_systems (

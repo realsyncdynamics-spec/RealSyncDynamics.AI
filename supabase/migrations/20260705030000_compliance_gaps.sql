@@ -1,7 +1,6 @@
 -- Compliance Gaps: identified missing implementations
 -- Tracks gaps in framework compliance per tenant
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 1. Compliance Gaps (Gap-Analyse-Resultat) ───
 

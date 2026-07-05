@@ -1,7 +1,6 @@
 -- Evidence Vault Extended: Multi-framework evidence tracking
 -- Enhanced evidence management with framework mapping and lifecycle
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 1. Evidence Items (extended) ───
 

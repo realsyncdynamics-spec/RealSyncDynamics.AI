@@ -1,7 +1,6 @@
 -- Audit Reports Extended: Multi-framework compliance reporting
 -- Extends audit reports with framework-specific findings and scoring
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 0. Create base audit_reports table if it doesn't exist ───
 

@@ -1,7 +1,6 @@
 -- Compliance Frameworks (DSGVO, AI Act, NIS2, ISO 27001, ISO 42001)
 -- Multi-framework support for unified governance OS
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 1. Compliance Frameworks (DSGVO, AI Act, NIS2, ISO 27001, ISO 42001) ───
 

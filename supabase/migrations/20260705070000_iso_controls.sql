@@ -1,7 +1,6 @@
 -- ISO 27001 & ISO 42001 Control Implementations
 -- Tracks implementation status of ISO controls for information security and AI management
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 1. ISO 27001 Control Implementations ───
 

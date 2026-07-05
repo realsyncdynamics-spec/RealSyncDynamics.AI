@@ -1,7 +1,6 @@
 -- Governance Onboarding Workflow State
 -- Tracks responses and progress through the 10-step guided governance onboarding
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ─── 1. Governance Workflow State ───
 

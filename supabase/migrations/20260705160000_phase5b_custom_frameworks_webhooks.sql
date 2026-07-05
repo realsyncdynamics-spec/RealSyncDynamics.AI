@@ -36,39 +36,6 @@ CREATE TABLE IF NOT EXISTS custom_framework_mappings (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Table: webhook_endpoints
-CREATE TABLE IF NOT EXISTS webhook_endpoints (
-  id TEXT PRIMARY KEY DEFAULT 'wh-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  url TEXT NOT NULL,
-  events TEXT[] NOT NULL, -- Array of event types to subscribe to
-  active BOOLEAN DEFAULT true,
-  signing_secret TEXT NOT NULL,
-  retry_policy TEXT DEFAULT 'exponential', -- 'exponential', 'linear', 'once'
-  custom_headers JSONB,
-  last_delivery_at TIMESTAMP WITH TIME ZONE,
-  failure_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Table: webhook_deliveries
-CREATE TABLE IF NOT EXISTS webhook_deliveries (
-  id TEXT PRIMARY KEY DEFAULT 'del-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  endpoint_id TEXT NOT NULL REFERENCES webhook_endpoints(id) ON DELETE CASCADE,
-  event_type TEXT NOT NULL,
-  status TEXT NOT NULL, -- 'success', 'failed', 'retrying', 'pending'
-  status_code INTEGER,
-  payload JSONB,
-  response_body TEXT,
-  sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  next_retry_at TIMESTAMP WITH TIME ZONE,
-  retry_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_custom_frameworks_tenant_id ON custom_frameworks(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_custom_frameworks_created_at ON custom_frameworks(created_at);
@@ -80,11 +47,6 @@ CREATE INDEX IF NOT EXISTS idx_custom_framework_mappings_framework_id ON custom_
 CREATE INDEX IF NOT EXISTS idx_custom_framework_mappings_standard ON custom_framework_mappings(standard_framework);
 
 CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_tenant_id ON webhook_endpoints(tenant_id);
-
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_tenant_id ON webhook_deliveries(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_endpoint_id ON webhook_deliveries(endpoint_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON webhook_deliveries(status);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_sent_at ON webhook_deliveries(sent_at DESC);
 
 -- Trigger: Update custom_frameworks.updated_at
 CREATE OR REPLACE FUNCTION update_custom_frameworks_updated_at()
@@ -121,7 +83,6 @@ ALTER TABLE custom_frameworks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_controls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_framework_mappings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webhook_endpoints ENABLE ROW LEVEL SECURITY;
-ALTER TABLE webhook_deliveries ENABLE ROW LEVEL SECURITY;
 
 -- RLS: custom_frameworks
 CREATE POLICY "Users can read frameworks in their tenant"
@@ -216,12 +177,3 @@ WITH CHECK (public.is_tenant_member(tenant_id));
 CREATE POLICY "Users can delete endpoints in their tenant"
 ON webhook_endpoints FOR DELETE
 USING (public.is_tenant_member(tenant_id));
-
--- RLS: webhook_deliveries (service role can write for logging)
-CREATE POLICY "Users can read deliveries in their tenant"
-ON webhook_deliveries FOR SELECT
-USING (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "Service role can insert deliveries"
-ON webhook_deliveries FOR INSERT
-WITH CHECK (true);

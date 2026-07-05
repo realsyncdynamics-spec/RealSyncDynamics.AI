@@ -25,7 +25,7 @@ DROP POLICY IF EXISTS "webhook_endpoints tenant_member_read" ON public.webhook_e
 CREATE POLICY "webhook_endpoints tenant_member_read"
   ON public.webhook_endpoints FOR SELECT
   USING (EXISTS (
-    SELECT 1 FROM public.tenant_memberships m
+    SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));
 
@@ -33,7 +33,7 @@ DROP POLICY IF EXISTS "webhook_endpoints tenant_member_insert" ON public.webhook
 CREATE POLICY "webhook_endpoints tenant_member_insert"
   ON public.webhook_endpoints FOR INSERT
   WITH CHECK (EXISTS (
-    SELECT 1 FROM public.tenant_memberships m
+    SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));
 
@@ -41,11 +41,11 @@ DROP POLICY IF EXISTS "webhook_endpoints tenant_member_update" ON public.webhook
 CREATE POLICY "webhook_endpoints tenant_member_update"
   ON public.webhook_endpoints FOR UPDATE
   USING (EXISTS (
-    SELECT 1 FROM public.tenant_memberships m
+    SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ))
   WITH CHECK (EXISTS (
-    SELECT 1 FROM public.tenant_memberships m
+    SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));
 
@@ -53,7 +53,7 @@ DROP POLICY IF EXISTS "webhook_endpoints tenant_member_delete" ON public.webhook
 CREATE POLICY "webhook_endpoints tenant_member_delete"
   ON public.webhook_endpoints FOR DELETE
   USING (EXISTS (
-    SELECT 1 FROM public.tenant_memberships m
+    SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));
 
@@ -84,7 +84,7 @@ CREATE POLICY "webhook_deliveries tenant_member_read"
   ON public.webhook_deliveries FOR SELECT
   USING (EXISTS (
     SELECT 1 FROM public.webhook_endpoints we
-    JOIN public.tenant_memberships m ON we.tenant_id = m.tenant_id
+    JOIN public.memberships m ON we.tenant_id = m.tenant_id
     WHERE we.id = webhook_deliveries.webhook_id AND m.user_id = auth.uid()
   ));
 
@@ -116,7 +116,7 @@ DROP POLICY IF EXISTS "quota_alerts tenant_member_read" ON public.quota_alerts;
 CREATE POLICY "quota_alerts tenant_member_read"
   ON public.quota_alerts FOR SELECT
   USING (EXISTS (
-    SELECT 1 FROM public.tenant_memberships m
+    SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = quota_alerts.tenant_id AND m.user_id = auth.uid()
   ));
 

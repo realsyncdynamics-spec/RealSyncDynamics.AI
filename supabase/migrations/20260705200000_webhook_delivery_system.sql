@@ -111,7 +111,7 @@ CREATE INDEX IF NOT EXISTS webhook_deliveries_subscription_status_idx
 CREATE INDEX IF NOT EXISTS webhook_deliveries_tenant_created_idx
   ON public.webhook_deliveries(tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS webhook_deliveries_next_retry_idx
-  ON public.webhook_deliveries(next_retry_at) WHERE status = 'pending' AND next_retry_at <= NOW();
+  ON public.webhook_deliveries(next_retry_at) WHERE status = 'pending';
 
 -- 4. RLS Policies
 ALTER TABLE public.webhook_event_types ENABLE ROW LEVEL SECURITY;

@@ -3,8 +3,6 @@
 -- Enables tenant admins to customize dashboard appearance, colors, logos, and fonts.
 -- Supports both API (programmatic) and UI-based branding customization.
 
-BEGIN;
-
 -- 1. Extend tenants table with additional branding fields
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS company_name TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS support_email TEXT;
@@ -196,5 +194,3 @@ DROP TRIGGER IF EXISTS log_tenant_branding_changes ON public.tenants;
 CREATE TRIGGER log_tenant_branding_changes
   AFTER UPDATE ON public.tenants
   FOR EACH ROW EXECUTE FUNCTION public.log_branding_change();
-
-COMMIT;

@@ -214,6 +214,12 @@ const ComplianceRoadmapView = lazy(() => import('./features/governance/Complianc
 const CustomFrameworkBuilderView = lazy(() => import('./features/governance/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
 const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
 const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
+// ── Phase 5C: Analytics, Bulk Operations, Collaboration (5 new views)
+const ComplianceAnalyticsView = lazy(() => import('./features/governance/ComplianceAnalyticsView').then((m) => ({ default: m.ComplianceAnalyticsView })));
+const BulkOperationsView = lazy(() => import('./features/governance/BulkOperationsView').then((m) => ({ default: m.BulkOperationsView })));
+const ComplianceCalendarView = lazy(() => import('./features/governance/ComplianceCalendarView').then((m) => ({ default: m.ComplianceCalendarView })));
+const AuditTrailView = lazy(() => import('./features/governance/AuditTrailView').then((m) => ({ default: m.AuditTrailView })));
+const GovernanceTeamView = lazy(() => import('./features/governance/GovernanceTeamView').then((m) => ({ default: m.GovernanceTeamView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
@@ -600,6 +606,12 @@ function RoutesWithTracking() {
       <Route path="/app/governance/custom-framework-builder" element={<GovernanceBrowserShell><CustomFrameworkBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/custom-frameworks" element={<GovernanceBrowserShell><CustomFrameworkView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/integrations" element={<GovernanceBrowserShell><IntegrationsView /></GovernanceBrowserShell>} />
+      {/* Phase 5C: Analytics, Bulk Operations, Collaboration */}
+      <Route path="/app/governance/compliance-analytics" element={<GovernanceBrowserShell><ComplianceAnalyticsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/bulk-operations" element={<GovernanceBrowserShell><BulkOperationsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/compliance-calendar" element={<GovernanceBrowserShell><ComplianceCalendarView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/audit-trail" element={<GovernanceBrowserShell><AuditTrailView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/team-collaboration" element={<GovernanceBrowserShell><GovernanceTeamView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />

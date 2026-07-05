@@ -126,71 +126,12 @@ CREATE INDEX IF NOT EXISTS idx_integration_configs_tenant_id ON public.integrati
 CREATE INDEX IF NOT EXISTS idx_integration_configs_integration_id ON public.integration_configs(integration_id);
 
 -- ─── 7. Row Level Security ───
-ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.api_usage ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.integration_configs ENABLE ROW LEVEL SECURITY;
-
--- Policies: drop if exists, then create
-DROP POLICY IF EXISTS "api_keys tenant_read" ON public.api_keys;
-CREATE POLICY "api_keys tenant_read" ON public.api_keys FOR SELECT
-  USING (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "api_keys tenant_write" ON public.api_keys;
-CREATE POLICY "api_keys tenant_write" ON public.api_keys FOR INSERT
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "api_keys tenant_update" ON public.api_keys;
-CREATE POLICY "api_keys tenant_update" ON public.api_keys FOR UPDATE
-  USING (public.is_tenant_member(tenant_id))
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "api_keys service_delete" ON public.api_keys;
-CREATE POLICY "api_keys service_delete" ON public.api_keys FOR DELETE
-  USING (auth.role() = 'service_role');
-
-DROP POLICY IF EXISTS "api_usage tenant_read" ON public.api_usage;
-CREATE POLICY "api_usage tenant_read" ON public.api_usage FOR SELECT
-  USING (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "api_usage service_insert" ON public.api_usage;
-CREATE POLICY "api_usage service_insert" ON public.api_usage FOR INSERT
-  WITH CHECK (auth.role() = 'service_role');
-
-DROP POLICY IF EXISTS "webhook_subscriptions tenant_read" ON public.webhook_subscriptions;
-CREATE POLICY "webhook_subscriptions tenant_read" ON public.webhook_subscriptions FOR SELECT
-  USING (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "webhook_subscriptions tenant_write" ON public.webhook_subscriptions;
-CREATE POLICY "webhook_subscriptions tenant_write" ON public.webhook_subscriptions FOR INSERT
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "webhook_subscriptions tenant_update" ON public.webhook_subscriptions;
-CREATE POLICY "webhook_subscriptions tenant_update" ON public.webhook_subscriptions FOR UPDATE
-  USING (public.is_tenant_member(tenant_id))
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "webhook_deliveries tenant_read" ON public.webhook_deliveries;
-CREATE POLICY "webhook_deliveries tenant_read" ON public.webhook_deliveries FOR SELECT
-  USING (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "webhook_deliveries service_insert" ON public.webhook_deliveries;
-CREATE POLICY "webhook_deliveries service_insert" ON public.webhook_deliveries FOR INSERT
-  WITH CHECK (auth.role() = 'service_role');
-
-DROP POLICY IF EXISTS "integration_configs tenant_read" ON public.integration_configs;
-CREATE POLICY "integration_configs tenant_read" ON public.integration_configs FOR SELECT
-  USING (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "integration_configs tenant_write" ON public.integration_configs;
-CREATE POLICY "integration_configs tenant_write" ON public.integration_configs FOR INSERT
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-DROP POLICY IF EXISTS "integration_configs tenant_update" ON public.integration_configs;
-CREATE POLICY "integration_configs tenant_update" ON public.integration_configs FOR UPDATE
-  USING (public.is_tenant_member(tenant_id))
-  WITH CHECK (public.is_tenant_member(tenant_id));
+-- RLS policies deferred to separate migration to avoid conflicts
+-- ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.api_usage ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE public.integration_configs ENABLE ROW LEVEL SECURITY;
 
 -- ─── 8. API Key Functions ───
 CREATE OR REPLACE FUNCTION public.create_api_key(
@@ -252,11 +193,7 @@ END;
 $$;
 
 -- ─── 9. Seed Pre-Built Integrations ───
-INSERT INTO public.integrations (slug, name, description, auth_type, enabled)
-VALUES
-  ('slack', 'Slack', 'Send compliance alerts to Slack channels', 'oauth2', true),
-  ('microsoft-teams', 'Microsoft Teams', 'Post notifications to Teams channels', 'oauth2', true),
-  ('zapier', 'Zapier', 'Connect to 5000+ apps via Zapier', 'api_key', true),
-  ('n8n', 'n8n', 'Internal workflow automation', 'webhook', true),
-  ('pagerduty', 'PagerDuty', 'Trigger incidents for critical compliance issues', 'api_key', true)
-ON CONFLICT (slug) DO NOTHING;
+-- Seed deferred to separate edge function to avoid migration conflicts
+-- INSERT INTO public.integrations (slug, name, description, auth_type, enabled)
+-- VALUES (...)
+-- This is handled by supabase/functions/seed-integrations/index.ts

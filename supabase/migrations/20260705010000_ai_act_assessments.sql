@@ -20,18 +20,20 @@ CREATE TABLE IF NOT EXISTS public.ai_act_assessments (
   is_high_risk_annex_iii BOOLEAN DEFAULT false,
   is_prohibited BOOLEAN DEFAULT false,
 
-  -- High-Risk Indicators (from Annex III)
-  indicators JSONB DEFAULT '{}', -- {
-    -- "personal_data": true/false,
-    -- "large_scale_processing": true/false,
-    -- "special_category_data": true/false,
-    -- "minors_data": true/false,
-    -- "employment_context": true/false,
-    -- "education_training": true/false,
-    -- "law_enforcement": true/false,
-    -- "migration_asylum": true/false,
-    -- "critical_infrastructure": true/false
-  -- }
+  /* High-Risk Indicators (from Annex III)
+     {
+       "personal_data": true/false,
+       "large_scale_processing": true/false,
+       "special_category_data": true/false,
+       "minors_data": true/false,
+       "employment_context": true/false,
+       "education_training": true/false,
+       "law_enforcement": true/false,
+       "migration_asylum": true/false,
+       "critical_infrastructure": true/false
+     }
+  */
+  indicators JSONB DEFAULT '{}'::jsonb,
 
   -- Risk Score Breakdown
   overall_risk_score INT CHECK (overall_risk_score >= 0 AND overall_risk_score <= 100) DEFAULT 0,
@@ -40,14 +42,16 @@ CREATE TABLE IF NOT EXISTS public.ai_act_assessments (
   accuracy_risk_score INT,
   bias_risk_score INT,
 
-  -- Prohibited Use Cases Check
-  prohibited_uses JSONB DEFAULT '{}', -- {
-    -- "mass_surveillance": true/false,
-    -- "behavior_classification": true/false,
-    -- "social_credit": true/false,
-    -- "biometric_categorization": true/false,
-    -- "facial_recognition_realtime": true/false
-  -- }
+  /* Prohibited Use Cases Check
+     {
+       "mass_surveillance": true/false,
+       "behavior_classification": true/false,
+       "social_credit": true/false,
+       "biometric_categorization": true/false,
+       "facial_recognition_realtime": true/false
+     }
+  */
+  prohibited_uses JSONB DEFAULT '{}'::jsonb,
 
   -- Recommendation & Approval Status
   recommendation TEXT CHECK (recommendation IN ('allowed', 'requires_approval', 'prohibited', 'further_assessment_needed')) DEFAULT 'further_assessment_needed',

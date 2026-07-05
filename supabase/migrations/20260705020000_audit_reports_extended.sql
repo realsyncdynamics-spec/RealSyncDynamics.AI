@@ -292,7 +292,6 @@ CREATE OR REPLACE VIEW public.compliance_report_ready AS
 SELECT
   ar.id AS report_id,
   ar.tenant_id,
-  ar.website_url,
   ar.compliance_score,
   ar.frameworks_covered,
   COUNT(af.id) AS total_findings,
@@ -302,6 +301,6 @@ SELECT
   ar.updated_at
 FROM public.audit_reports ar
 LEFT JOIN public.audit_findings af ON af.audit_report_id = ar.id
-GROUP BY ar.id, ar.tenant_id, ar.website_url, ar.compliance_score, ar.frameworks_covered, ar.created_at, ar.updated_at;
+GROUP BY ar.id, ar.tenant_id, ar.compliance_score, ar.frameworks_covered, ar.created_at, ar.updated_at;
 
 ALTER VIEW public.compliance_report_ready OWNER TO postgres;

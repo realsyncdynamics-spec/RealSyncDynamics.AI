@@ -78,7 +78,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await expect(page.locator('text=Framework Scores & Targets')).toBeVisible();
 
       // Check for individual frameworks
-      await expect(page.locator('text=ISO 27001').or(page.locator('text=/ISO|DSGVO|NIS2/'))).toBeVisible();
+      await expect(page.locator('text=ISO 27001').or(page.locator(/ISO|DSGVO|NIS2/))).toBeVisible();
     });
 
     test('should display audit readiness score', async ({ page }) => {
@@ -88,7 +88,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await expect(page.locator('text=Audit Readiness Score')).toBeVisible();
 
       // Check for score number
-      const scoreElements = page.locator('text=/\\d+\\/100/');
+      const scoreElements = page.locator(/\d+\/100/);
       expect(await scoreElements.count()).toBeGreaterThan(0);
     });
 
@@ -99,7 +99,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await expect(page.locator('text=Gap Movement Trends')).toBeVisible();
 
       // Check for week labels
-      await expect(page.locator('text=Week').or(page.locator('text=/Week [0-9]/'))).toBeVisible();
+      await expect(page.locator('text=Week').or(page.locator(/Week [0-9]/))).toBeVisible();
     });
   });
 
@@ -119,7 +119,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       expect(await uploadTab.isVisible()).toBeTruthy();
 
       // Look for job types
-      await expect(page.locator('text=/Import Gaps|Import Evidence|Bulk Update/').first()).toBeVisible();
+      await expect(page.locator(/Import Gaps|Import Evidence|Bulk Update/).first()).toBeVisible();
     });
 
     test('should allow selecting job type', async ({ page }) => {
@@ -139,7 +139,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.goto(`${baseUrl}/app/governance/bulk-operations`);
 
       // Check for drag-and-drop area
-      await expect(page.locator('text=/Drag and drop|Choose File/')).toBeVisible();
+      await expect(page.locator(/Drag and drop|Choose File/)).toBeVisible();
     });
 
     test('should navigate to job history', async ({ page }) => {
@@ -162,7 +162,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.waitForTimeout(300);
 
       // Look for job items
-      const jobItems = page.locator('[class*="bg-obsidian-900"]').filter({ has: page.locator('text=/processing|completed|pending/') });
+      const jobItems = page.locator('[class*="bg-obsidian-900"]').filter({ has: page.locator(/processing|completed|pending/) });
       expect(await jobItems.count()).toBeGreaterThanOrEqual(0);
     });
 
@@ -180,7 +180,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
         await page.waitForTimeout(300);
 
         // Check for expanded details
-        const details = page.locator('text=/Processed|Failed|Details/');
+        const details = page.locator(/Processed|Failed|Details/);
         const isVisible = await details.isVisible().catch(() => false);
         expect(typeof isVisible).toBe('boolean');
       }
@@ -191,7 +191,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
 
       // Check for options
       await expect(page.locator('text=Import Options')).toBeVisible();
-      await expect(page.locator('text=/Validate|Auto-assign|Rollback/').first()).toBeVisible();
+      await expect(page.locator(/Validate|Auto-assign|Rollback/).first()).toBeVisible();
     });
   });
 
@@ -207,10 +207,10 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.goto(`${baseUrl}/app/governance/compliance-calendar`);
 
       // Look for calendar
-      await expect(page.locator('text=/Mo|Tu|We|Th|Fr|Sa|Su/').first()).toBeVisible();
+      await expect(page.locator(/Mo|Tu|We|Th|Fr|Sa|Su/).first()).toBeVisible();
 
       // Check for month name
-      const monthHeader = page.locator('text=/January|February|March|April|May|June|July|August|September|October|November|December/');
+      const monthHeader = page.locator(/January|February|March|April|May|June|July|August|September|October|November|December/);
       await expect(monthHeader).toBeVisible();
     });
 
@@ -220,7 +220,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       // Click next month button
       const nextBtn = page.locator('button').filter({ has: page.locator('[class*="ChevronRight"]') }).first();
       if (await nextBtn.isVisible()) {
-        const monthBefore = await page.locator('text=/[A-Za-z]+ [0-9]{4}/').first().textContent();
+        const monthBefore = await page.locator(/[A-Za-z]+ [0-9]{4}/).first().textContent();
         await nextBtn.click();
         await page.waitForTimeout(300);
         // Month should have changed
@@ -246,7 +246,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       const upcoming = page.locator('text=Upcoming Deadlines');
       if (await upcoming.isVisible()) {
         // Should have deadline items
-        const deadlineItems = page.locator('[class*="border-l"]').filter({ has: page.locator('text=/[A-Za-z]+/') });
+        const deadlineItems = page.locator('[class*="border-l"]').filter({ has: page.locator(/[A-Za-z]+/) });
         expect(await deadlineItems.count()).toBeGreaterThanOrEqual(0);
       }
     });
@@ -263,7 +263,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       expect(await deadlineItems.count()).toBeGreaterThan(0);
 
       // Check for status badges
-      await expect(page.locator('text=/PENDING|IN-PROGRESS|COMPLETED|OVERDUE/').first()).toBeVisible();
+      await expect(page.locator(/PENDING|IN-PROGRESS|COMPLETED|OVERDUE/).first()).toBeVisible();
     });
   });
 
@@ -311,7 +311,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.goto(`${baseUrl}/app/governance/audit-trail`);
 
       // Look for log entries
-      const logItems = page.locator('[class*="border-titanium"]').filter({ has: page.locator('text=/UPDATE|CREATE|DELETE/') });
+      const logItems = page.locator('[class*="border-titanium"]').filter({ has: page.locator(/UPDATE|CREATE|DELETE/) });
       expect(await logItems.count()).toBeGreaterThan(0);
     });
 
@@ -319,13 +319,13 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.goto(`${baseUrl}/app/governance/audit-trail`);
 
       // Find first log entry
-      const firstLog = page.locator('button').filter({ has: page.locator('text=/[A-Za-z]+ [A-Z]+ /') }).first();
+      const firstLog = page.locator('button').filter({ has: page.locator(/[A-Za-z]+ [A-Z]+ /) }).first();
       if (await firstLog.isVisible()) {
         await firstLog.click();
         await page.waitForTimeout(300);
 
         // Check for expanded details (old/new values)
-        const details = page.locator('text=/Previous Value|New Value|Details/');
+        const details = page.locator(/Previous Value|New Value|Details/);
         const isVisible = await details.isVisible().catch(() => false);
         expect(typeof isVisible).toBe('boolean');
       }
@@ -363,24 +363,24 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.goto(`${baseUrl}/app/governance/team-collaboration`);
 
       // Look for member items
-      const memberItems = page.locator('[class*="bg-obsidian-900"]').filter({ has: page.locator('text=/@/) });
+      const memberItems = page.locator('[class*="bg-obsidian-900"]').filter({ has: page.locator(/@/) });
       expect(await memberItems.count()).toBeGreaterThanOrEqual(0);
 
       // Look for role badges
-      await expect(page.locator('text=/OWNER|EDITOR|VIEWER/')).toBeVisible();
+      await expect(page.locator(/(OWNER|EDITOR|VIEWER)/)).toBeVisible();
     });
 
     test('should allow expanding member details', async ({ page }) => {
       await page.goto(`${baseUrl}/app/governance/team-collaboration`);
 
       // Find first member
-      const firstMember = page.locator('button').filter({ has: page.locator('text=/@|@company/') }).first();
+      const firstMember = page.locator('button').filter({ has: page.locator(/@|@company/) }).first();
       if (await firstMember.isVisible()) {
         await firstMember.click();
         await page.waitForTimeout(300);
 
         // Check for expanded details
-        const details = page.locator('text=/Email|Role|Message|Edit Permissions/');
+        const details = page.locator(/(Email|Role|Message|Edit Permissions)/);
         const isVisible = await details.isVisible().catch(() => false);
         expect(typeof isVisible).toBe('boolean');
       }
@@ -406,7 +406,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       await page.waitForTimeout(300);
 
       // Look for assignment items
-      const assignments = page.locator('[class*="border"]').filter({ has: page.locator('text=/assigned|Due/') });
+      const assignments = page.locator('[class*="border"]').filter({ has: page.locator(/assigned|Due/) });
       expect(await assignments.count()).toBeGreaterThan(0);
     });
 
@@ -445,7 +445,7 @@ test.describe('Phase 5C: Analytics, Bulk Operations, Collaboration', () => {
       // Look for task items
       await expect(page.locator('text=My Tasks')).toBeVisible();
 
-      const tasks = page.locator('[class*="border"]').filter({ has: page.locator('text=/Due|Priority/') });
+      const tasks = page.locator('[class*="border"]').filter({ has: page.locator(/Due|Priority/) });
       expect(await tasks.count()).toBeGreaterThanOrEqual(0);
     });
 

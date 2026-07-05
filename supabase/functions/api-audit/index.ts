@@ -159,16 +159,60 @@ serve(async (req: Request) => {
       }
     }
 
-    // TODO: Implement audit logic based on domain/module parameters
-    // For now, return a placeholder response
+    // Implement audit logic based on domain/module parameters
+    const domain = body.domain || 'all';
+    const module = body.module || 'general';
+    const detailed = body.detailed || false;
+
+    // Fetch audit results from governance_audits table
+    const { data: auditData, error: auditErr } = await supabase
+      .from('governance_audits')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('domain', domain === 'all' ? null : domain, { foreignTable: true })
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Get compliance findings for the module
+    const { data: findings, error: findingsErr } = await supabase
+      .from('compliance_findings')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('module', module)
+      .eq('domain', domain === 'all' ? null : domain, { foreignTable: true })
+      .eq('resolved', false)
+      .order('severity', { ascending: false });
+
+    // Calculate compliance score (0-100)
+    let complianceScore = 100;
+    if (findings && findings.length > 0) {
+      const severityWeights = { critical: 25, high: 15, medium: 8, low: 3 };
+      const totalPenalty = findings.reduce((sum, f) => sum + (severityWeights[f.severity as keyof typeof severityWeights] || 0), 0);
+      complianceScore = Math.max(0, 100 - totalPenalty);
+    }
+
     const auditResult = {
       tenant_id: tenantId,
-      domain: body.domain || 'all',
-      module: body.module || 'general',
-      status: 'ready',
-      last_checked: new Date().toISOString(),
-      compliance_score: 0, // Would be populated by actual audit logic
-      findings: [],
+      domain: domain,
+      module: module,
+      status: complianceScore >= 80 ? 'compliant' : 'non-compliant',
+      last_checked: auditData?.created_at || new Date().toISOString(),
+      compliance_score: complianceScore,
+      findings: detailed ? (findings || []).map(f => ({
+        id: f.id,
+        severity: f.severity,
+        title: f.title,
+        description: f.description,
+        recommendation: f.recommendation,
+        detected_at: f.detected_at,
+      })) : (findings || []).slice(0, 5).map(f => ({
+        id: f.id,
+        severity: f.severity,
+        title: f.title,
+        recommendation: f.recommendation,
+      })),
     };
 
     // Log API call

@@ -461,7 +461,8 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
-      const badge = growthCard.locator('text=Empfohlen');
+      // Target the specific div badge, not the span
+      const badge = growthCard.locator('div:has-text("Empfohlen")').first();
       await expect(badge).toBeVisible();
     });
 
@@ -469,8 +470,8 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Should indicate it's the recommended plan
-      const recommendedBadge = page.locator('text=Empfohlen');
+      // Should indicate it's the recommended plan - target the div badge specifically
+      const recommendedBadge = page.locator('div:has-text("Empfohlen")').first();
       await expect(recommendedBadge).toBeVisible();
     });
 
@@ -489,7 +490,8 @@ test.describe('Pricing Flow', () => {
 
       for (const slug of planSlugs) {
         const card = page.locator(`[data-testid="pricing-card-${slug}"]`);
-        const badge = card.locator('text=Empfohlen');
+        // Use more specific selector to avoid ambiguity
+        const badge = card.locator('div:has-text("Empfohlen")');
 
         // Badge should not be visible for non-Growth plans
         const isVisible = await badge.isVisible().catch(() => false);

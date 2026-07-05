@@ -268,14 +268,14 @@ SET search_path = public
 AS $$
   SELECT
     af.severity,
-    COUNT(*)::INT,
+    COUNT(*)::INT AS finding_count,
     jsonb_object_agg(
       af.framework_code,
       COUNT(*)::INT
-    )
+    ) AS framework_breakdown
   FROM public.audit_findings af
   WHERE af.audit_report_id = p_audit_report_id
-  GROUP BY af.severity, af.framework_code
+  GROUP BY af.severity
   ORDER BY
     CASE af.severity
       WHEN 'critical' THEN 1

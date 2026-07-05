@@ -38,7 +38,7 @@ CREATE INDEX idx_iso_control_definitions_search ON public.iso_control_definition
 -- Maps controls across frameworks (ISO 27001 -> AI Act, etc.)
 CREATE TABLE IF NOT EXISTS public.iso_control_mappings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  source_control_id TEXT NOT NULL REFERENCES iso_control_definitions(control_id) ON DELETE CASCADE,
+  source_control_id TEXT NOT NULL REFERENCES public.iso_control_definitions(control_id) ON DELETE CASCADE,
   target_framework TEXT NOT NULL, -- 'ai_act', 'dsgvo', 'nis2'
   target_references TEXT[] NOT NULL, -- Array of mapped references
   mapping_strength TEXT NOT NULL DEFAULT 'direct', -- 'direct', 'indirect', 'supporting'
@@ -56,7 +56,7 @@ CREATE INDEX idx_iso_control_mappings_target ON public.iso_control_mappings(targ
 -- Stores generated compliance reports (PDF/Excel exports)
 CREATE TABLE IF NOT EXISTS public.compliance_reports (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   frameworks_covered TEXT[] NOT NULL, -- ['iso27001', 'dsgvo', ...]
   format TEXT NOT NULL, -- 'pdf', 'excel', 'both'
@@ -86,7 +86,7 @@ CREATE INDEX idx_compliance_reports_frameworks ON public.compliance_reports USIN
 -- For recurring report generation (daily, weekly, monthly, quarterly)
 CREATE TABLE IF NOT EXISTS public.report_schedules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   frameworks_covered TEXT[] NOT NULL,
   frequency TEXT NOT NULL, -- 'daily', 'weekly', 'monthly', 'quarterly'
@@ -113,7 +113,7 @@ CREATE INDEX idx_report_schedules_next_run ON public.report_schedules(next_run_a
 -- Daily snapshots of compliance scores for trending and forecasting
 CREATE TABLE IF NOT EXISTS public.compliance_metrics_snapshots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   snapshot_date DATE NOT NULL,
   framework TEXT NOT NULL, -- 'iso27001', 'iso42001', 'dsgvo', 'ai_act', 'nis2', 'overall'
   compliance_score NUMERIC(5,2) NOT NULL, -- 0-100
@@ -137,7 +137,7 @@ CREATE INDEX idx_compliance_metrics_snapshots_framework ON public.compliance_met
 -- Tracks individual control maturity progression over time
 CREATE TABLE IF NOT EXISTS public.control_maturity_tracking (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   control_id TEXT NOT NULL,
   current_maturity_level INTEGER NOT NULL DEFAULT 0, -- 0-5
   previous_maturity_level INTEGER DEFAULT 0,

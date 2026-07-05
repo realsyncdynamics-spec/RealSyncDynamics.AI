@@ -340,7 +340,7 @@ function analyzeAndRecommend(workflow: WorkflowAnalysis): RecommendationResult {
     'Evidence Vault mit Nachweisen füllen',
   ];
 
-  if (recommendedTier === 'agency' || recommendedTier === 'scale') {
+  if (recommendedTier === 'agency' || recommendedTier === 'growth') {
     nextSteps.push('API-Keys für Integration generieren');
   }
 

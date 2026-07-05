@@ -195,17 +195,17 @@ function Inner() {
                 <div>
                   <label className="block text-xs font-semibold text-titanium-300 mb-2">Report Sections</label>
                   <div className="space-y-2">
-                    {[
-                      { key: 'includeSummary', label: 'Executive Summary' },
-                      { key: 'includeControlDetails', label: 'Control Details' },
-                      { key: 'includeFindings', label: 'Findings & Gaps' },
-                      { key: 'includeRoadmap', label: 'Remediation Roadmap' },
-                    ].map((section) => (
+                    {([
+                      { key: 'includeSummary' as const, label: 'Executive Summary' },
+                      { key: 'includeControlDetails' as const, label: 'Control Details' },
+                      { key: 'includeFindings' as const, label: 'Findings & Gaps' },
+                      { key: 'includeRoadmap' as const, label: 'Remediation Roadmap' },
+                    ] as const).map((section) => (
                       <label key={section.key} className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={config[section.key as keyof ReportConfig] as boolean}
-                          onChange={(e) => handleConfigChange(section.key, e.target.checked)}
+                          onChange={(e) => handleConfigChange(section.key as keyof ReportConfig, e.target.checked)}
                           className="w-4 h-4"
                         />
                         <span className="text-xs text-titanium-300">{section.label}</span>

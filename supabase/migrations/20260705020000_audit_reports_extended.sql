@@ -30,7 +30,6 @@ CREATE POLICY "audit_reports tenant_read"
 
 CREATE POLICY "audit_reports tenant_write"
   ON public.audit_reports FOR INSERT
-  USING (public.is_tenant_member(tenant_id))
   WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "audit_reports tenant_update"

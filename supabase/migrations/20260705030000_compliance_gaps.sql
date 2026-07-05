@@ -88,7 +88,7 @@ CREATE POLICY "gap_analysis_history tenant_read"
 
 CREATE POLICY "gap_analysis_history service_only"
   ON public.gap_analysis_history FOR INSERT
-  USING (auth.role() = 'service_role');
+  WITH CHECK (auth.role() = 'service_role');
 
 CREATE INDEX IF NOT EXISTS idx_gap_analysis_history_gap_id
   ON public.gap_analysis_history(gap_id);

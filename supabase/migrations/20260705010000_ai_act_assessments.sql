@@ -31,7 +31,7 @@ CREATE POLICY "ai_systems tenant_read"
 
 CREATE POLICY "ai_systems service_write"
   ON public.ai_systems FOR INSERT
-  USING (auth.role() = 'service_role');
+  WITH CHECK (auth.role() = 'service_role');
 
 CREATE POLICY "ai_systems tenant_update"
   ON public.ai_systems FOR UPDATE
@@ -112,7 +112,7 @@ CREATE POLICY "ai_act_assessments tenant_read"
 
 CREATE POLICY "ai_act_assessments service_only_write"
   ON public.ai_act_assessments FOR INSERT
-  USING (auth.role() = 'service_role');
+  WITH CHECK (auth.role() = 'service_role');
 
 CREATE POLICY "ai_act_assessments tenant_update"
   ON public.ai_act_assessments FOR UPDATE

@@ -1,18 +1,5 @@
 -- Phase 5C: Analytics, Bulk Operations, Collaboration
 
--- Table: compliance_metrics_snapshots (daily snapshots for trending)
-CREATE TABLE IF NOT EXISTS compliance_metrics_snapshots (
-  id TEXT PRIMARY KEY DEFAULT 'snap-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  framework TEXT NOT NULL, -- 'iso27001', 'iso42001', 'ai_act', 'dsgvo', 'nis2', or custom framework ID
-  score INTEGER NOT NULL, -- Compliance score 0-100
-  controls_count INTEGER DEFAULT 0,
-  gaps_count INTEGER DEFAULT 0,
-  evidence_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- Table: bulk_import_jobs (async processing of large imports)
 CREATE TABLE IF NOT EXISTS bulk_import_jobs (
   id TEXT PRIMARY KEY DEFAULT 'job-' || gen_random_uuid()::text,

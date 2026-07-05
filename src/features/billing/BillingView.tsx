@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
+import { StripeAccountInfo } from './StripeAccountInfo';
 
 interface Subscription {
   plan_key: string | null;
@@ -246,6 +247,20 @@ export function BillingView() {
         Rechnungen + Zahlungshistorie verwalten wir nicht selbst — alles im Stripe-Portal-Knopf oben.
         Steuer- und Buchhaltungsfragen: <a href="mailto:billing@realsyncdynamicsai.de" className="text-security-400">billing@realsyncdynamicsai.de</a>.
       </p>
+
+      {/* Stripe Account Information */}
+      <div>
+        <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Stripe-Konto</h2>
+        <StripeAccountInfo
+          stripeCustomerId={sub !== 'none' ? sub.stripe_customer_id : null}
+          stripeSubscriptionId={sub !== 'none' ? sub.stripe_subscription_id : null}
+          status={sub !== 'none' ? sub.status : null}
+          cancelAtPeriodEnd={sub !== 'none' ? sub.cancel_at_period_end : false}
+          currentPeriodEnd={sub !== 'none' ? sub.current_period_end : null}
+          onOpenPortal={openPortal}
+          canManage={canManage}
+        />
+      </div>
     </div>
   );
 }

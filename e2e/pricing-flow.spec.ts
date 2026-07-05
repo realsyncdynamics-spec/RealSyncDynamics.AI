@@ -9,7 +9,7 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       // Check page title
-      await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete/);
+      await expect(page).toHaveTitle(/[Pp]reis|[Pp]akete/);
 
       // Check all 6 plan cards are present
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');

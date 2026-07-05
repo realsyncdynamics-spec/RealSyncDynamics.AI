@@ -4,6 +4,7 @@ import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
+import { SEOHead } from '../../components/SEOHead';
 import {
   PUBLIC_PRICING_TIERS, ENTERPRISE_TIER, PRICING_TRUST_NOTE, TIER_ACCENT,
   type PricingTier, type TierId,
@@ -53,7 +54,9 @@ export function PricingPage() {
   }, [selectedPlan]);
 
   return (
-    <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
+    <>
+      <SEOHead />
+      <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
         <Link to="/" className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50">
@@ -290,7 +293,8 @@ export function PricingPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
 

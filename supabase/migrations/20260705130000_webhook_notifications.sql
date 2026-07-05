@@ -35,6 +35,10 @@ CREATE POLICY "webhook_endpoints tenant_member_crud"
   USING (EXISTS (
     SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.memberships m
+    WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));
 
 -- Webhook delivery log
@@ -67,6 +71,11 @@ CREATE POLICY "webhook_deliveries tenant_member_read"
     JOIN public.memberships m ON we.tenant_id = m.tenant_id
     WHERE we.id = webhook_deliveries.webhook_id AND m.user_id = auth.uid()
   ));
+
+DROP POLICY IF EXISTS "webhook_deliveries service_role_insert" ON public.webhook_deliveries;
+CREATE POLICY "webhook_deliveries service_role_insert"
+  ON public.webhook_deliveries FOR INSERT
+  WITH CHECK (true);
 
 -- Quota alerts log
 CREATE TABLE IF NOT EXISTS public.quota_alerts (

@@ -58,18 +58,18 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
+      // Enterprise is rendered as banner, not card; free tier uses id 'free'
       const expectedSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
+        { card: 'free', info: 'free' },
+        { card: 'starter', info: 'starter' },
+        { card: 'growth', info: 'growth' },
+        { card: 'agency', info: 'agency' },
+        { card: 'scale', info: 'scale' },
       ];
 
-      for (const slug of expectedSlugs) {
+      for (const { card, info } of expectedSlugs) {
         const infoButton = page.locator(
-          `[data-testid="pricing-card-${slug}"] [data-testid="pricing-info-${slug}"]`
+          `[data-testid="pricing-card-${card}"] [data-testid="pricing-info-${info}"]`
         );
         await expect(infoButton).toBeVisible();
       }
@@ -79,18 +79,18 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
+      // Enterprise is rendered as banner, not card; free tier uses id 'free'
       const expectedSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
+        { card: 'free', book: 'free' },
+        { card: 'starter', book: 'starter' },
+        { card: 'growth', book: 'growth' },
+        { card: 'agency', book: 'agency' },
+        { card: 'scale', book: 'scale' },
       ];
 
-      for (const slug of expectedSlugs) {
+      for (const { card, book } of expectedSlugs) {
         const bookButton = page.locator(
-          `[data-testid="pricing-card-${slug}"] [data-testid="pricing-book-${slug}"]`
+          `[data-testid="pricing-card-${card}"] [data-testid="pricing-book-${book}"]`
         );
         await expect(bookButton).toBeVisible();
       }
@@ -393,26 +393,20 @@ test.describe('Pricing Flow', () => {
     });
 
     test('free-audit checkout should redirect to audit page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/free-audit`);
-      await page.waitForLoadState('networkidle');
+      // Navigate to /checkout/free-audit — CheckoutPage immediately redirects via window.location.href
+      // (does not render UI, so no button click needed)
+      await page.goto(`${BASE_URL}/checkout/free-audit`, { waitUntil: 'networkidle' });
 
-      const bookButton = page.locator('[data-testid="checkout-book-button"]');
-      await bookButton.click();
-
-      // Free audit should navigate to /audit
-      await page.waitForURL(/\/audit/);
+      // Verify redirect to /audit occurred
       await expect(page).toHaveURL(/\/audit/);
     });
 
     test('enterprise checkout should redirect to contact sales', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForLoadState('networkidle');
+      // Navigate to /checkout/enterprise — CheckoutPage immediately redirects via window.location.href
+      // (does not render UI, so no button click needed)
+      await page.goto(`${BASE_URL}/checkout/enterprise`, { waitUntil: 'networkidle' });
 
-      const bookButton = page.locator('[data-testid="checkout-book-button"]');
-      await bookButton.click();
-
-      // Enterprise should navigate to /contact-sales
-      await page.waitForURL(/\/contact-sales/);
+      // Verify redirect to /contact-sales occurred
       await expect(page).toHaveURL(/\/contact-sales/);
     });
   });

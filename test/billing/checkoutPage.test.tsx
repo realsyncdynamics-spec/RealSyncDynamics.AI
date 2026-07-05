@@ -84,9 +84,11 @@ describe('CheckoutPage — Auth-Auflösung', () => {
 
     renderCheckout();
 
-    await waitFor(() => expect(bodyText()).toMatch(/keine Setup-Gebühren/i));
-    // Bezahl-Gate zeigt die angemeldete E-Mail an.
-    expect(bodyText()).toMatch(/owner@example\.com/);
+    // Auf die angemeldete E-Mail warten: „Angemeldet als owner@example.com" ist
+    // eindeutig dem Ready-Bezahl-Gate vorbehalten. (Der Footer „…Keine
+    // Setup-Gebühren" steht auch im Ladezustand und wäre daher ein Race.)
+    await waitFor(() => expect(bodyText()).toMatch(/owner@example\.com/));
+    expect(bodyText()).toMatch(/zahlungspflichtig bestellen/i);
   });
 
   it('zeigt bei Session ohne Membership den Workspace-Einrichten-Zustand', async () => {

@@ -178,7 +178,7 @@ ALTER TABLE governance_audit_log ENABLE ROW LEVEL SECURITY;
 -- RLS: compliance_metrics_snapshots
 CREATE POLICY "Users can read snapshots in their tenant"
 ON compliance_metrics_snapshots FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Service role can insert snapshots"
 ON compliance_metrics_snapshots FOR INSERT
@@ -187,63 +187,63 @@ WITH CHECK (true);
 -- RLS: bulk_import_jobs
 CREATE POLICY "Users can read jobs in their tenant"
 ON bulk_import_jobs FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create jobs in their tenant"
 ON bulk_import_jobs FOR INSERT
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update jobs in their tenant"
 ON bulk_import_jobs FOR UPDATE
-USING (tenant_id = auth.jwt() ->> 'tenant_id')
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id))
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: compliance_deadlines
 CREATE POLICY "Users can read deadlines in their tenant"
 ON compliance_deadlines FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create deadlines in their tenant"
 ON compliance_deadlines FOR INSERT
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update deadlines in their tenant"
 ON compliance_deadlines FOR UPDATE
-USING (tenant_id = auth.jwt() ->> 'tenant_id')
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id))
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: governance_assignments
 CREATE POLICY "Users can read assignments in their tenant"
 ON governance_assignments FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create assignments in their tenant"
 ON governance_assignments FOR INSERT
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update assignments in their tenant"
 ON governance_assignments FOR UPDATE
-USING (tenant_id = auth.jwt() ->> 'tenant_id')
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id))
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: governance_comments
 CREATE POLICY "Users can read comments in their tenant"
 ON governance_comments FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create comments in their tenant"
 ON governance_comments FOR INSERT
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update own comments"
 ON governance_comments FOR UPDATE
 USING (user_id = auth.uid())
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: governance_audit_log
 CREATE POLICY "Users can read audit log in their tenant"
 ON governance_audit_log FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Service role can insert audit entries"
 ON governance_audit_log FOR INSERT

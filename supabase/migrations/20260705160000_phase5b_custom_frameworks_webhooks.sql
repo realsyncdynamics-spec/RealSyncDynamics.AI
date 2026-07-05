@@ -127,87 +127,87 @@ ALTER TABLE webhook_deliveries ENABLE ROW LEVEL SECURITY;
 -- RLS: custom_frameworks
 CREATE POLICY "Users can read frameworks in their tenant"
 ON custom_frameworks FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create frameworks in their tenant"
 ON custom_frameworks FOR INSERT
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update frameworks in their tenant"
 ON custom_frameworks FOR UPDATE
-USING (tenant_id = auth.jwt() ->> 'tenant_id')
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id))
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can delete frameworks in their tenant"
 ON custom_frameworks FOR DELETE
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 -- RLS: custom_controls (inherited via framework_id)
 CREATE POLICY "Users can read controls in their frameworks"
 ON custom_controls FOR SELECT
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 CREATE POLICY "Users can create controls in their frameworks"
 ON custom_controls FOR INSERT
 WITH CHECK (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 CREATE POLICY "Users can update controls in their frameworks"
 ON custom_controls FOR UPDATE
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 CREATE POLICY "Users can delete controls in their frameworks"
 ON custom_controls FOR DELETE
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 -- RLS: custom_framework_mappings (inherited via framework_id)
 CREATE POLICY "Users can read mappings in their frameworks"
 ON custom_framework_mappings FOR SELECT
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 CREATE POLICY "Users can create mappings in their frameworks"
 ON custom_framework_mappings FOR INSERT
 WITH CHECK (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 CREATE POLICY "Users can delete mappings in their frameworks"
 ON custom_framework_mappings FOR DELETE
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE tenant_id = auth.jwt() ->> 'tenant_id'
+  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
 ));
 
 -- RLS: webhook_endpoints
 CREATE POLICY "Users can read endpoints in their tenant"
 ON webhook_endpoints FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create endpoints in their tenant"
 ON webhook_endpoints FOR INSERT
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update endpoints in their tenant"
 ON webhook_endpoints FOR UPDATE
-USING (tenant_id = auth.jwt() ->> 'tenant_id')
-WITH CHECK (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id))
+WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can delete endpoints in their tenant"
 ON webhook_endpoints FOR DELETE
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 -- RLS: webhook_deliveries (service role can write for logging)
 CREATE POLICY "Users can read deliveries in their tenant"
 ON webhook_deliveries FOR SELECT
-USING (tenant_id = auth.jwt() ->> 'tenant_id');
+USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Service role can insert deliveries"
 ON webhook_deliveries FOR INSERT

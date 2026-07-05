@@ -487,10 +487,36 @@ function ConsentGateShell({
             </div>
           )}
 
+          <div className="mb-6 space-y-4">
+            <div className="text-center">
+              <h3 className="font-semibold text-sm text-titanium-100 mb-2">Im Plan enthalten:</h3>
+              <div className="space-y-1 text-xs text-silver-300">
+                <div data-testid="checkout-feature-1">✓ Vollständiger Plattformzugriff</div>
+                <div data-testid="checkout-feature-2">✓ Kundensupport</div>
+                <div data-testid="checkout-feature-3">✓ Regelmäßige Updates</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6 border-t border-silver-700/50 pt-4">
+            <h3 className="font-semibold text-sm text-titanium-100 mb-3 text-center">Häufige Fragen</h3>
+            <div className="space-y-2 text-xs text-silver-300">
+              <details className="hover:text-silver-200 cursor-pointer">
+                <summary className="font-medium">Kann ich jederzeit kündigen?</summary>
+                <p className="mt-1 ml-2">Ja, monatlich kündbar ohne Bindung oder Kündigungsfrist.</p>
+              </details>
+              <details className="hover:text-silver-200 cursor-pointer">
+                <summary className="font-medium">Welche Zahlungsarten akzeptiert ihr?</summary>
+                <p className="mt-1 ml-2">Stripe akzeptiert alle gängigen Kreditkarten und Zahlungsmethoden.</p>
+              </details>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={onConfirm}
             disabled={!canSubmit}
+            data-testid="checkout-book-button"
             className={`surface-gold w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-none transition-opacity ${
               canSubmit ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed'
             }`}

@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@a12a3c3cb4850933a629cd6edf4f2dab7a75d27f  # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Deploy to Production
         env:
@@ -124,38 +124,20 @@ jobs:
             echo "SUCCESS=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create deployment status
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1b3paec4b05  # v7
-        with:
-          script: |
-            const success = '${{ steps.status.outputs.SUCCESS }}' === 'true';
-            const emoji = success ? '✅' : '❌';
-            const status = success ? 'success' : 'failure';
-
-            await github.rest.repos.createDeployment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.sha,
-              environment: 'production',
-              description: 'Frontend deployment',
-              auto_merge: false,
-              required_contexts: [],
-              production_environment: true
-            });
-
-            github.rest.repos.createCommitComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: `${emoji} **Production Deployment**\n\nURL: https://realsyncdynamicsai.de\nStatus: ${status.toUpperCase()}\nTime: ${new Date().toISOString()}`
-            });
-
-      - name: Slack notification (optional)
-        if: always()
+      - name: Production deployment summary
         run: |
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Production Deployment Status"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Deploy: ${{ needs.deploy-production.result }}"
+          echo "Verify: ${{ needs.deploy-production.result }}"
+          echo ""
+
           if [ "${{ steps.status.outputs.SUCCESS }}" == "true" ]; then
-            echo "✅ Production deployment completed successfully"
+            echo "✅ PRODUCTION DEPLOYMENT SUCCESSFUL"
+            echo "URL: https://realsyncdynamicsai.de"
+            echo "Status: LIVE"
           else
-            echo "❌ Production deployment failed - check logs"
+            echo "❌ PRODUCTION DEPLOYMENT FAILED"
             exit 1
           fi

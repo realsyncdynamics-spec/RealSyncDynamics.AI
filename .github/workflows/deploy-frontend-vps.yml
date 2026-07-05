@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@a12a3c3cb4850933a629cd6edf4f2dab7a75d27f  # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Deploy to Staging
         env:
@@ -90,23 +90,13 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Comment on PR
-        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/heads/main')
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1b3paec4b05  # v7
-        with:
-          script: |
-            const branch = context.ref.replace('refs/heads/', '');
-            const status = '${{ needs.deploy-staging.result }}' === 'success' ? '✅' : '❌';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `${status} **Staging Deploy** — Branch: \`${branch}\`\n\n🔗 Preview: https://test.realsyncdynamicsai.de`
-            });
       - name: Status check
         run: |
+          echo "Deployment Status: ${{ needs.deploy-staging.result }}"
           if [ "${{ needs.deploy-staging.result }}" != "success" ]; then
             echo "❌ Staging deployment failed"
             exit 1
+          else
+            echo "✅ Staging deployment successful"
+            echo "Preview: https://test.realsyncdynamicsai.de"
           fi

@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For full-text search
 
 -- Table: iso_control_definitions
 -- Single source of truth for ISO 27001 and ISO 42001 controls
-CREATE TABLE IF NOT EXISTS iso_control_definitions (
+CREATE TABLE IF NOT EXISTS public.iso_control_definitions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   control_id TEXT NOT NULL UNIQUE, -- e.g., "iso27001_a5_1_1"
   framework TEXT NOT NULL, -- 'iso27001' or 'iso42001'
@@ -30,13 +30,13 @@ CREATE TABLE IF NOT EXISTS iso_control_definitions (
 );
 
 -- Index for framework queries
-CREATE INDEX idx_iso_control_definitions_framework ON iso_control_definitions(framework);
-CREATE INDEX idx_iso_control_definitions_clause ON iso_control_definitions(clause);
-CREATE INDEX idx_iso_control_definitions_search ON iso_control_definitions USING GIN(to_tsvector('english', title || ' ' || description));
+CREATE INDEX idx_iso_control_definitions_framework ON public.iso_control_definitions(framework);
+CREATE INDEX idx_iso_control_definitions_clause ON public.iso_control_definitions(clause);
+CREATE INDEX idx_iso_control_definitions_search ON public.iso_control_definitions USING GIN(to_tsvector('english', title || ' ' || description));
 
 -- Table: iso_control_mapping
 -- Maps controls across frameworks (ISO 27001 -> AI Act, etc.)
-CREATE TABLE IF NOT EXISTS iso_control_mappings (
+CREATE TABLE IF NOT EXISTS public.iso_control_mappings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   source_control_id TEXT NOT NULL REFERENCES iso_control_definitions(control_id) ON DELETE CASCADE,
   target_framework TEXT NOT NULL, -- 'ai_act', 'dsgvo', 'nis2'
@@ -49,12 +49,12 @@ CREATE TABLE IF NOT EXISTS iso_control_mappings (
   CONSTRAINT iso_control_mapping_strength_check CHECK (mapping_strength IN ('direct', 'indirect', 'supporting'))
 );
 
-CREATE INDEX idx_iso_control_mappings_source ON iso_control_mappings(source_control_id);
-CREATE INDEX idx_iso_control_mappings_target ON iso_control_mappings(target_framework);
+CREATE INDEX idx_iso_control_mappings_source ON public.iso_control_mappings(source_control_id);
+CREATE INDEX idx_iso_control_mappings_target ON public.iso_control_mappings(target_framework);
 
 -- Table: compliance_reports
 -- Stores generated compliance reports (PDF/Excel exports)
-CREATE TABLE IF NOT EXISTS compliance_reports (
+CREATE TABLE IF NOT EXISTS public.compliance_reports (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -78,13 +78,13 @@ CREATE TABLE IF NOT EXISTS compliance_reports (
 );
 
 -- Indexes for efficient querying
-CREATE INDEX idx_compliance_reports_tenant ON compliance_reports(tenant_id);
-CREATE INDEX idx_compliance_reports_generated_at ON compliance_reports(generated_at DESC);
-CREATE INDEX idx_compliance_reports_frameworks ON compliance_reports USING GIN(frameworks_covered);
+CREATE INDEX idx_compliance_reports_tenant ON public.compliance_reports(tenant_id);
+CREATE INDEX idx_compliance_reports_generated_at ON public.compliance_reports(generated_at DESC);
+CREATE INDEX idx_compliance_reports_frameworks ON public.compliance_reports USING GIN(frameworks_covered);
 
 -- Table: report_schedules
 -- For recurring report generation (daily, weekly, monthly, quarterly)
-CREATE TABLE IF NOT EXISTS report_schedules (
+CREATE TABLE IF NOT EXISTS public.report_schedules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -106,12 +106,12 @@ CREATE TABLE IF NOT EXISTS report_schedules (
   CONSTRAINT report_schedules_format_check CHECK (format IN ('pdf', 'excel', 'both'))
 );
 
-CREATE INDEX idx_report_schedules_tenant ON report_schedules(tenant_id);
-CREATE INDEX idx_report_schedules_next_run ON report_schedules(next_run_at) WHERE is_active = TRUE;
+CREATE INDEX idx_report_schedules_tenant ON public.report_schedules(tenant_id);
+CREATE INDEX idx_report_schedules_next_run ON public.report_schedules(next_run_at) WHERE is_active = TRUE;
 
 -- Table: compliance_metrics_snapshots
 -- Daily snapshots of compliance scores for trending and forecasting
-CREATE TABLE IF NOT EXISTS compliance_metrics_snapshots (
+CREATE TABLE IF NOT EXISTS public.compliance_metrics_snapshots (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   snapshot_date DATE NOT NULL,
@@ -130,12 +130,12 @@ CREATE TABLE IF NOT EXISTS compliance_metrics_snapshots (
   UNIQUE(tenant_id, snapshot_date, framework)
 );
 
-CREATE INDEX idx_compliance_metrics_snapshots_tenant_date ON compliance_metrics_snapshots(tenant_id, snapshot_date DESC);
-CREATE INDEX idx_compliance_metrics_snapshots_framework ON compliance_metrics_snapshots(framework);
+CREATE INDEX idx_compliance_metrics_snapshots_tenant_date ON public.compliance_metrics_snapshots(tenant_id, snapshot_date DESC);
+CREATE INDEX idx_compliance_metrics_snapshots_framework ON public.compliance_metrics_snapshots(framework);
 
 -- Table: control_maturity_tracking
 -- Tracks individual control maturity progression over time
-CREATE TABLE IF NOT EXISTS control_maturity_tracking (
+CREATE TABLE IF NOT EXISTS public.control_maturity_tracking (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   control_id TEXT NOT NULL,
@@ -154,64 +154,64 @@ CREATE TABLE IF NOT EXISTS control_maturity_tracking (
   CONSTRAINT control_maturity_previous_check CHECK (previous_maturity_level >= 0 AND previous_maturity_level <= 5)
 );
 
-CREATE INDEX idx_control_maturity_tracking_tenant ON control_maturity_tracking(tenant_id);
-CREATE INDEX idx_control_maturity_tracking_control ON control_maturity_tracking(control_id);
-CREATE INDEX idx_control_maturity_tracking_date ON control_maturity_tracking(maturity_changed_at DESC);
+CREATE INDEX idx_control_maturity_tracking_tenant ON public.control_maturity_tracking(tenant_id);
+CREATE INDEX idx_control_maturity_tracking_control ON public.control_maturity_tracking(control_id);
+CREATE INDEX idx_control_maturity_tracking_date ON public.control_maturity_tracking(maturity_changed_at DESC);
 
 -- Enable RLS for all new tables
-ALTER TABLE iso_control_definitions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE iso_control_mappings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE compliance_reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE compliance_metrics_snapshots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE control_maturity_tracking ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.iso_control_definitions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.iso_control_mappings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.compliance_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.report_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.compliance_metrics_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.control_maturity_tracking ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy: iso_control_definitions (public read, system write)
-CREATE POLICY iso_control_definitions_read_all ON iso_control_definitions
+CREATE POLICY iso_control_definitions_read_all ON public.iso_control_definitions
   FOR SELECT USING (TRUE); -- Public lookup reference data
 
-CREATE POLICY iso_control_definitions_write_system ON iso_control_definitions
+CREATE POLICY iso_control_definitions_write_system ON public.iso_control_definitions
   FOR INSERT WITH CHECK (FALSE); -- Only system/migrations can insert
 
 -- RLS Policy: iso_control_mappings (public read, system write)
-CREATE POLICY iso_control_mappings_read_all ON iso_control_mappings
+CREATE POLICY iso_control_mappings_read_all ON public.iso_control_mappings
   FOR SELECT USING (TRUE);
 
 -- RLS Policy: compliance_reports (tenant isolation)
-CREATE POLICY compliance_reports_select_tenant ON compliance_reports
+CREATE POLICY compliance_reports_select_tenant ON public.compliance_reports
   FOR SELECT USING (
     public.is_tenant_member(tenant_id)
   );
 
-CREATE POLICY compliance_reports_insert_tenant ON compliance_reports
+CREATE POLICY compliance_reports_insert_tenant ON public.compliance_reports
   FOR INSERT WITH CHECK (
     public.is_tenant_member(tenant_id)
   );
 
 -- RLS Policy: report_schedules (tenant isolation)
-CREATE POLICY report_schedules_select_tenant ON report_schedules
+CREATE POLICY report_schedules_select_tenant ON public.report_schedules
   FOR SELECT USING (
     public.is_tenant_member(tenant_id)
   );
 
-CREATE POLICY report_schedules_insert_tenant ON report_schedules
+CREATE POLICY report_schedules_insert_tenant ON public.report_schedules
   FOR INSERT WITH CHECK (
     public.is_tenant_member(tenant_id)
   );
 
 -- RLS Policy: compliance_metrics_snapshots (tenant isolation)
-CREATE POLICY compliance_metrics_snapshots_select_tenant ON compliance_metrics_snapshots
+CREATE POLICY compliance_metrics_snapshots_select_tenant ON public.compliance_metrics_snapshots
   FOR SELECT USING (
     public.is_tenant_member(tenant_id)
   );
 
 -- RLS Policy: control_maturity_tracking (tenant isolation)
-CREATE POLICY control_maturity_tracking_select_tenant ON control_maturity_tracking
+CREATE POLICY control_maturity_tracking_select_tenant ON public.control_maturity_tracking
   FOR SELECT USING (
     public.is_tenant_member(tenant_id)
   );
 
-CREATE POLICY control_maturity_tracking_insert_tenant ON control_maturity_tracking
+CREATE POLICY control_maturity_tracking_insert_tenant ON public.control_maturity_tracking
   FOR INSERT WITH CHECK (
     public.is_tenant_member(tenant_id)
   );
@@ -227,36 +227,36 @@ $$ LANGUAGE plpgsql;
 
 -- Create triggers for updated_at
 CREATE TRIGGER update_iso_control_definitions_updated_at
-  BEFORE UPDATE ON iso_control_definitions
+  BEFORE UPDATE ON public.iso_control_definitions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_compliance_reports_updated_at
-  BEFORE UPDATE ON compliance_reports
+  BEFORE UPDATE ON public.compliance_reports
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_report_schedules_updated_at
-  BEFORE UPDATE ON report_schedules
+  BEFORE UPDATE ON public.report_schedules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_control_maturity_tracking_updated_at
-  BEFORE UPDATE ON control_maturity_tracking
+  BEFORE UPDATE ON public.control_maturity_tracking
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 -- Grant permissions
-GRANT SELECT ON iso_control_definitions TO authenticated;
-GRANT SELECT ON iso_control_mappings TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON compliance_reports TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON report_schedules TO authenticated;
-GRANT SELECT, INSERT ON compliance_metrics_snapshots TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON control_maturity_tracking TO authenticated;
+GRANT SELECT ON public.iso_control_definitions TO authenticated;
+GRANT SELECT ON public.iso_control_mappings TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.compliance_reports TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.report_schedules TO authenticated;
+GRANT SELECT, INSERT ON public.compliance_metrics_snapshots TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.control_maturity_tracking TO authenticated;
 
 -- Add comment for documentation
-COMMENT ON TABLE iso_control_definitions IS 'Single source of truth for ISO 27001 and ISO 42001 control definitions with maturity progressions';
-COMMENT ON TABLE compliance_reports IS 'Generated PDF/Excel compliance reports for audit and stakeholder communication';
-COMMENT ON TABLE report_schedules IS 'Automated recurring report generation schedules';
-COMMENT ON TABLE compliance_metrics_snapshots IS 'Daily compliance score snapshots for trending and forecasting';
-COMMENT ON TABLE control_maturity_tracking IS 'Tracks individual control maturity progression and implementation status';
+COMMENT ON TABLE public.iso_control_definitions IS 'Single source of truth for ISO 27001 and ISO 42001 control definitions with maturity progressions';
+COMMENT ON TABLE public.compliance_reports IS 'Generated PDF/Excel compliance reports for audit and stakeholder communication';
+COMMENT ON TABLE public.report_schedules IS 'Automated recurring report generation schedules';
+COMMENT ON TABLE public.compliance_metrics_snapshots IS 'Daily compliance score snapshots for trending and forecasting';
+COMMENT ON TABLE public.control_maturity_tracking IS 'Tracks individual control maturity progression and implementation status';

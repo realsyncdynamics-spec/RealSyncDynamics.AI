@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For full-text search
 -- Table: iso_control_definitions
 -- Single source of truth for ISO 27001 and ISO 42001 controls
 CREATE TABLE IF NOT EXISTS public.iso_control_definitions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   control_id TEXT NOT NULL UNIQUE, -- e.g., "iso27001_a5_1_1"
   framework TEXT NOT NULL, -- 'iso27001' or 'iso42001'
   clause TEXT NOT NULL, -- e.g., "A.5.1" or "4.1"
@@ -37,7 +37,7 @@ CREATE INDEX idx_iso_control_definitions_search ON public.iso_control_definition
 -- Table: iso_control_mapping
 -- Maps controls across frameworks (ISO 27001 -> AI Act, etc.)
 CREATE TABLE IF NOT EXISTS public.iso_control_mappings (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source_control_id TEXT NOT NULL REFERENCES public.iso_control_definitions(control_id) ON DELETE CASCADE,
   target_framework TEXT NOT NULL, -- 'ai_act', 'dsgvo', 'nis2'
   target_references TEXT[] NOT NULL, -- Array of mapped references
@@ -55,7 +55,7 @@ CREATE INDEX idx_iso_control_mappings_target ON public.iso_control_mappings(targ
 -- Table: compliance_reports
 -- Stores generated compliance reports (PDF/Excel exports)
 CREATE TABLE IF NOT EXISTS public.compliance_reports (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   frameworks_covered TEXT[] NOT NULL, -- ['iso27001', 'dsgvo', ...]
@@ -85,7 +85,7 @@ CREATE INDEX idx_compliance_reports_frameworks ON public.compliance_reports USIN
 -- Table: report_schedules
 -- For recurring report generation (daily, weekly, monthly, quarterly)
 CREATE TABLE IF NOT EXISTS public.report_schedules (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   frameworks_covered TEXT[] NOT NULL,
@@ -112,7 +112,7 @@ CREATE INDEX idx_report_schedules_next_run ON public.report_schedules(next_run_a
 -- Table: compliance_metrics_snapshots
 -- Daily snapshots of compliance scores for trending and forecasting
 CREATE TABLE IF NOT EXISTS public.compliance_metrics_snapshots (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   snapshot_date DATE NOT NULL,
   framework TEXT NOT NULL, -- 'iso27001', 'iso42001', 'dsgvo', 'ai_act', 'nis2', 'overall'
@@ -136,7 +136,7 @@ CREATE INDEX idx_compliance_metrics_snapshots_framework ON public.compliance_met
 -- Table: control_maturity_tracking
 -- Tracks individual control maturity progression over time
 CREATE TABLE IF NOT EXISTS public.control_maturity_tracking (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   control_id TEXT NOT NULL,
   current_maturity_level INTEGER NOT NULL DEFAULT 0, -- 0-5

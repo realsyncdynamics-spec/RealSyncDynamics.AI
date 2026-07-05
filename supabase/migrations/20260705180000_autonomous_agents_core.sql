@@ -38,41 +38,65 @@ CREATE INDEX IF NOT EXISTS idx_agents_type ON public.agents(type);
 
 -- ─── 2. Agent Execution Runs ───
 
-CREATE TABLE IF NOT EXISTS public.agent_runs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+-- Create agent_runs table only if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_runs' AND table_schema = 'public') THEN
+    CREATE TABLE public.agent_runs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+      tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
-  -- Execution Metadata
-  triggered_by TEXT NOT NULL CHECK (triggered_by IN ('schedule', 'manual', 'webhook', 'system')),
-  triggered_by_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+      -- Execution Metadata
+      triggered_by TEXT NOT NULL CHECK (triggered_by IN ('schedule', 'manual', 'webhook', 'system')),
+      triggered_by_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
 
-  -- Status Tracking
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
-  started_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
-  duration_ms INT, -- execution time in milliseconds
+      -- Status Tracking
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
+      started_at TIMESTAMPTZ,
+      completed_at TIMESTAMPTZ,
+      duration_ms INT,
 
-  -- Input & Output
-  input_params JSONB DEFAULT '{}', -- parameters passed to this run
-  output JSONB DEFAULT '{}', -- execution results (items_processed, gaps_found, tasks_created, etc.)
+      -- Input & Output
+      input_params JSONB DEFAULT '{}',
+      output JSONB DEFAULT '{}',
 
-  -- Error Handling
-  error_message TEXT,
-  error_details JSONB, -- stack trace or detailed error context
-  retry_count INT DEFAULT 0,
-  max_retries INT DEFAULT 3,
+      -- Error Handling
+      error_message TEXT,
+      error_details JSONB,
+      retry_count INT DEFAULT 0,
+      max_retries INT DEFAULT 3,
 
-  -- Audit
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+      -- Audit
+      created_at TIMESTAMPTZ DEFAULT now(),
+      updated_at TIMESTAMPTZ DEFAULT now()
+    );
+  END IF;
+END $$;
 
-CREATE INDEX IF NOT EXISTS idx_agent_runs_agent_id ON public.agent_runs(agent_id);
-CREATE INDEX IF NOT EXISTS idx_agent_runs_tenant_id ON public.agent_runs(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_agent_runs_status ON public.agent_runs(status);
-CREATE INDEX IF NOT EXISTS idx_agent_runs_triggered_by ON public.agent_runs(triggered_by);
-CREATE INDEX IF NOT EXISTS idx_agent_runs_created_at ON public.agent_runs(created_at);
+-- Create indexes on agent_runs (only if table exists and column exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'agent_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_runs_agent_id ON public.agent_runs(agent_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_runs_tenant_id ON public.agent_runs(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_runs_status ON public.agent_runs(status);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'triggered_by') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_runs_triggered_by ON public.agent_runs(triggered_by);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_runs_created_at ON public.agent_runs(created_at);
+  END IF;
+END $$;
 
 -- ─── 3. Agent-Generated Tasks ───
 

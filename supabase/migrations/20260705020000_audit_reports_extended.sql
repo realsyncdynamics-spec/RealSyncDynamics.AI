@@ -287,20 +287,20 @@ AS $$
 $$;
 
 -- ─── 7. View: Compliance Report Ready (all data joined) ───
--- Note: This view will be created in a future migration to avoid circular dependencies
--- CREATE OR REPLACE VIEW public.compliance_report_ready AS
--- SELECT
---   ar.id AS report_id,
---   ar.tenant_id,
---   ar.compliance_score,
---   ar.frameworks_covered,
---   COUNT(af.id) AS total_findings,
---   COUNT(af.id) FILTER (WHERE af.severity = 'critical')::INT AS critical_findings,
---   COUNT(af.id) FILTER (WHERE af.severity = 'high')::INT AS high_findings,
---   ar.created_at,
---   ar.updated_at
--- FROM public.audit_reports ar
--- LEFT JOIN public.audit_findings af ON af.audit_report_id = ar.id
--- GROUP BY ar.id, ar.tenant_id, ar.compliance_score, ar.frameworks_covered, ar.created_at, ar.updated_at;
 
--- ALTER VIEW public.compliance_report_ready OWNER TO postgres;
+CREATE OR REPLACE VIEW public.compliance_report_ready AS
+SELECT
+  ar.id AS report_id,
+  ar.tenant_id,
+  ar.compliance_score,
+  ar.frameworks_covered,
+  COUNT(af.id) AS total_findings,
+  COUNT(af.id) FILTER (WHERE af.severity = 'critical')::INT AS critical_findings,
+  COUNT(af.id) FILTER (WHERE af.severity = 'high')::INT AS high_findings,
+  ar.created_at,
+  ar.updated_at
+FROM public.audit_reports ar
+LEFT JOIN public.audit_findings af ON af.audit_report_id = ar.id
+GROUP BY ar.id, ar.tenant_id, ar.compliance_score, ar.frameworks_covered, ar.created_at, ar.updated_at;
+
+ALTER VIEW public.compliance_report_ready OWNER TO postgres;

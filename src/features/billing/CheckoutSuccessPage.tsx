@@ -2,13 +2,17 @@
  * Checkout Success Page — shown after successful payment
  *
  * Fetches subscription details from the database after successful Stripe payment
+ * For Agency+ customers, offers quick onboarding to API setup wizard
  */
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Zap } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
+
+const API_ENABLED_TIERS = ['agency', 'scale', 'enterprise'];
 
 export function CheckoutSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -117,14 +121,41 @@ export function CheckoutSuccessPage() {
           <p className="text-sm text-security-400 mt-2 font-semibold">{subscription.status}</p>
         </div>
 
+        {/* API Onboarding CTA for Agency+ */}
+        {subscription && API_ENABLED_TIERS.includes(subscription.plan.toLowerCase()) && (
+          <div className="bg-security-950 border border-security-700 rounded p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <Zap className="h-5 w-5 text-security-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-titanium-50 mb-1">API-Zugriff verfügbar</p>
+                <p className="text-xs text-titanium-400">
+                  Dein Plan beinhaltet API-Zugriff. Erstelle einen Schlüssel um Integrationen zu aktivieren.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button
-            data-testid="checkout-book-button"
+            data-testid="checkout-dashboard-button"
             onClick={() => navigate('/app')}
             className="flex-1 px-6 py-3 bg-security-500 text-white font-bold uppercase hover:bg-security-600"
           >
             Zum Dashboard
           </button>
+
+          {/* API Setup Button for Agency+ */}
+          {subscription && API_ENABLED_TIERS.includes(subscription.plan.toLowerCase()) && (
+            <button
+              data-testid="checkout-setup-api-button"
+              onClick={() => navigate('/app/api/setup')}
+              className="flex-1 px-6 py-3 bg-obsidian-700 text-titanium-100 font-bold uppercase border border-titanium-700 hover:bg-obsidian-600 transition-colors flex items-center justify-center gap-2"
+            >
+              <Zap className="h-4 w-4" />
+              API-Schlüssel erstellen
+            </button>
+          )}
         </div>
       </div>
     </div>

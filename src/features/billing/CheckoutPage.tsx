@@ -196,6 +196,7 @@ export function CheckoutPage() {
   // status === 'ready' — manual consent gate before Stripe hand-off.
   return (
     <ConsentGateShell
+      planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
       isPilot={isPilot}
@@ -368,6 +369,7 @@ function NoUserShell({
 // trail of consent — separate from the Stripe session itself.
 
 function ConsentGateShell({
+  planKey,
   tier,
   userEmail,
   isPilot,
@@ -380,6 +382,7 @@ function ConsentGateShell({
   onConfirm,
   backTo = '/pricing',
 }: {
+  planKey:                  string;
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
   isPilot:                  boolean;
@@ -411,13 +414,13 @@ function ConsentGateShell({
       </header>
 
       <main className="flex flex-col items-center justify-center px-4 py-12 sm:py-16">
-        <div className="max-w-md w-full">
+        <div className="max-w-md w-full" data-testid={`checkout-plan-${planKey}`}>
           <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-5" />
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-2 text-center">
             {tier.name}
           </h1>
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
-            {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
+            <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
           {isPilot ? (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
@@ -489,7 +492,7 @@ function ConsentGateShell({
 
           <div className="mb-6 space-y-4">
             <div className="text-center">
-              <h3 className="font-semibold text-sm text-titanium-100 mb-2">Im Plan enthalten:</h3>
+              <h3 className="font-semibold text-sm text-titanium-100 mb-2">Was ist alles enthalten</h3>
               <div className="space-y-1 text-xs text-silver-300">
                 <div data-testid="checkout-feature-1">✓ Vollständiger Plattformzugriff</div>
                 <div data-testid="checkout-feature-2">✓ Kundensupport</div>

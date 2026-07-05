@@ -8,6 +8,8 @@
 -- 2. webhook_deliveries: Append-only log of all delivery attempts
 -- 3. webhook-deliver function: Posts events to registered URLs with retries
 
+BEGIN;
+
 -- 1. Event catalog (documentation/configuration)
 CREATE TABLE IF NOT EXISTS public.webhook_event_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -191,3 +193,5 @@ RETURNS BIGINT AS $$
     AND created_at >= NOW() - INTERVAL '1 hour'
     AND status IN ('delivered', 'pending');
 $$ LANGUAGE SQL IMMUTABLE;
+
+COMMIT;

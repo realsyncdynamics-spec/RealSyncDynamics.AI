@@ -59,8 +59,8 @@ SELECT p.id, e.id, pd.val
 ON CONFLICT (product_id, entitlement_id) DO UPDATE SET value = EXCLUDED.value;
 
 -- 4. Create index on tenant_cost_ledger for faster aggregation
-CREATE INDEX IF NOT EXISTS tenant_cost_ledger_tenant_kind_recorded_idx
-  ON public.tenant_cost_ledger(tenant_id, cost_kind, recorded_at DESC)
+CREATE INDEX IF NOT EXISTS tenant_cost_ledger_tenant_kind_occurred_idx
+  ON public.tenant_cost_ledger(tenant_id, cost_kind, occurred_at DESC)
   WHERE cost_kind IN ('llm_input', 'llm_output');
 
 -- 5. Create RPC function to count tokens for a tenant in a month
@@ -77,8 +77,8 @@ BEGIN
   WHERE tenant_id = p_tenant_id
     AND cost_kind IN ('llm_input', 'llm_output')
     AND is_simulated = FALSE
-    -- Match month: recorded_at >= period_month AND < next month
-    AND DATE_TRUNC('month', recorded_at)::DATE = p_period_month::DATE;
+    -- Match month: occurred_at >= period_month AND < next month
+    AND DATE_TRUNC('month', occurred_at)::DATE = p_period_month::DATE;
 
   RETURN v_total;
 END;

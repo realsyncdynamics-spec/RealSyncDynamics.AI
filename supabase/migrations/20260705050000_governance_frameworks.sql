@@ -61,10 +61,13 @@ UPDATE public.framework_controls
 SET control_name = title
 WHERE control_name IS NULL AND title IS NOT NULL;
 
--- Drop NOT NULL constraint on framework to allow new records with only framework_id
--- (We're transitioning from framework TEXT to framework_id UUID)
+-- Drop NOT NULL constraints on old schema columns to allow new records with only framework_id/control_name
+-- (We're transitioning from framework TEXT + title TEXT to framework_id UUID + control_name TEXT)
 ALTER TABLE public.framework_controls
   ALTER COLUMN framework DROP NOT NULL;
+
+ALTER TABLE public.framework_controls
+  ALTER COLUMN title DROP NOT NULL;
 
 ALTER TABLE public.framework_controls ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "framework_controls public_read"

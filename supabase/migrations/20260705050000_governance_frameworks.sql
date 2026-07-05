@@ -37,9 +37,29 @@ CREATE TABLE IF NOT EXISTS public.framework_controls (
   UNIQUE(framework_id, control_code)
 );
 
--- Add framework_id column if it doesn't exist (in case table was created by earlier migration)
+-- Add missing columns if they don't exist (in case table was created by earlier migration)
 ALTER TABLE public.framework_controls
   ADD COLUMN IF NOT EXISTS framework_id UUID;
+
+ALTER TABLE public.framework_controls
+  ADD COLUMN IF NOT EXISTS control_name TEXT;
+
+ALTER TABLE public.framework_controls
+  ADD COLUMN IF NOT EXISTS guidance TEXT;
+
+ALTER TABLE public.framework_controls
+  ADD COLUMN IF NOT EXISTS severity TEXT DEFAULT 'medium' CHECK (severity IN ('info', 'low', 'medium', 'high', 'critical'));
+
+ALTER TABLE public.framework_controls
+  ADD COLUMN IF NOT EXISTS category TEXT;
+
+ALTER TABLE public.framework_controls
+  ADD COLUMN IF NOT EXISTS parent_control_id UUID;
+
+-- Migrate data from old schema (title -> control_name) for existing rows
+UPDATE public.framework_controls
+SET control_name = title
+WHERE control_name IS NULL AND title IS NOT NULL;
 
 ALTER TABLE public.framework_controls ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "framework_controls public_read"

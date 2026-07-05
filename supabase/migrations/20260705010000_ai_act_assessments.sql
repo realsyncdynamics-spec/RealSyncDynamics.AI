@@ -161,10 +161,7 @@ CREATE POLICY "ai_act_assessment_history tenant_read"
 CREATE INDEX IF NOT EXISTS idx_ai_act_assessment_history_assessment_id
   ON public.ai_act_assessment_history(assessment_id);
 
--- ─── 3. Extend ai_systems with assessment reference ───
-
-ALTER TABLE public.ai_systems
-  ADD COLUMN IF NOT EXISTS latest_assessment_id UUID REFERENCES public.ai_act_assessments(id) ON DELETE SET NULL;
+-- ─── 3. Add index for latest_assessment_id on ai_systems ───
 
 CREATE INDEX IF NOT EXISTS idx_ai_systems_latest_assessment_id
   ON public.ai_systems(latest_assessment_id);

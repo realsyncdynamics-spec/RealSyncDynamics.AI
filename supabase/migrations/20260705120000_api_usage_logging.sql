@@ -47,41 +47,5 @@ SELECT
 FROM public.api_calls
 GROUP BY tenant_id, DATE_TRUNC('month', called_at);
 
--- Function to check if API call is within rate limits
-CREATE OR REPLACE FUNCTION public.check_api_rate_limit(
-  p_tenant_id UUID,
-  p_tier TEXT
-)
-RETURNS BOOLEAN
-LANGUAGE plpgsql AS $$
-DECLARE
-  v_limit INTEGER;
-  v_current_count BIGINT;
-  v_month_start TIMESTAMPTZ;
-BEGIN
-  -- Determine monthly limit based on tier
-  v_limit := CASE
-    WHEN p_tier = 'agency' THEN 1000
-    WHEN p_tier = 'scale' THEN 10000
-    WHEN p_tier = 'enterprise' THEN 100000
-    ELSE 0
-  END;
-
-  IF v_limit = 0 THEN
-    RETURN false;
-  END IF;
-
-  v_month_start := DATE_TRUNC('month', now());
-
-  -- Count calls this month
-  SELECT COUNT(*) INTO v_current_count
-  FROM public.api_calls
-  WHERE tenant_id = p_tenant_id
-    AND called_at >= v_month_start
-    AND called_at < v_month_start + INTERVAL '1 month';
-
-  RETURN v_current_count < v_limit;
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.check_api_rate_limit(UUID, TEXT) TO authenticated, service_role;
+-- Note: Rate limit checking is implemented in the Edge Function (api-audit)
+-- which queries this table directly for performance and simplicity.

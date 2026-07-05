@@ -94,20 +94,52 @@ serve(async (req: Request) => {
       .eq('key_hash', await hashApiKey(apiKey))
       .single();
 
-    // Check rate limit
-    const { data: withinLimit } = await supabase.rpc(
-      'check_api_rate_limit',
-      {
-        p_tenant_id: tenantId,
-        p_tier: tenantData.subscription_tier || 'free',
-      }
-    );
+    // Check rate limit based on tier
+    const tierLimits: Record<string, number> = {
+      agency: 1000,
+      scale: 10000,
+      enterprise: 100000,
+      free: 0,
+    };
 
-    if (!withinLimit) {
+    const limit = tierLimits[tenantData.subscription_tier?.toLowerCase() || 'free'] || 0;
+
+    if (limit === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: `Rate limit exceeded. Monthly quota for ${tenantData.subscription_tier} plan reached.`,
+          error: `API access not available in ${tenantData.subscription_tier || 'free'} plan.`,
+          timestamp: new Date().toISOString(),
+        } as ApiAuditResponse),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Count calls this month
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const { data: callCount, error: countErr } = await supabase
+      .from('api_calls')
+      .select('id', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .gte('called_at', monthStart.toISOString());
+
+    if (countErr) {
+      throw countErr;
+    }
+
+    const currentCalls = callCount?.length || 0;
+
+    if (currentCalls >= limit) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Rate limit exceeded. Monthly quota (${limit} calls) for ${tenantData.subscription_tier} plan reached.`,
           timestamp: new Date().toISOString(),
         } as ApiAuditResponse),
         {

@@ -18,6 +18,7 @@ import { StatusBadge } from '../../../enterprise-os/components/Badge';
 import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
+import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
 
 export function CeoCockpitView() {
   const { activeTenantId, tenants } = useTenant();
@@ -165,6 +166,9 @@ export function CeoCockpitView() {
               <CoverageCard label="Kontroll-Mapping" percent={data.posture.assetMappingsPercent} />
             </div>
           )}
+
+          {/* Zone 5 — API-Status */}
+          <ApiStatusCard />
 
           <p className="text-[11px] text-titanium-600 font-mono">
             {data.lastUpdated ? `KPI-Stand: ${data.lastUpdated}` : 'KPI-Snapshot noch nicht verfügbar — Score aus Echtzeit-Zählern.'}

@@ -76,7 +76,10 @@ CREATE INDEX IF NOT EXISTS webhook_subscriptions_event_key_idx
   ON public.webhook_subscriptions(event_key);
 
 -- 3. Webhook delivery log (append-only, immutable)
-CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
+-- Drop if exists from partial migration to ensure clean schema
+DROP TABLE IF EXISTS public.webhook_deliveries CASCADE;
+
+CREATE TABLE public.webhook_deliveries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   subscription_id UUID NOT NULL REFERENCES public.webhook_subscriptions(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,

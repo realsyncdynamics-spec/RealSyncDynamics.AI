@@ -7,9 +7,9 @@ import { test, expect } from '@playwright/test';
  * These tests validate the routing infrastructure without relying on
  * specific UI elements or user interactions.
  *
- * Playwright uses baseURL from playwright.config.ts:
+ * Playwright uses baseURL from playwright.catalog.config.ts:
  * - Local: http://localhost:3000
- * - CI: http://localhost:4173 (via vite preview)
+ * - CI: http://localhost:4173 (via vite preview with TEST_BASE_URL env)
  */
 
 test.describe('E2E Flow Navigation — Route Loading', () => {

@@ -225,21 +225,25 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create triggers for updated_at
+DROP TRIGGER IF EXISTS update_iso_control_definitions_updated_at ON public.iso_control_definitions;
 CREATE TRIGGER update_iso_control_definitions_updated_at
   BEFORE UPDATE ON public.iso_control_definitions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_compliance_reports_updated_at ON public.compliance_reports;
 CREATE TRIGGER update_compliance_reports_updated_at
   BEFORE UPDATE ON public.compliance_reports
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_report_schedules_updated_at ON public.report_schedules;
 CREATE TRIGGER update_report_schedules_updated_at
   BEFORE UPDATE ON public.report_schedules
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_control_maturity_tracking_updated_at ON public.control_maturity_tracking;
 CREATE TRIGGER update_control_maturity_tracking_updated_at
   BEFORE UPDATE ON public.control_maturity_tracking
   FOR EACH ROW

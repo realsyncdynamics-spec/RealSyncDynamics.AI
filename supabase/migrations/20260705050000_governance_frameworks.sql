@@ -126,8 +126,7 @@ SELECT
   'Rechtmäßigkeit, Fairness, Transparenz, Zweckbindung, Datenminimierung, Speicherbegrenzung, Integrität, Vertraulichkeit',
   'critical',
   'data_protection'
-FROM public.compliance_frameworks f WHERE f.code = 'gdpr'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'gdpr';
 
 INSERT INTO public.framework_controls
   (framework_id, control_code, control_name, description, severity, category)
@@ -138,8 +137,7 @@ SELECT
   'Benachrichtigung der Aufsichtsbehörde (innerhalb 72 Stunden) und der betroffenen Person (ohne unangemessene Verzögerung)',
   'critical',
   'incident_response'
-FROM public.compliance_frameworks f WHERE f.code = 'gdpr'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'gdpr';
 
 INSERT INTO public.framework_controls
   (framework_id, control_code, control_name, description, severity, category)
@@ -150,8 +148,7 @@ SELECT
   'Systematische Massenüberwachung, Verzerrung, Bewertung oder Klassifizierung basierend auf geschützten Merkmalen',
   'critical',
   'risk_management'
-FROM public.compliance_frameworks f WHERE f.code = 'ai_act'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'ai_act';
 
 INSERT INTO public.framework_controls
   (framework_id, control_code, control_name, description, severity, category)
@@ -162,8 +159,7 @@ SELECT
   'Aufbewahrung von Dokumenten zur Gewährleistung der Nachvollziehbarkeit und Rechenschaftspflicht',
   'high',
   'documentation'
-FROM public.compliance_frameworks f WHERE f.code = 'ai_act'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'ai_act';
 
 INSERT INTO public.framework_controls
   (framework_id, control_code, control_name, description, severity, category)
@@ -174,8 +170,7 @@ SELECT
   'Meldung kritischer Vorfälle an zuständige Behörde (72 Stunden für Betreiber, 24 Stunden für digitale Services)',
   'critical',
   'incident_response'
-FROM public.compliance_frameworks f WHERE f.code = 'nis2'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'nis2';
 
 INSERT INTO public.framework_controls
   (framework_id, control_code, control_name, description, severity, category)
@@ -186,8 +181,7 @@ SELECT
   'Formulierung und Verbreitung von Richtlinien zur Informationssicherheit',
   'high',
   'risk_management'
-FROM public.compliance_frameworks f WHERE f.code = 'iso27001'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'iso27001';
 
 INSERT INTO public.framework_controls
   (framework_id, control_code, control_name, description, severity, category)
@@ -198,8 +192,7 @@ SELECT
   'Definition von Kontext, Beteiligung von Stakeholdern, Dokumentation',
   'high',
   'risk_management'
-FROM public.compliance_frameworks f WHERE f.code = 'iso42001'
-ON CONFLICT (framework_id, control_code) DO NOTHING;
+FROM public.compliance_frameworks f WHERE f.code = 'iso42001';
 
 -- ─── RPC: Calculate compliance score ───
 

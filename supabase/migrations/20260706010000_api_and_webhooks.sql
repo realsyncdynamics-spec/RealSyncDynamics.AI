@@ -80,8 +80,9 @@ CREATE POLICY "webhook_subscriptions tenant_update" ON public.webhook_subscripti
   USING (public.is_tenant_member(tenant_id))
   WITH CHECK (public.is_tenant_member(tenant_id));
 
--- ─── 4. Webhook Deliveries ───
-CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
+-- ─── 4. API Webhook Deliveries ───
+-- Note: Using api_webhook_deliveries to avoid conflict with webhook_deliveries from webhook notifications system
+CREATE TABLE IF NOT EXISTS public.api_webhook_deliveries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   subscription_id UUID NOT NULL REFERENCES public.webhook_subscriptions(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
@@ -98,19 +99,19 @@ CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_subscription_id ON public.webhook_deliveries(subscription_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_tenant_id ON public.webhook_deliveries(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON public.webhook_deliveries(status);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_created_at ON public.webhook_deliveries(created_at);
+CREATE INDEX IF NOT EXISTS idx_api_webhook_deliveries_subscription_id ON public.api_webhook_deliveries(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_api_webhook_deliveries_tenant_id ON public.api_webhook_deliveries(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_api_webhook_deliveries_status ON public.api_webhook_deliveries(status);
+CREATE INDEX IF NOT EXISTS idx_api_webhook_deliveries_created_at ON public.api_webhook_deliveries(created_at);
 
-ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.api_webhook_deliveries ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "webhook_deliveries tenant_read" ON public.webhook_deliveries;
-CREATE POLICY "webhook_deliveries tenant_read" ON public.webhook_deliveries FOR SELECT
+DROP POLICY IF EXISTS "api_webhook_deliveries tenant_read" ON public.api_webhook_deliveries;
+CREATE POLICY "api_webhook_deliveries tenant_read" ON public.api_webhook_deliveries FOR SELECT
   USING (public.is_tenant_member(tenant_id));
 
-DROP POLICY IF EXISTS "webhook_deliveries service_insert" ON public.webhook_deliveries;
-CREATE POLICY "webhook_deliveries service_insert" ON public.webhook_deliveries FOR INSERT
+DROP POLICY IF EXISTS "api_webhook_deliveries service_insert" ON public.api_webhook_deliveries;
+CREATE POLICY "api_webhook_deliveries service_insert" ON public.api_webhook_deliveries FOR INSERT
   WITH CHECK (auth.role() = 'service_role');
 
 -- ─── 5. Pre-Built Integrations ───

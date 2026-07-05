@@ -90,32 +90,44 @@ ALTER TABLE public.optimization_metrics ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "optimization_recs_tenant_read"
     ON public.optimization_recommendations
     FOR SELECT
-    USING (tenant_id = auth.jwt()->>'tenant_id');
+    USING (public.is_tenant_member(tenant_id));
 
-CREATE POLICY "optimization_recs_service_all"
+CREATE POLICY "optimization_recs_tenant_insert"
     ON public.optimization_recommendations
-    FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    FOR INSERT
+    WITH CHECK (public.is_tenant_member(tenant_id));
+
+CREATE POLICY "optimization_recs_tenant_update"
+    ON public.optimization_recommendations
+    FOR UPDATE
+    USING (public.is_tenant_member(tenant_id))
+    WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "optimization_exec_tenant_read"
     ON public.optimization_executions
     FOR SELECT
-    USING (tenant_id = auth.jwt()->>'tenant_id');
+    USING (public.is_tenant_member(tenant_id));
 
-CREATE POLICY "optimization_exec_service_all"
+CREATE POLICY "optimization_exec_tenant_insert"
     ON public.optimization_executions
-    FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    FOR INSERT
+    WITH CHECK (public.is_tenant_member(tenant_id));
+
+CREATE POLICY "optimization_exec_tenant_update"
+    ON public.optimization_executions
+    FOR UPDATE
+    USING (public.is_tenant_member(tenant_id))
+    WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "optimization_metrics_tenant_read"
     ON public.optimization_metrics
     FOR SELECT
-    USING (tenant_id = auth.jwt()->>'tenant_id');
+    USING (public.is_tenant_member(tenant_id));
 
-CREATE POLICY "optimization_metrics_service_all"
+CREATE POLICY "optimization_metrics_tenant_insert"
     ON public.optimization_metrics
-    FOR ALL
-    USING (auth.jwt()->>'role' = 'service_role');
+    FOR INSERT
+    WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- 5. Function to approve recommendation
 CREATE OR REPLACE FUNCTION public.approve_optimization_recommendation(

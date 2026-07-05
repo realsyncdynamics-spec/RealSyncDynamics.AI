@@ -24,7 +24,7 @@ import { trackConversion } from '../../lib/pixels';
  * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
  */
 
-const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise']);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
@@ -55,7 +55,7 @@ export function CheckoutPage() {
 
   // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free') {
+    if (planKey === 'free' || planKey === 'free-audit') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
       return;
     }

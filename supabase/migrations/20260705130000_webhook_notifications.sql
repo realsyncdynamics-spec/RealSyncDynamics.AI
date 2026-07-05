@@ -126,7 +126,7 @@ BEGIN
       WHEN p_alert_type = 'limit_exceeded' THEN 'API quota limit exceeded (' || p_api_calls_count || '/' || p_quota_limit || ')'
       ELSE 'API quota alert'
     END
-  ) INTO v_alert_id;
+  ) RETURNING id INTO v_alert_id;
 
   -- Queue webhook deliveries for active webhooks subscribed to this event
   INSERT INTO public.webhook_deliveries (webhook_id, event_type, event_data, created_at)

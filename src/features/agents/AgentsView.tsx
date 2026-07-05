@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { getSupabase } from '../../lib/supabase';
 
 interface Agent {
   id: string;
@@ -25,7 +25,7 @@ interface AgentRun {
 }
 
 export function AgentsView() {
-  const supabase = useSupabaseClient();
+  const supabase = getSupabase();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [runs, setRuns] = useState<AgentRun[]>([]);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { getSupabase } from '../../lib/supabase';
 
 interface Integration {
   id: string;
@@ -20,7 +20,7 @@ interface IntegrationConfig {
 }
 
 export function IntegrationMarketplaceView() {
-  const supabase = useSupabaseClient();
+  const supabase = getSupabase();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [configs, setConfigs] = useState<IntegrationConfig[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { getSupabase } from '../../lib/supabase';
 
 interface ApiKey {
   id: string;
@@ -16,7 +16,7 @@ interface ApiKey {
 }
 
 export function ApiKeysView() {
-  const supabase = useSupabaseClient();
+  const supabase = getSupabase();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { getSupabase } from '../../lib/supabase';
 
 interface WebhookSubscription {
   id: string;
@@ -23,7 +23,7 @@ interface WebhookDelivery {
 }
 
 export function WebhookConfigView() {
-  const supabase = useSupabaseClient();
+  const supabase = getSupabase();
   const [subscriptions, setSubscriptions] = useState<WebhookSubscription[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);

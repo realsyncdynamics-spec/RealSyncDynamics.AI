@@ -53,16 +53,16 @@ describe('Autonomous Agents - Phase 6.1', () => {
 
     it('should track execution progress through states', async () => {
       const states = ['pending', 'running', 'completed'];
-      const run = { status: 'pending' as const };
+      let run: { status: string } = { status: 'pending' };
 
-      const stateMachine = {
-        'pending': () => ({ ...run, status: 'running' as const }),
-        'running': () => ({ ...run, status: 'completed' as const }),
+      const stateMachine: Record<string, () => { status: string }> = {
+        'pending': () => ({ status: 'running' }),
+        'running': () => ({ status: 'completed' }),
       };
 
       let current = run;
       for (const nextState of states.slice(1)) {
-        const transition = stateMachine[current.status as keyof typeof stateMachine];
+        const transition = stateMachine[current.status];
         if (transition) {
           current = transition();
         }
@@ -128,12 +128,12 @@ describe('Autonomous Agents - Phase 6.1', () => {
 
     it('should track task status transitions', async () => {
       const statuses = ['open', 'in_progress', 'completed'];
-      let task = { status: 'open' as const };
+      let task: { status: string } = { status: 'open' };
 
-      task = { ...task, status: 'in_progress' as const };
+      task = { ...task, status: 'in_progress' };
       expect(task.status).toBe('in_progress');
 
-      task = { ...task, status: 'completed' as const };
+      task = { ...task, status: 'completed' };
       expect(task.status).toBe('completed');
     });
 

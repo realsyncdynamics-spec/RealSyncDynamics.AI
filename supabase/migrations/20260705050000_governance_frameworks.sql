@@ -37,6 +37,10 @@ CREATE TABLE IF NOT EXISTS public.framework_controls (
   UNIQUE(framework_id, control_code)
 );
 
+-- Add framework_id column if it doesn't exist (in case table was created by earlier migration)
+ALTER TABLE public.framework_controls
+  ADD COLUMN IF NOT EXISTS framework_id UUID;
+
 ALTER TABLE public.framework_controls ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "framework_controls public_read"
   ON public.framework_controls FOR SELECT

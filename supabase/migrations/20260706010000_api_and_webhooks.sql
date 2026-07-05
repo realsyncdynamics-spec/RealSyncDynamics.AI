@@ -30,9 +30,21 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
   UNIQUE(tenant_id, name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_api_keys_tenant_id ON public.api_keys(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_api_keys_revoked ON public.api_keys(revoked_at);
-CREATE INDEX IF NOT EXISTS idx_api_keys_expires ON public.api_keys(expires_at);
+-- Create indexes on api_keys (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_keys' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_keys_tenant_id ON public.api_keys(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_keys' AND table_schema = 'public' AND column_name = 'revoked_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_keys_revoked ON public.api_keys(revoked_at);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_keys' AND table_schema = 'public' AND column_name = 'expires_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_keys_expires ON public.api_keys(expires_at);
+  END IF;
+END $$;
 
 -- ─── 2. API Usage Tracking ───
 
@@ -59,9 +71,21 @@ CREATE TABLE IF NOT EXISTS public.api_usage (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_api_usage_tenant_id ON public.api_usage(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_api_usage_api_key_id ON public.api_usage(api_key_id);
-CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON public.api_usage(created_at);
+-- Create indexes on api_usage (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_usage' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_usage_tenant_id ON public.api_usage(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_usage' AND table_schema = 'public' AND column_name = 'api_key_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_usage_api_key_id ON public.api_usage(api_key_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'api_usage' AND table_schema = 'public' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON public.api_usage(created_at);
+  END IF;
+END $$;
 
 -- ─── 3. Webhook Subscriptions ───
 
@@ -97,8 +121,17 @@ CREATE TABLE IF NOT EXISTS public.webhook_subscriptions (
   UNIQUE(tenant_id, name)
 );
 
-CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_tenant_id ON public.webhook_subscriptions(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_active ON public.webhook_subscriptions(active);
+-- Create indexes on webhook_subscriptions (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'webhook_subscriptions' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_tenant_id ON public.webhook_subscriptions(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'webhook_subscriptions' AND table_schema = 'public' AND column_name = 'active') THEN
+    CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_active ON public.webhook_subscriptions(active);
+  END IF;
+END $$;
 
 -- ─── 4. Webhook Deliveries (Event Log) ───
 
@@ -127,10 +160,25 @@ CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_subscription_id ON public.webhook_deliveries(subscription_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_tenant_id ON public.webhook_deliveries(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON public.webhook_deliveries(status);
-CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_created_at ON public.webhook_deliveries(created_at);
+-- Create indexes on webhook_deliveries (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'webhook_deliveries' AND table_schema = 'public' AND column_name = 'subscription_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_subscription_id ON public.webhook_deliveries(subscription_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'webhook_deliveries' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_tenant_id ON public.webhook_deliveries(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'webhook_deliveries' AND table_schema = 'public' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON public.webhook_deliveries(status);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'webhook_deliveries' AND table_schema = 'public' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_created_at ON public.webhook_deliveries(created_at);
+  END IF;
+END $$;
 
 -- ─── 5. Pre-Built Integrations ───
 
@@ -153,8 +201,17 @@ CREATE TABLE IF NOT EXISTS public.integrations (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_integrations_slug ON public.integrations(slug);
-CREATE INDEX IF NOT EXISTS idx_integrations_enabled ON public.integrations(enabled);
+-- Create indexes on integrations (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'integrations' AND table_schema = 'public' AND column_name = 'slug') THEN
+    CREATE INDEX IF NOT EXISTS idx_integrations_slug ON public.integrations(slug);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'integrations' AND table_schema = 'public' AND column_name = 'enabled') THEN
+    CREATE INDEX IF NOT EXISTS idx_integrations_enabled ON public.integrations(enabled);
+  END IF;
+END $$;
 
 -- ─── 6. User Integration Configurations ───
 
@@ -176,8 +233,17 @@ CREATE TABLE IF NOT EXISTS public.integration_configs (
   UNIQUE(tenant_id, integration_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_integration_configs_tenant_id ON public.integration_configs(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_integration_configs_integration_id ON public.integration_configs(integration_id);
+-- Create indexes on integration_configs (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'integration_configs' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_integration_configs_tenant_id ON public.integration_configs(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'integration_configs' AND table_schema = 'public' AND column_name = 'integration_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_integration_configs_integration_id ON public.integration_configs(integration_id);
+  END IF;
+END $$;
 
 -- ─── 7. Row Level Security ───
 

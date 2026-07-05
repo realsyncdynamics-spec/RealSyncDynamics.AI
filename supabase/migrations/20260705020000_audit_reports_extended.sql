@@ -330,11 +330,11 @@ AS $$
     COUNT(*)::INT,
     jsonb_object_agg(
       af.framework_code,
-      COUNT(*) FILTER (WHERE af.framework_code = framework_code)::INT
+      COUNT(*)::INT
     )
   FROM public.audit_findings af
   WHERE af.audit_report_id = p_audit_report_id
-  GROUP BY af.severity
+  GROUP BY af.severity, af.framework_code
   ORDER BY
     CASE af.severity
       WHEN 'critical' THEN 1

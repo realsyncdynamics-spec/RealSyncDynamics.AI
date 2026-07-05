@@ -48,12 +48,32 @@ CREATE INDEX IF NOT EXISTS idx_partner_quota_year_month ON public.partner_provis
 COMMENT ON TABLE public.partner_provisioning_quota IS 'Tracks monthly provisioning quota usage per partner for rate limiting';
 
 -- 3. Extend tenants table with partner branding
-ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS partner_id UUID REFERENCES public.partners(id) ON DELETE SET NULL;
-ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS brand_colors JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS partner_id UUID;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS brand_colors JSONB;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS custom_domain TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS custom_logo_url TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS billing_email TEXT;
-ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS auto_invoice_passthrough BOOLEAN DEFAULT false;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS auto_invoice_passthrough BOOLEAN;
+
+-- Add defaults
+DO $$
+BEGIN
+  ALTER TABLE public.tenants ALTER COLUMN brand_colors SET DEFAULT '{}'::jsonb;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.tenants ALTER COLUMN auto_invoice_passthrough SET DEFAULT false;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+-- Add foreign key constraint
+DO $$
+BEGIN
+  ALTER TABLE public.tenants ADD CONSTRAINT tenants_partner_id_fk FOREIGN KEY (partner_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_tenants_partner_id ON public.tenants(partner_id);
 -- Partial unique index on custom_domain (allows NULL, prevents duplicates)

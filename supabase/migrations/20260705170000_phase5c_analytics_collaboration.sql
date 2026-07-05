@@ -1,9 +1,9 @@
 -- Phase 5C: Analytics, Bulk Operations, Collaboration
 
 -- Table: bulk_import_jobs (async processing of large imports)
-CREATE TABLE IF NOT EXISTS bulk_import_jobs (
+CREATE TABLE IF NOT EXISTS public.bulk_import_jobs (
   id TEXT PRIMARY KEY DEFAULT 'job-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   type TEXT NOT NULL, -- 'import_gaps', 'import_evidence', 'bulk_update', 'bulk_assign'
   filename TEXT NOT NULL,
   file_url TEXT,
@@ -18,9 +18,9 @@ CREATE TABLE IF NOT EXISTS bulk_import_jobs (
 );
 
 -- Table: compliance_deadlines (regulatory & milestone tracking)
-CREATE TABLE IF NOT EXISTS compliance_deadlines (
+CREATE TABLE IF NOT EXISTS public.compliance_deadlines (
   id TEXT PRIMARY KEY DEFAULT 'deadline-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   type TEXT NOT NULL, -- 'regulatory', 'remediation', 'audit', 'certification'
   title TEXT NOT NULL,
   description TEXT,
@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS compliance_deadlines (
 );
 
 -- Table: governance_assignments (team member task assignments)
-CREATE TABLE IF NOT EXISTS governance_assignments (
+CREATE TABLE IF NOT EXISTS public.governance_assignments (
   id TEXT PRIMARY KEY DEFAULT 'assign-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   resource_type TEXT NOT NULL, -- 'gap', 'control', 'plan', 'framework'
   resource_id TEXT NOT NULL,
   assigned_to UUID NOT NULL REFERENCES auth.users(id),
@@ -52,9 +52,9 @@ CREATE TABLE IF NOT EXISTS governance_assignments (
 );
 
 -- Table: governance_comments (discussion threads per resource)
-CREATE TABLE IF NOT EXISTS governance_comments (
+CREATE TABLE IF NOT EXISTS public.governance_comments (
   id TEXT PRIMARY KEY DEFAULT 'comment-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   resource_type TEXT NOT NULL, -- 'gap', 'control', 'plan', etc.
   resource_id TEXT NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id),
@@ -65,9 +65,9 @@ CREATE TABLE IF NOT EXISTS governance_comments (
 );
 
 -- Table: governance_audit_log (comprehensive audit trail)
-CREATE TABLE IF NOT EXISTS governance_audit_log (
+CREATE TABLE IF NOT EXISTS public.governance_audit_log (
   id TEXT PRIMARY KEY DEFAULT 'audit-' || gen_random_uuid()::text,
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   action TEXT NOT NULL, -- 'CREATE', 'UPDATE', 'DELETE', 'EXPORT', etc.
   resource_type TEXT NOT NULL, -- 'Control', 'Gap', 'Evidence', etc.
   resource_id TEXT NOT NULL,
@@ -82,28 +82,28 @@ CREATE TABLE IF NOT EXISTS governance_audit_log (
 
 -- Indexes for performance
 
-CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_tenant ON bulk_import_jobs(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_status ON bulk_import_jobs(status);
-CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_created_at ON bulk_import_jobs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_tenant ON public.bulk_import_jobs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_status ON public.bulk_import_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_created_at ON public.bulk_import_jobs(created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_tenant ON compliance_deadlines(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_due_date ON compliance_deadlines(due_date);
-CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_status ON compliance_deadlines(status);
-CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_framework ON compliance_deadlines(framework);
+CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_tenant ON public.compliance_deadlines(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_due_date ON public.compliance_deadlines(due_date);
+CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_status ON public.compliance_deadlines(status);
+CREATE INDEX IF NOT EXISTS idx_compliance_deadlines_framework ON public.compliance_deadlines(framework);
 
-CREATE INDEX IF NOT EXISTS idx_governance_assignments_tenant ON governance_assignments(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_governance_assignments_assigned_to ON governance_assignments(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_governance_assignments_resource ON governance_assignments(resource_type, resource_id);
-CREATE INDEX IF NOT EXISTS idx_governance_assignments_status ON governance_assignments(status);
+CREATE INDEX IF NOT EXISTS idx_governance_assignments_tenant ON public.governance_assignments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_governance_assignments_assigned_to ON public.governance_assignments(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_governance_assignments_resource ON public.governance_assignments(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_governance_assignments_status ON public.governance_assignments(status);
 
-CREATE INDEX IF NOT EXISTS idx_governance_comments_tenant ON governance_comments(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_governance_comments_resource ON governance_comments(resource_type, resource_id);
-CREATE INDEX IF NOT EXISTS idx_governance_comments_user ON governance_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_governance_comments_tenant ON public.governance_comments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_governance_comments_resource ON public.governance_comments(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_governance_comments_user ON public.governance_comments(user_id);
 
-CREATE INDEX IF NOT EXISTS idx_governance_audit_log_tenant ON governance_audit_log(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_governance_audit_log_resource ON governance_audit_log(resource_type, resource_id);
-CREATE INDEX IF NOT EXISTS idx_governance_audit_log_user ON governance_audit_log(user_id);
-CREATE INDEX IF NOT EXISTS idx_governance_audit_log_created_at ON governance_audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_governance_audit_log_tenant ON public.governance_audit_log(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_governance_audit_log_resource ON public.governance_audit_log(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_governance_audit_log_user ON public.governance_audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_governance_audit_log_created_at ON public.governance_audit_log(created_at DESC);
 
 -- Trigger: Update compliance_deadlines.updated_at
 CREATE OR REPLACE FUNCTION update_compliance_deadlines_updated_at()
@@ -114,9 +114,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS compliance_deadlines_updated_at_trigger ON compliance_deadlines;
+DROP TRIGGER IF EXISTS compliance_deadlines_updated_at_trigger ON public.compliance_deadlines;
 CREATE TRIGGER compliance_deadlines_updated_at_trigger
-BEFORE UPDATE ON compliance_deadlines
+BEFORE UPDATE ON public.compliance_deadlines
 FOR EACH ROW
 EXECUTE FUNCTION update_compliance_deadlines_updated_at();
 
@@ -129,9 +129,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS governance_assignments_updated_at_trigger ON governance_assignments;
+DROP TRIGGER IF EXISTS governance_assignments_updated_at_trigger ON public.governance_assignments;
 CREATE TRIGGER governance_assignments_updated_at_trigger
-BEFORE UPDATE ON governance_assignments
+BEFORE UPDATE ON public.governance_assignments
 FOR EACH ROW
 EXECUTE FUNCTION update_governance_assignments_updated_at();
 
@@ -144,80 +144,80 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS governance_comments_updated_at_trigger ON governance_comments;
+DROP TRIGGER IF EXISTS governance_comments_updated_at_trigger ON public.governance_comments;
 CREATE TRIGGER governance_comments_updated_at_trigger
-BEFORE UPDATE ON governance_comments
+BEFORE UPDATE ON public.governance_comments
 FOR EACH ROW
 EXECUTE FUNCTION update_governance_comments_updated_at();
 
 -- RLS: Enable RLS on all tables (compliance_metrics_snapshots already enabled in Phase 5A)
-ALTER TABLE bulk_import_jobs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE compliance_deadlines ENABLE ROW LEVEL SECURITY;
-ALTER TABLE governance_assignments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE governance_comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE governance_audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bulk_import_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.compliance_deadlines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.governance_assignments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.governance_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.governance_audit_log ENABLE ROW LEVEL SECURITY;
 
 -- RLS: bulk_import_jobs
 CREATE POLICY "Users can read jobs in their tenant"
-ON bulk_import_jobs FOR SELECT
+ON public.bulk_import_jobs FOR SELECT
 USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create jobs in their tenant"
-ON bulk_import_jobs FOR INSERT
+ON public.bulk_import_jobs FOR INSERT
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update jobs in their tenant"
-ON bulk_import_jobs FOR UPDATE
+ON public.bulk_import_jobs FOR UPDATE
 USING (public.is_tenant_member(tenant_id))
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: compliance_deadlines
 CREATE POLICY "Users can read deadlines in their tenant"
-ON compliance_deadlines FOR SELECT
+ON public.compliance_deadlines FOR SELECT
 USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create deadlines in their tenant"
-ON compliance_deadlines FOR INSERT
+ON public.compliance_deadlines FOR INSERT
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update deadlines in their tenant"
-ON compliance_deadlines FOR UPDATE
+ON public.compliance_deadlines FOR UPDATE
 USING (public.is_tenant_member(tenant_id))
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: governance_assignments
 CREATE POLICY "Users can read assignments in their tenant"
-ON governance_assignments FOR SELECT
+ON public.governance_assignments FOR SELECT
 USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create assignments in their tenant"
-ON governance_assignments FOR INSERT
+ON public.governance_assignments FOR INSERT
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update assignments in their tenant"
-ON governance_assignments FOR UPDATE
+ON public.governance_assignments FOR UPDATE
 USING (public.is_tenant_member(tenant_id))
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: governance_comments
 CREATE POLICY "Users can read comments in their tenant"
-ON governance_comments FOR SELECT
+ON public.governance_comments FOR SELECT
 USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can create comments in their tenant"
-ON governance_comments FOR INSERT
+ON public.governance_comments FOR INSERT
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update own comments"
-ON governance_comments FOR UPDATE
+ON public.governance_comments FOR UPDATE
 USING (user_id = auth.uid())
 WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- RLS: governance_audit_log
 CREATE POLICY "Users can read audit log in their tenant"
-ON governance_audit_log FOR SELECT
+ON public.governance_audit_log FOR SELECT
 USING (public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Service role can insert audit entries"
-ON governance_audit_log FOR INSERT
+ON public.governance_audit_log FOR INSERT
 WITH CHECK (true);

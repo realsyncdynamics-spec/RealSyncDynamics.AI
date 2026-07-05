@@ -1,0 +1,100 @@
+name: Deploy Frontend to VPS
+
+on:
+  push:
+    branches:
+      - claude/turborepo-nextjs-docker-4l9cey
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'tailwind.config.ts'
+      - 'docker/realsync-web/**'
+      - '.github/workflows/deploy-frontend-vps.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          # Setup SSH key
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # SSH into VPS and pull + redeploy
+          ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" << 'EOF'
+          set -e
+
+          echo "[*] Deploying Frontend..."
+          cd ${{ env.VPS_DEPLOY_PATH }}
+
+          # Pull latest code
+          git fetch origin
+          git checkout origin/claude/turborepo-nextjs-docker-4l9cey
+
+          # Deploy
+          cd docker/realsync-web
+          echo "[*] Building Docker image..."
+          docker compose build --progress=plain
+
+          echo "[*] Starting container..."
+          docker compose up -d
+
+          echo "[*] Verifying deployment..."
+          sleep 5
+          if docker compose ps | grep -q "healthy"; then
+            echo "✅ Frontend deployed successfully"
+          else
+            echo "❌ Container not healthy!"
+            docker compose logs
+            exit 1
+          fi
+          EOF
+
+      - name: Verify deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # Test HTTPS endpoint
+          ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" << 'EOF'
+          echo "[*] Checking container status..."
+          docker ps | grep realsync-frontend
+
+          echo "[*] Frontend deployment verified ✅"
+          EOF
+
+  notify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Deployment status
+        run: |
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "✅ Frontend deployed to VPS"
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi

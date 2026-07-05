@@ -544,8 +544,7 @@ test.describe('Pricing Flow', () => {
       };
 
       for (const path of paths) {
-        await page.goto(`${BASE_URL}${path}`);
-        await page.waitForLoadState('networkidle');
+        await page.goto(`${BASE_URL}${path}`, { waitUntil: 'networkidle' });
 
         // Check if path has a special redirect, otherwise expect it in the URL
         const finalUrl = page.url();

@@ -173,6 +173,7 @@ const ConnectionsView = lazy(() => import('./features/kodee/connections/Connecti
 const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => ({ default: m.UsageView })));
 const BillingView = lazy(() => import('./features/billing/BillingView').then((m) => ({ default: m.BillingView })));
 const GovernanceAlertsView = lazy(() => import('./features/governance/AlertsView').then((m) => ({ default: m.AlertsView })));
+const OptimizationView = lazy(() => import('./features/governance/OptimizationView').then((m) => ({ default: m.OptimizationView })));
 const MonitoringSourcesView = lazy(() => import('./features/governance/MonitoringSourcesView').then((m) => ({ default: m.MonitoringSourcesView })));
 const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
 const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
@@ -603,6 +604,7 @@ function RoutesWithTracking() {
       <Route path="/app/scans/:scanId" element={<GovernanceBrowserShell><GovernanceScanDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
       <Route path="/app/alerts" element={<GovernanceBrowserShell><GovernanceAlertsView /></GovernanceBrowserShell>} />
+      <Route path="/app/optimize" element={<GovernanceBrowserShell><OptimizationView /></GovernanceBrowserShell>} />
       <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />

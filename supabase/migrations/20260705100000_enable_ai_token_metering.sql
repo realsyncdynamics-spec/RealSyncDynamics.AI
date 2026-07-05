@@ -88,7 +88,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE OR REPLACE VIEW public.ai_token_daily_totals AS
 SELECT
   tenant_id,
-  DATE(recorded_at) as day,
+  DATE(occurred_at) as day,
   SUM(CASE WHEN cost_kind = 'llm_input' THEN units ELSE 0 END) as input_tokens,
   SUM(CASE WHEN cost_kind = 'llm_output' THEN units ELSE 0 END) as output_tokens,
   SUM(CASE WHEN cost_kind IN ('llm_input', 'llm_output') THEN units ELSE 0 END) as total_tokens,
@@ -96,7 +96,7 @@ SELECT
 FROM public.tenant_cost_ledger
 WHERE cost_kind IN ('llm_input', 'llm_output')
   AND is_simulated = FALSE
-GROUP BY tenant_id, DATE(recorded_at)
+GROUP BY tenant_id, DATE(occurred_at)
 ORDER BY day DESC;
 
 -- 7. Trigger on ai-invoke: record usage_events for tokens consumed

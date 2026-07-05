@@ -176,3 +176,26 @@ SELECT
   'risk_management'
 FROM public.compliance_frameworks f WHERE f.code = 'iso42001'
 ON CONFLICT (framework_id, control_code) DO NOTHING;
+
+-- ─── RPC: Calculate compliance score ───
+
+CREATE OR REPLACE FUNCTION public.calculate_compliance_score(p_tenant_id UUID, p_framework_id UUID)
+RETURNS INT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    ROUND(
+      (
+        COUNT(CASE WHEN fi.status IN ('implemented', 'optimized') THEN 1 END)::NUMERIC /
+        NULLIF(COUNT(fi.id)::NUMERIC, 0)
+      ) * 100
+    )::INT,
+    0
+  ) AS score
+  FROM public.framework_implementations fi
+  WHERE fi.tenant_id = p_tenant_id
+    AND fi.framework_id = p_framework_id;
+$$;

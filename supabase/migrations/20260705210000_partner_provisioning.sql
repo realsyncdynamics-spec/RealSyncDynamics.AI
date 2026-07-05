@@ -50,13 +50,14 @@ COMMENT ON TABLE public.partner_provisioning_quota IS 'Tracks monthly provisioni
 -- 3. Extend tenants table with partner branding
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS partner_id UUID REFERENCES public.partners(id) ON DELETE SET NULL;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS brand_colors JSONB DEFAULT '{}'::jsonb;
-ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS custom_domain TEXT UNIQUE;
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS custom_domain TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS custom_logo_url TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS billing_email TEXT;
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS auto_invoice_passthrough BOOLEAN DEFAULT false;
 
 CREATE INDEX IF NOT EXISTS idx_tenants_partner_id ON public.tenants(partner_id);
-CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON public.tenants(custom_domain) WHERE custom_domain IS NOT NULL;
+-- Partial unique index on custom_domain (allows NULL, prevents duplicates)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_custom_domain_unique ON public.tenants(custom_domain) WHERE custom_domain IS NOT NULL;
 
 -- 4. RLS Policies for partners (service-role only)
 ALTER TABLE public.partners ENABLE ROW LEVEL SECURITY;

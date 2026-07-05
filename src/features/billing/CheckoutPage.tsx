@@ -63,6 +63,11 @@ export function CheckoutPage() {
       navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
       return;
     }
+    // Invalid plan key: redirect to pricing
+    if (planKey && !VALID_PLAN_KEYS.has(planKey as PlanKey)) {
+      navigate('/pricing', { replace: true });
+      return;
+    }
   }, [planKey, navigate]);
 
   // 3. Auth-State + Membership-Lookup

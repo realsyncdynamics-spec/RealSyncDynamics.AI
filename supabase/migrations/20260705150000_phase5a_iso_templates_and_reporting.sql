@@ -2,7 +2,6 @@
 -- Migration: Add support for ISO control definitions and compliance reporting
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For full-text search
 
 -- Table: iso_control_definitions

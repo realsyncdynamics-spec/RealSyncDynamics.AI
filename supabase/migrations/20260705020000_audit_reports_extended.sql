@@ -39,65 +39,6 @@ CREATE POLICY "audit_reports tenant_update"
   USING (public.is_tenant_member(tenant_id))
   WITH CHECK (public.is_tenant_member(tenant_id));
 
--- ─── 0b. Compliance Gaps table (prerequisite for audit_findings) ───
-
-CREATE TABLE IF NOT EXISTS public.compliance_gaps (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  framework_id UUID NOT NULL,
-  control_id UUID NOT NULL REFERENCES public.framework_controls(id) ON DELETE CASCADE,
-
-  -- Gap Status & Priority
-  status TEXT CHECK (status IN ('identified', 'planned', 'in_progress', 'resolved', 'accepted_risk', 'deferred')) DEFAULT 'identified',
-  risk_level TEXT CHECK (risk_level IN ('info', 'low', 'medium', 'high', 'critical')) DEFAULT 'medium',
-  priority INT CHECK (priority >= 1 AND priority <= 10) DEFAULT 5,
-
-  -- Remediation Details
-  remediation_notes TEXT,
-  remediation_owner UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  estimated_effort_hours INT,
-  due_date DATE,
-
-  -- Evidence Tracking
-  evidence_item_ids TEXT[] DEFAULT '{}',
-  related_incident_ids TEXT[] DEFAULT '{}',
-
-  -- Audit Trail
-  identified_at TIMESTAMPTZ DEFAULT now(),
-  resolved_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-
-  UNIQUE(tenant_id, framework_id, control_id)
-);
-
-ALTER TABLE public.compliance_gaps ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "compliance_gaps tenant_read"
-  ON public.compliance_gaps FOR SELECT
-  USING (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "compliance_gaps tenant_write"
-  ON public.compliance_gaps FOR INSERT
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "compliance_gaps tenant_update"
-  ON public.compliance_gaps FOR UPDATE
-  USING (public.is_tenant_member(tenant_id))
-  WITH CHECK (public.is_tenant_member(tenant_id));
-
-CREATE INDEX IF NOT EXISTS idx_compliance_gaps_tenant_id
-  ON public.compliance_gaps(tenant_id);
-
-CREATE INDEX IF NOT EXISTS idx_compliance_gaps_framework_id
-  ON public.compliance_gaps(framework_id);
-
-CREATE INDEX IF NOT EXISTS idx_compliance_gaps_control_id
-  ON public.compliance_gaps(control_id);
-
-CREATE INDEX IF NOT EXISTS idx_compliance_gaps_status
-  ON public.compliance_gaps(status);
-
 -- ─── 1. Add framework-specific columns to audit_reports ───
 
 ALTER TABLE public.audit_reports
@@ -133,8 +74,8 @@ CREATE TABLE IF NOT EXISTS public.audit_findings (
   estimated_remediation_hours INT,
   remediation_priority INT CHECK (remediation_priority >= 1 AND remediation_priority <= 10),
 
-  -- Reference to compliance gap (if already identified)
-  compliance_gap_id UUID REFERENCES public.compliance_gaps(id) ON DELETE SET NULL,
+  -- Reference to compliance gap (if already identified) - stored as UUID without constraint
+  compliance_gap_id UUID,
 
   -- Status
   status TEXT CHECK (status IN ('identified', 'acknowledged', 'remediation_planned', 'remediation_in_progress', 'remediated', 'deferred')) DEFAULT 'identified',

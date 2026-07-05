@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// Wie alle anderen e2e-Specs: die CI setzt TEST_BASE_URL (Preview-Server auf
-// :4173). Vorher las diese Datei fälschlich process.env.BASE_URL — dadurch fiel
-// sie in CI auf :3000 zurück und alle Navigationen liefen in ERR_CONNECTION_REFUSED.
-const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
 test.describe('Pricing Flow', () => {
   test.describe('Pricing Overview (/pricing)', () => {

@@ -53,10 +53,10 @@ CREATE OR REPLACE FUNCTION public.check_api_rate_limit(
   p_tier TEXT
 )
 RETURNS BOOLEAN
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+LANGUAGE plpgsql AS $$
 DECLARE
   v_limit INTEGER;
-  v_current_count INTEGER;
+  v_current_count BIGINT;
   v_month_start TIMESTAMPTZ;
 BEGIN
   -- Determine monthly limit based on tier
@@ -74,15 +74,14 @@ BEGIN
   v_month_start := DATE_TRUNC('month', now());
 
   -- Count calls this month
-  SELECT COUNT(*)
-  INTO v_current_count
+  SELECT COUNT(*) INTO v_current_count
   FROM public.api_calls
   WHERE tenant_id = p_tenant_id
     AND called_at >= v_month_start
-    AND called_at < v_month_start + interval '1 month';
+    AND called_at < v_month_start + INTERVAL '1 month';
 
   RETURN v_current_count < v_limit;
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.check_api_rate_limit(UUID, TEXT) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.check_api_rate_limit(UUID, TEXT) TO authenticated, service_role;

@@ -29,14 +29,30 @@ CREATE POLICY "webhook_endpoints tenant_member_read"
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));
 
-DROP POLICY IF EXISTS "webhook_endpoints tenant_member_crud" ON public.webhook_endpoints;
-CREATE POLICY "webhook_endpoints tenant_member_crud"
-  ON public.webhook_endpoints FOR INSERT, UPDATE, DELETE
+DROP POLICY IF EXISTS "webhook_endpoints tenant_member_insert" ON public.webhook_endpoints;
+CREATE POLICY "webhook_endpoints tenant_member_insert"
+  ON public.webhook_endpoints FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.memberships m
+    WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
+  ));
+
+DROP POLICY IF EXISTS "webhook_endpoints tenant_member_update" ON public.webhook_endpoints;
+CREATE POLICY "webhook_endpoints tenant_member_update"
+  ON public.webhook_endpoints FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ))
   WITH CHECK (EXISTS (
+    SELECT 1 FROM public.memberships m
+    WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
+  ));
+
+DROP POLICY IF EXISTS "webhook_endpoints tenant_member_delete" ON public.webhook_endpoints;
+CREATE POLICY "webhook_endpoints tenant_member_delete"
+  ON public.webhook_endpoints FOR DELETE
+  USING (EXISTS (
     SELECT 1 FROM public.memberships m
     WHERE m.tenant_id = webhook_endpoints.tenant_id AND m.user_id = auth.uid()
   ));

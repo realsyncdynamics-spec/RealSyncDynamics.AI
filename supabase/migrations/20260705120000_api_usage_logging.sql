@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.api_calls (
 );
 
 CREATE INDEX IF NOT EXISTS idx_api_calls_tenant_key ON public.api_calls(tenant_id, api_key_id);
-CREATE INDEX IF NOT EXISTS idx_api_calls_called_at ON public.api_calls(called_at DESC) WHERE called_at > now() - interval '30 days';
+CREATE INDEX IF NOT EXISTS idx_api_calls_called_at ON public.api_calls(called_at DESC);
 CREATE INDEX IF NOT EXISTS idx_api_calls_api_key ON public.api_calls(api_key_id, called_at DESC);
 
 ALTER TABLE public.api_calls ENABLE ROW LEVEL SECURITY;

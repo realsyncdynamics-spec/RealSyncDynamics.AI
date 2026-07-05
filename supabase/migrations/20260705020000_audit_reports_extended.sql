@@ -233,22 +233,22 @@ AS $$
     COALESCE(
       ROUND(
         (
-          (COUNT(*) FILTER (WHERE severity = 'critical') * 0)::NUMERIC +
-          (COUNT(*) FILTER (WHERE severity = 'high') * 10)::NUMERIC +
-          (COUNT(*) FILTER (WHERE severity = 'medium') * 25)::NUMERIC +
-          (COUNT(*) FILTER (WHERE severity = 'low') * 40)::NUMERIC +
-          (COUNT(*) FILTER (WHERE severity = 'info') * 50)::NUMERIC
+          (COUNT(*) FILTER (WHERE af.severity = 'critical') * 0)::NUMERIC +
+          (COUNT(*) FILTER (WHERE af.severity = 'high') * 10)::NUMERIC +
+          (COUNT(*) FILTER (WHERE af.severity = 'medium') * 25)::NUMERIC +
+          (COUNT(*) FILTER (WHERE af.severity = 'low') * 40)::NUMERIC +
+          (COUNT(*) FILTER (WHERE af.severity = 'info') * 50)::NUMERIC
         ) / NULLIF(COUNT(*)::NUMERIC, 0)
       )::INT,
       100
     ) AS compliance_score,
-    COUNT(*) FILTER (WHERE severity = 'critical')::INT AS critical_count,
-    COUNT(*) FILTER (WHERE severity = 'high')::INT AS high_count,
-    COUNT(*) FILTER (WHERE severity = 'medium')::INT AS medium_count,
-    COUNT(*) FILTER (WHERE severity = 'low')::INT AS low_count
-  FROM public.audit_findings
-  WHERE audit_report_id = p_audit_report_id
-    AND framework_code = p_framework_code;
+    COUNT(*) FILTER (WHERE af.severity = 'critical')::INT AS critical_count,
+    COUNT(*) FILTER (WHERE af.severity = 'high')::INT AS high_count,
+    COUNT(*) FILTER (WHERE af.severity = 'medium')::INT AS medium_count,
+    COUNT(*) FILTER (WHERE af.severity = 'low')::INT AS low_count
+  FROM public.audit_findings af
+  WHERE af.audit_report_id = p_audit_report_id
+    AND af.framework_code = p_framework_code;
 $$;
 
 -- ─── 6. RPC: List all findings by severity ───

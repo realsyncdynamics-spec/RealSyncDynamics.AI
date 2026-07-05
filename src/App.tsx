@@ -245,6 +245,8 @@ const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings')
 const ApiSetupWizard = lazy(() => import('./features/api/ApiSetupWizard').then((m) => ({ default: m.ApiSetupWizard })));
 const ApiDocumentation = lazy(() => import('./features/api/ApiDocumentation').then((m) => ({ default: m.ApiDocumentation })));
 const ApiMonitoringDashboard = lazy(() => import('./features/api/ApiMonitoringDashboard').then((m) => ({ default: m.ApiMonitoringDashboard })));
+const AdvancedMonitoringDashboard = lazy(() => import('./features/api/AdvancedMonitoringDashboard').then((m) => ({ default: m.AdvancedMonitoringDashboard })));
+const EmailTemplateManager = lazy(() => import('./features/api/EmailTemplateManager').then((m) => ({ default: m.EmailTemplateManager })));
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
@@ -712,6 +714,8 @@ function RoutesWithTracking() {
       <Route path="/app/api/setup" element={<GovernanceBrowserShell><ApiSetupWizard /></GovernanceBrowserShell>} />
       <Route path="/app/api/docs" element={<GovernanceBrowserShell><ApiDocumentation /></GovernanceBrowserShell>} />
       <Route path="/app/api/monitoring" element={<GovernanceBrowserShell><ApiMonitoringDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/api/monitoring-advanced" element={<GovernanceBrowserShell><AdvancedMonitoringDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/api/email-templates" element={<GovernanceBrowserShell><EmailTemplateManager /></GovernanceBrowserShell>} />
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />

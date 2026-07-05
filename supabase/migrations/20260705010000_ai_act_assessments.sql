@@ -1,8 +1,10 @@
 -- AI Act Risk Assessment & Tracking
 -- Extends ai_systems with detailed risk assessment data
 
--- ─── 0. Base AI System Registry ───
+-- ─── 0. Base AI System Registry (extends existing table or creates new) ───
 
+-- Ensure ai_systems table exists. If it already exists (created in earlier
+-- migrations like 20260510), we'll add the missing column below.
 CREATE TABLE IF NOT EXISTS public.ai_systems (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
@@ -17,22 +19,31 @@ CREATE TABLE IF NOT EXISTS public.ai_systems (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Add latest_assessment_id column if it doesn't exist (in case table was created by earlier migration)
+ALTER TABLE public.ai_systems
+  ADD COLUMN IF NOT EXISTS latest_assessment_id UUID;
+
 CREATE INDEX IF NOT EXISTS idx_ai_systems_tenant_id
   ON public.ai_systems(tenant_id);
 
 CREATE INDEX IF NOT EXISTS idx_ai_systems_status
   ON public.ai_systems(status);
 
+-- RLS might already be enabled by earlier migration, but ensure it is
 ALTER TABLE public.ai_systems ENABLE ROW LEVEL SECURITY;
 
+-- Policies might already exist, wrapped in DROP IF EXISTS for idempotency
+DROP POLICY IF EXISTS "ai_systems tenant_read" ON public.ai_systems;
 CREATE POLICY "ai_systems tenant_read"
   ON public.ai_systems FOR SELECT
   USING (public.is_tenant_member(tenant_id));
 
+DROP POLICY IF EXISTS "ai_systems service_write" ON public.ai_systems;
 CREATE POLICY "ai_systems service_write"
   ON public.ai_systems FOR INSERT
   WITH CHECK (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "ai_systems tenant_update" ON public.ai_systems;
 CREATE POLICY "ai_systems tenant_update"
   ON public.ai_systems FOR UPDATE
   USING (public.is_tenant_member(tenant_id))

@@ -205,6 +205,7 @@ const EvidenceVaultAdvancedViewNew = lazy(() => import('./features/governance/Ev
 const RemediationPlanViewNew = lazy(() => import('./features/governance/RemediationPlanView').then((m) => ({ default: m.RemediationPlanView })));
 const AuditReportAdvancedViewNew = lazy(() => import('./features/governance/AuditReportAdvancedView').then((m) => ({ default: m.AuditReportAdvancedView })));
 const GovernanceApiKeysView = lazy(() => import('./features/governance/GovernanceApiKeysView').then((m) => ({ default: m.GovernanceApiKeysView })));
+const GovernanceWorkflowRecommendation = lazy(() => import('./features/governance/GovernanceWorkflowRecommendation').then((m) => ({ default: m.GovernanceWorkflowRecommendation })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
@@ -582,6 +583,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/remediation-plans" element={<GovernanceBrowserShell><RemediationPlanViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/audit-reports" element={<GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/api-keys" element={<GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/recommendation" element={<GovernanceWorkflowRecommendation />} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />

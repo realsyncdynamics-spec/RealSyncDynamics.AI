@@ -1,5 +1,5 @@
 import { Lightbulb, X, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useSupabaseAuth } from '../../../lib/auth/hooks';
+import { getSupabase } from '../../../lib/supabase';
 import { useState } from 'react';
 
 interface Insight {
@@ -19,7 +19,7 @@ interface InsightsPanelProps {
 }
 
 export function InsightsPanel({ insights, tenantId, onInsightUpdated }: InsightsPanelProps) {
-  const { supabase } = useSupabaseAuth();
+  const supabase = getSupabase();
   const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(new Set());
 
   const dismissInsight = async (insightId: string) => {

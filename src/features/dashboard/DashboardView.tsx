@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSupabaseAuth } from '../../lib/auth/hooks';
+import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
 import { TrendingUp, AlertTriangle, Lightbulb, Target } from 'lucide-react';
 import { ScoreCard } from './components/ScoreCard';
@@ -45,8 +45,8 @@ interface DashboardKPI {
 }
 
 export function DashboardView() {
-  const { supabase } = useSupabaseAuth();
-  const { id: tenantId } = useTenant();
+  const supabase = getSupabase();
+  const { activeTenantId: tenantId } = useTenant();
   const [latestScore, setLatestScore] = useState<ComplianceScore | null>(null);
   const [scoreHistory, setScoreHistory] = useState<ComplianceScore[]>([]);
   const [risks, setRisks] = useState<RiskMetrics | null>(null);

@@ -68,8 +68,8 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_compliance_scores_by_framework 
   GROUP BY t.id, t.name, g.framework
   ORDER BY t.id, g.framework;
 
-CREATE INDEX IF NOT EXISTS idx_mv_compliance_scores_tenant
-  ON public.mv_compliance_scores_by_framework(tenant_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_compliance_scores_tenant
+  ON public.mv_compliance_scores_by_framework(tenant_id, framework);
 
 -- Risk heat map by framework and severity (refreshed hourly)
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_risk_heatmap AS
@@ -86,8 +86,8 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_risk_heatmap AS
   GROUP BY tenant_id, framework, risk_level
   ORDER BY tenant_id, framework, risk_level DESC;
 
-CREATE INDEX IF NOT EXISTS idx_mv_risk_heatmap_tenant
-  ON public.mv_risk_heatmap(tenant_id, framework);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_risk_heatmap_tenant
+  ON public.mv_risk_heatmap(tenant_id, framework, risk_level);
 
 -- Task backlog health metrics
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_task_backlog_health AS
@@ -106,7 +106,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_task_backlog_health AS
   FROM public.tasks
   GROUP BY tenant_id;
 
-CREATE INDEX IF NOT EXISTS idx_mv_task_backlog_health_tenant
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_task_backlog_health_tenant
   ON public.mv_task_backlog_health(tenant_id);
 
 -- ─── 3. Query Performance Metadata ───

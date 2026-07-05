@@ -56,11 +56,11 @@ export function CheckoutPage() {
   // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
   useEffect(() => {
     if (planKey === 'free' || planKey === 'free-audit') {
-      navigate('/audit?source=checkout-free-redirect', { replace: true });
+      window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
     if (planKey === 'enterprise') {
-      navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
+      window.location.href = '/contact-sales?intent=enterprise&source=checkout-redirect';
       return;
     }
     // Invalid plan key: redirect to pricing (full page load for E2E test compatibility)
@@ -68,7 +68,7 @@ export function CheckoutPage() {
       window.location.href = '/pricing';
       return;
     }
-  }, [planKey, navigate]);
+  }, [planKey]);
 
   // 3. Auth-State + Membership-Lookup
   useEffect(() => {

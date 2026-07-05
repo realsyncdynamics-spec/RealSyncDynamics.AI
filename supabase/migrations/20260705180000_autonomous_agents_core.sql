@@ -229,20 +229,24 @@ END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agents' AND table_schema = 'public') THEN
-    CREATE POLICY IF NOT EXISTS "agents tenant_read"
+    DROP POLICY IF EXISTS "agents tenant_read" ON public.agents;
+    CREATE POLICY "agents tenant_read"
       ON public.agents FOR SELECT
       USING (public.is_tenant_member(tenant_id));
 
-    CREATE POLICY IF NOT EXISTS "agents tenant_write"
+    DROP POLICY IF EXISTS "agents tenant_write" ON public.agents;
+    CREATE POLICY "agents tenant_write"
       ON public.agents FOR INSERT
       WITH CHECK (public.is_tenant_member(tenant_id));
 
-    CREATE POLICY IF NOT EXISTS "agents tenant_update"
+    DROP POLICY IF EXISTS "agents tenant_update" ON public.agents;
+    CREATE POLICY "agents tenant_update"
       ON public.agents FOR UPDATE
       USING (public.is_tenant_member(tenant_id))
       WITH CHECK (public.is_tenant_member(tenant_id));
 
-    CREATE POLICY IF NOT EXISTS "agents service_only_delete"
+    DROP POLICY IF EXISTS "agents service_only_delete" ON public.agents;
+    CREATE POLICY "agents service_only_delete"
       ON public.agents FOR DELETE
       USING (auth.role() = 'service_role');
   END IF;
@@ -252,15 +256,18 @@ END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_runs' AND table_schema = 'public') THEN
-    CREATE POLICY IF NOT EXISTS "agent_runs tenant_read"
+    DROP POLICY IF EXISTS "agent_runs tenant_read" ON public.agent_runs;
+    CREATE POLICY "agent_runs tenant_read"
       ON public.agent_runs FOR SELECT
       USING (public.is_tenant_member(tenant_id));
 
-    CREATE POLICY IF NOT EXISTS "agent_runs service_insert"
+    DROP POLICY IF EXISTS "agent_runs service_insert" ON public.agent_runs;
+    CREATE POLICY "agent_runs service_insert"
       ON public.agent_runs FOR INSERT
       WITH CHECK (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id));
 
-    CREATE POLICY IF NOT EXISTS "agent_runs service_update"
+    DROP POLICY IF EXISTS "agent_runs service_update" ON public.agent_runs;
+    CREATE POLICY "agent_runs service_update"
       ON public.agent_runs FOR UPDATE
       USING (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id))
       WITH CHECK (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id));
@@ -273,15 +280,18 @@ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_tasks' AND table_schema = 'public')
      AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'tenant_id')
      AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'assigned_to') THEN
-    CREATE POLICY IF NOT EXISTS "agent_tasks tenant_read"
+    DROP POLICY IF EXISTS "agent_tasks tenant_read" ON public.agent_tasks;
+    CREATE POLICY "agent_tasks tenant_read"
       ON public.agent_tasks FOR SELECT
       USING (public.is_tenant_member(tenant_id) OR auth.uid() = assigned_to);
 
-    CREATE POLICY IF NOT EXISTS "agent_tasks tenant_insert"
+    DROP POLICY IF EXISTS "agent_tasks tenant_insert" ON public.agent_tasks;
+    CREATE POLICY "agent_tasks tenant_insert"
       ON public.agent_tasks FOR INSERT
       WITH CHECK (public.is_tenant_member(tenant_id) OR auth.role() = 'service_role');
 
-    CREATE POLICY IF NOT EXISTS "agent_tasks update"
+    DROP POLICY IF EXISTS "agent_tasks update" ON public.agent_tasks;
+    CREATE POLICY "agent_tasks update"
       ON public.agent_tasks FOR UPDATE
       USING (public.is_tenant_member(tenant_id) OR auth.uid() = assigned_to)
       WITH CHECK (public.is_tenant_member(tenant_id) OR auth.uid() = assigned_to);
@@ -293,11 +303,13 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_events' AND table_schema = 'public')
      AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
-    CREATE POLICY IF NOT EXISTS "agent_events tenant_read"
+    DROP POLICY IF EXISTS "agent_events tenant_read" ON public.agent_events;
+    CREATE POLICY "agent_events tenant_read"
       ON public.agent_events FOR SELECT
       USING (public.is_tenant_member(tenant_id));
 
-    CREATE POLICY IF NOT EXISTS "agent_events service_insert"
+    DROP POLICY IF EXISTS "agent_events service_insert" ON public.agent_events;
+    CREATE POLICY "agent_events service_insert"
       ON public.agent_events FOR INSERT
       WITH CHECK (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id));
   END IF;

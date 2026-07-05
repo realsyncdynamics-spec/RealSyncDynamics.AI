@@ -3,6 +3,43 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- ─── 0. Base AI System Registry ───
+
+CREATE TABLE IF NOT EXISTS public.ai_systems (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  provider TEXT, -- 'anthropic', 'openai', 'google', 'ollama', etc.
+  model TEXT, -- model name/version
+  purpose TEXT, -- System purpose/use case
+  status TEXT DEFAULT 'active', -- 'active', 'inactive', 'deprecated', 'in_review'
+  latest_assessment_id UUID, -- Will be set via UPDATE after assessments table created
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_systems_tenant_id
+  ON public.ai_systems(tenant_id);
+
+CREATE INDEX IF NOT EXISTS idx_ai_systems_status
+  ON public.ai_systems(status);
+
+ALTER TABLE public.ai_systems ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "ai_systems tenant_read"
+  ON public.ai_systems FOR SELECT
+  USING (public.is_tenant_member(tenant_id));
+
+CREATE POLICY "ai_systems service_write"
+  ON public.ai_systems FOR INSERT
+  USING (auth.role() = 'service_role');
+
+CREATE POLICY "ai_systems tenant_update"
+  ON public.ai_systems FOR UPDATE
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
+
 -- ─── 1. AI Act Assessment (detailed risk evaluation) ───
 
 CREATE TABLE IF NOT EXISTS public.ai_act_assessments (
@@ -215,3 +252,9 @@ AS $$
     AND aa.classification IN ('high_risk', 'prohibited')
   ORDER BY aa.overall_risk_score DESC;
 $$;
+
+-- ─── 6. Add foreign key constraint for latest_assessment_id ───
+
+ALTER TABLE public.ai_systems
+  ADD CONSTRAINT fk_ai_systems_latest_assessment_id
+  FOREIGN KEY (latest_assessment_id) REFERENCES public.ai_act_assessments(id) ON DELETE SET NULL;

@@ -25,7 +25,7 @@ DROP POLICY IF EXISTS "api_calls tenant_member_read" ON public.api_calls;
 CREATE POLICY "api_calls tenant_member_read"
   ON public.api_calls FOR SELECT
   USING (EXISTS (
-    SELECT 1 FROM public.memberships m
+    SELECT 1 FROM public.tenant_memberships m
     WHERE m.tenant_id = api_calls.tenant_id AND m.user_id = auth.uid()
   ));
 

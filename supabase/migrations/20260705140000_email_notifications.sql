@@ -24,7 +24,7 @@ DROP POLICY IF EXISTS "email_notifications tenant_member_read" ON public.email_n
 CREATE POLICY "email_notifications tenant_member_read"
   ON public.email_notifications FOR SELECT
   USING (EXISTS (
-    SELECT 1 FROM public.memberships m
+    SELECT 1 FROM public.tenant_memberships m
     WHERE m.tenant_id = email_notifications.tenant_id AND m.user_id = auth.uid()
   ));
 
@@ -100,7 +100,7 @@ BEGIN
   -- Queue email notifications to tenant admins
   FOR v_member_email IN
     SELECT u.email
-    FROM public.memberships m
+    FROM public.tenant_memberships m
     JOIN auth.users u ON m.user_id = u.id
     WHERE m.tenant_id = p_tenant_id AND m.role = 'admin'
   LOOP

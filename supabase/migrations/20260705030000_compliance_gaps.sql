@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.compliance_gaps (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   framework_id UUID NOT NULL,
-  control_id UUID NOT NULL REFERENCES public.framework_controls(id) ON DELETE CASCADE,
+  control_id UUID NOT NULL, -- References framework_controls(id), stored as UUID without constraint to avoid circular dependencies
 
   -- Gap Status & Priority
   status TEXT CHECK (status IN ('identified', 'planned', 'in_progress', 'resolved', 'accepted_risk', 'deferred')) DEFAULT 'identified',

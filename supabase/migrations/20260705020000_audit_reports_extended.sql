@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS public.audit_findings (
 
   -- Framework & Control
   framework_code TEXT NOT NULL, -- 'gdpr', 'ai_act', 'nis2', 'iso27001', 'iso42001'
-  control_id UUID REFERENCES public.framework_controls(id) ON DELETE SET NULL,
+  control_id UUID, -- References framework_controls(id), stored as UUID without constraint to avoid circular dependencies
   control_reference TEXT, -- 'Art. 32', 'A.5.1'
 
   -- Finding Details

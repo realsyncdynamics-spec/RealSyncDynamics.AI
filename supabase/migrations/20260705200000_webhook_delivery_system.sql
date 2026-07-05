@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
   delivered_at TIMESTAMPTZ
 );
 
+-- Create indexes - subscription_status index may fail if table exists from incomplete migration
+-- In that case, subsequent ALTER TABLE migration will add missing columns and indexes
 CREATE INDEX IF NOT EXISTS webhook_deliveries_subscription_status_idx
   ON public.webhook_deliveries(subscription_id, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS webhook_deliveries_tenant_created_idx

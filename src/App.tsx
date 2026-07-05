@@ -13,6 +13,11 @@ import { AppGate } from './features/auth/AppGate';
 import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
 import { DemoLandingPage } from './pages/DemoLandingPage';
+import { DemoTourStartPage } from './pages/DemoTourStartPage';
+import { DemoTourSignupPage } from './pages/DemoTourSignupPage';
+import { DemoTourCheckoutPage } from './pages/DemoTourCheckoutPage';
+import { DemoTourDashboard } from './pages/DemoTourDashboard';
+import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
@@ -395,6 +400,12 @@ function RoutesWithTracking() {
               </ProtectedRoute>
             }
           />
+
+          {/* Demo Tour — Complete Product Tour Flow (no auth required) */}
+          <Route path="/demo-tour" element={<DemoTourProvider><DemoTourStartPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/signup" element={<DemoTourProvider><DemoTourSignupPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />

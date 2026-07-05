@@ -190,3 +190,5 @@ $$;
 
 COMMENT ON FUNCTION public.check_feature_usage(UUID, TEXT, DATE) IS
   'Check current usage and remaining quota for a feature in a billing month';
+
+COMMIT;

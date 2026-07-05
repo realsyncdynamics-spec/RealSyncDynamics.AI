@@ -267,9 +267,17 @@ AS $$
   SELECT
     af.severity,
     COUNT(*)::INT AS finding_count,
-    jsonb_object_agg(
-      af.framework_code,
-      COUNT(*)::INT
+    (
+      SELECT jsonb_object_agg(framework_code, count)
+      FROM (
+        SELECT
+          af2.framework_code,
+          COUNT(*) as count
+        FROM public.audit_findings af2
+        WHERE af2.audit_report_id = p_audit_report_id
+          AND af2.severity = af.severity
+        GROUP BY af2.framework_code
+      ) t
     ) AS framework_breakdown
   FROM public.audit_findings af
   WHERE af.audit_report_id = p_audit_report_id

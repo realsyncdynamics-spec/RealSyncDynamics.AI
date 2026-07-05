@@ -149,7 +149,7 @@ export function CheckoutSuccessPage() {
           {subscription && API_ENABLED_TIERS.includes(subscription.plan.toLowerCase()) && (
             <button
               data-testid="checkout-setup-api-button"
-              onClick={() => navigate('/app/api/setup')}
+              onClick={() => navigate('/app/api/setup?fromCheckout=true')}
               className="flex-1 px-6 py-3 bg-obsidian-700 text-titanium-100 font-bold uppercase border border-titanium-700 hover:bg-obsidian-600 transition-colors flex items-center justify-center gap-2"
             >
               <Zap className="h-4 w-4" />

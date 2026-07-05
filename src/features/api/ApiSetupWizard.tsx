@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Loader2, AlertTriangle, Zap } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
 import { useApiAccess } from './useApiAccess';
@@ -14,12 +14,25 @@ type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 export function ApiSetupWizard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { activeTenantId } = useTenant();
   const { hasAccess, tier, loading: accessLoading } = useApiAccess();
 
-  const [step, setStep] = useState<WizardStep>(1);
-  const [purpose, setPurpose] = useState<ApiPurpose | null>(null);
-  const [permission, setPermission] = useState<ApiPermissionLevel | null>(null);
+  const fromCheckout = searchParams.get('fromCheckout') === 'true';
+
+  const [step, setStep] = useState<WizardStep>(() => {
+    const initialPurpose = searchParams.get('purpose') as ApiPurpose | null;
+    const initialPermission = searchParams.get('permission') as ApiPermissionLevel | null;
+    if (initialPurpose && initialPermission) return 3;
+    if (initialPurpose) return 2;
+    return 1;
+  });
+  const [purpose, setPurpose] = useState<ApiPurpose | null>(
+    (searchParams.get('purpose') as ApiPurpose | null) || null
+  );
+  const [permission, setPermission] = useState<ApiPermissionLevel | null>(
+    (searchParams.get('permission') as ApiPermissionLevel | null) || null
+  );
   const [name, setName] = useState('');
   const [createdKey, setCreatedKey] = useState<{ id: string; raw: string } | null>(null);
   const [creating, setCreating] = useState(false);
@@ -112,6 +125,18 @@ export function ApiSetupWizard() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        {fromCheckout && (
+          <div className="mb-6 bg-security-950 border border-security-700 rounded-none p-4 flex items-start gap-3">
+            <Zap className="h-5 w-5 text-security-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-titanium-50 text-sm mb-1">API bereit zum Konfigurieren</p>
+              <p className="text-xs text-titanium-400">
+                Dein API-Zugriff ist aktiviert. Folge den Schritten unten um deinen ersten Schlüssel zu erstellen.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((s) => (

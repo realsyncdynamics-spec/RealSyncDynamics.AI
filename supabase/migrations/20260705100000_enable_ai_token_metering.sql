@@ -107,3 +107,5 @@ ORDER BY day DESC;
 -- (This replaces manual usage recording in the function)
 -- The usage-tracking system already has triggers to update usage_totals
 -- from usage_events, so we just need to ensure tokens are recorded there.
+
+COMMIT;

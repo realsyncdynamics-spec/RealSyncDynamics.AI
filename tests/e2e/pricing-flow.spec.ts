@@ -535,13 +535,20 @@ test.describe('Pricing Flow', () => {
         '/checkout/enterprise',
       ];
 
+      // Special redirects mapping
+      const expectedDestinations: Record<string, string> = {
+        '/checkout/free-audit': '/audit',
+        '/checkout/enterprise': '/contact-sales',
+      };
+
       for (const path of paths) {
         await page.goto(`${BASE_URL}${path}`);
         await page.waitForLoadState('networkidle');
 
-        // Should not have 404
-        const status = page.url();
-        expect(status).toContain(path);
+        // Check if path has a special redirect, otherwise expect it in the URL
+        const finalUrl = page.url();
+        const expectedPath = expectedDestinations[path] || path;
+        expect(finalUrl).toContain(expectedPath);
       }
     });
 

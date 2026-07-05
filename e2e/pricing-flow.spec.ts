@@ -11,23 +11,24 @@ test.describe('Pricing Flow', () => {
       // Check page title
       await expect(page).toHaveTitle(/[Pp]reis|[Pp]akete/);
 
-      // Check all 6 plan cards are present
+      // Check all 5 public plan cards are present
+      // (Enterprise is shown as a separate banner below the grid, not as a card)
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       const cardCount = await pricingCards.count();
-      expect(cardCount).toBe(6);
+      expect(cardCount).toBe(5);
     });
 
     test('should display all expected plan slugs as cards', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
+      // Note: Enterprise is NOT rendered as a card in the grid, so we check only PUBLIC_PRICING_TIERS
       const expectedSlugs = [
         'free-audit',
         'starter',
         'growth',
         'agency',
         'scale',
-        'enterprise',
       ];
 
       for (const slug of expectedSlugs) {

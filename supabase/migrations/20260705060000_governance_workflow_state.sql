@@ -165,11 +165,9 @@ BEGIN
   ON CONFLICT (tenant_id) DO UPDATE SET
     current_step = p_step,
     last_step_completed_at = now(),
-    completed_steps = array_append(
-      CASE WHEN p_step = ANY(governance_workflow_state.completed_steps) THEN governance_workflow_state.completed_steps
-      ELSE array_append(governance_workflow_state.completed_steps, p_step) END,
-      p_step
-    ),
+    completed_steps = CASE WHEN p_step = ANY(governance_workflow_state.completed_steps)
+                           THEN governance_workflow_state.completed_steps
+                           ELSE array_append(governance_workflow_state.completed_steps, p_step) END,
     updated_at = now();
 
   -- Store step-specific data based on p_step

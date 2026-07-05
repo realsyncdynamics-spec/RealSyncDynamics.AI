@@ -158,7 +158,6 @@ import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage'
 // Pricing detail pages — new detail routes for plans/features/checkout
 import { PricingDetailPageWrapper } from './pages/pricing/PricingDetailPage';
 import { FeatureDetailPageWrapper } from './pages/pricing/FeatureDetailPage';
-import { CheckoutDetailPageWrapper } from './pages/pricing/CheckoutDetailPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
@@ -644,7 +643,7 @@ function RoutesWithTracking() {
       {/* Checkout routes - specific paths must come before parameterized routes */}
       <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
       <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
-      <Route path="/checkout/:slug" element={<CheckoutDetailPageWrapper />} />
+      <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       {/* End of Pricing Detail Routes */}
       <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}

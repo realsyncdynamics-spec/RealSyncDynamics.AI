@@ -150,22 +150,12 @@ BEFORE UPDATE ON governance_comments
 FOR EACH ROW
 EXECUTE FUNCTION update_governance_comments_updated_at();
 
--- RLS: Enable RLS on all tables
-ALTER TABLE compliance_metrics_snapshots ENABLE ROW LEVEL SECURITY;
+-- RLS: Enable RLS on all tables (compliance_metrics_snapshots already enabled in Phase 5A)
 ALTER TABLE bulk_import_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE compliance_deadlines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE governance_assignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE governance_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE governance_audit_log ENABLE ROW LEVEL SECURITY;
-
--- RLS: compliance_metrics_snapshots
-CREATE POLICY "Users can read snapshots in their tenant"
-ON compliance_metrics_snapshots FOR SELECT
-USING (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "Service role can insert snapshots"
-ON compliance_metrics_snapshots FOR INSERT
-WITH CHECK (true);
 
 -- RLS: bulk_import_jobs
 CREATE POLICY "Users can read jobs in their tenant"

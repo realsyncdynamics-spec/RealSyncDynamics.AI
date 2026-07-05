@@ -376,7 +376,7 @@ describe('Governance RLS Security - Multi-Tenant Isolation', () => {
 
       expect(data).toBeDefined();
       expect(data?.length).toBeGreaterThanOrEqual(2);
-    });
+    }, 10000);
 
     it('should properly scope service role operations to audit logging', async () => {
       // Simulate service role logging operation

@@ -281,7 +281,12 @@ function Inner() {
                   <input
                     type="text"
                     value={newControl?.name || ''}
-                    onChange={(e) => setNewControl((prev) => ({ ...(prev || { id: '', criteria: [], maturityLevels: [], evidenceRequired: [] }), name: e.target.value }))}
+                    onChange={(e) => setNewControl((prev) => {
+                      if (!prev) {
+                        return { id: '', name: e.target.value, description: '', criteria: [], maturityLevels: [], evidenceRequired: [] };
+                      }
+                      return { ...prev, name: e.target.value };
+                    })}
                     className="w-full px-3 py-2 bg-obsidian-800 border border-titanium-800 text-titanium-100 text-sm rounded-none focus:outline-none focus:border-cyan-600"
                     placeholder="e.g., Multi-Factor Authentication"
                   />
@@ -291,7 +296,12 @@ function Inner() {
                   <label className="block text-xs font-semibold text-titanium-300 mb-2">Description</label>
                   <textarea
                     value={newControl?.description || ''}
-                    onChange={(e) => setNewControl((prev) => ({ ...(prev || { id: '', criteria: [], maturityLevels: [], evidenceRequired: [] }), description: e.target.value }))}
+                    onChange={(e) => setNewControl((prev) => {
+                      if (!prev) {
+                        return { id: '', name: '', description: e.target.value, criteria: [], maturityLevels: [], evidenceRequired: [] };
+                      }
+                      return { ...prev, description: e.target.value };
+                    })}
                     className="w-full px-3 py-2 bg-obsidian-800 border border-titanium-800 text-titanium-100 text-sm rounded-none focus:outline-none focus:border-cyan-600 resize-none"
                     rows={2}
                     placeholder="Control objective and scope"

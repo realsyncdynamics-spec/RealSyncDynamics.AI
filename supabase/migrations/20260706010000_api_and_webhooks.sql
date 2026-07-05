@@ -1,28 +1,15 @@
--- Public API & Webhook Integration System
--- Enables third-party integrations, event-driven workflows, and external connections
+-- Phase 6.2: API & Webhooks Extensions
+-- Extends existing API infrastructure with webhooks, integrations, and rate limiting
 
--- ─── 1. API Keys ───
-CREATE TABLE IF NOT EXISTS public.api_keys (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 128),
-  key_prefix TEXT NOT NULL UNIQUE,
-  key_hash TEXT NOT NULL UNIQUE,
-  scopes TEXT[] NOT NULL DEFAULT '{}',
-  allowed_ips TEXT[] DEFAULT '{}',
-  rate_limit_requests INT DEFAULT 100,
-  rate_limit_period_seconds INT DEFAULT 3600,
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  last_used_at TIMESTAMPTZ,
-  expires_at TIMESTAMPTZ,
-  revoked_at TIMESTAMPTZ,
-  UNIQUE(tenant_id, name)
-);
+-- ─── 1. Extend API Keys with Rate Limiting & Scopes ───
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS scopes TEXT[] DEFAULT '{}';
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS allowed_ips TEXT[] DEFAULT '{}';
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS rate_limit_requests INT DEFAULT 100;
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS rate_limit_period_seconds INT DEFAULT 3600;
+ALTER TABLE public.api_keys ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
 
-CREATE INDEX IF NOT EXISTS idx_api_keys_tenant_id ON public.api_keys(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_api_keys_revoked ON public.api_keys(revoked_at);
-CREATE INDEX IF NOT EXISTS idx_api_keys_expires ON public.api_keys(expires_at);
+CREATE INDEX IF NOT EXISTS idx_api_keys_expires ON public.api_keys(expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_api_keys_revoked_list ON public.api_keys(tenant_id, revoked_at);
 
 -- ─── 2. API Usage Tracking ───
 CREATE TABLE IF NOT EXISTS public.api_usage (
@@ -44,6 +31,16 @@ CREATE TABLE IF NOT EXISTS public.api_usage (
 CREATE INDEX IF NOT EXISTS idx_api_usage_tenant_id ON public.api_usage(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_api_usage_api_key_id ON public.api_usage(api_key_id);
 CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON public.api_usage(created_at);
+
+ALTER TABLE public.api_usage ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "api_usage tenant_read" ON public.api_usage;
+CREATE POLICY "api_usage tenant_read" ON public.api_usage FOR SELECT
+  USING (public.is_tenant_member(tenant_id));
+
+DROP POLICY IF EXISTS "api_usage service_insert" ON public.api_usage;
+CREATE POLICY "api_usage service_insert" ON public.api_usage FOR INSERT
+  WITH CHECK (auth.role() = 'service_role');
 
 -- ─── 3. Webhook Subscriptions ───
 CREATE TABLE IF NOT EXISTS public.webhook_subscriptions (
@@ -68,6 +65,21 @@ CREATE TABLE IF NOT EXISTS public.webhook_subscriptions (
 CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_tenant_id ON public.webhook_subscriptions(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_active ON public.webhook_subscriptions(active);
 
+ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "webhook_subscriptions tenant_read" ON public.webhook_subscriptions;
+CREATE POLICY "webhook_subscriptions tenant_read" ON public.webhook_subscriptions FOR SELECT
+  USING (public.is_tenant_member(tenant_id));
+
+DROP POLICY IF EXISTS "webhook_subscriptions tenant_write" ON public.webhook_subscriptions;
+CREATE POLICY "webhook_subscriptions tenant_write" ON public.webhook_subscriptions FOR INSERT
+  WITH CHECK (public.is_tenant_member(tenant_id));
+
+DROP POLICY IF EXISTS "webhook_subscriptions tenant_update" ON public.webhook_subscriptions;
+CREATE POLICY "webhook_subscriptions tenant_update" ON public.webhook_subscriptions FOR UPDATE
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
+
 -- ─── 4. Webhook Deliveries ───
 CREATE TABLE IF NOT EXISTS public.webhook_deliveries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -91,6 +103,16 @@ CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_tenant_id ON public.webhook_de
 CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_status ON public.webhook_deliveries(status);
 CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_created_at ON public.webhook_deliveries(created_at);
 
+ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "webhook_deliveries tenant_read" ON public.webhook_deliveries;
+CREATE POLICY "webhook_deliveries tenant_read" ON public.webhook_deliveries FOR SELECT
+  USING (public.is_tenant_member(tenant_id));
+
+DROP POLICY IF EXISTS "webhook_deliveries service_insert" ON public.webhook_deliveries;
+CREATE POLICY "webhook_deliveries service_insert" ON public.webhook_deliveries FOR INSERT
+  WITH CHECK (auth.role() = 'service_role');
+
 -- ─── 5. Pre-Built Integrations ───
 CREATE TABLE IF NOT EXISTS public.integrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -108,7 +130,7 @@ CREATE TABLE IF NOT EXISTS public.integrations (
 CREATE INDEX IF NOT EXISTS idx_integrations_slug ON public.integrations(slug);
 CREATE INDEX IF NOT EXISTS idx_integrations_enabled ON public.integrations(enabled);
 
--- ─── 6. Integration Configs ───
+-- ─── 6. Integration Configurations ───
 CREATE TABLE IF NOT EXISTS public.integration_configs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
@@ -125,75 +147,27 @@ CREATE TABLE IF NOT EXISTS public.integration_configs (
 CREATE INDEX IF NOT EXISTS idx_integration_configs_tenant_id ON public.integration_configs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_integration_configs_integration_id ON public.integration_configs(integration_id);
 
--- ─── 7. Row Level Security ───
--- RLS policies deferred to separate migration to avoid conflicts
--- ALTER TABLE public.api_keys ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE public.api_usage ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE public.webhook_deliveries ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE public.integration_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.integration_configs ENABLE ROW LEVEL SECURITY;
 
--- ─── 8. API Key Functions ───
-CREATE OR REPLACE FUNCTION public.create_api_key(
-  p_tenant_id UUID,
-  p_name TEXT,
-  p_scopes TEXT[],
-  p_expires_in_days INT DEFAULT NULL
-)
-RETURNS TABLE (key_id UUID, key_prefix TEXT, full_key TEXT)
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_key_id UUID;
-  v_prefix TEXT;
-  v_full_key TEXT;
-  v_hash TEXT;
-  v_expires_at TIMESTAMPTZ;
-BEGIN
-  v_prefix := 'rsd_live_' || substr(encode(gen_random_bytes(16), 'hex'), 1, 24);
-  v_full_key := v_prefix || '_' || encode(gen_random_bytes(32), 'hex');
-  v_hash := crypt(v_full_key, gen_salt('bf'));
+DROP POLICY IF EXISTS "integration_configs tenant_read" ON public.integration_configs;
+CREATE POLICY "integration_configs tenant_read" ON public.integration_configs FOR SELECT
+  USING (public.is_tenant_member(tenant_id));
 
-  IF p_expires_in_days IS NOT NULL THEN
-    v_expires_at := now() + (p_expires_in_days || ' days')::interval;
-  END IF;
+DROP POLICY IF EXISTS "integration_configs tenant_write" ON public.integration_configs;
+CREATE POLICY "integration_configs tenant_write" ON public.integration_configs FOR INSERT
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
-  INSERT INTO public.api_keys (tenant_id, name, key_prefix, key_hash, scopes, created_by, expires_at)
-  VALUES (p_tenant_id, p_name, v_prefix, v_hash, p_scopes, auth.uid(), v_expires_at)
-  RETURNING id INTO v_key_id;
+DROP POLICY IF EXISTS "integration_configs tenant_update" ON public.integration_configs;
+CREATE POLICY "integration_configs tenant_update" ON public.integration_configs FOR UPDATE
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
-  RETURN QUERY SELECT v_key_id, v_prefix, v_full_key;
-END;
-$$;
-
-CREATE OR REPLACE FUNCTION public.verify_api_key(p_full_key TEXT)
-RETURNS TABLE (valid BOOLEAN, tenant_id UUID, scopes TEXT[], rate_limit_requests INT)
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE
-  v_key_prefix TEXT;
-  v_key_hash TEXT;
-  v_tenant_id UUID;
-  v_scopes TEXT[];
-  v_rate_limit_requests INT;
-BEGIN
-  v_key_prefix := substr(p_full_key, 1, position('_' IN reverse(p_full_key)) - 1);
-
-  SELECT ak.tenant_id, ak.scopes, ak.rate_limit_requests, ak.key_hash
-  INTO v_tenant_id, v_scopes, v_rate_limit_requests, v_key_hash
-  FROM public.api_keys ak
-  WHERE ak.key_prefix = v_key_prefix
-    AND ak.revoked_at IS NULL
-    AND (ak.expires_at IS NULL OR ak.expires_at > now());
-
-  IF v_key_hash IS NOT NULL AND crypt(p_full_key, v_key_hash) = v_key_hash THEN
-    RETURN QUERY SELECT true::BOOLEAN, v_tenant_id, v_scopes, v_rate_limit_requests;
-  ELSE
-    RETURN QUERY SELECT false::BOOLEAN, NULL::UUID, NULL::TEXT[], NULL::INT;
-  END IF;
-END;
-$$;
-
--- ─── 9. Seed Pre-Built Integrations ───
--- Seed deferred to separate edge function to avoid migration conflicts
--- INSERT INTO public.integrations (slug, name, description, auth_type, enabled)
--- VALUES (...)
--- This is handled by supabase/functions/seed-integrations/index.ts
+-- ─── 7. Seed Pre-Built Integrations ───
+INSERT INTO public.integrations (slug, name, description, auth_type, enabled)
+VALUES
+  ('slack', 'Slack', 'Send compliance alerts to Slack channels', 'oauth2', true),
+  ('microsoft-teams', 'Microsoft Teams', 'Post notifications to Teams channels', 'oauth2', true),
+  ('zapier', 'Zapier', 'Connect to 5000+ apps via Zapier', 'api_key', true),
+  ('n8n', 'n8n', 'Internal workflow automation', 'webhook', true),
+  ('pagerduty', 'PagerDuty', 'Trigger incidents for critical compliance issues', 'api_key', true)
+ON CONFLICT (slug) DO NOTHING;

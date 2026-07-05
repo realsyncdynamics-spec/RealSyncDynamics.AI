@@ -105,5 +105,3 @@ INSERT INTO subscription_plans (
     '["all_scale", "custom_setup", "sla_guarantee", "ai_act_governance", "dsb_integration", "evidence_vault_unlimited", "unlimited_domains", "custom_contracts"]'::jsonb,
     true
   );
-
-COMMIT;

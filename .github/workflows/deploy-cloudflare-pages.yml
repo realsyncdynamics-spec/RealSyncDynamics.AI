@@ -99,6 +99,9 @@ jobs:
           VITE_STRIPE_PRICE_AGENCY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY }}
         run: npm run build
 
+      - name: Generate legal pages markers
+        run: npm run generate:legal-pages
+
       - name: Prerender high-priority routes
         run: |
           npx playwright install --with-deps chromium

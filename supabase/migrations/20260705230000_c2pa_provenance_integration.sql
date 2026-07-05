@@ -5,16 +5,24 @@
 --
 -- Enables cryptographic proof of content origin, history, and integrity.
 
--- 1. Extend audit_reports table with C2PA manifest
-ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_manifest JSONB;
-ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_claim_generator TEXT DEFAULT 'RealSyncDynamics/1.0';
-ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_assertion_hash TEXT;
-ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_timestamp_authority TEXT;
+-- 1. Extend audit_reports table with C2PA manifest (if table exists)
+DO $$
+BEGIN
+  ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_manifest JSONB;
+  ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_claim_generator TEXT DEFAULT 'RealSyncDynamics/1.0';
+  ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_assertion_hash TEXT;
+  ALTER TABLE public.audit_reports ADD COLUMN IF NOT EXISTS c2pa_timestamp_authority TEXT;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
--- 2. Extend compliance_exports table with C2PA metadata
-ALTER TABLE public.compliance_exports ADD COLUMN IF NOT EXISTS c2pa_manifest JSONB;
-ALTER TABLE public.compliance_exports ADD COLUMN IF NOT EXISTS c2pa_assertion_hash TEXT;
-ALTER TABLE public.compliance_exports ADD COLUMN IF NOT EXISTS provenance_chain JSONB;
+-- 2. Extend compliance_exports table with C2PA metadata (if table exists)
+DO $$
+BEGIN
+  ALTER TABLE public.compliance_exports ADD COLUMN IF NOT EXISTS c2pa_manifest JSONB;
+  ALTER TABLE public.compliance_exports ADD COLUMN IF NOT EXISTS c2pa_assertion_hash TEXT;
+  ALTER TABLE public.compliance_exports ADD COLUMN IF NOT EXISTS provenance_chain JSONB;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
 -- 3. C2PA provenance log (immutable audit trail)
 CREATE TABLE IF NOT EXISTS public.c2pa_provenance_log (

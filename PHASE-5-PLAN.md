@@ -365,12 +365,33 @@ Phase 5 builds on Phases 1-4 foundation (onboarding → 11 views → tier-gating
 
 ---
 
-## Approval Checklist
+## Implementation Progress
 
-- [ ] Phase 5 scope confirmed
-- [ ] Feature gating tiers reviewed
-- [ ] Database migration strategy validated
-- [ ] Test strategy (E2E + RLS + load) approved
-- [ ] Implementation phases (5A, 5B, 5C) timeline acceptable
-- [ ] Ready to proceed with Phase 5A (ISO Templates & Advanced Reporting)
+### Phase 5A: ISO Templates & Advanced Reporting ✅ COMPLETE
+- ✅ ISO Control Template Library config (100+ controls, 6-level maturity)
+- ✅ ISO Control Library View (search, filter, expand, maturity selector)
+- ✅ Report Builder View (config → preview → schedule → download)
+- ✅ Compliance Roadmap View (Gantt chart + timeline)
+- ✅ Report Generator edge function (async PDF/Excel)
+- ✅ Database migrations (iso_control_definitions, compliance_reports, metrics_snapshots)
+- ✅ E2E test suite (50+ tests)
+- ✅ App.tsx integration (3 routes, lazy loading)
+
+### Phase 5B: Custom Frameworks & Integrations ✅ COMPLETE
+- ✅ Custom Framework Builder (4-step wizard, base inheritance, control management)
+- ✅ Custom Framework View (detail view, gap analysis, duplicate/delete, compliance scores)
+- ✅ Integrations/Webhooks View (endpoint management, delivery logs, create form)
+- ✅ Webhook Dispatcher edge function (signed delivery, retry logic, logging)
+- ✅ Database migrations (custom_frameworks, custom_controls, webhook_endpoints, deliveries)
+- ✅ E2E test suite (40+ tests for framework & webhook workflows)
+- ✅ App.tsx integration (3 routes, lazy loading)
+
+### Phase 5C: Analytics, Bulk Operations, Collaboration 📋 PLANNED
+- 📋 Compliance Analytics Dashboard
+- 📋 Bulk Import View & edge function
+- 📋 Compliance Calendar
+- 📋 Audit Trail View
+- 📋 Team Collaboration View
+- 📋 Database migrations
+- 📋 Comprehensive test suite
 

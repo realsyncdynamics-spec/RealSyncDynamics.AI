@@ -210,6 +210,10 @@ const GovernanceWorkflowRecommendation = lazy(() => import('./features/governanc
 const IsoControlLibraryView = lazy(() => import('./features/governance/IsoControlLibraryView').then((m) => ({ default: m.IsoControlLibraryView })));
 const ReportBuilderView = lazy(() => import('./features/governance/ReportBuilderView').then((m) => ({ default: m.ReportBuilderView })));
 const ComplianceRoadmapView = lazy(() => import('./features/governance/ComplianceRoadmapView').then((m) => ({ default: m.ComplianceRoadmapView })));
+// ── Phase 5B: Custom Frameworks & Integrations (3 new views)
+const CustomFrameworkBuilderView = lazy(() => import('./features/governance/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
+const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
+const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
 const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
@@ -592,6 +596,10 @@ function RoutesWithTracking() {
       <Route path="/app/governance/iso-control-library" element={<GovernanceBrowserShell><IsoControlLibraryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/report-builder" element={<GovernanceBrowserShell><ReportBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/compliance-roadmap" element={<GovernanceBrowserShell><ComplianceRoadmapView /></GovernanceBrowserShell>} />
+      {/* Phase 5B: Custom Frameworks & Integrations */}
+      <Route path="/app/governance/custom-framework-builder" element={<GovernanceBrowserShell><CustomFrameworkBuilderView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/custom-frameworks" element={<GovernanceBrowserShell><CustomFrameworkView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/integrations" element={<GovernanceBrowserShell><IntegrationsView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />

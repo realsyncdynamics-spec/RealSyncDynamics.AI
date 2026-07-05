@@ -46,8 +46,6 @@ CREATE INDEX IF NOT EXISTS idx_custom_controls_framework_id ON custom_controls(f
 CREATE INDEX IF NOT EXISTS idx_custom_framework_mappings_framework_id ON custom_framework_mappings(framework_id);
 CREATE INDEX IF NOT EXISTS idx_custom_framework_mappings_standard ON custom_framework_mappings(standard_framework);
 
-CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_tenant_id ON webhook_endpoints(tenant_id);
-
 -- Trigger: Update custom_frameworks.updated_at
 CREATE OR REPLACE FUNCTION update_custom_frameworks_updated_at()
 RETURNS TRIGGER AS $$
@@ -63,26 +61,10 @@ BEFORE UPDATE ON custom_frameworks
 FOR EACH ROW
 EXECUTE FUNCTION update_custom_frameworks_updated_at();
 
--- Trigger: Update webhook_endpoints.updated_at
-CREATE OR REPLACE FUNCTION update_webhook_endpoints_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS webhook_endpoints_updated_at_trigger ON webhook_endpoints;
-CREATE TRIGGER webhook_endpoints_updated_at_trigger
-BEFORE UPDATE ON webhook_endpoints
-FOR EACH ROW
-EXECUTE FUNCTION update_webhook_endpoints_updated_at();
-
 -- RLS: Enable RLS on all tables
 ALTER TABLE custom_frameworks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_controls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_framework_mappings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE webhook_endpoints ENABLE ROW LEVEL SECURITY;
 
 -- RLS: custom_frameworks
 CREATE POLICY "Users can read frameworks in their tenant"
@@ -159,21 +141,3 @@ USING (framework_id IN (
     SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
   )
 ));
-
--- RLS: webhook_endpoints
-CREATE POLICY "Users can read endpoints in their tenant"
-ON webhook_endpoints FOR SELECT
-USING (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "Users can create endpoints in their tenant"
-ON webhook_endpoints FOR INSERT
-WITH CHECK (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "Users can update endpoints in their tenant"
-ON webhook_endpoints FOR UPDATE
-USING (public.is_tenant_member(tenant_id))
-WITH CHECK (public.is_tenant_member(tenant_id));
-
-CREATE POLICY "Users can delete endpoints in their tenant"
-ON webhook_endpoints FOR DELETE
-USING (public.is_tenant_member(tenant_id));

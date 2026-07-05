@@ -1,5 +1,5 @@
 -- Performance & Scaling - Phase 6.3
--- Materialized views, query optimization indexes, caching metadata
+-- Query optimization indexes, query performance monitoring, cache management
 
 -- ─── 1. Query Performance Indexes ───
 
@@ -46,101 +46,7 @@ BEGIN
   END IF;
 END $$;
 
--- ─── 2. Materialized Views for Dashboard Caching ───
-
--- Compliance score snapshot by framework (refreshed hourly)
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'gaps' AND table_schema = 'public')
-     AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tenants' AND table_schema = 'public') THEN
-    CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_compliance_scores_by_framework AS
-      SELECT
-        t.id as tenant_id,
-        t.name as tenant_name,
-        g.framework,
-        COUNT(*) FILTER (WHERE g.status = 'closed')::INT as gaps_closed,
-        COUNT(*)::INT as gaps_total,
-        ROUND(
-          (COUNT(*) FILTER (WHERE g.status = 'closed')::NUMERIC / NULLIF(COUNT(*)::NUMERIC, 0)) * 100,
-          1
-        )::NUMERIC as compliance_percentage,
-        ROUND(AVG(g.maturity_level)::NUMERIC, 1)::NUMERIC as maturity_average,
-        MAX(g.updated_at)::TIMESTAMPTZ as last_updated
-      FROM public.tenants t
-      LEFT JOIN public.gaps g ON g.tenant_id = t.id
-      WHERE g.status IS NOT NULL
-      GROUP BY t.id, t.name, g.framework
-      ORDER BY t.id, g.framework;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mv_compliance_scores_by_framework' AND table_schema = 'public') THEN
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_compliance_scores_tenant
-      ON public.mv_compliance_scores_by_framework(tenant_id, framework);
-  END IF;
-END $$;
-
--- Risk heat map by framework and severity (refreshed hourly)
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'gaps' AND table_schema = 'public') THEN
-    CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_risk_heatmap AS
-      SELECT
-        tenant_id,
-        framework,
-        risk_level,
-        COUNT(*)::INT as gap_count,
-        ROUND(AVG(risk_score)::NUMERIC, 1)::NUMERIC as avg_risk_score,
-        COUNT(*) FILTER (WHERE status = 'open')::INT as open_count,
-        COUNT(*) FILTER (WHERE status = 'in_progress')::INT as in_progress_count
-      FROM public.gaps
-      WHERE framework IS NOT NULL
-      GROUP BY tenant_id, framework, risk_level
-      ORDER BY tenant_id, framework, risk_level DESC;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mv_risk_heatmap' AND table_schema = 'public') THEN
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_risk_heatmap_tenant
-      ON public.mv_risk_heatmap(tenant_id, framework, risk_level);
-  END IF;
-END $$;
-
--- Task backlog health metrics
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tasks' AND table_schema = 'public') THEN
-    CREATE MATERIALIZED VIEW IF NOT EXISTS public.mv_task_backlog_health AS
-      SELECT
-        tenant_id,
-        COUNT(*) FILTER (WHERE status = 'open')::INT as open_tasks,
-        COUNT(*) FILTER (WHERE status = 'in_progress')::INT as active_tasks,
-        COUNT(*) FILTER (WHERE status = 'completed')::INT as completed_tasks,
-        COUNT(*) FILTER (WHERE due_date < now() AND status IN ('open', 'in_progress'))::INT as overdue_tasks,
-        COUNT(*) FILTER (WHERE priority = 'critical')::INT as critical_count,
-        ROUND(
-          (COUNT(*) FILTER (WHERE status = 'completed')::NUMERIC / NULLIF(COUNT(*)::NUMERIC, 0)) * 100,
-          1
-        )::NUMERIC as completion_rate,
-        MAX(updated_at)::TIMESTAMPTZ as last_updated
-      FROM public.tasks
-      GROUP BY tenant_id;
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mv_task_backlog_health' AND table_schema = 'public') THEN
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_task_backlog_health_tenant
-      ON public.mv_task_backlog_health(tenant_id);
-  END IF;
-END $$;
-
--- ─── 3. Query Performance Metadata ───
+-- ─── 2. Query Performance Monitoring ───
 
 -- Track slow queries and query patterns
 CREATE TABLE IF NOT EXISTS public.query_performance_log (
@@ -204,7 +110,7 @@ BEGIN
   END IF;
 END $$;
 
--- ─── 4. Cache Metadata Table ───
+-- ─── 3. Cache Metadata Table ───
 
 CREATE TABLE IF NOT EXISTS public.cache_metadata (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -263,49 +169,3 @@ BEGIN
       WITH CHECK (auth.role() = 'service_role');
   END IF;
 END $$;
-
--- ─── 5. Materialized View Refresh Scheduling ───
-
--- Function to refresh compliance scores (called hourly)
-CREATE OR REPLACE FUNCTION public.refresh_compliance_scores()
-RETURNS TABLE (
-  views_refreshed INT,
-  execution_time_ms INT
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_start_time TIMESTAMPTZ;
-  v_end_time TIMESTAMPTZ;
-  v_views_refreshed INT := 0;
-BEGIN
-  v_start_time := now();
-
-  -- Refresh compliance scores materialized view if it exists
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mv_compliance_scores_by_framework' AND table_schema = 'public' AND table_type = 'MATERIALIZED VIEW') THEN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY public.mv_compliance_scores_by_framework;
-    v_views_refreshed := v_views_refreshed + 1;
-  END IF;
-
-  -- Refresh risk heatmap if it exists
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mv_risk_heatmap' AND table_schema = 'public' AND table_type = 'MATERIALIZED VIEW') THEN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY public.mv_risk_heatmap;
-    v_views_refreshed := v_views_refreshed + 1;
-  END IF;
-
-  -- Refresh task backlog health if it exists
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'mv_task_backlog_health' AND table_schema = 'public' AND table_type = 'MATERIALIZED VIEW') THEN
-    REFRESH MATERIALIZED VIEW CONCURRENTLY public.mv_task_backlog_health;
-    v_views_refreshed := v_views_refreshed + 1;
-  END IF;
-
-  v_end_time := now();
-
-  RETURN QUERY SELECT v_views_refreshed::INT, EXTRACT(EPOCH FROM (v_end_time - v_start_time))::INT * 1000;
-END;
-$$;
-
--- Schedule refresh every hour via pg_cron (requires deployment-level setup)
--- SELECT cron.schedule('refresh-compliance-views', '0 * * * *', 'SELECT public.refresh_compliance_scores()');

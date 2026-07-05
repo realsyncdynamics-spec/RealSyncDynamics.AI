@@ -150,6 +150,7 @@ export function CheckoutPage() {
         title="Unbekanntes Paket"
         body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency.`}
         cta={{ label: 'Zur Preisuebersicht', to: '/pricing' }}
+        backTo="/pricing"
       />
     );
   }
@@ -160,6 +161,7 @@ export function CheckoutPage() {
         title="Pruefe Anmelde-Status..."
         body="Einen Moment."
         loading
+        backTo={`/pricing/${validPlan}`}
       />
     );
   }
@@ -172,6 +174,7 @@ export function CheckoutPage() {
         body="Wählen Sie einen Login-Weg. Nach Anmeldung sind Sie sofort wieder hier — der Checkout startet automatisch."
         oauthRedirect={checkoutPath}
         magicLinkHref={`/welcome?next=${encodeURIComponent(checkoutPath)}`}
+        backTo={`/pricing/${validPlan}`}
       />
     );
   }
@@ -185,6 +188,7 @@ export function CheckoutPage() {
           label: 'Workspace einrichten',
           to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,
         }}
+        backTo={`/pricing/${validPlan}`}
       />
     );
   }
@@ -202,6 +206,7 @@ export function CheckoutPage() {
       redirecting={redirecting}
       checkoutErr={checkoutErr}
       onConfirm={handleConfirmAndPay}
+      backTo={`/pricing/${validPlan}`}
     />
   );
 }
@@ -214,19 +219,22 @@ function ShellWithMessage({
   cta,
   loading,
   footer,
+  backTo = '/pricing',
 }: {
   title: string;
   body: string;
   cta?: { label: string; to: string };
   loading?: boolean;
   footer?: string;
+  backTo?: string;
 }) {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
-          to="/pricing"
+          to={backTo}
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -285,18 +293,21 @@ function NoUserShell({
   body,
   oauthRedirect,
   magicLinkHref,
+  backTo = '/pricing',
 }: {
   title: string;
   body: string;
   oauthRedirect: string;
   magicLinkHref: string;
+  backTo?: string;
 }) {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
-          to="/pricing"
+          to={backTo}
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -367,6 +378,7 @@ function ConsentGateShell({
   redirecting,
   checkoutErr,
   onConfirm,
+  backTo = '/pricing',
 }: {
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
@@ -378,6 +390,7 @@ function ConsentGateShell({
   redirecting:              boolean;
   checkoutErr:              StripeDiagnostic | null;
   onConfirm:                () => void;
+  backTo?:                  string;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
 
@@ -385,8 +398,9 @@ function ConsentGateShell({
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
-          to="/pricing"
+          to={backTo}
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>

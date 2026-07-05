@@ -44,7 +44,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        ...(process.env.CI ? { executablePath: '/opt/pw-browsers/chromium' } : {}),
+        executablePath: '/opt/pw-browsers/chromium',
       },
     },
   ],

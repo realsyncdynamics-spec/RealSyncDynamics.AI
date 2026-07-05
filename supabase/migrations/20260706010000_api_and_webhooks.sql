@@ -471,6 +471,6 @@ BEGIN
       ('zapier', 'Zapier', 'Connect to 5000+ apps via Zapier', 'api_key', true),
       ('n8n', 'n8n', 'Internal workflow automation', 'webhook', true),
       ('pagerduty', 'PagerDuty', 'Trigger incidents for critical compliance issues', 'api_key', true)
-    ON CONFLICT DO NOTHING;
+    ON CONFLICT (slug) DO NOTHING;
   END IF;
 END $$;

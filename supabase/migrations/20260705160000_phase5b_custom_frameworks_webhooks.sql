@@ -146,44 +146,58 @@ USING (public.is_tenant_member(tenant_id));
 CREATE POLICY "Users can read controls in their frameworks"
 ON custom_controls FOR SELECT
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 CREATE POLICY "Users can create controls in their frameworks"
 ON custom_controls FOR INSERT
 WITH CHECK (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 CREATE POLICY "Users can update controls in their frameworks"
 ON custom_controls FOR UPDATE
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 CREATE POLICY "Users can delete controls in their frameworks"
 ON custom_controls FOR DELETE
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 -- RLS: custom_framework_mappings (inherited via framework_id)
 CREATE POLICY "Users can read mappings in their frameworks"
 ON custom_framework_mappings FOR SELECT
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 CREATE POLICY "Users can create mappings in their frameworks"
 ON custom_framework_mappings FOR INSERT
 WITH CHECK (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 CREATE POLICY "Users can delete mappings in their frameworks"
 ON custom_framework_mappings FOR DELETE
 USING (framework_id IN (
-  SELECT id FROM custom_frameworks WHERE public.is_tenant_member(tenant_id)
+  SELECT id FROM custom_frameworks WHERE tenant_id IN (
+    SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid()
+  )
 ));
 
 -- RLS: webhook_endpoints

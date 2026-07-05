@@ -23,20 +23,16 @@ ON CONFLICT (key) DO NOTHING;
 -- 2. Add configuration for metering (Stripe sync will read this)
 INSERT INTO public.usage_limits_config (
   entitlement_key,
-  display_name,
   description,
   hard_limit,
   soft_limit,
-  billing_mode,
-  unit_label
+  billing_mode
 ) VALUES (
   'limit.ai_tokens_monthly',
-  'AI Tokens per Month',
   'LLM tokens consumed (input + output counted together)',
   NULL,
   900000,  -- soft warning at 900k (for limits < 1M)
-  'metered',
-  'tokens'
+  'metered'
 )
 ON CONFLICT (entitlement_key) DO NOTHING;
 

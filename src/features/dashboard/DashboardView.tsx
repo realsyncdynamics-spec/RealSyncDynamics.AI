@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useTenant } from '../../core/TenantProvider';
+import { useSupabaseAuth } from '../../lib/auth/hooks';
+import { useTenant } from '../../core/access/TenantProvider';
 import { TrendingUp, AlertTriangle, Lightbulb, Target } from 'lucide-react';
 import { ScoreCard } from './components/ScoreCard';
 import { RiskSummary } from './components/RiskSummary';
@@ -12,6 +12,8 @@ interface ComplianceScore {
   score_overall: number;
   score_gdpr?: number;
   score_nis2?: number;
+  score_dsa?: number;
+  score_ai_act?: number;
   trend_direction: 'improving' | 'stable' | 'declining';
   recorded_at: string;
 }
@@ -43,8 +45,8 @@ interface DashboardKPI {
 }
 
 export function DashboardView() {
-  const supabase = useSupabaseClient();
-  const { tenantId } = useTenant();
+  const { supabase } = useSupabaseAuth();
+  const { id: tenantId } = useTenant();
   const [latestScore, setLatestScore] = useState<ComplianceScore | null>(null);
   const [scoreHistory, setScoreHistory] = useState<ComplianceScore[]>([]);
   const [risks, setRisks] = useState<RiskMetrics | null>(null);

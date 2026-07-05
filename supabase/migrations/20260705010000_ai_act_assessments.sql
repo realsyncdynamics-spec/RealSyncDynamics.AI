@@ -252,9 +252,3 @@ AS $$
     AND aa.classification IN ('high_risk', 'prohibited')
   ORDER BY aa.overall_risk_score DESC;
 $$;
-
--- ─── 6. Add foreign key constraint for latest_assessment_id ───
-
-ALTER TABLE public.ai_systems
-  ADD CONSTRAINT fk_ai_systems_latest_assessment_id
-  FOREIGN KEY (latest_assessment_id) REFERENCES public.ai_act_assessments(id) ON DELETE SET NULL;

@@ -100,38 +100,62 @@ END $$;
 
 -- ─── 3. Agent-Generated Tasks ───
 
-CREATE TABLE IF NOT EXISTS public.agent_tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-  agent_run_id UUID NOT NULL REFERENCES public.agent_runs(id) ON DELETE CASCADE,
-  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+-- Create agent_tasks table only if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_tasks' AND table_schema = 'public') THEN
+    CREATE TABLE public.agent_tasks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+      agent_run_id UUID NOT NULL REFERENCES public.agent_runs(id) ON DELETE CASCADE,
+      tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
-  -- Task Details
-  title TEXT NOT NULL,
-  description TEXT,
-  task_type TEXT NOT NULL CHECK (task_type IN ('remediation', 'review', 'approval', 'investigation', 'documentation', 'audit')),
+      -- Task Details
+      title TEXT NOT NULL,
+      description TEXT,
+      task_type TEXT NOT NULL CHECK (task_type IN ('remediation', 'review', 'approval', 'investigation', 'documentation', 'audit')),
 
-  -- Assignment & Priority
-  assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  priority TEXT DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
-  due_date TIMESTAMPTZ,
+      -- Assignment & Priority
+      assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+      priority TEXT DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+      due_date TIMESTAMPTZ,
 
-  -- Tracking
-  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')),
-  linked_gap_id UUID REFERENCES public.compliance_gaps(id) ON DELETE SET NULL,
-  linked_evidence_id UUID REFERENCES public.evidence_items(id) ON DELETE SET NULL,
+      -- Tracking
+      status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')),
+      linked_gap_id UUID REFERENCES public.compliance_gaps(id) ON DELETE SET NULL,
+      linked_evidence_id UUID REFERENCES public.evidence_items(id) ON DELETE SET NULL,
 
-  -- Metadata
-  metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  completed_at TIMESTAMPTZ
-);
+      -- Metadata
+      metadata JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ DEFAULT now(),
+      completed_at TIMESTAMPTZ
+    );
+  END IF;
+END $$;
 
-CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_id ON public.agent_tasks(agent_id);
-CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_run_id ON public.agent_tasks(agent_run_id);
-CREATE INDEX IF NOT EXISTS idx_agent_tasks_tenant_id ON public.agent_tasks(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_agent_tasks_assigned_to ON public.agent_tasks(assigned_to);
-CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON public.agent_tasks(status);
+-- Create indexes on agent_tasks (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'agent_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_id ON public.agent_tasks(agent_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'agent_run_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_run_id ON public.agent_tasks(agent_run_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_tasks_tenant_id ON public.agent_tasks(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'assigned_to') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_tasks_assigned_to ON public.agent_tasks(assigned_to);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON public.agent_tasks(status);
+  END IF;
+END $$;
 
 -- ─── 4. Agent Event Log (Audit Trail) ───
 

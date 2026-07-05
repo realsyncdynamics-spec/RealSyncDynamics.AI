@@ -235,7 +235,7 @@ AS $$
     'ISO 27001'::TEXT,
     control_code,
     next_review_date,
-    (now()::DATE - next_review_date)::INT AS days_overdue
+    (EXTRACT(DAY FROM (now()::DATE - next_review_date)))::INT AS days_overdue
   FROM public.iso27001_implementations
   WHERE tenant_id = p_tenant_id
     AND next_review_date IS NOT NULL
@@ -245,7 +245,7 @@ AS $$
     'ISO 42001'::TEXT,
     control_code,
     next_review_date,
-    (now()::DATE - next_review_date)::INT AS days_overdue
+    (EXTRACT(DAY FROM (now()::DATE - next_review_date)))::INT AS days_overdue
   FROM public.iso42001_implementations
   WHERE tenant_id = p_tenant_id
     AND next_review_date IS NOT NULL

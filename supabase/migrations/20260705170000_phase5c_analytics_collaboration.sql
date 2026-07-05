@@ -94,10 +94,6 @@ CREATE TABLE IF NOT EXISTS governance_audit_log (
 );
 
 -- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_compliance_metrics_snapshots_tenant ON compliance_metrics_snapshots(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_compliance_metrics_snapshots_date ON compliance_metrics_snapshots(date DESC);
-CREATE INDEX IF NOT EXISTS idx_compliance_metrics_snapshots_framework ON compliance_metrics_snapshots(framework);
-CREATE INDEX IF NOT EXISTS idx_compliance_metrics_snapshots_tenant_date ON compliance_metrics_snapshots(tenant_id, date DESC);
 
 CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_tenant ON bulk_import_jobs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_bulk_import_jobs_status ON bulk_import_jobs(status);

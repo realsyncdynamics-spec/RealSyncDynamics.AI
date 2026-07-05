@@ -80,7 +80,6 @@ CREATE INDEX IF NOT EXISTS idx_custom_framework_mappings_framework_id ON custom_
 CREATE INDEX IF NOT EXISTS idx_custom_framework_mappings_standard ON custom_framework_mappings(standard_framework);
 
 CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_tenant_id ON webhook_endpoints(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_active ON webhook_endpoints(active);
 
 CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_tenant_id ON webhook_deliveries(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_endpoint_id ON webhook_deliveries(endpoint_id);

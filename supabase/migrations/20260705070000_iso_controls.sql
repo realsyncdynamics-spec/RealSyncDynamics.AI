@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS public.iso42001_implementations (
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
 
-  UNIQUE(tenant_id, control_code, COALESCE(ai_system_id, '00000000-0000-0000-0000-000000000000'::UUID))
+  UNIQUE(tenant_id, control_code, ai_system_id)
 );
 
 ALTER TABLE public.iso42001_implementations ENABLE ROW LEVEL SECURITY;

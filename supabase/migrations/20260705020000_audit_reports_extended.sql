@@ -3,6 +3,42 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- ─── 0. Create base audit_reports table if it doesn't exist ───
+
+CREATE TABLE IF NOT EXISTS public.audit_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  audit_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  status TEXT DEFAULT 'draft', -- 'draft', 'in_progress', 'completed', 'published'
+  created_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for audit_reports
+CREATE INDEX IF NOT EXISTS idx_audit_reports_tenant_id ON public.audit_reports(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_audit_reports_status ON public.audit_reports(status);
+CREATE INDEX IF NOT EXISTS idx_audit_reports_created_at ON public.audit_reports(created_at DESC);
+
+-- Enable RLS for audit_reports
+ALTER TABLE public.audit_reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "audit_reports tenant_read"
+  ON public.audit_reports FOR SELECT
+  USING (public.is_tenant_member(tenant_id));
+
+CREATE POLICY "audit_reports tenant_write"
+  ON public.audit_reports FOR INSERT
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
+
+CREATE POLICY "audit_reports tenant_update"
+  ON public.audit_reports FOR UPDATE
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
+
 -- ─── 1. Add framework-specific columns to audit_reports ───
 
 ALTER TABLE public.audit_reports

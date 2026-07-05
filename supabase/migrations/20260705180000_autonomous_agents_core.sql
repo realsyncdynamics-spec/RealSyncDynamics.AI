@@ -159,28 +159,49 @@ END $$;
 
 -- ─── 4. Agent Event Log (Audit Trail) ───
 
-CREATE TABLE IF NOT EXISTS public.agent_events (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-  tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
+-- Create agent_events table only if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_events' AND table_schema = 'public') THEN
+    CREATE TABLE public.agent_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+      tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
-  -- Event Details
-  event_type TEXT NOT NULL CHECK (event_type IN ('created', 'enabled', 'disabled', 'configured', 'executed', 'scheduled', 'deleted', 'error')),
-  actor_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+      -- Event Details
+      event_type TEXT NOT NULL CHECK (event_type IN ('created', 'enabled', 'disabled', 'configured', 'executed', 'scheduled', 'deleted', 'error')),
+      actor_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
 
-  -- Context
-  description TEXT,
-  changes JSONB DEFAULT '{}', -- before/after for config changes
-  related_run_id UUID REFERENCES public.agent_runs(id) ON DELETE SET NULL,
+      -- Context
+      description TEXT,
+      changes JSONB DEFAULT '{}', -- before/after for config changes
+      related_run_id UUID REFERENCES public.agent_runs(id) ON DELETE SET NULL,
 
-  -- Metadata
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+      -- Metadata
+      created_at TIMESTAMPTZ DEFAULT now()
+    );
+  END IF;
+END $$;
 
-CREATE INDEX IF NOT EXISTS idx_agent_events_agent_id ON public.agent_events(agent_id);
-CREATE INDEX IF NOT EXISTS idx_agent_events_tenant_id ON public.agent_events(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_agent_events_event_type ON public.agent_events(event_type);
-CREATE INDEX IF NOT EXISTS idx_agent_events_created_at ON public.agent_events(created_at);
+-- Create indexes on agent_events (only if columns exist)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'agent_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_events_agent_id ON public.agent_events(agent_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_events_tenant_id ON public.agent_events(tenant_id);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'event_type') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_events_event_type ON public.agent_events(event_type);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_events_created_at ON public.agent_events(created_at);
+  END IF;
+END $$;
 
 -- ─── 5. Row Level Security ───
 

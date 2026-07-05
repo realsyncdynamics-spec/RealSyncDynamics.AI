@@ -432,6 +432,9 @@ AS $$
 DECLARE
   v_key_prefix TEXT;
   v_key_hash TEXT;
+  v_tenant_id UUID;
+  v_scopes TEXT[];
+  v_rate_limit_requests INT;
 BEGIN
   -- Extract prefix from key
   v_key_prefix := substr(p_full_key, 1, position('_' IN reverse(p_full_key)) - 1);
@@ -442,14 +445,14 @@ BEGIN
     ak.scopes,
     ak.rate_limit_requests,
     ak.key_hash
-  INTO v_key_prefix, v_key_prefix, v_key_prefix, v_key_hash
+  INTO v_tenant_id, v_scopes, v_rate_limit_requests, v_key_hash
   FROM public.api_keys ak
   WHERE ak.key_prefix = v_key_prefix
     AND ak.revoked_at IS NULL
     AND (ak.expires_at IS NULL OR ak.expires_at > now());
 
   IF v_key_hash IS NOT NULL AND crypt(p_full_key, v_key_hash) = v_key_hash THEN
-    RETURN QUERY SELECT true::BOOLEAN, NULL::UUID, NULL::TEXT[], NULL::INT;
+    RETURN QUERY SELECT true::BOOLEAN, v_tenant_id, v_scopes, v_rate_limit_requests;
   ELSE
     RETURN QUERY SELECT false::BOOLEAN, NULL::UUID, NULL::TEXT[], NULL::INT;
   END IF;

@@ -1,5 +1,6 @@
--- Phase 6.3a: Performance & Scaling — Isolated Migration Validation Debugging
--- Focus: Query logging, cache metadata, performance indexes with minimal dependencies
+-- Phase 6.3a: Performance & Scaling — Core Foundation Tables
+-- Minimal schema for query logging and cache metadata instrumentation
+-- Performance indexes will be added in follow-up once dependency chain stabilizes
 
 -- ─── 1. Query Logging Table ───
 CREATE TABLE IF NOT EXISTS public.query_logs (
@@ -55,30 +56,6 @@ DROP POLICY IF EXISTS "cache_metadata service_update" ON public.cache_metadata;
 CREATE POLICY "cache_metadata service_update" ON public.cache_metadata FOR UPDATE
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
-
--- ─── 3. Performance Indexes (targeting common query patterns on existing tables) ───
-
--- Governance audit trail (exists on main)
-CREATE INDEX IF NOT EXISTS idx_governance_changes_tenant_date
-  ON public.governance_changes(tenant_id, created_at DESC)
-  INCLUDE (change_type, user_id);
-
--- AI Tool runs tracking (exists on main)
-CREATE INDEX IF NOT EXISTS idx_ai_tool_runs_tenant_model_date
-  ON public.ai_tool_runs(tenant_id, model, created_at DESC)
-  INCLUDE (status, cost_usd);
-
--- Workflow runs tracking (exists on main)
-CREATE INDEX IF NOT EXISTS idx_workflow_runs_tenant_status_date
-  ON public.workflow_runs(tenant_id, status, created_at DESC)
-  INCLUDE (duration_ms);
-
--- ISO Controls implementations (exists on main)
-CREATE INDEX IF NOT EXISTS idx_iso27001_tenant_status_maturity
-  ON public.iso27001_implementations(tenant_id, status, maturity_level DESC);
-
-CREATE INDEX IF NOT EXISTS idx_iso42001_tenant_status_maturity
-  ON public.iso42001_implementations(tenant_id, status, maturity_level DESC);
 
 -- ─── 4. RPC: Log Query Execution ───
 CREATE OR REPLACE FUNCTION public.log_query(

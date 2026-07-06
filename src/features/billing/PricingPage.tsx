@@ -39,6 +39,10 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
   agency: Globe,
   scale: Briefcase,
   enterprise: Building2,
+  starter_yearly: ShieldCheck,
+  growth_yearly: Zap,
+  agency_yearly: Globe,
+  scale_yearly: Briefcase,
 };
 
 export function PricingPage() {

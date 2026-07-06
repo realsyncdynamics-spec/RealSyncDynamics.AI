@@ -9,9 +9,9 @@ import { PRICING_TIERS, tierById, type TierId } from '../../src/config/pricing';
 import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig, planForTier } from '../../src/lib/billing/planConfig';
 
 describe('PRICING_TIERS — Single Source of Truth', () => {
-  it('has all 6 tier ids', () => {
+  it('has all 10 tier ids (6 base + 4 yearly variants)', () => {
     const ids = PRICING_TIERS.map((t) => t.id).sort();
-    expect(ids).toEqual(['agency', 'enterprise', 'free', 'growth', 'scale', 'starter']);
+    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'free', 'growth', 'growth_yearly', 'scale', 'scale_yearly', 'starter', 'starter_yearly']);
   });
 
   it('Starter price is 79 €', () => {

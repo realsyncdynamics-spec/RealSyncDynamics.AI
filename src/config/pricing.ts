@@ -25,7 +25,7 @@
  *     blockiert Tire-Kicker
  */
 
-export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly';
 
 export type BotChannelType = 'website' | 'whatsapp' | 'telegram' | 'slack' | 'teams' | 'email' | 'voice';
 
@@ -297,6 +297,138 @@ export const PRICING_TIERS: PricingTier[] = [
       meteringNotes: 'Enterprise Governance-Bots mit Custom Setup, Phase 3: DPA-konformes Usage-Metering & SLA-Tracking',
     },
   },
+  // ─── Yearly Pricing Variants ────────────────────────────────────────────
+  // 12 Monate zum Preis von 10 = 2-Monate-Rabatt (16,67%)
+  {
+    id: 'starter_yearly',
+    name: 'Starter (Jährlich)',
+    planKey: 'starter_yearly',
+    priceEur: 790,
+    priceString: '790',
+    priceSuffix: '/ Jahr',
+    recurring: true,
+    tagline: 'Starter mit 2-Monate-Rabatt: 79 € × 10 = 790 €/Jahr',
+    bullets: [
+      'Alles aus Starter (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Kontinuierliche DSGVO-Compliance',
+    ],
+    highlight: false,
+    cta: { label: '14 Tage kostenlos testen', href: '/checkout/starter_yearly?source=pricing&pilot=true' },
+    botsQuota: {
+      maxBots: 1,
+      maxAnswersPerMonth: 500,
+      channels: ['website'],
+      capabilities: ['Basic Q&A', 'AI-Act-Transparenzhinweis', 'Usage-Logging'],
+      meteringNotes: 'Jährliche Abrechnung mit Rabatt',
+    },
+  },
+  {
+    id: 'growth_yearly',
+    name: 'Growth (Jährlich)',
+    planKey: 'growth_yearly',
+    priceEur: 2490,
+    priceString: '2.490',
+    priceSuffix: '/ Jahr',
+    recurring: true,
+    tagline: 'Growth mit 2-Monate-Rabatt: 249 € × 10 = 2.490 €/Jahr',
+    bullets: [
+      'Alles aus Growth (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'KI-Governance + AI Risk Register (ganz Jahr)',
+    ],
+    badges: ['Empfohlen', 'Mit Rabatt'],
+    highlight: true,
+    cta: { label: '14 Tage kostenlos testen', href: '/checkout/growth_yearly?source=pricing&pilot=true' },
+    botsQuota: {
+      maxBots: 2,
+      maxAnswersPerMonth: 2000,
+      channels: ['website', 'whatsapp', 'telegram'],
+      capabilities: [
+        'AI-Act-Transparenzhinweis',
+        'Antwort-Logging',
+        'Risiko-Tags',
+        'Terminbuchung',
+        'Bestellannahme',
+        'Evidence-Export'
+      ],
+      meteringNotes: 'Jährliche Abrechnung mit Rabatt',
+    },
+  },
+  {
+    id: 'agency_yearly',
+    name: 'Agency (Jährlich)',
+    planKey: 'agency_yearly',
+    priceEur: 6900,
+    priceString: '6.900',
+    priceSuffix: '/ Jahr',
+    recurring: true,
+    tagline: 'Agency mit 2-Monate-Rabatt: 699 € × 10 = 6.900 €/Jahr',
+    bullets: [
+      'Alles aus Agency (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Branchenbibliothek + White-Label (ganz Jahr)',
+    ],
+    highlight: false,
+    cta: { label: 'Agency jährlich testen', href: '/checkout/agency_yearly?source=pricing&pilot=true' },
+    botsQuota: {
+      maxBots: 10,
+      maxAnswersPerMonth: 25000,
+      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
+      capabilities: [
+        'AI-Act-Transparenzhinweis',
+        'Antwort-Logging & Audit-Trail',
+        'Risiko-Tags & Compliance-Flags',
+        'Terminbuchung & Fallbearbeitung',
+        'Human Handoff mit Eskalation',
+        'Custom Intent-Matching',
+        'Evidence-Export',
+        'Bot-White-Label',
+        'Analytics & Sentiment-Analyse'
+      ],
+      meteringNotes: 'Jährliche Abrechnung mit Rabatt',
+    },
+  },
+  {
+    id: 'scale_yearly',
+    name: 'Scale (Jährlich)',
+    planKey: 'scale_yearly',
+    priceEur: 19000,
+    priceString: '19.000',
+    priceSuffix: '/ Jahr',
+    recurring: true,
+    tagline: 'Scale mit 2-Monate-Rabatt: 1.999 € × 10 = 19.000 €/Jahr',
+    bullets: [
+      'Alles aus Scale (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Multi-Tenant für bis zu 50 Mandanten (ganz Jahr)',
+    ],
+    badges: ['Reseller', 'Mit Rabatt'],
+    highlight: false,
+    cta: { label: 'Scale jährlich anfragen', href: '/contact-sales?tier=scale_yearly&source=pricing' },
+    botsQuota: {
+      maxBots: 50,
+      maxAnswersPerMonth: 100000,
+      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
+      capabilities: [
+        'AI-Act-Transparenzhinweis',
+        'Antwort-Logging & Audit-Trail',
+        'Risiko-Tags & Compliance-Flags',
+        'Terminbuchung & Fallbearbeitung',
+        'Human Handoff mit Eskalation',
+        'Custom Intent-Matching',
+        'Evidence-Export',
+        'Bot-White-Label (Mandanten-segregiert)',
+        'Analytics & Sentiment-Analyse',
+        'Mandanten-Isolation & Sub-Accounts'
+      ],
+      meteringNotes: 'Jährliche Abrechnung mit Rabatt für Multi-Tenant DSB-Kanzleien',
+    },
+  },
 ];
 
 /** Quick-Lookup nach id */
@@ -323,12 +455,16 @@ export const ENTERPRISE_TIER: PricingTier = PRICING_TIERS.find((t) => t.id === '
  * Klassennamen wie `border-t-${x}` werden NICHT erkannt).
  */
 export const TIER_ACCENT: Record<TierId, { border: string; text: string }> = {
-  free:       { border: 'border-t-silver-400',    text: 'text-silver-400' },
-  starter:    { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
-  growth:     { border: 'border-t-security-500',  text: 'text-security-500' },
-  agency:     { border: 'border-t-violet-400',    text: 'text-violet-400' },
-  scale:      { border: 'border-t-gold-400',      text: 'text-gold-400' },
-  enterprise: { border: 'border-t-titanium-200',  text: 'text-titanium-200' },
+  free:              { border: 'border-t-silver-400',    text: 'text-silver-400' },
+  starter:           { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
+  growth:            { border: 'border-t-security-500',  text: 'text-security-500' },
+  agency:            { border: 'border-t-violet-400',    text: 'text-violet-400' },
+  scale:             { border: 'border-t-gold-400',      text: 'text-gold-400' },
+  enterprise:        { border: 'border-t-titanium-200',  text: 'text-titanium-200' },
+  starter_yearly:    { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
+  growth_yearly:     { border: 'border-t-security-500',  text: 'text-security-500' },
+  agency_yearly:     { border: 'border-t-violet-400',    text: 'text-violet-400' },
+  scale_yearly:      { border: 'border-t-gold-400',      text: 'text-gold-400' },
 };
 
 /** Trust-Note unter Pricing-Cards */

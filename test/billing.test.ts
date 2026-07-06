@@ -53,14 +53,17 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
-describe('Pricing Tiers (5-Tier Model)', () => {
-  it('should have 6 tiers (free → enterprise)', () => {
-    expect(PRICING_TIERS).toHaveLength(6);
+describe('Pricing Tiers (5-Tier Model + Yearly Variants)', () => {
+  it('should have 10 tiers (6 base + 4 yearly variants)', () => {
+    expect(PRICING_TIERS).toHaveLength(10);
   });
 
-  it('should have public tiers (excluding enterprise)', () => {
-    expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
-    expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(['free', 'starter', 'growth', 'agency', 'scale']);
+  it('should have 9 public tiers (5 base + 4 yearly, excluding enterprise)', () => {
+    expect(PUBLIC_PRICING_TIERS).toHaveLength(9);
+    const baseIds = ['free', 'starter', 'growth', 'agency', 'scale'];
+    const yearlyIds = ['starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly'];
+    const allPublicIds = [...baseIds, ...yearlyIds];
+    expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(allPublicIds);
   });
 
   it('should have enterprise tier as separate constant', () => {

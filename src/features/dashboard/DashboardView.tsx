@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
-import { TrendingUp, AlertTriangle, Lightbulb, Target } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Lightbulb, Target, Zap } from 'lucide-react';
 import { ScoreCard } from './components/ScoreCard';
 import { RiskSummary } from './components/RiskSummary';
 import { InsightsPanel } from './components/InsightsPanel';
 import { KPICards } from './components/KPICards';
 import { TrendChart } from './components/TrendChart';
+import { WorkflowView } from './components/WorkflowView';
 
 interface ComplianceScore {
   score_overall: number;
@@ -54,6 +55,7 @@ export function DashboardView() {
   const [kpis, setKpis] = useState<DashboardKPI | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'workflows'>('dashboard');
 
   useEffect(() => {
     if (!tenantId) return;
@@ -181,66 +183,105 @@ export function DashboardView() {
         <p className="text-titanium-400">Real-time analytics and AI-powered insights</p>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* Compliance Score */}
-        <div className="lg:col-span-2">
-          <ScoreCard
-            score={latestScore?.score_overall ?? 0}
-            trend={latestScore?.trend_direction}
-            frameworks={{
-              gdpr: latestScore?.score_gdpr,
-              nis2: latestScore?.score_nis2,
-              dsa: latestScore?.score_dsa,
-              aiAct: latestScore?.score_ai_act,
-            }}
-          />
-        </div>
-
-        {/* Risk Summary Card */}
-        <div>
-          <RiskSummary risks={risks} totalRisks={totalRisks} />
-        </div>
+      {/* Tabs */}
+      <div className="flex gap-4 mb-8 border-b border-titanium-300/20">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`px-4 py-3 font-medium text-sm transition-colors relative ${
+            activeTab === 'dashboard'
+              ? 'text-cyan-400'
+              : 'text-titanium-400 hover:text-titanium-50'
+          }`}
+        >
+          Dashboard
+          {activeTab === 'dashboard' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('workflows')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-colors relative ${
+            activeTab === 'workflows'
+              ? 'text-cyan-400'
+              : 'text-titanium-400 hover:text-titanium-50'
+          }`}
+        >
+          <Zap size={16} />
+          Guided Workflows
+          {activeTab === 'workflows' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-500" />
+          )}
+        </button>
       </div>
 
-      {/* KPI Cards */}
-      {kpis && <KPICards kpis={kpis} className="mb-8" />}
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <>
+          {/* Main Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Compliance Score */}
+            <div className="lg:col-span-2">
+              <ScoreCard
+                score={latestScore?.score_overall ?? 0}
+                trend={latestScore?.trend_direction}
+                frameworks={{
+                  gdpr: latestScore?.score_gdpr,
+                  nis2: latestScore?.score_nis2,
+                  dsa: latestScore?.score_dsa,
+                  aiAct: latestScore?.score_ai_act,
+                }}
+              />
+            </div>
 
-      {/* Trend Chart */}
-      {scoreHistory.length > 0 && (
-        <div className="bg-obsidian-800 border border-obsidian-700 rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-semibold flex items-center gap-2 mb-6">
-            <TrendingUp className="w-5 h-5 text-petrol-700" />
-            30-Day Compliance Trend
-          </h2>
-          <TrendChart data={scoreHistory} />
-        </div>
+            {/* Risk Summary Card */}
+            <div>
+              <RiskSummary risks={risks} totalRisks={totalRisks} />
+            </div>
+          </div>
+
+          {/* KPI Cards */}
+          {kpis && <KPICards kpis={kpis} className="mb-8" />}
+
+          {/* Trend Chart */}
+          {scoreHistory.length > 0 && (
+            <div className="bg-obsidian-800 border border-obsidian-700 rounded-lg p-6 mb-8">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-6">
+                <TrendingUp className="w-5 h-5 text-petrol-700" />
+                30-Day Compliance Trend
+              </h2>
+              <TrendChart data={scoreHistory} />
+            </div>
+          )}
+
+          {/* AI Insights */}
+          {insights.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <Lightbulb className="w-5 h-5 text-amber-400" />
+                AI-Generated Insights ({insights.length})
+              </h2>
+              <InsightsPanel
+                insights={insights}
+                tenantId={tenantId}
+                onInsightUpdated={() => {
+                  // Refetch insights
+                }}
+              />
+            </div>
+          )}
+
+          {/* Empty State */}
+          {insights.length === 0 && (
+            <div className="bg-obsidian-800 border border-obsidian-700 rounded-lg p-12 text-center">
+              <Lightbulb className="w-12 h-12 text-obsidian-600 mx-auto mb-4" />
+              <p className="text-titanium-400">No active insights yet. Insights will appear as your system analyzes compliance data.</p>
+            </div>
+          )}
+        </>
       )}
 
-      {/* AI Insights */}
-      {insights.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-            <Lightbulb className="w-5 h-5 text-amber-400" />
-            AI-Generated Insights ({insights.length})
-          </h2>
-          <InsightsPanel
-            insights={insights}
-            tenantId={tenantId}
-            onInsightUpdated={() => {
-              // Refetch insights
-            }}
-          />
-        </div>
-      )}
-
-      {/* Empty State */}
-      {insights.length === 0 && (
-        <div className="bg-obsidian-800 border border-obsidian-700 rounded-lg p-12 text-center">
-          <Lightbulb className="w-12 h-12 text-obsidian-600 mx-auto mb-4" />
-          <p className="text-titanium-400">No active insights yet. Insights will appear as your system analyzes compliance data.</p>
-        </div>
-      )}
+      {/* Workflows Tab */}
+      {activeTab === 'workflows' && <WorkflowView tenantId={tenantId} />}
     </div>
   );
 }

@@ -4,3 +4,7 @@ export { RiskSummary } from './components/RiskSummary';
 export { InsightsPanel } from './components/InsightsPanel';
 export { KPICards } from './components/KPICards';
 export { TrendChart } from './components/TrendChart';
+export { WorkflowBuilder } from './components/WorkflowBuilder';
+export { WorkflowList } from './components/WorkflowList';
+export { WorkflowView } from './components/WorkflowView';
+export { useWorkflow } from './hooks/useWorkflow';

@@ -4,17 +4,17 @@ const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://lo
 
 test.describe('Pricing Flow', () => {
   test.describe('Pricing Overview (/pricing)', () => {
-    test('should load pricing page and display all 6 packages', async ({ page }) => {
+    test('should load pricing page and display all pricing packages', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
       // Check page title
       await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete/);
 
-      // Check all 6 plan cards are present
+      // Check all pricing cards are present (6 base + 4 yearly variants = 10 total)
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       const cardCount = await pricingCards.count();
-      expect(cardCount).toBe(6);
+      expect(cardCount).toBe(10);
     });
 
     test('should display all expected plan slugs as cards', async ({ page }) => {
@@ -28,6 +28,10 @@ test.describe('Pricing Flow', () => {
         'agency',
         'scale',
         'enterprise',
+        'starter_yearly',
+        'growth_yearly',
+        'agency_yearly',
+        'scale_yearly',
       ];
 
       for (const slug of expectedSlugs) {
@@ -59,6 +63,10 @@ test.describe('Pricing Flow', () => {
         'agency',
         'scale',
         'enterprise',
+        'starter_yearly',
+        'growth_yearly',
+        'agency_yearly',
+        'scale_yearly',
       ];
 
       for (const slug of expectedSlugs) {
@@ -80,6 +88,10 @@ test.describe('Pricing Flow', () => {
         'agency',
         'scale',
         'enterprise',
+        'starter_yearly',
+        'growth_yearly',
+        'agency_yearly',
+        'scale_yearly',
       ];
 
       for (const slug of expectedSlugs) {
@@ -269,7 +281,7 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
       await page.waitForLoadState('networkidle');
 
-      // dsgvo-scan is in all 6 plans, should see plan links
+      // dsgvo-scan is in all plans (including yearly variants), should see plan links
       const planLinks = page.locator('[data-testid^="feature-plan-link-"]');
       const planCount = await planLinks.count();
       expect(planCount).toBeGreaterThan(0);
@@ -331,6 +343,10 @@ test.describe('Pricing Flow', () => {
         'agency',
         'scale',
         'enterprise',
+        'starter_yearly',
+        'growth_yearly',
+        'agency_yearly',
+        'scale_yearly',
       ];
 
       for (const slug of planSlugs) {

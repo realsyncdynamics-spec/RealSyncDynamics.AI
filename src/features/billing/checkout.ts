@@ -6,7 +6,7 @@ import { getSupabase } from '../../lib/supabase';
  *   - public.products.default_for_plan_key in der DB
  * uebereinstimmen. 5-Tier seit PR #145.
  */
-export type PlanKey = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise';
+export type PlanKey = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly';
 
 export interface CheckoutResult {
   ok: boolean;

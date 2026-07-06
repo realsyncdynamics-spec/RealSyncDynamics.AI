@@ -56,39 +56,29 @@ CREATE POLICY "cache_metadata service_update" ON public.cache_metadata FOR UPDAT
   USING (auth.role() = 'service_role')
   WITH CHECK (auth.role() = 'service_role');
 
--- ─── 3. Performance Indexes (targeting common query patterns) ───
+-- ─── 3. Performance Indexes (targeting common query patterns on existing tables) ───
 
--- API Usage analytics
-CREATE INDEX IF NOT EXISTS idx_api_usage_tenant_method_date
-  ON public.api_usage(tenant_id, method, created_at DESC)
-  INCLUDE (status_code, response_time_ms);
-
--- Governance audit trail
+-- Governance audit trail (exists on main)
 CREATE INDEX IF NOT EXISTS idx_governance_changes_tenant_date
   ON public.governance_changes(tenant_id, created_at DESC)
   INCLUDE (change_type, user_id);
 
--- AI Tool runs tracking
+-- AI Tool runs tracking (exists on main)
 CREATE INDEX IF NOT EXISTS idx_ai_tool_runs_tenant_model_date
   ON public.ai_tool_runs(tenant_id, model, created_at DESC)
   INCLUDE (status, cost_usd);
 
--- Workflow runs tracking
+-- Workflow runs tracking (exists on main)
 CREATE INDEX IF NOT EXISTS idx_workflow_runs_tenant_status_date
   ON public.workflow_runs(tenant_id, status, created_at DESC)
   INCLUDE (duration_ms);
 
--- ISO Controls implementations
+-- ISO Controls implementations (exists on main)
 CREATE INDEX IF NOT EXISTS idx_iso27001_tenant_status_maturity
   ON public.iso27001_implementations(tenant_id, status, maturity_level DESC);
 
 CREATE INDEX IF NOT EXISTS idx_iso42001_tenant_status_maturity
   ON public.iso42001_implementations(tenant_id, status, maturity_level DESC);
-
--- Webhook deliveries audit
-CREATE INDEX IF NOT EXISTS idx_api_webhook_deliveries_tenant_status_date
-  ON public.api_webhook_deliveries(tenant_id, status, created_at DESC)
-  INCLUDE (attempt);
 
 -- ─── 4. RPC: Log Query Execution ───
 CREATE OR REPLACE FUNCTION public.log_query(

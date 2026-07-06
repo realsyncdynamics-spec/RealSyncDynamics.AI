@@ -47,6 +47,9 @@ export interface GovernanceTierConfig {
  * Growth: Full multi-framework (DSGVO + AI Act + ISO 27001)
  * Agency: All Growth + NIS2 + ISO 42001 + Advanced Automation
  * Scale/Enterprise: Unlimited access to all modules
+ *
+ * Yearly variants (starter_yearly, growth_yearly, agency_yearly, scale_yearly)
+ * have identical features to their monthly counterparts.
  */
 export const GOVERNANCE_TIERS: Record<TierId, GovernanceTierConfig> = {
   free: {
@@ -206,6 +209,114 @@ export const GOVERNANCE_TIERS: Record<TierId, GovernanceTierConfig> = {
     ],
     support: 'dedicated',
   },
+
+  starter_yearly: {
+    tier: 'starter_yearly',
+    label: 'Starter (Yearly)',
+    auditReportsPerMonth: 2,
+    remediationPlans: 5,
+    evidenceStorageGb: 2,
+    apiKeysAllowed: 1,
+    frameworks: ['dsgvo', 'ai_act_basic'],
+    features: [
+      'ai_register',
+      'dsgvo_directory',
+      'ai_act_risk_assessment_read',
+      'evidence_vault_basic',
+      'gap_analysis_read',
+      'audit_report_basic',
+    ],
+    support: 'email',
+  },
+
+  growth_yearly: {
+    tier: 'growth_yearly',
+    label: 'Growth (Yearly)',
+    auditReportsPerMonth: 12,
+    remediationPlans: 20,
+    evidenceStorageGb: 10,
+    apiKeysAllowed: 3,
+    frameworks: ['dsgvo', 'ai_act', 'iso27001'],
+    features: [
+      'ai_register',
+      'dsgvo_directory',
+      'ai_act_risk_assessment',
+      'iso27001_controls',
+      'evidence_vault_advanced',
+      'gap_analysis',
+      'remediation_plan_basic',
+      'audit_report',
+      'workflow_onboarding',
+      'compliance_scoring',
+    ],
+    support: 'priority',
+  },
+
+  agency_yearly: {
+    tier: 'agency_yearly',
+    label: 'Agency (Yearly)',
+    auditReportsPerMonth: 50,
+    remediationPlans: 100,
+    evidenceStorageGb: 50,
+    apiKeysAllowed: 10,
+    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001'],
+    features: [
+      'ai_register',
+      'dsgvo_directory',
+      'ai_act_risk_assessment',
+      'iso27001_controls',
+      'iso42001_controls',
+      'nis2_incidents',
+      'evidence_vault_advanced',
+      'gap_analysis',
+      'remediation_plan',
+      'audit_report',
+      'workflow_onboarding',
+      'compliance_scoring',
+      'gap_remediation_automation',
+      'evidence_versioning',
+      'api_access',
+      'webhook_notifications',
+      'bulk_operations',
+      'report_scheduling',
+    ],
+    support: 'priority',
+  },
+
+  scale_yearly: {
+    tier: 'scale_yearly',
+    label: 'Scale (Yearly)',
+    auditReportsPerMonth: 200,
+    remediationPlans: 500,
+    evidenceStorageGb: 200,
+    apiKeysAllowed: 50,
+    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001', 'dora'],
+    features: [
+      'ai_register',
+      'dsgvo_directory',
+      'ai_act_risk_assessment',
+      'iso27001_controls',
+      'iso42001_controls',
+      'nis2_incidents',
+      'evidence_vault_advanced',
+      'gap_analysis',
+      'remediation_plan',
+      'audit_report',
+      'workflow_onboarding',
+      'compliance_scoring',
+      'gap_remediation_automation',
+      'evidence_versioning',
+      'api_access',
+      'webhook_notifications',
+      'bulk_operations',
+      'report_scheduling',
+      'multi_tenant_management',
+      'custom_workflows',
+      'sso_integration',
+      'advanced_analytics',
+    ],
+    support: 'dedicated',
+  },
 };
 
 /**
@@ -358,7 +469,7 @@ export function getFeaturesByTier(tier: TierId): GovernanceFeature[] {
  */
 export function getRecommendedTierForFeatures(requiredFeatures: string[]): TierId {
   let minTier: TierId = 'free';
-  const tierOrder: TierId[] = ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'];
+  const tierOrder: TierId[] = ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly'];
 
   for (const feature of requiredFeatures) {
     const requiredTier = getFeatureMinimumTier(feature);

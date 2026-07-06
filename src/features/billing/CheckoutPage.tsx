@@ -24,7 +24,7 @@ import { trackConversion } from '../../lib/pixels';
  * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
  */
 
-const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly']);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }

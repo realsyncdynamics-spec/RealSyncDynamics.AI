@@ -25,6 +25,10 @@ const PLAN_LABEL: Record<AutomationSkill['planRequired'], string> = {
   agency: 'Agency',
   scale: 'Scale',
   enterprise: 'Enterprise',
+  starter_yearly: 'Starter (Jährlich)',
+  growth_yearly: 'Growth (Jährlich)',
+  agency_yearly: 'Agency (Jährlich)',
+  scale_yearly: 'Scale (Jährlich)',
 };
 
 export function AutomationSkillStatusBadge({ status }: { status: AutomationSkillStatus }) {

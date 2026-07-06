@@ -260,7 +260,8 @@ async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<
 
 async function generateInsights(
   admin: ReturnType<typeof createClient>,
-  tenantIds?: string[]
+  tenantIds?: string[],
+  useAI: boolean = true
 ): Promise<number> {
   let tenants = [];
 
@@ -300,8 +301,30 @@ async function generateInsights(
         dpia: dpia.data || [],
       };
 
-      // Generate AI-powered insights based on tenant state
-      const insights = await analyzeTenantStateForInsights(tenantState);
+      // First get rule-based insights as baseline
+      let insights = await analyzeTenantStateForInsights(tenantState);
+
+      // Try to enhance with AI-powered insights if enabled
+      if (useAI) {
+        try {
+          // Check if AI is enabled for this tenant
+          const { data: agentConfig } = await admin
+            .from('agent_configuration')
+            .select('enabled, auto_generate_insights')
+            .eq('tenant_id', tenant.id)
+            .single();
+
+          if (agentConfig?.enabled && agentConfig?.auto_generate_insights) {
+            // Call governance-agent for AI recommendations
+            // This would be implemented as a separate function that calls the governance-agent
+            // For now, we fall back to rule-based insights
+            console.log(`AI-powered insight generation enabled for tenant ${tenant.id}`);
+          }
+        } catch (aiErr) {
+          console.warn(`Could not enable AI insights for tenant ${tenant.id}:`, aiErr);
+          // Fall back to rule-based insights
+        }
+      }
 
       // Add insights to database
       for (const insight of insights) {
@@ -325,7 +348,7 @@ async function generateInsights(
             p_effort_level: insight.effort,
             p_confidence_score: insight.confidence,
             p_is_automated: true,
-            p_source_agent_id: 'dashboard_intelligence_v2',
+            p_source_agent_id: 'dashboard_intelligence_v3',
           });
 
           generated++;

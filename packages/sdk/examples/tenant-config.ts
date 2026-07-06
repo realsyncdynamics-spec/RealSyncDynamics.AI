@@ -51,7 +51,7 @@ async function manageTenantConfig() {
     console.log(`✅ Branding configured`);
 
     // Verify updated branding
-    console.log('\n✨ Branding Preview:`);
+    console.log('\n✨ Branding Preview:');
     console.log(`  Company: ${branded.name}`);
     console.log(`  Primary Color: ${branded.brand_colors?.primary || 'default'}`);
     console.log(`  Logo: ${branded.custom_logo_url ? '✓ Custom' : 'Platform default'}`);

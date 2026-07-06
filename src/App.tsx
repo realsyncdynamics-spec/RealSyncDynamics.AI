@@ -243,6 +243,7 @@ const TaxReviewsView     = lazy(() => import('./features/finance/TaxReviewsView'
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
+const BrandingSettings = lazy(() => import('./features/settings/BrandingSettings').then((m) => ({ default: m.BrandingSettings })));
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
@@ -710,6 +711,7 @@ function RoutesWithTracking() {
       <Route path="/settings/team" element={<RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2>} />
       <Route path="/settings/account" element={<AccountSettings />} />
       <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
+      <Route path="/settings/branding" element={<RequireAal2 action="White-Label Branding"><BrandingSettings /></RequireAal2>} />
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />

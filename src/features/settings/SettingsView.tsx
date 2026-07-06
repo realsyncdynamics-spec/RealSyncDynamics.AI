@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Settings as SettingsIcon, User as UserIcon, Shield,
-  Cookie, Key, Loader2, CheckCircle2, AlertTriangle, ExternalLink,
+  Cookie, Key, Loader2, CheckCircle2, AlertTriangle, ExternalLink, Palette,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -193,6 +193,8 @@ function ShortcutsSection() {
   return (
     <Section title="Datenschutz + Account-Aktionen" icon={<Shield className="h-4 w-4" />}>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ShortcutLink to="/settings/branding" title="White-Label Branding"
+          desc="Farben, Logo, Footer, Support-Info — Dashboard-Styling." icon={<Palette className="h-3.5 w-3.5" />} />
         <ShortcutLink to="/settings/security" title="Sicherheit · MFA"
           desc="Zwei-Faktor (TOTP), Recovery-Codes, MFA-Erzwingung pro Tenant." />
         <ShortcutLink to="/settings/team" title="Team & Zugriff"
@@ -213,12 +215,15 @@ function ShortcutsSection() {
   );
 }
 
-function ShortcutLink({ to, title, desc }: { to: string; title: string; desc: string }) {
+function ShortcutLink({ to, title, desc, icon }: { to: string; title: string; desc: string; icon?: React.ReactNode }) {
   return (
     <Link to={to}
       className="block p-3 bg-obsidian-950 border border-titanium-900 hover:bg-obsidian-800 hover:border-security-700 rounded-none transition-colors">
       <div className="flex items-center justify-between">
-        <span className="font-display font-bold text-titanium-50 text-sm">{title}</span>
+        <span className="font-display font-bold text-titanium-50 text-sm flex items-center gap-2">
+          {icon && <span className="text-titanium-500">{icon}</span>}
+          {title}
+        </span>
         <ExternalLink className="h-3.5 w-3.5 text-titanium-500" />
       </div>
       <p className="text-xs text-titanium-400 mt-1 leading-relaxed">{desc}</p>

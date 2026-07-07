@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { ScanActionGuard } from '../../../core/billing/ScanActionGuard';
 import { ArrowRight, Zap, Lock } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 
@@ -188,50 +189,95 @@ export function FreeTierDashboard() {
         <div className="mb-12">
           <h2 className="text-xl font-bold text-titanium-50 mb-6">Verfügbare Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accessibleCards.map((card) => (
-              <button
-                key={card.id}
-                onClick={() => {
-                  if (card.accessible && card.path) {
-                    navigate(card.path);
-                  } else if (!card.accessible && card.access.upgradeUrl) {
-                    navigate(card.access.upgradeUrl);
-                  }
-                }}
-                disabled={!card.accessible}
-                className={`
-                  text-left p-5 rounded-none border transition-all
-                  ${card.accessible
-                    ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
-                    : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
-                  }
-                `}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-titanium-50 flex-1">
-                    {card.title}
-                  </h3>
-                  {!card.accessible && (
-                    <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
-                  )}
-                </div>
+            {accessibleCards.map((card) => {
+              // Wrap scan card with limit guard
+              if (card.id === 'scan-count' && card.accessible) {
+                return (
+                  <ScanActionGuard key={card.id}>
+                    {(canScan, onScan) => (
+                      <button
+                        onClick={onScan}
+                        disabled={!canScan}
+                        className={`
+                          text-left p-5 rounded-none border transition-all
+                          ${canScan
+                            ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
+                            : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
+                          }
+                        `}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-titanium-50 flex-1">
+                            {card.title}
+                          </h3>
+                        </div>
 
-                <p className="text-xs text-titanium-400 mb-4">
-                  {card.description}
-                </p>
+                        <p className="text-xs text-titanium-400 mb-4">
+                          {card.description}
+                        </p>
 
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-mono px-2 py-1 rounded-none ${
-                    card.accessible
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-amber-500/10 text-amber-400'
-                  }`}>
-                    {card.accessible ? 'Verfügbar' : `Ab ${card.tier}`}
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-titanium-500" />
-                </div>
-              </button>
-            ))}
+                        <div className="flex items-center justify-between">
+                          <span className={`text-xs font-mono px-2 py-1 rounded-none ${
+                            canScan
+                              ? 'bg-emerald-500/10 text-emerald-400'
+                              : 'bg-amber-500/10 text-amber-400'
+                          }`}>
+                            {canScan ? 'Verfügbar' : 'Limit erreicht'}
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-titanium-500" />
+                        </div>
+                      </button>
+                    )}
+                  </ScanActionGuard>
+                );
+              }
+
+              // Regular card rendering for other features
+              return (
+                <button
+                  key={card.id}
+                  onClick={() => {
+                    if (card.accessible && card.path) {
+                      navigate(card.path);
+                    } else if (!card.accessible && card.access.upgradeUrl) {
+                      navigate(card.access.upgradeUrl);
+                    }
+                  }}
+                  disabled={!card.accessible}
+                  className={`
+                    text-left p-5 rounded-none border transition-all
+                    ${card.accessible
+                      ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
+                      : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-titanium-50 flex-1">
+                      {card.title}
+                    </h3>
+                    {!card.accessible && (
+                      <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
+                    )}
+                  </div>
+
+                  <p className="text-xs text-titanium-400 mb-4">
+                    {card.description}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-mono px-2 py-1 rounded-none ${
+                      card.accessible
+                        ? 'bg-emerald-500/10 text-emerald-400'
+                        : 'bg-amber-500/10 text-amber-400'
+                    }`}>
+                      {card.accessible ? 'Verfügbar' : `Ab ${card.tier}`}
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-titanium-500" />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 

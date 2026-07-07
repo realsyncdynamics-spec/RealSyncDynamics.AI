@@ -188,6 +188,7 @@ export function CheckoutPage() {
   return (
     <ConsentGateShell
       tier={tier}
+      planKey={validPlan}
       userEmail={auth.userEmail}
       isPilot={isPilot}
       agreedToTerms={agreedToTerms}
@@ -353,6 +354,7 @@ function NoUserShell({
 
 function ConsentGateShell({
   tier,
+  planKey,
   userEmail,
   isPilot,
   agreedToTerms,
@@ -364,6 +366,7 @@ function ConsentGateShell({
   onConfirm,
 }: {
   tier:                     { name: string; priceEur: number };
+  planKey:                  PlanKey;
   userEmail:                string;
   isPilot:                  boolean;
   agreedToTerms:            boolean;
@@ -382,6 +385,7 @@ function ConsentGateShell({
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -392,7 +396,7 @@ function ConsentGateShell({
       </header>
 
       <main className="flex flex-col items-center justify-center px-4 py-12 sm:py-16">
-        <div className="max-w-md w-full">
+        <div className="max-w-md w-full" data-testid={`checkout-plan-${planKey}`}>
           <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-5" />
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-2 text-center">
             {tier.name}
@@ -475,6 +479,7 @@ function ConsentGateShell({
             className={`surface-gold w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-none transition-opacity ${
               canSubmit ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed'
             }`}
+            data-testid="checkout-book-button"
           >
             {redirecting ? (
               <>

@@ -1,12 +1,6 @@
 -- Cron jobs for SEO-Marketing-Dashboard data syncs
 -- Enables automatic scheduled data synchronization from external sources
 
--- Attempt to create pg_cron extension (available in Supabase Pro+, not in test environments)
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Create http extension if not exists
-CREATE EXTENSION IF NOT EXISTS http;
-
 -- Create table to track cron job executions
 CREATE TABLE IF NOT EXISTS cron_executions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

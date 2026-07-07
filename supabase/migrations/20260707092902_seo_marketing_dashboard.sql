@@ -162,11 +162,28 @@ CREATE POLICY "seo_security_events_tenant_isolation"
   USING (public.is_tenant_member(tenant_id))
   WITH CHECK (public.is_tenant_member(tenant_id));
 
+-- Create audit logging table for SEO marketing changes
+CREATE TABLE IF NOT EXISTS seo_marketing_audit_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_name TEXT NOT NULL,
+  record_id UUID,
+  action TEXT NOT NULL,
+  old_values JSONB,
+  new_values JSONB,
+  tenant_id UUID REFERENCES public.tenants(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_seo_audit_table_name ON seo_marketing_audit_log(table_name);
+CREATE INDEX idx_seo_audit_tenant_id ON seo_marketing_audit_log(tenant_id);
+CREATE INDEX idx_seo_audit_created_at ON seo_marketing_audit_log(created_at);
+
 -- Create audit logging trigger
 CREATE OR REPLACE FUNCTION audit_seo_marketing_changes()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO audit_logs (table_name, record_id, action, old_values, new_values, tenant_id, created_by)
+  INSERT INTO seo_marketing_audit_log (table_name, record_id, action, old_values, new_values, tenant_id, created_by)
   VALUES (
     TG_TABLE_NAME,
     COALESCE(NEW.id, OLD.id),

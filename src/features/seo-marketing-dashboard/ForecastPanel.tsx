@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSupabaseAuth } from '../../supabase/SupabaseAuthContext';
+import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
 import {
   LineChart,

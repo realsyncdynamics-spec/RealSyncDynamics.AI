@@ -249,9 +249,10 @@ export function usePerformanceMonitoring() {
       const lcpObserver = new PerformanceObserver(list => {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
+        const renderTime = (lastEntry as unknown as Record<string, unknown>).renderTime || lastEntry.startTime;
         setMetrics(prev => ({
           ...prev,
-          renderTime: lastEntry.renderTime || lastEntry.startTime,
+          renderTime: Number(renderTime) || 0,
         }));
       });
 

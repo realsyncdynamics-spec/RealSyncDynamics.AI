@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useSupabaseAuth } from '../../supabase/SupabaseAuthContext';
+import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
 
 type OperationType = 'view' | 'export' | 'filter_apply' | 'sync_trigger' | 'integration_connect';

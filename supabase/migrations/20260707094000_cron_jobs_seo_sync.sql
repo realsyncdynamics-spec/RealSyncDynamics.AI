@@ -1,7 +1,7 @@
 -- Cron jobs for SEO-Marketing-Dashboard data syncs
 -- Enables automatic scheduled data synchronization from external sources
 
--- Create pg_cron extension if not exists
+-- Attempt to create pg_cron extension (available in Supabase Pro+, not in test environments)
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- Create http extension if not exists
@@ -20,78 +20,85 @@ CREATE TABLE IF NOT EXISTS cron_executions (
 CREATE INDEX idx_cron_executions_job_name ON cron_executions(job_name);
 CREATE INDEX idx_cron_executions_executed_at ON cron_executions(executed_at);
 
--- Schedule data sync every hour (runs schedule-data-syncs function)
--- Format: minute (0-59), hour (0-23), day (1-31), month (1-12), day-of-week (0-6, 0=Sunday)
--- This runs at the start of every hour
-SELECT cron.schedule(
-  'seo-marketing-sync-hourly',  -- job name
-  '0 * * * *',                   -- every hour at :00
-  $$
-    SELECT http_post(
-      concat(
-        current_setting('app.supabase_url'), '/functions/v1/schedule-data-syncs'
-      ),
-      '{}'::jsonb,
-      'application/json',
-      concat('Bearer ', current_setting('app.supabase_service_role_key'))
+-- Conditionally schedule cron jobs only if pg_cron extension is available
+DO $$
+BEGIN
+  -- Check if pg_cron extension exists in current database
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    -- Schedule data sync every hour (runs schedule-data-syncs function)
+    PERFORM cron.schedule(
+      'seo-marketing-sync-hourly',  -- job name
+      '0 * * * *',                   -- every hour at :00
+      $$
+        SELECT http_post(
+          concat(
+            current_setting('app.supabase_url'), '/functions/v1/schedule-data-syncs'
+          ),
+          '{}'::jsonb,
+          'application/json',
+          concat('Bearer ', current_setting('app.supabase_service_role_key'))
+        );
+      $$
     );
-  $$
-);
 
--- Schedule daily summary calculation and archival
--- Runs at midnight every day
-SELECT cron.schedule(
-  'seo-marketing-daily-archive',  -- job name
-  '0 0 * * *',                     -- every day at 00:00
-  $$
-    WITH daily_summary AS (
-      SELECT
-        tenant_id,
-        period_start::date AS summary_date,
-        AVG(web_visitors) AS avg_visitors,
-        AVG(leads_generated) AS avg_leads,
-        AVG(revenue_generated) AS avg_revenue,
-        AVG((revenue_generated / NULLIF(customers_acquired, 0))) AS avg_revenue_per_customer,
-        NOW() AS calculated_at
-      FROM marketing_metrics
-      WHERE period_start::date = CURRENT_DATE - INTERVAL '1 day'
-      GROUP BY tenant_id, period_start::date
-    )
-    INSERT INTO marketing_metrics (
-      tenant_id, period_start, period_end,
-      web_visitors, leads_generated, revenue_generated,
-      data_source, created_at
-    )
-    SELECT
-      ds.tenant_id,
-      (ds.summary_date)::date,
-      (ds.summary_date + INTERVAL '1 day')::date,
-      ROUND(ds.avg_visitors)::int,
-      ROUND(ds.avg_leads)::int,
-      ROUND(ds.avg_revenue::numeric, 2),
-      'daily_archive',
-      NOW()
-    FROM daily_summary ds
-    ON CONFLICT (tenant_id, period_start, period_end) DO UPDATE
-    SET
-      web_visitors = EXCLUDED.web_visitors,
-      leads_generated = EXCLUDED.leads_generated,
-      revenue_generated = EXCLUDED.revenue_generated,
-      updated_at = NOW();
-  $$
-);
+    -- Schedule daily summary calculation and archival
+    PERFORM cron.schedule(
+      'seo-marketing-daily-archive',  -- job name
+      '0 0 * * *',                     -- every day at 00:00
+      $$
+        WITH daily_summary AS (
+          SELECT
+            tenant_id,
+            period_start::date AS summary_date,
+            AVG(web_visitors) AS avg_visitors,
+            AVG(leads_generated) AS avg_leads,
+            AVG(revenue_generated) AS avg_revenue,
+            AVG((revenue_generated / NULLIF(customers_acquired, 0))) AS avg_revenue_per_customer,
+            NOW() AS calculated_at
+          FROM marketing_metrics
+          WHERE period_start::date = CURRENT_DATE - INTERVAL '1 day'
+          GROUP BY tenant_id, period_start::date
+        )
+        INSERT INTO marketing_metrics (
+          tenant_id, period_start, period_end,
+          web_visitors, leads_generated, revenue_generated,
+          data_source, created_at
+        )
+        SELECT
+          ds.tenant_id,
+          (ds.summary_date)::date,
+          (ds.summary_date + INTERVAL '1 day')::date,
+          ROUND(ds.avg_visitors)::int,
+          ROUND(ds.avg_leads)::int,
+          ROUND(ds.avg_revenue::numeric, 2),
+          'daily_archive',
+          NOW()
+        FROM daily_summary ds
+        ON CONFLICT (tenant_id, period_start, period_end) DO UPDATE
+        SET
+          web_visitors = EXCLUDED.web_visitors,
+          leads_generated = EXCLUDED.leads_generated,
+          revenue_generated = EXCLUDED.revenue_generated,
+          updated_at = NOW();
+      $$
+    );
 
--- Schedule cleanup of old sync jobs (delete entries older than 90 days)
--- Runs at 2 AM every day
-SELECT cron.schedule(
-  'seo-marketing-cleanup-jobs',  -- job name
-  '0 2 * * *',                    -- every day at 02:00
-  $$
-    DELETE FROM data_sync_jobs
-    WHERE created_at < NOW() - INTERVAL '90 days'
-      AND status IN ('completed', 'failed');
-  $$
-);
+    -- Schedule cleanup of old sync jobs (delete entries older than 90 days)
+    PERFORM cron.schedule(
+      'seo-marketing-cleanup-jobs',  -- job name
+      '0 2 * * *',                    -- every day at 02:00
+      $$
+        DELETE FROM data_sync_jobs
+        WHERE created_at < NOW() - INTERVAL '90 days'
+          AND status IN ('completed', 'failed');
+      $$
+    );
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  -- pg_cron not available in this environment (test databases, free tier)
+  -- Cron jobs will not run, but migration completes successfully
+  RAISE NOTICE 'pg_cron extension not available. Scheduled jobs will not run in this environment.';
+END $$;
 
 -- Function to handle sync job completion logging
 CREATE OR REPLACE FUNCTION log_sync_completion()

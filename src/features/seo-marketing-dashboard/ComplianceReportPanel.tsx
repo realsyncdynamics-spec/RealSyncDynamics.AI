@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSupabaseAuth } from '../../supabase/SupabaseAuthContext';
+import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { useTenant } from '../../core/access/TenantProvider';
 import {
   DownloadCloud,
@@ -76,30 +76,35 @@ export function ComplianceReportPanel() {
   }
 
   function updateComplianceMetrics(summary: Record<string, unknown>) {
+    const totalOps = (summary.total_operations as number) || 0;
+    const uniqueUsers = (summary.unique_users as number) || 0;
+    const exportCount = (summary.export_count as number) || 0;
+    const errorCount = (summary.error_count as number) || 0;
+
     const metrics: ComplianceMetric[] = [
       {
         label: 'Gesamtoperationen',
-        value: summary.total_operations || 0,
+        value: totalOps,
         status: 'compliant',
         icon: 'check',
       },
       {
         label: 'Eindeutige Benutzer',
-        value: summary.unique_users || 0,
+        value: uniqueUsers,
         status: 'compliant',
         icon: 'check',
       },
       {
         label: 'Exporte erfasst',
-        value: summary.export_count || 0,
-        status: summary.export_count > 0 ? 'compliant' : 'warning',
-        icon: summary.export_count > 0 ? 'check' : 'alert',
+        value: exportCount,
+        status: exportCount > 0 ? 'compliant' : 'warning',
+        icon: exportCount > 0 ? 'check' : 'alert',
       },
       {
         label: 'Fehlerrate',
-        value: `${((((summary.error_count || 0) / ((summary.total_operations as number) || 1)) * 100).toFixed(2))}%`,
-        status: ((summary.error_count || 0) as number) > 0 ? 'warning' : 'compliant',
-        icon: ((summary.error_count || 0) as number) > 0 ? 'alert' : 'check',
+        value: `${(((errorCount / Math.max(totalOps, 1)) * 100).toFixed(2))}%`,
+        status: errorCount > 0 ? 'warning' : 'compliant',
+        icon: errorCount > 0 ? 'alert' : 'check',
       },
     ];
     setComplianceMetrics(metrics);

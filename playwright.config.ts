@@ -21,9 +21,14 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  // Inspector-panel tests require an authenticated session with real data —
-  // they cannot run against the unauthenticated preview server in CI.
-  testIgnore: process.env.CI ? ['**/governance/inspector-panel.spec.ts'] : [],
+  // Some tests require a real backend with Supabase functions deployed.
+  // They cannot run against the unauthenticated preview server in CI.
+  testIgnore: process.env.CI ? [
+    '**/governance/inspector-panel.spec.ts',      // needs authenticated session + real data
+    '**/api-endpoints.spec.ts',                   // needs Supabase Edge Functions
+    '**/api-smoke-tests.spec.ts',                 // needs real backend
+    '**/api-notifications-integration.spec.ts',   // needs real backend
+  ] : [],
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   timeout: process.env.CI ? 90_000 : 30_000,

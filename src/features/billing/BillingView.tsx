@@ -7,6 +7,10 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
 import { StripeAccountInfo } from './StripeAccountInfo';
+import { PlanUpgradeModal } from './PlanUpgradeModal';
+import { createCheckoutSession } from '../../lib/stripe';
+import { useAuth } from '../../lib/useAuth';
+import type { TierId } from '../../config/pricing';
 
 interface Subscription {
   plan_key: string | null;
@@ -45,6 +49,7 @@ const PLAN_LABELS: Record<string, string> = {
 
 export function BillingView() {
   const { tenants, activeTenantId, entitlements, loading, getLimit } = useTenant();
+  const { user } = useAuth();
   const activeTenant = tenants.find((t) => t.tenantId === activeTenantId);
   const canManage = activeTenant?.role === 'owner' || activeTenant?.role === 'admin';
 
@@ -52,6 +57,8 @@ export function BillingView() {
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradingPlan, setUpgradingPlan] = useState(false);
 
   useEffect(() => {
     if (!activeTenantId) return;
@@ -109,6 +116,32 @@ export function BillingView() {
     } catch (e) {
       setError((e as Error).message);
       setOpening(false);
+    }
+  }
+
+  async function handlePlanUpgrade(planId: TierId) {
+    if (!activeTenantId || !user) return;
+    setUpgradingPlan(true);
+    setError(null);
+    try {
+      const response = await createCheckoutSession({
+        planId,
+        tenantId: activeTenantId,
+        userId: user.id,
+        email: user.email || '',
+        successUrl: `${window.location.origin}/billing/usage?checkout=success`,
+        cancelUrl: `${window.location.origin}/app/billing`,
+        trialDays: 0, // No trial for upgrades/downgrades
+      });
+      if (response.checkoutUrl) {
+        window.location.href = response.checkoutUrl;
+      } else {
+        setError('Checkout-URL konnte nicht generiert werden.');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten';
+      setError(errorMsg);
+      setUpgradingPlan(false);
     }
   }
 
@@ -178,9 +211,18 @@ export function BillingView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link to="/pricing" className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none flex items-center gap-2">
-              <Layers className="h-4 w-4" /> Plan ändern
-            </Link>
+            {sub !== 'none' && canManage ? (
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none flex items-center gap-2"
+              >
+                <Layers className="h-4 w-4" /> Plan ändern
+              </button>
+            ) : (
+              <Link to="/pricing" className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none flex items-center gap-2">
+                <Layers className="h-4 w-4" /> Plan wählen
+              </Link>
+            )}
             <Link to="/billing/usage" className="px-4 py-2 bg-obsidian-950 border border-titanium-900 hover:bg-obsidian-800 text-titanium-200 text-sm font-semibold rounded-none flex items-center gap-2">
               <Cpu className="h-4 w-4" /> Verbrauch
             </Link>
@@ -248,6 +290,7 @@ export function BillingView() {
         Steuer- und Buchhaltungsfragen: <a href="mailto:billing@realsyncdynamicsai.de" className="text-security-400">billing@realsyncdynamicsai.de</a>.
       </p>
 
+<<<<<<< HEAD
       {/* Stripe Account Information */}
       <div>
         <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Stripe-Konto</h2>
@@ -261,6 +304,18 @@ export function BillingView() {
           canManage={canManage}
         />
       </div>
+=======
+      {/* Plan Upgrade Modal */}
+      {showUpgradeModal && sub !== 'none' && (
+        <PlanUpgradeModal
+          currentPlanId={(sub.plan_key ?? 'free') as TierId}
+          onClose={() => setShowUpgradeModal(false)}
+          onSelectPlan={handlePlanUpgrade}
+          isLoading={upgradingPlan}
+          error={error}
+        />
+      )}
+>>>>>>> 023d695 (Phase 3: Plan Upgrade/Downgrade UI in Billing Dashboard)
     </div>
   );
 }

@@ -1,179 +1,190 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
-import { crypto } from 'https://deno.land/std@0.208.0/crypto/mod.ts';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.1";
 
-interface WebhookPayload {
-  tenantId: string;
-  eventType: string;
-  data: Record<string, unknown>;
-  timestamp: string;
+const supabaseUrl = Deno.env.get("SUPABASE_URL");
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error("Missing Supabase environment variables");
 }
 
-interface WebhookEndpoint {
-  id: string;
-  url: string;
-  signingSecret: string;
-  events: string[];
-  active: boolean;
-  retryPolicy: 'exponential' | 'linear' | 'once';
-}
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { persistSession: false },
+});
 
-async function signPayload(payload: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const secretKey = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'HMAC',
-    secretKey,
-    encoder.encode(payload)
-  );
-
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-async function deliverWebhook(
-  endpoint: WebhookEndpoint,
-  payload: WebhookPayload,
-  retryCount: number = 0
-): Promise<{ success: boolean; statusCode?: number; error?: string }> {
-  const payloadJson = JSON.stringify(payload);
-  const signature = await signPayload(payloadJson, endpoint.signingSecret);
-
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Webhook-Signature': `sha256=${signature}`,
-    'X-Webhook-Id': endpoint.id,
-    'X-Webhook-Event': payload.eventType,
-    'X-Webhook-Timestamp': payload.timestamp,
-  };
-
+/**
+ * Webhook Dispatcher
+ * Delivers events to subscribed webhooks with HMAC signing and retry logic
+ */
+serve(async (req: Request) => {
   try {
-    const response = await fetch(endpoint.url, {
-      method: 'POST',
-      headers,
-      body: payloadJson,
-      signal: AbortSignal.timeout(30000), // 30s timeout
-    });
-
-    const success = response.ok;
-
-    if (success) {
-      return { success: true, statusCode: response.status };
-    } else {
-      // Determine if should retry
-      const shouldRetry = response.status >= 500 && retryCount < 5;
-
-      if (shouldRetry) {
-        // Schedule retry
-        const delay = endpoint.retryPolicy === 'exponential'
-          ? Math.min(1000 * Math.pow(2, retryCount), 60000)
-          : 5000;
-
-        setTimeout(() => {
-          deliverWebhook(endpoint, payload, retryCount + 1);
-        }, delay);
-      }
-
-      return {
-        success: false,
-        statusCode: response.status,
-        error: `HTTP ${response.status}`,
-      };
-    }
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-
-    // Retry on network errors for exponential policy
-    if (endpoint.retryPolicy !== 'once' && retryCount < 5) {
-      const delay = endpoint.retryPolicy === 'exponential'
-        ? Math.min(1000 * Math.pow(2, retryCount), 60000)
-        : 5000;
-
-      setTimeout(() => {
-        deliverWebhook(endpoint, payload, retryCount + 1);
-      }, delay);
-    }
-
-    return { success: false, error: errorMsg };
-  }
-}
-
-serve(async (req) => {
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') || '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-  );
-
-  try {
-    const payload: WebhookPayload = await req.json();
-
-    // Fetch active webhook endpoints for this tenant and event type
-    const { data: endpoints, error: fetchError } = await supabase
-      .from('webhook_endpoints')
-      .select('*')
-      .eq('tenant_id', payload.tenantId)
-      .eq('active', true)
-      .contains('events', [payload.eventType]);
-
-    if (fetchError) {
-      console.error('Failed to fetch endpoints:', fetchError);
+    if (req.method !== "POST") {
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch endpoints' }),
-        { status: 500 }
+        JSON.stringify({ error: "Method not allowed" }),
+        { status: 405 }
       );
     }
 
-    // Deliver to each endpoint
-    const deliveryResults = await Promise.all(
-      (endpoints || []).map(async (endpoint: WebhookEndpoint) => {
-        const result = await deliverWebhook(endpoint, payload);
+    const { tenantId, eventType, eventId, payload, subscriptionIds } = await req.json();
 
-        // Log delivery
-        await supabase.from('webhook_deliveries').insert({
-          tenant_id: payload.tenantId,
-          endpoint_id: endpoint.id,
-          event_type: payload.eventType,
-          status: result.success ? 'success' : 'failed',
-          status_code: result.statusCode,
-          payload: payload.data,
-          response_body: result.error,
-          sent_at: new Date().toISOString(),
-          retry_count: 0,
+    if (!tenantId || !eventType || !payload) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400 }
+      );
+    }
+
+    // Get active subscriptions for this tenant and event type
+    let query = supabase
+      .from("webhook_subscriptions")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("active", true);
+
+    if (subscriptionIds && subscriptionIds.length > 0) {
+      query = query.in("id", subscriptionIds);
+    }
+
+    const { data: subscriptions, error: subError } = await query;
+
+    if (subError) throw subError;
+
+    const results = [];
+
+    for (const subscription of subscriptions || []) {
+      try {
+        // Check if subscription matches event type
+        if (!subscription.events.includes(eventType) && !subscription.events.includes("*")) {
+          continue;
+        }
+
+        // Check filter criteria
+        if (subscription.filter_criteria && Object.keys(subscription.filter_criteria).length > 0) {
+          const criteria = subscription.filter_criteria;
+          let matches = true;
+          for (const [key, value] of Object.entries(criteria)) {
+            if (payload[key] !== value) {
+              matches = false;
+              break;
+            }
+          }
+          if (!matches) continue;
+        }
+
+        // Create webhook delivery record
+        const { data: delivery, error: deliveryError } = await supabase
+          .from("webhook_deliveries")
+          .insert({
+            subscription_id: subscription.id,
+            tenant_id: tenantId,
+            event_type: eventType,
+            event_id: eventId,
+            payload,
+            status: "pending",
+          })
+          .select()
+          .single();
+
+        if (deliveryError) throw deliveryError;
+
+        // Dispatch webhook with HMAC signature
+        const success = await dispatchWebhook(subscription, delivery.id, payload);
+
+        if (success) {
+          results.push({ subscription_id: subscription.id, status: "sent" });
+        } else {
+          results.push({ subscription_id: subscription.id, status: "pending_retry" });
+        }
+      } catch (err) {
+        console.error(`Error processing subscription ${subscription.id}:`, err);
+        results.push({
+          subscription_id: subscription.id,
+          status: "error",
+          error: String(err),
         });
-
-        return result;
-      })
-    );
-
-    const successCount = deliveryResults.filter((r) => r.success).length;
+      }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        delivered: successCount,
-        total: deliveryResults.length,
+        event_type: eventType,
+        subscriptions_processed: results.length,
+        results,
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('Webhook dispatcher error:', errorMsg);
-
+  } catch (err) {
+    console.error("Webhook dispatcher error:", err);
     return new Response(
-      JSON.stringify({ error: errorMsg }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: String(err) }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 });
+
+/**
+ * Dispatch webhook to endpoint with HMAC-SHA256 signature
+ */
+async function dispatchWebhook(
+  subscription: any,
+  deliveryId: string,
+  payload: any
+): Promise<boolean> {
+  try {
+    // Generate HMAC-SHA256 signature
+    const secretKey = new TextEncoder().encode(subscription.secret);
+    const message = new TextEncoder().encode(JSON.stringify(payload));
+    const cryptoKey = await globalThis.crypto.subtle.importKey(
+      "raw",
+      secretKey,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signature = await globalThis.crypto.subtle.sign("HMAC", cryptoKey, message);
+    const signatureHex = Array.from(new Uint8Array(signature))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // Send webhook
+    const response = await fetch(subscription.endpoint_url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Signature": signatureHex,
+        "X-Webhook-Delivery-ID": deliveryId,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // Record delivery result
+    await supabase.from("webhook_deliveries").update({
+      status: response.ok ? "sent" : "failed",
+      http_status_code: response.status,
+      response_body: await response.text(),
+      sent_at: new Date().toISOString(),
+    }).eq("id", deliveryId);
+
+    return response.ok;
+  } catch (err) {
+    // Record failed delivery
+    const nextRetry = new Date();
+    nextRetry.setSeconds(nextRetry.getSeconds() + 300); // 5 minute retry delay
+
+    const { data: delivery } = await supabase
+      .from("webhook_deliveries")
+      .select("attempt")
+      .eq("id", deliveryId)
+      .single();
+
+    await supabase.from("webhook_deliveries").update({
+      status: "failed",
+      attempt: (delivery?.attempt || 0) + 1,
+      next_retry_at: nextRetry.toISOString(),
+      last_error: String(err),
+    }).eq("id", deliveryId);
+
+    return false;
+  }
+}

@@ -222,7 +222,7 @@ const GovernanceApiKeysView = lazy(() => import('./features/governance/Governanc
 const GovernanceWorkflowRecommendation = lazy(() => import('./features/governance/GovernanceWorkflowRecommendation').then((m) => ({ default: m.GovernanceWorkflowRecommendation })));
 // ── Phase 5A: ISO Templates & Advanced Reporting (3 new views)
 const IsoControlLibraryView = lazy(() => import('./features/governance/IsoControlLibraryView').then((m) => ({ default: m.IsoControlLibraryView })));
-const ReportBuilderView = lazy(() => import('./features/governance/ReportBuilderView').then((m) => ({ default: m.ReportBuilderView })));
+const ReportBuilderView = lazy(() => import('./features/governance/reporting/AdvancedReportingView').then((m) => ({ default: m.AdvancedReportingView })));
 const ComplianceRoadmapView = lazy(() => import('./features/governance/ComplianceRoadmapView').then((m) => ({ default: m.ComplianceRoadmapView })));
 // ── Phase 5B: Custom Frameworks & Integrations (3 new views)
 const CustomFrameworkBuilderView = lazy(() => import('./features/governance/frameworks/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));

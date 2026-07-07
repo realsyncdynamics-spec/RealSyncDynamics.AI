@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test';
 test.describe('API Infrastructure Smoke Tests', () => {
   test('should respond to health check endpoint', async ({ request }) => {
     // Health check endpoint for monitoring
-    const response = await request.get('https://realsyncdynamics-ai.de/health');
+    const response = await request.get('/health');
     expect([200, 404]).toContain(response.status()); // 404 acceptable if endpoint doesn't exist
   });
 
@@ -18,7 +18,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
       test.skip();
     }
 
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 
   test('should reject requests without authentication', async ({ request }) => {
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       data: { domain: 'test.com', module: 'gdpr' },
     });
 
@@ -45,7 +45,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
     // Make requests until rate limit or success
     let hitRateLimit = false;
     for (let i = 0; i < 50; i++) {
-      const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+      const response = await request.post('/functions/v1/api-audit', {
         headers: {
           Authorization: `Bearer ${process.env.TEST_API_KEY}`,
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
       test.skip();
     }
 
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
     const modules = ['gdpr', 'dpia', 'dsr', 'consent', 'general'];
 
     for (const module of modules) {
-      const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+      const response = await request.post('/functions/v1/api-audit', {
         headers: {
           Authorization: `Bearer ${process.env.TEST_API_KEY}`,
           'Content-Type': 'application/json',
@@ -106,7 +106,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
       test.skip();
     }
 
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 
   test('should provide webhook configuration interface', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api');
+    await page.goto('/app/api');
 
     // Check webhook section exists
     const webhookSection = await page.locator('text=Konfigurierte Webhooks').isVisible();
@@ -131,7 +131,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 
   test('should provide monitoring dashboard', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check key monitoring elements
     const successRate = await page.locator('text=Erfolgsquote').isVisible();
@@ -141,7 +141,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 
   test('should provide email template configuration', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/email-templates');
+    await page.goto('/app/api/email-templates');
 
     // Check email templates section
     const templateSection = await page.locator('text=E-Mail-Vorlagen').isVisible();
@@ -149,7 +149,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 
   test('should provide API documentation', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/docs');
+    await page.goto('/app/api/docs');
 
     // Check documentation content
     const docContent = await page.locator('text=API').isVisible();
@@ -157,7 +157,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 
   test('should support API key setup wizard', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/setup');
+    await page.goto('/app/api/setup');
 
     // Check wizard is accessible
     const wizardContent = await page.locator('text=API').isVisible();
@@ -169,7 +169,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
       test.skip();
     }
 
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
     }
 
     // Send malformed request
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -210,7 +210,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
     }
 
     // API calls should be isolated by tenant
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
       test.skip();
     }
 
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ test.describe('Infrastructure Health Checks', () => {
       test.skip();
     }
 
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -273,7 +273,7 @@ test.describe('Infrastructure Health Checks', () => {
     }
 
     // Test primary edge function
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ test.describe('Infrastructure Health Checks', () => {
     }
 
     const startTime = Date.now();
-    const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+    const response = await request.post('/functions/v1/api-audit', {
       headers: {
         Authorization: `Bearer ${process.env.TEST_API_KEY}`,
         'Content-Type': 'application/json',

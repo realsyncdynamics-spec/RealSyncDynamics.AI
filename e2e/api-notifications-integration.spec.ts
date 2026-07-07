@@ -18,7 +18,7 @@ test.describe('Quota Alert Notification Flow', () => {
     // Make 800 calls to reach 80%
     let callCount = 0;
     for (let i = 0; i < 800; i++) {
-      const response = await request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+      const response = await request.post('/functions/v1/api-audit', {
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ test.describe('Quota Alert Notification Flow', () => {
     }
 
     // Navigate to webhook configuration
-    await page.goto('https://realsyncdynamics-ai.de/app/api');
+    await page.goto('/app/api');
 
     // Check that webhook endpoints are visible
     const webhookSection = await page.locator('text=Konfigurierte Webhooks');
@@ -62,7 +62,7 @@ test.describe('Quota Alert Notification Flow', () => {
     }
 
     // Navigate to monitoring dashboard
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for email statistics card
     const emailStatsCard = await page.locator('text=E-Mail-Benachrichtigungen');
@@ -74,7 +74,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should display recent webhook and email events in monitoring dashboard', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for recent events section
     const recentEventsSection = await page.locator('text=Letzte Ereignisse');
@@ -86,7 +86,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should show success rate percentage for webhook deliveries', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for success rate card
     const successRateCard = await page.locator('text=Erfolgsquote');
@@ -98,7 +98,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should show delivery status for each event (success/failed/pending)', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for event status indicators
     const successIndicators = await page.locator('[data-testid="event-success"]').count();
@@ -110,7 +110,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should filter events by type (webhook vs email)', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for filter controls (if implemented)
     const filterButton = await page.locator('[data-testid="event-filter"]');
@@ -129,7 +129,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should display webhook retry attempts and exponential backoff status', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for webhook stats card
     const webhookStatsCard = await page.locator('text=Webhook-Lieferungen');
@@ -141,7 +141,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should display email delivery success rate separately', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for email stats card
     const emailStatsCard = await page.locator('text=E-Mail-Benachrichtigungen');
@@ -156,7 +156,7 @@ test.describe('Quota Alert Notification Flow', () => {
   });
 
   test('should show system health status (API, Webhooks, Email)', async ({ page }) => {
-    await page.goto('https://realsyncdynamics-ai.de/app/api/monitoring');
+    await page.goto('/app/api/monitoring');
 
     // Check for system status card
     const systemStatusCard = await page.locator('text=System-Status');
@@ -183,7 +183,7 @@ test.describe('Quota Alert Notification Flow', () => {
     const requests = [];
     for (let i = 0; i < 10; i++) {
       requests.push(
-        request.post('https://realsyncdynamics-ai.de/functions/v1/api-audit', {
+        request.post('/functions/v1/api-audit', {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',

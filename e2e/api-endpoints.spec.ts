@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
  * - Response format
  */
 
-const API_ENDPOINT = 'https://realsyncdynamics-ai.de/functions/v1/api-audit';
+const API_ENDPOINT = '/functions/v1/api-audit';
 
 test.describe('API Audit Endpoint', () => {
   test('should reject request without Authorization header', async ({ request }) => {

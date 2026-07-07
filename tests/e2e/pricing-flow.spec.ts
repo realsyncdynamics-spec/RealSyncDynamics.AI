@@ -414,16 +414,16 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should redirect to contact sales', async ({ page }) => {
+    test('enterprise checkout should redirect to login when not authenticated', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/enterprise`);
       await page.waitForLoadState('networkidle');
 
       const bookButton = page.locator('[data-testid="checkout-book-button"]');
       await bookButton.click();
 
-      // Enterprise should navigate to /contact-sales
-      await page.waitForURL(/\/contact-sales/);
-      await expect(page).toHaveURL(/\/contact-sales/);
+      // Enterprise requires auth, should redirect to welcome page
+      await page.waitForURL(/\/welcome/);
+      await expect(page).toHaveURL(/\/welcome/);
     });
   });
 

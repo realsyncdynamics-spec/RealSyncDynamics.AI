@@ -53,7 +53,7 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
+  // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
     if (planKey === 'free') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
@@ -63,7 +63,11 @@ export function CheckoutPage() {
       navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
       return;
     }
-  }, [planKey, navigate]);
+    if (!validPlan && planKey) {
+      navigate('/pricing?source=checkout-invalid', { replace: true });
+      return;
+    }
+  }, [planKey, validPlan, navigate]);
 
   // 3. Auth-State + Membership-Lookup
   useEffect(() => {

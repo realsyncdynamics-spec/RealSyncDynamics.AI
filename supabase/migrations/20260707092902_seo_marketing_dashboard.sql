@@ -39,12 +39,8 @@ ALTER TABLE marketing_metrics ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "marketing_metrics_tenant_isolation"
   ON marketing_metrics
   FOR ALL
-  USING (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )))
-  WITH CHECK (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )));
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- 2. Customer Lifecycle (CAC & LTV Tracking)
 CREATE TABLE IF NOT EXISTS customer_lifecycle (
@@ -81,12 +77,8 @@ ALTER TABLE customer_lifecycle ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "customer_lifecycle_tenant_isolation"
   ON customer_lifecycle
   FOR ALL
-  USING (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )))
-  WITH CHECK (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )));
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- 3. SEO Tool Tracking (Shadow SaaS Visibility)
 CREATE TABLE IF NOT EXISTS seo_tool_tracking (
@@ -130,12 +122,8 @@ ALTER TABLE seo_tool_tracking ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "seo_tool_tracking_tenant_isolation"
   ON seo_tool_tracking
   FOR ALL
-  USING (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )))
-  WITH CHECK (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )));
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- 4. Security & Governance Events
 CREATE TABLE IF NOT EXISTS seo_security_events (
@@ -171,12 +159,8 @@ ALTER TABLE seo_security_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "seo_security_events_tenant_isolation"
   ON seo_security_events
   FOR ALL
-  USING (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )))
-  WITH CHECK (tenant_id IN (SELECT id FROM public.tenants WHERE id = auth.uid()::UUID OR id IN (
-    SELECT tenant_id FROM public.team_members WHERE user_id = auth.uid()
-  )));
+  USING (public.is_tenant_member(tenant_id))
+  WITH CHECK (public.is_tenant_member(tenant_id));
 
 -- Create audit logging trigger
 CREATE OR REPLACE FUNCTION audit_seo_marketing_changes()

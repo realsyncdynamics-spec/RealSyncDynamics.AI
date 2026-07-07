@@ -118,12 +118,11 @@ test.describe('Pricing Flow', () => {
 
     test('all plan detail pages should be accessible', async ({ page }) => {
       const planSlugs = [
-        'free-audit',
+        'free',
         'starter',
         'growth',
         'agency',
         'scale',
-        'enterprise',
       ];
 
       for (const slug of planSlugs) {
@@ -334,12 +333,10 @@ test.describe('Pricing Flow', () => {
 
     test('all checkout pages should be accessible', async ({ page }) => {
       const planSlugs = [
-        'free-audit',
         'starter',
         'growth',
         'agency',
         'scale',
-        'enterprise',
         'starter_yearly',
         'growth_yearly',
         'agency_yearly',
@@ -399,8 +396,8 @@ test.describe('Pricing Flow', () => {
       await expect(bookButton).toBeVisible();
     });
 
-    test('free-audit checkout should redirect to audit page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/free-audit`);
+    test('free checkout should redirect to audit page', async ({ page }) => {
+      await page.goto(`${BASE_URL}/checkout/free`);
       await page.waitForLoadState('networkidle');
 
       const bookButton = page.locator('[data-testid="checkout-book-button"]');
@@ -493,11 +490,10 @@ test.describe('Pricing Flow', () => {
 
       // Check each plan individually
       const planSlugs = [
-        'free-audit',
+        'free',
         'starter',
         'agency',
         'scale',
-        'enterprise',
       ];
 
       for (const slug of planSlugs) {
@@ -516,12 +512,11 @@ test.describe('Pricing Flow', () => {
       // Test that all navigation works without 404s
       const paths = [
         '/pricing',
-        '/pricing/free-audit',
+        '/pricing/free',
         '/pricing/starter',
         '/pricing/growth',
         '/pricing/agency',
         '/pricing/scale',
-        '/pricing/enterprise',
         '/features/dsgvo-scan',
         '/features/consent-timing',
         '/features/privacy-policy-generator',
@@ -540,12 +535,14 @@ test.describe('Pricing Flow', () => {
         '/features/white-label',
         '/features/multi-tenant-dashboard',
         '/features/kodee-vps-assistent',
-        '/checkout/free-audit',
         '/checkout/starter',
         '/checkout/growth',
         '/checkout/agency',
         '/checkout/scale',
-        '/checkout/enterprise',
+        '/checkout/starter_yearly',
+        '/checkout/growth_yearly',
+        '/checkout/agency_yearly',
+        '/checkout/scale_yearly',
       ];
 
       for (const path of paths) {

@@ -204,6 +204,7 @@ const Iso42001ControlDetailView = lazy(() => import('./features/governance/Iso42
 const CertificationReadinessDashboard = lazy(() => import('./features/governance/CertificationReadinessDashboard').then((m) => ({ default: m.CertificationReadinessDashboard })));
 const Iso42001ControlsLibraryView = lazy(() => import('./features/governance/Iso42001ControlsLibraryView').then((m) => ({ default: m.Iso42001ControlsLibraryView })));
 const AuditorEngagementView = lazy(() => import('./features/governance/AuditorEngagementView').then((m) => ({ default: m.AuditorEngagementView })));
+const CertificationReportGeneratorView = lazy(() => import('./features/governance/CertificationReportGeneratorView').then((m) => ({ default: m.CertificationReportGeneratorView })));
 const GapAnalysisView = lazy(() => import('./features/governance/GapAnalysisView').then((m) => ({ default: m.GapAnalysisView })));
 const EvidenceVaultAdvancedViewNew = lazy(() => import('./features/governance/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
 const RemediationPlanViewNew = lazy(() => import('./features/governance/RemediationPlanView').then((m) => ({ default: m.RemediationPlanView })));
@@ -599,6 +600,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/iso42001-readiness" element={<GovernanceBrowserShell><CertificationReadinessDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001-library" element={<GovernanceBrowserShell><Iso42001ControlsLibraryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001-auditors" element={<GovernanceBrowserShell><AuditorEngagementView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-reports" element={<GovernanceBrowserShell><CertificationReportGeneratorView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001/:controlId" element={<GovernanceBrowserShell><Iso42001ControlDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/gaps" element={<GovernanceBrowserShell><GapAnalysisView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/evidence-vault-advanced" element={<GovernanceBrowserShell><EvidenceVaultAdvancedViewNew /></GovernanceBrowserShell>} />

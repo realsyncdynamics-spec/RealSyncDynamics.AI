@@ -45,7 +45,7 @@ CREATE POLICY "integrations_tenant_isolation"
 CREATE TABLE IF NOT EXISTS data_sync_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-  integration_id UUID NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
+  integration_id UUID NOT NULL REFERENCES public.integrations(id) ON DELETE CASCADE,
 
   -- Job details
   job_type VARCHAR(100) NOT NULL,

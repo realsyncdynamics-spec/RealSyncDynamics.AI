@@ -39,9 +39,9 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
     )
 
-    // Get tenant_id from team_members or tenants
+    // Get tenant_id from memberships
     const { data: tenantData } = await supabase
-      .from('team_members')
+      .from('memberships')
       .select('tenant_id')
       .eq('user_id', userId)
       .single()

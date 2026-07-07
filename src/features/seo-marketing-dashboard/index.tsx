@@ -7,5 +7,6 @@ export { IntegrationSettings } from './IntegrationSettings';
 export { ExportButton } from './ExportButton';
 export { ComplianceReportPanel } from './ComplianceReportPanel';
 export { ForecastPanel } from './ForecastPanel';
+export { CollaborationPanel } from './CollaborationPanel';
 export { useAuditLog } from './useAuditLog';
 export * from './exportUtils';

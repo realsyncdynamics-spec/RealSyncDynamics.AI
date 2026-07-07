@@ -24,8 +24,11 @@ import { trackConversion } from '../../lib/pixels';
  * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
  */
 
+// Checkout-fähige Plans. Alle müssen echte Stripe Price-IDs in public.products haben.
+// Status: starter + growth + agency ✅
+//         scale + yearly-variants ⏳ (warten auf Stripe Price-IDs — siehe Migration 20260707000000_stripe_missing_price_ids_scale_yearly.sql)
+// Free + Enterprise leiten um (free → /audit, enterprise → /contact-sales)
 const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly']);
-// DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
   | { status: 'no_user' }
@@ -55,7 +58,7 @@ export function CheckoutPage() {
 
   // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free') {
+    if (planKey === 'free_audit') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
       return;
     }
@@ -400,11 +403,17 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot ? (
-            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
-              14 Tage kostenlos testen · keine Kosten bis Tag 15
-            </p>
-          ) : (
+          {isPilot && (
+            <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
+              <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
+                ✅ 14 TAGE KOSTENLOS
+              </p>
+              <p className="font-mono text-xs text-emerald-200">
+                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+              </p>
+            </div>
+          )}
+          {!isPilot && (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>

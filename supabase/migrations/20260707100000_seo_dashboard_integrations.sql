@@ -21,11 +21,3 @@ CREATE INDEX idx_integrations_provider ON integrations(provider);
 
 -- Add unique constraint as separate statement
 CREATE UNIQUE INDEX idx_integrations_tenant_provider ON integrations(tenant_id, provider);
-
-ALTER TABLE integrations ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "integrations_tenant_isolation"
-  ON integrations
-  FOR ALL
-  USING (public.is_tenant_member(tenant_id))
-  WITH CHECK (public.is_tenant_member(tenant_id));

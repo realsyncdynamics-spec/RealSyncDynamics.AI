@@ -302,6 +302,8 @@ const AdminAPIKeysPage = lazy(() => import('./features/admin/pages/AdminAPIKeysP
 const AdminAuditPage = lazy(() => import('./features/admin/pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
 // ── Platform Super-Admin (Phase 2) ──
 const SuperAdminDashboard = lazy(() => import('./features/admin/SuperAdminDashboard').then((m) => ({ default: m.SuperAdminDashboard })));
+// ── SEO-Marketing-SaaS-Dashboard (auth-gated)
+const SEOMarketingDashboard = lazy(() => import('./features/seo-marketing-dashboard/SEOMarketingDashboard').then((m) => ({ default: m.SEOMarketingDashboard })));
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -581,6 +583,7 @@ function RoutesWithTracking() {
           Die View-eigenen Guards (AuthGate/RequireAal2) bleiben zusaetzlich aktiv. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
+      <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />

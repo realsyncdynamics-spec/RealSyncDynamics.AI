@@ -73,10 +73,10 @@ CREATE POLICY seo_dashboard_performance_metrics_read ON public.seo_dashboard_per
   USING (
     public.is_tenant_member(tenant_id) AND
     EXISTS (
-      SELECT 1 FROM public.team_members
-      WHERE team_members.user_id = auth.uid()
-      AND team_members.tenant_id = seo_dashboard_performance_metrics.tenant_id
-      AND team_members.role IN ('admin', 'owner')
+      SELECT 1 FROM public.memberships
+      WHERE memberships.user_id = auth.uid()
+      AND memberships.tenant_id = seo_dashboard_performance_metrics.tenant_id
+      AND memberships.role IN ('admin', 'owner')
     )
   );
 
@@ -93,10 +93,10 @@ CREATE POLICY seo_dashboard_api_performance_read ON public.seo_dashboard_api_per
   USING (
     public.is_tenant_member(tenant_id) AND
     EXISTS (
-      SELECT 1 FROM public.team_members
-      WHERE team_members.user_id = auth.uid()
-      AND team_members.tenant_id = seo_dashboard_api_performance.tenant_id
-      AND team_members.role IN ('admin', 'owner')
+      SELECT 1 FROM public.memberships
+      WHERE memberships.user_id = auth.uid()
+      AND memberships.tenant_id = seo_dashboard_api_performance.tenant_id
+      AND memberships.role IN ('admin', 'owner')
     )
   );
 

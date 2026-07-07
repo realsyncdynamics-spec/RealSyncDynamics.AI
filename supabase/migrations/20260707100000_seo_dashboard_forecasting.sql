@@ -104,10 +104,10 @@ CREATE POLICY seo_forecast_models_insert ON public.seo_forecast_models
   WITH CHECK (
     public.is_tenant_member(tenant_id) AND
     EXISTS (
-      SELECT 1 FROM public.team_members
-      WHERE team_members.user_id = auth.uid()
-      AND team_members.tenant_id = seo_forecast_models.tenant_id
-      AND team_members.role IN ('admin', 'owner')
+      SELECT 1 FROM public.memberships
+      WHERE memberships.user_id = auth.uid()
+      AND memberships.tenant_id = seo_forecast_models.tenant_id
+      AND memberships.role IN ('admin', 'owner')
     )
   );
 

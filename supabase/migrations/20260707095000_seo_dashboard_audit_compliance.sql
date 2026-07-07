@@ -84,10 +84,10 @@ CREATE POLICY seo_dashboard_audit_log_admin_only ON public.seo_dashboard_audit_l
   USING (
     public.is_tenant_member(tenant_id) AND
     EXISTS (
-      SELECT 1 FROM public.team_members
-      WHERE team_members.user_id = auth.uid()
-      AND team_members.tenant_id = seo_dashboard_audit_log.tenant_id
-      AND team_members.role IN ('admin', 'owner')
+      SELECT 1 FROM public.memberships
+      WHERE memberships.user_id = auth.uid()
+      AND memberships.tenant_id = seo_dashboard_audit_log.tenant_id
+      AND memberships.role IN ('admin', 'owner')
     )
   );
 
@@ -102,10 +102,10 @@ CREATE POLICY seo_dashboard_data_policies_update ON public.seo_dashboard_data_po
   USING (
     public.is_tenant_member(tenant_id) AND
     EXISTS (
-      SELECT 1 FROM public.team_members
-      WHERE team_members.user_id = auth.uid()
-      AND team_members.tenant_id = seo_dashboard_data_policies.tenant_id
-      AND team_members.role IN ('admin', 'owner')
+      SELECT 1 FROM public.memberships
+      WHERE memberships.user_id = auth.uid()
+      AND memberships.tenant_id = seo_dashboard_data_policies.tenant_id
+      AND memberships.role IN ('admin', 'owner')
     )
   );
 
@@ -133,10 +133,10 @@ CREATE POLICY seo_dashboard_compliance_reports_insert ON public.seo_dashboard_co
   WITH CHECK (
     public.is_tenant_member(tenant_id) AND
     EXISTS (
-      SELECT 1 FROM public.team_members
-      WHERE team_members.user_id = auth.uid()
-      AND team_members.tenant_id = seo_dashboard_compliance_reports.tenant_id
-      AND team_members.role IN ('admin', 'owner')
+      SELECT 1 FROM public.memberships
+      WHERE memberships.user_id = auth.uid()
+      AND memberships.tenant_id = seo_dashboard_compliance_reports.tenant_id
+      AND memberships.role IN ('admin', 'owner')
     )
   );
 

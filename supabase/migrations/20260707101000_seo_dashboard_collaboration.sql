@@ -115,10 +115,10 @@ CREATE POLICY seo_dashboard_views_delete ON public.seo_dashboard_views
     (
       public.is_tenant_member(tenant_id) AND
       EXISTS (
-        SELECT 1 FROM public.team_members
-        WHERE team_members.user_id = auth.uid()
-        AND team_members.tenant_id = seo_dashboard_views.tenant_id
-        AND team_members.role IN ('admin', 'owner')
+        SELECT 1 FROM public.memberships
+        WHERE memberships.user_id = auth.uid()
+        AND memberships.tenant_id = seo_dashboard_views.tenant_id
+        AND memberships.role IN ('admin', 'owner')
       )
     )
   );
@@ -255,7 +255,7 @@ BEGIN
     p_resource_id,
     p_title,
     p_message
-  FROM public.team_members tm
+  FROM public.memberships tm
   WHERE tm.tenant_id = p_tenant_id
     AND tm.user_id != p_user_id
   ON CONFLICT DO NOTHING;

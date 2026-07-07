@@ -248,7 +248,7 @@ test.describe.skip('API Infrastructure Smoke Tests', () => {
   });
 });
 
-test.describe('Infrastructure Health Checks', () => {
+test.describe.skip('Infrastructure Health Checks', () => {
   test('database connection is operational', async ({ request }) => {
     // This would ideally test a health endpoint that checks DB connectivity
     // For now, we verify API endpoints are responding

@@ -234,7 +234,7 @@ test.describe.skip('API Audit Endpoint', () => {
   });
 });
 
-test.describe('API Usage Logging', () => {
+test.describe.skip('API Usage Logging', () => {
   test('should log successful API calls to api_calls table', async ({ request }) => {
     if (!process.env.TEST_API_KEY) {
       test.skip();

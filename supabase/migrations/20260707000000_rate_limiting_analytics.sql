@@ -37,7 +37,7 @@ CREATE POLICY "Users can view their tenant's rate limit configs"
   FOR SELECT
   USING (tenant_id IN (
     SELECT id FROM public.tenants WHERE id = auth.uid() OR
-    id IN (SELECT tenant_id FROM public.tenant_members WHERE user_id = auth.uid())
+    id IN (SELECT tenant_id FROM public.tenant_memberships WHERE user_id = auth.uid())
   ));
 
 CREATE POLICY "Users can update their tenant's rate limit configs"
@@ -45,7 +45,7 @@ CREATE POLICY "Users can update their tenant's rate limit configs"
   FOR UPDATE
   USING (tenant_id IN (
     SELECT id FROM public.tenants WHERE id = auth.uid() OR
-    id IN (SELECT tenant_id FROM public.tenant_members WHERE user_id = auth.uid())
+    id IN (SELECT tenant_id FROM public.tenant_memberships WHERE user_id = auth.uid())
   ));
 
 -- RLS Policies for rate_limit_violations
@@ -54,7 +54,7 @@ CREATE POLICY "Users can view their tenant's rate limit violations"
   FOR SELECT
   USING (tenant_id IN (
     SELECT id FROM public.tenants WHERE id = auth.uid() OR
-    id IN (SELECT tenant_id FROM public.tenant_members WHERE user_id = auth.uid())
+    id IN (SELECT tenant_id FROM public.tenant_memberships WHERE user_id = auth.uid())
   ));
 
 -- Indexes for performance

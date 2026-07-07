@@ -318,15 +318,18 @@ function ProofBand() {
     { value: '24/7', label: 'Kontinuierliches Monitoring' },
     { value: '100%', label: 'EU-Hosting & Datenresidenz' },
     { value: '< 5 Min', label: 'Bis zum ersten Nachweis' },
-    { value: '94.2%', label: 'Claude-Code-Readiness-Score' },
+    { value: '94.2%', label: 'Claude-Code-Readiness-Score', demo: true },
   ];
   return (
     <section className="relative z-10 py-12 sm:py-16 border-y border-white/10 bg-gradient-to-r from-cyan-500/[0.04] via-transparent to-cyan-500/[0.04]">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-        {stats.map(({ value, label }) => (
+        {stats.map(({ value, label, demo }) => (
           <div key={label} className="text-center">
             <div className="font-mono text-2xl sm:text-3xl md:text-4xl font-bold text-cyan-400 mb-2">{value}</div>
-            <div className="text-xs sm:text-sm text-white/60 leading-relaxed">{label}</div>
+            <div className="text-xs sm:text-sm text-white/60 leading-relaxed flex items-center justify-center gap-2">
+              {label}
+              {demo && <span className="font-mono text-[8px] tracking-widest text-cyan-400/70 bg-cyan-400/10 px-1.5 py-0.5 rounded">DEMO</span>}
+            </div>
           </div>
         ))}
       </div>
@@ -534,11 +537,15 @@ function CardShell({ className = '', children }: { className?: string; children:
 }
 
 function MetricCard({ metric, className = '' }: { metric: Metric; className?: string }) {
+  const isDemo = metric.label === 'EVIDENZ';
   return (
     <CardShell className={className}>
-      <div className="flex items-center gap-2 mb-2">
-        {metric.accent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">{metric.label}</span>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          {metric.accent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+          <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">{metric.label}</span>
+        </div>
+        {isDemo && <span className="font-mono text-[8px] tracking-widest text-cyan-400/70 bg-cyan-400/10 px-1.5 py-0.5 rounded">DEMO</span>}
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className={`font-mono font-bold ${metric.accent ? 'text-cyan-400 text-base sm:text-lg' : 'text-white text-xl sm:text-2xl'}`}>{metric.value}</span>
@@ -551,9 +558,12 @@ function MetricCard({ metric, className = '' }: { metric: Metric; className?: st
 function RiskCard({ className = '' }: { className?: string }) {
   return (
     <CardShell className={className}>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">RISK SCORE</span>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+          <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">RISK SCORE</span>
+        </div>
+        <span className="font-mono text-[8px] tracking-widest text-cyan-400/70 bg-cyan-400/10 px-1.5 py-0.5 rounded">DEMO</span>
       </div>
       <div className="flex items-baseline gap-1.5 mb-2">
         <span className="font-mono font-bold text-white text-2xl sm:text-3xl">87</span>
@@ -584,9 +594,12 @@ function MonitoringCard({ label, pulse, className = '' }: { label: string; pulse
 function ClaudeCodeAuditCard({ className = '' }: { className?: string }) {
   return (
     <CardShell className={className}>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE AUDIT</span>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+          <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE AUDIT</span>
+        </div>
+        <span className="font-mono text-[8px] tracking-widest text-cyan-400/70 bg-cyan-400/10 px-1.5 py-0.5 rounded">DEMO</span>
       </div>
       <div className="flex items-baseline gap-1.5 mb-2">
         <span className="font-mono font-bold text-white text-2xl sm:text-3xl">94.2%</span>

@@ -68,17 +68,3 @@ CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_api_key
   ON public.api_rate_limit_violations(api_key_id);
 CREATE INDEX IF NOT EXISTS idx_rate_limit_violations_timestamp
   ON public.api_rate_limit_violations(violated_at DESC);
-
--- Audit logging
-INSERT INTO ai_tool_runs (tenant_id, tool_name, input_json, output_json, status)
-SELECT
-  null,
-  'database_migration',
-  '{"migration":"20260707000000_rate_limiting_analytics"}'::jsonb,
-  '{"tables_created":["api_rate_limit_configs","api_rate_limit_violations"]}'::jsonb,
-  'completed'
-WHERE NOT EXISTS (
-  SELECT 1 FROM ai_tool_runs
-  WHERE tool_name = 'database_migration'
-  AND input_json->>'migration' = '20260707000000_rate_limiting_analytics'
-);

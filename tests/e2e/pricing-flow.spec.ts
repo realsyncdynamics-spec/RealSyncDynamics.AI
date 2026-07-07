@@ -46,9 +46,9 @@ test.describe('Pricing Flow', () => {
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
       await expect(growthCard).toBeVisible();
 
-      // Check for "Empfohlen" badge
-      const badge = growthCard.locator('text=Empfohlen');
-      await expect(badge).toBeVisible();
+      // Check for "Empfohlen" badge at the top (absolute positioned)
+      const badge = growthCard.locator('div.absolute').first();
+      await expect(badge).toHaveText('Empfohlen');
     });
 
     test('should have info buttons for each plan', async ({ page }) => {
@@ -471,16 +471,16 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
-      const badge = growthCard.locator('text=Empfohlen');
-      await expect(badge).toBeVisible();
+      const badge = growthCard.locator('div.absolute').first();
+      await expect(badge).toHaveText('Empfohlen');
     });
 
     test('Growth plan detail page should show recommended badge', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Should indicate it's the recommended plan
-      const recommendedBadge = page.locator('text=Empfohlen');
+      // Should indicate it's the recommended plan (badge appears in header before h1)
+      const recommendedBadge = page.locator('div.inline-block').filter({ hasText: 'Empfohlen' }).first();
       await expect(recommendedBadge).toBeVisible();
     });
 

@@ -143,7 +143,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency.`}
+        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency / scale (monatlich oder jährlich).`}
         cta={{ label: 'Zur Preisuebersicht', to: '/pricing' }}
       />
     );

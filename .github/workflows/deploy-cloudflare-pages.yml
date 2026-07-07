@@ -133,7 +133,8 @@ jobs:
               '/settings', '/settings/team', '/settings/security',
               '/settings/account', '/settings/ai-residency', '/settings/api-keys',
               '/billing/usage', '/tenant/invites',
-              '/checkout/starter', '/checkout/growth', '/checkout/agency',
+              '/checkout/starter', '/checkout/growth', '/checkout/agency', '/checkout/scale',
+              '/checkout/starter_yearly', '/checkout/growth_yearly', '/checkout/agency_yearly', '/checkout/scale_yearly',
           ]
           paths = sorted(paths | set(APP_ROUTES))
           src = 'dist/index.html'

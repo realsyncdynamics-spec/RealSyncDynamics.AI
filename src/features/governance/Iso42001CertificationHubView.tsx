@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
-  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive,
+  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive, AlertCircle,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -74,6 +74,15 @@ const CERTIFICATION_MODULES = [
     route: '/app/governance/iso42001-evidence',
     color: 'emerald',
     badge: 'Storage',
+  },
+  {
+    id: 'gaps',
+    title: 'Gap Analysis',
+    description: 'Identify compliance gaps and prioritize remediation efforts',
+    icon: AlertCircle,
+    route: '/app/governance/iso42001-gaps',
+    color: 'red',
+    badge: 'Analysis',
   },
   {
     id: 'timeline',
@@ -361,6 +370,7 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     orange: 'border-orange-900 hover:bg-orange-950/20 text-orange-400',
     indigo: 'border-indigo-900 hover:bg-indigo-950/20 text-indigo-400',
     cyan: 'border-cyan-900 hover:bg-cyan-950/20 text-cyan-400',
+    red: 'border-red-900 hover:bg-red-950/20 text-red-400',
   };
 
   const BadgeColor = {
@@ -370,6 +380,7 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     orange: 'bg-orange-950 border-orange-800 text-orange-300',
     indigo: 'bg-indigo-950 border-indigo-800 text-indigo-300',
     cyan: 'bg-cyan-950 border-cyan-800 text-cyan-300',
+    red: 'bg-red-950 border-red-800 text-red-300',
   };
 
   const content = (

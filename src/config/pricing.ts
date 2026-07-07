@@ -1,5 +1,5 @@
 /**
- * Single Source of Truth fuer alle Pricing-Tiers (5-Tier seit PR #145).
+ * Single Source of Truth fuer alle Pricing-Tiers (6-Tier seit PR #XXX).
  *
  * Konsumenten:
  *   - src/features/billing/PricingPage.tsx  (volle Pricing-Page)
@@ -9,20 +9,20 @@
  *
  * Aenderungen hier propagieren ueberall — niemals duplizieren.
  *
- * Pricing-Rebalance vom 2026-05-10 (Test-Kunde-Critique):
- *   alt:  Free / Starter 49 / Growth 199 / Enterprise individuell  (4 Tier)
- *   neu:  Free / Starter 79 / Growth 249 / Agency 699 / Enterprise ab 1500
+ * Pricing-Rebalance 2026-07 (Strukturoptimierung):
+ *   Neue Struktur:
+ *   - Free:       kostenlos (Audit-Scan)
+ *   - Starter:    79 € / Monat (Einzelunternehmen)
+ *   - Growth:     249 € / Monat (KMU, kleine Teams)
+ *   - Agency:     699 € / Monat (mittlere Agenturen)
+ *   - Enterprise: 1.249 € / Monat (Konzerne, Großunternehmen)
+ *   - Partner:    1.999 € / Monat (Reseller, Kanzleien, MSPs — Multi-Tenant)
  *
  * Reasoning:
- *   - Starter 49 -> 79: 49 wirkt wie Hobby-Tool. 79 ist das DACH-Pflicht-
- *     Compliance-Sweet-Spot (Cookiebot Premium ~110, Iubenda Plus ~280)
- *   - Growth 199 -> 249: leichte Anhebung weil Auto-Fix + Daily-Monitoring
- *     mehr wert ist als 199, und 249 markiert klar die Premium-Linie
- *   - Agency 699 NEU: fehlte komplett. Agenturen sind in DACH der schnellste
- *     Vertriebskanal — 1 Agency-Kunde = 5-15 End-Domains. Sweet-Spot 699:
- *     OneTrust ab ~600, aber wir liefern White-Label + DACH-Pricing
- *   - Enterprise jetzt mit Floor "ab 1500": signalisiert Niveau,
- *     blockiert Tire-Kicker
+ *   - Enterprise als Zwischenschicht zwischen Agency und Partner
+ *   - Bessere Preissprünge: 79 → 249 (215%) → 699 (180%) → 1.249 (78%) → 1.999 (60%)
+ *   - Partner klar als spezialisiertes Multi-Tenant-Produkt positioniert
+ *   - Reduziert Kaufabbrüche durch granularere Upsell-Pfade
  */
 
 export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'scale' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'enterprise_yearly' | 'scale_yearly';
@@ -213,30 +213,26 @@ export const PRICING_TIERS: PricingTier[] = [
   },
   {
     id: 'scale',
-    name: 'Scale',
+    name: 'Partner',
     planKey: 'scale',
     priceEur: 1999,
     priceString: '1.999',
     priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für DSB-Kanzleien und Compliance-Dienstleister, die 11-50 Mandanten parallel betreuen',
+    tagline: 'Für Reseller, Kanzleien und MSPs: Multi-Tenant-Plattform für bis zu 50 Mandanten',
     bullets: [
-      'Alles aus Agency',
+      'Alles aus Enterprise',
       'Governance-Bots (bis 50 Bots, 100.000 Antworten/Monat, Mandanten-segregiert)',
       'Multi-Tenant-Dashboard für bis zu 50 Mandanten',
-      'Eigene Sub-Domain (z.B. dsb.ihrekanzlei.de)',
-      'White-Label PDFs + Live-Dashboard',
-      'Voller API-Zugriff für eigene Integrationen',
-      'SLA 4 h auf Bug-Reports + Priority-Support',
+      'Eigene Sub-Domains pro Mandant',
+      'White-Label Branding (Logos, Farben, Texte)',
+      'Voller API-Zugriff + Webhooks',
+      'Mandanten-Isolation & Sub-Accounts',
+      'SLA 4 h auf Bug-Reports + Dedicated Support',
     ],
-    badges: ['Reseller'],
+    badges: ['Reseller', 'Multi-Tenant'],
     highlight: false,
-    // Scale läuft Phase A noch über manuelles Onboarding (Sales-Call statt
-    // self-serve Checkout). Sobald ein Stripe-Price-ID existiert UND die
-    // 50-Tenant-Quotas im Backend erzwungen sind, kann die CTA auf
-    // /checkout/scale flippen. Bis dahin geht jeder Scale-Interessent
-    // durch /contact-sales mit `?tier=scale` für Lead-Routing.
-    cta: { label: 'Scale anfragen', href: '/contact-sales?tier=scale&source=pricing' },
+    cta: { label: 'Partner anfragen', href: '/contact-sales?tier=scale&source=pricing' },
     botsQuota: {
       maxBots: 50,
       maxAnswersPerMonth: 100000,
@@ -395,22 +391,22 @@ export const PRICING_TIERS: PricingTier[] = [
   },
   {
     id: 'scale_yearly',
-    name: 'Scale (Jährlich)',
+    name: 'Partner (Jährlich)',
     planKey: 'scale_yearly',
     priceEur: 19000,
     priceString: '19.000',
     priceSuffix: '/ Jahr',
     recurring: true,
-    tagline: 'Scale mit 2-Monate-Rabatt: 1.999 € × 10 = 19.000 €/Jahr',
+    tagline: 'Partner mit 2-Monate-Rabatt: 1.999 € × 10 = 19.000 €/Jahr',
     bullets: [
-      'Alles aus Scale (monatlich)',
+      'Alles aus Partner (monatlich)',
       '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
       'Automatische Jahres-Verlängerung',
       'Multi-Tenant für bis zu 50 Mandanten (ganz Jahr)',
     ],
     badges: ['Reseller', 'Mit Rabatt'],
     highlight: false,
-    cta: { label: 'Scale jährlich anfragen', href: '/contact-sales?tier=scale_yearly&source=pricing' },
+    cta: { label: 'Partner jährlich anfragen', href: '/contact-sales?tier=scale_yearly&source=pricing' },
     botsQuota: {
       maxBots: 50,
       maxAnswersPerMonth: 100000,

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
-  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar,
+  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -65,6 +65,15 @@ const CERTIFICATION_MODULES = [
     route: '/app/governance/iso42001-reports',
     color: 'indigo',
     badge: 'Export',
+  },
+  {
+    id: 'evidence',
+    title: 'Evidence Vault',
+    description: 'Upload, organize, and track compliance evidence artifacts',
+    icon: Archive,
+    route: '/app/governance/iso42001-evidence',
+    color: 'emerald',
+    badge: 'Storage',
   },
   {
     id: 'timeline',

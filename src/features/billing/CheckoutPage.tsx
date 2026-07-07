@@ -20,8 +20,7 @@ import { trackConversion } from '../../lib/pixels';
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
  *   3c. Wenn eingeloggt aber kein Tenant: Link auf /welcome zur Tenant-Erstellung
  *
- * Free + Enterprise: hier nicht angezeigt — diese Tiers werden vor dem
- * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
+ * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
 const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'enterprise', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly']);
@@ -53,14 +52,10 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
+  // 2. Free: redirect away — diese Page nicht zustaendig
   useEffect(() => {
     if (planKey === 'free') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
-      return;
-    }
-    if (planKey === 'enterprise') {
-      navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
       return;
     }
   }, [planKey, navigate]);

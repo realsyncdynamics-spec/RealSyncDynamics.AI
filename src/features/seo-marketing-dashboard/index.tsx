@@ -5,4 +5,6 @@ export { ShadowSaasTable } from './ShadowSaasTable';
 export { AdvancedFilters } from './AdvancedFilters';
 export { IntegrationSettings } from './IntegrationSettings';
 export { ExportButton } from './ExportButton';
+export { ComplianceReportPanel } from './ComplianceReportPanel';
+export { useAuditLog } from './useAuditLog';
 export * from './exportUtils';

@@ -225,7 +225,7 @@ const IsoControlLibraryView = lazy(() => import('./features/governance/IsoContro
 const ReportBuilderView = lazy(() => import('./features/governance/ReportBuilderView').then((m) => ({ default: m.ReportBuilderView })));
 const ComplianceRoadmapView = lazy(() => import('./features/governance/ComplianceRoadmapView').then((m) => ({ default: m.ComplianceRoadmapView })));
 // ── Phase 5B: Custom Frameworks & Integrations (3 new views)
-const CustomFrameworkBuilderView = lazy(() => import('./features/governance/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
+const CustomFrameworkBuilderView = lazy(() => import('./features/governance/frameworks/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
 const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
 const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
 // ── Phase 5C: Analytics, Bulk Operations, Collaboration (5 new views)

@@ -304,6 +304,8 @@ const AdminAuditPage = lazy(() => import('./features/admin/pages/AdminAuditPage'
 const SuperAdminDashboard = lazy(() => import('./features/admin/SuperAdminDashboard').then((m) => ({ default: m.SuperAdminDashboard })));
 // ── SEO-Marketing-SaaS-Dashboard (auth-gated)
 const SEOMarketingDashboard = lazy(() => import('./features/seo-marketing-dashboard/SEOMarketingDashboard').then((m) => ({ default: m.SEOMarketingDashboard })));
+// ── OAuth Callbacks (public, no auth required)
+import { StripeOAuthCallback } from './pages/integrations/StripeOAuthCallback';
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -488,6 +490,7 @@ function RoutesWithTracking() {
       <Route path="/trust" element={<Trust />} />
       <Route path="/pilot-readiness" element={<PilotReadiness />} />
       <Route path="/integrations/shopify" element={<ShopifyIntegrationPage />} />
+      <Route path="/integrations/stripe/callback" element={<StripeOAuthCallback />} />
       <Route path="/shopify/success" element={<ShopifySuccessPage />} />
       <Route path="/shopify/error" element={<ShopifyErrorPage />} />
       <Route path="/app/settings/integrations/telegram" element={<TelegramIntegrationPage />} />

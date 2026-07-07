@@ -21,3 +21,6 @@ CREATE INDEX idx_integrations_provider ON integrations(provider);
 
 -- Add unique constraint as separate statement
 CREATE UNIQUE INDEX idx_integrations_tenant_provider ON integrations(tenant_id, provider);
+
+-- Enable RLS but WITHOUT policy for now - test if table can be created
+ALTER TABLE integrations ENABLE ROW LEVEL SECURITY;

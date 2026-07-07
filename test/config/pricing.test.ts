@@ -4,7 +4,7 @@ import { PRICING_TIERS, tierById } from '../../src/config/pricing';
 describe('pricing config (Single Source of Truth)', () => {
   it('enthaelt alle Pflicht-Tiers und Jahresvarianten in korrekter Reihenfolge', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
-    expect(ids).toEqual(['free', 'starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly']);
+    expect(ids).toEqual(['free', 'starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly', 'enterprise_yearly']);
   });
 
   it('hat die vom Master-Direktiv vorgegebenen Preise', () => {

@@ -58,9 +58,9 @@ describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
     expect(PRICING_TIERS).toHaveLength(11);
   });
 
-  it('should have 5 public tiers (starter, growth, agency, enterprise, scale)', () => {
+  it('should have 5 public tiers (starter, growth, agency, scale, enterprise)', () => {
     expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
-    const baseIds = ['starter', 'growth', 'agency', 'enterprise', 'scale'];
+    const baseIds = ['starter', 'growth', 'agency', 'scale', 'enterprise'];
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 

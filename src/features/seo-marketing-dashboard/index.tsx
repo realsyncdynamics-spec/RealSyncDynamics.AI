@@ -6,5 +6,6 @@ export { AdvancedFilters } from './AdvancedFilters';
 export { IntegrationSettings } from './IntegrationSettings';
 export { ExportButton } from './ExportButton';
 export { ComplianceReportPanel } from './ComplianceReportPanel';
+export { ForecastPanel } from './ForecastPanel';
 export { useAuditLog } from './useAuditLog';
 export * from './exportUtils';

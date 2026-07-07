@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.E2E_BASE_URL || 'https://realsyncdynamicsai.de';
 const STRIPE_TEST_MODE = process.env.STRIPE_TEST_MODE === 'true';
 
 test.describe('[CO] Checkout', () => {

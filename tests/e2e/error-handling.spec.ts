@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.E2E_BASE_URL || 'https://realsyncdynamicsai.de';
 
 /**
  * [BE-002] Fehlerbehandlung — ungültige Eingaben erzeugen eine valide

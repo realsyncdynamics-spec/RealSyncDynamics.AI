@@ -9,12 +9,12 @@ import { defineConfig, devices } from '@playwright/test';
  * `npm run e2e`) getrennt: andere Ziel-URL, andere ENV-Konvention.
  *
  * Ziel-URL überschreiben:
- *   TEST_BASE_URL=http://localhost:3000 npm run test:e2e   # lokal
- *   TEST_BASE_URL=https://staging.example npm run test:e2e # Staging
+ *   E2E_BASE_URL=http://localhost:3000 npm run test:e2e   # lokal
+ *   E2E_BASE_URL=https://staging.example npm run test:e2e # Staging
  *
- * CI: .github/workflows/e2e.yml (setzt TEST_BASE_URL + STRIPE_TEST_MODE).
+ * CI: .github/workflows/e2e.yml (setzt E2E_BASE_URL + STRIPE_TEST_MODE).
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.E2E_BASE_URL ?? 'https://realsyncdynamicsai.de';
 
 export default defineConfig({
   testDir: './tests/e2e',

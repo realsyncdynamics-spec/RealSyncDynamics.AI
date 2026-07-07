@@ -234,7 +234,7 @@ const BulkOperationsView = lazy(() => import('./features/governance/BulkOperatio
 const ComplianceCalendarView = lazy(() => import('./features/governance/ComplianceCalendarView').then((m) => ({ default: m.ComplianceCalendarView })));
 const AuditTrailView = lazy(() => import('./features/governance/AuditTrailView').then((m) => ({ default: m.AuditTrailView })));
 const GovernanceTeamView = lazy(() => import('./features/governance/GovernanceTeamView').then((m) => ({ default: m.GovernanceTeamView })));
-const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
+const GovernanceWebhooksView = lazy(() => import('./features/governance/webhooks/WebhooksView').then((m) => ({ default: m.WebhooksView })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
 const GovernanceEventDetailView = lazy(() => import('./features/governance/EventDetailView').then((m) => ({ default: m.EventDetailView })));

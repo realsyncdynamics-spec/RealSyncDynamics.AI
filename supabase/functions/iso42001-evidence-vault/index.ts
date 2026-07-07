@@ -6,6 +6,23 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
 
+const detectEvidenceType = (fileName: string, mimeType: string): string => {
+  const name = fileName.toLowerCase();
+  const mime = mimeType.toLowerCase();
+
+  if (mime.includes('pdf')) return 'document';
+  if (name.endsWith('.docx') || name.endsWith('.doc') || mime.includes('word')) return 'document';
+  if (name.endsWith('.xlsx') || name.endsWith('.xls') || mime.includes('spreadsheet')) return 'document';
+  if (mime.includes('image') || /\.(png|jpg|jpeg|gif|webp)$/i.test(name)) return 'screenshot';
+  if (name.endsWith('.log') || mime.includes('text/plain') || mime.includes('log')) return 'log';
+  if (name.includes('policy') || name.includes('policy') || mime.includes('policy')) return 'policy';
+  if (name.includes('training') || name.includes('cert') || mime.includes('certificate')) return 'training_record';
+  if (name.includes('audit') || name.includes('report')) return 'audit_report';
+  if (name.includes('assess')) return 'assessment';
+
+  return 'other';
+};
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -45,16 +62,20 @@ Deno.serve(async (req) => {
     return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
   }
 
-  // GET: List evidence items
+  // GET: List evidence items (with pagination support)
   if (req.method === 'GET') {
     try {
-      const { data: evidenceItems, error } = await userClient
+      const url = new URL(req.url);
+      const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 100);
+
+      const { data: evidenceItems, error, count } = await userClient
         .from('evidence_items')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('tenant_id', tenantId)
-        .eq('archived_at', null, { is: true })
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(offset, offset + limit - 1);
 
       if (error) throw error;
 
@@ -67,6 +88,9 @@ Deno.serve(async (req) => {
       return jsonResponse({
         success: true,
         evidence_items: enriched,
+        total_count: count,
+        offset,
+        limit,
       });
     } catch (err) {
       console.error('Evidence retrieval error:', err);
@@ -94,6 +118,9 @@ Deno.serve(async (req) => {
       // Generate file hash (simple mock)
       const fileHash = `sha256-${Date.now()}`;
 
+      // Detect evidence type from file name and MIME type
+      const evidenceType = detectEvidenceType(file.name, file.type);
+
       // Create evidence item
       const { data: newEvidence, error: insertError } = await userClient
         .from('evidence_items')
@@ -101,7 +128,7 @@ Deno.serve(async (req) => {
           tenant_id: tenantId,
           title,
           description: description || null,
-          evidence_type: file.type.includes('pdf') ? 'document' : 'other',
+          evidence_type: evidenceType,
           file_path: `evidence/${tenantId}/${file.name}`,
           file_hash: fileHash,
           file_size_bytes: file.size,

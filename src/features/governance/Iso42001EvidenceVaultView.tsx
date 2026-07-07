@@ -312,6 +312,18 @@ function Inner() {
   );
 }
 
+const COLOR_CLASSES: Record<string, string> = {
+  blue: 'text-blue-400',
+  green: 'text-green-400',
+  purple: 'text-purple-400',
+  cyan: 'text-cyan-400',
+  orange: 'text-orange-400',
+  indigo: 'text-indigo-400',
+  emerald: 'text-emerald-400',
+  pink: 'text-pink-400',
+  gray: 'text-gray-400',
+};
+
 function EvidenceCard({ evidence, onSelect }: { evidence: EvidenceItem; onSelect: (e: EvidenceItem) => void }) {
   const typeInfo = EVIDENCE_TYPE_LABELS[evidence.evidence_type];
   const isExpiring = evidence.expires_at &&
@@ -324,7 +336,7 @@ function EvidenceCard({ evidence, onSelect }: { evidence: EvidenceItem; onSelect
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-start gap-2 flex-1">
-          <FileText className={`h-5 w-5 text-${typeInfo.color}-400 shrink-0 mt-0.5`} />
+          <FileText className={`h-5 w-5 shrink-0 mt-0.5 ${COLOR_CLASSES[typeInfo.color]}`} />
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-titanium-50 text-sm group-hover:text-white truncate">
               {evidence.title}
@@ -518,6 +530,22 @@ function DetailPanel({
 }) {
   const typeInfo = EVIDENCE_TYPE_LABELS[evidence.evidence_type];
 
+  const handleDownload = () => {
+    if (evidence.file_path) {
+      window.open(`/download?path=${encodeURIComponent(evidence.file_path)}`, '_blank');
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!window.confirm('Archive this evidence? It will be hidden from the default view.')) return;
+    try {
+      // TODO: Implement archive API call
+      console.log('Archive evidence:', evidence.id);
+    } catch (err) {
+      console.error('Archive failed:', err);
+    }
+  };
+
   return (
     <div className="fixed right-0 top-0 bottom-0 w-full md:w-96 bg-obsidian-900 border-l border-titanium-900 shadow-2xl z-40 flex flex-col">
       <div className="h-14 border-b border-titanium-900 flex items-center justify-between px-4">
@@ -530,7 +558,7 @@ function DetailPanel({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Type Badge */}
         <div className="flex items-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 rounded-none w-fit">
-          <FileText className={`h-4 w-4 text-${typeInfo.color}-400`} />
+          <FileText className={`h-4 w-4 ${COLOR_CLASSES[typeInfo.color]}`} />
           <span className="text-sm font-semibold text-titanium-100">{typeInfo.label}</span>
         </div>
 
@@ -602,7 +630,7 @@ function DetailPanel({
             <p className="text-[11px] text-titanium-500 uppercase font-semibold tracking-wide mb-2">Linked to {evidence.control_ids.length} Control{evidence.control_ids.length !== 1 ? 's' : ''}</p>
             <div className="space-y-1">
               {evidence.control_ids.map((cid) => (
-                <div key={cid} className="text-[11px] text-blue-400 truncate">{cid}</div>
+                <div key={cid} className="text-[11px] text-blue-400 truncate font-mono">{cid}</div>
               ))}
             </div>
           </div>
@@ -612,12 +640,18 @@ function DetailPanel({
       {/* Actions */}
       <div className="border-t border-titanium-900 p-4 flex gap-2">
         {evidence.file_path && (
-          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-none transition">
+          <button
+            onClick={handleDownload}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-none transition"
+          >
             <Download className="h-4 w-4" />
             Download
           </button>
         )}
-        <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 text-titanium-200 text-sm font-semibold rounded-none transition">
+        <button
+          onClick={handleArchive}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 text-titanium-200 text-sm font-semibold rounded-none transition"
+        >
           <Trash2 className="h-4 w-4" />
           Archive
         </button>

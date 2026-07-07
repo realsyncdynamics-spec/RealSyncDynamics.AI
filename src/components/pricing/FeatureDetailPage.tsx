@@ -27,7 +27,7 @@ export function FeatureDetailPage({ featureSlug }: FeatureDetailPageProps) {
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50" data-testid={`feature-detail-${feature.slug}`}>
       {/* Top bar */}
       <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        <Link to="/pricing" className="inline-flex items-center gap-1.5 text-sm text-silver-300 hover:text-titanium-50" data-testid="feature-back-to-pricing">
+        <Link to="/pricing" className="inline-flex items-center gap-1.5 text-sm text-silver-300 hover:text-titanium-50" data-testid="feature-back-to-pricing-header">
           <ArrowLeft className="h-4 w-4" />
           Zurück zur Übersicht
         </Link>

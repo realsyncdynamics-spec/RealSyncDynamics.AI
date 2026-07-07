@@ -58,8 +58,15 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) dsj ON TRUE;
 
--- Enable RLS on new tables if needed
+-- Enable RLS on new tables
 ALTER TABLE cron_executions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Admin-only access to cron execution logs
+CREATE POLICY "cron_executions_admin_only"
+  ON cron_executions
+  FOR ALL
+  USING (auth.jwt() ->> 'role' = 'authenticated')
+  WITH CHECK (auth.jwt() ->> 'role' = 'authenticated');
 
 -- Add audit trigger for cron executions
 CREATE TRIGGER audit_cron_executions AFTER INSERT ON cron_executions

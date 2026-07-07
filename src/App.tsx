@@ -200,6 +200,13 @@ const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRi
 const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
 const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
 const Iso42001View = lazy(() => import('./features/governance/Iso42001View').then((m) => ({ default: m.Iso42001View })));
+const Iso42001ControlDetailView = lazy(() => import('./features/governance/Iso42001ControlDetailView').then((m) => ({ default: m.Iso42001ControlDetailView })));
+const CertificationReadinessDashboard = lazy(() => import('./features/governance/CertificationReadinessDashboard').then((m) => ({ default: m.CertificationReadinessDashboard })));
+const Iso42001ControlsLibraryView = lazy(() => import('./features/governance/Iso42001ControlsLibraryView').then((m) => ({ default: m.Iso42001ControlsLibraryView })));
+const AuditorEngagementView = lazy(() => import('./features/governance/AuditorEngagementView').then((m) => ({ default: m.AuditorEngagementView })));
+const CertificationReportGeneratorView = lazy(() => import('./features/governance/CertificationReportGeneratorView').then((m) => ({ default: m.CertificationReportGeneratorView })));
+const Iso42001CertificationHubView = lazy(() => import('./features/governance/Iso42001CertificationHubView').then((m) => ({ default: m.Iso42001CertificationHubView })));
+const Iso42001EvidenceVaultView = lazy(() => import('./features/governance/Iso42001EvidenceVaultView').then((m) => ({ default: m.Iso42001EvidenceVaultView })));
 const GapAnalysisView = lazy(() => import('./features/governance/GapAnalysisView').then((m) => ({ default: m.GapAnalysisView })));
 const EvidenceVaultAdvancedViewNew = lazy(() => import('./features/governance/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
 const RemediationPlanViewNew = lazy(() => import('./features/governance/RemediationPlanView').then((m) => ({ default: m.RemediationPlanView })));
@@ -596,7 +603,14 @@ function RoutesWithTracking() {
       <Route path="/app/governance/ai-act-assessment" element={<GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/nis2-incidents" element={<GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso27001" element={<GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-hub" element={<GovernanceBrowserShell><Iso42001CertificationHubView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001" element={<GovernanceBrowserShell><Iso42001View /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-readiness" element={<GovernanceBrowserShell><CertificationReadinessDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-library" element={<GovernanceBrowserShell><Iso42001ControlsLibraryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-auditors" element={<GovernanceBrowserShell><AuditorEngagementView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-reports" element={<GovernanceBrowserShell><CertificationReportGeneratorView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-evidence" element={<GovernanceBrowserShell><Iso42001EvidenceVaultView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001/:controlId" element={<GovernanceBrowserShell><Iso42001ControlDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/gaps" element={<GovernanceBrowserShell><GapAnalysisView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/evidence-vault-advanced" element={<GovernanceBrowserShell><EvidenceVaultAdvancedViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/remediation-plans" element={<GovernanceBrowserShell><RemediationPlanViewNew /></GovernanceBrowserShell>} />

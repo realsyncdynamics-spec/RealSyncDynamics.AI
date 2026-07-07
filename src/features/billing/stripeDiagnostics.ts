@@ -39,9 +39,9 @@ export function getStripeDiagnostic(status: StripeDiagnosticStatus): StripeDiagn
     case 'missing_price_id':
       return {
         status,
-        title: 'Stripe Price ID fehlt',
-        message: 'Der ausgewählte Plan ist noch nicht mit einer echten Stripe Price ID verbunden.',
-        action: 'Stripe-Dashboard öffnen, Product-Price kopieren, public.products aktualisieren.',
+        title: 'Dieser Plan ist gerade nicht verfügbar',
+        message: 'Der ausgewählte Plan ist noch nicht vollständig konfiguriert.',
+        action: 'Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.',
         runbook: 'docs/runbooks/stripe-production-checkout.md#required-db-rows',
       };
 
@@ -66,20 +66,20 @@ export function getStripeDiagnostic(status: StripeDiagnosticStatus): StripeDiagn
     case 'edge_function_error':
       return {
         status,
-        title: 'Stripe Edge Function Fehler',
-        message: 'Die stripe-checkout Edge Function konnte keine Stripe Session erzeugen.',
-        action: 'Supabase Edge-Logs prüfen, STRIPE_SECRET_KEY im Vault verifizieren, Price IDs prüfen.',
+        title: 'Checkout konnte nicht vorbereitet werden',
+        message: 'Es gab einen technischen Fehler bei der Vorbereitung des Checkouts.',
+        action: 'Bitte versuchen Sie es in wenigen Minuten erneut. Wenn das Problem weiterhin auftritt, kontaktieren Sie support@realsyncdynamicsai.de',
         runbook: 'docs/runbooks/stripe-production-checkout.md#failure-modes',
       };
 
     case 'client_network_error':
       return {
         status,
-        title: 'Anfrage konnte nicht gesendet werden',
+        title: 'Verbindungsfehler',
         message:
-          'Der Browser konnte die Checkout-Anfrage nicht an Supabase senden — die Anfrage hat den Server nicht erreicht.',
+          'Die Verbindung zum Server konnte nicht hergestellt werden.',
         action:
-          'Werbe-/Tracking-Blocker für diese Seite deaktivieren (Filter wie "*stripe*" oder "*checkout*" blockieren oft den Supabase-Aufruf) und erneut versuchen. Bei VPN/Firewall: Zugriff auf *.supabase.co erlauben.',
+          'Überprüfen Sie Ihre Internetverbindung. Falls Sie Ad-Blocker oder VPN verwenden, deaktivieren Sie diese bitte für diese Seite und versuchen Sie es erneut.',
         runbook: 'docs/runbooks/stripe-production-checkout.md#failure-modes',
       };
 

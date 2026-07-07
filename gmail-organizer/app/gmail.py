@@ -3,7 +3,7 @@ import os
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
-from google.api_python_client import discovery
+from googleapiclient import discovery
 from app.logger import setup_logger
 from app.config import Config
 
@@ -28,12 +28,20 @@ class GmailClient:
 
         # Load token if it exists
         if os.path.exists(TOKEN_FILE):
-            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+            try:
+                creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+            except Exception as e:
+                logger.warning(f"Failed to load token from {TOKEN_FILE}: {e}. Re-authenticating.")
+                creds = None
 
         # Refresh token if expired
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            self._save_token(creds)
+            try:
+                creds.refresh(Request())
+                self._save_token(creds)
+            except Exception as e:
+                logger.warning(f"Failed to refresh token: {e}. Re-authenticating.")
+                creds = None
 
         # Initiate OAuth flow if no valid token
         if not creds or not creds.valid:
@@ -46,7 +54,8 @@ class GmailClient:
             flow = InstalledAppFlow.from_client_secrets_file(
                 CREDENTIALS_FILE, SCOPES
             )
-            creds = flow.run_local_server(port=8080)
+            # Use run_console() for headless/container environments (no browser available)
+            creds = flow.run_console()
             self._save_token(creds)
 
         self.service = discovery.build("gmail", "v1", credentials=creds)

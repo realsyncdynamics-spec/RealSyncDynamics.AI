@@ -100,7 +100,13 @@ class EmailOrganizer:
             logger.debug(f"Message {msg_id} already processed")
             return False
 
-        sender_email = self._extract_sender_email(message)
+        # Fetch full message to get headers (list() doesn't include payload)
+        full_message = self.gmail_client.get_message(msg_id)
+        if not full_message:
+            logger.error(f"Failed to fetch full message {msg_id}")
+            return False
+
+        sender_email = self._extract_sender_email(full_message)
         if not sender_email:
             logger.warning(f"Could not extract sender email from message {msg_id}")
             self.processed_messages.add(msg_id)

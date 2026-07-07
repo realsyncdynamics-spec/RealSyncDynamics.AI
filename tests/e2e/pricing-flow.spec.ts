@@ -9,12 +9,12 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       // Check page title
-      await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete/);
+      await expect(page).toHaveTitle(/[Pp]reise|[Pp]ricing|[Pp]akete/);
 
-      // Check all pricing cards are present (6 base + 4 yearly variants = 10 total)
+      // Check all pricing cards are present (5 public base + 4 yearly variants = 9 total, enterprise excluded)
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       const cardCount = await pricingCards.count();
-      expect(cardCount).toBe(10);
+      expect(cardCount).toBe(9);
     });
 
     test('should display all expected plan slugs as cards', async ({ page }) => {
@@ -22,12 +22,11 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const expectedSlugs = [
-        'free-audit',
+        'free',
         'starter',
         'growth',
         'agency',
         'scale',
-        'enterprise',
         'starter_yearly',
         'growth_yearly',
         'agency_yearly',
@@ -57,12 +56,11 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const expectedSlugs = [
-        'free-audit',
+        'free',
         'starter',
         'growth',
         'agency',
         'scale',
-        'enterprise',
         'starter_yearly',
         'growth_yearly',
         'agency_yearly',
@@ -82,12 +80,11 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const expectedSlugs = [
-        'free-audit',
+        'free',
         'starter',
         'growth',
         'agency',
         'scale',
-        'enterprise',
         'starter_yearly',
         'growth_yearly',
         'agency_yearly',

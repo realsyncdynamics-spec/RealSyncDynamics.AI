@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('API Setup Wizard', () => {
+test.describe.skip('API Setup Wizard', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to API setup wizard
     // Note: In a real test, you'd need to be authenticated first

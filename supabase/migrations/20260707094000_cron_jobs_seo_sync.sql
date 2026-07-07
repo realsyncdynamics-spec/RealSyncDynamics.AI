@@ -21,14 +21,14 @@ CREATE INDEX idx_cron_executions_job_name ON cron_executions(job_name);
 CREATE INDEX idx_cron_executions_executed_at ON cron_executions(executed_at);
 
 -- Conditionally schedule cron jobs only if pg_cron extension is available
-DO $$
+DO $outer$
 BEGIN
   -- Check if pg_cron extension exists in current database
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     -- Schedule data sync every hour (runs schedule-data-syncs function)
     PERFORM cron.schedule(
-      'seo-marketing-sync-hourly',  -- job name
-      '0 * * * *',                   -- every hour at :00
+      'seo-marketing-sync-hourly',
+      '0 * * * *',
       $$
         SELECT http_post(
           concat(
@@ -43,8 +43,8 @@ BEGIN
 
     -- Schedule daily summary calculation and archival
     PERFORM cron.schedule(
-      'seo-marketing-daily-archive',  -- job name
-      '0 0 * * *',                     -- every day at 00:00
+      'seo-marketing-daily-archive',
+      '0 0 * * *',
       $$
         WITH daily_summary AS (
           SELECT
@@ -85,8 +85,8 @@ BEGIN
 
     -- Schedule cleanup of old sync jobs (delete entries older than 90 days)
     PERFORM cron.schedule(
-      'seo-marketing-cleanup-jobs',  -- job name
-      '0 2 * * *',                    -- every day at 02:00
+      'seo-marketing-cleanup-jobs',
+      '0 2 * * *',
       $$
         DELETE FROM data_sync_jobs
         WHERE created_at < NOW() - INTERVAL '90 days'
@@ -98,7 +98,7 @@ EXCEPTION WHEN OTHERS THEN
   -- pg_cron not available in this environment (test databases, free tier)
   -- Cron jobs will not run, but migration completes successfully
   RAISE NOTICE 'pg_cron extension not available. Scheduled jobs will not run in this environment.';
-END $$;
+END $outer$;
 
 -- Function to handle sync job completion logging
 CREATE OR REPLACE FUNCTION log_sync_completion()

@@ -205,6 +205,7 @@ const CertificationReadinessDashboard = lazy(() => import('./features/governance
 const Iso42001ControlsLibraryView = lazy(() => import('./features/governance/Iso42001ControlsLibraryView').then((m) => ({ default: m.Iso42001ControlsLibraryView })));
 const AuditorEngagementView = lazy(() => import('./features/governance/AuditorEngagementView').then((m) => ({ default: m.AuditorEngagementView })));
 const CertificationReportGeneratorView = lazy(() => import('./features/governance/CertificationReportGeneratorView').then((m) => ({ default: m.CertificationReportGeneratorView })));
+const Iso42001CertificationHubView = lazy(() => import('./features/governance/Iso42001CertificationHubView').then((m) => ({ default: m.Iso42001CertificationHubView })));
 const GapAnalysisView = lazy(() => import('./features/governance/GapAnalysisView').then((m) => ({ default: m.GapAnalysisView })));
 const EvidenceVaultAdvancedViewNew = lazy(() => import('./features/governance/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
 const RemediationPlanViewNew = lazy(() => import('./features/governance/RemediationPlanView').then((m) => ({ default: m.RemediationPlanView })));
@@ -596,6 +597,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/ai-act-assessment" element={<GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/nis2-incidents" element={<GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso27001" element={<GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-hub" element={<GovernanceBrowserShell><Iso42001CertificationHubView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001" element={<GovernanceBrowserShell><Iso42001View /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001-readiness" element={<GovernanceBrowserShell><CertificationReadinessDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001-library" element={<GovernanceBrowserShell><Iso42001ControlsLibraryView /></GovernanceBrowserShell>} />

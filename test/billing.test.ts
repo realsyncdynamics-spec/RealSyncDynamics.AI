@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { COMPANY, getCompanyDisplayName, getCompanyAddress, isBetaReady, isProductionReady } from '../src/config/company';
-import { PRICING_TIERS, tierById, PUBLIC_PRICING_TIERS, ENTERPRISE_TIER } from '../src/config/pricing';
+import { PRICING_TIERS, tierById, PUBLIC_PRICING_TIERS } from '../src/config/pricing';
 import { formatPrice, getPlanById, isPlanFixedPrice, getStripeProductMetadata, isStripeConfigured } from '../src/lib/stripe';
 import { generateImpressumText, areLegalDocsComplete, getComplianceBanner } from '../src/lib/compliance-notices';
 
@@ -53,22 +53,24 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
-describe('Pricing Tiers (5-Tier Model + Yearly Variants)', () => {
-  it('should have 10 tiers (6 base + 4 yearly variants)', () => {
-    expect(PRICING_TIERS).toHaveLength(10);
+describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
+  it('should have 11 tiers (6 base + 5 yearly variants)', () => {
+    expect(PRICING_TIERS).toHaveLength(11);
   });
 
-  it('should have 9 public tiers (5 base + 4 yearly, excluding enterprise)', () => {
-    expect(PUBLIC_PRICING_TIERS).toHaveLength(9);
-    const baseIds = ['free', 'starter', 'growth', 'agency', 'scale'];
-    const yearlyIds = ['starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly'];
+  it('should have 10 public tiers (5 base paid + 5 yearly, excluding free)', () => {
+    expect(PUBLIC_PRICING_TIERS).toHaveLength(10);
+    const baseIds = ['starter', 'growth', 'agency', 'enterprise', 'scale'];
+    const yearlyIds = ['starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly'];
     const allPublicIds = [...baseIds, ...yearlyIds];
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(allPublicIds);
   });
 
-  it('should have enterprise tier as separate constant', () => {
-    expect(ENTERPRISE_TIER.id).toBe('enterprise');
-    expect(ENTERPRISE_TIER.priceEur).toBe(0);
+  it('should have enterprise tier as paid tier at 1249€', () => {
+    const enterprise = tierById('enterprise');
+    expect(enterprise?.id).toBe('enterprise');
+    expect(enterprise?.priceEur).toBe(1249);
+    expect(enterprise?.name).toBe('Enterprise');
   });
 
   it('free_audit should have no account required', () => {

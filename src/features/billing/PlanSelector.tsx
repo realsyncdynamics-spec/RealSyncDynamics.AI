@@ -1,12 +1,12 @@
 /**
  * Plan Selector — Interactive tier card grid with Checkout CTA
  *
- * Displays all PUBLIC_PRICING_TIERS (free → scale) with feature comparison,
- * highlight states, and CTA buttons. Enterprise is shown separately below.
+ * Displays all PUBLIC_PRICING_TIERS (starter → partner) with feature comparison,
+ * highlight states, and CTA buttons.
  */
 
 import React from 'react';
-import { PUBLIC_PRICING_TIERS, ENTERPRISE_TIER, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, type TierId, TIER_ACCENT, PRICING_TRUST_NOTE } from '../../config/pricing';
 import { getComplianceBanner } from '../../lib/compliance-notices';
 
 export interface PlanSelectorProps {
@@ -14,7 +14,6 @@ export interface PlanSelectorProps {
   onSelectPlan: (planId: TierId) => void;
   isLoading?: boolean;
   disabled?: boolean;
-  showEnterprise?: boolean;
   testIdPrefix?: 'pricing' | 'checkout';
 }
 
@@ -23,7 +22,6 @@ export function PlanSelector({
   onSelectPlan,
   isLoading = false,
   disabled = false,
-  showEnterprise = true,
   testIdPrefix = 'pricing',
 }: PlanSelectorProps) {
   return (
@@ -134,37 +132,6 @@ export function PlanSelector({
             );
           })}
         </div>
-
-        {/* Enterprise Tier (separate section) */}
-        {showEnterprise && (
-          <div className="max-w-2xl mx-auto mb-12">
-            <div className="bg-obsidian-800 border-2 border-titanium-600 rounded-none p-8">
-              <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-titanium-50 mb-2">Enterprise</h3>
-                  <p className="text-titanium-300 mb-4">
-                    Für regulierte Unternehmen, größere Mittelständler und Organisationen mit
-                    SLA-, DSB- oder AI-Act-Anforderungen
-                  </p>
-                  <ul className="space-y-2 text-sm text-titanium-300">
-                    {ENTERPRISE_TIER.bullets.slice(0, 4).map((bullet, idx) => (
-                      <li key={idx} className="flex gap-2">
-                        <span className="text-security-400 flex-shrink-0">✓</span>
-                        <span>{bullet}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <a
-                  href={ENTERPRISE_TIER.cta.href}
-                  className="px-8 py-3 bg-titanium-700 text-obsidian-900 font-bold uppercase hover:bg-titanium-600 transition-colors whitespace-nowrap"
-                >
-                  {ENTERPRISE_TIER.cta.label}
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Trust Note */}
         <div className="text-center text-sm text-titanium-400">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
+import { postEdgeFunction } from '../../lib/edgeFunction';
 
 type Sector = 'saas' | 'agency' | 'healthcare' | 'public_sector' | 'generic';
 
@@ -72,10 +73,15 @@ export function PostRegisterOnboardingPage() {
     setLoading(true);
 
     try {
-      // For now, just proceed to success page
-      // In production, these would save to Supabase:
-      // - company profile (sector, answers)
-      // - create trial subscription (trial_start, trial_end = now + 14 days)
+      // Save company profile
+      await postEdgeFunction('save-company-profile', {
+        sector: selectedSector,
+        answers,
+      });
+
+      // Create trial subscription
+      await postEdgeFunction('create-trial-subscription', {});
+
       setStep('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');

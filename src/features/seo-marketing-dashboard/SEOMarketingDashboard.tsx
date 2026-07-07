@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../../lib/auth';
-import { useTenant } from '../../core/TenantProvider';
+import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
+import { useTenant } from '../../core/access/TenantProvider';
 import { MetricsCard } from './MetricsCard';
 import { TrendChart } from './TrendChart';
 import { ShadowSaasTable } from './ShadowSaasTable';
@@ -24,8 +24,8 @@ interface Metrics {
 }
 
 export function SEOMarketingDashboard() {
-  const { session } = useAuth();
-  const { tenant } = useTenant();
+  const { session } = useSupabaseAuth();
+  const { activeTenantId } = useTenant();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +37,7 @@ export function SEOMarketingDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!session || !tenant) return;
+      if (!session?.access_token || !activeTenantId) return;
 
       setIsLoading(true);
       setError(null);
@@ -69,7 +69,7 @@ export function SEOMarketingDashboard() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              tenant_id: tenant.id,
+              tenant_id: activeTenantId,
               start_date: dateRange.start,
               end_date: dateRange.end,
             }),
@@ -88,7 +88,7 @@ export function SEOMarketingDashboard() {
     };
 
     fetchData();
-  }, [session, tenant, dateRange]);
+  }, [session, activeTenantId, dateRange]);
 
   if (isLoading) {
     return (

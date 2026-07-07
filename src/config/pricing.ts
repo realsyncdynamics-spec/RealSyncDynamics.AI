@@ -25,7 +25,7 @@
  *     blockiert Tire-Kicker
  */
 
-export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly';
+export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'scale' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'enterprise_yearly' | 'scale_yearly';
 
 export type BotChannelType = 'website' | 'whatsapp' | 'telegram' | 'slack' | 'teams' | 'email' | 'voice';
 
@@ -260,41 +260,42 @@ export const PRICING_TIERS: PricingTier[] = [
     id: 'enterprise',
     name: 'Enterprise',
     planKey: 'enterprise',
-    priceEur: 0,
-    priceString: 'individuell',
-    priceSuffix: 'Individuelle Laufzeitumgebung',
+    priceEur: 1249,
+    priceString: '1.249',
+    priceSuffix: '/ Monat',
     recurring: true,
-    tagline: 'Für regulierte Unternehmen, größere Mittelständler und Organisationen mit SLA-, DSB- oder AI-Act-Anforderungen',
+    tagline: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen und SLA-Bedarf',
     bullets: [
-      'Alle Agency-Funktionen',
-      'Custom Governance-Bots (Anzahl, Volumen, Kanäle individuell)',
-      'SLA und dedizierter Runtime-Kanal',
-      'EU AI Act Governance-Modul',
-      'DSB-Integration (interner oder externer DSB)',
-      'Volles Evidence Vault (HMAC-Signaturen + Langzeit-Retention)',
-      'Unlimitierte Domains + unlimitierte Mitarbeiter',
-      'Individuelle Vertragsgestaltung / DPA',
+      'Alles aus Agency',
+      'Governance-Bots (bis 20 Bots, 50.000 Antworten/Monat, alle Kanäle)',
+      'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
+      'Zentrale Benutzerverwaltung & Rollen/Rechte',
+      'API Premium + Webhooks',
+      'White-Label Light (Branding, Logo, Farben)',
+      'Priority Support (4h Response-Zeit)',
+      'Audit Center Pro + Evidence Vault Enterprise',
+      'Scheduler Unlimited für geplante Scans',
+      'Advanced Analytics & Risk-Scoring',
     ],
     highlight: false,
-    cta: { label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=pricing' },
+    cta: { label: '14 Tage kostenlos testen', href: '/checkout/enterprise?source=pricing&pilot=true' },
     botsQuota: {
-      maxBots: -1, // Unlimited
-      maxAnswersPerMonth: -1, // Unlimited
+      maxBots: 20,
+      maxAnswersPerMonth: 50000,
       channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
       capabilities: [
-        'AI-Act-Transparenzhinweis & Deep-Disclosures',
-        'Antwort-Logging & Audit-Trail mit Langzeit-Retention',
+        'AI-Act-Transparenzhinweis',
+        'Antwort-Logging & Audit-Trail',
         'Risiko-Tags & Compliance-Flags',
         'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation & Triage',
-        'Custom Intent-Matching & LLM-Integration',
-        'Evidence-Export mit DPA-Anhang',
-        'Bot-White-Label & Custom-Branding',
+        'Human Handoff mit Eskalation',
+        'Custom Intent-Matching',
+        'Evidence-Export',
+        'Bot-White-Label',
         'Advanced Analytics & Sentiment-Analyse',
-        'SLA-Monitoring & Uptime-Garantie',
-        'Custom Channels & Integrations'
+        'Multi-Tenant Support'
       ],
-      meteringNotes: 'Enterprise Governance-Bots mit Custom Setup, Phase 3: DPA-konformes Usage-Metering & SLA-Tracking',
+      meteringNotes: 'Enterprise Governance-Bots mit Multi-Tenant-Support für Großunternehmen, Phase 3: Pro-Org Usage-Tracking',
     },
   },
   // ─── Yearly Pricing Variants ────────────────────────────────────────────
@@ -429,6 +430,42 @@ export const PRICING_TIERS: PricingTier[] = [
       meteringNotes: 'Jährliche Abrechnung mit Rabatt für Multi-Tenant DSB-Kanzleien',
     },
   },
+  {
+    id: 'enterprise_yearly',
+    name: 'Enterprise (Jährlich)',
+    planKey: 'enterprise_yearly',
+    priceEur: 12490,
+    priceString: '12.490',
+    priceSuffix: '/ Jahr',
+    recurring: true,
+    tagline: 'Enterprise mit 2-Monate-Rabatt: 1.249 € × 10 = 12.490 €/Jahr',
+    bullets: [
+      'Alles aus Enterprise (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Multi-Tenant für bis zu 5 Organisationen (ganz Jahr)',
+    ],
+    highlight: false,
+    cta: { label: '14 Tage kostenlos testen', href: '/checkout/enterprise_yearly?source=pricing&pilot=true' },
+    botsQuota: {
+      maxBots: 20,
+      maxAnswersPerMonth: 50000,
+      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
+      capabilities: [
+        'AI-Act-Transparenzhinweis',
+        'Antwort-Logging & Audit-Trail',
+        'Risiko-Tags & Compliance-Flags',
+        'Terminbuchung & Fallbearbeitung',
+        'Human Handoff mit Eskalation',
+        'Custom Intent-Matching',
+        'Evidence-Export',
+        'Bot-White-Label',
+        'Advanced Analytics & Sentiment-Analyse',
+        'Multi-Tenant Support'
+      ],
+      meteringNotes: 'Jährliche Abrechnung mit Rabatt für Enterprise Multi-Tenant',
+    },
+  },
 ];
 
 /** Quick-Lookup nach id */
@@ -437,16 +474,14 @@ export function tierById(id: TierId): PricingTier | undefined {
 }
 
 /**
- * Die 5 selbst buchbaren Pakete (Free Audit → Scale 1.999 €) für Pricing-
- * Grids auf Landing/Pricing/Checkout. "Enterprise" (individuell, kein fester
- * Preis) wird NICHT als 6. Karte gerendert — sonst entsteht ein 6-Karten-
- * Grid in 5 Spalten ("durcheinander"). Enterprise läuft als eigener
- * Anfrage-CTA neben/unter dem 5er-Grid, siehe ENTERPRISE_TIER.
+ * Die 5 selbst buchbaren Pakete (Starter 79 € → Scale 1.999 €) für Pricing-
+ * Grids auf Landing/Pricing/Checkout. Enterprise ist jetzt ein 1.249 €
+ * self-service-Tier zwischen Agency (699 €) und Scale (1.999 €).
+ * Yearly-Varianten sind hier ausgeschlossen (werden separat verwaltet).
  */
-export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter((t) => t.id !== 'enterprise');
-
-/** Custom/individuell-Tier — separater CTA, kein Grid-Card. */
-export const ENTERPRISE_TIER: PricingTier = PRICING_TIERS.find((t) => t.id === 'enterprise')!;
+export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
+  (t) => !['free', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly'].includes(t.id)
+);
 
 /**
  * Akzentfarbe pro Tier — sorgt für farbliche Trennung der Pakete in
@@ -459,11 +494,12 @@ export const TIER_ACCENT: Record<TierId, { border: string; text: string }> = {
   starter:           { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
   growth:            { border: 'border-t-security-500',  text: 'text-security-500' },
   agency:            { border: 'border-t-violet-400',    text: 'text-violet-400' },
+  enterprise:        { border: 'border-t-emerald-400',   text: 'text-emerald-400' },
   scale:             { border: 'border-t-gold-400',      text: 'text-gold-400' },
-  enterprise:        { border: 'border-t-titanium-200',  text: 'text-titanium-200' },
   starter_yearly:    { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
   growth_yearly:     { border: 'border-t-security-500',  text: 'text-security-500' },
   agency_yearly:     { border: 'border-t-violet-400',    text: 'text-violet-400' },
+  enterprise_yearly: { border: 'border-t-emerald-400',   text: 'text-emerald-400' },
   scale_yearly:      { border: 'border-t-gold-400',      text: 'text-gold-400' },
 };
 

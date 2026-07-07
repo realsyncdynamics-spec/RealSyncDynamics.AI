@@ -290,7 +290,6 @@ export function BillingView() {
         Steuer- und Buchhaltungsfragen: <a href="mailto:billing@realsyncdynamicsai.de" className="text-security-400">billing@realsyncdynamicsai.de</a>.
       </p>
 
-<<<<<<< HEAD
       {/* Stripe Account Information */}
       <div>
         <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Stripe-Konto</h2>
@@ -304,7 +303,7 @@ export function BillingView() {
           canManage={canManage}
         />
       </div>
-=======
+
       {/* Plan Upgrade Modal */}
       {showUpgradeModal && sub !== 'none' && (
         <PlanUpgradeModal
@@ -315,7 +314,6 @@ export function BillingView() {
           error={error}
         />
       )}
->>>>>>> 023d695 (Phase 3: Plan Upgrade/Downgrade UI in Billing Dashboard)
     </div>
   );
 }

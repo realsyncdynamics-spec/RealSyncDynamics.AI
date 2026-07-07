@@ -274,6 +274,8 @@ const ApiDocumentation = lazy(() => import('./features/api/ApiDocumentation').th
 const ApiMonitoringDashboard = lazy(() => import('./features/api/ApiMonitoringDashboard').then((m) => ({ default: m.ApiMonitoringDashboard })));
 const AdvancedMonitoringDashboard = lazy(() => import('./features/api/AdvancedMonitoringDashboard').then((m) => ({ default: m.AdvancedMonitoringDashboard })));
 const EmailTemplateManager = lazy(() => import('./features/api/EmailTemplateManager').then((m) => ({ default: m.EmailTemplateManager })));
+const WebhookRetryManagement = lazy(() => import('./features/api/WebhookRetryManagement').then((m) => ({ default: m.WebhookRetryManagement })));
+const WebhookTester = lazy(() => import('./features/api/WebhookTester').then((m) => ({ default: m.WebhookTester })));
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
@@ -773,6 +775,8 @@ function RoutesWithTracking() {
       <Route path="/app/api/monitoring" element={<GovernanceBrowserShell><ApiMonitoringDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/api/monitoring-advanced" element={<GovernanceBrowserShell><AdvancedMonitoringDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/api/email-templates" element={<GovernanceBrowserShell><EmailTemplateManager /></GovernanceBrowserShell>} />
+      <Route path="/app/api/webhook-retry" element={<GovernanceBrowserShell><WebhookRetryManagement /></GovernanceBrowserShell>} />
+      <Route path="/app/api/webhook-tester" element={<GovernanceBrowserShell><WebhookTester /></GovernanceBrowserShell>} />
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />

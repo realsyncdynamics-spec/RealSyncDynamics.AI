@@ -32,7 +32,7 @@ export default defineConfig({
     ? [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
     : 'list',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
+    baseURL: process.env.TEST_BASE_URL ?? process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
     screenshot: process.env.CI ? 'only-on-failure' : 'off',
     video: process.env.CI ? 'retain-on-failure' : 'off',

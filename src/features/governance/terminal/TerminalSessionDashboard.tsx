@@ -3,12 +3,13 @@ import { TerminalInterface } from './TerminalInterface';
 import { TeamCollaborationPanel } from './TeamCollaborationPanel';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel';
 import { ActivityLogPanel } from './ActivityLogPanel';
+import { AuditExportPanel } from './AuditExportPanel';
 import { useAgenticTerminal } from './useAgenticTerminal';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function TerminalSessionDashboard() {
   const { sessionId } = useAgenticTerminal();
-  const [rightPanelOpen, setRightPanelOpen] = useState<'collaboration' | 'approvals' | 'activity' | null>(
+  const [rightPanelOpen, setRightPanelOpen] = useState<'collaboration' | 'approvals' | 'activity' | 'exports' | null>(
     'collaboration'
   );
 
@@ -30,7 +31,9 @@ export function TerminalSessionDashboard() {
                   ? 'approvals'
                   : rightPanelOpen === 'approvals'
                     ? 'activity'
-                    : null
+                    : rightPanelOpen === 'activity'
+                      ? 'exports'
+                      : null
             )
           }
           className="p-2 text-titanium-600 hover:text-titanium-300 hover:bg-obsidian-800 rounded transition-colors"
@@ -41,7 +44,9 @@ export function TerminalSessionDashboard() {
                 ? 'Switch to approvals'
                 : rightPanelOpen === 'approvals'
                   ? 'Switch to activity'
-                  : 'Close panels'
+                  : rightPanelOpen === 'activity'
+                    ? 'Switch to exports'
+                    : 'Close panels'
           }
         >
           {rightPanelOpen === null ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
@@ -64,6 +69,11 @@ export function TerminalSessionDashboard() {
           <ActivityLogPanel sessionId={sessionId} />
         </div>
       )}
+      {rightPanelOpen === 'exports' && (
+        <div className="w-sm border-l border-titanium-700 overflow-y-auto">
+          <AuditExportPanel session_id={sessionId} />
+        </div>
+      )}
 
       {/* Tab Indicator when closed */}
       {rightPanelOpen === null && (
@@ -81,6 +91,13 @@ export function TerminalSessionDashboard() {
             title="Show approval queue"
           >
             APPS
+          </button>
+          <button
+            onClick={() => setRightPanelOpen('exports')}
+            className="text-xs font-mono text-titanium-600 hover:text-titanium-300 transition-colors py-2 px-1 hover:bg-obsidian-800 rounded writing-vertical text-left"
+            title="Show audit exports"
+          >
+            EXP
           </button>
           <div className="flex-1" />
           <button

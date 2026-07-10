@@ -81,9 +81,24 @@ CREATE INDEX member_role_changes_tenant_id_idx ON public.terminal_member_role_ch
 CREATE INDEX member_role_changes_changed_by_idx ON public.terminal_member_role_changes(changed_by);
 CREATE INDEX member_role_changes_created_at_idx ON public.terminal_member_role_changes(created_at DESC);
 
--- Realtime publication updates
-ALTER PUBLICATION supabase_realtime ADD TABLE public.audit_exports;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_member_role_changes;
+-- Realtime publication updates.
+-- Guarded: die Publication `supabase_realtime` existiert nur auf einem echten
+-- Supabase-Stack — die CI-Migrationsvalidierung läuft gegen Vanilla-Postgres,
+-- dort wird der Block übersprungen. `duplicate_object` macht den Re-Run idempotent.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.audit_exports;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_member_role_changes;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+END;
+$$;
 
 -- Function: Log role change to activity log and notification
 CREATE OR REPLACE FUNCTION public.log_role_change()

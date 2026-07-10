@@ -91,10 +91,28 @@ CREATE INDEX notification_events_status_idx ON public.notification_events(status
 CREATE INDEX notification_events_created_at_idx ON public.notification_events(created_at DESC);
 
 -- Enable Realtime for activity log and approvals (for WebSocket subscriptions)
--- This allows subscribers to receive real-time updates via WebSocket
-ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_activity_log;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_approvals;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_session_members;
+-- This allows subscribers to receive real-time updates via WebSocket.
+-- Guarded: die Publication `supabase_realtime` existiert nur auf einem echten
+-- Supabase-Stack — die CI-Migrationsvalidierung läuft gegen Vanilla-Postgres,
+-- dort wird der Block übersprungen. `duplicate_object` macht den Re-Run idempotent.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_activity_log;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_approvals;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+    BEGIN
+      ALTER PUBLICATION supabase_realtime ADD TABLE public.terminal_session_members;
+    EXCEPTION WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+END;
+$$;
 
 -- Function: Create default notification preferences for new users
 CREATE OR REPLACE FUNCTION public.create_default_notification_preferences()

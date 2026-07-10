@@ -104,7 +104,9 @@ test.describe('Pricing Flow', () => {
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
       await expect(growthCard).toBeVisible();
 
-      const badge = growthCard.locator('text=Empfohlen');
+      // .first(): die Growth-Karte trägt „Empfohlen" doppelt
+      // (Highlight-Badge + Badge-Chip) — strict mode braucht Eindeutigkeit.
+      const badge = growthCard.locator('text=Empfohlen').first();
       await expect(badge).toBeVisible();
     });
 
@@ -548,7 +550,7 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
-      const badge = growthCard.locator('text=Empfohlen');
+      const badge = growthCard.locator('text=Empfohlen').first();
       await expect(badge).toBeVisible();
     });
 

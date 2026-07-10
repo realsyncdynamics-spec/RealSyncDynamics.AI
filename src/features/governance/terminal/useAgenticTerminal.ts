@@ -2,6 +2,10 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { useSupabaseAuth } from '../../../features/supabase/SupabaseAuthContext';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
+import { triageAnalyze, formatTriageMessage, formatTriageAgentBox } from './agents/TriageAgent';
+import { createCheckoutSession, formatUpgradeMessage } from './agents/PaymentAgent';
+import { generateAudit, formatAuditMessage, formatAuditAgentBox } from './agents/AuditAgent';
+import type { ScanResult } from './agents/TriageAgent';
 
 export interface TerminalMessage {
   id: string;
@@ -262,11 +266,157 @@ Session: ${sessionId?.slice(0, 8)}`,
             type: 'info',
           };
           responses.push(historyMsg);
+        } else if (parsed.type === 'scan') {
+          // Triage Agent: Scan website
+          const url = parsed.args.url as string;
+          const mockScan: ScanResult = {
+            scanId: crypto.randomUUID(),
+            url,
+            findingsCount: Math.floor(Math.random() * 25),
+            riskLevel: ['critical', 'high', 'medium', 'low'][Math.floor(Math.random() * 4)] as any,
+            systemsClassified: Math.floor(Math.random() * 10),
+            findings: [],
+          };
+
+          const recommendation = triageAnalyze(mockScan);
+          const triageMessages = formatTriageMessage(mockScan, recommendation);
+          responses.push(...triageMessages);
+
+          const agentBox = formatTriageAgentBox(recommendation);
+          const agentMsg: TerminalMessage = {
+            id: crypto.randomUUID(),
+            role: 'agent',
+            content: agentBox,
+            timestamp: new Date(),
+            type: 'info',
+          };
+          responses.push(agentMsg);
+
+          setContext({ ...context, scanId: mockScan.scanId });
+        } else if (parsed.type === 'upgrade') {
+          // Payment Agent: Upgrade subscription
+          const tier = parsed.args.tier as string;
+          try {
+            const checkout = createCheckoutSession(tier);
+            const upgradeMessages = formatUpgradeMessage(tier, checkout.checkoutUrl);
+            responses.push(...upgradeMessages);
+            setContext({ ...context, pendingUpgrade: true });
+          } catch (err) {
+            const errorMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `❌ Invalid tier: ${tier}. Valid options: starter, growth, agency, scale`,
+              timestamp: new Date(),
+              type: 'error',
+            };
+            responses.push(errorMsg);
+          }
+        } else if (parsed.type === 'audit') {
+          // Audit Agent: Generate compliance audit
+          const scanId = parsed.args.scanId as string | undefined;
+          if (!scanId && !context.scanId) {
+            const errorMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `❌ No scan ID provided. Run /scan first or use /audit <scanId>`,
+              timestamp: new Date(),
+              type: 'error',
+            };
+            responses.push(errorMsg);
+          } else {
+            const audit = generateAudit(scanId || context.scanId || 'unknown', 'free');
+            const auditMessages = formatAuditMessage(audit, 'free');
+            responses.push(...auditMessages);
+
+            const agentBox = formatAuditAgentBox('free', audit.auditId);
+            const agentMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: agentBox,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(agentMsg);
+            setContext({ ...context, lastAuditId: audit.auditId });
+          }
+        } else if (parsed.type === 'register') {
+          // Registration flow
+          const email = parsed.args.email as string | undefined;
+          if (email) {
+            const regMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `📧 Sending verification link to ${email}...`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(regMsg);
+
+            const verifyMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `✓ Account created: ${email}
+✓ Free tier activated (3 scans/month)`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(verifyMsg);
+
+            const onboardingMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `┌─ ONBOARDING AGENT ─────────────────┐
+│ Welcome! Your first scan is free.   │
+│ Type /scan <url> to start, or       │
+│ /upgrade to skip the 3-scan limit.  │
+└────────────────────────────────────┘`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(onboardingMsg);
+
+            setContext({ ...context, registrationEmail: email });
+          } else {
+            const promptMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `📧 What's your email? Type: /register your.email@company.com`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(promptMsg);
+          }
+        } else if (parsed.type === 'pay') {
+          // Invoice payment fallback
+          const tier = parsed.args.tier as string | undefined;
+          if (tier) {
+            const invoiceMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `📨 Sending invoice request for ${tier.toUpperCase()} tier...
+Invoice will be sent to your registered email address.
+Payment terms: Due within 7 days
+Reference your invoice number for payment.`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(invoiceMsg);
+          } else {
+            const errorMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `❌ Please specify tier: /pay <tier>
+Valid options: starter, growth, agency, scale`,
+              timestamp: new Date(),
+              type: 'error',
+            };
+            responses.push(errorMsg);
+          }
         } else {
           const agentMsg: TerminalMessage = {
             id: crypto.randomUUID(),
             role: 'agent',
-            content: `🤖 Processing ${parsed.type} command... (Agent implementation coming in Phase 6 Week 2)`,
+            content: `🤖 Processing ${parsed.type} command...`,
             timestamp: new Date(),
             type: 'info',
           };

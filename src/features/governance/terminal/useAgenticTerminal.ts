@@ -5,6 +5,7 @@ import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { triageAnalyze, formatTriageMessage, formatTriageAgentBox } from './agents/TriageAgent';
 import { createCheckoutSession, formatUpgradeMessage } from './agents/PaymentAgent';
 import { generateAudit, formatAuditMessage, formatAuditAgentBox } from './agents/AuditAgent';
+import { useTerminalSessionPersistence } from './useTerminalSessionPersistence';
 import type { ScanResult } from './agents/TriageAgent';
 
 export interface TerminalMessage {
@@ -122,7 +123,14 @@ export function useAgenticTerminal() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [context, setContext] = useState<TerminalContext>({});
   const [error, setError] = useState<string | null>(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(false);
   const commandHistoryRef = useRef<string[]>([]);
+
+  const { restoreSession, saveSession, clearSession } = useTerminalSessionPersistence(
+    sessionId,
+    messages,
+    context
+  );
 
   const createSession = useCallback(async () => {
     if (!activeTenantId || !user || !isSupabaseConfigured()) {
@@ -130,6 +138,19 @@ export function useAgenticTerminal() {
     }
 
     try {
+      setIsRestoringSession(true);
+
+      // Try to restore previous session
+      const restoredSession = restoreSession();
+      if (restoredSession) {
+        setSessionId(restoredSession.sessionId);
+        setMessages(restoredSession.messages);
+        setContext(restoredSession.context);
+        setIsRestoringSession(false);
+        return;
+      }
+
+      // Create new session if no restore available
       const sb = getSupabase();
       const newSessionId = crypto.randomUUID();
 
@@ -159,12 +180,14 @@ Type /help for available commands.`,
       };
 
       setMessages([welcomeMsg]);
+      setIsRestoringSession(false);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to create session';
       setError(errorMsg);
       console.error('Session creation error:', err);
+      setIsRestoringSession(false);
     }
-  }, [activeTenantId, user]);
+  }, [activeTenantId, user, restoreSession]);
 
   const logCommand = useCallback(
     async (command: string, parsed: ParsedCommand, result: TerminalMessage[]): Promise<void> => {
@@ -447,11 +470,14 @@ Valid options: starter, growth, agency, scale`,
     sessionId,
     messages,
     isExecuting,
+    isRestoringSession,
     error,
     context,
     executeCommand,
     setContext,
     setError,
     getCommandHistory: () => [...commandHistoryRef.current],
+    saveSession,
+    clearSession,
   };
 }

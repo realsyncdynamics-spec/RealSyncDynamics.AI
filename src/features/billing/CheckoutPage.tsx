@@ -229,6 +229,7 @@ function ShellWithMessage({
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -294,11 +295,12 @@ function NoUserShell({
   magicLinkHref: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -388,6 +390,7 @@ function ConsentGateShell({
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
+          data-testid="checkout-back"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

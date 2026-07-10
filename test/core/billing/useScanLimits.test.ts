@@ -3,11 +3,16 @@ import { renderHook } from '@testing-library/react';
 import { useScanLimits } from '../../../src/core/billing/useScanLimits';
 import * as useEntitlementsModule from '../../../src/core/billing/useEntitlements';
 import * as supabaseModule from '../../../src/lib/supabase';
+import { TenantProvider } from '../../../src/core/access/TenantProvider';
+import React from 'react';
 
 describe('useScanLimits', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
+
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(TenantProvider, { children });
 
   it('returns null for paid tier users', () => {
     // Mock useEntitlements to return paid tier
@@ -23,7 +28,7 @@ describe('useScanLimits', () => {
 
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(false);
 
-    const { result } = renderHook(() => useScanLimits());
+    const { result } = renderHook(() => useScanLimits(), { wrapper });
 
     expect(result.current).toBeNull();
   });
@@ -59,7 +64,7 @@ describe('useScanLimits', () => {
 
     vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue(mockSupabase as any);
 
-    const { result } = renderHook(() => useScanLimits());
+    const { result } = renderHook(() => useScanLimits(), { wrapper });
 
     // Wait for async state update
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -104,7 +109,7 @@ describe('useScanLimits', () => {
 
     vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue(mockSupabase as any);
 
-    const { result } = renderHook(() => useScanLimits());
+    const { result } = renderHook(() => useScanLimits(), { wrapper });
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -145,7 +150,7 @@ describe('useScanLimits', () => {
 
     vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue(mockSupabase as any);
 
-    const { result } = renderHook(() => useScanLimits());
+    const { result } = renderHook(() => useScanLimits(), { wrapper });
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -184,7 +189,7 @@ describe('useScanLimits', () => {
 
     vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue(mockSupabase as any);
 
-    const { result } = renderHook(() => useScanLimits());
+    const { result } = renderHook(() => useScanLimits(), { wrapper });
 
     await new Promise(resolve => setTimeout(resolve, 100));
 

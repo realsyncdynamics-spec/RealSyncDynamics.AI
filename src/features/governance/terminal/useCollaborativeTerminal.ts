@@ -213,27 +213,31 @@ export function useCollaborativeTerminal(sessionId: string | null) {
   );
 
   const updateMemberRole = useCallback(
-    async (memberId: string, newRole: TerminalRole): Promise<boolean> => {
+    async (memberId: string, newRole: TerminalRole, reason?: string): Promise<boolean> => {
       if (!sessionId || !activeTenantId || !isSupabaseConfigured()) {
         return false;
       }
 
-      // Check if current user is owner
-      if (sessionState?.currentUserRole !== 'owner') {
-        setError('Only session owner can change member roles');
+      // Check if current user is owner or approver
+      if (sessionState?.currentUserRole !== 'owner' && sessionState?.currentUserRole !== 'approver') {
+        setError('Only owner or approver can change member roles');
         return false;
       }
 
       try {
         const sb = getSupabase();
 
-        const { error: updateError } = await sb
-          .from('terminal_session_members')
-          .update({ role: newRole })
-          .eq('id', memberId)
-          .eq('tenant_id', activeTenantId);
+        // Call Edge Function for atomic role update
+        const { data, error: callError } = await sb.functions.invoke('update-member-role', {
+          body: {
+            member_id: memberId,
+            new_role: newRole,
+            reason: reason || null,
+          },
+        });
 
-        if (updateError) throw updateError;
+        if (callError) throw callError;
+        if (!data.ok) throw new Error(data.message);
 
         await fetchSessionMembers();
         return true;
@@ -248,7 +252,7 @@ export function useCollaborativeTerminal(sessionId: string | null) {
   );
 
   const canPerformAction = useCallback(
-    (action: 'invite' | 'remove' | 'approve'): boolean => {
+    (action: 'invite' | 'remove' | 'approve' | 'update_role'): boolean => {
       if (!sessionState) return false;
 
       switch (action) {
@@ -260,6 +264,8 @@ export function useCollaborativeTerminal(sessionId: string | null) {
           return (
             sessionState.currentUserRole === 'owner' || sessionState.currentUserRole === 'approver'
           );
+        case 'update_role':
+          return sessionState.currentUserRole === 'owner' || sessionState.currentUserRole === 'approver';
         default:
           return false;
       }

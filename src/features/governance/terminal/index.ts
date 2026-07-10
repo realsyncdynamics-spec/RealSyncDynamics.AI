@@ -5,6 +5,7 @@ export { TerminalModal, useTerminalModal } from './TerminalModal';
 export { TeamCollaborationPanel } from './TeamCollaborationPanel';
 export { ApprovalQueuePanel } from './ApprovalQueuePanel';
 export { ActivityLogPanel } from './ActivityLogPanel';
+export { AuditExportPanel } from './AuditExportPanel';
 export { useCollaborativeTerminal } from './useCollaborativeTerminal';
 export { useApprovalWorkflow } from './useApprovalWorkflow';
 export { useRealtimeActivityLog } from './useRealtimeActivityLog';

@@ -34,6 +34,8 @@ export function TeamCollaborationPanel({ sessionId }: TeamCollaborationPanelProp
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<TerminalRole>('editor');
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) return;
@@ -52,7 +54,10 @@ export function TeamCollaborationPanel({ sessionId }: TeamCollaborationPanelProp
   };
 
   const handleRoleChange = async (memberId: string, newRole: TerminalRole) => {
+    setIsUpdatingRole(true);
     await updateMemberRole(memberId, newRole);
+    setIsUpdatingRole(false);
+    setEditingRoleId(null);
   };
 
   if (!sessionState) {
@@ -105,12 +110,29 @@ export function TeamCollaborationPanel({ sessionId }: TeamCollaborationPanelProp
                   key={member.id}
                   className="flex items-center gap-2 px-3 py-2 bg-obsidian-800 rounded border border-titanium-700 hover:border-titanium-500 transition-colors"
                 >
-                  <div
-                    className={`px-2 py-1 rounded text-xs font-mono flex items-center gap-1 ${ROLE_COLORS[member.role]}`}
-                  >
-                    {ROLE_ICONS[member.role]}
-                    {member.role}
-                  </div>
+                  {editingRoleId === member.id && canPerformAction('update_role') ? (
+                    <select
+                      value={member.role}
+                      onChange={(e) => handleRoleChange(member.id, e.target.value as TerminalRole)}
+                      disabled={isUpdatingRole}
+                      className="px-2 py-1 rounded text-xs font-mono bg-obsidian-700 border border-blue-600 text-blue-300 focus:outline-none"
+                      autoFocus
+                    >
+                      <option value="owner">owner</option>
+                      <option value="editor">editor</option>
+                      <option value="approver">approver</option>
+                      <option value="viewer">viewer</option>
+                    </select>
+                  ) : (
+                    <div
+                      className={`px-2 py-1 rounded text-xs font-mono flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity ${ROLE_COLORS[member.role]}`}
+                      onClick={() => canPerformAction('update_role') && setEditingRoleId(member.id)}
+                      title={canPerformAction('update_role') ? 'Click to change role' : ''}
+                    >
+                      {ROLE_ICONS[member.role]}
+                      {member.role}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-titanium-300 truncate">{member.displayName}</div>
                   </div>

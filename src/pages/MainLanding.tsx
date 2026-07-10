@@ -124,6 +124,7 @@ export function MainLanding() {
       <ProofBand />
       <Pricing />
       <Security />
+      <CollaborativeTerminal />
       <FinalCta />
       <Footer />
     </div>
@@ -401,6 +402,106 @@ function Security() {
         ))}
       </div>
     </Section>
+  );
+}
+
+/* ── COLLABORATIVE TERMINAL ────────────────────────────– */
+function CollaborativeTerminal() {
+  return (
+    <section className="relative z-10 py-16 md:py-24">
+      <div className="max-w-6xl mx-auto px-6 lg:px-10">
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
+            Governance im Team.<br className="hidden sm:block" /> In Echtzeit.
+          </h2>
+          <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-3xl mx-auto leading-relaxed">
+            Collaborative Terminal für Governance-Teams. Laden Sie Mitglieder ein, genehmigen Sie Audits,
+            exportieren Sie Compliance-Nachweise — alles mit vollständiger Audit-Spur und Echtzeit-Updates.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Features */}
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <ShieldCheck className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Rollenbasierte Zugriffskontolle</h3>
+                <p className="text-sm text-white/60">Owner, Editor, Viewer, Approver — granulare Berechtigungen mit atomaren Updates und Selbstsicherung gegen Privilege-Eskalation.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <Radar className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Echtzeit-Genehmigungsworkflow</h3>
+                <p className="text-sm text-white/60">Auditanforderungen, Genehmigung oder Ablehnung mit Begründung — WebSocket-basiert, Benachrichtigungen per E-Mail, vollständige Audit-Spur.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <FileLock2 className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Audit-Export mit Signatur</h3>
+                <p className="text-sm text-white/60">PDF, CSV, XLSX — jede exportierte Audit mit SHA256-Signatur, 30-Tage-Gültig, offline verifizierbar, Compliance-sicher.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <GitBranch className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Lückenlose Aktivitätsspur</h3>
+                <p className="text-sm text-white/60">Jede Aktion (Einladung, Genehmigung, Rolle, Export) wird protokolliert. Echtzeit-Feed mit Filterung nach Benutzer, Typ und Zeitraum.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual: Terminal Stats */}
+          <div className="relative">
+            <div className="rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-obsidian-800/50 to-transparent p-8 sm:p-10 space-y-6">
+              <div className="space-y-1">
+                <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">Team-Status</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white">4 Mitglieder</div>
+                <div className="text-xs text-white/50">Owner (1) · Editor (1) · Approver (1) · Viewer (1)</div>
+              </div>
+
+              <div className="h-px bg-white/10" />
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">Aktuelle Genehmigungen</div>
+                  <div className="text-lg font-bold text-white">3 ausstehend</div>
+                </div>
+                <div className="text-xs text-white/60 space-y-1">
+                  <p>• Audit-Export PDF (angefordert von sarah@team.de)</p>
+                  <p>• DSGVO-Scan (angefordert von alex@team.de)</p>
+                  <p>• AI-Act-Klassifizierung (angefordert von maya@team.de)</p>
+                </div>
+              </div>
+
+              <div className="h-px bg-white/10" />
+
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">Letzte Aktivitäten</div>
+                <div className="text-xs text-white/60 space-y-1.5">
+                  <p className="flex items-center gap-2"><span className="text-green-400">✓</span> maya@team.de genehmigt Audit-Export</p>
+                  <p className="flex items-center gap-2"><span className="text-blue-400">→</span> alex@team.de wechselt zu Approver-Rolle</p>
+                  <p className="flex items-center gap-2"><span className="text-cyan-400">↓</span> sarah@team.de exportiert 1.248 Nachweise als CSV</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { useHealthStatus } from '../hooks/useHealthStatus';
+import { TerminalModal, useTerminalModal } from '../features/governance/terminal';
 import {
   Snowflake,
   ShieldCheck,
@@ -405,31 +406,44 @@ function Security() {
 
 /* ── FINAL-CTA ──────────────────────────────────────────── */
 function FinalCta() {
+  const { isOpen, open, close } = useTerminalModal();
+
   return (
-    <section className="relative z-10 py-16 md:py-24">
-      <div className="max-w-5xl mx-auto px-6 lg:px-10">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
-            Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit läuft?
-          </h2>
-          <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-            Starten Sie mit einem kostenlosen Scan — ohne Account, in unter fünf Minuten. Sehen Sie
-            Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-              Plattform öffnen<ArrowRight className="w-4 h-4" />
-            </SmartLink>
-            <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-              <PlayCircle className="w-4 h-4" />Kostenlos starten
-            </SmartLink>
+    <>
+      <section className="relative z-10 py-16 md:py-24">
+        <div className="max-w-5xl mx-auto px-6 lg:px-10">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
+              Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit läuft?
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
+              Starten Sie mit einem kostenlosen Scan — ohne Account, in unter fünf Minuten. Sehen Sie
+              Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+                Plattform öffnen<ArrowRight className="w-4 h-4" />
+              </SmartLink>
+              <button
+                onClick={() => open('/scan')}
+                className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg"
+              >
+                <PlayCircle className="w-4 h-4" />Im Terminal erkunden
+              </button>
+              <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+                <PlayCircle className="w-4 h-4" />Kostenlos starten
+              </SmartLink>
+            </div>
+            <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
+              Self-Service · ohne Account · kein Verkaufsgespräch nötig
+            </p>
           </div>
-          <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
-            Self-Service · ohne Account · kein Verkaufsgespräch nötig
-          </p>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* Terminal Modal */}
+      <TerminalModal isOpen={isOpen} onClose={close} initialCommand="/scan" />
+    </>
   );
 }
 

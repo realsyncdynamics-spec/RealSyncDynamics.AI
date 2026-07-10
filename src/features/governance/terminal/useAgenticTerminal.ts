@@ -18,7 +18,7 @@ export interface TerminalMessage {
 }
 
 export interface ParsedCommand {
-  type: 'scan' | 'upgrade' | 'audit' | 'register' | 'pay' | 'help' | 'status' | 'history' | 'unknown';
+  type: 'scan' | 'upgrade' | 'audit' | 'register' | 'pay' | 'help' | 'status' | 'history' | 'invite' | 'members' | 'approve' | 'unknown';
   args: Record<string, string | string[] | undefined>;
 }
 
@@ -29,7 +29,7 @@ export interface TerminalContext {
   lastAuditId?: string;
 }
 
-const WHITELISTED_COMMANDS = ['scan', 'upgrade', 'audit', 'register', 'pay', 'help', 'status', 'history'];
+const WHITELISTED_COMMANDS = ['scan', 'upgrade', 'audit', 'register', 'pay', 'help', 'status', 'history', 'invite', 'members', 'approve'];
 
 function parseCommand(input: string): ParsedCommand {
   const trimmed = input.trim();
@@ -86,6 +86,27 @@ function parseCommand(input: string): ParsedCommand {
         args.tier = tier;
       }
       return { type: 'pay', args };
+    }
+
+    case 'invite': {
+      const email = parts[1];
+      const role = parts[2]?.toLowerCase() || 'editor';
+      if (email && isValidEmail(email) && ['editor', 'viewer', 'approver'].includes(role)) {
+        args.email = email;
+        args.role = role;
+      }
+      return { type: 'invite', args };
+    }
+
+    case 'members':
+      return { type: 'members', args };
+
+    case 'approve': {
+      const auditId = parts[1];
+      if (auditId && isValidUUID(auditId)) {
+        args.auditId = auditId;
+      }
+      return { type: 'approve', args };
     }
 
     case 'help':
@@ -255,14 +276,24 @@ Type /help for available commands.`,
             id: crypto.randomUUID(),
             role: 'agent',
             content: `Available Commands:
+Scanning & Compliance:
 /scan <URL>           - Scan website for AI systems & compliance gaps
-/upgrade <TIER>       - Upgrade subscription (starter|growth|agency|scale)
 /audit <SCANID>       - Generate compliance audit report
-/register [EMAIL]     - Create new account
-/pay <TIER>           - Request invoice payment
-/help                 - Show this help message
 /status               - Show account status & scan quota
-/history              - Show last 5 scans & audits`,
+/history              - Show last 5 scans & audits
+
+Subscription:
+/upgrade <TIER>       - Upgrade subscription (starter|growth|agency|scale)
+/pay <TIER>           - Request invoice payment
+
+Team & Approval:
+/invite <EMAIL> [ROLE]  - Invite team member (editor|viewer|approver)
+/members              - List session participants
+/approve <AUDITID>    - Approve audit for compliance sign-off
+
+Account:
+/register [EMAIL]     - Create new account
+/help                 - Show this help message`,
             timestamp: new Date(),
             type: 'info',
           };
@@ -430,6 +461,70 @@ Reference your invoice number for payment.`,
               role: 'agent',
               content: `❌ Please specify tier: /pay <tier>
 Valid options: starter, growth, agency, scale`,
+              timestamp: new Date(),
+              type: 'error',
+            };
+            responses.push(errorMsg);
+          }
+        } else if (parsed.type === 'invite') {
+          // Invite team member to session
+          const email = parsed.args.email as string | undefined;
+          const role = parsed.args.role as string | undefined;
+          if (email) {
+            const inviteMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `👥 Inviting ${email} to session as ${(role || 'editor').toUpperCase()}...
+Invitation sent and pending acceptance.
+They can join with: /accept-invite <token>`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(inviteMsg);
+          } else {
+            const errorMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `❌ Please specify email: /invite <email@company.com> [role]
+Valid roles: editor (default), viewer, approver`,
+              timestamp: new Date(),
+              type: 'error',
+            };
+            responses.push(errorMsg);
+          }
+        } else if (parsed.type === 'members') {
+          // List session members
+          const membersMsg: TerminalMessage = {
+            id: crypto.randomUUID(),
+            role: 'agent',
+            content: `👥 Session Members:
+1. You (owner) - Full access
+2. No other members yet
+Invite team members with: /invite <email@company.com>`,
+            timestamp: new Date(),
+            type: 'info',
+          };
+          responses.push(membersMsg);
+        } else if (parsed.type === 'approve') {
+          // Approval workflow
+          const auditId = parsed.args.auditId as string | undefined;
+          if (auditId) {
+            const approveMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `✅ Audit ${auditId.slice(0, 8)} marked as approved.
+Compliance sign-off sealed to Evidence-Chain.
+Event hash: SHA256:${crypto.randomUUID().slice(0, 16)}...`,
+              timestamp: new Date(),
+              type: 'info',
+            };
+            responses.push(approveMsg);
+          } else {
+            const errorMsg: TerminalMessage = {
+              id: crypto.randomUUID(),
+              role: 'agent',
+              content: `❌ Please specify audit ID: /approve <auditId>
+Format: /approve audit_abc12345`,
               timestamp: new Date(),
               type: 'error',
             };

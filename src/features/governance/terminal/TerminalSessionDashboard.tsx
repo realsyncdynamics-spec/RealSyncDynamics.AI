@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { TerminalInterface } from './TerminalInterface';
 import { TeamCollaborationPanel } from './TeamCollaborationPanel';
 import { ApprovalQueuePanel } from './ApprovalQueuePanel';
+import { ActivityLogPanel } from './ActivityLogPanel';
 import { useAgenticTerminal } from './useAgenticTerminal';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function TerminalSessionDashboard() {
   const { sessionId } = useAgenticTerminal();
-  const [rightPanelOpen, setRightPanelOpen] = useState<'collaboration' | 'approvals' | null>(
+  const [rightPanelOpen, setRightPanelOpen] = useState<'collaboration' | 'approvals' | 'activity' | null>(
     'collaboration'
   );
 
@@ -27,7 +28,9 @@ export function TerminalSessionDashboard() {
                 ? 'collaboration'
                 : rightPanelOpen === 'collaboration'
                   ? 'approvals'
-                  : null
+                  : rightPanelOpen === 'approvals'
+                    ? 'activity'
+                    : null
             )
           }
           className="p-2 text-titanium-600 hover:text-titanium-300 hover:bg-obsidian-800 rounded transition-colors"
@@ -36,7 +39,9 @@ export function TerminalSessionDashboard() {
               ? 'Show panels'
               : rightPanelOpen === 'collaboration'
                 ? 'Switch to approvals'
-                : 'Close panels'
+                : rightPanelOpen === 'approvals'
+                  ? 'Switch to activity'
+                  : 'Close panels'
           }
         >
           {rightPanelOpen === null ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
@@ -54,6 +59,11 @@ export function TerminalSessionDashboard() {
           <ApprovalQueuePanel sessionId={sessionId} />
         </div>
       )}
+      {rightPanelOpen === 'activity' && (
+        <div className="w-sm border-l border-titanium-700 overflow-y-auto">
+          <ActivityLogPanel sessionId={sessionId} />
+        </div>
+      )}
 
       {/* Tab Indicator when closed */}
       {rightPanelOpen === null && (
@@ -65,13 +75,20 @@ export function TerminalSessionDashboard() {
           >
             TEAM
           </button>
-          <div className="flex-1" />
           <button
             onClick={() => setRightPanelOpen('approvals')}
             className="text-xs font-mono text-titanium-600 hover:text-titanium-300 transition-colors py-2 px-1 hover:bg-obsidian-800 rounded writing-vertical text-left"
             title="Show approval queue"
           >
             APPS
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={() => setRightPanelOpen('activity')}
+            className="text-xs font-mono text-titanium-600 hover:text-titanium-300 transition-colors py-2 px-1 hover:bg-obsidian-800 rounded writing-vertical text-left"
+            title="Show activity log"
+          >
+            LOG
           </button>
         </div>
       )}

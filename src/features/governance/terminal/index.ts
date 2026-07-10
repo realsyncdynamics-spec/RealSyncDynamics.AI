@@ -4,6 +4,7 @@ export { TerminalSessionDashboard } from './TerminalSessionDashboard';
 export { TerminalModal, useTerminalModal } from './TerminalModal';
 export { TeamCollaborationPanel } from './TeamCollaborationPanel';
 export { ApprovalQueuePanel } from './ApprovalQueuePanel';
+export { ActivityLogPanel } from './ActivityLogPanel';
 export { useCollaborativeTerminal } from './useCollaborativeTerminal';
 export { useApprovalWorkflow } from './useApprovalWorkflow';
 export type { TerminalMessage, ParsedCommand, TerminalContext } from './useAgenticTerminal';

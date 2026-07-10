@@ -7,6 +7,8 @@ export { ApprovalQueuePanel } from './ApprovalQueuePanel';
 export { ActivityLogPanel } from './ActivityLogPanel';
 export { useCollaborativeTerminal } from './useCollaborativeTerminal';
 export { useApprovalWorkflow } from './useApprovalWorkflow';
+export { useRealtimeActivityLog } from './useRealtimeActivityLog';
+export { useRealtimeApprovals } from './useRealtimeApprovals';
 export type { TerminalMessage, ParsedCommand, TerminalContext } from './useAgenticTerminal';
 export type {
   SessionMember,
@@ -15,3 +17,4 @@ export type {
   TerminalRole,
 } from './useCollaborativeTerminal';
 export type { ApprovalRequest } from './useApprovalWorkflow';
+export type { ActivityLogEntry } from './useRealtimeActivityLog';

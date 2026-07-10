@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Check, X, Clock } from 'lucide-react';
+import { Check, X, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useApprovalWorkflow } from './useApprovalWorkflow';
+import { useRealtimeApprovals } from './useRealtimeApprovals';
 
 interface ApprovalQueuePanelProps {
   sessionId: string | null;
@@ -19,14 +20,15 @@ const STATUS_ICONS: Record<'pending' | 'approved' | 'rejected', React.ReactNode>
 };
 
 export function ApprovalQueuePanel({ sessionId }: ApprovalQueuePanelProps) {
-  const { approvals, loading, error, approveAudit, rejectAudit, getPendingApprovalsForUser } =
-    useApprovalWorkflow(sessionId);
+  const { approveAudit, rejectAudit } = useApprovalWorkflow(sessionId);
+  const { approvals, loading: rtLoading, error: rtError, connectionStatus } = useRealtimeApprovals();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
   const [isActing, setIsActing] = useState<Record<string, boolean>>({});
 
-  const pendingApprovals = getPendingApprovalsForUser();
+  // Filter for pending approvals only (real-time)
+  const pendingApprovals = approvals.filter((a) => a.status === 'pending');
   const completedApprovals = approvals.filter((a) => a.status !== 'pending');
 
   const handleApprove = async (approvalId: string) => {
@@ -67,21 +69,39 @@ export function ApprovalQueuePanel({ sessionId }: ApprovalQueuePanelProps) {
       </div>
 
       {/* Error */}
-      {error && (
+      {rtError && (
         <div className="text-xs text-red-400 bg-red-900/20 p-2 rounded border border-red-700">
-          {error}
+          {rtError}
         </div>
       )}
 
+      {/* Connection Status */}
+      <div className="flex items-center justify-between px-3 py-2 bg-obsidian-800 rounded border border-titanium-700">
+        <div className="flex items-center gap-2">
+          {connectionStatus === 'connected' ? (
+            <Wifi size={12} className="text-green-400 animate-pulse" />
+          ) : (
+            <WifiOff size={12} className="text-yellow-400" />
+          )}
+          <span className="font-mono text-[10px] text-titanium-500">
+            {connectionStatus === 'connected'
+              ? 'Live Updates'
+              : connectionStatus === 'reconnecting'
+                ? 'Reconnecting…'
+                : 'Offline'}
+          </span>
+        </div>
+      </div>
+
       {/* Loading */}
-      {loading && (
+      {rtLoading && pendingApprovals.length === 0 && (
         <div className="text-xs text-titanium-400 italic">
           Loading approvals...
         </div>
       )}
 
       {/* Pending Approvals */}
-      {!loading && pendingApprovals.length > 0 && (
+      {!rtLoading && pendingApprovals.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs text-titanium-300 font-mono">
             Pending ({pendingApprovals.length})
@@ -170,7 +190,7 @@ export function ApprovalQueuePanel({ sessionId }: ApprovalQueuePanelProps) {
       )}
 
       {/* Empty state */}
-      {!loading && pendingApprovals.length === 0 && (
+      {!rtLoading && pendingApprovals.length === 0 && (
         <div className="text-xs text-titanium-500 italic">
           No pending approvals
         </div>

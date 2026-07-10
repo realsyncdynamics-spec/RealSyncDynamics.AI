@@ -1,16 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useTenant } from '../../../core/access/TenantProvider';
-import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
-import { Eye, Plus, Shield, Trash2, Check, AlertCircle } from 'lucide-react';
-
-interface ActivityLogEntry {
-  id: string;
-  action: string;
-  actionType: string;
-  userId: string;
-  createdAt: Date;
-  details?: Record<string, unknown>;
-}
+import { useState } from 'react';
+import { Eye, Plus, Shield, Trash2, Check, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { useRealtimeActivityLog } from './useRealtimeActivityLog';
 
 interface ActivityLogPanelProps {
   sessionId: string | null;
@@ -26,56 +16,7 @@ const ACTION_TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 export function ActivityLogPanel({ sessionId }: ActivityLogPanelProps) {
-  const { activeTenantId } = useTenant();
-  const [activities, setActivities] = useState<ActivityLogEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchActivityLog = useCallback(async () => {
-    if (!sessionId || !activeTenantId || !isSupabaseConfigured()) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const sb = getSupabase();
-
-      const { data, error: fetchError } = await sb
-        .from('terminal_activity_log')
-        .select('id, action, action_type, user_id, details, created_at')
-        .eq('session_id', sessionId)
-        .eq('tenant_id', activeTenantId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (fetchError) throw fetchError;
-
-      const transformed: ActivityLogEntry[] = (data || []).map((entry) => ({
-        id: entry.id,
-        action: entry.action,
-        actionType: entry.action_type,
-        userId: entry.user_id,
-        details: entry.details,
-        createdAt: new Date(entry.created_at),
-      }));
-
-      setActivities(transformed);
-      setError(null);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch activity log';
-      setError(errorMsg);
-      console.error('Fetch activity log error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId, activeTenantId]);
-
-  useEffect(() => {
-    void fetchActivityLog();
-    // Poll for new activities every 5 seconds
-    const interval = setInterval(fetchActivityLog, 5000);
-    return () => clearInterval(interval);
-  }, [fetchActivityLog]);
+  const { activities, loading, error, connectionStatus } = useRealtimeActivityLog(sessionId, 100);
 
   const getRelativeTime = (date: Date): string => {
     const now = new Date();
@@ -149,14 +90,23 @@ export function ActivityLogPanel({ sessionId }: ActivityLogPanelProps) {
         </div>
       )}
 
-      {/* Refresh button */}
-      <button
-        onClick={() => void fetchActivityLog()}
-        disabled={loading}
-        className="w-full px-3 py-2 bg-obsidian-800 hover:bg-obsidian-700 disabled:opacity-50 disabled:cursor-not-allowed text-titanium-400 font-mono text-xs rounded border border-titanium-700 hover:border-titanium-600 transition-colors"
-      >
-        Refresh
-      </button>
+      {/* Connection Status */}
+      <div className="flex items-center justify-between px-3 py-2 bg-obsidian-800 rounded border border-titanium-700">
+        <div className="flex items-center gap-2">
+          {connectionStatus === 'connected' ? (
+            <Wifi size={12} className="text-green-400 animate-pulse" />
+          ) : (
+            <WifiOff size={12} className="text-yellow-400" />
+          )}
+          <span className="font-mono text-[10px] text-titanium-500">
+            {connectionStatus === 'connected'
+              ? 'Live'
+              : connectionStatus === 'reconnecting'
+                ? 'Reconnecting…'
+                : 'Offline'}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

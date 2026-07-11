@@ -52,9 +52,9 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free: redirect away — diese Page nicht zustaendig
+  // 2. Free audit: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free') {
+    if (planKey === 'free_audit') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
       return;
     }

@@ -6,7 +6,7 @@ import { getSupabase } from '../../lib/supabase';
  *   - public.products.default_for_plan_key in der DB
  * uebereinstimmen. 5-Tier seit PR #145.
  */
-export type PlanKey = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'scale' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'enterprise_yearly' | 'scale_yearly';
+export type PlanKey = 'free_audit' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'scale' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'enterprise_yearly' | 'scale_yearly';
 
 export interface CheckoutResult {
   ok: boolean;
@@ -28,8 +28,8 @@ export async function createCheckoutSession(
   planKey: PlanKey,
   pilot?: boolean,
 ): Promise<CheckoutResult> {
-  if (planKey === 'free') {
-    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free plan needs no checkout' } };
+  if (planKey === 'free_audit') {
+    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free audit needs no checkout' } };
   }
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
   const sb = getSupabase();

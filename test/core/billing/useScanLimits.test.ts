@@ -11,8 +11,8 @@ describe('useScanLimits', () => {
     vi.clearAllMocks();
   });
 
-  const wrapper = ({ children }: { children: React.ReactNode }) => 
-    React.createElement(TenantProvider, {}, children);
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(TenantProvider, { children });
 
   it('returns null for paid tier users', () => {
     // Mock useEntitlements to return paid tier

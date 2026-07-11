@@ -4,6 +4,7 @@ import {
   ArrowLeft, FileDown, Loader2, AlertTriangle, ShieldCheck, Hash,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
+import { SubscriptionLimitGuard } from '../../core/billing/SubscriptionLimitGuard';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import {
   fetchTenantEvents, fetchTenantAssets, fetchTenantPolicies,
@@ -189,14 +190,27 @@ function Inner() {
               <span>{error}</span>
             </div>
           )}
-          <button
-            onClick={generate}
-            disabled={busy || !activeTenantId}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
+          <SubscriptionLimitGuard
+            feature="reports.export"
+            featureName="Compliance Reports"
           >
-            {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Erzeuge Snapshot…</>
-                  : <><FileDown className="h-4 w-4" /> Report jetzt erzeugen + herunterladen</>}
-          </button>
+            {(allowed, onAttempt) => (
+              <button
+                onClick={() => {
+                  if (allowed) {
+                    generate();
+                  } else {
+                    onAttempt();
+                  }
+                }}
+                disabled={busy || !activeTenantId || !allowed}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
+              >
+                {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Erzeuge Snapshot…</>
+                      : <><FileDown className="h-4 w-4" /> Report jetzt erzeugen + herunterladen</>}
+              </button>
+            )}
+          </SubscriptionLimitGuard>
         </section>
 
         {lastReport && (

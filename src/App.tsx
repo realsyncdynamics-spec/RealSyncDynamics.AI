@@ -74,6 +74,13 @@ import { GovernanceRecommendation } from './pages/GovernanceRecommendation';
 // ── Geführter, seitenbasierter Flow (/flow/*) ──
 import { FlowProvider } from './flow/FlowContext';
 import { FlowStepRoute } from './flow/FlowStepRoute';
+// ── Phase 2: Onboarding Setup Assistant (Free Tier)
+const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
+// ── Phase 2: Dashboard Router (Adaptive based on tier)
+const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+// ── Phase 3: Advanced Governance Views
+const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
+const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -215,10 +222,10 @@ const GovernanceApiKeysView = lazy(() => import('./features/governance/Governanc
 const GovernanceWorkflowRecommendation = lazy(() => import('./features/governance/GovernanceWorkflowRecommendation').then((m) => ({ default: m.GovernanceWorkflowRecommendation })));
 // ── Phase 5A: ISO Templates & Advanced Reporting (3 new views)
 const IsoControlLibraryView = lazy(() => import('./features/governance/IsoControlLibraryView').then((m) => ({ default: m.IsoControlLibraryView })));
-const ReportBuilderView = lazy(() => import('./features/governance/ReportBuilderView').then((m) => ({ default: m.ReportBuilderView })));
+const ReportBuilderView = lazy(() => import('./features/governance/reporting/AdvancedReportingView').then((m) => ({ default: m.AdvancedReportingView })));
 const ComplianceRoadmapView = lazy(() => import('./features/governance/ComplianceRoadmapView').then((m) => ({ default: m.ComplianceRoadmapView })));
 // ── Phase 5B: Custom Frameworks & Integrations (3 new views)
-const CustomFrameworkBuilderView = lazy(() => import('./features/governance/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
+const CustomFrameworkBuilderView = lazy(() => import('./features/governance/frameworks/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
 const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
 const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
 // ── Phase 5C: Analytics, Bulk Operations, Collaboration (5 new views)
@@ -227,7 +234,8 @@ const BulkOperationsView = lazy(() => import('./features/governance/BulkOperatio
 const ComplianceCalendarView = lazy(() => import('./features/governance/ComplianceCalendarView').then((m) => ({ default: m.ComplianceCalendarView })));
 const AuditTrailView = lazy(() => import('./features/governance/AuditTrailView').then((m) => ({ default: m.AuditTrailView })));
 const GovernanceTeamView = lazy(() => import('./features/governance/GovernanceTeamView').then((m) => ({ default: m.GovernanceTeamView })));
-const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
+const GovernanceWebhooksView = lazy(() => import('./features/governance/webhooks/WebhooksView').then((m) => ({ default: m.WebhooksView })));
+const GovernanceTerminalView = lazy(() => import('./features/governance/terminal/TerminalSessionDashboard').then((m) => ({ default: m.TerminalSessionDashboard })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
 const GovernanceEventDetailView = lazy(() => import('./features/governance/EventDetailView').then((m) => ({ default: m.EventDetailView })));
@@ -465,6 +473,8 @@ function RoutesWithTracking() {
       {/* Onboarding nach Stripe-Checkout */}
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/setup" element={<Welcome />} />
+      {/* Phase 2: Free Tier Setup Assistant (3-step wizard) */}
+      <Route path="/setup-assistant" element={<AppGate><SetupAssistant /></AppGate>} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}
@@ -590,8 +600,8 @@ function RoutesWithTracking() {
       {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
-          Die View-eigenen Guards (AuthGate/RequireAal2) bleiben zusaetzlich aktiv. */}
-      <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
+          DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
+      <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
@@ -618,6 +628,9 @@ function RoutesWithTracking() {
       <Route path="/app/governance/audit-reports" element={<GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell>} />
       <Route path="/app/governance/api-keys" element={<GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/recommendation" element={<GovernanceWorkflowRecommendation />} />
+      {/* Phase 3: Advanced Governance Views */}
+      <Route path="/app/governance/frameworks" element={<AppGate><ComplianceFrameworkSelector /></AppGate>} />
+      <Route path="/app/governance/iso-42001-hub" element={<AppGate><GovernanceBrowserShell><Iso42001ComplianceHub /></GovernanceBrowserShell></AppGate>} />
       {/* Phase 5A: ISO Templates & Advanced Reporting */}
       <Route path="/app/governance/iso-control-library" element={<GovernanceBrowserShell><IsoControlLibraryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/report-builder" element={<GovernanceBrowserShell><ReportBuilderView /></GovernanceBrowserShell>} />
@@ -667,6 +680,7 @@ function RoutesWithTracking() {
       <Route path="/app/keys" element={<GovernanceBrowserShell><GovernanceKeysView /></GovernanceBrowserShell>} />
       <Route path="/app/vvt" element={<GovernanceBrowserShell><RuntimeVvtView /></GovernanceBrowserShell>} />
       <Route path="/app/webhooks" element={<GovernanceBrowserShell><GovernanceWebhooksView /></GovernanceBrowserShell>} />
+      <Route path="/app/terminal" element={<AppGate><GovernanceBrowserShell><GovernanceTerminalView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/onboarding" element={<GovernanceBrowserShell><GovernanceOnboardingView /></GovernanceBrowserShell>} />
       <Route path="/app/mappings" element={<GovernanceBrowserShell><GovernanceMappingsView /></GovernanceBrowserShell>} />
       <Route path="/app/events/:eventId" element={<GovernanceBrowserShell><GovernanceEventDetailView /></GovernanceBrowserShell>} />

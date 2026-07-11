@@ -1,122 +1,151 @@
-name: Deploy Frontend to Staging
+name: Deploy Frontend to Hostinger VPS
 
 on:
   push:
     branches:
-      - '**'
-      - '!main'
+      - main
     paths:
       - 'src/**'
+      - 'public/**'
       - 'package.json'
       - 'package-lock.json'
-      - 'tsconfig.json'
       - 'vite.config.ts'
-      - 'tailwind.config.ts'
-      - 'docker/realsync-web/**'
+      - 'tsconfig.json'
+      - 'tailwind.config.js'
+      - 'Dockerfile.frontend'
+      - 'deploy/frontend-vps-deploy-v2/**'
       - '.github/workflows/deploy-frontend-vps.yml'
-
-concurrency:
-  group: staging-deploy
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
-  deploy-staging:
+  deploy:
+    name: Build and deploy frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: github.event_name == 'push'
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: actions/checkout@v4
 
-      # Preflight: Ohne konfigurierte VPS-Secrets kann kein Staging-Deploy laufen.
-      # Statt hart zu scheitern (roter Check auf jedem Feature-Branch), wird der
-      # Deploy dann sauber übersprungen. Sind die Secrets gesetzt, läuft er normal.
-      - name: Check deploy secrets
-        id: preflight
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
-        run: |
-          if [ -n "$VPS_HOST" ] && [ -n "$VPS_USER" ] && [ -n "$VPS_SSH_KEY" ] && [ -n "$VPS_DEPLOY_PATH" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "ℹ️  VPS-Staging-Secrets sind nicht konfiguriert — Staging-Deploy wird übersprungen."
-            echo "    Zum Aktivieren VPS_HOST / VPS_USER / VPS_SSH_KEY / VPS_DEPLOY_PATH als Repo-Secrets setzen."
-          fi
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Deploy to Staging
-        if: steps.preflight.outputs.configured == 'true'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run linting
+        run: npm run lint 2>&1 | tee /tmp/lint.log
+        continue-on-error: true
+
+      - name: Run type check
+        run: npx tsc --noEmit 2>&1 | tee /tmp/typecheck.log
+        continue-on-error: true
+
+      - name: Build frontend
+        run: npm run build
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
-          GITHUB_BRANCH: ${{ github.ref_name }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+
+      - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          echo "${{ secrets.VPS_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" << 'EOF'
-          set -e
+      - name: Sync source to VPS
+        run: |
+          rsync -avz \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env*' \
+            --exclude='dist' \
+            . ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/var/www/realsyncdynamicsai-frontend/
 
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "📦 Deploying to STAGING (test.realsyncdynamicsai.de)"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Branch: $GITHUB_BRANCH"
-          echo "Time: $(date)"
+      - name: Deploy on VPS via Docker Compose
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
+          set -Eeuo pipefail
 
-          cd "$VPS_DEPLOY_PATH"
+          REPO_PATH="/var/www/realsyncdynamicsai-frontend"
+          COMPOSE_DIR="$REPO_PATH/deploy/frontend-vps-deploy-v2"
+          ENV_FILE="$COMPOSE_DIR/.env"
 
-          # Pull latest code
-          git fetch origin
-          git checkout "origin/$GITHUB_BRANCH"
-
-          # Deploy to staging
-          cd docker/realsync-web-staging
-          echo ""
-          echo "[1/4] Building Docker image..."
-          docker compose build --progress=plain
-
-          echo ""
-          echo "[2/4] Starting container..."
-          docker compose up -d
-
-          echo ""
-          echo "[3/4] Waiting for healthcheck..."
-          sleep 8
-
-          echo ""
-          echo "[4/4] Verifying deployment..."
-          if docker compose ps | grep -q "healthy"; then
-            echo "✅ Staging deployment successful"
-            echo ""
-            echo "Preview URL: https://test.realsyncdynamicsai.de"
-            echo "Branch: $GITHUB_BRANCH"
-          else
-            echo "❌ Container not healthy!"
-            docker compose logs
+          if [[ ! -f "$ENV_FILE" ]]; then
+            echo "ERROR: $ENV_FILE nicht vorhanden. Deployment abgebrochen."
             exit 1
           fi
+
+          cd "$COMPOSE_DIR"
+
+          # Tag vorheriges Image für Rollback
+          if docker image inspect realsync-frontend:latest >/dev/null 2>&1; then
+            docker image tag realsync-frontend:latest realsync-frontend:previous || true
+            echo "✓ Rollback-Tag gesetzt: realsync-frontend:previous"
+          fi
+
+          # Build und starten
+          docker compose --env-file "$ENV_FILE" up -d --build
+          docker image prune -f >/dev/null 2>&1 || true
+
+          # Auf healthy warten (max. 60s)
+          echo -n "⏳ Warte auf healthy "
+          for i in {1..30}; do
+            STATUS="$(docker inspect -f '{{.State.Health.Status}}' realsync-frontend 2>/dev/null || echo missing)"
+            if [[ "$STATUS" == "healthy" ]]; then
+              echo " ✓"
+              break
+            fi
+            echo -n "."
+            sleep 2
+          done
+
+          if [[ "${STATUS:-}" != "healthy" ]]; then
+            echo " FEHLER"
+            docker compose logs --tail=50 frontend
+            exit 4
+          fi
+
+          # Smoke-Test
+          if curl -fsS "http://127.0.0.1:8090/healthz" >/dev/null 2>&1; then
+            echo "✓ /healthz reachable"
+          else
+            echo "⚠ Warnung: /healthz auf 127.0.0.1:8090 nicht erreichbar"
+          fi
+
+          echo "✓ Frontend deployment erfolgreich"
           EOF
 
-  notify:
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Status check
+      - name: Verify public URL
         run: |
-          echo "Deployment Status: ${{ needs.deploy-staging.result }}"
-          if [ "${{ needs.deploy-staging.result }}" != "success" ]; then
-            echo "❌ Staging deployment failed"
-            exit 1
+          echo "⏳ Warte auf nginx propagation (5s)..."
+          sleep 5
+
+          if curl -fsSL https://realsyncdynamicsai.de/healthz >/dev/null 2>&1; then
+            echo "✓ https://realsyncdynamicsai.de erreichbar"
           else
-            echo "✅ Staging deployment successful"
-            echo "Preview: https://test.realsyncdynamicsai.de"
+            echo "⚠ Warnung: https://realsyncdynamicsai.de nicht sofort erreichbar (könnte sein, dass nginx noch lädt)"
+          fi
+
+      - name: Log summary
+        if: always()
+        run: |
+          echo "## Deploy Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** main" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend URL:** https://realsyncdynamicsai.de" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Linting & Type Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ -f /tmp/lint.log ]]; then
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            head -20 /tmp/lint.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi

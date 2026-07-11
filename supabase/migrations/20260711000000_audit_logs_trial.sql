@@ -32,7 +32,7 @@ CREATE POLICY "audit_logs tenant-read"
 -- Service role can insert (from Edge Functions)
 CREATE POLICY "audit_logs service-write"
   ON public.audit_logs FOR INSERT
-  USING (auth.role() = 'service_role');
+  WITH CHECK (auth.role() = 'service_role');
 
 -- Indices for query performance
 CREATE INDEX idx_audit_logs_tenant ON public.audit_logs(tenant_id);

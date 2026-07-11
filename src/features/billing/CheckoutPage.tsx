@@ -52,13 +52,21 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free: redirect away — diese Page nicht zustaendig
+  // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free') {
+    if (planKey === 'free_audit') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
       return;
     }
-  }, [planKey, navigate]);
+    if (planKey === 'enterprise') {
+      navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
+      return;
+    }
+    if (!validPlan && planKey) {
+      navigate('/pricing?source=checkout-invalid', { replace: true });
+      return;
+    }
+  }, [planKey, validPlan, navigate]);
 
   // 3. Auth-State + Membership-Lookup
   useEffect(() => {
@@ -217,6 +225,7 @@ function ShellWithMessage({
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -282,11 +291,12 @@ function NoUserShell({
   magicLinkHref: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -376,6 +386,7 @@ function ConsentGateShell({
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
+          data-testid="checkout-back"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -395,11 +406,17 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot ? (
-            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
-              14 Tage kostenlos testen · keine Kosten bis Tag 15
-            </p>
-          ) : (
+          {isPilot && (
+            <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
+              <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
+                ✅ 14 TAGE KOSTENLOS
+              </p>
+              <p className="font-mono text-xs text-emerald-200">
+                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+              </p>
+            </div>
+          )}
+          {!isPilot && (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>

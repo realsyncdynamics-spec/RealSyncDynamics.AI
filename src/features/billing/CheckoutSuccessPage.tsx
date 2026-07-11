@@ -28,6 +28,7 @@ export function CheckoutSuccessPage() {
     status: string;
     trialEnds?: string;
   } | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
 
   useEffect(() => {
     if (!activeTenantId) {
@@ -38,6 +39,24 @@ export function CheckoutSuccessPage() {
 
     verifyCheckoutSession();
   }, [activeTenantId]);
+
+  // Auto-redirect zum Dashboard nach 5 Sekunden
+  useEffect(() => {
+    if (subscription && !error && !isVerifying) {
+      const timer = setTimeout(() => {
+        navigate('/app');
+      }, 5000);
+
+      const countdown = setInterval(() => {
+        setRedirectCountdown((prev) => prev - 1);
+      }, 1000);
+
+      return () => {
+        clearTimeout(timer);
+        clearInterval(countdown);
+      };
+    }
+  }, [subscription, error, isVerifying, navigate]);
 
   const verifyCheckoutSession = async () => {
     try {
@@ -157,6 +176,10 @@ export function CheckoutSuccessPage() {
             </button>
           )}
         </div>
+
+        <p className="text-center text-xs text-titanium-500 mt-4 font-mono">
+          Weiterleitung zum Dashboard in {redirectCountdown} Sekunde{redirectCountdown !== 1 ? 'n' : ''}…
+        </p>
       </div>
     </div>
   );

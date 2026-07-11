@@ -2,42 +2,99 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
+/**
+ * Pricing-Flow E2E — getestet wird das REALE Produkt:
+ *
+ * - /pricing rendert 9 Karten aus PUBLIC_PRICING_TIERS (src/config/pricing.ts):
+ *   free, starter, growth, agency, scale + 4 Jahres-Varianten.
+ *   Enterprise ist BEWUSST keine Karte, sondern ein eigener Anfrage-Banner
+ *   (Design-Entscheidung, siehe Kommentar zu PUBLIC_PRICING_TIERS).
+ * - /pricing/:slug rendert Detailseiten aus src/content/pricingContent.ts
+ *   (Slugs: free-audit, starter, growth, agency, scale, enterprise + yearly).
+ *   /pricing/free leitet per Alias auf /pricing/free-audit um.
+ * - /checkout/:planKey ist die echte Stripe-Checkout-Bridge
+ *   (src/features/billing/CheckoutPage.tsx): anonyme Besucher sehen den
+ *   Login-Shell (data-testid="checkout-auth-required"); free_audit leitet
+ *   nach /audit um, enterprise nach /contact-sales.
+ */
+
+// Karten-Ids auf /pricing — identisch zu TierId in src/config/pricing.ts.
+const CARD_IDS = [
+  'free',
+  'starter',
+  'growth',
+  'agency',
+  'scale',
+  'starter_yearly',
+  'growth_yearly',
+  'agency_yearly',
+  'scale_yearly',
+];
+
+// Detailseiten-Slugs — identisch zu pricingPlans in src/content/pricingContent.ts.
+const DETAIL_SLUGS = [
+  'free-audit',
+  'starter',
+  'growth',
+  'agency',
+  'scale',
+  'enterprise',
+  'starter_yearly',
+  'growth_yearly',
+  'agency_yearly',
+  'scale_yearly',
+];
+
+// Selbst buchbare Checkout-PlanKeys (VALID_PLAN_KEYS der CheckoutPage).
+const CHECKOUT_PLAN_KEYS = [
+  'starter',
+  'growth',
+  'agency',
+  'scale',
+  'starter_yearly',
+  'growth_yearly',
+  'agency_yearly',
+  'scale_yearly',
+];
+
 test.describe('Pricing Flow', () => {
   test.describe('Pricing Overview (/pricing)', () => {
     test('should load pricing page and display all pricing packages', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      // Check page title
-      await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete/);
+      await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete|[Pp]reise/);
 
-      // Check all pricing cards are present (6 base + 4 yearly variants = 10 total)
+      // 5 Basis-Karten + 4 Jahres-Varianten = 9 Karten.
+      // Enterprise ist bewusst keine Karte (eigener Banner unterhalb des Grids).
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       const cardCount = await pricingCards.count();
-      expect(cardCount).toBe(10);
+      expect(cardCount).toBe(CARD_IDS.length);
     });
 
-    test('should display all expected plan slugs as cards', async ({ page }) => {
+    test('should display all expected plan cards', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      const expectedSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
-        'starter_yearly',
-        'growth_yearly',
-        'agency_yearly',
-        'scale_yearly',
-      ];
-
-      for (const slug of expectedSlugs) {
-        const card = page.locator(`[data-testid="pricing-card-${slug}"]`);
+      for (const id of CARD_IDS) {
+        const card = page.locator(`[data-testid="pricing-card-${id}"]`);
         await expect(card).toBeVisible();
       }
+    });
+
+    test('Enterprise should appear as inquiry banner, not as card', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing`);
+      await page.waitForLoadState('networkidle');
+
+      // Keine Enterprise-Karte im Grid …
+      const enterpriseCard = page.locator('[data-testid="pricing-card-enterprise"]');
+      await expect(enterpriseCard).toHaveCount(0);
+
+      // … aber ein Banner mit Anfrage-CTA nach /contact-sales.
+      const enterpriseBanner = page.locator('text=Enterprise').first();
+      await expect(enterpriseBanner).toBeVisible();
+      const contactLink = page.locator('a[href*="/contact-sales"]').first();
+      await expect(contactLink).toBeVisible();
     });
 
     test('Growth plan should be marked as recommended', async ({ page }) => {
@@ -47,8 +104,9 @@ test.describe('Pricing Flow', () => {
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
       await expect(growthCard).toBeVisible();
 
-      // Check for "Empfohlen" badge
-      const badge = growthCard.locator('text=Empfohlen');
+      // .first(): die Growth-Karte trägt „Empfohlen" doppelt
+      // (Highlight-Badge + Badge-Chip) — strict mode braucht Eindeutigkeit.
+      const badge = growthCard.locator('text=Empfohlen').first();
       await expect(badge).toBeVisible();
     });
 
@@ -56,47 +114,21 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      const expectedSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
-        'starter_yearly',
-        'growth_yearly',
-        'agency_yearly',
-        'scale_yearly',
-      ];
-
-      for (const slug of expectedSlugs) {
+      for (const id of CARD_IDS) {
         const infoButton = page.locator(
-          `[data-testid="pricing-card-${slug}"] [data-testid="pricing-info-${slug}"]`
+          `[data-testid="pricing-card-${id}"] [data-testid="pricing-info-${id}"]`
         );
         await expect(infoButton).toBeVisible();
       }
     });
 
-    test('should have checkout buttons for each plan', async ({ page }) => {
+    test('should have booking buttons for each plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      const expectedSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
-        'starter_yearly',
-        'growth_yearly',
-        'agency_yearly',
-        'scale_yearly',
-      ];
-
-      for (const slug of expectedSlugs) {
+      for (const id of CARD_IDS) {
         const bookButton = page.locator(
-          `[data-testid="pricing-card-${slug}"] [data-testid="pricing-book-${slug}"]`
+          `[data-testid="pricing-card-${id}"] [data-testid="pricing-book-${id}"]`
         );
         await expect(bookButton).toBeVisible();
       }
@@ -111,7 +143,6 @@ test.describe('Pricing Flow', () => {
       const infoButton = page.locator('[data-testid="pricing-info-growth"]');
       await infoButton.click();
 
-      // Should be on plan detail page
       await expect(page).toHaveURL(/\/pricing\/growth/);
       await page.waitForLoadState('networkidle');
 
@@ -120,16 +151,7 @@ test.describe('Pricing Flow', () => {
     });
 
     test('all plan detail pages should be accessible', async ({ page }) => {
-      const planSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
-      ];
-
-      for (const slug of planSlugs) {
+      for (const slug of DETAIL_SLUGS) {
         await page.goto(`${BASE_URL}/pricing/${slug}`);
         await page.waitForLoadState('networkidle');
 
@@ -138,12 +160,53 @@ test.describe('Pricing Flow', () => {
       }
     });
 
+    test('free card info link should resolve to free-audit detail page', async ({ page }) => {
+      // Die Free-Karte verlinkt auf /pricing/free — der Wrapper leitet per
+      // Slug-Alias auf die kanonische Detailseite /pricing/free-audit um.
+      await page.goto(`${BASE_URL}/pricing/free`);
+      await page.waitForLoadState('networkidle');
+
+      await expect(page).toHaveURL(/\/pricing\/free-audit/);
+      const planDetail = page.locator('[data-testid="plan-detail-free-audit"]');
+      await expect(planDetail).toBeVisible();
+    });
+
+    test('yearly plan should display annual billing period', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing/growth_yearly`);
+      await page.waitForLoadState('networkidle');
+
+      const annualLabel = page.locator('text=/pro Jahr|12 Monate/i').first();
+      await expect(annualLabel).toBeVisible();
+    });
+
+    test('yearly plan pricing should reflect 2-month discount', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing/growth_yearly`);
+      await page.waitForLoadState('networkidle');
+
+      // Growth jährlich: 249 € × 10 = 2.490 € (deutsches Zahlenformat)
+      const price = page.locator('text=2.490 €').first();
+      await expect(price).toBeVisible();
+    });
+
+    test('yearly vs monthly pricing difference should be clear', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing/growth`);
+      await page.waitForLoadState('networkidle');
+      const monthlyPrice = page.locator('text=249 €').first();
+      await expect(monthlyPrice).toBeVisible();
+
+      await page.goto(`${BASE_URL}/pricing/growth_yearly`);
+      await page.waitForLoadState('networkidle');
+      const yearlyPrice = page.locator('text=2.490 €').first();
+      await expect(yearlyPrice).toBeVisible();
+      // 2.490 € < 12 × 249 € = 2.988 € → Rabatt implizit belegt.
+    });
+
     test('plan detail page should display plan name', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('networkidle');
 
       const planName = page.locator('h2:has-text("Growth")');
-      await expect(planName).toBeVisible();
+      await expect(planName.first()).toBeVisible();
     });
 
     test('plan detail page should have features list', async ({ page }) => {
@@ -159,7 +222,6 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing/starter`);
       await page.waitForLoadState('networkidle');
 
-      // Should have previous/next buttons
       const nextButton = page.locator('[data-testid="plan-nav-next"]');
       await expect(nextButton).toBeVisible();
 
@@ -174,7 +236,6 @@ test.describe('Pricing Flow', () => {
       const nextButton = page.locator('[data-testid="plan-nav-next"]');
       await nextButton.click();
 
-      // Should be on growth plan
       await expect(page).toHaveURL(/\/pricing\/growth/);
     });
 
@@ -185,7 +246,6 @@ test.describe('Pricing Flow', () => {
       const prevButton = page.locator('[data-testid="plan-nav-prev"]');
       await prevButton.click();
 
-      // Should be on starter plan
       await expect(page).toHaveURL(/\/pricing\/starter/);
     });
 
@@ -193,16 +253,13 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Click first feature link
       const firstFeatureLink = page.locator('[data-testid^="feature-link-"]').first();
       const href = await firstFeatureLink.getAttribute('href');
       expect(href).toMatch(/\/features\/[a-z-]+/);
 
-      // Navigate to that feature
       await firstFeatureLink.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be on feature detail page
       await expect(page).toHaveURL(/\/features\/[a-z-]+/);
     });
 
@@ -222,7 +279,6 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Click first feature link
       const firstFeatureLink = page.locator('[data-testid^="feature-link-"]').first();
       const featureSlug = await firstFeatureLink.getAttribute('data-testid');
       const expectedFeatureSlug = featureSlug?.replace('feature-link-', '');
@@ -272,7 +328,6 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const featureTitle = page.locator('h1, h2');
-      // Should contain feature name
       const titleText = await featureTitle.first().textContent();
       expect(titleText?.toLowerCase()).toContain('dsgvo');
     });
@@ -281,7 +336,6 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
       await page.waitForLoadState('networkidle');
 
-      // dsgvo-scan is in all plans (including yearly variants), should see plan links
       const planLinks = page.locator('[data-testid^="feature-plan-link-"]');
       const planCount = await planLinks.count();
       expect(planCount).toBeGreaterThan(0);
@@ -299,7 +353,6 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
       await page.waitForLoadState('networkidle');
 
-      // Should have at least one "view plan" button
       const viewPlanButtons = page.locator('[data-testid^="feature-view-plan-"]');
       const buttonCount = await viewPlanButtons.count();
       expect(buttonCount).toBeGreaterThan(0);
@@ -309,17 +362,15 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
       await page.waitForLoadState('networkidle');
 
-      // Click first "view plan" button
       const viewPlanButton = page.locator('[data-testid^="feature-view-plan-"]').first();
       await viewPlanButton.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be on plan detail page
-      await expect(page).toHaveURL(/\/pricing\/[a-z-]+/);
+      await expect(page).toHaveURL(/\/pricing\/[a-z-_]+/);
     });
   });
 
-  test.describe('Checkout Flow', () => {
+  test.describe('Checkout Flow (Stripe-Bridge)', () => {
     test('should navigate to checkout page from pricing', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
@@ -327,79 +378,81 @@ test.describe('Pricing Flow', () => {
       const bookButton = page.locator('[data-testid="pricing-book-growth"]');
       await bookButton.click();
 
-      // Should be on checkout page
       await expect(page).toHaveURL(/\/checkout\/growth/);
       await page.waitForLoadState('networkidle');
 
-      const checkoutPlan = page.locator('[data-testid="checkout-plan-growth"]');
-      await expect(checkoutPlan).toBeVisible();
+      // Anonyme Besucher sehen den Login-Shell der Stripe-Checkout-Bridge.
+      const authShell = page.locator('[data-testid="checkout-auth-required"]');
+      await expect(authShell).toBeVisible();
     });
 
-    test('all checkout pages should be accessible', async ({ page }) => {
-      const planSlugs = [
-        'free-audit',
-        'starter',
-        'growth',
-        'agency',
-        'scale',
-        'enterprise',
-        'starter_yearly',
-        'growth_yearly',
-        'agency_yearly',
-        'scale_yearly',
-      ];
-
-      for (const slug of planSlugs) {
-        await page.goto(`${BASE_URL}/checkout/${slug}`);
+    test('all bookable checkout pages should be accessible', async ({ page }) => {
+      for (const planKey of CHECKOUT_PLAN_KEYS) {
+        await page.goto(`${BASE_URL}/checkout/${planKey}`);
         await page.waitForLoadState('networkidle');
 
-        const checkoutPlan = page.locator(`[data-testid="checkout-plan-${slug}"]`);
-        await expect(checkoutPlan).toBeVisible();
+        // URL bleibt auf dem Checkout (kein Redirect) …
+        expect(page.url()).toContain(`/checkout/${planKey}`);
+        // … und der Login-Shell wird angezeigt (nicht eingeloggt).
+        const authShell = page.locator('[data-testid="checkout-auth-required"]');
+        await expect(authShell).toBeVisible();
       }
     });
 
-    test('checkout page should display plan summary', async ({ page }) => {
+    test('checkout page should name the selected plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Should show plan name
-      const planName = page.locator('text=Growth');
+      // Login-Shell-Titel: „Anmelden, um Growth zu buchen"
+      const planName = page.locator('h1:has-text("Growth")');
       await expect(planName).toBeVisible();
-
-      // Should show price
-      const price = page.locator('text=249 €');
-      await expect(price).toBeVisible();
     });
 
-    test('checkout page should show featured features', async ({ page }) => {
+    test('checkout page should offer login options', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Should have features section
-      const featuresSection = page.locator('text=Was ist alles enthalten');
-      await expect(featuresSection).toBeVisible();
-
-      // Should have feature items
-      const features = page.locator('[data-testid^="checkout-feature-"]');
-      const featureCount = await features.count();
-      expect(featureCount).toBeGreaterThan(0);
+      // Magic-Link-Fallback führt nach /welcome mit Rücksprung zum Checkout.
+      const magicLink = page.locator('a[href*="/welcome"]');
+      await expect(magicLink.first()).toBeVisible();
     });
 
-    test('checkout page should have FAQ section', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/growth`);
-      await page.waitForLoadState('networkidle');
-
-      // Should have FAQ section
-      const faqSection = page.locator('text=Häufige Fragen');
-      await expect(faqSection).toBeVisible();
+    test('free audit plan should redirect to audit page', async ({ page }) => {
+      // free_audit braucht keinen Checkout — die CheckoutPage leitet nach /audit um.
+      await page.goto(`${BASE_URL}/checkout/free_audit`);
+      await page.waitForURL(/\/audit/);
+      await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('checkout page should have booking button', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/growth`);
+    test('enterprise checkout should redirect to contact sales', async ({ page }) => {
+      await page.goto(`${BASE_URL}/checkout/enterprise`);
+      await page.waitForURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/\/contact-sales/);
+    });
+  });
+
+  test.describe('Yearly Plan Checkout', () => {
+    test('should navigate to yearly plan checkout from pricing card', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      const bookButton = page.locator('[data-testid="checkout-book-button"]');
-      await expect(bookButton).toBeVisible();
+      const bookButton = page.locator('[data-testid="pricing-book-growth_yearly"]');
+      await bookButton.click();
+
+      await expect(page).toHaveURL(/\/checkout\/growth_yearly/);
+      await page.waitForLoadState('networkidle');
+
+      const authShell = page.locator('[data-testid="checkout-auth-required"]');
+      await expect(authShell).toBeVisible();
+    });
+
+    test('yearly checkout should name the annual plan', async ({ page }) => {
+      await page.goto(`${BASE_URL}/checkout/growth_yearly`);
+      await page.waitForLoadState('networkidle');
+
+      // Login-Shell-Titel: „Anmelden, um Growth (Jährlich) zu buchen"
+      const annualLabel = page.locator('text=/Jährlich/i').first();
+      await expect(annualLabel).toBeVisible();
     });
 
     test('free-audit checkout should redirect to audit page', async ({ page }) => {
@@ -432,7 +485,6 @@ test.describe('Pricing Flow', () => {
       await backButton.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be back on pricing page
       await expect(page).toHaveURL(/\/pricing$/);
     });
 
@@ -446,7 +498,6 @@ test.describe('Pricing Flow', () => {
       await backButton.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be back on pricing page
       await expect(page).toHaveURL(/\/pricing$/);
     });
 
@@ -460,8 +511,8 @@ test.describe('Pricing Flow', () => {
       await backButton.click();
       await page.waitForLoadState('networkidle');
 
-      // Should be back on plan detail page
-      await expect(page).toHaveURL(/\/pricing\/growth/);
+      // Der Checkout-Backlink führt zur Paketübersicht.
+      await expect(page).toHaveURL(/\/pricing$/);
     });
   });
 
@@ -471,7 +522,7 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('networkidle');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
-      const badge = growthCard.locator('text=Empfohlen');
+      const badge = growthCard.locator('text=Empfohlen').first();
       await expect(badge).toBeVisible();
     });
 
@@ -479,29 +530,23 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('networkidle');
 
-      // Should indicate it's the recommended plan
-      const recommendedBadge = page.locator('text=Empfohlen');
+      const recommendedBadge = page.locator('text=Empfohlen').first();
       await expect(recommendedBadge).toBeVisible();
     });
 
-    test('only Growth plan should have recommended badge', async ({ page }) => {
+    test('only Growth variants should have recommended badge', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      // Check each plan individually
-      const planSlugs = [
-        'free-audit',
-        'starter',
-        'agency',
-        'scale',
-        'enterprise',
-      ];
+      // Growth (monatlich) und Growth (Jährlich) sind highlight-Tiers —
+      // alle anderen Karten dürfen kein „Empfohlen"-Badge tragen.
+      const nonRecommended = CARD_IDS.filter(
+        (id) => id !== 'growth' && id !== 'growth_yearly'
+      );
 
-      for (const slug of planSlugs) {
-        const card = page.locator(`[data-testid="pricing-card-${slug}"]`);
+      for (const id of nonRecommended) {
+        const card = page.locator(`[data-testid="pricing-card-${id}"]`);
         const badge = card.locator('text=Empfohlen');
-
-        // Badge should not be visible for non-Growth plans
         const isVisible = await badge.isVisible().catch(() => false);
         expect(isVisible).toBe(false);
       }
@@ -510,15 +555,10 @@ test.describe('Pricing Flow', () => {
 
   test.describe('No Dead Links', () => {
     test('all internal links should be valid', async ({ page }) => {
-      // Test that all navigation works without 404s
-      const paths = [
+      // Pfade, die ohne Redirect erreichbar bleiben müssen.
+      const stablePaths = [
         '/pricing',
-        '/pricing/free-audit',
-        '/pricing/starter',
-        '/pricing/growth',
-        '/pricing/agency',
-        '/pricing/scale',
-        '/pricing/enterprise',
+        ...DETAIL_SLUGS.map((slug) => `/pricing/${slug}`),
         '/features/dsgvo-scan',
         '/features/consent-timing',
         '/features/privacy-policy-generator',
@@ -537,42 +577,43 @@ test.describe('Pricing Flow', () => {
         '/features/white-label',
         '/features/multi-tenant-dashboard',
         '/features/kodee-vps-assistent',
-        '/checkout/free-audit',
-        '/checkout/starter',
-        '/checkout/growth',
-        '/checkout/agency',
-        '/checkout/scale',
-        '/checkout/enterprise',
+        ...CHECKOUT_PLAN_KEYS.map((key) => `/checkout/${key}`),
       ];
 
-      for (const path of paths) {
+      for (const path of stablePaths) {
         await page.goto(`${BASE_URL}${path}`);
         await page.waitForLoadState('networkidle');
+        expect(page.url()).toContain(path);
+      }
+    });
 
-        // Should not have 404
-        const status = page.url();
-        expect(status).toContain(path);
+    test('redirect paths should land on their canonical targets', async ({ page }) => {
+      // Bewusste Redirects — kein 404, sondern kanonisches Ziel.
+      const redirects: Array<{ from: string; to: RegExp }> = [
+        { from: '/pricing/free', to: /\/pricing\/free-audit/ },
+        { from: '/checkout/free_audit', to: /\/audit/ },
+        { from: '/checkout/enterprise', to: /\/contact-sales/ },
+      ];
+
+      for (const { from, to } of redirects) {
+        await page.goto(`${BASE_URL}${from}`);
+        await page.waitForURL(to);
+        await expect(page).toHaveURL(to);
       }
     });
 
     test('invalid plan slug should redirect to /pricing', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/invalid-slug`, { waitUntil: 'networkidle' });
-
-      // Should redirect or show pricing page
       await expect(page).toHaveURL(/\/pricing/);
     });
 
     test('invalid feature slug should redirect to /pricing', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/invalid-slug`, { waitUntil: 'networkidle' });
-
-      // Should redirect or show pricing page
       await expect(page).toHaveURL(/\/pricing/);
     });
 
     test('invalid checkout slug should redirect to /pricing', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/invalid-slug`, { waitUntil: 'networkidle' });
-
-      // Should redirect or show pricing page
       await expect(page).toHaveURL(/\/pricing/);
     });
   });

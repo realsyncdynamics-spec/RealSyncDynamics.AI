@@ -312,6 +312,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Kontinuierliche DSGVO-Compliance',
     ],
     highlight: false,
+    badges: ['Sparen Sie 2 Monate'],
     cta: { label: '14 Tage kostenlos testen', href: '/checkout/starter_yearly?source=pricing&pilot=true' },
     botsQuota: {
       maxBots: 1,
@@ -370,6 +371,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Branchenbibliothek + White-Label (ganz Jahr)',
     ],
     highlight: false,
+    badges: ['Mit Rabatt'],
     cta: { label: 'Agency jährlich testen', href: '/checkout/agency_yearly?source=pricing&pilot=true' },
     botsQuota: {
       maxBots: 10,

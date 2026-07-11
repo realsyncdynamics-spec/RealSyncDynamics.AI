@@ -12,8 +12,8 @@ import {
 
 describe('pricingContent', () => {
   describe('Content Structure', () => {
-    it('should have 6 pricing plans', () => {
-      expect(pricingPlans.length).toBe(6);
+    it('should have 10 pricing plans (6 base + 4 yearly variants)', () => {
+      expect(pricingPlans.length).toBe(10);
     });
 
     it('should have 18 features', () => {
@@ -284,9 +284,9 @@ describe('pricingContent', () => {
       expect(enterpriseFeatures.length).toBe(18);
     });
 
-    it('feature dsgvo-scan should be in all 6 plans', () => {
+    it('feature dsgvo-scan should be in all 10 plans', () => {
       const dsgvoFeature = getFeatureBySlug('dsgvo-scan');
-      expect(dsgvoFeature?.includedInPlans.length).toBe(6);
+      expect(dsgvoFeature?.includedInPlans.length).toBe(10);
     });
   });
 

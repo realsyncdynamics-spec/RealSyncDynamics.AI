@@ -59,7 +59,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Der DSGVO-Scan prüft automatisch, welche Datenschutzrisiken auf einer Website sichtbar sind.',
     whyItMatters: 'Viele Websites binden Dienste, Cookies, Tracker, Schriftarten, Karten, Videos oder Analyse-Tools ein, ohne dass Betreiber genau wissen, wann diese geladen werden und ob die Datenschutzerklärung dazu passt.',
     customerBenefit: 'Der Kunde erhält eine klare Übersicht, welche Risiken bestehen und was konkret verbessert werden sollte.',
-    includedInPlans: ['Free Audit', 'Starter', 'Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Free Audit', 'Starter', 'Growth', 'Agency', 'Scale', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'consent-timing',
@@ -68,7 +68,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Die Consent-Timing-Analyse prüft, ob Tracking-Dienste bereits vor einer aktiven Cookie-Einwilligung geladen werden.',
     whyItMatters: 'Wenn Tracker vor Zustimmung feuern, kann das datenschutzrechtlich problematisch sein.',
     customerBenefit: 'Der Kunde erkennt, ob sein Cookie-Banner nur optisch vorhanden ist oder technisch wirklich funktioniert.',
-    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'privacy-policy-generator',
@@ -77,7 +77,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Der Generator erstellt eine passende Datenschutzerklärung auf Basis der gefundenen Dienste und Website-Funktionen.',
     whyItMatters: 'Eine Datenschutzerklärung ist nur dann hilfreich, wenn sie zur tatsächlichen Website passt.',
     customerBenefit: 'Der Kunde spart Zeit und erhält eine strukturierte Grundlage für seine Datenschutzdokumentation.',
-    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'evidence-vault',
@@ -86,7 +86,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Der Evidence Vault speichert Prüfungen, Ergebnisse und Nachweise nachvollziehbar ab.',
     whyItMatters: 'Compliance ist nicht nur die Behebung eines Problems. Wichtig ist auch der Nachweis, dass geprüft, bewertet und gehandelt wurde.',
     customerBenefit: 'Der Kunde kann gegenüber Datenschutzbeauftragten, internen Stellen oder externen Prüfern belegen, welche Prüfungen durchgeführt wurden.',
-    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'monitoring',
@@ -95,7 +95,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Monitoring prüft regelmäßig, ob sich auf einer Website etwas verändert hat.',
     whyItMatters: 'Websites ändern sich ständig: neue Plugins, neue Skripte, neue Tracking-Dienste, neue Formulare oder externe Einbindungen.',
     customerBenefit: 'Der Kunde erkennt Änderungen frühzeitig, statt Risiken erst Monate später zu bemerken.',
-    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'scheduler',
@@ -104,7 +104,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Der Scheduler plant automatische Scans täglich, wöchentlich oder monatlich.',
     whyItMatters: 'Regelmäßige Prüfung muss nicht manuell angestoßen werden.',
     customerBenefit: 'Der Kunde erhält einen wiederholbaren Prüfprozess und kann Compliance als laufenden Prozess betreiben.',
-    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Starter', 'Growth', 'Agency', 'Scale', 'Enterprise', 'Starter (Jährlich)', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'auto-remediation',
@@ -113,7 +113,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Auto-Remediation liefert konkrete Lösungsvorschläge und Copy-Paste-Code für typische Probleme.',
     whyItMatters: 'Viele Tools zeigen nur ein Problem. RealSyncDynamics.AI zeigt dem Kunden auch, wie es gelöst werden kann.',
     customerBenefit: 'Der Kunde kann technische Korrektionen schneller umsetzen oder an Entwickler weitergeben.',
-    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'ai-risk-register',
@@ -122,7 +122,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Das AI Risk Register sammelt KI-Tools, KI-Anwendungsfälle, Risiken, Verantwortlichkeiten und Maßnahmen an einem Ort.',
     whyItMatters: 'Unternehmen nutzen oft KI, ohne zentrale Übersicht über Tools, Daten, Risiken und Zuständigkeiten zu haben.',
     customerBenefit: 'Der Kunde bekommt eine strukturierte Grundlage für KI-Governance und interne Kontrolle.',
-    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'ki-governance',
@@ -131,7 +131,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'KI-Governance hilft Unternehmen, den Einsatz von KI-Systemen zu erfassen, zu bewerten und zu dokumentieren.',
     whyItMatters: 'KI-Nutzung muss nachvollziehbar, verantwortbar und prüfbar sein, besonders bei sensiblen Daten oder regulierten Prozessen.',
     customerBenefit: 'Der Kunde kann KI-Nutzung nicht nur technisch, sondern organisatorisch steuern.',
-    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'governance-agents',
@@ -140,7 +140,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Governance Agents sind intelligente Assistenten, die Prüf-, Dokumentations- und Analyseaufgaben unterstützen.',
     whyItMatters: 'Viele Compliance-Aufgaben sind wiederkehrend und zeitintensiv.',
     customerBenefit: 'Der Kunde spart Zeit und bekommt strukturierte Unterstützung bei laufender Governance-Arbeit.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'bots',
@@ -149,7 +149,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Bots unterstützen Kundenservice, Terminbuchung, Bestellannahmen oder einfache Support-Prozesse über Chat, Telegram, WhatsApp oder Voice.',
     whyItMatters: 'Viele Unternehmen brauchen automatisierte Kommunikation, ohne sofort ein eigenes KI-System aufzubauen.',
     customerBenefit: 'Der Kunde kann wiederkehrende Anfragen automatisieren und gleichzeitig Governance und Nachweisbarkeit berücksichtigen.',
-    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Growth', 'Agency', 'Scale', 'Enterprise', 'Growth (Jährlich)', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'bulk-jobs',
@@ -158,7 +158,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Bulk Jobs ermöglichen die automatisierte Prüfung vieler Websites, Seiten oder Kundenprojekte in einem Durchlauf.',
     whyItMatters: 'Agenturen, Kanzleien und Datenschutzbeauftragte prüfen selten nur eine einzelne Website. Sie brauchen Stapelverarbeitung.',
     customerBenefit: 'Der Kunde kann viele Prüfungen parallel oder geplant durchführen, spart Zeit und erhält einheitliche Ergebnisse.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'c2pa-herkunftsnachweis',
@@ -167,7 +167,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Der Herkunftsnachweis dokumentiert, woher digitale Inhalte stammen, ob sie verändert wurden und welche Metadaten zur Herkunft vorhanden sind.',
     whyItMatters: 'Durch KI-generierte Inhalte, Bildbearbeitung und automatisierte Content-Produktion wird es immer wichtiger, Herkunft und Bearbeitung nachvollziehbar zu machen.',
     customerBenefit: 'Der Kunde kann Inhalte besser prüfen, kennzeichnen und dokumentieren. Das hilft bei Vertrauen, Nachweisbarkeit, Markenrisiko und Compliance.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'branchenbibliotheken',
@@ -176,7 +176,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Branchenbibliotheken liefern vorbereitete Prüf- und Lösungsmuster für typische Branchen.',
     whyItMatters: 'Eine Arztpraxis, ein Onlineshop, eine Kanzlei und ein Industriebetrieb haben unterschiedliche Risiken und Pflichten.',
     customerBenefit: 'Der Kunde startet nicht bei null, sondern nutzt passende Vorlagen für seine Branche.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'api-zugriff',
@@ -185,7 +185,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'API-Zugriff ermöglicht die Anbindung von RealSyncDynamics.AI an eigene Systeme.',
     whyItMatters: 'Professionelle Kunden möchten Prüfungen, Reports und Statusdaten oft in eigene Workflows integrieren.',
     customerBenefit: 'Der Kunde kann RealSyncDynamics.AI in bestehende Tools, Dashboards oder Kundenportale einbinden.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'white-label',
@@ -194,7 +194,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'White-Label ermöglicht Reports und Portale mit eigenem Logo und eigener Darstellung.',
     whyItMatters: 'Agenturen, Kanzleien und Datenschutzbeauftragte wollen Ergebnisse professionell unter eigener Marke präsentieren.',
     customerBenefit: 'Der Kunde kann RealSyncDynamics.AI als eigenen Service gegenüber Mandanten oder Kunden einsetzen.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
   {
     slug: 'multi-tenant-dashboard',
@@ -203,7 +203,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Das Multi-Tenant Dashboard verwaltet mehrere Kunden, Mandanten oder Websites zentral.',
     whyItMatters: 'Bei vielen Kunden reicht eine einfache Einzelansicht nicht mehr aus.',
     customerBenefit: 'Der Kunde sieht Risiken, Status und offene Aufgaben über alle Mandanten hinweg.',
-    includedInPlans: ['Scale', 'Enterprise'],
+    includedInPlans: ['Scale', 'Enterprise', 'Scale (Jährlich)'],
   },
   {
     slug: 'kodee-vps-assistent',
@@ -212,7 +212,7 @@ export const featureDetails: Feature[] = [
     whatItDoes: 'Der Kodee VPS-Assistent unterstützt bei Server-, DNS-, SSL-, Sicherheits- und Infrastrukturproblemen.',
     whyItMatters: 'Viele Datenschutz- und Sicherheitsprobleme entstehen nicht nur im Frontend, sondern auch durch Server- und DNS-Konfiguration.',
     customerBenefit: 'Der Kunde bekommt Unterstützung bei technischen Infrastrukturthemen, die sonst oft zwischen Agentur, Hoster und Entwickler hängen bleiben.',
-    includedInPlans: ['Agency', 'Scale', 'Enterprise'],
+    includedInPlans: ['Agency', 'Scale', 'Enterprise', 'Agency (Jährlich)', 'Scale (Jährlich)'],
   },
 ];
 
@@ -424,6 +424,56 @@ export const pricingPlans: PricingPlan[] = [
       description: '14 Tage kostenlos testen, keine Kosten bis Tag 15, monatlich kündbar',
     },
   },
+  // ─── Jahres-Variante Starter — 12 Monate zum Preis von 10 ───
+  // Slug identisch zur TierId in src/config/pricing.ts, damit die Info-
+  // Buttons der Pricing-Karten (/pricing/<tier.id>) auf echte Detailseiten
+  // führen. Position VOR Scale wegen der Preis-Invariante des Unit-Tests
+  // (bezahlte Pläne aufsteigend: 790 € < 1.999 €).
+  {
+    slug: 'starter_yearly',
+    name: 'Starter (Jährlich)',
+    price: 790,
+    priceString: '790 €',
+    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    recommended: false,
+    badge: 'Sparen Sie 2 Monate',
+    shortDescription: 'Starter mit Jahresabrechnung und 2-Monate-Rabatt: 79 € × 10 = 790 € pro Jahr. Gleicher Funktionsumfang wie Starter (monatlich), ein Jahr durchgehende DSGVO-Grundabsicherung.',
+    targetAudience: 'Für kleine Unternehmen, Praxen, Kanzleien und lokale Dienstleister, die sich für ein Jahr absichern und dabei 2 Monatsraten sparen möchten.',
+    whatCustomerGets: [
+      'Alles aus Starter (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Kontinuierliche DSGVO-Compliance ohne Unterbrechung',
+    ],
+    cta: {
+      label: '14 Tage kostenlos testen',
+      href: '/checkout/starter_yearly',
+    },
+    checkoutPath: '/checkout/starter_yearly',
+    problemsSolved: [
+      'Monatliche Abrechnung erzeugt unnötigen Verwaltungsaufwand',
+      'Compliance-Budget soll planbar fürs ganze Jahr sein',
+      'Schutzlücken durch versehentlich ausgelaufene Monats-Abos',
+    ],
+    includedFeatureSlugs: [
+      'dsgvo-scan',
+      'consent-timing',
+      'privacy-policy-generator',
+      'evidence-vault',
+      'monitoring',
+      'scheduler',
+    ],
+    detailedSections: [
+      {
+        title: 'Warum die Jahresvariante?',
+        content: 'Die Jahresabrechnung bündelt 12 Monate Starter zum Preis von 10 Monaten. Der Funktionsumfang ist identisch zur monatlichen Variante — laufende Scans, Risiko-Hinweise, automatische Datenschutzerklärung und der prüfbare Nachweis-Verlauf. Für Unternehmen mit festem Jahresbudget entfällt die monatliche Rechnungsstellung.',
+      },
+    ],
+    trial: {
+      days: 14,
+      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
+    },
+  },
   {
     slug: 'enterprise',
     name: 'Enterprise',
@@ -542,6 +592,169 @@ export const pricingPlans: PricingPlan[] = [
       {
         title: 'Warum Scale für große Organisationen sinnvoll ist',
         content: 'Scale ist für professionelle Anbieter gedacht, die Compliance als laufenden Service für viele Kunden betreiben. Statt einzelne Webseiten isoliert zu prüfen, erhält der Kunde eine zentrale Multi-Mandanten-Ansicht. Dadurch lassen sich Risiken, Prüfstatus, Nachweise und offene Aufgaben über viele Kunden hinweg steuern. Die eigene Subdomain macht das System als White-Label-Lösung nutzbar.',
+      },
+    ],
+  },
+  // ─── Weitere Jahres-Varianten (siehe starter_yearly weiter oben) ───
+  // Array-Position folgt der Preis-Invariante aus pricingContent.test.ts:
+  // bezahlte Pläne müssen aufsteigend sortiert sein (2.490 → 6.900 → 19.000 €).
+  {
+    slug: 'growth_yearly',
+    name: 'Growth (Jährlich)',
+    price: 2490,
+    priceString: '2.490 €',
+    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    // recommended bleibt exklusiv beim monatlichen Growth-Plan —
+    // pricingContent.test.ts erzwingt genau EINEN empfohlenen Plan.
+    recommended: false,
+    badge: 'Sparen Sie 2 Monate',
+    shortDescription: 'Growth mit Jahresabrechnung und 2-Monate-Rabatt: 249 € × 10 = 2.490 € pro Jahr. KI-Governance, AI Risk Register und tägliches Monitoring für ein ganzes Jahr.',
+    targetAudience: 'Für wachsende Unternehmen mit KI-Einsatz, die Governance-Prozesse für ein Jahr fest verankern und dabei 2 Monatsraten sparen möchten.',
+    whatCustomerGets: [
+      'Alles aus Growth (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'KI-Governance + AI Risk Register für das ganze Jahr',
+    ],
+    cta: {
+      label: '14 Tage kostenlos testen',
+      href: '/checkout/growth_yearly',
+    },
+    checkoutPath: '/checkout/growth_yearly',
+    problemsSolved: [
+      'KI-Compliance braucht Kontinuität statt Monats-Flickwerk',
+      'Compliance-Budget soll planbar fürs ganze Jahr sein',
+      'AI-Act-Pflichten gelten dauerhaft, nicht monatsweise',
+    ],
+    includedFeatureSlugs: [
+      'dsgvo-scan',
+      'consent-timing',
+      'privacy-policy-generator',
+      'evidence-vault',
+      'monitoring',
+      'scheduler',
+      'auto-remediation',
+      'ai-risk-register',
+      'ki-governance',
+      'bots',
+    ],
+    detailedSections: [
+      {
+        title: 'Warum die Jahresvariante?',
+        content: 'Die Jahresabrechnung bündelt 12 Monate Growth zum Preis von 10 Monaten. KI-Governance und das AI Risk Register laufen ohne Unterbrechung durch — wichtig, weil AI-Act- und DSGVO-Pflichten kontinuierlich gelten. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+      },
+    ],
+    trial: {
+      days: 14,
+      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
+    },
+  },
+  {
+    slug: 'agency_yearly',
+    name: 'Agency (Jährlich)',
+    price: 6900,
+    priceString: '6.900 €',
+    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    recommended: false,
+    badge: 'Sparen Sie 2 Monate',
+    shortDescription: 'Agency mit Jahresabrechnung und 2-Monate-Rabatt: 699 € × 10 = 6.900 € pro Jahr. Branchenbibliotheken, White-Label und API-Zugriff für ein ganzes Jahr.',
+    targetAudience: 'Für Datenschutzkanzleien, Agenturen und Compliance-Berater, die Mandanten langfristig betreuen und Jahresbudgets bevorzugen.',
+    whatCustomerGets: [
+      'Alles aus Agency (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Branchenbibliothek + White-Label für das ganze Jahr',
+    ],
+    cta: {
+      label: 'Agency jährlich testen',
+      href: '/checkout/agency_yearly',
+    },
+    checkoutPath: '/checkout/agency_yearly',
+    problemsSolved: [
+      'Mandanten-Betreuung ist auf Jahre angelegt, nicht auf Monate',
+      'Compliance-Budget soll planbar fürs ganze Jahr sein',
+      'White-Label-Angebote brauchen verlässliche Laufzeiten',
+    ],
+    includedFeatureSlugs: [
+      'dsgvo-scan',
+      'consent-timing',
+      'privacy-policy-generator',
+      'evidence-vault',
+      'monitoring',
+      'scheduler',
+      'auto-remediation',
+      'ai-risk-register',
+      'ki-governance',
+      'governance-agents',
+      'bots',
+      'bulk-jobs',
+      'c2pa-herkunftsnachweis',
+      'branchenbibliotheken',
+      'api-zugriff',
+      'white-label',
+      'kodee-vps-assistent',
+    ],
+    detailedSections: [
+      {
+        title: 'Warum die Jahresvariante?',
+        content: 'Die Jahresabrechnung bündelt 12 Monate Agency zum Preis von 10 Monaten. Für Kanzleien und Agenturen, die Mandate über Jahresverträge abrechnen, passt die Laufzeit damit zum eigenen Geschäftsmodell. Der Funktionsumfang ist identisch zur monatlichen Variante.',
+      },
+    ],
+    trial: {
+      days: 14,
+      description: '14 Tage kostenlos testen, keine Kosten bis Tag 15',
+    },
+  },
+  {
+    slug: 'scale_yearly',
+    name: 'Scale (Jährlich)',
+    price: 19000,
+    priceString: '19.000 €',
+    interval: 'pro Jahr — 12 Monate zum Preis von 10',
+    recommended: false,
+    badge: 'Reseller',
+    shortDescription: 'Scale mit Jahresabrechnung und 2-Monate-Rabatt: 1.999 € × 10 = 19.000 € pro Jahr. Multi-Tenant-Verwaltung für bis zu 50 Mandanten, ein ganzes Jahr.',
+    targetAudience: 'Für DSB-Kanzleien, Datenschutzunternehmen und große Agenturen mit vielen Mandanten und jahresbasierter Budgetplanung.',
+    whatCustomerGets: [
+      'Alles aus Scale (monatlich)',
+      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Automatische Jahres-Verlängerung',
+      'Multi-Tenant für bis zu 50 Mandanten das ganze Jahr',
+    ],
+    cta: {
+      label: 'Scale jährlich buchen',
+      href: '/checkout/scale_yearly',
+    },
+    checkoutPath: '/checkout/scale_yearly',
+    problemsSolved: [
+      'Multi-Mandanten-Betrieb braucht verlässliche Jahreslaufzeiten',
+      'Compliance-Budget soll planbar fürs ganze Jahr sein',
+      'Reseller-Kalkulation basiert auf Jahrespreisen',
+    ],
+    includedFeatureSlugs: [
+      'dsgvo-scan',
+      'consent-timing',
+      'privacy-policy-generator',
+      'evidence-vault',
+      'monitoring',
+      'scheduler',
+      'auto-remediation',
+      'ai-risk-register',
+      'ki-governance',
+      'governance-agents',
+      'bots',
+      'bulk-jobs',
+      'c2pa-herkunftsnachweis',
+      'branchenbibliotheken',
+      'api-zugriff',
+      'white-label',
+      'multi-tenant-dashboard',
+      'kodee-vps-assistent',
+    ],
+    detailedSections: [
+      {
+        title: 'Warum die Jahresvariante?',
+        content: 'Die Jahresabrechnung bündelt 12 Monate Scale zum Preis von 10 Monaten. Multi-Tenant-Betreiber kalkulieren ihre Mandantenpreise üblicherweise auf Jahresbasis — die Jahresvariante passt Einkaufs- und Verkaufslogik aneinander an. Der Funktionsumfang ist identisch zur monatlichen Variante.',
       },
     ],
   },

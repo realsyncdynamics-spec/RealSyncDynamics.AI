@@ -1,0 +1,102 @@
+name: Deploy Frontend to Staging
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'vite.config.ts'
+      - 'tailwind.config.ts'
+      - 'docker/realsync-web/**'
+      - '.github/workflows/deploy-frontend-vps.yml'
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Deploy to Staging
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+          GITHUB_BRANCH: ${{ github.ref_name }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          ssh -i ~/.ssh/deploy_key "$VPS_USER@$VPS_HOST" << 'EOF'
+          set -e
+
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 Deploying to STAGING (test.realsyncdynamicsai.de)"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "Branch: $GITHUB_BRANCH"
+          echo "Time: $(date)"
+
+          cd "$VPS_DEPLOY_PATH"
+
+          # Pull latest code
+          git fetch origin
+          git checkout "origin/$GITHUB_BRANCH"
+
+          # Deploy to staging
+          cd docker/realsync-web-staging
+          echo ""
+          echo "[1/4] Building Docker image..."
+          docker compose build --progress=plain
+
+          echo ""
+          echo "[2/4] Starting container..."
+          docker compose up -d
+
+          echo ""
+          echo "[3/4] Waiting for healthcheck..."
+          sleep 8
+
+          echo ""
+          echo "[4/4] Verifying deployment..."
+          if docker compose ps | grep -q "healthy"; then
+            echo "✅ Staging deployment successful"
+            echo ""
+            echo "Preview URL: https://test.realsyncdynamicsai.de"
+            echo "Branch: $GITHUB_BRANCH"
+          else
+            echo "❌ Container not healthy!"
+            docker compose logs
+            exit 1
+          fi
+          EOF
+
+  notify:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Status check
+        run: |
+          echo "Deployment Status: ${{ needs.deploy-staging.result }}"
+          if [ "${{ needs.deploy-staging.result }}" != "success" ]; then
+            echo "❌ Staging deployment failed"
+            exit 1
+          else
+            echo "✅ Staging deployment successful"
+            echo "Preview: https://test.realsyncdynamicsai.de"
+          fi

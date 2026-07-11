@@ -59,62 +59,51 @@ Deno.serve(async (req) => {
   // Calculate trial dates
   const now = new Date();
   const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // +14 days
+  const nowIso = now.toISOString();
+  const trialEndIso = trialEnd.toISOString();
 
   try {
-    // Check if subscription already exists
-    const { data: existing } = await supabase
+    // UPSERT: atomare Operation (INSERT falls nicht vorhanden, UPDATE falls bereits vorhanden)
+    const { data: newSub, error: upsertError } = await supabase
       .from('subscriptions')
-      .select('id')
-      .eq('tenant_id', body.tenantId)
-      .single();
-
-    if (existing) {
-      // Update existing subscription
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'trialing',
-          trial_start: now.toISOString(),
-          trial_end: trialEnd.toISOString(),
-          plan_key: 'free_audit',
-          updated_at: now.toISOString(),
-        })
-        .eq('tenant_id', body.tenantId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return jsonResponse({
-        success: true,
-        subscription: {
-          id: data.id,
-          tenant_id: data.tenant_id,
-          status: data.status,
-          trial_start: data.trial_start,
-          trial_end: data.trial_end,
-          plan_key: data.plan_key,
-        },
-      });
-    }
-
-    // Create new subscription
-    const { data: newSub, error: createError } = await supabase
-      .from('subscriptions')
-      .insert({
+      .upsert({
         tenant_id: body.tenantId,
         status: 'trialing',
         plan_key: 'free_audit',
-        trial_start: now.toISOString(),
-        trial_end: trialEnd.toISOString(),
+        trial_start: nowIso,
+        trial_end: trialEndIso,
         billing_interval: 'month',
-        created_at: now.toISOString(),
-        updated_at: now.toISOString(),
+        created_at: nowIso,
+        updated_at: nowIso,
+      }, {
+        onConflict: 'tenant_id',  // Bei Konflikt: UPDATE statt Error
       })
       .select()
       .single();
 
-    if (createError) throw createError;
+    if (upsertError) throw upsertError;
+
+    // Log trial activation
+    await supabase
+      .from('audit_logs')
+      .insert({
+        tenant_id: body.tenantId,
+        user_id: user.id,
+        resource_type: 'subscription',
+        action: 'CREATE_TRIAL',
+        new_values: {
+          status: 'trialing',
+          trial_start: newSub.trial_start,
+          trial_end: newSub.trial_end,
+        },
+        source: 'unified-entry',
+        ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+        user_agent: req.headers.get('user-agent'),
+      })
+      .catch((err) => {
+        // Audit-Log ist nice-to-have, nicht kritisch
+        console.warn('Audit log failed:', err.message);
+      });
 
     return jsonResponse({
       success: true,

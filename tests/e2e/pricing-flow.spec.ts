@@ -448,7 +448,8 @@ test.describe('Pricing Flow', () => {
       // Just verify we navigated somewhere (checkout or pricing detail)
       await page.waitForTimeout(500);
       const url = page.url();
-      expect(url).toContain('checkout') || expect(url).toContain('pricing');
+      const isCheckoutOrPricing = url.includes('checkout') || url.includes('pricing');
+      expect(isCheckoutOrPricing).toBe(true);
     });
 >>>>>>> 2a5c77d (Fix: Make E2E tests more robust - relax strict selectors and timeouts)
 

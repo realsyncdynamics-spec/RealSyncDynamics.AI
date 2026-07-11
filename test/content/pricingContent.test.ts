@@ -304,10 +304,10 @@ describe('pricingContent', () => {
       expect(freeAudit?.priceString).toBe('0 €');
     });
 
-    it('enterprise should have price 0 (custom pricing)', () => {
+    it('enterprise should have price 1249 (checkout tier)', () => {
       const enterprise = getPlanBySlug('enterprise');
-      expect(enterprise?.price).toBe(0);
-      expect(enterprise?.priceString).toBe('Individuelles Angebot');
+      expect(enterprise?.price).toBe(1249);
+      expect(enterprise?.priceString).toBe('1.249 €');
     });
 
     it('prices should be in ascending order for paid plans', () => {

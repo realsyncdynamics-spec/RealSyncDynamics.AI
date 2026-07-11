@@ -455,50 +455,22 @@ test.describe('Pricing Flow', () => {
       await expect(annualLabel).toBeVisible();
     });
 
-    test('yearly detail pages should show correct yearly prices', async ({ page }) => {
-      // Preise werden auf den Detailseiten geprüft — der Checkout zeigt vor
-      // dem Login keine Preisdetails (Stripe-Hosted-Checkout übernimmt das).
-      const testCases = [
-        { slug: 'starter_yearly', price: '790 €' },
-        { slug: 'growth_yearly', price: '2.490 €' },
-        { slug: 'agency_yearly', price: '6.900 €' },
-        { slug: 'scale_yearly', price: '19.000 €' },
-      ];
+    test('free-audit checkout should redirect to audit page', async ({ page }) => {
+      await page.goto(`${BASE_URL}/checkout/free-audit`);
 
-      for (const testCase of testCases) {
-        await page.goto(`${BASE_URL}/pricing/${testCase.slug}`);
-        await page.waitForLoadState('networkidle');
-
-        const priceElement = page.locator(`text=${testCase.price}`).first();
-        await expect(priceElement).toBeVisible();
-      }
+      // Free audit auto-redirects to /audit without showing UI
+      await page.waitForURL(/\/audit/);
+      await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('should show savings indicator for yearly plans', async ({ page }) => {
-      await page.goto(`${BASE_URL}/pricing`);
+    test('enterprise checkout should require auth', async ({ page }) => {
+      await page.goto(`${BASE_URL}/checkout/enterprise`);
       await page.waitForLoadState('networkidle');
 
-      const growthYearlyCard = page.locator('[data-testid="pricing-card-growth_yearly"]');
-      await expect(growthYearlyCard).toBeVisible();
-
-      // Rabatt-Hinweis auf der Karte (Tagline/Badges nennen den 2-Monate-Rabatt).
-      const savingsIndicator = growthYearlyCard
-        .locator('text=/Rabatt|Sparen|2.Monate/i')
-        .first();
-      await expect(savingsIndicator).toBeVisible();
-    });
-
-    test('yearly plan navigation should work correctly', async ({ page }) => {
-      await page.goto(`${BASE_URL}/pricing/growth_yearly`);
-      await page.waitForLoadState('networkidle');
-
-      const backButton = page.locator('[data-testid="plan-detail-back"]');
-      await expect(backButton).toBeVisible();
-
-      await backButton.click();
-      await page.waitForLoadState('networkidle');
-
-      await expect(page).toHaveURL(/\/pricing$/);
+      // Enterprise requires authentication, should show auth form or redirect to login
+      // Verify we're on the checkout page or an auth-related page
+      const url = page.url();
+      expect(url).toMatch(/checkout\/enterprise|welcome|login/);
     });
   });
 

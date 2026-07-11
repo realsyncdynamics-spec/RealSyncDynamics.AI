@@ -20,15 +20,11 @@ import { trackConversion } from '../../lib/pixels';
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
  *   3c. Wenn eingeloggt aber kein Tenant: Link auf /welcome zur Tenant-Erstellung
  *
- * Free + Enterprise: hier nicht angezeigt — diese Tiers werden vor dem
- * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
+ * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-// Checkout-fähige Plans. Alle müssen echte Stripe Price-IDs in public.products haben.
-// Status: starter + growth + agency ✅
-//         scale + yearly-variants ⏳ (warten auf Stripe Price-IDs — siehe Migration 20260707000000_stripe_missing_price_ids_scale_yearly.sql)
-// Free + Enterprise leiten um (free → /audit, enterprise → /contact-sales)
-const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'enterprise', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly']);
+// DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
   | { status: 'no_user' }

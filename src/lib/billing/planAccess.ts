@@ -95,6 +95,7 @@ const PLAN_DIRECT_FEATURES: Record<PlanKey, FeatureKey[]> = {
   starter_yearly: [],
   growth_yearly: [],
   agency_yearly: [],
+  enterprise_yearly: [],
   scale_yearly: [],
 };
 
@@ -110,11 +111,12 @@ const PLAN_INHERITANCE: Record<PlanKey, PlanKey | null> = {
   starter:           null,
   growth:            'starter',
   agency:            'growth',
-  scale:             'agency',
   enterprise:        'agency',
+  scale:             'agency',
   starter_yearly:    'starter',
   growth_yearly:     'growth',
   agency_yearly:     'agency',
+  enterprise_yearly: 'enterprise',
   scale_yearly:      'scale',
 };
 

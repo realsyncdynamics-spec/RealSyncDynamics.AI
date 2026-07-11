@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import {
-  PUBLIC_PRICING_TIERS, ENTERPRISE_TIER, PRICING_TRUST_NOTE, TIER_ACCENT,
+  PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, TIER_ACCENT,
   type PricingTier, type TierId,
 } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
@@ -14,22 +14,20 @@ import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance
 import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
 
 /**
- * /pricing — public Pricing-Page mit 5 Paketen (Free → 1.999 €).
+ * /pricing — public Pricing-Page mit 5 Paketen (Starter → Partner/Scale 1.999 €).
  *
  * Tier-Daten kommen ausschließlich aus src/config/pricing.ts
  * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
- * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-06):
- *   Free Audit  0 €          Lead-Funnel, einmalig, kein Account
- *   Starter    79 €/Monat    Einzeldomain
- *   Growth    249 €/Monat    Monitoring + Auto-Fix (HIGHLIGHT)
- *   Agency    699 €/Monat    White-Label, 10 Kunden-Sites, API
- *   Scale   1.999 €/Monat    DSB-Kanzleien, bis 50 Mandanten
+ * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-07):
+ *   Starter      79 €/Monat    Einzelunternehmen
+ *   Growth      249 €/Monat    KMU, Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Agency      699 €/Monat    Mid-size, White-Label, API
+ *   Enterprise 1.249 €/Monat   Großunternehmen, Multi-Org, SLA
+ *   Partner   1.999 €/Monat    Reseller/MSP, bis 50 Mandanten
  *
- * "Enterprise" (individuell, kein fester Preis) ist KEINE 6. Karte — sonst
- * entsteht ein 6-in-5-Spalten-Grid. Stattdessen eigener Anfrage-Banner
- * unterhalb des Grids (ENTERPRISE_TIER). Jede Karte hat eine Akzentfarbe
- * (TIER_ACCENT) zur visuellen Trennung der Pakete.
+ * Jede Karte hat eine Akzentfarbe (TIER_ACCENT) zur visuellen Trennung der Pakete.
+ * Yearly-Varianten werden separat verwaltet (nicht im Grid).
  */
 
 const TIER_ICONS: Record<TierId, typeof Cookie> = {
@@ -37,11 +35,12 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
   starter: ShieldCheck,
   growth: Zap,
   agency: Globe,
-  scale: Briefcase,
   enterprise: Building2,
+  scale: Briefcase,
   starter_yearly: ShieldCheck,
   growth_yearly: Zap,
   agency_yearly: Globe,
+  enterprise_yearly: Building2,
   scale_yearly: Briefcase,
 };
 
@@ -116,22 +115,6 @@ export function PricingPage() {
             {PUBLIC_PRICING_TIERS.map((tier) => (
               <TierCard key={tier.id} tier={tier} selected={tier.id === selectedPlan} />
             ))}
-          </div>
-
-          {/* Enterprise — kein Grid-Card, sondern eigener Anfrage-Banner */}
-          <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-obsidian-900/60 border border-titanium-200/30 rounded-none">
-            <div>
-              <div className="font-display font-bold text-titanium-50 text-base mb-1">
-                {ENTERPRISE_TIER.name} — {ENTERPRISE_TIER.priceString}
-              </div>
-              <p className="text-sm text-silver-300">{ENTERPRISE_TIER.tagline}</p>
-            </div>
-            <Link
-              to={ENTERPRISE_TIER.cta.href}
-              className="surface-mono inline-flex shrink-0 items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none whitespace-nowrap"
-            >
-              {ENTERPRISE_TIER.cta.label} <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
 
           <div className="mt-8 text-center space-y-2">

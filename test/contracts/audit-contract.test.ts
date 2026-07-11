@@ -9,9 +9,9 @@ import { PRICING_TIERS, tierById, type TierId } from '../../src/config/pricing';
 import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig, planForTier } from '../../src/lib/billing/planConfig';
 
 describe('PRICING_TIERS — Single Source of Truth', () => {
-  it('has all 10 tier ids (6 base + 4 yearly variants)', () => {
+  it('has all 11 tier ids (6 base + 5 yearly variants)', () => {
     const ids = PRICING_TIERS.map((t) => t.id).sort();
-    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'free', 'growth', 'growth_yearly', 'scale', 'scale_yearly', 'starter', 'starter_yearly']);
+    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'enterprise_yearly', 'free', 'growth', 'growth_yearly', 'scale', 'scale_yearly', 'starter', 'starter_yearly']);
   });
 
   it('Starter price is 79 €', () => {
@@ -26,15 +26,15 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
     expect(tierById('agency')?.priceEur).toBe(699);
   });
 
-  it('Scale price is 1999 € and slots between Agency and Enterprise', () => {
+  it('Scale (Partner) price is 1999 € and comes before Enterprise in PRICING_TIERS', () => {
     expect(tierById('scale')?.priceEur).toBe(1999);
-    // Verify slot order: agency → scale → enterprise
+    // Verify array order: agency → scale → enterprise
     const order = PRICING_TIERS.map((t) => t.id);
     const agencyIdx = order.indexOf('agency');
     const scaleIdx = order.indexOf('scale');
     const enterpriseIdx = order.indexOf('enterprise');
     expect(scaleIdx).toBeGreaterThan(agencyIdx);
-    expect(scaleIdx).toBeLessThan(enterpriseIdx);
+    expect(enterpriseIdx).toBeGreaterThan(scaleIdx);
   });
 
   it('Free tier has priceEur=0 and recurring=false', () => {
@@ -43,8 +43,8 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
     expect(f?.recurring).toBe(false);
   });
 
-  it('Enterprise has priceString="individuell"', () => {
-    expect(tierById('enterprise')?.priceString).toBe('individuell');
+  it('Enterprise has priceString="1.249"', () => {
+    expect(tierById('enterprise')?.priceString).toBe('1.249');
   });
 
   it('every tier has a non-empty bullets array', () => {
@@ -73,7 +73,7 @@ describe('PLAN_CONFIG alignment with PRICING_TIERS', () => {
     }
   });
 
-  it('PLAN_CONFIG prices match PRICING_TIERS prices (or null for enterprise)', () => {
+  it('PLAN_CONFIG prices match PRICING_TIERS prices', () => {
     const mismatches = diffPricingTiersAgainstPlanConfig();
     expect(mismatches).toEqual([]);
   });
@@ -91,8 +91,8 @@ describe('PLAN_CONFIG alignment with PRICING_TIERS', () => {
     expect(PLAN_CONFIG.free_audit.mode).toBe('free');
   });
 
-  it('enterprise mode is "inquiry"', () => {
-    expect(PLAN_CONFIG.enterprise.mode).toBe('inquiry');
+  it('enterprise mode is "checkout"', () => {
+    expect(PLAN_CONFIG.enterprise.mode).toBe('checkout');
   });
 });
 

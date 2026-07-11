@@ -42,7 +42,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Use pre-installed Chromium in CI environment (/opt/pw-browsers/)
+        ...(process.env.CI && {
+          launchArgs: ['--disable-dev-shm-usage', '--disable-gpu'],
+        }),
+      },
     },
   ],
 });

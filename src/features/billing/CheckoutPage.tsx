@@ -20,15 +20,11 @@ import { trackConversion } from '../../lib/pixels';
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
  *   3c. Wenn eingeloggt aber kein Tenant: Link auf /welcome zur Tenant-Erstellung
  *
- * Free + Enterprise: hier nicht angezeigt — diese Tiers werden vor dem
- * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
+ * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-// Checkout-fähige Plans. Alle müssen echte Stripe Price-IDs in public.products haben.
-// Status: starter + growth + agency ✅
-//         scale + yearly-variants ⏳ (warten auf Stripe Price-IDs — siehe Migration 20260707000000_stripe_missing_price_ids_scale_yearly.sql)
-// Free + Enterprise leiten um (free → /audit, enterprise → /contact-sales)
-const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'enterprise', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly']);
+// DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
   | { status: 'no_user' }
@@ -229,6 +225,7 @@ function ShellWithMessage({
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -294,11 +291,12 @@ function NoUserShell({
   magicLinkHref: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -388,6 +386,7 @@ function ConsentGateShell({
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
+          data-testid="checkout-back"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

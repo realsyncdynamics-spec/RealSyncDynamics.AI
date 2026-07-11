@@ -73,10 +73,10 @@ export const PLAN_CONFIG: Record<string, PlanConfigEntry> = {
     mode: 'inquiry',
   },
   enterprise: {
-    price: null,
+    price: 1249,
     interval: 'month',
-    stripePriceId: null,
-    mode: 'inquiry',
+    stripePriceId: env.VITE_STRIPE_PRICE_ENTERPRISE ?? null,
+    mode: 'checkout',
   },
   // Yearly variants (12 Monate zum Preis von 10 = 2-Monate-Rabatt)
   starter_yearly: {
@@ -102,6 +102,12 @@ export const PLAN_CONFIG: Record<string, PlanConfigEntry> = {
     interval: 'year',
     stripePriceId: env.VITE_STRIPE_PRICE_SCALE_YEARLY ?? null,
     mode: 'inquiry',
+  },
+  enterprise_yearly: {
+    price: 12490,
+    interval: 'year',
+    stripePriceId: env.VITE_STRIPE_PRICE_ENTERPRISE_YEARLY ?? null,
+    mode: 'checkout',
   },
 } as const;
 

@@ -4,7 +4,7 @@
 // Body: { tenantId?: string }
 //
 // Creates a new trial subscription (14 days) for the authenticated user's tenant
-// Sets: status='trialing', trial_start=NOW, trial_end=NOW+14d, plan_key='free_trial'
+// Sets: status='trialing', trial_start=NOW, trial_end=NOW+14d, plan_key='free_audit'
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           status: 'trialing',
           trial_start: now.toISOString(),
           trial_end: trialEnd.toISOString(),
-          plan_key: 'free_trial',
+          plan_key: 'free_audit',
           updated_at: now.toISOString(),
         })
         .eq('tenant_id', body.tenantId)
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
       .insert({
         tenant_id: body.tenantId,
         status: 'trialing',
-        plan_key: 'free_trial',
+        plan_key: 'free_audit',
         trial_start: now.toISOString(),
         trial_end: trialEnd.toISOString(),
         billing_interval: 'month',

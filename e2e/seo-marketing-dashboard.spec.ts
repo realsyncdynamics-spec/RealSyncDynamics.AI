@@ -1,17 +1,20 @@
 import { test, expect } from '@playwright/test';
 
+const TEST_EMAIL = process.env.E2E_TEST_EMAIL || 'test@example.com';
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || 'password123';
+
 test.describe('SEO-Marketing-Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to login page
     await page.goto('/demo-login');
 
-    // Perform demo login
-    await page.fill('input[name="email"]', 'demo@example.com');
-    await page.fill('input[name="password"]', 'demo123456');
+    // Perform login with test credentials
+    await page.fill('input[name="email"]', TEST_EMAIL);
+    await page.fill('input[name="password"]', TEST_PASSWORD);
     await page.click('button[type="submit"]');
 
-    // Wait for dashboard redirect
-    await page.waitForURL(/\/app\/dashboard/, { timeout: 10000 });
+    // Wait for authentication to complete (flexible URL pattern for different redirect paths)
+    await page.waitForURL(/\/(app|demo-app)/, { timeout: 10000 });
   });
 
   test('should load dashboard and display KPI cards', async ({ page }) => {

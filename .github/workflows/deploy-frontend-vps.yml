@@ -29,7 +29,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
+      # Preflight: Ohne konfigurierte VPS-Secrets kann kein Staging-Deploy laufen.
+      # Statt hart zu scheitern (roter Check auf jedem Feature-Branch), wird der
+      # Deploy dann sauber übersprungen. Sind die Secrets gesetzt, läuft er normal.
+      - name: Check deploy secrets
+        id: preflight
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          if [ -n "$VPS_HOST" ] && [ -n "$VPS_USER" ] && [ -n "$VPS_SSH_KEY" ] && [ -n "$VPS_DEPLOY_PATH" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  VPS-Staging-Secrets sind nicht konfiguriert — Staging-Deploy wird übersprungen."
+            echo "    Zum Aktivieren VPS_HOST / VPS_USER / VPS_SSH_KEY / VPS_DEPLOY_PATH als Repo-Secrets setzen."
+          fi
+
       - name: Deploy to Staging
+        if: steps.preflight.outputs.configured == 'true'
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}

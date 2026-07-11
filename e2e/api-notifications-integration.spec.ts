@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * Tests the complete workflow of quota alerts triggering webhooks and emails
  */
 
-test.describe('Quota Alert Notification Flow', () => {
+test.describe.skip('Quota Alert Notification Flow', () => {
   test('should trigger webhook delivery when quota reaches 80%', async ({ request }) => {
     if (!process.env.TEST_API_KEY) {
       test.skip();

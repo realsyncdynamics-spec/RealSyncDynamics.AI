@@ -6,11 +6,22 @@ describe('postEdgeFunction', () => {
 
   beforeEach(() => {
     vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co');
+    // Mock localStorage for auth-required functions
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn((key: string) => {
+        if (key === 'sb-auth-token') return 'mock-jwt-token-test';
+        return null;
+      }),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    });
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it('returns parsed JSON on ok:true response', async () => {

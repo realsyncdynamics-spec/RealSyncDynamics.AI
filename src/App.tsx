@@ -71,6 +71,14 @@ import { SaaSSolution } from './pages/solutions/SaaSSolution';
 import { AgenciesSolution } from './pages/solutions/AgenciesSolution';
 import { GovernanceOnboarding } from './pages/GovernanceOnboarding';
 import { GovernanceRecommendation } from './pages/GovernanceRecommendation';
+// ── Unified Entry: Scan → Dashboard with Trial ──
+import { UnifiedEntryShell } from './unified-entry/UnifiedEntryShell';
+import { ScanEntryPage } from './unified-entry/pages/ScanEntryPage';
+import { DashboardPreviewPage } from './unified-entry/pages/DashboardPreviewPage';
+import { TrialOfferPage } from './unified-entry/pages/TrialOfferPage';
+import { RegisterPage } from './unified-entry/pages/RegisterPage';
+import { PostRegisterOnboardingPage } from './unified-entry/pages/PostRegisterOnboardingPage';
+import { SuccessPage } from './unified-entry/pages/SuccessPage';
 // ── Geführter, seitenbasierter Flow (/flow/*) ──
 import { FlowProvider } from './flow/FlowContext';
 import { FlowStepRoute } from './flow/FlowStepRoute';
@@ -957,6 +965,65 @@ function RoutesWithTracking() {
           <EnterpriseAppShell title="Einstellungen" breadcrumb={['Organisation']}>
             <EnterprisePlaceholderPage title="Einstellungen" description="Die vollständigen Organisations- und Account-Einstellungen folgen in Phase 3." />
           </EnterpriseAppShell>
+        }
+      />
+
+      {/* Unified Entry: Scan → Dashboard with Trial */}
+      <Route path="/unified-entry" element={<Navigate to="/unified-entry/scan" replace />} />
+      <Route
+        path="/unified-entry/scan"
+        element={
+          <UnifiedEntryShell currentStep={1} totalSteps={5}>
+            <ScanEntryPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/preview"
+        element={
+          <UnifiedEntryShell currentStep={2} totalSteps={5}>
+            <DashboardPreviewPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/trial-offer"
+        element={
+          <UnifiedEntryShell currentStep={3} totalSteps={5}>
+            <TrialOfferPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/register"
+        element={
+          <UnifiedEntryShell currentStep={3} totalSteps={5}>
+            <RegisterPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/onboarding"
+        element={
+          <SupabaseAuthProvider>
+            <TenantProvider>
+              <UnifiedEntryShell currentStep={4} totalSteps={5}>
+                <PostRegisterOnboardingPage />
+              </UnifiedEntryShell>
+            </TenantProvider>
+          </SupabaseAuthProvider>
+        }
+      />
+      <Route
+        path="/unified-entry/success"
+        element={
+          <SupabaseAuthProvider>
+            <TenantProvider>
+              <UnifiedEntryShell currentStep={5} totalSteps={5} showProgress={false}>
+                <SuccessPage />
+              </UnifiedEntryShell>
+            </TenantProvider>
+          </SupabaseAuthProvider>
         }
       />
 

@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
 
       // Log update
       await supabase
-        .from('audit_logs')
+        .from('trial_audit_logs')
         .insert({
           tenant_id: tenantId,
           user_id: user.id,
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
 
     // Log creation
     await supabase
-      .from('audit_logs')
+      .from('trial_audit_logs')
       .insert({
         tenant_id: tenantId,
         user_id: user.id,

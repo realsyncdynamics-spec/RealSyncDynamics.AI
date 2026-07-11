@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
 
     // Log trial activation
     await supabase
-      .from('audit_logs')
+      .from('trial_audit_logs')
       .insert({
         tenant_id: body.tenantId,
         user_id: user.id,

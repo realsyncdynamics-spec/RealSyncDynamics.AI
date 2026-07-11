@@ -42,7 +42,7 @@
 ## Datenbankmigrationen
 
 - [ ] `supabase db reset` erfolgreich
-- [ ] `audit_logs` Tabelle vorhanden mit RLS
+- [ ] `trial_audit_logs` Tabelle vorhanden mit RLS (bestehende `audit_logs` unangetastet)
 - [ ] `subscriptions.tenant_id` UNIQUE Constraint vorhanden
 - [ ] Migrationen sind idempotent (2x Ausführung ohne Fehler)
 - [ ] Rollback-Procedure getestet:
@@ -66,7 +66,7 @@
   - Erwartetes Ergebnis: Profile gespeichert
   - Audit-Log Eintrag vorhanden? ✅/❌
 
-- [ ] Fehlerbehandlung für fehlende `audit_logs`-Tabelle (MVP-Fallback)
+- [ ] Fehlerbehandlung für fehlende `trial_audit_logs`-Tabelle (MVP-Fallback)
 
 **Anforderung:** Alle Edge Functions müssen erfolgreich deployen und ausführen.
 

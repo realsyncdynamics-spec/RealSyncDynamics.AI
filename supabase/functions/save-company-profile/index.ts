@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
+    const action = existing ? 'UPDATE' : 'CREATE';
+
     if (existing) {
       // Update existing profile
       const { data, error } = await supabase
@@ -92,6 +94,24 @@ Deno.serve(async (req) => {
         .single();
 
       if (error) throw error;
+
+      // Log update
+      await supabase
+        .from('trial_audit_logs')
+        .insert({
+          tenant_id: tenantId,
+          user_id: user.id,
+          resource_type: 'company_profile',
+          action: 'UPDATE',
+          old_values: { sector: existing.sector },
+          new_values: { sector, onboarding_answers: answers },
+          source: 'unified-entry',
+          ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent'),
+        })
+        .catch((err) => {
+          console.warn('Audit log failed:', err.message);
+        });
 
       return jsonResponse({
         success: true,
@@ -129,6 +149,23 @@ Deno.serve(async (req) => {
         note: 'Profile data stored in session (table not yet available)',
       });
     }
+
+    // Log creation
+    await supabase
+      .from('trial_audit_logs')
+      .insert({
+        tenant_id: tenantId,
+        user_id: user.id,
+        resource_type: 'company_profile',
+        action: 'CREATE',
+        new_values: { sector, onboarding_answers: answers },
+        source: 'unified-entry',
+        ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+        user_agent: req.headers.get('user-agent'),
+      })
+      .catch((err) => {
+        console.warn('Audit log failed:', err.message);
+      });
 
     return jsonResponse({
       success: true,

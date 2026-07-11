@@ -4,6 +4,11 @@
     "governance-dsr",
     "governance-incidents",
     "governance-connectors",
-    "governance-vendors"
+    "governance-vendors",
+    "debug-secret-shape",
+    "vault-set-secret",
+    "vault-key-setter",
+    "stripe-webhook-fixer",
+    "stripe-webhook-provision"
   ]
 }

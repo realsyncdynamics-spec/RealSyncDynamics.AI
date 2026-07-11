@@ -19,16 +19,15 @@ const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://lo
  */
 
 // Karten-Ids auf /pricing — identisch zu TierId in src/config/pricing.ts.
+// Öffentlich gerenderte Karten = PUBLIC_PRICING_TIERS (src/config/pricing.ts).
+// Config filtert 'free' und alle '*_yearly'-Tiers aus dem Grid heraus; Enterprise
+// wird als reguläre Karte gezeigt. Stand 2026-07: 5-Karten-Grid.
 const CARD_IDS = [
-  'free',
   'starter',
   'growth',
   'agency',
   'scale',
-  'starter_yearly',
-  'growth_yearly',
-  'agency_yearly',
-  'scale_yearly',
+  'enterprise',
 ];
 
 // Detailseiten-Slugs — identisch zu pricingPlans in src/content/pricingContent.ts.
@@ -65,8 +64,8 @@ test.describe('Pricing Flow', () => {
 
       await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete|[Pp]reise/);
 
-      // 5 Basis-Karten + 4 Jahres-Varianten = 9 Karten.
-      // Enterprise ist bewusst keine Karte (eigener Banner unterhalb des Grids).
+      // 5-Karten-Grid: starter, growth, agency, scale, enterprise (PUBLIC_PRICING_TIERS).
+      // 'free' und alle Jahres-Varianten sind bewusst nicht als Karten gelistet.
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       const cardCount = await pricingCards.count();
       expect(cardCount).toBe(CARD_IDS.length);
@@ -82,19 +81,17 @@ test.describe('Pricing Flow', () => {
       }
     });
 
-    test('Enterprise should appear as inquiry banner, not as card', async ({ page }) => {
+    test('Enterprise should appear as a card in the grid', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      // Keine Enterprise-Karte im Grid …
+      // Enterprise ist Teil von PUBLIC_PRICING_TIERS und wird als reguläre Karte gezeigt.
       const enterpriseCard = page.locator('[data-testid="pricing-card-enterprise"]');
-      await expect(enterpriseCard).toHaveCount(0);
+      await expect(enterpriseCard).toBeVisible();
 
-      // … aber ein Banner mit Anfrage-CTA nach /contact-sales.
-      const enterpriseBanner = page.locator('text=Enterprise').first();
-      await expect(enterpriseBanner).toBeVisible();
-      const contactLink = page.locator('a[href*="/contact-sales"]').first();
-      await expect(contactLink).toBeVisible();
+      // Enterprise-Buchung führt in den Enterprise-Checkout (der zu /contact-sales weiterleitet).
+      const enterpriseBook = page.locator('[data-testid="pricing-book-enterprise"]');
+      await expect(enterpriseBook).toBeVisible();
     });
 
     test('Growth plan should be marked as recommended', async ({ page }) => {
@@ -432,19 +429,9 @@ test.describe('Pricing Flow', () => {
   });
 
   test.describe('Yearly Plan Checkout', () => {
-    test('should navigate to yearly plan checkout from pricing card', async ({ page }) => {
-      await page.goto(`${BASE_URL}/pricing`);
-      await page.waitForLoadState('networkidle');
-
-      const bookButton = page.locator('[data-testid="pricing-book-growth_yearly"]');
-      await bookButton.click();
-
-      await expect(page).toHaveURL(/\/checkout\/growth_yearly/);
-      await page.waitForLoadState('networkidle');
-
-      const authShell = page.locator('[data-testid="checkout-auth-required"]');
-      await expect(authShell).toBeVisible();
-    });
+    // Hinweis: Jahres-Tarife werden nicht mehr als eigene Pricing-Karten gezeigt
+    // (PUBLIC_PRICING_TIERS filtert '*_yearly' heraus). Sie bleiben als direkte
+    // Checkout-Routen gültig und werden hier per Direkt-URL getestet.
 
     test('yearly checkout should name the annual plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth_yearly`);
@@ -456,21 +443,22 @@ test.describe('Pricing Flow', () => {
     });
 
     test('free-audit checkout should redirect to audit page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/free-audit`);
+      // Plan-Key ist 'free_audit' (Unterstrich); CheckoutPage leitet ihn nach /audit um.
+      await page.goto(`${BASE_URL}/checkout/free_audit`);
 
       // Free audit auto-redirects to /audit without showing UI
       await page.waitForURL(/\/audit/);
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should require auth', async ({ page }) => {
+    test('enterprise checkout should redirect to contact-sales', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForLoadState('networkidle');
 
-      // Enterprise requires authentication, should show auth form or redirect to login
-      // Verify we're on the checkout page or an auth-related page
-      const url = page.url();
-      expect(url).toMatch(/checkout\/enterprise|welcome|login/);
+      // Enterprise ist kein Self-Service-Checkout mehr: CheckoutPage leitet
+      // /checkout/enterprise nach /contact-sales?intent=enterprise um.
+      await page.waitForURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/intent=enterprise/);
     });
   });
 

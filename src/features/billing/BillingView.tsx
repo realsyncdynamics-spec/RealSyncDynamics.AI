@@ -347,10 +347,7 @@ export function BillingView() {
                 </p>
                 {!isCurrentPlan && canManage && (
                   <button
-                    onClick={() => {
-                      setUpgradingPlan(false);
-                      handlePlanUpgrade(plan.id as TierId);
-                    }}
+                    onClick={() => handlePlanUpgrade(plan.id as TierId)}
                     disabled={upgradingPlan}
                     className="w-full py-2 px-3 bg-security-500 hover:bg-security-600 disabled:opacity-50 text-white text-xs font-semibold rounded-none"
                   >

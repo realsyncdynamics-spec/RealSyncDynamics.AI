@@ -113,11 +113,11 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1000);
 
-      // Check that pricing cards have buttons (flexible selector for robustness)
-      for (const id of CARD_IDS.slice(0, 3)) { // Check subset to avoid timeout
-        const card = page.locator(`[data-testid="pricing-card-${id}"]`);
-        const buttons = card.locator('button');
-        await expect(buttons.first()).toBeVisible({ timeout: 10000 });
+      // Die „Mehr erfahren"-CTA ist ein <Link> (Anchor), kein <button> —
+      // daher gezielt über die stabile data-testid prüfen (PricingPage.tsx).
+      for (const id of CARD_IDS.slice(0, 3)) { // Subset gegen Timeout
+        const infoLink = page.locator(`[data-testid="pricing-info-${id}"]`);
+        await expect(infoLink).toBeVisible({ timeout: 10000 });
       }
     });
 
@@ -125,11 +125,12 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1000);
 
-      // Check that pricing cards have clickable buttons
-      const cards = page.locator('[data-testid^="pricing-card-"]');
-      const firstCard = cards.first();
-      const buttons = firstCard.locator('button');
-      await expect(buttons.first()).toBeVisible({ timeout: 10000 });
+      // Die Primär-CTA jeder Karte ist ein <a>/<Link> (Anchor), kein <button>.
+      // Prüfe die Buchen-CTA über ihre stabile data-testid.
+      for (const id of CARD_IDS) {
+        const bookLink = page.locator(`[data-testid="pricing-book-${id}"]`);
+        await expect(bookLink).toBeVisible({ timeout: 10000 });
+      }
     });
   });
 

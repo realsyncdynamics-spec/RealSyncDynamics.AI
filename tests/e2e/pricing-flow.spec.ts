@@ -430,28 +430,9 @@ test.describe('Pricing Flow', () => {
   });
 
   test.describe('Yearly Plan Checkout', () => {
-<<<<<<< HEAD
     // Hinweis: Jahres-Tarife werden nicht mehr als eigene Pricing-Karten gezeigt
     // (PUBLIC_PRICING_TIERS filtert '*_yearly' heraus). Sie bleiben als direkte
     // Checkout-Routen gültig und werden hier per Direkt-URL getestet.
-=======
-    test('should navigate to yearly plan checkout from pricing card', async ({ page }) => {
-      await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(1000);
-
-      // Find and click booking button (flexible selector)
-      const cards = page.locator('[data-testid^="pricing-card-"]');
-      const buttons = cards.locator('button');
-      await expect(buttons.first()).toBeVisible({ timeout: 10000 });
-      await buttons.first().click();
-
-      // Just verify we navigated somewhere (checkout or pricing detail)
-      await page.waitForTimeout(500);
-      const url = page.url();
-      const isCheckoutOrPricing = url.includes('checkout') || url.includes('pricing');
-      expect(isCheckoutOrPricing).toBe(true);
-    });
->>>>>>> 2a5c77d (Fix: Make E2E tests more robust - relax strict selectors and timeouts)
 
     test('yearly checkout should name the annual plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth_yearly`);
@@ -463,12 +444,8 @@ test.describe('Pricing Flow', () => {
     });
 
     test('free-audit checkout should redirect to audit page', async ({ page }) => {
-<<<<<<< HEAD
       // Plan-Key ist 'free_audit' (Unterstrich); CheckoutPage leitet ihn nach /audit um.
       await page.goto(`${BASE_URL}/checkout/free_audit`);
-=======
-      await page.goto(`${BASE_URL}/checkout/free-audit`, { waitUntil: 'domcontentloaded' });
->>>>>>> 2a5c77d (Fix: Make E2E tests more robust - relax strict selectors and timeouts)
 
       // Free audit auto-redirects to /audit without showing UI
       await page.waitForURL(/\/audit/, { timeout: 10000 });

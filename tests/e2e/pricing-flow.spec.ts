@@ -124,9 +124,15 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      // Look for checkout buttons using more flexible selectors
-      const checkoutButton = page.locator('text=Checkout|Jetzt buchen|Book Now').first();
-      await expect(checkoutButton).toBeVisible({ timeout: 5000 });
+      // Look for CTA buttons using the actual button labels from config/pricing.ts
+      // Labels include "Kostenlos starten", "14 Tage kostenlos testen", "Partner anfragen", etc.
+      const ctaButtons = page.locator('[data-testid^="pricing-book-"]');
+      const count = await ctaButtons.count();
+      expect(count).toBeGreaterThan(0);
+
+      // Verify at least one button is visible
+      const firstButton = ctaButtons.first();
+      await expect(firstButton).toBeVisible({ timeout: 5000 });
     });
   });
 

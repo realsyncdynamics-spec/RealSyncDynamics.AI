@@ -10,7 +10,7 @@ import { StripeAccountInfo } from './StripeAccountInfo';
 import { PlanUpgradeModal } from './PlanUpgradeModal';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
-import type { TierId } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
 
 interface Subscription {
   plan_key: string | null;
@@ -46,6 +46,18 @@ const PLAN_LABELS: Record<string, string> = {
   silver: 'Silver (legacy)',
   gold: 'Gold (legacy)',
 };
+
+// Available plans for billing dashboard — excluding yearly variants
+const AVAILABLE_PLANS = PUBLIC_PRICING_TIERS
+  .filter((tier) => !tier.id.includes('yearly'))
+  .map((tier) => ({
+    id: tier.id,
+    key: tier.planKey,
+    name: tier.name,
+    price: tier.priceString,
+    suffix: tier.priceSuffix,
+    tagline: tier.tagline,
+  }));
 
 export function BillingView() {
   const { tenants, activeTenantId, entitlements, loading, getLimit } = useTenant();
@@ -302,6 +314,53 @@ export function BillingView() {
           onOpenPortal={openPortal}
           canManage={canManage}
         />
+      </div>
+
+      {/* Available Plans */}
+      <div>
+        <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Verfügbare Pläne</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {AVAILABLE_PLANS.map((plan) => {
+            const isCurrentPlan = sub !== 'none' && sub.plan_key === plan.key;
+            return (
+              <div
+                key={plan.key}
+                className={`relative border rounded-none p-4 transition-all ${
+                  isCurrentPlan
+                    ? 'border-security-500 bg-obsidian-900/50'
+                    : 'border-titanium-800 bg-obsidian-950 hover:border-titanium-700'
+                }`}
+              >
+                {isCurrentPlan && (
+                  <div className="absolute top-2 right-2">
+                    <span className="inline-flex items-center text-xs font-bold text-emerald-300 bg-emerald-950/60 px-2 py-1 border border-emerald-800">
+                      Aktuell
+                    </span>
+                  </div>
+                )}
+                <h3 className="font-bold text-titanium-50 text-sm mb-1">{plan.name}</h3>
+                <p className="text-xl font-mono text-security-400 mb-3">
+                  {plan.price}<span className="text-xs text-titanium-500 ml-1">{plan.suffix}</span>
+                </p>
+                <p className="text-xs text-titanium-400 mb-3 leading-relaxed h-12 overflow-hidden">
+                  {plan.tagline}
+                </p>
+                {!isCurrentPlan && canManage && (
+                  <button
+                    onClick={() => {
+                      setUpgradingPlan(false);
+                      handlePlanUpgrade(plan.id as TierId);
+                    }}
+                    disabled={upgradingPlan}
+                    className="w-full py-2 px-3 bg-security-500 hover:bg-security-600 disabled:opacity-50 text-white text-xs font-semibold rounded-none"
+                  >
+                    Zu diesem Plan
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Plan Upgrade Modal */}

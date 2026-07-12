@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
 
 test.describe('[SEC] Consent und Tracker-Verhalten', () => {
   test('[SEC-001] Nicht-notwendige Tracker feuern nicht vor Consent', async ({ page }) => {

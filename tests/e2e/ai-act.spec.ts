@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { aiActUsecases } from '../fixtures/ai-act-usecases';
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
 
 test.describe('[GOV-004/005] EU AI Act Seite', () => {
   test('[GOV-004] AI-Act-Seite stellt Risikoklassen-Hierarchie dar', async ({ page }) => {

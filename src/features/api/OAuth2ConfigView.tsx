@@ -53,7 +53,7 @@ export function OAuth2ConfigView() {
 }
 
 function Inner() {
-  const { activeTenantId, planTier } = useTenant();
+  const { activeTenantId, hasFeature } = useTenant();
   const [applications, setApplications] = useState<OAuth2Application[]>([]);
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +67,14 @@ function Inner() {
     scopes: [] as string[],
   });
 
-  const rateLimitConfig = RATE_LIMIT_DEFAULTS[planTier || 'starter'];
+  // Determine plan tier based on features
+  let planTier: keyof typeof RATE_LIMIT_DEFAULTS = 'starter';
+  if (hasFeature('enterprise.tier')) planTier = 'enterprise';
+  else if (hasFeature('scale.tier')) planTier = 'scale';
+  else if (hasFeature('agency.tier')) planTier = 'agency';
+  else if (hasFeature('growth.tier')) planTier = 'growth';
+
+  const rateLimitConfig = RATE_LIMIT_DEFAULTS[planTier];
 
   useEffect(() => {
     loadApplications();

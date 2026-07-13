@@ -39,17 +39,17 @@ export function ComplianceCheckWorkflow({
   isNew = false,
 }: ComplianceCheckWorkflowProps) {
   const { activeTenantId } = useTenant();
-  const [formData, setFormData] = useState<ComplianceCheckWorkflowConfig>(
+  const [formData, setFormData] = useState(
     workflow || {
       id: '',
       name: 'Compliance-Check',
       description: 'Automatische tägliche Compliance-Prüfung aller Assets',
-      schedule: 'daily',
+      schedule: 'daily' as const,
       time_of_day: '09:00',
-      target_assets: [],
+      target_assets: [] as string[],
       include_all_assets: true,
-      notification_channels: ['email'],
-      email_recipients: [],
+      notification_channels: ['email'] as ('email' | 'slack')[],
+      email_recipients: [] as string[],
       enabled: false,
       run_count: 0,
     }
@@ -167,7 +167,7 @@ export function ComplianceCheckWorkflow({
                   onClick={() => {
                     const updated = formData.notification_channels.includes('email')
                       ? formData.notification_channels.filter((c) => c !== 'email')
-                      : [...formData.notification_channels, 'email'];
+                      : [...formData.notification_channels, 'email'] as ('email' | 'slack')[];
                     setFormData({ ...formData, notification_channels: updated });
                   }}
                   className={`flex items-center gap-2 px-3 py-2 border transition-all ${
@@ -183,7 +183,7 @@ export function ComplianceCheckWorkflow({
                   onClick={() => {
                     const updated = formData.notification_channels.includes('slack')
                       ? formData.notification_channels.filter((c) => c !== 'slack')
-                      : [...formData.notification_channels, 'slack'];
+                      : [...formData.notification_channels, 'slack'] as ('email' | 'slack')[];
                     setFormData({ ...formData, notification_channels: updated });
                   }}
                   className={`flex items-center gap-2 px-3 py-2 border transition-all ${

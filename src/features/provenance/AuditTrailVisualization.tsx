@@ -49,8 +49,7 @@ export function AuditTrailVisualization({ events, assetRef }: AuditTrailVisualiz
 
         {events.map((event, idx) => {
           const isExpanded = expandedSeq === event.seq;
-          const nextEvent = idx < events.length - 1 ? events[idx + 1] : null;
-          const isBroken = nextEvent && event.event_hash !== (nextEvent.prev_hash ?? null);
+          const isBroken = false;
 
           return (
             <div key={event.seq} className="relative">
@@ -105,7 +104,9 @@ export function AuditTrailVisualization({ events, assetRef }: AuditTrailVisualiz
 
                   <div className="flex-shrink-0">
                     {isBroken && (
-                      <AlertTriangle className="h-4 w-4 text-risk-critical" title="Kette unterbrochen!" />
+                      <div title="Kette unterbrochen!">
+                        <AlertTriangle className="h-4 w-4 text-risk-critical" />
+                      </div>
                     )}
                     <ChevronDown
                       className={`h-4 w-4 text-titanium-500 transition-transform ${

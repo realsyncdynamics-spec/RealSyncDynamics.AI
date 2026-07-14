@@ -10,6 +10,7 @@ import {
   createIngestKey, listIngestKeys, revokeIngestKey,
   type IngestKey, type IngestKeySource,
 } from './keysApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * Authenticated key-management for the Governance Telemetry
@@ -17,9 +18,15 @@ import {
  * tokens are shown EXACTLY ONCE at creation — server stores only
  * the sha256 hash + display prefix.
  */
-export function KeysView() {
+function _KeysView() {
   return <AuthGate>{() => <KeysInner />}</AuthGate>;
 }
+
+export const KeysView = withPerformanceMonitoring(
+  _KeysView,
+  'KeysView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 const ALL_SOURCES: IngestKeySource[] = [
   'website_scanner', 'browser_extension', 'sdk', 'api',

@@ -213,6 +213,20 @@ const PolicyPacksView = lazy(() => import('./features/policy-packs/PolicyPacksVi
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
+// Cloud Code Optimizer — öffentlicher Page-by-Page-Flow (Phase 1), lazy geladen.
+const OptimizerLanding = lazy(() => import('./pages/optimizer/OptimizerLanding').then((m) => ({ default: m.OptimizerLanding })));
+const OptimizerScan = lazy(() => import('./pages/optimizer/OptimizerScan').then((m) => ({ default: m.OptimizerScan })));
+const OptimizerScanning = lazy(() => import('./pages/optimizer/OptimizerScanning').then((m) => ({ default: m.OptimizerScanning })));
+const OptimizerResults = lazy(() => import('./pages/optimizer/OptimizerResults').then((m) => ({ default: m.OptimizerResults })));
+// Cloud Code Optimizer — Phase 2 (Auth, Pricing, Dashboard).
+const OptimizerAuth = lazy(() => import('./pages/optimizer/OptimizerAuth').then((m) => ({ default: m.OptimizerAuth })));
+const OptimizerVerify = lazy(() => import('./pages/optimizer/OptimizerVerify').then((m) => ({ default: m.OptimizerVerify })));
+const OptimizerPricing = lazy(() => import('./pages/optimizer/OptimizerPricing').then((m) => ({ default: m.OptimizerPricing })));
+const OptimizerDashboard = lazy(() => import('./pages/optimizer/OptimizerDashboard').then((m) => ({ default: m.OptimizerDashboard })));
+// Cloud Code Optimizer — Phase 3 (Checkout-Handoff, Auto-Optimizer).
+const OptimizerCheckout = lazy(() => import('./pages/optimizer/OptimizerCheckout').then((m) => ({ default: m.OptimizerCheckout })));
+const OptimizerOptimizing = lazy(() => import('./pages/optimizer/OptimizerOptimizing').then((m) => ({ default: m.OptimizerOptimizing })));
+const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete').then((m) => ({ default: m.OptimizerComplete })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
 const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
@@ -440,6 +454,18 @@ function RoutesWithTracking() {
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
+      {/* Cloud Code Optimizer — Page-by-Page-Flow (Phase 1) */}
+      <Route path="/optimizer" element={<OptimizerLanding />} />
+      <Route path="/optimizer/scan" element={<OptimizerScan />} />
+      <Route path="/optimizer/scanning" element={<OptimizerScanning />} />
+      <Route path="/optimizer/results" element={<OptimizerResults />} />
+      <Route path="/optimizer/auth" element={<OptimizerAuth />} />
+      <Route path="/optimizer/auth/verify" element={<OptimizerVerify />} />
+      <Route path="/optimizer/pricing" element={<OptimizerPricing />} />
+      <Route path="/optimizer/dashboard" element={<OptimizerDashboard />} />
+      <Route path="/optimizer/checkout" element={<OptimizerCheckout />} />
+      <Route path="/optimizer/optimizing" element={<OptimizerOptimizing />} />
+      <Route path="/optimizer/complete" element={<OptimizerComplete />} />
       <Route path="/automations" element={<AutomationsLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />

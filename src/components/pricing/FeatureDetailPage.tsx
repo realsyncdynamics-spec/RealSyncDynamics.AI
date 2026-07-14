@@ -90,7 +90,9 @@ export function FeatureDetailPage({ featureSlug }: FeatureDetailPageProps) {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/pricing" className="surface-mono py-4 text-base font-bold rounded-none text-center hover:bg-opacity-90 flex-1" data-testid="feature-back-to-paketubersicht">
+            {/* testid bewusst anders als der Header-Backlink (Zeile ~30) —
+                doppelte data-testids lösen Playwright-Strict-Mode-Fehler aus. */}
+            <Link to="/pricing" className="surface-mono py-4 text-base font-bold rounded-none text-center hover:bg-opacity-90 flex-1" data-testid="feature-back-to-pricing-cta">
               Zurück zur Paketübersicht
             </Link>
             {plans.length > 0 && (

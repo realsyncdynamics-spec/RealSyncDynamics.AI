@@ -12,6 +12,7 @@ import type {
   GovernanceAssetType, AiActClass,
   GovernancePolicyType, GovernancePolicyAction, GovernanceRiskLevel,
 } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/onboarding — first-time wizard. Steps:
@@ -26,9 +27,15 @@ import type {
  * Each step uses the same Edge Functions as the standalone CRUD
  * surfaces, so onboarding artefacts are first-class.
  */
-export function OnboardingView() {
+function _OnboardingView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const OnboardingView = withPerformanceMonitoring(
+  _OnboardingView,
+  'OnboardingView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -88,7 +95,7 @@ function Inner() {
           policyId={policyId}
           keyName={keyName}
           token={token}
-          onFinish={() => navigate('/governance')}
+          onFinish={() => navigate('/app/dashboard')}
         />
       )}
     </Shell>

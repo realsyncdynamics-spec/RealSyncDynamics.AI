@@ -581,3 +581,25 @@ html, body {
      Hintergründe — auf hellem Grund sonst nicht lesbar. */
   --color-brass-100: #8a6526;
 }
+
+/* -- MainLanding -- Light-Mode-Toggle (genehmigte Design-Lock-Erweiterung) --
+   Tailwind v4 exponiert Palettenfarben als CSS-Variablen auf :root; alle
+   text-, bg- und border-white- sowie cyan-Utilities (inkl. Opazitaets-
+   Varianten) referenzieren sie via var() bzw. color-mix(). Durch
+   Re-Definition innerhalb von .main-landing-light kippt der komplette
+   Weiss-Opazitaets-Stack von MainLanding.tsx auf Dunkel-auf-Hell, ohne die
+   Utility-Klassen im Component-Code anzufassen. Der Cyan-Akzent wird auf
+   den bereits an anderer Stelle im Produkt genutzten Petrol-Ton gemappt
+   (bessere Text-Kontrastwerte auf Weiss). Einzige Ausnahme: die arbitraere
+   rgb(3,7,18)-Kachel-Hintergrundfarbe in Platform/Industries, die als
+   Literal kompiliert (keine Variable) und daher explizit ueberschrieben
+   wird. Der Hero-Hintergrund (Night-Earth-Bild) wird zusaetzlich in
+   MainLanding.tsx bedingt durch einen hellen Gradient ersetzt. */
+.main-landing-light {
+     --color-white: #0f172a;
+     --color-cyan-300: #0f766e;
+     --color-cyan-400: #0f766e;
+}
+.main-landing-light .bg-\[rgb\(3\,7\,18\)\] {
+     background-color: #ffffff;
+}

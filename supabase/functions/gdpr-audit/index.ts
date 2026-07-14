@@ -20,6 +20,7 @@ import { isLikelyGermanJurisdiction } from '../_shared/jurisdiction.ts';
 import { stripPolicyDeclarations, effectiveCspValue } from '../_shared/tracker-detection.ts';
 import { assessScanCoverage } from '../_shared/scan-coverage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { detectAIDisclosure } from '../_shared/ai-disclosure-check.ts';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
@@ -536,6 +537,26 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
       detail: 'WCAG 2.1: Auto-Redirects via meta-refresh sind problematisch für Screenreader-User. Server-Redirect (301) bevorzugen.',
       paragraph_ref: 'BITV 2.0 / WCAG 2.2.1',
     });
+  }
+
+  // ── EU AI Act Art. 52: KI-Disclosure-Prüfung ──
+  if (status !== null && !fetchError) {
+    const aiDisclosure = detectAIDisclosure(html);
+    if (aiDisclosure.detected_ai_tools.length > 0) {
+      const tools = aiDisclosure.detected_ai_tools.join(', ');
+      const severity = aiDisclosure.has_disclosure ? 'low' : 'critical';
+      issues.push({
+        id: 'ai_disclosure_check',
+        severity,
+        title: aiDisclosure.has_disclosure
+          ? `KI-Nutzung offengelegt: ${tools}`
+          : `KI-Nutzung ohne Disclosure: ${tools}`,
+        detail: aiDisclosure.has_disclosure
+          ? `Die Website nutzt KI (${tools}) und hat einen Hinweis auf KI-Verwendung. Art. 52 AI Act konform.`
+          : `Die Website nutzt KI-Services (${tools}), hat aber keinen sichtbaren Hinweis auf KI-Verwendung. Art. 52 AI Act verlangt Transparenz: "Nutzer müssen wissen, dass sie mit KI interagieren."`,
+        paragraph_ref: 'AI Act Art. 52 (Limited-Risk AI)',
+      });
+    }
   }
 
   return issues;

@@ -16,7 +16,7 @@ export function DeploymentGovernancePage() {
     >
       <H2>Wann der Check feuert</H2>
       <P>
-        Drei Trigger sind heute unterstützt: GitHub-PR-Hook (push, PR, release), Vercel-/Netlify-Deploy-Webhook
+        Drei Trigger sind heute unterstützt: GitHub-PR-Hook (push, PR, release), Cloudflare-Pages-Deploy-Webhook
         (für statisch gebaute Sites) und GitLab-Pipeline-Hook. Die Check-Action liest den Diff,
         identifiziert Änderungen mit Governance-Relevanz und ruft die Policy-Engine an. Das
         Ergebnis landet als Check-Run auf der PR, plus ein strukturierter Kommentar mit

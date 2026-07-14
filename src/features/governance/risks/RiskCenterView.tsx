@@ -1034,7 +1034,9 @@ function incidentToRisk(inc: DbIncident): Risk {
 }
 
 // ─── Haupt-View ─────────────────────────────────────────────────────────────
-export function RiskCenterView() {
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+
+function _RiskCenterView() {
   const { activeTenantId } = useTenant();
   const navigate = useNavigate();
   const [activeRisks, setActiveRisks] = useState<Risk[]>(RISKS);
@@ -1294,3 +1296,9 @@ export function RiskCenterView() {
     </div>
   );
 }
+
+export const RiskCenterView = withPerformanceMonitoring(
+  _RiskCenterView,
+  'RiskCenterView',
+  { threshold: 500, maxRenders: 10 }
+);

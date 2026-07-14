@@ -11,6 +11,7 @@ import {
   type DbGovernanceAsset, type DbGovernancePolicy,
 } from './governanceApi';
 import type { GovernanceRiskLevel } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/events/:eventId — single-event drill-down. Reads
@@ -18,9 +19,15 @@ import type { GovernanceRiskLevel } from './types';
  * any) and the matched policy (if any). All four reads honour
  * tenant-RLS so an event from another tenant returns 404.
  */
-export function EventDetailView() {
+function _EventDetailView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const EventDetailView = withPerformanceMonitoring(
+  _EventDetailView,
+  'EventDetailView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { eventId } = useParams<{ eventId: string }>();

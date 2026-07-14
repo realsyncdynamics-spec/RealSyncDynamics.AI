@@ -5,6 +5,9 @@ import { getSupabase } from '../../lib/supabase';
  *   - PRICING_TIERS[i].planKey aus src/config/pricing.ts
  *   - public.products.default_for_plan_key in der DB
  * uebereinstimmen. 5-Tier seit PR #145.
+ *
+ * Hinweis: 'free_audit' ist das externe Identifier (Marketing, CTAs),
+ * aber dieser Checkout verneint es — Free braucht keinen Checkout.
  */
 export type PlanKey = 'free' | 'free-audit' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
 

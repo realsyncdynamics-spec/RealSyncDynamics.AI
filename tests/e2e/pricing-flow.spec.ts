@@ -118,6 +118,12 @@ test.describe('Pricing Flow', () => {
       const cardButtons = page.locator('[data-testid^="pricing-"]');
       const count = await cardButtons.count();
       expect(count).toBeGreaterThan(0);
+      // Die „Mehr erfahren"-CTA ist ein <Link> (Anchor), kein <button> —
+      // daher gezielt über die stabile data-testid prüfen (PricingPage.tsx).
+      for (const id of CARD_IDS.slice(0, 3)) { // Subset gegen Timeout
+        const infoLink = page.locator(`[data-testid="pricing-info-${id}"]`);
+        await expect(infoLink).toBeVisible({ timeout: 10000 });
+      }
     });
 
     test('should have booking buttons for each plan', async ({ page }) => {
@@ -133,6 +139,12 @@ test.describe('Pricing Flow', () => {
       // Verify at least one button is visible
       const firstButton = ctaButtons.first();
       await expect(firstButton).toBeVisible({ timeout: 5000 });
+      // Die Primär-CTA jeder Karte ist ein <a>/<Link> (Anchor), kein <button>.
+      // Prüfe die Buchen-CTA über ihre stabile data-testid.
+      for (const id of CARD_IDS) {
+        const bookLink = page.locator(`[data-testid="pricing-book-${id}"]`);
+        await expect(bookLink).toBeVisible({ timeout: 10000 });
+      }
     });
   });
 

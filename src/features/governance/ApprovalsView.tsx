@@ -11,15 +11,22 @@ import {
   type Approval, type ApprovalStatus,
 } from './approvalsApi';
 import type { GovernanceRiskLevel } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/approvals — pending-approval queue for events that
  * the policy engine stamped as require_approval. Each row links
  * back to the event detail; resolution adds an evidence row.
  */
-export function ApprovalsView() {
+function _ApprovalsView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ApprovalsView = withPerformanceMonitoring(
+  _ApprovalsView,
+  'ApprovalsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 const FILTERS: Array<{ key: ApprovalStatus; label: string }> = [
   { key: 'pending',  label: 'Offen' },

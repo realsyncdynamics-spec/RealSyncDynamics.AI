@@ -14,7 +14,7 @@
 #   7. Runs install + lint + typecheck + test + build (only the
 #      scripts that exist in package.json).
 #   8. On clean build: pushes default branch.
-#   9. Auto-deploys via Vercel CLI / Netlify CLI if available.
+#   9. Auto-deploys via Wrangler CLI (Cloudflare Pages) if available.
 #  10. Notes GitHub Actions deploy is triggered by the push otherwise.
 #
 # Safety rules (hard, never violated):
@@ -184,18 +184,17 @@ ok "Pushed."
 # ─── Deploy ────────────────────────────────────────────────────────────
 step "Deploy phase"
 
-if command -v vercel >/dev/null 2>&1; then
-  step "Vercel CLI detected — production deploy"
+if command -v wrangler >/dev/null 2>&1; then
+    step "Wrangler CLI detected — Cloudflare Pages deploy"
   if [[ "$DRY_RUN" == "true" ]]; then
-    echo "  (dry-run) vercel pull --yes --environment=production"
-    echo "  (dry-run) vercel build --prod"
-    echo "  (dry-run) vercel deploy --prebuilt --prod"
+    echo "  (dry-run)   step "Deploying to Cloudflare Pages via Wrangler""
+    echo "  (dry-run)   wrangler pages deploy dist --project-name=realsync --commit-dirty=true"
+      echo "  (dry-run) # wrangler deploy already echoed above"
   else
-    vercel pull --yes --environment=production
-    vercel build --prod
-    vercel deploy --prebuilt --prod
-  fi
-  ok "Vercel deploy invoked."
+      step "Deploying to Cloudflare Pages via Wrangler"
+      wrangler pages deploy dist --project-name=realsync --commit-dirty=true
+    
+  ok "Cloudflare Pages deploy invoked."
 elif command -v netlify >/dev/null 2>&1; then
   step "Netlify CLI detected — production deploy"
   if [[ "$DRY_RUN" == "true" ]]; then
@@ -205,9 +204,9 @@ elif command -v netlify >/dev/null 2>&1; then
   fi
   ok "Netlify deploy invoked."
 elif [[ -d .github/workflows ]]; then
-  warn "Vercel/Netlify CLI not found — relying on GitHub Actions deploy triggered by the push."
+    warn "Wrangler CLI not found — relying on GitHub Actions Cloudflare deploy triggered by the push."
 else
-  warn "Vercel/Netlify CLI not found and no .github/workflows. Manual deploy required."
+    warn "Wrangler CLI not found and no .github/workflows. Manual deploy required."
 fi
 
 ok "Release-merge-deploy completed for $BRANCH → $DEFAULT_BRANCH."

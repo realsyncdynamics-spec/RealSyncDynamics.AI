@@ -21,9 +21,11 @@ export function ScanEntryPage() {
 
     try {
       const normalizedUrl = domain.trim().match(/^https?:\/\//i) ? domain.trim() : `https://${domain.trim()}`;
+      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
+      // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
       const data = await postEdgeFunction<{ audit_id?: string; id?: string }>('gdpr-audit', {
         url: normalizedUrl,
-      });
+      }, { requireAuth: false });
 
       const auditId = data.audit_id || data.id;
 

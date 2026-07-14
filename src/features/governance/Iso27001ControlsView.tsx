@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface Iso27001Control {
   id: string;
@@ -18,9 +19,15 @@ interface Iso27001Control {
   next_review_date: string | null;
 }
 
-export function Iso27001ControlsView() {
+function _Iso27001ControlsView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso27001ControlsView = withPerformanceMonitoring(
+  _Iso27001ControlsView,
+  'Iso27001ControlsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

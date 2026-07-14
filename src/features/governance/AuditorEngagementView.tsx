@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface Assessor {
   id: string;
@@ -55,9 +56,15 @@ interface AuditEngagementState {
   recent_events: AuditEvent[];
 }
 
-export function AuditorEngagementView() {
+function _AuditorEngagementView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AuditorEngagementView = withPerformanceMonitoring(
+  _AuditorEngagementView,
+  'AuditorEngagementView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

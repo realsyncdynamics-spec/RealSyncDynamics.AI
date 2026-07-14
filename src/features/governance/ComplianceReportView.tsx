@@ -13,6 +13,7 @@ import {
   type DbGovernanceEvidence, type DbFrameworkControl, type DbAssetControlMapping,
 } from './governanceApi';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/reports — point-in-time tenant snapshot.
@@ -27,9 +28,15 @@ import { getSupabase } from '../../lib/supabase';
  * sealed timestamping (signed receipt stored server-side), see
  * the deferred backlog in the PR description.
  */
-export function ComplianceReportView() {
+function _ComplianceReportView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ComplianceReportView = withPerformanceMonitoring(
+  _ComplianceReportView,
+  'ComplianceReportView',
+  { threshold: 2000, maxRenders: 8 }
+);
 
 interface ReportShape {
   report_id: string;

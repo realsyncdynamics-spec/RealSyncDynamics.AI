@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface CertificationStatus {
   overall_score: number;
@@ -114,9 +115,15 @@ const QUICK_ACTIONS = [
   },
 ];
 
-export function Iso42001CertificationHubView() {
+function _Iso42001CertificationHubView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso42001CertificationHubView = withPerformanceMonitoring(
+  _Iso42001CertificationHubView,
+  'Iso42001CertificationHubView',
+  { threshold: 2000, maxRenders: 8 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

@@ -15,6 +15,7 @@ import {
 } from './governanceApi';
 import { archiveAsset, autoMapAsset } from './resourcesApi';
 import type { GovernanceRiskLevel, GovernanceControlStatus } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/assets/:assetId — single-asset drill-down. Shows
@@ -22,9 +23,15 @@ import type { GovernanceRiskLevel, GovernanceControlStatus } from './types';
  * reference it, framework-control mappings, and a quick archive
  * action.
  */
-export function AssetDetailView() {
+function _AssetDetailView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AssetDetailView = withPerformanceMonitoring(
+  _AssetDetailView,
+  'AssetDetailView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 const STATUS_LABEL: Record<GovernanceControlStatus, string> = {
   implemented:    'Implementiert',

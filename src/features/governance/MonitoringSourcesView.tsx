@@ -7,6 +7,7 @@ import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { WorkspaceShell } from '../workspace/WorkspaceShell';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 type SourceType = 'website' | 'ai_system' | 'api' | 'vendor' | 'repository' | 'workflow' | 'document';
 type SourceStatus = 'pending' | 'active' | 'paused' | 'error';
@@ -77,7 +78,7 @@ function formatShort(iso: string | null): string {
   });
 }
 
-export function MonitoringSourcesView() {
+function _MonitoringSourcesView() {
   return (
     <AuthGate>
       {() => (
@@ -88,6 +89,12 @@ export function MonitoringSourcesView() {
     </AuthGate>
   );
 }
+
+export const MonitoringSourcesView = withPerformanceMonitoring(
+  _MonitoringSourcesView,
+  'MonitoringSourcesView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

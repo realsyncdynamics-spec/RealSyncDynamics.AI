@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface TeamMember {
   id: string;
@@ -31,9 +32,15 @@ interface TaskAssignment {
   priority: 'low' | 'medium' | 'high' | 'critical';
 }
 
-export function GovernanceTeamView() {
+function _GovernanceTeamView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const GovernanceTeamView = withPerformanceMonitoring(
+  _GovernanceTeamView,
+  'GovernanceTeamView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

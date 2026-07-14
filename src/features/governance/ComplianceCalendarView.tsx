@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface CalendarDeadline {
   id: string;
@@ -20,9 +21,15 @@ interface CalendarDeadline {
   tags: string[];
 }
 
-export function ComplianceCalendarView() {
+function _ComplianceCalendarView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ComplianceCalendarView = withPerformanceMonitoring(
+  _ComplianceCalendarView,
+  'ComplianceCalendarView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

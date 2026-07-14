@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface Assessment {
   id: string;
@@ -18,9 +19,15 @@ interface Assessment {
   created_at: string;
 }
 
-export function AiActRiskAssessmentView() {
+function _AiActRiskAssessmentView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AiActRiskAssessmentView = withPerformanceMonitoring(
+  _AiActRiskAssessmentView,
+  'AiActRiskAssessmentView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

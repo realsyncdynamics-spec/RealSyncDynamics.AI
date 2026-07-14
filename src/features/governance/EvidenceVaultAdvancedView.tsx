@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface EvidenceItem {
   id: string;
@@ -20,9 +21,15 @@ interface EvidenceItem {
   created_at: string;
 }
 
-export function EvidenceVaultAdvancedView() {
+function _EvidenceVaultAdvancedView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const EvidenceVaultAdvancedView = withPerformanceMonitoring(
+  _EvidenceVaultAdvancedView,
+  'EvidenceVaultAdvancedView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

@@ -11,6 +11,7 @@ import {
   type IngestWebhook,
 } from './webhooksApi';
 import type { GovernanceRiskLevel } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * Authenticated, owner/admin-only Webhook management for outbound
@@ -19,9 +20,15 @@ import type { GovernanceRiskLevel } from './types';
  * webhooks are fired by governance-ingest (v3+) after every
  * successful event insert that crosses min_risk_level threshold.
  */
-export function WebhooksView() {
+function _WebhooksView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const WebhooksView = withPerformanceMonitoring(
+  _WebhooksView,
+  'WebhooksView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 const RISK_LEVELS: GovernanceRiskLevel[] = ['info', 'low', 'medium', 'high', 'critical'];
 

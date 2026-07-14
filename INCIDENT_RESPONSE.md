@@ -85,7 +85,7 @@
    - Generate new RESEND_API_KEY
 3. Update all environment variables in:
    - Cloudflare Pages project settings
-   - Vercel/deployment pipeline
+   - Cloudflare Pages/deployment pipeline
    - Local .env.local files (team)
 4. Scan git history for exposed secrets:
    ```bash

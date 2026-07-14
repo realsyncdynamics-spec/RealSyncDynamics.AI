@@ -11,6 +11,7 @@ import {
 } from './policyTemplates';
 import { createPolicy } from './resourcesApi';
 import type { GovernanceRiskLevel } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/policies/templates — one-click install for curated
@@ -18,9 +19,15 @@ import type { GovernanceRiskLevel } from './types';
  * governance-resources Edge Function so installed templates are
  * just normal governance_policies rows from then on.
  */
-export function PolicyTemplatesView() {
+function _PolicyTemplatesView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const PolicyTemplatesView = withPerformanceMonitoring(
+  _PolicyTemplatesView,
+  'PolicyTemplatesView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

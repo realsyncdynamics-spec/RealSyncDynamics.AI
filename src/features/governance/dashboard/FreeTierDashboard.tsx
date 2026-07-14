@@ -5,6 +5,7 @@ import { useTenant } from '../../../core/access/TenantProvider';
 import { ScanActionGuard } from '../../../core/billing/ScanActionGuard';
 import { ArrowRight, Zap, Lock } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
+import { usePerformanceMonitor, measureAsync } from '../../../lib/performance';
 
 interface DashboardCard {
   id: string;
@@ -75,6 +76,8 @@ const DASHBOARD_CARDS: DashboardCard[] = [
 ];
 
 export function FreeTierDashboard() {
+  usePerformanceMonitor('FreeTierDashboard', { threshold: 300 });
+
   const navigate = useNavigate();
   const { tier, hasFeature, canAccess } = useEntitlements();
   const { activeTenantId, tenants } = useTenant();
@@ -92,15 +95,21 @@ export function FreeTierDashboard() {
     void (async () => {
       try {
         const sb = getSupabase();
-        const { data } = await sb
-          .from('tenants')
-          .select('org_name, tenant_type')
-          .eq('id', activeTenantId)
-          .single();
-        if (!cancelled && data) {
+        const result = await measureAsync('fetch-tenant-details',
+          async () => {
+            const { data: tenantData } = await sb
+              .from('tenants')
+              .select('org_name, tenant_type')
+              .eq('id', activeTenantId)
+              .single();
+            return tenantData;
+          },
+          { category: 'database', tags: { table: 'tenants' } }
+        );
+        if (!cancelled && result) {
           setTenantDetails({
-            orgName: data.org_name || undefined,
-            tenantType: data.tenant_type || undefined,
+            orgName: result.org_name || undefined,
+            tenantType: result.tenant_type || undefined,
           });
         }
       } catch {

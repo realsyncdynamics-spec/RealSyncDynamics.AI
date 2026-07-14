@@ -37,6 +37,7 @@
     "services/realsync-evidence-runtime",
     "worker",
     "apps/agent-runtime",
-    "extension"
+    "extension",
+    "deploy"
   ]
 }

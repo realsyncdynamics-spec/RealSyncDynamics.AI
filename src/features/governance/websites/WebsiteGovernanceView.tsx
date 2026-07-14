@@ -206,8 +206,10 @@ function AddDomainModal({ onAdd, onClose }: { onAdd: (domain: string) => void; o
   );
 }
 
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+
 // ─── Haupt-View ──────────────────────────────────────────────────────────────
-export function WebsiteGovernanceView() {
+function _WebsiteGovernanceView() {
   const { activeTenantId } = useTenant();
   const [rows, setRows]       = useState<WebsiteRow[]>(MOCK_ROWS);
   const [search, setSearch]   = useState('');
@@ -385,3 +387,9 @@ export function WebsiteGovernanceView() {
     </div>
   );
 }
+
+export const WebsiteGovernanceView = withPerformanceMonitoring(
+  _WebsiteGovernanceView,
+  'WebsiteGovernanceView',
+  { threshold: 500, maxRenders: 10 }
+);

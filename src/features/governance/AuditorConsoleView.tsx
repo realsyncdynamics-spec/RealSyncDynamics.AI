@@ -33,10 +33,17 @@ import {
   type Racpo,
   type TenantQuadrant,
 } from './auditorConsoleApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
-export function AuditorConsoleView() {
+function _AuditorConsoleView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AuditorConsoleView = withPerformanceMonitoring(
+  _AuditorConsoleView,
+  'AuditorConsoleView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

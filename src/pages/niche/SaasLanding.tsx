@@ -13,7 +13,7 @@ const SAAS_CONFIG: NicheConfig = {
     {
       Icon: Cookie,
       title: 'Marketing-Site mit Tracker-Wildwuchs',
-      body: 'Growth-Stack mit GA4, Hubspot, Hotjar, LinkedIn Insight und Meta Pixel — meist alle vor Consent geladen. Klassischer TTDSG-§ 25-Verstoß, abmahnbar.',
+      body: 'Growth-Stack mit GA4, Hubspot, Hotjar, LinkedIn Insight und Meta Pixel — meist alle vor Consent geladen. Klassischer TDDDG-§ 25-Verstoß, abmahnbar.',
     },
     {
       Icon: Database,

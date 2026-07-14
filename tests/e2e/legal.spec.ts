@@ -3,15 +3,15 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
 
 const legalRoutes = [
-  { id: 'LEGAL-001', path: '/impressum', label: 'Impressum', required: true },
-  { id: 'LEGAL-002', path: '/datenschutz', label: 'Datenschutz', required: true },
-  { id: 'LEGAL-003', path: '/agb', label: 'AGB', required: false },
+  // Konkreter, stabiler Inhalt je Rechtstext: Impressum trägt ein <h1>Impressum,
+  // die Datenschutzerklärung rendert ihren Titel als Marken-Header.
+  { id: 'LEGAL-001', path: '/impressum', label: 'Impressum', required: true, content: /Impressum/i },
+  { id: 'LEGAL-002', path: '/datenschutz', label: 'Datenschutz', required: true, content: /Datenschutzerklärung/i },
+  { id: 'LEGAL-003', path: '/agb', label: 'AGB', required: false, content: /AGB|Allgemeine Geschäftsbedingungen/i },
 ];
 
 for (const route of legalRoutes) {
-  const testFn = route.required ? test : test;
-
-  testFn(`[${route.id}] ${route.label} (${route.path}) ist erreichbar`, async ({ page }) => {
+  test(`[${route.id}] ${route.label} (${route.path}) ist erreichbar`, async ({ page }) => {
     const response = await page.goto(BASE_URL + route.path, {
       waitUntil: 'domcontentloaded',
       timeout: 20000,
@@ -24,8 +24,7 @@ for (const route of legalRoutes) {
 
     expect(response?.status(), `HTTP-Status ${route.path}`).toBeLessThan(400);
 
-    // Mindestinhalt prüfen
-    const content = await page.locator('body').textContent();
-    expect(content?.length ?? 0).toBeGreaterThan(200);
+    // Konkreter Mindestinhalt statt nur Body-Länge.
+    await expect(page.getByText(route.content).first()).toBeVisible({ timeout: 10000 });
   });
 }

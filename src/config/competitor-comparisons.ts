@@ -36,7 +36,7 @@ const CAPABILITIES = {
 
 const WHY_IT_MATTERS: Record<string, string> = {
   [CAPABILITIES.COOKIE_BANNER]:
-    'Pflicht aus § 25 TTDSG + Art. 6 Abs. 1 lit. a DSGVO. Aber: Banner allein lösen keine Compliance — sie sind ein Output-Modul.',
+    'Pflicht aus § 25 TDDDG + Art. 6 Abs. 1 lit. a DSGVO. Aber: Banner allein lösen keine Compliance — sie sind ein Output-Modul.',
   [CAPABILITIES.WEBSITE_SCAN]:
     'Die meisten DSGVO-Verstöße passieren technisch (Tracker, Fonts, Drittanbieter), nicht im Banner. Ohne echten Headless-Browser-Scan bleiben sie unsichtbar.',
   [CAPABILITIES.CONSENT_TIMING]:

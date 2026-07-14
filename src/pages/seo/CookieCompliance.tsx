@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Cookie, AlertTriangle, CheckCircle2, Code } from 'lucide-react';
 
 /**
- * /cookie-compliance — fokussierte SEO-Doorway für Cookie-Banner-/TTDSG-/
+ * /cookie-compliance — fokussierte SEO-Doorway für Cookie-Banner-/TDDDG-/
  * BfDI-2024-Konformität. Direct-conversion zu /audit oder /cookie-consent-sdk.
  */
 export function CookieCompliance() {
@@ -24,10 +24,10 @@ export function CookieCompliance() {
         <div className="max-w-3xl mx-auto space-y-10">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-amber-900 bg-amber-950/30 text-amber-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <Cookie className="h-3 w-3" /> TTDSG § 25 · BfDI 2024 · DSGVO Art. 6 lit. a
+              <Cookie className="h-3 w-3" /> TDDDG § 25 · BfDI 2024 · DSGVO Art. 6 lit. a
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
-              Cookie-Compliance prüfen — <span className="text-security-400">TTDSG-konform</span>
+              Cookie-Compliance prüfen — <span className="text-security-400">TDDDG-konform</span>
             </h1>
             <p className="text-lg text-titanium-300 max-w-xl mx-auto leading-relaxed">
               Drei gleichberechtigte Buttons. Reject vor Tracking-Load. AVV mit allen Anbietern.
@@ -39,7 +39,7 @@ export function CookieCompliance() {
             <ul className="space-y-1.5 text-sm">
               <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50 mr-1">3 gleichberechtigte Buttons:</strong> „Alles akzeptieren" / „Alles ablehnen" / „Anpassen" — same size, same color, same position.</li>
               <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50 mr-1">Kein Pre-Check:</strong> non-essential Cookies dürfen NICHT vorausgewählt sein (Art. 7 Abs. 4 DSGVO).</li>
-              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50 mr-1">Kein Tracker-Load vor Consent:</strong> Google Analytics, Meta Pixel, Hotjar dürfen erst nach Opt-In ausgeführt werden (TTDSG § 25 Abs. 1).</li>
+              <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50 mr-1">Kein Tracker-Load vor Consent:</strong> Google Analytics, Meta Pixel, Hotjar dürfen erst nach Opt-In ausgeführt werden (TDDDG § 25 Abs. 1).</li>
               <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50 mr-1">Widerruf gleich einfach:</strong> ein-Klick-Widerruf (Art. 7 Abs. 3) — kein Cookie-Banner-Re-Open-Pflicht.</li>
               <li className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" /><strong className="text-titanium-50 mr-1">Audit-Log:</strong> Consent-Entscheidung muss nachweisbar gespeichert werden (Beweislast beim Verantwortlichen).</li>
             </ul>

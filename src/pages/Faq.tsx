@@ -258,8 +258,8 @@ const ITEMS: Item[] = [
           Kontroll-Matrix und die <strong className="text-titanium-50">Abdeckung</strong> wird gegen deine dokumentierten Maßnahmen berechnet.
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li>Packs u. a.: DSGVO Essentials · EU AI Act (High-Risk, Art. 9–15) · NIS2 · DORA · ISO 27001 Foundation · TISAX (Automotive) · FinTech-Kombi (DSGVO + NIS2 + DORA).</li>
-          <li>Jederzeit aktivier-/deaktivierbar; individuelle Unternehmensrichtlinien ergänzbar.</li>
+          <li>Packs u. a.: DSGVO (vollständiger Kernkatalog) · EU AI Act High-Risk (Art. 8–27) · NIS2 (inkl. Maßnahmenkatalog Art. 21) · DORA · ISO 27001 Annex A 2022 (93 Controls) · TISAX (Automotive) · FinTech-Kombi (DSGVO + NIS2 + DORA).</li>
+          <li>Vollständige Framework-Kataloge statt kuratierter Auszüge; jederzeit aktivier-/deaktivierbar; individuelle Unternehmensrichtlinien ergänzbar.</li>
         </ul>
         <p className="mt-2">
           Im Dashboard: <Link to="/app/policy-packs" className="text-security-400">/app/policy-packs</Link>

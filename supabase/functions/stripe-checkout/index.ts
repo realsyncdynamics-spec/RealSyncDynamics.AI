@@ -31,12 +31,15 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // headers and surfaces to the browser as "Failed to send a request to the
 // Edge Function".
 async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
-  const fromEnv = Deno.env.get(envVar);
-  if (fromEnv) return fromEnv;
+  // Vault-first, env-fallback: a key provisioned via set_app_secret() must be
+  // able to OVERRIDE a stale or placeholder env var without a function
+  // redeploy. (Previously this read env first, which silently defeated that
+  // override — a `sk_live_…_KEY` placeholder env var could not be corrected
+  // via the Vault.)
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
   const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
-  if (error) return null;
-  return typeof data === 'string' && data.length > 0 ? data : null;
+  if (!error && typeof data === 'string' && data.length > 0) return data;
+  return Deno.env.get(envVar) ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -66,8 +69,8 @@ Deno.serve(async (req) => {
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
   }
-  if (body.plan_key === 'free') {
-    return jsonError(400, 'BAD_REQUEST', 'free plan does not require checkout');
+  if (body.plan_key === 'free_audit') {
+    return jsonError(400, 'BAD_REQUEST', 'Free Audit braucht keinen Checkout');
   }
 
   // Membership + role check

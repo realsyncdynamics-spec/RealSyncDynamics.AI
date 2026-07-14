@@ -4,7 +4,7 @@
  *
  * Risk Center — Governance OS
  * Ampelsystem: Kritisch / Hoch / Mittel / Niedrig
- * DSGVO · EU AI Act · TTDSG · Technische Sicherheit
+ * DSGVO · EU AI Act · TDDDG · Technische Sicherheit
  */
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -107,7 +107,7 @@ const RISKS: Risk[] = [
     severity: 'Kritisch',
     title: 'Meta Pixel ohne Einwilligung auf app.atelier-nord.de',
     category: 'Cookie & Consent',
-    framework: 'DSGVO Art. 6 · TTDSG §25',
+    framework: 'DSGVO Art. 6 · TDDDG §25',
     systems: ['app.atelier-nord.de'],
     description: 'Meta Pixel wird unabhängig vom Consent-Status geladen. Tracking-Daten fließen vor Einwilligung nach Meta (USA). Sofortige Abstellung erforderlich.',
     status: 'Offen',
@@ -159,7 +159,7 @@ const RISKS: Risk[] = [
     severity: 'Hoch',
     title: 'Cookie-Banner ohne granulare Kategorien — blog.atelier-nord.de',
     category: 'Cookie & Consent',
-    framework: 'TTDSG §25 · DSGVO Art. 7',
+    framework: 'TDDDG §25 · DSGVO Art. 7',
     systems: ['blog.atelier-nord.de'],
     description: 'Nur „Alle akzeptieren" oder „Alle ablehnen" möglich. Getrennte Ablehnung nach Kategorie (Analytics, Marketing) fehlt. EuGH-Rechtsprechung Planet49 missachtet.',
     status: 'In Bearbeitung',
@@ -227,7 +227,7 @@ const RISKS: Risk[] = [
     severity: 'Hoch',
     title: 'Google Analytics vor Consent-Bestätigung (Δt = -2.3s)',
     category: 'Cookie & Consent',
-    framework: 'DSGVO Art. 6 · TTDSG §25',
+    framework: 'DSGVO Art. 6 · TDDDG §25',
     systems: ['blog.atelier-nord.de'],
     description: 'GA4 feuert Events 2.3 Sekunden vor Consent-Interaktion. Pre-Consent-Tracking liegt vor. Messung bestätigt durch Network Trace.',
     status: 'Offen',
@@ -347,7 +347,7 @@ const RISKS: Risk[] = [
     severity: 'Mittel',
     title: 'Neuer Tracker analytics.partner.io auf shop.atelier-nord.de',
     category: 'Cookie & Consent',
-    framework: 'TTDSG §25 · DSGVO Art. 6',
+    framework: 'TDDDG §25 · DSGVO Art. 6',
     systems: ['shop.atelier-nord.de'],
     description: 'Unbekanntes Skript analytics.partner.io wurde neu eingebunden. Zweck und Anbieter nicht dokumentiert.',
     status: 'Offen',
@@ -433,7 +433,7 @@ const RISKS: Risk[] = [
     severity: 'Niedrig',
     title: 'Cookie-Anzahl um 1 gestiegen — atelier-nord.de',
     category: 'Cookie & Consent',
-    framework: 'TTDSG §25',
+    framework: 'TDDDG §25',
     systems: ['atelier-nord.de'],
     description: 'Monitoring erkannte Cookie-Count von 11 auf 12 gestiegen. Neues Cookie noch nicht klassifiziert.',
     status: 'In Bearbeitung',

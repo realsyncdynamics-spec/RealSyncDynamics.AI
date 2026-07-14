@@ -81,7 +81,7 @@ Regeln:
 - Schema: { "summary": string, "steps": [{ "title": string, "detail": string }], "legal_reference": string }
 - summary: 1-2 Sätze, was zu tun ist.
 - steps: 3-6 konkrete Schritte. detail-Texte erwähnen NIE „Beratung", sondern „technische Umsetzung".
-- legal_reference: relevanter DSGVO-Artikel oder TTDSG-Paragraph, sonst "".
+- legal_reference: relevanter DSGVO-Artikel oder TDDDG-Paragraph, sonst "".
 - Keine Marketing-Sprache. Keine Rechtsberatung.`;
 
 /**

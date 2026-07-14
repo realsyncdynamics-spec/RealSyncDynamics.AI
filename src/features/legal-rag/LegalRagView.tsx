@@ -19,7 +19,7 @@ const FRAMEWORK_LABEL: Record<LegalFramework, string> = {
   dsa:      'DSA',
   data_act: 'Data Act',
   eidas:    'eIDAS',
-  ttdsg:    'TTDSG',
+  ttdsg:    'TDDDG',
   c2pa:     'C2PA',
   other:    'Sonstige',
 };

@@ -6,7 +6,7 @@ import { ScoreGauge } from '../components/ScoreGauge';
 import { EmptyState } from '../components/States';
 import { COMPLIANCE_OBLIGATIONS, SCORES } from '../mock/data';
 
-const CATEGORIES = ['Alle', 'DSGVO', 'EU AI Act', 'TTDSG'] as const;
+const CATEGORIES = ['Alle', 'DSGVO', 'EU AI Act', 'TDDDG'] as const;
 
 export function CompliancePage() {
   const [category, setCategory] = useState<typeof CATEGORIES[number]>('Alle');
@@ -24,7 +24,7 @@ export function CompliancePage() {
         </p>
         <h1 className="mt-1 font-display text-2xl font-bold text-titanium-50 sm:text-3xl">Compliance</h1>
         <p className="mt-1 text-sm text-titanium-400">
-          {openCount} offene Pflichten · DSGVO, TTDSG &amp; EU AI Act im Überblick
+          {openCount} offene Pflichten · DSGVO, TDDDG &amp; EU AI Act im Überblick
         </p>
       </div>
 

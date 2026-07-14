@@ -6,15 +6,18 @@ let aiClient: GoogleGenAI | null = null;
  * Soft check used during app boot. Logs a warning if Gemini is unconfigured
  * — the app keeps working, only Gemini-backed features fail at call time.
  * Returns true when a key is available.
+ * Only warns in dev mode to avoid console spam in production.
  */
 export function validateGeminiConfig(): boolean {
   const apiKey = process.env.GEMINI_API_KEY;
   if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-    console.warn(
-      '[gemini] GEMINI_API_KEY is not set. Gemini-backed features will be ' +
-      'disabled. Anthropic / Ollama / OpenAI providers (via Edge Functions) ' +
-      'are unaffected.'
-    );
+    if (import.meta.env.DEV) {
+      console.warn(
+        '[gemini] GEMINI_API_KEY is not set. Gemini-backed features will be ' +
+        'disabled. Anthropic / Ollama / OpenAI providers (via Edge Functions) ' +
+        'are unaffected.'
+      );
+    }
     return false;
   }
   return true;

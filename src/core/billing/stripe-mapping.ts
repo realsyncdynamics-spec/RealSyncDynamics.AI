@@ -18,6 +18,11 @@ const PRICE_FALLBACK = {
   starter: 'price_1TVbdCCNKcHrCAICUiJEMfyf',
   growth: 'price_1TVbdbCNKcHrCAICBr5X3NmN',
   agency: 'price_1TVbduCNKcHrCAICT0IYHOmB',
+  scale: 'price_1TVbePCNKcHrCAICE2Y5Z0mL',
+  starter_yearly: 'price_internal_starter_yearly_790',
+  growth_yearly: 'price_internal_growth_yearly_2490',
+  agency_yearly: 'price_internal_agency_yearly_6900',
+  scale_yearly: 'price_internal_scale_yearly_19000',
 } as const;
 
 const env = import.meta.env;
@@ -38,6 +43,26 @@ export const STRIPE_PLAN_MAPPING: Record<string, { priceId: string; label: strin
   agency: {
     priceId: env.VITE_STRIPE_PRICE_AGENCY || PRICE_FALLBACK.agency,
     label: 'Unternehmen (Agency)',
+  },
+  scale: {
+    priceId: env.VITE_STRIPE_PRICE_SCALE || PRICE_FALLBACK.scale,
+    label: 'Scale (Reseller)',
+  },
+  starter_yearly: {
+    priceId: env.VITE_STRIPE_PRICE_STARTER_YEARLY || PRICE_FALLBACK.starter_yearly,
+    label: 'Anlasser Jährlich (Starter)',
+  },
+  growth_yearly: {
+    priceId: env.VITE_STRIPE_PRICE_GROWTH_YEARLY || PRICE_FALLBACK.growth_yearly,
+    label: 'Wachstum Jährlich (Growth)',
+  },
+  agency_yearly: {
+    priceId: env.VITE_STRIPE_PRICE_AGENCY_YEARLY || PRICE_FALLBACK.agency_yearly,
+    label: 'Unternehmen Jährlich (Agency)',
+  },
+  scale_yearly: {
+    priceId: env.VITE_STRIPE_PRICE_SCALE_YEARLY || PRICE_FALLBACK.scale_yearly,
+    label: 'Scale Jährlich (Reseller)',
   },
 };
 

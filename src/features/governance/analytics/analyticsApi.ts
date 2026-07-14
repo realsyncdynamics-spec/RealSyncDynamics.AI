@@ -1,6 +1,6 @@
 // Governance Analytics API Layer
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase } from '../../../lib/supabase';
 import type {
   DbGovernanceKpiSnapshot,
   TimeseriesRow,
@@ -11,10 +11,9 @@ import type {
   AnalyticsExportResponse,
 } from './types';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+// Zentraler Singleton — kein eigener Client (verhindert „Multiple GoTrueClient
+// instances" und nutzt den Produktions-Fallback aus supabaseUrl.ts).
+const supabase = getSupabase();
 
 // Fetch aggregated KPI data for date range
 export async function fetchKpiRange(

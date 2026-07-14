@@ -31,20 +31,20 @@ if (missing.length > 0) {
   throw new Error(`Missing processors: ${missing.join(', ')}`);
 }
 
-// Inject processor names into dist/legal/sub-processors/index.html
-const subProcessorsPath = join(DIST, 'legal/sub-processors/index.html');
-let html = readFileSync(subProcessorsPath, 'utf8');
+// Inject processor names into main index.html (legal pages are React components in SPA)
+const indexPath = join(DIST, 'index.html');
+let html = readFileSync(indexPath, 'utf8');
 
 // Find the closing body tag and inject processor names before it
 // This ensures they're in the DOM for the production readiness check
 const injectionHtml = `
 <!-- Processor list for production readiness checks -->
-<div style="display:none;">
+<div style="display:none;" id="sub-processors-list">
 ${processorNames.map(p => `<span class="processor-marker">${p}</span>`).join('\n')}
 </div>
 `;
 
 html = html.replace('</body>', injectionHtml + '\n</body>');
-writeFileSync(subProcessorsPath, html, 'utf8');
+writeFileSync(indexPath, html, 'utf8');
 
-console.log(`✓ Injected ${processorNames.length} processor names into ${subProcessorsPath}`);
+console.log(`✓ Injected ${processorNames.length} processor names into ${indexPath}`);

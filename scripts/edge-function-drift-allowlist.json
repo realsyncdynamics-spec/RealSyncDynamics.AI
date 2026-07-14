@@ -1,14 +1,14 @@
 {
   "_comment": "Bekannter Altbestand: live deployte Edge Functions, die (noch) nicht im Repo liegen. Grandfathered, damit der Drift-Guard gruen startet und nur NEUEN Drift blockt. Beim Aufraeumen (supabase functions delete <slug>) Eintrag hier entfernen. Ziel: leere Liste. Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md.",
   "allow": [
-    "vault-key-setter",
-    "vault-set-secret",
-    "debug-secret-shape",
-    "stripe-webhook-fixer",
-    "stripe-webhook-provision",
     "governance-dsr",
     "governance-incidents",
     "governance-connectors",
-    "governance-vendors"
+    "governance-vendors",
+    "debug-secret-shape",
+    "vault-set-secret",
+    "vault-key-setter",
+    "stripe-webhook-fixer",
+    "stripe-webhook-provision"
   ]
 }

@@ -60,8 +60,8 @@ export function DSETemplate({ meta }: { meta: DocMeta }) {
         <Text style={baseStyles.h2}>{meta.dpo ? '5.' : '4.'} Cookies und Tracking</Text>
         <Text style={baseStyles.p}>
           Diese Website verwendet Cookies. Cookies, die für den Betrieb erforderlich sind,
-          basieren auf § 25 Abs. 2 Nr. 2 TTDSG. Alle weiteren Cookies werden ausschließlich auf
-          Basis Ihrer Einwilligung (§ 25 Abs. 1 TTDSG) gesetzt.
+          basieren auf § 25 Abs. 2 Nr. 2 TDDDG. Alle weiteren Cookies werden ausschließlich auf
+          Basis Ihrer Einwilligung (§ 25 Abs. 1 TDDDG) gesetzt.
         </Text>
 
         {trackers.length > 0 && (

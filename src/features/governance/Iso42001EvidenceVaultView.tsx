@@ -46,9 +46,15 @@ const EVIDENCE_TYPE_LABELS: Record<string, { label: string; icon: typeof FileTex
   other: { label: 'Other', icon: FileText, color: 'gray' },
 };
 
-export function Iso42001EvidenceVaultView() {
+function _Iso42001EvidenceVaultView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso42001EvidenceVaultView = withPerformanceMonitoring(
+  _Iso42001EvidenceVaultView,
+  'Iso42001EvidenceVaultView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

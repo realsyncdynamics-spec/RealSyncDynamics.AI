@@ -48,9 +48,15 @@ interface EvidenceItem {
   uploaded_at: string;
 }
 
-export function Iso42001ControlDetailView() {
+function _Iso42001ControlDetailView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso42001ControlDetailView = withPerformanceMonitoring(
+  _Iso42001ControlDetailView,
+  'Iso42001ControlDetailView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { controlId } = useParams<{ controlId: string }>();

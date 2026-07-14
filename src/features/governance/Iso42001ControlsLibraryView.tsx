@@ -31,9 +31,15 @@ const CATEGORIES = [
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low', 'info'];
 
-export function Iso42001ControlsLibraryView() {
+function _Iso42001ControlsLibraryView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso42001ControlsLibraryView = withPerformanceMonitoring(
+  _Iso42001ControlsLibraryView,
+  'Iso42001ControlsLibraryView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

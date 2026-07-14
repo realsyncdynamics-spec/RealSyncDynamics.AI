@@ -18,9 +18,15 @@ interface Iso42001Control {
   last_review_date: string | null;
 }
 
-export function Iso42001View() {
+function _Iso42001View() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso42001View = withPerformanceMonitoring(
+  _Iso42001View,
+  'Iso42001View',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

@@ -53,14 +53,14 @@ test.describe('Governance OS Browser Shell — Public Route Structure', () => {
   });
 
   test('/audit lädt als öffentliche Landing Page', async ({ page }) => {
-    await page.goto('/audit', { waitUntil: 'domcontentloaded' });
+    const response = await page.goto('/audit', { waitUntil: 'domcontentloaded' });
 
-    // Nicht 404
-    expect(page.url()).not.toContain('404');
+    // Seite lädt ohne Fehler
+    expect(response?.status()).toBeLessThan(400);
 
-    // Page hat Content (main tag oder beliebiger Text)
-    const body = page.locator('body');
-    await expect(body).toContainText(/EU AI Act|Compliance|Audit/, { timeout: 3000 });
+    // Content hat Text (prüfen wir mit einfacher String-Suche)
+    const text = await page.innerText('body');
+    expect(text.toLowerCase()).toContain('compliance');
   });
 
   test('/pricing lädt und zeigt Tarif-Informationen', async ({ page }) => {

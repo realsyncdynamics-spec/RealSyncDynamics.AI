@@ -98,7 +98,8 @@ test.describe('Pricing Flow', () => {
         // Use the same pattern matching approach that works in the first test
         const card = allCards.filter({ has: page.locator(`[data-testid="pricing-card-${slug}"]`) });
         expect(await card.count()).toBe(1);
-      expect(cardCount).toBeGreaterThanOrEqual(CARD_IDS.length - 1); // Allow for minor variations
+      }
+      expect(count).toBeGreaterThanOrEqual(CARD_IDS.length - 1); // Allow for minor variations
     });
 
     test('should display all expected plan cards', async ({ page }) => {
@@ -156,6 +157,7 @@ test.describe('Pricing Flow', () => {
           `[data-testid="pricing-card-${card}"] [data-testid="pricing-info-${info}"]`
         );
         await expect(infoButton).toBeVisible();
+      }
       await page.waitForLoadState('domcontentloaded');
 
       // Find pricing cards by looking for elements with pricing-related buttons
@@ -189,6 +191,7 @@ test.describe('Pricing Flow', () => {
           `[data-testid="pricing-card-${card}"] [data-testid="pricing-book-${book}"]`
         );
         await expect(bookButton).toBeVisible();
+      }
       await page.waitForLoadState('domcontentloaded');
 
       // Look for CTA buttons using the actual button labels from config/pricing.ts
@@ -557,8 +560,10 @@ test.describe('Pricing Flow', () => {
       // Navigate to /checkout/enterprise — CheckoutPage immediately redirects via window.location.href
       // (does not render UI, so no button click needed)
       await page.goto(`${BASE_URL}/checkout/enterprise`, { waitUntil: 'networkidle' });
-
       // Verify redirect to /contact-sales occurred
+      await expect(page).toHaveURL(/\/contact-sales/);
+    });
+
   test.describe('Yearly Plan Checkout', () => {
     // Hinweis: Jahres-Tarife werden nicht mehr als eigene Pricing-Karten gezeigt
     // (PUBLIC_PRICING_TIERS filtert '*_yearly' heraus). Sie bleiben als direkte
@@ -659,10 +664,6 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('domcontentloaded');
 
-      for (const slug of planSlugs) {
-        const card = page.locator(`[data-testid="pricing-card-${slug}"]`);
-        // Use more specific selector to avoid ambiguity
-        const badge = card.locator('div:has-text("Empfohlen")');
       // Growth (monatlich) und Growth (Jährlich) sind highlight-Tiers —
       // alle anderen Karten dürfen kein „Empfohlen"-Badge tragen.
       const nonRecommended = CARD_IDS.filter(
@@ -705,19 +706,6 @@ test.describe('Pricing Flow', () => {
         ...CHECKOUT_PLAN_KEYS.map((key) => `/checkout/${key}`),
       ];
 
-      // Special redirects mapping
-      const expectedDestinations: Record<string, string> = {
-        '/checkout/free-audit': '/audit',
-        '/checkout/enterprise': '/contact-sales',
-      };
-
-      for (const path of paths) {
-        await page.goto(`${BASE_URL}${path}`, { waitUntil: 'networkidle' });
-
-        // Check if path has a special redirect, otherwise expect it in the URL
-        const finalUrl = page.url();
-        const expectedPath = expectedDestinations[path] || path;
-        expect(finalUrl).toContain(expectedPath);
       for (const path of stablePaths) {
         await page.goto(`${BASE_URL}${path}`);
         await page.waitForLoadState('domcontentloaded');

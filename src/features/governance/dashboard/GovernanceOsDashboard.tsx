@@ -191,7 +191,7 @@ const TOP_RISKS: RiskItem[] = [
   { severity: 'Kritisch', title: 'Meta Pixel ohne Einwilligung', framework: 'DSGVO Art. 6', route: '/app/risks' },
   { severity: 'Kritisch', title: 'CV-Screening ohne Konformitätsbewertung', framework: 'EU AI Act Art. 6', route: '/app/risks' },
   { severity: 'Kritisch', title: 'Profiling ohne Rechtsgrundlage', framework: 'DSGVO Art. 22', route: '/app/risks' },
-  { severity: 'Hoch', title: 'Cookie-Banner ohne Kategorien', framework: 'TTDSG §25', route: '/app/risks' },
+  { severity: 'Hoch', title: 'Cookie-Banner ohne Kategorien', framework: 'TDDDG §25', route: '/app/risks' },
   { severity: 'Hoch', title: 'Google Fonts US-Transfer ohne SCC', framework: 'DSGVO Art. 44', route: '/app/risks' },
 ];
 

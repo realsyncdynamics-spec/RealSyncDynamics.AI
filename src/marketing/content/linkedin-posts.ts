@@ -78,7 +78,7 @@ Eine Liste mit Rule-ID, Quelle und Hash — direkt verwertbar für Dev oder Agen
 Kein PDF-Theater. Technische Evidence.
 
 Kostenlosen Check starten → realsyncdynamicsai.de/audit`,
-    hashtags: ['#PreConsent', '#TTDSG', '#DSGVO', '#Compliance'],
+    hashtags: ['#PreConsent', '#TDDDG', '#DSGVO', '#Compliance'],
   },
   {
     id: 'li-003-ai-act-gpai-deadline',

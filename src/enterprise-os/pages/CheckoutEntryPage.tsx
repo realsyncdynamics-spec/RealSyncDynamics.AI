@@ -11,7 +11,7 @@ import { Navigate, useSearchParams } from 'react-router-dom';
  * Canonical route /checkout/:planKey wird direkt durch CheckoutPageWrapper angezeigt.
  * Diese Entry Page dient nur zur Query-Parameter-Normalisierung.
  */
-const VALID_PLAN_KEYS = new Set(['starter', 'growth', 'agency']);
+const VALID_PLAN_KEYS = new Set(['starter', 'growth', 'agency', 'enterprise', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly']);
 
 export function CheckoutEntryPage() {
   const [params] = useSearchParams();

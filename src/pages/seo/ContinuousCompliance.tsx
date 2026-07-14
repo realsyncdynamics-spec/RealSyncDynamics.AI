@@ -26,7 +26,7 @@ const FAQ_FOR_LD = [...PAGE_FAQS, ...DEFAULT_COMPLIANCE_FAQ];
 
 export function ContinuousCompliance() {
   usePageMeta({
-    title: 'Continuous Compliance Monitoring — DSGVO, TTDSG und AI Act laufend überwachen',
+    title: 'Continuous Compliance Monitoring — DSGVO, TDDDG und AI Act laufend überwachen',
     description:
       'Laufende technische Überwachung von Websites, Tracking-Stacks und Compliance-Risiken mit nachvollziehbarer Audit-Historie.',
     url: 'https://RealSyncDynamicsAI.de/continuous-compliance',
@@ -50,7 +50,7 @@ export function ContinuousCompliance() {
       <ProseSection>
         <h2 className="font-display font-bold text-titanium-50 text-xl">Warum einmalige Scans nicht reichen</h2>
         <p>
-          DSGVO und TTDSG sind keine „einmal-einrichten"-Themen. Moderne Websites ändern sich permanent: neue
+          DSGVO und TDDDG sind keine „einmal-einrichten"-Themen. Moderne Websites ändern sich permanent: neue
           Marketing-Tools, neue Tag-Manager-Container, neue Drittanbieter-Skripte, neue Embeds aus
           Headless-CMS-Inhalten. Ein Audit, der heute „grün" ist, kann morgen einen neuen Tracker enthalten —
           ohne dass ihn jemand bewusst eingebaut hat.

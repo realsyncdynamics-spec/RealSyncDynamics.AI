@@ -88,7 +88,7 @@ function Inner() {
           policyId={policyId}
           keyName={keyName}
           token={token}
-          onFinish={() => navigate('/governance')}
+          onFinish={() => navigate('/app/dashboard')}
         />
       )}
     </Shell>

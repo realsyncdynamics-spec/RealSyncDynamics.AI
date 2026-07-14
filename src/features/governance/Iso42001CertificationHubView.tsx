@@ -77,6 +77,24 @@ const CERTIFICATION_MODULES = [
     badge: 'Storage',
   },
   {
+    id: 'gaps',
+    title: 'Gap Analysis',
+    description: 'Identify compliance gaps and prioritize remediation efforts',
+    icon: AlertCircle,
+    route: '/app/governance/iso42001-gaps',
+    color: 'red',
+    badge: 'Analysis',
+  },
+  {
+    id: 'remediation',
+    title: 'Remediation Workflow',
+    description: 'Track remediation tasks, assign owners, and monitor progress',
+    icon: Wrench,
+    route: '/app/governance/iso42001-remediation',
+    color: 'amber',
+    badge: 'Execution',
+  },
+  {
     id: 'timeline',
     title: 'Certification Timeline',
     description: 'Project timeline to certification with critical milestones',
@@ -368,6 +386,8 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     orange: 'border-orange-900 hover:bg-orange-950/20 text-orange-400',
     indigo: 'border-indigo-900 hover:bg-indigo-950/20 text-indigo-400',
     cyan: 'border-cyan-900 hover:bg-cyan-950/20 text-cyan-400',
+    red: 'border-red-900 hover:bg-red-950/20 text-red-400',
+    amber: 'border-amber-900 hover:bg-amber-950/20 text-amber-400',
   };
 
   const BadgeColor = {
@@ -377,6 +397,8 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     orange: 'bg-orange-950 border-orange-800 text-orange-300',
     indigo: 'bg-indigo-950 border-indigo-800 text-indigo-300',
     cyan: 'bg-cyan-950 border-cyan-800 text-cyan-300',
+    red: 'bg-red-950 border-red-800 text-red-300',
+    amber: 'bg-amber-950 border-amber-800 text-amber-300',
   };
 
   const content = (

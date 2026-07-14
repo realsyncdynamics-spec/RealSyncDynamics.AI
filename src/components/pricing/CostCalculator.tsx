@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Calculator, Info, ArrowRight, TrendingDown } from 'lucide-react';
 import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
 
@@ -23,17 +23,21 @@ export function CostCalculator() {
     setParams({ ...params, hourlyRate: Math.max(40, parseInt(e.target.value, 10) || 40) });
   };
 
-  const reviewsPerYear = {
-    monthly: 12,
-    quarterly: 4,
-    annual: 1,
-  };
+  const calculations = useMemo(() => {
+    const reviewsPerYear = {
+      monthly: 12,
+      quarterly: 4,
+      annual: 1,
+    };
 
-  const hoursPerWebsitePerReview = 3;
-  const totalManualHoursPerYear =
-    params.websites * hoursPerWebsitePerReview * reviewsPerYear[params.reviewFrequency];
-  const totalManualCostPerYear = totalManualHoursPerYear * params.hourlyRate;
-  const totalManualCostPerMonth = totalManualCostPerYear / 12;
+    const hoursPerWebsitePerReview = 3;
+    const totalManualHoursPerYear =
+      params.websites * hoursPerWebsitePerReview * reviewsPerYear[params.reviewFrequency];
+    const totalManualCostPerYear = totalManualHoursPerYear * params.hourlyRate;
+    const totalManualCostPerMonth = totalManualCostPerYear / 12;
+
+    return { totalManualHoursPerYear, totalManualCostPerYear, totalManualCostPerMonth };
+  }, [params.websites, params.reviewFrequency, params.hourlyRate]);
 
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
@@ -70,7 +74,7 @@ export function CostCalculator() {
                   min="1"
                   max="100"
                   value={params.websites}
-                  onChange={(e) => setParams({ ...params, websites: parseInt(e.target.value, 10) })}
+                  onChange={(e) => setParams({ ...params, websites: Math.max(1, parseInt(e.target.value, 10) || 1) })}
                   className="flex-1 h-2 bg-obsidian-800 rounded-none appearance-none cursor-pointer accent-cyan-400"
                 />
                 <input
@@ -168,14 +172,14 @@ export function CostCalculator() {
                   <div>
                     <p className="text-xs text-silver-400 mb-1">Stunden pro Jahr</p>
                     <p className="font-display font-bold text-2xl text-titanium-100 tabular-nums">
-                      {totalManualHoursPerYear.toLocaleString()}
+                      {calculations.totalManualHoursPerYear.toLocaleString()}
                       <span className="text-sm text-silver-400"> h</span>
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-silver-400 mb-1">Kosten pro Jahr</p>
                     <p className="font-display font-bold text-2xl text-titanium-100 tabular-nums">
-                      {totalManualCostPerYear.toLocaleString()}
+                      {calculations.totalManualCostPerYear.toLocaleString()}
                       <span className="text-sm text-silver-400"> €</span>
                     </p>
                   </div>
@@ -183,7 +187,7 @@ export function CostCalculator() {
                 <div className="pt-3 border-t border-silver-700/30">
                   <p className="text-xs text-silver-400 mb-1">Monatlich (ohne RealSync)</p>
                   <p className="font-display font-bold text-xl text-titanium-100 tabular-nums">
-                    {Math.round(totalManualCostPerMonth).toLocaleString()}
+                    {Math.round(calculations.totalManualCostPerMonth).toLocaleString()}
                     <span className="text-sm text-silver-400"> €/Mo</span>
                   </p>
                 </div>
@@ -201,9 +205,9 @@ export function CostCalculator() {
                   (tier) => tier.id !== 'free' && !tier.id.includes('yearly'),
                 ).map((tier) => {
                   const yearlyCost = (tier.priceEur || 0) * 12;
-                  const savings = totalManualCostPerYear - yearlyCost;
-                  const savingsPercent = totalManualCostPerYear > 0
-                    ? Math.round((savings / totalManualCostPerYear) * 100)
+                  const savings = calculations.totalManualCostPerYear - yearlyCost;
+                  const savingsPercent = calculations.totalManualCostPerYear > 0
+                    ? Math.round((savings / calculations.totalManualCostPerYear) * 100)
                     : 0;
                   const isSavings = savings > 0;
 

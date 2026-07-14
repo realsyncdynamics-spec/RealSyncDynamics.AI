@@ -54,7 +54,7 @@ const SECTIONS: Array<{ title: string; bullets: string[] }> = [
     title: '6. Datenschutzfreundliche Voreinstellungen (Art. 25 DSGVO)',
     bullets: [
       'Privacy by Design + Privacy by Default in Produkt-Entwicklung',
-      'Cookie-Banner mit echter Wahlfreiheit (TTDSG § 25)',
+      'Cookie-Banner mit echter Wahlfreiheit (TDDDG § 25)',
       'Minimal-Data-Prinzip in Formularen',
     ],
   },

@@ -95,7 +95,7 @@ function classifySingleFinding(finding: ScanFinding): ClassifiedFinding {
   // Business context based on severity and dimension
   const businessContextMap: Record<RiskLevel, Record<GovernanceDimension, string>> = {
     critical: {
-      website_compliance: 'Tracking without consent violates DSGVO Art. 6 and TTDSG § 25. Regulatory enforcement likely.',
+      website_compliance: 'Tracking without consent violates DSGVO Art. 6 and TDDDG § 25. Regulatory enforcement likely.',
       monitoring: 'Undetected compliance drift creates liability. Continuous monitoring required for evidence.',
       aiact_governance: 'High-risk AI classification missing. EU AI Act enforcement actions possible.',
       evidence: 'No audit trail. Regulators cannot verify compliance measures.',

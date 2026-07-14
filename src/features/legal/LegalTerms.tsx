@@ -145,7 +145,7 @@ export function LegalTerms() {
           </p>
           <p>
             (3) Die Plattform unterstützt den Nutzer bei der Identifikation
-            potenziell DSGVO-, TTDSG- oder KI-Verordnungs-relevanter
+            potenziell DSGVO-, TDDDG- oder KI-Verordnungs-relevanter
             Sachverhalte (automatische Scans, Tracker-Erkennung,
             KI-System-Inventar). Die Plattform ist ein technisches
             Werkzeug und{' '}
@@ -281,7 +281,7 @@ export function LegalTerms() {
             ein technisches Werkzeug zur Compliance-Unterstützung;
             insbesondere wird{' '}
             <strong className="text-titanium-50">
-              keine Garantie für DSGVO-, TTDSG- oder KI-Verordnungs-Konformität
+              keine Garantie für DSGVO-, TDDDG- oder KI-Verordnungs-Konformität
             </strong>{' '}
             der vom Nutzer betriebenen Systeme übernommen.
           </p>

@@ -25,7 +25,7 @@ export function PolicyEnginePage() {
 
       <H3>YAML-Beispiel</H3>
       <P>
-        Eine Policy, die Tracking ohne Consent verbietet (TTDSG §25):
+        Eine Policy, die Tracking ohne Consent verbietet (TDDDG §25):
       </P>
       <UL>
         <li><strong>id</strong>: policy.tracker_without_consent</li>
@@ -33,7 +33,7 @@ export function PolicyEnginePage() {
         <li><strong>when</strong>: event.event_type = scanner.tracker_added</li>
         <li><strong>require</strong>: exists event.event_type = consent.granted within session, category ∈ analytics, marketing</li>
         <li><strong>on_violation</strong>: severity high, action require_approval, capture page_url + script_src + session_id</li>
-        <li><strong>references</strong>: TTDSG_25, GDPR_ART_6, GDPR_ART_7</li>
+        <li><strong>references</strong>: TDDDG_25, GDPR_ART_6, GDPR_ART_7</li>
       </UL>
 
       <H2>Eval-Lifecycle</H2>

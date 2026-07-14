@@ -62,7 +62,7 @@ function buildInitialPrompt(issue: Issue, domain: string): string {
     '',
     'Ich brauche:',
     '1. Was das technisch bedeutet (welches Signal wurde beobachtet)',
-    '2. Welche regulatorische Pflicht daraus folgt (DSGVO/TTDSG/AI-Act-Bezug)',
+    '2. Welche regulatorische Pflicht daraus folgt (DSGVO/TDDDG/AI-Act-Bezug)',
     '3. Wie man das praktisch behebt (Code-Snippet wenn möglich, sonst Schritte für gängige CMS wie WordPress/Shopify/Webflow)',
     '',
     'Bitte direkt, ohne Marketing-Sprech, und ohne Bußgeld-/Abmahn-Wording — die rechtliche Würdigung obliegt DSB/Fachjurist.',

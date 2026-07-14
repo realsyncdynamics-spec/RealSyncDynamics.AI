@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { useHealthStatus } from '../hooks/useHealthStatus';
+import { TerminalModal, useTerminalModal } from '../features/governance/terminal';
 import {
   Snowflake,
   ShieldCheck,
@@ -58,7 +59,7 @@ const HERO_FEATURES = [
   { icon: LineChart, title: 'KONTINUIERLICH', text: 'Monitoring, Alerts & Evidenz in Echtzeit.' },
 ];
 
-const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TTDSG', 'BAIT', 'MaRisk', 'EU-Hosting'];
+const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TDDDG', 'BAIT', 'MaRisk', 'EU-Hosting'];
 
 const PLATFORM = [
   {
@@ -149,6 +150,7 @@ export function MainLanding() {
       <ProofBand />
       <Pricing />
       <Security />
+      <CollaborativeTerminal />
       <FinalCta />
       <Footer />
     </div>
@@ -186,6 +188,9 @@ function Header({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => v
             Kostenlos starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </SmartLink>
         </div>
+        <SmartLink to="/app" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
+          Plattform öffnen<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        </SmartLink>
       </div>
     </header>
   );
@@ -246,11 +251,11 @@ function Hero({ theme }: { theme: Theme }) {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-                Kostenlos starten<ArrowRight className="w-4 h-4" />
+              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+                Plattform öffnen<ArrowRight className="w-4 h-4" />
               </SmartLink>
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-                <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
+              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+                <PlayCircle className="w-4 h-4" />Kostenlos starten
               </SmartLink>
             </div>
           </div>
@@ -447,33 +452,146 @@ function Security() {
   );
 }
 
-/* ── FINAL-CTA ──────────────────────────────────────────── */
-function FinalCta() {
+/* ── COLLABORATIVE TERMINAL ────────────────────────────– */
+function CollaborativeTerminal() {
   return (
     <section className="relative z-10 py-16 md:py-24">
-      <div className="max-w-5xl mx-auto px-6 lg:px-10">
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
+      <div className="max-w-6xl mx-auto px-6 lg:px-10">
+        <div className="text-center mb-12 md:mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
-            Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit läuft?
+            Governance im Team.<br className="hidden sm:block" /> In Echtzeit.
           </h2>
-          <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-            Starten Sie mit einem kostenlosen Scan — ohne Account, in unter fünf Minuten. Sehen Sie
-            Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
+          <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-3xl mx-auto leading-relaxed">
+            Collaborative Terminal für Governance-Teams. Laden Sie Mitglieder ein, genehmigen Sie Audits,
+            exportieren Sie Compliance-Nachweise — alles mit vollständiger Audit-Spur und Echtzeit-Updates.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-              Kostenlos starten<ArrowRight className="w-4 h-4" />
-            </SmartLink>
-            <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-              <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
-            </SmartLink>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Features */}
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <ShieldCheck className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Rollenbasierte Zugriffskontolle</h3>
+                <p className="text-sm text-white/60">Owner, Editor, Viewer, Approver — granulare Berechtigungen mit atomaren Updates und Selbstsicherung gegen Privilege-Eskalation.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <Radar className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Echtzeit-Genehmigungsworkflow</h3>
+                <p className="text-sm text-white/60">Auditanforderungen, Genehmigung oder Ablehnung mit Begründung — WebSocket-basiert, Benachrichtigungen per E-Mail, vollständige Audit-Spur.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <FileLock2 className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Audit-Export mit Signatur</h3>
+                <p className="text-sm text-white/60">PDF, CSV, XLSX — jede exportierte Audit mit SHA256-Signatur, 30-Tage-Gültig, offline verifizierbar, Compliance-sicher.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1">
+                <GitBranch className="w-5 h-5 text-cyan-400" strokeWidth={1.5} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white mb-2">Lückenlose Aktivitätsspur</h3>
+                <p className="text-sm text-white/60">Jede Aktion (Einladung, Genehmigung, Rolle, Export) wird protokolliert. Echtzeit-Feed mit Filterung nach Benutzer, Typ und Zeitraum.</p>
+              </div>
+            </div>
           </div>
-          <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
-            Self-Service · ohne Account · kein Verkaufsgespräch nötig
-          </p>
+
+          {/* Visual: Terminal Stats */}
+          <div className="relative">
+            <div className="rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-obsidian-800/50 to-transparent p-8 sm:p-10 space-y-6">
+              <div className="space-y-1">
+                <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">Team-Status</div>
+                <div className="text-3xl sm:text-4xl font-bold text-white">4 Mitglieder</div>
+                <div className="text-xs text-white/50">Owner (1) · Editor (1) · Approver (1) · Viewer (1)</div>
+              </div>
+
+              <div className="h-px bg-white/10" />
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">Aktuelle Genehmigungen</div>
+                  <div className="text-lg font-bold text-white">3 ausstehend</div>
+                </div>
+                <div className="text-xs text-white/60 space-y-1">
+                  <p>• Audit-Export PDF (angefordert von sarah@team.de)</p>
+                  <p>• DSGVO-Scan (angefordert von alex@team.de)</p>
+                  <p>• AI-Act-Klassifizierung (angefordert von maya@team.de)</p>
+                </div>
+              </div>
+
+              <div className="h-px bg-white/10" />
+
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">Letzte Aktivitäten</div>
+                <div className="text-xs text-white/60 space-y-1.5">
+                  <p className="flex items-center gap-2"><span className="text-green-400">✓</span> maya@team.de genehmigt Audit-Export</p>
+                  <p className="flex items-center gap-2"><span className="text-blue-400">→</span> alex@team.de wechselt zu Approver-Rolle</p>
+                  <p className="flex items-center gap-2"><span className="text-cyan-400">↓</span> sarah@team.de exportiert 1.248 Nachweise als CSV</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+/* ── FINAL-CTA ──────────────────────────────────────────── */
+function FinalCta() {
+  const { isOpen, open, close } = useTerminalModal();
+
+  return (
+    <>
+      <section className="relative z-10 py-16 md:py-24">
+        <div className="max-w-5xl mx-auto px-6 lg:px-10">
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
+              Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit läuft?
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
+              Starten Sie mit einem kostenlosen Scan — ohne Account, in unter fünf Minuten. Sehen Sie
+              Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+                Plattform öffnen<ArrowRight className="w-4 h-4" />
+              </SmartLink>
+              <button
+                onClick={() => open('/scan')}
+                className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg"
+              >
+                <PlayCircle className="w-4 h-4" />Im Terminal erkunden
+              </button>
+              <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+                <PlayCircle className="w-4 h-4" />Kostenlos starten
+              </SmartLink>
+            </div>
+            <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
+              Self-Service · ohne Account · kein Verkaufsgespräch nötig
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Terminal Modal */}
+      <TerminalModal isOpen={isOpen} onClose={close} initialCommand="/scan" />
+    </>
   );
 }
 

@@ -113,7 +113,7 @@ function defaultSummaryForType(type: string): string {
 const TYPE_TO_BASE_HASHTAGS: Record<string, string[]> = {
   'tracker.detected':         ['#DSGVO', '#Tracking', '#Compliance'],
   'ai.endpoint.detected':     ['#AIAct', '#AIGovernance', '#Compliance'],
-  'consent.missing':          ['#DSGVO', '#Consent', '#TTDSG'],
+  'consent.missing':          ['#DSGVO', '#Consent', '#TDDDG'],
   'high_risk.classified':     ['#AIAct', '#AIGovernance', '#RiskManagement'],
   'evidence.anchor.created':  ['#AuditTrail', '#Evidence', '#Compliance'],
   'policy.violation.detected':['#Governance', '#Compliance', '#Audit'],

@@ -3,8 +3,9 @@ import {
   Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Edit2, X, Link2, Copy, RefreshCw,
 } from 'lucide-react';
 import { useWebhooks, WEBHOOK_EVENTS, type WebhookEndpoint } from './useWebhooks';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
-export function WebhooksView() {
+function _WebhooksView() {
   const { endpoints, deliveries, loading, error, createEndpoint, updateEndpoint, deleteEndpoint, retryDelivery, refetchDeliveries } = useWebhooks();
 
   const [showNewForm, setShowNewForm] = useState(false);
@@ -480,3 +481,9 @@ export function WebhooksView() {
     </div>
   );
 }
+
+export const WebhooksView = withPerformanceMonitoring(
+  _WebhooksView,
+  'WebhooksView',
+  { threshold: 500, maxRenders: 10 }
+);

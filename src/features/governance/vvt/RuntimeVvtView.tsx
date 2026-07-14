@@ -6,6 +6,8 @@ import { RuntimeVvtEntryCard } from './RuntimeVvtEntryCard';
 import { RuntimeVvtExportButton } from './RuntimeVvtExportButton';
 import type { RuntimeVvtEntry, VvtReviewStatus } from './types';
 
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+
 /**
  * /governance/vvt — Runtime-VVT-View.
  *
@@ -13,7 +15,7 @@ import type { RuntimeVvtEntry, VvtReviewStatus } from './types';
  * tenantId und Backend-Tabelle existieren, wird `entries` aus Supabase
  * geladen und die Demo-Daten fallen weg.
  */
-export function RuntimeVvtView() {
+function _RuntimeVvtView() {
   const [filter, setFilter] = useState<VvtReviewStatus | 'all'>('all');
 
   const entries: RuntimeVvtEntry[] = DEMO_VVT_ENTRIES;
@@ -109,6 +111,12 @@ export function RuntimeVvtView() {
     </div>
   );
 }
+
+export const RuntimeVvtView = withPerformanceMonitoring(
+  _RuntimeVvtView,
+  'RuntimeVvtView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Stat({ label, value, tone }: { label: string; value: number; tone?: 'amber' | 'rose' | 'emerald' }) {
   const toneCls =

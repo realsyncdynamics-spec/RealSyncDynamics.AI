@@ -49,9 +49,17 @@ const GRADE_COLOR: Record<string, string> = {
   D: 'text-orange-300', F: 'text-rose-300',
 };
 
-export function ScanDetailView() {
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+
+function _ScanDetailView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ScanDetailView = withPerformanceMonitoring(
+  _ScanDetailView,
+  'ScanDetailView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { scanId = '' } = useParams<{ scanId: string }>();

@@ -10,6 +10,7 @@ import {
   type DbIncident,
 } from './incidentsApi';
 import type { IncidentStatus, IncidentSeverity } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 const STATUSES: IncidentStatus[] = ['open','investigating','contained','resolved','reported_to_authority'];
 const STATUS_LABEL: Record<IncidentStatus, string> = {
@@ -24,7 +25,13 @@ const STATUS_CLS: Record<IncidentStatus, string> = {
   reported_to_authority: 'bg-purple-500/15 text-purple-200 border-purple-500/40',
 };
 
-export function IncidentsView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+function _IncidentsView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+
+export const IncidentsView = withPerformanceMonitoring(
+  _IncidentsView,
+  'IncidentsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

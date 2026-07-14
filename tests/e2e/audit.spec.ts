@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { testDomains } from '../fixtures/test-domains';
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
 
 test.describe('[GOV] DSGVO-Audit-Seite', () => {
   test('[GOV-001] Audit-Seite lädt und Domain-Eingabe ist vorhanden', async ({ page }) => {

@@ -18,9 +18,15 @@ interface Iso42001Control {
   last_review_date: string | null;
 }
 
-export function Iso42001View() {
+function _Iso42001View() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Iso42001View = withPerformanceMonitoring(
+  _Iso42001View,
+  'Iso42001View',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();
@@ -211,7 +217,7 @@ function ControlCard({ control }: { control: Iso42001Control }) {
       </div>
 
       <Link
-        to={`/app/iso42001/${control.id}`}
+        to={`/app/governance/iso42001/${control.id}`}
         className="inline-flex items-center text-[11px] font-semibold text-blue-400 hover:text-blue-300 hover:underline"
       >
         Implementierung Details →

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface MetricSnapshot {
   date: string;
@@ -26,9 +27,15 @@ interface KPICard {
   color: string;
 }
 
-export function ComplianceAnalyticsView() {
+function _ComplianceAnalyticsView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ComplianceAnalyticsView = withPerformanceMonitoring(
+  _ComplianceAnalyticsView,
+  'ComplianceAnalyticsView',
+  { threshold: 1000, maxRenders: 5 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

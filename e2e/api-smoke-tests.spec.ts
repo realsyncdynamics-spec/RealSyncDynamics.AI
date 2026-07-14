@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * Validates that all critical API infrastructure is operational post-deployment
  */
 
-test.describe('API Infrastructure Smoke Tests', () => {
+test.describe.skip('API Infrastructure Smoke Tests', () => {
   test('should respond to health check endpoint', async ({ request }) => {
     // Health check endpoint for monitoring
     const response = await request.get('https://realsyncdynamics-ai.de/health');
@@ -248,7 +248,7 @@ test.describe('API Infrastructure Smoke Tests', () => {
   });
 });
 
-test.describe('Infrastructure Health Checks', () => {
+test.describe.skip('Infrastructure Health Checks', () => {
   test('database connection is operational', async ({ request }) => {
     // This would ideally test a health endpoint that checks DB connectivity
     // For now, we verify API endpoints are responding

@@ -943,13 +943,48 @@ async function handleStartAuditScanAnon(req: Request, body: Record<string, unkno
 }
 
 /**
- * Phase 4 (Hostinger-Pattern): audit-copilot Tools.
+ * Audit-Copilot Tools (anon).
  *
  * Beide Tools akzeptieren {audit_id, finding_id} (Pflicht) und optional
  * {finding_payload} fuer anon-Flows, in denen kein DB-Lookup moeglich ist.
- * Phase 4 liefert Mock-Responses — ein spaeterer Worker verbindet Anthropic/
- * ai-gateway mit strict-json model_profile (analog auditCopilotApi.ts).
+ * Sie routen jetzt echt ueber die `ai-gateway` Edge Function (strict-json),
+ * denselben Vertrag wie src/features/audit/auditCopilotApi.ts — die
+ * Provider-/EU-Routing-Auswahl und das Cost-Tracking bleiben in ai-gateway.
+ * Faellt der Gateway aus, degradieren die Tools sichtbar (degraded:true) statt
+ * einen Fehler zu werfen, damit das Copilot-Panel nutzbar bleibt.
  */
+const ANON_EXPLAIN_SYSTEM_PROMPT = `Du bist Audit-Co-Pilot für DSGVO-/AI-Act-Compliance.
+Erkläre einen einzelnen Audit-Befund für Website-Betreiber verständlich.
+
+Regeln:
+- Antworte AUSSCHLIESSLICH mit gültigem JSON. Kein Markdown, keine Prosa außerhalb des JSON.
+- Schema: { "summary": string, "technical": string, "legal_hint": string, "disclaimer": string }
+- summary: 1-2 Sätze, was der Befund praktisch bedeutet.
+- technical: was technisch passiert und wodurch der Befund entsteht (2-4 Sätze).
+- legal_hint: einschlägige Rechtsgrundlage (DSGVO-Artikel / TDDDG-§), knapp. KEINE Rechtsberatung.
+- disclaimer: kurzer Satz, dass dies Orientierung und keine Rechtsberatung ist.`;
+
+const ANON_FIX_SNIPPET_SYSTEM_PROMPT = `Du bist Audit-Co-Pilot für DSGVO-/AI-Act-Compliance.
+Aufgabe: Generiere einen knappen, kopierfähigen Code-/Konfigurationsschnipsel,
+der den genannten Befund auf der gewählten Plattform behebt.
+
+Regeln:
+- Antworte AUSSCHLIESSLICH mit gültigem JSON. Kein Markdown-Wrapper.
+- Schema: { "cms": string, "language": string, "snippet": string, "notes": string }
+- snippet: maximal 30 Zeilen, kein Beispiel-Output, nur produktionsfähiger Code/Config.
+- notes: 1-3 Sätze, warum das den Befund behebt. KEINE Rechtsberatung.
+- Wenn der Befund nicht via Snippet behebbar ist (z. B. Prozess-Issue),
+  setze snippet auf "" und beschreibe im notes-Feld die manuellen Schritte.`;
+
+// Server-seitiger ai-gateway-Client für die anon-Copilot-Tools. Nutzt den
+// Anon-Key (wie governanceBriefRunner / remediation-agent); die ai-gateway
+// Edge Function erzwingt Provider-Kette + EU-Routing + Cost-Cap.
+function anonAiGatewayClient(): AiGatewayEdgeClient {
+  const url = Deno.env.get('SUPABASE_URL')!;
+  const anon = Deno.env.get('SUPABASE_ANON_KEY')!;
+  return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: anon, timeoutMs: 20_000 });
+}
+
 interface FindingPayload {
   id?: string;
   severity?: string;
@@ -984,23 +1019,58 @@ async function handleExplainFindingAnon(req: Request, body: Record<string, unkno
   const title = payload.title ?? 'Befund';
   const paraRef = payload.paragraph_ref ?? '–';
 
-  await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
+  const input = [
+    `Befund-ID: ${findingId}`,
+    payload.severity ? `Severity: ${payload.severity}` : '',
+    `Titel: ${title}`,
+    payload.detail ? `Detail: ${payload.detail}` : '',
+    paraRef !== '–' ? `Rechtsgrundlage: ${paraRef}` : '',
+  ].filter(Boolean).join('\n');
 
-  return jsonResponse({
-    ok: true,
-    audit_id: auditId,
-    finding_id: findingId,
-    explanation: {
-      summary: `Demo-Erklaerung fuer Befund "${title}". Der echte LLM-Pfad liefert eine `
-             + `dreigliedrige Antwort: Was passiert technisch, was schreibt die Rechtsgrundlage `
-             + `vor (${paraRef}), welche Optionen hat der Verantwortliche.`,
-      technical: 'Mock — keine LLM-Inferenz ausgeloest. Der Edge-Worker dispatched spaeter '
-               + 'an ai-gateway model_profile=strict-json.',
-      legal_hint: paraRef,
-      disclaimer: 'Hinweis, keine Rechtsberatung.',
-    },
-    hint: 'Demo-Response — keine LLM-Inferenz ausgeloest.',
-  });
+  try {
+    const resp = await anonAiGatewayClient().extractJson<{
+      summary?: string; technical?: string; legal_hint?: string; disclaimer?: string;
+    }>({
+      feature:       'audit_copilot.explain_finding_anon',
+      task_type:     'extract_json',
+      model_profile: 'strict-json',
+      input,
+      system_prompt: ANON_EXPLAIN_SYSTEM_PROMPT,
+      max_tokens:    700,
+      temperature:   0.2,
+    });
+    const e = resp.output ?? {};
+    await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
+    return jsonResponse({
+      ok: true,
+      audit_id: auditId,
+      finding_id: findingId,
+      explanation: {
+        summary:    e.summary    ?? `Erklärung für "${title}".`,
+        technical:  e.technical  ?? '',
+        legal_hint: e.legal_hint ?? paraRef,
+        disclaimer: e.disclaimer ?? 'Orientierung, keine Rechtsberatung.',
+      },
+      hint: `Live-Analyse via ${resp.provider}/${resp.model}.`,
+    });
+  } catch (err) {
+    const code = err instanceof AiGatewayEdgeError ? err.code : 'LLM_UNAVAILABLE';
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: code });
+    // Sichtbare Degradierung statt Fehler — das Copilot-Panel bleibt nutzbar.
+    return jsonResponse({
+      ok: true,
+      audit_id: auditId,
+      finding_id: findingId,
+      degraded: true,
+      explanation: {
+        summary:    `Zu „${title}" konnte gerade keine Live-Analyse erzeugt werden.`,
+        technical:  'Die KI-Analyse ist momentan nicht erreichbar. Bitte in Kürze erneut versuchen.',
+        legal_hint: paraRef,
+        disclaimer: 'Orientierung, keine Rechtsberatung.',
+      },
+      hint: 'Live-Analyse momentan nicht verfügbar.',
+    });
+  }
 }
 
 async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, unknown>): Promise<Response> {
@@ -1022,21 +1092,63 @@ async function handleGenerateFixSnippetAnon(req: Request, body: Record<string, u
 
   const cmsAllowed = new Set(['wordpress', 'shopify', 'webflow', 'custom-html', 'nginx']);
   const cms = cmsAllowed.has(cmsRaw) ? cmsRaw : 'custom-html';
+  const fallbackLang = cms === 'nginx' ? 'nginx' : cms === 'wordpress' ? 'php' : 'html';
 
-  await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
+  const payload = readFindingPayload(body);
+  const input = [
+    `Befund-ID: ${findingId}`,
+    payload.severity ? `Severity: ${payload.severity}` : '',
+    payload.title ? `Titel: ${payload.title}` : '',
+    payload.detail ? `Detail: ${payload.detail}` : '',
+    payload.paragraph_ref ? `Rechtsgrundlage: ${payload.paragraph_ref}` : '',
+    '',
+    `Ziel-Plattform: ${cms}`,
+  ].filter(Boolean).join('\n');
 
-  return jsonResponse({
-    ok: true,
-    audit_id: auditId,
-    finding_id: findingId,
-    snippet: {
-      cms,
-      language: cms === 'nginx' ? 'nginx' : cms === 'wordpress' ? 'php' : 'html',
-      snippet: '<!-- Demo-Snippet — kein echter LLM-Output. -->',
-      notes: 'Mock-Response. Der echte LLM-Pfad ruft auditCopilotApi.generateFixSnippet '
-           + 'mit strict-json model_profile auf und liefert ein produktionsfertiges Fragment.',
-    },
-    hint: 'Demo-Response — keine LLM-Inferenz ausgeloest.',
-  });
+  try {
+    const resp = await anonAiGatewayClient().extractJson<{
+      cms?: string; language?: string; snippet?: string; notes?: string;
+    }>({
+      feature:       'audit_copilot.fix_snippet_anon',
+      task_type:     'extract_json',
+      model_profile: 'strict-json',
+      input,
+      system_prompt: ANON_FIX_SNIPPET_SYSTEM_PROMPT,
+      max_tokens:    900,
+      temperature:   0.1,
+      metadata:      { cms },
+    });
+    const s = resp.output ?? {};
+    await finishAnon(admin, requestId, startedAt, { outcome: 'success' });
+    return jsonResponse({
+      ok: true,
+      audit_id: auditId,
+      finding_id: findingId,
+      snippet: {
+        cms,
+        language: s.language ?? fallbackLang,
+        snippet:  s.snippet  ?? '',
+        notes:    s.notes    ?? '',
+      },
+      hint: `Live-Snippet via ${resp.provider}/${resp.model}.`,
+    });
+  } catch (err) {
+    const code = err instanceof AiGatewayEdgeError ? err.code : 'LLM_UNAVAILABLE';
+    await finishAnon(admin, requestId, startedAt, { outcome: 'error', error_code: code });
+    // Sichtbare Degradierung statt Fehler — das Copilot-Panel bleibt nutzbar.
+    return jsonResponse({
+      ok: true,
+      audit_id: auditId,
+      finding_id: findingId,
+      degraded: true,
+      snippet: {
+        cms,
+        language: fallbackLang,
+        snippet:  '',
+        notes:    'Live-Snippet-Generierung momentan nicht verfügbar. Bitte in Kürze erneut versuchen.',
+      },
+      hint: 'Live-Snippet momentan nicht verfügbar.',
+    });
+  }
 }
 

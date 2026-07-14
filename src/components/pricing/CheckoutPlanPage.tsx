@@ -38,8 +38,8 @@ export function CheckoutPlanPage({ planSlug }: CheckoutPlanPageProps) {
 
   // Check auth state on mount
   useEffect(() => {
-    if (plan.slug === 'free-audit' || plan.slug === 'enterprise') {
-      return; // No auth needed for these
+    if (plan.slug === 'free-audit') {
+      return; // No auth needed for free audit
     }
 
     let cancelled = false;
@@ -81,13 +81,7 @@ export function CheckoutPlanPage({ planSlug }: CheckoutPlanPageProps) {
       return;
     }
 
-    if (plan.slug === 'enterprise') {
-      // Enterprise → contact sales
-      navigate('/contact-sales?intent=enterprise&source=checkout-pricing-detail');
-      return;
-    }
-
-    // Paid plans require auth
+    // All paid plans require auth
     if (auth.status !== 'ready') {
       if (auth.status === 'no_user') {
         navigate(`/welcome?next=/checkout/${plan.slug}`);
@@ -131,7 +125,7 @@ export function CheckoutPlanPage({ planSlug }: CheckoutPlanPageProps) {
       <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex-grow">
         <div className="max-w-2xl mx-auto">
           {/* Show login prompt if not authenticated */}
-          {auth.status === 'no_user' && (plan.slug !== 'free-audit' && plan.slug !== 'enterprise') && (
+          {auth.status === 'no_user' && plan.slug !== 'free-audit' && (
             <div className="mb-8">
               <h1 className="font-display font-bold text-3xl mb-4 text-titanium-50">Anmelden, um {plan.name} zu buchen</h1>
               <p className="text-base text-silver-300 mb-6 leading-relaxed">
@@ -190,7 +184,7 @@ export function CheckoutPlanPage({ planSlug }: CheckoutPlanPageProps) {
             {/* Main CTA button */}
             <button
               onClick={handleCheckout}
-              disabled={isProcessing || (auth.status !== 'loading' && auth.status !== 'ready' && plan.slug !== 'free-audit' && plan.slug !== 'enterprise')}
+              disabled={isProcessing || (auth.status !== 'loading' && auth.status !== 'ready' && plan.slug !== 'free-audit')}
               className="w-full py-4 text-base font-bold rounded-none text-center bg-titanium-100 text-obsidian-950 hover:bg-titanium-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
               data-testid="checkout-book-button"
             >

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface RemediationPlan {
   id: string;
@@ -34,9 +35,15 @@ interface Milestone {
   owner?: string;
 }
 
-export function RemediationPlanView() {
+function _RemediationPlanView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const RemediationPlanView = withPerformanceMonitoring(
+  _RemediationPlanView,
+  'RemediationPlanView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

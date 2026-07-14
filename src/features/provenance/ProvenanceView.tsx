@@ -8,6 +8,8 @@ import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card'
 import { sha256Hex } from '../../lib/provenance';
 import { trustBand } from '../../lib/provenance/trustScore';
 import { registerProvenance, verifyProvenance, type VerifyResponse, type ProvenanceError } from './provenanceApi';
+import { AuditTrailVisualization, type CustodyEvent } from './AuditTrailVisualization';
+import { ComplianceGapReport, type ComplianceGap } from './ComplianceGapReport';
 
 /**
  * /app/provenance — Herkunftsnachweis für Assets (C2PA-angelehnt).
@@ -156,69 +158,78 @@ function ProvenanceInner() {
         </Card>
 
         {result && (
-          <Card>
-            <CardHeader title="Verifikationsergebnis" eyebrow={`Asset ${result.asset_ref}`} />
-            <CardBody>
-              <div className="grid gap-6 sm:grid-cols-[auto,1fr]">
-                <div className="text-center">
-                  <div className={`font-display text-4xl font-bold ${bandColor(trustBand(result.trust.trustScore))}`}>
-                    {result.trust.trustScore}
+          <>
+            <Card>
+              <CardHeader title="Verifikationsergebnis" eyebrow={`Asset ${result.asset_ref}`} />
+              <CardBody>
+                <div className="grid gap-6 sm:grid-cols-[auto,1fr]">
+                  <div className="text-center">
+                    <div className={`font-display text-4xl font-bold ${bandColor(trustBand(result.trust.trustScore))}`}>
+                      {result.trust.trustScore}
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Trust-Score</div>
+                    <div className={`mt-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider ${result.tamper_state === 'intact' ? 'text-emerald-400' : 'text-risk-critical'}`}>
+                      {result.tamper_state === 'intact' ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+                      {result.tamper_state === 'intact' ? 'unverändert' : result.tamper_state === 'tampered' ? `manipuliert (seq ${result.broken_at_seq})` : 'nicht verifizierbar'}
+                    </div>
                   </div>
-                  <div className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">Trust-Score</div>
-                  <div className={`mt-2 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider ${result.tamper_state === 'intact' ? 'text-emerald-400' : 'text-risk-critical'}`}>
-                    {result.tamper_state === 'intact' ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                    {result.tamper_state === 'intact' ? 'unverändert' : result.tamper_state === 'tampered' ? `manipuliert (seq ${result.broken_at_seq})` : 'nicht verifizierbar'}
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-wider">
-                    <EvidenceChip ok={result.evidence_components.metadataIntegrity} label="Metadaten-Integrität" />
-                    <EvidenceChip ok={result.evidence_components.ownershipConsistency} label="Eigentümer-Konsistenz" />
-                    <EvidenceChip ok={result.evidence_components.provenanceContinuity} label="Ketten-Kontinuität" />
-                    {result.signature?.algorithm && (
-                      <span
-                        title={result.signature.externally_verifiable
-                          ? 'Ed25519-Signatur — mit dem öffentlichen Schlüssel unabhängig prüfbar'
-                          : 'HMAC-Signatur (Legacy) — nur intern prüfbar'}
-                        className={`border px-2 py-1 ${result.signature.externally_verifiable
-                          ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-300'
-                          : 'border-titanium-700 text-titanium-400'}`}
-                      >
-                        {result.signature.externally_verifiable ? 'Ed25519 · extern prüfbar' : `${result.signature.algorithm} · intern`}
-                      </span>
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2 font-mono text-[10px] uppercase tracking-wider">
+                      <EvidenceChip ok={result.evidence_components.metadataIntegrity} label="Metadaten-Integrität" />
+                      <EvidenceChip ok={result.evidence_components.ownershipConsistency} label="Eigentümer-Konsistenz" />
+                      <EvidenceChip ok={result.evidence_components.provenanceContinuity} label="Ketten-Kontinuität" />
+                      {result.signature?.algorithm && (
+                        <span
+                          title={result.signature.externally_verifiable
+                            ? 'Ed25519-Signatur — mit dem öffentlichen Schlüssel unabhängig prüfbar'
+                            : 'HMAC-Signatur (Legacy) — nur intern prüfbar'}
+                          className={`border px-2 py-1 ${result.signature.externally_verifiable
+                            ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-300'
+                            : 'border-titanium-700 text-titanium-400'}`}
+                        >
+                          {result.signature.externally_verifiable ? 'Ed25519 · extern prüfbar' : `${result.signature.algorithm} · intern`}
+                        </span>
+                      )}
+                    </div>
+                    {result.trust.riskLabels.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {result.trust.riskLabels.map((l) => (
+                          <span key={l} className="border border-amber-500/40 bg-amber-500/5 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-amber-300">{l}</span>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  {result.trust.riskLabels.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {result.trust.riskLabels.map((l) => (
-                        <span key={l} className="border border-amber-500/40 bg-amber-500/5 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-amber-300">{l}</span>
-                      ))}
-                    </div>
-                  )}
                 </div>
-              </div>
+              </CardBody>
+            </Card>
 
-              <div className="mt-6">
-                <div className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500">Chain-of-Custody</div>
-                <ol className="space-y-2">
-                  {result.custody.map((c) => (
-                    <li key={c.seq} className="flex items-center justify-between border border-titanium-800 px-3 py-2 text-xs">
-                      <span className="flex items-center gap-3">
-                        <span className="font-mono text-titanium-500">#{c.seq}</span>
-                        <span className="text-titanium-200">{c.action}</span>
-                        <span className="font-mono text-[10px] text-titanium-500">{c.actor}</span>
-                      </span>
-                      <span className="flex items-center gap-3 font-mono text-[10px] text-titanium-500">
-                        <span className="break-all">{c.event_hash.slice(0, 16)}…</span>
-                        {c.signed && <span className="text-emerald-400">signiert</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </CardBody>
-          </Card>
+            <Card>
+              <CardHeader title="Audit-Trail" eyebrow="Custody-Kette mit Integritätsprüfung" />
+              <CardBody>
+                <AuditTrailVisualization
+                  events={result.custody.map((c) => ({
+                    seq: c.seq,
+                    action: c.action as 'registered' | 'updated' | 'licensed' | 'audited',
+                    actor: c.actor,
+                    event_ts: new Date(c.timestamp),
+                    event_hash: c.event_hash,
+                    prev_hash: null,
+                    signed: c.signed,
+                    signature_alg: c.signature_alg,
+                  }))}
+                  assetRef={result.asset_ref}
+                />
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader title="Compliance-Analyse" eyebrow="Lücken und Risiken" />
+              <CardBody>
+                <ComplianceGapReport gaps={generateComplianceGaps(result)} assetRef={result.asset_ref} />
+              </CardBody>
+            </Card>
+          </>
         )}
       </div>
     </div>
@@ -232,4 +243,76 @@ function EvidenceChip({ ok, label }: { ok: boolean; label: string }) {
       {label}
     </span>
   );
+}
+
+function generateComplianceGaps(result: VerifyResponse): ComplianceGap[] {
+  const gaps: ComplianceGap[] = [];
+  const now = new Date();
+
+  // Critical: Chain integrity broken
+  if (result.tamper_state === 'tampered') {
+    gaps.push({
+      id: 'tamper_detected',
+      severity: 'critical',
+      category: 'chain_integrity',
+      asset_ref: result.asset_ref,
+      message: 'Manipulation in der Custody-Kette erkannt',
+      recommendation: 'Überprüfen Sie Event #' + result.broken_at_seq + ' und alle nachfolgenden Events. Benachrichtigen Sie den Sicherheitsteam.',
+      affected_seq: result.broken_at_seq,
+    });
+  }
+
+  // High: Unsigned events in critical custody
+  const unsignedCount = result.custody.filter((c) => !c.signed).length;
+  if (unsignedCount > 0 && result.custody.length > 1) {
+    gaps.push({
+      id: 'unsigned_events',
+      severity: 'high',
+      category: 'signature_gap',
+      asset_ref: result.asset_ref,
+      message: `${unsignedCount} Event(s) ohne Signatur`,
+      recommendation: 'Signieren Sie alle kritischen Events mit Ed25519 für externe Verifikation.',
+    });
+  }
+
+  // Medium: Ownership consistency issues
+  if (!result.evidence_components.ownershipConsistency) {
+    gaps.push({
+      id: 'ownership_inconsistency',
+      severity: 'medium',
+      category: 'access_control',
+      asset_ref: result.asset_ref,
+      message: 'Inkonsistenzen in der Eigentümerangaben',
+      recommendation: 'Überprüfen Sie die Eigentümer-Records in den frühen Events.',
+    });
+  }
+
+  // Medium: Stale audit (older than 30 days)
+  const latestEvent = result.custody[result.custody.length - 1];
+  if (latestEvent && new Date(latestEvent.timestamp).getTime() < now.getTime() - 30 * 24 * 60 * 60 * 1000) {
+    gaps.push({
+      id: 'stale_audit',
+      severity: 'medium',
+      category: 'stale_audit',
+      asset_ref: result.asset_ref,
+      message: 'Letzte Prüfung älter als 30 Tage',
+      recommendation: 'Führen Sie eine neue Audit durch, um die Aktualität der Provenance zu sichern.',
+      affected_seq: latestEvent.seq,
+      timestamp: new Date(latestEvent.timestamp),
+    });
+  }
+
+  // Low: Metadata integrity issues
+  if (!result.evidence_components.metadataIntegrity) {
+    gaps.push({
+      id: 'metadata_issue',
+      severity: 'low',
+      category: 'verification_failure',
+      asset_ref: result.asset_ref,
+      message: 'Metadaten-Integritätsprobleme erkannt',
+      recommendation: 'Optional: Aktualisieren Sie die Asset-Metadaten für vollständige Konsistenz.',
+    });
+  }
+
+  return gaps;
 }

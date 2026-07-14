@@ -47,7 +47,9 @@ function formatShort(iso: string | null): string {
   });
 }
 
-export function SecuritySignalsView() {
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+
+function _SecuritySignalsView() {
   return (
     <AuthGate>
       {() => (
@@ -58,6 +60,12 @@ export function SecuritySignalsView() {
     </AuthGate>
   );
 }
+
+export const SecuritySignalsView = withPerformanceMonitoring(
+  _SecuritySignalsView,
+  'SecuritySignalsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

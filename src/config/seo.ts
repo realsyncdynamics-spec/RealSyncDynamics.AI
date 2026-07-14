@@ -363,7 +363,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/cookiebot-alternative': {
     title: 'Cookiebot Alternative mit EU-Hosting & AI-Act | RealSyncDynamics.AI',
     description:
-      'RealSyncDynamics.AI vs. Cookiebot: Consent-Timing-Analyse, automatische Remediation, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
+      'RealSyncDynamics.AI vs. Cookiebot: Consent-Timing-Analyse, fertige Fix-Snippets & Remediation-Pläne, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
     canonical: `${SITE_URL}/cookiebot-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

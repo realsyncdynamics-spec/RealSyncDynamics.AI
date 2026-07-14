@@ -315,7 +315,7 @@ function Inner() {
       {showScheduleModal && (
         <ScheduleModal
           schedule={schedule}
-          onClose={() => setScheduleModal(false)}
+          onClose={() => setShowScheduleModal(false)}
           onScheduleUpdated={() => {
             setShowScheduleModal(false);
             void loadData();
@@ -419,7 +419,7 @@ function ScheduleModal({ schedule, onClose, onScheduleUpdated }: { schedule: Mai
   const [auditFreq, setAuditFreq] = useState(schedule?.audit_frequency_months || 12);
   const [recertFreq, setRecertFreq] = useState(schedule?.recertification_frequency_months || 24);
   const [reviewFreq, setReviewFreq] = useState(schedule?.control_review_frequency_months || 6);
-  const [autoSchedule, setAutoSchedule] = useState(schedule?.auto_schedule_enabled || true);
+  const [autoSchedule, setAutoSchedule] = useState<boolean>(schedule?.auto_schedule_enabled ?? true);
   const [notifyDays, setNotifyDays] = useState(schedule?.notification_days_before || 30);
 
   return (

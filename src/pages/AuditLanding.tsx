@@ -13,7 +13,7 @@ export function AuditLanding() {
         description="Scan your website in 2 minutes. Get an instant compliance score for DSGVO, HTTPS, AI Disclosure, and Privacy Policy."
       />
 
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
         {/* Navigation */}
         <nav className="sticky top-0 z-50 bg-white border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
@@ -269,7 +269,7 @@ export function AuditLanding() {
             </div>
           </div>
         </footer>
-      </div>
+      </main>
     </>
   );
 }

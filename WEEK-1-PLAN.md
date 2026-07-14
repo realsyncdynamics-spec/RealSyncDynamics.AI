@@ -98,47 +98,52 @@
 
 ---
 
-### Thursday (July 17)
-**Goal:** Stripe Integration Verified + One Test Payment
+### Thursday (July 15)
+**Goal:** Verify Stripe Integration Works End-to-End
 
 **Tasks:**
-- [ ] 1. Check Stripe Setup
-      - Verify API keys in env vars (test mode)
-      - Confirm Professional plan created in Stripe dashboard
-      - Price: €99/month
-      - Annual option: €990/year
+- [x] 1. Assess Stripe Setup (Already 90% Done!)
+      - ✅ Edge Functions exist: stripe-checkout, stripe-webhook, stripe-portal
+      - ✅ Database schema ready: subscriptions, subscription_plans, feature_usage
+      - ✅ Frontend utilities: createCheckoutSession(), openCustomerPortal()
+      - ✅ UI Components: CheckoutPage, BillingView, PlanUpgradeModal
+      - ⏳ Need: Verify Supabase secrets (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET)
+      - ⏳ Need: Seed real Stripe Price IDs in public.products table
       
-- [ ] 2. Create Checkout Flow
-      - Button on dashboard: "Upgrade to Professional"
-      - Redirects to Stripe Checkout
-      - Prefilled: company name, email
-      - Success redirect: /app/billing-success
-      - Cancel redirect: /app
+- [ ] 2. Manual Payment Test (First Priority)
+      - [ ] Set STRIPE_SECRET_KEY in Supabase secrets (sk_test_... from Stripe dashboard)
+      - [ ] Set STRIPE_WEBHOOK_SECRET in Supabase secrets
+      - [ ] Use Stripe test card: 4242 4242 4242 4242 (exp: any future, CVC: any 3 digits)
+      - [ ] Complete checkout flow: /checkout/starter
+      - [ ] Verify subscription created in DB
+      - [ ] Verify webhook event received and synced
+      - [ ] Verify status = 'active' or 'trialing'
       
-- [ ] 3. Test Payment Webhook
-      - webhook endpoint configured: /api/stripe-webhook
-      - Listens to: customer.subscription.created, payment_intent.succeeded
-      - Updates user subscription in DB
-      - Unlocks features post-payment
+- [ ] 3. Test Webhook Event Handling
+      - [ ] Verify stripe-webhook function logs show incoming events
+      - [ ] Verify idempotency (resend same event twice → only processes once)
+      - [ ] Verify customer.subscription.created syncs to DB
+      - [ ] Verify invoice.paid triggers email receipt
       
-- [ ] 4. Manual Payment Test
-      - Use Stripe test card: 4242 4242 4242 4242
-      - Create subscription
-      - Verify DB updates correctly
-      - Verify feature access changes
+- [ ] 4. Test Subscription Status Handling
+      - [ ] Active subscription: features enabled
+      - [ ] Past Due: should show warning message
+      - [ ] Cancelled: should show upsell to reactivate
       
-- [ ] 5. Handle Subscription Status
-      - Active = features enabled
-      - Past Due = warning message, disable scanning
-      - Cancelled = trial features only
+- [ ] 5. Document for Production Launch (Dec 31)
+      - [ ] Stripe Account: switch to live mode
+      - [ ] Secrets: switch to sk_live_... keys
+      - [ ] Webhook: register real endpoint in Stripe dashboard
+      - [ ] Products: use real Stripe Product/Price IDs
 
 **Acceptance Criteria:**
-- [ ] Checkout flow works end-to-end
-- [ ] Test payment succeeds
-- [ ] DB subscription status updates
-- [ ] Free tier + paid tier working
+- [x] Stripe infrastructure already exists (no build work needed)
+- [ ] Test payment completes end-to-end
+- [ ] DB subscription synced correctly
+- [ ] Webhook events processed
+- [ ] No errors in browser/server logs
 
-**Time Budget:** 3-5 hours
+**Time Budget:** 2-3 hours (verification only, not building from scratch)
 
 ---
 

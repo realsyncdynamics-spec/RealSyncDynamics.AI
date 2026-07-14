@@ -77,7 +77,7 @@ interface PolicyRow {
 }
 
 const POLICY_STATUS: PolicyRow[] = [
-  { name: 'Cookie Consent Policy',             framework: 'TTDSG §25',          status: 'error',   lastCheck: '16.06.2026', nextCheck: '23.06.2026' },
+  { name: 'Cookie Consent Policy',             framework: 'TDDDG §25',          status: 'error',   lastCheck: '16.06.2026', nextCheck: '23.06.2026' },
   { name: 'Drittlandtransfer Policy',          framework: 'DSGVO Art. 44-46',   status: 'warning', lastCheck: '16.06.2026', nextCheck: '23.06.2026' },
   { name: 'Datenschutz-Grundsätze',            framework: 'DSGVO Art. 5',       status: 'ok',      lastCheck: '16.06.2026', nextCheck: '30.06.2026' },
   { name: 'EU AI Act Compliance Policy',        framework: 'EU AI Act Art. 6',   status: 'warning', lastCheck: '16.06.2026', nextCheck: '23.06.2026' },

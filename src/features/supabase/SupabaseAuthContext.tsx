@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { createClient, Session } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
+import { getSupabase } from '../../lib/supabase';
 
 export interface AuthUser {
   id: string;
@@ -30,7 +31,13 @@ const supabaseAnonKey = getSupabaseAnonKey();
 
 const isSupabaseConfigured = !!(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// WICHTIG: Genau EINE Supabase-Client-Instanz pro Browser-Kontext.
+// Früher wurde hier via `createClient` ein zweiter Client erzeugt (zusätzlich
+// zum Singleton in `lib/supabase.ts`) — das löste die Warnung „Multiple
+// GoTrueClient instances detected" aus und führte zu einer Auth-Race-Condition,
+// bei der das Dashboard trotz gültiger Session „Bitte anmelden" zeigte.
+// Jetzt teilen sich alle Consumer den zentralen Singleton.
+export const supabase = getSupabase();
 
 export function SupabaseAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);

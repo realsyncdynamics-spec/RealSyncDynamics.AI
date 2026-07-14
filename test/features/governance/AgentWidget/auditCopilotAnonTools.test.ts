@@ -1,7 +1,10 @@
 /**
- * Vertragstest fuer die Phase-4 audit-copilot Tools.
+ * Vertragstest fuer die anon audit-copilot Tools (Client-Seite).
  *
- * explainFindingAnon / generateFixSnippetAnon — Mock-Queued in Phase 4.
+ * explainFindingAnon / generateFixSnippetAnon routen jetzt echt ueber die
+ * ai-gateway Edge Function (strict-json). Dieser Test prueft den Client-
+ * Vertrag (op, Pflichtfelder, kein tenant-Leak, Fehler-Mapping) mit
+ * gemocktem Transport — die Server-Antwort wird injiziert.
  * Pflichtfelder: audit_id, finding_id. Optional: finding_payload, cms.
  *
  * 6 Cases (3 pro Tool):
@@ -41,7 +44,7 @@ beforeEach(() => {
   nextResponse = { data: null, error: null };
 });
 
-describe('Phase 4 — audit-copilot Tools im anon-Mode', () => {
+describe('audit-copilot Tools im anon-Mode', () => {
   // ── explain_finding ──────────────────────────────────────────────────────
 
   it('explain_finding: ruft governance-agent mit op=explain_finding + Pflichtfeldern', async () => {

@@ -42,7 +42,7 @@ export type FindingVerificationStatus =
   | 'disputed';
 
 export type FindingCategory =
-  | 'consent'        // banner / pre-consent tracker / TTDSG §25
+  | 'consent'        // banner / pre-consent tracker / TDDDG §25
   | 'tracker'        // unknown vendor, DPA missing, third-party script
   | 'ai_act'         // EU AI Act Annex III, transparency, oversight
   | 'tom'            // technical / organizational measures (Art. 32)

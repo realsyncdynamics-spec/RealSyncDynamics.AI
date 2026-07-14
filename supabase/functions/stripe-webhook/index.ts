@@ -100,6 +100,20 @@ Deno.serve(async (req) => {
         if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
           await recordPaymentEvent(admin, event);
         }
+        if (event.type === 'invoice.paid') {
+          const inv = event.data.object as Stripe.Invoice;
+          const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id;
+          if (subId) {
+            const { data: sub } = await admin
+              .from('subscriptions')
+              .select('tenant_id')
+              .eq('stripe_subscription_id', subId)
+              .maybeSingle();
+            if (sub?.tenant_id) {
+              await sendInvoiceEmail(inv.id, sub.tenant_id);
+            }
+          }
+        }
         break;
       case 'charge.failed':
       case 'charge.refunded':
@@ -137,7 +151,7 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
   }
 
   const item = sub.items.data[0];
-  const planKey = item?.price?.metadata?.plan_key ?? 'free';
+  const planKey = await resolvePlanKey(admin, item);
 
   const row = {
     tenant_id: tenantId,
@@ -165,6 +179,32 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
     .from('subscriptions')
     .upsert(row, { onConflict: 'stripe_subscription_id' });
   if (error) throw error;
+}
+
+// Plan-Key-Auflösung mit additivem Fallback.
+//
+// Bevorzugt `price.metadata.plan_key` (im Stripe-Dashboard am Preis gesetzt).
+// Fehlt es — ein häufiger Konfigurationsfehler — wird der Plan aus
+// public.products via `stripe_price_id` aufgelöst, statt stillschweigend auf
+// 'free' zu fallen. Sonst bekäme ein zahlender Kunde keine Entitlements,
+// obwohl der Preis korrekt in der DB verdrahtet ist. Erst wenn auch das
+// nichts findet, greift 'free'.
+// deno-lint-ignore no-explicit-any
+async function resolvePlanKey(admin: any, item: Stripe.SubscriptionItem | undefined): Promise<string> {
+  const fromMeta = item?.price?.metadata?.plan_key;
+  if (fromMeta) return fromMeta;
+
+  const priceId = item?.price?.id;
+  if (priceId) {
+    const { data } = await admin
+      .from('products')
+      .select('default_for_plan_key')
+      .eq('stripe_price_id', priceId)
+      .maybeSingle();
+    if (data?.default_for_plan_key) return data.default_for_plan_key;
+  }
+
+  return 'free';
 }
 
 // deno-lint-ignore no-explicit-any
@@ -520,5 +560,33 @@ async function reportPurchaseToAdPlatforms(
     });
   } catch (err) {
     console.warn('[stripe-webhook] purchase fan-out failed:', (err as Error).message);
+  }
+}
+
+// Fire-and-forget: send invoice email via invoice-email Edge Function
+async function sendInvoiceEmail(stripeInvoiceId: string, tenantId: string): Promise<void> {
+  try {
+    const fn_url = Deno.env.get('SUPABASE_URL');
+    if (!fn_url) return; // No Supabase URL available
+    const res = await fetch(`${fn_url}/functions/v1/invoice-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({
+        stripe_invoice_id: stripeInvoiceId,
+        tenant_id: tenantId,
+      }),
+    });
+    if (!res.ok) {
+      console.warn(
+        `[stripe-webhook] invoice-email failed: HTTP ${res.status} for invoice ${stripeInvoiceId}`
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[stripe-webhook] invoice-email error: ${(err as Error).message}`
+    );
   }
 }

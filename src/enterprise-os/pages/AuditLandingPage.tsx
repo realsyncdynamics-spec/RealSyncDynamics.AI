@@ -52,7 +52,7 @@ export function AuditLandingPage() {
           </h1>
           <p className="mt-5 text-base leading-relaxed text-titanium-400 sm:text-lg">
             In Sekunden prüfen wir Cookies, Tracker und Drittanbieter-Verbindungen Ihrer Website auf DSGVO- und
-            TTDSG-Konformität — kostenlos und ohne Anmeldung.
+            TDDDG-Konformität — kostenlos und ohne Anmeldung.
           </p>
 
           <form onSubmit={handleSubmit} className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">

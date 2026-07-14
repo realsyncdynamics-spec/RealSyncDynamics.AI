@@ -104,12 +104,12 @@ const TRUST_ITEMS = [
 //   85+  → supabase/functions/ (Edge Functions, ohne _-Präfix: 87)
 //   180+ → distinct CREATE TABLE in supabase/migrations/ (184)
 //   9    → Plattform-Module (TILES)
-//   3    → abgedeckte Frameworks: DSGVO · TTDSG · EU AI Act
+//   3    → abgedeckte Frameworks: DSGVO · TDDDG · EU AI Act
 const PLATFORM_METRICS = [
   { value: '85+',  label: 'Edge Functions', sub: 'Automation & Runtime' },
   { value: '180+', label: 'RLS-Tabellen',   sub: 'Governance-Datenmodell' },
   { value: '9',    label: 'Plattform-Module', sub: 'Eine Oberfläche' },
-  { value: '3',    label: 'Frameworks',     sub: 'DSGVO · TTDSG · EU AI Act' },
+  { value: '3',    label: 'Frameworks',     sub: 'DSGVO · TDDDG · EU AI Act' },
 ] as const;
 
 export function PublicWorkspacePreview() {

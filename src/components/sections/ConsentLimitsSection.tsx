@@ -26,7 +26,7 @@ const LIMITS: LimitItem[] = [
     scope: 'Cookie-Banner allein',
     label: 'Consent-Einholung am UI',
     detail:
-      'Banner zeigen, Cookies erst nach Zustimmung setzen — ja, das ist die Pflicht aus § 25 TTDSG. Aber damit ist nur die SICHTBARE Schicht erschlagen.',
+      'Banner zeigen, Cookies erst nach Zustimmung setzen — ja, das ist die Pflicht aus § 25 TDDDG. Aber damit ist nur die SICHTBARE Schicht erschlagen.',
   },
   {
     icon: Eye,

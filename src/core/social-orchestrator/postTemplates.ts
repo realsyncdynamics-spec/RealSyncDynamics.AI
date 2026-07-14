@@ -65,7 +65,7 @@ const TEMPLATES: Record<SocialChannel, Record<string, TemplateFn>> = {
     'consent.missing': () => ({
       body:
         'Datenverarbeitung ohne dokumentierten Consent ist kein Detail — sie ist der häufigste Befund in unseren Audits. Unsere Runtime erkennt das Muster früh und versiegelt es im Evidence Stream, bevor es zum Bußgeld-Indikator wird.',
-      hashtags: ['#Consent', '#TTDSG'],
+      hashtags: ['#Consent', '#TDDDG'],
     }),
     'high_risk.classified': () => ({
       body:
@@ -107,7 +107,7 @@ const TEMPLATES: Record<SocialChannel, Record<string, TemplateFn>> = {
     'tracker.detected': () => ({
       body:
         'Hinweis aus der Praxis: Tracking-Aktivität verändert sich kontinuierlich. Eine einmalige Datenschutz-Folgenabschätzung deckt diese Veränderung nicht ab. Continuous Detection + Evidence Anchoring schließt diese Lücke prüfbar — relevant für DSGVO Art. 5 Abs. 2 (Rechenschaftspflicht).',
-      hashtags: ['#DSGVO', '#TTDSG'],
+      hashtags: ['#DSGVO', '#TDDDG'],
     }),
     'ai.endpoint.detected': () => ({
       body:

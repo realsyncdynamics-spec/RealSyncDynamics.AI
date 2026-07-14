@@ -24,7 +24,7 @@ type Consent = {
 };
 
 /**
- * Cookie-Consent-Banner gemäß TTDSG / DSGVO Art. 7.
+ * Cookie-Consent-Banner gemäß TDDDG / DSGVO Art. 7.
  *
  * Sichtbar bis User entweder „Alles akzeptieren" / „Nur notwendig" / „Anpassen"
  * gewählt hat. Speichert Wahl in localStorage. Keine 3rd-Party-Tracker
@@ -103,7 +103,7 @@ export function CookieConsent() {
                   Statistik- und Marketing-Cookies mit Deiner Einwilligung. Mehr
                   in der <Link to="/legal/privacy" className="text-security-400 hover:underline">Datenschutzerklärung</Link>.
                 </p>
-                {/* BfDI-Leitlinie + DSGVO Art. 7 III + TTDSG §25: Accept und Reject
+                {/* BfDI-Leitlinie + DSGVO Art. 7 III + TDDDG §25: Accept und Reject
                     in eigenem flex-Container, je flex-1 → garantiert gleiche Breite.
                     Einstellungen separat darunter. */}
                 <div className="flex gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">

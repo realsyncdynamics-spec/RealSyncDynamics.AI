@@ -8,6 +8,8 @@
 import { getSupabase } from '../../lib/supabase';
 import type { TrustOutput } from '../../types/models';
 
+export type SignatureAlg = 'ed25519' | 'hmac-sha256';
+
 export interface CustodyEntry {
   seq: number;
   action: 'registered' | 'updated' | 'licensed' | 'audited';
@@ -15,6 +17,7 @@ export interface CustodyEntry {
   timestamp: string;
   event_hash: string;
   signed: boolean;
+  signature_alg?: SignatureAlg | null;
 }
 
 export interface VerifyResponse {
@@ -24,11 +27,22 @@ export interface VerifyResponse {
   broken_at_seq: number | null;
   trust: TrustOutput;
   custody: CustodyEntry[];
+  signature?: {
+    algorithm: SignatureAlg | null;
+    externally_verifiable: boolean;
+  };
   evidence_components: {
     metadataIntegrity: boolean;
     ownershipConsistency: boolean;
     provenanceContinuity: boolean;
   };
+}
+
+export interface PublicKeyResponse {
+  ok: true;
+  alg: 'ed25519' | null;
+  key_id: string | null;
+  public_key_spki_b64: string | null;
 }
 
 export interface RegisterResponse {
@@ -90,4 +104,9 @@ export function verifyProvenance(args: {
   content_sha256?: string;
 }): Promise<ProvenanceResult<VerifyResponse>> {
   return invoke<VerifyResponse>({ op: 'verify', ...args });
+}
+
+/** Öffentlicher Ed25519-Signaturschlüssel für die unabhängige Signaturprüfung. */
+export function getProvenancePublicKey(): Promise<ProvenanceResult<PublicKeyResponse>> {
+  return invoke<PublicKeyResponse>({ op: 'pubkey' });
 }

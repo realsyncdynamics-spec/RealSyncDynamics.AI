@@ -1,11 +1,30 @@
 # Deploy — Frontend on Hostinger VPS
 
-Hosts the static Vite build at `https://realsyncdynamicsai.de/`, served by
-nginx, TLS via Let's Encrypt, auto-deploy via GitHub Actions over SSH.
+Hosts the Vite React SPA at `https://realsyncdynamicsai.de/`, served by
+nginx reverse proxy, TLS via Let's Encrypt, auto-deployed via GitHub Actions.
 
-Target VPS: `72.61.89.191`. Existing service (Kodee/OpenClaw Docker stack)
-keeps running on the same machine; this just adds an nginx server block on
-80/443 for the marketing + app domain.
+**Target VPS:** `72.61.89.191`  
+**Deployment Method:** Git push → GitHub Actions → SSH rsync → Docker Compose on VPS  
+**Existing Services:** Kodee/OpenClaw Python stack on port 8080 (untouched)
+
+## Architektur
+
+```
+GitHub (main push)
+    ↓
+GitHub Actions
+    ├─ npm ci
+    ├─ npm run lint
+    ├─ npm run build
+    └─ rsync dist/ + all source to VPS
+        ↓
+    VPS (realsyncdynamicsai.de)
+        ├─ docker compose --env-file .env up -d --build
+        └─ realsync-frontend:latest → http://127.0.0.1:8090
+            ↓
+        nginx (public 80/443)
+            └─ https://realsyncdynamicsai.de
+```
 
 ---
 
@@ -122,34 +141,74 @@ dig +short www.realsyncdynamicsai.de A
 
 `Settings → Secrets and variables → Actions → New repository secret`:
 
-| Name                    | Value                                                                |
+| Name                    | Value / Source                                                       |
 | ----------------------- | -------------------------------------------------------------------- |
+| **SSH/Deployment**      |                                                                      |
 | `VPS_SSH_HOST`          | `realsyncdynamicsai.de` (or `72.61.89.191`)                          |
-| `VPS_SSH_USER`          | `deploy`                                                             |
-| `VPS_SSH_KEY`           | Contents of `~/.ssh/realsync_github_actions` (the **private** key)   |
-| `VPS_SSH_KNOWN_HOST`    | Single line from `ssh-keyscan -t ed25519 …`                          |
-| `VPS_FRONTEND_PATH`     | `/var/www/realsyncdynamicsai.de/dist`                                |
-| `VITE_SUPABASE_URL`     | `https://ebljyceifhnlzhjfyxup.supabase.co`                           |
-| `VITE_SUPABASE_ANON_KEY`| Supabase Dashboard → API Settings → `anon public` (it's not secret)  |
+| `VPS_SSH_USER`          | `deploy` (or username with sudo)                                     |
+| `VPS_SSH_KEY`           | Private key from `~/.ssh/realsync_github_actions` (output of `cat ~/.ssh/realsync_github_actions`) |
+| `VPS_SSH_KNOWN_HOST`    | Host key from `ssh-keyscan -t ed25519 realsyncdynamicsai.de`         |
+| **Frontend Build**      |                                                                      |
+| `VITE_SUPABASE_URL`     | `https://ebljyceifhnlzhjfyxup.supabase.co` (Supabase Dashboard)     |
+| `VITE_SUPABASE_ANON_KEY`| Supabase Dashboard → API Settings → `anon public` key               |
+| `VITE_SENTRY_DSN`       | (Optional) Sentry project DSN, leave blank to disable               |
 
 ---
 
-## Verify
+## Deployment Workflow — GitHub Actions
 
-Push any commit that touches `src/**` (or trigger manually via
-*Actions → Deploy Frontend → Run workflow*). Expected timeline:
+**File:** `.github/workflows/deploy-frontend-vps.yml`
 
+**Trigger:** 
+- Auto: Any push to `main` that touches `src/`, `package.json`, Dockerfile, etc.
+- Manual: GitHub → Actions → Deploy Frontend to Hostinger VPS → Run workflow
+
+**Expected Timeline:**
 ```
-Verify required secrets        2 s
-Install dependencies         ~30 s
-Build production bundle      ~10 s
-Configure SSH                  1 s
-Sync dist/ to VPS            ~5 s
-Smoke-test the public URL     <1 s   → HTTP 200
+Setup Node.js                  ~15 s
+Install dependencies           ~30 s
+Run linting (non-blocking)      ~5 s
+Run type check (non-blocking)   ~3 s
+Build production bundle        ~15 s
+Configure SSH                   2 s
+Rsync source to VPS           ~10 s
+Docker Compose build+deploy   ~30 s
+Health check polling           ~10 s
+Verify public URL              ~5 s
+─────────────────────────────────
+Total                       ~125 s (~2 min)
 ```
 
-Open https://realsyncdynamicsai.de/ — the Hard-Edge Industrial landing
-should load. Then `/dashboard`, `/kodee`, `/billing/usage`, `/pricing`.
+### Manual Deployment Verification
+
+After workflow completes, verify:
+
+```bash
+# From your laptop
+curl -I https://realsyncdynamicsai.de/
+curl -I https://realsyncdynamicsai.de/healthz
+
+# Check specific pages
+curl -s https://realsyncdynamicsai.de/pricing | grep -q "Pricing" && echo "✓"
+```
+
+### On VPS - Manual Health Check
+
+SSH into VPS and run:
+```bash
+docker ps -f name=realsync-frontend --format '{{.Names}}\t{{.Status}}'
+docker compose -f deploy/frontend-vps-deploy-v2/docker-compose.yml logs frontend --tail=20
+```
+
+### Rollback (on VPS)
+
+If deployment fails, rollback to previous version:
+```bash
+cd deploy/frontend-vps-deploy-v2
+docker compose down
+docker image tag realsync-frontend:previous realsync-frontend:latest
+docker compose --env-file .env up -d
+```
 
 ---
 

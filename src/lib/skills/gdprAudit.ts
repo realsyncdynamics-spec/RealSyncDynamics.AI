@@ -27,12 +27,12 @@ const DISCLAIMER =
   'Technische Heuristik, keine Rechtsberatung. Befunde sind vor rechtsverbindlicher ' +
   'Bewertung durch qualifizierte Fachleute (DSB/Fachjurist) zu pruefen.';
 
-// Bekannte DSGVO-/TTDSG-Website-Befundkategorien → Schweregrad + Remediation.
+// Bekannte DSGVO-/TDDDG-Website-Befundkategorien → Schweregrad + Remediation.
 const FINDINGS: Record<string, { severity: AuditSeverity; remediation: string }> = {
   tracker_before_consent:      { severity: 'critical', remediation: 'Tracker erst nach aktiver Einwilligung laden (Consent-Gating, type="text/plain" data-consent).' },
   session_recording_no_consent:{ severity: 'critical', remediation: 'Session-Recording (z.B. Hotjar) nur mit vorheriger Einwilligung aktivieren.' },
   missing_privacy_policy:      { severity: 'critical', remediation: 'Datenschutzerklaerung nach Art. 13/14 DSGVO bereitstellen und verlinken.' },
-  no_consent_banner:           { severity: 'high',     remediation: 'DSGVO-/TTDSG-konformes Consent-Banner mit echtem "Ablehnen" einbinden.' },
+  no_consent_banner:           { severity: 'high',     remediation: 'DSGVO-/TDDDG-konformes Consent-Banner mit echtem "Ablehnen" einbinden.' },
   analytics_no_consent:        { severity: 'high',     remediation: 'Analytics (z.B. Google Analytics) hinter Consent legen oder auf einwilligungsfreie Loesung umstellen.' },
   social_pixel_no_consent:     { severity: 'high',     remediation: 'Marketing-Pixel (Meta/LinkedIn/TikTok) nur nach Einwilligung laden.' },
   missing_imprint:             { severity: 'high',     remediation: 'Impressum nach §5 DDG/TMG ergaenzen und erreichbar machen.' },
@@ -73,7 +73,7 @@ export function buildWebsiteAuditPlan(url: string): WebsiteAuditPlan {
     throw new Error('url must be an absolute http(s) URL');
   }
   const steps: AuditPlanStep[] = [
-    { id: 'consent-timing',   title: 'Consent-Timing: welche Requests/Tracker laden VOR Einwilligung?', reference: 'TTDSG §25 / Art. 6 DSGVO' },
+    { id: 'consent-timing',   title: 'Consent-Timing: welche Requests/Tracker laden VOR Einwilligung?', reference: 'TDDDG §25 / Art. 6 DSGVO' },
     { id: 'consent-banner',   title: 'Consent-Banner: vorhanden, mit echtem "Ablehnen", kein Dark-Pattern?', reference: 'EDSA-Leitlinien 03/2022' },
     { id: 'trackers',         title: 'Tracker- & Pixel-Inventar (Analytics, Marketing, Session-Recording).', reference: 'Art. 30 DSGVO' },
     { id: 'third-party',      title: 'Drittlandtransfers: Fonts/CDN/Embeds, US-Dienste, Schrems-II.', reference: 'Art. 44 ff. DSGVO' },

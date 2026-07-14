@@ -48,4 +48,17 @@ test.describe('[FE-002] Navigation und primäre CTAs', () => {
       expect(resp?.status(), `Deep Link ${link}`).toBeLessThan(400);
     }
   });
+
+  test('[FE-004] Footer-Rechtslinks (Impressum, Datenschutz) erreichbar', async ({ page }) => {
+    const footer = page.locator('footer');
+
+    // Footer enthält die Rechtslinks ggf. mehrfach (Spalte + Legal-Nav) — .first().
+    const impressum = footer.getByRole('link', { name: /^Impressum$/i }).first();
+    await expect(impressum).toBeVisible();
+    await expect(impressum).toHaveAttribute('href', /\/impressum$/);
+
+    const datenschutz = footer.getByRole('link', { name: /^Datenschutz$/i }).first();
+    await expect(datenschutz).toBeVisible();
+    await expect(datenschutz).toHaveAttribute('href', /\/datenschutz$/);
+  });
 });

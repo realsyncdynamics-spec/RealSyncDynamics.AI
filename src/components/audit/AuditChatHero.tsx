@@ -145,13 +145,18 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
          * real report. Failures here MUST NOT block the scan. */
       });
 
+      // `gdpr-audit` ist eine öffentliche Edge-Function (verify_jwt=false) für
+      // den anonymen Free-Audit-Flow. Ohne `requireAuth: false` würde
+      // postEdgeFunction einen JWT aus localStorage erzwingen und für nicht
+      // eingeloggte Besucher mit „Nicht authentifiziert" abbrechen, bevor der
+      // Request überhaupt rausgeht.
       const report = await postEdgeFunction<Report>('gdpr-audit', {
         url,
         email: trimmed,
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
-      });
+      }, { requireAuth: false });
 
       setBubbles((prev) => [
         ...prev.filter((b) => b.id !== 'scanning'),
@@ -259,9 +264,11 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
             {phase === 'scanning' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
-        <p className="text-[10px] text-titanium-500 leading-relaxed">
-          E-Mail landet in unserem CRM. Verarbeitung gemäß <a href="/legal/privacy" className="underline hover:text-titanium-300">Datenschutzerklärung</a>.
-        </p>
+        {phase === 'ask-email' && (
+          <p className="text-[10px] text-titanium-500 leading-relaxed">
+            E-Mail landet in unserem CRM. Verarbeitung gemäß <a href="/legal/privacy" className="underline hover:text-titanium-300">Datenschutzerklärung</a>.
+          </p>
+        )}
       </div>
     </div>
   );

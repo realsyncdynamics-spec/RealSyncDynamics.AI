@@ -34,7 +34,7 @@ const FINDINGS_BREAKDOWN = [
   ];
 
 const DSGVO_CATEGORIES = [
-  { icon: Cookie,      label: 'Cookies / TTDSG § 25',           findings: 6 },
+  { icon: Cookie,      label: 'Cookies / TDDDG § 25',           findings: 6 },
   { icon: Activity,    label: 'Tracking & Analytics',            findings: 5 },
   { icon: Lock,        label: 'Drittlandtransfer (Schrems II)',  findings: 3 },
   { icon: FileWarning, label: 'Pflichtinformationen',            findings: 2 },

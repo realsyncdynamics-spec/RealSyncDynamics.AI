@@ -5,6 +5,7 @@
 
 import { getSupabase } from '../../lib/supabase';
 import type { RetentionClass } from '../../lib/evidence/retention';
+import type { SnapshotRecord } from '../../lib/evidence/verifyChain';
 
 export interface TimelineEntry {
   id: string;
@@ -27,6 +28,8 @@ export interface SnapshotResult {
   event_hash: string;
   retained_until: string | null;
   signed: boolean;
+  /** Phase 2b: Snapshot wurde automatisch in der Herkunftskette erfasst. */
+  provenance_linked?: boolean;
 }
 
 export type VaultError =
@@ -69,4 +72,20 @@ export async function listTimeline(tenantId: string): Promise<TimelineEntry[]> {
   const { data, error } = await sb.rpc('evidence_vault_timeline', { p_tenant_id: tenantId, p_limit: 100 });
   if (error) throw new Error(error.message);
   return (data ?? []) as TimelineEntry[];
+}
+
+/**
+ * Liest die Rohdaten der Snapshots (RLS-sicher direkt), inkl. prev_hash und
+ * event_timestamp, für die unabhängige Hash-Chain-Verifizierung im Browser.
+ */
+export async function listSnapshotsForVerification(tenantId: string): Promise<SnapshotRecord[]> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('evidence_snapshots')
+    .select('subject_ref, version, content_sha256, retention_class, prev_hash, event_hash, event_timestamp')
+    .eq('tenant_id', tenantId)
+    .order('subject_ref', { ascending: true })
+    .order('version', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as SnapshotRecord[];
 }

@@ -16,7 +16,7 @@ export function DeploymentGovernancePage() {
     >
       <H2>Wann der Check feuert</H2>
       <P>
-        Drei Trigger sind heute unterstützt: GitHub-PR-Hook (push, PR, release), Vercel-/Netlify-Deploy-Webhook
+        Drei Trigger sind heute unterstützt: GitHub-PR-Hook (push, PR, release), Cloudflare-Pages-Deploy-Webhook
         (für statisch gebaute Sites) und GitLab-Pipeline-Hook. Die Check-Action liest den Diff,
         identifiziert Änderungen mit Governance-Relevanz und ruft die Policy-Engine an. Das
         Ergebnis landet als Check-Run auf der PR, plus ein strukturierter Kommentar mit
@@ -38,7 +38,7 @@ export function DeploymentGovernancePage() {
         Die Engine berechnet drei Scores: Pre-Deploy-Risk (aktueller Stand), Post-Deploy-Risk
         (projiziert nach Merge), Delta. Konkret: ein neuer US-Vendor erhöht den Score um eine
         konfigurierte Konstante; ein neues Modell ohne <code>ai_act_class</code>-Tag triggert eine
-        Reclassifikation; ein Tracker ohne Consent-Gate erhöht den Score um die TTDSG-§25-Penalty.
+        Reclassifikation; ein Tracker ohne Consent-Gate erhöht den Score um die TDDDG-§25-Penalty.
         Das Delta ist die Zahl, die in der Check-Box steht.
       </P>
 

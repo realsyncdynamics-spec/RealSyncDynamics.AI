@@ -96,14 +96,14 @@ export const SKILL_REGISTRY: Record<SkillKey, SkillDef> = {
     key: 'gdpr-audit',
     label: 'DSGVO-Audit (Website)',
     description:
-      'Technische DSGVO-/TTDSG-Heuristik fuer Websites: Consent-Timing, Tracker, ' +
+      'Technische DSGVO-/TDDDG-Heuristik fuer Websites: Consent-Timing, Tracker, ' +
       'Drittlandtransfers, Pflichtseiten, Security-Header. Keine Rechtsberatung.',
     triggers: [
       'dsgvo audit', 'gdpr audit', 'website scan', 'website audit', 'cookie scan',
       'tracker', 'consent timing', 'consent banner', 'security header',
     ],
     useCases: [
-      'Website auf DSGVO-/TTDSG-Risiken pruefen (Consent-Timing, Tracker)',
+      'Website auf DSGVO-/TDDDG-Risiken pruefen (Consent-Timing, Tracker)',
       'Befund klassifizieren (critical/high/medium/low) inkl. Remediation-Hinweis',
       'Pruefplan fuer ein Website-Audit erzeugen',
     ],

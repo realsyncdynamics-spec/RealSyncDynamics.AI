@@ -64,7 +64,7 @@ export function AuditLanding() {
   usePageMeta({
     title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
     description:
-      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TTDSG-Risiken analysieren.',
+      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
   });
   const [url, setUrl] = useState('');
@@ -89,6 +89,8 @@ export function AuditLanding() {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
+      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
+      // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
       const data = await postEdgeFunction<Report>('gdpr-audit', {
         url: normalizedUrl,
         email: email.trim(),
@@ -96,7 +98,7 @@ export function AuditLanding() {
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
-      });
+      }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id) {
@@ -352,7 +354,7 @@ function Pillars() {
   const items = [
     { law: 'DSGVO Art. 6 Abs. 1', issue: 'Tracker ohne Consent', max: 'Rechtsgrundlage erforderlich' },
     { law: 'DSGVO Art. 13',       issue: 'Fehlende Datenschutzerklärung', max: 'Informationspflicht' },
-    { law: '§ 25 TTDSG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
+    { law: '§ 25 TDDDG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
     { law: '§ 5 TMG',             issue: 'Fehlendes Impressum', max: 'Anbieterkennzeichnung erforderlich' },
   ];
   return (
@@ -435,8 +437,10 @@ function TrialCtaBlock({ report }: { report: Report }) {
     } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
 
     // Kanonischer Weg: immer über die eine Paket-Auswahl (/pricing).
+    // CTA-Beschriftung lautet „Starter 14 Tage kostenlos aktivieren" —
+    // daher Starter-Plan vorwählen (nicht Growth).
     navigate(
-      `/pricing?plan=growth&audit_id=${report.audit_id}&source=trial_cta`
+      `/pricing?plan=starter&audit_id=${report.audit_id}&source=trial_cta`
     );
   }
 
@@ -463,10 +467,10 @@ function TrialCtaBlock({ report }: { report: Report }) {
         ob neue DSGVO-, Security- oder KI-Risiken entstehen.
         {(criticalCount > 0 || highCount > 0) && (
           <span className="block mt-2 text-amber-300 font-semibold">
-            {criticalCount > 0 && `${criticalCount} kritische`}
+            {criticalCount > 0 && `${criticalCount} ${criticalCount === 1 ? 'kritischer' : 'kritische'}`}
             {criticalCount > 0 && highCount > 0 && ' + '}
-            {highCount > 0 && `${highCount} hohe`}
-            {' '}Befunde — Monitoring empfohlen.
+            {highCount > 0 && `${highCount} ${highCount === 1 ? 'hoher' : 'hohe'}`}
+            {' '}{criticalCount + highCount === 1 ? 'Befund' : 'Befunde'} — Monitoring empfohlen.
           </span>
         )}
       </p>
@@ -970,8 +974,17 @@ function plainLanguageResult(critCount: number, medCount: number, lowCount: numb
     return 'Es wurden keine DSGVO-Verstöße oder technischen Verbesserungspunkte erkannt. Sehr gutes Ergebnis.';
   }
   if (critCount > 0) {
-    return `Es wurden ${critCount} kritische DSGVO-Verstöße erkannt, die zeitnah behoben werden sollten` +
-      (medCount + lowCount > 0 ? `. Zusätzlich werden ${medCount + lowCount} weitere Verbesserungen empfohlen.` : '.');
+    const critText =
+      critCount === 1
+        ? 'Es wurde 1 kritischer DSGVO-Verstoß erkannt, der zeitnah behoben werden sollte'
+        : `Es wurden ${critCount} kritische DSGVO-Verstöße erkannt, die zeitnah behoben werden sollten`;
+    const extra = medCount + lowCount;
+    return (
+      critText +
+      (extra > 0
+        ? `. Zusätzlich ${extra === 1 ? 'wird 1 weitere Verbesserung' : `werden ${extra} weitere Verbesserungen`} empfohlen.`
+        : '.')
+    );
   }
   const parts: string[] = [];
   if (medCount > 0) parts.push(`${medCount} mittlere`);
@@ -1037,7 +1050,7 @@ function MonitoringActivationBlock({ report }: { report: Report }) {
         </div>
       </div>
       <p className="text-sm text-titanium-300 mb-5 leading-relaxed">
-        Die technische Analyse hat mögliche DSGVO-, TTDSG- oder Tracking-Risiken identifiziert.
+        Die technische Analyse hat mögliche DSGVO-, TDDDG- oder Tracking-Risiken identifiziert.
         Mit kontinuierlichem Monitoring bleiben Änderungen an Tracking, externen Diensten und möglichen
         Compliance-Risiken nachvollziehbar.
       </p>

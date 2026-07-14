@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft, Bot, AlertTriangle, Loader2, Activity, Network,
-  Mail, Globe, Archive, FileCheck2, TrendingUp, RefreshCcw,
+  Mail, Globe, Archive, FileCheck2, TrendingUp, RefreshCcw, Wand2,
 } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { RemediationPanel } from './RemediationPanel';
@@ -13,7 +13,7 @@ import {
   type DbFrameworkControl, type DbAssetControlMapping,
   type DbAssetRiskHistory,
 } from './governanceApi';
-import { archiveAsset } from './resourcesApi';
+import { archiveAsset, autoMapAsset } from './resourcesApi';
 import type { GovernanceRiskLevel, GovernanceControlStatus } from './types';
 
 /**
@@ -52,6 +52,8 @@ function Inner() {
   const [error, setError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [autoMapping, setAutoMapping] = useState(false);
+  const [autoMapMsg, setAutoMapMsg] = useState<string | null>(null);
 
   const reload = async () => {
     if (!assetId) return;
@@ -80,6 +82,20 @@ function Inner() {
     const r = await recalculateRiskScore(assetId);
     setRecalculating(false);
     if (!r.ok) { setError(r.error?.message ?? 'Recalc fehlgeschlagen'); return; }
+    await reload();
+  };
+
+  const runAutoMap = async () => {
+    if (!assetId) return;
+    setAutoMapping(true); setError(null); setAutoMapMsg(null);
+    const r = await autoMapAsset(assetId);
+    setAutoMapping(false);
+    if (!r.ok) { setError(r.error?.message ?? 'Auto-Mapping fehlgeschlagen'); return; }
+    setAutoMapMsg(
+      (r.applied ?? 0) > 0
+        ? `${r.applied} Control${r.applied === 1 ? '' : 's'} automatisch zugeordnet.`
+        : 'Keine Änderungen — bereits aktuell (manuelle Zuordnungen bleiben unangetastet).',
+    );
     await reload();
   };
 
@@ -141,6 +157,9 @@ function Inner() {
             riskHistory={riskHistory}
             onRecalculate={recalc}
             recalculating={recalculating}
+            onAutoMap={runAutoMap}
+            autoMapping={autoMapping}
+            autoMapMsg={autoMapMsg}
           />
         )}
       </main>
@@ -165,6 +184,7 @@ function NotFound() {
 
 function Body({
   asset, events, mappings, controls, riskHistory, onRecalculate, recalculating,
+  onAutoMap, autoMapping, autoMapMsg,
 }: {
   asset: DbGovernanceAsset;
   events: DbGovernanceEvent[];
@@ -173,6 +193,9 @@ function Body({
   riskHistory: DbAssetRiskHistory[];
   onRecalculate: () => void;
   recalculating: boolean;
+  onAutoMap: () => void;
+  autoMapping: boolean;
+  autoMapMsg: string | null;
 }) {
   const criticalEvents = events.filter((e) => e.risk_level === 'critical').length;
   const highEvents = events.filter((e) => e.risk_level === 'high').length;
@@ -232,10 +255,26 @@ function Body({
 
       {/* Control mappings */}
       <Section icon={<FileCheck2 className="h-4 w-4" />} title={`Framework Mappings (${mappings.length})`} actions={
-        <Link to="/app/mappings" className="text-[11px] text-amber-300 hover:text-amber-200 font-semibold">
-          Matrix bearbeiten →
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onAutoMap}
+            disabled={autoMapping}
+            title="Control-Status aus der Asset-Klassifikation (AI-Act, Datentypen) ableiten. Manuelle Zuordnungen bleiben unangetastet."
+            className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold text-indigo-300 border border-indigo-500/40 hover:bg-indigo-500/10 rounded-none disabled:opacity-50"
+          >
+            <Wand2 className={`h-3 w-3 ${autoMapping ? 'animate-pulse' : ''}`} />
+            {autoMapping ? 'Mappe…' : 'Auto-Mapping'}
+          </button>
+          <Link to="/app/mappings" className="text-[11px] text-amber-300 hover:text-amber-200 font-semibold">
+            Matrix bearbeiten →
+          </Link>
+        </div>
       }>
+        {autoMapMsg && (
+          <div className="mb-3 text-[12px] text-indigo-200 bg-indigo-500/5 border border-indigo-500/30 px-3 py-2">
+            {autoMapMsg}
+          </div>
+        )}
         {mappings.length === 0 ? (
           <div className="text-sm text-titanium-500">
             Noch keine Framework-Controls zugeordnet.{' '}

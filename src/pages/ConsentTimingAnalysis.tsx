@@ -1,5 +1,5 @@
 // ConsentTimingAnalysis — Das Alleinstellungsmerkmal:
-// Prüft welche Requests VOR Consent abgefeuert wurden (§ 25 TTDSG Verstoß).
+// Prüft welche Requests VOR Consent abgefeuert wurden (§ 25 TDDDG Verstoß).
 // Nutzt den cookie-scan-deep / Playwright-Scanner-Microservice.
 //
 // Route: /consent-timing
@@ -98,7 +98,7 @@ export function ConsentTimingAnalysis() {
           </div>
           <div className="leading-tight">
             <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Consent-Timing-Analyse</div>
-            <div className="text-[11px] text-titanium-400">§ 25 TTDSG · Pre-Consent-Request-Nachweis</div>
+            <div className="text-[11px] text-titanium-400">§ 25 TDDDG · Pre-Consent-Request-Nachweis</div>
           </div>
         </div>
         <div className="ml-auto">
@@ -119,7 +119,7 @@ export function ConsentTimingAnalysis() {
             <p className="text-titanium-300 leading-relaxed max-w-2xl">
               Die meisten DSGVO-Tools prüfen nur: "Ist ein Banner vorhanden?"
               Wir prüfen: <strong className="text-titanium-50">"Welche Tracking-Requests feuerten bevor der Nutzer geklickt hat?"</strong>{' '}
-              Das ist der tatsächliche § 25 TTDSG Verstoß — und der, der Bußgelder auslöst.
+              Das ist der tatsächliche § 25 TDDDG Verstoß — und der, der Bußgelder auslöst.
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs text-titanium-500">
               <span className="flex items-center gap-1 px-2 py-1 bg-obsidian-900 border border-titanium-800">
@@ -308,7 +308,7 @@ function ConsentTimingResult({
           <div>
             <div className="font-bold text-titanium-50">Kein Pre-Consent-Tracking!</div>
             <p className="text-sm text-titanium-300 mt-1">
-              Alle Tracking-Requests laufen erst nach Consent-Interaktion. § 25 TTDSG eingehalten.
+              Alle Tracking-Requests laufen erst nach Consent-Interaktion. § 25 TDDDG eingehalten.
               Für laufendes Monitoring empfehlen wir den Growth-Tarif.
             </p>
           </div>
@@ -395,7 +395,7 @@ function ExplanationBlock() {
           {
             icon: <Clock className="h-4 w-4 text-security-400" />,
             title: 'Was wirklich zählt',
-            text: '§ 25 TTDSG verbietet das Setzen von Cookies und Tracking-Requests ohne vorherige Einwilligung. Entscheidend ist der Zeitpunkt — nicht das Vorhandensein eines Banners.',
+            text: '§ 25 TDDDG verbietet das Setzen von Cookies und Tracking-Requests ohne vorherige Einwilligung. Entscheidend ist der Zeitpunkt — nicht das Vorhandensein eines Banners.',
           },
           {
             icon: <ShieldCheck className="h-4 w-4 text-emerald-400" />,

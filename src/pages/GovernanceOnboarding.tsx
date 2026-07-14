@@ -5,6 +5,9 @@ import {
   Globe, Briefcase, Heart, Shield, User,
 } from 'lucide-react';
 import { useGovernanceOnboarding } from '../hooks/useGovernanceOnboarding';
+import { saveCompanyProfile, loadCompanyProfile } from '../features/company/companyProfileLocal';
+import { syncTenantProfile } from '../features/company/tenantProfileService';
+import { useTenant } from '../core/access/TenantProvider';
 import type { ScanFinding, Sector } from '../core/onboarding/types';
 import { getQuestion } from '../core/onboarding/questionEngine';
 
@@ -33,6 +36,7 @@ export function GovernanceOnboarding() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const locationState = (state ?? {}) as LocationState;
+  const { activeTenantId } = useTenant();
 
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'sector' | 'questions' | 'summary'>('sector');
@@ -65,6 +69,10 @@ export function GovernanceOnboarding() {
   }
 
   const handleSectorSelect = (sector: Sector) => {
+    // Save sector as industry to localStorage for tenant profile
+    const profile = loadCompanyProfile(activeTenantId);
+    saveCompanyProfile(activeTenantId, { ...profile, industry: sector });
+
     onboarding.updateSector(sector);
     setStep('questions');
   };
@@ -93,8 +101,11 @@ export function GovernanceOnboarding() {
   const handleProceedToRecommendation = async () => {
     setLoading(true);
     try {
-      // In real app, save profile to backend
-      await new Promise((r) => setTimeout(r, 500));
+      // Sync tenant profile (industry, company size) to database
+      if (activeTenantId) {
+        await syncTenantProfile(activeTenantId);
+      }
+
       navigate(`/recommendation/${scanId}`, {
         state: {
           profile: onboarding.profile,

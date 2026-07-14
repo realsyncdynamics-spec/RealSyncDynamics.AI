@@ -13,7 +13,7 @@ const FAQS: FaqEntry[] = [
   {
     question: 'Warum ist Pre-Consent Tracking riskant?',
     answer:
-      'Nach § 25 TTDSG und DSGVO Art. 6 sind nicht technisch notwendige Cookies und vergleichbare Zugriffe in der Regel einwilligungspflichtig. Tracking ohne Consent kann eine fehlende Rechtsgrundlage darstellen — die konkrete Bewertung hängt von Konfiguration und Zweck ab.',
+      'Nach § 25 TDDDG und DSGVO Art. 6 sind nicht technisch notwendige Cookies und vergleichbare Zugriffe in der Regel einwilligungspflichtig. Tracking ohne Consent kann eine fehlende Rechtsgrundlage darstellen — die konkrete Bewertung hängt von Konfiguration und Zweck ab.',
   },
   {
     question: 'Welche Indikatoren prüft der Audit?',
@@ -24,7 +24,7 @@ const FAQS: FaqEntry[] = [
 
 export function PreConsentTracking() {
   usePageMeta({
-    title: 'Pre-Consent Tracking prüfen — DSGVO- und TTDSG-Risiken erkennen',
+    title: 'Pre-Consent Tracking prüfen — DSGVO- und TDDDG-Risiken erkennen',
     description:
       'Erkennen Sie mögliche Tracking-Risiken vor Einwilligung: Cookies, Pixel, externe Skripte und Consent-Verhalten technisch vorprüfen.',
     url: 'https://RealSyncDynamicsAI.de/pre-consent-tracking',
@@ -54,9 +54,9 @@ export function PreConsentTracking() {
           Browser-Fingerprint-Signalen zählen dazu.
         </p>
 
-        <h2 className="font-display font-bold text-titanium-50 text-xl">Warum es DSGVO- und TTDSG-relevant ist</h2>
+        <h2 className="font-display font-bold text-titanium-50 text-xl">Warum es DSGVO- und TDDDG-relevant ist</h2>
         <p>
-          § 25 TTDSG knüpft den Zugriff auf Endgeräte (Cookies, vergleichbare Speichervorgänge) grundsätzlich an
+          § 25 TDDDG knüpft den Zugriff auf Endgeräte (Cookies, vergleichbare Speichervorgänge) grundsätzlich an
           eine Einwilligung — ausgenommen sind technisch zwingend erforderliche Zugriffe. Parallel verlangt DSGVO
           Art. 6 eine taugliche Rechtsgrundlage für jede Verarbeitung personenbezogener Daten. Tracking ohne
           Consent fällt häufig in keine der Erlaubnistatbestände und wird in der Rechtsprechung zunehmend kritisch

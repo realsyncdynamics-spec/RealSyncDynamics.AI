@@ -69,7 +69,7 @@ const FINDINGS: Finding[] = [
                 title: 'Google Analytics vor Consent geladen',
                 detail: 'gtag/js wird beim ersten Page-Load ausgefuehrt, VOR dem Consent-Banner. Tracking-Cookie _ga gesetzt mit IP-Adresse.',
                 ref: 'request: googletagmanager.com/gtag/js?id=G-XXXX',
-                rule: 'TTDSG 25 Abs.1 · DSGVO Art.6 lit.a',
+                rule: 'TDDDG 25 Abs.1 · DSGVO Art.6 lit.a',
                 fix_snippets: [{ label: 'Script hinter Consent-Gate verschieben', language: 'html', code: `<!-- Consent-Mode v2 Default -->
                 <script>
                 gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied'});
@@ -86,7 +86,7 @@ const FINDINGS: Finding[] = [
                 title: 'Meta Pixel feuert ohne Einwilligung',
                 detail: 'connect.facebook.net Script-Tag aktiv ohne consent Wrapper. fbp+fbc Cookies gesetzt, PageView-Event gesendet.',
                 ref: 'request: connect.facebook.net/en_US/fbevents.js',
-                rule: 'TTDSG 25 · EuGH C-252/21',
+                rule: 'TDDDG 25 · EuGH C-252/21',
                 fix_snippets: [{ label: 'Pixel hinter Consent-Check kapseln', language: 'tsx', code: `export function MetaPixel({ pixelId }: { pixelId: string }) {
                   const { marketing } = useConsent();
                     useEffect(() => {
@@ -127,7 +127,7 @@ const FINDINGS: Finding[] = [
                 title: 'Cookie-Banner ohne Kategorisierung',
                 detail: 'Akzeptieren-Button setzt alle Cookies pauschal. Keine granulare Auswahl (Notwendig/Statistik/Marketing).',
                 ref: 'consent.cookieyes.com => all=true',
-                rule: 'DSGVO Art.7 · TTDSG 25 Abs.2',
+                rule: 'DSGVO Art.7 · TDDDG 25 Abs.2',
                 fix_snippets: [{ label: 'Kategorisierter Reject-Button', language: 'tsx', code: `<Button variant="secondary"
                   onClick={() => setConsent({ necessary: true, statistics: false, marketing: false })}
                   >

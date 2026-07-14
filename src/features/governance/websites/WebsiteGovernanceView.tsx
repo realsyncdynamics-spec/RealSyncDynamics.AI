@@ -357,7 +357,7 @@ export function WebsiteGovernanceView() {
           </div>
           <div className="flex items-center gap-1.5 border border-titanium-900 px-3 py-1.5 bg-obsidian-900 text-[11px] font-mono text-titanium-500">
             <Shield className="h-3 w-3" />
-            DSGVO · TTDSG · Cookie
+            DSGVO · TDDDG · Cookie
           </div>
         </div>
 

@@ -36,7 +36,7 @@ export function CookieConsentSdk() {
         <div className="max-w-3xl mx-auto space-y-12">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 border border-amber-900 bg-amber-950/30 text-amber-300 text-xs font-bold uppercase tracking-wider rounded-none mb-5">
-              <ShieldCheck className="h-3 w-3" /> BfDI-Leitlinie 2024 · § 25 TTDSG · BGH-Urteil "Cookie II"
+              <ShieldCheck className="h-3 w-3" /> BfDI-Leitlinie 2024 · § 25 TDDDG · BGH-Urteil "Cookie II"
             </div>
             <h1 className="text-3xl sm:text-5xl font-display font-bold text-titanium-50 tracking-tight leading-tight mb-4">
               Cookie-Banner. <span className="text-amber-400">DSGVO-konform.</span> 1 Zeile Code.

@@ -10,6 +10,11 @@ test.describe('[GOV] DSGVO-Audit-Seite', () => {
     // Seite muss laden
     await expect(page).toHaveTitle(/.+/);
 
+    // Konkrete Hero-Headline der Audit-Seite (stabiler Kontrakt).
+    await expect(
+      page.getByRole('heading', { level: 1, name: /Kostenloser DSGVO- und Tracking-Audit/i }),
+    ).toBeVisible();
+
     // Domain-Eingabefeld muss vorhanden sein
     const input = page.locator('input[type="text"], input[type="url"], input[placeholder*="domain" i], input[name*="domain" i]').first();
     await expect(input).toBeVisible({ timeout: 10000 });

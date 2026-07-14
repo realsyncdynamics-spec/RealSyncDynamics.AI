@@ -27,7 +27,7 @@ export function IubendaAlternative() {
             </h1>
             <p className="text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
               Iubenda (Mailand, gehört seit 2022 zu team.blue) ist beliebt im SMB-Segment.
-              Wir liefern dasselbe — fokussiert auf <strong className="text-titanium-50">DACH-Recht (BfDI 2024, TTDSG, BGH-Rechtsprechung)</strong> und mit
+              Wir liefern dasselbe — fokussiert auf <strong className="text-titanium-50">DACH-Recht (BfDI 2024, TDDDG, BGH-Rechtsprechung)</strong> und mit
               KI-Compliance-Tools obendrauf.
             </p>
           </div>

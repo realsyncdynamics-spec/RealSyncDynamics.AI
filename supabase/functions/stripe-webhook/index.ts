@@ -100,6 +100,20 @@ Deno.serve(async (req) => {
         if (event.type === 'invoice.paid' || event.type === 'invoice.payment_failed') {
           await recordPaymentEvent(admin, event);
         }
+        if (event.type === 'invoice.paid') {
+          const inv = event.data.object as Stripe.Invoice;
+          const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id;
+          if (subId) {
+            const { data: sub } = await admin
+              .from('subscriptions')
+              .select('tenant_id')
+              .eq('stripe_subscription_id', subId)
+              .maybeSingle();
+            if (sub?.tenant_id) {
+              await sendInvoiceEmail(inv.id, sub.tenant_id);
+            }
+          }
+        }
         break;
       case 'charge.failed':
       case 'charge.refunded':
@@ -546,5 +560,33 @@ async function reportPurchaseToAdPlatforms(
     });
   } catch (err) {
     console.warn('[stripe-webhook] purchase fan-out failed:', (err as Error).message);
+  }
+}
+
+// Fire-and-forget: send invoice email via invoice-email Edge Function
+async function sendInvoiceEmail(stripeInvoiceId: string, tenantId: string): Promise<void> {
+  try {
+    const fn_url = Deno.env.get('SUPABASE_URL');
+    if (!fn_url) return; // No Supabase URL available
+    const res = await fetch(`${fn_url}/functions/v1/invoice-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({
+        stripe_invoice_id: stripeInvoiceId,
+        tenant_id: tenantId,
+      }),
+    });
+    if (!res.ok) {
+      console.warn(
+        `[stripe-webhook] invoice-email failed: HTTP ${res.status} for invoice ${stripeInvoiceId}`
+      );
+    }
+  } catch (err) {
+    console.warn(
+      `[stripe-webhook] invoice-email error: ${(err as Error).message}`
+    );
   }
 }

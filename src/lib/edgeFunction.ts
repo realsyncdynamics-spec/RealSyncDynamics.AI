@@ -1,22 +1,33 @@
-// Shared POST-helper für öffentliche (verify_jwt=false) Supabase Edge
-// Functions wie `gdpr-audit`.
+import { getSupabaseUrl } from './supabaseUrl';
+
+// POST-helper für Supabase Edge Functions
 //
-// Hintergrund: Ein roher `fetch(...).then(r => r.json())` wirft
-// "Unexpected end of JSON input", sobald die Antwort einen leeren oder
-// nicht-JSON Body hat — z. B. wenn VITE_SUPABASE_URL in einem Deploy nicht
-// gesetzt ist und der Request dadurch relativ gegen den eigenen
-// SPA-Host geht (404/405 mit leerem Body) statt gegen Supabase. Dieser
-// Helper liefert in solchen Fällen eine verständliche Fehlermeldung statt
-// des kryptischen JSON-Parse-Fehlers.
-export async function postEdgeFunction<T>(fn: string, body: unknown): Promise<T> {
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  if (!SUPABASE_URL) {
-    throw new Error('Backend nicht erreichbar (VITE_SUPABASE_URL ist nicht konfiguriert).');
+// Unterstützt sowohl auth-required (verify_jwt=true) als auch öffentliche (verify_jwt=false) Funktionen.
+// Bei auth-required: JWT-Token wird aus localStorage geholt und als Bearer-Header gesendet.
+// Basis-URL wird über `getSupabaseUrl()` aufgelöst (Fallback auf Produktions-URL falls VITE_SUPABASE_URL nicht gesetzt).
+export async function postEdgeFunction<T>(
+  fn: string,
+  body: unknown,
+  options?: { requireAuth?: boolean }
+): Promise<T> {
+  const SUPABASE_URL = getSupabaseUrl();
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  // Auth-required Funktionen: JWT als Bearer Token mitschicken
+  if (options?.requireAuth !== false) {
+    const token = localStorage.getItem('sb-auth-token');
+    if (!token) {
+      throw new Error('Nicht authentifiziert – kein Token in localStorage');
+    }
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
   const resp = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
 

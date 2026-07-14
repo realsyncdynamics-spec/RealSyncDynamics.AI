@@ -142,7 +142,7 @@ export function PrivacyPolicy() {
         <Section title="9. Cookies">
           <p>
             Wir setzen technisch notwendige Cookies (Session-Cookie für Login,
-            keine Einwilligung erforderlich nach § 25 Abs. 2 TTDSG). Tracking-,
+            keine Einwilligung erforderlich nach § 25 Abs. 2 TDDDG). Tracking-,
             Marketing- und Statistik-Cookies setzen wir nur nach expliziter
             Einwilligung über das Cookie-Banner ein.
           </p>
@@ -152,7 +152,7 @@ export function PrivacyPolicy() {
           <p>
             Mit Deiner Einwilligung über das Cookie-Banner setzen wir folgende
             Tracking-Pixel ein. Rechtsgrundlage ist in allen Fällen Art. 6 Abs. 1
-            lit. a DSGVO (Einwilligung) i. V. m. § 25 Abs. 1 TTDSG. Du kannst die
+            lit. a DSGVO (Einwilligung) i. V. m. § 25 Abs. 1 TDDDG. Du kannst die
             Einwilligung jederzeit über das Cookie-Banner widerrufen.
           </p>
           <p className="text-xs text-titanium-500">

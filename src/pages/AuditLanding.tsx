@@ -64,7 +64,7 @@ export function AuditLanding() {
   usePageMeta({
     title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
     description:
-      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TTDSG-Risiken analysieren.',
+      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
     url: 'https://RealSyncDynamicsAI.de/audit',
   });
   const [url, setUrl] = useState('');
@@ -89,6 +89,8 @@ export function AuditLanding() {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
+      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
+      // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
       const data = await postEdgeFunction<Report>('gdpr-audit', {
         url: normalizedUrl,
         email: email.trim(),
@@ -96,7 +98,7 @@ export function AuditLanding() {
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
-      });
+      }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id) {
@@ -249,11 +251,13 @@ export function AuditLanding() {
         </div>
       </main>
 
-      <ReportPreviewSection
-        eyebrow="Beispiel-Report · Was Sie nach dem Scan bekommen"
-        headline="Ihr eigener Audit sieht genauso aus."
-        subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
-      />
+      {!report && (
+        <ReportPreviewSection
+          eyebrow="Beispielreport · Was Sie nach dem Scan bekommen"
+          headline="Ihr eigener Audit sieht genauso aus."
+          subline="Bei jedem Free-Audit erhalten Sie diesen strukturierten Output. Kein Marketing-Mockup — die exakte Form, in der unsere Engine Findings dokumentiert."
+        />
+      )}
 
       <Footer />
     </div>
@@ -350,7 +354,7 @@ function Pillars() {
   const items = [
     { law: 'DSGVO Art. 6 Abs. 1', issue: 'Tracker ohne Consent', max: 'Rechtsgrundlage erforderlich' },
     { law: 'DSGVO Art. 13',       issue: 'Fehlende Datenschutzerklärung', max: 'Informationspflicht' },
-    { law: '§ 25 TTDSG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
+    { law: '§ 25 TDDDG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
     { law: '§ 5 TMG',             issue: 'Fehlendes Impressum', max: 'Anbieterkennzeichnung erforderlich' },
   ];
   return (
@@ -432,8 +436,11 @@ function TrialCtaBlock({ report }: { report: Report }) {
       }));
     } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
 
+    // Kanonischer Weg: immer über die eine Paket-Auswahl (/pricing).
+    // CTA-Beschriftung lautet „Starter 14 Tage kostenlos aktivieren" —
+    // daher Starter-Plan vorwählen (nicht Growth).
     navigate(
-      `/welcome?next=${encodeURIComponent(`/checkout/starter?pilot=true&audit_id=${report.audit_id}&source=trial_cta`)}`
+      `/pricing?plan=starter&audit_id=${report.audit_id}&source=trial_cta`
     );
   }
 
@@ -460,10 +467,10 @@ function TrialCtaBlock({ report }: { report: Report }) {
         ob neue DSGVO-, Security- oder KI-Risiken entstehen.
         {(criticalCount > 0 || highCount > 0) && (
           <span className="block mt-2 text-amber-300 font-semibold">
-            {criticalCount > 0 && `${criticalCount} kritische`}
+            {criticalCount > 0 && `${criticalCount} ${criticalCount === 1 ? 'kritischer' : 'kritische'}`}
             {criticalCount > 0 && highCount > 0 && ' + '}
-            {highCount > 0 && `${highCount} hohe`}
-            {' '}Befunde — Monitoring empfohlen.
+            {highCount > 0 && `${highCount} ${highCount === 1 ? 'hoher' : 'hohe'}`}
+            {' '}{criticalCount + highCount === 1 ? 'Befund' : 'Befunde'} — Monitoring empfohlen.
           </span>
         )}
       </p>
@@ -503,6 +510,56 @@ function TrialCtaBlock({ report }: { report: Report }) {
       <p className="mt-3 font-mono text-[10px] text-titanium-600">
         Keine Demo. Kein Verkaufsgespräch. Direkt starten. · Keine Kreditkarte für 14 Tage.
       </p>
+    </div>
+  );
+}
+
+// ─── Guided Plan Finder ─────────────────────────────────────────────────────
+//
+// Führt nach dem Scan in den geführten Onboarding-Flow
+// (/onboarding/:scanId → /recommendation/:scanId → /pricing). Findings/Domain
+// werden via Router-State übergeben, damit die Empfehlung ohne Backend-Roundtrip
+// rechnet. Nur sichtbar, wenn es Befunde gibt (sonst hat das Onboarding keine
+// Datenbasis).
+function GuidedPlanBlock({ report }: { report: Report }) {
+  const findings = report.issues.map((i) => ({
+    id: i.id,
+    severity: i.severity,
+    title: i.title,
+    detail: i.detail,
+    paragraph_ref: i.paragraph_ref,
+  }));
+  return (
+    <div className="border border-titanium-800 bg-obsidian-900 p-6 rounded-none">
+      <div className="flex items-start gap-3 mb-3">
+        <Sparkles className="h-5 w-5 text-violet-300 shrink-0 mt-0.5" />
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-titanium-400 font-bold mb-1">
+            Geführte Empfehlung · 2 Minuten
+          </div>
+          <h3 className="font-display font-bold text-titanium-50 text-lg">
+            Nicht sicher, welches Paket passt?
+          </h3>
+        </div>
+      </div>
+      <p className="text-sm text-titanium-300 mb-4 leading-relaxed">
+        Beantworten Sie ein paar kurze Fragen zu Branche und Governance-Bedarf — auf Basis
+        Ihrer {report.issues.length} Befunde empfehlen wir das passende Paket und führen Sie
+        direkt zur Auswahl.
+      </p>
+      <Link
+        to={`/onboarding/${report.audit_id}`}
+        state={{
+          findings,
+          domain: report.domain,
+          score: report.score,
+          severity: report.severity,
+          auditId: report.audit_id,
+        }}
+        className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
+      >
+        Passende Pakete finden <ArrowRight className="h-4 w-4" />
+      </Link>
     </div>
   );
 }
@@ -570,6 +627,8 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
       </div>
 
       <TrialCtaBlock report={report} />
+
+      {report.issues.length > 0 && <GuidedPlanBlock report={report} />}
 
       {/* Business Impact Summary */}
       {report.issues.length > 0 && (
@@ -677,12 +736,12 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           >
             <FileText className="h-3.5 w-3.5" /> Evidence Vault
           </Link>
-          <a
-            href="/checkout/starter?source=audit_cta"
+          <Link
+            to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit_cta`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-titanium-700 text-titanium-100 text-xs font-bold hover:border-titanium-400 transition-colors"
           >
             <FileText className="h-3.5 w-3.5" /> 14 Tage gratis starten →
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -699,12 +758,12 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
           DSGVO-Selfservice. <strong className="text-titanium-50">In 14 Tagen DSGVO-ready</strong>, nicht in 6 Monaten.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
-          <a
-            href="/checkout/starter?source=audit_report"
+          <Link
+            to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit_report`}
             className="surface-mono inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-none"
           >
             14 Tage gratis testen <ArrowRight className="h-4 w-4" />
-          </a>
+          </Link>
           <Link
             to="/pricing"
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-titanium-200 text-titanium-200 text-sm font-bold rounded-none"
@@ -734,7 +793,7 @@ function ReportView({ report, onRetry }: { report: Report; onRetry: () => void }
               Drift und schreibt jeden Befund in die Evidence-Chain.
             </p>
             <Link
-              to={`/audit?plan=starter&source=audit-followup&audit=${report.audit_id}`}
+              to={`/pricing?plan=starter&audit_id=${report.audit_id}&source=audit-followup`}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-cyan-400 hover:bg-cyan-300 text-obsidian-950 text-xs font-bold rounded-none"
             >
               Monitoring aktivieren <ArrowRight className="h-3 w-3" />
@@ -915,8 +974,17 @@ function plainLanguageResult(critCount: number, medCount: number, lowCount: numb
     return 'Es wurden keine DSGVO-Verstöße oder technischen Verbesserungspunkte erkannt. Sehr gutes Ergebnis.';
   }
   if (critCount > 0) {
-    return `Es wurden ${critCount} kritische DSGVO-Verstöße erkannt, die zeitnah behoben werden sollten` +
-      (medCount + lowCount > 0 ? `. Zusätzlich werden ${medCount + lowCount} weitere Verbesserungen empfohlen.` : '.');
+    const critText =
+      critCount === 1
+        ? 'Es wurde 1 kritischer DSGVO-Verstoß erkannt, der zeitnah behoben werden sollte'
+        : `Es wurden ${critCount} kritische DSGVO-Verstöße erkannt, die zeitnah behoben werden sollten`;
+    const extra = medCount + lowCount;
+    return (
+      critText +
+      (extra > 0
+        ? `. Zusätzlich ${extra === 1 ? 'wird 1 weitere Verbesserung' : `werden ${extra} weitere Verbesserungen`} empfohlen.`
+        : '.')
+    );
   }
   const parts: string[] = [];
   if (medCount > 0) parts.push(`${medCount} mittlere`);
@@ -982,7 +1050,7 @@ function MonitoringActivationBlock({ report }: { report: Report }) {
         </div>
       </div>
       <p className="text-sm text-titanium-300 mb-5 leading-relaxed">
-        Die technische Analyse hat mögliche DSGVO-, TTDSG- oder Tracking-Risiken identifiziert.
+        Die technische Analyse hat mögliche DSGVO-, TDDDG- oder Tracking-Risiken identifiziert.
         Mit kontinuierlichem Monitoring bleiben Änderungen an Tracking, externen Diensten und möglichen
         Compliance-Risiken nachvollziehbar.
       </p>

@@ -6,9 +6,11 @@
 
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getSupabaseUrl } from './supabaseUrl';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const ENDPOINT = `${SUPABASE_URL}/functions/v1/track-pageview`;
+// getSupabaseUrl() fällt auf die Produktions-URL zurück, wenn VITE_SUPABASE_URL
+// im Build fehlt — sonst geht der Beacon relativ gegen den SPA-Host (503).
+const ENDPOINT = `${getSupabaseUrl()}/functions/v1/track-pageview`;
 
 // Skip in dev to avoid polluting analytics with HMR refreshes.
 const ENABLED = import.meta.env.PROD;

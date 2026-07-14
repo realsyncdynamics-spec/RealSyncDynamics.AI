@@ -118,7 +118,7 @@ export const POLICY_TEMPLATES: PolicyTemplate[] = [
     action: 'warn',
     condition: { event_type: 'cookie.before_consent' },
     enabled: true,
-    rationale: 'TTDSG § 25 + GDPR Art. 6 — Nicht-essentielle Cookies brauchen aktive Einwilligung VOR dem Setzen.',
+    rationale: 'TDDDG § 25 + GDPR Art. 6 — Nicht-essentielle Cookies brauchen aktive Einwilligung VOR dem Setzen.',
   },
   {
     id: 'tracker-from-non-approved-vendor',

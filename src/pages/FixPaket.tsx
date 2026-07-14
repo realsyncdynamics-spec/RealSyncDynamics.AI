@@ -111,7 +111,7 @@ export function FixPaket() {
               DSGVO-Fix-Paket Light
             </h1>
             <p className="text-base sm:text-lg text-titanium-300 max-w-2xl mx-auto leading-relaxed">
-              Technische Unterstützung bei typischen DSGVO-/TTDSG-Risiken wie Consent, externe Dienste, Fonts,
+              Technische Unterstützung bei typischen DSGVO-/TDDDG-Risiken wie Consent, externe Dienste, Fonts,
               Tracking und Datenschutzhinweisen.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 border border-titanium-700 bg-obsidian-900 text-titanium-200 text-xs font-bold uppercase tracking-wider rounded-none">

@@ -8,7 +8,7 @@ const FAQS: FaqEntry[] = [
   {
     question: 'Braucht Google Analytics immer einen Consent?',
     answer:
-      'In den meisten Standard-Setups: ja. Google Analytics setzt Cookies und überträgt Daten an Dritte (typischerweise außerhalb der EU). Die Pflicht zur Einwilligung ergibt sich aus § 25 TTDSG und DSGVO Art. 6. Ausnahmen sind selten und sollten individuell juristisch geprüft werden.',
+      'In den meisten Standard-Setups: ja. Google Analytics setzt Cookies und überträgt Daten an Dritte (typischerweise außerhalb der EU). Die Pflicht zur Einwilligung ergibt sich aus § 25 TDDDG und DSGVO Art. 6. Ausnahmen sind selten und sollten individuell juristisch geprüft werden.',
   },
   {
     question: 'Was ist der Google Consent Mode?',
@@ -51,7 +51,7 @@ export function GoogleAnalyticsConsent() {
           <code className="text-titanium-100">_ga</code>,{' '}
           <code className="text-titanium-100">_ga_*</code>,{' '}
           <code className="text-titanium-100">_gid</code>) und überträgt Daten — typischerweise auch in die USA.
-          Nach § 25 TTDSG ist das Setzen nicht-technisch-notwendiger Cookies in der Regel
+          Nach § 25 TDDDG ist das Setzen nicht-technisch-notwendiger Cookies in der Regel
           einwilligungspflichtig, parallel braucht DSGVO Art. 6 eine taugliche Rechtsgrundlage. Tracking-Daten
           „funktional" oder „berechtigtes Interesse" zu deklarieren reicht in den meisten Auslegungen nicht aus.
         </p>

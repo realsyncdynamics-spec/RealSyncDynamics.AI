@@ -6,6 +6,11 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
+import { StripeAccountInfo } from './StripeAccountInfo';
+import { PlanUpgradeModal } from './PlanUpgradeModal';
+import { createCheckoutSession } from '../../lib/stripe';
+import { useAuth } from '../../lib/useAuth';
+import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
 
 interface Subscription {
   plan_key: string | null;
@@ -42,8 +47,21 @@ const PLAN_LABELS: Record<string, string> = {
   gold: 'Gold (legacy)',
 };
 
+// Available plans for billing dashboard — excluding yearly variants
+const AVAILABLE_PLANS = PUBLIC_PRICING_TIERS
+  .filter((tier) => !tier.id.includes('yearly'))
+  .map((tier) => ({
+    id: tier.id,
+    key: tier.planKey,
+    name: tier.name,
+    price: tier.priceString,
+    suffix: tier.priceSuffix,
+    tagline: tier.tagline,
+  }));
+
 export function BillingView() {
   const { tenants, activeTenantId, entitlements, loading, getLimit } = useTenant();
+  const { user } = useAuth();
   const activeTenant = tenants.find((t) => t.tenantId === activeTenantId);
   const canManage = activeTenant?.role === 'owner' || activeTenant?.role === 'admin';
 
@@ -51,6 +69,8 @@ export function BillingView() {
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradingPlan, setUpgradingPlan] = useState(false);
 
   useEffect(() => {
     if (!activeTenantId) return;
@@ -108,6 +128,32 @@ export function BillingView() {
     } catch (e) {
       setError((e as Error).message);
       setOpening(false);
+    }
+  }
+
+  async function handlePlanUpgrade(planId: TierId) {
+    if (!activeTenantId || !user) return;
+    setUpgradingPlan(true);
+    setError(null);
+    try {
+      const response = await createCheckoutSession({
+        planId,
+        tenantId: activeTenantId,
+        userId: user.id,
+        email: user.email || '',
+        successUrl: `${window.location.origin}/billing/usage?checkout=success`,
+        cancelUrl: `${window.location.origin}/app/billing`,
+        trialDays: 0, // No trial for upgrades/downgrades
+      });
+      if (response.checkoutUrl) {
+        window.location.href = response.checkoutUrl;
+      } else {
+        setError('Checkout-URL konnte nicht generiert werden.');
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten';
+      setError(errorMsg);
+      setUpgradingPlan(false);
     }
   }
 
@@ -177,9 +223,18 @@ export function BillingView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link to="/pricing" className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none flex items-center gap-2">
-              <Layers className="h-4 w-4" /> Plan ändern
-            </Link>
+            {sub !== 'none' && canManage ? (
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none flex items-center gap-2"
+              >
+                <Layers className="h-4 w-4" /> Plan ändern
+              </button>
+            ) : (
+              <Link to="/pricing" className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none flex items-center gap-2">
+                <Layers className="h-4 w-4" /> Plan wählen
+              </Link>
+            )}
             <Link to="/billing/usage" className="px-4 py-2 bg-obsidian-950 border border-titanium-900 hover:bg-obsidian-800 text-titanium-200 text-sm font-semibold rounded-none flex items-center gap-2">
               <Cpu className="h-4 w-4" /> Verbrauch
             </Link>
@@ -246,6 +301,75 @@ export function BillingView() {
         Rechnungen + Zahlungshistorie verwalten wir nicht selbst — alles im Stripe-Portal-Knopf oben.
         Steuer- und Buchhaltungsfragen: <a href="mailto:billing@realsyncdynamicsai.de" className="text-security-400">billing@realsyncdynamicsai.de</a>.
       </p>
+
+      {/* Stripe Account Information */}
+      <div>
+        <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Stripe-Konto</h2>
+        <StripeAccountInfo
+          stripeCustomerId={sub !== 'none' ? sub.stripe_customer_id : null}
+          stripeSubscriptionId={sub !== 'none' ? sub.stripe_subscription_id : null}
+          status={sub !== 'none' ? sub.status : null}
+          cancelAtPeriodEnd={sub !== 'none' ? sub.cancel_at_period_end : false}
+          currentPeriodEnd={sub !== 'none' ? sub.current_period_end : null}
+          onOpenPortal={openPortal}
+          canManage={canManage}
+        />
+      </div>
+
+      {/* Available Plans */}
+      <div>
+        <h2 className="text-lg font-display font-bold text-titanium-50 tracking-tight mb-4">Verfügbare Pläne</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {AVAILABLE_PLANS.map((plan) => {
+            const isCurrentPlan = sub !== 'none' && sub.plan_key === plan.key;
+            return (
+              <div
+                key={plan.key}
+                className={`relative border rounded-none p-4 transition-all ${
+                  isCurrentPlan
+                    ? 'border-security-500 bg-obsidian-900/50'
+                    : 'border-titanium-800 bg-obsidian-950 hover:border-titanium-700'
+                }`}
+              >
+                {isCurrentPlan && (
+                  <div className="absolute top-2 right-2">
+                    <span className="inline-flex items-center text-xs font-bold text-emerald-300 bg-emerald-950/60 px-2 py-1 border border-emerald-800">
+                      Aktuell
+                    </span>
+                  </div>
+                )}
+                <h3 className="font-bold text-titanium-50 text-sm mb-1">{plan.name}</h3>
+                <p className="text-xl font-mono text-security-400 mb-3">
+                  {plan.price}<span className="text-xs text-titanium-500 ml-1">{plan.suffix}</span>
+                </p>
+                <p className="text-xs text-titanium-400 mb-3 leading-relaxed h-12 overflow-hidden">
+                  {plan.tagline}
+                </p>
+                {!isCurrentPlan && canManage && (
+                  <button
+                    onClick={() => handlePlanUpgrade(plan.id as TierId)}
+                    disabled={upgradingPlan}
+                    className="w-full py-2 px-3 bg-security-500 hover:bg-security-600 disabled:opacity-50 text-white text-xs font-semibold rounded-none"
+                  >
+                    Zu diesem Plan
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Plan Upgrade Modal */}
+      {showUpgradeModal && sub !== 'none' && (
+        <PlanUpgradeModal
+          currentPlanId={(sub.plan_key ?? 'free') as TierId}
+          onClose={() => setShowUpgradeModal(false)}
+          onSelectPlan={handlePlanUpgrade}
+          isLoading={upgradingPlan}
+          error={error}
+        />
+      )}
     </div>
   );
 }

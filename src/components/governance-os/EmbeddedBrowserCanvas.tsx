@@ -3,6 +3,7 @@ import {
   X, RefreshCw, ExternalLink, Shield, ScanLine, FileCheck2,
   AlertTriangle, Loader2,
 } from 'lucide-react';
+import { getSupabase } from '../../lib/supabase';
 import { useAuth } from '../../lib/useAuth';
 import { useCurrentTenant } from '../../lib/useCurrentTenant';
 import { useBrowserSession } from '../../lib/useBrowserSession';
@@ -79,6 +80,26 @@ export function EmbeddedBrowserCanvas({
   const auth = useAuth();
   const tenant = useCurrentTenant();
   const sessionId = useBrowserSession();
+
+  const logToolRun = async (toolKey: string, status: 'success' | 'error', metadata?: Record<string, unknown>) => {
+    try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const resp = await fetch('/functions/v1/log-tool-run', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ tool_key: toolKey, status, metadata }),
+      });
+      if (!resp.ok) console.warn('Failed to log tool run:', resp.status);
+    } catch (err) {
+      console.warn('Error logging tool run:', err);
+    }
+  };
 
   const handleLoad = () => {
     const endTime = Date.now();

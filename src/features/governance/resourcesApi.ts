@@ -89,3 +89,20 @@ export const upsertMapping = (
 
 export const deleteMapping = (mapping_id: string) =>
   call<BareResult>({ op: 'delete_mapping', mapping_id });
+
+export interface AutoMapProposal {
+  framework: string;
+  control_code: string;
+  status: GovernanceControlStatus;
+  rationale: string;
+}
+export interface AutoMapResult {
+  ok: boolean;
+  applied?: number;
+  proposals?: AutoMapProposal[];
+  error?: { code: string; message: string };
+}
+
+/** Leitet Control-Status aus der Asset-Klassifikation ab und schreibt sie (source='auto'). */
+export const autoMapAsset = (asset_id: string) =>
+  call<AutoMapResult>({ op: 'auto_map', asset_id });

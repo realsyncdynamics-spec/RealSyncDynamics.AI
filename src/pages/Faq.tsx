@@ -109,6 +109,166 @@ const ITEMS: Item[] = [
   },
   {
     tag: 'Technik',
+    q: 'Kann ich Konversations-Bots (Chat, Telefonie, WhatsApp) einsetzen?',
+    a: (
+      <>
+        <p>
+          Ja — ab dem <strong className="text-titanium-50">Growth</strong>-Tier sind Konversations-Bots inklusive.
+          Du legst sie selbst im Bot-Builder an (Persona, Begrüßung, Kanal) und bindest sie per Web-Endpoint
+          bzw. Twilio-Webhook ein. Optional aktivierbar: <strong className="text-titanium-50">Terminbuchung</strong> und
+          <strong className="text-titanium-50"> Bestellannahme</strong>.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li><strong className="text-titanium-50">Growth</strong> — Chat, Telegram & WhatsApp · bis 2 Bots · 2.000 Antworten/Monat</li>
+          <li><strong className="text-titanium-50">Agency</strong> — zusätzlich Telefonie (Voice) · bis 10 Bots · 10.000 Antworten + 500 Voice-Minuten/Monat</li>
+          <li><strong className="text-titanium-50">Scale</strong> — bis 50 Bots · 50.000 Antworten + 2.500 Voice-Minuten/Monat</li>
+          <li><strong className="text-titanium-50">Enterprise</strong> — ohne Limit</li>
+        </ul>
+        <p className="mt-2">
+          Jede Bot-Antwort ist RLS-geschützt, gedeckelt und mit Prüfpfad geloggt. Anlegen im Dashboard: <Link to="/app/bots" className="text-security-400">/app/bots</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Kann ich wiederkehrende Compliance-Aufgaben automatisieren?',
+    a: (
+      <>
+        <p>
+          Ja — über <strong className="text-titanium-50">Automatisierungs-Skills</strong> (DSGVO-Audit, Dokumenten-Generierung,
+          Lead-Risk u. a.). Jeder Lauf wird mit Kosten und Prüfpfad protokolliert. Kontingente pro Monat:
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li><strong className="text-titanium-50">Free</strong> 3 · <strong className="text-titanium-50">Starter</strong> 25 · <strong className="text-titanium-50">Growth</strong> 100 · <strong className="text-titanium-50">Agency</strong> 500 · <strong className="text-titanium-50">Scale</strong> 2.500 · <strong className="text-titanium-50">Enterprise</strong> unbegrenzt</li>
+        </ul>
+        <p className="mt-2">
+          Übersicht der Skills: <Link to="/automations" className="text-security-400">/automations</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Gibt es einen Assistenten für Server-/VPS-Betrieb?',
+    a: (
+      <>
+        <p>
+          Ja — <strong className="text-titanium-50">Kodee</strong>, der VPS-Assistent, ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Er verbindet sich per SSH mit deinem Server und hilft bei Status- und Log-Checks, DNS/TLS-Prüfung sowie
+          Deployment-Aufgaben — inklusive Risiko-Advisor, der Schreib-Aktionen (z. B. Neustarts) vorab bewertet.
+        </p>
+        <p className="mt-2">
+          Jede Aktion ist mandantengetrennt, verschlüsselt und im Prüfpfad geloggt. Zugang: <Link to="/kodee" className="text-security-400">/kodee</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Könnt ihr die Herkunft KI-generierter Inhalte nachweisen (C2PA / Content Credentials)?',
+    a: (
+      <>
+        <p>
+          Ja — der <strong className="text-titanium-50">Herkunftsnachweis</strong> (ab <strong className="text-titanium-50">Agency</strong>) bindet
+          jedes Asset über eine unveränderliche <strong className="text-titanium-50">Chain-of-Custody</strong> (SHA-256-Hash-Kette) an einen
+          signierten Manifest-Eintrag. Manipulation bricht die Kette und wird beim Verifizieren sofort erkannt.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Inhalts-Hash wird <strong className="text-titanium-50">lokal im Browser</strong> berechnet — die Datei verlässt dein Gerät nicht.</li>
+          <li><strong className="text-titanium-50">Trust-Score</strong> (0–100) aus Signatur, Ketten-Kontinuität, Metadaten- und Eigentümer-Konsistenz.</li>
+          <li>Jede Custody-Aktion ist mandantengetrennt (RLS) und im Prüfpfad geloggt.</li>
+        </ul>
+        <p className="mt-2">
+          Datenmodell C2PA-angelehnt (Content Credentials); Zugang im Dashboard: <Link to="/app/provenance" className="text-security-400">/app/provenance</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Kann ich hunderte Domains auf einmal scannen (Bulk-Jobs)?',
+    a: (
+      <>
+        <p>
+          Ja — <strong className="text-titanium-50">Bulk-Jobs</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Du fügst Domains per Liste oder <strong className="text-titanium-50">CSV-Import</strong> ein; sie werden lokal geprüft
+          (dedupliziert, ungültige markiert) und als Batch in eine <strong className="text-titanium-50">Prioritäts-Queue</strong> mit
+          automatischem Retry eingereiht. Fortschritt je Batch ist live sichtbar, Abbrechen jederzeit möglich.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Kontingent: <strong className="text-titanium-50">Agency</strong> 50 · <strong className="text-titanium-50">Scale</strong> 500 · <strong className="text-titanium-50">Enterprise</strong> unbegrenzt Batches/Monat</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/bulk" className="text-security-400">/app/bulk</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Kann ich Scans automatisch planen (täglich/wöchentlich/monatlich)?',
+    a: (
+      <>
+        <p>
+          Ja — der <strong className="text-titanium-50">Scheduler</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Du legst pro Mandant Zeitpläne an (täglich, wöchentlich oder monatlich zu fester UTC-Uhrzeit); zum geplanten
+          Zeitpunkt wird automatisch ein Bulk-Scan der hinterlegten Domains ausgeführt. Pausieren/Fortsetzen jederzeit.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Benachrichtigung bei Lauf: <strong className="text-titanium-50">Slack</strong>, <strong className="text-titanium-50">Teams</strong> oder generischer <strong className="text-titanium-50">Webhook</strong> (HMAC-signiert).</li>
+          <li>„Nächster Lauf" wird vorab angezeigt; Ausführung via pg_cron-Dispatch.</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/scheduler" className="text-security-400">/app/scheduler</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Wie stellt ihr sicher, dass Nachweise unveränderlich und revisionssicher sind?',
+    a: (
+      <>
+        <p>
+          Der <strong className="text-titanium-50">Evidence Vault Advanced</strong> (ab <strong className="text-titanium-50">Agency</strong>) legt Nachweise als
+          <strong className="text-titanium-50"> versionierte, unveränderliche Snapshots</strong> ab: jeder Stand ist über eine SHA-256-Kette
+          (prev_hash) mit dem Vorgänger verknüpft und wird per Datenbank-Trigger gegen Änderung/Löschung gesperrt (append-only).
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li><strong className="text-titanium-50">Aufbewahrungsrichtlinien</strong> (7 J / 3 J / 1 J / 90 T / … / unbegrenzt) pro Snapshot.</li>
+          <li><strong className="text-titanium-50">Legal-Hold</strong> sperrt den Ablauf/die Löschung, solange aktiv — für laufende Verfahren.</li>
+          <li>Der Inhalts-Hash wird <strong className="text-titanium-50">lokal im Browser</strong> berechnet; optional HMAC-signiert.</li>
+          <li>Lückenlose <strong className="text-titanium-50">Audit-Timeline</strong> mit Version, Hash und Aufbewahrungsstatus.</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/evidence-vault" className="text-security-400">/app/evidence-vault</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
+    q: 'Gibt es vorkonfigurierte Compliance-Regelwerke (DSGVO, AI Act, NIS2, DORA, ISO 27001, TISAX)?',
+    a: (
+      <>
+        <p>
+          Ja — <strong className="text-titanium-50">Policy Packs</strong> ab dem <strong className="text-titanium-50">Agency</strong>-Tier.
+          Statt bei null anzufangen, aktivierst du ein kuratiertes Regelwerk mit einem Klick; die Controls landen in deiner
+          Kontroll-Matrix und die <strong className="text-titanium-50">Abdeckung</strong> wird gegen deine dokumentierten Maßnahmen berechnet.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mt-2">
+          <li>Packs u. a.: DSGVO (vollständiger Kernkatalog) · EU AI Act High-Risk (Art. 8–27) · NIS2 (inkl. Maßnahmenkatalog Art. 21) · DORA · ISO 27001 Annex A 2022 (93 Controls) · TISAX (Automotive) · FinTech-Kombi (DSGVO + NIS2 + DORA).</li>
+          <li>Vollständige Framework-Kataloge statt kuratierter Auszüge; jederzeit aktivier-/deaktivierbar; individuelle Unternehmensrichtlinien ergänzbar.</li>
+        </ul>
+        <p className="mt-2">
+          Im Dashboard: <Link to="/app/policy-packs" className="text-security-400">/app/policy-packs</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    tag: 'Technik',
     q: 'Habt ihr ISO 27001 oder SOC 2?',
     a: (
       <p>

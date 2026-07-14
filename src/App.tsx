@@ -9,9 +9,15 @@ import { SEOHead } from './components/SEOHead';
 import { RequireAal2 } from './core/access/RequireAal2';
 import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
+import { AppGate } from './features/auth/AppGate';
 import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
 import { DemoLandingPage } from './pages/DemoLandingPage';
+import { DemoTourStartPage } from './pages/DemoTourStartPage';
+import { DemoTourSignupPage } from './pages/DemoTourSignupPage';
+import { DemoTourCheckoutPage } from './pages/DemoTourCheckoutPage';
+import { DemoTourDashboard } from './pages/DemoTourDashboard';
+import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
@@ -44,6 +50,8 @@ import { RuntimePage } from './pages/RuntimePage';
 import { MonitoringPage, MonitoringSurface } from './pages/MonitoringPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
+import { AiDsgvoBotPage } from './pages/AiDsgvoBotPage';
+import { ClaudeCodeOptimizer } from './pages/ClaudeCodeOptimizer';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
 import { DigitalSovereignty } from './pages/DigitalSovereignty';
@@ -64,6 +72,28 @@ import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 import { EnterpriseLanding } from './pages/EnterpriseLanding';
+import { SaaSSolution } from './pages/solutions/SaaSSolution';
+import { AgenciesSolution } from './pages/solutions/AgenciesSolution';
+import { GovernanceOnboarding } from './pages/GovernanceOnboarding';
+import { GovernanceRecommendation } from './pages/GovernanceRecommendation';
+// ── Unified Entry: Scan → Dashboard with Trial ──
+import { UnifiedEntryShell } from './unified-entry/UnifiedEntryShell';
+import { ScanEntryPage } from './unified-entry/pages/ScanEntryPage';
+import { DashboardPreviewPage } from './unified-entry/pages/DashboardPreviewPage';
+import { TrialOfferPage } from './unified-entry/pages/TrialOfferPage';
+import { RegisterPage } from './unified-entry/pages/RegisterPage';
+import { PostRegisterOnboardingPage } from './unified-entry/pages/PostRegisterOnboardingPage';
+import { SuccessPage } from './unified-entry/pages/SuccessPage';
+// ── Geführter, seitenbasierter Flow (/flow/*) ──
+import { FlowProvider } from './flow/FlowContext';
+import { FlowStepRoute } from './flow/FlowStepRoute';
+// ── Phase 2: Onboarding Setup Assistant (Free Tier)
+const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
+// ── Phase 2: Dashboard Router (Adaptive based on tier)
+const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+// ── Phase 3: Advanced Governance Views
+const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
+const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -145,6 +175,9 @@ import { PricingPage } from './features/billing/PricingPage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CheckoutSuccessPage } from './features/billing/CheckoutSuccessPage';
 import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage';
+// Pricing detail pages — new detail routes for plans/features/checkout
+import { PricingDetailPageWrapper } from './pages/pricing/PricingDetailPage';
+import { FeatureDetailPageWrapper } from './pages/pricing/FeatureDetailPage';
 import { PrivacyPolicy } from './features/legal/PrivacyPolicy';
 import { SubProcessors } from './features/legal/SubProcessors';
 import { Impressum } from './features/legal/Impressum';
@@ -152,6 +185,7 @@ import { AVVTemplate } from './features/legal/AVVTemplate';
 import { ComplianceMatrix } from './features/legal/ComplianceMatrix';
 import { LegalMethodology } from './features/legal/LegalMethodology';
 import { LegalTerms } from './features/legal/LegalTerms';
+import { Widerrufsbelehrung } from './features/legal/Widerrufsbelehrung';
 
 // Auth-gated Features → lazy. Reduzieren Initial-Bundle für public Audit-Page.
 const KodeeView = lazy(() => import('./features/kodee/KodeeView').then((m) => ({ default: m.KodeeView })));
@@ -170,11 +204,51 @@ const GovernanceAgentsCenterView = lazy(() => import('./features/governance/agen
 const GovernanceDocumentsView = lazy(() => import('./features/governance/documents/DocumentsView').then((m) => ({ default: m.DocumentsView })));
 const GovernanceAuditExportView = lazy(() => import('./features/governance/audit/AuditExportView').then((m) => ({ default: m.AuditExportView })));
 const AutomationSkillsView = lazy(() => import('./features/automations/AutomationSkillsView').then((m) => ({ default: m.AutomationSkillsView })));
+const ProvenanceView = lazy(() => import('./features/provenance/ProvenanceView').then((m) => ({ default: m.ProvenanceView })));
+const BulkJobsView = lazy(() => import('./features/bulk/BulkJobsView').then((m) => ({ default: m.BulkJobsView })));
+const SchedulerView = lazy(() => import('./features/scheduler/SchedulerView').then((m) => ({ default: m.SchedulerView })));
+const EvidenceVaultAdvancedView = lazy(() => import('./features/evidence-vault/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
+const PolicyPacksView = lazy(() => import('./features/policy-packs/PolicyPacksView').then((m) => ({ default: m.PolicyPacksView })));
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
-const GovernanceWebhooksView = lazy(() => import('./features/governance/WebhooksView').then((m) => ({ default: m.WebhooksView })));
+// ── Phase 2: Multi-Framework Governance Views (10 new modules)
+const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
+const DsgvoDirectoryView = lazy(() => import('./features/governance/DsgvoDirectoryView').then((m) => ({ default: m.DsgvoDirectoryView })));
+const AiActRiskAssessmentView = lazy(() => import('./features/governance/AiActRiskAssessmentView').then((m) => ({ default: m.AiActRiskAssessmentView })));
+const Nis2IncidentsView = lazy(() => import('./features/governance/Nis2IncidentsView').then((m) => ({ default: m.Nis2IncidentsView })));
+const Iso27001ControlsView = lazy(() => import('./features/governance/Iso27001ControlsView').then((m) => ({ default: m.Iso27001ControlsView })));
+const Iso42001View = lazy(() => import('./features/governance/Iso42001View').then((m) => ({ default: m.Iso42001View })));
+const Iso42001ControlDetailView = lazy(() => import('./features/governance/Iso42001ControlDetailView').then((m) => ({ default: m.Iso42001ControlDetailView })));
+const CertificationReadinessDashboard = lazy(() => import('./features/governance/CertificationReadinessDashboard').then((m) => ({ default: m.CertificationReadinessDashboard })));
+const Iso42001ControlsLibraryView = lazy(() => import('./features/governance/Iso42001ControlsLibraryView').then((m) => ({ default: m.Iso42001ControlsLibraryView })));
+const AuditorEngagementView = lazy(() => import('./features/governance/AuditorEngagementView').then((m) => ({ default: m.AuditorEngagementView })));
+const CertificationReportGeneratorView = lazy(() => import('./features/governance/CertificationReportGeneratorView').then((m) => ({ default: m.CertificationReportGeneratorView })));
+const Iso42001CertificationHubView = lazy(() => import('./features/governance/Iso42001CertificationHubView').then((m) => ({ default: m.Iso42001CertificationHubView })));
+const Iso42001EvidenceVaultView = lazy(() => import('./features/governance/Iso42001EvidenceVaultView').then((m) => ({ default: m.Iso42001EvidenceVaultView })));
+const GapAnalysisView = lazy(() => import('./features/governance/GapAnalysisView').then((m) => ({ default: m.GapAnalysisView })));
+const EvidenceVaultAdvancedViewNew = lazy(() => import('./features/governance/EvidenceVaultAdvancedView').then((m) => ({ default: m.EvidenceVaultAdvancedView })));
+const RemediationPlanViewNew = lazy(() => import('./features/governance/RemediationPlanView').then((m) => ({ default: m.RemediationPlanView })));
+const AuditReportAdvancedViewNew = lazy(() => import('./features/governance/AuditReportAdvancedView').then((m) => ({ default: m.AuditReportAdvancedView })));
+const GovernanceApiKeysView = lazy(() => import('./features/governance/GovernanceApiKeysView').then((m) => ({ default: m.GovernanceApiKeysView })));
+const GovernanceWorkflowRecommendation = lazy(() => import('./features/governance/GovernanceWorkflowRecommendation').then((m) => ({ default: m.GovernanceWorkflowRecommendation })));
+// ── Phase 5A: ISO Templates & Advanced Reporting (3 new views)
+const IsoControlLibraryView = lazy(() => import('./features/governance/IsoControlLibraryView').then((m) => ({ default: m.IsoControlLibraryView })));
+const ReportBuilderView = lazy(() => import('./features/governance/reporting/AdvancedReportingView').then((m) => ({ default: m.AdvancedReportingView })));
+const ComplianceRoadmapView = lazy(() => import('./features/governance/ComplianceRoadmapView').then((m) => ({ default: m.ComplianceRoadmapView })));
+// ── Phase 5B: Custom Frameworks & Integrations (3 new views)
+const CustomFrameworkBuilderView = lazy(() => import('./features/governance/frameworks/CustomFrameworkBuilder').then((m) => ({ default: m.CustomFrameworkBuilder })));
+const CustomFrameworkView = lazy(() => import('./features/governance/CustomFrameworkView').then((m) => ({ default: m.CustomFrameworkView })));
+const IntegrationsView = lazy(() => import('./features/governance/IntegrationsView').then((m) => ({ default: m.IntegrationsView })));
+// ── Phase 5C: Analytics, Bulk Operations, Collaboration (5 new views)
+const ComplianceAnalyticsView = lazy(() => import('./features/governance/ComplianceAnalyticsView').then((m) => ({ default: m.ComplianceAnalyticsView })));
+const BulkOperationsView = lazy(() => import('./features/governance/BulkOperationsView').then((m) => ({ default: m.BulkOperationsView })));
+const ComplianceCalendarView = lazy(() => import('./features/governance/ComplianceCalendarView').then((m) => ({ default: m.ComplianceCalendarView })));
+const AuditTrailView = lazy(() => import('./features/governance/AuditTrailView').then((m) => ({ default: m.AuditTrailView })));
+const GovernanceTeamView = lazy(() => import('./features/governance/GovernanceTeamView').then((m) => ({ default: m.GovernanceTeamView })));
+const GovernanceWebhooksView = lazy(() => import('./features/governance/webhooks/WebhooksView').then((m) => ({ default: m.WebhooksView })));
+const GovernanceTerminalView = lazy(() => import('./features/governance/terminal/TerminalSessionDashboard').then((m) => ({ default: m.TerminalSessionDashboard })));
 const GovernanceOnboardingView = lazy(() => import('./features/governance/OnboardingView').then((m) => ({ default: m.OnboardingView })));
 const GovernanceMappingsView = lazy(() => import('./features/governance/MappingsView').then((m) => ({ default: m.MappingsView })));
 const GovernanceEventDetailView = lazy(() => import('./features/governance/EventDetailView').then((m) => ({ default: m.EventDetailView })));
@@ -204,6 +278,9 @@ const RemediationPlansView      = lazy(() => import('./features/governance/remed
 const RemediationPlanDetailView = lazy(() => import('./features/governance/remediation/RemediationPlanDetailView').then((m) => ({ default: m.RemediationPlanDetailView })));
 const OperationsDashboardView   = lazy(() => import('./features/operations/OperationsDashboardView').then((m) => ({ default: m.OperationsDashboardView })));
 const OperationsItemsView       = lazy(() => import('./features/operations/InventoryItemsView').then((m) => ({ default: m.InventoryItemsView })));
+const BotsView                  = lazy(() => import('./features/bots/BotsView').then((m) => ({ default: m.BotsView })));
+const BotBuilderView            = lazy(() => import('./features/bots/BotBuilderView').then((m) => ({ default: m.BotBuilderView })));
+const BotInboxView              = lazy(() => import('./features/bots/BotInboxView').then((m) => ({ default: m.BotInboxView })));
 const OperationsStockMovements  = lazy(() => import('./features/operations/StockMovementsView').then((m) => ({ default: m.StockMovementsView })));
 const OperationsSuppliersView   = lazy(() => import('./features/operations/SuppliersView').then((m) => ({ default: m.SuppliersView })));
 const OperationsLocationsView   = lazy(() => import('./features/operations/LocationsView').then((m) => ({ default: m.LocationsView })));
@@ -220,6 +297,14 @@ const TaxReviewsView     = lazy(() => import('./features/finance/TaxReviewsView'
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
+const ApiSetupWizard = lazy(() => import('./features/api/ApiSetupWizard').then((m) => ({ default: m.ApiSetupWizard })));
+const ApiDocumentation = lazy(() => import('./features/api/ApiDocumentation').then((m) => ({ default: m.ApiDocumentation })));
+const ApiMonitoringDashboard = lazy(() => import('./features/api/ApiMonitoringDashboard').then((m) => ({ default: m.ApiMonitoringDashboard })));
+const AdvancedMonitoringDashboard = lazy(() => import('./features/api/AdvancedMonitoringDashboard').then((m) => ({ default: m.AdvancedMonitoringDashboard })));
+const EmailTemplateManager = lazy(() => import('./features/api/EmailTemplateManager').then((m) => ({ default: m.EmailTemplateManager })));
+const WebhookRetryManagement = lazy(() => import('./features/api/WebhookRetryManagement').then((m) => ({ default: m.WebhookRetryManagement })));
+const WebhookTester = lazy(() => import('./features/api/WebhookTester').then((m) => ({ default: m.WebhookTester })));
+const RateLimitingAnalytics = lazy(() => import('./features/api/RateLimitingAnalytics').then((m) => ({ default: m.RateLimitingAnalytics })));
 const SettingsView = lazy(() => import('./features/settings/SettingsView').then((m) => ({ default: m.SettingsView })));
 const SecuritySettings = lazy(() => import('./features/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })));
 const TenantAdminConsole = lazy(() => import('./features/tenants/TenantAdminConsole').then((m) => ({ default: m.TenantAdminConsole })));
@@ -248,6 +333,10 @@ const AdminAPIKeysPage = lazy(() => import('./features/admin/pages/AdminAPIKeysP
 const AdminAuditPage = lazy(() => import('./features/admin/pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage })));
 // ── Platform Super-Admin (Phase 2) ──
 const SuperAdminDashboard = lazy(() => import('./features/admin/SuperAdminDashboard').then((m) => ({ default: m.SuperAdminDashboard })));
+// ── SEO-Marketing-SaaS-Dashboard (auth-gated)
+const SEOMarketingDashboard = lazy(() => import('./features/seo-marketing-dashboard/SEOMarketingDashboard').then((m) => ({ default: m.SEOMarketingDashboard })));
+// ── OAuth Callbacks (public, no auth required)
+import { StripeOAuthCallback } from './pages/integrations/StripeOAuthCallback';
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -255,7 +344,6 @@ const EnterpriseAppShell = lazy(() => import('./enterprise-os/layout/AppShell').
 const EnterpriseAppHomePage = lazy(() => import('./enterprise-os/pages/AppHomePage').then((m) => ({ default: m.AppHomePage })));
 const EnterprisePlaceholderPage = lazy(() => import('./enterprise-os/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })));
 // Phase 2 — Public Pages (Pricing, Audit, AI Governance, Agenturen, Auth, Legal, Checkout)
-const EnterprisePricingPage = lazy(() => import('./enterprise-os/pages/PricingPage').then((m) => ({ default: m.PricingPage })));
 const EnterpriseAuthPage = lazy(() => import('./enterprise-os/pages/AuthPage').then((m) => ({ default: m.AuthPage })));
 const EnterpriseAuditLandingPage = lazy(() => import('./enterprise-os/pages/AuditLandingPage').then((m) => ({ default: m.AuditLandingPage })));
 const EnterpriseAiGovernancePage = lazy(() => import('./enterprise-os/pages/AiGovernancePage').then((m) => ({ default: m.AiGovernancePage })));
@@ -263,6 +351,8 @@ const EnterpriseAgenciesPage = lazy(() => import('./enterprise-os/pages/Agencies
 const EnterpriseDatenschutzPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.DatenschutzPage })));
 const EnterpriseImpressumPage = lazy(() => import('./enterprise-os/pages/LegalPage').then((m) => ({ default: m.ImpressumPage })));
 const EnterpriseCheckoutEntryPage = lazy(() => import('./enterprise-os/pages/CheckoutEntryPage').then((m) => ({ default: m.CheckoutEntryPage })));
+const EnterpriseCheckoutPageWrapper = lazy(() => import('./enterprise-os/pages/CheckoutPageWrapper').then((m) => ({ default: m.CheckoutPageWrapper })));
+const EnterpriseWelcomeWizardPage = lazy(() => import('./enterprise-os/pages/WelcomeWizardPage').then((m) => ({ default: m.WelcomeWizardPage })));
 
 // Phase 4 — App Workspace (Websites, Risiken, Compliance, Evidence, Monitoring)
 const EnterpriseWebsitesPage = lazy(() => import('./enterprise-os/pages/WebsitesPage').then((m) => ({ default: m.WebsitesPage })));
@@ -318,6 +408,12 @@ function RoutesWithTracking() {
               </ProtectedRoute>
             }
           />
+
+          {/* Demo Tour — Complete Product Tour Flow (no auth required) */}
+          <Route path="/demo-tour" element={<DemoTourProvider><DemoTourStartPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/signup" element={<DemoTourProvider><DemoTourSignupPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
@@ -337,6 +433,7 @@ function RoutesWithTracking() {
       <Route path="/governance-complexity-score"   element={<GovernanceScorePage />} />
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
+      <Route path="/ai-dsgvo-bot" element={<AiDsgvoBotPage />} />
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
@@ -359,6 +456,9 @@ function RoutesWithTracking() {
       <Route path="/shopify-dsgvo"   element={<ShopifyDsgvoLanding />} />
       <Route path="/audit/share/:token" element={<AuditShare />} />
       <Route path="/audit/result/:auditId" element={<AuditResultPage />} />
+      {/* Guided post-scan onboarding flow — Phase 2 */}
+      <Route path="/onboarding/:scanId" element={<GovernanceOnboarding />} />
+      <Route path="/recommendation/:scanId" element={<GovernanceRecommendation />} />
       <Route path="/dsgvo-ki-checkliste" element={<DsgvoKiChecklist />} />
       <Route path="/ai-act-faq" element={<AiActFaq />} />
       <Route path="/schrems-ii-erklaert" element={<SchremsIIErklaert />} />
@@ -394,6 +494,8 @@ function RoutesWithTracking() {
       {/* Onboarding nach Stripe-Checkout */}
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/setup" element={<Welcome />} />
+      {/* Phase 2: Free Tier Setup Assistant (3-step wizard) */}
+      <Route path="/setup-assistant" element={<AppGate><SetupAssistant /></AppGate>} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
       {/* Industry-Doorways */}
@@ -427,6 +529,7 @@ function RoutesWithTracking() {
       <Route path="/trust" element={<Trust />} />
       <Route path="/pilot-readiness" element={<PilotReadiness />} />
       <Route path="/integrations/shopify" element={<ShopifyIntegrationPage />} />
+      <Route path="/integrations/stripe/callback" element={<StripeOAuthCallback />} />
       <Route path="/shopify/success" element={<ShopifySuccessPage />} />
       <Route path="/shopify/error" element={<ShopifyErrorPage />} />
       <Route path="/app/settings/integrations/telegram" element={<TelegramIntegrationPage />} />
@@ -513,15 +616,68 @@ function RoutesWithTracking() {
       {/* ── Governance OS Browser Shell — alle /app/* Routen ──
           GovernanceBrowserShell: TopBar + Tabs + Canvas + AssistantPanel + StatusBar.
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
-      <Route path="/app" element={<GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell>} />
+      {/* Onboarding-First-Routing: /app kanonisiert auf das gegatete Dashboard.
+          Kein Onboarding-Zwang (kein Hard-Lockout) — nur Kanonisierung. */}
+      <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+      {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
+          Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
+          ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
+          DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
+      <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
+      <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/overview" element={<GovernanceBrowserShell><GovernanceOsDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/home" element={<GovernanceBrowserShell><WorkspaceHome /></GovernanceBrowserShell>} />
       <Route path="/app/company" element={<GovernanceBrowserShell><CompanyView /></GovernanceBrowserShell>} />
       <Route path="/app/websites" element={<GovernanceBrowserShell><WebsiteGovernanceView /></GovernanceBrowserShell>} />
+      {/* Phase 2 Governance Views: Multi-Framework Compliance */}
+      <Route path="/app/governance/ai-register" element={<GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/dsgvo-directory" element={<GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/ai-act-assessment" element={<GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/nis2-incidents" element={<GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso27001" element={<GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-hub" element={<GovernanceBrowserShell><Iso42001CertificationHubView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001" element={<GovernanceBrowserShell><Iso42001View /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-readiness" element={<GovernanceBrowserShell><CertificationReadinessDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-library" element={<GovernanceBrowserShell><Iso42001ControlsLibraryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-auditors" element={<GovernanceBrowserShell><AuditorEngagementView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-reports" element={<GovernanceBrowserShell><CertificationReportGeneratorView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001-evidence" element={<GovernanceBrowserShell><Iso42001EvidenceVaultView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/iso42001/:controlId" element={<GovernanceBrowserShell><Iso42001ControlDetailView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/gaps" element={<GovernanceBrowserShell><GapAnalysisView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/evidence-vault-advanced" element={<GovernanceBrowserShell><EvidenceVaultAdvancedViewNew /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/remediation-plans" element={<GovernanceBrowserShell><RemediationPlanViewNew /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/audit-reports" element={<GovernanceBrowserShell><AuditReportAdvancedViewNew /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/api-keys" element={<GovernanceBrowserShell><GovernanceApiKeysView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/recommendation" element={<GovernanceWorkflowRecommendation />} />
+      {/* Phase 3: Advanced Governance Views */}
+      <Route path="/app/governance/frameworks" element={<AppGate><ComplianceFrameworkSelector /></AppGate>} />
+      <Route path="/app/governance/iso-42001-hub" element={<AppGate><GovernanceBrowserShell><Iso42001ComplianceHub /></GovernanceBrowserShell></AppGate>} />
+      {/* Phase 5A: ISO Templates & Advanced Reporting */}
+      <Route path="/app/governance/iso-control-library" element={<GovernanceBrowserShell><IsoControlLibraryView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/report-builder" element={<GovernanceBrowserShell><ReportBuilderView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/compliance-roadmap" element={<GovernanceBrowserShell><ComplianceRoadmapView /></GovernanceBrowserShell>} />
+      {/* Phase 5B: Custom Frameworks & Integrations */}
+      <Route path="/app/governance/custom-framework-builder" element={<GovernanceBrowserShell><CustomFrameworkBuilderView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/custom-frameworks" element={<GovernanceBrowserShell><CustomFrameworkView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/integrations" element={<GovernanceBrowserShell><IntegrationsView /></GovernanceBrowserShell>} />
+      {/* Phase 5C: Analytics, Bulk Operations, Collaboration */}
+      <Route path="/app/governance/compliance-analytics" element={<GovernanceBrowserShell><ComplianceAnalyticsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/bulk-operations" element={<GovernanceBrowserShell><BulkOperationsView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/compliance-calendar" element={<GovernanceBrowserShell><ComplianceCalendarView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/audit-trail" element={<GovernanceBrowserShell><AuditTrailView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/team-collaboration" element={<GovernanceBrowserShell><GovernanceTeamView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems" element={<GovernanceBrowserShell><AiSystemRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/ai-systems/agents" element={<GovernanceBrowserShell><AgentRegistryView /></GovernanceBrowserShell>} />
       <Route path="/app/automations" element={<GovernanceBrowserShell><AutomationSkillsView /></GovernanceBrowserShell>} />
+      <Route path="/app/provenance" element={<GovernanceBrowserShell><ProvenanceView /></GovernanceBrowserShell>} />
+      <Route path="/app/bulk" element={<GovernanceBrowserShell><BulkJobsView /></GovernanceBrowserShell>} />
+      <Route path="/app/scheduler" element={<GovernanceBrowserShell><SchedulerView /></GovernanceBrowserShell>} />
+      <Route path="/app/evidence-vault" element={<GovernanceBrowserShell><EvidenceVaultAdvancedView /></GovernanceBrowserShell>} />
+      <Route path="/app/policy-packs" element={<GovernanceBrowserShell><PolicyPacksView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
+      <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />
       <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
       <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
       <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
@@ -546,6 +702,7 @@ function RoutesWithTracking() {
       <Route path="/app/keys" element={<GovernanceBrowserShell><GovernanceKeysView /></GovernanceBrowserShell>} />
       <Route path="/app/vvt" element={<GovernanceBrowserShell><RuntimeVvtView /></GovernanceBrowserShell>} />
       <Route path="/app/webhooks" element={<GovernanceBrowserShell><GovernanceWebhooksView /></GovernanceBrowserShell>} />
+      <Route path="/app/terminal" element={<AppGate><GovernanceBrowserShell><GovernanceTerminalView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/onboarding" element={<GovernanceBrowserShell><GovernanceOnboardingView /></GovernanceBrowserShell>} />
       <Route path="/app/mappings" element={<GovernanceBrowserShell><GovernanceMappingsView /></GovernanceBrowserShell>} />
       <Route path="/app/events/:eventId" element={<GovernanceBrowserShell><GovernanceEventDetailView /></GovernanceBrowserShell>} />
@@ -595,9 +752,19 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
-                <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
-                <Route path="/checkout/:planKey" element={<CheckoutPage />} />
+      {/* Pricing Detail Routes */}
+      <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
+      <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />
+      {/* Checkout routes - specific paths must come before parameterized routes */}
+      <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+      <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
+      <Route path="/checkout/:planKey" element={<CheckoutPage />} />
+      {/* End of Pricing Detail Routes */}
+      <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />
+      {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}
+      <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />
+      <Route path="/solutions/saas" element={<SaaSSolution />} />
+      <Route path="/solutions/agencies" element={<AgenciesSolution />} />
       <Route path="/tenant/invites" element={<RequireAal2 action="Team-Verwaltung"><InvitesView /></RequireAal2>} />
       <Route path="/tenant/invite/:token" element={<AcceptInviteView />} />
       {/* Legacy /governance/* routes redirect to canonical /app/* paths (with shell wrapper).
@@ -654,6 +821,14 @@ function RoutesWithTracking() {
       <Route path="/settings/team" element={<RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2>} />
       <Route path="/settings/account" element={<AccountSettings />} />
       <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
+      <Route path="/app/api/setup" element={<GovernanceBrowserShell><ApiSetupWizard /></GovernanceBrowserShell>} />
+      <Route path="/app/api/docs" element={<GovernanceBrowserShell><ApiDocumentation /></GovernanceBrowserShell>} />
+      <Route path="/app/api/monitoring" element={<GovernanceBrowserShell><ApiMonitoringDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/api/monitoring-advanced" element={<GovernanceBrowserShell><AdvancedMonitoringDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/api/email-templates" element={<GovernanceBrowserShell><EmailTemplateManager /></GovernanceBrowserShell>} />
+      <Route path="/app/api/webhook-retry" element={<GovernanceBrowserShell><WebhookRetryManagement /></GovernanceBrowserShell>} />
+      <Route path="/app/api/webhook-tester" element={<GovernanceBrowserShell><WebhookTester /></GovernanceBrowserShell>} />
+      <Route path="/app/api/rate-limiting" element={<GovernanceBrowserShell><RateLimitingAnalytics /></GovernanceBrowserShell>} />
       <Route path="/workflows" element={<WorkflowsView />} />
       <Route path="/market-gaps" element={<MarketGapsView />} />
       <Route path="/outreach" element={<OutreachView />} />
@@ -674,8 +849,12 @@ function RoutesWithTracking() {
       <Route path="/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/datenschutz" element={<PrivacyPolicy />} />
       <Route path="/legal/avv" element={<AVVTemplate />} />
+      <Route path="/avv" element={<Navigate to="/legal/avv" replace />} />
       <Route path="/legal/terms" element={<LegalTerms />} />
       <Route path="/agb" element={<LegalTerms />} />
+      <Route path="/legal/widerruf" element={<Widerrufsbelehrung />} />
+      <Route path="/widerruf" element={<Widerrufsbelehrung />} />
+      <Route path="/widerrufsbelehrung" element={<Widerrufsbelehrung />} />
       <Route path="/legal/compliance-matrix" element={<ComplianceMatrix />} />
       <Route path="/legal/methodology" element={<LegalMethodology />} />
       <Route path="/methodik" element={<LegalMethodology />} />
@@ -683,23 +862,24 @@ function RoutesWithTracking() {
       <Route path="/limits" element={<Limits />} />
 
       {/* Common auth entry points users expect */}
-      <Route path="/login" element={<Navigate to="/welcome" replace />} />
-      <Route path="/signin" element={<Navigate to="/welcome" replace />} />
-      <Route path="/signup" element={<Navigate to="/welcome" replace />} />
-      <Route path="/register" element={<Navigate to="/welcome" replace />} />
+      <Route path="/login" element={<Navigate to="/os/login" replace />} />
+      <Route path="/signin" element={<Navigate to="/os/login" replace />} />
+      <Route path="/signup" element={<Navigate to="/os/signup" replace />} />
+      <Route path="/register" element={<Navigate to="/os/signup" replace />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.
           Bestehende /, /app/* Routen bleiben unverändert (siehe oben). */}
       <Route path="/os" element={<EnterpriseLandingPage />} />
       {/* Phase 2 — Public Pages (eigenständig, Mockdaten, kein Backend) */}
-      <Route path="/os/pricing" element={<EnterprisePricingPage />} />
+      <Route path="/os/pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/os/audit" element={<EnterpriseAuditLandingPage />} />
       <Route path="/os/ai-act" element={<EnterpriseAiGovernancePage />} />
       <Route path="/os/agencies" element={<EnterpriseAgenciesPage />} />
       <Route path="/os/login" element={<EnterpriseAuthPage mode="login" />} />
       <Route path="/os/signup" element={<EnterpriseAuthPage mode="signup" />} />
       <Route path="/os/checkout" element={<EnterpriseCheckoutEntryPage />} />
+      <Route path="/os/welcome" element={<EnterpriseWelcomeWizardPage />} />
       <Route path="/os/datenschutz" element={<EnterpriseDatenschutzPage />} />
       <Route path="/os/impressum" element={<EnterpriseImpressumPage />} />
       <Route
@@ -799,6 +979,70 @@ function RoutesWithTracking() {
         }
       />
 
+      {/* Unified Entry: Scan → Dashboard with Trial */}
+      <Route path="/unified-entry" element={<Navigate to="/unified-entry/scan" replace />} />
+      <Route
+        path="/unified-entry/scan"
+        element={
+          <UnifiedEntryShell currentStep={1} totalSteps={5}>
+            <ScanEntryPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/preview"
+        element={
+          <UnifiedEntryShell currentStep={2} totalSteps={5}>
+            <DashboardPreviewPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/trial-offer"
+        element={
+          <UnifiedEntryShell currentStep={3} totalSteps={5}>
+            <TrialOfferPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/register"
+        element={
+          <UnifiedEntryShell currentStep={3} totalSteps={5}>
+            <RegisterPage />
+          </UnifiedEntryShell>
+        }
+      />
+      <Route
+        path="/unified-entry/onboarding"
+        element={
+          <SupabaseAuthProvider>
+            <TenantProvider>
+              <UnifiedEntryShell currentStep={4} totalSteps={5}>
+                <PostRegisterOnboardingPage />
+              </UnifiedEntryShell>
+            </TenantProvider>
+          </SupabaseAuthProvider>
+        }
+      />
+      <Route
+        path="/unified-entry/success"
+        element={
+          <SupabaseAuthProvider>
+            <TenantProvider>
+              <UnifiedEntryShell currentStep={5} totalSteps={5} showProgress={false}>
+                <SuccessPage />
+              </UnifiedEntryShell>
+            </TenantProvider>
+          </SupabaseAuthProvider>
+        }
+      />
+
+      {/* Geführter Flow — erklärt jeden Klick auf einer eigenen Seite.
+          `/flow/*` fängt auch verschachtelte Slugs wie `checkout/starter`. */}
+      <Route path="/flow" element={<Navigate to="/flow/start-scan" replace />} />
+      <Route path="/flow/*" element={<FlowStepRoute />} />
+
       {/* 404 catch-all — must be last */}
       <Route path="*" element={<NotFoundPage />} />
         </Routes>
@@ -816,7 +1060,9 @@ export default function App() {
           <SupabaseAuthProvider>
             <BrowserRouter basename={ROUTER_BASENAME}>
             <ScrollToTop />
+            <FlowProvider>
             <RoutesWithTracking />
+            </FlowProvider>
             <CookieConsent />
             <Suspense fallback={null}>
               <AssistentChip />

@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
   }
-  if (body.plan_key === 'free') {
-    return jsonError(400, 'BAD_REQUEST', 'free plan does not require checkout');
+  if (body.plan_key === 'free_audit') {
+    return jsonError(400, 'BAD_REQUEST', 'Free Audit braucht keinen Checkout');
   }
 
   // Membership + role check

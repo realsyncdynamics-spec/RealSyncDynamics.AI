@@ -6,7 +6,7 @@ import {
 } from '../../config/business-identity';
 
 /**
- * Impressum nach § 5 TMG + § 18 MStV.
+ * Impressum nach § 5 DDG + § 18 MStV.
  *
  * USt-IdNr., HRB-Eintrag und Wirtschafts-ID werden aus ENV-Vars geladen
  * (VITE_BUSINESS_VAT_ID, VITE_BUSINESS_REGISTRY_ENTRY,
@@ -34,7 +34,7 @@ export function Impressum() {
           </div>
           <div className="leading-tight">
             <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Impressum</h1>
-            <div className="text-[11px] text-titanium-400 font-medium">§ 5 TMG · § 18 MStV</div>
+            <div className="text-[11px] text-titanium-400 font-medium">§ 5 DDG · § 18 MStV</div>
           </div>
         </div>
       </header>
@@ -56,7 +56,7 @@ export function Impressum() {
           </div>
         )}
 
-        <Section title="Anbieter / Verantwortlicher i. S. d. § 5 TMG">
+        <Section title="Anbieter / Verantwortlicher i. S. d. § 5 DDG">
           <p>
             <strong className="text-titanium-50">RealSync Dynamics</strong><br />
             Schwarzburger Str. 31<br />
@@ -94,7 +94,7 @@ export function Impressum() {
             Entwicklung und Betrieb von Software-as-a-Service (SaaS)-Lösungen
             im Bereich Datenschutz-, Compliance- und KI-Governance,
             insbesondere automatisierte Website- und Tracking-Analysen,
-            DSGVO-/TTDSG-Compliance-Monitoring, technische Audit- und
+            DSGVO-/TDDDG-Compliance-Monitoring, technische Audit- und
             Reporting-Systeme sowie digitale Compliance-Tools. Erbringung
             von IT-Dienstleistungen, Softwareentwicklung und Bereitstellung
             webbasierter Analyse- und Monitoringplattformen.
@@ -119,9 +119,6 @@ export function Impressum() {
               (Registergericht Jena oder zuständiges Amtsgericht) ergänzt.
             </p>
           )}
-          <p className="text-xs text-titanium-500">
-            Falls Einzelunternehmen bleibt: dieser Abschnitt kann entfernt werden, der Hinweis „Nicht im Handelsregister eingetragen" reicht.
-          </p>
         </Section>
 
         <Section title="Umsatzsteuer">
@@ -163,10 +160,6 @@ export function Impressum() {
             <strong className="text-titanium-50">Dominik Steiner</strong><br />
             Anschrift wie Anbieter (siehe oben).
           </p>
-          <p className="text-xs text-titanium-500">
-            Pflicht bei journalistisch-redaktionell gestalteten Angeboten (z. B. Blog, News).
-            Aktuell keine redaktionellen Inhalte — Abschnitt wird bei Blog-Aufnahme aktiv.
-          </p>
         </Section>
 
         <Section title="EU-Streitschlichtung">
@@ -188,9 +181,9 @@ export function Impressum() {
           <p>
             Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die
             Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch
-            keine Gewähr übernehmen. Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG
+            keine Gewähr übernehmen. Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG
             für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen
-            verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch
+            verantwortlich. Nach §§ 7 bis 10 DDG sind wir als Diensteanbieter jedoch
             nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu
             überwachen.
           </p>

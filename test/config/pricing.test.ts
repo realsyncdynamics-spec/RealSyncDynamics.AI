@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { PRICING_TIERS, tierById } from '../../src/config/pricing';
 
 describe('pricing config (Single Source of Truth)', () => {
-  it('enthaelt alle Pflicht-Tiers in korrekter Reihenfolge', () => {
+  it('enthaelt alle Pflicht-Tiers und Jahresvarianten in korrekter Reihenfolge', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
-    expect(ids).toEqual(['free', 'starter', 'growth', 'agency', 'scale', 'enterprise']);
+    expect(ids).toEqual(['free', 'starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly', 'enterprise_yearly']);
   });
 
   it('hat die vom Master-Direktiv vorgegebenen Preise', () => {
@@ -13,11 +13,19 @@ describe('pricing config (Single Source of Truth)', () => {
     expect(tierById('growth')?.priceEur).toBe(249);
     expect(tierById('agency')?.priceEur).toBe(699);
     expect(tierById('scale')?.priceEur).toBe(1999);
-    expect(tierById('enterprise')?.priceEur).toBe(0);
+    expect(tierById('enterprise')?.priceEur).toBe(1249);
+  });
+
+  it('hat die korrekten Jahrespreise (12 Monate zum Preis von 10)', () => {
+    expect(tierById('starter_yearly')?.priceEur).toBe(790);
+    expect(tierById('growth_yearly')?.priceEur).toBe(2490);
+    expect(tierById('agency_yearly')?.priceEur).toBe(6900);
+    expect(tierById('enterprise_yearly')?.priceEur).toBe(12490);
+    expect(tierById('scale_yearly')?.priceEur).toBe(19000);
   });
 
   it('alle Paid-Tiers haben recurring=true', () => {
-    const paid = ['starter', 'growth', 'agency', 'scale', 'enterprise'] as const;
+    const paid = ['starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly'] as const;
     for (const id of paid) {
       expect(tierById(id)?.recurring, `${id} must be recurring`).toBe(true);
     }
@@ -42,9 +50,9 @@ describe('pricing config (Single Source of Truth)', () => {
     }
   });
 
-  it('exakt ein Tier ist als highlight markiert (Growth)', () => {
+  it('exakt zwei Tiers sind als highlight markiert (Growth und Growth Yearly)', () => {
     const highlighted = PRICING_TIERS.filter((tier) => tier.highlight);
-    expect(highlighted).toHaveLength(1);
-    expect(highlighted[0].id).toBe('growth');
+    expect(highlighted).toHaveLength(2);
+    expect(highlighted.map(t => t.id)).toEqual(['growth', 'growth_yearly']);
   });
 });

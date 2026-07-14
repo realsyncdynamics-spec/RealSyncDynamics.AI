@@ -381,6 +381,12 @@ const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgent
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
 const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
+// ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
+const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
+const OptimizerScan = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerScan })));
+const OptimizerResult = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerResult })));
+const OptimizerSignup = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerSignup })));
+const OptimizerReport = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerReport })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
@@ -527,6 +533,14 @@ function RoutesWithTracking() {
       <Route path="/setup-assistant" element={<AppGate><SetupAssistant /></AppGate>} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
+      {/* Claude Code Optimizer — geführter, seitenweiser Flow.
+          Jeder Schritt ist eine eigene Route; /cloud-code-optimizer ist ein Alias. */}
+      <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
+      <Route path="/claude-code-optimizer/scan" element={<OptimizerScan />} />
+      <Route path="/claude-code-optimizer/ergebnis" element={<OptimizerResult />} />
+      <Route path="/claude-code-optimizer/anmelden" element={<OptimizerSignup />} />
+      <Route path="/claude-code-optimizer/bericht" element={<OptimizerReport />} />
+      <Route path="/cloud-code-optimizer" element={<Navigate to="/claude-code-optimizer" replace />} />
       {/* Industry-Doorways */}
       <Route path="/branchen" element={<Branchen />} />
       <Route path="/branchen/:slug" element={<IndustryDetail />} />

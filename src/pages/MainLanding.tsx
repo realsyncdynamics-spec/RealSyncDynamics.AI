@@ -218,7 +218,7 @@ function Hero({ theme }: { theme: Theme }) {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <SmartLink to="/audit?source=hero-badge" className="inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 rounded-full">
+            <SmartLink to="/claude-code-optimizer?source=home-hero-badge" className="inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors rounded-full">
               <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
               <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
                 CLAUDE CODE OPTIMIZER<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -251,8 +251,11 @@ function Hero({ theme }: { theme: Theme }) {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-                Plattform öffnen<ArrowRight className="w-4 h-4" />
+              <SmartLink to="/claude-code-optimizer?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+                Claude Code Optimizer starten<ArrowRight className="w-4 h-4" />
+              </SmartLink>
+              <SmartLink to="/audit?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+                Kostenlos starten<ArrowRight className="w-4 h-4" />
               </SmartLink>
               <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
                 <PlayCircle className="w-4 h-4" />Kostenlos starten

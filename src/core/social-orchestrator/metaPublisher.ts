@@ -62,13 +62,14 @@ export class MetaPublisher implements SocialPublisher {
 
       if (!createResponse.ok) {
         const errorData = await createResponse.json().catch(() => ({}));
-        const errorCode = `INSTAGRAM_${createResponse.status}_${(errorData as Record<string, unknown>).error?.type ?? 'ERROR'}`;
+        const errorObj = (errorData as Record<string, unknown>).error as Record<string, unknown> | undefined;
+        const errorCode = `INSTAGRAM_${createResponse.status}_${errorObj?.type as string ?? 'ERROR'}`;
         return {
           ok: false,
           channel: this.channel,
           error: {
             code: errorCode,
-            message: (errorData as Record<string, unknown>).error?.message ?? `HTTP ${createResponse.status}`,
+            message: (errorObj?.message as string) ?? `HTTP ${createResponse.status}`,
           },
         };
       }
@@ -103,13 +104,14 @@ export class MetaPublisher implements SocialPublisher {
 
       if (!publishResponse.ok) {
         const errorData = await publishResponse.json().catch(() => ({}));
-        const errorCode = `INSTAGRAM_${publishResponse.status}_${(errorData as Record<string, unknown>).error?.type ?? 'ERROR'}`;
+        const errorObj = (errorData as Record<string, unknown>).error as Record<string, unknown> | undefined;
+        const errorCode = `INSTAGRAM_${publishResponse.status}_${errorObj?.type as string ?? 'ERROR'}`;
         return {
           ok: false,
           channel: this.channel,
           error: {
             code: errorCode,
-            message: (errorData as Record<string, unknown>).error?.message ?? `HTTP ${publishResponse.status}`,
+            message: (errorObj?.message as string) ?? `HTTP ${publishResponse.status}`,
           },
         };
       }

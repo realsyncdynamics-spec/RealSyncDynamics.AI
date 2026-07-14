@@ -77,13 +77,14 @@ export class TikTokPublisher implements SocialPublisher {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const errorCode = `TIKTOK_${response.status}_${(errorData as Record<string, unknown>).error?.code ?? 'ERROR'}`;
+        const errorObj = (errorData as Record<string, unknown>).error as Record<string, unknown> | undefined;
+        const errorCode = `TIKTOK_${response.status}_${errorObj?.code as string ?? 'ERROR'}`;
         return {
           ok: false,
           channel: this.channel,
           error: {
             code: errorCode,
-            message: (errorData as Record<string, unknown>).error?.message ?? `HTTP ${response.status}`,
+            message: (errorObj?.message as string) ?? `HTTP ${response.status}`,
           },
         };
       }

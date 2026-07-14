@@ -49,6 +49,36 @@ describe('postEdgeFunction', () => {
     await expect(postEdgeFunction('gdpr-audit', {})).rejects.toThrow(/Ungültige Server-Antwort/);
   });
 
+  it('throws before fetching when a JWT is required but no token is in localStorage', async () => {
+    // Anonymous visitor: no sb-auth-token. Default (auth-required) must fail fast.
+    (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue(null);
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock;
+    await expect(postEdgeFunction('some-protected-fn', {})).rejects.toThrow(
+      'Nicht authentifiziert – kein Token in localStorage',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('calls a public function (requireAuth:false) for anon visitors without an Authorization header', async () => {
+    // Regression: the free Audit flow (gdpr-audit, verify_jwt=false) must work
+    // for logged-out visitors. Previously this threw because postEdgeFunction
+    // defaulted to requiring a localStorage JWT.
+    (localStorage.getItem as ReturnType<typeof vi.fn>).mockReturnValue(null);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true, score: 73 }), { status: 200 }),
+    );
+    global.fetch = fetchMock;
+    const data = await postEdgeFunction<{ score: number }>(
+      'gdpr-audit',
+      { url: 'https://x.de' },
+      { requireAuth: false },
+    );
+    expect(data.score).toBe(73);
+    const [, init] = fetchMock.mock.calls[0];
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+  });
+
   it('falls back to the production Supabase URL when VITE_SUPABASE_URL is not configured', async () => {
     vi.stubEnv('VITE_SUPABASE_URL', '');
     const fetchMock = vi.fn().mockResolvedValue(

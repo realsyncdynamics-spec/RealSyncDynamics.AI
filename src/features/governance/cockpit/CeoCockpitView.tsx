@@ -19,8 +19,11 @@ import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
 import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
+import { usePerformanceMonitor, measureAsync } from '../../../lib/performance';
 
 export function CeoCockpitView() {
+  usePerformanceMonitor('CeoCockpitView', { threshold: 1000 });
+
   const { activeTenantId, tenants } = useTenant();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
   const [data, setData] = useState<CockpitData | null>(null);
@@ -32,7 +35,10 @@ export function CeoCockpitView() {
     if (!activeTenantId) { setData(null); return; }
     setLoading(true); setError(null);
 
-    loadCockpitData(activeTenantId)
+    measureAsync('load-cockpit-data',
+      () => loadCockpitData(activeTenantId),
+      { category: 'api', tags: { dashboard: 'executive' } }
+    )
       .then((d) => { if (!cancelled) setData(d); })
       .catch((e) => { if (!cancelled) setError((e as Error)?.message ?? String(e)); })
       .finally(() => { if (!cancelled) setLoading(false); });

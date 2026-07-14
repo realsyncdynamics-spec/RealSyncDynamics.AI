@@ -2,13 +2,18 @@ import React from 'react';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { CeoCockpitView } from '../cockpit/CeoCockpitView';
 import { FreeTierDashboard } from './FreeTierDashboard';
+import { usePerformanceMonitor } from '../../../lib/performance';
 
 /**
  * DashboardRouter conditionally renders the appropriate dashboard based on tier:
  * - Free tier: Simplified FreeTierDashboard with limited features
  * - Starter+: Full CeoCockpitView (CEO dashboard)
+ *
+ * Performance: Monitors dashboard load time and re-render frequency.
  */
 export function DashboardRouter() {
+  usePerformanceMonitor('DashboardRouter', { threshold: 500 });
+
   const { tier, loading } = useEntitlements();
 
   if (loading) {

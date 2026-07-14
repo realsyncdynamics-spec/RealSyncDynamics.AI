@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface AuditLogEntry {
   id: string;
@@ -22,9 +23,15 @@ interface AuditLogEntry {
   details?: string;
 }
 
-export function AuditTrailView() {
+function _AuditTrailView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AuditTrailView = withPerformanceMonitoring(
+  _AuditTrailView,
+  'AuditTrailView',
+  { threshold: 1000, maxRenders: 5 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

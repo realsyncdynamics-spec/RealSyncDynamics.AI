@@ -8,6 +8,7 @@ import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { WorkspaceShell } from '../workspace/WorkspaceShell';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
@@ -57,7 +58,7 @@ function computeRiskScore(items: RiskItem[]): number {
   return Math.max(0, Math.min(100, 100 - penalty));
 }
 
-export function RiskCenterView() {
+function _RiskCenterView() {
   return (
     <AuthGate>
       {() => (
@@ -68,6 +69,12 @@ export function RiskCenterView() {
     </AuthGate>
   );
 }
+
+export const RiskCenterView = withPerformanceMonitoring(
+  _RiskCenterView,
+  'RiskCenterView',
+  { threshold: 1000, maxRenders: 5 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

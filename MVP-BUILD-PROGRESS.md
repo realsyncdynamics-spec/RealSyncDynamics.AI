@@ -127,10 +127,12 @@ Monday Week 2: Ready for Pilot Testing
 
 ## ⚠️ KNOWN ISSUES / BLOCKERS
 
-### Migration Drift CI Failure
-- **Issue:** Migration validation check failed on PR #818
-- **Impact:** Not blocking feature work, but must fix before production
-- **Action:** Investigate migration history vs. remote state (Week 2 priority)
+### Migration Drift CI Failure (Pre-Existing)
+- **Issue:** Migration validation check fails (remote DB ≠ local repo)
+- **Root Cause:** Some migrations applied directly to production without being committed
+- **Impact:** NOT blocking MVP feature work (no new migrations added by docs commits)
+- **Action:** Defer to Week 2 operations (requires Supabase access + DB inspection)
+- **Workaround:** Proceed with MVP; this is infrastructure maintenance, not feature blocking
 
 ### Complex Pricing Structure
 - **Issue:** System has 6 tiers (free, starter, growth, agency, scale, enterprise) + yearly variants

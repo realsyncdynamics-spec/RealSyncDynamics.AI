@@ -194,6 +194,9 @@ const ConnectionsView = lazy(() => import('./features/kodee/connections/Connecti
 const UsageView = lazy(() => import('./features/billing/UsageView').then((m) => ({ default: m.UsageView })));
 const BillingView = lazy(() => import('./features/billing/BillingView').then((m) => ({ default: m.BillingView })));
 const GovernanceAlertsView = lazy(() => import('./features/governance/AlertsView').then((m) => ({ default: m.AlertsView })));
+const ComplianceAlertRulesView = lazy(() => import('./features/governance/ComplianceAlertRulesView').then((m) => ({ default: m.ComplianceAlertRulesView })));
+const ComplianceMonitoringDashboard = lazy(() => import('./features/governance/ComplianceMonitoringDashboard').then((m) => ({ default: m.ComplianceMonitoringDashboard })));
+const OptimizationView = lazy(() => import('./features/governance/OptimizationView').then((m) => ({ default: m.OptimizationView })));
 const MonitoringSourcesView = lazy(() => import('./features/governance/MonitoringSourcesView').then((m) => ({ default: m.MonitoringSourcesView })));
 const InvitesView = lazy(() => import('./features/tenants/InvitesView').then((m) => ({ default: m.InvitesView })));
 const AcceptInviteView = lazy(() => import('./features/tenants/AcceptInviteView').then((m) => ({ default: m.AcceptInviteView })));
@@ -314,6 +317,7 @@ const TaxReviewsView     = lazy(() => import('./features/finance/TaxReviewsView'
 const AiResidencySettings = lazy(() => import('./features/settings/AiResidencySettings').then((m) => ({ default: m.AiResidencySettings })));
 const AccountSettings = lazy(() => import('./features/settings/AccountSettings').then((m) => ({ default: m.AccountSettings })));
 const ApiKeysSettings = lazy(() => import('./features/settings/ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings })));
+const BrandingSettings = lazy(() => import('./features/settings/BrandingSettings').then((m) => ({ default: m.BrandingSettings })));
 const ApiSetupWizard = lazy(() => import('./features/api/ApiSetupWizard').then((m) => ({ default: m.ApiSetupWizard })));
 const ApiDocumentation = lazy(() => import('./features/api/ApiDocumentation').then((m) => ({ default: m.ApiDocumentation })));
 const ApiMonitoringDashboard = lazy(() => import('./features/api/ApiMonitoringDashboard').then((m) => ({ default: m.ApiMonitoringDashboard })));
@@ -383,6 +387,7 @@ const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgent
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
 const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
+const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((m) => ({ default: m.DashboardView })));
 // ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
 const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
 const OptimizerScan = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerScan })));
@@ -667,6 +672,9 @@ function RoutesWithTracking() {
       {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
+          Die View-eigenen Guards (AuthGate/RequireAal2) bleiben zusaetzlich aktiv. */}
+      <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
           DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
@@ -763,6 +771,9 @@ function RoutesWithTracking() {
       <Route path="/app/scans/:scanId" element={<GovernanceBrowserShell><GovernanceScanDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />
       <Route path="/app/alerts" element={<GovernanceBrowserShell><GovernanceAlertsView /></GovernanceBrowserShell>} />
+      <Route path="/app/monitoring/dashboard" element={<GovernanceBrowserShell><ComplianceMonitoringDashboard /></GovernanceBrowserShell>} />
+      <Route path="/app/monitoring/rules" element={<GovernanceBrowserShell><RequireAal2 action="Compliance Rules"><ComplianceAlertRulesView /></RequireAal2></GovernanceBrowserShell>} />
+      <Route path="/app/optimize" element={<GovernanceBrowserShell><OptimizationView /></GovernanceBrowserShell>} />
       <Route path="/app/billing" element={<GovernanceBrowserShell><RequireAal2 action="Billing-Verwaltung"><BillingView /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/datasets" element={<GovernanceBrowserShell><AiActDataGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/analytics" element={<GovernanceBrowserShell><Suspense fallback={<div>Loading...</div>}><DashboardAnalyticsView /></Suspense></GovernanceBrowserShell>} />
@@ -868,6 +879,7 @@ function RoutesWithTracking() {
       <Route path="/settings/team" element={<RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2>} />
       <Route path="/settings/account" element={<AccountSettings />} />
       <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
+      <Route path="/settings/branding" element={<RequireAal2 action="White-Label Branding"><BrandingSettings /></RequireAal2>} />
       <Route path="/app/api/setup" element={<GovernanceBrowserShell><ApiSetupWizard /></GovernanceBrowserShell>} />
       <Route path="/app/api/docs" element={<GovernanceBrowserShell><ApiDocumentation /></GovernanceBrowserShell>} />
       <Route path="/app/api/monitoring" element={<GovernanceBrowserShell><ApiMonitoringDashboard /></GovernanceBrowserShell>} />

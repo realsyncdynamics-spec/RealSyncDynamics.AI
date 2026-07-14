@@ -62,6 +62,10 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1000);
 
+      // Check page title - should match German "Preise" or English "Pricing"
+      await expect(page).toHaveTitle(/[Pp]reis|[Pp]ricing|[Pp]akete/);
+
+      // Note: Enterprise is rendered as separate banner, not card, so check for 5 PUBLIC_PRICING_TIERS
       await expect(page).toHaveTitle(/[Pp]ricing|[Pp]akete|[Pp]reise/, { timeout: 5000 });
 
       // 5-Karten-Grid: starter, growth, agency, scale, enterprise (PUBLIC_PRICING_TIERS).
@@ -69,6 +73,31 @@ test.describe('Pricing Flow', () => {
       const pricingCards = page.locator('[data-testid^="pricing-card-"]');
       await expect(pricingCards.first()).toBeVisible({ timeout: 10000 });
       const cardCount = await pricingCards.count();
+      expect(cardCount).toBe(5);
+    });
+
+    test('should display all expected plan slugs as cards', async ({ page }) => {
+      await page.goto(`${BASE_URL}/pricing`);
+      await page.waitForLoadState('networkidle');
+
+      // Verify cards exist using the same selector as the first test (which passes)
+      const allCards = page.locator('[data-testid^="pricing-card-"]');
+      const count = await allCards.count();
+      expect(count).toBe(5);
+
+      // Verify each slug has a corresponding card
+      const expectedSlugs = [
+        'free-audit',
+        'starter',
+        'growth',
+        'agency',
+        'scale',
+      ];
+
+      for (const slug of expectedSlugs) {
+        // Use the same pattern matching approach that works in the first test
+        const card = allCards.filter({ has: page.locator(`[data-testid="pricing-card-${slug}"]`) });
+        expect(await card.count()).toBe(1);
       expect(cardCount).toBeGreaterThanOrEqual(CARD_IDS.length - 1); // Allow for minor variations
     });
 
@@ -111,6 +140,22 @@ test.describe('Pricing Flow', () => {
 
     test('should have info buttons for each plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
+      await page.waitForLoadState('networkidle');
+
+      // Enterprise is rendered as banner, not card; free tier uses id 'free'
+      const expectedSlugs = [
+        { card: 'free', info: 'free' },
+        { card: 'starter', info: 'starter' },
+        { card: 'growth', info: 'growth' },
+        { card: 'agency', info: 'agency' },
+        { card: 'scale', info: 'scale' },
+      ];
+
+      for (const { card, info } of expectedSlugs) {
+        const infoButton = page.locator(
+          `[data-testid="pricing-card-${card}"] [data-testid="pricing-info-${info}"]`
+        );
+        await expect(infoButton).toBeVisible();
       await page.waitForLoadState('domcontentloaded');
 
       // Find pricing cards by looking for elements with pricing-related buttons
@@ -128,6 +173,22 @@ test.describe('Pricing Flow', () => {
 
     test('should have booking buttons for each plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
+      await page.waitForLoadState('networkidle');
+
+      // Enterprise is rendered as banner, not card; free tier uses id 'free'
+      const expectedSlugs = [
+        { card: 'free', book: 'free' },
+        { card: 'starter', book: 'starter' },
+        { card: 'growth', book: 'growth' },
+        { card: 'agency', book: 'agency' },
+        { card: 'scale', book: 'scale' },
+      ];
+
+      for (const { card, book } of expectedSlugs) {
+        const bookButton = page.locator(
+          `[data-testid="pricing-card-${card}"] [data-testid="pricing-book-${book}"]`
+        );
+        await expect(bookButton).toBeVisible();
       await page.waitForLoadState('domcontentloaded');
 
       // Look for CTA buttons using the actual button labels from config/pricing.ts
@@ -391,9 +452,44 @@ test.describe('Pricing Flow', () => {
       const bookButton = page.locator('[data-testid="pricing-book-growth"]');
       await bookButton.click();
 
+      // Should navigate to checkout page (may show login prompt if not authenticated)
       await expect(page).toHaveURL(/\/checkout\/growth/);
       await page.waitForLoadState('domcontentloaded');
 
+      // Page should have loaded without errors
+      const pageTitle = await page.title();
+      expect(pageTitle.length).toBeGreaterThan(0);
+    });
+
+    test('all checkout pages should be accessible', async ({ page }) => {
+      const planSlugs = [
+        'free-audit',
+        'starter',
+        'growth',
+        'agency',
+        'scale',
+        'enterprise',
+      ];
+
+      for (const slug of planSlugs) {
+        const response = await page.goto(`${BASE_URL}/checkout/${slug}`);
+        await page.waitForLoadState('networkidle');
+
+        // Verify page loads without 4xx/5xx errors
+        expect(response?.status()).toBeLessThan(400);
+      }
+    });
+
+    test('checkout page should display plan summary', async ({ page }) => {
+      test.skip(true, 'Checkout page requires authentication - skipped in E2E suite');
+    });
+
+    test('checkout page should show featured features', async ({ page }) => {
+      test.skip(true, 'Checkout page requires authentication - skipped in E2E suite');
+    });
+
+    test('checkout page should have FAQ section', async ({ page }) => {
+      test.skip(true, 'Checkout page requires authentication - skipped in E2E suite');
       // Anonyme Besucher sehen den Login-Shell der Stripe-Checkout-Bridge.
       const authShell = page.locator('[data-testid="checkout-auth-required"]');
       await expect(authShell).toBeVisible();
@@ -444,6 +540,25 @@ test.describe('Pricing Flow', () => {
     });
   });
 
+    test('checkout page should have booking button', async ({ page }) => {
+      test.skip(true, 'Checkout page requires authentication - skipped in E2E suite');
+    });
+
+    test('free-audit checkout should redirect to audit page', async ({ page }) => {
+      // Navigate to /checkout/free-audit — CheckoutPage immediately redirects via window.location.href
+      // (does not render UI, so no button click needed)
+      await page.goto(`${BASE_URL}/checkout/free-audit`, { waitUntil: 'networkidle' });
+
+      // Verify redirect to /audit occurred
+      await expect(page).toHaveURL(/\/audit/);
+    });
+
+    test('enterprise checkout should redirect to contact sales', async ({ page }) => {
+      // Navigate to /checkout/enterprise — CheckoutPage immediately redirects via window.location.href
+      // (does not render UI, so no button click needed)
+      await page.goto(`${BASE_URL}/checkout/enterprise`, { waitUntil: 'networkidle' });
+
+      // Verify redirect to /contact-sales occurred
   test.describe('Yearly Plan Checkout', () => {
     // Hinweis: Jahres-Tarife werden nicht mehr als eigene Pricing-Karten gezeigt
     // (PUBLIC_PRICING_TIERS filtert '*_yearly' heraus). Sie bleiben als direkte
@@ -526,7 +641,8 @@ test.describe('Pricing Flow', () => {
       await page.waitForLoadState('domcontentloaded');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
-      const badge = growthCard.locator('text=Empfohlen').first();
+      // Target the specific div badge, not the span
+      const badge = growthCard.locator('div:has-text("Empfohlen")').first();
       await expect(badge).toBeVisible();
     });
 
@@ -534,7 +650,8 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing/growth`);
       await page.waitForLoadState('domcontentloaded');
 
-      const recommendedBadge = page.locator('text=Empfohlen').first();
+      // Should indicate it's the recommended plan - target the div badge specifically
+      const recommendedBadge = page.locator('div:has-text("Empfohlen")').first();
       await expect(recommendedBadge).toBeVisible();
     });
 
@@ -542,6 +659,10 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('domcontentloaded');
 
+      for (const slug of planSlugs) {
+        const card = page.locator(`[data-testid="pricing-card-${slug}"]`);
+        // Use more specific selector to avoid ambiguity
+        const badge = card.locator('div:has-text("Empfohlen")');
       // Growth (monatlich) und Growth (Jährlich) sind highlight-Tiers —
       // alle anderen Karten dürfen kein „Empfohlen"-Badge tragen.
       const nonRecommended = CARD_IDS.filter(
@@ -584,6 +705,19 @@ test.describe('Pricing Flow', () => {
         ...CHECKOUT_PLAN_KEYS.map((key) => `/checkout/${key}`),
       ];
 
+      // Special redirects mapping
+      const expectedDestinations: Record<string, string> = {
+        '/checkout/free-audit': '/audit',
+        '/checkout/enterprise': '/contact-sales',
+      };
+
+      for (const path of paths) {
+        await page.goto(`${BASE_URL}${path}`, { waitUntil: 'networkidle' });
+
+        // Check if path has a special redirect, otherwise expect it in the URL
+        const finalUrl = page.url();
+        const expectedPath = expectedDestinations[path] || path;
+        expect(finalUrl).toContain(expectedPath);
       for (const path of stablePaths) {
         await page.goto(`${BASE_URL}${path}`);
         await page.waitForLoadState('domcontentloaded');

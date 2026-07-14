@@ -20,7 +20,7 @@ for (const route of publicRoutes) {
     page.on('pageerror', (err) => errors.push(err.message));
 
     const response = await page.goto(BASE_URL + route.path, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle',
       timeout: 30000,
     });
 

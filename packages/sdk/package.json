@@ -1,0 +1,62 @@
+{
+  "name": "@realsyncdynamics/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript SDK for RealSyncDynamics compliance platform API",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run build:cjs && npm run build:esm && npm run build:types",
+    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build:esm": "tsc --project tsconfig.esm.json",
+    "build:types": "tsc --declaration --emitDeclarationOnly --outDir dist",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "prepublishOnly": "npm run build && npm run test && npm run lint"
+  },
+  "keywords": [
+    "compliance",
+    "gdpr",
+    "data-protection",
+    "risk-management",
+    "c2pa",
+    "provenance",
+    "audit",
+    "realsyncdynamics"
+  ],
+  "author": "RealSyncDynamics",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/realsyncdynamics/sdk-ts"
+  },
+  "homepage": "https://docs.realsyncdynamics.ai",
+  "bugs": {
+    "url": "https://github.com/realsyncdynamics/sdk-ts/issues"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "eslint": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}

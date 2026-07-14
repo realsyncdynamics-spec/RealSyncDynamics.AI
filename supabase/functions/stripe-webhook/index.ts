@@ -151,7 +151,7 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
   }
 
   const item = sub.items.data[0];
-  const planKey = item?.price?.metadata?.plan_key ?? 'free';
+  const planKey = await resolvePlanKey(admin, item);
 
   const row = {
     tenant_id: tenantId,
@@ -179,6 +179,32 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
     .from('subscriptions')
     .upsert(row, { onConflict: 'stripe_subscription_id' });
   if (error) throw error;
+}
+
+// Plan-Key-Auflösung mit additivem Fallback.
+//
+// Bevorzugt `price.metadata.plan_key` (im Stripe-Dashboard am Preis gesetzt).
+// Fehlt es — ein häufiger Konfigurationsfehler — wird der Plan aus
+// public.products via `stripe_price_id` aufgelöst, statt stillschweigend auf
+// 'free' zu fallen. Sonst bekäme ein zahlender Kunde keine Entitlements,
+// obwohl der Preis korrekt in der DB verdrahtet ist. Erst wenn auch das
+// nichts findet, greift 'free'.
+// deno-lint-ignore no-explicit-any
+async function resolvePlanKey(admin: any, item: Stripe.SubscriptionItem | undefined): Promise<string> {
+  const fromMeta = item?.price?.metadata?.plan_key;
+  if (fromMeta) return fromMeta;
+
+  const priceId = item?.price?.id;
+  if (priceId) {
+    const { data } = await admin
+      .from('products')
+      .select('default_for_plan_key')
+      .eq('stripe_price_id', priceId)
+      .maybeSingle();
+    if (data?.default_for_plan_key) return data.default_for_plan_key;
+  }
+
+  return 'free';
 }
 
 // deno-lint-ignore no-explicit-any

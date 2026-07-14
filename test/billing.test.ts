@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { COMPANY, getCompanyDisplayName, getCompanyAddress, isBetaReady, isProductionReady } from '../src/config/company';
-import { PRICING_TIERS, tierById, PUBLIC_PRICING_TIERS, ENTERPRISE_TIER } from '../src/config/pricing';
+import { PRICING_TIERS, tierById, PUBLIC_PRICING_TIERS } from '../src/config/pricing';
 import { formatPrice, getPlanById, isPlanFixedPrice, getStripeProductMetadata, isStripeConfigured } from '../src/lib/stripe';
 import { generateImpressumText, areLegalDocsComplete, getComplianceBanner } from '../src/lib/compliance-notices';
 
@@ -53,22 +53,22 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
-describe('Pricing Tiers (5-Tier Model + Yearly Variants)', () => {
-  it('should have 10 tiers (6 base + 4 yearly variants)', () => {
-    expect(PRICING_TIERS).toHaveLength(10);
+describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
+  it('should have 11 tiers (6 base + 5 yearly variants)', () => {
+    expect(PRICING_TIERS).toHaveLength(11);
   });
 
-  it('should have 9 public tiers (5 base + 4 yearly, excluding enterprise)', () => {
-    expect(PUBLIC_PRICING_TIERS).toHaveLength(9);
-    const baseIds = ['free', 'starter', 'growth', 'agency', 'scale'];
-    const yearlyIds = ['starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly'];
-    const allPublicIds = [...baseIds, ...yearlyIds];
-    expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(allPublicIds);
+  it('should have 5 public tiers (starter, growth, agency, scale, enterprise)', () => {
+    expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
+    const baseIds = ['starter', 'growth', 'agency', 'scale', 'enterprise'];
+    expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 
-  it('should have enterprise tier as separate constant', () => {
-    expect(ENTERPRISE_TIER.id).toBe('enterprise');
-    expect(ENTERPRISE_TIER.priceEur).toBe(0);
+  it('should have enterprise tier as paid tier at 1249€', () => {
+    const enterprise = tierById('enterprise');
+    expect(enterprise?.id).toBe('enterprise');
+    expect(enterprise?.priceEur).toBe(1249);
+    expect(enterprise?.name).toBe('Enterprise');
   });
 
   it('free_audit should have no account required', () => {
@@ -103,10 +103,10 @@ describe('Pricing Tiers (5-Tier Model + Yearly Variants)', () => {
     expect(scale.botsQuota.maxAnswersPerMonth).toBe(100000);
   });
 
-  it('enterprise should have unlimited bots', () => {
+  it('enterprise should have 20 bots with 50k answers/month', () => {
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.botsQuota.maxBots).toBe(-1);
-    expect(enterprise.botsQuota.maxAnswersPerMonth).toBe(-1);
+    expect(enterprise.botsQuota.maxBots).toBe(20);
+    expect(enterprise.botsQuota.maxAnswersPerMonth).toBe(50000);
   });
 
   it('all tiers should have bullets describing features', () => {
@@ -148,7 +148,7 @@ describe('Stripe Integration', () => {
   it('should identify fixed-price plans', () => {
     expect(isPlanFixedPrice('free')).toBe(false); // €0
     expect(isPlanFixedPrice('starter')).toBe(true); // €79
-    expect(isPlanFixedPrice('enterprise')).toBe(false); // €0 (custom)
+    expect(isPlanFixedPrice('enterprise')).toBe(true); // €1.249 (self-service)
   });
 
   it('should generate Stripe product metadata', () => {
@@ -233,12 +233,12 @@ describe('Billing Workflows', () => {
     const scale = tierById('scale')!;
     const scaleDesc = scale.bullets.join(' ').toLowerCase();
     expect(scaleDesc).toContain('mandant');
-    expect(scaleDesc).toContain('kanzlei');
+    expect(scaleDesc).toContain('multi-tenant');
   });
 
-  it('enterprise should have contact sales CTA', () => {
+  it('enterprise should have checkout CTA', () => {
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/contact-sales');
+    expect(enterprise.cta.href).toContain('/checkout/enterprise');
   });
 });
 

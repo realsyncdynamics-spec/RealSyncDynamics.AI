@@ -4,6 +4,7 @@ import { ArrowLeft, ScrollText, AlertTriangle, Loader2, User } from 'lucide-reac
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface AdminLogRow {
   id: string;
@@ -23,9 +24,15 @@ interface AdminLogRow {
  * are written by the governance-* Edge Functions on every
  * owner/admin write.
  */
-export function AdminLogView() {
+function _AdminLogView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AdminLogView = withPerformanceMonitoring(
+  _AdminLogView,
+  'AdminLogView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

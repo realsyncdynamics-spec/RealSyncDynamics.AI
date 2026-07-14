@@ -10,6 +10,7 @@ import {
   SEVERITY_LABEL, SEVERITY_ORDER,
   type InventoryItem, type Severity,
 } from './aiActRiskInventoryApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 const SEVERITY_CLS: Record<Severity, string> = {
   prohibited: 'bg-red-500/15 text-red-200 border-red-500/40',
@@ -18,9 +19,15 @@ const SEVERITY_CLS: Record<Severity, string> = {
   minimal:    'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
 };
 
-export function AiActRiskInventoryView() {
+function _AiActRiskInventoryView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AiActRiskInventoryView = withPerformanceMonitoring(
+  _AiActRiskInventoryView,
+  'AiActRiskInventoryView',
+  { threshold: 1000, maxRenders: 5 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

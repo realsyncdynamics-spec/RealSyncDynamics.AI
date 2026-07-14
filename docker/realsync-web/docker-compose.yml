@@ -1,0 +1,94 @@
+# docker-compose.yml — RealSyncDynamics.AI Frontend hinter Traefik
+#
+# Architektur:
+#
+#   [internet] ─TLS─→ Host-Traefik (Let's Encrypt)
+#                     ↓
+#                     realsyncdynamicsai.de
+#                     (Traefik-Labels → Routing)
+#                     ↓
+#               realsync-frontend:80 (nginx)
+#
+# Routing ist vollständig über Traefik-Labels deklariert — kein Caddy oder
+# localhost-Binding nötig. Traefik sitzt auf dem Host, dieser Container sitzt
+# in einem separaten Docker-Netz (internal) + shared Traefik-Netz (traefik_proxy).
+#
+# Voraussetzungen auf dem VPS:
+#   - Docker + docker-compose v2
+#   - Bestehender Host-Traefik mit Docker-Provider + Let's-Encrypt-Resolver
+#   - Externes Docker-Netz (TRAEFIK_NETWORK in .env)
+#   - DNS A-Record realsyncdynamicsai.de → VPS-IP
+
+version: '3.8'
+
+services:
+  frontend:
+    # ─ Image & Container ────────────────────────────────────────────────────
+    # Lokal gebaut oder von Private Registry gepullt. Build selbst im Compose:
+    build:
+      context: ../..  # Repo-Root (wo package.json liegt)
+      dockerfile: docker/realsync-web/Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
+        VITE_GOOGLE_GENAI_API_KEY: ${VITE_GOOGLE_GENAI_API_KEY}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY}
+
+    container_name: realsync-frontend
+    restart: unless-stopped
+
+    # ─ Networking ───────────────────────────────────────────────────────────
+    # Nur auf internem Netz + Traefik-Proxy (kein localhost-Binding).
+    networks:
+      - internal
+      - traefik_proxy
+
+    # ─ Healthcheck ──────────────────────────────────────────────────────────
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+    # ─ Traefik-Labels ───────────────────────────────────────────────────────
+    # Traefik nutzt diese zur automatischen Route-Konfiguration.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${TRAEFIK_NETWORK}"
+
+      # ── Router: realsyncdynamicsai.de (HTTP + HTTPS) ─────────────────────
+      # Host-basiertes Routing — alle Requests zu realsyncdynamicsai.de
+      # landen auf diesem Service.
+      - "traefik.http.routers.realsync-frontend.rule=Host(`realsyncdynamicsai.de`) || Host(`www.realsyncdynamicsai.de`)"
+
+      # Nur auf websecure entrypoint (HTTPS):
+      - "traefik.http.routers.realsync-frontend.entrypoints=websecure"
+      - "traefik.http.routers.realsync-frontend.tls=true"
+      - "traefik.http.routers.realsync-frontend.tls.certresolver=${TRAEFIK_CERT_RESOLVER}"
+
+      # Service-Definition (welcher Container, welcher Port):
+      - "traefik.http.routers.realsync-frontend.service=realsync-frontend"
+      - "traefik.http.services.realsync-frontend.loadbalancer.server.port=80"
+
+      # ── Middleware: HTTP → HTTPS Redirect ────────────────────────────────
+      # Optionales Redirect für HTTP; in Traefik Static Config bereits gesetzt,
+      # aber falls nötig, kann auch hier ergänzt werden.
+      # (In diesem Setup wird meist Host-Level HTTP→HTTPS gemacht)
+
+      # ── Security Headers ────────────────────────────────────────────────
+      # Diese werden auch von nginx gesetzt, aber Traefik kann zusätzliche
+      # Headers injizieren. Hier minimal (nginx übernimmt die meisten).
+
+networks:
+  # ── Internes Netz ──────────────────────────────────────────────────────
+  # Nur dieser Container, keine externen Connections (außer via Traefik).
+  internal:
+    driver: bridge
+
+  # ── Traefik Proxy Netz ──────────────────────────────────────────────────
+  # Extern verwaltet vom Host-Traefik; muss auf dem VPS existieren.
+  traefik_proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK}

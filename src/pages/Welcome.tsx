@@ -254,12 +254,37 @@ export function Welcome() {
 
   const isCookieSdk = product.includes('Cookie-SDK');
 
-  // Final "Setup abschließen" CTA — mark wizard complete, then navigate to
-  // the product-specific landing.
-  // Wenn ein ?next=<safe-path> URL-Parameter gesetzt ist (z.B. von der
-  // CheckoutPage bei Buy-Button-Klick ohne Auth), hat dieser Vorrang vor
-  // dem product-spezifischen Default. Damit landet der User direkt im
-  // Checkout-Flow weiter, statt im Cookie-SDK / Audit-Pro Default.
+  // Check if user is free tier and not yet onboarded → redirect to setup-assistant
+  useEffect(() => {
+    if (!isSupabaseConfigured() || step < 2 || !tenantId) return;
+    const sb = getSupabase();
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const { data: tenant } = await sb
+          .from('tenants')
+          .select('onboarded_at')
+          .eq('id', tenantId)
+          .single();
+        if (cancelled) return;
+
+        // If tenant exists and hasn't been onboarded, redirect to setup-assistant
+        if (tenant && !tenant.onboarded_at) {
+          navigate('/setup-assistant', { replace: true });
+        }
+      } catch {
+        // Silently continue if tenant lookup fails
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, tenantId, navigate]);
+
+  // Final "Setup abschließen" CTA — mark wizard complete, then navigate to dashboard.
+  // Post-Checkout-Flow: ALLE Benutzer gehen zu /app/dashboard (Workspace-Home),
+  // um das Governance-OS zu sehen. Keine Umleitung zu Produktseiten; diese sind
+  // über die Dashboard-Navigation erreichbar.
+  // ?next=<safe-path> hat Vorrang (z.B. für interruptive Checkouts).
   // Sicherheits-Whitelist: nur Pfade die mit / starten und KEIN //
   // (Open-Redirect-Schutz) werden akzeptiert.
   const finalizeAndNavigate = async () => {
@@ -268,12 +293,9 @@ export function Welcome() {
       nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
         ? nextParam
         : null;
-    const target = safeNext ?? (
-      // Ohne ?session (= kein Post-Checkout-Onboarding) ist dies ein
-      // generischer Login → kanonisches Workspace-Home /app. Mit ?session
-      // bleibt der produktspezifische Onboarding-Landeplatz erhalten.
-      !sessionId ? '/app' : (isCookieSdk ? '/cookie-consent-sdk' : '/audit-pro')
-    );
+    // Post-Checkout oder generischer Login: BEIDE gehen zu /app/dashboard.
+    // Das ist das zentrale Workspace-Home, von dem aus alle Features erreichbar sind.
+    const target = safeNext ?? '/app/dashboard';
     if (isSupabaseConfigured()) {
       try {
         const sb = getSupabase();

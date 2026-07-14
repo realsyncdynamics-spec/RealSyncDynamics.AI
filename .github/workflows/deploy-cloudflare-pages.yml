@@ -97,6 +97,11 @@ jobs:
           VITE_STRIPE_PRICE_STARTER: ${{ secrets.VITE_STRIPE_PRICE_STARTER }}
           VITE_STRIPE_PRICE_GROWTH: ${{ secrets.VITE_STRIPE_PRICE_GROWTH }}
           VITE_STRIPE_PRICE_AGENCY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY }}
+          VITE_STRIPE_PRICE_SCALE: ${{ secrets.VITE_STRIPE_PRICE_SCALE }}
+          VITE_STRIPE_PRICE_STARTER_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_STARTER_YEARLY }}
+          VITE_STRIPE_PRICE_GROWTH_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_GROWTH_YEARLY }}
+          VITE_STRIPE_PRICE_AGENCY_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY_YEARLY }}
+          VITE_STRIPE_PRICE_SCALE_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_SCALE_YEARLY }}
         run: npm run build
 
       - name: Generate legal pages markers
@@ -133,7 +138,8 @@ jobs:
               '/settings', '/settings/team', '/settings/security',
               '/settings/account', '/settings/ai-residency', '/settings/api-keys',
               '/billing/usage', '/tenant/invites',
-              '/checkout/starter', '/checkout/growth', '/checkout/agency',
+              '/checkout/starter', '/checkout/growth', '/checkout/agency', '/checkout/enterprise', '/checkout/scale',
+              '/checkout/starter_yearly', '/checkout/growth_yearly', '/checkout/agency_yearly', '/checkout/enterprise_yearly', '/checkout/scale_yearly',
           ]
           paths = sorted(paths | set(APP_ROUTES))
           src = 'dist/index.html'

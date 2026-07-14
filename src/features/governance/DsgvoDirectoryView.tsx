@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface DataProcessing {
   id: string;
@@ -19,9 +20,15 @@ interface DataProcessing {
   created_at: string;
 }
 
-export function DsgvoDirectoryView() {
+function _DsgvoDirectoryView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const DsgvoDirectoryView = withPerformanceMonitoring(
+  _DsgvoDirectoryView,
+  'DsgvoDirectoryView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

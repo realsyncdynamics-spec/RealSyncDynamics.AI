@@ -4,6 +4,7 @@ import {
   ArrowLeft, FileDown, Loader2, AlertTriangle, ShieldCheck, Hash,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
+import { SubscriptionLimitGuard } from '../../core/billing/SubscriptionLimitGuard';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import {
   fetchTenantEvents, fetchTenantAssets, fetchTenantPolicies,
@@ -12,6 +13,7 @@ import {
   type DbGovernanceEvidence, type DbFrameworkControl, type DbAssetControlMapping,
 } from './governanceApi';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/reports — point-in-time tenant snapshot.
@@ -26,9 +28,15 @@ import { getSupabase } from '../../lib/supabase';
  * sealed timestamping (signed receipt stored server-side), see
  * the deferred backlog in the PR description.
  */
-export function ComplianceReportView() {
+function _ComplianceReportView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ComplianceReportView = withPerformanceMonitoring(
+  _ComplianceReportView,
+  'ComplianceReportView',
+  { threshold: 2000, maxRenders: 8 }
+);
 
 interface ReportShape {
   report_id: string;
@@ -189,14 +197,27 @@ function Inner() {
               <span>{error}</span>
             </div>
           )}
-          <button
-            onClick={generate}
-            disabled={busy || !activeTenantId}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
+          <SubscriptionLimitGuard
+            feature="reports.export"
+            featureName="Compliance Reports"
           >
-            {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Erzeuge Snapshot…</>
-                  : <><FileDown className="h-4 w-4" /> Report jetzt erzeugen + herunterladen</>}
-          </button>
+            {(allowed, onAttempt) => (
+              <button
+                onClick={() => {
+                  if (allowed) {
+                    generate();
+                  } else {
+                    onAttempt();
+                  }
+                }}
+                disabled={busy || !activeTenantId || !allowed}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-obsidian-950 text-sm font-bold rounded-none hover:bg-amber-400 disabled:opacity-50"
+              >
+                {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Erzeuge Snapshot…</>
+                      : <><FileDown className="h-4 w-4" /> Report jetzt erzeugen + herunterladen</>}
+              </button>
+            )}
+          </SubscriptionLimitGuard>
         </section>
 
         {lastReport && (

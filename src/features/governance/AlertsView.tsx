@@ -7,6 +7,7 @@ import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { WorkspaceShell } from '../workspace/WorkspaceShell';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 type AlertSeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
 type AlertStatus   = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
@@ -76,7 +77,7 @@ function formatRelative(iso: string): string {
   return `vor ${days} Tag${days === 1 ? '' : 'en'}`;
 }
 
-export function AlertsView() {
+function _AlertsView() {
   return (
     <AuthGate>
       {() => (
@@ -87,6 +88,12 @@ export function AlertsView() {
     </AuthGate>
   );
 }
+
+export const AlertsView = withPerformanceMonitoring(
+  _AlertsView,
+  'AlertsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

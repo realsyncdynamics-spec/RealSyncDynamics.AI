@@ -23,11 +23,12 @@ const PLAN_LABEL: Record<AutomationSkill['planRequired'], string> = {
   starter: 'Starter',
   growth: 'Growth',
   agency: 'Agency',
-  scale: 'Scale',
   enterprise: 'Enterprise',
+  scale: 'Scale',
   starter_yearly: 'Starter (Jährlich)',
   growth_yearly: 'Growth (Jährlich)',
   agency_yearly: 'Agency (Jährlich)',
+  enterprise_yearly: 'Enterprise (Jährlich)',
   scale_yearly: 'Scale (Jährlich)',
 };
 

@@ -10,6 +10,7 @@ import {
   type DbDpia,
 } from './dpiasApi';
 import type { DpiaStatus } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 const STATUS_LABEL: Record<DpiaStatus, string> = {
   draft: 'Entwurf', in_review: 'In Prüfung', approved: 'Genehmigt', rejected: 'Abgelehnt',
@@ -21,7 +22,13 @@ const STATUS_CLS: Record<DpiaStatus, string> = {
   rejected:   'bg-rose-500/15 text-rose-200 border-rose-500/40',
 };
 
-export function DpiasView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+function _DpiasView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+
+export const DpiasView = withPerformanceMonitoring(
+  _DpiasView,
+  'DpiasView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

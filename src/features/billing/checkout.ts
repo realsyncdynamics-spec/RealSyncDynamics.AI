@@ -5,8 +5,11 @@ import { getSupabase } from '../../lib/supabase';
  *   - PRICING_TIERS[i].planKey aus src/config/pricing.ts
  *   - public.products.default_for_plan_key in der DB
  * uebereinstimmen. 5-Tier seit PR #145.
+ *
+ * Hinweis: 'free_audit' ist das externe Identifier (Marketing, CTAs),
+ * aber dieser Checkout verneint es — Free braucht keinen Checkout.
  */
-export type PlanKey = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly';
+export type PlanKey = 'free_audit' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly' | 'enterprise_yearly';
 
 export interface CheckoutResult {
   ok: boolean;
@@ -28,8 +31,8 @@ export async function createCheckoutSession(
   planKey: PlanKey,
   pilot?: boolean,
 ): Promise<CheckoutResult> {
-  if (planKey === 'free') {
-    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free plan needs no checkout' } };
+  if (planKey === 'free_audit') {
+    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free Audit braucht keinen Checkout' } };
   }
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
   const sb = getSupabase();

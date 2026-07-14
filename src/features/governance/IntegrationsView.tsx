@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface WebhookEndpoint {
   id: string;
@@ -34,9 +35,15 @@ interface WebhookDelivery {
   nextRetryAt?: string;
 }
 
-export function IntegrationsView() {
+function _IntegrationsView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const IntegrationsView = withPerformanceMonitoring(
+  _IntegrationsView,
+  'IntegrationsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

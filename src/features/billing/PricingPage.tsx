@@ -345,10 +345,8 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
       <div className="flex flex-col gap-3">
         {/* Primary CTA: Book / Start */}
         {tier.cta.href.startsWith('http') ? (
-          <a
-            href={tier.cta.href}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => window.open(tier.cta.href, '_blank')}
             className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
               tier.highlight
                 ? 'surface-mono'
@@ -357,10 +355,10 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
             data-testid={`pricing-book-${tier.id}`}
           >
             {tier.cta.label} <ArrowRight className="h-4 w-4" />
-          </a>
+          </button>
         ) : (
-          <Link
-            to={tier.cta.href}
+          <button
+            onClick={() => window.location.href = tier.cta.href}
             className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
               tier.highlight
                 ? 'surface-mono'
@@ -369,17 +367,17 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
             data-testid={`pricing-book-${tier.id}`}
           >
             {tier.cta.label} <ArrowRight className="h-4 w-4" />
-          </Link>
+          </button>
         )}
 
         {/* Secondary: More Info button (links to plan detail page) */}
-        <Link
-          to={`/pricing/${tier.id}`}
+        <button
+          onClick={() => window.location.href = `/pricing/${tier.id}`}
           className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold rounded-none border border-titanium-200/30 text-titanium-300 hover:text-titanium-50 hover:border-titanium-200/60 transition-colors"
           data-testid={`pricing-info-${tier.id}`}
         >
           Mehr erfahren
-        </Link>
+        </button>
       </div>
     </div>
   );

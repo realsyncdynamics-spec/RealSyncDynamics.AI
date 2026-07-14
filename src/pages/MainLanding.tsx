@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { useHealthStatus } from '../hooks/useHealthStatus';
@@ -21,6 +22,8 @@ import {
   Cloud,
   Globe2,
   LineChart,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 /**
@@ -111,12 +114,35 @@ const PRICING = [
   { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
 ];
 
+type Theme = 'dark' | 'light';
+const THEME_STORAGE_KEY = 'rsd-main-landing-theme';
+
+function getInitialTheme(): Theme {
+  if (typeof window === 'undefined') return 'dark';
+  return window.localStorage.getItem(THEME_STORAGE_KEY) === 'light' ? 'light' : 'dark';
+}
+
 export function MainLanding() {
+  // Design-Lock bleibt dunkel als Standard (siehe Kommentar oben) — dies
+  // ergänzt lediglich einen manuellen Umschalter auf ein helles Pendant,
+  // ausdrücklich genehmigt. Keine Struktur-/Copy-Änderung.
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+  useEffect(() => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const isLight = theme === 'light';
+
   return (
-    <div className="min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
+    <div
+      className={`min-h-screen text-white antialiased${isLight ? ' main-landing-light' : ''}`}
+      style={{ backgroundColor: isLight ? '#ffffff' : BG, fontFamily: FONT_STACK }}
+    >
       <SEOHead />
-      <Header />
-      <Hero />
+      <Header theme={theme} onToggleTheme={toggleTheme} />
+      <Hero theme={theme} />
       <TrustStrip />
       <Platform />
       <Runtime />
@@ -132,7 +158,7 @@ export function MainLanding() {
 }
 
 /* ── HEADER ─────────────────────────────────────────────── */
-function Header() {
+function Header({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   return (
     <header className="absolute top-0 left-0 right-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 h-16 sm:h-20 flex items-center justify-between">
@@ -148,6 +174,20 @@ function Header() {
           ))}
           <SmartLink to="/flow/login" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={theme === 'dark' ? 'Zu hellem Design wechseln' : 'Zu dunklem Design wechseln'}
+            title={theme === 'dark' ? 'Helles Design' : 'Dunkles Design'}
+            className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg text-white/70 hover:text-white"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" strokeWidth={1.75} /> : <Moon className="w-4 h-4" strokeWidth={1.75} />}
+          </button>
+          <SmartLink to="/flow/start-scan?source=nav-startfree" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
+            Kostenlos starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </SmartLink>
+        </div>
         <SmartLink to="/app" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
           Plattform öffnen<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </SmartLink>
@@ -157,21 +197,28 @@ function Header() {
 }
 
 /* ── HERO ───────────────────────────────────────────────── */
-function Hero() {
+function Hero({ theme }: { theme: Theme }) {
   const { label: monitoringLabel, pulse } = useHealthStatus();
+  const isLight = theme === 'light';
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" className="w-full h-full object-cover object-right" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[rgb(3,7,18)] via-[rgb(3,7,18)]/85 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-[rgb(3,7,18)]/40" />
+        {isLight ? (
+          <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-cyan-50" />
+        ) : (
+          <>
+            <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" className="w-full h-full object-cover object-right" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[rgb(3,7,18)] via-[rgb(3,7,18)]/85 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-[rgb(3,7,18)]/40" />
+          </>
+        )}
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <SmartLink to="/claude-code-optimizer?source=home-hero-pill" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
+            <SmartLink to="/claude-code-optimizer?source=home-hero-badge" className="inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 hover:border-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors rounded-full">
               <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
               <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
                 CLAUDE CODE OPTIMIZER<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -204,8 +251,11 @@ function Hero() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-                Plattform öffnen<ArrowRight className="w-4 h-4" />
+              <SmartLink to="/claude-code-optimizer?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+                Claude Code Optimizer starten<ArrowRight className="w-4 h-4" />
+              </SmartLink>
+              <SmartLink to="/audit?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+                Kostenlos starten<ArrowRight className="w-4 h-4" />
               </SmartLink>
               <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
                 <PlayCircle className="w-4 h-4" />Kostenlos starten

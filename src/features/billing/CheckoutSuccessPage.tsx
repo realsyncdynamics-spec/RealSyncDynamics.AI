@@ -1,3 +1,10 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Check, Cpu } from 'lucide-react';
+import { Navbar } from '../../components/Navbar';
+import { usePageMeta } from '../../lib/usePageMeta';
+import { getPostCheckoutReturn, clearPostCheckoutReturn } from '../../lib/optimizer/state';
+
 /**
  * Checkout Success Page — shown after successful payment
  *
@@ -51,6 +58,9 @@ export function CheckoutSuccessPage() {
         setRedirectCountdown((prev) => prev - 1);
       }, 1000);
 
+  const planLabel = useMemo(() => labelForPlanKey(planKey), [planKey]);
+  // Kommt der Nutzer aus dem Optimizer-Flow, bieten wir die Rückführung an.
+  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
       return () => {
         clearTimeout(timer);
         clearInterval(countdown);
@@ -131,8 +141,48 @@ export function CheckoutSuccessPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-titanium-50 text-center mb-2">Willkommen!</h1>
-        <p className="text-titanium-300 text-center mb-6">Dein Abo wurde erfolgreich aktiviert.</p>
+          <p className="mt-4 text-sm leading-relaxed text-titanium-300">
+            Der Zahlungsstatus wurde von Stripe entgegengenommen. Die Freischaltung
+            kann wenige Sekunden dauern — sobald der Webhook das Abonnement
+            verarbeitet hat, ist dein Plan im Dashboard sichtbar.
+          </p>
+
+          {planLabel ? (
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-titanium-500">
+              Plan: {planLabel}
+            </p>
+          ) : null}
+          {sessionId ? (
+            <p className="mt-1 break-all font-mono text-[11px] text-titanium-500">
+              Session: {sessionId}
+            </p>
+          ) : null}
+
+          <OnboardingSteps planKey={planKey} />
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            {optimizerReturn && (
+              <Link
+                to={optimizerReturn}
+                onClick={() => clearPostCheckoutReturn()}
+                className="inline-flex items-center gap-2 border border-ai-cyan-500/50 bg-ai-cyan-900/20 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-ai-cyan-200 hover:bg-ai-cyan-900/40"
+              >
+                <Cpu className="h-3.5 w-3.5" /> Weiter zum Optimizer <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
+            <Link
+              to="/app"
+              className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-950 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-titanium-200 hover:border-titanium-500 hover:text-titanium-50"
+            >
+              Dashboard öffnen <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              to="/pricing"
+              className="inline-flex items-center gap-2 border border-titanium-700 bg-obsidian-950 px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-titanium-200 hover:border-titanium-500 hover:text-titanium-50"
+            >
+              Zurück zur Übersicht
+            </Link>
+          </div>
 
         <div className="bg-obsidian-900 rounded border border-obsidian-700 p-6 mb-6">
           <p className="text-xs text-titanium-400 uppercase tracking-wider mb-1">Aktiver Plan</p>

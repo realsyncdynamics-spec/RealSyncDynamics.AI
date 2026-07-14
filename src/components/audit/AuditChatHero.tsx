@@ -145,13 +145,18 @@ export function AuditChatHero({ onScanComplete }: { onScanComplete: (report: Rep
          * real report. Failures here MUST NOT block the scan. */
       });
 
+      // `gdpr-audit` ist eine öffentliche Edge-Function (verify_jwt=false) für
+      // den anonymen Free-Audit-Flow. Ohne `requireAuth: false` würde
+      // postEdgeFunction einen JWT aus localStorage erzwingen und für nicht
+      // eingeloggte Besucher mit „Nicht authentifiziert" abbrechen, bevor der
+      // Request überhaupt rausgeht.
       const report = await postEdgeFunction<Report>('gdpr-audit', {
         url,
         email: trimmed,
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
-      });
+      }, { requireAuth: false });
 
       setBubbles((prev) => [
         ...prev.filter((b) => b.id !== 'scanning'),

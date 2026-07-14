@@ -19,13 +19,13 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Vault-first, env-fallback — see stripe-checkout/index.ts for rationale.
+// Vault wins so an operator can override a stale/placeholder env var via
+// set_app_secret() without a function redeploy.
 async function getSecret(envVar: string, vaultName: string): Promise<string | null> {
-  const fromEnv = Deno.env.get(envVar);
-  if (fromEnv) return fromEnv;
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
   const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
-  if (error) return null;
-  return typeof data === 'string' && data.length > 0 ? data : null;
+  if (!error && typeof data === 'string' && data.length > 0) return data;
+  return Deno.env.get(envVar) ?? null;
 }
 
 Deno.serve(async (req) => {

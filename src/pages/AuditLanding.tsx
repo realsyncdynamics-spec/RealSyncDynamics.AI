@@ -89,6 +89,8 @@ export function AuditLanding() {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
       const source = params.get('source')?.trim().slice(0, 200) || undefined;
+      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
+      // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
       const data = await postEdgeFunction<Report>('gdpr-audit', {
         url: normalizedUrl,
         email: email.trim(),
@@ -96,7 +98,7 @@ export function AuditLanding() {
         referral_code: getAffiliateRef() || undefined,
         plan,
         source,
-      });
+      }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
       if (data.audit_id) {

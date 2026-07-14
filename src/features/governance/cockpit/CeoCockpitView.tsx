@@ -5,10 +5,10 @@
 // Sekunden braucht: Gesamt-Score, Audit-Readiness, Top-3-Pflichten, Fristen.
 // Nutzt ausschliesslich bestehende APIs — kein neues Backend.
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, ArrowRight, FileCheck2, Loader2, ShieldCheck,
-  TrendingDown, TrendingUp, Minus, Clock, ChevronRight,
+  TrendingDown, TrendingUp, Minus, Clock, ChevronRight, Rocket, CheckCircle,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Card';

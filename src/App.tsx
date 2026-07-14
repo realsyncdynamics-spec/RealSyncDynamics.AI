@@ -13,6 +13,11 @@ import { AppGate } from './features/auth/AppGate';
 import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
 import { DemoLandingPage } from './pages/DemoLandingPage';
+import { DemoTourStartPage } from './pages/DemoTourStartPage';
+import { DemoTourSignupPage } from './pages/DemoTourSignupPage';
+import { DemoTourCheckoutPage } from './pages/DemoTourCheckoutPage';
+import { DemoTourDashboard } from './pages/DemoTourDashboard';
+import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
@@ -25,6 +30,7 @@ import { PublicWorkspacePreview } from './pages/PublicWorkspacePreview';
 import { GovernanceBrowserPage } from './pages/GovernanceBrowserPage';
 // ── Legacy marketing landing — kept for reuse / SEO sub-paths ──
 import { Landing } from './pages/Landing';
+import { LandingPagesOverview } from './pages/LandingPagesOverview';
 import { AgenciesLanding } from './pages/AgenciesLanding';
 import { AuditLanding } from './pages/AuditLanding';
 import { AutomationsLanding } from './pages/AutomationsLanding';
@@ -207,6 +213,20 @@ const PolicyPacksView = lazy(() => import('./features/policy-packs/PolicyPacksVi
 const LegalRagView = lazy(() => import('./features/legal-rag/LegalRagView').then((m) => ({ default: m.LegalRagView })));
 const AgentOsAdminPage = lazy(() => import('./features/agent-os-admin/AgentOsAdminPage').then((m) => ({ default: m.AgentOsAdminPage })));
 const GovernanceDashboardView = lazy(() => import('./features/governance/GovernanceDashboardView').then((m) => ({ default: m.GovernanceDashboardView })));
+// Cloud Code Optimizer — öffentlicher Page-by-Page-Flow (Phase 1), lazy geladen.
+const OptimizerLanding = lazy(() => import('./pages/optimizer/OptimizerLanding').then((m) => ({ default: m.OptimizerLanding })));
+const OptimizerScan = lazy(() => import('./pages/optimizer/OptimizerScan').then((m) => ({ default: m.OptimizerScan })));
+const OptimizerScanning = lazy(() => import('./pages/optimizer/OptimizerScanning').then((m) => ({ default: m.OptimizerScanning })));
+const OptimizerResults = lazy(() => import('./pages/optimizer/OptimizerResults').then((m) => ({ default: m.OptimizerResults })));
+// Cloud Code Optimizer — Phase 2 (Auth, Pricing, Dashboard).
+const OptimizerAuth = lazy(() => import('./pages/optimizer/OptimizerAuth').then((m) => ({ default: m.OptimizerAuth })));
+const OptimizerVerify = lazy(() => import('./pages/optimizer/OptimizerVerify').then((m) => ({ default: m.OptimizerVerify })));
+const OptimizerPricing = lazy(() => import('./pages/optimizer/OptimizerPricing').then((m) => ({ default: m.OptimizerPricing })));
+const OptimizerDashboard = lazy(() => import('./pages/optimizer/OptimizerDashboard').then((m) => ({ default: m.OptimizerDashboard })));
+// Cloud Code Optimizer — Phase 3 (Checkout-Handoff, Auto-Optimizer).
+const OptimizerCheckout = lazy(() => import('./pages/optimizer/OptimizerCheckout').then((m) => ({ default: m.OptimizerCheckout })));
+const OptimizerOptimizing = lazy(() => import('./pages/optimizer/OptimizerOptimizing').then((m) => ({ default: m.OptimizerOptimizing })));
+const OptimizerComplete = lazy(() => import('./pages/optimizer/OptimizerComplete').then((m) => ({ default: m.OptimizerComplete })));
 const WebsiteGovernanceView = lazy(() => import('./features/governance/websites/WebsiteGovernanceView').then((m) => ({ default: m.WebsiteGovernanceView })));
 // ── Phase 2: Multi-Framework Governance Views (10 new modules)
 const AiRegisterView = lazy(() => import('./features/governance/AiRegisterView').then((m) => ({ default: m.AiRegisterView })));
@@ -361,6 +381,12 @@ const AutomationAgentPage = lazy(() => import('./features/agents/AutomationAgent
 const SupportAgentPage = lazy(() => import('./features/agents/SupportAgentPage').then((m) => ({ default: m.SupportAgentPage })));
 const CallAgentSusiPage = lazy(() => import('./features/agents/CallAgentSusiPage').then((m) => ({ default: m.CallAgentSusiPage })));
 const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgentPage').then((m) => ({ default: m.ScreenshotAgentPage })));
+// ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
+const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
+const OptimizerScan = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerScan })));
+const OptimizerResult = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerResult })));
+const OptimizerSignup = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerSignup })));
+const OptimizerReport = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerReport })));
 import { Limits } from './pages/Limits';
 import { AiGovernancePage } from './pages/AiGovernancePage';
 // CheckoutPage already imported at line 112 (PR #290) — duplicate removed.
@@ -403,12 +429,20 @@ function RoutesWithTracking() {
               </ProtectedRoute>
             }
           />
+
+          {/* Demo Tour — Complete Product Tour Flow (no auth required) */}
+          <Route path="/demo-tour" element={<DemoTourProvider><DemoTourStartPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/signup" element={<DemoTourProvider><DemoTourSignupPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/checkout" element={<DemoTourProvider><DemoTourCheckoutPage /></DemoTourProvider>} />
+          <Route path="/demo-tour/dashboard" element={<DemoTourProvider><DemoTourDashboard /></DemoTourProvider>} />
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
       <Route path="/aetheros" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />
+      <Route path="/landingpages" element={<LandingPagesOverview />} />
+      <Route path="/landing-uebersicht" element={<LandingPagesOverview />} />
       <Route path="/realsync-landing" element={<RealSyncDynamicsLanding />} />
       <Route path="/governance-browser" element={<GovernanceBrowserPage />} />
       <Route path="/runtime"    element={<RuntimePage />} />
@@ -426,6 +460,18 @@ function RoutesWithTracking() {
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />
+      {/* Cloud Code Optimizer — Page-by-Page-Flow (Phase 1) */}
+      <Route path="/optimizer" element={<OptimizerLanding />} />
+      <Route path="/optimizer/scan" element={<OptimizerScan />} />
+      <Route path="/optimizer/scanning" element={<OptimizerScanning />} />
+      <Route path="/optimizer/results" element={<OptimizerResults />} />
+      <Route path="/optimizer/auth" element={<OptimizerAuth />} />
+      <Route path="/optimizer/auth/verify" element={<OptimizerVerify />} />
+      <Route path="/optimizer/pricing" element={<OptimizerPricing />} />
+      <Route path="/optimizer/dashboard" element={<OptimizerDashboard />} />
+      <Route path="/optimizer/checkout" element={<OptimizerCheckout />} />
+      <Route path="/optimizer/optimizing" element={<OptimizerOptimizing />} />
+      <Route path="/optimizer/complete" element={<OptimizerComplete />} />
       <Route path="/automations" element={<AutomationsLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
@@ -487,6 +533,14 @@ function RoutesWithTracking() {
       <Route path="/setup-assistant" element={<AppGate><SetupAssistant /></AppGate>} />
       {/* Tools Hub */}
       <Route path="/tools" element={<ToolsHub />} />
+      {/* Claude Code Optimizer — geführter, seitenweiser Flow.
+          Jeder Schritt ist eine eigene Route; /cloud-code-optimizer ist ein Alias. */}
+      <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
+      <Route path="/claude-code-optimizer/scan" element={<OptimizerScan />} />
+      <Route path="/claude-code-optimizer/ergebnis" element={<OptimizerResult />} />
+      <Route path="/claude-code-optimizer/anmelden" element={<OptimizerSignup />} />
+      <Route path="/claude-code-optimizer/bericht" element={<OptimizerReport />} />
+      <Route path="/cloud-code-optimizer" element={<Navigate to="/claude-code-optimizer" replace />} />
       {/* Industry-Doorways */}
       <Route path="/branchen" element={<Branchen />} />
       <Route path="/branchen/:slug" element={<IndustryDetail />} />

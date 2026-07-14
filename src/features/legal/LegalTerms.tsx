@@ -145,7 +145,7 @@ export function LegalTerms() {
           </p>
           <p>
             (3) Die Plattform unterstützt den Nutzer bei der Identifikation
-            potenziell DSGVO-, TTDSG- oder KI-Verordnungs-relevanter
+            potenziell DSGVO-, TDDDG- oder KI-Verordnungs-relevanter
             Sachverhalte (automatische Scans, Tracker-Erkennung,
             KI-System-Inventar). Die Plattform ist ein technisches
             Werkzeug und{' '}
@@ -281,7 +281,7 @@ export function LegalTerms() {
             ein technisches Werkzeug zur Compliance-Unterstützung;
             insbesondere wird{' '}
             <strong className="text-titanium-50">
-              keine Garantie für DSGVO-, TTDSG- oder KI-Verordnungs-Konformität
+              keine Garantie für DSGVO-, TDDDG- oder KI-Verordnungs-Konformität
             </strong>{' '}
             der vom Nutzer betriebenen Systeme übernommen.
           </p>
@@ -359,7 +359,10 @@ export function LegalTerms() {
             ausdrücklich zugestimmt und seine Kenntnis vom Erlöschen
             des Widerrufsrechts mit Beginn der Vertragsausführung
             bestätigt hat. Die entsprechende Bestätigung wird im
-            Checkout-Prozess als separates Häkchen abgefragt.
+            Checkout-Prozess als separates Häkchen abgefragt. Die
+            vollständige, formale Belehrung samt Muster-Widerrufsformular
+            findest Du unter{' '}
+            <Link to="/legal/widerruf" className="text-security-400">Widerrufsbelehrung</Link>.
           </p>
         </Section>
 
@@ -420,6 +423,7 @@ export function LegalTerms() {
         <div className="flex flex-wrap items-center gap-4 text-xs text-titanium-400 pt-6 border-t border-titanium-900">
           <Link to="/impressum" className="hover:text-titanium-200">Impressum</Link>
           <Link to="/legal/privacy" className="hover:text-titanium-200">Datenschutzerklärung</Link>
+          <Link to="/legal/widerruf" className="hover:text-titanium-200">Widerrufsbelehrung</Link>
           <Link to="/legal/avv" className="hover:text-titanium-200">AVV</Link>
           <Link to="/legal/sub-processors" className="hover:text-titanium-200">Sub-Prozessoren</Link>
         </div>

@@ -1,32 +1,34 @@
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import {
-  PUBLIC_PRICING_TIERS, ENTERPRISE_TIER, PRICING_TRUST_NOTE, TIER_ACCENT,
+  PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, TIER_ACCENT,
   type PricingTier, type TierId,
 } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
+import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
+import { CostCalculator } from '../../components/pricing/CostCalculator';
 import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
+import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
 
 /**
- * /pricing — public Pricing-Page mit 5 Paketen (Free → 1.999 €).
+ * /pricing — public Pricing-Page mit 5 Paketen (Starter → Partner/Scale 1.999 €).
  *
  * Tier-Daten kommen ausschließlich aus src/config/pricing.ts
  * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
  *
- * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-06):
- *   Free Audit  0 €          Lead-Funnel, einmalig, kein Account
- *   Starter    79 €/Monat    Einzeldomain
- *   Growth    249 €/Monat    Monitoring + Auto-Fix (HIGHLIGHT)
- *   Agency    699 €/Monat    White-Label, 10 Kunden-Sites, API
- *   Scale   1.999 €/Monat    DSB-Kanzleien, bis 50 Mandanten
+ * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-07):
+ *   Starter      79 €/Monat    Einzelunternehmen
+ *   Growth      249 €/Monat    KMU, Monitoring + Auto-Fix (HIGHLIGHT)
+ *   Agency      699 €/Monat    Mid-size, White-Label, API
+ *   Enterprise 1.249 €/Monat   Großunternehmen, Multi-Org, SLA
+ *   Partner   1.999 €/Monat    Reseller/MSP, bis 50 Mandanten
  *
- * "Enterprise" (individuell, kein fester Preis) ist KEINE 6. Karte — sonst
- * entsteht ein 6-in-5-Spalten-Grid. Stattdessen eigener Anfrage-Banner
- * unterhalb des Grids (ENTERPRISE_TIER). Jede Karte hat eine Akzentfarbe
- * (TIER_ACCENT) zur visuellen Trennung der Pakete.
+ * Jede Karte hat eine Akzentfarbe (TIER_ACCENT) zur visuellen Trennung der Pakete.
+ * Yearly-Varianten werden separat verwaltet (nicht im Grid).
  */
 
 const TIER_ICONS: Record<TierId, typeof Cookie> = {
@@ -34,11 +36,26 @@ const TIER_ICONS: Record<TierId, typeof Cookie> = {
   starter: ShieldCheck,
   growth: Zap,
   agency: Globe,
-  scale: Briefcase,
   enterprise: Building2,
+  scale: Briefcase,
+  starter_yearly: ShieldCheck,
+  growth_yearly: Zap,
+  agency_yearly: Globe,
+  enterprise_yearly: Building2,
+  scale_yearly: Briefcase,
 };
 
 export function PricingPage() {
+  // Deep-Link von Startseite/Audit: ?plan=<id> hebt das gewählte Paket hervor
+  // und scrollt es in den Blick — so bleibt der Weg zur Paket-Auswahl eindeutig.
+  const [params] = useSearchParams();
+  const selectedPlan = params.get('plan');
+  useEffect(() => {
+    if (!selectedPlan) return;
+    const el = document.getElementById(`plan-${selectedPlan}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [selectedPlan]);
+
   return (
     <div className="bg-hero-only min-h-screen flex flex-col text-titanium-50">
       {/* Top bar */}
@@ -82,6 +99,13 @@ export function PricingPage() {
           >
             Governance Complexity Score ermitteln <ArrowRight className="h-4 w-4" />
           </Link>
+
+          {/* 14-Tage-Trial klar sichtbar — Starter/Growth/Agency starten mit
+              ?pilot=true in den 14-Tage-Testmodus (siehe CheckoutPage). */}
+          <p className="mt-5 inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.18em] text-titanium-300">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            14 Tage kostenlos testen · keine Kosten bis Tag 15 · monatlich kündbar
+          </p>
         </div>
       </section>
 
@@ -90,24 +114,8 @@ export function PricingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 items-stretch">
             {PUBLIC_PRICING_TIERS.map((tier) => (
-              <TierCard key={tier.id} tier={tier} />
+              <TierCard key={tier.id} tier={tier} selected={tier.id === selectedPlan} />
             ))}
-          </div>
-
-          {/* Enterprise — kein Grid-Card, sondern eigener Anfrage-Banner */}
-          <div className="mt-5 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 bg-obsidian-900/60 border border-titanium-200/30 rounded-none">
-            <div>
-              <div className="font-display font-bold text-titanium-50 text-base mb-1">
-                {ENTERPRISE_TIER.name} — {ENTERPRISE_TIER.priceString}
-              </div>
-              <p className="text-sm text-silver-300">{ENTERPRISE_TIER.tagline}</p>
-            </div>
-            <Link
-              to={ENTERPRISE_TIER.cta.href}
-              className="surface-mono inline-flex shrink-0 items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none whitespace-nowrap"
-            >
-              {ENTERPRISE_TIER.cta.label} <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
 
           <div className="mt-8 text-center space-y-2">
@@ -115,7 +123,10 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency/Scale: erste Abbuchung sofort nach Bestellung
+              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency: 14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Scale/Enterprise: nach Anfrage
+            </p>
+            <p className="text-[10px] font-mono text-titanium-600">
+              Alle Preise in EUR. Keine Umsatzsteuer ausgewiesen — Kleinunternehmer gemäß § 19 UStG.
             </p>
           </div>
 
@@ -133,9 +144,15 @@ export function PricingPage() {
         </div>
       </section>
 
+      {/* Cost Calculator — Interactive estimation tool */}
+      <CostCalculator />
+
       {/* Beispielhafte Kostenrechnung — Procurement-Anker, klar als Beispiel
           gekennzeichnet, keine Einsparzusagen. */}
       <PricingRoiExampleSection />
+
+      {/* Governance-Bots Section — Bot-Quotas + Add-ons */}
+      <GovernanceBotsSection />
 
       {/* Differenzierer */}
       <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
@@ -255,6 +272,7 @@ export function PricingPage() {
             <Link to="/legal/privacy" className="hover:text-titanium-50">Datenschutz</Link>
             <Link to="/impressum" className="hover:text-titanium-50">Impressum</Link>
             <Link to="/legal/terms" className="hover:text-titanium-50">AGB</Link>
+            <Link to="/legal/widerruf" className="hover:text-titanium-50">Widerruf</Link>
             <Link to="/legal/avv" className="hover:text-titanium-50">AVV</Link>
             <Link to="/legal/sub-processors" className="hover:text-titanium-50">Sub-Processors</Link>
             <Link to="/legal/methodology" className="hover:text-titanium-50">Methodik</Link>
@@ -267,7 +285,7 @@ export function PricingPage() {
   );
 }
 
-function TierCard({ tier }: { tier: PricingTier }) {
+function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
   const TierIcon = TIER_ICONS[tier.id];
   const priceDisplay =
     tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
@@ -276,11 +294,13 @@ function TierCard({ tier }: { tier: PricingTier }) {
 
   return (
     <div
+      id={`plan-${tier.id}`}
       className={`relative flex flex-col p-6 sm:p-7 bg-obsidian-900/60 border-x border-b rounded-none border-t-4 transition-colors ${accent.border} ${
         tier.highlight
           ? 'border-titanium-200/80 shadow-[0_0_0_1px_rgba(229,231,235,0.25)]'
           : 'border-silver-700/30 hover:border-titanium-200/60'
-      }`}
+      }${selected ? ' ring-2 ring-cyan-400/70' : ''}`}
+      data-testid={`pricing-card-${tier.id}`}
     >
       {tier.highlight && (
         <div className="absolute -top-3 left-5 px-2 py-0.5 bg-titanium-50 text-obsidian-950 font-mono uppercase tracking-wider text-[10px] font-bold">
@@ -322,31 +342,43 @@ function TierCard({ tier }: { tier: PricingTier }) {
         ))}
       </ul>
 
-      {tier.cta.href.startsWith('http') ? (
-        <a
-          href={tier.cta.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-            tier.highlight
-              ? 'surface-mono'
-              : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-          }`}
+      <div className="flex flex-col gap-3">
+        {/* Primary CTA: Book / Start */}
+        {tier.cta.href.startsWith('http') ? (
+          <button
+            onClick={() => window.open(tier.cta.href, '_blank')}
+            className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+              tier.highlight
+                ? 'surface-mono'
+                : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+            }`}
+            data-testid={`pricing-book-${tier.id}`}
+          >
+            {tier.cta.label} <ArrowRight className="h-4 w-4" />
+          </button>
+        ) : (
+          <button
+            onClick={() => window.location.href = tier.cta.href}
+            className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
+              tier.highlight
+                ? 'surface-mono'
+                : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
+            }`}
+            data-testid={`pricing-book-${tier.id}`}
+          >
+            {tier.cta.label} <ArrowRight className="h-4 w-4" />
+          </button>
+        )}
+
+        {/* Secondary: More Info button (links to plan detail page) */}
+        <button
+          onClick={() => window.location.href = `/pricing/${tier.id}`}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold rounded-none border border-titanium-200/30 text-titanium-300 hover:text-titanium-50 hover:border-titanium-200/60 transition-colors"
+          data-testid={`pricing-info-${tier.id}`}
         >
-          {tier.cta.label} <ArrowRight className="h-4 w-4" />
-        </a>
-      ) : (
-        <Link
-          to={tier.cta.href}
-          className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-none transition-colors ${
-            tier.highlight
-              ? 'surface-mono'
-              : 'border border-silver-500 hover:border-titanium-200 text-silver-100 hover:text-titanium-50'
-          }`}
-        >
-          {tier.cta.label} <ArrowRight className="h-4 w-4" />
-        </Link>
-      )}
+          Mehr erfahren
+        </button>
+      </div>
     </div>
   );
 }
@@ -408,7 +440,10 @@ function GovernanceModuleMatrix() {
                   className={`border-b border-titanium-900 ${i % 2 === 0 ? 'bg-obsidian-950' : 'bg-obsidian-900'}`}
                 >
                   <td className="py-2.5 pr-4 font-medium text-titanium-100 whitespace-nowrap">
-                    {mod.label}
+                    <span className="inline-flex items-center gap-2">
+                      {mod.label}
+                      {mod.status !== 'live' && <ModuleStatusBadge status={mod.status} />}
+                    </span>
                   </td>
                   {MATRIX_TIERS.map((t) => {
                     const ok = canAccessModule(mod, t.id);

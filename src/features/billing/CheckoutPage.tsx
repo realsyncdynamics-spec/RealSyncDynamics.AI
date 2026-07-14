@@ -20,11 +20,10 @@ import { trackConversion } from '../../lib/pixels';
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
  *   3c. Wenn eingeloggt aber kein Tenant: Link auf /welcome zur Tenant-Erstellung
  *
- * Free + Enterprise: hier nicht angezeigt — diese Tiers werden vor dem
- * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
+ * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency', 'enterprise', 'scale', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly']);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
@@ -53,9 +52,9 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
+  // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free') {
+    if (planKey === 'free_audit') {
       navigate('/audit?source=checkout-free-redirect', { replace: true });
       return;
     }
@@ -63,27 +62,51 @@ export function CheckoutPage() {
       navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
       return;
     }
-  }, [planKey, navigate]);
+    if (!validPlan && planKey) {
+      navigate('/pricing?source=checkout-invalid', { replace: true });
+      return;
+    }
+  }, [planKey, validPlan, navigate]);
 
   // 3. Auth-State + Membership-Lookup
   useEffect(() => {
     if (!validPlan) return;
     let cancelled = false;
+
+    // Sicherheitsnetz gegen unbegrenzten „Lade…"-Zustand: Falls die
+    // Auth-Auflösung (z. B. eine hängende Membership-Abfrage oder Client-
+    // Initialisierung) nicht zeitnah zurückkommt, fällt die Seite in den
+    // Login-Zustand zurück — recoverbar per Klick statt endloser Spinner.
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        setAuth((prev) => (prev.status === 'loading' ? { status: 'no_user' } : prev));
+      }
+    }, 8000);
+
     (async () => {
       const sb = getSupabase();
-      const { data: userData } = await sb.auth.getUser();
+      // getSession() liest die Session lokal aus dem Storage und ist damit
+      // praktisch sofort verfügbar. Das vorherige getUser() machte einen
+      // Netzwerk-Roundtrip zum Auth-Server (/auth/v1/user), der beim ersten
+      // Aufruf mehrere Sekunden hängen konnte („Lade…", erst nach Reload ok).
+      // Die eigentliche Autorisierung passiert ohnehin serverseitig in
+      // createCheckoutSession() (Edge Function + RLS auf memberships).
+      const { data: sessionData } = await sb.auth.getSession();
       if (cancelled) return;
-      if (!userData?.user) {
+      const user = sessionData?.session?.user;
+      if (!user) {
+        clearTimeout(timeout);
         setAuth({ status: 'no_user' });
         return;
       }
-      const userEmail = userData.user.email ?? '';
+      const userEmail = user.email ?? '';
       const { data: memberships } = await sb
         .from('memberships')
         .select('tenant_id, role')
         .in('role', ['owner', 'admin'])
         .limit(1);
       if (cancelled) return;
+      clearTimeout(timeout);
       const firstTenant = memberships?.[0];
       if (!firstTenant?.tenant_id) {
         setAuth({ status: 'no_tenant', userEmail });
@@ -91,7 +114,7 @@ export function CheckoutPage() {
       }
       setAuth({ status: 'ready', userEmail, tenantId: firstTenant.tenant_id });
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [validPlan]);
 
   // 4. Manual trigger on user submit — see consent gate render below.
@@ -107,7 +130,7 @@ export function CheckoutPage() {
       value: tier?.priceEur ?? 0,
       currency: 'EUR',
     });
-    const result = await createCheckoutSession(auth.tenantId, validPlan);
+    const result = await createCheckoutSession(auth.tenantId, validPlan, isPilot);
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {
@@ -123,7 +146,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency.`}
+        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency / scale (monatlich oder jährlich).`}
         cta={{ label: 'Zur Preisuebersicht', to: '/pricing' }}
       />
     );
@@ -202,6 +225,7 @@ function ShellWithMessage({
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -267,11 +291,12 @@ function NoUserShell({
   magicLinkHref: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -361,6 +386,7 @@ function ConsentGateShell({
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
+          data-testid="checkout-back"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -380,11 +406,17 @@ function ConsentGateShell({
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
             {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot ? (
-            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
-              14 Tage kostenlos testen · keine Kosten bis Tag 15
-            </p>
-          ) : (
+          {isPilot && (
+            <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
+              <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
+                ✅ 14 TAGE KOSTENLOS
+              </p>
+              <p className="font-mono text-xs text-emerald-200">
+                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+              </p>
+            </div>
+          )}
+          {!isPilot && (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>
@@ -427,6 +459,10 @@ function ConsentGateShell({
                 (§§ 356 Abs. 5, 327 BGB; siehe{' '}
                 <Link to="/legal/terms" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
                   AGB § 12
+                </Link>{' '}
+                und{' '}
+                <Link to="/legal/widerruf" className="text-gold-300 underline hover:text-gold-200" target="_blank" rel="noopener noreferrer">
+                  Widerrufsbelehrung
                 </Link>
                 ).
               </span>

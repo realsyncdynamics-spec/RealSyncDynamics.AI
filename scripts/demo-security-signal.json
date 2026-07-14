@@ -1,0 +1,11 @@
+{
+  "provider": "blacklens",
+  "finding_id": "bl-demo-001",
+  "severity": "critical",
+  "title": "Publicly exposed admin interface",
+  "description": "Admin panel exposed on public internet without additional access restrictions.",
+  "asset": "https://realsyncdynamicsai.de/admin",
+  "first_seen": "2026-06-26T08:00:00Z",
+  "last_seen": "2026-06-26T08:05:00Z",
+  "tags": ["attack-surface", "web", "gdpr-art-32"]
+}

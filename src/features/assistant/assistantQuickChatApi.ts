@@ -1,4 +1,5 @@
 import { AiGatewayEdgeClient, AiGatewayEdgeError } from '../../core/ai-gateway/edgeClient';
+import { getSupabaseUrl, getSupabaseAnonKey } from '../../lib/supabaseUrl';
 
 // Quick-chat helper for the floating AssistentChip on public pages.
 //
@@ -101,11 +102,14 @@ export interface SendQuickChatArgs {
 
 function resolveClient(deps?: QuickChatDeps): AiGatewayEdgeClient {
   if (deps?.client) return deps.client;
-  const url = deps?.supabaseUrl     ?? (import.meta.env.VITE_SUPABASE_URL      as string | undefined);
-  const key = deps?.supabaseAnonKey ?? (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined);
+  // Zentrale Auflösung mit öffentlichem Produktions-Fallback (siehe
+  // lib/supabaseUrl.ts), damit der Assistent-Chip auch in Deploys ohne
+  // gesetzte VITE_*-Build-Env antwortet statt mit 503 abzubrechen.
+  const url = deps?.supabaseUrl     ?? getSupabaseUrl();
+  const key = deps?.supabaseAnonKey ?? getSupabaseAnonKey();
   if (!url || !key) {
     throw new AiGatewayEdgeError(503, 'AI_GATEWAY_NOT_CONFIGURED',
-      'VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY fehlen.');
+      'Supabase-Zugangsdaten fehlen.');
   }
   return new AiGatewayEdgeClient({ supabaseUrl: url, apiKey: key });
 }

@@ -47,7 +47,7 @@ const TECH_STACK: TechItem[] = [
     label: 'Cookie-Klassifikation',
     detail:
       'Automatische Einordnung jedes gesetzten Cookies nach Kategorie (notwendig / Praeferenzen / Statistik / Marketing), Lebensdauer und Uebertragungsland. Setzungs-Zeitpunkt vor/nach Consent protokolliert.',
-    tag: 'TTDSG § 25 · ePrivacy-RL · IAB TCF v2.2',
+    tag: 'TDDDG § 25 · ePrivacy-RL · IAB TCF v2.2',
   },
   {
     icon: FileLock,

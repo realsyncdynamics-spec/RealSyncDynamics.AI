@@ -86,6 +86,9 @@ verify_jwt = false
 [functions.governance-ingest]
 verify_jwt = false
 
+[functions.security-signal-ingest]
+verify_jwt = false
+
 [functions.governance-webhooks]
 verify_jwt = false
 
@@ -113,6 +116,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.cookie-scan-deep]
+verify_jwt = false
+
+# Browser-action-log — governance observability. Called from browser without JWT
+# (EmbeddedBrowserCanvas). Auth + tenant-scope checked inside the function via
+# service_role calls to Supabase (browser passes tenantId, which is validated by RLS).
+[functions.browser-action-log]
 verify_jwt = false
 
 # AI Gateway — provider-neutral inference endpoint. Public per spec
@@ -266,6 +275,31 @@ verify_jwt = false
 
 # telegram-channels is called from the SPA with a user Bearer JWT.
 [functions.telegram-channels]
+
+# ── Legal-RAG ──
+# legal-embed is called by cron/admin scripts with a shared LEGAL_EMBED_SECRET,
+# not a user JWT.
+[functions.legal-embed]
+verify_jwt = false
+
+# legal-retrieve is called from the SPA with a user Bearer JWT — default verify_jwt=true applies.
+
+# ── Bots (Konversations-Bots: Chat + Voice) ──
+# bot-chat, appointment-book, order-intake werden vom öffentlichen Web-Widget
+# ohne JWT aufgerufen; bot-voice-webhook vom Telefonie-Provider (Twilio o.ä.).
+# Zugriffskontrolle läuft über das Paar (tenant_id, bot_id) + Feature-Gates
+# (bots.enabled / bots.voice) innerhalb der Functions.
+[functions.bot-chat]
+verify_jwt = false
+
+[functions.appointment-book]
+verify_jwt = false
+
+[functions.order-intake]
+verify_jwt = false
+
+[functions.bot-voice-webhook]
+verify_jwt = false
 
 # All other functions (stripe-checkout, stripe-portal, ai-invoke,
 # workflow-trigger, gdpr-export, gdpr-delete, tenant-invite,

@@ -69,11 +69,19 @@ Migration from GitHub Pages to Cloudflare Pages for the frontend deployment of `
 | Variable | Value | Source |
 |----------|-------|--------|
 | `VITE_SUPABASE_URL` | `https://ebljyceifhnlzhjfyxup.supabase.co` | Supabase Dashboard → Settings → API |
-| `VITE_SUPABASE_ANON_KEY` | `eyJ...` (long string) | Supabase → Settings → API → `sb_anon_public` key |
+| `VITE_SUPABASE_ANON_KEY` | `sb_publishable_...` (publishable key) | Supabase → Settings → API → publishable (`sb_publishable_`) key |
 | `VITE_STRIPE_PRICE_STARTER` | `price_1...` | Stripe Dashboard → Products → Starter → Price ID |
 | `VITE_STRIPE_PRICE_GROWTH` | `price_2...` | Stripe → Products → Growth → Price ID |
 | `VITE_STRIPE_PRICE_AGENCY` | `price_3...` | Stripe → Products → Agency → Price ID |
 | `VITE_SENTRY_DSN` | `https://abc@def.ingest.sentry.io/123` | Sentry Project Settings → DSN (optional) |
+
+> **Hinweis:** `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY` haben seit der
+> Vereinheitlichung in `src/lib/supabaseUrl.ts` einen Code-Fallback auf die
+> öffentlichen Produktionswerte — Auth/Login funktionieren also auch ohne
+> gesetzte Variablen. Beide hier dennoch zu setzen ist Best Practice (saubere
+> Trennung, einfacher Projektwechsel); gesetzte Werte haben Vorrang vor dem
+> Fallback. URL und Publishable-Key sind öffentlich; der Service-Role-Key bleibt
+> ausschließlich in den Edge Functions.
 
 7. Click **Save and Deploy**
 

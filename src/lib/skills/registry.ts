@@ -10,6 +10,7 @@
 export type SkillKey =
   | 'data-exploration'
   | 'finance-audit-support'
+  | 'gdpr-audit'
   | 'legal-compliance'
   | 'legal-contract-review'
   | 'marketing-performance-analytics'
@@ -88,6 +89,28 @@ export const SKILL_REGISTRY: Record<SkillKey, SkillDef> = {
     riskLevel: 'high',
     requiresWebResearch: false,
     requiresUserData: true,
+    reviewRequired: true,
+  },
+
+  'gdpr-audit': {
+    key: 'gdpr-audit',
+    label: 'DSGVO-Audit (Website)',
+    description:
+      'Technische DSGVO-/TDDDG-Heuristik fuer Websites: Consent-Timing, Tracker, ' +
+      'Drittlandtransfers, Pflichtseiten, Security-Header. Keine Rechtsberatung.',
+    triggers: [
+      'dsgvo audit', 'gdpr audit', 'website scan', 'website audit', 'cookie scan',
+      'tracker', 'consent timing', 'consent banner', 'security header',
+    ],
+    useCases: [
+      'Website auf DSGVO-/TDDDG-Risiken pruefen (Consent-Timing, Tracker)',
+      'Befund klassifizieren (critical/high/medium/low) inkl. Remediation-Hinweis',
+      'Pruefplan fuer ein Website-Audit erzeugen',
+    ],
+    guardrails: [NO_LEGAL_OPINION],
+    riskLevel: 'high',
+    requiresWebResearch: true,
+    requiresUserData: false,
     reviewRequired: true,
   },
 

@@ -13,18 +13,13 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex } from '../_shared/hash.ts';
 import { audit } from '../_shared/auditLog.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // Token-Gültigkeit: 15 Minuten
 const TOKEN_TTL_MS = 15 * 60 * 1000;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -133,7 +128,7 @@ async function handleConnectComplete(admin: any, userId: string, userEmail: stri
     payload: { telegram_user_id: conn.telegram_user_id, telegram_chat_id: conn.telegram_chat_id },
   });
 
-  return json({ ok: true, connected: true, telegram_user_id: conn.telegram_user_id });
+  return jsonResponse({ ok: true, connected: true, telegram_user_id: conn.telegram_user_id });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -145,7 +140,7 @@ async function handleStatus(admin: any, userId: string) {
     .neq('status', 'revoked')
     .maybeSingle();
 
-  if (!conn) return json({ ok: true, connected: false });
+  if (!conn) return jsonResponse({ ok: true, connected: false });
 
   let tenantName: string | null = null;
   if (conn.tenant_id) {
@@ -157,7 +152,7 @@ async function handleStatus(admin: any, userId: string) {
     tenantName = tenant?.name ?? null;
   }
 
-  return json({
+  return jsonResponse({
     ok:            true,
     connected:     conn.status === 'connected',
     status:        conn.status,
@@ -176,7 +171,7 @@ async function handleRevoke(admin: any, userId: string, userEmail: string | null
     .neq('status', 'revoked')
     .maybeSingle();
 
-  if (!conn) return json({ ok: true, revoked: false, msg: 'no active connection' });
+  if (!conn) return jsonResponse({ ok: true, revoked: false, msg: 'no active connection' });
 
   const { error } = await admin
     .from('telegram_connections')
@@ -195,18 +190,7 @@ async function handleRevoke(admin: any, userId: string, userEmail: string | null
     payload: { telegram_user_id: conn.telegram_user_id },
   });
 
-  return json({ ok: true, revoked: true });
+  return jsonResponse({ ok: true, revoked: true });
 }
 
 // --- Helpers --------------------------------------------------------------
-
-function json(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

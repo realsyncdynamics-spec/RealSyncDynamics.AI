@@ -28,6 +28,7 @@ export type FeatureKey =
   | 'monthly_scan'
   | 'dse_generator'
   | 'basic_alerts'
+  | 'evidence_export'
   // growth
   | 'daily_monitoring'
   | 'drift_detection'
@@ -62,6 +63,10 @@ const PLAN_DIRECT_FEATURES: Record<PlanKey, FeatureKey[]> = {
     'monthly_scan',
     'dse_generator',
     'basic_alerts',
+    // Evidence-Trail-Export ist die Kaufbegründung des ersten zahlenden
+    // Tiers (siehe docs/PRODUCT_PRIORITIZATION.md). Free sieht den Trail
+    // read-only, exportieren kann erst ab Starter.
+    'evidence_export',
   ],
   growth: [
     'daily_monitoring',
@@ -86,6 +91,12 @@ const PLAN_DIRECT_FEATURES: Record<PlanKey, FeatureKey[]> = {
     'evidence_vault',
     'custom_policies',
   ],
+  // Yearly variants erben von ihren Base-Tiers
+  starter_yearly: [],
+  growth_yearly: [],
+  agency_yearly: [],
+  enterprise_yearly: [],
+  scale_yearly: [],
 };
 
 /**
@@ -96,12 +107,17 @@ const PLAN_DIRECT_FEATURES: Record<PlanKey, FeatureKey[]> = {
  * erlaubt NUR den one_time_scan, niemals monthly_scan & Co.
  */
 const PLAN_INHERITANCE: Record<PlanKey, PlanKey | null> = {
-  free:       null,
-  starter:    null,
-  growth:     'starter',
-  agency:     'growth',
-  scale:      'agency',
-  enterprise: 'agency',
+  free:              null,
+  starter:           null,
+  growth:            'starter',
+  agency:            'growth',
+  enterprise:        'agency',
+  scale:             'agency',
+  starter_yearly:    'starter',
+  growth_yearly:     'growth',
+  agency_yearly:     'agency',
+  enterprise_yearly: 'enterprise',
+  scale_yearly:      'scale',
 };
 
 /**

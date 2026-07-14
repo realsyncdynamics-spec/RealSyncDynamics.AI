@@ -5,12 +5,7 @@
 // Bei Fehler bleibt next_send_at gleich → automatischer Retry am nächsten Tag.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 interface DueRow {
   id: string;
@@ -21,7 +16,8 @@ interface DueRow {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -33,12 +29,12 @@ Deno.serve(async (req) => {
 
   const { data: due, error } = await admin.rpc('audit_email_drip_due', { p_limit: 50 });
   if (error) {
-    return json({ ok: false, error: error.message }, 500);
+    return jsonResponse({ ok: false, error: error.message }, 500);
   }
 
   const rows = (due ?? []) as DueRow[];
   if (rows.length === 0) {
-    return json({ ok: true, sent: 0, message: 'no due drips' });
+    return jsonResponse({ ok: true, sent: 0, message: 'no due drips' });
   }
 
   const sent: string[] = [];
@@ -95,7 +91,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ ok: true, sent: sent.length, failed: failed.length, total_due: rows.length });
+  return jsonResponse({ ok: true, sent: sent.length, failed: failed.length, total_due: rows.length });
 });
 
 interface TemplateContext {
@@ -181,9 +177,3 @@ function emailWrap(body: string, unsubscribe: string): string {
 </html>`;
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}

@@ -98,20 +98,48 @@ describe('clampTopK', () => {
   });
 });
 
+// enforcePhase1 is deprecated and delegates to enforceCaller — it no longer
+// restricts to caller_type='internal' only. These tests reflect the current
+// delegated behavior.
 describe('enforcePhase1', () => {
   it('accepts internal + tenant_id=null', () => {
     expect(() => enforcePhase1({ ...baseReq })).not.toThrow();
   });
-  it('rejects caller_type=tenant', () => {
+  it('rejects caller_type=tenant without tenant_id', () => {
     expect(() => enforcePhase1({ ...baseReq, caller_type: 'tenant' }))
       .toThrow(LegalRetrievalPhaseError);
   });
-  it('rejects caller_type=api', () => {
-    expect(() => enforcePhase1({ ...baseReq, caller_type: 'api' }))
+  it('accepts caller_type=api (deprecated wrapper delegates to enforceCaller)', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'api' })).not.toThrow();
+  });
+  it('rejects tenant_id non-null with caller_type=internal', () => {
+    expect(() => enforcePhase1({ ...baseReq, tenant_id: 't-1' }))
       .toThrow(LegalRetrievalPhaseError);
   });
-  it('rejects tenant_id non-null', () => {
-    expect(() => enforcePhase1({ ...baseReq, tenant_id: 't-1' }))
+});
+
+describe('enforceCaller', () => {
+  // enforceCaller is imported via enforcePhase1 — test through that alias here
+  // to keep the import list minimal.
+  it('accepts caller_type=internal with tenant_id=null', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'internal' })).not.toThrow();
+  });
+  it('accepts caller_type=tenant with tenant_id set', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'tenant', tenant_id: 't-1' })).not.toThrow();
+  });
+  it('accepts caller_type=api', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'api' })).not.toThrow();
+  });
+  it('rejects unknown caller_type', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'unknown' as never }))
+      .toThrow(LegalRetrievalPhaseError);
+  });
+  it('rejects caller_type=internal with non-null tenant_id', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'internal', tenant_id: 't-x' }))
+      .toThrow(LegalRetrievalPhaseError);
+  });
+  it('rejects caller_type=tenant without tenant_id', () => {
+    expect(() => enforcePhase1({ ...baseReq, caller_type: 'tenant' }))
       .toThrow(LegalRetrievalPhaseError);
   });
 });

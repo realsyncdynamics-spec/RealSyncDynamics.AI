@@ -1,16 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getSupabaseUrl, getSupabaseAnonKey } from './supabaseUrl';
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// URL und anon-Key werden zentral über `supabaseUrl.ts` aufgelöst. Beide Werte
+// sind öffentlich (sie landen ohnehin im Bundle) und greifen auf die
+// Produktions-Projektwerte zurück, falls `VITE_SUPABASE_URL` /
+// `VITE_SUPABASE_ANON_KEY` in einem Deploy nicht gesetzt sind. Dadurch
+// funktioniert die Anmeldung auch ohne gesetzte Frontend-Env-Variablen.
+const url = getSupabaseUrl();
+const anonKey = getSupabaseAnonKey();
 
 let cached: SupabaseClient | null = null;
 
 export function getSupabase(): SupabaseClient {
-  if (!url || !anonKey) {
-    throw new Error(
-      'Supabase nicht konfiguriert: VITE_SUPABASE_URL und VITE_SUPABASE_ANON_KEY in .env.local setzen.',
-    );
-  }
   if (!cached) {
     cached = createClient(url, anonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },

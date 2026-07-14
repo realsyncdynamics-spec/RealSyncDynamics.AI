@@ -77,6 +77,41 @@ EOF
 npm run dev    # http://localhost:3000
 ```
 
+## E2E / Visual Functional Tests
+
+Die öffentliche Website wird durch Playwright E2E-Tests auf optische und funktionelle Korrektheit validiert.
+
+**Baseline erzeugen** (einmalig oder nach intentionalen visuellen Änderungen):
+
+```bash
+npx playwright test --update-snapshots
+```
+
+**Regulärer Testlauf:**
+
+```bash
+npm run test:e2e
+```
+
+**Report anzeigen:**
+
+```bash
+npm run test:e2e:report
+```
+
+Der Test validiert:
+- Routing aller öffentlichen Seiten (`/`, `/audit`, `/ai-act`, etc.)
+- Sichtbare Inhalte und Navigation
+- Call-to-Actions (CTAs)
+- Audit- und AI-Act-Einsteige
+- HealthTech-, SaaS-, Public-Sector-Seiten
+- Checkout-Starter-Seite (kein ungewolltes Zahlungsformular)
+- Mobile Darstellung (kein horizontaler Overflow)
+- Bild-Alt-Attribute (WCAG-Konformität)
+- Keine sichtbaren JavaScript-Fehler in der UI
+
+Siehe auch: [`docs/QA_VISUAL_FUNCTIONAL_TESTRUN.md`](docs/QA_VISUAL_FUNCTIONAL_TESTRUN.md) für aktuelle Test-Resultate.
+
 ## Deploy
 
 - **Frontend:** statische Vite-Build via GitHub Actions auf Hostinger-VPS,

@@ -17,16 +17,11 @@
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 // Vault-first, env-fallback. Lets an operator provision the live key via
 //   select public.set_app_secret('stripe_secret_key', 'sk_live_...');
@@ -45,7 +40,7 @@ async function getSecret(envVar: string, vaultName: string): Promise<string | nu
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const stripeSecret = await getSecret('STRIPE_SECRET_KEY', 'stripe_secret_key');
@@ -71,8 +66,8 @@ Deno.serve(async (req) => {
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
   }
-  if (body.plan_key === 'free') {
-    return jsonError(400, 'BAD_REQUEST', 'free plan does not require checkout');
+  if (body.plan_key === 'free_audit') {
+    return jsonError(400, 'BAD_REQUEST', 'Free Audit braucht keinen Checkout');
   }
 
   // Membership + role check
@@ -158,18 +153,9 @@ Deno.serve(async (req) => {
       // hinterlegen.
     });
 
-    return json({ ok: true, url: session.url, session_id: session.id });
+    return jsonResponse({ ok: true, url: session.url, session_id: session.id });
   } catch (e) {
     return jsonError(502, 'STRIPE_ERROR', `stripe checkout failed: ${(e as Error).message}`);
   }
 });
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

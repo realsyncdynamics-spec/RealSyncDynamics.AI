@@ -17,18 +17,13 @@ import {
   buildLlmsTxt, buildAiInfoJson, buildJsonLd, injectJsonLd,
 } from '../_shared/website-rebuild/ai-ready.ts';
 import { STEP_ORDER, type StepName, type RebuildContext } from '../_shared/website-rebuild/types.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const URL_RE = /^https?:\/\/[^\s/$.?#].[^\s]*$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST')    return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -141,11 +136,11 @@ async function runWorkflow(admin: ReturnType<typeof createClient>, ctx: RebuildC
     console.error(`[rebuild-website] preview-email failed for ${ctx.rebuildId}: ${(e as Error).message}`);
   }
 
-  return new Response(JSON.stringify({
+  return jsonResponse({
     rebuild_id: ctx.rebuildId,
     status: 'preview_ready',
     preview_url: state.previewUrl ?? null,
-  }), { status: 200, headers: { ...corsHeaders, 'content-type': 'application/json' } });
+  });
 }
 
 async function sendPreviewReadyEmail(ctx: RebuildContext, previewUrl: string | null): Promise<void> {
@@ -333,7 +328,5 @@ async function markStep(
 }
 
 function jsonError(status: number, code: string, message: string, extra?: Record<string, unknown>) {
-  return new Response(JSON.stringify({ error: { code, message, ...extra } }), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
+  return jsonResponse({ error: { code, message, ...extra } }, status);
 }

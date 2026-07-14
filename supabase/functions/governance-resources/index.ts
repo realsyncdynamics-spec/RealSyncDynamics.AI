@@ -9,6 +9,7 @@
 //   { op: 'toggle_policy',    policy_id, enabled }
 //   { op: 'upsert_mapping',   asset_id, control_id, status, notes?, evidence_id? }
 //   { op: 'delete_mapping',   mapping_id }
+//   { op: 'auto_map',         asset_id }
 //
 // Owner / admin gated against `public.memberships`. Reads are
 // handled directly by the frontend via Supabase + tenant-RLS
@@ -18,12 +19,8 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
 
 const ASSET_TYPES = ['website', 'ai_system', 'vendor', 'model', 'agent', 'api', 'dataset', 'repository', 'workflow'];
 const AI_ACT_CLASSES = ['minimal', 'limited', 'high', 'prohibited', 'unknown'];
@@ -33,7 +30,7 @@ const ACTIONS = ['allow', 'log', 'warn', 'block', 'require_approval'];
 const CONTROL_STATUSES = ['not_started', 'in_progress', 'implemented', 'gap', 'not_applicable'];
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -65,6 +62,7 @@ Deno.serve(async (req) => {
       case 'toggle_policy':   return await togglePolicy(admin, userId, userEmail, body);
       case 'upsert_mapping':  return await upsertMapping(admin, userId, userEmail, body);
       case 'delete_mapping':  return await deleteMapping(admin, userId, userEmail, body);
+      case 'auto_map':        return await autoMap(admin, userId, userEmail, body);
       default: return jsonError(400, 'BAD_REQUEST', 'unknown op');
     }
   } catch (e) {
@@ -103,7 +101,7 @@ async function createAsset(admin: any, userId: string, userEmail: string | null,
   }).select('*').single();
   if (error) throw error;
   await audit(admin, { tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'asset.create', target_type: 'governance_asset', target_id: data.id, payload: { name: data.name, asset_type, ai_act_class } });
-  return json({ ok: true, asset: data });
+  return jsonResponse({ ok: true, asset: data });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -114,13 +112,13 @@ async function archiveAsset(admin: any, userId: string, userEmail: string | null
   const { data: row } = await admin.from('governance_assets')
     .select('tenant_id, status').eq('id', asset_id).maybeSingle();
   if (!row) return jsonError(404, 'NOT_FOUND', 'asset not found');
-  if (row.status === 'archived') return json({ ok: true, already_archived: true });
+  if (row.status === 'archived') return jsonResponse({ ok: true, already_archived: true });
   if (!(await isOwnerOrAdmin(admin, userId, row.tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
 
   const { error } = await admin.from('governance_assets').update({ status: 'archived' }).eq('id', asset_id);
   if (error) throw error;
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'asset.archive', target_type: 'governance_asset', target_id: asset_id, payload: {} });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -150,7 +148,7 @@ async function createPolicy(admin: any, userId: string, userEmail: string | null
   }).select('*').single();
   if (error) throw error;
   await audit(admin, { tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'policy.create', target_type: 'governance_policy', target_id: data.id, payload: { name: data.name, policy_type, severity, action } });
-  return json({ ok: true, policy: data });
+  return jsonResponse({ ok: true, policy: data });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -167,7 +165,7 @@ async function togglePolicy(admin: any, userId: string, userEmail: string | null
   const { error } = await admin.from('governance_policies').update({ enabled }).eq('id', policy_id);
   if (error) throw error;
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: enabled ? 'policy.enable' : 'policy.disable', target_type: 'governance_policy', target_id: policy_id, payload: { enabled } });
-  return json({ ok: true, enabled });
+  return jsonResponse({ ok: true, enabled });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -202,11 +200,70 @@ async function upsertMapping(admin: any, userId: string, userEmail: string | nul
   }
 
   const { data, error } = await admin.from('asset_control_mappings')
-    .upsert({ asset_id, control_id, status, notes, evidence_id }, { onConflict: 'asset_id,control_id' })
+    .upsert({ asset_id, control_id, status, notes, evidence_id, source: 'manual' }, { onConflict: 'asset_id,control_id' })
     .select('*').single();
   if (error) throw error;
   await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.upsert', target_type: 'asset_control_mapping', target_id: data.id, payload: { asset_id, control_id, status } });
-  return json({ ok: true, mapping: data });
+  return jsonResponse({ ok: true, mapping: data });
+}
+
+// deno-lint-ignore no-explicit-any
+async function autoMap(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+  const asset_id = b.asset_id as string;
+  if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required');
+
+  const { data: asset } = await admin.from('governance_assets')
+    .select('tenant_id, asset_type, ai_act_class, data_types').eq('id', asset_id).maybeSingle();
+  if (!asset) return jsonError(404, 'NOT_FOUND', 'asset not found');
+  if (!(await isOwnerOrAdmin(admin, userId, asset.tenant_id))) {
+    return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
+  }
+
+  // Tenant-Industrie laden (für Industry-spezifische Controls)
+  const { data: tenant } = await admin.from('tenants')
+    .select('industry').eq('id', asset.tenant_id).maybeSingle();
+  const tenantIndustry = tenant?.industry ?? undefined;
+
+  // Katalog (id ↔ framework/control_code) + Ist-Zustand laden.
+  const { data: controls } = await admin.from('framework_controls').select('id, framework, control_code');
+  const ctrlList: Array<{ id: string; framework: string; control_code: string }> = controls ?? [];
+  const controlId = new Map(ctrlList.map((c) => [`${c.framework}::${c.control_code}`, c.id]));
+
+  const { data: existing } = await admin.from('asset_control_mappings')
+    .select('control_id, status, source').eq('asset_id', asset_id);
+  const current: CurrentMapping[] = (existing ?? [])
+    .map((m: { control_id: string; status: string; source: string }) => {
+      const c = ctrlList.find((x) => x.id === m.control_id);
+      return c ? { framework: c.framework, control_code: c.control_code, status: m.status as CurrentMapping['status'], source: (m.source as CurrentMapping['source']) ?? 'manual' } : null;
+    })
+    .filter((x: CurrentMapping | null): x is CurrentMapping => x !== null);
+
+  const profile: AssetProfile = {
+    assetType: asset.asset_type ?? '',
+    aiActClass: asset.ai_act_class ?? 'unknown',
+    dataTypes: Array.isArray(asset.data_types) ? asset.data_types.map(String) : [],
+    tenantIndustry,
+  };
+  const refs: ControlRef[] = ctrlList.map((c) => ({ framework: c.framework, control_code: c.control_code }));
+
+  const proposals = computeAutoMappings(profile, refs, current);
+
+  // Nur Vorschläge anwenden, deren Control im Katalog auflösbar ist.
+  const rows = proposals
+    .map((p) => {
+      const cid = controlId.get(`${p.framework}::${p.control_code}`);
+      return cid ? { asset_id, control_id: cid, status: p.status, notes: `[auto] ${p.rationale}`, source: 'auto' } : null;
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  if (rows.length > 0) {
+    const { error } = await admin.from('asset_control_mappings')
+      .upsert(rows, { onConflict: 'asset_id,control_id' });
+    if (error) throw error;
+  }
+
+  await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.auto', target_type: 'governance_asset', target_id: asset_id, payload: { applied: rows.length } });
+  return jsonResponse({ ok: true, applied: rows.length, proposals });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -228,7 +285,7 @@ async function deleteMapping(admin: any, userId: string, userEmail: string | nul
   const { error } = await admin.from('asset_control_mappings').delete().eq('id', mapping_id);
   if (error) throw error;
   await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.delete', target_type: 'asset_control_mapping', target_id: mapping_id, payload: {} });
-  return json({ ok: true });
+  return jsonResponse({ ok: true });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -244,12 +301,3 @@ function clampInt(v: unknown, fallback: number, min: number, max: number): numbe
   return Math.min(Math.max(Math.trunc(n), min), max);
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

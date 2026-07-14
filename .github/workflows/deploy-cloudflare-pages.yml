@@ -1,25 +1,30 @@
 name: Deploy to Cloudflare Pages
 
 # ─────────────────────────────────────────────────────────────────
-# CLOUDFLARE PAGES DEPLOYMENT PIPELINE
+# CLOUDFLARE PAGES — BUILD-VALIDIERUNG (+ optionaler Deploy)
 # ─────────────────────────────────────────────────────────────────
-# Replaces GitHub Pages. Automatic deploy on push to main.
+# Der LIVE-Deploy laeuft ueber Cloudflares native Git-Integration
+# (Pages baut/deployt direkt aus dem Repo, ganz ohne Repo-Secret).
+# Die Live-Site ist darueber gruen (HTTP 200).
 #
-# Setup required (one-time):
-# 1. Create Cloudflare Pages project (see deploy/cloudflare-pages/README.md)
-# 2. Add secrets to GitHub (Settings > Secrets and variables > Actions):
+# Dieser Workflow ist daher primaer eine CI-Validierung: er laeuft
+# `npm run lint` + `npm run build` bei jedem Push und stellt sicher,
+# dass der Build nicht bricht.
+#
+# Der `deploy`-Job (Push via wrangler-action) ist OPTIONAL und laeuft
+# NUR, wenn beide Repo-Secrets gesetzt sind:
 #    - CLOUDFLARE_API_TOKEN
 #    - CLOUDFLARE_ACCOUNT_ID
-# 3. Add environment variables to GitHub Actions:
-#    - VITE_SUPABASE_URL
-#    - VITE_SUPABASE_ANON_KEY
-#    - VITE_SENTRY_DSN (optional)
-#    - VITE_STRIPE_PRICE_* (required)
+# Sind sie nicht gesetzt, werden `deploy`/`smoke-test` sauber
+# uebersprungen (skipped, NICHT failed) — kein Dauer-Rot. Secrets
+# koennen unter Repo → Settings → Secrets and variables → Actions
+# nachgetragen werden; dann uebernimmt dieser Workflow den Deploy.
+# Wer das tut, sollte zusaetzlich die Cloudflare-Git-Integration
+# deaktivieren, damit nicht zwei Pfade gleichzeitig deployen.
 #
-# DNS setup:
-# - Domain: realsyncdynamicsai.de
-# - Current: GitHub Pages (185.199.108-111.153)
-# - Target: Cloudflare Pages (via nameserver delegation)
+# Build-Env-Variablen (GitHub Actions Secrets/Variables):
+#    - VITE_SUPABASE_URL · VITE_SUPABASE_ANON_KEY
+#    - VITE_SENTRY_DSN (optional) · VITE_STRIPE_PRICE_* (Checkout)
 # ─────────────────────────────────────────────────────────────────
 
 on:
@@ -50,8 +55,27 @@ jobs:
   build:
     name: Build SPA
     runs-on: ubuntu-latest
+    # Signalisiert nachgelagerten Jobs, ob die Cloudflare-Credentials
+    # vorhanden sind. Secrets sind in job-level `if:` nicht lesbar, darum
+    # hier als Job-Output abgeleitet.
+    outputs:
+      cf_ready: ${{ steps.cfcheck.outputs.ready }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Detect Cloudflare credentials
+        id: cfcheck
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "✓ Cloudflare-Credentials vorhanden — Deploy-Job laeuft."
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Cloudflare-Repo-Secrets nicht gesetzt — GitHub-Actions-Deploy wird uebersprungen. Live-Deploy laeuft ueber Cloudflares Git-Integration; dieser Workflow validiert nur Lint + Build."
+          fi
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -73,7 +97,15 @@ jobs:
           VITE_STRIPE_PRICE_STARTER: ${{ secrets.VITE_STRIPE_PRICE_STARTER }}
           VITE_STRIPE_PRICE_GROWTH: ${{ secrets.VITE_STRIPE_PRICE_GROWTH }}
           VITE_STRIPE_PRICE_AGENCY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY }}
+          VITE_STRIPE_PRICE_SCALE: ${{ secrets.VITE_STRIPE_PRICE_SCALE }}
+          VITE_STRIPE_PRICE_STARTER_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_STARTER_YEARLY }}
+          VITE_STRIPE_PRICE_GROWTH_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_GROWTH_YEARLY }}
+          VITE_STRIPE_PRICE_AGENCY_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY_YEARLY }}
+          VITE_STRIPE_PRICE_SCALE_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_SCALE_YEARLY }}
         run: npm run build
+
+      - name: Generate legal pages markers
+        run: npm run generate:legal-pages
 
       - name: Prerender high-priority routes
         run: |
@@ -106,7 +138,8 @@ jobs:
               '/settings', '/settings/team', '/settings/security',
               '/settings/account', '/settings/ai-residency', '/settings/api-keys',
               '/billing/usage', '/tenant/invites',
-              '/checkout/starter', '/checkout/growth', '/checkout/agency',
+              '/checkout/starter', '/checkout/growth', '/checkout/agency', '/checkout/enterprise', '/checkout/scale',
+              '/checkout/starter_yearly', '/checkout/growth_yearly', '/checkout/agency_yearly', '/checkout/enterprise_yearly', '/checkout/scale_yearly',
           ]
           paths = sorted(paths | set(APP_ROUTES))
           src = 'dist/index.html'
@@ -133,6 +166,10 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Pages
     needs: build
+    # Nur ausfuehren, wenn die Repo-Secrets vorhanden sind. Andernfalls sauber
+    # uebersprungen (skipped) — der Live-Deploy laeuft ueber Cloudflares
+    # Git-Integration und braucht diesen Job nicht.
+    if: needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -142,26 +179,6 @@ jobs:
         with:
           name: dist
           path: dist/
-
-      # Fail-fast mit klarer Meldung, wenn die Cloudflare-Credentials fehlen.
-      # Ohne diese deployt Pages NICHT — die Live-Site bleibt dann HTTP 500.
-      # Haeufige Ursache: Secret als *Environment*-Secret statt Repo-Secret
-      # hinterlegt (dann muesste der Job `environment:` deklarieren), oder
-      # unter abweichendem Namen. Erwartet: Repo → Settings → Secrets and
-      # variables → Actions → CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID.
-      - name: Verify Cloudflare credentials present
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          missing=""
-          [ -z "$CF_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
-          [ -z "$CF_ACCOUNT_ID" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
-          if [ -n "$missing" ]; then
-            echo "::error::Fehlende GitHub-Actions-Secrets:$missing — bitte unter Repo → Settings → Secrets and variables → Actions als Repository-Secret hinterlegen. Ohne sie kann Cloudflare Pages nicht deployen und die Live-Site bleibt HTTP 500."
-            exit 1
-          fi
-          echo "✓ Cloudflare-Credentials vorhanden"
 
       # cloudflare/pages-action@v1 ist deprecated (lehnt u. a. `productionBranch`
       # ab). Maintainter Weg: wrangler-action@v3 mit `pages deploy`.
@@ -174,7 +191,9 @@ jobs:
 
   smoke-test:
     name: Smoke test live routes
-    needs: deploy
+    needs: [build, deploy]
+    # Lief deploy (mangels Secrets) nicht, gibt es nichts zu pruefen.
+    if: needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Wait for CDN propagation

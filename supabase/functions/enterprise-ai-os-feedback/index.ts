@@ -8,34 +8,23 @@
 // enterprise_feedback_reports table.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse } from '../_shared/gateway.ts';
 
 const VALID_TYPES = new Set([
   'bug', 'improvement', 'feature_request', 'security_issue', 'ux_feedback',
 ]);
 const VALID_SEVERITIES = new Set(['low', 'medium', 'high', 'critical']);
 
-function json(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...cors, 'Content-Type': 'application/json' },
-  });
-}
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (req.method !== 'POST') return json(405, { error: 'POST only' });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return jsonResponse({ error: 'POST only' }, 405);
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return json(400, { error: 'invalid JSON' });
+    return jsonResponse({ error: 'invalid JSON' }, 400);
   }
 
   const title = typeof body.title === 'string' ? body.title : '';
@@ -43,21 +32,21 @@ Deno.serve(async (req) => {
   const type = typeof body.type === 'string' ? body.type : '';
 
   if (!title || !description || !type) {
-    return json(400, { error: 'title, description and type are required' });
+    return jsonResponse({ error: 'title, description and type are required' }, 400);
   }
   if (!VALID_TYPES.has(type)) {
-    return json(400, { error: `type must be one of ${[...VALID_TYPES].join(', ')}` });
+    return jsonResponse({ error: `type must be one of ${[...VALID_TYPES].join(', ')}` }, 400);
   }
 
   const severity = typeof body.severity === 'string' ? body.severity : 'medium';
   if (!VALID_SEVERITIES.has(severity)) {
-    return json(400, { error: `severity must be one of ${[...VALID_SEVERITIES].join(', ')}` });
+    return jsonResponse({ error: `severity must be one of ${[...VALID_SEVERITIES].join(', ')}` }, 400);
   }
 
   const url = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !serviceKey) {
-    return json(500, { error: 'Supabase env vars missing on the function' });
+    return jsonResponse({ error: 'Supabase env vars missing on the function' }, 500);
   }
 
   const sb = createClient(url, serviceKey);
@@ -78,7 +67,7 @@ Deno.serve(async (req) => {
     .select()
     .single();
 
-  if (error) return json(500, { error: error.message });
+  if (error) return jsonResponse({ error: error.message }, 500);
 
-  return json(200, { ok: true, feedback: data });
+  return jsonResponse({ ok: true, feedback: data }, 200);
 });

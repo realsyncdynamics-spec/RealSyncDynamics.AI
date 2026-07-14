@@ -17,8 +17,8 @@ const items: ChecklistItem[] = [
 
   // Transparenz
   { id: 't1', category: 'transparenz', title: 'Datenschutzerklärung enthält KI-Verarbeitung', detail: 'Welche Daten gehen an welchen KI-Provider? Welche Modelle? Welche Zweckbindung? Pauschale „Wir nutzen KI" reicht nicht.', ref: 'DSGVO Art. 13 Abs. 1+2' },
-  { id: 't2', category: 'transparenz', title: 'Cookie-Banner mit „Ablehnen" gleichberechtigt', detail: 'Reject-Button muss visuell gleichwertig zu Accept-Button sein. Dark-Patterns (graue Reject-Schrift, versteckte Ebenen) sind abmahnfähig.', ref: '§ 25 TTDSG · BfDI-Leitlinie 2024' },
-  { id: 't3', category: 'transparenz', title: 'Tracker erst nach Consent laden', detail: 'Google Analytics, Meta-Pixel, LinkedIn-Insight, Hotjar, Microsoft Clarity dürfen NICHT vor Cookie-Consent geladen werden — auch nicht „anonymisiert".', ref: 'DSGVO Art. 6 Abs. 1 · § 25 TTDSG' },
+  { id: 't2', category: 'transparenz', title: 'Cookie-Banner mit „Ablehnen" gleichberechtigt', detail: 'Reject-Button muss visuell gleichwertig zu Accept-Button sein. Dark-Patterns (graue Reject-Schrift, versteckte Ebenen) sind abmahnfähig.', ref: '§ 25 TDDDG · BfDI-Leitlinie 2024' },
+  { id: 't3', category: 'transparenz', title: 'Tracker erst nach Consent laden', detail: 'Google Analytics, Meta-Pixel, LinkedIn-Insight, Hotjar, Microsoft Clarity dürfen NICHT vor Cookie-Consent geladen werden — auch nicht „anonymisiert".', ref: 'DSGVO Art. 6 Abs. 1 · § 25 TDDDG' },
   { id: 't4', category: 'transparenz', title: 'Auftragsverarbeitung im Datenschutzhinweis', detail: 'Jeder Auftragsverarbeiter (KI-Anbieter, CRM, E-Mail) muss namentlich + mit Speicherort genannt werden.', ref: 'DSGVO Art. 13 Abs. 1 lit. e' },
 
   // Sicherheit (Art. 32)
@@ -189,7 +189,7 @@ function Footer() {
         <div>© 2026 RealSync Dynamics · Made in Germany</div>
         <div className="flex flex-wrap gap-3">
           <Link to="/legal/privacy" className="hover:text-titanium-300">Datenschutz</Link>
-          <Link to="/legal/sub-processors" className="hover:text-titanium-300">Impressum</Link>
+          <Link to="/impressum" className="hover:text-titanium-300">Impressum</Link>
           <Link to="/legal/avv" className="hover:text-titanium-300">AVV</Link>
         </div>
       </div>

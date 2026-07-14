@@ -6,11 +6,9 @@
 //   → { selectedSkill, confidence, reason, requiresWebResearch, riskLevel,
 //       candidates, guardrails }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-};
+import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+
+const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 type RiskLevel = 'low' | 'medium' | 'high';
 
@@ -138,24 +136,18 @@ function route(rawInput: string) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req, corsHeaders);
+  if (preflight) return preflight;
 
-  if (req.method === 'GET') return json({ ok: true, skills: SKILLS });
+  if (req.method === 'GET') return jsonResponse({ ok: true, skills: SKILLS }, 200, corsHeaders);
 
   if (req.method === 'POST') {
     let body: { input?: unknown };
-    try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
+    try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json', corsHeaders); }
     const input = typeof body?.input === 'string' ? body.input : '';
-    if (!input) return jsonError(400, 'BAD_REQUEST', 'input required');
-    return json({ ok: true, ...route(input) });
+    if (!input) return jsonError(400, 'BAD_REQUEST', 'input required', corsHeaders);
+    return jsonResponse({ ok: true, ...route(input) }, 200, corsHeaders);
   }
 
-  return jsonError(405, 'BAD_REQUEST', 'GET or POST only');
+  return jsonError(405, 'BAD_REQUEST', 'GET or POST only', corsHeaders);
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'content-type': 'application/json' } });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

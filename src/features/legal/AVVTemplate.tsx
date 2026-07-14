@@ -65,8 +65,8 @@ export function AVVTemplate() {
             <p className="mb-3"><strong>Auftragsverarbeiter:</strong></p>
             <div className="border border-titanium-800 print:border-titanium-300 p-3 text-sm">
               RealSync Dynamics<br />
-              Inhaber: Dominik Seed<br />
-              Anschrift: <em>[wird durch RealSync ausgefüllt]</em><br />
+              Inhaber: Dominik Steiner<br />
+              Schwarzburger Str. 31, 98724 Neuhaus am Rennweg, Thüringen, Deutschland<br />
               E-Mail: <a href="mailto:privacy@realsyncdynamicsai.de" className="text-security-400 print:text-[#1f6feb]">privacy@realsyncdynamicsai.de</a><br />
               („<em>RealSync</em>")
             </div>
@@ -213,6 +213,63 @@ export function AVVTemplate() {
               <li>Vulnerability-Scanning auf allen Produktivsystemen.</li>
               <li>Mitarbeiter-Schulungen zum Datenschutz mindestens jährlich.</li>
             </ul>
+          </Section>
+
+          {/* Anhang Branchenspezifisch */}
+          <Section title="Anhang 2 — Branchenspezifische Zusatzvereinbarungen">
+            <Para>
+              Die folgenden Klauseln gelten <strong>nur</strong>, soweit die jeweilige
+              Branche für den Kunden zutrifft und im Hauptvertrag bzw. durch
+              Ankreuzen unten ausdrücklich vereinbart wurde. Sie ergänzen die
+              §§ 1–10 und gehen diesen im Konfliktfall für den betreffenden
+              Sektor vor.
+            </Para>
+
+            <h3 className="font-display font-bold text-titanium-50 print:text-[#0d1117] text-base mt-5 mb-2">
+              A) Rechtsanwälte, Steuerberater &amp; Berufsgeheimnisträger (§ 203 StGB, § 43e BRAO)
+            </h3>
+            <div className="border border-titanium-800 print:border-titanium-300 p-2 mb-3 text-sm font-mono">
+              ☐ Diese Zusatzvereinbarung wird verbindlich vereinbart.
+            </div>
+            <ul className="list-disc pl-6 space-y-1.5 text-sm">
+              <li>RealSync und alle bei der Verarbeitung mitwirkenden Personen werden vor Tätigkeitsbeginn nach § 203 Abs. 4 StGB schriftlich zur strafbewehrten Verschwiegenheit verpflichtet (sonstige mitwirkende Personen i. S. d. § 203 Abs. 3 StGB). Der Nachweis wird dem Kunden auf Verlangen vorgelegt.</li>
+              <li>Sub-Prozessoren werden nur eingesetzt, wenn sie ihrerseits nach § 203 Abs. 4 StGB verpflichtet sind; der Kunde ist über die Hinzuziehung vorab zu unterrichten (§ 43e Abs. 2 BRAO entsprechend).</li>
+              <li>Mandats- bzw. mandantenbezogene Daten werden auf Weisung unverzüglich gelöscht oder herausgegeben; eine Verarbeitung zu eigenen Zwecken von RealSync ist ausgeschlossen.</li>
+              <li>Zugriffe auf Berufsgeheimnisse erfolgen ausschließlich nach dem Need-to-know-Prinzip und werden gesondert protokolliert.</li>
+            </ul>
+
+            <h3 className="font-display font-bold text-titanium-50 print:text-[#0d1117] text-base mt-5 mb-2">
+              B) Banken &amp; Finanzdienstleister (§ 25b KWG, MaRisk AT 9, BAIT)
+            </h3>
+            <div className="border border-titanium-800 print:border-titanium-300 p-2 mb-3 text-sm font-mono">
+              ☐ Diese Zusatzvereinbarung wird verbindlich vereinbart.
+            </div>
+            <ul className="list-disc pl-6 space-y-1.5 text-sm">
+              <li>Die Verarbeitung gilt als Auslagerung i. S. d. § 25b KWG bzw. MaRisk AT 9. RealSync unterstützt das Auslagerungsmanagement des Kunden (Risikoanalyse, Dokumentation, Notfallkonzept).</li>
+              <li>Uneingeschränkte Informations-, Prüfungs- und Kontrollrechte des Kunden, seiner Internen Revision und Abschlussprüfer sowie der BaFin und der Deutschen Bundesbank — einschließlich Vor-Ort-Prüfungen und vollständiger Auskunfts- und Einsichtsrechte (§ 25b Abs. 3 KWG).</li>
+              <li>Weisungs- und uneingeschränkte Kündigungsrechte des Kunden bleiben jederzeit gewahrt; RealSync gewährleistet ein geordnetes Exit-Management und die Datenrückführung ohne Beeinträchtigung des laufenden Betriebs.</li>
+              <li>Schwerwiegende Vorfälle und Betriebsstörungen werden unverzüglich gemeldet, kompatibel mit den aufsichtlichen Melde- und Anzeigepflichten des Kunden.</li>
+              <li>Eine Weiterverlagerung (Sub-Outsourcing) wesentlicher Leistungen erfolgt nur mit vorheriger Zustimmung des Kunden und unter Durchstellung gleichwertiger Prüf- und Kündigungsrechte.</li>
+            </ul>
+
+            <h3 className="font-display font-bold text-titanium-50 print:text-[#0d1117] text-base mt-5 mb-2">
+              C) Gesundheit, Pflege &amp; Sozialdaten (Art. 9 DSGVO, § 22 BDSG, § 113c SGB XI, § 80 SGB X)
+            </h3>
+            <div className="border border-titanium-800 print:border-titanium-300 p-2 mb-3 text-sm font-mono">
+              ☐ Diese Zusatzvereinbarung wird verbindlich vereinbart.
+            </div>
+            <ul className="list-disc pl-6 space-y-1.5 text-sm">
+              <li>Besondere Kategorien personenbezogener Daten (insb. Gesundheitsdaten, Art. 9 DSGVO) werden nur auf ausdrückliche, dokumentierte Weisung verarbeitet. RealSync trifft die zusätzlichen Maßnahmen nach § 22 Abs. 2 BDSG (u. a. verschärfte Zugriffsbeschränkung, erweiterte Protokollierung, Pseudonymisierung/Verschlüsselung).</li>
+              <li>Bei Verarbeitung von Sozialdaten gelten ergänzend § 80 SGB X und — im Pflegekontext — § 113c SGB XI; die Prüf- und Kontrollrechte der zuständigen Aufsichts- und Sozialleistungsträger werden gewährleistet.</li>
+              <li>Der Zugriff erfolgt strikt rollenbasiert nach dem Need-to-know-Prinzip; jeder Zugriff auf besondere Kategorien wird mandantenbezogen protokolliert und ist revisionssicher.</li>
+              <li>Eine Übermittlung in Drittländer ist für besondere Kategorien ausgeschlossen, sofern der Kunde nicht ausdrücklich und gesondert zustimmt.</li>
+            </ul>
+
+            <p className="text-xs text-titanium-500 print:text-[#7a838e] mt-4">
+              Für stark regulierte Mandate stellt RealSync auf Anfrage ein
+              vollständig ausformuliertes, sektorspezifisches Dokument zur
+              Einzelunterzeichnung bereit (siehe „AVV anfragen").
+            </p>
           </Section>
 
           {/* Unterschriften */}

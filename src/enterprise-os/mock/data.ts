@@ -61,7 +61,7 @@ export const RISKS: RiskItem[] = [
     description: 'Nutzer können Marketing-Cookies nicht einzeln ablehnen — nur „Alle akzeptieren" oder „Alle ablehnen".',
     level: 'high',
     asset: 'blog.atelier-nord.de',
-    framework: 'TTDSG §25',
+    framework: 'TDDDG §25',
     detectedAt: '10.06.2026',
   },
   {
@@ -441,7 +441,7 @@ export const COMPLIANCE_OBLIGATIONS: ComplianceObligation[] = [
   {
     id: 'ob-3',
     title: 'Cookie-Banner auf granulare Einwilligung umstellen',
-    framework: 'TTDSG §25',
+    framework: 'TDDDG §25',
     status: 'high',
     dueDate: '20.06.2026',
     owner: 'Tarek Younes',

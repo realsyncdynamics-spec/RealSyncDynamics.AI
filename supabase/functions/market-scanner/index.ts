@@ -23,12 +23,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { callProvider, ProviderError } from '../_shared/providers.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 // 12-Industries-Rotation. Index = (day_of_year - 1) mod 12.
 const INDUSTRIES: Array<{ industry: string; default_sector: string }> = [
@@ -63,7 +58,7 @@ interface GapPayload {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST')   return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -164,7 +159,7 @@ Deno.serve(async (req) => {
       finished_at: new Date().toISOString(),
     }).eq('id', runId);
 
-    return json({ ok: true, run_id: runId, gap_id: gapId, briefs_created: briefsCreated });
+    return jsonResponse({ ok: true, run_id: runId, gap_id: gapId, briefs_created: briefsCreated });
   } catch (e) {
     const err = e as Error;
     const code = e instanceof ProviderError ? e.code : 'INTERNAL';
@@ -301,11 +296,3 @@ function buildCeoBrief(gap: GapPayload): { title: string; body_md: string } {
   return { title, body_md };
 }
 
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string): Response {
-  return json({ ok: false, error: { code, message } }, status);
-}

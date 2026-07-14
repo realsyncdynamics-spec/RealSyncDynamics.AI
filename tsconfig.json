@@ -29,12 +29,15 @@
     "node_modules",
     "dist",
     "scripts",
+    "deploy",
     "supabase/functions",
     "services/playwright-scanner",
     "services/openclaw-agent",
     "services/realsync-runtime-core",
     "services/realsync-evidence-runtime",
     "worker",
-    "apps/agent-runtime"
+    "apps/agent-runtime",
+    "extension",
+    "deploy"
   ]
 }

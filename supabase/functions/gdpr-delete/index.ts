@@ -23,17 +23,13 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
 const CONFIRM_PHRASE = 'DELETE-MY-ACCOUNT';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
   const auth = req.headers.get('Authorization');
@@ -89,7 +85,7 @@ Deno.serve(async (req) => {
   if (soleOwnerTenants.length > 0) {
     return jsonError(409, 'SOLE_OWNER',
       'Du bist alleiniger Owner mindestens eines Workspaces. Übertrage erst Ownership oder lösche den Workspace.',
-      { sole_owner_of: soleOwnerTenants });
+      undefined, { sole_owner_of: soleOwnerTenants });
   }
 
   // ── Anonymisieren statt löschen (Audit-Retention) ─────────────────────────
@@ -112,7 +108,7 @@ Deno.serve(async (req) => {
   const { error: authErr } = await admin.auth.admin.deleteUser(userId);
   if (authErr) return jsonError(500, 'INTERNAL', `auth.deleteUser failed: ${authErr.message}`);
 
-  return json({
+  return jsonResponse({
     ok: true,
     deleted_user: { id: userId, email: userEmail },
     anonymized_tables: ['workflow_runs', 'ai_tool_runs'],
@@ -121,12 +117,3 @@ Deno.serve(async (req) => {
     anonymization_warnings: anonymizationErrors,
   });
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status, headers: { ...corsHeaders, 'content-type': 'application/json' },
-  });
-}
-function jsonError(status: number, code: string, message: string, details?: unknown): Response {
-  return json({ ok: false, error: { code, message, details } }, status);
-}

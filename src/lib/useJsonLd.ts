@@ -66,7 +66,7 @@ export function softwareApplicationLd() {
     applicationCategory: 'BusinessApplication',
     operatingSystem: 'Web',
     description:
-      'Technische Vorprüfung und Monitoring für DSGVO-, TTDSG- und AI-Act-relevante Website- und Tracking-Risiken.',
+      'Technische Vorprüfung und Monitoring für DSGVO-, TDDDG- und AI-Act-relevante Website- und Tracking-Risiken.',
     url: 'https://RealSyncDynamicsAI.de/',
   };
 }

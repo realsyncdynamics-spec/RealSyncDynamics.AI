@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface CustomFramework {
   id: string;
@@ -22,9 +23,15 @@ interface CustomFramework {
   isPublished: boolean;
 }
 
-export function CustomFrameworkView() {
+function _CustomFrameworkView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const CustomFrameworkView = withPerformanceMonitoring(
+  _CustomFrameworkView,
+  'CustomFrameworkView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface ReportTemplate {
   id: string;
@@ -96,9 +97,15 @@ const REPORT_TEMPLATES: ReportTemplate[] = [
   },
 ];
 
-export function CertificationReportGeneratorView() {
+function _CertificationReportGeneratorView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const CertificationReportGeneratorView = withPerformanceMonitoring(
+  _CertificationReportGeneratorView,
+  'CertificationReportGeneratorView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

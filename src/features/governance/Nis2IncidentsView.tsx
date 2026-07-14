@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface Nis2Deadline {
   id: string;
@@ -20,9 +21,15 @@ interface Nis2Deadline {
   created_at: string;
 }
 
-export function Nis2IncidentsView() {
+function _Nis2IncidentsView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const Nis2IncidentsView = withPerformanceMonitoring(
+  _Nis2IncidentsView,
+  'Nis2IncidentsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

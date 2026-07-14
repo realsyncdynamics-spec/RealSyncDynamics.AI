@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface ComplianceGap {
   id: string;
@@ -22,9 +23,15 @@ interface ComplianceGap {
   created_at: string;
 }
 
-export function GapAnalysisView() {
+function _GapAnalysisView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const GapAnalysisView = withPerformanceMonitoring(
+  _GapAnalysisView,
+  'GapAnalysisView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

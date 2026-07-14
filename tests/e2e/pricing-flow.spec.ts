@@ -98,7 +98,7 @@ test.describe('Pricing Flow', () => {
 
     test('Growth plan should be marked as recommended', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
       await expect(growthCard).toBeVisible();
@@ -110,9 +110,14 @@ test.describe('Pricing Flow', () => {
     });
 
     test('should have info buttons for each plan', async ({ page }) => {
-      await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(1000);
+      await page.goto(`${BASE_URL}/pricing`);
+      await page.waitForLoadState('domcontentloaded');
 
+      // Find pricing cards by looking for elements with pricing-related buttons
+      // Cards should have buttons for checkout/info
+      const cardButtons = page.locator('[data-testid^="pricing-"]');
+      const count = await cardButtons.count();
+      expect(count).toBeGreaterThan(0);
       // Die „Mehr erfahren"-CTA ist ein <Link> (Anchor), kein <button> —
       // daher gezielt über die stabile data-testid prüfen (PricingPage.tsx).
       for (const id of CARD_IDS.slice(0, 3)) { // Subset gegen Timeout
@@ -122,9 +127,18 @@ test.describe('Pricing Flow', () => {
     });
 
     test('should have booking buttons for each plan', async ({ page }) => {
-      await page.goto(`${BASE_URL}/pricing`, { waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(1000);
+      await page.goto(`${BASE_URL}/pricing`);
+      await page.waitForLoadState('domcontentloaded');
 
+      // Look for CTA buttons using the actual button labels from config/pricing.ts
+      // Labels include "Kostenlos starten", "14 Tage kostenlos testen", "Partner anfragen", etc.
+      const ctaButtons = page.locator('[data-testid^="pricing-book-"]');
+      const count = await ctaButtons.count();
+      expect(count).toBeGreaterThan(0);
+
+      // Verify at least one button is visible
+      const firstButton = ctaButtons.first();
+      await expect(firstButton).toBeVisible({ timeout: 5000 });
       // Die Primär-CTA jeder Karte ist ein <a>/<Link> (Anchor), kein <button>.
       // Prüfe die Buchen-CTA über ihre stabile data-testid.
       for (const id of CARD_IDS) {
@@ -137,13 +151,13 @@ test.describe('Pricing Flow', () => {
   test.describe('Plan Detail Pages', () => {
     test('should navigate to plan detail page from info button', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const infoButton = page.locator('[data-testid="pricing-info-growth"]');
       await infoButton.click();
 
       await expect(page).toHaveURL(/\/pricing\/growth/);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const planDetail = page.locator('[data-testid="plan-detail-growth"]');
       await expect(planDetail).toBeVisible();
@@ -152,7 +166,7 @@ test.describe('Pricing Flow', () => {
     test('all plan detail pages should be accessible', async ({ page }) => {
       for (const slug of DETAIL_SLUGS) {
         await page.goto(`${BASE_URL}/pricing/${slug}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         const planDetail = page.locator(`[data-testid="plan-detail-${slug}"]`);
         await expect(planDetail).toBeVisible();
@@ -163,7 +177,7 @@ test.describe('Pricing Flow', () => {
       // Die Free-Karte verlinkt auf /pricing/free — der Wrapper leitet per
       // Slug-Alias auf die kanonische Detailseite /pricing/free-audit um.
       await page.goto(`${BASE_URL}/pricing/free`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page).toHaveURL(/\/pricing\/free-audit/);
       const planDetail = page.locator('[data-testid="plan-detail-free-audit"]');
@@ -172,7 +186,7 @@ test.describe('Pricing Flow', () => {
 
     test('yearly plan should display annual billing period', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth_yearly`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const annualLabel = page.locator('text=/pro Jahr|12 Monate/i').first();
       await expect(annualLabel).toBeVisible();
@@ -180,7 +194,7 @@ test.describe('Pricing Flow', () => {
 
     test('yearly plan pricing should reflect 2-month discount', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth_yearly`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Growth jährlich: 249 € × 10 = 2.490 € (deutsches Zahlenformat)
       const price = page.locator('text=2.490 €').first();
@@ -189,12 +203,12 @@ test.describe('Pricing Flow', () => {
 
     test('yearly vs monthly pricing difference should be clear', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       const monthlyPrice = page.locator('text=249 €').first();
       await expect(monthlyPrice).toBeVisible();
 
       await page.goto(`${BASE_URL}/pricing/growth_yearly`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       const yearlyPrice = page.locator('text=2.490 €').first();
       await expect(yearlyPrice).toBeVisible();
       // 2.490 € < 12 × 249 € = 2.988 € → Rabatt implizit belegt.
@@ -202,7 +216,7 @@ test.describe('Pricing Flow', () => {
 
     test('plan detail page should display plan name', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const planName = page.locator('h2:has-text("Growth")');
       await expect(planName.first()).toBeVisible();
@@ -210,7 +224,7 @@ test.describe('Pricing Flow', () => {
 
     test('plan detail page should have features list', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const featureLinks = page.locator('[data-testid^="feature-link-"]');
       const featureCount = await featureLinks.count();
@@ -219,7 +233,7 @@ test.describe('Pricing Flow', () => {
 
     test('plan detail page should have navigation buttons', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/starter`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const nextButton = page.locator('[data-testid="plan-nav-next"]');
       await expect(nextButton).toBeVisible();
@@ -230,7 +244,7 @@ test.describe('Pricing Flow', () => {
 
     test('should navigate to next plan via button', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/starter`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const nextButton = page.locator('[data-testid="plan-nav-next"]');
       await nextButton.click();
@@ -240,7 +254,7 @@ test.describe('Pricing Flow', () => {
 
     test('should navigate to previous plan via button', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const prevButton = page.locator('[data-testid="plan-nav-prev"]');
       await prevButton.click();
@@ -250,21 +264,21 @@ test.describe('Pricing Flow', () => {
 
     test('should link to feature detail pages from plan detail', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const firstFeatureLink = page.locator('[data-testid^="feature-link-"]').first();
       const href = await firstFeatureLink.getAttribute('href');
       expect(href).toMatch(/\/features\/[a-z-]+/);
 
       await firstFeatureLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page).toHaveURL(/\/features\/[a-z-]+/);
     });
 
     test('should have checkout button on plan detail page', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const checkoutButton = page.locator(
         '[data-testid="plan-detail-growth"] [data-testid="plan-cta-button"]'
@@ -276,14 +290,14 @@ test.describe('Pricing Flow', () => {
   test.describe('Feature Detail Pages', () => {
     test('should navigate to feature detail page', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const firstFeatureLink = page.locator('[data-testid^="feature-link-"]').first();
       const featureSlug = await firstFeatureLink.getAttribute('data-testid');
       const expectedFeatureSlug = featureSlug?.replace('feature-link-', '');
 
       await firstFeatureLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const featureDetail = page.locator(
         `[data-testid="feature-detail-${expectedFeatureSlug}"]`
@@ -315,7 +329,7 @@ test.describe('Pricing Flow', () => {
 
       for (const slug of featureSlugs) {
         await page.goto(`${BASE_URL}/features/${slug}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         const featureDetail = page.locator(`[data-testid="feature-detail-${slug}"]`);
         await expect(featureDetail).toBeVisible();
@@ -324,7 +338,7 @@ test.describe('Pricing Flow', () => {
 
     test('feature detail page should display feature title', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const featureTitle = page.locator('h1, h2');
       const titleText = await featureTitle.first().textContent();
@@ -333,7 +347,7 @@ test.describe('Pricing Flow', () => {
 
     test('feature detail page should show plans containing feature', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const planLinks = page.locator('[data-testid^="feature-plan-link-"]');
       const planCount = await planLinks.count();
@@ -342,7 +356,7 @@ test.describe('Pricing Flow', () => {
 
     test('feature detail page should link back to pricing', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const backToPricingButton = page.locator('[data-testid="feature-back-to-pricing"]');
       await expect(backToPricingButton).toBeVisible();
@@ -350,7 +364,7 @@ test.describe('Pricing Flow', () => {
 
     test('feature detail page should have button to view plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const viewPlanButtons = page.locator('[data-testid^="feature-view-plan-"]');
       const buttonCount = await viewPlanButtons.count();
@@ -359,11 +373,11 @@ test.describe('Pricing Flow', () => {
 
     test('can navigate from feature to plan detail page', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const viewPlanButton = page.locator('[data-testid^="feature-view-plan-"]').first();
       await viewPlanButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page).toHaveURL(/\/pricing\/[a-z-_]+/);
     });
@@ -372,13 +386,13 @@ test.describe('Pricing Flow', () => {
   test.describe('Checkout Flow (Stripe-Bridge)', () => {
     test('should navigate to checkout page from pricing', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const bookButton = page.locator('[data-testid="pricing-book-growth"]');
       await bookButton.click();
 
       await expect(page).toHaveURL(/\/checkout\/growth/);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Anonyme Besucher sehen den Login-Shell der Stripe-Checkout-Bridge.
       const authShell = page.locator('[data-testid="checkout-auth-required"]');
@@ -388,7 +402,7 @@ test.describe('Pricing Flow', () => {
     test('all bookable checkout pages should be accessible', async ({ page }) => {
       for (const planKey of CHECKOUT_PLAN_KEYS) {
         await page.goto(`${BASE_URL}/checkout/${planKey}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
 
         // URL bleibt auf dem Checkout (kein Redirect) …
         expect(page.url()).toContain(`/checkout/${planKey}`);
@@ -400,7 +414,7 @@ test.describe('Pricing Flow', () => {
 
     test('checkout page should name the selected plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Login-Shell-Titel: „Anmelden, um Growth zu buchen"
       const planName = page.locator('h1:has-text("Growth")');
@@ -409,7 +423,7 @@ test.describe('Pricing Flow', () => {
 
     test('checkout page should offer login options', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Magic-Link-Fallback führt nach /welcome mit Rücksprung zum Checkout.
       const magicLink = page.locator('a[href*="/welcome"]');
@@ -437,7 +451,7 @@ test.describe('Pricing Flow', () => {
 
     test('yearly checkout should name the annual plan', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth_yearly`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Login-Shell-Titel: „Anmelden, um Growth (Jährlich) zu buchen"
       const annualLabel = page.locator('text=/Jährlich/i').first();
@@ -467,39 +481,39 @@ test.describe('Pricing Flow', () => {
   test.describe('Navigation Consistency', () => {
     test('should have working back button on plan detail page', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const backButton = page.locator('[data-testid="plan-detail-back"]');
       await expect(backButton).toBeVisible();
 
       await backButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page).toHaveURL(/\/pricing$/);
     });
 
     test('should have working back button on feature detail page', async ({ page }) => {
       await page.goto(`${BASE_URL}/features/dsgvo-scan`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const backButton = page.locator('[data-testid="feature-back-to-pricing"]');
       await expect(backButton).toBeVisible();
 
       await backButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       await expect(page).toHaveURL(/\/pricing$/);
     });
 
     test('should have working back button on checkout page', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const backButton = page.locator('[data-testid="checkout-back"]');
       await expect(backButton).toBeVisible();
 
       await backButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Der Checkout-Backlink führt zur Paketübersicht.
       await expect(page).toHaveURL(/\/pricing$/);
@@ -509,7 +523,7 @@ test.describe('Pricing Flow', () => {
   test.describe('Growth Plan Special Status', () => {
     test('Growth plan should be marked as recommended on pricing page', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const growthCard = page.locator('[data-testid="pricing-card-growth"]');
       const badge = growthCard.locator('text=Empfohlen').first();
@@ -518,7 +532,7 @@ test.describe('Pricing Flow', () => {
 
     test('Growth plan detail page should show recommended badge', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing/growth`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const recommendedBadge = page.locator('text=Empfohlen').first();
       await expect(recommendedBadge).toBeVisible();
@@ -526,7 +540,7 @@ test.describe('Pricing Flow', () => {
 
     test('only Growth variants should have recommended badge', async ({ page }) => {
       await page.goto(`${BASE_URL}/pricing`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Growth (monatlich) und Growth (Jährlich) sind highlight-Tiers —
       // alle anderen Karten dürfen kein „Empfohlen"-Badge tragen.
@@ -572,7 +586,7 @@ test.describe('Pricing Flow', () => {
 
       for (const path of stablePaths) {
         await page.goto(`${BASE_URL}${path}`);
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         expect(page.url()).toContain(path);
       }
     });

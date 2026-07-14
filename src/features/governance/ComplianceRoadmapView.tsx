@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface RoadmapItem {
   id: string;
@@ -23,9 +24,15 @@ interface RoadmapItem {
   blockers?: string[];
 }
 
-export function ComplianceRoadmapView() {
+function _ComplianceRoadmapView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ComplianceRoadmapView = withPerformanceMonitoring(
+  _ComplianceRoadmapView,
+  'ComplianceRoadmapView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

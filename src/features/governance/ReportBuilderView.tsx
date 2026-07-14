@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { tierById } from '../../config/pricing';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface ReportConfig {
   title: string;
@@ -39,9 +40,15 @@ interface ReportPreview {
   gapsOpen: number;
 }
 
-export function ReportBuilderView() {
+function _ReportBuilderView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ReportBuilderView = withPerformanceMonitoring(
+  _ReportBuilderView,
+  'ReportBuilderView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

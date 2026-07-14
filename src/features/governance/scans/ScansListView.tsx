@@ -40,9 +40,17 @@ const STATUS_BADGE: Record<ScanRun['status'], { label: string; cls: string; Icon
   cancelled: { label: 'Abgebrochen', cls: 'border-titanium-700 text-titanium-400', Icon: XCircle },
 };
 
-export function ScansListView() {
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+
+function _ScansListView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const ScansListView = withPerformanceMonitoring(
+  _ScansListView,
+  'ScansListView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

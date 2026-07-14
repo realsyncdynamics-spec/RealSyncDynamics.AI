@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface AuditReport {
   id: string;
@@ -23,9 +24,15 @@ interface AuditReport {
   report_type: 'self_assessment' | 'internal_audit' | 'external_audit' | 'remediation_verification';
 }
 
-export function AuditReportAdvancedView() {
+function _AuditReportAdvancedView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AuditReportAdvancedView = withPerformanceMonitoring(
+  _AuditReportAdvancedView,
+  'AuditReportAdvancedView',
+  { threshold: 2000, maxRenders: 8 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

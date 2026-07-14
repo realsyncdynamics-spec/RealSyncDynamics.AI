@@ -15,6 +15,7 @@ import {
   CONTROL_MATURITY_DESCRIPTIONS,
   type MaturityLevel,
 } from '../../config/iso-control-templates';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface ControlStatus {
   controlId: string;
@@ -24,9 +25,15 @@ interface ControlStatus {
   owner?: string;
 }
 
-export function IsoControlLibraryView() {
+function _IsoControlLibraryView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const IsoControlLibraryView = withPerformanceMonitoring(
+  _IsoControlLibraryView,
+  'IsoControlLibraryView',
+  { threshold: 2000, maxRenders: 8 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

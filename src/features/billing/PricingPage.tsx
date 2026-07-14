@@ -10,6 +10,7 @@ import {
 } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
+import { CostCalculator } from '../../components/pricing/CostCalculator';
 import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
 import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
 
@@ -142,6 +143,9 @@ export function PricingPage() {
           </div>
         </div>
       </section>
+
+      {/* Cost Calculator — Interactive estimation tool */}
+      <CostCalculator />
 
       {/* Beispielhafte Kostenrechnung — Procurement-Anker, klar als Beispiel
           gekennzeichnet, keine Einsparzusagen. */}

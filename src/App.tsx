@@ -285,6 +285,7 @@ const SecuritySignalsView = lazy(() => import('./features/governance/security-si
 const GovernanceConnectorsView = lazy(() => import('./features/governance/ConnectorsView').then((m) => ({ default: m.ConnectorsView })));
 const GovernanceVendorInventoryView = lazy(() => import('./features/governance/VendorInventoryView').then((m) => ({ default: m.VendorInventoryView })));
 const GovernanceCostTrackingView = lazy(() => import('./features/governance/CostTrackingView').then((m) => ({ default: m.CostTrackingView })));
+const ModelUsageDashboard = lazy(() => import('./features/ai-gateway/ModelUsageDashboard').then((m) => ({ default: m.ModelUsageDashboard })));
 const GovernanceAuditorConsoleView = lazy(() => import('./features/governance/AuditorConsoleView').then((m) => ({ default: m.AuditorConsoleView })));
 const DashboardAnalyticsView = lazy(() => import('./features/governance/analytics/DashboardAnalyticsView').then((m) => ({ default: m.DashboardAnalyticsView })));
 const EvidenceVaultView = lazy(() => import('./features/governance/evidence/EvidenceVaultView').then((m) => ({ default: m.EvidenceVaultView })));
@@ -390,7 +391,7 @@ const ScreenshotAgentPage = lazy(() => import('./features/agents/ScreenshotAgent
 const DashboardView = lazy(() => import('./features/dashboard/DashboardView').then((m) => ({ default: m.DashboardView })));
 // ── Claude Code Optimizer — geführter Flow (Überblick → Scan → Ergebnis → Anmeldung → Bericht) ──
 const OptimizerOverview = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerOverview })));
-const OptimizerScan = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerScan })));
+const ClaudeCodeOptimizerScan = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerScan })));
 const OptimizerResult = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerResult })));
 const OptimizerSignup = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerSignup })));
 const OptimizerReport = lazy(() => import('./pages/claude-code-optimizer').then((m) => ({ default: m.OptimizerReport })));
@@ -543,7 +544,7 @@ function RoutesWithTracking() {
       {/* Claude Code Optimizer — geführter, seitenweiser Flow.
           Jeder Schritt ist eine eigene Route; /cloud-code-optimizer ist ein Alias. */}
       <Route path="/claude-code-optimizer" element={<OptimizerOverview />} />
-      <Route path="/claude-code-optimizer/scan" element={<OptimizerScan />} />
+      <Route path="/claude-code-optimizer/scan" element={<ClaudeCodeOptimizerScan />} />
       <Route path="/claude-code-optimizer/ergebnis" element={<OptimizerResult />} />
       <Route path="/claude-code-optimizer/anmelden" element={<OptimizerSignup />} />
       <Route path="/claude-code-optimizer/bericht" element={<OptimizerReport />} />
@@ -675,7 +676,7 @@ function RoutesWithTracking() {
           Die View-eigenen Guards (AuthGate/RequireAal2) bleiben zusaetzlich aktiv. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
-          DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
+      {/* DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
       <Route path="/app/seo-marketing-dashboard" element={<AppGate><GovernanceBrowserShell><SEOMarketingDashboard /></GovernanceBrowserShell></AppGate>} />
@@ -767,6 +768,7 @@ function RoutesWithTracking() {
       <Route path="/app/policies/templates" element={<GovernanceBrowserShell><GovernancePolicyTemplatesView /></GovernanceBrowserShell>} />
       <Route path="/app/connectors" element={<GovernanceBrowserShell><GovernanceConnectorsView /></GovernanceBrowserShell>} />
       <Route path="/app/costs" element={<GovernanceBrowserShell><GovernanceCostTrackingView /></GovernanceBrowserShell>} />
+      <Route path="/app/ai-gateway" element={<GovernanceBrowserShell><ModelUsageDashboard /></GovernanceBrowserShell>} />
       <Route path="/app/scans" element={<GovernanceBrowserShell><GovernanceScansListView /></GovernanceBrowserShell>} />
       <Route path="/app/scans/:scanId" element={<GovernanceBrowserShell><GovernanceScanDetailView /></GovernanceBrowserShell>} />
       <Route path="/app/risk-inventory" element={<GovernanceBrowserShell><AiActRiskInventoryView /></GovernanceBrowserShell>} />

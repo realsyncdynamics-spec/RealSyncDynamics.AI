@@ -403,8 +403,7 @@ function ConsentGateShell({
           to="/pricing"
           data-testid="checkout-back"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
-          
-        
+        >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
         </Link>

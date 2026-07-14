@@ -215,6 +215,8 @@ export async function runAiTool(
       cost_usd: costUsd,
       duration_ms: durationMs,
       status: 'success',
+      provider: effectiveProvider,
+      model_id: effectiveModelId,
       metadata: { ...(opts.metadata ?? {}), residency, provider: effectiveProvider },
     }).select('id').single();
 
@@ -278,6 +280,8 @@ export async function runAiTool(
       status: 'error',
       error_code: code,
       error_message: message,
+      provider: effectiveProvider,
+      model_id: effectiveModelId,
       metadata: { ...(opts.metadata ?? {}), residency, provider: effectiveProvider },
     });
 

@@ -82,13 +82,15 @@
 
 ## 🌐 Phase 4: Deployment & Ops (Weeks 9-10)
 
-### Frontend Deployment
+### Frontend Deployment (Cloudflare Pages)
 - [ ] Build succeeds: `npm run build`
 - [ ] Production checks pass: `npm run check:production`
-- [ ] Deployed to Vercel (or similar)
+- [ ] wrangler.toml configured (pages_build_output_dir = "dist")
+- [ ] GitHub Actions: deploy-cloudflare-pages.yml enabled
+- [ ] Cloudflare Git integration: connected to this repo
 - [ ] Custom domain: `realsync.app` (or TBD)
-- [ ] SSL certificate valid
-- [ ] env vars set in production
+- [ ] SSL certificate valid (auto-issued by Cloudflare)
+- [ ] env vars set in GitHub Actions Secrets (VITE_SUPABASE_*, etc.)
 
 ### Backend Deployment
 - [ ] Edge Functions deployed to Supabase

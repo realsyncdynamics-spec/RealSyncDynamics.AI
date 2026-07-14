@@ -149,12 +149,19 @@ Agenturen nutzen KI-Tools & Third-Party Services auf Websites, wissen aber nicht
 
 ## Deployment Target
 
-**Frontend:** Vercel  
+**Frontend:** Cloudflare Pages (native Git integration)  
 **Backend:** Supabase (Edge Functions + Postgres)  
 **DNS:** Cloudflare  
 **Monitoring:** Sentry  
 
-**Single Deployment:** `realsync.app` (or similar)
+**Single Domain:** `realsync.app` (or similar)
+
+### Why Cloudflare Pages (not Vercel)?
+- ✅ Native Git integration (push → auto-deploy, no webhooks)
+- ✅ Zero config (wrangler.toml already set up)
+- ✅ Already deployed: https://claude-realsync-roadmap-stra.realsyncdynamics-ai.pages.dev
+- ✅ Works with Supabase backend seamlessly
+- ✅ No account blockers or operational issues
 
 ---
 

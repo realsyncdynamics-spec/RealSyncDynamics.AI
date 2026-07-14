@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 interface AiSystem {
   id: string;
@@ -19,9 +20,15 @@ interface AiSystem {
   created_at: string;
 }
 
-export function AiRegisterView() {
+function _AiRegisterView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const AiRegisterView = withPerformanceMonitoring(
+  _AiRegisterView,
+  'AiRegisterView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

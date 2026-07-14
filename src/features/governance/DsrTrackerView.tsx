@@ -10,6 +10,7 @@ import {
   type DbDsrRequest,
 } from './dsrApi';
 import type { DsrStatus, DsrRequestType } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 const TYPES: DsrRequestType[] = ['access','erasure','portability','rectification','restriction','objection'];
 const STATUSES: DsrStatus[] = ['received','in_progress','pending_verification','completed','rejected'];
@@ -23,7 +24,13 @@ const TYPE_LABEL: Record<DsrRequestType, string> = {
   objection:     'Widerspruch (Art. 21)',
 };
 
-export function DsrTrackerView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+function _DsrTrackerView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+
+export const DsrTrackerView = withPerformanceMonitoring(
+  _DsrTrackerView,
+  'DsrTrackerView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

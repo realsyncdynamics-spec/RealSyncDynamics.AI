@@ -16,6 +16,10 @@ import { DemoLandingPage } from './pages/DemoLandingPage';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
+// ── Product Entry Points (/scan/start, /chatbot/start, /phonebot/start)
+import { ScanStartPage } from './pages/product-entry-points/ScanStartPage';
+import { ChatbotStartPage } from './pages/product-entry-points/ChatbotStartPage';
+import { PhonebotStartPage } from './pages/product-entry-points/PhonebotStartPage';
 // ── AetherOS Landing (3D-Konzept) — weiterhin als eigene Route verfügbar
 import { AetherOSLanding } from './pages/AetherOSLanding';
 // ── RealSyncDynamics Landing Page (eigene Route /realsync-landing) ──
@@ -344,6 +348,10 @@ function RoutesWithTracking() {
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
+      {/* Product Entry Points */}
+      <Route path="/scan/start" element={<ScanStartPage />} />
+      <Route path="/chatbot/start" element={<ChatbotStartPage />} />
+      <Route path="/phonebot/start" element={<PhonebotStartPage />} />
       <Route path="/aetheros" element={<AetherOSLanding />} />
       <Route path="/preview" element={<PublicWorkspacePreview />} />
       <Route path="/landing" element={<Landing />} />

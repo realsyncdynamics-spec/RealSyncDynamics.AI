@@ -20,6 +20,9 @@ import {
   Cloud,
   Globe2,
   LineChart,
+  Scan,
+  MessageCircle,
+  Phone,
 } from 'lucide-react';
 
 /**
@@ -123,6 +126,7 @@ export function MainLanding() {
       <ProofBand />
       <Pricing />
       <Security />
+      <ProductEntryPoints />
       <FinalCta />
       <Footer />
     </div>
@@ -397,6 +401,49 @@ function Security() {
             <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
             <p className="text-sm text-white/60 leading-relaxed">{text}</p>
           </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ── PRODUCT ENTRY POINTS ───────────────────────────────── */
+function ProductEntryPoints() {
+  const products = [
+    {
+      icon: Scan,
+      title: 'Website Compliance Scan',
+      text: 'Kostenloser automatisierter Scan — DSGVO, EU AI Act und Code-Compliance prüfen. Detaillierter Bericht in Echtzeit.',
+      to: '/scan/start',
+    },
+    {
+      icon: MessageCircle,
+      title: 'KI-Chat-Assistent',
+      text: 'Intelligenter Chatbot für Ihre Website — EU-gehostet, auf Ihre Dokumentation trainiert, DSGVO-konform.',
+      to: '/chatbot/start',
+    },
+    {
+      icon: Phone,
+      title: 'KI-Telefon-Assistent',
+      text: 'Automatisierte Sprachanrufe mit vollständiger Dokumentation — Kundenservice, Terminvergabe, Compliance-Abfragen.',
+      to: '/phonebot/start',
+    },
+  ];
+
+  return (
+    <Section eyebrow="NEUE PRODUKTE" title="KI-Assistenten & Compliance-Tools" subtitle="Starten Sie sofort — neue Einstiege für Website-Audits, Chat und Telefon-Automatisierung.">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
+        {products.map(({ icon: Icon, title, text, to }) => (
+          <SmartLink key={title} to={to} className="group flex flex-col p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
+            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
+              <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
+            </div>
+            <h3 className="flex items-center gap-1.5 text-lg font-semibold mb-2.5">
+              {title}
+              <ArrowRight className="w-4 h-4 text-cyan-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+            </h3>
+            <p className="text-sm text-white/60 leading-relaxed flex-1">{text}</p>
+          </SmartLink>
         ))}
       </div>
     </Section>

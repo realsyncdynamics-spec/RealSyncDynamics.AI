@@ -30,8 +30,14 @@ export function PilotReadiness() {
       <div className="sr-only">Pilot</div>
       <Suspense
         fallback={
-          <div className="h-screen flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-titanium-300" />
+          <div className="h-screen flex items-center justify-center bg-obsidian-950">
+            <div className="flex flex-col items-center gap-6 bg-obsidian-900 border border-titanium-700 rounded p-8">
+              <Loader2 className="h-12 w-12 animate-spin text-security-500" />
+              <div className="text-center">
+                <p className="text-titanium-50 text-base font-semibold">Lade Seite…</p>
+                <p className="text-titanium-400 text-xs mt-2">Governance-Daten werden abgerufen</p>
+              </div>
+            </div>
           </div>
         }
       >

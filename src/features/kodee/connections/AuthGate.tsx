@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LogIn, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { LogIn, Mail, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { getAuthRedirectUrl } from '../../../lib/auth-redirect';
 import type { Session } from '@supabase/supabase-js';
@@ -40,7 +40,14 @@ export function AuthGate({ children }: Props) {
   }
 
   if (session === undefined) {
-    return <div className="flex items-center justify-center h-screen text-titanium-500 text-sm">Lade Session…</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-security-400" />
+          <p className="text-titanium-100 text-sm font-medium">Lade Session…</p>
+        </div>
+      </div>
+    );
   }
 
   if (session) return <>{children(session)}</>;

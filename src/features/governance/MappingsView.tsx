@@ -10,7 +10,9 @@ import {
   type DbGovernanceAsset, type DbFrameworkControl, type DbAssetControlMapping,
 } from './governanceApi';
 import { upsertMapping, deleteMapping } from './resourcesApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import type { GovernanceControlStatus } from './types';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/mappings — Asset × Framework-Control matrix. Cell
@@ -19,9 +21,15 @@ import type { GovernanceControlStatus } from './types';
  * Edge Function (upsert_mapping / delete_mapping). Reads via
  * tenant-RLS-gated Supabase queries.
  */
-export function MappingsView() {
+function _MappingsView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const MappingsView = withPerformanceMonitoring(
+  _MappingsView,
+  'MappingsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 const STATUSES: GovernanceControlStatus[] = ['not_started', 'in_progress', 'implemented', 'gap', 'not_applicable'];
 

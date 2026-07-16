@@ -20,11 +20,10 @@ import { trackConversion } from '../../lib/pixels';
  *       window.location.href = data.url (Stripe-Hosted-Checkout)
  *   3c. Wenn eingeloggt aber kein Tenant: Link auf /welcome zur Tenant-Erstellung
  *
- * Free + Enterprise: hier nicht angezeigt — diese Tiers werden vor dem
- * Routing umgeleitet (free -> /audit, enterprise -> /contact-sales).
+ * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-const VALID_PLAN_KEYS = new Set<PlanKey>(['starter', 'growth', 'agency']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise']);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
@@ -53,17 +52,22 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free + Enterprise: redirect away — diese Page nicht zustaendig
+  // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free') {
-      navigate('/audit?source=checkout-free-redirect', { replace: true });
+    if (planKey === 'free' || planKey === 'free-audit') {
+      window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
     if (planKey === 'enterprise') {
-      navigate('/contact-sales?intent=enterprise&source=checkout-redirect', { replace: true });
+      window.location.href = '/contact-sales?intent=enterprise&source=checkout-redirect';
       return;
     }
-  }, [planKey, navigate]);
+    // Invalid plan key: redirect to pricing (full page load for E2E test compatibility)
+    if (planKey && !VALID_PLAN_KEYS.has(planKey as PlanKey)) {
+      window.location.href = '/pricing';
+      return;
+    }
+  }, [planKey]);
 
   // 3. Auth-State + Membership-Lookup
   useEffect(() => {
@@ -143,8 +147,9 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency.`}
+        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency / scale (monatlich oder jährlich).`}
         cta={{ label: 'Zur Preisuebersicht', to: '/pricing' }}
+        backTo="/pricing"
       />
     );
   }
@@ -155,6 +160,7 @@ export function CheckoutPage() {
         title="Pruefe Anmelde-Status..."
         body="Einen Moment."
         loading
+        backTo={`/pricing/${validPlan}`}
       />
     );
   }
@@ -167,6 +173,7 @@ export function CheckoutPage() {
         body="Wählen Sie einen Login-Weg. Nach Anmeldung sind Sie sofort wieder hier — der Checkout startet automatisch."
         oauthRedirect={checkoutPath}
         magicLinkHref={`/welcome?next=${encodeURIComponent(checkoutPath)}`}
+        backTo={`/pricing/${validPlan}`}
       />
     );
   }
@@ -180,6 +187,7 @@ export function CheckoutPage() {
           label: 'Workspace einrichten',
           to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,
         }}
+        backTo={`/pricing/${validPlan}`}
       />
     );
   }
@@ -187,6 +195,7 @@ export function CheckoutPage() {
   // status === 'ready' — manual consent gate before Stripe hand-off.
   return (
     <ConsentGateShell
+      planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
       isPilot={isPilot}
@@ -197,6 +206,7 @@ export function CheckoutPage() {
       redirecting={redirecting}
       checkoutErr={checkoutErr}
       onConfirm={handleConfirmAndPay}
+      backTo={`/pricing/${validPlan}`}
     />
   );
 }
@@ -209,19 +219,22 @@ function ShellWithMessage({
   cta,
   loading,
   footer,
+  backTo = '/pricing',
 }: {
   title: string;
   body: string;
   cta?: { label: string; to: string };
   loading?: boolean;
   footer?: string;
+  backTo?: string;
 }) {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
-          to="/pricing"
+          to={backTo}
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -280,18 +293,21 @@ function NoUserShell({
   body,
   oauthRedirect,
   magicLinkHref,
+  backTo = '/pricing',
 }: {
   title: string;
   body: string;
   oauthRedirect: string;
   magicLinkHref: string;
+  backTo?: string;
 }) {
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100" data-testid="checkout-auth-required">
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
-          to="/pricing"
+          to={backTo}
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
+          data-testid="checkout-back"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span className="font-display font-bold">RealSyncDynamics.AI</span>
@@ -352,6 +368,7 @@ function NoUserShell({
 // trail of consent — separate from the Stripe session itself.
 
 function ConsentGateShell({
+  planKey,
   tier,
   userEmail,
   isPilot,
@@ -362,7 +379,9 @@ function ConsentGateShell({
   redirecting,
   checkoutErr,
   onConfirm,
+  backTo = '/pricing',
 }: {
+  planKey:                  string;
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
   isPilot:                  boolean;
@@ -373,6 +392,7 @@ function ConsentGateShell({
   redirecting:              boolean;
   checkoutErr:              StripeDiagnostic | null;
   onConfirm:                () => void;
+  backTo?:                  string;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
 
@@ -381,6 +401,7 @@ function ConsentGateShell({
       <header className="px-4 sm:px-6 lg:px-8 py-4 border-b border-silver-700/30 flex items-center justify-between">
         <Link
           to="/pricing"
+          data-testid="checkout-back"
           className="inline-flex items-center gap-2 text-xs sm:text-sm text-silver-300 hover:text-titanium-50"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -392,19 +413,25 @@ function ConsentGateShell({
       </header>
 
       <main className="flex flex-col items-center justify-center px-4 py-12 sm:py-16">
-        <div className="max-w-md w-full">
+        <div className="max-w-md w-full" data-testid={`checkout-plan-${planKey}`}>
           <ShieldCheck className="mx-auto h-10 w-10 text-gold-400 mb-5" />
           <h1 className="font-display font-bold text-2xl sm:text-3xl text-titanium-50 tracking-tight mb-2 text-center">
             {tier.name}
           </h1>
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
-            {tier.priceEur} € / Monat · monatlich kündbar · keine Setup-Gebühren
+            <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
           </p>
-          {isPilot ? (
-            <p className="text-center font-mono text-[10px] uppercase tracking-wider text-emerald-400 mb-6">
-              14 Tage kostenlos testen · keine Kosten bis Tag 15
-            </p>
-          ) : (
+          {isPilot && (
+            <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
+              <p className="font-mono font-bold text-base uppercase tracking-wider text-emerald-300 mb-1">
+                ✅ 14 TAGE KOSTENLOS
+              </p>
+              <p className="font-mono text-xs text-emerald-200">
+                Keine Zahlung erforderlich. Abo startet automatisch nach der Testphase.
+              </p>
+            </div>
+          )}
+          {!isPilot && (
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>
@@ -468,10 +495,36 @@ function ConsentGateShell({
             </div>
           )}
 
+          <div className="mb-6 space-y-4">
+            <div className="text-center">
+              <h3 className="font-semibold text-sm text-titanium-100 mb-2">Was ist alles enthalten</h3>
+              <div className="space-y-1 text-xs text-silver-300">
+                <div data-testid="checkout-feature-1">✓ Vollständiger Plattformzugriff</div>
+                <div data-testid="checkout-feature-2">✓ Kundensupport</div>
+                <div data-testid="checkout-feature-3">✓ Regelmäßige Updates</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-6 border-t border-silver-700/50 pt-4">
+            <h3 className="font-semibold text-sm text-titanium-100 mb-3 text-center">Häufige Fragen</h3>
+            <div className="space-y-2 text-xs text-silver-300">
+              <details className="hover:text-silver-200 cursor-pointer">
+                <summary className="font-medium">Kann ich jederzeit kündigen?</summary>
+                <p className="mt-1 ml-2">Ja, monatlich kündbar ohne Bindung oder Kündigungsfrist.</p>
+              </details>
+              <details className="hover:text-silver-200 cursor-pointer">
+                <summary className="font-medium">Welche Zahlungsarten akzeptiert ihr?</summary>
+                <p className="mt-1 ml-2">Stripe akzeptiert alle gängigen Kreditkarten und Zahlungsmethoden.</p>
+              </details>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={onConfirm}
             disabled={!canSubmit}
+            data-testid="checkout-book-button"
             className={`surface-gold w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold rounded-none transition-opacity ${
               canSubmit ? 'hover:opacity-90' : 'opacity-40 cursor-not-allowed'
             }`}

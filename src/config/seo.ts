@@ -299,6 +299,32 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'AI Governance OS', url: '/ai-governance' },
     ]),
   },
+  '/runtime': {
+    title: 'Runtime — Kontinuierliche Compliance-Überwachung | RealSyncDynamics.AI',
+    description:
+      'Governance-Runtime mit kontinuierlicher Überwachung: Compliance-Agenten, überprüfbare Evidence-Reports, dokumentierte Policies und Incident-Tracking. Demo-Surface für Pilot-Evaluierung.',
+    canonical: `${SITE_URL}/runtime`,
+    ogTitle: 'Governance Runtime — Kontinuierliche Compliance-Überwachung',
+    ogDescription:
+      'Kontinuierliche Compliance-Überwachung mit Agenten, Evidence Vault und Policy Enforcement — auditfähig, EU-gehostet.',
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'Runtime', url: '/runtime' },
+    ]),
+  },
+  '/ai-act': {
+    title: 'AI Act Governance — Klassifikation & Risiko-Assessment | RealSyncDynamics.AI',
+    description:
+      'EU AI Act ohne Beratung: AI-Systeme klassifizieren (minimal/limited/high/prohibited), Hochrisiko-Profile, Agent-Oversight und Policy Engine — alle Findings in der Evidence Chain.',
+    canonical: `${SITE_URL}/ai-act`,
+    ogTitle: 'AI Act Governance — Klassifikation & Compliance',
+    ogDescription:
+      'Automatisierte Klassifikation von KI-Systemen nach EU AI Act. Hochrisiko-Erkennung, Oversight und Policies für regulierte Branchen.',
+    jsonLd: breadcrumbs([
+      { name: 'Home', url: '/' },
+      { name: 'AI Act Governance', url: '/ai-act' },
+    ]),
+  },
   '/governance-score': {
     title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',
     description:
@@ -363,7 +389,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/cookiebot-alternative': {
     title: 'Cookiebot Alternative mit EU-Hosting & AI-Act | RealSyncDynamics.AI',
     description:
-      'RealSyncDynamics.AI vs. Cookiebot: Consent-Timing-Analyse, automatische Remediation, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
+      'RealSyncDynamics.AI vs. Cookiebot: Consent-Timing-Analyse, fertige Fix-Snippets & Remediation-Pläne, EU-Server Frankfurt, AI-Act-Inventar. Kostenloser Vergleichs-Scan.',
     canonical: `${SITE_URL}/cookiebot-alternative`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },

@@ -7,6 +7,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { runAiTool, AiInvokeError } from '../_shared/ai.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { recordUsage } from '../_shared/usage.ts';
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
@@ -49,6 +50,26 @@ Deno.serve(async (req) => {
     const r = await runAiTool(admin, body.tenant_id, userId, body.tool_key, body.input, {
       metadata: body.metadata ?? {},
     });
+
+    // Record token usage for metering
+    // Total tokens = input + output (cached tokens don't count toward billing)
+    const totalTokens = r.inputTokens + r.outputTokens;
+    if (totalTokens > 0) {
+      try {
+        await recordUsage(admin, body.tenant_id, 'limit.ai_tokens_monthly', totalTokens, {
+          run_id: r.runId,
+          tool_key: body.tool_key,
+          input_tokens: r.inputTokens,
+          output_tokens: r.outputTokens,
+          cached_tokens: r.cachedTokens,
+          cost_usd: r.costUsd,
+        });
+      } catch (usageErr) {
+        // Log but don't fail the request — token tracking is best-effort
+        console.warn('Failed to record token usage:', usageErr);
+      }
+    }
+
     return jsonResponse({
       ok: true,
       run_id: r.runId,

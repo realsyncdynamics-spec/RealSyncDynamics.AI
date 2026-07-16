@@ -31,7 +31,8 @@
     "qa:load": "tsx scripts/qa-load-test.ts",
     "seed:beta": "tsx scripts/seed-beta-tenant.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
-    "release:publish": "bash scripts/publish-release.sh"
+    "release:publish": "bash scripts/publish-release.sh",
+    "perf:monthly-report": "tsx scripts/generate-performance-report.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

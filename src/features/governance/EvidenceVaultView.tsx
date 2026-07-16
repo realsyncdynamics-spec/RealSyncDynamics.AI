@@ -10,6 +10,7 @@ import { useActivePlan } from '../../hooks/useModuleAccess';
 import { hasFeature, type PlanKey } from '../../lib/billing/planAccess';
 import { WorkspaceShell } from '../workspace/WorkspaceShell';
 import { getSupabase } from '../../lib/supabase';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 type EvidenceType =
   | 'screenshot' | 'har' | 'json' | 'log' | 'pdf'
@@ -65,7 +66,7 @@ function shortHash(hash: string | null): string {
   return hash.slice(0, 8) + '…' + hash.slice(-4);
 }
 
-export function EvidenceVaultView() {
+function _EvidenceVaultView() {
   return (
     <AuthGate>
       {() => (
@@ -76,6 +77,12 @@ export function EvidenceVaultView() {
     </AuthGate>
   );
 }
+
+export const EvidenceVaultView = withPerformanceMonitoring(
+  _EvidenceVaultView,
+  'EvidenceVaultView',
+  { threshold: 2000, maxRenders: 8 }
+);
 
 function Inner() {
   const { activeTenantId } = useTenant();

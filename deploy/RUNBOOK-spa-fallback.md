@@ -83,7 +83,7 @@ that route and rely on Option B.
 
 Two pre-configured candidates already exist in the repo:
 
-- **Vercel** — `vercel.json` already contains:
+- **Vercel** — `_wrangler.toml / cloudflare-pages config` already contains:
   ```json
   { "source": "/(.*)", "destination": "/index.html" }
   ```
@@ -117,7 +117,7 @@ fronting GH Pages.
 
 - **Now (this incident):** Option A for `/integrations/shopify` (the one
   route blocking Phase-2 validation).
-- **Within the next sprint:** Option B (Vercel) — `vercel.json` is
+- **Within the next sprint:** Option B (Vercel) — `_wrangler.toml / cloudflare-pages config` is
   already there, this is two DNS records.
 
 ## Diagnosis steps (if symptoms re-appear)

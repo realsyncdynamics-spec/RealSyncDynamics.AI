@@ -4,8 +4,15 @@ import { ArrowLeft, DollarSign, Loader2, AlertTriangle } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { fetchTenantTokenMonthly, type DbTokenUsageMonthly } from './costApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
-export function CostTrackingView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+function _CostTrackingView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+
+export const CostTrackingView = withPerformanceMonitoring(
+  _CostTrackingView,
+  'CostTrackingView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

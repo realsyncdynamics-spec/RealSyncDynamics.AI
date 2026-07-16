@@ -10,10 +10,17 @@ import {
   createConnector, updateConnector, deleteConnector,
   type DbConnector, type ConnectorType, type DbRemediationAction,
 } from './connectorsApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 const TYPES: ConnectorType[] = ['jira','github','linear','servicenow','slack','teams'];
 
-export function ConnectorsView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+function _ConnectorsView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+
+export const ConnectorsView = withPerformanceMonitoring(
+  _ConnectorsView,
+  'ConnectorsView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

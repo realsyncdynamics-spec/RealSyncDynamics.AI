@@ -42,6 +42,63 @@ describe('syncSubscription — plan_key aus price.metadata', () => {
   });
 });
 
+// ── Stripe Webhook — plan_key Fallback via public.products ────────────────
+// Spiegelt resolvePlanKey() aus supabase/functions/stripe-webhook/index.ts:
+//   1. price.metadata.plan_key (von Stripe gesetzt) hat Vorrang
+//   2. sonst Lookup in public.products via stripe_price_id
+//   3. sonst 'free'
+// Schützt zahlende Kunden vor stillem Downgrade auf 'free', falls jemand
+// vergisst, metadata.plan_key am Stripe-Preis zu setzen.
+describe('resolvePlanKey — Fallback via products', () => {
+  async function resolvePlanKey(
+    item: { price?: { id?: string; metadata?: Record<string, string> } } | undefined,
+    lookup: (priceId: string) => Promise<string | null>,
+  ): Promise<string> {
+    const fromMeta = item?.price?.metadata?.plan_key;
+    if (fromMeta) return fromMeta;
+    const priceId = item?.price?.id;
+    if (priceId) {
+      const planKey = await lookup(priceId);
+      if (planKey) return planKey;
+    }
+    return 'free';
+  }
+
+  const productsLookup =
+    (map: Record<string, string>) =>
+    async (priceId: string): Promise<string | null> =>
+      map[priceId] ?? null;
+
+  it('bevorzugt price.metadata.plan_key vor dem DB-Lookup', async () => {
+    const r = await resolvePlanKey(
+      { price: { id: 'price_x', metadata: { plan_key: 'growth' } } },
+      productsLookup({ price_x: 'starter' }),
+    );
+    expect(r).toBe('growth');
+  });
+
+  it('fällt auf products.default_for_plan_key zurück wenn metadata fehlt', async () => {
+    const r = await resolvePlanKey(
+      { price: { id: 'price_1TfsV8REjTWueUcGCdOO6bT2', metadata: {} } },
+      productsLookup({ price_1TfsV8REjTWueUcGCdOO6bT2: 'starter' }),
+    );
+    expect(r).toBe('starter');
+  });
+
+  it('fällt auf "free" wenn weder metadata noch products-Treffer', async () => {
+    const r = await resolvePlanKey(
+      { price: { id: 'price_unknown', metadata: {} } },
+      productsLookup({}),
+    );
+    expect(r).toBe('free');
+  });
+
+  it('fällt auf "free" wenn price/item fehlt', async () => {
+    const r = await resolvePlanKey({}, productsLookup({ price_x: 'starter' }));
+    expect(r).toBe('free');
+  });
+});
+
 // ── Idempotenz-Logik ──────────────────────────────────────────────────────
 // duplicate key = already processed → kein Fehler
 describe('Webhook Idempotenz', () => {

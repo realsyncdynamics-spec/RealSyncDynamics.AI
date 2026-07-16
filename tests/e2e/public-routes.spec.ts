@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.TEST_BASE_URL || 'https://realsyncdynamicsai.de';
+const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
 
 const publicRoutes = [
   // `heading`: stabiler Substring der jeweiligen Hero-Headline (bestätigt,
@@ -20,7 +20,7 @@ for (const route of publicRoutes) {
     page.on('pageerror', (err) => errors.push(err.message));
 
     const response = await page.goto(BASE_URL + route.path, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle',
       timeout: 30000,
     });
 

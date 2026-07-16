@@ -9,6 +9,7 @@ import {
   fetchTenantVendors, createVendor, updateVendor, deleteVendor,
   type DbVendor, type DpaStatus, type TransferMechanism,
 } from './vendorsApi';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 const DPA_LABEL: Record<DpaStatus, string> = {
   none: 'Kein DPA', requested: 'Angefragt', signed: 'Unterzeichnet', expired: 'Abgelaufen', not_required: 'Nicht erforderlich',
@@ -21,7 +22,13 @@ const DPA_CLS: Record<DpaStatus, string> = {
   not_required: 'bg-titanium-800/30 text-titanium-300 border-titanium-700',
 };
 
-export function VendorInventoryView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+function _VendorInventoryView() { return <AuthGate>{() => <Inner />}</AuthGate>; }
+
+export const VendorInventoryView = withPerformanceMonitoring(
+  _VendorInventoryView,
+  'VendorInventoryView',
+  { threshold: 500, maxRenders: 10 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

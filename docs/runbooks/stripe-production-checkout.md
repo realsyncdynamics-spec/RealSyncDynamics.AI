@@ -20,6 +20,13 @@ Project: `ebljyceifhnlzhjfyxup` · Schema: `vault.secrets`
 
 Provision via the `vault-set-secret` Edge Function. See `p0-pilot-blockers.md` for the curl command.
 
+Alternatively, mirror the two Stripe secrets from your environment into the
+Vault with `scripts/provision-stripe-vault.sh` (reads `STRIPE_SECRET_KEY` +
+`STRIPE_WEBHOOK_SECRET` from env, writes via `public.set_app_secret`, never logs
+the values, validates key prefixes). Requires `SUPABASE_PROJECT_ID` and
+`SUPABASE_SERVICE_ROLE_KEY` in the environment. Run with `DRY_RUN=1` first to
+preview without writing.
+
 ## Required DB rows
 
 Table: `public.products`

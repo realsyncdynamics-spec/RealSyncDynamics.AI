@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import {
   fetchTenantEvents, fetchTenantAssets, fetchTenantPolicies,
   fetchFrameworkControls,
@@ -37,9 +38,15 @@ import type { GovernanceRiskLevel } from './types';
  * (RLS gates by membership). If the tenant has no rows yet, an
  * onboarding panel points at /governance/keys to mint an API key.
  */
-export function GovernanceDashboardView() {
+function _GovernanceDashboardView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;
 }
+
+export const GovernanceDashboardView = withPerformanceMonitoring(
+  _GovernanceDashboardView,
+  'GovernanceDashboardView',
+  { threshold: 1000, maxRenders: 5 }
+);
 
 function Inner() {
   const { tenants, activeTenantId, setActiveTenant } = useTenant();

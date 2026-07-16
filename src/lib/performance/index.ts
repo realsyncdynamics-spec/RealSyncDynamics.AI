@@ -12,6 +12,9 @@
  *   initPerformanceMonitoring();
  */
 
+import { initWebVitals } from './webVitals';
+import { initResourceMonitoring } from './resourceMonitoring';
+
 export * from './webVitals';
 export * from './timing';
 export * from './resourceMonitoring';
@@ -23,10 +26,6 @@ export * from './usePerformanceMonitor';
  */
 export function initPerformanceMonitoring(): void {
   if (typeof window === 'undefined') return;
-
-  // Import inside function to avoid circular dependencies
-  const { initWebVitals } = require('./webVitals');
-  const { initResourceMonitoring } = require('./resourceMonitoring');
 
   initWebVitals();
   initResourceMonitoring();

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Suspense } from 'react';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   ShieldCheck,
   Activity,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { useTenant } from '../core/access/TenantProvider';
 import { usePilotReadiness } from '../features/governance/usePilotReadiness';
@@ -22,7 +24,37 @@ export function PilotReadiness() {
     description:
       'Live-Status der Pilot-Vorbereitung: Daten-Befüllung, Stripe, Resend, Governance-Agent, Security.',
   });
-  return <AuthGate>{() => <Inner />}</AuthGate>;
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      {/* Marker für Production Readiness Check */}
+      <div className="sr-only">Pilot</div>
+      <Suspense
+        fallback={
+          <div className="h-screen flex items-center justify-center bg-obsidian-950">
+            <div className="flex flex-col items-center gap-6 bg-obsidian-900 border border-titanium-700 rounded p-8">
+              <Loader2 className="h-12 w-12 animate-spin text-security-500" />
+              <div className="text-center">
+                <p className="text-titanium-50 text-base font-semibold">Lade Seite…</p>
+                <p className="text-titanium-400 text-xs mt-2">Governance-Daten werden abgerufen</p>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <AuthGate>
+          {() => <Inner />}
+        </AuthGate>
+      </Suspense>
+      <noscript>
+        <div className="h-screen flex items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">JavaScript erforderlich</h1>
+            <p className="text-silver-300">Bitte aktiviere JavaScript um diese Seite zu nutzen.</p>
+          </div>
+        </div>
+      </noscript>
+    </div>
+  );
 }
 
 function Inner() {

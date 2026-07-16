@@ -12,8 +12,7 @@ import { getPostCheckoutReturn, clearPostCheckoutReturn } from '../../lib/optimi
  * For Agency+ customers, offers quick onboarding to API setup wizard
  */
 
-import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Zap } from 'lucide-react';
 import { useAuth } from '../../lib/useAuth';
 import { useTenant } from '../../core/access/TenantProvider';

@@ -42,9 +42,12 @@ export function AuthGate({ children }: Props) {
   if (session === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-security-400" />
-          <p className="text-titanium-100 text-sm font-medium">Lade Session…</p>
+        <div className="flex flex-col items-center gap-6 bg-obsidian-900 border border-titanium-700 rounded p-8">
+          <Loader2 className="h-12 w-12 animate-spin text-security-500" />
+          <div className="text-center">
+            <p className="text-titanium-50 text-base font-semibold">Lade Session…</p>
+            <p className="text-titanium-400 text-xs mt-2">Authentifizierung wird überprüft</p>
+          </div>
         </div>
       </div>
     );

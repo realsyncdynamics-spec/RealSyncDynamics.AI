@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Check, Cpu } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Check, Cpu, Zap } from 'lucide-react';
 import { Navbar } from '../../components/Navbar';
 import { usePageMeta } from '../../lib/usePageMeta';
 import { getPostCheckoutReturn, clearPostCheckoutReturn } from '../../lib/optimizer/state';
+import { useAuth } from '../../lib/useAuth';
+import { useTenant } from '../../core/access/TenantProvider';
+import { getSupabase } from '../../lib/supabase';
 
 /**
  * Checkout Success Page — shown after successful payment
@@ -11,12 +14,6 @@ import { getPostCheckoutReturn, clearPostCheckoutReturn } from '../../lib/optimi
  * Fetches subscription details from the database after successful Stripe payment
  * For Agency+ customers, offers quick onboarding to API setup wizard
  */
-
-import { useNavigate } from 'react-router-dom';
-import { Zap } from 'lucide-react';
-import { useAuth } from '../../lib/useAuth';
-import { useTenant } from '../../core/access/TenantProvider';
-import { getSupabase } from '../../lib/supabase';
 
 const API_ENABLED_TIERS = ['agency', 'scale', 'enterprise'];
 

@@ -36,7 +36,7 @@ export function Trust() {
         {/* Hero */}
         <section className="mb-12">
           <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
-            Operational Readiness
+            Trust · Operational Readiness
           </div>
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-tight">
             Wo unsere Daten leben. Wer was sieht. Was wir versprechen.

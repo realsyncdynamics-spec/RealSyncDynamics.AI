@@ -93,6 +93,9 @@ function Inner() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <section className="mb-10">
+          <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100 mb-3">
+            Pilot Launch Readiness
+          </div>
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-tight">
             Pilot Readiness Check
           </h1>

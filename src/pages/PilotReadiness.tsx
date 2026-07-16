@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Suspense } from 'react';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   ShieldCheck,
   Activity,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { useTenant } from '../core/access/TenantProvider';
 import { usePilotReadiness } from '../features/governance/usePilotReadiness';
@@ -23,11 +25,29 @@ export function PilotReadiness() {
       'Live-Status der Pilot-Vorbereitung: Daten-Befüllung, Stripe, Resend, Governance-Agent, Security.',
   });
   return (
-    <>
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       {/* Marker für Production Readiness Check */}
       <div className="sr-only">Pilot Launch Readiness Check</div>
-      <AuthGate>{() => <Inner />}</AuthGate>
-    </>
+      <Suspense
+        fallback={
+          <div className="h-screen flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-titanium-300" />
+          </div>
+        }
+      >
+        <AuthGate>
+          {() => <Inner />}
+        </AuthGate>
+      </Suspense>
+      <noscript>
+        <div className="h-screen flex items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">JavaScript erforderlich</h1>
+            <p className="text-silver-300">Bitte aktiviere JavaScript um diese Seite zu nutzen.</p>
+          </div>
+        </div>
+      </noscript>
+    </div>
   );
 }
 

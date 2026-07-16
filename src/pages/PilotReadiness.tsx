@@ -27,7 +27,7 @@ export function PilotReadiness() {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
       {/* Marker für Production Readiness Check */}
-      <div className="sr-only">Pilot Launch Readiness Check</div>
+      <div className="sr-only">Pilot</div>
       <Suspense
         fallback={
           <div className="h-screen flex items-center justify-center">

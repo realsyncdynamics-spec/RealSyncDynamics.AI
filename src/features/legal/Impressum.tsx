@@ -121,14 +121,14 @@ export function Impressum() {
           )}
         </Section>
 
-        <Section title="Umsatzsteuer">
+        <Section title="Umsatzsteuer-Identifikationsnummer">
           {identity.vatId ? (
             <p>
-              USt-IdNr. gemäß § 27 a Umsatzsteuergesetz: <span className="font-mono text-titanium-50">{identity.vatId}</span>
+              Umsatzsteuer-Identifikationsnummer gemäß § 27 a Umsatzsteuergesetz: <span className="font-mono text-titanium-50">{identity.vatId}</span>
             </p>
           ) : (
             <p>
-              Kleinunternehmer i. S. v. § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.
+              Kleinunternehmer i. S. v. § 19 UStG (Umsatzsteuer-Befreiung). Es wird keine Umsatzsteuer ausgewiesen.
             </p>
           )}
         </Section>

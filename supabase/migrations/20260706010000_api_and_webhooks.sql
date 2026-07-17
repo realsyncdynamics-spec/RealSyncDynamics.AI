@@ -62,6 +62,23 @@ CREATE TABLE IF NOT EXISTS public.webhook_subscriptions (
   UNIQUE(tenant_id, name)
 );
 
+-- Die Tabelle kann bereits aus 20260705200000_webhook_delivery_system.sql
+-- existieren (dort mit event_key/url/enabled statt name/endpoint_url/active).
+-- CREATE TABLE IF NOT EXISTS überspringt dann die Neuanlage — die von dieser
+-- Migration (und webhook-dispatcher) erwarteten Spalten müssen additiv
+-- ergänzt werden, sonst schlägt der Index auf (active) fehl.
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS endpoint_url TEXT;
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS events TEXT[];
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true;
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS signing_algorithm TEXT DEFAULT 'hmac-sha256';
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS filter_criteria JSONB DEFAULT '{}';
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS max_retries INT DEFAULT 3;
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS retry_delay_seconds INT DEFAULT 300;
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE public.webhook_subscriptions ADD COLUMN IF NOT EXISTS disabled_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_tenant_id ON public.webhook_subscriptions(tenant_id);
 
 ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;

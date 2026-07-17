@@ -1,3 +1,4 @@
 -- DEPRECATED: This migration attempted to create indices on non-existent tables/columns.
 -- Replaced by 20260703000100_optimize_governance_indices.sql which creates correct indices.
 -- Keeping this file as a NO-OP to maintain migration sequence integrity.
+SELECT 1;

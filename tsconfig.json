@@ -38,6 +38,8 @@
     "worker",
     "apps/agent-runtime",
     "extension",
+    "packages/sdk/examples",
+    "packages/sdk/test",
     "deploy"
   ]
 }

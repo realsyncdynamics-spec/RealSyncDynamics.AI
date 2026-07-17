@@ -23,7 +23,10 @@ import { trackConversion } from '../../lib/pixels';
  * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-const VALID_PLAN_KEYS = new Set<PlanKey>(['free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise']);
+const VALID_PLAN_KEYS = new Set<PlanKey>([
+  'free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise',
+  'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly',
+]);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
@@ -54,7 +57,9 @@ export function CheckoutPage() {
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free' || planKey === 'free-audit') {
+    // 'free_audit' (Underscore) ist der externe Marketing-Identifier für
+    // denselben Free-Plan — alle Varianten führen zum kostenlosen Audit.
+    if (planKey === 'free' || planKey === 'free-audit' || planKey === 'free_audit') {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }

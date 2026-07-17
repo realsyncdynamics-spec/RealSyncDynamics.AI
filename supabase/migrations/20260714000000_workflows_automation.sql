@@ -20,6 +20,17 @@ CREATE TABLE IF NOT EXISTS public.workflows (
   CONSTRAINT workflows_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 
+-- Reconcile with the pre-existing public.workflows table from 00001_initial_schema.sql.
+-- That table already exists (owner_id/title/is_active/...), so the CREATE TABLE
+-- IF NOT EXISTS above is a no-op and the automation columns below never
+-- materialized — which broke the index creation that follows. Add them
+-- additively (nullable, so existing rows are unaffected).
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS name VARCHAR;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS workflow_type VARCHAR;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS config JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT false;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS next_run_at TIMESTAMP WITH TIME ZONE;
+
 -- RLS for workflows
 ALTER TABLE public.workflows ENABLE ROW LEVEL SECURITY;
 
@@ -54,9 +65,9 @@ CREATE POLICY "Users can delete workflows"
     tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
   );
 
-CREATE INDEX idx_workflows_tenant_id ON public.workflows(tenant_id);
-CREATE INDEX idx_workflows_enabled ON public.workflows(enabled);
-CREATE INDEX idx_workflows_next_run_at ON public.workflows(next_run_at);
+CREATE INDEX IF NOT EXISTS idx_workflows_tenant_id ON public.workflows(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_enabled ON public.workflows(enabled);
+CREATE INDEX IF NOT EXISTS idx_workflows_next_run_at ON public.workflows(next_run_at);
 
 -- Workflow runs: Track execution history
 CREATE TABLE IF NOT EXISTS public.workflow_runs (

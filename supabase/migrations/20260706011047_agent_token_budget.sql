@@ -39,8 +39,10 @@ CREATE INDEX idx_agent_token_usage_created_at
 CREATE INDEX idx_agent_token_usage_prompt_type
   ON agent_token_usage(tenant_id, prompt_type);
 
-CREATE INDEX idx_agent_token_usage_hourly
-  ON agent_token_usage(tenant_id, date_trunc('hour', created_at));
+-- Hourly-bucket queries are served by idx_agent_token_usage_created_at
+-- (tenant_id, created_at DESC). An expression index on
+-- date_trunc('hour', created_at) is rejected because date_trunc over
+-- timestamptz is only STABLE (session-timezone dependent), not IMMUTABLE.
 
 -- Agent Configuration Table
 CREATE TABLE IF NOT EXISTS agent_configuration (
@@ -116,7 +118,7 @@ CREATE OR REPLACE FUNCTION check_rate_limit(
 RETURNS TABLE (
   rate_limit_exceeded BOOLEAN,
   calls_this_hour INTEGER,
-  limit INTEGER
+  rate_limit INTEGER
 ) AS $$
 DECLARE
   v_config RECORD;

@@ -63,7 +63,6 @@ CREATE TABLE IF NOT EXISTS public.webhook_subscriptions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_tenant_id ON public.webhook_subscriptions(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_webhook_subscriptions_active ON public.webhook_subscriptions(active);
 
 ALTER TABLE public.webhook_subscriptions ENABLE ROW LEVEL SECURITY;
 

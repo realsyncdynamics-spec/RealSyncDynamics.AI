@@ -31,7 +31,7 @@ CREATE POLICY "Users can view own workflow progress"
 CREATE POLICY "Users can create own workflows"
   ON dashboard_workflows
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id AND tenant_id = (SELECT active_tenant_id FROM auth.users WHERE id = auth.uid()));
+  WITH CHECK (auth.uid() = user_id AND public.is_tenant_member(tenant_id));
 
 CREATE POLICY "Users can update own workflows"
   ON dashboard_workflows

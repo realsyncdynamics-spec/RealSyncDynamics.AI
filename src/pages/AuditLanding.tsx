@@ -2,6 +2,21 @@ import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { CheckCircle, ArrowRight, Shield, Zap, FileText, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { usePageMeta } from '../lib/usePageMeta';
+import { postEdgeFunction } from '../lib/edgeFunction';
+import { getAffiliateRef } from '../lib/affiliate';
+import { trackConversion } from '../lib/pixels';
+import { getSupabaseUrl } from '../lib/supabaseUrl';
+
+const SUPABASE_URL = getSupabaseUrl();
+
+interface Report {
+  audit_id: string;
+  created_at?: string;
+  email?: string;
+  domain?: string;
+  score?: number;
+}
 
 export function AuditLanding() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);

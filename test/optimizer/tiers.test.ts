@@ -63,8 +63,11 @@ describe('formatTierPrice', () => {
     const bronze = OPTIMIZER_TIERS.find((t) => t.id === 'bronze')!; // → starter €79
     expect(formatTierPrice(bronze)).toBe('€79 / Monat');
   });
-  it('zeigt „Individuell" für Enterprise', () => {
+  it('zeigt den realen Enterprise-Preis (seit fa93b0a Self-Service €1249)', () => {
+    // Enterprise wurde am 2026-07-07 (Commit fa93b0a) von „Individuell" auf
+    // einen Self-Service-Preis von €1249/Monat umgestellt (priceString '1.249',
+    // Checkout-CTA). Der Test spiegelt die kanonische Pricing-Config wider.
     const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise
-    expect(formatTierPrice(diamant)).toBe('Individuell');
+    expect(formatTierPrice(diamant)).toBe('€1249 / Monat');
   });
 });

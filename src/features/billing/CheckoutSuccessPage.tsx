@@ -24,6 +24,7 @@ export function CheckoutSuccessPage() {
   const { activeTenantId } = useTenant();
 
   const sessionId = searchParams.get('session_id') || searchParams.get('session');
+  const planKey = searchParams.get('plan_key') || searchParams.get('plan');
   const [isVerifying, setIsVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<{
@@ -32,6 +33,9 @@ export function CheckoutSuccessPage() {
     trialEnds?: string;
   } | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const planLabel = useMemo(() => labelForPlanKey(planKey), [planKey]);
+  // Kommt der Nutzer aus dem Optimizer-Flow, bieten wir die Rückführung an.
+  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
 
   useEffect(() => {
     if (!activeTenantId) {
@@ -54,9 +58,6 @@ export function CheckoutSuccessPage() {
         setRedirectCountdown((prev) => prev - 1);
       }, 1000);
 
-  const planLabel = useMemo(() => labelForPlanKey(planKey), [planKey]);
-  // Kommt der Nutzer aus dem Optimizer-Flow, bieten wir die Rückführung an.
-  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
       return () => {
         clearTimeout(timer);
         clearInterval(countdown);
@@ -229,4 +230,60 @@ export function CheckoutSuccessPage() {
       </div>
     </div>
   );
+}
+
+interface OnboardingStep { label: string; detail: string }
+
+const ONBOARDING_STEPS: Record<string, OnboardingStep[]> = {
+  agency: [
+    { label: 'E-Mail prüfen', detail: 'Account-Zugang + API-Key innerhalb von 15 Minuten' },
+    { label: 'Dashboard öffnen', detail: 'White-Label-Panel, Logo, Farben und eigene Domain konfigurieren' },
+    { label: 'Erste Kundenseite hinzufügen', detail: '10 Domains inklusive — Domain-Onboarding im Dashboard unter "Websites"' },
+    { label: 'Optional: Setup-Gespräch', detail: 'Unser Team meldet sich innerhalb von 24 h für ein kostenfreies Onboarding-Call' },
+  ],
+  growth: [
+    { label: 'E-Mail prüfen', detail: 'Account-Zugang innerhalb von 15 Minuten' },
+    { label: 'Domain hinzufügen', detail: 'Bis zu 3 Domains im Dashboard — tägliches Monitoring startet automatisch' },
+    { label: 'Risk-Dashboard öffnen', detail: 'Erste Drift-Events und Consent-Analyse sind sofort sichtbar' },
+  ],
+  starter: [
+    { label: 'E-Mail prüfen', detail: 'Account-Zugang innerhalb von 15 Minuten' },
+    { label: 'Domain hinzufügen', detail: '1 Domain — monatlicher Re-Scan startet automatisch' },
+  ],
+};
+
+function OnboardingSteps({ planKey }: { planKey: string | null }) {
+  const steps = planKey ? ONBOARDING_STEPS[planKey] : null;
+  if (!steps) return null;
+  return (
+    <div className="mt-6 border border-titanium-800 bg-obsidian-950 p-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-titanium-500 mb-3">
+        Nächste Schritte
+      </p>
+      <ol className="space-y-2">
+        {steps.map((s, i) => (
+          <li key={s.label} className="flex items-start gap-3">
+            <span className="shrink-0 font-mono text-[10px] text-titanium-600 mt-0.5 w-4">{i + 1}.</span>
+            <div>
+              <span className="text-xs font-semibold text-titanium-100 flex items-center gap-1.5">
+                <Check className="h-3 w-3 text-emerald-400 shrink-0" /> {s.label}
+              </span>
+              <p className="text-[11px] text-titanium-500 mt-0.5">{s.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function labelForPlanKey(planKey: string | null): string | null {
+  switch (planKey) {
+    case 'starter':    return 'Starter';
+    case 'growth':     return 'Growth';
+    case 'agency':     return 'Agency';
+    case 'scale':      return 'Scale';
+    case 'enterprise': return 'Enterprise';
+    default:           return null;
+  }
 }

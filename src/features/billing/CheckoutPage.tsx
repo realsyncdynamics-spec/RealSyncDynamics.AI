@@ -23,9 +23,12 @@ import { trackConversion } from '../../lib/pixels';
  * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
+<<<<<<< HEAD
+// Yearly-Keys sind buchbar (CTAs in src/config/pricing.ts verlinken auf
+// /checkout/<key>_yearly) — ohne sie hier bounced die Buchung zurück auf /pricing.
 const VALID_PLAN_KEYS = new Set<PlanKey>([
   'free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise',
-  'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly',
+  'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly', 'enterprise_yearly',
 ]);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
@@ -57,13 +60,13 @@ export function CheckoutPage() {
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    // 'free_audit' (Underscore) ist der externe Marketing-Identifier für
-    // denselben Free-Plan — alle Varianten führen zum kostenlosen Audit.
+    // 'free_audit' ist der kanonische planKey aus src/config/pricing.ts —
+    // alle drei Schreibweisen führen zum kostenlosen Audit statt in den Checkout.
     if (planKey === 'free' || planKey === 'free-audit' || planKey === 'free_audit') {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
-    if (planKey === 'enterprise') {
+    if (planKey === 'enterprise' || planKey === 'enterprise_yearly') {
       window.location.href = '/contact-sales?intent=enterprise&source=checkout-redirect';
       return;
     }

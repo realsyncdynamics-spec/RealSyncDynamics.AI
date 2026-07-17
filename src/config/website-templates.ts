@@ -303,9 +303,10 @@ export function getTemplate(industry: string): WebsiteTemplate | undefined {
 }
 
 /**
- * List all available industries
+ * List all available industries as {id, name} entries (suitable for a
+ * dropdown). Returns the industry key plus the template's display name.
  */
-export function listAvailableIndustries(): string[] {
+export function listAvailableIndustries(): Array<{ id: string; name: string }> {
   return Object.keys(WEBSITE_TEMPLATES).map((key) => ({
     id: key,
     name: WEBSITE_TEMPLATES[key].name,

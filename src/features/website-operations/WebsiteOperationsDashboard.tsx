@@ -4,8 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../lib/auth';
-import { useSupabaseAuth } from '../../core/auth/useSupabaseAuth';
+import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
@@ -13,19 +12,8 @@ import { CreateWebsiteWizard } from './CreateWebsiteWizard';
 import { WebsiteProjectCard } from './WebsiteProjectCard';
 import { DeploymentStatus } from './DeploymentStatus';
 import { ComplianceScoreboard } from './ComplianceScoreboard';
+import type { WebsiteProject, WebsiteProjectStatus } from './types';
 import './WebsiteOperationsDashboard.css';
-
-interface WebsiteProject {
-  id: string;
-  name: string;
-  industry: string;
-  status: 'draft' | 'preview' | 'live' | 'archived';
-  compliance_score: number;
-  deployment_url?: string;
-  preview_url?: string;
-  last_deployed_at?: string;
-  created_at: string;
-}
 
 export function WebsiteOperationsDashboard() {
   const { user } = useSupabaseAuth();
@@ -130,7 +118,7 @@ export function WebsiteOperationsDashboard() {
 
       {/* Create Website Modal */}
       {showCreateModal && (
-        <Modal onClose={() => setShowCreateModal(false)}>
+        <Modal open title="Neue Website erstellen" onClose={() => setShowCreateModal(false)}>
           <CreateWebsiteWizard
             onSuccess={(newProject) => {
               setProjects([...projects, newProject]);
@@ -143,10 +131,10 @@ export function WebsiteOperationsDashboard() {
 
       {/* Project Detail Panel */}
       {selectedProject && (
-        <Modal onClose={() => setSelectedProject(null)}>
+        <Modal open title={selectedProject.name} onClose={() => setSelectedProject(null)}>
           <div className="project-detail">
             <h2>{selectedProject.name}</h2>
-            <Badge label={selectedProject.status} variant={getStatusVariant(selectedProject.status)} />
+            <Badge variant={getStatusVariant(selectedProject.status)}>{selectedProject.status}</Badge>
 
             <div className="detail-sections">
               <section>
@@ -209,15 +197,15 @@ function StatCard({ label, value, icon, highlight }: StatCardProps) {
 }
 
 function getStatusVariant(
-  status: 'draft' | 'preview' | 'live' | 'archived'
-): 'default' | 'success' | 'warning' | 'danger' {
+  status: WebsiteProjectStatus
+): 'default' | 'success' | 'warning' | 'error' {
   switch (status) {
     case 'live':
       return 'success';
     case 'preview':
       return 'warning';
     case 'archived':
-      return 'danger';
+      return 'error';
     default:
       return 'default';
   }

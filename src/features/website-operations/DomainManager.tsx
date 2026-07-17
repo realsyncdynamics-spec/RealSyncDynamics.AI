@@ -155,7 +155,7 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
                     {domain.domain_type === 'subdomain' ? '🌐 Managed' : '🔗 Custom'}
                   </p>
                 </div>
-                {domain.is_primary && <Badge label="Primary" variant="success" />}
+                {domain.is_primary && <Badge variant="success">Primary</Badge>}
               </div>
 
               <div className="domain-status">

@@ -5,18 +5,13 @@
  */
 
 import { useState } from 'react';
-import { useSupabaseAuth } from '../../core/auth/useSupabaseAuth';
+import { useSupabaseAuth } from '../supabase/SupabaseAuthContext';
+import { useTenant } from '../../core/access/TenantProvider';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import type { WebsiteProject } from './types';
 import './CreateWebsiteWizard.css';
-
-interface WebsiteProject {
-  id: string;
-  name: string;
-  industry: string;
-  status: string;
-}
 
 interface CreateWebsiteWizardProps {
   onSuccess: (project: WebsiteProject) => void;
@@ -26,7 +21,8 @@ interface CreateWebsiteWizardProps {
 type Step = 'industry' | 'company' | 'services' | 'review';
 
 export function CreateWebsiteWizard({ onSuccess, onClose }: CreateWebsiteWizardProps) {
-  const { user, tenant } = useSupabaseAuth();
+  const { user } = useSupabaseAuth();
+  const { activeTenantId } = useTenant();
   const [step, setStep] = useState<Step>('industry');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,7 +49,7 @@ export function CreateWebsiteWizard({ onSuccess, onClose }: CreateWebsiteWizardP
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!tenant?.id) {
+    if (!activeTenantId) {
       alert('Tenant information not found');
       return;
     }
@@ -67,7 +63,7 @@ export function CreateWebsiteWizard({ onSuccess, onClose }: CreateWebsiteWizardP
           Authorization: `Bearer ${user?.id}`,
         },
         body: JSON.stringify({
-          tenant_id: tenant.id,
+          tenant_id: activeTenantId,
           industry: formData.industry,
           company_name: formData.company_name,
           description: formData.description,
@@ -227,7 +223,7 @@ export function CreateWebsiteWizard({ onSuccess, onClose }: CreateWebsiteWizardP
                 { value: 'minimal', label: 'Minimal' },
                 { value: 'bold', label: 'Bold' },
               ]}
-              onChange={(value) => setFormData({ ...formData, style_layout: value })}
+              onChange={(e) => setFormData({ ...formData, style_layout: e.target.value })}
             />
           </div>
         )}

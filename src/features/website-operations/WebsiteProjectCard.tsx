@@ -5,19 +5,8 @@
 
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
+import type { WebsiteProject, WebsiteProjectStatus } from './types';
 import './WebsiteProjectCard.css';
-
-interface WebsiteProject {
-  id: string;
-  name: string;
-  industry: string;
-  status: 'draft' | 'preview' | 'live' | 'archived';
-  compliance_score: number;
-  deployment_url?: string;
-  preview_url?: string;
-  last_deployed_at?: string;
-  created_at: string;
-}
 
 interface WebsiteProjectCardProps {
   project: WebsiteProject;
@@ -35,7 +24,7 @@ export function WebsiteProjectCard({ project, onSelect }: WebsiteProjectCardProp
           <h3>{project.name}</h3>
           <p className="industry">{formatIndustry(project.industry)}</p>
         </div>
-        <Badge label={project.status} variant={getStatusVariant(project.status)} />
+        <Badge variant={getStatusVariant(project.status)}>{project.status}</Badge>
       </div>
 
       <div className="card-metrics">
@@ -87,15 +76,15 @@ function formatIndustry(industry: string): string {
 }
 
 function getStatusVariant(
-  status: 'draft' | 'preview' | 'live' | 'archived'
-): 'default' | 'success' | 'warning' | 'danger' {
+  status: WebsiteProjectStatus
+): 'default' | 'success' | 'warning' | 'error' {
   switch (status) {
     case 'live':
       return 'success';
     case 'preview':
       return 'warning';
     case 'archived':
-      return 'danger';
+      return 'error';
     default:
       return 'default';
   }

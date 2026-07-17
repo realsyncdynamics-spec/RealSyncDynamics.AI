@@ -81,7 +81,7 @@ test.describe('Website Operations Workflow', () => {
 
     // Check compliance section
     await expect(page.locator('text=Compliance Status')).toBeVisible();
-    await expect(page.locator(/Compliance|DSGVO|EU AI Act/)).toBeVisible();
+    await expect(page.getByText(/Compliance|DSGVO|EU AI Act/)).toBeVisible();
 
     // Verify score display
     const scoreElement = page.locator('[class*="compliance-score"]');

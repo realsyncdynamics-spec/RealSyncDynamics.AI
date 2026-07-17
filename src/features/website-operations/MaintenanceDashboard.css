@@ -1,0 +1,366 @@
+.maintenance-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: #e2e2e2;
+}
+
+.maintenance-dashboard.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #a0a0a0;
+}
+
+.maintenance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.maintenance-header h2 {
+  margin: 0;
+  color: #00d9ff;
+  font-size: 1.5rem;
+}
+
+.btn-scan {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-scan:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+}
+
+.btn-scan:disabled,
+.btn-scan.scanning {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.last-scan {
+  font-size: 0.875rem;
+  color: #a0a0a0;
+  text-align: right;
+}
+
+.health-card {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.1), rgba(16, 185, 129, 0.1));
+  border: 2px solid rgba(0, 217, 255, 0.2);
+  padding: 2rem;
+  border-radius: 0.75rem;
+}
+
+.overall-score {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.score-circle {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid;
+  flex-shrink: 0;
+}
+
+.score-circle.score-excellent {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.score-circle.score-good {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.score-circle.score-fair {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.score-circle.score-poor {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.score-number {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-circle.score-excellent .score-number {
+  color: #10b981;
+}
+
+.score-circle.score-good .score-number {
+  color: #3b82f6;
+}
+
+.score-circle.score-fair .score-number {
+  color: #f59e0b;
+}
+
+.score-circle.score-poor .score-number {
+  color: #ef4444;
+}
+
+.score-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #a0a0a0;
+  margin-top: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.health-status p {
+  margin: 0;
+}
+
+.health-status .status {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.health-status .status.excellent {
+  color: #10b981;
+}
+
+.health-status .status.good {
+  color: #3b82f6;
+}
+
+.health-status .status.fair {
+  color: #f59e0b;
+}
+
+.health-status .status.poor {
+  color: #ef4444;
+}
+
+.health-status .description {
+  color: #a0a0a0;
+  font-size: 0.95rem;
+}
+
+.scores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 217, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-card h4 {
+  margin: 0 0 0.75rem 0;
+  color: #e2e2e2;
+}
+
+.metric-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.metric-score {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.metric-card.metric-excellent .metric-score {
+  color: #10b981;
+}
+
+.metric-card.metric-good .metric-score {
+  color: #3b82f6;
+}
+
+.metric-card.metric-fair .metric-score {
+  color: #f59e0b;
+}
+
+.metric-card.metric-poor .metric-score {
+  color: #ef4444;
+}
+
+.metric-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.metric-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d9ff, #0052ff);
+  transition: width 0.3s ease;
+}
+
+.metric-card.metric-fair .metric-fill {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.metric-card.metric-poor .metric-fill {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.metric-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.metric-tips small {
+  color: #a0a0a0;
+  font-size: 0.75rem;
+}
+
+.issues-section,
+.suggestions-section {
+  margin-top: 1.5rem;
+}
+
+.issues-section h3,
+.suggestions-section h3 {
+  margin: 0 0 1rem 0;
+  color: #e2e2e2;
+  font-size: 1.1rem;
+}
+
+.issue-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.issue-card.issue-critical {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.issue-card.issue-warning {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.issue-card.issue-info {
+  border-color: rgba(0, 217, 255, 0.2);
+  background: rgba(0, 217, 255, 0.05);
+}
+
+.issue-header h5 {
+  margin: 0 0 0.5rem 0;
+  color: #e2e2e2;
+}
+
+.issue-description,
+.issue-impact {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #a0a0a0;
+}
+
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.suggestion {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 217, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+.sugg-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.sugg-header h4 {
+  margin: 0;
+  color: #00d9ff;
+}
+
+.sugg-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.effort,
+.impact {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #a0a0a0;
+}
+
+.effort-low {
+  border-left: 3px solid #10b981;
+}
+
+.effort-medium {
+  border-left: 3px solid #f59e0b;
+}
+
+.effort-high {
+  border-left: 3px solid #ef4444;
+}
+
+.sugg-description {
+  margin: 0;
+  color: #a0a0a0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.info-card {
+  background: rgba(0, 217, 255, 0.1);
+  border: 1px solid rgba(0, 217, 255, 0.2);
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.info-card p {
+  margin: 0;
+  color: #a0a0a0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.info-card strong {
+  color: #00d9ff;
+}

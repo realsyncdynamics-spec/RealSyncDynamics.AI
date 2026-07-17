@@ -8,6 +8,8 @@ import { MonitoringSurface } from '../../../pages/MonitoringPage';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantAssets, fetchTenantEvents } from '../governanceApi';
 import { countOpenIncidents } from '../incidentsApi';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ---------------------------------------------------------------------------
 // Mock-Daten
@@ -599,6 +601,131 @@ const TAB_LABELS: Record<AssetTab, string> = {
   'dokumente':  'Dokumente',
   'richtlinien': 'Richtlinien',
 };
+
+function Inner() {
+  const { activeTenantId } = useTenant();
+  const [assetCount, setAssetCount] = useState<string>('18');
+  const [alertCount, setAlertCount] = useState<string>('4');
+  const [lastCheck, setLastCheck] = useState<string>('vor 3 Min.');
+  const [activeTab, setActiveTab] = useState<AssetTab>('websites');
+
+  useEffect(() => {
+    if (!activeTenantId) return;
+    fetchTenantAssets(activeTenantId).then((a) => {
+      if (a.length > 0) setAssetCount(String(a.length));
+    }).catch(() => {});
+    countOpenIncidents(activeTenantId).then((n) => setAlertCount(String(n))).catch(() => {});
+    fetchTenantEvents(activeTenantId, 1).then((evs) => {
+      if (evs.length > 0) {
+        const diffMs = Date.now() - new Date(evs[0].created_at).getTime();
+        const diffMin = Math.floor(diffMs / 60_000);
+        const ts = diffMin < 60 ? `vor ${diffMin} Min.`
+          : diffMin < 1440 ? `vor ${Math.floor(diffMin / 60)} Std.`
+          : `vor ${Math.floor(diffMin / 1440)} Tag${Math.floor(diffMin / 1440) !== 1 ? 'en' : ''}`;
+        setLastCheck(ts);
+      }
+    }).catch(() => {});
+  }, [activeTenantId]);
+
+
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+
+      {/* ── Sektion 1: Header + Coverage-Metriken ── */}
+      <section className="border-b border-titanium-900">
+        {/* Header-Zeile */}
+        <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 border-b border-titanium-900">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <h1 className="text-lg font-semibold tracking-tight text-titanium-50 leading-none">
+                Monitoring Runtime
+              </h1>
+              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-teal-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-teal-400 motion-safe:animate-pulse" />
+                AKTIV
+              </span>
+            </div>
+            <p className="mt-1 font-mono text-[10px] text-titanium-500 uppercase tracking-wider">
+              24/7 · EU-lokal · DSGVO &amp; EU AI Act
+            </p>
+          </div>
+        </div>
+
+        {/* Metriken-Reihe */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px bg-titanium-900">
+          <MetricCard label="Überwachte Assets" value={assetCount} />
+          <MetricCard label="Scans heute"        value="142" />
+          <MetricCard label="Aktive Alerts"      value={alertCount} valueClass="text-red-400" />
+          <MetricCard label="Letzte Prüfung"     value={lastCheck} valueClass="text-teal-400" />
+          <MetricCard label="Nächste Prüfung"    value="07:45" />
+        </div>
+      </section>
+
+      {/* ── Sektion 2: Asset Monitoring Status (Tabs) ── */}
+      <section className="border-b border-titanium-900">
+        {/* Tab-Leiste */}
+        <div className="flex border-b border-titanium-900 px-6 pt-4">
+          {(Object.keys(TAB_LABELS) as AssetTab[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={[
+                'pb-2 px-4 font-mono text-[11px] uppercase tracking-wider transition-colors border-b-2 -mb-px',
+                activeTab === tab
+                  ? 'border-teal-400 text-titanium-50'
+                  : 'border-transparent text-titanium-500 hover:text-titanium-200',
+              ].join(' ')}
+            >
+              {TAB_LABELS[tab]}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab-Inhalt */}
+        <div className="py-2">
+          {activeTab === 'websites'    && <WebsitesTab />}
+          {activeTab === 'ki-systeme'  && <AiSystemsTab />}
+          {activeTab === 'dokumente'   && <DokumenteTab />}
+          {activeTab === 'richtlinien' && <RichtlinienTab />}
+        </div>
+      </section>
+
+      {/* ── Sektion 3: Alerts + Regeln ── */}
+      <section className="border-b border-titanium-900">
+        <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-titanium-900">
+          {/* Linke Spalte — Aktive Alerts (2/3) */}
+          <div className="lg:col-span-2">
+            <ActiveAlertsPanel />
+          </div>
+          {/* Rechte Spalte — Alert-Regeln (1/3) */}
+          <div>
+            <AlertRulesPanel />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Sektion 4: Live Event Stream ── */}
+      <section>
+        {/* Stream-Header */}
+        <div className="px-6 py-3 border-b border-titanium-900 flex items-center gap-4">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">
+            Live Event Stream
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-teal-400">
+            <span className="inline-block h-2 w-2 rounded-full bg-teal-400 motion-safe:animate-pulse" />
+            Echtzeit
+          </span>
+          <span className="ml-auto font-mono text-[10px] text-titanium-500">
+            Letzte 24 Stunden · Live-Feed
+          </span>
+        </div>
+        {/* Embedded Feed */}
+        <MonitoringSurface embedded />
+      </section>
+    </div>
+  );
+}
 
 function _MonitoringRuntimeView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;

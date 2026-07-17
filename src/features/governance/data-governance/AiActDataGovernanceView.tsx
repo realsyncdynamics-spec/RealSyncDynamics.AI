@@ -10,6 +10,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Database, Plus, X, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 import {
   listDatasets,
   createDataset,
@@ -75,6 +77,142 @@ const DEMO_DATASETS: Dataset[] = [
 ];
 
 // ── Haupt-View ────────────────────────────────────────────────────────────────
+
+function Inner() {
+  const { activeTenantId } = useTenant();
+  const [datasets, setDatasets] = useState<Dataset[]>(DEMO_DATASETS);
+  const [showModal, setShowModal] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeTenantId) {
+      setDatasets(DEMO_DATASETS);
+      return;
+    }
+    let cancelled = false;
+    listDatasets(activeTenantId)
+      .then((rows) => { if (!cancelled && rows.length > 0) setDatasets(rows); })
+      .catch(() => {/* Demo-Fallback bleibt */});
+    return () => { cancelled = true; };
+  }, [activeTenantId]);
+
+  const metrics = useMemo(() => {
+    const total = datasets.length;
+    const withPii = datasets.filter((d) => d.contains_personal_data).length;
+    const complete = datasets.filter((d) => assessArt10Completeness(d).complete).length;
+    return { total, withPii, complete };
+  }, [datasets]);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  async function handleCreate(input: CreateDatasetInput) {
+    if (!activeTenantId) {
+      // Demo-Modus: optimistisch lokal anhängen.
+      setDatasets((prev) => [{
+        ...DEMO_DATASETS[0],
+        ...input,
+        id: `local-${Date.now()}`,
+        origin_jurisdictions: input.origin_jurisdictions ?? [],
+        contains_personal_data: input.contains_personal_data ?? false,
+        special_categories: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Dataset, ...prev]);
+      setShowModal(false);
+      showToast('Datensatz gespeichert (Demo)');
+      return;
+    }
+    try {
+      const row = await createDataset({ ...input, tenant_id: activeTenantId });
+      setDatasets((prev) => [row, ...prev]);
+      setShowModal(false);
+      showToast('Datensatz gespeichert');
+    } catch {
+      showToast('Speichern fehlgeschlagen');
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+      <header className="flex h-14 items-center justify-between border-b border-titanium-900 bg-obsidian-900 px-4">
+        <div className="flex items-center gap-3">
+          <Link to="/app" className="p-1.5 text-titanium-400 hover:bg-obsidian-800 hover:text-titanium-200">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center bg-gradient-to-br from-teal-600 to-teal-800">
+              <Database className="h-4 w-4 text-white" />
+            </div>
+            <div className="leading-tight">
+              <h1 className="font-display text-sm font-semibold tracking-tight text-titanium-50">
+                Daten-Governance
+              </h1>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+                EU AI Act · Art. 10 · Trainings-, Validierungs- &amp; Testdaten
+              </p>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-1.5 border border-teal-700 bg-teal-900/30 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-teal-300 hover:bg-teal-900/60 hover:text-teal-100"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Datensatz hinzufügen
+        </button>
+      </header>
+
+      <main className="mx-auto max-w-5xl space-y-5 p-4 md:p-6">
+        {/* Metriken */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <MetricCard label="Datensätze dokumentiert" value={metrics.total.toString()} />
+          <MetricCard label="Mit Personenbezug" value={metrics.withPii.toString()} tone="amber" />
+          <MetricCard label="Art-10-vollständig" value={`${metrics.complete}/${metrics.total}`} tone="teal" />
+        </div>
+
+        {/* Datensatz-Karten */}
+        <div className="space-y-3">
+          {datasets.map((d) => (
+            <DatasetCard key={d.id} dataset={d} />
+          ))}
+          {datasets.length === 0 && (
+            <div className="border border-titanium-800 bg-obsidian-900 p-10 text-center">
+              <p className="text-sm text-titanium-400">Noch keine Datensätze dokumentiert.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Art-10-Info */}
+        <section className="border border-titanium-900 bg-obsidian-900 p-4">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
+            EU AI Act · Art. 10 · Pflicht-Facetten
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {Object.values(ART10_FACET_LABEL).map((label) => (
+              <span key={label} className="border border-titanium-800 bg-obsidian-950 px-2 py-0.5 font-mono text-[10px] text-titanium-400">
+                {label}
+              </span>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {showModal && (
+        <AddDatasetModal onClose={() => setShowModal(false)} onSave={handleCreate} />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-50 border border-teal-700 bg-obsidian-900 px-4 py-2.5 font-mono text-[11px] text-teal-300 shadow-xl">
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function _AiActDataGovernanceView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;

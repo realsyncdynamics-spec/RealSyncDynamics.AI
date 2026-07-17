@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
-  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive,
+  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive, AlertCircle, Wrench, RotateCcw,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
@@ -93,6 +93,15 @@ const CERTIFICATION_MODULES = [
     route: '/app/governance/iso42001-remediation',
     color: 'amber',
     badge: 'Execution',
+  },
+  {
+    id: 'maintenance',
+    title: 'Post-Certification Maintenance',
+    description: 'Manage ongoing compliance monitoring and recertification schedules',
+    icon: RotateCcw,
+    route: '/app/governance/iso42001-maintenance',
+    color: 'cyan',
+    badge: 'Monitoring',
   },
   {
     id: 'timeline',

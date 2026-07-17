@@ -139,9 +139,14 @@ CREATE TABLE IF NOT EXISTS public.website_domains (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
 
   CONSTRAINT website_domains_project_fk FOREIGN KEY (project_id) REFERENCES public.website_projects(id),
-  CONSTRAINT website_domains_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),
-  CONSTRAINT website_domains_primary_unique UNIQUE (project_id) WHERE is_primary = true
+  CONSTRAINT website_domains_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
+
+-- Enforce "only one primary domain per project" via a partial unique index.
+-- (A table-level UNIQUE constraint cannot carry a WHERE clause; a partial
+--  unique index is the correct construct.)
+CREATE UNIQUE INDEX IF NOT EXISTS website_domains_primary_unique
+  ON public.website_domains(project_id) WHERE is_primary = true;
 
 CREATE INDEX idx_website_domains_project_id ON public.website_domains(project_id);
 CREATE INDEX idx_website_domains_tenant_id ON public.website_domains(tenant_id);

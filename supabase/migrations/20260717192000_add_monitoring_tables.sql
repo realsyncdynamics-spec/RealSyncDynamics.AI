@@ -72,16 +72,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Add monitoring columns to website_projects if not exist
-ALTER TABLE website_projects ADD COLUMN IF NOT EXISTS
-  last_error_at TIMESTAMP WITH TIME ZONE,
-  consecutive_errors INTEGER DEFAULT 0,
-  last_successful_deployment TIMESTAMP WITH TIME ZONE;
+-- (one ADD COLUMN clause per column — Postgres does not accept a shared
+--  IF NOT EXISTS across a comma-separated column list)
+ALTER TABLE website_projects ADD COLUMN IF NOT EXISTS last_error_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE website_projects ADD COLUMN IF NOT EXISTS consecutive_errors INTEGER DEFAULT 0;
+ALTER TABLE website_projects ADD COLUMN IF NOT EXISTS last_successful_deployment TIMESTAMP WITH TIME ZONE;
 
 -- Add monitoring columns to deployment_logs if not exist
-ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS
-  duration_ms BIGINT,
-  error_code TEXT,
-  circuit_breaker_state TEXT CHECK (circuit_breaker_state IN ('closed', 'open', 'half-open'));
+ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS duration_ms BIGINT;
+ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS error_code TEXT;
+ALTER TABLE deployment_logs ADD COLUMN IF NOT EXISTS circuit_breaker_state TEXT
+  CHECK (circuit_breaker_state IN ('closed', 'open', 'half-open'));
 
 -- Create view for recent errors (last 24 hours)
 CREATE OR REPLACE VIEW v_recent_errors AS

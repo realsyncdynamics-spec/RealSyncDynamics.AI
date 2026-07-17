@@ -17,17 +17,11 @@ export * from './timing';
 export * from './resourceMonitoring';
 export * from './usePerformanceMonitor';
 
-/**
- * Initialize all performance monitoring systems.
- * Call once on app startup in main.tsx.
- */
+import { initWebVitals } from './webVitals';
+import { initResourceMonitoring } from './resourceMonitoring';
+
 export function initPerformanceMonitoring(): void {
   if (typeof window === 'undefined') return;
-
-  // Import inside function to avoid circular dependencies
-  const { initWebVitals } = require('./webVitals');
-  const { initResourceMonitoring } = require('./resourceMonitoring');
-
   initWebVitals();
   initResourceMonitoring();
 }

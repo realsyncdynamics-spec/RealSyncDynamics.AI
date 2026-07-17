@@ -48,11 +48,11 @@ export interface PricingTier {
   name: string;
   /** Plan-Key fuer Stripe / DB (matcht public.products.default_for_plan_key) */
   planKey: string;
-  /** Anzeige-Preis (Euro). Fuer Enterprise: priceEur=0, priceString='individuell' */
+  /** Anzeige-Preis (Euro). 0 nur beim Free-Tier. */
   priceEur: number;
   /** "0", "79", "249", "699" — als String fuer Stripe Offer-Schema */
   priceString: string;
-  /** "/ Monat", "einmalig", "individuell ab 1.500 €" */
+  /** "/ Monat", "einmalig" */
   priceSuffix: string;
   /** isRecurring → mode: subscription bei Stripe Checkout */
   recurring: boolean;

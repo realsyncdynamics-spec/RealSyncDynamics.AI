@@ -193,8 +193,8 @@ export function SaaSSolution() {
             SaaS-Paket: Professional Governance
           </h2>
           <div className="border border-silver-700 p-8 bg-obsidian-900 rounded-none mb-8">
-            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">€149/Monat</div>
-            <p className="text-silver-400 mb-6">Perfekt für SaaS-Anbieter mit 1-10 Websites/Produkten</p>
+            <div className="font-display font-bold text-4xl text-titanium-50 mb-2">€699/Monat</div>
+            <p className="text-silver-400 mb-6">Agency-Tarif — für SaaS-Anbieter mit bis zu 10 Websites/Produkten</p>
             <ul className="space-y-3 text-sm text-silver-300 mb-8 max-w-lg mx-auto">
               {[
                 'KI-System-Inventar (unbegrenzt)',

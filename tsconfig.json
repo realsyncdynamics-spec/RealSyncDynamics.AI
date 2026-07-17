@@ -38,6 +38,7 @@
     "worker",
     "apps/agent-runtime",
     "extension",
-    "deploy"
+    "deploy",
+    "packages"
   ]
 }

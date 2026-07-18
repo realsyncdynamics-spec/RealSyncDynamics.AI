@@ -49,6 +49,7 @@ interface Issue {
 
 interface Report {
   audit_id: string;
+  scan_run_id?: string;
   created_at?: string;
   email?: string;
   domain: string;

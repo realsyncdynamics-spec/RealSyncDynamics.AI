@@ -24,9 +24,6 @@ export function CheckoutSuccessPage() {
   const { activeTenantId } = useTenant();
 
   const sessionId = searchParams.get('session_id') || searchParams.get('session');
-  const planKey = searchParams.get('plan_key');
-  const planLabel = useMemo(() => labelForPlanKey(planKey), [planKey]);
-  // Kommt der Nutzer aus dem Optimizer-Flow, bieten wir die Rückführung an.
   const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
   const [isVerifying, setIsVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +47,6 @@ export function CheckoutSuccessPage() {
   const planKey = subscription?.plan || null;
   const planLabel = useMemo(() => {
     if (!planKey) return null;
-    // Simple label mapping without requiring separate function
     const labels: Record<string, string> = {
       starter: 'Starter',
       growth: 'Growth',
@@ -60,8 +56,6 @@ export function CheckoutSuccessPage() {
     };
     return labels[planKey] || planKey;
   }, [planKey]);
-
-  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
 
   // Auto-redirect zum Dashboard nach 5 Sekunden
   useEffect(() => {

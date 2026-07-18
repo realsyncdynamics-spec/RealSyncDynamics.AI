@@ -31,6 +31,10 @@ export const CHANNEL_CHAR_BUDGET: Record<SocialChannel, number> = {
   'instagram.reel':       900,   // Reels caption practical limit
   'tiktok.fast':          280,   // TikTok caption short
   'x.alert':              260,   // X (Twitter) 280 minus margin for autolinks
+  'wordpress.blog':      5000,   // Blog post body (HTML support)
+  'ghost.blog':          5000,   // Blog post body (Markdown/HTML)
+  'webhook.custom':      5000,   // Webhook payload (JSON)
+  'email.newsletter':    5000,   // Email body (HTML)
 };
 
 // ── Tone hashtag overlays (added per channel) ──────────────────────
@@ -41,6 +45,10 @@ const CHANNEL_HASHTAGS: Record<SocialChannel, string[]> = {
   'instagram.reel':      ['#TechExplained', '#PrivacyTech'],
   'tiktok.fast':         ['#TechTok', '#PrivacyTech'],
   'x.alert':             ['#Runtime', '#GovernanceTech'],
+  'wordpress.blog':      ['governance', 'compliance'],
+  'ghost.blog':          ['governance', 'compliance'],
+  'webhook.custom':      [],
+  'email.newsletter':    [],
 };
 
 // ── Templates per channel × event type ─────────────────────────────
@@ -242,6 +250,109 @@ const TEMPLATES: Record<SocialChannel, Record<string, TemplateFn>> = {
     }),
     __default: (e) => ({
       body: shortHook(e.anonymizedSummary),
+      hashtags: [],
+    }),
+  },
+
+  'wordpress.blog': {
+    'tracker.detected': () => ({
+      body:
+        'Realtime-Governance statt einmaliger Checkliste: Unsere Runtime hat neue Tracking-Aktivität erkannt, klassifiziert und revisionsfähig dokumentiert.',
+      hashtags: [],
+    }),
+    'ai.endpoint.detected': () => ({
+      body:
+        'Ein neuer AI-Endpoint wurde erkannt und gegen den Annex-III-Use-Case-Katalog des EU AI Act geprüft. Indikator-basierte Vorklassifikation mit Audit-Trail.',
+      hashtags: [],
+    }),
+    'consent.missing': () => ({
+      body:
+        'Datenverarbeitung ohne dokumentierten Consent ist ein Befund in unseren Audits. Unsere Runtime erkennt das Muster früh und versiegelt es im Evidence Stream.',
+      hashtags: [],
+    }),
+    'policy.violation.detected': () => ({
+      body:
+        'Eine Policy-Verletzung wurde erkannt, im Evidence Store verankert und der zuständigen Rolle zur Überprüfung zugespielt. Compliance-as-Code, nicht Compliance-as-PDF.',
+      hashtags: [],
+    }),
+    'audit.bundle.generated': () => ({
+      body:
+        'Ein Audit-Bundle ist fertig: alle relevanten Evidence-Anker, die zugehörigen Policy-Versionen und der Replay-Index, gebündelt in einem Paket.',
+      hashtags: [],
+    }),
+    __default: (e) => ({
+      body: e.anonymizedSummary,
+      hashtags: [],
+    }),
+  },
+
+  'ghost.blog': {
+    'tracker.detected': () => ({
+      body:
+        'Realtime-Governance statt einmaliger Checkliste: Unsere Runtime hat neue Tracking-Aktivität erkannt, klassifiziert und revisionsfähig dokumentiert.',
+      hashtags: [],
+    }),
+    'ai.endpoint.detected': () => ({
+      body:
+        'Ein neuer AI-Endpoint wurde erkannt und gegen den Annex-III-Use-Case-Katalog des EU AI Act geprüft. Indikator-basierte Vorklassifikation mit Audit-Trail.',
+      hashtags: [],
+    }),
+    'consent.missing': () => ({
+      body:
+        'Datenverarbeitung ohne dokumentierten Consent ist ein häufiger Befund. Unsere Runtime erkennt das Muster früh und versiegelt es im Evidence Stream.',
+      hashtags: [],
+    }),
+    'policy.violation.detected': () => ({
+      body:
+        'Eine Policy-Verletzung wurde erkannt, im Evidence Store verankert und zur Überprüfung freigegeben. Compliance-as-Code, nicht Compliance-als-Prozess.',
+      hashtags: [],
+    }),
+    'audit.bundle.generated': () => ({
+      body:
+        'Ein Audit-Bundle ist fertig: alle relevanten Evidence-Anker, die zugehörigen Policy-Versionen und der Replay-Index, gebündelt in einem Paket.',
+      hashtags: [],
+    }),
+    __default: (e) => ({
+      body: e.anonymizedSummary,
+      hashtags: [],
+    }),
+  },
+
+  'webhook.custom': {
+    __default: (e) => ({
+      body: e.anonymizedSummary,
+      hashtags: [],
+    }),
+  },
+
+  'email.newsletter': {
+    'tracker.detected': () => ({
+      body:
+        'Governance Alert: Neue Tracking-Aktivität erkannt und klassifiziert. Unsere Runtime dokumentiert dies revisionsfähig für Ihren Audit-Trail.',
+      hashtags: [],
+    }),
+    'ai.endpoint.detected': () => ({
+      body:
+        'Ein neuer AI-Endpoint wurde erkannt und gegen die Bestimmungen des EU AI Act überprüft. Details finden Sie in Ihrem Audit-Dashboard.',
+      hashtags: [],
+    }),
+    'consent.missing': () => ({
+      body:
+        'Eine fehlende Consent-Dokumentation wurde erkannt. Unsere Runtime versiegelt dies im Evidence Stream für zukünftige Compliance-Nachweise.',
+      hashtags: [],
+    }),
+    'policy.violation.detected': () => ({
+      body:
+        'Eine Abweichung von einer hinterlegten Policy wurde erkannt und versiegelt. Bitte überprüfen Sie die Details im Governance-Dashboard.',
+      hashtags: [],
+    }),
+    'audit.bundle.generated': () => ({
+      body:
+        'Ein neues Audit-Bundle ist fertig. Es enthält alle relevanten Evidence-Anker, Policy-Versionen und ist übergabefähig an Aufsichtsbehörden oder interne Reviewer.',
+      hashtags: [],
+    }),
+    __default: (e) => ({
+      body: e.anonymizedSummary,
       hashtags: [],
     }),
   },

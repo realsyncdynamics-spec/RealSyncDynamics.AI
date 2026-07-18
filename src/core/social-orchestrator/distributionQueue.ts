@@ -289,12 +289,17 @@ abstract class BasePublisher implements SocialPublisher {
 
 /**
  * LinkedIn Publisher — OAuth 2.0 + REST API
- * Requires token in Supabase Vault: linkedin_access_token
+ * Requires: linkedin_access_token in Supabase Vault + linkedInPersonUrn in post metadata
  * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
  */
 export class LinkedInPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string = ''; // TODO: load from Supabase Vault in production
+  private accessToken: string = '';
+
+  constructor(accessToken?: string) {
+    super();
+    this.accessToken = accessToken || '';
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
@@ -307,6 +312,15 @@ export class LinkedInPublisher extends BasePublisher {
       };
     }
 
+    const authorUrn = this.getAuthorUrn(post);
+    if (!authorUrn) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_AUTHOR', message: 'LinkedIn author URN not specified in post metadata' },
+      };
+    }
+
     try {
       const result = await this.retryWithBackoff(
         async () => {
@@ -315,9 +329,10 @@ export class LinkedInPublisher extends BasePublisher {
             headers: {
               'Authorization': `Bearer ${this.accessToken}`,
               'Content-Type': 'application/json',
+              'LinkedIn-Version': '202401',
             },
             body: JSON.stringify({
-              author: 'urn:li:person:PERSON_ID', // TODO: parameterize per profile
+              author: authorUrn,
               lifecycleState: 'PUBLISHED',
               specificContent: {
                 'com.linkedin.ugc.PublishContent': {
@@ -362,41 +377,201 @@ export class LinkedInPublisher extends BasePublisher {
       };
     }
   }
-}
 
-/**
- * WordPress Publisher — XML-RPC or REST API
- * TODO: implement in follow-up PR; placeholder for architecture
- */
-export class WordPressPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'wordpress.blog' channel
-  private siteUrl: string = ''; // TODO: load from config
-  private apiToken: string = ''; // TODO: load from Supabase Vault
-
-  async publish(post: SocialPost): Promise<PublishResult> {
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'WordPress publisher pending implementation' },
-    };
+  private getAuthorUrn(post: SocialPost): string | null {
+    const metadata = (post as any).linkedInMetadata;
+    return metadata?.authorUrn || null;
   }
 }
 
 /**
- * Ghost Publisher — Ghost API (v3+)
- * TODO: implement in follow-up PR; placeholder for architecture
+ * WordPress Publisher — REST API (WP 4.7+)
+ * Requires: WordPress site URL + application password in Supabase Vault
+ * See: https://developer.wordpress.org/rest-api/
  */
-export class GhostPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'ghost.blog' channel
-  private adminUrl: string = '';
-  private adminApiKey: string = '';
+export class WordPressPublisher extends BasePublisher {
+  public readonly channel: SocialChannel = 'wordpress.blog';
+  private siteUrl: string;
+  private username: string;
+  private appPassword: string;
+
+  constructor(siteUrl: string, username?: string, appPassword?: string) {
+    super();
+    this.siteUrl = siteUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.username = username || '';
+    this.appPassword = appPassword || '';
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Ghost publisher pending implementation' },
-    };
+    this.logPublishAttempt(post, 'started', { siteUrl: this.siteUrl });
+
+    if (!this.siteUrl || !this.username || !this.appPassword) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'MISSING_CONFIG', message: 'WordPress site URL, username, or app password not configured' },
+      };
+    }
+
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const auth = Buffer.from(`${this.username}:${this.appPassword}`).toString('base64');
+          const excerpt = post.body.substring(0, 200);
+          const slug = post.socialEventId.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+          const response = await fetch(`${this.siteUrl}/wp-json/wp/v2/posts`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: `Governance Alert: ${new Date().toISOString().split('T')[0]}`,
+              content: post.body,
+              excerpt,
+              slug,
+              status: 'publish',
+              categories: [1], // Default category; customize per site
+              meta: {
+                source_event_id: post.socialEventId,
+                published_via: 'realsyncdynamics_orchestrator',
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`WP_${response.status}: ${error?.message || 'Unknown error'}`);
+          }
+
+          return response.json();
+        },
+        (attempt, error) => {
+          console.warn(`WordPress publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      this.logPublishAttempt(post, 'success', { postId: result.id, url: result.link });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: String(result.id),
+        postedAt: result.date_gmt || new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'WORDPRESS_API_ERROR', message: errorMsg },
+      };
+    }
+  }
+}
+
+/**
+ * Ghost Publisher — Ghost API v1
+ * Requires: Ghost Admin API key (from Ghost settings) + admin URL
+ * See: https://ghost.org/docs/admin-api/
+ */
+export class GhostPublisher extends BasePublisher {
+  public readonly channel: SocialChannel = 'ghost.blog';
+  private adminUrl: string;
+  private adminApiKey: string;
+
+  constructor(adminUrl: string, adminApiKey?: string) {
+    super();
+    this.adminUrl = adminUrl.replace(/\/$/, ''); // Remove trailing slash
+    this.adminApiKey = adminApiKey || '';
+  }
+
+  async publish(post: SocialPost): Promise<PublishResult> {
+    this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
+
+    if (!this.adminUrl || !this.adminApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'MISSING_CONFIG', message: 'Ghost admin URL or API key not configured' },
+      };
+    }
+
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const [id, secret] = this.adminApiKey.split(':');
+          if (!id || !secret) {
+            throw new Error('Invalid Ghost API key format (expected id:secret)');
+          }
+
+          const response = await fetch(`${this.adminUrl}/ghost/api/admin/posts/?source=html`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Ghost ${this.createGhostJwt(id, secret)}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              posts: [
+                {
+                  title: `Governance Update: ${new Date().toISOString().split('T')[0]}`,
+                  html: post.body,
+                  tags: [{ name: 'Governance' }, { name: 'Compliance' }],
+                  status: 'published',
+                  custom_excerpt: post.body.substring(0, 200),
+                  meta_description: post.body.substring(0, 160),
+                },
+              ],
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`GHOST_${response.status}: ${error?.errors?.[0]?.message || 'Unknown error'}`);
+          }
+
+          return response.json();
+        },
+        (attempt, error) => {
+          console.warn(`Ghost publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      const publishedPost = result.posts?.[0];
+      this.logPublishAttempt(post, 'success', { postId: publishedPost?.id, url: publishedPost?.url });
+
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: publishedPost?.id,
+        postedAt: publishedPost?.published_at || new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'GHOST_API_ERROR', message: errorMsg },
+      };
+    }
+  }
+
+  private createGhostJwt(id: string, secret: string): string {
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
+    const iat = Math.floor(Date.now() / 1000);
+    const payload = Buffer.from(JSON.stringify({ iat, exp: iat + 60 })).toString('base64');
+
+    const crypto = require('crypto');
+    const signature = crypto
+      .createHmac('sha256', Buffer.from(secret, 'hex'))
+      .update(`${header}.${payload}`)
+      .digest('base64');
+
+    return `${header}.${payload}.${signature}`;
   }
 }
 
@@ -405,7 +580,7 @@ export class GhostPublisher extends BasePublisher {
  * Useful for integration with n8n, Zapier, or internal systems
  */
 export class WebhookPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'webhook.custom' channel
+  public readonly channel: SocialChannel = 'webhook.custom';
   private webhookUrl: string;
 
   constructor(webhookUrl: string) {
@@ -415,6 +590,14 @@ export class WebhookPublisher extends BasePublisher {
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { webhookUrl: this.webhookUrl });
+
+    if (!this.webhookUrl) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'MISSING_URL', message: 'Webhook URL not configured' },
+      };
+    }
 
     try {
       const result = await this.retryWithBackoff(
@@ -426,6 +609,7 @@ export class WebhookPublisher extends BasePublisher {
               channel: post.channel,
               body: post.body,
               hashtags: post.hashtags,
+              socialEventId: post.socialEventId,
               timestamp: new Date().toISOString(),
             }),
           });
@@ -462,17 +646,28 @@ export class WebhookPublisher extends BasePublisher {
 }
 
 /**
- * Email Publisher — Send post as email newsletter
- * Useful for compliance-focused audiences who prefer inbox delivery
+ * Email Publisher — Send post as email newsletter via SendGrid/SES
+ * Supports batch send to compliance-focused audiences.
+ * Configured for SendGrid; can be adapted for AWS SES or others.
  */
 export class EmailPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'email.newsletter' channel
-  private fromAddress: string = 'noreply@realsync.ai';
-  private toAddresses: string[] = [];
+  public readonly channel: SocialChannel = 'email.newsletter';
+  private fromAddress: string;
+  private toAddresses: string[];
+  private sendGridApiKey: string;
+  private provider: 'sendgrid' | 'ses' = 'sendgrid';
 
-  constructor(toAddresses: string[] = []) {
+  constructor(
+    toAddresses: string[] = [],
+    sendGridApiKey?: string,
+    fromAddress?: string,
+    provider?: 'sendgrid' | 'ses'
+  ) {
     super();
     this.toAddresses = toAddresses;
+    this.sendGridApiKey = sendGridApiKey || '';
+    this.fromAddress = fromAddress || 'alerts@realsyncdynamics.ai';
+    this.provider = provider || 'sendgrid';
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -484,19 +679,147 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
-    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
+    if (!this.sendGridApiKey && this.provider === 'sendgrid') {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'MISSING_API_KEY', message: 'SendGrid API key not configured' },
+      };
+    }
 
-    // TODO: integrate with email service (SendGrid, AWS SES, etc.)
-    // For now, this is a placeholder. Real implementation would:
-    // 1. Call email provider API
-    // 2. Include metadata for tracking / audit
-    // 3. Handle bounce/delivery tracking
+    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length, provider: this.provider });
 
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Email publisher pending implementation' },
-    };
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          if (this.provider === 'sendgrid') {
+            return this.publishViaSendGrid(post);
+          } else {
+            return this.publishViaSes(post);
+          }
+        },
+        (attempt, error) => {
+          console.warn(`Email publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      this.logPublishAttempt(post, 'success', { messageId: result.messageId, recipientCount: this.toAddresses.length });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: result.messageId,
+        postedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'EMAIL_SEND_FAILED', message: errorMsg },
+      };
+    }
+  }
+
+  private async publishViaSendGrid(post: SocialPost): Promise<{ messageId: string }> {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.sendGridApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        personalizations: this.toAddresses.map(email => ({
+          to: [{ email }],
+          subject: `Governance Alert: ${new Date().toLocaleDateString()}`,
+        })),
+        from: { email: this.fromAddress, name: 'RealSyncDynamics Alerts' },
+        content: [
+          {
+            type: 'text/html',
+            value: this.buildHtmlEmail(post),
+          },
+        ],
+        trackingSettings: {
+          clickTracking: { enable: true },
+          openTracking: { enable: true },
+        },
+        customArgs: {
+          source_event_id: post.socialEventId,
+          channel: 'email.newsletter',
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`SendGrid ${response.status}: ${error}`);
+    }
+
+    const messageId = response.headers.get('X-Message-ID') || `sg_${Date.now()}`;
+    return { messageId };
+  }
+
+  private async publishViaSes(post: SocialPost): Promise<{ messageId: string }> {
+    const response = await fetch(
+      `${process.env.AWS_SES_ENDPOINT || 'https://email.amazonaws.com'}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-amz-json-1.1',
+          'X-Amz-Target': 'AmazonSSM.SendEmail',
+        },
+        body: JSON.stringify({
+          Source: this.fromAddress,
+          Destination: { ToAddresses: this.toAddresses },
+          Message: {
+            Subject: { Data: `Governance Alert: ${new Date().toLocaleDateString()}` },
+            Body: { Html: { Data: this.buildHtmlEmail(post) } },
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`AWS SES ${response.status}: ${error}`);
+    }
+
+    const result = await response.json();
+    return { messageId: result.MessageId };
+  }
+
+  private buildHtmlEmail(post: SocialPost): string {
+    return `
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { background: #0A0A0B; color: white; padding: 20px; border-radius: 4px; margin-bottom: 20px; }
+      .content { line-height: 1.6; }
+      .footer { color: #666; font-size: 12px; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>🛡️ RealSyncDynamics Governance Alert</h2>
+      </div>
+      <div class="content">
+        ${post.body}
+        ${post.hashtags.length > 0 ? `<p><strong>Tags:</strong> ${post.hashtags.join(', ')}</p>` : ''}
+      </div>
+      <div class="footer">
+        <p>This is an automated governance alert from RealSyncDynamics.AI</p>
+        <p><a href="https://realsyncdynamics.ai/audit">View full audit report</a></p>
+      </div>
+    </div>
+  </body>
+</html>
+    `.trim();
   }
 }
 

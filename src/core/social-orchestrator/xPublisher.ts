@@ -17,13 +17,13 @@ export class XPublisher implements SocialPublisher {
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
-    if (post.channel !== 'x') {
+    if (post.channel !== 'x.alert') {
       return {
         ok: false,
         channel: this.channel,
         error: {
           code: 'CHANNEL_MISMATCH',
-          message: `post channel ${post.channel} != publisher channel x`,
+          message: `post channel ${post.channel} != publisher channel x.alert`,
         },
       };
     }
@@ -52,23 +52,31 @@ export class XPublisher implements SocialPublisher {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorCode = `X_${response.status}_${(errorData as Record<string, unknown>).type ?? 'ERROR'}`;
+        const errorData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+        const errorType = String(errorData.type ?? 'ERROR');
+        const errorCode = `X_${response.status}_${errorType}`;
+
+        let errorMessage = `HTTP ${response.status}`;
+        if (Array.isArray(errorData.errors)) {
+          const firstError = (errorData.errors as Array<Record<string, unknown>>)[0];
+          errorMessage = String(firstError?.message ?? errorMessage);
+        } else if (typeof errorData.title === 'string') {
+          errorMessage = errorData.title;
+        }
+
         return {
           ok: false,
           channel: this.channel,
           error: {
             code: errorCode,
-            message: Array.isArray((errorData as Record<string, unknown>).errors)
-              ? ((errorData as Record<string, unknown>).errors as Array<Record<string, unknown>>)[0]?.message ?? 'Tweet creation failed'
-              : (errorData as Record<string, unknown>).title ?? `HTTP ${response.status}`,
+            message: errorMessage,
           },
         };
       }
 
-      const result = await response.json();
-      const data = (result as Record<string, unknown>).data as Record<string, unknown> | undefined;
-      const tweetId = data?.id as string | undefined ?? `x_${Date.now()}`;
+      const result = (await response.json()) as Record<string, unknown>;
+      const data = result.data as Record<string, unknown> | undefined;
+      const tweetId = (typeof data?.id === 'string' ? data.id : null) ?? `x_${Date.now()}`;
 
       return {
         ok: true,

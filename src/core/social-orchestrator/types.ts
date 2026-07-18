@@ -14,7 +14,11 @@ export type SocialChannel =
   | 'linkedin.legal'        // narrower DPO/legal-counsel framing
   | 'instagram.reel'        // hook-led visual storytelling
   | 'tiktok.fast'           // very short, hook-heavy
-  | 'x.alert';              // datapoint + hashtag
+  | 'x.alert'               // datapoint + hashtag
+  | 'wordpress.blog'        // WordPress blog post publication
+  | 'ghost.blog'            // Ghost CMS blog publication
+  | 'webhook.custom'        // Generic webhook for n8n/Zapier integration
+  | 'email.newsletter';     // Email newsletter distribution
 
 export const ALL_CHANNELS: readonly SocialChannel[] = [
   'linkedin.enterprise',
@@ -22,6 +26,10 @@ export const ALL_CHANNELS: readonly SocialChannel[] = [
   'instagram.reel',
   'tiktok.fast',
   'x.alert',
+  'wordpress.blog',
+  'ghost.blog',
+  'webhook.custom',
+  'email.newsletter',
 ] as const;
 
 // ── Approval status ────────────────────────────────────────────────

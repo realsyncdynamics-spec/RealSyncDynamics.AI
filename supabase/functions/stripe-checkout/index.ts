@@ -2,18 +2,28 @@
 //
 // POST /functions/v1/stripe-checkout
 // Authorization: Bearer <user JWT>
-// Body: { tenant_id: uuid, plan_key: string, return_url?: string }
+// Body: {
+//   tenant_id: uuid,
+//   plan_key: string,
+//   return_url?: string,
+//   pilot?: boolean,
+//   selected_addons?: string[] (addon IDs)
+// }
 //
 // 1. Verifies the caller is owner / admin of the tenant.
 // 2. Resolves the Stripe Price ID for `plan_key` from public.products
 //    (default_for_plan_key match). Falls back to 400 if no real Stripe
 //    price is wired yet (sentinel `internal_default_*` prices won't work
 //    against Stripe's API).
-// 3. Re-uses or creates a Stripe Customer carrying metadata.tenant_id
+// 3. Resolves Stripe Price IDs for each selected addon (if any) from
+//    public.products table (addon_key match).
+// 4. Re-uses or creates a Stripe Customer carrying metadata.tenant_id
 //    so the existing stripe-webhook can sync the resulting subscription.
-// 4. Creates a Stripe Checkout Session and returns its URL.
+// 5. Creates a Stripe Checkout Session with line items for plan + addons.
+// 6. Logs addon selections for compliance/analytics.
 //
 // `plan_key = 'free'` short-circuits with 400 — there's nothing to charge.
+// Addons without wired Stripe prices are silently skipped (logged as warning).
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -63,7 +73,7 @@ Deno.serve(async (req) => {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
 
-  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean };
+  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean; selected_addons?: string[] };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.plan_key) {
@@ -72,6 +82,8 @@ Deno.serve(async (req) => {
   if (body.plan_key === 'free_audit') {
     return jsonError(400, 'BAD_REQUEST', 'Free Audit braucht keinen Checkout');
   }
+
+  const selectedAddons = Array.isArray(body.selected_addons) ? body.selected_addons : [];
 
   // Membership + role check
   const { data: membership, error: memberErr } = await userClient
@@ -99,6 +111,30 @@ Deno.serve(async (req) => {
   if (!realPrice) {
     return jsonError(400, 'PRICE_NOT_CONFIGURED',
       `no Stripe Price wired for plan_key=${body.plan_key}; insert a real price_xxx into public.products with default_for_plan_key=${body.plan_key}`);
+  }
+
+  // Resolve Stripe prices for selected addons
+  const addonLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
+  if (selectedAddons.length > 0) {
+    const { data: addonProducts, error: addonErr } = await admin
+      .from('products')
+      .select('addon_key, stripe_price_id, name')
+      .in('addon_key', selectedAddons);
+    if (addonErr) {
+      console.error('Addon price lookup error:', addonErr);
+    } else {
+      for (const addonId of selectedAddons) {
+        const addonProduct = (addonProducts ?? []).find((p) => p.addon_key === addonId);
+        if (addonProduct && !addonProduct.stripe_price_id.startsWith('internal_default_')) {
+          addonLineItems.push({
+            price: addonProduct.stripe_price_id,
+            quantity: 1,
+          });
+        } else {
+          console.warn(`Addon ${addonId} has no real Stripe price; skipping from checkout`);
+        }
+      }
+    }
   }
 
   // Re-use or create the tenant's Stripe Customer.
@@ -140,11 +176,21 @@ Deno.serve(async (req) => {
       stripeCustomerId = customer.id;
     }
 
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      { price: realPrice.stripe_price_id, quantity: 1 },
+      ...addonLineItems,
+    ];
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: stripeCustomerId!,
-      line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
-      metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
+      line_items: lineItems,
+      metadata: {
+        tenant_id: body.tenant_id,
+        plan_key: body.plan_key,
+        pilot: body.pilot ? 'true' : 'false',
+        addons: selectedAddons.length > 0 ? selectedAddons.join(',') : 'none',
+      },
       subscription_data: subscriptionData,
       success_url: successUrl,
       cancel_url: cancelUrl,

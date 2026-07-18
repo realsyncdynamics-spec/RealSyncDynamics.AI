@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
   Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive,
+  AlertCircle, Wrench,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';

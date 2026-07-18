@@ -5,60 +5,6 @@ import { useState } from 'react';
 
 export function AuditLanding() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
-  usePageMeta({
-    title: 'Kostenloser DSGVO-Audit — Tracking-, Consent- und Compliance-Check',
-    description:
-      'Technische Vorprüfung für Websites: Consent, Tracking, Drittanbieter-Skripte und mögliche DSGVO-/TDDDG-Risiken analysieren.',
-    url: 'https://RealSyncDynamicsAI.de/audit',
-  });
-  const [url, setUrl] = useState('');
-  const [email, setEmail] = useState('');
-  const [company, setCompany] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<Report | null>(null);
-  const [classicForm, setClassicForm] = useState(false);
-  const [chatGen, setChatGen] = useState(0);
-
-  function resetForNewScan() {
-    setReport(null);
-    setChatGen((n) => n + 1);
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError(null); setReport(null);
-    try {
-      const normalizedUrl = url.trim().match(/^https?:\/\//i) ? url.trim() : `https://${url.trim()}`;
-      const params = new URLSearchParams(window.location.search);
-      const plan = params.get('plan')?.trim().slice(0, 40) || undefined;
-      const source = params.get('source')?.trim().slice(0, 200) || undefined;
-      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
-      // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
-      const data = await postEdgeFunction<Report>('gdpr-audit', {
-        url: normalizedUrl,
-        email: email.trim(),
-        company: company.trim() || undefined,
-        referral_code: getAffiliateRef() || undefined,
-        plan,
-        source,
-      }, { requireAuth: false });
-      setReport(data);
-      trackConversion('Lead', { content_name: 'dsgvo_audit' });
-      if (data.audit_id) {
-        // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
-        // Failures are intentionally swallowed — report is already shown in-browser.
-        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.audit_id}`, {
-          method: 'GET',
-          keepalive: true,
-        }).catch(() => { /* non-blocking */ });
-      }
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <>

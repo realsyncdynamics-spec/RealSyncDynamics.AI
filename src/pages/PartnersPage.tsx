@@ -114,7 +114,7 @@ export function PartnersPage() {
                 'Evidence Vault · Custom DPA',
               ]}
               cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
-              footnote="ab € 1.500 / Monat · Festpreis nach Mandanten-Volumen"
+              footnote="€ 1.249 / Monat · Festpreis nach Mandanten-Volumen"
             />
           </div>
         </section>

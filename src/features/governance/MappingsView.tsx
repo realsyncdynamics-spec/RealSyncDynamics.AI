@@ -12,7 +12,6 @@ import {
 import { upsertMapping, deleteMapping } from './resourcesApi';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import type { GovernanceControlStatus } from './types';
-import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/mappings — Asset × Framework-Control matrix. Cell

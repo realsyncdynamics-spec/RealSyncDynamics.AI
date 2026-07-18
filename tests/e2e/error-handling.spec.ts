@@ -15,8 +15,11 @@ test.describe('[BE-002] Fehlerbehandlung', () => {
     await expect(page.getByRole('link', { name: /Zur Startseite/i })).toBeVisible();
   });
 
-  test('Unbekannter Checkout-Plan zeigt klare Fehlermeldung', async ({ page }) => {
+  test('Unbekannter Checkout-Plan leitet zur Preisübersicht um', async ({ page }) => {
+    // CheckoutPage leitet ungültige Plan-Keys bewusst nach /pricing um
+    // (siehe pricing-flow.spec.ts „invalid checkout slug should redirect to /pricing").
     await page.goto(BASE_URL + '/checkout/nicht-existent', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText(/Unbekanntes Paket/i)).toBeVisible({ timeout: 10000 });
+    await page.waitForURL(/\/pricing/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/pricing/);
   });
 });

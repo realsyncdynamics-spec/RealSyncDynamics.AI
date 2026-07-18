@@ -288,7 +288,7 @@ export function EnterpriseLanding() {
           <p className="text-lg text-silver-300 leading-relaxed mb-10">
             Abhängig von Anzahl der Domains, Benutzer, API-Calls, und SLA-Anforderungen.
             <br />
-            <strong>Start ab €1.500/Monat</strong> · Volume Discounts verfügbar.
+            <strong>Start ab €1.249/Monat</strong> · Volume Discounts verfügbar.
           </p>
 
           <Link

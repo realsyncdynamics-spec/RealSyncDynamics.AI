@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { tierById, type TierId } from '../../config/pricing';
+import { tierById, type TierId, botAddonsByTier } from '../../config/pricing';
 import { createCheckoutSession, type PlanKey } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
@@ -39,6 +39,7 @@ export function CheckoutPage() {
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
   const [checkoutErr, setCheckoutErr] = useState<StripeDiagnostic | null>(null);
   const [redirecting, setRedirecting] = useState(false);
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   // §312k / §356(5) BGB: explicit consent gate. Required for paid recurring
   // SaaS so the §356(5) BGB withdrawal-right-erasure is documentably
   // acknowledged BEFORE we hand off to Stripe-Hosted-Checkout. See
@@ -125,13 +126,13 @@ export function CheckoutPage() {
     if (!agreedToTerms || !acknowledgedWithdrawal) return;
     setRedirecting(true);
     setCheckoutErr(null);
-    trackMarketingEvent('checkout_started', { plan_key: validPlan });
+    trackMarketingEvent('checkout_started', { plan_key: validPlan, addons: selectedAddons });
     trackConversion('InitiateCheckout', {
       content_name: validPlan,
       value: tier?.priceEur ?? 0,
       currency: 'EUR',
     });
-    const result = await createCheckoutSession(auth.tenantId, validPlan, isPilot);
+    const result = await createCheckoutSession(auth.tenantId, validPlan, isPilot, selectedAddons);
     if (result.ok && result.url) {
       window.location.href = result.url;
     } else {
@@ -193,12 +194,23 @@ export function CheckoutPage() {
   }
 
   // status === 'ready' — manual consent gate before Stripe hand-off.
+  function handleAddonChange(addonId: string, checked: boolean) {
+    if (checked) {
+      setSelectedAddons([...selectedAddons, addonId]);
+    } else {
+      setSelectedAddons(selectedAddons.filter(id => id !== addonId));
+    }
+  }
+
   return (
     <ConsentGateShell
       planKey={validPlan}
       tier={tier}
       userEmail={auth.userEmail}
       isPilot={isPilot}
+      tierId={validPlan as TierId}
+      selectedAddons={selectedAddons}
+      onAddonChange={handleAddonChange}
       agreedToTerms={agreedToTerms}
       onAgreedToTerms={setAgreedToTerms}
       acknowledgedWithdrawal={acknowledgedWithdrawal}
@@ -372,6 +384,9 @@ function ConsentGateShell({
   tier,
   userEmail,
   isPilot,
+  tierId,
+  selectedAddons,
+  onAddonChange,
   agreedToTerms,
   onAgreedToTerms,
   acknowledgedWithdrawal,
@@ -385,6 +400,9 @@ function ConsentGateShell({
   tier:                     { name: string; priceEur: number };
   userEmail:                string;
   isPilot:                  boolean;
+  tierId:                   TierId;
+  selectedAddons:           string[];
+  onAddonChange:            (addonId: string, checked: boolean) => void;
   agreedToTerms:            boolean;
   onAgreedToTerms:          (value: boolean) => void;
   acknowledgedWithdrawal:   boolean;
@@ -395,6 +413,12 @@ function ConsentGateShell({
   backTo?:                  string;
 }) {
   const canSubmit = agreedToTerms && acknowledgedWithdrawal && !redirecting;
+  const availableAddons = botAddonsByTier(tierId);
+  const addonTotal = selectedAddons.reduce((sum, id) => {
+    const addon = availableAddons.find(a => a.id === id);
+    return sum + (addon?.priceEur ?? 0);
+  }, 0);
+  const totalPrice = tier.priceEur + addonTotal;
 
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -419,7 +443,9 @@ function ConsentGateShell({
             {tier.name}
           </h1>
           <p className="text-center text-silver-300 text-sm sm:text-base mb-1">
-            <span>{tier.priceEur} €</span> / Monat · monatlich kündbar · keine Setup-Gebühren
+            <span className={addonTotal > 0 ? 'line-through text-silver-500' : ''}>{tier.priceEur} €</span>
+            {addonTotal > 0 && <span className="ml-2 font-bold text-gold-300">{totalPrice} €</span>}
+            <span> / Monat · monatlich kündbar · keine Setup-Gebühren</span>
           </p>
           {isPilot && (
             <div className="mb-6 p-4 bg-emerald-950 border-2 border-emerald-600 rounded-sm text-center">
@@ -435,6 +461,31 @@ function ConsentGateShell({
             <p className="text-center font-mono text-[10px] uppercase tracking-wider text-silver-500 mb-6">
               Erste Abbuchung sofort nach Bestellung
             </p>
+          )}
+
+          {availableAddons.length > 0 && (
+            <div className="mb-6 border-t border-silver-700/50 pt-6">
+              <h3 className="font-semibold text-sm text-titanium-100 mb-4">Optionale Add-ons</h3>
+              <div className="space-y-3">
+                {availableAddons.map((addon) => (
+                  <label key={addon.id} className="flex items-start gap-3 p-3 border border-silver-700/50 hover:border-silver-500 cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={selectedAddons.includes(addon.id)}
+                      onChange={(e) => onAddonChange(addon.id, e.target.checked)}
+                      className="mt-0.5 h-4 w-4 cursor-pointer accent-gold-400"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 justify-between">
+                        <span className="text-xs sm:text-sm font-medium text-silver-100">{addon.name}</span>
+                        <span className="font-mono text-xs font-bold text-gold-300 shrink-0">{addon.priceEur} €{addon.priceSuffix.startsWith('/') ? addon.priceSuffix : ' ' + addon.priceSuffix}</span>
+                      </div>
+                      <p className="text-xs text-silver-400 mt-1">{addon.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className="space-y-3 mb-5">

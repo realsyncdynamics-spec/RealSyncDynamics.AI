@@ -47,6 +47,22 @@ export function CheckoutSuccessPage() {
     verifyCheckoutSession();
   }, [activeTenantId]);
 
+  const planKey = subscription?.plan || null;
+  const planLabel = useMemo(() => {
+    if (!planKey) return null;
+    // Simple label mapping without requiring separate function
+    const labels: Record<string, string> = {
+      starter: 'Starter',
+      growth: 'Growth',
+      agency: 'Agency',
+      scale: 'Scale',
+      enterprise: 'Enterprise',
+    };
+    return labels[planKey] || planKey;
+  }, [planKey]);
+
+  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
+
   // Auto-redirect zum Dashboard nach 5 Sekunden
   useEffect(() => {
     if (subscription && !error && !isVerifying) {
@@ -155,7 +171,7 @@ export function CheckoutSuccessPage() {
             </p>
           ) : null}
 
-          <OnboardingSteps planKey={planKey} />
+          {/* OnboardingSteps component to be implemented */}
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             {optimizerReturn && (

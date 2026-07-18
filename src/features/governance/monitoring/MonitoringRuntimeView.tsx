@@ -8,6 +8,8 @@ import { MonitoringSurface } from '../../../pages/MonitoringPage';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { fetchTenantAssets, fetchTenantEvents } from '../governanceApi';
 import { countOpenIncidents } from '../incidentsApi';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ---------------------------------------------------------------------------
 // Mock-Daten

@@ -27,6 +27,8 @@ import {
 } from './agentsApi';
 import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/agents/types';
 import { AgentActivityPanel } from './AgentActivityPanel';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {

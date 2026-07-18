@@ -35,6 +35,8 @@ import {
 } from './documentsApi';
 import { listDpias, type DbDpia } from '../dpiasApi';
 import type { DpiaStatus } from '../types';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
 type DocStatus = 'aktuell' | 'veraltet' | 'entwurf' | 'fehlend';

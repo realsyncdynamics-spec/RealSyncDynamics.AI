@@ -26,6 +26,8 @@ import {
   defaultRange,
   type ExportFormat,
 } from './auditExportApi';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
 type PackageStatus = 'bereit' | 'in-vorbereitung' | 'archiviert';

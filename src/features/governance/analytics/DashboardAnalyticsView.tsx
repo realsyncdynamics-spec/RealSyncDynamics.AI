@@ -13,6 +13,8 @@ import { FilterPanel } from './FilterPanel';
 import { AnalyticsTable } from './AnalyticsTable';
 import { ExportModal } from './ExportModal';
 import { DATE_RANGE_PRESETS } from './types';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 export function DashboardAnalyticsView() {
   const { activeTenantId } = useTenant();

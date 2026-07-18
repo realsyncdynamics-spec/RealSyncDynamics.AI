@@ -20,6 +20,8 @@ import {
   type DatasetRole,
   type CreateDatasetInput,
 } from '../aiActDataGovernanceApi';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Demo-Daten (ohne Tenant) ──────────────────────────────────────────────────
 

@@ -23,15 +23,17 @@ const DETAIL_SLUGS = [
   'scale_yearly',
 ];
 
+// Only the monthly plans are self-serve /checkout pages. CheckoutPage's
+// VALID_PLAN_KEYS (src/features/billing/CheckoutPage.tsx) accepts
+// starter/growth/agency/scale (+ free-audit → /audit, enterprise →
+// /contact-sales); the *_yearly variants are not bookable via /checkout and
+// redirect to /pricing. (If yearly self-serve checkout is desired, that is a
+// separate CheckoutPage change, not a test gap.)
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
   'agency',
   'scale',
-  'starter_yearly',
-  'growth_yearly',
-  'agency_yearly',
-  'scale_yearly',
 ];
 
 test.describe('Pricing Flow', () => {
@@ -111,7 +113,8 @@ test.describe('Pricing Flow', () => {
     });
 
     test('free audit plan should redirect to audit page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/checkout/free_audit`);
+      // The free-audit plan key uses a hyphen (matches CheckoutPage VALID_PLAN_KEYS).
+      await page.goto(`${BASE_URL}/checkout/free-audit`);
       await page.waitForURL(/\/audit/);
       await expect(page).toHaveURL(/\/audit/);
     });

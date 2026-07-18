@@ -15,8 +15,12 @@ test.describe('[BE-002] Fehlerbehandlung', () => {
     await expect(page.getByRole('link', { name: /Zur Startseite/i })).toBeVisible();
   });
 
-  test('Unbekannter Checkout-Plan zeigt klare Fehlermeldung', async ({ page }) => {
+  test('Unbekannter Checkout-Plan leitet zur Preisübersicht um', async ({ page }) => {
+    // CheckoutPage leitet unbekannte Plan-Keys per Full-Page-Load auf /pricing
+    // um (src/features/billing/CheckoutPage.tsx), statt eine Inline-Meldung zu
+    // zeigen — das ist der stabile, für E2E ausgelegte Kontrakt.
     await page.goto(BASE_URL + '/checkout/nicht-existent', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByText(/Unbekanntes Paket/i)).toBeVisible({ timeout: 10000 });
+    await page.waitForURL(/\/pricing/);
+    await expect(page).toHaveURL(/\/pricing/);
   });
 });

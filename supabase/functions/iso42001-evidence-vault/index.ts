@@ -175,5 +175,67 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonError(405, 'BAD_REQUEST', 'POST or GET only');
+  // PATCH: Archive evidence
+  if (req.method === 'PATCH') {
+    try {
+      const url = new URL(req.url);
+      const evidenceId = url.searchParams.get('evidence_id');
+
+      if (!evidenceId) {
+        return jsonError(400, 'BAD_REQUEST', 'evidence_id required');
+      }
+
+      // Verify ownership: evidence must belong to this tenant
+      const { data: evidence, error: getError } = await userClient
+        .from('evidence_items')
+        .select('id, title, tenant_id')
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (getError || !evidence) {
+        return jsonError(404, 'NOT_FOUND', 'evidence item not found or not owned by tenant');
+      }
+
+      // Archive the evidence (set archived_at)
+      const { data: archived, error: archiveError } = await userClient
+        .from('evidence_items')
+        .update({
+          archived_at: new Date().toISOString(),
+          archived_by: userId,
+        })
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (archiveError) throw archiveError;
+
+      // Log audit action
+      await audit(admin, {
+        tenant_id: tenantId,
+        user_id: userId,
+        user_email: userEmail,
+        action: 'evidence_archived',
+        resource_type: 'evidence_item',
+        resource_id: evidenceId,
+        changes: {
+          title: evidence.title,
+          archived_at: archived.archived_at,
+        },
+        severity: 'info',
+      });
+
+      return jsonResponse({
+        success: true,
+        message: `Evidence "${evidence.title}" archived successfully`,
+        archived_at: archived.archived_at,
+      });
+    } catch (err) {
+      console.error('Evidence archival error:', err);
+      return jsonError(500, 'ERROR', 'failed to archive evidence');
+    }
+  }
+
+  return jsonError(405, 'BAD_REQUEST', 'GET, POST, or PATCH only');
 });

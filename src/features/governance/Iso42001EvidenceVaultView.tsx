@@ -161,6 +161,13 @@ function Inner() {
 
   useEffect(() => {
     void loadEvidence();
+
+    // Reload evidence when archived
+    const handleArchived = () => {
+      void loadEvidence();
+    };
+    window.addEventListener('evidenceArchived', handleArchived);
+    return () => window.removeEventListener('evidenceArchived', handleArchived);
   }, [activeTenantId]);
 
   if (!activeTenantId) {
@@ -312,6 +319,7 @@ function Inner() {
       {selectedEvidence && (
         <DetailPanel
           evidence={selectedEvidence}
+          tenantId={activeTenantId}
           onClose={() => setSelectedEvidence(null)}
         />
       )}
@@ -530,9 +538,11 @@ function UploadModal({
 
 function DetailPanel({
   evidence,
+  tenantId,
   onClose,
 }: {
   evidence: EvidenceItem;
+  tenantId: string;
   onClose: () => void;
 }) {
   const typeInfo = EVIDENCE_TYPE_LABELS[evidence.evidence_type];
@@ -546,9 +556,28 @@ function DetailPanel({
   const handleArchive = async () => {
     if (!window.confirm('Archive this evidence? It will be hidden from the default view.')) return;
     try {
-      // TODO: Implement archive API call
-      console.log('Archive evidence:', evidence.id);
+      const token = await getAuthToken();
+      const response = await fetch(
+        `/functions/v1/iso42001-evidence-vault?tenant_id=${tenantId}&evidence_id=${evidence.id}`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to archive evidence');
+      }
+
+      const result = await response.json();
+      alert(`Evidence archived: ${result.message}`);
+      onClose();
+      // Trigger reload of evidence list
+      window.dispatchEvent(new Event('evidenceArchived'));
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Archive failed';
+      alert(`Error: ${errorMsg}`);
       console.error('Archive failed:', err);
     }
   };

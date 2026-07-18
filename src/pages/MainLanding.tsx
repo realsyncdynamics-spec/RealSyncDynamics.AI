@@ -110,7 +110,7 @@ const PRICING = [
   { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: '14 Tage testen', to: '/checkout/starter?source=home&pilot=true' },
   { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Konversations-Bots'], cta: '14 Tage testen', featured: true, to: '/checkout/growth?source=home&pilot=true' },
   { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Herkunftsnachweis (C2PA)', 'API-Zugriff'], cta: '14 Tage testen', to: '/checkout/agency?source=home&pilot=true' },
-  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
+  { name: 'Partner', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Partner anfragen', to: '/contact-sales?tier=scale&source=home' },
 ];
 
 export function MainLanding() {

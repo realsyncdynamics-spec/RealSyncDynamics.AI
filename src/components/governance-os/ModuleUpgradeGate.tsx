@@ -4,9 +4,9 @@ import { minimumPlanForModule, GOVERNANCE_MODULES } from './governanceModules';
 
 const PLAN_LABELS: Record<string, string> = {
   starter: 'Starter',
-  growth:  'Professional',
+  growth:  'Growth',
   agency:  'Agency',
-  scale:   'Scale',
+  scale:   'Partner',
   enterprise: 'Enterprise',
 };
 

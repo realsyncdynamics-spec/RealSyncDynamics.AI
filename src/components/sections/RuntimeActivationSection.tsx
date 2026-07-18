@@ -47,12 +47,13 @@ export function RuntimeActivationSection() {
             Runtime aktivieren
           </div>
           <h2 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight text-titanium-50 mb-3">
-            Runtime aktivieren — vom kostenlosen Audit bis Scale.
+            Runtime aktivieren — vom kostenlosen Audit bis Partner.
           </h2>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl">
             Das kostenlose Audit ist der Einstieg ohne Karte. Starter aktiviert kontinuierliches Monitoring.
             Growth ergänzt die AI-Act-Governance-Schicht. Agency liefert Multi-Domain-Whitelabel.
-            Scale bedient DSB-Kanzleien mit bis zu 50 Mandanten. Individuelle Anforderungen?{' '}
+            Enterprise bündelt Multi-Org-Verwaltung und SLA für Großunternehmen.
+            Partner bedient DSB-Kanzleien mit bis zu 50 Mandanten. Individuelle Anforderungen?{' '}
             <Link to="/contact-sales?tier=enterprise&source=activation" className="underline hover:text-titanium-50">
               Enterprise anfragen
             </Link>.

@@ -58,10 +58,14 @@ describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
     expect(PRICING_TIERS).toHaveLength(11);
   });
 
-  it('should have 5 public tiers (starter, growth, agency, scale, enterprise)', () => {
+  it('should have 5 public tiers aufsteigend nach Preis (starter, growth, agency, enterprise, scale)', () => {
     expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
-    const baseIds = ['starter', 'growth', 'agency', 'scale', 'enterprise'];
+    // Anzeige-Reihenfolge im Pricing-Grid: aufsteigend nach Preis —
+    // Enterprise (1.249 €) VOR Partner/scale (1.999 €).
+    const baseIds = ['starter', 'growth', 'agency', 'enterprise', 'scale'];
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
+    const prices = PUBLIC_PRICING_TIERS.map((t) => t.priceEur);
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
   });
 
   it('should have enterprise tier as paid tier at 1249€', () => {

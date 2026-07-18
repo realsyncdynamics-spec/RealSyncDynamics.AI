@@ -139,7 +139,7 @@ export const GOVERNANCE_TIERS: Record<TierId, GovernanceTierConfig> = {
 
   scale: {
     tier: 'scale',
-    label: 'Scale',
+    label: 'Partner',
     auditReportsPerMonth: 200,
     remediationPlans: 500,
     evidenceStorageGb: 200,
@@ -285,7 +285,7 @@ export const GOVERNANCE_TIERS: Record<TierId, GovernanceTierConfig> = {
 
   scale_yearly: {
     tier: 'scale_yearly',
-    label: 'Scale (Yearly)',
+    label: 'Partner (Yearly)',
     auditReportsPerMonth: 200,
     remediationPlans: 500,
     evidenceStorageGb: 200,

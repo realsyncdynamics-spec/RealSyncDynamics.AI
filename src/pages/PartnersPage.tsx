@@ -86,35 +86,35 @@ export function PartnersPage() {
               cta={{ label: 'Direkt buchen', href: '/audit?plan=agency&source=partners' }}
             />
             <TierCard
-              name="Scale"
+              name="Enterprise"
+              price="€1.249 / Monat"
+              capacity="bis zu 5 Organisationen"
+              accent="text-violet-300"
+              bullets={[
+                'Alles aus Agency',
+                'Multi-Org-Dashboard · zentrale Rollen/Rechte',
+                'EU AI Act Governance-Modul',
+                'White-Label Light · API Premium',
+                'Priority Support (4 h Response-Zeit)',
+              ]}
+              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
+              footnote="14 Tage kostenlos testen · monatlich kündbar"
+            />
+            <TierCard
+              name="Partner"
               price="€1.999 / Monat"
               capacity="bis 50 Mandanten"
               accent="text-emerald-300"
               highlight
               bullets={[
-                'Alles aus Agency',
+                'Alles aus Enterprise',
                 'Eigene Sub-Domain (dsb.ihrekanzlei.de)',
                 'White-Label PDF + Live-Dashboard',
                 'Voller API-Zugriff',
                 'SLA 4 h · Priority-Support',
               ]}
-              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=scale&source=partners' }}
+              cta={{ label: 'Partner anfragen', href: '/contact-sales?tier=scale&source=partners' }}
               footnote="manuelles Onboarding · Pilot-Phase · Stripe-Self-Serve folgt"
-            />
-            <TierCard
-              name="Enterprise"
-              price="individuell"
-              capacity="unbegrenzte Mandanten"
-              accent="text-violet-300"
-              bullets={[
-                'Alle Scale-Funktionen',
-                'Dedizierter Runtime-Kanal · SLA-Vertrag',
-                'EU AI Act Governance-Modul',
-                'DSB-Integration (intern oder extern)',
-                'Evidence Vault · Custom DPA',
-              ]}
-              cta={{ label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=partners' }}
-              footnote="ab € 1.500 / Monat · Festpreis nach Mandanten-Volumen"
             />
           </div>
         </section>
@@ -169,8 +169,8 @@ export function PartnersPage() {
               eta="Q4 2026"
             />
             <Roadmap
-              title="Self-Serve Scale-Checkout"
-              body="Stripe-Checkout direkt aus /pricing für Scale-Tier. Aktuell: manuelles Onboarding über Sales (besser für die ersten 10 Kunden — wir verifizieren persönlich)."
+              title="Self-Serve Partner-Checkout"
+              body="Stripe-Checkout direkt aus /pricing für den Partner-Tier. Aktuell: manuelles Onboarding über Sales (besser für die ersten 10 Kunden — wir verifizieren persönlich)."
               eta="Q3 2026"
             />
             <Roadmap

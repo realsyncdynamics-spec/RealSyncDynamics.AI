@@ -126,7 +126,7 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency: 14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Scale/Enterprise: nach Anfrage
+              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency/Enterprise: 14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Partner: nach Anfrage
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
               Alle Preise in EUR. Keine Umsatzsteuer ausgewiesen — Kleinunternehmer gemäß § 19 UStG.
@@ -291,8 +291,9 @@ export function PricingPage() {
 
 function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
   const TierIcon = TIER_ICONS[tier.id];
+  // priceString statt priceEur: liefert deutsche Tausendertrennung ("1.999 €")
   const priceDisplay =
-    tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
+    tier.priceEur > 0 ? `${tier.priceString} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
 
   const accent = TIER_ACCENT[tier.id];
 
@@ -398,8 +399,8 @@ const MATRIX_TIERS: { id: TierId; label: string }[] = [
   { id: 'starter',    label: 'Starter' },
   { id: 'growth',     label: 'Growth' },
   { id: 'agency',     label: 'Agency' },
-  { id: 'scale',      label: 'Scale' },
   { id: 'enterprise', label: 'Enterprise' },
+  { id: 'scale',      label: 'Partner' },
 ];
 
 function GovernanceModuleMatrix() {

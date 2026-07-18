@@ -217,7 +217,7 @@ export function AgenciesSolution() {
           </div>
 
           <p className="text-silver-400 text-sm">
-            Bist du bereit für 50+ Kunden-Websites? Skaliere auf <strong>Scale €1.999/Monat</strong> oder frag <Link to="/contact-sales?product=agency&tier=scale" className="text-security-500 hover:text-security-400">Enterprise an</Link>.
+            Bist du bereit für 50+ Kunden-Websites? Skaliere auf <strong>Partner 1.999 €/Monat</strong> oder frag <Link to="/contact-sales?product=agency&tier=scale" className="text-security-500 hover:text-security-400">Partner an</Link>.
           </p>
         </div>
       </section>

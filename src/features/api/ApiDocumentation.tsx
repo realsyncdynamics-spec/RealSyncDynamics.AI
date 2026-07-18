@@ -187,7 +187,7 @@ export function ApiDocumentation() {
               },
               {
                 q: 'Wie viele API-Aufrufe darf ich machen?',
-                a: 'Das hängt von deinem Plan ab. Im Agency-Plan sind 10.000 Aufrufe/Monat enthalten. Wenn du mehr brauchst, upgrade auf Scale oder kontaktiere uns.',
+                a: 'Das hängt von deinem Plan ab. Im Agency-Plan sind 10.000 Aufrufe/Monat enthalten. Wenn du mehr brauchst, upgrade auf Enterprise oder Partner — oder kontaktiere uns.',
               },
             ].map((item, i) => (
               <button

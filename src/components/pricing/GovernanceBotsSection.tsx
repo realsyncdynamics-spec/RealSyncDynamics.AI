@@ -199,7 +199,7 @@ export function GovernanceBotsSection() {
                       </div>
                     </div>
                     <div className="text-[10px] text-silver-500 italic">
-                      Für Growth/Agency/Scale/Enterprise
+                      Für Growth/Agency/Enterprise/Partner
                     </div>
                   </div>
                 </div>

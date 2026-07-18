@@ -63,8 +63,8 @@ describe('formatTierPrice', () => {
     const bronze = OPTIMIZER_TIERS.find((t) => t.id === 'bronze')!; // → starter €79
     expect(formatTierPrice(bronze)).toBe('€79 / Monat');
   });
-  it('zeigt „Individuell" für Enterprise', () => {
-    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise
-    expect(formatTierPrice(diamant)).toBe('Individuell');
+  it('zeigt den realen Enterprise-Preis (seit Pricing-Rebalance 2026-07 kein „Individuell" mehr)', () => {
+    const diamant = OPTIMIZER_TIERS.find((t) => t.id === 'diamant')!; // → enterprise 1.249 €
+    expect(formatTierPrice(diamant)).toBe('€1249 / Monat');
   });
 });

@@ -120,7 +120,7 @@ function BulkInner() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
             <div className="text-xs text-titanium-300">
               <p className="font-semibold text-amber-300">Bulk-Jobs sind in deinem Plan nicht freigeschaltet.</p>
-              <p className="mt-1">Verfügbar ab <strong>Agency</strong> (Agency 50 · Scale 500 · Enterprise unbegrenzt Batches/Monat).</p>
+              <p className="mt-1">Verfügbar ab <strong>Agency</strong> (Agency 50 · Partner 500 · Enterprise unbegrenzt Batches/Monat).</p>
             </div>
           </div>
         )}

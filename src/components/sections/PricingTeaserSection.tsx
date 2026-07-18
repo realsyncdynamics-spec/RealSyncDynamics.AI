@@ -29,7 +29,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-            Free Audit · Starter · Growth · Agency · Scale
+            Starter · Growth · Agency · Enterprise · Partner
           </h2>
         </div>
 
@@ -53,7 +53,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
               </div>
               <div className="mb-1.5">
                 <span className="text-2xl font-display font-bold text-gold-400 tabular-nums">
-                  {tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage')}
+                  {tier.priceEur > 0 ? `${tier.priceString} €` : (tier.id === 'free' ? '0 €' : 'Anfrage')}
                 </span>
                 {tier.recurring && tier.priceEur > 0 && (
                   <span className="ml-1 text-xs font-mono text-silver-400">/ Monat</span>
@@ -79,7 +79,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             to="/pricing"
             className="surface-gold inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-bold rounded-none"
           >
-            Alle Preise + Enterprise <ArrowRight className="h-4 w-4" />
+            Alle Preise im Detail <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
             to={contactHref}

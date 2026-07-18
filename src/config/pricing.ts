@@ -295,7 +295,11 @@ export const PRICING_TIERS: PricingTier[] = [
     },
   },
   // ─── Yearly Pricing Variants ────────────────────────────────────────────
-  // 12 Monate zum Preis von 10 = 2-Monate-Rabatt (16,67%)
+  // 12 Monate zum Preis von 10 = 2-Monate-Rabatt (16,67%).
+  // Ausnahme Agency/Partner: auf runde Beträge abgerundet (6.900 statt 6.990,
+  // 19.000 statt 19.990) — Rabatt dort also etwas höher als 2 Monatsraten.
+  // Die Beträge sind in Stripe-Mappings verankert (stripe-mapping.ts) und
+  // dürfen nicht ohne Billing-Abgleich geändert werden.
   {
     id: 'starter_yearly',
     name: 'Starter (Jährlich)',
@@ -363,10 +367,10 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '6.900',
     priceSuffix: '/ Jahr',
     recurring: true,
-    tagline: 'Agency mit 2-Monate-Rabatt: 699 € × 10 = 6.900 €/Jahr',
+    tagline: 'Agency mit Jahresrabatt: 6.900 € statt 8.388 €/Jahr',
     bullets: [
       'Alles aus Agency (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Mehr als 2 Monatsraten Rabatt: 6.900 € statt 8.388 €/Jahr',
       'Automatische Jahres-Verlängerung',
       'Branchenbibliothek + White-Label (ganz Jahr)',
     ],
@@ -399,10 +403,10 @@ export const PRICING_TIERS: PricingTier[] = [
     priceString: '19.000',
     priceSuffix: '/ Jahr',
     recurring: true,
-    tagline: 'Partner mit 2-Monate-Rabatt: 1.999 € × 10 = 19.000 €/Jahr',
+    tagline: 'Partner mit Jahresrabatt: 19.000 € statt 23.988 €/Jahr',
     bullets: [
       'Alles aus Partner (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
+      'Mehr als 2 Monatsraten Rabatt: 19.000 € statt 23.988 €/Jahr',
       'Automatische Jahres-Verlängerung',
       'Multi-Tenant für bis zu 50 Mandanten (ganz Jahr)',
     ],
@@ -472,14 +476,19 @@ export function tierById(id: TierId): PricingTier | undefined {
 }
 
 /**
- * Die 5 selbst buchbaren Pakete (Starter 79 € → Scale 1.999 €) für Pricing-
+ * Die 5 selbst buchbaren Pakete (Starter 79 € → Partner 1.999 €) für Pricing-
  * Grids auf Landing/Pricing/Checkout. Enterprise ist jetzt ein 1.249 €
- * self-service-Tier zwischen Agency (699 €) und Scale (1.999 €).
+ * self-service-Tier zwischen Agency (699 €) und Partner (1.999 €).
  * Yearly-Varianten sind hier ausgeschlossen (werden separat verwaltet).
+ *
+ * Aufsteigend nach Preis sortiert — PRICING_TIERS führt `scale` vor
+ * `enterprise` (historische Array-Position, von test/config/pricing.test.ts
+ * gepinnt), im Grid muss Enterprise (1.249 €) aber VOR Partner (1.999 €)
+ * stehen.
  */
 export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
   (t) => !['free', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly'].includes(t.id)
-);
+).sort((a, b) => a.priceEur - b.priceEur);
 
 /**
  * Akzentfarbe pro Tier — sorgt für farbliche Trennung der Pakete in
@@ -518,7 +527,7 @@ export interface BotAddOn {
 }
 
 /**
- * Bot Add-on-Karten — zusätzlich buchbar für Growth/Agency/Scale/Enterprise.
+ * Bot Add-on-Karten — zusätzlich buchbar für Growth/Agency/Enterprise/Partner.
  * Free/Starter: keine Add-ons, da maxBots=0 oder sehr niedrig.
  *
  * Phase 3 TODO: Diese Add-ons in den Checkout-Payload mit answerQuota, channels, addons[] weben.

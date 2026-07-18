@@ -374,6 +374,10 @@ function DsfaCard({ dpia }: { dpia: DbDpia }) {
   );
 }
 
+function Inner() {
+  return <div className="p-4 text-titanium-300">Implementation pending</div>;
+}
+
 // ── DocumentsView ──────────────────────────────────────────────────────────
 export function DocumentsView() {
   const { activeTenantId } = useTenant();

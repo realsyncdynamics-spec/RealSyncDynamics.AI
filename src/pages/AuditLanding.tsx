@@ -101,10 +101,10 @@ export function AuditLanding() {
       }, { requireAuth: false });
       setReport(data);
       trackConversion('Lead', { content_name: 'dsgvo_audit' });
-      if (data.audit_id) {
+      if (data.scan_run_id && SUPABASE_URL) {
         // Fire-and-forget: triggers Resend-email if RESEND_API_KEY is configured.
         // Failures are intentionally swallowed — report is already shown in-browser.
-        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.audit_id}`, {
+        fetch(`${SUPABASE_URL}/functions/v1/audit-report-email?id=${data.scan_run_id}`, {
           method: 'GET',
           keepalive: true,
         }).catch(() => { /* non-blocking */ });

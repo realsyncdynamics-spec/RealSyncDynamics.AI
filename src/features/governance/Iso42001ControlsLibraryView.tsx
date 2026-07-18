@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 import { getAuthToken } from '../../lib/auth';
 import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 

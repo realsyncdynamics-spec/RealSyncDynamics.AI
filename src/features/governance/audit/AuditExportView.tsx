@@ -168,6 +168,10 @@ function eventToAuditEvent(e: DbGovernanceEvent): AuditEvent {
   };
 }
 
+function Inner() {
+  return <div className="p-4 text-titanium-300">Implementation pending</div>;
+}
+
 // ── AuditExportView ────────────────────────────────────────────────────────
 export function AuditExportView() {
   const { activeTenantId } = useTenant();

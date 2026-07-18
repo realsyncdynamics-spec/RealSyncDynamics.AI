@@ -147,6 +147,10 @@ function Toast({ message, tone }: { message: string; tone: 'ok' | 'error' }) {
   );
 }
 
+function Inner() {
+  return <div className="p-4 text-titanium-300">Implementation pending</div>;
+}
+
 // ── AgentsCenterView ───────────────────────────────────────────────────────
 export function AgentsCenterView() {
   const { activeTenantId } = useTenant();

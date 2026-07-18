@@ -28,6 +28,9 @@ CREATE POLICY "Users can view own workflow progress"
   FOR SELECT
   USING (auth.uid() = user_id);
 
+-- [hotfix] auth.users hat keine Spalte active_tenant_id (weder in Supabase
+-- noch im CI-Stub) — Migration konnte nie angewendet werden. Tenant-Bindung
+-- läuft wie überall sonst über die Membership-Prüfung.
 CREATE POLICY "Users can create own workflows"
   ON dashboard_workflows
   FOR INSERT

@@ -39,6 +39,25 @@ export async function createCheckoutSession(
   const { data, error } = await sb.functions.invoke('stripe-checkout', {
     body: { tenant_id: tenantId, plan_key: planKey, return_url: window.location.origin, pilot: isPilot },
   });
-  if (error) return { ok: false, error: { code: 'NETWORK', message: error.message } };
+  if (error) {
+    // FunctionsHttpError.message ist immer nur "non-2xx status code" — der
+    // echte Server-Fehler ({code, message} aus jsonError) steckt im
+    // Response-Body unter error.context. Ohne dieses Auslesen zeigt die UI
+    // fuer jeden Fehler (403, PRICE_NOT_CONFIGURED, STRIPE_ERROR, ...) nur
+    // den generischen "Checkout konnte nicht vorbereitet werden"-Text.
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === 'function') {
+      try {
+        const body = (await ctx.json()) as CheckoutResult;
+        if (body?.error?.code) {
+          // Fuer den Operator: echte Ursache in die Konsole (UI zeigt
+          // bewusst nur die kategorisierte Diagnose, nie rohe Stripe-Bodies).
+          console.error('[stripe-checkout]', body.error.code, body.error.message);
+          return { ok: false, error: body.error };
+        }
+      } catch { /* Body war kein JSON — unten generisch weitermelden */ }
+    }
+    return { ok: false, error: { code: 'NETWORK', message: error.message } };
+  }
   return data as CheckoutResult;
 }

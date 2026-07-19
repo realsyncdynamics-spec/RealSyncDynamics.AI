@@ -16,6 +16,21 @@ import {
   type LegalJurisdiction,
 } from './legal-retrieval.ts';
 
+interface QueryBuilder {
+  eq(col: string, val: unknown): QueryBuilder;
+  in(col: string, vals: unknown[]): QueryBuilder;
+  order(col: string, opts?: Record<string, unknown>): QueryBuilder;
+  limit(n: number): QueryBuilder;
+  then<T>(onfulfilled?: (val: { data: unknown; error: unknown }) => T): Promise<T>;
+}
+
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(cols: string): QueryBuilder;
+    insert(obj: Record<string, unknown>): Promise<{ error: unknown }>;
+  };
+}
+
 // Structural shape of Anthropic.Tool — kept local so vitest (Node-resolver)
 // doesn't trip on the 'npm:' specifier used by Deno at runtime. The
 // Anthropic SDK accepts plain objects matching this shape; we forward
@@ -181,8 +196,7 @@ const KNOWN_TOOLS = new Set(AGENT_TOOLS.map((t) => t.name));
 export interface DispatchCtx {
   name: string;
   input: Record<string, unknown>;
-  // deno-lint-ignore no-explicit-any
-  admin: any;
+  admin: SupabaseAdminClient;
   bearerAuth: string;
   tenantId: string;
   userId: string;

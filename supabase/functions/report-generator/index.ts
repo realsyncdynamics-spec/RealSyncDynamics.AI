@@ -29,11 +29,12 @@ interface ReportRequest {
 }
 
 interface ReportOptions {
-  include_summary: boolean;
-  include_control_details: boolean;
-  include_findings: boolean;
-  include_roadmap: boolean;
-  branding?: string;
+  include_summary?: boolean;
+  include_control_details?: boolean;
+  include_findings?: boolean;
+  include_roadmap?: boolean;
+  branding?: 'minimal' | 'standard' | 'custom';
+  [key: string]: unknown;
 }
 
 interface ComplianceData {

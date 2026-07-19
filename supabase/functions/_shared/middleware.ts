@@ -14,7 +14,7 @@ interface MiddlewareContext {
 interface MiddlewareResponse {
   status: number;
   headers: Record<string, string>;
-  body: any;
+  body: unknown;
 }
 
 /**
@@ -47,7 +47,7 @@ export function errorResponse(
 /**
  * Success response formatter
  */
-export function successResponse(data: any, context?: Partial<MiddlewareContext>): MiddlewareResponse {
+export function successResponse(data: unknown, context?: Partial<MiddlewareContext>): MiddlewareResponse {
   const requestId = context?.requestId || 'unknown';
 
   return {
@@ -197,7 +197,7 @@ export function logOperation(
   level: 'info' | 'warn' | 'error',
   message: string,
   context?: Partial<MiddlewareContext>,
-  meta?: any
+  meta?: unknown
 ): void {
   const timestamp = new Date().toISOString();
   const requestId = context?.requestId || 'unknown';

@@ -8,12 +8,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface JWTPayload {
-  sub: string;
+interface MarketingMetric {
   [key: string]: unknown;
 }
 
-interface LifecycleRecord {
+interface SeoTool {
+  [key: string]: unknown;
+}
+
+interface SecurityEvent {
+  [key: string]: unknown;
+}
+
+interface CustomerLifecycle {
   status: string;
   customer_acquisition_cost?: number;
   lifetime_value?: number;
@@ -21,11 +28,19 @@ interface LifecycleRecord {
   [key: string]: unknown;
 }
 
+interface CustomerSummary {
+  active_customers: number;
+  churned_customers: number;
+  avg_cac: number;
+  avg_ltv: number;
+  ltv_cac_ratio: number;
+}
+
 interface DashboardData {
-  marketing_metrics: Record<string, unknown>[]
-  shadow_seo_tools: Record<string, unknown>[]
-  security_events: Record<string, unknown>[]
-  customer_summary: Record<string, unknown>
+  marketing_metrics: MarketingMetric[];
+  shadow_seo_tools: SeoTool[];
+  security_events: SecurityEvent[];
+  customer_summary: CustomerSummary;
 }
 
 serve(async (req: Request) => {
@@ -44,7 +59,7 @@ serve(async (req: Request) => {
 
     // Extract token and decode
     const token = authHeader.replace('Bearer ', '')
-    const decoded: JWTPayload = jwtDecode(token)
+    const decoded = jwtDecode(token) as { sub: string; [key: string]: unknown }
     const userId = decoded.sub
 
     const supabase = createClient(
@@ -109,16 +124,16 @@ serve(async (req: Request) => {
       .select('*')
       .eq('tenant_id', tenantId)
 
-    const activeCusts = lifecycleData?.filter((l: LifecycleRecord) => l.status === 'active').length || 0
-    const churnedCusts = lifecycleData?.filter((l: LifecycleRecord) => l.status === 'churned').length || 0
+    const activeCusts = lifecycleData?.filter((l: CustomerLifecycle) => l.status === 'active').length || 0
+    const churnedCusts = lifecycleData?.filter((l: CustomerLifecycle) => l.status === 'churned').length || 0
     const avgCac =
       lifecycleData && lifecycleData.length > 0
-        ? lifecycleData.reduce((sum: number, l: LifecycleRecord) => sum + (l.customer_acquisition_cost || 0), 0) / lifecycleData.length
+        ? lifecycleData.reduce((sum: number, l: CustomerLifecycle) => sum + (l.customer_acquisition_cost || 0), 0) / lifecycleData.length
         : 0
 
     const avgLtv =
       lifecycleData && lifecycleData.length > 0
-        ? lifecycleData.reduce((sum: number, l: LifecycleRecord) => sum + (l.lifetime_value || l.predicted_ltv || 0), 0) / lifecycleData.length
+        ? lifecycleData.reduce((sum: number, l: CustomerLifecycle) => sum + (l.lifetime_value || l.predicted_ltv || 0), 0) / lifecycleData.length
         : 0
 
     const dashboardData: DashboardData = {

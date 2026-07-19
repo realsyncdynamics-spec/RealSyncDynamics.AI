@@ -13,6 +13,19 @@ interface CallbackRequest {
   state: string
 }
 
+interface DecodedJwt {
+  sub: string;
+  [key: string]: unknown;
+}
+
+interface StripeOAuthResponse {
+  stripe_user_id: string;
+  access_token: string;
+  refresh_token: string;
+  scope: string;
+  [key: string]: unknown;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -28,7 +41,7 @@ serve(async (req: Request) => {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const decoded: any = jwtDecode(token)
+    const decoded: DecodedJwt = jwtDecode(token) as unknown as DecodedJwt
     const userId = decoded.sub
 
     const { code }: CallbackRequest = await req.json()
@@ -85,7 +98,7 @@ serve(async (req: Request) => {
       )
     }
 
-    const stripeData: any = await stripeResponse.json()
+    const stripeData: StripeOAuthResponse = await stripeResponse.json() as unknown as StripeOAuthResponse
 
     // Store integration in database
     const { error: integrationError } = await supabase

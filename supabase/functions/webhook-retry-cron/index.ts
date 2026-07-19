@@ -33,6 +33,26 @@ interface RetryResult {
   error?: string;
 }
 
+interface WebhookSubscription {
+  id: string;
+  secret: string;
+  headers?: Record<string, unknown>;
+  max_retries: number;
+  [key: string]: unknown;
+}
+
+interface WebhookDelivery {
+  id: string;
+  subscription_id: string;
+  url: string;
+  request_body: Record<string, unknown>;
+  error_message?: string;
+  status_code?: number;
+  attempt_number: number;
+  next_retry_at?: string;
+  [key: string]: unknown;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
@@ -81,11 +101,11 @@ Deno.serve(async (req) => {
       return jsonError(500, 'INTERNAL', subErr.message);
     }
 
-    const subMap = new Map((subs || []).map((s: any) => [s.id, s]));
+    const subMap = new Map((subs || []).map((s: WebhookSubscription) => [s.id, s]));
 
     // 3. Retry each delivery
     for (const d of deliveries) {
-      const delivery = d as any;
+      const delivery = d as WebhookDelivery;
       const sub = subMap.get(delivery.subscription_id);
       if (!sub) {
         results.push({

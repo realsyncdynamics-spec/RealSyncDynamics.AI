@@ -21,6 +21,14 @@ interface ControlGap {
   created_at: string;
 }
 
+interface Implementation {
+  id: string;
+  control_id: string;
+  control_name: string;
+  maturity_level: string;
+  criticality: number;
+}
+
 // Calculate gap severity based on control maturity level
 const calculateSeverity = (maturityLevel: string): 'critical' | 'high' | 'medium' | 'low' => {
   switch (maturityLevel) {
@@ -141,8 +149,8 @@ Deno.serve(async (req) => {
 
       // Generate gaps based on implementations
       const gaps: ControlGap[] = (implementations || [])
-        .filter((impl: any) => impl.maturity_level !== 'optimized')
-        .map((impl: any) => {
+        .filter((impl: Implementation) => impl.maturity_level !== 'optimized')
+        .map((impl: Implementation) => {
           const severity = calculateSeverity(impl.maturity_level);
           const impactScore = calculateImpactScore(impl.criticality, impl.maturity_level);
           const effortDays = estimateEffort(impl.control_id, impl.maturity_level);

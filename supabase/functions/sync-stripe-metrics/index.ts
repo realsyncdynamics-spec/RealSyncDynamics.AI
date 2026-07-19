@@ -14,6 +14,12 @@ interface SyncRequest {
   end_date: string
 }
 
+interface CustomerLifecycleRecord {
+  status: string;
+  lifetime_value?: number;
+  [key: string]: unknown;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -102,8 +108,8 @@ serve(async (req: Request) => {
       .gte('acquisition_date', start_date)
       .lte('acquisition_date', end_date)
 
-    const activeCustomers = lifecycleData?.filter((l: any) => l.status === 'active').length || 0
-    const totalRevenue = lifecycleData?.reduce((sum: any, l: any) => sum + (l.lifetime_value || 0), 0) || 0
+    const activeCustomers = lifecycleData?.filter((l: CustomerLifecycleRecord) => l.status === 'active').length || 0
+    const totalRevenue = lifecycleData?.reduce((sum: number, l: CustomerLifecycleRecord) => sum + (l.lifetime_value || 0), 0) || 0
 
     // Insert aggregated metrics
     await supabase.from('marketing_metrics').upsert(

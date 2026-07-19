@@ -49,19 +49,13 @@ interface SupabaseAdminClient {
         eq(col2: string, val2: unknown): {
           maybeSingle(): Promise<{ data: unknown; error: unknown }>;
         };
-        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
       };
-      single(): Promise<{ data: unknown; error: unknown }>;
     };
     insert(row: Record<string, unknown>): {
-      select(columns: string): {
-        single(): Promise<{ data: unknown; error: unknown }>;
-      };
+      select(columns?: string): Promise<{ data: unknown; error: unknown }>;
     };
     update(row: Record<string, unknown>): {
-      eq(col: string, val: unknown): {
-        eq(col2: string, val2: unknown): Promise<{ error: unknown }>;
-      };
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
     };
   };
 }
@@ -137,6 +131,7 @@ interface PlanPayload {
   confidence: number;
 }
 
+// deno-lint-ignore no-explicit-any
 async function handleCreatePlan(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const finding_id  = String(body.finding_id ?? '');
   const evidence_id = body.evidence_id ? String(body.evidence_id) : null;
@@ -258,6 +253,7 @@ interface SnippetPayload {
   notes:    string;
 }
 
+// deno-lint-ignore no-explicit-any
 async function handleGenerateSnippet(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
@@ -320,6 +316,7 @@ interface IssuePayload {
   labels: string[];
 }
 
+// deno-lint-ignore no-explicit-any
 async function handlePrepareIssue(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
@@ -375,6 +372,7 @@ interface PrCommentPayload {
   body: string;
 }
 
+// deno-lint-ignore no-explicit-any
 async function handlePrepareComment(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');

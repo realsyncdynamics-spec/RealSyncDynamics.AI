@@ -17,6 +17,28 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sha256Hex, randomToken } from '../_shared/hash.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 const ALLOWED_SOURCES = [
   'website_scanner', 'browser_extension', 'sdk', 'api',
   'github', 'ci_cd', 'manual', 'agent_runtime',
@@ -58,8 +80,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleCreate(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   const name = (body.name as string ?? '').trim();
   const allowedSources = Array.isArray(body.allowed_sources)
@@ -98,8 +119,7 @@ async function handleCreate(admin: any, userId: string, body: Record<string, unk
   return jsonResponse({ ok: true, key: data, token });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleList(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleList(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) {
@@ -113,8 +133,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
   return jsonResponse({ ok: true, keys: data ?? [] });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleRevoke(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleRevoke(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const key_id = body.key_id as string;
   if (!key_id) return jsonError(400, 'BAD_REQUEST', 'key_id required');
 
@@ -135,8 +154,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships')
     .select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data?.role === 'owner' || data?.role === 'admin';

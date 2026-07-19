@@ -6,6 +6,20 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
 
+interface SupabaseClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+      in(col: string, vals: unknown[]): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -43,8 +57,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleGet(client: any, userId: string, urlStr: string) {
+async function handleGet(client: SupabaseClient, userId: string, urlStr: string) {
   const url = new URL(urlStr);
   const tenantId = url.searchParams.get('tenant_id');
   const controlId = url.searchParams.get('control_id');
@@ -76,7 +89,7 @@ async function handleGet(client: any, userId: string, urlStr: string) {
     .limit(50);
 
   // Load evidence items (stored as IDs in control.evidence_item_ids)
-  let evidence: any[] = [];
+  let evidence: Record<string, unknown>[] = [];
   if (control.evidence_item_ids && Array.isArray(control.evidence_item_ids) && control.evidence_item_ids.length > 0) {
     const { data: evidenceData } = await client
       .from('evidence_items')
@@ -92,8 +105,7 @@ async function handleGet(client: any, userId: string, urlStr: string) {
   });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handlePost(admin: any, userClient: any, userId: string, userEmail: string | null, req: Request) {
+async function handlePost(admin: SupabaseClient, userClient: SupabaseClient, userId: string, userEmail: string | null, req: Request) {
   let body: Record<string, unknown>;
   try {
     body = await req.json();

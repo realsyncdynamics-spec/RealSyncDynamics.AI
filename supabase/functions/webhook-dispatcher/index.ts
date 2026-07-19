@@ -12,6 +12,15 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { persistSession: false },
 });
 
+interface WebhookSubscription {
+  id: string;
+  secret: string;
+  endpoint_url: string;
+  events: string[];
+  filter_criteria?: Record<string, unknown>;
+  active?: boolean;
+}
+
 /**
  * Webhook Dispatcher
  * Delivers events to subscribed webhooks with HMAC signing and retry logic
@@ -127,9 +136,9 @@ serve(async (req: Request) => {
  * Dispatch webhook to endpoint with HMAC-SHA256 signature
  */
 async function dispatchWebhook(
-  subscription: any,
+  subscription: WebhookSubscription,
   deliveryId: string,
-  payload: any
+  payload: Record<string, unknown>
 ): Promise<boolean> {
   try {
     // Generate HMAC-SHA256 signature

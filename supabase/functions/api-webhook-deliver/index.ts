@@ -28,6 +28,19 @@ const MAX_PAYLOAD_SIZE = 1024 * 1024; // 1MB
 const DELIVERY_TIMEOUT = 10000; // 10 seconds
 const MAX_CONCURRENT_DELIVERIES = 10;
 
+interface SupabaseClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 serve(async () => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -92,7 +105,7 @@ serve(async () => {
   }
 });
 
-async function processDelivery(supabase: any, delivery: WebhookDelivery): Promise<void> {
+async function processDelivery(supabase: SupabaseClient, delivery: WebhookDelivery): Promise<void> {
   try {
     // Fetch webhook endpoint
     const { data: webhook, error: webhookErr } = await supabase
@@ -171,7 +184,7 @@ async function processDelivery(supabase: any, delivery: WebhookDelivery): Promis
 }
 
 async function handleDeliveryFailure(
-  supabase: any,
+  supabase: SupabaseClient,
   delivery: WebhookDelivery,
   webhook: WebhookEndpoint,
   statusCode: number | null,

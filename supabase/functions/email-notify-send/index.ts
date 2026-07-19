@@ -18,6 +18,14 @@ interface EmailNotification {
   created_at: string;
 }
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    update(obj: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const FROM_EMAIL = 'alerts@realsyncdynamics.ai';
 const RESEND_API_URL = 'https://api.resend.com/emails';
@@ -83,7 +91,7 @@ serve(async () => {
   }
 });
 
-async function sendEmail(supabase: any, email: EmailNotification): Promise<void> {
+async function sendEmail(supabase: SupabaseAdminClient, email: EmailNotification): Promise<void> {
   try {
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY not configured');

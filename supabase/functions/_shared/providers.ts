@@ -57,6 +57,36 @@ export class ProviderError extends Error {
   }
 }
 
+interface AnthropicUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
+interface AnthropicMessageParams {
+  model: string;
+  max_tokens: number;
+  system?: Array<{ type: string; text: string; cache_control?: Record<string, unknown> }>;
+  messages: Array<{ role: string; content: string }>;
+  temperature?: number;
+}
+
+interface GoogleGenerateContentResponse {
+  text?: string;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    cachedContentTokenCount?: number;
+  };
+}
+
+interface OllamaResponse {
+  message?: { content?: string };
+  prompt_eval_count?: number;
+  eval_count?: number;
+}
+
 export async function callProvider(req: ProviderRequest): Promise<ProviderResult> {
   switch (req.provider) {
     case 'anthropic': return await callAnthropic(req);
@@ -83,8 +113,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
 
   // Anthropic deprecated `temperature` for Claude 4.x+ models — passing it
   // returns 400 invalid_request_error. Pass it only for older model IDs.
-  // deno-lint-ignore no-explicit-any
-  const params: any = {
+  const params: AnthropicMessageParams & { temperature?: number } = {
     model: req.modelId,
     max_tokens: req.maxTokens,
     system: systemBlocks,
@@ -103,8 +132,7 @@ async function callAnthropic(req: ProviderRequest): Promise<ProviderResult> {
     .join('\n');
 
   // The Anthropic SDK exposes cache stats on usage when caching is in use.
-  // deno-lint-ignore no-explicit-any
-  const u: any = resp.usage;
+  const u: AnthropicUsage = resp.usage;
   return {
     text,
     inputTokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0),
@@ -126,8 +154,7 @@ async function callGoogle(req: ProviderRequest): Promise<ProviderResult> {
     ? `${req.systemPrompt}\n\n---\n\n${req.userPrompt}`
     : req.userPrompt;
 
-  // deno-lint-ignore no-explicit-any
-  const resp: any = await ai.models.generateContent({
+  const resp: GoogleGenerateContentResponse = await ai.models.generateContent({
     model: req.modelId,
     contents,
     config: { maxOutputTokens: req.maxTokens, temperature: req.temperature },
@@ -201,8 +228,7 @@ async function callOllama(req: ProviderRequest): Promise<ProviderResult> {
     throw new ProviderError(`Ollama HTTP ${resp.status}: ${body.slice(0, 200)}`, 'PROVIDER_ERROR');
   }
 
-  // deno-lint-ignore no-explicit-any
-  const data: any = await resp.json();
+  const data: OllamaResponse = await resp.json();
   const text: string = data?.message?.content ?? '';
 
   return {

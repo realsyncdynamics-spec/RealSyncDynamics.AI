@@ -370,6 +370,24 @@ const RISK_RANK: Record<string, number> = {
   info: 0, low: 1, medium: 2, high: 3, critical: 4,
 };
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          is(col3: string, val3: unknown): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+    insert(rows: Record<string, unknown>[]): {
+      select(columns?: string): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+}
+
 interface WebhookRow {
   id: string;
   target_url: string;
@@ -377,9 +395,8 @@ interface WebhookRow {
   min_risk_level: string;
 }
 
-// deno-lint-ignore no-explicit-any
 async function fireWebhooks(
-  admin: any,
+  admin: SupabaseAdminClient,
   tenantId: string,
   items: IngestItem[],
   insertedEvents: Array<{ id: string }>,
@@ -426,8 +443,7 @@ async function fireWebhooks(
   return deliveries.length;
 }
 
-// deno-lint-ignore no-explicit-any
-async function deliverOne(admin: any, hook: WebhookRow, envelope: WebhookEnvelope): Promise<void> {
+async function deliverOne(admin: SupabaseAdminClient, hook: WebhookRow, envelope: WebhookEnvelope): Promise<void> {
   const format = detectFormat(hook.target_url);
   const bodyText = formatPayload(envelope, format);
   const signature = await hmacSha256Hex(hook.secret_hash, bodyText);

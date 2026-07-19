@@ -25,9 +25,8 @@ interface SupabaseAdminClient {
       eq(col: string, val: unknown): {
         eq(col2: string, val2: unknown): {
           maybeSingle(): Promise<{ data: unknown; error: unknown }>;
-          order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
         };
-        order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+        order(col: string, options?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
         maybeSingle(): Promise<{ data: unknown; error: unknown }>;
       };
     };

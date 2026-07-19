@@ -7,9 +7,14 @@
 // statt still verschluckt zu werden: ein fehlender Audit-Eintrag ist auf einer
 // Compliance-Plattform eine meldepflichtige Luecke.
 
-// deno-lint-ignore no-explicit-any
+interface SupabaseAdminClient {
+  from(table: string): {
+    insert(obj: Record<string, unknown>): Promise<{ error: unknown }>;
+  };
+}
+
 export async function audit(
-  admin: any,
+  admin: SupabaseAdminClient,
   args: {
     tenant_id: string;
     actor_user_id: string;

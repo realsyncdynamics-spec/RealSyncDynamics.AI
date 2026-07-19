@@ -19,6 +19,35 @@ interface DashboardRequest {
   action: 'update_scores' | 'generate_insights' | 'refresh_all';
 }
 
+interface Policy {
+  status: string;
+  framework?: string;
+}
+
+interface Audit {
+  findings_count: number;
+  status: string;
+}
+
+interface Incident {
+  severity: string;
+  status: string;
+}
+
+interface Risk {
+  severity: string;
+  type?: string;
+}
+
+interface Vendor {
+  status: string;
+  risk_level?: string;
+}
+
+interface Dpia {
+  status: string;
+}
+
 async function calculateComplianceScore(
   admin: ReturnType<typeof createClient>,
   tenantId: string

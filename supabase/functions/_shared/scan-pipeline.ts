@@ -177,11 +177,10 @@ export async function completeScanRun(
 
   if (findingCount === undefined) {
     // Compute the roll-up. select() chain shape varies between
-    // supabase-js builder + our mocks; structural any to keep
+    // supabase-js builder + our mocks; typed with double cast to keep
     // adapter testable in both shapes.
-    // deno-lint-ignore no-explicit-any
-    const q: any = admin.from('findings').select('severity').eq('scan_run_id', scanRunId);
-    const { data, error } = await (q as Promise<{ data: { severity: FindingSeverity }[] | null; error: { message: string } | null }>);
+    const q: Promise<{ data: { severity: FindingSeverity }[] | null; error: { message: string } | null }> = admin.from('findings').select('severity').eq('scan_run_id', scanRunId) as unknown as Promise<{ data: { severity: FindingSeverity }[] | null; error: { message: string } | null }>;
+    const { data, error } = await q;
     if (error) return { ok: false, error: error.message };
     const rows = data ?? [];
     findingCount = rows.length;

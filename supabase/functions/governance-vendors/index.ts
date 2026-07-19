@@ -15,6 +15,35 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { buildPatch, isWriterRole, validateEnums } from './logic.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        order?(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns?: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        select(columns?: string): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+    delete(): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -58,8 +87,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleCreate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   const name = (body.name as string ?? '').trim();
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
@@ -82,8 +110,7 @@ async function handleCreate(admin: any, userId: string, userEmail: string | null
   return json({ ok: true, vendor: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleUpdate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('vendors').select('tenant_id').eq('id', id).maybeSingle();
@@ -108,8 +135,7 @@ async function handleUpdate(admin: any, userId: string, userEmail: string | null
   return json({ ok: true, vendor: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleDelete(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleDelete(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('vendors').select('tenant_id, name').eq('id', id).maybeSingle();
@@ -128,14 +154,12 @@ async function handleDelete(admin: any, userId: string, userEmail: string | null
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-// deno-lint-ignore no-explicit-any
-async function isWriter(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isWriter(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return isWriterRole(data?.role);
 }
 
-// deno-lint-ignore no-explicit-any
-async function emitEvidence(admin: any, args: {
+async function emitEvidence(admin: SupabaseAdminClient, args: {
   tenant_id: string;
   eventType: string;
   vendorId: string;

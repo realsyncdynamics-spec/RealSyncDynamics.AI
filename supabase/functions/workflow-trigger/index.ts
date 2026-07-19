@@ -18,6 +18,11 @@ import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { getCurrentTotal } from '../_shared/usage.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface N8nAcknowledge {
+  executionId?: string | null;
+  [key: string]: unknown;
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -126,8 +131,7 @@ Deno.serve(async (req) => {
       }).eq('id', run.id);
       return jsonError(502, 'N8N_REJECTED', `n8n returned ${n8nResp.status}`);
     }
-    // deno-lint-ignore no-explicit-any
-    const ack: any = await n8nResp.json().catch(() => ({}));
+    const ack: N8nAcknowledge = await n8nResp.json().catch(() => ({})) as unknown as N8nAcknowledge;
     n8nExecutionId = ack?.executionId ?? null;
   } catch (e) {
     await admin.from('workflow_runs').update({

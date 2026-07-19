@@ -185,7 +185,7 @@ async function logMetric(
   errorCode?: string,
   userId?: string,
   tenantId?: string,
-  context?: any
+  context?: unknown
 ): Promise<void> {
   try {
     await admin.from('_operation_metrics').insert({

@@ -18,6 +18,12 @@ import { decryptPrivateKey } from '../kodee/secrets.ts';
 import { sshExec, shellQuote } from '../kodee/ssh.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface VpsConnection {
+  id: string;
+  host: string;
+  label: string;
+}
+
 const SUPPORTED_ACTIONS = new Set([
   'vps.service.restart', 'vps.compose.up', 'vps.compose.restart',
 ]);
@@ -103,9 +109,8 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
 async function collectContext(
-  conn: any, key: string, action: string, args: Record<string, unknown>, base: Record<string, unknown>,
+  conn: VpsConnection, key: string, action: string, args: Record<string, unknown>, base: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
   const evidence = { ...base };
   try {

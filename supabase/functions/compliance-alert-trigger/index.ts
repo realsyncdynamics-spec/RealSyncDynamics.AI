@@ -23,6 +23,13 @@ interface AlertTriggerRequest {
   description?: string;
 }
 
+interface ComplianceAction {
+  action: string;
+  recipients?: unknown[];
+  url?: string;
+  [key: string]: unknown;
+}
+
 async function logAlert(
   admin: ReturnType<typeof createClient>,
   tenantId: string,
@@ -71,7 +78,7 @@ async function getEnabledRules(
 }
 
 async function executeActions(
-  actions: any[],
+  actions: ComplianceAction[],
   context: {
     alertId: string;
     severity: string;

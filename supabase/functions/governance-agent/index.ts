@@ -46,10 +46,30 @@ import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { selectModel, getModelId, MODEL_PRICING } from '../_shared/modelSelection.ts';
 
-// Supabase client type
-interface SupabaseClient {
-  from(table: string): unknown;
-  rpc(fn: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          eq(col3: string, val3: unknown): {
+            maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+          };
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    upsert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          eq(col3: string, val3: unknown): Promise<{ error: unknown }>;
+        };
+      };
+    };
+  };
+  rpc(name: string, params?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
 }
 
 const MAX_ITERATIONS = 8;
@@ -158,7 +178,7 @@ async function anonGate(
   const uaHash   = ua ? await sha256Hex(ua) : undefined;
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
-  let admin: SupabaseClient;
+  let admin: SupabaseAdminClient;
   try {
     admin = await makeAdmin();
   } catch (e) {
@@ -204,7 +224,7 @@ async function anonGate(
 // LLM quota + chat history helpers live in `_shared/llm-quota.ts` so
 // vitest can exercise them without pulling in Deno-only imports. Thin
 // adapters here map the structured results to HTTP responses.
-async function enforceTenantQuota(admin: SupabaseClient, tenantId: string): Promise<Response | null> {
+async function enforceTenantQuota(admin: SupabaseAdminClient, tenantId: string): Promise<Response | null> {
   const r = await checkTenantQuota(admin, tenantId);
   if (r.allowed) return null;
   if (r.errorCode === 'QUOTA_LOOKUP_FAILED') {
@@ -215,7 +235,7 @@ async function enforceTenantQuota(admin: SupabaseClient, tenantId: string): Prom
     ' Bis zum Monatswechsel keine weiteren Anfragen, oder Plan upgraden.');
 }
 
-async function enforceAnonQuota(admin: SupabaseClient, ipHash: string): Promise<Response | null> {
+async function enforceAnonQuota(admin: SupabaseAdminClient, ipHash: string): Promise<Response | null> {
   const r = await checkAnonQuota(admin, ipHash);
   if (r.allowed) return null;
   if (r.errorCode === 'QUOTA_LOOKUP_FAILED') {
@@ -227,7 +247,7 @@ async function enforceAnonQuota(admin: SupabaseClient, ipHash: string): Promise<
 }
 
 async function logChatToHistory(
-  admin: SupabaseClient,
+  admin: SupabaseAdminClient,
   args: Parameters<typeof recordChatHistory>[1],
 ): Promise<void> {
   const r = await recordChatHistory(admin, args);
@@ -237,7 +257,7 @@ async function logChatToHistory(
 }
 
 async function finishAnon(
-  admin: SupabaseClient,
+  admin: SupabaseAdminClient,
   requestId: string,
   startedAt: number,
   patch: Omit<AnonAuditCompletion, 'duration_ms'>,
@@ -363,7 +383,7 @@ Deno.serve(async (req) => {
 });
 
 async function handleChat(
-  admin: SupabaseClient,
+  admin: SupabaseAdminClient,
   userId: string,
   userEmail: string | null,
   bearerAuth: string,
@@ -578,7 +598,8 @@ async function handleChat(
   });
 }
 
-async function handleReset(admin: SupabaseClient, userId: string, body: Record<string, unknown>): Promise<Response> {
+// deno-lint-ignore no-explicit-any
+async function handleReset(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>): Promise<Response> {
   const session_id = body.session_id as string;
   const tenant_id = body.tenant_id as string;
   if (!session_id || !tenant_id) return jsonError(400, 'BAD_REQUEST', 'session_id and tenant_id required');
@@ -589,7 +610,8 @@ async function handleReset(admin: SupabaseClient, userId: string, body: Record<s
   return jsonResponse({ ok: true });
 }
 
-async function handleHistory(admin: SupabaseClient, userId: string, body: Record<string, unknown>): Promise<Response> {
+// deno-lint-ignore no-explicit-any
+async function handleHistory(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>): Promise<Response> {
   const tenant_id = body.tenant_id as string;
   const session_id = body.session_id as string | undefined;
   const limit = Math.min((body.limit as number | undefined) ?? 20, 100);
@@ -615,7 +637,7 @@ async function handleHistory(admin: SupabaseClient, userId: string, body: Record
 // the monthly-quota counter. RLS scopes by tenant membership, so the
 // service-role client mirrors the user's effective view by filtering
 // on tenant_id + user_id explicitly (defense-in-depth).
-async function handleChatHistoryTenant(admin: SupabaseClient, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleChatHistoryTenant(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>): Promise<Response> {
   const tenant_id = body.tenant_id as string;
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
 
@@ -869,7 +891,8 @@ async function runAnonViaAiGateway(
 // always fall through to Anthropic regardless of the env value. Without
 // this fix, setting AGENT_LLM_PROVIDER=ai_gateway would brick tenant
 // chat with 503 LLM_NOT_CONFIGURED.
-async function getLlmApiKey(admin: SupabaseClient): Promise<string | null> {
+// deno-lint-ignore no-explicit-any
+async function getLlmApiKey(admin: SupabaseAdminClient): Promise<string | null> {
   const effectiveProvider = LLM_PROVIDER === 'ai_gateway' ? 'anthropic' : LLM_PROVIDER;
   const envVar = effectiveProvider === 'anthropic' ? 'ANTHROPIC_API_KEY'
                : effectiveProvider === 'openai'    ? 'OPENAI_API_KEY'

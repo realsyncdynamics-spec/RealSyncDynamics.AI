@@ -22,6 +22,27 @@ import { audit } from '../_shared/auditLog.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { computeAutoMappings, type AssetProfile, type ControlRef, type CurrentMapping } from '../_shared/autoMap.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns?: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 const ASSET_TYPES = ['website', 'ai_system', 'vendor', 'model', 'agent', 'api', 'dataset', 'repository', 'workflow'];
 const AI_ACT_CLASSES = ['minimal', 'limited', 'high', 'prohibited', 'unknown'];
 const POLICY_TYPES = ['data_transfer', 'model_usage', 'human_review', 'logging_required', 'vendor_restriction', 'retention', 'security', 'ai_act', 'gdpr'];
@@ -132,6 +153,7 @@ async function createAsset(admin: SupabaseAdminClient, userId: string, userEmail
   return jsonResponse({ ok: true, asset: data });
 }
 
+
 async function archiveAsset(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
   if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required');
@@ -147,6 +169,7 @@ async function archiveAsset(admin: SupabaseAdminClient, userId: string, userEmai
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'asset.archive', target_type: 'governance_asset', target_id: asset_id, payload: {} });
   return jsonResponse({ ok: true });
 }
+
 
 async function createPolicy(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const tenant_id = b.tenant_id as string;
@@ -177,6 +200,7 @@ async function createPolicy(admin: SupabaseAdminClient, userId: string, userEmai
   return jsonResponse({ ok: true, policy: data });
 }
 
+
 async function togglePolicy(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const policy_id = b.policy_id as string;
   const enabled = b.enabled !== false;
@@ -192,6 +216,7 @@ async function togglePolicy(admin: SupabaseAdminClient, userId: string, userEmai
   await audit(admin, { tenant_id: row.tenant_id, actor_user_id: userId, actor_email: userEmail, action: enabled ? 'policy.enable' : 'policy.disable', target_type: 'governance_policy', target_id: policy_id, payload: { enabled } });
   return jsonResponse({ ok: true, enabled });
 }
+
 
 async function upsertMapping(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
@@ -230,6 +255,7 @@ async function upsertMapping(admin: SupabaseAdminClient, userId: string, userEma
   await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.upsert', target_type: 'asset_control_mapping', target_id: data.id, payload: { asset_id, control_id, status } });
   return jsonResponse({ ok: true, mapping: data });
 }
+
 
 async function autoMap(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
@@ -289,6 +315,7 @@ async function autoMap(admin: SupabaseAdminClient, userId: string, userEmail: st
   return jsonResponse({ ok: true, applied: rows.length, proposals });
 }
 
+
 async function deleteMapping(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const mapping_id = b.mapping_id as string;
   if (!mapping_id) return jsonError(400, 'BAD_REQUEST', 'mapping_id required');
@@ -309,6 +336,7 @@ async function deleteMapping(admin: SupabaseAdminClient, userId: string, userEma
   await audit(admin, { tenant_id: asset.tenant_id, actor_user_id: userId, actor_email: userEmail, action: 'mapping.delete', target_type: 'asset_control_mapping', target_id: mapping_id, payload: {} });
   return jsonResponse({ ok: true });
 }
+
 
 async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships')

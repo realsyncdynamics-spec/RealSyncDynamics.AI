@@ -17,6 +17,19 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string, options?: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+  };
+}
+
 const ROLES = ['owner', 'admin', 'dpo', 'editor', 'viewer_auditor'];
 
 interface SupabaseAdminClient {

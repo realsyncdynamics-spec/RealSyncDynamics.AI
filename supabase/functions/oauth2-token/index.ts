@@ -25,15 +25,17 @@ interface SupabaseAdminClient {
   from(table: string): {
     select(columns: string): {
       eq(col: string, val: unknown): {
-        single(): Promise<{ data: unknown; error: unknown }>;
         eq(col2: string, val2: unknown): {
           single(): Promise<{ data: unknown; error: unknown }>;
         };
+        single(): Promise<{ data: unknown; error: unknown }>;
       };
     };
     insert(rows: Record<string, unknown>[]): Promise<{ error: unknown }>;
     update(row: Record<string, unknown>): {
-      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): Promise<{ error: unknown }>;
+      };
     };
   };
 }

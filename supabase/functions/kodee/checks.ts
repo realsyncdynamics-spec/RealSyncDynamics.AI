@@ -6,6 +6,14 @@ import type {
   VpsConnectionRow,
 } from './types.ts';
 
+interface TlsCertificate {
+  validTo?: string;
+  validFrom?: string;
+  subjectAltNames?: string[];
+  issuer?: string;
+  subject?: string;
+}
+
 const TLS_TIMEOUT_MS = 10_000;
 
 export async function dnsCheck(
@@ -84,10 +92,9 @@ export async function tlsCheck(
     clearTimeout(timer);
 
     // Deno exposes peer certificates as parsed structures.
-    // deno-lint-ignore no-explicit-any
-    const certs: any = (tlsConn as any).handshake
-      ? await (tlsConn as any).handshake().then(() => (tlsConn as any).getPeerCertificates?.())
-      : (tlsConn as any).getPeerCertificates?.();
+    const certs: TlsCertificate[] | null | undefined = (tlsConn as any).handshake
+      ? await (tlsConn as unknown as any).handshake().then(() => (tlsConn as unknown as any).getPeerCertificates?.())
+      : (tlsConn as unknown as any).getPeerCertificates?.();
 
     tlsConn.close();
 

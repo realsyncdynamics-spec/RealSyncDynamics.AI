@@ -16,6 +16,24 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string, options?: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): { single(): Promise<{ data: unknown; error: unknown }> };
+        is(col2: string, val2: unknown): Promise<{ data: unknown; error: unknown }>;
+      };
+      eq(col: string, val: unknown): { is(col2: string, val2: unknown): Promise<{ data: unknown; error: unknown }> };
+    };
+    update(obj: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        is(col2: string, val2: unknown): Promise<{ error: unknown }>;
+      } & Promise<{ error: unknown }>;
+    };
+    delete(): { eq(col: string, val: unknown): Promise<{ error: unknown }> };
+  };
+}
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 

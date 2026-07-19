@@ -6,6 +6,11 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { audit } from '../_shared/auditLog.ts';
 
+interface EvidenceItem {
+  [key: string]: unknown;
+  created_by_name?: string;
+}
+
 const detectEvidenceType = (fileName: string, mimeType: string): string => {
   const name = fileName.toLowerCase();
   const mime = mimeType.toLowerCase();
@@ -80,7 +85,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       // Enrich with user names (mock for now)
-      const enriched = (evidenceItems || []).map((item: any) => ({
+      const enriched = (evidenceItems || []).map((item: EvidenceItem) => ({
         ...item,
         created_by_name: 'ISO Auditor',
       }));

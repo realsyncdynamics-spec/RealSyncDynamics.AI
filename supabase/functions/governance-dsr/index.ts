@@ -32,24 +32,31 @@ import {
   normalizeExportRequest,
 } from './logic.ts';
 
-// Supabase client type for this function suite
-interface SupabaseClient {
+interface SupabaseAdminClient {
   from(table: string): {
-    select(columns: string): unknown;
-    insert(row: Record<string, unknown>): { select(cols: string): { single(): Promise<{ data: unknown; error: unknown }> } };
-    update(row: Record<string, unknown>): { eq(col: string, val: unknown): { select(cols: string): Promise<{ data: unknown; error: unknown }> } };
-    delete(): { eq(col: string, val: unknown): Promise<{ error: unknown }> };
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          eq(col3: string, val3: unknown): {
+            maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+          };
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
   };
-  rpc(fn: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+  rpc(name: string, params?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
 }
 
-interface DSRRequest {
-  id: string;
-  tenant_id: string;
-  request_type: string;
-  requester_email: string;
-  status: string;
+interface DsrRequest {
+  id?: string;
   metadata?: Record<string, unknown>;
+  tenant_id?: string;
   [key: string]: unknown;
 }
 
@@ -98,7 +105,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function handleCreate(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const built = buildCreate(body);
   if (built.error || !built.row) return jsonError(400, 'BAD_REQUEST', built.error ?? 'invalid payload');
   const row = built.row;
@@ -129,7 +136,7 @@ async function handleCreate(admin: SupabaseClient, userId: string, userEmail: st
   return json({ ok: true, dsr: data });
 }
 
-async function handleUpdate(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const row = await loadRow(admin, id);
@@ -148,7 +155,7 @@ async function handleUpdate(admin: SupabaseClient, userId: string, userEmail: st
   return json({ ok: true, dsr: data });
 }
 
-async function handleAssign(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleAssign(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   const assigned_to = (body.assigned_to as string ?? '').trim();
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
@@ -165,7 +172,7 @@ async function handleAssign(admin: SupabaseClient, userId: string, userEmail: st
   return json({ ok: true, dsr: data });
 }
 
-async function handleClose(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleClose(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const row = await loadRow(admin, id);
@@ -188,7 +195,7 @@ async function handleClose(admin: SupabaseClient, userId: string, userEmail: str
 // hash-chained event timeline. Read-only — any tenant member may run it.
 // The canonical RPCs (has_tenant_membership-guarded) are invoked via the
 // user client so the membership check uses the caller's own identity.
-async function handleExport(admin: SupabaseClient, userClient: SupabaseClient, userId: string, body: Record<string, unknown>) {
+async function handleExport(admin: SupabaseAdminClient, userClient: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const target = normalizeExportRequest(body);
   if (target.error) return jsonError(400, 'BAD_REQUEST', target.error);
 
@@ -220,22 +227,22 @@ async function handleExport(admin: SupabaseClient, userClient: SupabaseClient, u
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-async function loadRow(admin: SupabaseClient, id: string) {
+async function loadRow(admin: SupabaseAdminClient, id: string) {
   const { data } = await admin.from('dsr_requests').select('id, tenant_id, completed_at, metadata').eq('id', id).maybeSingle();
   return data ?? null;
 }
 
-async function isWriter(admin: SupabaseClient, userId: string, tenantId: string): Promise<boolean> {
+async function isWriter(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return isWriterRole(data?.role);
 }
 
-async function isMember(admin: SupabaseClient, userId: string, tenantId: string): Promise<boolean> {
+async function isMember(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('user_id').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return !!data;
 }
 
-async function getActiveKey(admin: SupabaseClient, tenantId: string): Promise<{ key_version: number; vault_secret_name: string } | null> {
+async function getActiveKey(admin: SupabaseAdminClient, tenantId: string): Promise<{ key_version: number; vault_secret_name: string } | null> {
   const { data } = await admin.from('subject_ref_keys')
     .select('key_version, vault_secret_name')
     .eq('tenant_id', tenantId).eq('status', 'active')
@@ -252,7 +259,7 @@ function randomHex(bytes: number): string {
 // Resolve the HMAC subject_ref for an email, provisioning a per-tenant key
 // (metadata row + Vault secret) on first use. Best-effort: returns null on
 // any failure so DSR intake is never blocked.
-async function ensureSubjectRef(admin: SupabaseClient, tenantId: string, email: string): Promise<{ subject_ref: string; key_version: number } | null> {
+async function ensureSubjectRef(admin: SupabaseAdminClient, tenantId: string, email: string): Promise<{ subject_ref: string; key_version: number } | null> {
   try {
     let key = await getActiveKey(admin, tenantId);
     if (!key) {
@@ -277,7 +284,7 @@ async function ensureSubjectRef(admin: SupabaseClient, tenantId: string, email: 
 
 // Create the subject anchor if absent; never disturb an existing mapping's
 // lifecycle (deletion_requested_at / erased_at / retention_class).
-async function upsertMapping(admin: SupabaseClient, m: { subject_ref: string; tenant_id: string; key_version: number }): Promise<void> {
+async function upsertMapping(admin: SupabaseAdminClient, m: { subject_ref: string; tenant_id: string; key_version: number }): Promise<void> {
   try {
     const { error } = await admin.from('subject_ref_mappings').upsert(
       { subject_ref: m.subject_ref, tenant_id: m.tenant_id, key_version: m.key_version, subject_kind: 'email' },
@@ -293,7 +300,7 @@ async function upsertMapping(admin: SupabaseClient, m: { subject_ref: string; te
 // of request_subject_erasure() via the service-role client (that RPC guards
 // on has_tenant_membership/auth.uid(), which is absent for service role).
 // The membership check already happened in handleCreate (isWriter).
-async function enqueueErasure(admin: SupabaseClient, tenantId: string, subjectRef: string, dsrId: string): Promise<void> {
+async function enqueueErasure(admin: SupabaseAdminClient, tenantId: string, subjectRef: string, dsrId: string): Promise<void> {
   try {
     const { error } = await admin.from('subject_ref_mappings')
       .update({ deletion_requested_at: new Date().toISOString() })
@@ -309,7 +316,7 @@ async function enqueueErasure(admin: SupabaseClient, tenantId: string, subjectRe
   }
 }
 
-function subjectRefOf(dsr: DSRRequest): string | null {
+function subjectRefOf(dsr: DsrRequest): string | null {
   const ref = dsr?.metadata?.subject_ref;
   return typeof ref === 'string' && ref.length >= 8 ? ref : null;
 }
@@ -317,10 +324,10 @@ function subjectRefOf(dsr: DSRRequest): string | null {
 // Append-only evidence row on the per-tenant hash chain. Best-effort: a
 // failure here (e.g. a missing future partition) is logged but never blocks
 // the DSR write, which is the source of truth.
-async function emitEvidence(admin: SupabaseClient, args: {
+async function emitEvidence(admin: SupabaseAdminClient, args: {
   tenant_id: string;
   eventType: string;
-  dsr: DSRRequest;
+  dsr: DsrRequest;
   subject_ref: string | null;
   severity?: string;
   payload: Record<string, unknown>;

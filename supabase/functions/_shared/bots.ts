@@ -13,11 +13,39 @@
 // Funktion in Vitest importierbar, ohne den jsr-Specifier auflösen zu müssen
 // (gleiche Technik wie _shared/findings.ts: AdminLike). Der echte
 // service-role-Client der Edge Functions ist strukturell kompatibel.
+
+interface QueryBuilder extends PromiseLike<{ data: unknown; error: unknown }> {
+  eq(col: string, val: unknown): QueryBuilder;
+  order(col: string, opts?: Record<string, unknown>): QueryBuilder;
+  limit(n: number): QueryBuilder;
+  maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+  single(): Promise<{ data: unknown; error: unknown }>;
+  select(cols?: string): QueryBuilder;
+}
+
+interface InsertChain extends PromiseLike<{ data?: unknown; error?: unknown }> {
+  select(cols?: string): InsertChain;
+  single(): Promise<{ data: unknown; error: unknown }>;
+}
+
+interface UpdateChain extends PromiseLike<{ error?: unknown }> {
+  eq(col: string, val: unknown): UpdateChain;
+}
+
+interface TableBuilder {
+  select(cols: string): QueryBuilder;
+  insert(obj: Record<string, unknown>): InsertChain;
+  update(obj: Record<string, unknown>): UpdateChain;
+}
+
+interface RpcResponse {
+  data: unknown;
+  error: unknown;
+}
+
 export interface SupabaseAdmin {
-  // deno-lint-ignore no-explicit-any
-  from(table: string): any;
-  // deno-lint-ignore no-explicit-any
-  rpc(fn: string, args: Record<string, unknown>): any;
+  from(table: string): TableBuilder;
+  rpc(fn: string, args: Record<string, unknown>): Promise<RpcResponse>;
 }
 
 export type BotChannel = 'chat' | 'voice' | 'telegram' | 'whatsapp';
@@ -55,7 +83,7 @@ export async function resolveBot(
   const { data, error } = await admin
     .from('bots').select('*')
     .eq('id', botId).eq('tenant_id', tenantId).maybeSingle();
-  if (error) throw new BotError(error.message, 'INTERNAL', 500);
+  if (error) throw new BotError((error as { message: string }).message, 'INTERNAL', 500);
   const row = data as BotRow | null;
   if (!row) throw new BotError('bot not found', 'NOT_FOUND', 404);
   if (!row.enabled) throw new BotError('bot is disabled', 'FORBIDDEN', 403);
@@ -78,7 +106,7 @@ export async function upsertConversation(
     const { data: existing, error: selErr } = await admin
       .from('bot_conversations').select('id')
       .eq('bot_id', bot.id).eq('external_ref', externalRef).maybeSingle();
-    if (selErr) throw new BotError(selErr.message, 'INTERNAL', 500);
+    if (selErr) throw new BotError((selErr as { message: string }).message, 'INTERNAL', 500);
     if (existing) return (existing as { id: string }).id;
   }
 
@@ -90,7 +118,7 @@ export async function upsertConversation(
     contact_label: opts.contactLabel ?? null,
     last_message_at: new Date().toISOString(),
   }).select('id').single();
-  if (error) throw new BotError(error.message, 'INTERNAL', 500);
+  if (error) throw new BotError((error as { message: string }).message, 'INTERNAL', 500);
   return (data as { id: string }).id;
 }
 
@@ -121,7 +149,7 @@ export async function insertMessage(
     cost_usd: extra.costUsd ?? 0,
     metadata: extra.metadata ?? {},
   });
-  if (error) throw new BotError(error.message, 'INTERNAL', 500);
+  if (error) throw new BotError((error as { message: string }).message, 'INTERNAL', 500);
 
   await admin.from('bot_conversations')
     .update({ last_message_at: new Date().toISOString() })
@@ -139,8 +167,8 @@ export async function loadRecentHistory(
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (error) throw new BotError(error.message, 'INTERNAL', 500);
-  return (data ?? []).reverse() as Array<{ role: string; content: string }>;
+  if (error) throw new BotError((error as { message: string }).message, 'INTERNAL', 500);
+  return ((data as unknown as Array<{ role: string; content: string }> ?? [])).reverse();
 }
 
 export interface BuildBotPromptInput {

@@ -103,7 +103,8 @@ interface SupabaseAdminClient {
         order(col: string, opts?: Record<string, unknown>): { limit(n: number): { maybeSingle(): Promise<{ data: unknown; error: unknown }> } };
       };
     };
-    insert(obj: Record<string, unknown>): { select(columns?: string): { single(): Promise<{ data: unknown; error: unknown }> } };
+    insert(obj: Record<string, unknown>): PromiseLike<{ data?: unknown; error?: unknown }> & { select(columns?: string): { single(): Promise<{ data: unknown; error: unknown }> } };
+    update(obj: Record<string, unknown>): { eq(col: string, val: unknown): Promise<{ error: unknown }> };
   };
 }
 
@@ -134,15 +135,15 @@ export async function appendCustodyEvent(admin: SupabaseAdminClient, args: {
       .insert({ tenant_id: args.tenantId, asset_ref: args.assetRef, content_sha256: contentSha, issuer: args.issuer, latest_hash: 'pending', trust_score: 100, tamper_state: 'intact' })
       .select('id').single();
     if (insErr || !ins) throw new Error('could not create provenance manifest');
-    manifestId = ins.id;
+    manifestId = (ins as { id: string }).id;
     created = true;
     action = 'registered';
   } else {
-    manifestId = manifest.id;
-    prevHash = manifest.latest_hash;
+    manifestId = (manifest as { id: string }).id;
+    prevHash = (manifest as { latest_hash: string | null }).latest_hash;
     const { data: lastEv } = await admin
       .from('provenance_custody_events').select('seq').eq('manifest_id', manifestId).order('seq', { ascending: false }).limit(1).maybeSingle();
-    seq = (lastEv?.seq ?? 0) + 1;
+    seq = ((lastEv as unknown as { seq: number } | null)?.seq ?? 0) + 1;
   }
 
   const claim: Claim = { assetRef: args.assetRef, contentSha256: contentSha, issuer: args.issuer, action, timestamp: nowIso, prevHash };

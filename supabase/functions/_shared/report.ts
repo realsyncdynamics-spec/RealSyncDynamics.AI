@@ -142,14 +142,14 @@ export async function getReport(
 
   const scanQ = admin.from('scan_runs').select('*').eq('id', scanRunId) as unknown as Promise<{ data: unknown; error: unknown }>;
   const { data: scanData, error: scanErr } = await scanQ;
-  if (scanErr) return { ok: false, error: scanErr.message };
+  if (scanErr) return { ok: false, error: (scanErr as { message: string }).message };
   const scanRow = Array.isArray(scanData) ? scanData[0] : scanData;
   if (!scanRow) return { ok: false, error: 'scan_run not found' };
   const scanRun = scanRow as ScanRunRow;
 
   const findsQ = admin.from('findings').select('*').eq('scan_run_id', scanRunId) as unknown as Promise<{ data: unknown; error: unknown }>;
   const { data: findData, error: findErr } = await findsQ;
-  if (findErr) return { ok: false, error: findErr.message };
+  if (findErr) return { ok: false, error: (findErr as { message: string }).message };
   const findings = ((findData as FindingRow[]) ?? []);
 
   const sevBreak: Record<FindingSeverity, number> = {

@@ -16,12 +16,11 @@ import {
   type LegalJurisdiction,
 } from './legal-retrieval.ts';
 
-interface QueryBuilder {
+interface QueryBuilder extends PromiseLike<{ data: unknown; error: unknown }> {
   eq(col: string, val: unknown): QueryBuilder;
   in(col: string, vals: unknown[]): QueryBuilder;
   order(col: string, opts?: Record<string, unknown>): QueryBuilder;
   limit(n: number): QueryBuilder;
-  then<T>(onfulfilled?: (val: { data: unknown; error: unknown }) => T): Promise<T>;
 }
 
 interface SupabaseAdminClient {
@@ -29,6 +28,7 @@ interface SupabaseAdminClient {
     select(cols: string): QueryBuilder;
     insert(obj: Record<string, unknown>): Promise<{ error: unknown }>;
   };
+  rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
 }
 
 // Structural shape of Anthropic.Tool — kept local so vitest (Node-resolver)
@@ -234,13 +234,15 @@ async function toolListAssets(ctx: DispatchCtx): Promise<unknown> {
   if (ctx.input.ai_act_class) q = q.eq('ai_act_class', ctx.input.ai_act_class);
   const { data, error } = await q;
   if (error) throw error;
-  return { assets: data ?? [], count: data?.length ?? 0 };
+  const arr = (data as unknown[]) ?? [];
+  return { assets: arr, count: arr.length };
 }
 
 async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
   const { data: assets } = await ctx.admin.from('governance_assets')
     .select('id, name, asset_type, ai_act_class, risk_score').eq('tenant_id', ctx.tenantId);
-  const assetIds = (assets ?? []).map((a: { id: string }) => a.id);
+  const assetArr = (assets as unknown[]) ?? [];
+  const assetIds = assetArr.map((a: { id: string }) => a.id);
   const { data: latestRisks } = assetIds.length === 0 ? { data: [] } : await ctx.admin.from('asset_risk_history')
     .select('asset_id, risk_score, calculated_at')
     .in('asset_id', assetIds)
@@ -248,14 +250,15 @@ async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
     .limit(500);
 
   const latestByAsset = new Map<string, { risk_score: number; calculated_at: string }>();
-  for (const r of (latestRisks ?? []) as Array<{ asset_id: string; risk_score: number; calculated_at: string }>) {
+  const risksArr = ((latestRisks as unknown[]) ?? []) as Array<{ asset_id: string; risk_score: number; calculated_at: string }>;
+  for (const r of risksArr) {
     if (!latestByAsset.has(r.asset_id)) latestByAsset.set(r.asset_id, { risk_score: r.risk_score, calculated_at: r.calculated_at });
   }
 
   const filter = ctx.input.severity_filter as string ?? 'all';
   const severity = (s: number) => s >= 80 ? 'critical' : s >= 60 ? 'high' : s >= 40 ? 'medium' : 'low';
 
-  const rows = (assets ?? []).map((a: { id: string; name: string; asset_type: string; ai_act_class: string; risk_score: number | null }) => {
+  const rows = assetArr.map((a: { id: string; name: string; asset_type: string; ai_act_class: string; risk_score: number | null }) => {
     const latest = latestByAsset.get(a.id);
     const score = latest?.risk_score ?? a.risk_score ?? 0;
     return { id: a.id, name: a.name, asset_type: a.asset_type, ai_act_class: a.ai_act_class, score, severity: severity(score) };
@@ -266,7 +269,7 @@ async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
   const critical = rows.filter((r: { severity: string }) => r.severity === 'critical').length;
   const high     = rows.filter((r: { severity: string }) => r.severity === 'high').length;
   return {
-    total_assets: assets?.length ?? 0,
+    total_assets: assetArr.length,
     critical,
     high,
     immediate_action_needed: critical + high > 0,
@@ -284,7 +287,8 @@ async function toolListDpias(ctx: DispatchCtx): Promise<unknown> {
   if (ctx.input.asset_id) q = q.eq('asset_id', ctx.input.asset_id);
   const { data, error } = await q;
   if (error) throw error;
-  return { dpias: data ?? [], count: data?.length ?? 0 };
+  const arr = (data as unknown[]) ?? [];
+  return { dpias: arr, count: arr.length };
 }
 
 async function toolListIncidents(ctx: DispatchCtx): Promise<unknown> {
@@ -298,7 +302,7 @@ async function toolListIncidents(ctx: DispatchCtx): Promise<unknown> {
   if (error) throw error;
 
   const now = Date.now();
-  const enriched = (data ?? []).map((i: { id: string; severity: string; status: string; notification_deadline_at: string | null }) => {
+  const enriched = ((data as unknown[]) ?? []).map((i: { id: string; severity: string; status: string; notification_deadline_at: string | null }) => {
     if (!i.notification_deadline_at || i.status === 'reported' || i.status === 'resolved') return i;
     const hoursLeft = Math.max(0, Math.round((new Date(i.notification_deadline_at).getTime() - now) / 36e5));
     return { ...i, hours_until_72h_deadline: hoursLeft };
@@ -315,7 +319,8 @@ async function toolListVendors(ctx: DispatchCtx): Promise<unknown> {
   if (ctx.input.dpa_status) q = q.eq('dpa_status', ctx.input.dpa_status);
   const { data, error } = await q;
   if (error) throw error;
-  return { vendors: data ?? [], count: data?.length ?? 0 };
+  const arr = (data as unknown[]) ?? [];
+  return { vendors: arr, count: arr.length };
 }
 
 function toolRegulationInfo(ctx: DispatchCtx): unknown {
@@ -401,7 +406,7 @@ async function toolLegalContext(ctx: DispatchCtx): Promise<unknown> {
     : 5;
 
   try {
-    const r = await retrieveLegalContext(ctx.admin, {
+    const r = await retrieveLegalContext(ctx.admin as unknown as any, {
       query,
       top_k,
       framework:      ctx.input.framework    as LegalFramework    | undefined,

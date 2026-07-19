@@ -20,6 +20,30 @@ import { audit } from '../_shared/auditLog.ts';
 import { renderTemplate, KNOWN_PATTERNS, type Pattern } from '../_shared/remediation-templates.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+      order(col: string, opts: { ascending: boolean }): {
+        limit(n: number): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -57,8 +81,7 @@ Deno.serve(async (req) => {
   } catch (e) { return jsonError(500, 'INTERNAL', (e as Error).message); }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleList(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleList(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   if (!(await isMember(admin, userId, tenant_id))) return jsonError(403, 'FORBIDDEN', 'no membership in this tenant');
@@ -75,8 +98,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
   return jsonResponse({ ok: true, snippets: data ?? [] });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleGenerate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleGenerate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   const pattern = body.pattern as Pattern;
   const params = (body.params as Record<string, string> | undefined) ?? {};
@@ -134,8 +156,7 @@ async function handleGenerate(admin: any, userId: string, userEmail: string | nu
   return jsonResponse({ ok: true, snippet: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleMarkApplied(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleMarkApplied(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('remediation_snippets').select('tenant_id').eq('id', id).maybeSingle();
@@ -154,8 +175,7 @@ async function handleMarkApplied(admin: any, userId: string, userEmail: string |
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleReject(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleReject(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('remediation_snippets').select('tenant_id').eq('id', id).maybeSingle();
@@ -171,8 +191,7 @@ async function handleReject(admin: any, userId: string, userEmail: string | null
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleSupersede(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleSupersede(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('remediation_snippets').select('tenant_id').eq('id', id).maybeSingle();
@@ -188,14 +207,12 @@ async function handleSupersede(admin: any, userId: string, userEmail: string | n
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function isMember(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isMember(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return !!data;
 }
 
-// deno-lint-ignore no-explicit-any
-async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data?.role === 'owner' || data?.role === 'admin';
 }

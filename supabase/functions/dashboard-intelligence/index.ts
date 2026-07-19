@@ -19,6 +19,35 @@ interface DashboardRequest {
   action: 'update_scores' | 'generate_insights' | 'refresh_all';
 }
 
+interface Policy {
+  status: string;
+  framework?: string;
+}
+
+interface Audit {
+  findings_count: number;
+  status: string;
+}
+
+interface Incident {
+  severity: string;
+  status: string;
+}
+
+interface Risk {
+  severity: string;
+  type?: string;
+}
+
+interface Vendor {
+  status: string;
+  risk_level?: string;
+}
+
+interface Dpia {
+  status: string;
+}
+
 async function calculateComplianceScore(
   admin: ReturnType<typeof createClient>,
   tenantId: string
@@ -51,13 +80,13 @@ async function calculateComplianceScore(
 
   // Policy coverage: each policy documented adds 5 points, max 25
   if (policies && policies.length > 0) {
-    const documented = policies.filter((p: any) => p.status === 'approved').length;
+    const documented = policies.filter((p: Policy) => p.status === 'approved').length;
     overallScore += Math.min((documented / 5) * 25, 25);
   }
 
   // Recent audits: recent clean audit adds 15 points
   if (audits && audits.length > 0) {
-    const recentClean = audits.filter((a: any) => a.status === 'passed' && a.findings_count === 0);
+    const recentClean = audits.filter((a: Audit) => a.status === 'passed' && a.findings_count === 0);
     if (recentClean.length > 0) {
       overallScore += 15;
     } else if (audits[0].findings_count === 0) {
@@ -69,8 +98,8 @@ async function calculateComplianceScore(
 
   // Incident response: open incidents deduct points
   if (incidents && incidents.length > 0) {
-    const criticalCount = incidents.filter((i: any) => i.severity === 'critical').length;
-    const highCount = incidents.filter((i: any) => i.severity === 'high').length;
+    const criticalCount = incidents.filter((i: Incident) => i.severity === 'critical').length;
+    const highCount = incidents.filter((i: Incident) => i.severity === 'high').length;
     overallScore -= criticalCount * 10 + highCount * 5;
   }
 
@@ -159,7 +188,7 @@ async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<
   const insights = [];
 
   // Critical incidents detection
-  const criticalIncidents = tenantState.incidents?.filter((i: any) => i.severity === 'critical') || [];
+  const criticalIncidents = tenantState.incidents?.filter((i: Incident) => i.severity === 'critical') || [];
   if (criticalIncidents.length > 0) {
     insights.push({
       type: 'incident_pattern',
@@ -187,7 +216,7 @@ async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<
   }
 
   // Risk concentration
-  const highRisks = tenantState.risks?.filter((r: any) => r.severity === 'high') || [];
+  const highRisks = tenantState.risks?.filter((r: Risk) => r.severity === 'high') || [];
   if (highRisks.length > 3) {
     insights.push({
       type: 'risk_mitigation',
@@ -201,7 +230,7 @@ async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<
   }
 
   // Policy coverage opportunity
-  const documentedPolicies = tenantState.policies?.filter((p: any) => p.status === 'approved') || [];
+  const documentedPolicies = tenantState.policies?.filter((p: Policy) => p.status === 'approved') || [];
   if (documentedPolicies.length < 8) {
     insights.push({
       type: 'compliance_opportunity',
@@ -215,7 +244,7 @@ async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<
   }
 
   // Vendor risk assessment
-  const riskVendors = tenantState.vendors?.filter((v: any) => v.risk_level === 'high') || [];
+  const riskVendors = tenantState.vendors?.filter((v: Vendor) => v.risk_level === 'high') || [];
   if (riskVendors.length > 0) {
     insights.push({
       type: 'vendor_concern',
@@ -229,7 +258,7 @@ async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<
   }
 
   // DPIA recommendations
-  const pendingDpias = tenantState.dpia?.filter((d: any) => d.status === 'pending') || [];
+  const pendingDpias = tenantState.dpia?.filter((d: Dpia) => d.status === 'pending') || [];
   if (pendingDpias.length > 0) {
     insights.push({
       type: 'dpia_required',

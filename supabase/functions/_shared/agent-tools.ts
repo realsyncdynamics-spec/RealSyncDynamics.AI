@@ -16,12 +16,11 @@ import {
   type LegalJurisdiction,
 } from './legal-retrieval.ts';
 
-interface QueryBuilder {
+interface QueryBuilder extends PromiseLike<{ data: unknown; error: unknown }> {
   eq(col: string, val: unknown): QueryBuilder;
   in(col: string, vals: unknown[]): QueryBuilder;
   order(col: string, opts?: Record<string, unknown>): QueryBuilder;
   limit(n: number): QueryBuilder;
-  then<T>(onfulfilled?: (val: { data: unknown; error: unknown }) => T): Promise<T>;
 }
 
 interface SupabaseAdminClient {
@@ -29,6 +28,7 @@ interface SupabaseAdminClient {
     select(cols: string): QueryBuilder;
     insert(obj: Record<string, unknown>): Promise<{ error: unknown }>;
   };
+  rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
 }
 
 // Structural shape of Anthropic.Tool — kept local so vitest (Node-resolver)
@@ -241,8 +241,8 @@ async function toolListAssets(ctx: DispatchCtx): Promise<unknown> {
 async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
   const { data: assets } = await ctx.admin.from('governance_assets')
     .select('id, name, asset_type, ai_act_class, risk_score').eq('tenant_id', ctx.tenantId);
-  const assetArr = (assets as Array<{ id: string; name: string; asset_type: string; ai_act_class: string; risk_score: number | null }>) ?? [];
-  const assetIds = assetArr.map((a) => a.id);
+  const assetArr = (assets as unknown[]) ?? [];
+  const assetIds = assetArr.map((a: { id: string }) => a.id);
   const { data: latestRisks } = assetIds.length === 0 ? { data: [] } : await ctx.admin.from('asset_risk_history')
     .select('asset_id, risk_score, calculated_at')
     .in('asset_id', assetIds)
@@ -258,7 +258,7 @@ async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
   const filter = ctx.input.severity_filter as string ?? 'all';
   const severity = (s: number) => s >= 80 ? 'critical' : s >= 60 ? 'high' : s >= 40 ? 'medium' : 'low';
 
-  const rows = assetArr.map((a) => {
+  const rows = assetArr.map((a: { id: string; name: string; asset_type: string; ai_act_class: string; risk_score: number | null }) => {
     const latest = latestByAsset.get(a.id);
     const score = latest?.risk_score ?? a.risk_score ?? 0;
     return { id: a.id, name: a.name, asset_type: a.asset_type, ai_act_class: a.ai_act_class, score, severity: severity(score) };
@@ -302,8 +302,7 @@ async function toolListIncidents(ctx: DispatchCtx): Promise<unknown> {
   if (error) throw error;
 
   const now = Date.now();
-  const dataArr = (data as Array<{ id: string; title: string; severity: string; status: string; detected_at: string; notification_deadline_at: string | null; asset_id: string | null }>) ?? [];
-  const enriched = dataArr.map((i) => {
+  const enriched = ((data as unknown[]) ?? []).map((i: { id: string; severity: string; status: string; notification_deadline_at: string | null }) => {
     if (!i.notification_deadline_at || i.status === 'reported' || i.status === 'resolved') return i;
     const hoursLeft = Math.max(0, Math.round((new Date(i.notification_deadline_at).getTime() - now) / 36e5));
     return { ...i, hours_until_72h_deadline: hoursLeft };

@@ -103,7 +103,8 @@ interface SupabaseAdminClient {
         order(col: string, opts?: Record<string, unknown>): { limit(n: number): { maybeSingle(): Promise<{ data: unknown; error: unknown }> } };
       };
     };
-    insert(obj: Record<string, unknown>): { select(columns?: string): { single(): Promise<{ data: unknown; error: unknown }> } };
+    insert(obj: Record<string, unknown>): PromiseLike<{ data?: unknown; error?: unknown }> & { select(columns?: string): { single(): Promise<{ data: unknown; error: unknown }> } };
+    update(obj: Record<string, unknown>): { eq(col: string, val: unknown): Promise<{ error: unknown }> };
   };
 }
 

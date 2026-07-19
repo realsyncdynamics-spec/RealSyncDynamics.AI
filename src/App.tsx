@@ -366,6 +366,7 @@ const SuperAdminDashboard = lazy(() => import('./features/admin/SuperAdminDashbo
 const SEOMarketingDashboard = lazy(() => import('./features/seo-marketing-dashboard/SEOMarketingDashboard').then((m) => ({ default: m.SEOMarketingDashboard })));
 // ── OAuth Callbacks (public, no auth required)
 import { StripeOAuthCallback } from './pages/integrations/StripeOAuthCallback';
+import { CheckoutSuccess } from './pages/CheckoutSuccess';
 // ── Enterprise OS Prototype (/os, /os/app/*) — Phase 1 Foundation:
 // neues Designsystem + Enterprise-Shell, Mockdaten, kein Backend-Zugriff. ──
 const EnterpriseLandingPage = lazy(() => import('./enterprise-os/pages/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -545,6 +546,7 @@ function RoutesWithTracking() {
       <Route path="/command-center/showcase" element={<AiCommandCenterShowcase />} />
       <Route path="/dashboard/enterprise-ai-os/discovery" element={<EnterpriseAiOsDiscovery />} />
       {/* Onboarding nach Stripe-Checkout */}
+      <Route path="/checkout/success" element={<CheckoutSuccess />} />
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/setup" element={<Welcome />} />
       {/* Phase 2: Free Tier Setup Assistant (3-step wizard) */}

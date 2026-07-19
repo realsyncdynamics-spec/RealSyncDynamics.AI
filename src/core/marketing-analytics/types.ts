@@ -22,7 +22,7 @@ export interface MarketingEvent {
   event_value?: number;
   currency?: string;
   plan_key?: string;
-  addons?: Array<{id: string; name: string}>;
+  addons?: string[];
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;

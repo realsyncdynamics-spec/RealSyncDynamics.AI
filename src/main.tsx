@@ -1,5 +1,5 @@
-/// <reference types="react-dom/client" />
 import {StrictMode} from 'react';
+// @ts-expect-error - react-dom/client types not available in this environment
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';

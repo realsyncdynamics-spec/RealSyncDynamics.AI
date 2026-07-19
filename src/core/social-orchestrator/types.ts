@@ -127,6 +127,8 @@ export interface SocialPost {
   generatedAt: string;
   /** Populated when approvalStatus is REVIEW or BLOCKED. */
   blockReasons?: string[];
+  /** Channel-specific metadata (e.g., linkedInMetadata, tiktokMetadata). */
+  linkedInMetadata?: Record<string, unknown>;
 }
 
 // ── Approval decision (from contentPolicy) ─────────────────────────

@@ -46,6 +46,32 @@ import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { selectModel, getModelId, MODEL_PRICING } from '../_shared/modelSelection.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          eq(col3: string, val3: unknown): {
+            maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+          };
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    upsert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          eq(col3: string, val3: unknown): Promise<{ error: unknown }>;
+        };
+      };
+    };
+  };
+  rpc(name: string, params?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+}
+
 const MAX_ITERATIONS = 8;
 const MAX_HISTORY_TURNS = 20;
 // Output cap per Anthropic turn. Compliance answers typically need
@@ -153,8 +179,7 @@ async function anonGate(
   const uaHash   = ua ? await sha256Hex(ua) : undefined;
   const requestId = crypto.randomUUID();
   const startedAt = Date.now();
-  // deno-lint-ignore no-explicit-any
-  let admin: any;
+  let admin: SupabaseAdminClient;
   try {
     admin = await makeAdmin();
   } catch (e) {
@@ -200,7 +225,7 @@ async function anonGate(
 // LLM quota + chat history helpers live in `_shared/llm-quota.ts` so
 // vitest can exercise them without pulling in Deno-only imports. Thin
 // adapters here map the structured results to HTTP responses.
-async function enforceTenantQuota(admin: any, tenantId: string): Promise<Response | null> {
+async function enforceTenantQuota(admin: SupabaseAdminClient, tenantId: string): Promise<Response | null> {
   const r = await checkTenantQuota(admin, tenantId);
   if (r.allowed) return null;
   if (r.errorCode === 'QUOTA_LOOKUP_FAILED') {
@@ -211,7 +236,7 @@ async function enforceTenantQuota(admin: any, tenantId: string): Promise<Respons
     ' Bis zum Monatswechsel keine weiteren Anfragen, oder Plan upgraden.');
 }
 
-async function enforceAnonQuota(admin: any, ipHash: string): Promise<Response | null> {
+async function enforceAnonQuota(admin: SupabaseAdminClient, ipHash: string): Promise<Response | null> {
   const r = await checkAnonQuota(admin, ipHash);
   if (r.allowed) return null;
   if (r.errorCode === 'QUOTA_LOOKUP_FAILED') {
@@ -223,7 +248,7 @@ async function enforceAnonQuota(admin: any, ipHash: string): Promise<Response | 
 }
 
 async function logChatToHistory(
-  admin: any,
+  admin: SupabaseAdminClient,
   args: Parameters<typeof recordChatHistory>[1],
 ): Promise<void> {
   const r = await recordChatHistory(admin, args);
@@ -233,8 +258,7 @@ async function logChatToHistory(
 }
 
 async function finishAnon(
-  // deno-lint-ignore no-explicit-any
-  admin: any,
+  admin: SupabaseAdminClient,
   requestId: string,
   startedAt: number,
   patch: Omit<AnonAuditCompletion, 'duration_ms'>,
@@ -359,9 +383,8 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
 async function handleChat(
-  admin: any,
+  admin: SupabaseAdminClient,
   userId: string,
   userEmail: string | null,
   bearerAuth: string,
@@ -577,7 +600,7 @@ async function handleChat(
 }
 
 // deno-lint-ignore no-explicit-any
-async function handleReset(admin: any, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleReset(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>): Promise<Response> {
   const session_id = body.session_id as string;
   const tenant_id = body.tenant_id as string;
   if (!session_id || !tenant_id) return jsonError(400, 'BAD_REQUEST', 'session_id and tenant_id required');
@@ -589,7 +612,7 @@ async function handleReset(admin: any, userId: string, body: Record<string, unkn
 }
 
 // deno-lint-ignore no-explicit-any
-async function handleHistory(admin: any, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleHistory(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>): Promise<Response> {
   const tenant_id = body.tenant_id as string;
   const session_id = body.session_id as string | undefined;
   const limit = Math.min((body.limit as number | undefined) ?? 20, 100);
@@ -615,7 +638,7 @@ async function handleHistory(admin: any, userId: string, body: Record<string, un
 // the monthly-quota counter. RLS scopes by tenant membership, so the
 // service-role client mirrors the user's effective view by filtering
 // on tenant_id + user_id explicitly (defense-in-depth).
-async function handleChatHistoryTenant(admin: any, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleChatHistoryTenant(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>): Promise<Response> {
   const tenant_id = body.tenant_id as string;
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
 
@@ -870,7 +893,7 @@ async function runAnonViaAiGateway(
 // this fix, setting AGENT_LLM_PROVIDER=ai_gateway would brick tenant
 // chat with 503 LLM_NOT_CONFIGURED.
 // deno-lint-ignore no-explicit-any
-async function getLlmApiKey(admin: any): Promise<string | null> {
+async function getLlmApiKey(admin: SupabaseAdminClient): Promise<string | null> {
   const effectiveProvider = LLM_PROVIDER === 'ai_gateway' ? 'anthropic' : LLM_PROVIDER;
   const envVar = effectiveProvider === 'anthropic' ? 'ANTHROPIC_API_KEY'
                : effectiveProvider === 'openai'    ? 'OPENAI_API_KEY'

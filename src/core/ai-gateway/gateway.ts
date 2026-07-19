@@ -73,10 +73,11 @@ export async function processAIGatewayRequest(req: GatewayRequest) {
 
     throw new Error(`Unsupported provider: ${req.provider}`);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error: error.message || "Gateway Error",
+      error: message || "Gateway Error",
     };
   }
 }

@@ -12,6 +12,23 @@ interface FilterState {
   dateRange: 'today' | '7days' | '30days' | 'all';
 }
 
+interface MonitoringEvent {
+  id: string;
+  type: 'webhook' | 'email';
+  event_type: string;
+  status: EventStatus;
+  created_at: string;
+  details: string | null;
+}
+
+interface MonitoringStats {
+  total: number;
+  success: number;
+  failed: number;
+  pending: number;
+  successRate: number;
+}
+
 export function AdvancedMonitoringDashboard() {
   const { activeTenantId } = useTenant();
   const [filters, setFilters] = useState<FilterState>({
@@ -19,10 +36,10 @@ export function AdvancedMonitoringDashboard() {
     status: 'all',
     dateRange: '7days',
   });
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<MonitoringEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<MonitoringStats | null>(null);
 
   useEffect(() => {
     if (!activeTenantId) return;
@@ -48,7 +65,7 @@ export function AdvancedMonitoringDashboard() {
       }
 
       // Fetch webhook events
-      let webhookEvents: any[] = [];
+      let webhookEvents: MonitoringEvent[] = [];
       if (filters.eventType === 'webhook' || filters.eventType === 'all') {
         const { data } = await sb
           .from('webhook_deliveries')
@@ -67,7 +84,7 @@ export function AdvancedMonitoringDashboard() {
       }
 
       // Fetch email events
-      let emailEvents: any[] = [];
+      let emailEvents: MonitoringEvent[] = [];
       if (filters.eventType === 'email' || filters.eventType === 'all') {
         const { data } = await sb
           .from('email_notifications')

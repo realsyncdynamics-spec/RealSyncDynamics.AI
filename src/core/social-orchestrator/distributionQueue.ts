@@ -686,38 +686,28 @@ abstract class BasePublisher implements SocialPublisher {
 // ── Real publishers (placeholder implementations) ──────────────────────────
 
 /**
- * LinkedIn Publisher — OAuth 2.0 + REST API
- * Requires token in Supabase Vault: linkedin_access_token
- * Supports multiple LinkedIn profiles (enterprise vs. legal framing)
+ * LinkedIn Publisher (placeholder) — OAuth 2.0 + REST API
  * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
+ *
+ * ⚠️ This is a placeholder/reference implementation for testing/documentation.
+ * The real production implementation is in ./linkedinPublisher.ts which:
+ * - Accepts accessToken + authorId as constructor parameters
+ * - Caller (Edge Function) loads token from Supabase Vault
+ * - Supports per-profile author IDs (linkedin.enterprise, linkedin.legal, etc)
  */
 export class LinkedInPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string;
-  private profileMap: Map<SocialChannel, string>;
-
-  /**
-   * Create a LinkedIn publisher with OAuth token and profile URNs.
-   * @param accessToken LinkedIn OAuth 2.0 access token (loaded from Supabase Vault in production)
-   * @param profileMap Map of LinkedIn channel → LinkedIn Person URN (e.g., "urn:li:person:ABC123")
-   */
-  constructor(accessToken: string, profileMap?: Map<SocialChannel, string>) {
-    super();
-    this.accessToken = accessToken;
-    this.profileMap = profileMap ?? new Map([
-      ['linkedin.enterprise', 'urn:li:person:ABC123'],
-      ['linkedin.legal', 'urn:li:person:XYZ789'],
-    ]);
-  }
+  private accessToken: string = '';
+  private profileId: string = '';
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
 
-    if (!this.accessToken) {
+    if (!this.accessToken || !this.profileId) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'LinkedIn access token not configured' },
+        error: { code: 'NO_TOKEN', message: 'LinkedIn access token or profile ID not configured' },
       };
     }
 
@@ -740,7 +730,7 @@ export class LinkedInPublisher extends BasePublisher {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              author: personUrn,
+              author: `urn:li:person:${this.profileId}`,
               lifecycleState: 'PUBLISHED',
               specificContent: {
                 'com.linkedin.ugc.PublishContent': {

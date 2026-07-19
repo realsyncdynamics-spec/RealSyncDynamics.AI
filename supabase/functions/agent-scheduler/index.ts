@@ -8,6 +8,14 @@ if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
+interface Agent {
+  id: string;
+  tenant_id: string;
+  type: string;
+  parameters?: Record<string, unknown>;
+  config?: Record<string, unknown>;
+}
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { persistSession: false },
 });
@@ -77,7 +85,7 @@ serve(async (req: Request) => {
  * Creates an agent_run record and dispatches to appropriate handler
  */
 async function executeAgent(
-  agent: any
+  agent: Agent
 ): Promise<{ id: string; status: string }> {
   // Create run record
   const { data: run, error: runError } = await supabase
@@ -154,7 +162,7 @@ async function executeAgent(
  * Analyzes compliance gaps, generates insights
  */
 async function executeGovernanceAgent(
-  agent: any,
+  agent: Agent,
   runId: string
 ): Promise<Record<string, unknown>> {
   const tenantId = agent.tenant_id;
@@ -191,7 +199,7 @@ async function executeGovernanceAgent(
  * Generates remediation plans for gaps
  */
 async function executeRemediationAgent(
-  agent: any,
+  agent: Agent,
   runId: string
 ): Promise<Record<string, unknown>> {
   const tenantId = agent.tenant_id;
@@ -234,7 +242,7 @@ async function executeRemediationAgent(
  * Tracks compliance status, deadlines, and drift
  */
 async function executeMonitoringAgent(
-  agent: any,
+  agent: Agent,
   runId: string
 ): Promise<Record<string, unknown>> {
   const tenantId = agent.tenant_id;

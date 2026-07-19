@@ -16,6 +16,25 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface DailyStats {
+  last_24h?: {
+    audits?: number;
+    leads?: number;
+    pageviews?: number;
+    audits_unsent_email?: number;
+    [key: string]: unknown;
+  };
+  totals?: {
+    tenants?: number;
+    subscriptions?: number;
+    outreach_contacts?: number;
+    audits?: number;
+    leads?: number;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 const corsHeaders = buildCorsHeaders('GET, POST, OPTIONS');
 
 Deno.serve(async (req) => {
@@ -103,7 +122,7 @@ async function getResendKey(supa: ReturnType<typeof createClient>): Promise<stri
   return null;
 }
 
-function renderEmail(stats: any): string {
+function renderEmail(stats: DailyStats): string {
   const last = stats.last_24h ?? {};
   const tot = stats.totals ?? {};
   const today = new Date().toLocaleDateString('de-DE');

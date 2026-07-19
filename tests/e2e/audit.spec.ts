@@ -12,7 +12,7 @@ test.describe('[GOV] DSGVO-Audit-Seite', () => {
 
     // Konkrete Hero-Headline der Audit-Seite (stabiler Kontrakt).
     await expect(
-      page.getByRole('heading', { level: 1, name: /Kostenloser DSGVO- und Tracking-Audit/i }),
+      page.getByRole('heading', { level: 1, name: /EU AI Act Compliance Check/i }),
     ).toBeVisible();
 
     // Domain-Eingabefeld muss vorhanden sein

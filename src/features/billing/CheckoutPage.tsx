@@ -23,7 +23,7 @@ import { trackConversion } from '../../lib/pixels';
  * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-const VALID_PLAN_KEYS = new Set<PlanKey>(['free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise']);
+const VALID_PLAN_KEYS = new Set<PlanKey>(['free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly']);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =
   | { status: 'loading' }
@@ -54,17 +54,12 @@ export function CheckoutPage() {
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
-    if (planKey === 'free' || planKey === 'free-audit') {
+    if (planKey === 'free' || planKey === 'free-audit' || planKey === 'free_audit') {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
     if (planKey === 'enterprise') {
       window.location.href = '/contact-sales?intent=enterprise&source=checkout-redirect';
-      return;
-    }
-    // Invalid plan key: redirect to pricing (full page load for E2E test compatibility)
-    if (planKey && !VALID_PLAN_KEYS.has(planKey as PlanKey)) {
-      window.location.href = '/pricing';
       return;
     }
   }, [planKey]);
@@ -160,7 +155,7 @@ export function CheckoutPage() {
         title="Pruefe Anmelde-Status..."
         body="Einen Moment."
         loading
-        backTo={`/pricing/${validPlan}`}
+        backTo="/pricing"
       />
     );
   }
@@ -173,7 +168,7 @@ export function CheckoutPage() {
         body="Wählen Sie einen Login-Weg. Nach Anmeldung sind Sie sofort wieder hier — der Checkout startet automatisch."
         oauthRedirect={checkoutPath}
         magicLinkHref={`/welcome?next=${encodeURIComponent(checkoutPath)}`}
-        backTo={`/pricing/${validPlan}`}
+        backTo="/pricing"
       />
     );
   }
@@ -187,7 +182,7 @@ export function CheckoutPage() {
           label: 'Workspace einrichten',
           to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,
         }}
-        backTo={`/pricing/${validPlan}`}
+        backTo="/pricing"
       />
     );
   }
@@ -206,7 +201,7 @@ export function CheckoutPage() {
       redirecting={redirecting}
       checkoutErr={checkoutErr}
       onConfirm={handleConfirmAndPay}
-      backTo={`/pricing/${validPlan}`}
+      backTo="/pricing"
     />
   );
 }

@@ -87,7 +87,7 @@ test.describe('Pricing Flow', () => {
 
       // Verify each slug has a corresponding card
       const expectedSlugs = [
-        'free-audit',
+        'enterprise',
         'starter',
         'growth',
         'agency',
@@ -143,9 +143,9 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      // Enterprise is rendered as banner, not card; free tier uses id 'free'
+      // Enterprise is shown as a regular card; free is not in the grid
       const expectedSlugs = [
-        { card: 'free', info: 'free' },
+        { card: 'enterprise', info: 'enterprise' },
         { card: 'starter', info: 'starter' },
         { card: 'growth', info: 'growth' },
         { card: 'agency', info: 'agency' },
@@ -177,9 +177,9 @@ test.describe('Pricing Flow', () => {
       await page.goto(`${BASE_URL}/pricing`);
       await page.waitForLoadState('networkidle');
 
-      // Enterprise is rendered as banner, not card; free tier uses id 'free'
+      // Enterprise is shown as a regular card; free is not in the grid
       const expectedSlugs = [
-        { card: 'free', book: 'free' },
+        { card: 'enterprise', book: 'enterprise' },
         { card: 'starter', book: 'starter' },
         { card: 'growth', book: 'growth' },
         { card: 'agency', book: 'agency' },
@@ -738,9 +738,9 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/pricing/);
     });
 
-    test('invalid checkout slug should redirect to /pricing', async ({ page }) => {
+    test('invalid checkout slug should show error message', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/invalid-slug`, { waitUntil: 'networkidle' });
-      await expect(page).toHaveURL(/\/pricing/);
+      await expect(page.getByText(/Unbekanntes Paket/i)).toBeVisible();
     });
   });
 });

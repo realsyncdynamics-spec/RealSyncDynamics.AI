@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { CheckCircle, ArrowRight, Shield, Zap, FileText, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { usePageMeta } from '../lib/usePageMeta';
 
 export function AuditLanding() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -94,6 +95,25 @@ export function AuditLanding() {
             <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
               Scan your website and get an instant compliance score. Know your risks in 2 minutes.
             </p>
+            <form onSubmit={handleSubmit} className="mb-6 flex flex-col sm:flex-row gap-2 max-w-xl mx-auto">
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://yourdomain.com"
+                name="domain"
+                aria-label="Website domain"
+                className="flex-1 px-4 py-3 border border-slate-300 rounded-chip text-slate-900 bg-white focus:ring-2 focus:ring-petrol-700 outline-none text-base"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-3 bg-petrol-700 text-white font-semibold rounded-chip hover:bg-petrol-800 transition disabled:opacity-50"
+              >
+                {loading ? 'Scanning…' : 'Scan Now'}
+              </button>
+            </form>
+            {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to="/scan" className="px-8 py-4 bg-petrol-700 text-white text-lg font-semibold rounded-chip hover:bg-petrol-800 transition flex items-center gap-2 justify-center">
                 Try Free <ArrowRight size={20} />

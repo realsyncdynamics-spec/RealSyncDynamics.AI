@@ -19,6 +19,27 @@ import { audit } from '../_shared/auditLog.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string, opts?: { count?: string }): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+        is(col2: string, val2: null): Promise<{ count?: number; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        is(col2: string, val2: null): Promise<{ error: unknown }>;
+      };
+    };
+    delete(): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -60,7 +81,7 @@ Deno.serve(async (req) => {
 
 // Rotate client secret
 async function handleRotateSecret(
-  sb: any,
+  sb: SupabaseAdminClient,
   tenantId: string,
   appId: string,
   req: Request
@@ -120,7 +141,7 @@ async function handleRotateSecret(
 
 // Delete app and revoke tokens
 async function handleDeleteApp(
-  sb: any,
+  sb: SupabaseAdminClient,
   tenantId: string,
   appId: string,
   req: Request
@@ -174,7 +195,7 @@ async function handleDeleteApp(
 }
 
 // Get app details (for verification)
-async function handleGetApp(sb: any, tenantId: string, appId: string) {
+async function handleGetApp(sb: SupabaseAdminClient, tenantId: string, appId: string) {
   const { data: app, error: appError } = await sb
     .from('oauth2_applications')
     .select('id, client_id, name, description, redirect_uris, scopes, is_active, created_at, last_used_at')

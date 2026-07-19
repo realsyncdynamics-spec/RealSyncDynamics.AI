@@ -386,7 +386,225 @@ export const DocumentsView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  return <div className="p-8 text-titanium-400">View coming soon...</div>;
+  const { activeTenantId } = useTenant();
+  const [documents, setDocuments] = useState<GovernanceDoc[]>(DOCUMENTS);
+  const [dpias, setDpias] = useState<DbDpia[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewingDoc, setViewingDoc] = useState<GovernanceDoc | null>(null);
+  const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'error' } | null>(null);
+
+  useEffect(() => {
+    void loadData();
+  }, [activeTenantId]);
+
+  const loadData = async () => {
+    if (!activeTenantId) {
+      setDocuments(DOCUMENTS);
+      setDpias([]);
+      return;
+    }
+    try {
+      setLoading(true);
+      const [docs, dpiaResult] = await Promise.all([
+        fetchTenantDocuments(activeTenantId),
+        listDpias(activeTenantId),
+      ]);
+      const merged = mergeDocuments(DOCUMENTS, docs);
+      setDocuments(merged);
+      setDpias(dpiaResult.dpias ?? []);
+    } catch (err) {
+      console.error('Failed to load documents:', err);
+      setDocuments(DOCUMENTS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerate = async (doc: GovernanceDoc) => {
+    if (!activeTenantId || !doc.docType || !doc.domain) return;
+    try {
+      setBusyId(doc.id);
+      const result = await generateDocument({
+        doc_type: doc.docType,
+        audit_id: doc.auditId || '',
+        tenant_id: activeTenantId,
+      });
+      if (result.ok && result.html_content && result.methodology_version) {
+        setDocuments((prev) =>
+          prev.map((d) =>
+            d.id === doc.id
+              ? {
+                  ...d,
+                  status: 'aktuell',
+                  updatedAt: formatDate(new Date().toISOString()),
+                  version: `v${result.methodology_version}`,
+                  html: result.html_content,
+                  methodologyVersion: result.methodology_version,
+                }
+              : d
+          )
+        );
+        setToast({ message: `${doc.title} generiert`, tone: 'ok' });
+      }
+    } catch (err) {
+      console.error('Generation failed:', err);
+      setToast({ message: 'Generierung fehlgeschlagen', tone: 'error' });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleView = (doc: GovernanceDoc) => {
+    if (!doc.html) return;
+    openHtmlInNewTab(doc.html);
+  };
+
+  const handleExport = async (doc: GovernanceDoc) => {
+    if (!doc.html || !doc.domain || !doc.methodologyVersion) return;
+    try {
+      downloadHtml(doc.html, buildDocFilename(doc.id, doc.domain, doc.methodologyVersion));
+      setToast({ message: 'Dokument heruntergeladen', tone: 'ok' });
+    } catch (err) {
+      console.error('Export failed:', err);
+      setToast({ message: 'Export fehlgeschlagen', tone: 'error' });
+    }
+  };
+
+  const handleEdit = (doc: GovernanceDoc) => {
+    if (!doc.html) return;
+    setViewingDoc(doc);
+  };
+
+  const filteredDocs = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return documents.filter(
+      (doc) =>
+        doc.title.toLowerCase().includes(query) ||
+        doc.reference.toLowerCase().includes(query) ||
+        doc.subtitle.toLowerCase().includes(query)
+    );
+  }, [documents, searchQuery]);
+
+  const stats = useMemo(
+    () => ({
+      total: documents.length,
+      aktuell: documents.filter((d) => d.status === 'aktuell').length,
+      entwurf: documents.filter((d) => d.status === 'entwurf').length,
+      fehlend: documents.filter((d) => d.status === 'fehlend').length,
+    }),
+    [documents]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-teal-400 animate-spin mx-auto mb-3" />
+          <p className="text-[12px] text-titanium-400">Dokumente werden geladen...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-titanium-50">Dokumenten-Management</h1>
+          <p className="text-sm text-titanium-400 mt-1">DSGVO & EU AI Act Compliance-Dokumentation</p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-obsidian-900 border border-titanium-800 p-3">
+          <p className="font-mono text-[10px] uppercase text-titanium-600">Gesamt</p>
+          <p className="text-2xl font-bold text-titanium-50 mt-1">{stats.total}</p>
+        </div>
+        <div className="bg-obsidian-900 border border-titanium-800 p-3">
+          <p className="font-mono text-[10px] uppercase text-teal-600">Aktuell</p>
+          <p className="text-2xl font-bold text-teal-400 mt-1">{stats.aktuell}</p>
+        </div>
+        <div className="bg-obsidian-900 border border-titanium-800 p-3">
+          <p className="font-mono text-[10px] uppercase text-blue-600">Entwurf</p>
+          <p className="text-2xl font-bold text-blue-400 mt-1">{stats.entwurf}</p>
+        </div>
+        <div className="bg-obsidian-900 border border-titanium-800 p-3">
+          <p className="font-mono text-[10px] uppercase text-red-600">Fehlend</p>
+          <p className="text-2xl font-bold text-red-400 mt-1">{stats.fehlend}</p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-titanium-600" />
+        <input
+          type="text"
+          placeholder="Dokumente suchen..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 bg-obsidian-900 border border-titanium-800 text-titanium-100 font-mono text-[12px] focus:border-teal-600 focus:outline-none"
+        />
+      </div>
+
+      {/* Documents */}
+      <div className="space-y-3">
+        {filteredDocs.length === 0 ? (
+          <div className="flex justify-center py-8">
+            <p className="text-titanium-400 text-sm">Keine Dokumente gefunden</p>
+          </div>
+        ) : (
+          filteredDocs.map((doc) => (
+            <DocumentCard
+              key={doc.id}
+              doc={doc}
+              handlers={{
+                onView: handleView,
+                onEdit: handleEdit,
+                onExport: handleExport,
+                onGenerate: handleGenerate,
+                busyId,
+              }}
+            />
+          ))
+        )}
+      </div>
+
+      {/* DPIAs */}
+      {dpias.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-titanium-800">
+          <h2 className="text-lg font-semibold text-titanium-50 mb-4">Datenschutz-Folgenabschätzungen</h2>
+          <div className="space-y-3">
+            {dpias.map((dpia) => (
+              <DsfaCard key={dpia.id} dpia={dpia} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && <Toast message={toast.message} tone={toast.tone} />}
+
+      {/* View Modal */}
+      {viewingDoc && viewingDoc.html && (
+        <Modal title={`Bearbeitung: ${viewingDoc.title}`} onClose={() => setViewingDoc(null)}>
+          <p className="text-sm text-titanium-400 mb-4">
+            Erweiterte Bearbeitung ist über den "Export"-Button in einem HTML-Editor verfügbar.
+          </p>
+          <button
+            onClick={() => downloadHtml(viewingDoc.html!, buildDocFilename(viewingDoc.id, viewingDoc.domain || 'dokument', viewingDoc.methodologyVersion))}
+            className="px-3 py-1.5 border border-teal-700 bg-teal-900/40 text-teal-200 font-mono text-xs hover:bg-teal-800/60"
+          >
+            <Download className="inline h-3 w-3 mr-1" />
+            Exportieren & bearbeiten
+          </button>
+        </Modal>
+      )}
+    </div>
+  );
 }
 
 // ── Generisches Modal ───────────────────────────────────────────────────────

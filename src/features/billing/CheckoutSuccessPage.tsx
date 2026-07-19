@@ -84,7 +84,7 @@ export function CheckoutSuccessPage() {
       const sb = getSupabase();
       const { data, error: fetchErr } = await sb
         .from('subscriptions')
-        .select('plan_key, stripe_subscription_status, trial_ends_at')
+        .select('plan_key, status, trial_end')
         .eq('tenant_id', activeTenantId)
         .maybeSingle();
 
@@ -98,8 +98,8 @@ export function CheckoutSuccessPage() {
 
       setSubscription({
         plan: data.plan_key || 'Unknown',
-        status: data.stripe_subscription_status || 'pending',
-        trialEnds: data.trial_ends_at || undefined,
+        status: data.status || 'pending',
+        trialEnds: data.trial_end || undefined,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');

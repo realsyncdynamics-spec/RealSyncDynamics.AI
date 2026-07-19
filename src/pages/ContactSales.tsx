@@ -23,7 +23,7 @@ export function ContactSales() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // Capture source (utm_source / ?source / referrer) on mount
+  // Capture source (utm_source / ?source / referrer) and intent on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const s = params.get('source') ?? params.get('utm_source');
@@ -34,6 +34,12 @@ export function ContactSales() {
         const ref = new URL(document.referrer);
         setSource(`ref:${ref.hostname}`);
       } catch { /* ignore */ }
+    }
+
+    // Pre-populate use_case based on intent parameter
+    const intent = params.get('intent');
+    if (intent === 'policy-customization') {
+      setForm((prev) => ({ ...prev, use_case: 'compliance' }));
     }
   }, []);
 

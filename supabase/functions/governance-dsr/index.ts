@@ -32,6 +32,27 @@ import {
   normalizeExportRequest,
 } from './logic.ts';
 
+// Supabase client type for this function suite
+interface SupabaseClient {
+  from(table: string): {
+    select(columns: string): unknown;
+    insert(row: Record<string, unknown>): { select(cols: string): { single(): Promise<{ data: unknown; error: unknown }> } };
+    update(row: Record<string, unknown>): { eq(col: string, val: unknown): { select(cols: string): Promise<{ data: unknown; error: unknown }> } };
+    delete(): { eq(col: string, val: unknown): Promise<{ error: unknown }> };
+  };
+  rpc(fn: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+}
+
+interface DSRRequest {
+  id: string;
+  tenant_id: string;
+  request_type: string;
+  requester_email: string;
+  status: string;
+  metadata?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -77,8 +98,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleCreate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleCreate(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const built = buildCreate(body);
   if (built.error || !built.row) return jsonError(400, 'BAD_REQUEST', built.error ?? 'invalid payload');
   const row = built.row;
@@ -109,8 +129,7 @@ async function handleCreate(admin: any, userId: string, userEmail: string | null
   return json({ ok: true, dsr: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleUpdate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleUpdate(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const row = await loadRow(admin, id);
@@ -129,8 +148,7 @@ async function handleUpdate(admin: any, userId: string, userEmail: string | null
   return json({ ok: true, dsr: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleAssign(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleAssign(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   const assigned_to = (body.assigned_to as string ?? '').trim();
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
@@ -147,8 +165,7 @@ async function handleAssign(admin: any, userId: string, userEmail: string | null
   return json({ ok: true, dsr: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleClose(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleClose(admin: SupabaseClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const row = await loadRow(admin, id);
@@ -171,8 +188,7 @@ async function handleClose(admin: any, userId: string, userEmail: string | null,
 // hash-chained event timeline. Read-only — any tenant member may run it.
 // The canonical RPCs (has_tenant_membership-guarded) are invoked via the
 // user client so the membership check uses the caller's own identity.
-// deno-lint-ignore no-explicit-any
-async function handleExport(admin: any, userClient: any, userId: string, body: Record<string, unknown>) {
+async function handleExport(admin: SupabaseClient, userClient: SupabaseClient, userId: string, body: Record<string, unknown>) {
   const target = normalizeExportRequest(body);
   if (target.error) return jsonError(400, 'BAD_REQUEST', target.error);
 
@@ -204,26 +220,22 @@ async function handleExport(admin: any, userClient: any, userId: string, body: R
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-// deno-lint-ignore no-explicit-any
-async function loadRow(admin: any, id: string) {
+async function loadRow(admin: SupabaseClient, id: string) {
   const { data } = await admin.from('dsr_requests').select('id, tenant_id, completed_at, metadata').eq('id', id).maybeSingle();
   return data ?? null;
 }
 
-// deno-lint-ignore no-explicit-any
-async function isWriter(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isWriter(admin: SupabaseClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return isWriterRole(data?.role);
 }
 
-// deno-lint-ignore no-explicit-any
-async function isMember(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isMember(admin: SupabaseClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('user_id').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return !!data;
 }
 
-// deno-lint-ignore no-explicit-any
-async function getActiveKey(admin: any, tenantId: string): Promise<{ key_version: number; vault_secret_name: string } | null> {
+async function getActiveKey(admin: SupabaseClient, tenantId: string): Promise<{ key_version: number; vault_secret_name: string } | null> {
   const { data } = await admin.from('subject_ref_keys')
     .select('key_version, vault_secret_name')
     .eq('tenant_id', tenantId).eq('status', 'active')
@@ -240,8 +252,7 @@ function randomHex(bytes: number): string {
 // Resolve the HMAC subject_ref for an email, provisioning a per-tenant key
 // (metadata row + Vault secret) on first use. Best-effort: returns null on
 // any failure so DSR intake is never blocked.
-// deno-lint-ignore no-explicit-any
-async function ensureSubjectRef(admin: any, tenantId: string, email: string): Promise<{ subject_ref: string; key_version: number } | null> {
+async function ensureSubjectRef(admin: SupabaseClient, tenantId: string, email: string): Promise<{ subject_ref: string; key_version: number } | null> {
   try {
     let key = await getActiveKey(admin, tenantId);
     if (!key) {
@@ -266,8 +277,7 @@ async function ensureSubjectRef(admin: any, tenantId: string, email: string): Pr
 
 // Create the subject anchor if absent; never disturb an existing mapping's
 // lifecycle (deletion_requested_at / erased_at / retention_class).
-// deno-lint-ignore no-explicit-any
-async function upsertMapping(admin: any, m: { subject_ref: string; tenant_id: string; key_version: number }): Promise<void> {
+async function upsertMapping(admin: SupabaseClient, m: { subject_ref: string; tenant_id: string; key_version: number }): Promise<void> {
   try {
     const { error } = await admin.from('subject_ref_mappings').upsert(
       { subject_ref: m.subject_ref, tenant_id: m.tenant_id, key_version: m.key_version, subject_kind: 'email' },
@@ -283,8 +293,7 @@ async function upsertMapping(admin: any, m: { subject_ref: string; tenant_id: st
 // of request_subject_erasure() via the service-role client (that RPC guards
 // on has_tenant_membership/auth.uid(), which is absent for service role).
 // The membership check already happened in handleCreate (isWriter).
-// deno-lint-ignore no-explicit-any
-async function enqueueErasure(admin: any, tenantId: string, subjectRef: string, dsrId: string): Promise<void> {
+async function enqueueErasure(admin: SupabaseClient, tenantId: string, subjectRef: string, dsrId: string): Promise<void> {
   try {
     const { error } = await admin.from('subject_ref_mappings')
       .update({ deletion_requested_at: new Date().toISOString() })
@@ -300,8 +309,7 @@ async function enqueueErasure(admin: any, tenantId: string, subjectRef: string, 
   }
 }
 
-// deno-lint-ignore no-explicit-any
-function subjectRefOf(dsr: any): string | null {
+function subjectRefOf(dsr: DSRRequest): string | null {
   const ref = dsr?.metadata?.subject_ref;
   return typeof ref === 'string' && ref.length >= 8 ? ref : null;
 }
@@ -309,12 +317,10 @@ function subjectRefOf(dsr: any): string | null {
 // Append-only evidence row on the per-tenant hash chain. Best-effort: a
 // failure here (e.g. a missing future partition) is logged but never blocks
 // the DSR write, which is the source of truth.
-// deno-lint-ignore no-explicit-any
-async function emitEvidence(admin: any, args: {
+async function emitEvidence(admin: SupabaseClient, args: {
   tenant_id: string;
   eventType: string;
-  // deno-lint-ignore no-explicit-any
-  dsr: any;
+  dsr: DSRRequest;
   subject_ref: string | null;
   severity?: string;
   payload: Record<string, unknown>;

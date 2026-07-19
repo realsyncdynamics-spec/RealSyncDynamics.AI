@@ -42,6 +42,24 @@ const TECHNOLOGIES = new Set([
   'react', 'vite', 'nginx', 'apache', 'cloudflare', 'vercel', 'supabase', 'unknown',
 ]);
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns?: string): Promise<{ data: unknown; error: unknown }>;
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 // ── HTTP entrypoint ────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -114,7 +132,7 @@ interface PlanPayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handleCreatePlan(admin: any, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleCreatePlan(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const finding_id  = String(body.finding_id ?? '');
   const evidence_id = body.evidence_id ? String(body.evidence_id) : null;
   if (!finding_id) return jsonError(400, 'BAD_REQUEST', 'finding_id required');
@@ -236,7 +254,7 @@ interface SnippetPayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handleGenerateSnippet(admin: any, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handleGenerateSnippet(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
 
@@ -299,7 +317,7 @@ interface IssuePayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handlePrepareIssue(admin: any, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handlePrepareIssue(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
 
@@ -355,7 +373,7 @@ interface PrCommentPayload {
 }
 
 // deno-lint-ignore no-explicit-any
-async function handlePrepareComment(admin: any, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
+async function handlePrepareComment(admin: SupabaseAdminClient, tenant_id: string, userId: string, body: Record<string, unknown>): Promise<Response> {
   const plan_id = String(body.plan_id ?? '');
   if (!plan_id) return jsonError(400, 'BAD_REQUEST', 'plan_id required');
 
@@ -457,7 +475,7 @@ async function aiGenerate<T>(args: AiCallArgs<T>): Promise<T> {
 
 // deno-lint-ignore no-explicit-any
 async function emitEvent(
-  admin: any,
+  admin: SupabaseAdminClient,
   tenant_id: string,
   remediation_plan_id: string | null,
   userId: string,

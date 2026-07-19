@@ -28,6 +28,14 @@ interface ReportRequest {
   date_range: string;
 }
 
+interface ReportOptions {
+  include_summary: boolean;
+  include_control_details: boolean;
+  include_findings: boolean;
+  include_roadmap: boolean;
+  branding?: string;
+}
+
 interface ComplianceData {
   iso27001_score: number;
   iso42001_score: number;
@@ -37,7 +45,7 @@ interface ComplianceData {
   controls_total: number;
   controls_implemented: number;
   gaps_open: number;
-  findings: any[];
+  findings: Record<string, unknown>[];
 }
 
 Deno.serve(async (req: Request) => {
@@ -224,7 +232,7 @@ async function generatePdfReport(
   tenantId: string,
   title: string,
   data: ComplianceData,
-  options: any
+  options: ReportOptions
 ): Promise<string> {
   // In production, would use pdfkit or puppeteer for proper PDF generation
   // For now, simulating with placeholder
@@ -259,7 +267,7 @@ async function generateExcelReport(
   tenantId: string,
   title: string,
   data: ComplianceData,
-  options: any
+  options: ReportOptions
 ): Promise<string> {
   // In production, would use xlsx or exceljs library
   // For now, simulating with placeholder
@@ -290,7 +298,7 @@ async function generateExcelReport(
 /**
  * Generate report content (can be HTML, JSON, etc.)
  */
-function generateReportContent(title: string, data: ComplianceData, options: any): string {
+function generateReportContent(title: string, data: ComplianceData, options: ReportOptions): string {
   const lines: string[] = [
     `Title: ${title}`,
     `Generated: ${new Date().toISOString()}`,

@@ -406,7 +406,7 @@ export class WordPressPublisher extends BasePublisher {
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
-    this.logPublishAttempt(post, 'pending', { siteUrl: this.siteUrl });
+    this.logPublishAttempt(post, 'started', { siteUrl: this.siteUrl });
     return {
       ok: false,
       channel: this.channel,
@@ -432,7 +432,7 @@ export class GhostPublisher extends BasePublisher {
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
-    this.logPublishAttempt(post, 'pending', { adminUrl: this.adminUrl });
+    this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
     return {
       ok: false,
       channel: this.channel,
@@ -530,7 +530,7 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
-    this.logPublishAttempt(post, 'pending', { recipientCount: this.toAddresses.length, service: this.emailService });
+    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length, service: this.emailService });
 
     // Placeholder implementation. Real integration with email service would:
     // 1. Call email provider API (SendGrid, AWS SES, Mailgun)

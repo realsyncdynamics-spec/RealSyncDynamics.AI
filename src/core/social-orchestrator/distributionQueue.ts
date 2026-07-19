@@ -288,22 +288,28 @@ abstract class BasePublisher implements SocialPublisher {
 // ── Real publishers (placeholder implementations) ──────────────────────────
 
 /**
- * LinkedIn Publisher — OAuth 2.0 + REST API
- * Requires token in Supabase Vault: linkedin_access_token
+ * LinkedIn Publisher (placeholder) — OAuth 2.0 + REST API
  * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
+ *
+ * ⚠️ This is a placeholder/reference implementation for testing/documentation.
+ * The real production implementation is in ./linkedinPublisher.ts which:
+ * - Accepts accessToken + authorId as constructor parameters
+ * - Caller (Edge Function) loads token from Supabase Vault
+ * - Supports per-profile author IDs (linkedin.enterprise, linkedin.legal, etc)
  */
 export class LinkedInPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string = ''; // TODO: load from Supabase Vault in production
+  private accessToken: string = '';
+  private profileId: string = '';
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
 
-    if (!this.accessToken) {
+    if (!this.accessToken || !this.profileId) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'LinkedIn access token not configured' },
+        error: { code: 'NO_TOKEN', message: 'LinkedIn access token or profile ID not configured' },
       };
     }
 
@@ -317,7 +323,7 @@ export class LinkedInPublisher extends BasePublisher {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              author: 'urn:li:person:PERSON_ID', // TODO: parameterize per profile
+              author: `urn:li:person:${this.profileId}`,
               lifecycleState: 'PUBLISHED',
               specificContent: {
                 'com.linkedin.ugc.PublishContent': {

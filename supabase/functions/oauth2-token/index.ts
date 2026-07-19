@@ -21,6 +21,23 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const TOKEN_EXPIRY_SECONDS = 3600; // 1 hour
 const REFRESH_TOKEN_EXPIRY_SECONDS = 2592000; // 30 days
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+        eq(col2: string, val2: unknown): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+    insert(rows: Record<string, unknown>[]): Promise<{ error: unknown }>;
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
@@ -57,9 +74,9 @@ Deno.serve(async (req) => {
 
 // Generate new access/refresh token for client credentials
 async function handleTokenGeneration(
-  sb: any,
+  sb: SupabaseAdminClient,
   tenantId: string,
-  payload: any,
+  payload: Record<string, unknown>,
   req: Request
 ) {
   const { grant_type, scope, client_id, client_secret } = payload;
@@ -173,7 +190,7 @@ async function handleTokenGeneration(
 }
 
 // Validate token and check rate limits
-async function handleTokenValidation(sb: any, tenantId: string, payload: any) {
+async function handleTokenValidation(sb: SupabaseAdminClient, tenantId: string, payload: Record<string, unknown>) {
   const { access_token } = payload;
 
   if (!access_token) {
@@ -222,7 +239,7 @@ async function handleTokenValidation(sb: any, tenantId: string, payload: any) {
 }
 
 // Revoke access or refresh token
-async function handleTokenRevocation(sb: any, tenantId: string, payload: any) {
+async function handleTokenRevocation(sb: SupabaseAdminClient, tenantId: string, payload: Record<string, unknown>) {
   const { token } = payload;
 
   if (!token) {
@@ -252,7 +269,7 @@ async function handleTokenRevocation(sb: any, tenantId: string, payload: any) {
 }
 
 // Helper: Check rate limits
-async function checkRateLimit(sb: any, appId: string, operation: string): Promise<boolean> {
+async function checkRateLimit(sb: SupabaseAdminClient, appId: string, operation: string): Promise<boolean> {
   const { data: rateLimit } = await sb
     .from('oauth2_rate_limits')
     .select('requests_minute, window_start_minute')

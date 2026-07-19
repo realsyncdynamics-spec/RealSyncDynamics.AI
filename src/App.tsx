@@ -96,6 +96,9 @@ import { FlowStepRoute } from './flow/FlowStepRoute';
 const SetupAssistant = lazy(() => import('./features/onboarding/SetupAssistant').then((m) => ({ default: m.SetupAssistant })));
 // ── Phase 2: Dashboard Router (Adaptive based on tier)
 const DashboardRouter = lazy(() => import('./features/governance/dashboard/DashboardRouter').then((m) => ({ default: m.DashboardRouter })));
+// ── SMB Experience Layer: vereinfachte Business-Ansicht für Einzelunternehmer.
+//    Konsumiert nur bestehende Services (siehe src/features/smb/README.md).
+const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').then((m) => ({ default: m.SmbDashboardView })));
 // ── Phase 3: Advanced Governance Views
 const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
@@ -682,6 +685,11 @@ function RoutesWithTracking() {
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
           Die View-eigenen Guards (AuthGate/RequireAal2) bleiben zusaetzlich aktiv. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
+      {/* SMB Experience Layer — vereinfachte Ansicht für Einzelunternehmer/kleine
+          Unternehmen. Zusätzliche Sicht auf dieselben Services; die
+          Enterprise-Ansicht (/app/dashboard) bleibt unverändert. */}
+      <Route path="/app/mein-geschaeft" element={<AppGate><SmbDashboardView /></AppGate>} />
+      <Route path="/app/simple" element={<Navigate to="/app/mein-geschaeft" replace />} />
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
       {/* DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />

@@ -45,7 +45,7 @@ export function TrendChart({ data, title, height = 400 }: TrendChartProps) {
               borderRadius: '6px',
               color: '#f1f5f9',
             }}
-            formatter={(value: any) => [
+            formatter={(value: unknown) => [
               `€${typeof value === 'number' ? value.toFixed(2) : value}`,
               '',
             ]}

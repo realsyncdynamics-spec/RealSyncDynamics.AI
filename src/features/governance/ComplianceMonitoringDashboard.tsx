@@ -312,7 +312,7 @@ function AlertBreakdown({ metrics }: { metrics: MonitoringMetrics }) {
 
 // ─── TrendChart ────────────────────────────────────────────────────────────
 
-function TrendChart({ trends }: { trends: any[] }) {
+function TrendChart({ trends }: { trends: AlertTrend[] }) {
   const maxCount = Math.max(...trends.map((t) => t.count), 1);
 
   return (

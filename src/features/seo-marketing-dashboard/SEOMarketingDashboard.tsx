@@ -5,23 +5,7 @@ import { MetricsCard } from './MetricsCard';
 import { TrendChart } from './TrendChart';
 import { ShadowSaasTable } from './ShadowSaasTable';
 import { BarChart3, DollarSign, TrendingUp, AlertTriangle, Calendar } from 'lucide-react';
-
-interface DashboardData {
-  marketing_metrics: any[];
-  shadow_seo_tools: any[];
-  security_events: any[];
-  customer_summary: any;
-}
-
-interface Metrics {
-  cac: number;
-  ltv: number;
-  ltv_cac_ratio: number;
-  conversion_rate: number;
-  churn_rate: number;
-  cmrr: number;
-  period_metrics: any;
-}
+import type { DashboardData, Metrics } from './types';
 
 export function SEOMarketingDashboard() {
   const { session } = useSupabaseAuth();
@@ -118,7 +102,7 @@ export function SEOMarketingDashboard() {
     );
   }
 
-  const trendData = (dashboardData?.marketing_metrics || []).map((m: any) => ({
+  const trendData = (dashboardData?.marketing_metrics || []).map(m => ({
     date: new Date(m.period_start).toLocaleDateString('de-DE', {
       month: 'short',
       day: 'numeric',
@@ -129,7 +113,7 @@ export function SEOMarketingDashboard() {
   }));
 
   const highRiskTools = (dashboardData?.shadow_seo_tools || []).filter(
-    (t: any) => t.risk_level === 'high',
+    t => t.risk_level === 'high',
   );
 
   return (

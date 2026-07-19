@@ -11,7 +11,7 @@ interface QueueItem<T> {
   retries: number;
   maxRetries: number;
   resolve: (value: T) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
   createdAt: number;
 }
 
@@ -146,7 +146,7 @@ export class BatchProcessor<T, R> {
   private batch: T[] = [];
   private promises: Array<{
     resolve: (value: R) => void;
-    reject: (reason?: any) => void;
+    reject: (reason?: unknown) => void;
   }> = [];
   private flushTimer: NodeJS.Timeout | null = null;
 

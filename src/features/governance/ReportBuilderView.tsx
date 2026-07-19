@@ -67,7 +67,7 @@ function Inner() {
   });
   const [preview, setPreview] = useState<ReportPreview | null>(null);
 
-  const handleConfigChange = (key: keyof ReportConfig, value: any) => {
+  const handleConfigChange = (key: keyof ReportConfig, value: ReportConfig[keyof ReportConfig]) => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   };
 

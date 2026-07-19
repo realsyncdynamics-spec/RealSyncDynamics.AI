@@ -86,10 +86,11 @@ export function KodeeView() {
       });
       if (!res.success) throw new Error(res.error || 'Gateway-Fehler');
       setMessages([...next, { role: 'kodee', text: res.modelOutput || '…', status: 'success' }]);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Da ist etwas schiefgelaufen – versuch es nochmal oder wechsel das Modell.';
       setMessages([...next, {
         role: 'kodee',
-        text: err?.message || 'Da ist etwas schiefgelaufen – versuch es nochmal oder wechsel das Modell.',
+        text: message,
         status: 'error',
       }]);
     }

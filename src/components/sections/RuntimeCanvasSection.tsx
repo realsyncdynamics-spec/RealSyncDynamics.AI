@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
 import { Activity, Cpu, ShieldCheck } from 'lucide-react';
 import { useSyntheticRuntimeStream } from '../../hooks/useSyntheticRuntimeStream';
-import { KIND_COLOR, KIND_LABEL, SEVERITY_COLOR } from '../../lib/syntheticRuntimeEvents';
+import { KIND_COLOR, KIND_LABEL, SEVERITY_COLOR, type SyntheticRuntimeEvent } from '../../lib/syntheticRuntimeEvents';
 
 const NODES = [
   { x: 160, y: 120, r: 22, color: 'cyan' as const, pulse: 2.4 },
@@ -162,7 +162,7 @@ function GraphPane({ active, reduce }: { active: boolean; reduce: boolean }) {
   );
 }
 
-function CountersPane({ events, active, reduce }: { events: any[]; active: boolean; reduce: boolean }) {
+function CountersPane({ events, active, reduce }: { events: SyntheticRuntimeEvent[]; active: boolean; reduce: boolean }) {
   const counters = {
     scans: events.filter(e => e.kind === 'scan').length,
     drifts: events.filter(e => e.kind === 'drift' || e.kind === 'incident').length,
@@ -197,7 +197,7 @@ function MetricTile({ label, value, icon, highlight }: { label: string; value: n
   );
 }
 
-function TerminalPane({ events, isRunning, active, reduce }: { events: any[]; isRunning: boolean; active: boolean; reduce: boolean }) {
+function TerminalPane({ events, isRunning, active, reduce }: { events: SyntheticRuntimeEvent[]; isRunning: boolean; active: boolean; reduce: boolean }) {
   return (
     <Pane title="event-stream · demo" badge={<span className="text-cyan-300">{isRunning ? '▮ Demo-Runtime' : '⊘ paused'}</span>}>
       <div className="bg-obsidian-950 font-mono text-[11px] leading-relaxed p-3 overflow-y-auto max-h-[300px] lg:max-h-none lg:h-full">

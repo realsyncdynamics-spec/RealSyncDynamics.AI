@@ -28,8 +28,11 @@ const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
   {
     title: 'Rechtliches',
     links: [
-      { label: 'Datenschutz', to: '/os/datenschutz' },
-      { label: 'Impressum', to: '/os/impressum' },
+      { label: 'Datenschutz', to: '/legal/privacy' },
+      { label: 'Impressum', to: '/legal/impressum' },
+      { label: 'Sub-Prozessoren', to: '/legal/sub-processors' },
+      { label: 'Allgemeine Bedingungen', to: '/legal/terms' },
+      { label: 'Widerruf', to: '/legal/widerruf' },
     ],
   },
   {

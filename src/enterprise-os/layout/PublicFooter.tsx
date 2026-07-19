@@ -26,13 +26,14 @@ const COLUMNS: { title: string; links: { label: string; to: string }[] }[] = [
     ],
   },
   {
-    title: 'Rechtliches',
+    title: 'Rechtliches & Sicherheit',
     links: [
       { label: 'Datenschutz', to: '/legal/privacy' },
       { label: 'Impressum', to: '/legal/impressum' },
-      { label: 'Sub-Prozessoren', to: '/legal/sub-processors' },
+      { label: 'Sub-Prozessoren (Art. 28)', to: '/legal/sub-processors' },
       { label: 'Allgemeine Bedingungen', to: '/legal/terms' },
       { label: 'Widerruf', to: '/legal/widerruf' },
+      { label: 'Security & Compliance', to: '/security' },
     ],
   },
   {

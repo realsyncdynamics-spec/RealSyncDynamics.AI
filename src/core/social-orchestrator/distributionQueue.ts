@@ -879,29 +879,43 @@ export class WordPressPublisher extends BasePublisher {
 
 /**
  * Ghost Publisher — Ghost API (v3+)
- * TODO: implement in follow-up PR; basic scaffolding in place
- * TODO: adminUrl and adminApiKey loaded from config/Supabase Vault in production
+ *
+ * Caller (Edge Function) is responsible for loading adminUrl and adminApiKey
+ * from configuration and Supabase Vault, then passing them to constructor.
+ *
+ * Uses Ghost Admin API for direct post publishing. Requires:
+ * - Ghost v3.0+
+ * - Admin API key (not Content API key)
+ * - Full Ghost URL (e.g., https://blog.example.com)
+ *
+ * See: https://ghost.org/docs/admin-api/
  */
 export class GhostPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'ghost.blog';
-  private adminUrl: string = '';
-  private adminApiKey: string = '';
+  private adminUrl: string;
+  private adminApiKey: string;
+
+  constructor(adminUrl: string, adminApiKey: string) {
+    super();
+    this.adminUrl = adminUrl.replace(/\/$/, ''); // strip trailing slash
+    this.adminApiKey = adminApiKey;
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
 
-    if (!this.adminApiKey) {
+    if (!this.adminUrl || !this.adminApiKey) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'Ghost Admin API key not configured' },
+        error: { code: 'NO_CONFIG', message: 'Ghost admin URL or API key not configured' },
       };
     }
 
     try {
       const result = await this.retryWithBackoff(
         async () => {
-          const response = await fetch(`${this.adminUrl}/ghost/api/v3/admin/posts/?source=html`, {
+          const response = await fetch(`${this.adminUrl}/ghost/api/admin/posts/?source=html`, {
             method: 'POST',
             headers: {
               'Authorization': `Ghost ${this.adminApiKey}`,
@@ -910,18 +924,24 @@ export class GhostPublisher extends BasePublisher {
             body: JSON.stringify({
               posts: [
                 {
-                  title: post.body.split('\n')[0]?.substring(0, 100) || 'Governance Update',
-                  html: post.body.replace(/\n/g, '<br/>'),
-                  tags: post.hashtags.map(h => ({ name: h.replace('#', '') })).slice(0, 5),
+                  title: this.extractTitle(post.body),
+                  html: this.markdownToHtml(post.body),
                   status: 'published',
+                  tags: post.hashtags.length > 0 ? post.hashtags.map(h => ({ name: h.replace('#', '') })) : [],
                 },
               ],
             }),
           });
 
+          if (response.status === 401) {
+            throw new Error('GHOST_401_UNAUTHORIZED');
+          }
+          if (response.status === 403) {
+            throw new Error('GHOST_403_FORBIDDEN');
+          }
           if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`GHOST_${response.status}: ${error}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`GHOST_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
           }
 
           return response.json();
@@ -931,12 +951,14 @@ export class GhostPublisher extends BasePublisher {
         }
       );
 
-      const createdPost = (result.posts && result.posts[0]) || result;
-      this.logPublishAttempt(post, 'success', { postId: createdPost.id });
+      const posts = (result as Record<string, unknown>).posts as Array<Record<string, unknown>>;
+      const postId = posts?.[0]?.id;
+      this.logPublishAttempt(post, 'success', { externalId: postId });
+
       return {
         ok: true,
         channel: this.channel,
-        externalId: createdPost.id,
+        externalId: String(postId),
         postedAt: new Date().toISOString(),
       };
     } catch (err) {
@@ -949,6 +971,28 @@ export class GhostPublisher extends BasePublisher {
         error: { code: 'GHOST_API_ERROR', message: errorMsg },
       };
     }
+  }
+
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 200) {
+      return firstLine;
+    }
+    return body.substring(0, 200).trim() + (body.length > 200 ? '…' : '');
+  }
+
+  private markdownToHtml(md: string): string {
+    // Very basic markdown to HTML conversion (handles common patterns)
+    let html = md
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    return `<p>${html}</p>`;
   }
 }
 

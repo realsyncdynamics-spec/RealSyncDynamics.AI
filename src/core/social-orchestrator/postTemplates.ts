@@ -31,10 +31,10 @@ export const CHANNEL_CHAR_BUDGET: Record<SocialChannel, number> = {
   'instagram.reel':       900,   // Reels caption practical limit
   'tiktok.fast':          280,   // TikTok caption short
   'x.alert':              260,   // X (Twitter) 280 minus margin for autolinks
-  'wordpress.blog':      5000,   // Blog post body no hard limit (markdown in DB)
-  'ghost.blog':          5000,   // Ghost CMS no hard limit
-  'webhook.custom':     10000,   // Custom webhook payload
-  'email.newsletter':    3000,   // Email body (plain-text + HTML)
+  'wordpress.blog':      5000,   // WordPress post body (no hard limit)
+  'ghost.blog':          5000,   // Ghost post body (no hard limit)
+  'webhook.custom':      2000,   // Webhook payload (application-dependent)
+  'email.newsletter':    3000,   // Email body (plain text or HTML)
 };
 
 // ── Tone hashtag overlays (added per channel) ──────────────────────
@@ -45,10 +45,10 @@ const CHANNEL_HASHTAGS: Record<SocialChannel, string[]> = {
   'instagram.reel':      ['#TechExplained', '#PrivacyTech'],
   'tiktok.fast':         ['#TechTok', '#PrivacyTech'],
   'x.alert':             ['#Runtime', '#GovernanceTech'],
-  'wordpress.blog':      ['#Compliance', '#Governance', '#AIAct'],
-  'ghost.blog':          ['#Compliance', '#Governance', '#AIAct'],
-  'webhook.custom':      [],  // Custom integration; no hashtags
-  'email.newsletter':    [],  // Email; no hashtags
+  'wordpress.blog':      ['#GovernanceBlog', '#Compliance'],
+  'ghost.blog':          ['#ComplianceBlog', '#Enterprise'],
+  'webhook.custom':      ['#Integration', '#Automation'],
+  'email.newsletter':    ['#Governance', '#Newsletter'],
 };
 
 // ── Templates per channel × event type ─────────────────────────────

@@ -794,14 +794,8 @@ export class LinkedInPublisher extends BasePublisher {
  */
 export class WordPressPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'wordpress.blog';
-  private siteUrl: string;
-  private apiToken: string;
-
-  constructor(siteUrl: string, apiToken: string) {
-    super();
-    this.siteUrl = siteUrl;
-    this.apiToken = apiToken;
-  }
+  private siteUrl: string = ''; // TODO: load from config
+  private apiToken: string = ''; // TODO: load from Supabase Vault
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { siteUrl: this.siteUrl });
@@ -871,14 +865,8 @@ export class WordPressPublisher extends BasePublisher {
  */
 export class GhostPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'ghost.blog';
-  private adminUrl: string;
-  private adminApiKey: string;
-
-  constructor(adminUrl: string, adminApiKey: string) {
-    super();
-    this.adminUrl = adminUrl;
-    this.adminApiKey = adminApiKey;
-  }
+  private adminUrl: string = '';
+  private adminApiKey: string = '';
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
@@ -1014,9 +1002,8 @@ export class WebhookPublisher extends BasePublisher {
  */
 export class EmailPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'email.newsletter';
-  private fromAddress: string;
-  private toAddresses: string[];
-  private emailService?: string; // 'sendgrid' | 'ses' | 'mailgun'
+  private fromAddress: string = 'noreply@realsync.ai';
+  private toAddresses: string[] = [];
 
   constructor(fromAddress: string, toAddresses: string[] = [], emailService?: string) {
     super();

@@ -33,6 +33,10 @@ export function CheckoutSuccessPage() {
   } | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState(5);
 
+  // Kommt der Nutzer aus dem Optimizer-Flow, bieten wir die Rückführung an.
+  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
+  const postCheckoutReturn = useMemo(() => getPostCheckoutReturn(), []);
+
   useEffect(() => {
     if (!activeTenantId) {
       setError('Workspace konnte nicht geladen werden');
@@ -54,9 +58,6 @@ export function CheckoutSuccessPage() {
         setRedirectCountdown((prev) => prev - 1);
       }, 1000);
 
-  const planLabel = useMemo(() => labelForPlanKey(planKey), [planKey]);
-  // Kommt der Nutzer aus dem Optimizer-Flow, bieten wir die Rückführung an.
-  const [optimizerReturn] = useState<string | null>(() => getPostCheckoutReturn());
       return () => {
         clearTimeout(timer);
         clearInterval(countdown);
@@ -143,9 +144,9 @@ export function CheckoutSuccessPage() {
             verarbeitet hat, ist dein Plan im Dashboard sichtbar.
           </p>
 
-          {planLabel ? (
+          {subscription?.plan ? (
             <p className="mt-3 font-mono text-[11px] uppercase tracking-wide text-titanium-500">
-              Plan: {planLabel}
+              Plan: {subscription.plan}
             </p>
           ) : null}
           {sessionId ? (
@@ -153,8 +154,6 @@ export function CheckoutSuccessPage() {
               Session: {sessionId}
             </p>
           ) : null}
-
-          <OnboardingSteps planKey={planKey} />
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
             {optimizerReturn && (

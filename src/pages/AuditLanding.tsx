@@ -2,6 +2,12 @@ import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { CheckCircle, ArrowRight, Shield, Zap, FileText, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { usePageMeta } from '../lib/usePageMeta';
+import { postEdgeFunction } from '../lib/postEdgeFunction';
+import { getAffiliateRef } from '../lib/getAffiliateRef';
+import { trackConversion } from '../lib/pixels';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 export function AuditLanding() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);

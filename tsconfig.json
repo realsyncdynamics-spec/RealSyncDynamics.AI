@@ -23,7 +23,8 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "strict": true
   },
   "exclude": [
     "node_modules",
@@ -38,6 +39,7 @@
     "worker",
     "apps/agent-runtime",
     "extension",
-    "deploy"
+    "deploy",
+    "packages/sdk"
   ]
 }

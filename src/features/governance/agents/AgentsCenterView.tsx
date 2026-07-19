@@ -159,5 +159,309 @@ export const AgentsCenterView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  return <div className="p-8 text-titanium-400">Agents Center view coming soon...</div>;
+  const { activeTenantId } = useTenant();
+  const [runs, setRuns] = useState<AgentRunRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [busyId, setBusyId] = useState<AgentId | null>(null);
+  const [toast, setToast] = useState<{ message: string; tone: 'ok' | 'error' } | null>(null);
+
+  const [activeTab, setActiveTab] = useState<'agents' | 'activity'>('agents');
+  const [selectedAgent, setSelectedAgent] = useState<EnterpriseAgentDefinition | null>(null);
+  const [modal, setModal] = useState<{
+    type: 'result' | 'history' | 'config';
+    data?: AgentRunResult | null;
+  } | null>(null);
+
+  useEffect(() => {
+    void loadRuns();
+  }, [activeTenantId]);
+
+  const loadRuns = async () => {
+    if (!activeTenantId) return;
+    try {
+      setLoading(true);
+      const data = await fetchAgentRuns(activeTenantId);
+      setRuns(data || []);
+    } catch (err) {
+      console.error('Failed to fetch agent runs:', err);
+      setToast({ message: 'Failed to load agent runs', tone: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRunAgent = async (agent: EnterpriseAgentDefinition) => {
+    if (!activeTenantId) return;
+    try {
+      setBusyId(agent.id);
+      const response = await runAgent({
+        agentId: agent.id,
+        tenantId: activeTenantId,
+        actor: 'dashboard-user',
+      });
+      if (response.ok && response.result) {
+        setToast({ message: `Agent "${agent.name}" gestartet`, tone: 'ok' });
+        await loadRuns();
+        setModal({ type: 'result', data: response.result });
+      } else {
+        setToast({ message: response.error || `Fehler beim Starten von "${agent.name}"`, tone: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to run agent:', err);
+      setToast({ message: `Fehler beim Starten von "${agent.name}"`, tone: 'error' });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleShowHistory = (agent: EnterpriseAgentDefinition) => {
+    setSelectedAgent(agent);
+    setModal({ type: 'history' });
+  };
+
+  const handleShowConfig = (agent: EnterpriseAgentDefinition) => {
+    setSelectedAgent(agent);
+    setModal({ type: 'config' });
+  };
+
+  const activeAgents = useMemo(() => enterpriseAgents.filter((a) => a.status === 'active'), []);
+  const experimentalAgents = useMemo(() => enterpriseAgents.filter((a) => a.status === 'experimental'), []);
+  const inactiveAgents = useMemo(() => enterpriseAgents.filter((a) => a.status === 'inactive'), []);
+
+  const successfulRuns = useMemo(() => runs.filter((r) => r.status === 'success').length, [runs]);
+  const failedRuns = useMemo(() => runs.filter((r) => r.status === 'error').length, [runs]);
+
+  return (
+    <div className="flex flex-col h-screen bg-obsidian-950 text-titanium-100">
+      {/* Header + Metriken */}
+      <div className="px-6 py-4 border-b border-titanium-900">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-semibold">Agents Center</h1>
+            <p className="text-[12px] text-titanium-400 mt-1">Enterprise Skills & Governance Automation</p>
+          </div>
+          <button
+            onClick={() => void loadRuns()}
+            disabled={loading}
+            className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors disabled:opacity-50"
+          >
+            {loading ? '⟳ Wird geladen...' : '🔄 Aktualisieren'}
+          </button>
+        </div>
+
+        {/* Metrik-Reihe */}
+        <div className="grid grid-cols-5 gap-3">
+          <div className="bg-obsidian-900 border border-titanium-900 px-4 py-3 flex flex-col gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Gesamt-Agenten</span>
+            <span className="font-mono text-xl font-semibold text-titanium-100">{enterpriseAgents.length}</span>
+          </div>
+          <div className="bg-obsidian-900 border border-titanium-900 px-4 py-3 flex flex-col gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Aktiv</span>
+            <span className="font-mono text-xl font-semibold text-teal-400">{activeAgents.length}</span>
+          </div>
+          <div className="bg-obsidian-900 border border-titanium-900 px-4 py-3 flex flex-col gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Experimentell</span>
+            <span className="font-mono text-xl font-semibold text-amber-400">{experimentalAgents.length}</span>
+          </div>
+          <div className="bg-obsidian-900 border border-titanium-900 px-4 py-3 flex flex-col gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Erfolgreiche Läufe</span>
+            <span className="font-mono text-xl font-semibold text-teal-400">{successfulRuns}</span>
+          </div>
+          <div className="bg-obsidian-900 border border-titanium-900 px-4 py-3 flex flex-col gap-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Fehlerhafte Läufe</span>
+            <span className="font-mono text-xl font-semibold text-red-400">{failedRuns}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tab-Navigation */}
+      <div className="px-6 py-3 border-b border-titanium-900 flex gap-1">
+        <button
+          onClick={() => setActiveTab('agents')}
+          type="button"
+          className={`font-mono text-[10px] uppercase tracking-wider px-3 py-2 transition-colors ${
+            activeTab === 'agents'
+              ? 'text-teal-400 border-b-2 border-teal-400'
+              : 'text-titanium-500 hover:text-titanium-300 border-b-2 border-transparent'
+          }`}
+        >
+          Agenten
+        </button>
+        <button
+          onClick={() => setActiveTab('activity')}
+          type="button"
+          className={`font-mono text-[10px] uppercase tracking-wider px-3 py-2 transition-colors ${
+            activeTab === 'activity'
+              ? 'text-teal-400 border-b-2 border-teal-400'
+              : 'text-titanium-500 hover:text-titanium-300 border-b-2 border-transparent'
+          }`}
+        >
+          Aktivität
+        </button>
+      </div>
+
+      {/* Tab-Content */}
+      <div className="flex-1 overflow-auto px-6 py-4">
+        {activeTab === 'agents' && (
+          <div className="space-y-6">
+            {activeAgents.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-titanium-100 mb-3">Aktive Agenten</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  {activeAgents.map((agent) => (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      handlers={{
+                        onRun: handleRunAgent,
+                        onHistory: handleShowHistory,
+                        onConfig: handleShowConfig,
+                        busyId,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {experimentalAgents.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-titanium-100 mb-3">Experimentelle Agenten</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  {experimentalAgents.map((agent) => (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      handlers={{
+                        onRun: handleRunAgent,
+                        onHistory: handleShowHistory,
+                        onConfig: handleShowConfig,
+                        busyId,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {inactiveAgents.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-titanium-100 mb-3">Inaktive Agenten</h2>
+                <div className="grid grid-cols-3 gap-4">
+                  {inactiveAgents.map((agent) => (
+                    <AgentCard
+                      key={agent.id}
+                      agent={agent}
+                      handlers={{
+                        onRun: handleRunAgent,
+                        onHistory: handleShowHistory,
+                        onConfig: handleShowConfig,
+                        busyId,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <AgentActivityPanel />
+        )}
+      </div>
+
+      {/* Modals */}
+      {modal?.type === 'result' && modal.data && (
+        <Modal
+          title={`Ergebnis: ${selectedAgent?.name || 'Lauf'}`}
+          onClose={() => setModal(null)}
+        >
+          <div className="space-y-3">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Status</span>
+              <p className={`font-mono text-sm font-semibold mt-1 ${
+                modal.data.status === 'success' ? 'text-teal-400' : 'text-red-400'
+              }`}>
+                {modal.data.status === 'success' ? '✓ Erfolgreich' : '✕ Fehlgeschlagen'}
+              </p>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Zusammenfassung</span>
+              <p className="mt-1 text-[12px] text-titanium-300">{modal.data.summary}</p>
+            </div>
+            {modal.data.findings.length > 0 && (
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Befunde ({modal.data.findings.length})</span>
+                <pre className="mt-1 p-2 bg-obsidian-800 border border-titanium-800 text-[10px] text-titanium-300 overflow-auto max-h-48">
+                  {JSON.stringify(modal.data.findings, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {modal?.type === 'history' && selectedAgent && (
+        <Modal title={`Verlauf: ${selectedAgent.name}`} onClose={() => setModal(null)}>
+          <div className="space-y-2 max-h-96 overflow-auto">
+            {runs
+              .filter((r) => r.agent_id === selectedAgent.id)
+              .slice(0, 10)
+              .map((run) => (
+                <div key={run.id} className="p-2 bg-obsidian-800 border border-titanium-800">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] text-titanium-500">{run.created_at}</span>
+                    <span className={`font-mono text-[10px] font-semibold ${
+                      run.status === 'success' ? 'text-teal-400' : 'text-red-400'
+                    }`}>
+                      {run.status === 'success' ? '✓ OK' : '✕ Fehler'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] text-titanium-300 line-clamp-2">{run.summary}</p>
+                </div>
+              ))}
+          </div>
+        </Modal>
+      )}
+
+      {modal?.type === 'config' && selectedAgent && (
+        <Modal title={`Konfiguration: ${selectedAgent.name}`} onClose={() => setModal(null)}>
+          <div className="space-y-3">
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Name</span>
+              <p className="mt-1 text-sm text-titanium-100">{selectedAgent.name}</p>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Beschreibung</span>
+              <p className="mt-1 text-[12px] text-titanium-300">{selectedAgent.description}</p>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Skills ({selectedAgent.capabilities.length})</span>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {selectedAgent.capabilities.map((cap) => (
+                  <span key={cap.id} className="px-2 py-1 bg-teal-900/30 border border-teal-700 text-teal-300 text-[10px] font-mono">
+                    {cap.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Autonomie</span>
+              <p className="mt-1 font-mono text-[11px] text-titanium-300">{AUTONOMY_LABELS[selectedAgent.autonomyLevel]}</p>
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-titanium-500">Freigabe erforderlich</span>
+              <p className={`mt-1 font-mono text-[11px] ${selectedAgent.humanApprovalRequired ? 'text-amber-400' : 'text-teal-400'}`}>
+                {selectedAgent.humanApprovalRequired ? 'Ja' : 'Nein'}
+              </p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Toast */}
+      {toast && <Toast message={toast.message} tone={toast.tone} />}
+    </div>
+  );
 }

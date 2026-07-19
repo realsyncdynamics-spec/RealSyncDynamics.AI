@@ -189,7 +189,7 @@ export function VvtWizard() {
                       ['Empfänger', e.empfaenger.join(', ')],
                       e.drittland ? ['Drittlandtransfer', e.drittland_garantie || 'Garantie ausstehend'] : null,
                       ['Löschfrist', e.loeschfrist], ['TOM', e.tom.join(', ')],
-                    ].filter(Boolean).map(([k, v]) => (
+                    ].filter((x): x is [string, string] => x !== null).map(([k, v]) => (
                       <tr key={k as string} style={{ borderBottom: '1px solid #f3f4f6' }}>
                         <td style={{ padding: '0.4rem 0.75rem', fontWeight: 600, width: '30%', background: '#f9fafb' }}>{k}</td>
                         <td style={{ padding: '0.4rem 0.75rem' }}>{v as string || '—'}</td>

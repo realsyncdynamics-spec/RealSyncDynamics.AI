@@ -167,6 +167,16 @@ export function DashboardView() {
     );
   }
 
+  if (!tenantId) {
+    return (
+      <div className="min-h-screen bg-obsidian-950 text-titanium-50 p-8">
+        <div className="text-center">
+          <p className="text-titanium-400">Select a workspace to view the dashboard</p>
+        </div>
+      </div>
+    );
+  }
+
   const totalRisks = risks ? (
     risks.critical_risks_count + risks.high_risks_count +
     risks.medium_risks_count + risks.low_risks_count

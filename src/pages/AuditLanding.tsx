@@ -3,11 +3,32 @@ import { SEOHead } from '../components/SEOHead';
 import { CheckCircle, ArrowRight, Shield, Zap, FileText, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { usePageMeta } from '../lib/usePageMeta';
-import { postEdgeFunction } from '../lib/postEdgeFunction';
-import { getAffiliateRef } from '../lib/getAffiliateRef';
+import { postEdgeFunction } from '../lib/edgeFunction';
+import { getAffiliateRef } from '../lib/affiliate';
 import { trackConversion } from '../lib/pixels';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+interface Report {
+  audit_id: string;
+  created_at?: string;
+  email?: string;
+  domain: string;
+  score: number;
+  severity: string;
+  issues: Array<{
+    id: string;
+    severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+    title: string;
+    detail: string;
+    paragraph_ref?: string;
+  }>;
+  fetched: boolean;
+  fetched_status: number | null;
+  fetch_error: string | null;
+  coverage?: 'full' | 'limited' | 'failed';
+  coverage_notice?: string | null;
+}
 
 export function AuditLanding() {
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);

@@ -258,7 +258,7 @@ function generateComplianceGaps(result: VerifyResponse): ComplianceGap[] {
       asset_ref: result.asset_ref,
       message: 'Manipulation in der Custody-Kette erkannt',
       recommendation: 'Überprüfen Sie Event #' + result.broken_at_seq + ' und alle nachfolgenden Events. Benachrichtigen Sie den Sicherheitsteam.',
-      affected_seq: result.broken_at_seq,
+      affected_seq: result.broken_at_seq ?? undefined,
     });
   }
 

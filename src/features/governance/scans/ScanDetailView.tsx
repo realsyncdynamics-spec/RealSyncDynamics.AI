@@ -94,7 +94,7 @@ function Inner() {
       </Shell>
     );
   }
-  return <Detail payload={payload} onReload={() => setReloadKey((n) => n + 1)} />;
+  return <Detail payload={payload as ReportPayload} onReload={() => setReloadKey((n) => n + 1)} />;
 }
 
 function Detail({

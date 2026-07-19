@@ -17,8 +17,8 @@ export const aiGatewayConfig = {
        * point the React app at a local LM Studio for dev pages, but the
        * production AI Gateway always goes through the Edge Function.
        */
-      baseUrl: (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_LM_STUDIO_BASE_URL) ?? 'http://localhost:1234/v1',
-      apiKey:  (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string> }).env?.VITE_LM_STUDIO_API_KEY)  ?? 'lm-studio',
+      baseUrl: ((typeof import.meta !== 'undefined' ? (import.meta as { env?: Record<string, string> }).env?.VITE_LM_STUDIO_BASE_URL : undefined) ?? 'http://localhost:1234/v1') as string,
+      apiKey:  ((typeof import.meta !== 'undefined' ? (import.meta as { env?: Record<string, string> }).env?.VITE_LM_STUDIO_API_KEY : undefined) ?? 'lm-studio') as string,
       healthcheckPath: '/models',
     },
     openai: {

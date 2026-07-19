@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Brain, Loader2, AlertTriangle, CheckCircle2, ArrowRight,
-  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive,
+  Target, BookOpen, Shield, FileText, Zap, BarChart3, Clock, Calendar, Archive, AlertCircle, Wrench,
 } from 'lucide-react';
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
-import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { withPerformanceMonitoring } from '../../lib/hoc';
 
 interface CertificationStatus {
   overall_score: number;
@@ -21,7 +21,20 @@ interface CertificationStatus {
   timeline_weeks: number;
 }
 
-const CERTIFICATION_MODULES = [
+type ColorName = 'blue' | 'green' | 'purple' | 'orange' | 'indigo' | 'cyan' | 'red' | 'amber' | 'emerald';
+
+interface CertificationModule {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  route: string;
+  color: ColorName;
+  badge: string;
+  comingSoon?: boolean;
+}
+
+const CERTIFICATION_MODULES: CertificationModule[] = [
   {
     id: 'controls',
     title: 'Controls Library',
@@ -376,7 +389,7 @@ function QuickActionCard({ action }: { action: (typeof QUICK_ACTIONS)[0] }) {
   );
 }
 
-function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
+function ModuleCard({ module }: { module: CertificationModule }) {
   const Icon = module.icon;
 
   const colorMap = {
@@ -388,7 +401,8 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     cyan: 'border-cyan-900 hover:bg-cyan-950/20 text-cyan-400',
     red: 'border-red-900 hover:bg-red-950/20 text-red-400',
     amber: 'border-amber-900 hover:bg-amber-950/20 text-amber-400',
-  };
+    emerald: 'border-emerald-900 hover:bg-emerald-950/20 text-emerald-400',
+  } as const;
 
   const BadgeColor = {
     blue: 'bg-blue-950 border-blue-800 text-blue-300',
@@ -399,7 +413,8 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     cyan: 'bg-cyan-950 border-cyan-800 text-cyan-300',
     red: 'bg-red-950 border-red-800 text-red-300',
     amber: 'bg-amber-950 border-amber-800 text-amber-300',
-  };
+    emerald: 'bg-emerald-950 border-emerald-800 text-emerald-300',
+  } as const;
 
   const content = (
     <div className={`bg-obsidian-900 border ${colorMap[module.color]} rounded-none p-4 transition-all h-full flex flex-col ${module.comingSoon ? 'opacity-60' : ''}`}>

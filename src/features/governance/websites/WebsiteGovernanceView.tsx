@@ -6,6 +6,8 @@ import {
   Clock, XCircle, Search, Shield, Activity,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import {
   listWebsitesForTenant, listScanRuns, triggerTenantAudit,
   type TenantWebsite,
@@ -206,7 +208,6 @@ function AddDomainModal({ onAdd, onClose }: { onAdd: (domain: string) => void; o
   );
 }
 
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ─── Haupt-View ──────────────────────────────────────────────────────────────
 function _WebsiteGovernanceView() {

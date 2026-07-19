@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ListChecks, AlertTriangle, MessageSquare, GitPullRequest } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import {
   getRemediationPlan,
   prepareGithubIssue,

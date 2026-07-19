@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import {
   Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Edit2, X, Link2, Copy, RefreshCw,
 } from 'lucide-react';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { useWebhooks, WEBHOOK_EVENTS, type WebhookEndpoint } from './useWebhooks';
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 function _WebhooksView() {
   const { endpoints, deliveries, loading, error, createEndpoint, updateEndpoint, deleteEndpoint, retryDelivery, refetchDeliveries } = useWebhooks();

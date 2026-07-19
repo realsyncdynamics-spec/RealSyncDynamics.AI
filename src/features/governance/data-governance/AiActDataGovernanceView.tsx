@@ -10,6 +10,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Database, Plus, X, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import {
   listDatasets,
   createDataset,

@@ -9,6 +9,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import {
   fetchTenantIncidents,
   transitionIncident,
@@ -1034,8 +1036,6 @@ function incidentToRisk(inc: DbIncident): Risk {
 }
 
 // ─── Haupt-View ─────────────────────────────────────────────────────────────
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
-
 function _RiskCenterView() {
   const { activeTenantId } = useTenant();
   const navigate = useNavigate();

@@ -4,6 +4,7 @@ import {
   Search, X, FileJson, ClipboardCheck, Link2, Server,
 } from 'lucide-react';
 import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { WorkspaceShell } from '../../workspace/WorkspaceShell';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
@@ -47,7 +48,6 @@ function formatShort(iso: string | null): string {
   });
 }
 
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 function _SecuritySignalsView() {
   return (

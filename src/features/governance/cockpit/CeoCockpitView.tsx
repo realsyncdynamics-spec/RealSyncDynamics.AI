@@ -11,6 +11,8 @@ import {
   TrendingDown, TrendingUp, Minus, Clock, ChevronRight, Rocket, CheckCircle,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { Card, CardHeader, CardBody } from '../../../enterprise-os/components/Card';
 import { ScoreGauge } from '../../../enterprise-os/components/ScoreGauge';
 import { Button } from '../../../enterprise-os/components/Button';

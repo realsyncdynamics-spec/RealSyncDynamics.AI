@@ -7,6 +7,7 @@ import {
 import { useTenant } from '../../core/access/TenantProvider';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { getAuthToken } from '../../lib/auth';
+import { withPerformanceMonitoring } from '../../lib/hoc';
 
 interface ControlLibraryItem {
   id: string;

@@ -26,6 +26,8 @@ import {
   Tag,
   Shield,
 } from 'lucide-react';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
+import { AuthGate } from '../../kodee/connections/AuthGate';
 
 // ── Typen ─────────────────────────────────────────────────────────────────────
 

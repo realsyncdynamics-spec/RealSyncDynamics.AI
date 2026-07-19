@@ -10,9 +10,8 @@ import {
   type DbGovernanceAsset, type DbFrameworkControl, type DbAssetControlMapping,
 } from './governanceApi';
 import { upsertMapping, deleteMapping } from './resourcesApi';
-import { withPerformanceMonitoring } from './withPerformanceMonitoring';
+import { withPerformanceMonitoring } from '../../lib/hoc';
 import type { GovernanceControlStatus } from './types';
-import { withPerformanceMonitoring } from './withPerformanceMonitoring';
 
 /**
  * /governance/mappings — Asset × Framework-Control matrix. Cell

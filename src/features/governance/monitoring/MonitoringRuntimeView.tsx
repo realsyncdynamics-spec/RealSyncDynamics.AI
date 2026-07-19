@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MonitoringSurface } from '../../../pages/MonitoringPage';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { fetchTenantAssets, fetchTenantEvents } from '../governanceApi';
 import { countOpenIncidents } from '../incidentsApi';
 

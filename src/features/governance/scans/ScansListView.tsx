@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import {
   listScanRuns, listWebsitesForTenant, addWebsiteForTenant,
   triggerTenantAudit, type TenantWebsite,
@@ -40,7 +41,6 @@ const STATUS_BADGE: Record<ScanRun['status'], { label: string; cls: string; Icon
   cancelled: { label: 'Abgebrochen', cls: 'border-titanium-700 text-titanium-400', Icon: XCircle },
 };
 
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 function _ScansListView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;

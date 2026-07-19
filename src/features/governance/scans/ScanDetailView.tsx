@@ -15,6 +15,7 @@ import {
   ArrowLeft, Download, Loader2, AlertTriangle, ShieldCheck, XCircle,
 } from 'lucide-react';
 import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { getScanReport } from './scansApi';
 import type { ReportPayload } from '../../../types/governance/report';
 import type { Finding, FindingSeverity, FindingStatus } from '../../../types/governance/finding';
@@ -48,8 +49,6 @@ const GRADE_COLOR: Record<string, string> = {
   A: 'text-emerald-300', B: 'text-lime-300', C: 'text-amber-300',
   D: 'text-orange-300', F: 'text-rose-300',
 };
-
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 function _ScanDetailView() {
   return <AuthGate>{() => <Inner />}</AuthGate>;

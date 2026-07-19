@@ -12,6 +12,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { fetchTenantEvents, type DbGovernanceEvent } from '../governanceApi';
 import {
   exportAnalytics,

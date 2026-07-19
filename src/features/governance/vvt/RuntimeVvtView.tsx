@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Database } from 'lucide-react';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../../../lib/hoc';
 import { DEMO_VVT_ENTRIES, DEMO_RUNTIME_EVENTS } from './demoRuntimeVvtData';
 import { RuntimeVvtEntryCard } from './RuntimeVvtEntryCard';
 import { RuntimeVvtExportButton } from './RuntimeVvtExportButton';
 import type { RuntimeVvtEntry, VvtReviewStatus } from './types';
-
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 /**
  * /governance/vvt — Runtime-VVT-View.

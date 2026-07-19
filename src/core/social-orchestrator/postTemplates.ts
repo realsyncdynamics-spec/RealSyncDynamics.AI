@@ -31,6 +31,10 @@ export const CHANNEL_CHAR_BUDGET: Record<SocialChannel, number> = {
   'instagram.reel':       900,   // Reels caption practical limit
   'tiktok.fast':          280,   // TikTok caption short
   'x.alert':              260,   // X (Twitter) 280 minus margin for autolinks
+  'wordpress.blog':      5000,   // WordPress post body (no hard limit)
+  'ghost.blog':          5000,   // Ghost post body (no hard limit)
+  'webhook.custom':      2000,   // Webhook payload (application-dependent)
+  'email.newsletter':    3000,   // Email body (plain text or HTML)
 };
 
 // ── Tone hashtag overlays (added per channel) ──────────────────────
@@ -41,6 +45,10 @@ const CHANNEL_HASHTAGS: Record<SocialChannel, string[]> = {
   'instagram.reel':      ['#TechExplained', '#PrivacyTech'],
   'tiktok.fast':         ['#TechTok', '#PrivacyTech'],
   'x.alert':             ['#Runtime', '#GovernanceTech'],
+  'wordpress.blog':      ['#GovernanceBlog', '#Compliance'],
+  'ghost.blog':          ['#ComplianceBlog', '#Enterprise'],
+  'webhook.custom':      ['#Integration', '#Automation'],
+  'email.newsletter':    ['#Governance', '#Newsletter'],
 };
 
 // ── Templates per channel × event type ─────────────────────────────
@@ -242,6 +250,34 @@ const TEMPLATES: Record<SocialChannel, Record<string, TemplateFn>> = {
     }),
     __default: (e) => ({
       body: shortHook(e.anonymizedSummary),
+      hashtags: [],
+    }),
+  },
+
+  'wordpress.blog': {
+    __default: (e) => ({
+      body: e.anonymizedSummary,
+      hashtags: [],
+    }),
+  },
+
+  'ghost.blog': {
+    __default: (e) => ({
+      body: e.anonymizedSummary,
+      hashtags: [],
+    }),
+  },
+
+  'webhook.custom': {
+    __default: (e) => ({
+      body: e.anonymizedSummary,
+      hashtags: [],
+    }),
+  },
+
+  'email.newsletter': {
+    __default: (e) => ({
+      body: e.anonymizedSummary,
       hashtags: [],
     }),
   },

@@ -369,7 +369,7 @@ export class LinkedInPublisher extends BasePublisher {
  * TODO: implement in follow-up PR; placeholder for architecture
  */
 export class WordPressPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'wordpress.blog' channel
+  public readonly channel: SocialChannel = 'wordpress.blog';
   private siteUrl: string = ''; // TODO: load from config
   private apiToken: string = ''; // TODO: load from Supabase Vault
 
@@ -387,7 +387,7 @@ export class WordPressPublisher extends BasePublisher {
  * TODO: implement in follow-up PR; placeholder for architecture
  */
 export class GhostPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'ghost.blog' channel
+  public readonly channel: SocialChannel = 'ghost.blog';
   private adminUrl: string = '';
   private adminApiKey: string = '';
 
@@ -405,7 +405,7 @@ export class GhostPublisher extends BasePublisher {
  * Useful for integration with n8n, Zapier, or internal systems
  */
 export class WebhookPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'webhook.custom' channel
+  public readonly channel: SocialChannel = 'webhook.custom';
   private webhookUrl: string;
 
   constructor(webhookUrl: string) {
@@ -466,7 +466,7 @@ export class WebhookPublisher extends BasePublisher {
  * Useful for compliance-focused audiences who prefer inbox delivery
  */
 export class EmailPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'email.newsletter' channel
+  public readonly channel: SocialChannel = 'email.newsletter';
   private fromAddress: string = 'noreply@realsync.ai';
   private toAddresses: string[] = [];
 

@@ -118,13 +118,13 @@ export function ShopifyScanResultView({ result }: { result: ShopifyScanResultVie
             </header>
             <p className="text-sm text-titanium-300 leading-relaxed mb-3">{f.description}</p>
             <div className="border-t border-titanium-900 pt-2 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-1.5 gap-x-3 text-[11px]">
-              {f.evidence.url && (
+              {(f.evidence.url as string | undefined) && (
                 <>
                   <span className="font-mono uppercase tracking-[0.18em] text-silver-500">url</span>
                   <span className="font-mono text-silver-300 break-all">{String(f.evidence.url)}</span>
                 </>
               )}
-              {f.evidence.header && (
+              {(f.evidence.header as string | undefined) && (
                 <>
                   <span className="font-mono uppercase tracking-[0.18em] text-silver-500">header</span>
                   <span className="font-mono text-silver-300">{String(f.evidence.header)}</span>

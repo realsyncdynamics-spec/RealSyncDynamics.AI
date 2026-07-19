@@ -13,6 +13,23 @@ interface MetricsRequest {
   end_date: string
 }
 
+interface LifecycleRecord {
+  customer_acquisition_cost?: number
+  lifetime_value?: number
+  predicted_ltv?: number
+  status: string
+  [key: string]: unknown
+}
+
+interface MarketingMetric {
+  web_visitors?: number
+  leads_generated?: number
+  trials_started?: number
+  customers_acquired?: number
+  revenue_generated?: number
+  [key: string]: unknown
+}
+
 interface MetricsResponse {
   cac: number
   ltv: number
@@ -73,7 +90,7 @@ serve(async (req: Request) => {
 
     // Calculate CAC (Customer Acquisition Cost)
     const totalAcquisitionCosts = lifecycleData?.reduce(
-      (sum: number, record: any) => sum + (record.customer_acquisition_cost || 0),
+      (sum: number, record: LifecycleRecord) => sum + (record.customer_acquisition_cost || 0),
       0,
     ) || 0
     const totalCustomersAcquired = lifecycleData?.length || 1
@@ -81,7 +98,7 @@ serve(async (req: Request) => {
 
     // Calculate LTV (Lifetime Value)
     const totalLifetimeValue = lifecycleData?.reduce(
-      (sum: number, record: any) => sum + (record.lifetime_value || record.predicted_ltv || 0),
+      (sum: number, record: LifecycleRecord) => sum + (record.lifetime_value || record.predicted_ltv || 0),
       0,
     ) || 0
     const ltv = totalLifetimeValue / Math.max(totalCustomersAcquired, 1)
@@ -92,11 +109,11 @@ serve(async (req: Request) => {
     // Period summary
     const periodMetrics = metricsData && metricsData.length > 0
       ? {
-          web_visitors: metricsData.reduce((sum: number, m: any) => sum + (m.web_visitors || 0), 0),
-          leads_generated: metricsData.reduce((sum: number, m: any) => sum + (m.leads_generated || 0), 0),
-          trials_started: metricsData.reduce((sum: number, m: any) => sum + (m.trials_started || 0), 0),
-          customers_acquired: metricsData.reduce((sum: number, m: any) => sum + (m.customers_acquired || 0), 0),
-          revenue: metricsData.reduce((sum: number, m: any) => sum + (m.revenue_generated || 0), 0),
+          web_visitors: metricsData.reduce((sum: number, m: MarketingMetric) => sum + (m.web_visitors || 0), 0),
+          leads_generated: metricsData.reduce((sum: number, m: MarketingMetric) => sum + (m.leads_generated || 0), 0),
+          trials_started: metricsData.reduce((sum: number, m: MarketingMetric) => sum + (m.trials_started || 0), 0),
+          customers_acquired: metricsData.reduce((sum: number, m: MarketingMetric) => sum + (m.customers_acquired || 0), 0),
+          revenue: metricsData.reduce((sum: number, m: MarketingMetric) => sum + (m.revenue_generated || 0), 0),
         }
       : {
           web_visitors: 0,
@@ -113,8 +130,8 @@ serve(async (req: Request) => {
         : 0
 
     // Calculate churn rate (active customers without churn date vs. churned)
-    const activeCustomers = lifecycleData?.filter((l: any) => l.status === 'active').length || 0
-    const churnedCustomers = lifecycleData?.filter((l: any) => l.status === 'churned').length || 0
+    const activeCustomers = lifecycleData?.filter((l: LifecycleRecord) => l.status === 'active').length || 0
+    const churnedCustomers = lifecycleData?.filter((l: LifecycleRecord) => l.status === 'churned').length || 0
     const churn_rate =
       totalCustomersAcquired > 0 ? (churnedCustomers / totalCustomersAcquired) * 100 : 0
 

@@ -54,9 +54,11 @@ export class AiGateway {
   private readonly fallbackChain: readonly AiProviderAdapter[];
 
   constructor(deps: AiGatewayDeps = {}) {
+    const baseUrl = (deps.lmStudioConfig?.baseUrl ?? aiGatewayConfig.providers.lm_studio.baseUrl) as string;
+    const apiKey = (deps.lmStudioConfig?.apiKey ?? aiGatewayConfig.providers.lm_studio.apiKey) as string | undefined;
     this.lmStudio = deps.lmStudio ?? new LMStudioAdapter({
-      baseUrl:      deps.lmStudioConfig?.baseUrl      ?? aiGatewayConfig.providers.lm_studio.baseUrl,
-      apiKey:       deps.lmStudioConfig?.apiKey       ?? aiGatewayConfig.providers.lm_studio.apiKey,
+      baseUrl,
+      apiKey,
       defaultModel: deps.lmStudioConfig?.defaultModel,
       fetchImpl:    deps.lmStudioConfig?.fetchImpl,
     });

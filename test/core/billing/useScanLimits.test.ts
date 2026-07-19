@@ -19,7 +19,7 @@ describe('useScanLimits', () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'starter',
       loading: false,
-      error: null,
+      error: undefined,
       features: {},
       hasFeature: () => true,
       getLimit: () => null,
@@ -38,7 +38,7 @@ describe('useScanLimits', () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'free_tier',
       loading: false,
-      error: null,
+      error: undefined,
       features: {},
       hasFeature: () => false,
       getLimit: () => 3,
@@ -54,7 +54,7 @@ describe('useScanLimits', () => {
             gte: vi.fn().mockReturnValue({
               lte: vi.fn().mockResolvedValue({
                 data: [{ id: '1' }, { id: '2' }],
-                error: null,
+                error: undefined,
               }),
             }),
           }),
@@ -83,7 +83,7 @@ describe('useScanLimits', () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'free_tier',
       loading: false,
-      error: null,
+      error: undefined,
       features: {},
       hasFeature: () => false,
       getLimit: () => 3,
@@ -99,7 +99,7 @@ describe('useScanLimits', () => {
             gte: vi.fn().mockReturnValue({
               lte: vi.fn().mockResolvedValue({
                 data: [{ id: '1' }, { id: '2' }, { id: '3' }],
-                error: null,
+                error: undefined,
               }),
             }),
           }),
@@ -124,7 +124,7 @@ describe('useScanLimits', () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'free_tier',
       loading: false,
-      error: null,
+      error: undefined,
       features: {},
       hasFeature: () => false,
       getLimit: () => 3,
@@ -140,7 +140,7 @@ describe('useScanLimits', () => {
             gte: vi.fn().mockReturnValue({
               lte: vi.fn().mockResolvedValue({
                 data: [],
-                error: null,
+                error: undefined,
               }),
             }),
           }),
@@ -163,7 +163,7 @@ describe('useScanLimits', () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
       tier: 'free_tier',
       loading: false,
-      error: null,
+      error: undefined,
       features: {},
       hasFeature: () => false,
       getLimit: () => 3,

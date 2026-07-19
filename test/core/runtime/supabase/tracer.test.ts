@@ -7,7 +7,7 @@ import type { ExecutionRecord } from '../../../../src/core/runtime';
  * Captures every call against a Supabase fluent chain so the tests can
  * assert on the table, the verb, the payload, and the .eq() predicates.
  */
-function spyClient(insertResult = { error: null }, updateResult = { error: null }) {
+function spyClient(insertResult: { error: null | Record<string, unknown> } = { error: null }, updateResult: { error: null | Record<string, unknown> } = { error: null }) {
   const insert = vi.fn((_row: Record<string, unknown>) => Promise.resolve(insertResult));
   const eq = vi.fn((_col: string, _val: unknown) => Promise.resolve(updateResult));
   const update = vi.fn((_patch: Record<string, unknown>) => ({ eq }));

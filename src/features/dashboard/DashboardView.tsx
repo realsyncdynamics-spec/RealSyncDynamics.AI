@@ -262,7 +262,7 @@ export function DashboardView() {
               </h2>
               <InsightsPanel
                 insights={insights}
-                tenantId={tenantId}
+                tenantId={tenantId!}
                 onInsightUpdated={() => {
                   // Refetch insights
                 }}
@@ -281,7 +281,7 @@ export function DashboardView() {
       )}
 
       {/* Workflows Tab */}
-      {activeTab === 'workflows' && <WorkflowView tenantId={tenantId} />}
+      {activeTab === 'workflows' && <WorkflowView tenantId={tenantId!} />}
     </div>
   );
 }

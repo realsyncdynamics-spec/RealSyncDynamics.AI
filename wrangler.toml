@@ -10,9 +10,3 @@
 name = "realsyncdynamics-ai"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-06-23"
-
-# Cloudflare Pages Build Configuration
-# Runs when native Git integration deploys
-[build]
-command = "npm run build && npm run generate:legal-pages"
-cwd = "."

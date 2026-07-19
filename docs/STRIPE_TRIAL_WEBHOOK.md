@@ -107,13 +107,38 @@ EXECUTE FUNCTION notify_webhook(NEW);
 }
 ```
 
-## Current State (Phase 2A)
+## Current State (Phase 2B ✅ COMPLETE)
 
 ✅ Database schema ready (`stripe_trial_events` table exists)
 ✅ Stripe webhook logs trial events (stripe-webhook function)
-⏳ n8n workflow trigger NOT YET WIRED (Phase 2B)
+✅ n8n workflow trigger WIRED via Edge Function + database trigger
 
-To activate: Add Edge Function or database trigger + configure n8n webhook URL in environment.
+### Implementation (Phase 2B)
+
+**Edge Function**: `supabase/functions/automation-trigger-trial-webhook/`
+- Receives trial event from database trigger
+- Looks up active n8n webhook URL in `governance_webhooks` table (by tenant)
+- POSTs formatted payload to n8n webhook URL
+- Fire-and-forget (async, non-blocking)
+- Graceful degradation: skips silently if no webhook configured
+
+**Database Trigger**: `supabase/migrations/20260719000000_stripe_trial_webhook_trigger.sql`
+- Fires on `stripe_trial_events` INSERT
+- Calls `trigger_trial_webhook()` function via pg_net.http_post()
+- Passes event data to Edge Function asynchronously
+- Non-blocking (errors logged but don't fail the insert)
+
+**Setup Required**:
+1. Deploy Edge Function: `supabase functions deploy automation-trigger-trial-webhook`
+2. Apply migration: `supabase db push`
+3. Configure n8n webhook in Supabase Dashboard:
+   - Table: `governance_webhooks`
+   - Insert row with:
+     - `tenant_id`: your workspace ID
+     - `name`: "n8n Trial Events Webhook"
+     - `target_url`: your n8n webhook URL
+     - `enabled`: true
+     - `secret_hash` + `secret_prefix`: optional HMAC signing
 
 ## Testing
 

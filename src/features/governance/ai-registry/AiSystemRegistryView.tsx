@@ -13,6 +13,7 @@ import {
 import { downloadConformityDossier } from '../../../lib/ai-act/conformityDossier';
 import { listDatasets } from '../aiActDataGovernanceApi';
 import {
+  AlertTriangle,
   ArrowLeft,
   Bot,
   Plus,
@@ -328,7 +329,167 @@ export const AiSystemRegistryView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  return <div className="p-8 text-titanium-400">AI System Registry view coming soon...</div>;
+  const { activeTenantId: tenantId } = useTenant();
+  const [systems, setSystems] = useState<AiSystem[]>(AI_SYSTEMS);
+  const [activeTab, setActiveTab] = useState<FilterTab>('Alle');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const filteredSystems = useMemo(() => {
+    let result = systems;
+
+    if (activeTab !== 'Alle') {
+      result = result.filter(s => {
+        if (activeTab === 'Hoch-Risiko') return s.riskClass === 'Hoch' || s.riskClass === 'Verboten';
+        if (activeTab === 'Begrenzt') return s.riskClass === 'Begrenzt';
+        if (activeTab === 'Minimal') return s.riskClass === 'Minimal';
+        if (activeTab === 'Ausstehend') return s.docProgress < s.docTotal;
+        return true;
+      });
+    }
+
+    if (searchTerm) {
+      result = result.filter(s =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.model.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return result;
+  }, [systems, activeTab, searchTerm]);
+
+  const metrics = useMemo(() => ({
+    verboten: systems.filter(s => s.riskClass === 'Verboten').length,
+    hoch: systems.filter(s => s.riskClass === 'Hoch').length,
+    begrenzt: systems.filter(s => s.riskClass === 'Begrenzt').length,
+    minimal: systems.filter(s => s.riskClass === 'Minimal').length,
+    ausstehend: systems.filter(s => s.docProgress < s.docTotal).length,
+  }), [systems]);
+
+  const handleDossier = (system: AiSystem) => {
+    downloadConformityDossier({
+      system: {
+        name: system.name,
+        provider: system.provider,
+        model: system.model,
+        riskLabel: system.riskClass,
+        annexCategory: system.annexCategory ?? undefined,
+        providerRole: system.providerRole ?? undefined,
+        intendedPurpose: system.intendedPurpose ?? undefined,
+        deploymentContext: system.deploymentContext ?? undefined,
+        affectedGroups: system.affectedGroups,
+        scope: system.scope,
+        owner: system.owner,
+      },
+    });
+  };
+
+  const handleAddSystem = () => {
+    setShowAddModal(false);
+  };
+
+  const tabs: FilterTab[] = ['Alle', 'Hoch-Risiko', 'Begrenzt', 'Minimal', 'Ausstehend'];
+
+  return (
+    <div className="min-h-screen flex flex-col bg-obsidian-950 text-titanium-50">
+      {/* Header */}
+      <div className="border-b border-titanium-900 px-8 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Bot className="h-6 w-6 text-teal-400" />
+            <div>
+              <h1 className="font-display text-2xl font-bold">KI-System-Registry</h1>
+              <p className="text-sm text-titanium-400 mt-1">EU AI Act Konformitätsüberwachung</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 border border-teal-700 bg-teal-900/40 px-4 py-2 font-mono text-sm text-teal-200 hover:bg-teal-800/60"
+          >
+            <Plus className="h-4 w-4" />
+            System hinzufügen
+          </button>
+        </div>
+
+        {/* Suchleiste */}
+        <div className="relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Nach Systemname, Beschreibung oder Modell suchen…"
+            className="w-full border border-titanium-800 bg-obsidian-900 px-4 py-2.5 text-sm text-titanium-100 placeholder-titanium-600 outline-none focus:border-teal-600"
+          />
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="border-b border-titanium-900 px-8">
+        <div className="flex gap-1 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-3 font-mono text-xs uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === tab
+                  ? 'border-teal-500 text-teal-300'
+                  : 'border-transparent text-titanium-500 hover:text-titanium-300'
+              }`}
+            >
+              {tab} {tab !== 'Alle' && `(${
+                tab === 'Hoch-Risiko' ? metrics.hoch + metrics.verboten :
+                tab === 'Begrenzt' ? metrics.begrenzt :
+                tab === 'Minimal' ? metrics.minimal :
+                metrics.ausstehend
+              })`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Metrics Row */}
+      <div className="border-b border-titanium-900 px-8 py-6">
+        <div className="grid grid-cols-5 gap-4">
+          <MetricCard label="Verboten" value={String(metrics.verboten)} tone="red" />
+          <MetricCard label="Hoch-Risiko" value={String(metrics.hoch)} tone="red" />
+          <MetricCard label="Begrenzt" value={String(metrics.begrenzt)} tone="amber" />
+          <MetricCard label="Minimal" value={String(metrics.minimal)} tone="teal" />
+          <MetricCard label="Dokumentation ausstehend" value={String(metrics.ausstehend)} tone="amber" />
+        </div>
+      </div>
+
+      {/* Systems List */}
+      <div className="flex-1 px-8 py-6 space-y-3 overflow-y-auto">
+        {filteredSystems.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <AlertTriangle className="h-12 w-12 mx-auto text-titanium-600 mb-3 opacity-50" />
+              <p className="text-titanium-400">Keine Systeme gefunden</p>
+            </div>
+          </div>
+        ) : (
+          filteredSystems.map((system) => (
+            <AiSystemCard
+              key={system.id}
+              system={system}
+              onDossier={handleDossier}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Add System Modal */}
+      {showAddModal && (
+        <AddSystemModal
+          onClose={() => setShowAddModal(false)}
+          onSaved={handleAddSystem}
+        />
+      )}
+    </div>
+  );
 }
 
 // ── System-Karte ──────────────────────────────────────────────────────────────

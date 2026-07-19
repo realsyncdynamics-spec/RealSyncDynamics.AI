@@ -19,6 +19,37 @@ import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/
 
 const ROLES = ['owner', 'admin', 'dpo', 'editor', 'viewer_auditor'];
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string, opts?: { count?: string; head?: boolean }): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+          order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+      order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+    };
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): Promise<{ error: unknown }>;
+      };
+    };
+    delete(): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): Promise<{ error: unknown }>;
+      };
+    };
+  };
+  auth: {
+    admin: {
+      getUserById(id: string): Promise<{ data: { user?: { email?: string } } }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -56,31 +87,27 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function callerRole(admin: any, userId: string, tenantId: string): Promise<string | null> {
+async function callerRole(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<string | null> {
   const { data } = await admin.from('memberships')
     .select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data?.role ?? null;
 }
 
-// deno-lint-ignore no-explicit-any
-async function ownerCount(admin: any, tenantId: string): Promise<number> {
+async function ownerCount(admin: SupabaseAdminClient, tenantId: string): Promise<number> {
   const { count } = await admin.from('memberships')
     .select('user_id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId).eq('role', 'owner');
   return count ?? 0;
 }
 
-// deno-lint-ignore no-explicit-any
-async function audit(admin: any, tenantId: string, actorId: string, action: string, targetId: string, payload: unknown) {
+async function audit(admin: SupabaseAdminClient, tenantId: string, actorId: string, action: string, targetId: string, payload: unknown) {
   await admin.from('governance_admin_log').insert({
     tenant_id: tenantId, actor_user_id: actorId, action,
     target_type: 'membership', target_id: targetId, payload,
   }).then(() => {}, () => {}); // never hard-fail on audit
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleList(admin: any, actorId: string, body: Record<string, unknown>) {
+async function handleList(admin: SupabaseAdminClient, actorId: string, body: Record<string, unknown>) {
   const tenantId = body.tenant_id as string;
   if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   // Any member of the tenant may read the roster.
@@ -98,8 +125,7 @@ async function handleList(admin: any, actorId: string, body: Record<string, unkn
   for (const m of data ?? []) {
     let email: string | null = null;
     try {
-      // deno-lint-ignore no-explicit-any
-      const { data: u } = await (admin as any).auth.admin.getUserById(m.user_id);
+      const { data: u } = await admin.auth.admin.getUserById(m.user_id);
       email = u?.user?.email ?? null;
     } catch { /* ignore */ }
     members.push({ user_id: m.user_id, role: m.role, created_at: m.created_at, email, is_self: m.user_id === actorId });
@@ -107,8 +133,7 @@ async function handleList(admin: any, actorId: string, body: Record<string, unkn
   return jsonResponse({ ok: true, members, caller_role: role });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleSetRole(admin: any, actorId: string, body: Record<string, unknown>) {
+async function handleSetRole(admin: SupabaseAdminClient, actorId: string, body: Record<string, unknown>) {
   const tenantId = body.tenant_id as string;
   const targetUserId = body.target_user_id as string;
   const role = body.role as string;
@@ -145,8 +170,7 @@ async function handleSetRole(admin: any, actorId: string, body: Record<string, u
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleRemove(admin: any, actorId: string, body: Record<string, unknown>) {
+async function handleRemove(admin: SupabaseAdminClient, actorId: string, body: Record<string, unknown>) {
   const tenantId = body.tenant_id as string;
   const targetUserId = body.target_user_id as string;
   if (!tenantId || !targetUserId) return jsonError(400, 'BAD_REQUEST', 'tenant_id, target_user_id required');
@@ -176,13 +200,11 @@ async function handleRemove(admin: any, actorId: string, body: Record<string, un
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function targetMembership(admin: any, userId: string, tenantId: string): Promise<{ role: string } | null> {
+async function targetMembership(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<{ role: string } | null> {
   const { data } = await admin.from('memberships')
     .select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data ?? null;
 }
-// deno-lint-ignore no-explicit-any
-async function targetRole(admin: any, userId: string, tenantId: string): Promise<string | null> {
+async function targetRole(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<string | null> {
   return (await targetMembership(admin, userId, tenantId))?.role ?? null;
 }

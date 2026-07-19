@@ -157,3 +157,7 @@ export const AgentsCenterView = withPerformanceMonitoring(
   'AgentsCenterView',
   { threshold: 500, maxRenders: 10 }
 );
+
+function Inner() {
+  return <div className="p-8 text-titanium-400">Agents Center view coming soon...</div>;
+}

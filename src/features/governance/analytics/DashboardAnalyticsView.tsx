@@ -25,3 +25,7 @@ export const DashboardAnalyticsView = withPerformanceMonitoring(
   'DashboardAnalyticsView',
   { threshold: 500, maxRenders: 10 }
 );
+
+function Inner() {
+  return <div className="p-8 text-titanium-400">Dashboard Analytics view coming soon...</div>;
+}

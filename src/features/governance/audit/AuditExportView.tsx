@@ -178,3 +178,7 @@ export const AuditExportView = withPerformanceMonitoring(
   'AuditExportView',
   { threshold: 500, maxRenders: 10 }
 );
+
+function Inner() {
+  return <div className="p-8 text-titanium-400">Audit Export view coming soon...</div>;
+}

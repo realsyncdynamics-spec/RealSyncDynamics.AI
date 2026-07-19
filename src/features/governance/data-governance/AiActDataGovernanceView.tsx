@@ -88,6 +88,10 @@ export const AiActDataGovernanceView = withPerformanceMonitoring(
   { threshold: 500, maxRenders: 10 }
 );
 
+function Inner() {
+  return <div className="p-8 text-titanium-400">View coming soon...</div>;
+}
+
 // ── Datensatz-Karte ───────────────────────────────────────────────────────────
 
 function DatasetCard({ dataset }: { dataset: Dataset }) {

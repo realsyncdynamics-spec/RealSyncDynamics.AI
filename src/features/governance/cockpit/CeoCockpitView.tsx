@@ -33,6 +33,10 @@ export const CeoCockpitView = withPerformanceMonitoring(
   { threshold: 500, maxRenders: 10 }
 );
 
+function Inner() {
+  return <div className="p-8 text-titanium-400">CEO Cockpit view coming soon...</div>;
+}
+
 function TrendChip({ direction, percent }: { direction: 'up' | 'down' | 'flat'; percent: number }) {
   if (direction === 'flat' || percent === 0) {
     return <span className="inline-flex items-center gap-1 text-xs text-titanium-500"><Minus className="h-3 w-3" /> stabil</span>;

@@ -327,6 +327,10 @@ export const AiSystemRegistryView = withPerformanceMonitoring(
   { threshold: 500, maxRenders: 10 }
 );
 
+function Inner() {
+  return <div className="p-8 text-titanium-400">AI System Registry view coming soon...</div>;
+}
+
 // ── System-Karte ──────────────────────────────────────────────────────────────
 
 function AiSystemCard({ system, onDossier }: { system: AiSystem; onDossier: (s: AiSystem) => void }) {

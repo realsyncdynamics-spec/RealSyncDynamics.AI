@@ -16,3 +16,7 @@ export const AdvancedReportingView = withPerformanceMonitoring(
   'AdvancedReportingView',
   { threshold: 500, maxRenders: 10 }
 );
+
+function Inner() {
+  return <div className="p-8 text-titanium-400">View coming soon...</div>;
+}

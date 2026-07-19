@@ -778,23 +778,36 @@ export class LinkedInPublisher extends BasePublisher {
 }
 
 /**
- * WordPress Publisher — XML-RPC or REST API
- * TODO: implement in follow-up PR; basic scaffolding in place
- * TODO: siteUrl and apiToken loaded from config/Supabase Vault in production
+ * WordPress Publisher — REST API (WP 4.7+)
+ *
+ * Caller (Edge Function) is responsible for loading siteUrl and apiToken
+ * from configuration and Supabase Vault, then passing them to constructor.
+ *
+ * Supports both:
+ * - Application passwords (recommended for headless/automated publishing)
+ * - OAuth tokens (for user-authenticated posting)
+ *
+ * See: https://developer.wordpress.org/plugins/authentication/
  */
 export class WordPressPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'wordpress.blog';
-  private siteUrl: string = ''; // TODO: load from config
-  private apiToken: string = ''; // TODO: load from Supabase Vault
+  private siteUrl: string;
+  private apiToken: string;
+
+  constructor(siteUrl: string, apiToken: string) {
+    super();
+    this.siteUrl = siteUrl.replace(/\/$/, ''); // strip trailing slash
+    this.apiToken = apiToken;
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { siteUrl: this.siteUrl });
 
-    if (!this.apiToken) {
+    if (!this.siteUrl || !this.apiToken) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'WordPress API token not configured' },
+        error: { code: 'NO_CONFIG', message: 'WordPress site URL or API token not configured' },
       };
     }
 
@@ -808,17 +821,23 @@ export class WordPressPublisher extends BasePublisher {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              title: post.body.split('\n')[0]?.substring(0, 100) || 'Governance Update',
+              title: this.extractTitle(post.body),
               content: post.body,
               status: 'publish',
-              tags: post.hashtags.map(h => h.replace('#', '')).slice(0, 5),
-              excerpt: post.body.substring(0, 160),
+              // Store hashtags as tags
+              tags: post.hashtags.length > 0 ? post.hashtags.map(h => h.replace('#', '')) : [],
             }),
           });
 
+          if (response.status === 401) {
+            throw new Error('WORDPRESS_401_UNAUTHORIZED');
+          }
+          if (response.status === 403) {
+            throw new Error('WORDPRESS_403_FORBIDDEN');
+          }
           if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`WORDPRESS_${response.status}: ${error}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`WORDPRESS_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
           }
 
           return response.json();
@@ -828,11 +847,11 @@ export class WordPressPublisher extends BasePublisher {
         }
       );
 
-      this.logPublishAttempt(post, 'success', { postId: result.id });
+      this.logPublishAttempt(post, 'success', { externalId: (result as Record<string, unknown>).id });
       return {
         ok: true,
         channel: this.channel,
-        externalId: String(result.id),
+        externalId: String((result as Record<string, unknown>).id),
         postedAt: new Date().toISOString(),
       };
     } catch (err) {
@@ -845,6 +864,16 @@ export class WordPressPublisher extends BasePublisher {
         error: { code: 'WORDPRESS_API_ERROR', message: errorMsg },
       };
     }
+  }
+
+  private extractTitle(body: string): string {
+    // Use first line as title, or first 60 chars if no line break
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 100) {
+      return firstLine;
+    }
+    return body.substring(0, 60).trim() + (body.length > 60 ? '…' : '');
   }
 }
 

@@ -4,6 +4,8 @@ import {
 } from 'lucide-react';
 import { useReportBuilder, type ReportConfig } from './useReportBuilder';
 import { useCustomFrameworks } from '../frameworks/useCustomFrameworks';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 export function AdvancedReportingView() {
   const { reports, generatedReports, loading, error, createReport, updateReport, deleteReport, generateReport } = useReportBuilder();

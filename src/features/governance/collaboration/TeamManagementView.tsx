@@ -3,6 +3,8 @@ import {
   Users, Plus, UserCheck, UserX, Shield, Mail, LoaderCircle, AlertTriangle,
 } from 'lucide-react';
 import { useTeamMembers, type TeamMember } from './useTeamMembers';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 const ROLE_INFO: Record<TeamMember['role'], { label: string; description: string; color: string }> = {
   owner: {

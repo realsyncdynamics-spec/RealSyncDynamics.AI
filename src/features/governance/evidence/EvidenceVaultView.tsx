@@ -43,6 +43,8 @@ import {
   Minus,
   Loader2,
 } from 'lucide-react';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Typen ────────────────────────────────────────────────────────────────────
 

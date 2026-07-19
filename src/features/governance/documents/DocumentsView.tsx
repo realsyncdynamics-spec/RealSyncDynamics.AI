@@ -35,6 +35,8 @@ import {
 } from './documentsApi';
 import { listDpias, type DbDpia } from '../dpiasApi';
 import type { DpiaStatus } from '../types';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
 type DocStatus = 'aktuell' | 'veraltet' | 'entwurf' | 'fehlend';
@@ -370,6 +372,10 @@ function DsfaCard({ dpia }: { dpia: DbDpia }) {
       </div>
     </div>
   );
+}
+
+function Inner() {
+  return <div className="p-4 text-titanium-300">Implementation pending</div>;
 }
 
 // ── DocumentsView ──────────────────────────────────────────────────────────

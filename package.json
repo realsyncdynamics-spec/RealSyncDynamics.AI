@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
-    "build:full": "vite build && npm run generate:legal-pages && npm run prerender",
+    "build": "vite build && npm run generate:legal-pages",
+    "build:full": "npm run build && npm run prerender",
     "generate:legal-pages": "node scripts/generate-static-legal-pages.mjs",
     "prerender": "node scripts/prerender.mjs",
     "preview": "vite preview",

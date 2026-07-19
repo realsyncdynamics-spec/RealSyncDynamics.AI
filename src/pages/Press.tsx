@@ -8,7 +8,7 @@ const FACTS = [
   { k: 'Modelle', v: 'Anthropic / OpenAI / Google · Ollama EU-local Fallback' },
   { k: 'Compliance-Stack', v: 'DSGVO · AI Act · BAIT · MaRisk · DORA · BfDI 2024' },
   { k: 'Zielmärkte', v: 'HealthTech · Legal-Tech · FinTech · Public Sector · Mittelstand' },
-  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Enterprise ab 1.500 €/M' },
+  { k: 'Pricing', v: 'Free Audit kostenlos · Starter 79 €/M · Growth 249 €/M · Agency 699 €/M · Partner 1.999 €/M · Enterprise 1.249 €/M' },
 ];
 
 const QUOTES = [
@@ -17,7 +17,7 @@ const QUOTES = [
     a: 'Founder, RealSync Dynamics',
   },
   {
-    q: 'OneTrust kostet ab 24.000 €/Jahr. Usercentrics ab 1.800 €/Jahr. Wir liefern dasselbe ab 348 €/Jahr — plus AVV, VVT, AI-Act-Tools.',
+    q: 'OneTrust kostet ab 24.000 €/Jahr. Usercentrics ab 1.800 €/Jahr. Wir liefern dasselbe ab 790 €/Jahr — plus AVV, VVT, AI-Act-Tools.',
     a: 'Founder, RealSync Dynamics',
   },
 ];

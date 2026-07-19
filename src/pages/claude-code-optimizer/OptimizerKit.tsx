@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bot, Info, MousePointerClick, Check } from 'lucide-react';
+import { tierById, type TierId } from '../../config/pricing';
 
 /**
  * Gemeinsames Kit für den Claude-Code-Optimizer-Flow.
@@ -282,6 +283,10 @@ export function SecondaryLink({
 }
 
 // ─── Paket-Definitionen (was der Optimizer je Paket leistet) ──────────────
+//
+// Preise kommen ausschließlich aus src/config/pricing.ts (Single Source of
+// Truth) — hier niemals hardcoden, sonst zeigen /pricing und diese Seite
+// unterschiedliche Preise.
 
 export interface OptimizerPackage {
   key: string;             // Stripe/Pricing-Plan-Key
@@ -293,11 +298,19 @@ export interface OptimizerPackage {
   highlighted?: boolean;
 }
 
+/** Anzeige-Preis aus der kanonischen Pricing-Config. */
+function canonicalPrice(planKey: TierId): string {
+  const tier = tierById(planKey);
+  if (!tier) return 'individuell';
+  if (tier.priceEur === 0) return planKey === 'free' ? '0 €' : 'individuell';
+  return `${tier.priceString} €/Mo.`;
+}
+
 export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
   {
     key: 'free',
     name: 'Free-Scan',
-    price: '0 €',
+    price: canonicalPrice('free'),
     tagline: 'Einmalige Analyse ohne Account',
     does: [
       'Einmaliger Website-Scan',
@@ -308,7 +321,7 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
   {
     key: 'starter',
     name: 'Starter',
-    price: 'ab 49 €/Mo.',
+    price: canonicalPrice('starter'),
     tagline: 'Fehler verstehen & priorisieren',
     does: [
       'Priorisierter Fix-Plan pro Befund',
@@ -321,7 +334,7 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
   {
     key: 'growth',
     name: 'Growth',
-    price: 'ab 149 €/Mo.',
+    price: canonicalPrice('growth'),
     tagline: 'Fehler automatisch beheben lassen',
     does: [
       'Automatische Fix-Vorschläge als Code (Claude Code)',
@@ -333,7 +346,7 @@ export const OPTIMIZER_PACKAGES: OptimizerPackage[] = [
   {
     key: 'enterprise',
     name: 'Enterprise',
-    price: 'individuell',
+    price: canonicalPrice('enterprise'),
     tagline: 'Vollautomatisiert & auditfähig',
     does: [
       'Eigene Regelwerke & Policy-Packs',

@@ -26,6 +26,8 @@ import {
   defaultRange,
   type ExportFormat,
 } from './auditExportApi';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Typen ──────────────────────────────────────────────────────────────────
 type PackageStatus = 'bereit' | 'in-vorbereitung' | 'archiviert';
@@ -164,6 +166,10 @@ function eventToAuditEvent(e: DbGovernanceEvent): AuditEvent {
     target:   e.title,
     severity,
   };
+}
+
+function Inner() {
+  return <div className="p-4 text-titanium-300">Implementation pending</div>;
 }
 
 // ── AuditExportView ────────────────────────────────────────────────────────

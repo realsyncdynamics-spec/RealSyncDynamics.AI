@@ -20,6 +20,18 @@ CREATE TABLE IF NOT EXISTS public.workflows (
   CONSTRAINT workflows_tenant_fk FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 
+-- Reconcile with the pre-existing public.workflows table from 00001_initial_schema.sql.
+-- That table already exists (owner_id/title/is_active/...), so the CREATE TABLE
+-- IF NOT EXISTS above is a no-op and the automation columns below never
+-- materialized — which broke the index creation that follows. Add them
+-- additively (nullable, so existing rows are unaffected).
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS name VARCHAR;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS workflow_type VARCHAR;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}';
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS enabled BOOLEAN DEFAULT false;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS next_run_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE public.workflows ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
 -- RLS for workflows
 ALTER TABLE public.workflows ENABLE ROW LEVEL SECURITY;
 
@@ -27,36 +39,36 @@ CREATE POLICY "Users can view their tenant's workflows"
   ON public.workflows
   FOR SELECT
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can create workflows"
   ON public.workflows
   FOR INSERT
   WITH CHECK (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can update workflows"
   ON public.workflows
   FOR UPDATE
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   )
   WITH CHECK (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can delete workflows"
   ON public.workflows
   FOR DELETE
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
-CREATE INDEX idx_workflows_tenant_id ON public.workflows(tenant_id);
-CREATE INDEX idx_workflows_enabled ON public.workflows(enabled);
-CREATE INDEX idx_workflows_next_run_at ON public.workflows(next_run_at);
+CREATE INDEX IF NOT EXISTS idx_workflows_tenant_id ON public.workflows(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_workflows_enabled ON public.workflows(enabled);
+CREATE INDEX IF NOT EXISTS idx_workflows_next_run_at ON public.workflows(next_run_at);
 
 -- Workflow runs: Track execution history
 CREATE TABLE IF NOT EXISTS public.workflow_runs (
@@ -81,14 +93,14 @@ CREATE POLICY "Users can view their tenant's workflow runs"
   ON public.workflow_runs
   FOR SELECT
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can create workflow runs"
   ON public.workflow_runs
   FOR INSERT
   WITH CHECK (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE INDEX idx_workflow_runs_workflow_id ON public.workflow_runs(workflow_id);

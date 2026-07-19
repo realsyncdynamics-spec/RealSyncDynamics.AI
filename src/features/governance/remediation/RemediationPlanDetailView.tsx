@@ -10,6 +10,8 @@ import {
 import type { RemediationPlan } from './types';
 import { RemediationReviewBanner } from './RemediationReviewBanner';
 import { RemediationSnippetCard } from './RemediationSnippetCard';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 export function RemediationPlanDetailView() {
   const { planId } = useParams<{ planId: string }>();

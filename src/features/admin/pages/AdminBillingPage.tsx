@@ -57,11 +57,11 @@ export function AdminBillingPage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 border border-titanium/10 rounded-sm">
                 <p className="text-xs text-titanium-400 mb-1">Plan</p>
-                <p className="font-display font-bold text-lg text-titanium-50">Professional</p>
+                <p className="font-display font-bold text-lg text-titanium-50">Agency</p>
               </div>
               <div className="p-4 border border-titanium/10 rounded-sm">
                 <p className="text-xs text-titanium-400 mb-1">Abgerechnet</p>
-                <p className="font-display font-bold text-lg text-titanium-50">€299/Monat</p>
+                <p className="font-display font-bold text-lg text-titanium-50">€699/Monat</p>
               </div>
               <div className="p-4 border border-titanium/10 rounded-sm">
                 <p className="text-xs text-titanium-400 mb-1">Status</p>
@@ -176,9 +176,9 @@ export function AdminBillingPage() {
                 </thead>
                 <tbody>
                   {[
-                    { date: '23. Juni 2026', number: 'INV-2026-0534', amount: '€299,00', status: 'Bezahlt' },
-                    { date: '23. Mai 2026', number: 'INV-2026-0521', amount: '€299,00', status: 'Bezahlt' },
-                    { date: '23. April 2026', number: 'INV-2026-0508', amount: '€299,00', status: 'Bezahlt' },
+                    { date: '23. Juni 2026', number: 'INV-2026-0534', amount: '€699,00', status: 'Bezahlt' },
+                    { date: '23. Mai 2026', number: 'INV-2026-0521', amount: '€699,00', status: 'Bezahlt' },
+                    { date: '23. April 2026', number: 'INV-2026-0508', amount: '€699,00', status: 'Bezahlt' },
                   ].map((invoice, idx) => (
                     <tr key={idx} className="border-b border-titanium/10 hover:bg-obsidian-900/50">
                       <td className="py-3 px-4 text-titanium-300">{invoice.date}</td>

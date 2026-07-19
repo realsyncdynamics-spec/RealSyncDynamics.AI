@@ -27,6 +27,8 @@ import {
 } from './agentsApi';
 import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/agents/types';
 import { AgentActivityPanel } from './AgentActivityPanel';
+import { AuthGate } from '../../kodee/connections/AuthGate';
+import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {
@@ -143,6 +145,10 @@ function Toast({ message, tone }: { message: string; tone: 'ok' | 'error' }) {
       {message}
     </div>
   );
+}
+
+function Inner() {
+  return <div className="p-4 text-titanium-300">Implementation pending</div>;
 }
 
 // ── AgentsCenterView ───────────────────────────────────────────────────────

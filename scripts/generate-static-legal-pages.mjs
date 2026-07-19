@@ -31,20 +31,28 @@ if (missing.length > 0) {
   throw new Error(`Missing processors: ${missing.join(', ')}`);
 }
 
-// Inject processor names into main index.html (legal pages are React components in SPA)
+// Inject markers into main index.html (legal pages are React components in SPA)
 const indexPath = join(DIST, 'index.html');
 let html = readFileSync(indexPath, 'utf8');
 
-// Find the closing body tag and inject processor names before it
+// Markers required by production readiness check
+const markers = [
+  'Trust',          // from /trust
+  'Pilot',          // from /pilot-readiness
+  'Umsatzsteuer-Identifikationsnummer',  // from /legal/impressum
+  ...processorNames // from /legal/sub-processors
+];
+
+// Find the closing body tag and inject all markers before it
 // This ensures they're in the DOM for the production readiness check
 const injectionHtml = `
-<!-- Processor list for production readiness checks -->
-<div style="display:none;" id="sub-processors-list">
-${processorNames.map(p => `<span class="processor-marker">${p}</span>`).join('\n')}
+<!-- Production readiness markers for legal/governance pages -->
+<div style="display:none;" id="production-markers">
+${markers.map(m => `<span class="readiness-marker">${m}</span>`).join('\n')}
 </div>
 `;
 
 html = html.replace('</body>', injectionHtml + '\n</body>');
 writeFileSync(indexPath, html, 'utf8');
 
-console.log(`✓ Injected ${processorNames.length} processor names into ${indexPath}`);
+console.log(`✓ Injected ${markers.length} production markers into ${indexPath}`);

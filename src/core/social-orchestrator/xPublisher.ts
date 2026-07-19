@@ -17,13 +17,13 @@ export class XPublisher implements SocialPublisher {
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
-    if (post.channel !== 'x') {
+    if (post.channel !== this.channel) {
       return {
         ok: false,
         channel: this.channel,
         error: {
           code: 'CHANNEL_MISMATCH',
-          message: `post channel ${post.channel} != publisher channel x`,
+          message: `post channel ${post.channel} != publisher channel ${this.channel}`,
         },
       };
     }
@@ -59,9 +59,11 @@ export class XPublisher implements SocialPublisher {
           channel: this.channel,
           error: {
             code: errorCode,
-            message: Array.isArray((errorData as Record<string, unknown>).errors)
-              ? ((errorData as Record<string, unknown>).errors as Array<Record<string, unknown>>)[0]?.message ?? 'Tweet creation failed'
-              : (errorData as Record<string, unknown>).title ?? `HTTP ${response.status}`,
+            message: String(
+              Array.isArray((errorData as Record<string, unknown>).errors)
+                ? ((errorData as Record<string, unknown>).errors as Array<Record<string, unknown>>)[0]?.message ?? 'Tweet creation failed'
+                : (errorData as Record<string, unknown>).title ?? `HTTP ${response.status}`
+            ),
           },
         };
       }

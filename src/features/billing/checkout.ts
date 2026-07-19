@@ -9,7 +9,10 @@ import { getSupabase } from '../../lib/supabase';
  * Hinweis: 'free_audit' ist das externe Identifier (Marketing, CTAs),
  * aber dieser Checkout verneint es — Free braucht keinen Checkout.
  */
-export type PlanKey = 'free' | 'free-audit' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+export type PlanKey =
+  | 'free' | 'free-audit'
+  | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise'
+  | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly';
 
 export interface CheckoutResult {
   ok: boolean;

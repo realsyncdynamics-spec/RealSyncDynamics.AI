@@ -1058,57 +1058,30 @@ export class WebhookPublisher extends BasePublisher {
 }
 
 /**
- * Email Publisher — Send post as email newsletter
- * Supports SendGrid, AWS SES, and Mailgun via pluggable adapters.
- * In production, credentials are loaded from Supabase Vault via environment variables.
+ * Email Publisher — SendGrid SMTP API integration
+ *
+ * Caller (Edge Function) is responsible for loading API key from Supabase Vault
+ * and recipient list from configuration, then passing to constructor.
+ *
+ * Supports:
+ * - Bulk sending to multiple recipients
+ * - HTML and plain-text formatting
+ * - Tracking metadata (for bounce/delivery monitoring)
+ * - Retry with exponential backoff
+ *
+ * See: https://sendgrid.com/docs/api-reference/
  */
 export class EmailPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'email.newsletter';
-  private fromAddress: string = 'noreply@realsync.ai';
-  private toAddresses: string[] = [];
+  private fromAddress: string;
+  private toAddresses: string[];
+  private sendgridApiKey: string;
 
-  constructor(
-    fromAddress: string,
-    toAddresses: string[] = [],
-    emailService: 'sendgrid' | 'ses' | 'mailgun' = 'sendgrid',
-    adapterConfig?: Record<string, string>
-  ) {
+  constructor(fromAddress: string, toAddresses: string[], sendgridApiKey: string) {
     super();
-    this.fromAddress = fromAddress || 'noreply@realsync.ai';
+    this.fromAddress = fromAddress;
     this.toAddresses = toAddresses;
-    this.adapter = this.createAdapter(emailService, adapterConfig || {});
-  }
-
-  private createAdapter(service: string, config: Record<string, string>): EmailAdapter {
-    switch (service) {
-      case 'sendgrid':
-        if (!config.sendgridApiKey) {
-          throw new Error('SendGrid adapter requires sendgridApiKey in config. Use Edge Functions to fetch secrets.');
-        }
-        return new SendGridAdapter(config.sendgridApiKey);
-      case 'ses':
-        if (!config.awsAccessKey || !config.awsSecretKey) {
-          throw new Error('AWS SES adapter requires awsAccessKey and awsSecretKey in config. Use Edge Functions to fetch secrets.');
-        }
-        return new AWSSESAdapter(
-          config.awsRegion || 'us-east-1',
-          config.awsAccessKey,
-          config.awsSecretKey
-        );
-      case 'mailgun':
-        if (!config.mailgunDomain || !config.mailgunApiKey) {
-          throw new Error('Mailgun adapter requires mailgunDomain and mailgunApiKey in config. Use Edge Functions to fetch secrets.');
-        }
-        return new MailgunAdapter(
-          config.mailgunDomain,
-          config.mailgunApiKey
-        );
-      default:
-        if (!config.sendgridApiKey) {
-          throw new Error('SendGrid adapter requires sendgridApiKey in config. Use Edge Functions to fetch secrets.');
-        }
-        return new SendGridAdapter(config.sendgridApiKey);
-    }
+    this.sendgridApiKey = sendgridApiKey;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -1120,48 +1093,78 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
+    if (!this.sendgridApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_API_KEY', message: 'SendGrid API key not configured' },
+      };
+    }
+
     this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
 
     try {
       const result = await this.retryWithBackoff(
         async () => {
-          const title = post.body.split('\n')[0] || 'Governance Update';
-          const emailBody = `
-<html>
-<head><meta charset="utf-8"/></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333;">
-<h2>${this.escapeHtml(title)}</h2>
-<div>${post.body.replace(/\n/g, '<br/>')}</div>
-${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size: 0.9em;">${post.hashtags.map(h => this.escapeHtml(h)).join(' ')}</p>` : ''}
-<hr style="margin-top: 2em; border: none; border-top: 1px solid #ddd;">
-<p style="font-size: 0.85em; color: #999;">This email was sent as part of compliance monitoring. <a href="#">Manage preferences</a></p>
-</body>
-</html>
-`;
-
-          return this.adapter.send({
-            fromAddress: this.fromAddress,
-            toAddresses: this.toAddresses,
-            subject: title,
-            htmlBody: emailBody,
+          const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.sendgridApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              personalizations: this.toAddresses.map(email => ({
+                to: [{ email }],
+              })),
+              from: { email: this.fromAddress, name: 'RealSync Governance' },
+              subject: this.extractTitle(post.body),
+              content: [
+                {
+                  type: 'text/html',
+                  value: this.formatAsHtml(post.body),
+                },
+                {
+                  type: 'text/plain',
+                  value: post.body,
+                },
+              ],
+              tracking_settings: {
+                click_tracking: { enabled: true },
+                open_tracking: { enabled: true },
+              },
+              custom_args: {
+                source: 'RealSyncGovernance',
+                postId: post.id,
+                eventType: post.socialEventId,
+              },
+            }),
           });
+
+          if (response.status === 401) {
+            throw new Error('SENDGRID_401_UNAUTHORIZED');
+          }
+          if (response.status === 429) {
+            throw new Error('SENDGRID_429_RATE_LIMIT');
+          }
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`SENDGRID_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
+          }
+
+          return { ok: true };
         },
         (attempt, error) => {
-          console.warn(`Email publish attempt ${attempt} failed:`, error.message);
+          console.warn(`SendGrid publish attempt ${attempt} failed:`, error.message);
         }
       );
 
-      if (result.ok) {
-        this.logPublishAttempt(post, 'success', { recipients: this.toAddresses.length });
-        return {
-          ok: true,
-          channel: this.channel,
-          externalId: result.messageId || `email_${Date.now()}`,
-          postedAt: new Date().toISOString(),
-        };
-      } else {
-        throw new Error(result.error || 'Email send failed');
-      }
+      this.logPublishAttempt(post, 'success', { recipients: this.toAddresses.length });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: `sendgrid_${Date.now()}`,
+        postedAt: new Date().toISOString(),
+      };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       this.logPublishAttempt(post, 'failed', { error: errorMsg });
@@ -1169,14 +1172,37 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'EMAIL_SEND_ERROR', message: errorMsg },
+        error: { code: 'SENDGRID_API_ERROR', message: errorMsg },
       };
     }
   }
 
-  private escapeHtml(text: string): string {
-    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, m => map[m]!);
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 100) {
+      return firstLine;
+    }
+    return body.substring(0, 100).trim() + (body.length > 100 ? '…' : '');
+  }
+
+  private formatAsHtml(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    let html = escaped
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    return `<html><body style="font-family: sans-serif; line-height: 1.6;"><p>${html}</p></body></html>`;
   }
 }
 

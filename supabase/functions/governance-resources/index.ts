@@ -29,6 +29,35 @@ const SEVERITIES = ['info', 'low', 'medium', 'high', 'critical'];
 const ACTIONS = ['allow', 'log', 'warn', 'block', 'require_approval'];
 const CONTROL_STATUSES = ['not_started', 'in_progress', 'implemented', 'gap', 'not_applicable'];
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+    delete(): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+    upsert(rows: Record<string, unknown>[], opts: { onConflict: string }): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -70,8 +99,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function createAsset(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function createAsset(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const tenant_id = b.tenant_id as string;
   const asset_type = b.asset_type as string;
   const name = (b.name as string ?? '').trim();
@@ -104,8 +132,7 @@ async function createAsset(admin: any, userId: string, userEmail: string | null,
   return jsonResponse({ ok: true, asset: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function archiveAsset(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function archiveAsset(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
   if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required');
 
@@ -121,8 +148,7 @@ async function archiveAsset(admin: any, userId: string, userEmail: string | null
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function createPolicy(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function createPolicy(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const tenant_id = b.tenant_id as string;
   const name = (b.name as string ?? '').trim();
   const policy_type = b.policy_type as string;
@@ -151,8 +177,7 @@ async function createPolicy(admin: any, userId: string, userEmail: string | null
   return jsonResponse({ ok: true, policy: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function togglePolicy(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function togglePolicy(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const policy_id = b.policy_id as string;
   const enabled = b.enabled !== false;
   if (!policy_id) return jsonError(400, 'BAD_REQUEST', 'policy_id required');
@@ -168,8 +193,7 @@ async function togglePolicy(admin: any, userId: string, userEmail: string | null
   return jsonResponse({ ok: true, enabled });
 }
 
-// deno-lint-ignore no-explicit-any
-async function upsertMapping(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function upsertMapping(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
   const control_id = b.control_id as string;
   const status = (b.status as string) ?? 'not_started';
@@ -207,8 +231,7 @@ async function upsertMapping(admin: any, userId: string, userEmail: string | nul
   return jsonResponse({ ok: true, mapping: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function autoMap(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function autoMap(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const asset_id = b.asset_id as string;
   if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required');
 
@@ -266,8 +289,7 @@ async function autoMap(admin: any, userId: string, userEmail: string | null, b: 
   return jsonResponse({ ok: true, applied: rows.length, proposals });
 }
 
-// deno-lint-ignore no-explicit-any
-async function deleteMapping(admin: any, userId: string, userEmail: string | null, b: Record<string, unknown>) {
+async function deleteMapping(admin: SupabaseAdminClient, userId: string, userEmail: string | null, b: Record<string, unknown>) {
   const mapping_id = b.mapping_id as string;
   if (!mapping_id) return jsonError(400, 'BAD_REQUEST', 'mapping_id required');
 
@@ -288,8 +310,7 @@ async function deleteMapping(admin: any, userId: string, userEmail: string | nul
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships')
     .select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data?.role === 'owner' || data?.role === 'admin';

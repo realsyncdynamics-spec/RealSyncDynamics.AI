@@ -35,8 +35,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleGet(client: any, urlStr: string) {
+async function handleGet(client: unknown, urlStr: string) {
   const url = new URL(urlStr);
   const tenantId = url.searchParams.get('tenant_id');
 

@@ -472,19 +472,120 @@ export class WordPressPublisher extends BasePublisher {
 
 /**
  * Ghost Publisher — Ghost API (v3+)
- * TODO: implement in follow-up PR; placeholder for architecture
+ *
+ * Caller (Edge Function) is responsible for loading adminUrl and adminApiKey
+ * from configuration and Supabase Vault, then passing them to constructor.
+ *
+ * Uses Ghost Admin API for direct post publishing. Requires:
+ * - Ghost v3.0+
+ * - Admin API key (not Content API key)
+ * - Full Ghost URL (e.g., https://blog.example.com)
+ *
+ * See: https://ghost.org/docs/admin-api/
  */
 export class GhostPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'ghost.blog';
-  private adminUrl: string = '';
-  private adminApiKey: string = '';
+  private adminUrl: string;
+  private adminApiKey: string;
+
+  constructor(adminUrl: string, adminApiKey: string) {
+    super();
+    this.adminUrl = adminUrl.replace(/\/$/, ''); // strip trailing slash
+    this.adminApiKey = adminApiKey;
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Ghost publisher pending implementation' },
-    };
+    this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
+
+    if (!this.adminUrl || !this.adminApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_CONFIG', message: 'Ghost admin URL or API key not configured' },
+      };
+    }
+
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const response = await fetch(`${this.adminUrl}/ghost/api/admin/posts/?source=html`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Ghost ${this.adminApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              posts: [
+                {
+                  title: this.extractTitle(post.body),
+                  html: this.markdownToHtml(post.body),
+                  status: 'published',
+                  tags: post.hashtags.length > 0 ? post.hashtags.map(h => ({ name: h.replace('#', '') })) : [],
+                },
+              ],
+            }),
+          });
+
+          if (response.status === 401) {
+            throw new Error('GHOST_401_UNAUTHORIZED');
+          }
+          if (response.status === 403) {
+            throw new Error('GHOST_403_FORBIDDEN');
+          }
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`GHOST_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
+          }
+
+          return response.json();
+        },
+        (attempt, error) => {
+          console.warn(`Ghost publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      const posts = (result as Record<string, unknown>).posts as Array<Record<string, unknown>>;
+      const postId = posts?.[0]?.id;
+      this.logPublishAttempt(post, 'success', { externalId: postId });
+
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: String(postId),
+        postedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'GHOST_API_ERROR', message: errorMsg },
+      };
+    }
+  }
+
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 200) {
+      return firstLine;
+    }
+    return body.substring(0, 200).trim() + (body.length > 200 ? '…' : '');
+  }
+
+  private markdownToHtml(md: string): string {
+    // Very basic markdown to HTML conversion (handles common patterns)
+    let html = md
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    return `<p>${html}</p>`;
   }
 }
 

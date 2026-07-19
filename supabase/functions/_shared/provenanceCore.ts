@@ -94,8 +94,20 @@ export interface AppendResult {
  * Hängt ein Custody-Event an die Kette eines Assets an (legt das Manifest bei
  * Bedarf an). Das erste Event eines Assets ist stets 'registered'.
  */
-// deno-lint-ignore no-explicit-any
-export async function appendCustodyEvent(admin: any, args: {
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): { maybeSingle(): Promise<{ data: unknown; error: unknown }> };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        order(col: string, opts?: Record<string, unknown>): { limit(n: number): { maybeSingle(): Promise<{ data: unknown; error: unknown }> } };
+      };
+    };
+    insert(obj: Record<string, unknown>): { select(columns?: string): { single(): Promise<{ data: unknown; error: unknown }> } };
+  };
+}
+
+export async function appendCustodyEvent(admin: SupabaseAdminClient, args: {
   tenantId: string;
   assetRef: string;
   contentSha256: string;

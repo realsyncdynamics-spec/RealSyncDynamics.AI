@@ -14,6 +14,31 @@ import { reportServerConversion } from '../_shared/conversions-api.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns?: string): {
+      eq(col: string, val: unknown): {
+        limit(n: number): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    upsert(row: Record<string, unknown>, options?: Record<string, unknown>): {
+      select(columns?: string): Promise<{ data: unknown; error: unknown }>;
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns?: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    delete(): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 // Vault-first, env-fallback. Lets an operator rotate a secret via
 //   select public.set_app_secret('stripe_secret_key', 'sk_test_...');
 // without a function redeploy, and overrides a stale placeholder env var.
@@ -141,7 +166,7 @@ Deno.serve(async (req) => {
 });
 
 // deno-lint-ignore no-explicit-any
-async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<void> {
+async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscription): Promise<void> {
   const tenantId =
     (sub.metadata && sub.metadata.tenant_id) ||
     (typeof sub.customer === 'object' ? sub.customer?.metadata?.tenant_id : undefined);
@@ -190,7 +215,7 @@ async function syncSubscription(admin: any, sub: Stripe.Subscription): Promise<v
 // obwohl der Preis korrekt in der DB verdrahtet ist. Erst wenn auch das
 // nichts findet, greift 'free'.
 // deno-lint-ignore no-explicit-any
-async function resolvePlanKey(admin: any, item: Stripe.SubscriptionItem | undefined): Promise<string> {
+async function resolvePlanKey(admin: SupabaseAdminClient, item: Stripe.SubscriptionItem | undefined): Promise<string> {
   const fromMeta = item?.price?.metadata?.plan_key;
   if (fromMeta) return fromMeta;
 
@@ -208,7 +233,7 @@ async function resolvePlanKey(admin: any, item: Stripe.SubscriptionItem | undefi
 }
 
 // deno-lint-ignore no-explicit-any
-async function syncInvoice(admin: any, inv: Stripe.Invoice): Promise<void> {
+async function syncInvoice(admin: SupabaseAdminClient, inv: Stripe.Invoice): Promise<void> {
   const customerId = typeof inv.customer === 'string' ? inv.customer : inv.customer?.id ?? null;
   const subId = typeof inv.subscription === 'string' ? inv.subscription : inv.subscription?.id ?? null;
 
@@ -253,7 +278,7 @@ async function syncInvoice(admin: any, inv: Stripe.Invoice): Promise<void> {
 }
 
 // deno-lint-ignore no-explicit-any
-async function recordPaymentEvent(admin: any, event: Stripe.Event): Promise<void> {
+async function recordPaymentEvent(admin: SupabaseAdminClient, event: Stripe.Event): Promise<void> {
   const occurredAt = new Date(event.created * 1000).toISOString();
 
   let amount = 0;
@@ -325,9 +350,8 @@ async function recordPaymentEvent(admin: any, event: Stripe.Event): Promise<void
   if (error && !/duplicate key/i.test(error.message)) throw error;
 }
 
-// deno-lint-ignore no-explicit-any
 async function recordTrialEventIfApplicable(
-  admin: any,
+  admin: SupabaseAdminClient,
   event: Stripe.Event,
   kind: 'trial_started' | 'trial_will_end' | 'converted' | 'canceled',
 ): Promise<void> {
@@ -369,8 +393,7 @@ async function recordTrialEventIfApplicable(
   }
 }
 
-// deno-lint-ignore no-explicit-any
-async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Session): Promise<void> {
+async function sendOnboardingWelcome(admin: SupabaseAdminClient, session: Stripe.Checkout.Session): Promise<void> {
   const email = session.customer_details?.email ?? session.customer_email;
   if (!email) {
     console.log("[stripe-webhook] checkout.session.completed: no email — skip welcome");
@@ -456,8 +479,7 @@ async function sendOnboardingWelcome(admin: any, session: Stripe.Checkout.Sessio
 // gesetzt haben. Insert ist synchron (sichtbar im Admin sofort), Workflow-Run
 // läuft via EdgeRuntime.waitUntil im Hintergrund — Webhook acked sofort.
 //
-// deno-lint-ignore no-explicit-any
-async function triggerWebsiteRebuildIfApplicable(admin: any, session: Stripe.Checkout.Session): Promise<void> {
+async function triggerWebsiteRebuildIfApplicable(admin: SupabaseAdminClient, session: Stripe.Checkout.Session): Promise<void> {
   const meta = session.metadata ?? {};
   if (meta.product_type !== 'managed_website') return;
 

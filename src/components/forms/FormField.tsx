@@ -4,8 +4,8 @@ import { useForm } from './FormContext';
 interface FormFieldProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
   name: string;
   children: (fieldProps: {
-    value: any;
-    onChange: (value: any) => void;
+    value: unknown;
+    onChange: (value: unknown) => void;
     onBlur: () => void;
     error?: string;
     touched: boolean;
@@ -16,7 +16,7 @@ export const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
   ({ name, children, className = '', ...props }, ref) => {
     const { values, errors, touched, setFieldValue, setFieldTouched } = useForm();
 
-    const handleChange = (value: any) => {
+    const handleChange = (value: unknown) => {
       setFieldValue(name, value);
     };
 

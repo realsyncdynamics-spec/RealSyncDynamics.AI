@@ -1330,7 +1330,7 @@ export class QueueMetricsCollector {
 
     const retryRateByChannel: Record<SocialChannel, number> = {} as Record<SocialChannel, number>;
     for (const entry of entries) {
-      retryRateByChannel[entry.channel] = (retryRateByChannel[entry.channel] ?? 0) + (this.retryAttempts.get(entry.id) ?? 0);
+      retryRateByChannel[entry.post.channel] = (retryRateByChannel[entry.post.channel] ?? 0) + (this.retryAttempts.get(entry.id) ?? 0);
     }
 
     return {

@@ -38,6 +38,13 @@ export interface RateLimitStatus {
   requests_daily_limit: number;
 }
 
+export interface OAuth2TokenRecord {
+  id: string;
+  created_at: string;
+  last_used_at: string | null;
+  scope: string;
+}
+
 /**
  * Create a new OAuth2 application for third-party integrations.
  */
@@ -149,7 +156,7 @@ export async function listOAuth2Tokens(appId: string): Promise<Array<{ token_id:
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map((d: any) => ({
+  return (data as OAuth2TokenRecord[] || []).map(d => ({
     token_id: d.id,
     created_at: d.created_at,
     last_used_at: d.last_used_at,

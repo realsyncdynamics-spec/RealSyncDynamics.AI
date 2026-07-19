@@ -131,14 +131,14 @@ export function initWebVitals(): void {
   // Track INP (Interaction to Next Paint)
   try {
     const inpObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1] as any;
+      const entries = list.getEntries() as PerformanceEventTiming[];
+      const lastEntry = entries[entries.length - 1];
       if (lastEntry) {
         const inpValue = Math.max(
-          ...entries.map((e: any) => (e.processingDuration || 0) + (e.duration || 0))
+          ...entries.map(e => (e.processingDuration || 0) + (e.duration || 0))
         );
         const prevInpValue = entries.length > 1
-          ? Math.max(...entries.slice(0, -1).map((e: any) => (e.processingDuration || 0) + (e.duration || 0)))
+          ? Math.max(...entries.slice(0, -1).map(e => (e.processingDuration || 0) + (e.duration || 0)))
           : 0;
         reportWebVital({
           name: 'INP',
@@ -149,7 +149,7 @@ export function initWebVitals(): void {
         });
       }
     });
-    (inpObserver.observe as any)({ entryTypes: ['event'], durationThreshold: 0 });
+    inpObserver.observe({ entryTypes: ['event'], durationThreshold: 0 } as PerformanceObserverInit);
   } catch (e) {
     // PerformanceObserver not supported
   }
@@ -159,9 +159,9 @@ export function initWebVitals(): void {
     let clsValue = 0;
     const clsObserver = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        const entryAny = entry as any;
-        if (!entryAny.hadRecentInput) {
-          const delta = entryAny.value || 0;
+        const clsEntry = entry as PerformanceEventTiming;
+        if (!clsEntry.hadRecentInput) {
+          const delta = clsEntry.value || 0;
           clsValue += delta;
           reportWebVital({
             name: 'CLS',
@@ -180,7 +180,7 @@ export function initWebVitals(): void {
 
   // Track navigation timing (TTFB, FCP, DCL)
   try {
-    const navTiming = performance.getEntriesByType('navigation')[0] as any;
+    const navTiming = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
     if (navTiming) {
       const ttfb = navTiming.responseStart - navTiming.fetchStart;
       if (ttfb > 0) {
@@ -189,7 +189,7 @@ export function initWebVitals(): void {
           value: ttfb,
           rating: 'good',
           id: 'ttfb',
-          navigationType: navTiming.type as any,
+          navigationType: navTiming.type as WebVital['navigationType'],
         });
       }
 

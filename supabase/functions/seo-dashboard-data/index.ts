@@ -8,11 +8,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface JWTPayload {
+  sub: string;
+  [key: string]: unknown;
+}
+
+interface LifecycleRecord {
+  status: string;
+  customer_acquisition_cost?: number;
+  lifetime_value?: number;
+  predicted_ltv?: number;
+  [key: string]: unknown;
+}
+
 interface DashboardData {
-  marketing_metrics: any[]
-  shadow_seo_tools: any[]
-  security_events: any[]
-  customer_summary: any
+  marketing_metrics: Record<string, unknown>[]
+  shadow_seo_tools: Record<string, unknown>[]
+  security_events: Record<string, unknown>[]
+  customer_summary: Record<string, unknown>
 }
 
 serve(async (req: Request) => {
@@ -31,7 +44,7 @@ serve(async (req: Request) => {
 
     // Extract token and decode
     const token = authHeader.replace('Bearer ', '')
-    const decoded: any = jwtDecode(token)
+    const decoded: JWTPayload = jwtDecode(token)
     const userId = decoded.sub
 
     const supabase = createClient(
@@ -96,16 +109,16 @@ serve(async (req: Request) => {
       .select('*')
       .eq('tenant_id', tenantId)
 
-    const activeCusts = lifecycleData?.filter((l: any) => l.status === 'active').length || 0
-    const churnedCusts = lifecycleData?.filter((l: any) => l.status === 'churned').length || 0
+    const activeCusts = lifecycleData?.filter((l: LifecycleRecord) => l.status === 'active').length || 0
+    const churnedCusts = lifecycleData?.filter((l: LifecycleRecord) => l.status === 'churned').length || 0
     const avgCac =
       lifecycleData && lifecycleData.length > 0
-        ? lifecycleData.reduce((sum: number, l: any) => sum + (l.customer_acquisition_cost || 0), 0) / lifecycleData.length
+        ? lifecycleData.reduce((sum: number, l: LifecycleRecord) => sum + (l.customer_acquisition_cost || 0), 0) / lifecycleData.length
         : 0
 
     const avgLtv =
       lifecycleData && lifecycleData.length > 0
-        ? lifecycleData.reduce((sum: number, l: any) => sum + (l.lifetime_value || l.predicted_ltv || 0), 0) / lifecycleData.length
+        ? lifecycleData.reduce((sum: number, l: LifecycleRecord) => sum + (l.lifetime_value || l.predicted_ltv || 0), 0) / lifecycleData.length
         : 0
 
     const dashboardData: DashboardData = {

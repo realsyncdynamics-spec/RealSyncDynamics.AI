@@ -8,7 +8,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Database, Plus, X, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Database, Plus, X, ShieldCheck, AlertTriangle, Loader2 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { AuthGate } from '../../kodee/connections/AuthGate';
 import { withPerformanceMonitoring } from '../../../lib/hoc';
@@ -89,7 +89,116 @@ export const AiActDataGovernanceView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  return <div className="p-8 text-titanium-400">View coming soon...</div>;
+  const { activeTenantId } = useTenant();
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    void loadDatasets();
+  }, [activeTenantId]);
+
+  const loadDatasets = async () => {
+    if (!activeTenantId) {
+      setDatasets(DEMO_DATASETS);
+      return;
+    }
+    try {
+      setLoading(true);
+      const data = await listDatasets(activeTenantId);
+      setDatasets(data);
+    } catch (err) {
+      console.error('Failed to load datasets:', err);
+      setDatasets([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDataset = async (input: CreateDatasetInput) => {
+    if (!activeTenantId) return;
+    try {
+      const created = await createDataset({ ...input, tenant_id: activeTenantId });
+      setDatasets((prev) => [created, ...prev]);
+      setShowModal(false);
+    } catch (err) {
+      console.error('Failed to create dataset:', err);
+    }
+  };
+
+  const metrics = useMemo(() => {
+    if (datasets.length === 0) return { total: 0, withPii: 0, complete: 0 };
+    const withPii = datasets.filter((d) => d.contains_personal_data).length;
+    const complete = datasets.filter((d) => assessArt10Completeness(d).complete).length;
+    return { total: datasets.length, withPii, complete };
+  }, [datasets]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 text-teal-400 animate-spin mx-auto mb-3" />
+          <p className="text-[12px] text-titanium-400">Datasets werden geladen...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-titanium-50">AI Act — Datensätze (Art. 10)</h1>
+          <p className="text-sm text-titanium-400 mt-1">Dokumentation von Trainings-, Validierungs- und Testdatensätzen</p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-teal-900/40 border border-teal-700 text-teal-200 font-mono text-[11px] uppercase tracking-wider hover:bg-teal-800/60 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Datensatz hinzufügen
+        </button>
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-3 gap-4">
+        <MetricCard label="Datensätze gesamt" value={metrics.total.toString()} />
+        <MetricCard label="Mit Personenbezug" value={metrics.withPii.toString()} tone="amber" />
+        <MetricCard label="Art-10-vollständig" value={metrics.complete.toString()} tone="teal" />
+      </div>
+
+      {/* Dataset List */}
+      {datasets.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Database className="h-12 w-12 text-titanium-600 mb-4" />
+          <h2 className="text-lg font-semibold text-titanium-300">Keine Datensätze dokumentiert</h2>
+          <p className="text-sm text-titanium-500 mt-1 mb-4">Dokumentieren Sie Ihre Trainings-, Validierungs- und Testdatensätze gemäß Art. 10 EU AI Act</p>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-3 py-1.5 border border-teal-700 bg-teal-900/40 text-teal-200 font-mono text-[10px] uppercase tracking-wider hover:bg-teal-800/60 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Erstes Datensatz-Dokument
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {datasets.map((dataset) => (
+            <DatasetCard key={dataset.id} dataset={dataset} />
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <AddDatasetModal
+          onClose={() => setShowModal(false)}
+          onSave={handleSaveDataset}
+        />
+      )}
+    </div>
+  );
 }
 
 // ── Datensatz-Karte ───────────────────────────────────────────────────────────

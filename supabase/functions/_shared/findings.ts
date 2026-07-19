@@ -23,6 +23,13 @@
 //     spec_version + event_tier stay caller-controlled. A helper
 //     `emitCorrelatedRuntimeEvent` lives in a future PR.
 
+interface QueryBuilderChain {
+  eq?: (col: string, val: unknown) => QueryBuilderChain;
+  order?: (col: string, opts: { ascending: boolean }) => QueryBuilderChain;
+  limit?: (n: number) => Promise<{ data: unknown; error: { message: string } | null }>;
+  then<T>(onfulfilled?: (val: { data: unknown; error: { message: string } | null }) => T): Promise<T>;
+}
+
 export interface AdminLike {
   from(table: string): {
     insert(row: Record<string, unknown>): Promise<{
@@ -30,11 +37,7 @@ export interface AdminLike {
       error: { message: string } | null;
     }>;
     select(cols: string): {
-      eq(col: string, val: unknown): {
-        eq?: (col: string, val: unknown) => unknown;
-        order?: (col: string, opts: { ascending: boolean }) => unknown;
-        limit?: (n: number) => Promise<{ data: unknown; error: { message: string } | null }>;
-      } & PromiseLike<{ data: unknown; error: { message: string } | null }>;
+      eq(col: string, val: unknown): QueryBuilderChain;
     };
     update(patch: Record<string, unknown>): {
       eq(col: string, val: unknown): Promise<{ error: { message: string } | null }>;
@@ -196,8 +199,7 @@ export async function listFindings(
   // unit-tests would need to mock; the mock in tests/edge/findings.test.ts
   // returns the rows directly. Real usage chains .eq()/.order()/.limit().
   // The structural AdminLike type permits both shapes.
-  // deno-lint-ignore no-explicit-any
-  let q: any = admin.from('findings').select('*').eq('tenant_id', f.tenant_id);
+  let q: QueryBuilderChain = admin.from('findings').select('*').eq('tenant_id', f.tenant_id);
   if (f.status)     q = q.eq?.('status',     f.status)     ?? q;
   if (f.severity)   q = q.eq?.('severity',   f.severity)   ?? q;
   if (f.category)   q = q.eq?.('category',   f.category)   ?? q;

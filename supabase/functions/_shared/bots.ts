@@ -13,11 +13,39 @@
 // Funktion in Vitest importierbar, ohne den jsr-Specifier auflösen zu müssen
 // (gleiche Technik wie _shared/findings.ts: AdminLike). Der echte
 // service-role-Client der Edge Functions ist strukturell kompatibel.
+
+interface QueryBuilder {
+  eq(col: string, val: unknown): QueryBuilder;
+  order(col: string, opts?: Record<string, unknown>): QueryBuilder;
+  limit(n: number): QueryBuilder;
+  maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+  single(): Promise<{ data: unknown; error: unknown }>;
+  select(cols?: string): QueryBuilder;
+}
+
+interface InsertChain {
+  select(cols?: string): InsertChain;
+  single(): Promise<{ data: unknown; error: unknown }>;
+}
+
+interface UpdateChain {
+  eq(col: string, val: unknown): UpdateChain;
+}
+
+interface TableBuilder {
+  select(cols: string): QueryBuilder;
+  insert(obj: Record<string, unknown>): InsertChain;
+  update(obj: Record<string, unknown>): UpdateChain;
+}
+
+interface RpcResponse {
+  data: unknown;
+  error: unknown;
+}
+
 export interface SupabaseAdmin {
-  // deno-lint-ignore no-explicit-any
-  from(table: string): any;
-  // deno-lint-ignore no-explicit-any
-  rpc(fn: string, args: Record<string, unknown>): any;
+  from(table: string): TableBuilder;
+  rpc(fn: string, args: Record<string, unknown>): Promise<RpcResponse>;
 }
 
 export type BotChannel = 'chat' | 'voice' | 'telegram' | 'whatsapp';

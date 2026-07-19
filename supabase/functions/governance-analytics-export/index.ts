@@ -14,7 +14,22 @@ interface ExportRequest {
   include_charts?: boolean;
 }
 
-function generateCsv(snapshots: any[]): string {
+interface GovernanceSnapshot {
+  captured_date: string;
+  asset_count: number;
+  event_count: number;
+  incident_count: number;
+  critical_incident_count: number;
+  high_incident_count: number;
+  medium_incident_count: number;
+  policy_count: number;
+  assets_with_evidence_percent: number;
+  assets_with_mappings_percent: number;
+  policies_enabled_percent: number;
+  [key: string]: unknown;
+}
+
+function generateCsv(snapshots: GovernanceSnapshot[]): string {
   if (snapshots.length === 0) {
     return 'No data available\n';
   }

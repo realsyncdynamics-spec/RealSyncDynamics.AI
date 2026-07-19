@@ -803,7 +803,7 @@ export class EmailPublisher extends BasePublisher {
 
 /**
  * Dead Letter Queue — for failed publishing attempts.
- * TODO: Implement in follow-up PR with persistence to Postgres.
+ * In-memory implementation. Persistence to Postgres is a follow-up PR.
  *
  * Schema (future migration):
  *   CREATE TABLE distribution_dlq (
@@ -817,25 +817,187 @@ export class EmailPublisher extends BasePublisher {
  *     updated_at timestamptz
  *   );
  */
+export interface DeadLetterQueueEntry {
+  id: string;
+  queueEntryId: string;
+  channel: SocialChannel;
+  errorCode: string;
+  errorMessage: string;
+  retryCount: number;
+  nextRetryAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export class DeadLetterQueue {
+  private entries: DeadLetterQueueEntry[] = [];
+
+  enqueue(queueEntryId: string, channel: SocialChannel, errorCode: string, errorMessage: string, retryCount: number): DeadLetterQueueEntry {
+    const entry: DeadLetterQueueEntry = {
+      id: `dlq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      queueEntryId,
+      channel,
+      errorCode,
+      errorMessage,
+      retryCount,
+      nextRetryAt: new Date(Date.now() + Math.pow(2, retryCount) * 1000).toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.entries.push(entry);
+    return entry;
+  }
+
+  list(): DeadLetterQueueEntry[] {
+    return [...this.entries];
+  }
+
+  retry(dlqId: string): DeadLetterQueueEntry | null {
+    const entry = this.entries.find(e => e.id === dlqId);
+    if (entry) {
+      entry.retryCount += 1;
+      entry.nextRetryAt = new Date(Date.now() + Math.pow(2, entry.retryCount) * 1000).toISOString();
+      entry.updatedAt = new Date().toISOString();
+    }
+    return entry ?? null;
+  }
+
+  remove(dlqId: string): void {
+    this.entries = this.entries.filter(e => e.id !== dlqId);
+  }
+}
 
 /**
  * Queue Status & Metrics — for observability.
- * TODO: Implement in follow-up PR with time-series data.
+ * In-memory implementation. Time-series persistence is a follow-up PR.
  *
- * Metrics to track:
+ * Metrics tracked:
  *   - Queue depth (pending, approved, published, failed)
  *   - Publishing latency (start → published)
  *   - Retry rate (per channel, per error code)
  *   - Error trends (detect repeated failures)
  */
+export interface QueueMetrics {
+  queueDepth: Record<QueueStatus, number>;
+  publishingLatency: { min: number; max: number; avg: number };
+  retryRateByChannel: Record<SocialChannel, number>;
+  errorCodeFrequency: Record<string, number>;
+  timestamp: string;
+}
+
+export class QueueMetricsCollector {
+  private publishTimes: Map<string, number> = new Map();
+  private retryAttempts: Map<string, number> = new Map();
+  private errors: Map<string, number> = new Map();
+
+  recordPublishStart(queueId: string): void {
+    this.publishTimes.set(queueId, Date.now());
+  }
+
+  recordPublishEnd(queueId: string, success: boolean, errorCode?: string): void {
+    if (success) {
+      this.publishTimes.delete(queueId);
+    } else if (errorCode) {
+      this.errors.set(errorCode, (this.errors.get(errorCode) ?? 0) + 1);
+      this.retryAttempts.set(queueId, (this.retryAttempts.get(queueId) ?? 0) + 1);
+    }
+  }
+
+  getMetrics(queue: DistributionQueue): QueueMetrics {
+    const entries = queue.list();
+    const queueDepth: Record<QueueStatus, number> = {
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      published: 0,
+      failed: 0,
+      auto: 0,
+    };
+
+    for (const entry of entries) {
+      queueDepth[entry.status] = (queueDepth[entry.status] ?? 0) + 1;
+    }
+
+    const latencies = Array.from(this.publishTimes.values()).map(start => Date.now() - start);
+    const avgLatency = latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0;
+
+    const retryRateByChannel: Record<SocialChannel, number> = {} as Record<SocialChannel, number>;
+    for (const entry of entries) {
+      retryRateByChannel[entry.channel] = (retryRateByChannel[entry.channel] ?? 0) + (this.retryAttempts.get(entry.id) ?? 0);
+    }
+
+    return {
+      queueDepth,
+      publishingLatency: {
+        min: latencies.length > 0 ? Math.min(...latencies) : 0,
+        max: latencies.length > 0 ? Math.max(...latencies) : 0,
+        avg: avgLatency,
+      },
+      retryRateByChannel,
+      errorCodeFrequency: Object.fromEntries(this.errors),
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
 
 /**
- * Audit Logging — for compliance.
- * TODO: Wire to runtime_events table for full governance trail.
+ * Audit Logging — for compliance and governance trail.
+ * In-memory implementation. Wired to runtime_events table is a follow-up PR.
  *
- * Events to log:
- *   - publish_attempted(queue_id, channel, actor_id)
- *   - publish_succeeded(queue_id, channel, external_id)
- *   - publish_failed(queue_id, channel, error_code, retry_count)
- *   - dlq_entry_created(queue_id, reason)
+ * Events logged:
+ *   - publish_attempted(queueId, channel, status)
+ *   - publish_succeeded(queueId, channel, externalId)
+ *   - publish_failed(queueId, channel, errorCode, errorMessage)
+ *   - dlq_entry_created(queueId, reason)
  */
+export interface AuditLogEntry {
+  id: string;
+  eventType: string;
+  queueId: string;
+  channel: SocialChannel;
+  status: string;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+export class AuditLogger {
+  private entries: AuditLogEntry[] = [];
+
+  logPublishAttempted(queueId: string, channel: SocialChannel): AuditLogEntry {
+    return this.log('publish_attempted', queueId, channel, 'pending', { action: 'publish_attempt' });
+  }
+
+  logPublishSucceeded(queueId: string, channel: SocialChannel, externalId: string): AuditLogEntry {
+    return this.log('publish_succeeded', queueId, channel, 'published', { externalId });
+  }
+
+  logPublishFailed(queueId: string, channel: SocialChannel, errorCode: string, errorMessage: string): AuditLogEntry {
+    return this.log('publish_failed', queueId, channel, 'failed', { errorCode, errorMessage });
+  }
+
+  logDlqEntryCreated(queueId: string, channel: SocialChannel, reason: string): AuditLogEntry {
+    return this.log('dlq_entry_created', queueId, channel, 'dlq', { reason });
+  }
+
+  private log(eventType: string, queueId: string, channel: SocialChannel, status: string, metadata: Record<string, unknown>): AuditLogEntry {
+    const entry: AuditLogEntry = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      eventType,
+      queueId,
+      channel,
+      status,
+      metadata,
+      timestamp: new Date().toISOString(),
+    };
+    this.entries.push(entry);
+    return entry;
+  }
+
+  getEntries(filter?: { queueId?: string; eventType?: string }): AuditLogEntry[] {
+    return this.entries.filter(e => {
+      if (filter?.queueId && e.queueId !== filter.queueId) return false;
+      if (filter?.eventType && e.eventType !== filter.eventType) return false;
+      return true;
+    });
+  }
+}

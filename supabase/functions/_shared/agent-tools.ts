@@ -16,11 +16,12 @@ import {
   type LegalJurisdiction,
 } from './legal-retrieval.ts';
 
-interface QueryBuilder extends PromiseLike<{ data: unknown; error: unknown }> {
+interface QueryBuilder {
   eq(col: string, val: unknown): QueryBuilder;
   in(col: string, vals: unknown[]): QueryBuilder;
   order(col: string, opts?: Record<string, unknown>): QueryBuilder;
   limit(n: number): QueryBuilder;
+  then<T>(onfulfilled?: (val: { data: unknown; error: unknown }) => T): Promise<T>;
 }
 
 interface SupabaseAdminClient {
@@ -28,7 +29,6 @@ interface SupabaseAdminClient {
     select(cols: string): QueryBuilder;
     insert(obj: Record<string, unknown>): Promise<{ error: unknown }>;
   };
-  rpc(fn: string, args: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
 }
 
 // Structural shape of Anthropic.Tool — kept local so vitest (Node-resolver)

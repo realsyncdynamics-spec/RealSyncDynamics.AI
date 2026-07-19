@@ -290,11 +290,27 @@ abstract class BasePublisher implements SocialPublisher {
 /**
  * LinkedIn Publisher — OAuth 2.0 + REST API
  * Requires token in Supabase Vault: linkedin_access_token
+ * Supports multiple LinkedIn profiles (enterprise vs. legal framing)
  * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
  */
 export class LinkedInPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string = ''; // TODO: load from Supabase Vault in production
+  private accessToken: string;
+  private profileMap: Map<SocialChannel, string>;
+
+  /**
+   * Create a LinkedIn publisher with OAuth token and profile URNs.
+   * @param accessToken LinkedIn OAuth 2.0 access token (loaded from Supabase Vault in production)
+   * @param profileMap Map of LinkedIn channel → LinkedIn Person URN (e.g., "urn:li:person:ABC123")
+   */
+  constructor(accessToken: string, profileMap?: Map<SocialChannel, string>) {
+    super();
+    this.accessToken = accessToken;
+    this.profileMap = profileMap ?? new Map([
+      ['linkedin.enterprise', 'urn:li:person:ABC123'],
+      ['linkedin.legal', 'urn:li:person:XYZ789'],
+    ]);
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
@@ -304,6 +320,15 @@ export class LinkedInPublisher extends BasePublisher {
         ok: false,
         channel: this.channel,
         error: { code: 'NO_TOKEN', message: 'LinkedIn access token not configured' },
+      };
+    }
+
+    const personUrn = this.profileMap.get(post.channel);
+    if (!personUrn) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_PROFILE', message: `No LinkedIn profile configured for channel ${post.channel}` },
       };
     }
 
@@ -317,7 +342,7 @@ export class LinkedInPublisher extends BasePublisher {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              author: 'urn:li:person:PERSON_ID', // TODO: parameterize per profile
+              author: personUrn,
               lifecycleState: 'PUBLISHED',
               specificContent: {
                 'com.linkedin.ugc.PublishContent': {
@@ -366,36 +391,52 @@ export class LinkedInPublisher extends BasePublisher {
 
 /**
  * WordPress Publisher — XML-RPC or REST API
- * TODO: implement in follow-up PR; placeholder for architecture
+ * TODO: implement in follow-up PR; basic scaffolding in place
+ * TODO: siteUrl and apiToken loaded from config/Supabase Vault in production
  */
 export class WordPressPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'wordpress.blog' channel
-  private siteUrl: string = ''; // TODO: load from config
-  private apiToken: string = ''; // TODO: load from Supabase Vault
+  public readonly channel: SocialChannel = 'wordpress.blog';
+  private siteUrl: string;
+  private apiToken: string;
+
+  constructor(siteUrl: string, apiToken: string) {
+    super();
+    this.siteUrl = siteUrl;
+    this.apiToken = apiToken;
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
+    this.logPublishAttempt(post, 'pending', { siteUrl: this.siteUrl });
     return {
       ok: false,
       channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'WordPress publisher pending implementation' },
+      error: { code: 'NOT_IMPLEMENTED', message: 'WordPress publisher pending implementation (see #phase3-todo)' },
     };
   }
 }
 
 /**
  * Ghost Publisher — Ghost API (v3+)
- * TODO: implement in follow-up PR; placeholder for architecture
+ * TODO: implement in follow-up PR; basic scaffolding in place
+ * TODO: adminUrl and adminApiKey loaded from config/Supabase Vault in production
  */
 export class GhostPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'ghost.blog' channel
-  private adminUrl: string = '';
-  private adminApiKey: string = '';
+  public readonly channel: SocialChannel = 'ghost.blog';
+  private adminUrl: string;
+  private adminApiKey: string;
+
+  constructor(adminUrl: string, adminApiKey: string) {
+    super();
+    this.adminUrl = adminUrl;
+    this.adminApiKey = adminApiKey;
+  }
 
   async publish(post: SocialPost): Promise<PublishResult> {
+    this.logPublishAttempt(post, 'pending', { adminUrl: this.adminUrl });
     return {
       ok: false,
       channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Ghost publisher pending implementation' },
+      error: { code: 'NOT_IMPLEMENTED', message: 'Ghost publisher pending implementation (see #phase3-todo)' },
     };
   }
 }
@@ -405,7 +446,7 @@ export class GhostPublisher extends BasePublisher {
  * Useful for integration with n8n, Zapier, or internal systems
  */
 export class WebhookPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'webhook.custom' channel
+  public readonly channel: SocialChannel = 'webhook.custom';
   private webhookUrl: string;
 
   constructor(webhookUrl: string) {
@@ -464,15 +505,20 @@ export class WebhookPublisher extends BasePublisher {
 /**
  * Email Publisher — Send post as email newsletter
  * Useful for compliance-focused audiences who prefer inbox delivery
+ * TODO: integrate with email service (SendGrid, AWS SES, etc.)
+ * TODO: add bounce/delivery tracking in follow-up PR
  */
 export class EmailPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'x.alert'; // TODO: add 'email.newsletter' channel
-  private fromAddress: string = 'noreply@realsync.ai';
-  private toAddresses: string[] = [];
+  public readonly channel: SocialChannel = 'email.newsletter';
+  private fromAddress: string;
+  private toAddresses: string[];
+  private emailService?: string; // 'sendgrid' | 'ses' | 'mailgun'
 
-  constructor(toAddresses: string[] = []) {
+  constructor(fromAddress: string, toAddresses: string[] = [], emailService?: string) {
     super();
+    this.fromAddress = fromAddress || 'noreply@realsync.ai';
     this.toAddresses = toAddresses;
+    this.emailService = emailService;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -484,18 +530,18 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
-    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
+    this.logPublishAttempt(post, 'pending', { recipientCount: this.toAddresses.length, service: this.emailService });
 
-    // TODO: integrate with email service (SendGrid, AWS SES, etc.)
-    // For now, this is a placeholder. Real implementation would:
-    // 1. Call email provider API
-    // 2. Include metadata for tracking / audit
-    // 3. Handle bounce/delivery tracking
+    // Placeholder implementation. Real integration with email service would:
+    // 1. Call email provider API (SendGrid, AWS SES, Mailgun)
+    // 2. Include compliance headers + unsubscribe link
+    // 3. Handle bounce/delivery tracking + webhooks
+    // 4. Store delivery log in audit_email_sent table
 
     return {
       ok: false,
       channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Email publisher pending implementation' },
+      error: { code: 'NOT_IMPLEMENTED', message: 'Email publisher pending implementation (see #phase3-todo)' },
     };
   }
 }

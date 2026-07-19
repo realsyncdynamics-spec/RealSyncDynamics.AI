@@ -16,6 +16,11 @@ export interface EntitlementValue {
   value: number;
 }
 
+interface MembershipRow {
+  role: string;
+  tenant?: Record<string, unknown>;
+}
+
 export interface EntitlementSet {
   byKey: Record<string, EntitlementValue>;
 }
@@ -37,12 +42,11 @@ export async function listMyTenants(): Promise<TenantSummary[]> {
     .select('role,tenant:tenants(id,name,is_public_sector,industry)')
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return (data ?? [])
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .map((row: any) => ({
-      tenantId: row.tenant?.id,
-      name: row.tenant?.name ?? '(unbenannt)',
-      isPublicSector: !!row.tenant?.is_public_sector,
+  return ((data ?? []) as unknown as MembershipRow[])
+    .map((row) => ({
+      tenantId: (row.tenant?.id as string) ?? '',
+      name: (row.tenant?.name as string) ?? '(unbenannt)',
+      isPublicSector: !!(row.tenant?.is_public_sector),
       industry: (row.tenant?.industry as string | null) ?? null,
       role: row.role as TenantRole,
     }))

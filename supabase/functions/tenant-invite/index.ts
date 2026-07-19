@@ -19,6 +19,28 @@ import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/
 
 type Role = 'admin' | 'editor' | 'viewer_auditor';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        order(col: string, options?: Record<string, unknown>): Promise<{ data: unknown; error: unknown }>;
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -64,8 +86,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleCreate(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleCreate(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   const email = String(body.email ?? '').trim().toLowerCase();
   const role = body.role as Role;
@@ -95,8 +116,7 @@ async function handleCreate(admin: any, userId: string, body: Record<string, unk
   return jsonResponse({ ok: true, invite: data, token });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleList(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleList(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) {
@@ -110,8 +130,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
   return jsonResponse({ ok: true, invites: data ?? [] });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleRevoke(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleRevoke(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const invite_id = body.invite_id as string;
   if (!invite_id) return jsonError(400, 'BAD_REQUEST', 'invite_id required');
 
@@ -133,8 +152,7 @@ async function handleRevoke(admin: any, userId: string, body: Record<string, unk
   return jsonResponse({ ok: true });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleAccept(admin: any, userId: string, userEmail: string, body: Record<string, unknown>) {
+async function handleAccept(admin: SupabaseAdminClient, userId: string, userEmail: string, body: Record<string, unknown>) {
   const token = body.token as string;
   if (!token) return jsonError(400, 'BAD_REQUEST', 'token required');
 
@@ -168,8 +186,7 @@ async function handleAccept(admin: any, userId: string, userEmail: string, body:
   return jsonResponse({ ok: true, tenant_id: invite.tenant_id, role: invite.role });
 }
 
-// deno-lint-ignore no-explicit-any
-async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships')
     .select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data?.role === 'owner' || data?.role === 'admin';

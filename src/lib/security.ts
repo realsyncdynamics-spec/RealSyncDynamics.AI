@@ -154,7 +154,7 @@ export function validateTenantFilter(query: string, tenantId: string): {
  * Secrets validation
  * Ensures no secrets are exposed in logs or errors
  */
-export function sanitizeForLogging(obj: any): any {
+export function sanitizeForLogging(obj: unknown): unknown {
   if (!obj) return obj;
 
   const secretKeys = [
@@ -173,9 +173,9 @@ export function sanitizeForLogging(obj: any): any {
 
     for (const key in sanitized) {
       if (secretKeys.some((sk) => key.toLowerCase().includes(sk))) {
-        sanitized[key] = '[REDACTED]';
-      } else if (typeof sanitized[key] === 'object') {
-        sanitized[key] = sanitizeForLogging(sanitized[key]);
+        (sanitized as Record<string, unknown>)[key] = '[REDACTED]';
+      } else if (typeof (sanitized as Record<string, unknown>)[key] === 'object') {
+        (sanitized as Record<string, unknown>)[key] = sanitizeForLogging((sanitized as Record<string, unknown>)[key]);
       }
     }
 

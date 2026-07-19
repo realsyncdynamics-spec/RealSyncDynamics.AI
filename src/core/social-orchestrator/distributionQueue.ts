@@ -407,11 +407,62 @@ export class WordPressPublisher extends BasePublisher {
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { siteUrl: this.siteUrl });
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'WordPress publisher pending implementation (see #phase3-todo)' },
-    };
+
+    if (!this.apiToken) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_TOKEN', message: 'WordPress API token not configured' },
+      };
+    }
+
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const response = await fetch(`${this.siteUrl}/wp-json/wp/v2/posts`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.apiToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: post.body.split('\n')[0]?.substring(0, 100) || 'Governance Update',
+              content: post.body,
+              status: 'publish',
+              tags: post.hashtags.map(h => h.replace('#', '')).slice(0, 5),
+              excerpt: post.body.substring(0, 160),
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`WORDPRESS_${response.status}: ${error}`);
+          }
+
+          return response.json();
+        },
+        (attempt, error) => {
+          console.warn(`WordPress publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      this.logPublishAttempt(post, 'success', { postId: result.id });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: String(result.id),
+        postedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'WORDPRESS_API_ERROR', message: errorMsg },
+      };
+    }
   }
 }
 
@@ -433,11 +484,66 @@ export class GhostPublisher extends BasePublisher {
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Ghost publisher pending implementation (see #phase3-todo)' },
-    };
+
+    if (!this.adminApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_TOKEN', message: 'Ghost Admin API key not configured' },
+      };
+    }
+
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const response = await fetch(`${this.adminUrl}/ghost/api/v3/admin/posts/?source=html`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Ghost ${this.adminApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              posts: [
+                {
+                  title: post.body.split('\n')[0]?.substring(0, 100) || 'Governance Update',
+                  html: post.body.replace(/\n/g, '<br/>'),
+                  tags: post.hashtags.map(h => ({ name: h.replace('#', '') })).slice(0, 5),
+                  status: 'published',
+                },
+              ],
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`GHOST_${response.status}: ${error}`);
+          }
+
+          return response.json();
+        },
+        (attempt, error) => {
+          console.warn(`Ghost publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      const createdPost = (result.posts && result.posts[0]) || result;
+      this.logPublishAttempt(post, 'success', { postId: createdPost.id });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: createdPost.id,
+        postedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'GHOST_API_ERROR', message: errorMsg },
+      };
+    }
   }
 }
 
@@ -532,17 +638,76 @@ export class EmailPublisher extends BasePublisher {
 
     this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length, service: this.emailService });
 
-    // Placeholder implementation. Real integration with email service would:
-    // 1. Call email provider API (SendGrid, AWS SES, Mailgun)
-    // 2. Include compliance headers + unsubscribe link
-    // 3. Handle bounce/delivery tracking + webhooks
-    // 4. Store delivery log in audit_email_sent table
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const title = post.body.split('\n')[0] || 'Governance Update';
+          const emailBody = `
+<html>
+<head><meta charset="utf-8"/></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333;">
+<h2>${this.escapeHtml(title)}</h2>
+<div>${post.body.replace(/\n/g, '<br/>')}</div>
+${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size: 0.9em;">${post.hashtags.map(h => this.escapeHtml(h)).join(' ')}</p>` : ''}
+<hr style="margin-top: 2em; border: none; border-top: 1px solid #ddd;">
+<p style="font-size: 0.85em; color: #999;">This email was sent as part of compliance monitoring. <a href="#">Manage preferences</a></p>
+</body>
+</html>
+`;
 
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Email publisher pending implementation (see #phase3-todo)' },
-    };
+          const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.SENDGRID_API_KEY || ''}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              personalizations: this.toAddresses.map(to => ({ to: [{ email: to }] })),
+              from: { email: this.fromAddress, name: 'RealSync Governance' },
+              subject: title,
+              content: [{ type: 'text/html', value: emailBody }],
+              reply_to: { email: this.fromAddress },
+              tracking_settings: {
+                click_tracking: { enable: true },
+                open_tracking: { enable: true },
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`SENDGRID_${response.status}: ${error}`);
+          }
+
+          return { ok: true, messageId: `email_${Date.now()}` };
+        },
+        (attempt, error) => {
+          console.warn(`Email publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      this.logPublishAttempt(post, 'success', { recipients: this.toAddresses.length });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: result.messageId,
+        postedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'EMAIL_SEND_ERROR', message: errorMsg },
+      };
+    }
+  }
+
+  private escapeHtml(text: string): string {
+    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.replace(/[&<>"']/g, m => map[m]!);
   }
 }
 

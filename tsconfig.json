@@ -15,8 +15,7 @@
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
-    // "strict": true, // TODO(Phase 3): Enable and fix 26 violations
-    // Currently disabled; violations tracked in docs/PHASE-3-READINESS.md
+    "strict": true,
     "paths": {
       "@/*": [
         "./*"

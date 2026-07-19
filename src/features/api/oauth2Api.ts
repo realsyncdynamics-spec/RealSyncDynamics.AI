@@ -159,7 +159,7 @@ export async function listOAuth2Tokens(appId: string): Promise<Array<{ token_id:
   return (data as OAuth2TokenRecord[] || []).map(d => ({
     token_id: d.id,
     created_at: d.created_at,
-    last_used_at: d.last_used_at,
+    last_used_at: d.last_used_at ?? undefined,
     scope: d.scope,
   }));
 }

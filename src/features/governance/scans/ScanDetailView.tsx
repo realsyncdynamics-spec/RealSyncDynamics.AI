@@ -95,6 +95,9 @@ function Inner() {
       </Shell>
     );
   }
+  if (!payload) {
+    return <Shell><Loader2 className="h-5 w-5 animate-spin text-titanium-400" /></Shell>;
+  }
   return <Detail payload={payload} onReload={() => setReloadKey((n) => n + 1)} />;
 }
 

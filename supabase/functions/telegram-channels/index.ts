@@ -15,6 +15,24 @@ import { sha256Hex } from '../_shared/hash.ts';
 import { audit } from '../_shared/auditLog.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): SelectChain;
+    update(obj: Record<string, unknown>): UpdateChain;
+  };
+}
+
+interface SelectChain {
+  eq(col: string, val: unknown): SelectChain;
+  neq(col: string, val: unknown): SelectChain;
+  maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+}
+
+interface UpdateChain extends Promise<{ error: unknown }> {
+  eq(col: string, val: unknown): UpdateChain;
+  neq(col: string, val: unknown): UpdateChain;
+}
+
 // Token-Gültigkeit: 15 Minuten
 const TOKEN_TTL_MS = 15 * 60 * 1000;
 
@@ -55,8 +73,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleConnectComplete(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleConnectComplete(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const token          = (body.token as string ?? '').trim();
   const tenantId       = (body.tenant_id as string ?? '').trim();
   // telegram_user_id wird vom Bot in der Connect-URL als ?uid= mitgegeben und
@@ -131,8 +148,7 @@ async function handleConnectComplete(admin: any, userId: string, userEmail: stri
   return jsonResponse({ ok: true, connected: true, telegram_user_id: conn.telegram_user_id });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleStatus(admin: any, userId: string) {
+async function handleStatus(admin: SupabaseAdminClient, userId: string) {
   const { data: conn } = await admin
     .from('telegram_connections')
     .select('id, telegram_username, telegram_chat_id, status, connected_at, tenant_id')
@@ -162,8 +178,7 @@ async function handleStatus(admin: any, userId: string) {
   });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleRevoke(admin: any, userId: string, userEmail: string | null) {
+async function handleRevoke(admin: SupabaseAdminClient, userId: string, userEmail: string | null) {
   const { data: conn } = await admin
     .from('telegram_connections')
     .select('id, tenant_id, telegram_user_id')

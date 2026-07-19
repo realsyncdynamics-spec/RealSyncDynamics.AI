@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
 
       // Enrich with user names (mock for now, would join with profiles in production)
-      const enriched = (tasks || []).map((task: any) => ({
+      const enriched = (tasks || []).map((task: RemediationTask) => ({
         ...task,
         assigned_to_name: task.assigned_to_name || null,
       }));

@@ -1058,21 +1058,30 @@ export class WebhookPublisher extends BasePublisher {
 }
 
 /**
- * Email Publisher — Send post as email newsletter
- * Useful for compliance-focused audiences who prefer inbox delivery
- * TODO: integrate with email service (SendGrid, AWS SES, etc.)
- * TODO: add bounce/delivery tracking in follow-up PR
+ * Email Publisher — SendGrid SMTP API integration
+ *
+ * Caller (Edge Function) is responsible for loading API key from Supabase Vault
+ * and recipient list from configuration, then passing to constructor.
+ *
+ * Supports:
+ * - Bulk sending to multiple recipients
+ * - HTML and plain-text formatting
+ * - Tracking metadata (for bounce/delivery monitoring)
+ * - Retry with exponential backoff
+ *
+ * See: https://sendgrid.com/docs/api-reference/
  */
 export class EmailPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'email.newsletter';
-  private fromAddress: string = 'noreply@realsync.ai';
-  private toAddresses: string[] = [];
+  private fromAddress: string;
+  private toAddresses: string[];
+  private sendgridApiKey: string;
 
-  constructor(fromAddress: string, toAddresses: string[] = [], emailService?: string) {
+  constructor(fromAddress: string, toAddresses: string[], sendgridApiKey: string) {
     super();
-    this.fromAddress = fromAddress || 'noreply@realsync.ai';
+    this.fromAddress = fromAddress;
     this.toAddresses = toAddresses;
-    this.emailService = emailService;
+    this.sendgridApiKey = sendgridApiKey;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -1084,53 +1093,68 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
-    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length, service: this.emailService });
+    if (!this.sendgridApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_API_KEY', message: 'SendGrid API key not configured' },
+      };
+    }
+
+    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
 
     try {
       const result = await this.retryWithBackoff(
         async () => {
-          const title = post.body.split('\n')[0] || 'Governance Update';
-          const emailBody = `
-<html>
-<head><meta charset="utf-8"/></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333;">
-<h2>${this.escapeHtml(title)}</h2>
-<div>${post.body.replace(/\n/g, '<br/>')}</div>
-${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size: 0.9em;">${post.hashtags.map(h => this.escapeHtml(h)).join(' ')}</p>` : ''}
-<hr style="margin-top: 2em; border: none; border-top: 1px solid #ddd;">
-<p style="font-size: 0.85em; color: #999;">This email was sent as part of compliance monitoring. <a href="#">Manage preferences</a></p>
-</body>
-</html>
-`;
-
           const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.SENDGRID_API_KEY || ''}`,
+              'Authorization': `Bearer ${this.sendgridApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              personalizations: this.toAddresses.map(to => ({ to: [{ email: to }] })),
+              personalizations: this.toAddresses.map(email => ({
+                to: [{ email }],
+              })),
               from: { email: this.fromAddress, name: 'RealSync Governance' },
-              subject: title,
-              content: [{ type: 'text/html', value: emailBody }],
-              reply_to: { email: this.fromAddress },
+              subject: this.extractTitle(post.body),
+              content: [
+                {
+                  type: 'text/html',
+                  value: this.formatAsHtml(post.body),
+                },
+                {
+                  type: 'text/plain',
+                  value: post.body,
+                },
+              ],
               tracking_settings: {
-                click_tracking: { enable: true },
-                open_tracking: { enable: true },
+                click_tracking: { enabled: true },
+                open_tracking: { enabled: true },
+              },
+              custom_args: {
+                source: 'RealSyncGovernance',
+                postId: post.id,
+                eventType: post.socialEventId,
               },
             }),
           });
 
+          if (response.status === 401) {
+            throw new Error('SENDGRID_401_UNAUTHORIZED');
+          }
+          if (response.status === 429) {
+            throw new Error('SENDGRID_429_RATE_LIMIT');
+          }
           if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`SENDGRID_${response.status}: ${error}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`SENDGRID_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
           }
 
-          return { ok: true, messageId: `email_${Date.now()}` };
+          return { ok: true };
         },
         (attempt, error) => {
-          console.warn(`Email publish attempt ${attempt} failed:`, error.message);
+          console.warn(`SendGrid publish attempt ${attempt} failed:`, error.message);
         }
       );
 
@@ -1138,7 +1162,7 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
       return {
         ok: true,
         channel: this.channel,
-        externalId: result.messageId,
+        externalId: `sendgrid_${Date.now()}`,
         postedAt: new Date().toISOString(),
       };
     } catch (err) {
@@ -1148,14 +1172,37 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'EMAIL_SEND_ERROR', message: errorMsg },
+        error: { code: 'SENDGRID_API_ERROR', message: errorMsg },
       };
     }
   }
 
-  private escapeHtml(text: string): string {
-    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, m => map[m]!);
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 100) {
+      return firstLine;
+    }
+    return body.substring(0, 100).trim() + (body.length > 100 ? '…' : '');
+  }
+
+  private formatAsHtml(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    let html = escaped
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    return `<html><body style="font-family: sans-serif; line-height: 1.6;"><p>${html}</p></body></html>`;
   }
 }
 

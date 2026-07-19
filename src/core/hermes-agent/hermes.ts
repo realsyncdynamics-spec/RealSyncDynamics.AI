@@ -31,7 +31,9 @@ function nextId(prefix: string): string {
  * Node, Deno and the browser via SubtleCrypto.
  */
 async function sha256Hex(input: string): Promise<string> {
-  const cryptoObj = (typeof globalThis !== 'undefined' && (globalThis as Record<string, unknown>).crypto as Crypto | undefined) ?? null;
+  const cryptoObj: Crypto | null = typeof globalThis !== 'undefined'
+    ? ((globalThis as Record<string, unknown>).crypto as Crypto | undefined) ?? null
+    : null;
   if (cryptoObj?.subtle?.digest) {
     const buf = await cryptoObj.subtle.digest('SHA-256', new TextEncoder().encode(input));
     const bytes = new Uint8Array(buf);

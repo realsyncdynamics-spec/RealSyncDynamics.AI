@@ -6,6 +6,12 @@
  * - Framework-Lücken
  */
 
+interface SupabaseAdminLike {
+  from(table: string): {
+    insert(row: Record<string, unknown>): Promise<{ error?: Error | null }>;
+  };
+}
+
 export interface PolicyPackRecommendation {
   packId: string;
   packName: string;
@@ -144,7 +150,7 @@ export function recommendPolicyPacks(asset: AssetClassification): PolicyPackReco
  * Auto-activate recommended packs (für onboarding workflow).
  */
 export async function autoActivateRecommendedPacks(
-  admin: any, // Supabase admin client
+  admin: SupabaseAdminLike, // Supabase admin client
   tenantId: string,
   assetId: string,
   recommendations: PolicyPackRecommendation[],

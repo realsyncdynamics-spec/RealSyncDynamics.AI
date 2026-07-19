@@ -336,7 +336,7 @@ function DashboardBody({
                       borderRadius: 12,
                       color: '#fafafa',
                     }}
-                    formatter={(v: number) => FORMAT_EUR.format(v)}
+                    formatter={(v: any) => typeof v === 'number' ? FORMAT_EUR.format(v) : ''}
                   />
                   <Area type="monotone" dataKey="mrr" stroke="#d4af37" strokeWidth={2} fill="url(#mrrFill)" />
                 </AreaChart>
@@ -467,7 +467,7 @@ function PlanMixCard({ plans }: { plans: PlanDistributionEntry[] }) {
                 borderRadius: 12,
                 color: '#fafafa',
               }}
-              formatter={(v: number) => FORMAT_EUR.format(v)}
+              formatter={(v: any) => typeof v === 'number' ? FORMAT_EUR.format(v) : ''}
             />
             <Bar dataKey="mrr" fill="#d4af37" radius={[6, 6, 0, 0]} />
           </BarChart>

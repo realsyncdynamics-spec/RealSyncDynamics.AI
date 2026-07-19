@@ -31,7 +31,7 @@ export function WorkflowBuilder({ workflow, onComplete, onSave }: WorkflowBuilde
     );
   }, [currentStepIndex, completedSteps, stepStates, workflow.id]);
 
-  const handleStepInputChange = (fieldName: string, value: any) => {
+  const handleStepInputChange = (fieldName: string, value: unknown) => {
     setStepStates((prev) => ({
       ...prev,
       [currentStep.id]: {

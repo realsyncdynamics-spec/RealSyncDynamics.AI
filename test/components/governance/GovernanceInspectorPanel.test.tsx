@@ -341,7 +341,7 @@ describe('GovernanceInspectorPanel — Asset-Inspector', () => {
   beforeEach(() => {
     vi.mocked(fetchEvidenceForEvent).mockResolvedValue([]);
     vi.mocked(fetchEventsForAsset).mockResolvedValue([]);
-    vi.mocked(archiveAsset).mockResolvedValue(undefined);
+    vi.mocked(archiveAsset).mockResolvedValue({ ok: true });
     mockWriteText.mockClear();
   });
 
@@ -408,7 +408,7 @@ describe('GovernanceInspectorPanel — Policy-Inspector', () => {
   beforeEach(() => {
     vi.mocked(fetchEvidenceForEvent).mockResolvedValue([]);
     vi.mocked(fetchEventsForAsset).mockResolvedValue([]);
-    vi.mocked(togglePolicy).mockResolvedValue(undefined);
+    vi.mocked(togglePolicy).mockResolvedValue({ ok: true });
   });
 
   it('22 — zeigt Policy-Name in der h2-Überschrift', async () => {

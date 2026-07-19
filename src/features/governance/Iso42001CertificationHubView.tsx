@@ -388,7 +388,7 @@ function QuickActionCard({ action }: { action: (typeof QUICK_ACTIONS)[0] }) {
 function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
   const Icon = module.icon;
 
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     blue: 'border-blue-900 hover:bg-blue-950/20 text-blue-400',
     green: 'border-green-900 hover:bg-green-950/20 text-green-400',
     purple: 'border-purple-900 hover:bg-purple-950/20 text-purple-400',
@@ -399,7 +399,7 @@ function ModuleCard({ module }: { module: (typeof CERTIFICATION_MODULES)[0] }) {
     amber: 'border-amber-900 hover:bg-amber-950/20 text-amber-400',
   };
 
-  const BadgeColor = {
+  const BadgeColor: Record<string, string> = {
     blue: 'bg-blue-950 border-blue-800 text-blue-300',
     green: 'bg-green-950 border-green-800 text-green-300',
     purple: 'bg-purple-950 border-purple-800 text-purple-300',

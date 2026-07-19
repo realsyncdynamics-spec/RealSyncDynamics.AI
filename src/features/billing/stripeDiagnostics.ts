@@ -112,6 +112,14 @@ export function classifyStripeError(error: unknown): StripeDiagnosticStatus {
   if (!error) return 'unknown';
   const name = String((error as { name?: unknown }).name ?? '').toLowerCase();
   const msg = String((error as { message?: unknown }).message ?? error).toLowerCase();
+  // Seit checkout.ts error.context ausliest, kommt hier der echte
+  // Server-Fehlercode aus jsonError() an — der ist praeziser als jede
+  // Message-Heuristik, also zuerst pruefen.
+  const code = String((error as { code?: unknown }).code ?? '').toUpperCase();
+  if (code === 'PRICE_NOT_CONFIGURED') return 'missing_price_id';
+  if (code === 'UNAUTHORIZED') return 'missing_user';
+  if (code === 'STRIPE_ERROR' || code === 'STRIPE_NOT_CONFIGURED') return 'edge_function_error';
+  if (msg.includes('no such price')) return 'missing_price_id';
   // supabase-js FunctionsFetchError: the fetch() to the Edge Function itself
   // failed (request never reached the server) — e.g. ad-/tracking-blocker,
   // offline, DNS/firewall. Must be checked before the generic 'edge' match

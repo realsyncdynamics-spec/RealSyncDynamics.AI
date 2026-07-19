@@ -8,7 +8,7 @@ import { useGovernanceOnboarding } from '../hooks/useGovernanceOnboarding';
 import { saveCompanyProfile, loadCompanyProfile } from '../features/company/companyProfileLocal';
 import { syncTenantProfile } from '../features/company/tenantProfileService';
 import { useTenant } from '../core/access/TenantProvider';
-import type { ScanFinding, Sector } from '../core/onboarding/types';
+import type { ScanFinding, Sector, GovernanceQuestion } from '../core/onboarding/types';
 import { getQuestion } from '../core/onboarding/questionEngine';
 
 /**
@@ -259,13 +259,13 @@ function QuestionStep({
   answer,
   onAnswer,
 }: {
-  question: any;
+  question: GovernanceQuestion;
   currentIndex: number;
   totalCount: number;
-  answer: any;
-  onAnswer: (answer: any) => void;
+  answer: boolean | number | string | string[] | undefined;
+  onAnswer: (answer: boolean | number | string | string[]) => void;
 }) {
-  const [selectedAnswer, setSelectedAnswer] = React.useState<any>(answer);
+  const [selectedAnswer, setSelectedAnswer] = React.useState<boolean | number | string | string[] | undefined>(answer);
 
   const handleSubmit = () => {
     if (selectedAnswer !== undefined && selectedAnswer !== null && selectedAnswer !== '') {
@@ -348,7 +348,7 @@ function QuestionStep({
           {question.answerType === 'text' && (
             <input
               type="text"
-              value={selectedAnswer || ''}
+              value={typeof selectedAnswer === 'string' ? selectedAnswer : ''}
               onChange={(e) => setSelectedAnswer(e.target.value)}
               placeholder="Deine Antwort eingeben..."
               className="w-full px-4 py-3 bg-obsidian-900 border border-titanium-700 text-titanium-50 placeholder-titanium-600 rounded-none focus:border-titanium-400 outline-none"

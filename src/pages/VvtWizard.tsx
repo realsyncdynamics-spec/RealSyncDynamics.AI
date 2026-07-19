@@ -188,8 +188,8 @@ export function VvtWizard() {
                       ['Datenkategorien', e.kategorien.join(', ')], ['Betroffenengruppen', e.betroffene.join(', ')],
                       ['Empfänger', e.empfaenger.join(', ')],
                       e.drittland ? ['Drittlandtransfer', e.drittland_garantie || 'Garantie ausstehend'] : null,
-                      ['Löschfrist', e.loeschfrist], ['TOM', e.tom.join(', ')],
-                    ].filter(Boolean).map(([k, v]) => (
+                      ['Löschfrist', e.loeschfrist], ['TOM', (e.tom ?? []).join(', ')],
+                    ].filter((item): item is [string, string] => item !== null).map(([k, v]) => (
                       <tr key={k as string} style={{ borderBottom: '1px solid #f3f4f6' }}>
                         <td style={{ padding: '0.4rem 0.75rem', fontWeight: 600, width: '30%', background: '#f9fafb' }}>{k}</td>
                         <td style={{ padding: '0.4rem 0.75rem' }}>{v as string || '—'}</td>

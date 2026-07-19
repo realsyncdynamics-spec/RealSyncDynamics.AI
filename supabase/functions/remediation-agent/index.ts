@@ -473,7 +473,6 @@ async function aiGenerate<T>(args: AiCallArgs<T>): Promise<T> {
 
 // ── Event helper ───────────────────────────────────────────────────
 
-// deno-lint-ignore no-explicit-any
 async function emitEvent(
   admin: SupabaseAdminClient,
   tenant_id: string,

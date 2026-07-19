@@ -25,7 +25,7 @@ function ConnectionsInner() {
     setLoading(true);
     setError(null);
     try { setItems(await listConnections()); }
-    catch (e: any) { setError(e?.message ?? 'Laden fehlgeschlagen'); }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : 'Laden fehlgeschlagen'); }
     finally { setLoading(false); }
   };
 
@@ -198,8 +198,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     try {
       await createConnection(form);
       onCreated();
-    } catch (e: any) {
-      setError(e?.message ?? 'Anlegen fehlgeschlagen');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Anlegen fehlgeschlagen');
     } finally {
       setBusy(false);
     }

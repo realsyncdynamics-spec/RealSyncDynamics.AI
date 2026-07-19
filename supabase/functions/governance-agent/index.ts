@@ -150,8 +150,7 @@ async function makeAdmin() {
 }
 
 interface AnonGateContext {
-  // deno-lint-ignore no-explicit-any
-  admin:     any;
+  admin:     SupabaseClient;
   requestId: string;
   ipHash:    string;
   startedAt: number;

@@ -71,8 +71,8 @@ export function AuthGate({ children }: Props) {
       });
       if (error) throw error;
       setSent(true);
-    } catch (err: any) {
-      setError(err?.message ?? 'Senden fehlgeschlagen');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Senden fehlgeschlagen');
     } finally {
       setSending(false);
     }

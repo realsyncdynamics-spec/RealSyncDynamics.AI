@@ -167,13 +167,20 @@ async function updateComplianceScores(
   return updated;
 }
 
+type Incident = { severity: string; status: string };
+type Audit = { findings_count: number; status: string };
+type Risk = { severity: string; type?: string };
+type Policy = { status: string; framework?: string };
+type Vendor = { status: string; risk_level?: string };
+type Dpia = { status: string };
+
 interface TenantState {
-  incidents: { severity: string; status: string }[];
-  audits: { findings_count: number; status: string }[];
-  risks: { severity: string; type?: string }[];
-  policies: { status: string; framework?: string }[];
-  vendors: { status: string; risk_level?: string }[];
-  dpia: { status: string }[];
+  incidents: Incident[];
+  audits: Audit[];
+  risks: Risk[];
+  policies: Policy[];
+  vendors: Vendor[];
+  dpia: Dpia[];
 }
 
 async function analyzeTenantStateForInsights(tenantState: TenantState): Promise<Array<{

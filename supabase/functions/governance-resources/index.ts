@@ -50,6 +50,35 @@ const SEVERITIES = ['info', 'low', 'medium', 'high', 'critical'];
 const ACTIONS = ['allow', 'log', 'warn', 'block', 'require_approval'];
 const CONTROL_STATUSES = ['not_started', 'in_progress', 'implemented', 'gap', 'not_applicable'];
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+    delete(): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+    upsert(rows: Record<string, unknown>[], opts: { onConflict: string }): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');

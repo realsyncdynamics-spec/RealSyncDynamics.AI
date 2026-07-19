@@ -37,6 +37,27 @@ interface SupabaseAdminClient {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string, opts?: { count?: string }): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+        is(col2: string, val2: null): Promise<{ count?: number; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        is(col2: string, val2: null): Promise<{ error: unknown }>;
+      };
+    };
+    delete(): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;

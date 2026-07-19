@@ -145,7 +145,9 @@ function isSafeRegion(region: string | undefined): boolean {
 // SHA-256 → hex. Uses Web Crypto if available (browser, Deno, modern
 // Node), falls back to require('crypto') in the Node test runner.
 async function sha256Hex(input: string): Promise<string> {
-  const cryptoObj = (typeof globalThis !== 'undefined' && (globalThis as Record<string, unknown>).crypto as Crypto | undefined) ?? null;
+  const cryptoObj: Crypto | null = typeof globalThis !== 'undefined'
+    ? ((globalThis as Record<string, unknown>).crypto as Crypto | undefined) ?? null
+    : null;
   if (cryptoObj?.subtle?.digest) {
     const buf = await cryptoObj.subtle.digest('SHA-256', new TextEncoder().encode(input));
     const bytes = new Uint8Array(buf);

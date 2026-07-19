@@ -32,6 +32,37 @@ interface SupabaseAdminClient {
 
 const ROLES = ['owner', 'admin', 'dpo', 'editor', 'viewer_auditor'];
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string, opts?: { count?: string; head?: boolean }): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+          order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+      };
+      order(col: string, opts: { ascending: boolean }): Promise<{ data: unknown; error: unknown }>;
+    };
+    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): Promise<{ error: unknown }>;
+      };
+    };
+    delete(): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): Promise<{ error: unknown }>;
+      };
+    };
+  };
+  auth: {
+    admin: {
+      getUserById(id: string): Promise<{ data: { user?: { email?: string } } }>;
+    };
+  };
+}
+
 Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
@@ -107,8 +138,7 @@ async function handleList(admin: SupabaseAdminClient, actorId: string, body: Rec
   for (const m of data ?? []) {
     let email: string | null = null;
     try {
-      // deno-lint-ignore no-explicit-any
-      const { data: u } = await (admin as any).auth.admin.getUserById(m.user_id);
+      const { data: u } = await admin.auth.admin.getUserById(m.user_id);
       email = u?.user?.email ?? null;
     } catch { /* ignore */ }
     members.push({ user_id: m.user_id, role: m.role, created_at: m.created_at, email, is_self: m.user_id === actorId });

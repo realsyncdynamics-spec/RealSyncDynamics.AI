@@ -27,6 +27,26 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): SelectChain;
+      gte(col: string, val: unknown): Promise<{ data: unknown; error: unknown }>;
+    };
+    update(obj: Record<string, unknown>): {
+      eq(col: string, val: unknown): Promise<{ error: unknown }>;
+    };
+    insert(obj: Record<string, unknown>): {
+      select(): Promise<{ data: unknown; error: unknown }>;
+    };
+  };
+}
+
+interface SelectChain {
+  eq(col: string, val: unknown): SelectChain;
+  maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+}
+
 interface AssetRow {
   id: string;
   tenant_id: string | null;
@@ -72,8 +92,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// deno-lint-ignore no-explicit-any
-async function recalcTenant(admin: any, tenantId: string): Promise<{ count: number }> {
+async function recalcTenant(admin: SupabaseAdminClient, tenantId: string): Promise<{ count: number }> {
   const { data: assets, error } = await admin
     .from('governance_assets').select('id').eq('tenant_id', tenantId);
   if (error) throw error;
@@ -85,8 +104,7 @@ async function recalcTenant(admin: any, tenantId: string): Promise<{ count: numb
   return { count };
 }
 
-// deno-lint-ignore no-explicit-any
-async function recalcOne(admin: any, assetId: string): Promise<{ score: number; previous: number; delta: number; reason: string } | null> {
+async function recalcOne(admin: SupabaseAdminClient, assetId: string): Promise<{ score: number; previous: number; delta: number; reason: string } | null> {
   const { data: asset, error: aErr } = await admin
     .from('governance_assets')
     .select('id, tenant_id, asset_type, ai_act_class, data_types, status, risk_score')

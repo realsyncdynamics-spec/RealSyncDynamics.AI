@@ -29,6 +29,16 @@ import {
   type NormalizedSecuritySignal,
 } from '../_shared/securitySignals.ts';
 
+interface SupabaseAdminClient {
+  from(table: string): {
+    insert(obj: Record<string, unknown>): {
+      select(columns?: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+  };
+}
+
 // x-rsd-api-key zusätzlich zu den Standard-Headern erlauben.
 const CORS = {
   ...corsHeaders,
@@ -190,8 +200,7 @@ interface GovernanceChainResult {
 // Evidence-/Approval-Spur. Bewusst best-effort: das Security-Signal-Layer
 // ist auch ohne das vollständige Governance OS funktionsfähig.
 async function buildGovernanceChain(
-  // deno-lint-ignore no-explicit-any
-  admin: any,
+  admin: SupabaseAdminClient,
   tenantId: string,
   signal: NormalizedSecuritySignal,
   mapping: GovernanceMapping,

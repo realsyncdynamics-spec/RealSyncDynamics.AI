@@ -14,7 +14,7 @@
 // (gleiche Technik wie _shared/findings.ts: AdminLike). Der echte
 // service-role-Client der Edge Functions ist strukturell kompatibel.
 
-interface QueryBuilder {
+interface QueryBuilder extends PromiseLike<{ data: unknown; error: unknown }> {
   eq(col: string, val: unknown): QueryBuilder;
   order(col: string, opts?: Record<string, unknown>): QueryBuilder;
   limit(n: number): QueryBuilder;
@@ -23,12 +23,12 @@ interface QueryBuilder {
   select(cols?: string): QueryBuilder;
 }
 
-interface InsertChain {
+interface InsertChain extends PromiseLike<{ data?: unknown; error?: unknown }> {
   select(cols?: string): InsertChain;
   single(): Promise<{ data: unknown; error: unknown }>;
 }
 
-interface UpdateChain {
+interface UpdateChain extends PromiseLike<{ error?: unknown }> {
   eq(col: string, val: unknown): UpdateChain;
 }
 

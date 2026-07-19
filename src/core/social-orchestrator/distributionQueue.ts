@@ -651,17 +651,30 @@ export class WebhookPublisher extends BasePublisher {
 }
 
 /**
- * Email Publisher — Send post as email newsletter
- * Useful for compliance-focused audiences who prefer inbox delivery
+ * Email Publisher — SendGrid SMTP API integration
+ *
+ * Caller (Edge Function) is responsible for loading API key from Supabase Vault
+ * and recipient list from configuration, then passing to constructor.
+ *
+ * Supports:
+ * - Bulk sending to multiple recipients
+ * - HTML and plain-text formatting
+ * - Tracking metadata (for bounce/delivery monitoring)
+ * - Retry with exponential backoff
+ *
+ * See: https://sendgrid.com/docs/api-reference/
  */
 export class EmailPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'email.newsletter';
-  private fromAddress: string = 'noreply@realsync.ai';
-  private toAddresses: string[] = [];
+  private fromAddress: string;
+  private toAddresses: string[];
+  private sendgridApiKey: string;
 
-  constructor(toAddresses: string[] = []) {
+  constructor(fromAddress: string, toAddresses: string[], sendgridApiKey: string) {
     super();
+    this.fromAddress = fromAddress;
     this.toAddresses = toAddresses;
+    this.sendgridApiKey = sendgridApiKey;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -673,19 +686,116 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
+    if (!this.sendgridApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_API_KEY', message: 'SendGrid API key not configured' },
+      };
+    }
+
     this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
 
-    // TODO: integrate with email service (SendGrid, AWS SES, etc.)
-    // For now, this is a placeholder. Real implementation would:
-    // 1. Call email provider API
-    // 2. Include metadata for tracking / audit
-    // 3. Handle bounce/delivery tracking
+    try {
+      const result = await this.retryWithBackoff(
+        async () => {
+          const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${this.sendgridApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              personalizations: this.toAddresses.map(email => ({
+                to: [{ email }],
+              })),
+              from: { email: this.fromAddress, name: 'RealSync Governance' },
+              subject: this.extractTitle(post.body),
+              content: [
+                {
+                  type: 'text/html',
+                  value: this.formatAsHtml(post.body),
+                },
+                {
+                  type: 'text/plain',
+                  value: post.body,
+                },
+              ],
+              tracking_settings: {
+                click_tracking: { enabled: true },
+                open_tracking: { enabled: true },
+              },
+              custom_args: {
+                source: 'RealSyncGovernance',
+                postId: post.id,
+                eventType: post.socialEventId,
+              },
+            }),
+          });
 
-    return {
-      ok: false,
-      channel: this.channel,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Email publisher pending implementation' },
-    };
+          if (response.status === 401) {
+            throw new Error('SENDGRID_401_UNAUTHORIZED');
+          }
+          if (response.status === 429) {
+            throw new Error('SENDGRID_429_RATE_LIMIT');
+          }
+          if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`SENDGRID_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
+          }
+
+          return { ok: true };
+        },
+        (attempt, error) => {
+          console.warn(`SendGrid publish attempt ${attempt} failed:`, error.message);
+        }
+      );
+
+      this.logPublishAttempt(post, 'success', { recipients: this.toAddresses.length });
+      return {
+        ok: true,
+        channel: this.channel,
+        externalId: `sendgrid_${Date.now()}`,
+        postedAt: new Date().toISOString(),
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.logPublishAttempt(post, 'failed', { error: errorMsg });
+
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'SENDGRID_API_ERROR', message: errorMsg },
+      };
+    }
+  }
+
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 100) {
+      return firstLine;
+    }
+    return body.substring(0, 100).trim() + (body.length > 100 ? '…' : '');
+  }
+
+  private formatAsHtml(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    let html = escaped
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    return `<html><body style="font-family: sans-serif; line-height: 1.6;"><p>${html}</p></body></html>`;
   }
 }
 

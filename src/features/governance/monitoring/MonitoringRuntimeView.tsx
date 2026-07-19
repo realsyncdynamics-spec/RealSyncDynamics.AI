@@ -613,5 +613,103 @@ export const MonitoringRuntimeView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  return <div className="p-8 text-titanium-400">View coming soon...</div>;
+  const { activeTenantId } = useTenant();
+  const [activeTab, setActiveTab] = useState<AssetTab>('websites');
+
+  const criticalCount = [
+    ...WEBSITE_STATUS.filter((w) => w.status === 'critical'),
+    ...AI_SYSTEM_STATUS.filter((a) => a.status === 'critical'),
+    ...DOCUMENT_STATUS.filter((d) => d.status === 'critical'),
+    ...POLICY_STATUS.filter((p) => p.status === 'critical'),
+  ].length;
+
+  return (
+    <div className="flex flex-col h-screen bg-obsidian-950 text-titanium-100">
+      {/* Header + Metriken */}
+      <div className="px-6 py-4 border-b border-titanium-900">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-semibold">Monitoring Runtime</h1>
+            <p className="text-[12px] text-titanium-400 mt-1">
+              24/7 DSGVO & EU AI Act Governance Sentinel-Loop
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="font-mono text-[10px] uppercase tracking-wider text-teal-400 hover:text-teal-300 border border-teal-900 hover:border-teal-700 px-3 py-1.5 transition-colors"
+            >
+              🔄 Aktualisieren
+            </button>
+          </div>
+        </div>
+
+        {/* Metrik-Reihe */}
+        <div className="grid grid-cols-4 gap-3">
+          <MetricCard
+            label="Überwachte Assets"
+            value={String(
+              WEBSITE_STATUS.length +
+                AI_SYSTEM_STATUS.length +
+                DOCUMENT_STATUS.length +
+                POLICY_STATUS.length
+            )}
+          />
+          <MetricCard
+            label="Kritische Alerts"
+            value={String(ACTIVE_ALERTS.filter((a) => a.severity === 'Kritisch').length)}
+            valueClass="text-red-400"
+          />
+          <MetricCard
+            label="Probleme erkannt"
+            value={String(criticalCount)}
+            valueClass={criticalCount > 0 ? 'text-red-400' : 'text-teal-400'}
+          />
+          <MetricCard
+            label="Letzte Prüfung"
+            value="vor 3 Min."
+            valueClass="text-titanium-300"
+          />
+        </div>
+      </div>
+
+      {/* Tab-Navigation */}
+      <div className="px-6 py-3 border-b border-titanium-900 flex gap-1">
+        {Object.entries(TAB_LABELS).map(([tabKey, label]) => (
+          <button
+            key={tabKey}
+            onClick={() => setActiveTab(tabKey as AssetTab)}
+            type="button"
+            className={`font-mono text-[10px] uppercase tracking-wider px-3 py-2 transition-colors ${
+              activeTab === tabKey
+                ? 'text-teal-400 border-b-2 border-teal-400'
+                : 'text-titanium-500 hover:text-titanium-300 border-b-2 border-transparent'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab-Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="px-6 py-4">
+          {activeTab === 'websites' && <WebsitesTab />}
+          {activeTab === 'ki-systeme' && <AiSystemsTab />}
+          {activeTab === 'dokumente' && <DokumenteTab />}
+          {activeTab === 'richtlinien' && <RichtlinienTab />}
+        </div>
+      </div>
+
+      {/* Bottom: Aktive Alerts + Alert-Regeln */}
+      <div className="border-t border-titanium-900 grid grid-cols-2 h-80">
+        <div className="border-r border-titanium-900 overflow-auto">
+          <ActiveAlertsPanel />
+        </div>
+        <div className="overflow-auto">
+          <AlertRulesPanel />
+        </div>
+      </div>
+    </div>
+  );
 }

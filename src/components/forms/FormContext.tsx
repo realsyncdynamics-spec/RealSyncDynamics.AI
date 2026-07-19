@@ -5,10 +5,10 @@ export interface FormError {
 }
 
 interface FormContextType {
-  values: Record<string, any>;
+  values: Record<string, unknown>;
   errors: FormError;
   touched: Set<string>;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: (field: string, value: unknown) => void;
   setFieldError: (field: string, error: string) => void;
   setFieldTouched: (field: string, touched: boolean) => void;
   reset: () => void;
@@ -26,16 +26,16 @@ export const useForm = () => {
 };
 
 interface FormProviderProps {
-  initialValues: Record<string, any>;
+  initialValues: Record<string, unknown>;
   children: React.ReactNode;
 }
 
 export const FormProvider = ({ initialValues, children }: FormProviderProps) => {
-  const [values, setValues] = useState(initialValues);
+  const [values, setValues] = useState<Record<string, unknown>>(initialValues);
   const [errors, setErrors] = useState<FormError>({});
   const [touched, setTouched] = useState<Set<string>>(new Set());
 
-  const setFieldValue = useCallback((field: string, value: any) => {
+  const setFieldValue = useCallback((field: string, value: unknown) => {
     setValues(prev => ({ ...prev, [field]: value }));
   }, []);
 

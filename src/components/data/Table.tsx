@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
 
-export interface TableColumn {
+export interface TableColumn<T = unknown> {
   id: string;
   header: string;
-  accessor: (row: any) => React.ReactNode;
+  accessor: (row: T) => React.ReactNode;
   sortable?: boolean;
   width?: string;
 }
 
-interface TableProps {
-  columns: TableColumn[];
-  data: any[];
+interface TableProps<T = unknown> {
+  columns: TableColumn<T>[];
+  data: T[];
   striped?: boolean;
   hoverable?: boolean;
   selectable?: boolean;
-  onRowSelect?: (selectedRows: any[]) => void;
+  onRowSelect?: (selectedRows: T[]) => void;
   onSort?: (columnId: string, direction: 'asc' | 'desc') => void;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
 
 export const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  (
+  <T,>(
     {
       columns,
       data,
@@ -30,8 +30,8 @@ export const Table = React.forwardRef<HTMLTableElement, TableProps>(
       selectable = false,
       onRowSelect,
       onSort,
-    },
-    ref
+    }: TableProps<T>,
+    ref: React.ForwardedRef<HTMLTableElement>
   ) => {
     const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
     const [sortColumn, setSortColumn] = useState<string | null>(null);

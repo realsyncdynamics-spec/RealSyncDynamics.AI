@@ -9,6 +9,38 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { audit } from '../_shared/auditLog.ts';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+
+interface SupabaseAdminClient {
+  from(table: string): {
+    select(columns: string): {
+      eq(col: string, val: unknown): {
+        eq(col2: string, val2: unknown): {
+          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        };
+        order(col: string, opts: { ascending: boolean }): {
+          limit(n: number): Promise<{ data: unknown; error: unknown }>;
+        };
+        maybeSingle(): Promise<{ data: unknown; error: unknown }>;
+        select?(columns?: string): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+      };
+    };
+    insert(row: Record<string, unknown>): {
+      select(columns: string): {
+        single(): Promise<{ data: unknown; error: unknown }>;
+      };
+    };
+    update(row: Record<string, unknown>): {
+      eq(col: string, val: unknown): {
+        select?(columns: string): {
+          single(): Promise<{ data: unknown; error: unknown }>;
+        };
+      } & Promise<{ error: unknown }>;
+    };
+  };
+}
+
 const STATUS = ['draft','in_review','approved','rejected'];
 
 Deno.serve(async (req) => {
@@ -41,8 +73,7 @@ Deno.serve(async (req) => {
   } catch (e) { return jsonError(500, 'INTERNAL', (e as Error).message); }
 });
 
-// deno-lint-ignore no-explicit-any
-async function handleList(admin: any, userId: string, body: Record<string, unknown>) {
+async function handleList(admin: SupabaseAdminClient, userId: string, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   if (!tenant_id) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
   if (!(await isOwnerOrAdmin(admin, userId, tenant_id))) return jsonError(403, 'FORBIDDEN', 'must be owner or admin');
@@ -53,8 +84,7 @@ async function handleList(admin: any, userId: string, body: Record<string, unkno
   return jsonResponse({ ok: true, dpias: data ?? [] });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleCreate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleCreate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const tenant_id = body.tenant_id as string;
   const title = (body.title as string ?? '').trim();
   if (!tenant_id || !title) return jsonError(400, 'BAD_REQUEST', 'tenant_id and title required');
@@ -88,8 +118,7 @@ async function handleCreate(admin: any, userId: string, userEmail: string | null
   return jsonResponse({ ok: true, dpia: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleUpdate(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleUpdate(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('dpias').select('tenant_id').eq('id', id).maybeSingle();
@@ -108,8 +137,7 @@ async function handleUpdate(admin: any, userId: string, userEmail: string | null
   return jsonResponse({ ok: true, dpia: data });
 }
 
-// deno-lint-ignore no-explicit-any
-async function handleApprove(admin: any, userId: string, userEmail: string | null, body: Record<string, unknown>) {
+async function handleApprove(admin: SupabaseAdminClient, userId: string, userEmail: string | null, body: Record<string, unknown>) {
   const id = body.id as string;
   if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
   const { data: row } = await admin.from('dpias').select('tenant_id, status').eq('id', id).maybeSingle();
@@ -122,8 +150,7 @@ async function handleApprove(admin: any, userId: string, userEmail: string | nul
   return jsonResponse({ ok: true, approved_at: now });
 }
 
-// deno-lint-ignore no-explicit-any
-async function isOwnerOrAdmin(admin: any, userId: string, tenantId: string): Promise<boolean> {
+async function isOwnerOrAdmin(admin: SupabaseAdminClient, userId: string, tenantId: string): Promise<boolean> {
   const { data } = await admin.from('memberships').select('role').eq('tenant_id', tenantId).eq('user_id', userId).maybeSingle();
   return data?.role === 'owner' || data?.role === 'admin';
 }

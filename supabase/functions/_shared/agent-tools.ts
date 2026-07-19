@@ -241,8 +241,8 @@ async function toolListAssets(ctx: DispatchCtx): Promise<unknown> {
 async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
   const { data: assets } = await ctx.admin.from('governance_assets')
     .select('id, name, asset_type, ai_act_class, risk_score').eq('tenant_id', ctx.tenantId);
-  const assetArr = (assets as unknown[]) ?? [];
-  const assetIds = assetArr.map((a: { id: string }) => a.id);
+  const assetArr = ((assets as unknown[]) ?? []) as Array<{ id: string; name: string; asset_type: string; ai_act_class: string; risk_score: number | null }>;
+  const assetIds = assetArr.map((a) => a.id);
   const { data: latestRisks } = assetIds.length === 0 ? { data: [] } : await ctx.admin.from('asset_risk_history')
     .select('asset_id, risk_score, calculated_at')
     .in('asset_id', assetIds)
@@ -258,16 +258,16 @@ async function toolRiskSummary(ctx: DispatchCtx): Promise<unknown> {
   const filter = ctx.input.severity_filter as string ?? 'all';
   const severity = (s: number) => s >= 80 ? 'critical' : s >= 60 ? 'high' : s >= 40 ? 'medium' : 'low';
 
-  const rows = assetArr.map((a: { id: string; name: string; asset_type: string; ai_act_class: string; risk_score: number | null }) => {
+  const rows = assetArr.map((a) => {
     const latest = latestByAsset.get(a.id);
     const score = latest?.risk_score ?? a.risk_score ?? 0;
     return { id: a.id, name: a.name, asset_type: a.asset_type, ai_act_class: a.ai_act_class, score, severity: severity(score) };
-  }).filter((r) => filter === 'all' || r.severity === filter)
+  }).filter((r): boolean => filter === 'all' || r.severity === filter)
     .sort((a, b) => b.score - a.score)
     .slice(0, 10);
 
-  const critical = rows.filter((r: { severity: string }) => r.severity === 'critical').length;
-  const high     = rows.filter((r: { severity: string }) => r.severity === 'high').length;
+  const critical = rows.filter((r) => r.severity === 'critical').length;
+  const high     = rows.filter((r) => r.severity === 'high').length;
   return {
     total_assets: assetArr.length,
     critical,
@@ -302,7 +302,8 @@ async function toolListIncidents(ctx: DispatchCtx): Promise<unknown> {
   if (error) throw error;
 
   const now = Date.now();
-  const enriched = ((data as unknown[]) ?? []).map((i: { id: string; severity: string; status: string; notification_deadline_at: string | null }) => {
+  const incidentsArr = ((data as unknown[]) ?? []) as Array<{ id: string; severity: string; status: string; notification_deadline_at: string | null }>;
+  const enriched = incidentsArr.map((i) => {
     if (!i.notification_deadline_at || i.status === 'reported' || i.status === 'resolved') return i;
     const hoursLeft = Math.max(0, Math.round((new Date(i.notification_deadline_at).getTime() - now) / 36e5));
     return { ...i, hours_until_72h_deadline: hoursLeft };

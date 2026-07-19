@@ -649,5 +649,99 @@ export const EvidenceVaultView = withPerformanceMonitoring(
 );
 
 function Inner() {
-  return <div className="p-8 text-titanium-400">View coming soon...</div>;
+  const { activeTenantId: tenantId } = useTenant();
+  const [activeTab, setActiveTab] = useState<TabId>('timeline');
+  const [liveEvents, setLiveEvents] = useState<DbGovernanceEvent[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const handlers: EvidenceHandlers = {
+    onExport: async (prefix: string, format: ExportFormat, key: string) => {
+      setBusy(key);
+      try {
+        const range = defaultRange();
+        const result = await exportAnalytics({
+          tenantId: tenantId ?? '',
+          format,
+          range,
+          includeCharts: true,
+        });
+        if (result.ok && result.blob) {
+          const filename = buildExportFilename(prefix, format, range);
+          triggerBlobDownload(result.blob, filename);
+        } else {
+          console.error('Export failed:', result.error);
+        }
+      } catch (err) {
+        console.error('Export failed:', err);
+      } finally {
+        setBusy(null);
+      }
+    },
+    onViewEvidence: (id: string, isLive: boolean) => {
+      console.log('View evidence:', id, 'isLive:', isLive);
+    },
+    onCompare: () => {
+      console.log('Compare snapshots');
+    },
+    onShowTimeline: () => {
+      setActiveTab('timeline');
+    },
+    busy,
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-obsidian-950 text-titanium-50">
+      {/* Header */}
+      <div className="border-b border-titanium-900 px-8 py-6">
+        <div className="flex items-center gap-3 mb-6">
+          <Shield className="h-6 w-6 text-teal-400" />
+          <div>
+            <h1 className="font-display text-2xl font-bold">Evidence Vault</h1>
+            <p className="text-sm text-titanium-400 mt-1">C2PA-signierte Nachweise für DSGVO & EU AI Act</p>
+          </div>
+        </div>
+
+        {/* Metrics */}
+        <div className="grid grid-cols-4 gap-4">
+          {METRICS.map((metric) => (
+            <div key={metric.label} className="border border-titanium-800 bg-obsidian-900 p-3">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-titanium-500 mb-1">
+                {metric.label}
+              </p>
+              <p className="font-display text-lg font-bold text-titanium-100">{metric.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-titanium-900 overflow-x-auto">
+        <div className="flex px-8">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-3 font-mono text-xs uppercase tracking-wider border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-teal-500 text-teal-300'
+                  : 'border-transparent text-titanium-500 hover:text-titanium-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="flex-1 overflow-y-auto bg-obsidian-950">
+        {activeTab === 'timeline' && <TimelineTab liveEvents={liveEvents} handlers={handlers} />}
+        {activeTab === 'snapshots' && <SnapshotsTab handlers={handlers} />}
+        {activeTab === 'audittrail' && <AuditTrailTab />}
+        {activeTab === 'changes' && <ChangeTrackingTab />}
+        {activeTab === 'exports' && <ExportsTab handlers={handlers} />}
+      </div>
+    </div>
+  );
 }

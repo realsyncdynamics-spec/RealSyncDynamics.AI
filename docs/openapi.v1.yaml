@@ -1,0 +1,1269 @@
+openapi: 3.0.3
+info:
+  title: RealSync Dynamics.AI API
+  description: |
+    EU-souveräne SaaS-Plattform für Creator und Agenturen.
+    REST API für AI-Workflows, Governance, Automation und Compliance.
+  version: 1.0.0
+  contact:
+    name: RealSync Support
+    url: https://realsync.ai/support
+  license:
+    name: Proprietary
+    url: https://realsync.ai/license
+
+servers:
+  - url: https://api.realsync.ai/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Local Development
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Governance
+    description: Policies, Approvals, Webhooks
+  - name: Agents
+    description: AI Agent Management and Execution
+  - name: Workflows
+    description: Automation Workflows
+  - name: Audit & Compliance
+    description: Compliance Scanning and Reporting
+  - name: Integrations
+    description: Third-Party Connectors
+  - name: Webhooks
+    description: Incoming Webhook Handlers
+  - name: API Management
+    description: API Keys, Usage Stats, Billing
+
+paths:
+  /governance/policies:
+    get:
+      tags:
+        - Governance
+      summary: List all governance policies
+      operationId: listGovernancePolicies
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovernancePolicy'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+    post:
+      tags:
+        - Governance
+      summary: Create a new governance policy
+      operationId: createGovernancePolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGovernancePolicyRequest'
+      responses:
+        '201':
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernancePolicy'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /governance/policies/{policyId}:
+    get:
+      tags:
+        - Governance
+      summary: Get governance policy details
+      operationId: getGovernancePolicy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernancePolicy'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Governance
+      summary: Update a governance policy
+      operationId: updateGovernancePolicy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGovernancePolicyRequest'
+      responses:
+        '200':
+          description: Policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernancePolicy'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Governance
+      summary: Delete a governance policy
+      operationId: deleteGovernancePolicy
+      parameters:
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Policy deleted
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /governance/approvals:
+    get:
+      tags:
+        - Governance
+      summary: List pending approvals
+      operationId: listApprovals
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - rejected
+      responses:
+        '200':
+          description: List of approvals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Approval'
+                  total:
+                    type: integer
+
+  /governance/approvals/{approvalId}/approve:
+    post:
+      tags:
+        - Governance
+      summary: Approve a request
+      operationId: approveRequest
+      parameters:
+        - name: approvalId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Approval updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+
+  /governance/approvals/{approvalId}/reject:
+    post:
+      tags:
+        - Governance
+      summary: Reject a request
+      operationId: rejectRequest
+      parameters:
+        - name: approvalId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  required: true
+      responses:
+        '200':
+          description: Approval rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+
+  /agents:
+    get:
+      tags:
+        - Agents
+      summary: List all AI agents
+      operationId: listAgents
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agent'
+                  total:
+                    type: integer
+
+  /agents/{agentId}/run:
+    post:
+      tags:
+        - Agents
+      summary: Execute an AI agent
+      operationId: runAgent
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                input:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '202':
+          description: Agent execution started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRun'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /agents/{agentId}/runs:
+    get:
+      tags:
+        - Agents
+      summary: List agent runs
+      operationId: listAgentRuns
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of agent runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgentRun'
+
+  /agents/{agentId}/runs/{runId}:
+    get:
+      tags:
+        - Agents
+      summary: Get agent run details
+      operationId: getAgentRun
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent run details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentRun'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /workflows:
+    get:
+      tags:
+        - Workflows
+      summary: List workflows
+      operationId: listWorkflows
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of workflows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+                  total:
+                    type: integer
+
+    post:
+      tags:
+        - Workflows
+      summary: Create a workflow
+      operationId: createWorkflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkflowRequest'
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /workflows/{workflowId}:
+    get:
+      tags:
+        - Workflows
+      summary: Get workflow details
+      operationId: getWorkflow
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Workflow details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Workflows
+      summary: Update a workflow
+      operationId: updateWorkflow
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkflowRequest'
+      responses:
+        '200':
+          description: Workflow updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+    delete:
+      tags:
+        - Workflows
+      summary: Delete a workflow
+      operationId: deleteWorkflow
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Workflow deleted
+
+  /workflows/{workflowId}/trigger:
+    post:
+      tags:
+        - Workflows
+      summary: Manually trigger a workflow
+      operationId: triggerWorkflow
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                context:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '202':
+          description: Workflow triggered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowRun'
+
+  /workflows/{workflowId}/runs:
+    get:
+      tags:
+        - Workflows
+      summary: List workflow runs
+      operationId: listWorkflowRuns
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of workflow runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowRun'
+
+  /audit/logs:
+    get:
+      tags:
+        - Audit & Compliance
+      summary: Get audit logs
+      operationId: getAuditLogs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  total:
+                    type: integer
+
+  /audit/reports:
+    get:
+      tags:
+        - Audit & Compliance
+      summary: List compliance reports
+      operationId: listAuditReports
+      responses:
+        '200':
+          description: List of compliance reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ComplianceReport'
+
+  /connectors:
+    get:
+      tags:
+        - Integrations
+      summary: List installed connectors
+      operationId: listConnectors
+      responses:
+        '200':
+          description: List of connectors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Connector'
+
+  /connectors/{connectorType}/authorize:
+    post:
+      tags:
+        - Integrations
+      summary: Initiate OAuth authorization for a connector
+      operationId: authorizeConnector
+      parameters:
+        - name: connectorType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - github
+              - jira
+              - linear
+              - slack
+              - teams
+              - shopify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirect_uri:
+                  type: string
+      responses:
+        '200':
+          description: Authorization initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  auth_url:
+                    type: string
+                  state:
+                    type: string
+
+  /webhooks/stripe:
+    post:
+      tags:
+        - Webhooks
+      summary: Stripe webhook handler
+      operationId: handleStripeWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+        '400':
+          description: Invalid signature
+
+  /webhooks/github:
+    post:
+      tags:
+        - Webhooks
+      summary: GitHub webhook handler
+      operationId: handleGithubWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+  /webhooks/shopify:
+    post:
+      tags:
+        - Webhooks
+      summary: Shopify webhook handler
+      operationId: handleShopifyWebhook
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed
+
+  /api-keys:
+    get:
+      tags:
+        - API Management
+      summary: List my API keys
+      operationId: listApiKeys
+      responses:
+        '200':
+          description: List of API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
+
+    post:
+      tags:
+        - API Management
+      summary: Create a new API key
+      operationId: createApiKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  required: true
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                  required: true
+      responses:
+        '201':
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyResponse'
+
+  /api-keys/{keyId}:
+    delete:
+      tags:
+        - API Management
+      summary: Revoke an API key
+      operationId: revokeApiKey
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: API key revoked
+
+  /usage:
+    get:
+      tags:
+        - API Management
+      summary: Get usage statistics
+      operationId: getUsage
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum:
+              - last_24h
+              - last_7d
+              - last_30d
+            default: last_30d
+      responses:
+        '200':
+          description: Usage statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requests:
+                    type: integer
+                  errors:
+                    type: integer
+                  rate_limited:
+                    type: integer
+                  period:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: api-key
+      description: API Key in Bearer token format
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UnauthorizedError:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+            request_id:
+              type: string
+
+    GovernancePolicy:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        rules:
+          type: array
+          items:
+            type: object
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - archived
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateGovernancePolicyRequest:
+      type: object
+      required:
+        - name
+        - rules
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        rules:
+          type: array
+          items:
+            type: object
+
+    UpdateGovernancePolicyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        rules:
+          type: array
+          items:
+            type: object
+        status:
+          type: string
+          enum:
+            - active
+            - inactive
+            - archived
+
+    Approval:
+      type: object
+      required:
+        - id
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        resource_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        requested_by:
+          type: string
+        approved_by:
+          type: string
+        comment:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Agent:
+      type: object
+      required:
+        - id
+        - name
+        - type
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - decision
+            - planning
+            - monitoring
+            - orchestrator
+            - custom
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - online
+            - offline
+            - error
+        config:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    AgentRun:
+      type: object
+      required:
+        - id
+        - agent_id
+        - status
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+        input:
+          type: object
+          additionalProperties: true
+        output:
+          type: object
+          additionalProperties: true
+        error:
+          type: string
+        duration_ms:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    Workflow:
+      type: object
+      required:
+        - id
+        - name
+        - trigger
+        - actions
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        trigger:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - schedule
+                - webhook
+                - manual
+                - event
+            cron:
+              type: string
+            event_type:
+              type: string
+        actions:
+          type: array
+          items:
+            type: object
+        enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    CreateWorkflowRequest:
+      type: object
+      required:
+        - name
+        - trigger
+        - actions
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        trigger:
+          type: object
+        actions:
+          type: array
+          items:
+            type: object
+
+    UpdateWorkflowRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        trigger:
+          type: object
+        actions:
+          type: array
+          items:
+            type: object
+        enabled:
+          type: boolean
+
+    WorkflowRun:
+      type: object
+      required:
+        - id
+        - workflow_id
+        - status
+      properties:
+        id:
+          type: string
+        workflow_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+        triggered_by:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        result:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    AuditLog:
+      type: object
+      required:
+        - id
+        - action
+        - created_at
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        actor_id:
+          type: string
+        changes:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    ComplianceReport:
+      type: object
+      required:
+        - id
+        - created_at
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        findings:
+          type: array
+          items:
+            type: object
+        score:
+          type: number
+        created_at:
+          type: string
+          format: date-time
+
+    Connector:
+      type: object
+      required:
+        - id
+        - type
+        - status
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum:
+            - connected
+            - disconnected
+            - error
+        last_sync:
+          type: string
+          format: date-time
+        config:
+          type: object
+          additionalProperties: true
+
+    ApiKey:
+      type: object
+      required:
+        - id
+        - name
+        - scopes
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        prefix:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        last_used:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    ApiKeyResponse:
+      type: object
+      required:
+        - id
+        - key
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Full API key (shown only once)
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time

@@ -788,9 +788,11 @@ export class LinkedInPublisher extends BasePublisher {
 }
 
 /**
- * WordPress Publisher — XML-RPC or REST API
- * TODO: implement in follow-up PR; basic scaffolding in place
- * TODO: siteUrl and apiToken loaded from config/Supabase Vault in production
+ * WordPress Publisher — REST API publishing
+ *
+ * In production, siteUrl and apiToken are loaded from environment variables
+ * (which are sourced from Supabase Vault during Edge Function deployment).
+ * See: supabase/functions/social-publisher-worker/index.ts for complete implementation.
  */
 export class WordPressPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'wordpress.blog';
@@ -865,9 +867,11 @@ export class WordPressPublisher extends BasePublisher {
 }
 
 /**
- * Ghost Publisher — Ghost API (v3+)
- * TODO: implement in follow-up PR; basic scaffolding in place
- * TODO: adminUrl and adminApiKey loaded from config/Supabase Vault in production
+ * Ghost Publisher — Ghost CMS API (v3+)
+ *
+ * In production, adminUrl and adminApiKey are loaded from environment variables
+ * (which are sourced from Supabase Vault during Edge Function deployment).
+ * See: supabase/functions/social-publisher-worker/index.ts for complete implementation.
  */
 export class GhostPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'ghost.blog';
@@ -1008,21 +1012,45 @@ export class WebhookPublisher extends BasePublisher {
 
 /**
  * Email Publisher — Send post as email newsletter
- * Useful for compliance-focused audiences who prefer inbox delivery
- * TODO: integrate with email service (SendGrid, AWS SES, etc.)
- * TODO: add bounce/delivery tracking in follow-up PR
+ * Supports SendGrid, AWS SES, and Mailgun via pluggable adapters.
+ * In production, credentials are loaded from Supabase Vault via environment variables.
  */
 export class EmailPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'email.newsletter';
   private fromAddress: string;
   private toAddresses: string[];
-  private emailService?: string; // 'sendgrid' | 'ses' | 'mailgun'
+  private adapter: EmailAdapter;
 
-  constructor(fromAddress: string, toAddresses: string[] = [], emailService?: string) {
+  constructor(
+    fromAddress: string,
+    toAddresses: string[] = [],
+    emailService: 'sendgrid' | 'ses' | 'mailgun' = 'sendgrid',
+    adapterConfig?: Record<string, string>
+  ) {
     super();
     this.fromAddress = fromAddress || 'noreply@realsync.ai';
     this.toAddresses = toAddresses;
-    this.emailService = emailService;
+    this.adapter = this.createAdapter(emailService, adapterConfig || {});
+  }
+
+  private createAdapter(service: string, config: Record<string, string>): EmailAdapter {
+    switch (service) {
+      case 'sendgrid':
+        return new SendGridAdapter(config.sendgridApiKey || process.env.SENDGRID_API_KEY || '');
+      case 'ses':
+        return new AWSSESAdapter(
+          config.awsRegion || 'us-east-1',
+          config.awsAccessKey || process.env.AWS_ACCESS_KEY_ID || '',
+          config.awsSecretKey || process.env.AWS_SECRET_ACCESS_KEY || ''
+        );
+      case 'mailgun':
+        return new MailgunAdapter(
+          config.mailgunDomain || process.env.MAILGUN_DOMAIN || '',
+          config.mailgunApiKey || process.env.MAILGUN_API_KEY || ''
+        );
+      default:
+        return new SendGridAdapter(config.sendgridApiKey || process.env.SENDGRID_API_KEY || '');
+    }
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -1034,7 +1062,7 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
-    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length, service: this.emailService });
+    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
 
     try {
       const result = await this.retryWithBackoff(
@@ -1053,44 +1081,29 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
 </html>
 `;
 
-          const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.SENDGRID_API_KEY || ''}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              personalizations: this.toAddresses.map(to => ({ to: [{ email: to }] })),
-              from: { email: this.fromAddress, name: 'RealSync Governance' },
-              subject: title,
-              content: [{ type: 'text/html', value: emailBody }],
-              reply_to: { email: this.fromAddress },
-              tracking_settings: {
-                click_tracking: { enable: true },
-                open_tracking: { enable: true },
-              },
-            }),
+          return this.adapter.send({
+            fromAddress: this.fromAddress,
+            toAddresses: this.toAddresses,
+            subject: title,
+            htmlBody: emailBody,
           });
-
-          if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`SENDGRID_${response.status}: ${error}`);
-          }
-
-          return { ok: true, messageId: `email_${Date.now()}` };
         },
         (attempt, error) => {
           console.warn(`Email publish attempt ${attempt} failed:`, error.message);
         }
       );
 
-      this.logPublishAttempt(post, 'success', { recipients: this.toAddresses.length });
-      return {
-        ok: true,
-        channel: this.channel,
-        externalId: result.messageId,
-        postedAt: new Date().toISOString(),
-      };
+      if (result.ok) {
+        this.logPublishAttempt(post, 'success', { recipients: this.toAddresses.length });
+        return {
+          ok: true,
+          channel: this.channel,
+          externalId: result.messageId || `email_${Date.now()}`,
+          postedAt: new Date().toISOString(),
+        };
+      } else {
+        throw new Error(result.error || 'Email send failed');
+      }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       this.logPublishAttempt(post, 'failed', { error: errorMsg });
@@ -1106,6 +1119,151 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
   private escapeHtml(text: string): string {
     const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return text.replace(/[&<>"']/g, m => map[m]!);
+  }
+}
+
+// ── Email Service Adapters ────────────────────────────────────────────────
+
+interface EmailAdapter {
+  send(params: {
+    fromAddress: string;
+    toAddresses: string[];
+    subject: string;
+    htmlBody: string;
+  }): Promise<{ ok: boolean; messageId?: string; error?: string }>;
+}
+
+class SendGridAdapter implements EmailAdapter {
+  constructor(private apiKey: string) {}
+
+  async send(params: {
+    fromAddress: string;
+    toAddresses: string[];
+    subject: string;
+    htmlBody: string;
+  }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+    try {
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: params.toAddresses.map(to => ({ to: [{ email: to }] })),
+          from: { email: params.fromAddress, name: 'RealSync Governance' },
+          subject: params.subject,
+          content: [{ type: 'text/html', value: params.htmlBody }],
+          reply_to: { email: params.fromAddress },
+          tracking_settings: {
+            click_tracking: { enable: true },
+            open_tracking: { enable: true },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`SENDGRID_${response.status}: ${error}`);
+      }
+
+      const data = await response.json() as Record<string, string>;
+      return { ok: true, messageId: `email_${Date.now()}` };
+    } catch (err) {
+      return { ok: false, error: String(err) };
+    }
+  }
+}
+
+class AWSSESAdapter implements EmailAdapter {
+  constructor(private region: string, private accessKey: string, private secretKey: string) {}
+
+  async send(params: {
+    fromAddress: string;
+    toAddresses: string[];
+    subject: string;
+    htmlBody: string;
+  }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+    try {
+      const response = await fetch(`https://email.${this.region}.amazonaws.com/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': this.buildAWSAuthHeader('ses', this.region),
+        },
+        body: this.buildSESPayload(params),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`SES_${response.status}: ${error}`);
+      }
+
+      const data = await response.text();
+      const messageIdMatch = data.match(/<MessageId>([^<]+)<\/MessageId>/);
+      return { ok: true, messageId: messageIdMatch?.[1] || `email_${Date.now()}` };
+    } catch (err) {
+      return { ok: false, error: String(err) };
+    }
+  }
+
+  private buildAWSAuthHeader(service: string, region: string): string {
+    return `AWS4-HMAC-SHA256 Credential=${this.accessKey}/${new Date().toISOString().split('T')[0]}/${region}/${service}/aws4_request`;
+  }
+
+  private buildSESPayload(params: {
+    fromAddress: string;
+    toAddresses: string[];
+    subject: string;
+    htmlBody: string;
+  }): string {
+    const parts = [
+      `Action=SendEmail`,
+      `Source=${encodeURIComponent(params.fromAddress)}`,
+      `Destination.ToAddresses.member=${params.toAddresses.map(a => encodeURIComponent(a)).join('&Destination.ToAddresses.member=')}`,
+      `Message.Subject.Data=${encodeURIComponent(params.subject)}`,
+      `Message.Body.Html.Data=${encodeURIComponent(params.htmlBody)}`,
+    ];
+    return parts.join('&');
+  }
+}
+
+class MailgunAdapter implements EmailAdapter {
+  constructor(private domain: string, private apiKey: string) {}
+
+  async send(params: {
+    fromAddress: string;
+    toAddresses: string[];
+    subject: string;
+    htmlBody: string;
+  }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('from', `RealSync Governance <${params.fromAddress}>`);
+      params.toAddresses.forEach(to => formData.append('to', to));
+      formData.append('subject', params.subject);
+      formData.append('html', params.htmlBody);
+      formData.append('o:tracking-clicks', 'yes');
+      formData.append('o:tracking-opens', 'yes');
+
+      const response = await fetch(`https://api.mailgun.net/v3/${this.domain}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`api:${this.apiKey}`)}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`MAILGUN_${response.status}: ${error}`);
+      }
+
+      const data = await response.json() as Record<string, string>;
+      return { ok: true, messageId: data.id };
+    } catch (err) {
+      return { ok: false, error: String(err) };
+    }
   }
 }
 

@@ -1,10 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DistributionQueue, LinkedInPublisher, WordPressPublisher, GhostPublisher, EmailPublisher, WebhookPublisher, MockPublisher } from '../../src/core/social-orchestrator/distributionQueue';
+import {
+  DistributionQueue,
+  LinkedInPublisher,
+  WordPressPublisher,
+  GhostPublisher,
+  EmailPublisher,
+  WebhookPublisher,
+  MockPublisher,
+  XPublisher,
+  TikTokPublisher,
+  MetaPublisher,
+} from '../../src/core/social-orchestrator/distributionQueue';
 import type { SocialPost } from '../../src/core/social-orchestrator/types';
 
 describe('Social Publishers', () => {
   describe('LinkedInPublisher', () => {
-    it('should publish to LinkedIn with author URN', async () => {
+    it('should publish to LinkedIn enterprise page', async () => {
       global.fetch = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -13,7 +24,7 @@ describe('Social Publishers', () => {
         })
       ) as any;
 
-      const publisher = new LinkedInPublisher('test_token');
+      const publisher = new LinkedInPublisher('linkedin.enterprise', 'test_token', 'author_123', 'org_456');
       const post: SocialPost = {
         id: 'p1',
         socialEventId: 'e1',
@@ -23,7 +34,6 @@ describe('Social Publishers', () => {
         hashtags: [],
         charCount: 20,
         generatedAt: new Date().toISOString(),
-        linkedInMetadata: { authorUrn: 'urn:li:person:ABC123' },
       };
 
       const result = await publisher.publish(post);
@@ -33,31 +43,40 @@ describe('Social Publishers', () => {
       expect(result.channel).toBe('linkedin.enterprise');
     });
 
-    it('should fail without access token', async () => {
-      const publisher = new LinkedInPublisher('');
+    it('should publish to LinkedIn personal profile', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ id: 'urn:li:ugcPost:456' }),
+        })
+      ) as any;
+
+      const publisher = new LinkedInPublisher('linkedin.legal', 'test_token', 'author_123');
       const post: SocialPost = {
-        id: 'p1',
-        socialEventId: 'e1',
-        channel: 'linkedin.enterprise',
+        id: 'p2',
+        socialEventId: 'e2',
+        channel: 'linkedin.legal',
         approvalStatus: 'AUTO',
-        body: 'Test',
+        body: 'DPO compliance update',
         hashtags: [],
-        charCount: 4,
+        charCount: 21,
         generatedAt: new Date().toISOString(),
       };
 
       const result = await publisher.publish(post);
 
-      expect(result.ok).toBe(false);
-      expect(result.error?.code).toBe('NO_TOKEN');
+      expect(result.ok).toBe(true);
+      expect(result.externalId).toBe('urn:li:ugcPost:456');
+      expect(result.channel).toBe('linkedin.legal');
     });
 
-    it('should fail without author URN', async () => {
-      const publisher = new LinkedInPublisher('test_token');
+    it('should fail with channel mismatch', async () => {
+      const publisher = new LinkedInPublisher('linkedin.enterprise', 'test_token', 'author_123');
       const post: SocialPost = {
         id: 'p1',
         socialEventId: 'e1',
-        channel: 'linkedin.enterprise',
+        channel: 'x.alert',
         approvalStatus: 'AUTO',
         body: 'Test',
         hashtags: [],
@@ -68,7 +87,7 @@ describe('Social Publishers', () => {
       const result = await publisher.publish(post);
 
       expect(result.ok).toBe(false);
-      expect(result.error?.code).toBe('NO_AUTHOR');
+      expect(result.error?.code).toBe('CHANNEL_MISMATCH');
     });
   });
 
@@ -258,6 +277,173 @@ describe('Social Publishers', () => {
 
       expect(result.ok).toBe(false);
       expect(result.error?.code).toBe('MISSING_URL');
+    });
+  });
+
+  describe('XPublisher', () => {
+    it('should post to X/Twitter', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { id: '1234567890' } }),
+        })
+      ) as any;
+
+      const publisher = new XPublisher('test_x_token');
+      const post: SocialPost = {
+        id: 'p1',
+        socialEventId: 'e1',
+        channel: 'x.alert',
+        approvalStatus: 'AUTO',
+        body: 'Compliance alert: DSGVO violation detected #governance',
+        hashtags: ['governance'],
+        charCount: 58,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const result = await publisher.publish(post);
+
+      expect(result.ok).toBe(true);
+      expect(result.externalId).toBe('1234567890');
+      expect(result.channel).toBe('x.alert');
+    });
+
+    it('should fail when text exceeds 280 characters', async () => {
+      const publisher = new XPublisher('test_token');
+      const longText = 'a'.repeat(281);
+      const post: SocialPost = {
+        id: 'p1',
+        socialEventId: 'e1',
+        channel: 'x.alert',
+        approvalStatus: 'AUTO',
+        body: longText,
+        hashtags: [],
+        charCount: 281,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const result = await publisher.publish(post);
+
+      expect(result.ok).toBe(false);
+      expect(result.error?.code).toBe('TEXT_TOO_LONG');
+    });
+  });
+
+  describe('TikTokPublisher', () => {
+    it('should post to TikTok', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { publish_id: 'tiktok_123' } }),
+        })
+      ) as any;
+
+      const publisher = new TikTokPublisher('test_access_token', 'test_refresh_token');
+      const post: SocialPost = {
+        id: 'p1',
+        socialEventId: 'e1',
+        channel: 'tiktok.fast',
+        approvalStatus: 'AUTO',
+        body: 'Quick governance tip: Always audit your data flows! 🛡️',
+        hashtags: ['governance', 'compliance'],
+        charCount: 55,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const result = await publisher.publish(post);
+
+      expect(result.ok).toBe(true);
+      expect(result.externalId).toBe('tiktok_123');
+      expect(result.channel).toBe('tiktok.fast');
+    });
+
+    it('should truncate text for TikTok limit', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ data: { publish_id: 'tiktok_456' } }),
+        })
+      ) as any;
+
+      const publisher = new TikTokPublisher('token', 'refresh_token');
+      const longText = 'a'.repeat(2300);
+      const post: SocialPost = {
+        id: 'p1',
+        socialEventId: 'e1',
+        channel: 'tiktok.fast',
+        approvalStatus: 'AUTO',
+        body: longText,
+        hashtags: [],
+        charCount: 2300,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const result = await publisher.publish(post);
+
+      expect(result.ok).toBe(true);
+    });
+  });
+
+  describe('MetaPublisher', () => {
+    it('should post to Instagram', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ id: 'instagram_123' }),
+        })
+      ) as any;
+
+      const publisher = new MetaPublisher(
+        'test_meta_token',
+        'ig_user_123',
+        'https://example.com/fallback.jpg'
+      );
+      const post: SocialPost = {
+        id: 'p1',
+        socialEventId: 'e1',
+        channel: 'instagram.reel',
+        approvalStatus: 'AUTO',
+        body: 'Governance best practices for 2026: Always verify compliance status! 🔐 #DSGVO',
+        hashtags: ['DSGVO', 'compliance'],
+        charCount: 83,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const result = await publisher.publish(post);
+
+      expect(result.ok).toBe(true);
+      expect(result.channel).toBe('instagram.reel');
+    });
+
+    it('should truncate text for Instagram limit', async () => {
+      global.fetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ id: 'instagram_456' }),
+        })
+      ) as any;
+
+      const publisher = new MetaPublisher('token', 'user_id', 'https://img.example.com/pic.jpg');
+      const longText = 'a'.repeat(2300);
+      const post: SocialPost = {
+        id: 'p1',
+        socialEventId: 'e1',
+        channel: 'instagram.reel',
+        approvalStatus: 'AUTO',
+        body: longText,
+        hashtags: [],
+        charCount: 2300,
+        generatedAt: new Date().toISOString(),
+      };
+
+      const result = await publisher.publish(post);
+
+      expect(result.ok).toBe(true);
     });
   });
 

@@ -16,10 +16,8 @@
 // produces them as a record but they are not enqueueable here. A
 // caller that wants to surface them in a UI uses them directly.
 //
-// Real publisher integration is a stub: the queue accepts a registry
-// of channel→publisher adapters, but the only adapter shipped here
-// is `MockPublisher` for tests. Real adapters live in follow-up PRs;
-// see "Real publishers" at the bottom of this file.
+// Real publisher adapters for all social channels are imported
+// from their respective files and available for registration.
 
 import type {
   SocialPost,
@@ -30,6 +28,10 @@ import type {
   PublishResult,
   ApprovalStatus,
 } from './types';
+import { LinkedInPublisher } from './linkedinPublisher';
+import { XPublisher } from './xPublisher';
+import { TikTokPublisher } from './tiktokPublisher';
+import { MetaPublisher } from './metaPublisher';
 
 let queueIdCounter = 0;
 function nextQueueId(): string {
@@ -287,102 +289,8 @@ abstract class BasePublisher implements SocialPublisher {
 
 // ── Real publishers (placeholder implementations) ──────────────────────────
 
-/**
- * LinkedIn Publisher — OAuth 2.0 + REST API
- * Requires: linkedin_access_token in Supabase Vault + linkedInPersonUrn in post metadata
- * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
- */
-export class LinkedInPublisher extends BasePublisher {
-  public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string = '';
-
-  constructor(accessToken?: string) {
-    super();
-    this.accessToken = accessToken || '';
-  }
-
-  async publish(post: SocialPost): Promise<PublishResult> {
-    this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
-
-    if (!this.accessToken) {
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'LinkedIn access token not configured' },
-      };
-    }
-
-    const authorUrn = this.getAuthorUrn(post);
-    if (!authorUrn) {
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'NO_AUTHOR', message: 'LinkedIn author URN not specified in post metadata' },
-      };
-    }
-
-    try {
-      const result = await this.retryWithBackoff(
-        async () => {
-          const response = await fetch('https://api.linkedin.com/v2/ugcPosts', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${this.accessToken}`,
-              'Content-Type': 'application/json',
-              'LinkedIn-Version': '202401',
-            },
-            body: JSON.stringify({
-              author: authorUrn,
-              lifecycleState: 'PUBLISHED',
-              specificContent: {
-                'com.linkedin.ugc.PublishContent': {
-                  shareCommentary: { text: post.body },
-                  shareMediaCategory: 'ARTICLE',
-                },
-              },
-            }),
-          });
-
-          if (response.status === 429) {
-            throw new Error('LINKEDIN_429_RATE_LIMIT');
-          }
-          if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`LINKEDIN_${response.status}: ${error}`);
-          }
-
-          const data = await response.json();
-          return data;
-        },
-        (attempt, error) => {
-          console.warn(`LinkedIn publish attempt ${attempt} failed:`, error.message);
-        }
-      );
-
-      this.logPublishAttempt(post, 'success', { externalId: result.id });
-      return {
-        ok: true,
-        channel: this.channel,
-        externalId: result.id,
-        postedAt: new Date().toISOString(),
-      };
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      this.logPublishAttempt(post, 'failed', { error: errorMsg });
-
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'LINKEDIN_API_ERROR', message: errorMsg },
-      };
-    }
-  }
-
-  private getAuthorUrn(post: SocialPost): string | null {
-    const metadata = (post as any).linkedInMetadata;
-    return metadata?.authorUrn || null;
-  }
-}
+// LinkedInPublisher, XPublisher, TikTokPublisher, MetaPublisher
+// are imported at the top of this file and re-exported below.
 
 /**
  * WordPress Publisher — REST API (WP 4.7+)
@@ -645,6 +553,8 @@ export class WebhookPublisher extends BasePublisher {
   }
 }
 
+// ── Concrete publishers (extend BasePublisher) ────────────────────────
+
 /**
  * Email Publisher — Send post as email newsletter via SendGrid/SES
  * Supports batch send to compliance-focused audiences.
@@ -822,6 +732,28 @@ export class EmailPublisher extends BasePublisher {
     `.trim();
   }
 }
+
+// ── Publisher exports ──────────────────────────────────────────────────────
+//
+// All channel publishers are available for registration with the queue.
+// Real implementations:
+//   - LinkedInPublisher: supports linkedin.enterprise + linkedin.legal
+//   - XPublisher: posts to X/Twitter (x.alert channel)
+//   - TikTokPublisher: posts to TikTok (tiktok.fast channel)
+//   - MetaPublisher: posts to Instagram (instagram.reel channel)
+//   - WordPressPublisher: publishes to WordPress blogs
+//   - GhostPublisher: publishes to Ghost CMS blogs
+//   - WebhookPublisher: sends to generic webhook endpoints
+//   - EmailPublisher: sends via SendGrid or AWS SES
+//
+// Example usage:
+//   const queue = new DistributionQueue();
+//   queue.registerPublisher(new XPublisher(xAccessToken));
+//   queue.registerPublisher(new TikTokPublisher(tiktokToken, refreshToken));
+//   queue.registerPublisher(new MetaPublisher(metaToken, igUserId, fallbackImageUrl));
+//   queue.registerPublisher(new LinkedInPublisher('linkedin.enterprise', liToken, authorId, orgId));
+
+export { LinkedInPublisher, XPublisher, TikTokPublisher, MetaPublisher };
 
 // ── Distribution Queue Features (present & future) ──────────────────────────
 

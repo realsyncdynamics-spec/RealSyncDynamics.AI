@@ -1,6 +1,6 @@
 // Shared utilities for social publishers.
 
-import type { PublishResult, SocialPost } from './types';
+import type { PublishResult, SocialPost, SocialChannel } from './types';
 
 /**
  * Load secret from Supabase Vault.
@@ -17,20 +17,22 @@ export async function loadSecretFromVault(secretName: string): Promise<string> {
 
   // Server/Edge Function context: call Supabase directly.
   try {
+    const supabaseUrl = process.env.SUPABASE_URL ?? '';
+    const anonKey = process.env.SUPABASE_ANON_KEY ?? '';
     const response = await fetch(
-      `${process.env.SUPABASE_URL}/functions/v1/vault-get-secret`,
+      `${supabaseUrl}/functions/v1/vault-get-secret`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${anonKey}`,
         },
         body: JSON.stringify({ secretName }),
       }
     );
     if (!response.ok) return '';
-    const { secret } = await response.json();
-    return secret || '';
+    const result = await response.json() as Record<string, unknown>;
+    return (result.secret as string) || '';
   } catch {
     return '';
   }
@@ -40,12 +42,12 @@ export async function loadSecretFromVault(secretName: string): Promise<string> {
  * Standard error result when a required configuration is missing.
  */
 export function missingConfigError(
-  channel: string,
+  channel: SocialChannel,
   configName: string
 ): PublishResult {
   return {
     ok: false,
-    channel: channel as any,
+    channel,
     error: {
       code: 'MISSING_CONFIG',
       message: `${configName} not configured for ${channel}`,

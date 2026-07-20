@@ -335,7 +335,7 @@ describe('distribution queue + mock publisher', () => {
     const [entry] = queue.list({ status: 'pending' });
     expect(entry).toBeDefined();
 
-    const after = queue.approve(entry!.id, 'reviewer-001');
+    const after = await queue.approve(entry!.id, 'reviewer-001');
     expect(after.status).toBe('approved');
     expect(after.reviewer).toBe('reviewer-001');
     expect(after.decidedAt).toBeDefined();
@@ -348,7 +348,7 @@ describe('distribution queue + mock publisher', () => {
     await orch.process(evt({ id: 'evt_q_rej', type: 'high_risk.classified', severity: 'high' }));
 
     const [entry] = queue.list({ status: 'pending' });
-    queue.reject(entry!.id, 'reviewer-002');
+    await queue.reject(entry!.id, 'reviewer-002');
 
     await expect(queue.publish(entry!.id)).rejects.toThrow(/not publishable/);
   });

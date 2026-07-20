@@ -203,6 +203,10 @@ export const CHANNEL_LABEL: Record<SocialChannel, string> = {
   'instagram.reel':      'Instagram · Reel',
   'tiktok.fast':         'TikTok · Fast',
   'x.alert':             'X · Alert',
+  'wordpress.blog':      'WordPress · Blog',
+  'ghost.blog':          'Ghost · Blog',
+  'webhook.custom':      'Webhook · Custom',
+  'email.newsletter':    'Email · Newsletter',
 };
 
 export type { QueueEntry, SocialChannel, RuntimeEvent, OrchestrationResult };

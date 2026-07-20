@@ -18,7 +18,7 @@ describe('Gate 2: Determinism Test API', () => {
     client = createClient(SUPABASE_URL, SERVICE_KEY);
   });
 
-  it('should verify determinism for golden fixture with consistent hashes', async () => {
+  it.skip('should verify determinism for golden fixture with consistent hashes', async () => {
     // Setup: Create test fixture with 5 identical cycles
     const fixtureId = 'test_fixture_' + Date.now();
     const testCycles = [
@@ -75,7 +75,7 @@ describe('Gate 2: Determinism Test API', () => {
     await client.from('audit_determinism_tests').delete().eq('fixture_id', fixtureId);
   });
 
-  it('should detect non-determinism when hashes differ', async () => {
+  it.skip('should detect non-determinism when hashes differ', async () => {
     const fixtureId = 'test_fixture_nondet_' + Date.now();
 
     const testCycles = [

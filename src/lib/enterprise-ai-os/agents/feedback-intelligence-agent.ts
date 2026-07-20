@@ -108,6 +108,9 @@ export class FeedbackIntelligenceAgent extends BaseEnterpriseAgent {
     const clusters = this.analyzeClusters(reports);
     const criticalClusters = clusters.filter((c) => c.severity === 'critical');
     const userBlockingClusters = clusters.filter((c) => c.impact === 'user_blocking');
+    const bugCount = reports.filter((r) => r.type === 'bug').length;
+    const featureCount = reports.filter((r) => r.type === 'feature_request').length;
+    const criticalCount = reports.filter((r) => r.severity === 'critical').length;
 
     const findings: Array<{
       id: string;
@@ -178,7 +181,9 @@ export class FeedbackIntelligenceAgent extends BaseEnterpriseAgent {
         reportCount: reports.length,
         clusterCount: clusters.length,
         clusters: clusters.map((c) => ({ cluster: c.cluster, count: c.count, impact: c.impact })),
-        criticalCount: criticalClusters.length,
+        bugCount,
+        featureCount,
+        criticalCount,
         userBlockingCount: userBlockingClusters.length,
       },
     });

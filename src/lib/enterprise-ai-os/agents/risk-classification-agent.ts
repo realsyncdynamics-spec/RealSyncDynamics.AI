@@ -21,8 +21,16 @@ export class RiskClassificationAgent extends BaseEnterpriseAgent {
     const total = factors.dataRisk + factors.usageRisk + factors.complianceRisk + factors.automationRisk;
     const avg = total / 4;
 
-    if (avg >= 9) return 'prohibited';
-    if (avg >= 7) return 'high';
+    // Usage risk of 10 (social scoring, manipulation, discrimination) → prohibited
+    if (factors.usageRisk >= 10) return 'prohibited';
+
+    // Any factor at 9+ or average at 9+ → prohibited
+    if (factors.complianceRisk >= 9 || factors.automationRisk >= 9 || avg >= 9) return 'prohibited';
+
+    // Data risk at 10, or high factors → high
+    if (factors.dataRisk >= 10 || factors.usageRisk >= 8 || factors.complianceRisk >= 7 || avg >= 7) return 'high';
+
+    // Otherwise use average
     if (avg >= 4) return 'limited';
     return 'minimal';
   }

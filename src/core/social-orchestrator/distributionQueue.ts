@@ -1271,39 +1271,47 @@ class MailgunAdapter implements EmailAdapter {
 
 /**
  * Dead Letter Queue — for failed publishing attempts.
- * TODO: Implement in follow-up PR with persistence to Postgres.
+ * ✅ IMPLEMENTED: See migration 20260720081352_social_distribution_queue_persistence.sql
  *
- * Schema (future migration):
- *   CREATE TABLE distribution_dlq (
- *     id uuid primary key,
- *     queue_entry_id uuid references queue_entries(id),
- *     error_code text,
- *     error_message text,
- *     retry_count int,
- *     next_retry_at timestamptz,
- *     created_at timestamptz,
- *     updated_at timestamptz
- *   );
+ * Captures all entries that exhaust max retries:
+ *   - Table: distribution_dlq
+ *   - References: distribution_queue_entries
+ *   - Automatic move via distribution_queue_mark_failed() when attempts exhausted
+ *   - Indexed for querying failed entries per tenant/channel
  */
 
 /**
  * Queue Status & Metrics — for observability.
- * TODO: Implement in follow-up PR with time-series data.
+ * ✅ IMPLEMENTED: See migration 20260720130000_distribution_queue_metrics.sql
  *
- * Metrics to track:
- *   - Queue depth (pending, approved, published, failed)
- *   - Publishing latency (start → published)
- *   - Retry rate (per channel, per error code)
- *   - Error trends (detect repeated failures)
+ * Real-time views:
+ *   - vw_distribution_queue_metrics: aggregated per channel/tenant
+ *   - vw_distribution_queue_errors: error frequency analysis
+ *
+ * Time-series persistence (daily snapshots):
+ *   - Table: distribution_queue_daily_metrics
+ *   - compute_daily_metrics(): scheduled nightly snapshot
+ *   - get_queue_metrics_recent(): retrieve last N days for dashboards
+ *
+ * Tracked metrics:
+ *   - Queue depth (pending, approved, published, failed, rejected)
+ *   - Publishing latency (avg, p95)
+ *   - Retry rate (% of entries requiring > 1 attempt)
+ *   - Error trends (distinct error types, frequency)
+ *   - Success rates, bounce/complaint counts
  */
 
 /**
  * Audit Logging — for compliance.
- * TODO: Wire to runtime_events table for full governance trail.
+ * ✅ IMPLEMENTED: See migration 20260720081352_social_distribution_queue_persistence.sql
  *
- * Events to log:
- *   - publish_attempted(queue_id, channel, actor_id)
- *   - publish_succeeded(queue_id, channel, external_id)
- *   - publish_failed(queue_id, channel, error_code, retry_count)
- *   - dlq_entry_created(queue_id, reason)
+ * Distribution queue audit trail (distribution_audit_log table):
+ *   - enqueued: initial queue entry creation
+ *   - approved/rejected: approval workflow decisions
+ *   - publish_started: publishing attempt initiated
+ *   - publish_success: external_id assigned
+ *   - publish_failed: error captured, retry scheduled or DLQ moved
+ *   - dlq_moved: entry exhausted retries
+ *
+ * TODO: Wire to runtime_events for cross-module compliance trail.
  */

@@ -14,11 +14,21 @@ add column if not exists finding_hash text,
 add column if not exists chain_hash text,
 add column if not exists evidence_root_hash text;
 
--- Add constraints
-alter table public.audit_findings
-add constraint fk_parent_finding
-  foreign key (parent_finding_id)
-  references public.audit_findings(id) on delete set null;
+-- Add constraints (idempotent)
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where table_schema = 'public'
+      and table_name = 'audit_findings'
+      and constraint_name = 'fk_parent_finding'
+  ) then
+    alter table public.audit_findings
+    add constraint fk_parent_finding
+      foreign key (parent_finding_id)
+      references public.audit_findings(id) on delete set null;
+  end if;
+end $$;
 
 -- Indexes for chain traversal
 create index if not exists idx_audit_findings_parent on public.audit_findings(parent_finding_id);

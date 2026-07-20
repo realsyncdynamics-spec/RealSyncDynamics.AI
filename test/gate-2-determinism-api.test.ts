@@ -1,10 +1,12 @@
+// @ts-nocheck
 /**
  * test/gate-2-determinism-api.test.ts
  *
  * Integration tests for Determinism Test API
  * Tests: reproducibility verification via REST endpoint
  *
- * @ts-nocheck - Supabase type generation issues with audit_determinism_tests table
+ * NOTE: Supabase type generation issues with audit_determinism_tests table
+ * Disabled TypeScript checking for this file due to pre-existing type errors
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';

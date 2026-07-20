@@ -73,12 +73,25 @@
     "ajv-formats": "^3.0.1",
     "autoprefixer": "^10.4.21",
     "fs-extra": "^11.3.5",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
+    "lint-staged": "^17.1.0",
     "pg": "^8.21.0",
+    "prettier": "^3.9.5",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.1.5"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix",
+      "tsc --noEmit"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
   }
 }

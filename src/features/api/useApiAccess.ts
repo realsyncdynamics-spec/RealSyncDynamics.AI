@@ -38,16 +38,17 @@ export function useApiAccess(): ApiAccessStatus {
       try {
         const sb = getSupabase();
 
-        // 1. Hole Tenant-Subscription (plan_id oder subscription_tier)
-        const { data: tenantData, error: tenantErr } = await sb
-          .from('tenants')
-          .select('plan_id, subscription_tier')
-          .eq('id', activeTenantId)
+        // 1. Hole Tenant-Subscription (plan_key aus subscriptions)
+        const { data: subData, error: subErr } = await sb
+          .from('subscriptions')
+          .select('plan_key')
+          .eq('tenant_id', activeTenantId)
+          .eq('status', 'active')
           .single();
 
-        if (tenantErr) throw tenantErr;
+        if (subErr && subErr.code !== 'PGRST116') throw subErr; // PGRST116 = no rows
 
-        const tier = (tenantData?.subscription_tier ?? tenantData?.plan_id ?? 'free') as TierId;
+        const tier = (subData?.plan_key ?? 'free') as TierId;
         const hasAccess = API_ENABLED_TIERS.includes(tier);
 
         // 2. Zähle aktive API-Keys

@@ -23,9 +23,9 @@ async function sha256Hex(input: string): Promise<string> {
     .join('');
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
-  if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
+  if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;

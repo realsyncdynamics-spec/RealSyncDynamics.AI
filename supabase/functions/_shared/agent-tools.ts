@@ -302,7 +302,8 @@ async function toolListIncidents(ctx: DispatchCtx): Promise<unknown> {
   if (error) throw error;
 
   const now = Date.now();
-  const enriched = ((data as Array<{ id: string; severity: string; status: string; notification_deadline_at: string | null }>) ?? []).map((i) => {
+  const dataArr = (data as Array<{ id: string; title: string; severity: string; status: string; detected_at: string; notification_deadline_at: string | null; asset_id: string | null }>) ?? [];
+  const enriched = dataArr.map((i) => {
     if (!i.notification_deadline_at || i.status === 'reported' || i.status === 'resolved') return i;
     const hoursLeft = Math.max(0, Math.round((new Date(i.notification_deadline_at).getTime() - now) / 36e5));
     return { ...i, hours_until_72h_deadline: hoursLeft };

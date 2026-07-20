@@ -1303,7 +1303,9 @@ class MailgunAdapter implements EmailAdapter {
 
 /**
  * Audit Logging — for compliance.
- * ✅ IMPLEMENTED: See migration 20260720081352_social_distribution_queue_persistence.sql
+ * ✅ IMPLEMENTED: See migrations:
+ *   - 20260720081352: distribution_audit_log table (primary audit trail)
+ *   - 20260720140000: automatic sync to runtime_events (compliance consolidation)
  *
  * Distribution queue audit trail (distribution_audit_log table):
  *   - enqueued: initial queue entry creation
@@ -1313,5 +1315,9 @@ class MailgunAdapter implements EmailAdapter {
  *   - publish_failed: error captured, retry scheduled or DLQ moved
  *   - dlq_moved: entry exhausted retries
  *
- * TODO: Wire to runtime_events for cross-module compliance trail.
+ * Runtime Events Integration:
+ *   - Trigger: sync_distribution_audit_to_runtime()
+ *   - Prefix: 'distribution_queue.{event_type}'
+ *   - Payload: queue_entry_id, channel, message, metadata, audit_id, timestamp
+ *   - Query unified trail: SELECT * FROM runtime_events WHERE name LIKE 'distribution_queue.%'
  */

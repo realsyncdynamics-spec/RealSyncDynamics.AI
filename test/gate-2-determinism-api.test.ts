@@ -68,7 +68,7 @@ describe('Gate 2: Determinism Test API', () => {
       .order('test_cycle', { ascending: true });
 
     // Assert consistency
-    const hashes = cycles.data || [];
+    const hashes = (cycles.data as Array<{ findings_hash: string; decision_hash: string }>) || [];
     const uniqueFindingsHashes = new Set(hashes.map((c) => c.findings_hash));
     const uniqueDecisionHashes = new Set(hashes.map((c) => c.decision_hash));
 
@@ -120,7 +120,7 @@ describe('Gate 2: Determinism Test API', () => {
       .select('findings_hash, decision_hash')
       .eq('fixture_id', fixtureId);
 
-    const hashes = cycles.data || [];
+    const hashes = (cycles.data as Array<{ findings_hash: string; decision_hash: string }>) || [];
     const uniqueFindingsHashes = new Set(hashes.map((c) => c.findings_hash));
 
     expect(uniqueFindingsHashes.size).toBeGreaterThan(1); // Non-deterministic

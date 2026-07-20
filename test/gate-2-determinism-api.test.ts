@@ -53,7 +53,7 @@ describe('Gate 2: Determinism Test API', () => {
           policy_pack_hash: 'policy123',
           execution_started_at: new Date().toISOString(),
           execution_ended_at: new Date().toISOString(),
-        }))
+        })) as any
       )
       .select();
 
@@ -111,7 +111,7 @@ describe('Gate 2: Determinism Test API', () => {
           policy_pack_hash: 'policy123',
           execution_started_at: new Date().toISOString(),
           execution_ended_at: new Date().toISOString(),
-        }))
+        })) as any
       )
       .select();
 

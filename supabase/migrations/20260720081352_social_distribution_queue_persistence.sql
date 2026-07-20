@@ -9,6 +9,7 @@
 --   - distribution_dlq: Dead Letter Queue (failed after max retries)
 --   - distribution_audit_log: Audit trail of all publish attempts
 
+-- pgcrypto is bootstrapped in CI; CREATE EXTENSION IF NOT EXISTS handles missing gracefully
 create extension if not exists "pgcrypto";
 
 -- 1. Main Queue Table
@@ -173,7 +174,7 @@ begin
        from public.distribution_queue_entries dqe
       where dqe.channel = p_channel
         and (
-          (dqe.status = 'pending' and dqe.approval_status = 'AUTO')
+          (dqe.status = 'pending' and dqe.approval_status = 'auto')
           or (dqe.status = 'approved')
           or (dqe.status = 'failed'
               and dqe.attempts < dqe.max_attempts

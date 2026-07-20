@@ -1,29 +1,55 @@
--- Gate 4: Evidence Integrity with Hash Chains
+-- Gate 4: Evidence Integrity with Hash Chains (Simplified)
 --
--- Enables tamper detection: If any evidence is modified, all downstream chain hashes break.
---
--- Schema:
--- - Each finding links to previous finding (parent_finding_id)
--- - Each finding has integrity hash
--- - Chain hash computed as: hash(previous_chain_hash + current_finding_hash)
--- - If any finding is modified: chain breaks, tampering detected
+-- Enables tamper detection via hash chains on findings.
+-- Phase 1: Add columns & indexes (migrations must be safe for re-runs)
+-- Phase 2: Add triggers & functions (optional, can be in separate migration)
 
-alter table if exists public.audit_findings
-add column if not exists parent_finding_id uuid,
-add column if not exists finding_hash text,
-add column if not exists chain_hash text,
-add column if not exists evidence_root_hash text;
+-- 1. Add columns for chain tracking
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='audit_findings' and column_name='parent_finding_id'
+  ) then
+    alter table public.audit_findings add column parent_finding_id uuid;
+  end if;
 
--- Add constraints (idempotent with drop-if-exists)
-alter table if exists public.audit_findings
-drop constraint if exists fk_parent_finding;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='audit_findings' and column_name='finding_hash'
+  ) then
+    alter table public.audit_findings add column finding_hash text;
+  end if;
 
-alter table if exists public.audit_findings
-add constraint fk_parent_finding
-  foreign key (parent_finding_id)
-  references public.audit_findings(id) on delete set null;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='audit_findings' and column_name='chain_hash'
+  ) then
+    alter table public.audit_findings add column chain_hash text;
+  end if;
 
--- Indexes for chain traversal
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='audit_findings' and column_name='evidence_root_hash'
+  ) then
+    alter table public.audit_findings add column evidence_root_hash text;
+  end if;
+end $$;
+
+-- 2. Add foreign key constraint (safe via drop-if-exists)
+do $$
+begin
+  -- Drop old constraint if exists
+  execute 'alter table public.audit_findings drop constraint if exists fk_parent_finding';
+
+  -- Add new constraint
+  alter table public.audit_findings
+  add constraint fk_parent_finding
+    foreign key (parent_finding_id)
+    references public.audit_findings(id) on delete set null;
+end $$;
+
+-- 3. Add indexes for performance
 create index if not exists idx_audit_findings_parent on public.audit_findings(parent_finding_id);
 create index if not exists idx_audit_findings_chain_hash on public.audit_findings(chain_hash);
 create index if not exists idx_audit_findings_root_hash on public.audit_findings(evidence_root_hash);

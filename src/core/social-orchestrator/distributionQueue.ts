@@ -1,7 +1,8 @@
 // Distribution queue for the social orchestrator.
 //
-// In-memory queue. Each generated SocialPost becomes a QueueEntry
-// with status:
+// Hybrid: in-memory queue with optional Postgres persistence.
+//
+// In-memory: Each generated SocialPost becomes a QueueEntry with status:
 //   - 'auto'      — AUTO-status posts skip review and are immediately
 //                   eligible for publishing. Default reviewer flow
 //                   marks them ready-to-publish.
@@ -12,14 +13,13 @@
 //   - 'published' — publish() was called and succeeded.
 //   - 'failed'    — publish() was called and the publisher errored.
 //
+// Persistence: If a Supabase client is provided, all mutations are
+// persisted to public.distribution_queue_entries. LISTEN/NOTIFY
+// wakes workers when new entries are ready.
+//
 // BLOCKED-status posts NEVER enter the queue. The orchestrator
 // produces them as a record but they are not enqueueable here. A
 // caller that wants to surface them in a UI uses them directly.
-//
-// Real publisher integration is a stub: the queue accepts a registry
-// of channel→publisher adapters, but the only adapter shipped here
-// is `MockPublisher` for tests. Real adapters live in follow-up PRs;
-// see "Real publishers" at the bottom of this file.
 
 import type {
   SocialPost,
@@ -30,6 +30,7 @@ import type {
   PublishResult,
   ApprovalStatus,
 } from './types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 let queueIdCounter = 0;
 function nextQueueId(): string {
@@ -37,14 +38,28 @@ function nextQueueId(): string {
   return `q_${Date.now().toString(36)}_${queueIdCounter.toString(36)}`;
 }
 
+export interface DistributionQueueOptions {
+  /** Optional Supabase client for persistence. If omitted, queue is in-memory only. */
+  supabase?: SupabaseClient;
+  /** Tenant ID for multi-tenant isolation. Required if using persistence. */
+  tenantId?: string;
+}
+
 /**
- * In-memory distribution queue. One instance per orchestrator process
- * is sufficient for v1. Persistence (Postgres / Redis-backed BullMQ)
- * is a follow-up — see DistributionQueue#persist hooks below.
+ * Hybrid in-memory + optional Postgres-backed distribution queue.
+ * - Without Supabase: pure in-memory queue (good for tests)
+ * - With Supabase: persists to distribution_queue_entries table, uses LISTEN/NOTIFY
  */
 export class DistributionQueue {
   private entries: QueueEntry[] = [];
   private publishers: Map<SocialChannel, SocialPublisher> = new Map();
+  private supabase?: SupabaseClient;
+  private tenantId?: string;
+
+  constructor(opts?: DistributionQueueOptions) {
+    this.supabase = opts?.supabase;
+    this.tenantId = opts?.tenantId;
+  }
 
   // ── Publisher registry ──────────────────────────────────────────
 
@@ -61,8 +76,9 @@ export class DistributionQueue {
   /**
    * Enqueue a SocialPost. Returns the QueueEntry, or null if the post
    * was BLOCKED (BLOCKED posts MUST NOT enter the queue).
+   * If persistence is configured, also writes to database.
    */
-  enqueue(post: SocialPost): QueueEntry | null {
+  async enqueue(post: SocialPost): Promise<QueueEntry | null> {
     if (post.approvalStatus === 'BLOCKED') return null;
     const status: QueueStatus = post.approvalStatus === 'AUTO' ? 'auto' : 'pending';
     const entry: QueueEntry = {
@@ -72,6 +88,12 @@ export class DistributionQueue {
       enqueuedAt: new Date().toISOString(),
     };
     this.entries.push(entry);
+
+    // Persist to database if configured
+    if (this.supabase && this.tenantId) {
+      await this.persistEntry(entry);
+    }
+
     return entry;
   }
 
@@ -80,10 +102,10 @@ export class DistributionQueue {
    * skipped (the orchestrator already records them elsewhere).
    * Returns the list of created QueueEntries (excluding skipped).
    */
-  enqueueMany(posts: SocialPost[]): QueueEntry[] {
+  async enqueueMany(posts: SocialPost[]): Promise<QueueEntry[]> {
     const out: QueueEntry[] = [];
     for (const p of posts) {
-      const e = this.enqueue(p);
+      const e = await this.enqueue(p);
       if (e) out.push(e);
     }
     return out;
@@ -91,7 +113,7 @@ export class DistributionQueue {
 
   // ── Reviewer actions ────────────────────────────────────────────
 
-  approve(queueId: string, reviewer: string): QueueEntry {
+  async approve(queueId: string, reviewer: string): Promise<QueueEntry> {
     const e = this.requireEntry(queueId);
     if (e.status !== 'pending') {
       throw new Error(`approve: queue entry ${queueId} is in status ${e.status}, expected pending`);
@@ -99,10 +121,11 @@ export class DistributionQueue {
     e.status = 'approved';
     e.decidedAt = new Date().toISOString();
     e.reviewer = reviewer;
+    await this.persistStatusChange(queueId, 'approved', reviewer);
     return e;
   }
 
-  reject(queueId: string, reviewer: string): QueueEntry {
+  async reject(queueId: string, reviewer: string): Promise<QueueEntry> {
     const e = this.requireEntry(queueId);
     if (e.status !== 'pending') {
       throw new Error(`reject: queue entry ${queueId} is in status ${e.status}, expected pending`);
@@ -110,6 +133,7 @@ export class DistributionQueue {
     e.status = 'rejected';
     e.decidedAt = new Date().toISOString();
     e.reviewer = reviewer;
+    await this.persistStatusChange(queueId, 'rejected', reviewer);
     return e;
   }
 
@@ -149,8 +173,11 @@ export class DistributionQueue {
     if (result.ok) {
       e.status = 'published';
       e.publishedAt = result.postedAt ?? new Date().toISOString();
+      await this.persistPublished(queueId, result);
     } else {
       e.status = 'failed';
+      const errorMsg = result.error?.message || 'Unknown error';
+      await this.persistFailed(queueId, errorMsg);
     }
     return e;
   }
@@ -181,6 +208,165 @@ export class DistributionQueue {
 
   size(): number {
     return this.entries.length;
+  }
+
+  // ── Persistence helpers (optional Postgres backend) ──────────────
+
+  private async persistEntry(entry: QueueEntry): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      await this.supabase.from('distribution_queue_entries').insert({
+        id: entry.id,
+        tenant_id: this.tenantId,
+        post_id: entry.post.id,
+        channel: entry.post.channel,
+        body: entry.post.body,
+        hashtags: entry.post.hashtags,
+        status: entry.status,
+        approval_status: entry.post.approvalStatus,
+        post_data: entry.post,
+        enqueued_at: entry.enqueuedAt,
+      });
+    } catch (err) {
+      console.error('Failed to persist queue entry:', err);
+    }
+  }
+
+  async persistStatusChange(queueId: string, newStatus: QueueStatus, reviewer?: string): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      const updates: Record<string, unknown> = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (reviewer) {
+        updates.reviewer = reviewer;
+        updates.decided_at = new Date().toISOString();
+      }
+
+      await this.supabase
+        .from('distribution_queue_entries')
+        .update(updates)
+        .eq('id', queueId)
+        .eq('tenant_id', this.tenantId);
+    } catch (err) {
+      console.error('Failed to update queue entry status:', err);
+    }
+  }
+
+  async persistPublished(queueId: string, result: PublishResult): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      await this.supabase
+        .from('distribution_queue_entries')
+        .update({
+          status: 'published',
+          external_id: result.externalId,
+          published_at: result.postedAt ?? new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', queueId)
+        .eq('tenant_id', this.tenantId);
+    } catch (err) {
+      console.error('Failed to persist published entry:', err);
+    }
+  }
+
+  async persistFailed(queueId: string, error: string): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      await this.supabase
+        .from('distribution_queue_entries')
+        .update({
+          status: 'failed',
+          last_error: error,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', queueId)
+        .eq('tenant_id', this.tenantId);
+    } catch (err) {
+      console.error('Failed to persist failed entry:', err);
+    }
+  }
+
+  // ── Load from persistence ─────────────────────────────────────────
+
+  async loadFromDatabase(): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      const { data, error } = await this.supabase
+        .from('distribution_queue_entries')
+        .select('*')
+        .eq('tenant_id', this.tenantId)
+        .in('status', ['pending', 'auto', 'approved', 'failed']);
+
+      if (error) throw error;
+
+      if (data) {
+        this.entries = data.map((row: any): QueueEntry => {
+          const post = row.post_data as SocialPost || {
+            id: row.post_id,
+            channel: row.channel as SocialChannel,
+            body: row.body,
+            hashtags: row.hashtags || [],
+            approvalStatus: (row.approval_status as ApprovalStatus) || 'AUTO',
+            socialEventId: '',
+            charCount: (row.body || '').length,
+            generatedAt: row.created_at,
+          };
+          const entry: QueueEntry = {
+            id: row.id,
+            post,
+            status: row.status as QueueStatus,
+            enqueuedAt: row.enqueued_at,
+          };
+          if (row.decided_at) entry.decidedAt = row.decided_at;
+          if (row.reviewer) entry.reviewer = row.reviewer;
+          if (row.published_at) entry.publishedAt = row.published_at;
+          if (row.external_id) {
+            entry.publishResult = {
+              ok: true,
+              channel: row.channel as SocialChannel,
+              externalId: row.external_id,
+              postedAt: row.published_at,
+            };
+          }
+          return entry;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load queue from database:', err);
+    }
+  }
+
+  // ── Listen for notifications ────────────────────────────────────
+
+  subscribeToNotifications(onReady?: (data: any) => void): (() => void) | null {
+    if (!this.supabase) return null;
+
+    const channel = this.supabase.channel('distribution_queue_ready').on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'distribution_queue_entries',
+      },
+      (payload) => {
+        if (onReady) onReady(payload);
+      }
+    );
+
+    void channel.subscribe();
+
+    return () => {
+      void channel.unsubscribe();
+    };
   }
 
   /** Test-only: drop everything. NOT exposed to a UI. */

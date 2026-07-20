@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * test/gate-2-determinism-api.test.ts
  *
@@ -101,6 +102,7 @@ describe.skipIf(!hasSupabaseEnv)('Gate 2: Determinism Test API', () => {
       },
     ];
 
+<<<<<<< HEAD
     const { data } = await client
       .from('audit_determinism_tests')
       .insert(

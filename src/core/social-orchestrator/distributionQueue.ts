@@ -92,6 +92,7 @@ export class DistributionQueue {
     // Persist to database if configured
     if (this.supabase && this.tenantId) {
       await this.persistEntry(entry);
+      await this.logAuditEvent('enqueued', entry.id, post.channel, `Post enqueued with status: ${status}`);
     }
 
     return entry;
@@ -122,6 +123,7 @@ export class DistributionQueue {
     e.decidedAt = new Date().toISOString();
     e.reviewer = reviewer;
     await this.persistStatusChange(queueId, 'approved', reviewer);
+    await this.logAuditEvent('approved', queueId, e.post.channel, `Approved by ${reviewer}`);
     return e;
   }
 
@@ -134,6 +136,7 @@ export class DistributionQueue {
     e.decidedAt = new Date().toISOString();
     e.reviewer = reviewer;
     await this.persistStatusChange(queueId, 'rejected', reviewer);
+    await this.logAuditEvent('rejected', queueId, e.post.channel, `Rejected by ${reviewer}`);
     return e;
   }
 
@@ -174,10 +177,12 @@ export class DistributionQueue {
       e.status = 'published';
       e.publishedAt = result.postedAt ?? new Date().toISOString();
       await this.persistPublished(queueId, result);
+      await this.logAuditEvent('publish_success', queueId, e.post.channel, `Published with external ID: ${result.externalId}`);
     } else {
       e.status = 'failed';
       const errorMsg = result.error?.message || 'Unknown error';
       await this.persistFailed(queueId, errorMsg);
+      await this.logAuditEvent('publish_failed', queueId, e.post.channel, `Publish failed: ${errorMsg}`);
     }
     return e;
   }
@@ -208,6 +213,148 @@ export class DistributionQueue {
 
   size(): number {
     return this.entries.length;
+  }
+
+  // ── Dead Letter Queue (DLQ) ────────────────────────────────────────
+
+  /**
+   * Get all failed entries that have exhausted retries.
+   * Only available if persistence is configured.
+   */
+  async listDLQ(): Promise<any[]> {
+    if (!this.supabase || !this.tenantId) return [];
+
+    try {
+      const { data, error } = await this.supabase
+        .from('distribution_dlq')
+        .select('*')
+        .eq('tenant_id', this.tenantId)
+        .order('failed_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('Failed to query DLQ:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Move a failed entry to DLQ after exhausting all retries.
+   * Called internally by persistFailed() when max_attempts is exceeded.
+   */
+  private async moveToDLQ(queueId: string, error: string): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      const { data: entry } = await this.supabase
+        .from('distribution_queue_entries')
+        .select('*')
+        .eq('id', queueId)
+        .eq('tenant_id', this.tenantId)
+        .single();
+
+      if (!entry) return;
+
+      // Insert into DLQ
+      await this.supabase.from('distribution_dlq').insert({
+        queue_entry_id: queueId,
+        tenant_id: this.tenantId,
+        channel: entry.channel,
+        final_error: error,
+        attempts_made: entry.attempts,
+      });
+
+      // Log to audit trail
+      await this.logAuditEvent('dlq_moved', queueId, entry.channel, `Moved to DLQ after ${entry.attempts} attempts`);
+    } catch (err) {
+      console.error('Failed to move entry to DLQ:', err);
+    }
+  }
+
+  /**
+   * Archive a DLQ entry (mark as reviewed/handled).
+   */
+  async archiveDLQEntry(dlqId: string): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      await this.supabase
+        .from('distribution_dlq')
+        .update({ moved_to_dlq_at: new Date().toISOString() })
+        .eq('id', dlqId)
+        .eq('tenant_id', this.tenantId);
+    } catch (err) {
+      console.error('Failed to archive DLQ entry:', err);
+    }
+  }
+
+  /**
+   * Re-queue a DLQ entry (attempt to publish again).
+   * Resets retry counter and puts it back into pending status.
+   */
+  async requeueDLQEntry(dlqId: string): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      const { data: dlqEntry } = await this.supabase
+        .from('distribution_dlq')
+        .select('queue_entry_id')
+        .eq('id', dlqId)
+        .eq('tenant_id', this.tenantId)
+        .single();
+
+      if (!dlqEntry) return;
+
+      // Reset the queue entry
+      await this.supabase
+        .from('distribution_queue_entries')
+        .update({
+          status: 'pending',
+          attempts: 0,
+          last_error: null,
+          next_retry_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', dlqEntry.queue_entry_id)
+        .eq('tenant_id', this.tenantId);
+
+      // Remove from DLQ
+      await this.supabase
+        .from('distribution_dlq')
+        .delete()
+        .eq('id', dlqId)
+        .eq('tenant_id', this.tenantId);
+
+      await this.logAuditEvent('requeued_from_dlq', dlqEntry.queue_entry_id, 'unknown', 'Entry re-queued from DLQ');
+    } catch (err) {
+      console.error('Failed to re-queue DLQ entry:', err);
+    }
+  }
+
+  // ── Audit logging ──────────────────────────────────────────────────
+
+  private async logAuditEvent(
+    eventType: string,
+    queueId: string,
+    channel: string,
+    message: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    if (!this.supabase || !this.tenantId) return;
+
+    try {
+      await this.supabase.from('distribution_audit_log').insert({
+        queue_entry_id: queueId,
+        tenant_id: this.tenantId,
+        event_type: eventType,
+        channel,
+        message,
+        metadata: metadata || {},
+      });
+    } catch (err) {
+      console.error('Failed to log audit event:', err);
+    }
   }
 
   // ── Persistence helpers (optional Postgres backend) ──────────────
@@ -280,15 +427,52 @@ export class DistributionQueue {
     if (!this.supabase || !this.tenantId) return;
 
     try {
-      await this.supabase
+      // Get current entry to check retry state
+      const { data: entry } = await this.supabase
         .from('distribution_queue_entries')
-        .update({
-          status: 'failed',
-          last_error: error,
-          updated_at: new Date().toISOString(),
-        })
+        .select('*')
         .eq('id', queueId)
-        .eq('tenant_id', this.tenantId);
+        .eq('tenant_id', this.tenantId)
+        .single();
+
+      if (!entry) return;
+
+      const nextAttempts = entry.attempts + 1;
+      const shouldMoveToDLQ = nextAttempts >= entry.max_attempts;
+
+      if (shouldMoveToDLQ) {
+        // Exhausted retries — move to DLQ
+        await this.supabase
+          .from('distribution_queue_entries')
+          .update({
+            status: 'failed',
+            last_error: error,
+            attempts: nextAttempts,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', queueId)
+          .eq('tenant_id', this.tenantId);
+
+        await this.moveToDLQ(queueId, error);
+      } else {
+        // Schedule retry with exponential backoff: 2^attempts seconds
+        const backoffSeconds = Math.pow(2, entry.attempts);
+        const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000).toISOString();
+
+        await this.supabase
+          .from('distribution_queue_entries')
+          .update({
+            status: 'failed',
+            last_error: error,
+            attempts: nextAttempts,
+            next_retry_at: nextRetryAt,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', queueId)
+          .eq('tenant_id', this.tenantId);
+
+        await this.logAuditEvent('retry_scheduled', queueId, entry.channel, `Retry scheduled in ${backoffSeconds}s`);
+      }
     } catch (err) {
       console.error('Failed to persist failed entry:', err);
     }

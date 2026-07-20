@@ -186,3 +186,14 @@ export interface OrchestrationResult {
   posts: SocialPost[];
   queueEntries: QueueEntry[];
 }
+
+// ── Metrics (exported from metrics.ts) ────────────────────────────
+// Re-export here for convenience (import metrics types from types)
+export type {
+  PublishMetric,
+  QueueMetric,
+  VolumeMetric,
+  AggregatedMetrics,
+  ChannelMetrics,
+  OverallMetrics,
+} from './metrics';

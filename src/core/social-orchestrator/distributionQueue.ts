@@ -31,6 +31,7 @@ import type {
   ApprovalStatus,
 } from './types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { recordPublishMetric, recordQueueMetric } from './metrics';
 
 let queueIdCounter = 0;
 function nextQueueId(): string {
@@ -149,6 +150,8 @@ export class DistributionQueue {
    */
   async publish(queueId: string): Promise<QueueEntry> {
     const e = this.requireEntry(queueId);
+    const startTime = Date.now();
+
     if (e.status !== 'auto' && e.status !== 'approved') {
       throw new Error(`publish: entry ${queueId} not publishable (status=${e.status})`);
     }
@@ -160,6 +163,14 @@ export class DistributionQueue {
         channel: e.post.channel,
         error: { code: 'NO_PUBLISHER', message: `no publisher registered for ${e.post.channel}` },
       };
+      recordPublishMetric({
+        channel: e.post.channel,
+        status: 'failure',
+        latencyMs: Date.now() - startTime,
+        errorCode: 'NO_PUBLISHER',
+        errorMessage: 'no publisher registered',
+        timestamp: new Date().toISOString(),
+      });
       return e;
     }
     let result: PublishResult;
@@ -173,16 +184,33 @@ export class DistributionQueue {
       };
     }
     e.publishResult = result;
+    const latency = Date.now() - startTime;
+
     if (result.ok) {
       e.status = 'published';
       e.publishedAt = result.postedAt ?? new Date().toISOString();
       await this.persistPublished(queueId, result);
       await this.logAuditEvent('publish_success', queueId, e.post.channel, `Published with external ID: ${result.externalId}`);
+      recordPublishMetric({
+        channel: e.post.channel,
+        status: 'success',
+        latencyMs: latency,
+        externalId: result.externalId,
+        timestamp: new Date().toISOString(),
+      });
     } else {
       e.status = 'failed';
       const errorMsg = result.error?.message || 'Unknown error';
       await this.persistFailed(queueId, errorMsg);
       await this.logAuditEvent('publish_failed', queueId, e.post.channel, `Publish failed: ${errorMsg}`);
+      recordPublishMetric({
+        channel: e.post.channel,
+        status: 'failure',
+        latencyMs: latency,
+        errorCode: result.error?.code,
+        errorMessage: errorMsg,
+        timestamp: new Date().toISOString(),
+      });
     }
     return e;
   }

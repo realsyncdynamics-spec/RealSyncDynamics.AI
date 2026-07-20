@@ -4,6 +4,8 @@
  *
  * Integration tests for Determinism Test API
  * Tests: reproducibility verification via REST endpoint
+ *
+ * @ts-nocheck - Supabase type generation issues with audit_determinism_tests table
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';

@@ -28,6 +28,8 @@ import {
 import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/agents/types';
 import { AgentActivityPanel } from './AgentActivityPanel';
 import { AgentRunOutput } from './AgentRunOutput';
+import { AgentRunForm } from './AgentRunForm';
+import { AGENT_INPUT_SCHEMAS, hasInputSchema } from './agentInputSchemas';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {
@@ -156,6 +158,7 @@ export function AgentsCenterView() {
   const [config, setConfig] = useState<EnterpriseAgentDefinition | null>(null);
   const [history, setHistory] = useState<{ agent: EnterpriseAgentDefinition; rows: AgentRunRow[] | null; error?: string } | null>(null);
   const [allRuns, setAllRuns] = useState<AgentRunRow[]>([]);
+  const [runForm, setRunForm] = useState<EnterpriseAgentDefinition | null>(null);
 
   function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
     setToast({ msg, tone });
@@ -186,24 +189,32 @@ export function AgentsCenterView() {
     return map;
   }, [allRuns]);
 
+  async function executeRun(agent: EnterpriseAgentDefinition, payload?: Record<string, unknown>) {
+    setBusyId(agent.id);
+    try {
+      const res = await runAgent({ agentId: agent.id, tenantId: activeTenantId ?? undefined, payload });
+      if (!res.ok || !res.result) {
+        showToast(res.error ?? 'Agent-Lauf fehlgeschlagen.', 'error');
+        return;
+      }
+      setRunForm(null);
+      setRunResult({ agent, result: res.result });
+      showToast(`${agent.shortName}: ${res.result.status}`);
+      await loadRuns();
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const handlers: CardHandlers = {
     busyId,
-    onRun: async (agent) => {
-      setBusyId(agent.id);
-      try {
-        const res = await runAgent({ agentId: agent.id, tenantId: activeTenantId ?? undefined });
-        if (!res.ok || !res.result) {
-          showToast(res.error ?? 'Agent-Lauf fehlgeschlagen.', 'error');
-          return;
-        }
-        setRunResult({ agent, result: res.result });
-        showToast(`${agent.shortName}: ${res.result.status}`);
-        await loadRuns();
-      } catch (e) {
-        showToast((e as Error).message, 'error');
-      } finally {
-        setBusyId(null);
-      }
+    // Agenten mit Eingabe-Schema öffnen zuerst ein Formular; alle anderen
+    // starten direkt (leeres payload — z. B. Infrastructure, Feedback).
+    onRun: (agent) => {
+      if (hasInputSchema(agent.id)) setRunForm(agent);
+      else void executeRun(agent);
     },
     onHistory: async (agent) => {
       setHistory({ agent, rows: null });
@@ -288,6 +299,20 @@ export function AgentsCenterView() {
         </div>
         <AgentActivityPanel />
       </div>
+
+      {/* Run-Form-Modal — Parameter-Eingabe vor dem Lauf */}
+      {runForm && (
+        <Modal title={`${runForm.name} — Parameter`} onClose={() => setRunForm(null)}>
+          <p className="mb-3 text-xs text-titanium-500">
+            Optionale Eingaben für diesen Lauf. Leere Felder werden weggelassen.
+          </p>
+          <AgentRunForm
+            fields={AGENT_INPUT_SCHEMAS[runForm.id] ?? []}
+            busy={busyId === runForm.id}
+            onSubmit={(payload) => void executeRun(runForm, payload)}
+          />
+        </Modal>
+      )}
 
       {/* Run-Result-Modal */}
       {runResult && (

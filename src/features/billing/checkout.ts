@@ -10,9 +10,9 @@ import { getSupabase } from '../../lib/supabase';
  * aber dieser Checkout verneint es — Free braucht keinen Checkout.
  */
 export type PlanKey =
-  | 'free' | 'free-audit'
+  | 'free' | 'free-audit' | 'free_audit'
   | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise'
-  | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly';
+  | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly' | 'enterprise_yearly';
 
 export interface CheckoutResult {
   ok: boolean;
@@ -34,7 +34,7 @@ export async function createCheckoutSession(
   planKey: PlanKey,
   pilot?: boolean,
 ): Promise<CheckoutResult> {
-  if (planKey === 'free' || planKey === 'free-audit') {
+  if (planKey === 'free' || planKey === 'free-audit' || planKey === 'free_audit') {
     return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free plan needs no checkout' } };
   }
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';

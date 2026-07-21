@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Globe, Plus, RefreshCw, AlertTriangle, CheckCircle2,
-  Clock, XCircle, Search, Shield, Activity,
+  Clock, XCircle, Search, Shield, Activity, X,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
@@ -340,8 +340,14 @@ function _WebsiteGovernanceView() {
         {error && (
           <div className="flex items-center gap-2 bg-red-950/40 border border-red-900 px-4 py-2 text-xs font-mono text-red-400">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            {error}
-            <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-400">✕</button>
+            <span className="flex-1">{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="ml-2 shrink-0 p-1 text-red-500 hover:text-red-300 hover:bg-red-900/30 rounded transition-colors"
+              aria-label="Fehlermeldung schließen"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
 

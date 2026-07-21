@@ -173,6 +173,19 @@ export async function triggerTenantAudit(
     },
     body: JSON.stringify({ url, website_id: opts.website_id }),
   });
+
+  if (!r.ok) {
+    const text = await r.text();
+    let errorMsg = `tenant-audit fehlgeschlagen (HTTP ${r.status})`;
+    try {
+      const errObj = JSON.parse(text);
+      errorMsg = errObj.error?.message ?? errorMsg;
+    } catch {
+      // Response is not JSON, use HTTP status message
+    }
+    throw new Error(errorMsg);
+  }
+
   const body = await r.json() as {
     ok?: boolean;
     scan_run_id?: string;
@@ -180,8 +193,9 @@ export async function triggerTenantAudit(
     severity_max?: string | null;
     error?: { message?: string };
   };
-  if (!r.ok || !body.ok || !body.scan_run_id) {
-    throw new Error(body.error?.message ?? `tenant-audit fehlgeschlagen (HTTP ${r.status})`);
+
+  if (!body.ok || !body.scan_run_id) {
+    throw new Error(body.error?.message ?? 'tenant-audit fehlgeschlagen (ungültige Response)');
   }
   return {
     scan_run_id:   body.scan_run_id,

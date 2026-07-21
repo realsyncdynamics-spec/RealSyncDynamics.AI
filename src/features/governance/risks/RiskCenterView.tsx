@@ -692,6 +692,18 @@ function RiskCard({ risk, onOpen, actions }: { risk: Risk; onOpen: (r: Risk) => 
   const [expanded, setExpanded] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const busy = actions.busyId === risk.id;
+  const statusDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!statusOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setStatusOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [statusOpen]);
 
   return (
     <div className={`border ${cfg.card} flex cursor-default`}>
@@ -810,7 +822,7 @@ function RiskCard({ risk, onOpen, actions }: { risk: Risk; onOpen: (r: Risk) => 
             >
               Nachweis
             </button>
-            <div className="relative">
+            <div className="relative" ref={statusDropdownRef}>
               <button
                 onClick={() => setStatusOpen((v) => !v)}
                 disabled={busy}

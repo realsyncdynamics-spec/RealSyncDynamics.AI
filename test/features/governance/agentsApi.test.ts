@@ -11,8 +11,8 @@ import {
 } from '@/src/features/governance/agents/agentsApi';
 
 describe('agentsApi / registry', () => {
-  it('exposes the seven enterprise agents', () => {
-    expect(enterpriseAgents).toHaveLength(7);
+  it('exposes the eight enterprise agents', () => {
+    expect(enterpriseAgents).toHaveLength(8);
   });
 
   it('has a German autonomy label for every agent autonomyLevel', () => {

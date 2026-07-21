@@ -7,7 +7,8 @@ export type AgentId =
   | 'audit-agent'
   | 'feedback-intelligence-agent'
   | 'remediation-agent'
-  | 'workflow-agent';
+  | 'workflow-agent'
+  | 'infrastructure-agent';
 
 export type AgentLayer =
   | 'discovery'
@@ -16,7 +17,8 @@ export type AgentLayer =
   | 'audit'
   | 'intelligence'
   | 'remediation'
-  | 'orchestration';
+  | 'orchestration'
+  | 'infrastructure';
 
 export type AgentAutonomyLevel =
   | 'observe_only'

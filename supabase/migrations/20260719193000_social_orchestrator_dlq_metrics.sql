@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS social_dlq_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   queue_entry_id TEXT NOT NULL UNIQUE,
-  channel social_channel NOT NULL,
+  channel TEXT NOT NULL,
   error_code TEXT NOT NULL,
   error_message TEXT,
   retry_count INTEGER DEFAULT 0 NOT NULL,
@@ -26,7 +26,7 @@ CREATE INDEX idx_social_dlq_created ON social_dlq_entries(created_at DESC);
 
 CREATE TABLE IF NOT EXISTS social_publishing_metrics (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  channel social_channel NOT NULL,
+  channel TEXT NOT NULL,
   queue_id TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('started', 'succeeded', 'failed')),
   latency_ms INTEGER,
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS social_audit_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_type TEXT NOT NULL,
   queue_id TEXT NOT NULL,
-  channel social_channel NOT NULL,
+  channel TEXT NOT NULL,
   status TEXT,
   metadata JSONB DEFAULT '{}'::JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -97,7 +97,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TABLE IF NOT EXISTS social_publishing_metrics_hourly (
   hour TIMESTAMP WITH TIME ZONE NOT NULL,
-  channel social_channel NOT NULL,
+  channel TEXT NOT NULL,
   total_attempts INTEGER DEFAULT 0,
   succeeded INTEGER DEFAULT 0,
   failed INTEGER DEFAULT 0,
@@ -116,7 +116,7 @@ RETURNS TABLE(hour TIMESTAMP WITH TIME ZONE, channels_processed INT) AS $$
 DECLARE
   v_hour TIMESTAMP WITH TIME ZONE;
   v_channels_processed INT := 0;
-  v_channel social_channel;
+  v_channel TEXT;
 BEGIN
   v_hour := DATE_TRUNC('hour', NOW() - INTERVAL '1 hour');
 

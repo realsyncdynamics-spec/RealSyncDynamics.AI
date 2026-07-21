@@ -88,11 +88,22 @@ describe('pricingContent', () => {
       expect(enterprise).toBeDefined();
     });
 
-    it('all plan CTAs should link to /checkout/{slug}', () => {
-      pricingPlans.forEach((plan) => {
-        expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
-        expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
-      });
+    it('self-service plan CTAs should link to /checkout/{slug}', () => {
+      // Enterprise ist vertriebsgesteuert (keine Stripe-Price, Checkout leitet
+      // auf /contact-sales) — daher von der self-service-Checkout-Regel
+      // ausgenommen.
+      pricingPlans
+        .filter((plan) => plan.slug !== 'enterprise')
+        .forEach((plan) => {
+          expect(plan.cta.href).toBe(`/checkout/${plan.slug}`);
+          expect(plan.checkoutPath).toBe(`/checkout/${plan.slug}`);
+        });
+    });
+
+    it('enterprise CTA routes to the sales funnel, not self-service checkout', () => {
+      const enterprise = getPlanBySlug('enterprise');
+      expect(enterprise?.cta.href).toContain('/contact-sales');
+      expect(enterprise?.checkoutPath).toContain('/contact-sales');
     });
 
     it('all plans should have at least one included feature', () => {
@@ -304,7 +315,7 @@ describe('pricingContent', () => {
       expect(freeAudit?.priceString).toBe('0 €');
     });
 
-    it('enterprise should have price 1249 (checkout tier)', () => {
+    it('enterprise should have price 1249 (sales-assisted tier)', () => {
       const enterprise = getPlanBySlug('enterprise');
       expect(enterprise?.price).toBe(1249);
       expect(enterprise?.priceString).toBe('1.249 €');

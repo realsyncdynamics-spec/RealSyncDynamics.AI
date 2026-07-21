@@ -494,11 +494,15 @@ export const pricingPlans: PricingPlan[] = [
       'Audit Center Pro + Evidence Vault Enterprise',
       'Advanced Analytics & Risk-Scoring',
     ],
+    // Enterprise ist vertriebsgesteuert: keine Stripe-Price hinterlegt, der
+    // Checkout leitet auf /contact-sales. CTA + checkoutPath führen daher
+    // direkt in den Sales-Funnel statt einen nicht erzeugbaren self-service-
+    // Checkout zu versprechen.
     cta: {
-      label: '14 Tage kostenlos testen',
-      href: '/checkout/enterprise',
+      label: 'Enterprise anfragen',
+      href: '/contact-sales?tier=enterprise&source=pricing',
     },
-    checkoutPath: '/checkout/enterprise',
+    checkoutPath: '/contact-sales?tier=enterprise&source=pricing',
     problemsSolved: [
       'Anforderungen gehen über Standard-Pakete hinaus',
       'Besondere Compliance-Regeln notwendig',

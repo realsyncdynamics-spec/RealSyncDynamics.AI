@@ -238,9 +238,12 @@ describe('Billing Workflows', () => {
     expect(scaleDesc).toContain('multi-tenant');
   });
 
-  it('enterprise should have checkout CTA', () => {
+  it('enterprise should route to the sales funnel (no self-service checkout)', () => {
+    // Enterprise ist vertriebsgesteuert: keine Stripe-Price hinterlegt, der
+    // Checkout leitet auf /contact-sales. Die CTA muss dorthin führen statt
+    // einen nicht erzeugbaren self-service-Checkout zu versprechen.
     const enterprise = tierById('enterprise')!;
-    expect(enterprise.cta.href).toContain('/checkout/enterprise');
+    expect(enterprise.cta.href).toContain('/contact-sales');
   });
 });
 

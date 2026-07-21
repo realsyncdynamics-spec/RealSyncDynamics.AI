@@ -274,7 +274,12 @@ export const PRICING_TIERS: PricingTier[] = [
       'Advanced Analytics & Risk-Scoring',
     ],
     highlight: false,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/enterprise?source=pricing&pilot=true' },
+    // Enterprise ist vertriebsgesteuert (sales-assisted): es existiert keine
+    // Stripe-Price für plan_key='enterprise', und CheckoutPage leitet
+    // /checkout/enterprise bewusst auf /contact-sales. Die CTA muss das
+    // widerspiegeln — sonst verspricht sie einen self-service-Checkout, der
+    // serverseitig nicht erzeugt werden kann (PRICE_NOT_CONFIGURED).
+    cta: { label: 'Enterprise anfragen', href: '/contact-sales?tier=enterprise&source=pricing' },
     botsQuota: {
       maxBots: 20,
       maxAnswersPerMonth: 50000,
@@ -448,7 +453,9 @@ export const PRICING_TIERS: PricingTier[] = [
       'Multi-Tenant für bis zu 5 Organisationen (ganz Jahr)',
     ],
     highlight: false,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/enterprise_yearly?source=pricing&pilot=true' },
+    // Vertriebsgesteuert wie der monatliche Enterprise-Tier — keine
+    // Stripe-Price für enterprise_yearly, /checkout leitet auf /contact-sales.
+    cta: { label: 'Enterprise jährlich anfragen', href: '/contact-sales?tier=enterprise_yearly&source=pricing' },
     botsQuota: {
       maxBots: 20,
       maxAnswersPerMonth: 50000,
@@ -476,10 +483,12 @@ export function tierById(id: TierId): PricingTier | undefined {
 }
 
 /**
- * Die 5 selbst buchbaren Pakete (Starter 79 € → Partner 1.999 €) für Pricing-
- * Grids auf Landing/Pricing/Checkout. Enterprise ist jetzt ein 1.249 €
- * self-service-Tier zwischen Agency (699 €) und Partner (1.999 €).
- * Yearly-Varianten sind hier ausgeschlossen (werden separat verwaltet).
+ * Die öffentlichen Pakete (Starter 79 € → Partner 1.999 €) für Pricing-Grids
+ * auf Landing/Pricing/Checkout. Selbst buchbar (Stripe-Checkout) sind Starter,
+ * Growth und Agency; Enterprise (1.249 €) und Partner (1.999 €) sind
+ * vertriebsgesteuert (CTA → /contact-sales), da für sie keine Stripe-Price
+ * hinterlegt ist. Yearly-Varianten sind hier ausgeschlossen (werden separat
+ * verwaltet).
  *
  * Aufsteigend nach Preis sortiert — PRICING_TIERS führt `scale` vor
  * `enterprise` (historische Array-Position, von test/config/pricing.test.ts

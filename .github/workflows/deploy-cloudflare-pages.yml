@@ -68,10 +68,22 @@ jobs:
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Opt-in-Schalter fuer die Deploy-Pfad-Umstellung. Auf 'true' setzen
+          # (Repo → Settings → Secrets and variables → Actions → Variables),
+          # sobald dieser Actions-Deploy der EINZIGE Pfad ist (Cloudflares
+          # Git-Integration deaktiviert). Dann ist ein fehlendes Secret ein
+          # harter Fehler statt eines stillen Skips — verhindert, dass die
+          # Live-Site unbemerkt nicht mehr deployt wird. Siehe Runbook
+          # docs/runbooks/cloudflare-actions-deploy-cutover.md.
+          CF_ACTIONS_CANONICAL: ${{ vars.CLOUDFLARE_ACTIONS_DEPLOY }}
         run: |
           if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
             echo "✓ Cloudflare-Credentials vorhanden — Deploy-Job laeuft."
+          elif [ "$CF_ACTIONS_CANONICAL" = "true" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error::CLOUDFLARE_ACTIONS_DEPLOY=true, aber CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID fehlen. Der Actions-Deploy ist als einziger Pfad markiert — ohne Secrets deployt NICHTS. Secrets setzen oder die Variable entfernen."
+            exit 1
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Cloudflare-Repo-Secrets nicht gesetzt — GitHub-Actions-Deploy wird uebersprungen. Live-Deploy laeuft ueber Cloudflares Git-Integration; dieser Workflow validiert nur Lint + Build."

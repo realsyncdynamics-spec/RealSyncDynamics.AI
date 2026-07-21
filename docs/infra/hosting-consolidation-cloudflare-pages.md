@@ -53,6 +53,18 @@ Commit-Status mehr** — der rote Check verschwindet, ohne Dashboard-Zugriff.
 Der Dashboard-seitige Disconnect (unten) bleibt der saubere Endzustand; der
 Kill-Switch ist die Repo-Absicht bis dahin.
 
+> **Update 2026-07-21 (PR #844):** Der Kill-Switch ist jetzt **committed** —
+> `vercel.json` mit `{ "git": { "deploymentEnabled": false } }` liegt sowohl
+> im **Repo-Root** (deckt die beiden Frontend-Projekte `real-sync-dynamics-ai`
+> und `real-sync-dynamics-ai-9ue5`, `rootDirectory = Repo-Root`) als auch in
+> **`services/realsync-runtime-core/`** (deckt das Backend-Projekt, dessen
+> `rootDirectory = services/realsync-runtime-core` ist — das war die einzige
+> auf PRs failende Vercel-Deployment). Frontend bleibt allein Cloudflare Pages;
+> `realsync-runtime-core` ist ein Fastify-Server (NATS/Postgres/Redis) und
+> gehört auf den **VPS-Stack**, nicht auf Vercel oder Cloudflare Pages. Greift
+> nur, solange der Vercel-Account nicht *geblockt* ist (sonst Account-Level-
+> Status vor Config — dann bleibt nur der Disconnect unten).
+
 > **Befund 2026-07-01 (PR #750):** Solange der Vercel-Account **geblockt**
 > ist, greift der Kill-Switch **nicht** — Vercel postet den Status
 > „Account is blocked" auf **Account-Ebene**, *bevor* die Projekt-Config /

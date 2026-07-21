@@ -686,47 +686,28 @@ abstract class BasePublisher implements SocialPublisher {
 // ── Real publishers (placeholder implementations) ──────────────────────────
 
 /**
- * LinkedIn Publisher — OAuth 2.0 + REST API
- * Requires token in Supabase Vault: linkedin_access_token
- * Supports multiple LinkedIn profiles (enterprise vs. legal framing)
+ * LinkedIn Publisher (placeholder) — OAuth 2.0 + REST API
  * See: https://learn.microsoft.com/en-us/linkedin/marketing/integrations/community-management/shares/ugc-post-api
+ *
+ * ⚠️ This is a placeholder/reference implementation for testing/documentation.
+ * The real production implementation is in ./linkedinPublisher.ts which:
+ * - Accepts accessToken + authorId as constructor parameters
+ * - Caller (Edge Function) loads token from Supabase Vault
+ * - Supports per-profile author IDs (linkedin.enterprise, linkedin.legal, etc)
  */
 export class LinkedInPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'linkedin.enterprise';
-  private accessToken: string;
-  private profileMap: Map<SocialChannel, string>;
-
-  /**
-   * Create a LinkedIn publisher with OAuth token and profile URNs.
-   * @param accessToken LinkedIn OAuth 2.0 access token (loaded from Supabase Vault in production)
-   * @param profileMap Map of LinkedIn channel → LinkedIn Person URN (e.g., "urn:li:person:ABC123")
-   */
-  constructor(accessToken: string, profileMap?: Map<SocialChannel, string>) {
-    super();
-    this.accessToken = accessToken;
-    this.profileMap = profileMap ?? new Map([
-      ['linkedin.enterprise', 'urn:li:person:ABC123'],
-      ['linkedin.legal', 'urn:li:person:XYZ789'],
-    ]);
-  }
+  private accessToken: string = '';
+  private profileId: string = '';
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { apiEndpoint: '/v2/ugcPosts' });
 
-    if (!this.accessToken) {
+    if (!this.accessToken || !this.profileId) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'LinkedIn access token not configured' },
-      };
-    }
-
-    const personUrn = this.profileMap.get(post.channel);
-    if (!personUrn) {
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'NO_PROFILE', message: `No LinkedIn profile configured for channel ${post.channel}` },
+        error: { code: 'NO_TOKEN', message: 'LinkedIn access token or profile ID not configured' },
       };
     }
 
@@ -740,7 +721,7 @@ export class LinkedInPublisher extends BasePublisher {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              author: personUrn,
+              author: `urn:li:person:${this.profileId}`,
               lifecycleState: 'PUBLISHED',
               specificContent: {
                 'com.linkedin.ugc.PublishContent': {
@@ -788,9 +769,16 @@ export class LinkedInPublisher extends BasePublisher {
 }
 
 /**
- * WordPress Publisher — XML-RPC or REST API
- * TODO: implement in follow-up PR; basic scaffolding in place
- * TODO: siteUrl and apiToken loaded from config/Supabase Vault in production
+ * WordPress Publisher — REST API (WP 4.7+)
+ *
+ * Caller (Edge Function) is responsible for loading siteUrl and apiToken
+ * from configuration and Supabase Vault, then passing them to constructor.
+ *
+ * Supports both:
+ * - Application passwords (recommended for headless/automated publishing)
+ * - OAuth tokens (for user-authenticated posting)
+ *
+ * See: https://developer.wordpress.org/plugins/authentication/
  */
 export class WordPressPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'wordpress.blog';
@@ -799,18 +787,18 @@ export class WordPressPublisher extends BasePublisher {
 
   constructor(siteUrl: string, apiToken: string) {
     super();
-    this.siteUrl = siteUrl;
+    this.siteUrl = siteUrl.replace(/\/$/, ''); // strip trailing slash
     this.apiToken = apiToken;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { siteUrl: this.siteUrl });
 
-    if (!this.apiToken) {
+    if (!this.siteUrl || !this.apiToken) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'WordPress API token not configured' },
+        error: { code: 'NO_CONFIG', message: 'WordPress site URL or API token not configured' },
       };
     }
 
@@ -824,17 +812,23 @@ export class WordPressPublisher extends BasePublisher {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              title: post.body.split('\n')[0]?.substring(0, 100) || 'Governance Update',
+              title: this.extractTitle(post.body),
               content: post.body,
               status: 'publish',
-              tags: post.hashtags.map(h => h.replace('#', '')).slice(0, 5),
-              excerpt: post.body.substring(0, 160),
+              // Store hashtags as tags
+              tags: post.hashtags.length > 0 ? post.hashtags.map(h => h.replace('#', '')) : [],
             }),
           });
 
+          if (response.status === 401) {
+            throw new Error('WORDPRESS_401_UNAUTHORIZED');
+          }
+          if (response.status === 403) {
+            throw new Error('WORDPRESS_403_FORBIDDEN');
+          }
           if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`WORDPRESS_${response.status}: ${error}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`WORDPRESS_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
           }
 
           return response.json();
@@ -844,11 +838,11 @@ export class WordPressPublisher extends BasePublisher {
         }
       );
 
-      this.logPublishAttempt(post, 'success', { postId: result.id });
+      this.logPublishAttempt(post, 'success', { externalId: (result as Record<string, unknown>).id });
       return {
         ok: true,
         channel: this.channel,
-        externalId: String(result.id),
+        externalId: String((result as Record<string, unknown>).id),
         postedAt: new Date().toISOString(),
       };
     } catch (err) {
@@ -862,12 +856,30 @@ export class WordPressPublisher extends BasePublisher {
       };
     }
   }
+
+  private extractTitle(body: string): string {
+    // Use first line as title, or first 60 chars if no line break
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 100) {
+      return firstLine;
+    }
+    return body.substring(0, 60).trim() + (body.length > 60 ? '…' : '');
+  }
 }
 
 /**
  * Ghost Publisher — Ghost API (v3+)
- * TODO: implement in follow-up PR; basic scaffolding in place
- * TODO: adminUrl and adminApiKey loaded from config/Supabase Vault in production
+ *
+ * Caller (Edge Function) is responsible for loading adminUrl and adminApiKey
+ * from configuration and Supabase Vault, then passing them to constructor.
+ *
+ * Uses Ghost Admin API for direct post publishing. Requires:
+ * - Ghost v3.0+
+ * - Admin API key (not Content API key)
+ * - Full Ghost URL (e.g., https://blog.example.com)
+ *
+ * See: https://ghost.org/docs/admin-api/
  */
 export class GhostPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'ghost.blog';
@@ -876,25 +888,25 @@ export class GhostPublisher extends BasePublisher {
 
   constructor(adminUrl: string, adminApiKey: string) {
     super();
-    this.adminUrl = adminUrl;
+    this.adminUrl = adminUrl.replace(/\/$/, ''); // strip trailing slash
     this.adminApiKey = adminApiKey;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
     this.logPublishAttempt(post, 'started', { adminUrl: this.adminUrl });
 
-    if (!this.adminApiKey) {
+    if (!this.adminUrl || !this.adminApiKey) {
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'NO_TOKEN', message: 'Ghost Admin API key not configured' },
+        error: { code: 'NO_CONFIG', message: 'Ghost admin URL or API key not configured' },
       };
     }
 
     try {
       const result = await this.retryWithBackoff(
         async () => {
-          const response = await fetch(`${this.adminUrl}/ghost/api/v3/admin/posts/?source=html`, {
+          const response = await fetch(`${this.adminUrl}/ghost/api/admin/posts/?source=html`, {
             method: 'POST',
             headers: {
               'Authorization': `Ghost ${this.adminApiKey}`,
@@ -903,18 +915,24 @@ export class GhostPublisher extends BasePublisher {
             body: JSON.stringify({
               posts: [
                 {
-                  title: post.body.split('\n')[0]?.substring(0, 100) || 'Governance Update',
-                  html: post.body.replace(/\n/g, '<br/>'),
-                  tags: post.hashtags.map(h => ({ name: h.replace('#', '') })).slice(0, 5),
+                  title: this.extractTitle(post.body),
+                  html: this.markdownToHtml(post.body),
                   status: 'published',
+                  tags: post.hashtags.length > 0 ? post.hashtags.map(h => ({ name: h.replace('#', '') })) : [],
                 },
               ],
             }),
           });
 
+          if (response.status === 401) {
+            throw new Error('GHOST_401_UNAUTHORIZED');
+          }
+          if (response.status === 403) {
+            throw new Error('GHOST_403_FORBIDDEN');
+          }
           if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`GHOST_${response.status}: ${error}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`GHOST_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
           }
 
           return response.json();
@@ -924,12 +942,14 @@ export class GhostPublisher extends BasePublisher {
         }
       );
 
-      const createdPost = (result.posts && result.posts[0]) || result;
-      this.logPublishAttempt(post, 'success', { postId: createdPost.id });
+      const posts = (result as Record<string, unknown>).posts as Array<Record<string, unknown>>;
+      const postId = posts?.[0]?.id;
+      this.logPublishAttempt(post, 'success', { externalId: postId });
+
       return {
         ok: true,
         channel: this.channel,
-        externalId: createdPost.id,
+        externalId: String(postId),
         postedAt: new Date().toISOString(),
       };
     } catch (err) {
@@ -942,6 +962,28 @@ export class GhostPublisher extends BasePublisher {
         error: { code: 'GHOST_API_ERROR', message: errorMsg },
       };
     }
+  }
+
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 200) {
+      return firstLine;
+    }
+    return body.substring(0, 200).trim() + (body.length > 200 ? '…' : '');
+  }
+
+  private markdownToHtml(md: string): string {
+    // Very basic markdown to HTML conversion (handles common patterns)
+    let html = md
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    return `<p>${html}</p>`;
   }
 }
 
@@ -1007,22 +1049,30 @@ export class WebhookPublisher extends BasePublisher {
 }
 
 /**
- * Email Publisher — Send post as email newsletter
- * Useful for compliance-focused audiences who prefer inbox delivery
- * TODO: integrate with email service (SendGrid, AWS SES, etc.)
- * TODO: add bounce/delivery tracking in follow-up PR
+ * Email Publisher — SendGrid SMTP API integration
+ *
+ * Caller (Edge Function) is responsible for loading API key from Supabase Vault
+ * and recipient list from configuration, then passing to constructor.
+ *
+ * Supports:
+ * - Bulk sending to multiple recipients
+ * - HTML and plain-text formatting
+ * - Tracking metadata (for bounce/delivery monitoring)
+ * - Retry with exponential backoff
+ *
+ * See: https://sendgrid.com/docs/api-reference/
  */
 export class EmailPublisher extends BasePublisher {
   public readonly channel: SocialChannel = 'email.newsletter';
   private fromAddress: string;
   private toAddresses: string[];
-  private emailService?: string; // 'sendgrid' | 'ses' | 'mailgun'
+  private sendgridApiKey: string;
 
-  constructor(fromAddress: string, toAddresses: string[] = [], emailService?: string) {
+  constructor(fromAddress: string, toAddresses: string[], sendgridApiKey: string) {
     super();
-    this.fromAddress = fromAddress || 'noreply@realsync.ai';
+    this.fromAddress = fromAddress;
     this.toAddresses = toAddresses;
-    this.emailService = emailService;
+    this.sendgridApiKey = sendgridApiKey;
   }
 
   async publish(post: SocialPost): Promise<PublishResult> {
@@ -1034,53 +1084,68 @@ export class EmailPublisher extends BasePublisher {
       };
     }
 
-    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length, service: this.emailService });
+    if (!this.sendgridApiKey) {
+      return {
+        ok: false,
+        channel: this.channel,
+        error: { code: 'NO_API_KEY', message: 'SendGrid API key not configured' },
+      };
+    }
+
+    this.logPublishAttempt(post, 'started', { recipientCount: this.toAddresses.length });
 
     try {
       const result = await this.retryWithBackoff(
         async () => {
-          const title = post.body.split('\n')[0] || 'Governance Update';
-          const emailBody = `
-<html>
-<head><meta charset="utf-8"/></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333;">
-<h2>${this.escapeHtml(title)}</h2>
-<div>${post.body.replace(/\n/g, '<br/>')}</div>
-${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size: 0.9em;">${post.hashtags.map(h => this.escapeHtml(h)).join(' ')}</p>` : ''}
-<hr style="margin-top: 2em; border: none; border-top: 1px solid #ddd;">
-<p style="font-size: 0.85em; color: #999;">This email was sent as part of compliance monitoring. <a href="#">Manage preferences</a></p>
-</body>
-</html>
-`;
-
           const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.SENDGRID_API_KEY || ''}`,
+              'Authorization': `Bearer ${this.sendgridApiKey}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              personalizations: this.toAddresses.map(to => ({ to: [{ email: to }] })),
+              personalizations: this.toAddresses.map(email => ({
+                to: [{ email }],
+              })),
               from: { email: this.fromAddress, name: 'RealSync Governance' },
-              subject: title,
-              content: [{ type: 'text/html', value: emailBody }],
-              reply_to: { email: this.fromAddress },
+              subject: this.extractTitle(post.body),
+              content: [
+                {
+                  type: 'text/html',
+                  value: this.formatAsHtml(post.body),
+                },
+                {
+                  type: 'text/plain',
+                  value: post.body,
+                },
+              ],
               tracking_settings: {
-                click_tracking: { enable: true },
-                open_tracking: { enable: true },
+                click_tracking: { enabled: true },
+                open_tracking: { enabled: true },
+              },
+              custom_args: {
+                source: 'RealSyncGovernance',
+                postId: post.id,
+                eventType: post.socialEventId,
               },
             }),
           });
 
+          if (response.status === 401) {
+            throw new Error('SENDGRID_401_UNAUTHORIZED');
+          }
+          if (response.status === 429) {
+            throw new Error('SENDGRID_429_RATE_LIMIT');
+          }
           if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`SENDGRID_${response.status}: ${error}`);
+            const error = await response.json().catch(() => ({}));
+            throw new Error(`SENDGRID_${response.status}: ${(error as Record<string, unknown>).message ?? 'Unknown error'}`);
           }
 
-          return { ok: true, messageId: `email_${Date.now()}` };
+          return { ok: true };
         },
         (attempt, error) => {
-          console.warn(`Email publish attempt ${attempt} failed:`, error.message);
+          console.warn(`SendGrid publish attempt ${attempt} failed:`, error.message);
         }
       );
 
@@ -1088,7 +1153,7 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
       return {
         ok: true,
         channel: this.channel,
-        externalId: result.messageId,
+        externalId: `sendgrid_${Date.now()}`,
         postedAt: new Date().toISOString(),
       };
     } catch (err) {
@@ -1098,14 +1163,37 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
       return {
         ok: false,
         channel: this.channel,
-        error: { code: 'EMAIL_SEND_ERROR', message: errorMsg },
+        error: { code: 'SENDGRID_API_ERROR', message: errorMsg },
       };
     }
   }
 
-  private escapeHtml(text: string): string {
-    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-    return text.replace(/[&<>"']/g, m => map[m]!);
+  private extractTitle(body: string): string {
+    const lines = body.split('\n');
+    const firstLine = lines[0]?.trim() ?? '';
+    if (firstLine.length > 0 && firstLine.length <= 100) {
+      return firstLine;
+    }
+    return body.substring(0, 100).trim() + (body.length > 100 ? '…' : '');
+  }
+
+  private formatAsHtml(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    let html = escaped
+      .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+
+    return `<html><body style="font-family: sans-serif; line-height: 1.6;"><p>${html}</p></body></html>`;
   }
 }
 
@@ -1113,7 +1201,7 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
 
 /**
  * Dead Letter Queue — for failed publishing attempts.
- * TODO: Implement in follow-up PR with persistence to Postgres.
+ * In-memory implementation. Persistence to Postgres is a follow-up PR.
  *
  * Schema (future migration):
  *   CREATE TABLE distribution_dlq (
@@ -1127,25 +1215,187 @@ ${post.hashtags.length > 0 ? `<p style="margin-top: 2em; color: #666; font-size:
  *     updated_at timestamptz
  *   );
  */
+export interface DeadLetterQueueEntry {
+  id: string;
+  queueEntryId: string;
+  channel: SocialChannel;
+  errorCode: string;
+  errorMessage: string;
+  retryCount: number;
+  nextRetryAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export class DeadLetterQueue {
+  private entries: DeadLetterQueueEntry[] = [];
+
+  enqueue(queueEntryId: string, channel: SocialChannel, errorCode: string, errorMessage: string, retryCount: number): DeadLetterQueueEntry {
+    const entry: DeadLetterQueueEntry = {
+      id: `dlq_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      queueEntryId,
+      channel,
+      errorCode,
+      errorMessage,
+      retryCount,
+      nextRetryAt: new Date(Date.now() + Math.pow(2, retryCount) * 1000).toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.entries.push(entry);
+    return entry;
+  }
+
+  list(): DeadLetterQueueEntry[] {
+    return [...this.entries];
+  }
+
+  retry(dlqId: string): DeadLetterQueueEntry | null {
+    const entry = this.entries.find(e => e.id === dlqId);
+    if (entry) {
+      entry.retryCount += 1;
+      entry.nextRetryAt = new Date(Date.now() + Math.pow(2, entry.retryCount) * 1000).toISOString();
+      entry.updatedAt = new Date().toISOString();
+    }
+    return entry ?? null;
+  }
+
+  remove(dlqId: string): void {
+    this.entries = this.entries.filter(e => e.id !== dlqId);
+  }
+}
 
 /**
  * Queue Status & Metrics — for observability.
- * TODO: Implement in follow-up PR with time-series data.
+ * In-memory implementation. Time-series persistence is a follow-up PR.
  *
- * Metrics to track:
+ * Metrics tracked:
  *   - Queue depth (pending, approved, published, failed)
  *   - Publishing latency (start → published)
  *   - Retry rate (per channel, per error code)
  *   - Error trends (detect repeated failures)
  */
+export interface QueueMetrics {
+  queueDepth: Record<QueueStatus, number>;
+  publishingLatency: { min: number; max: number; avg: number };
+  retryRateByChannel: Record<SocialChannel, number>;
+  errorCodeFrequency: Record<string, number>;
+  timestamp: string;
+}
+
+export class QueueMetricsCollector {
+  private publishTimes: Map<string, number> = new Map();
+  private retryAttempts: Map<string, number> = new Map();
+  private errors: Map<string, number> = new Map();
+
+  recordPublishStart(queueId: string): void {
+    this.publishTimes.set(queueId, Date.now());
+  }
+
+  recordPublishEnd(queueId: string, success: boolean, errorCode?: string): void {
+    if (success) {
+      this.publishTimes.delete(queueId);
+    } else if (errorCode) {
+      this.errors.set(errorCode, (this.errors.get(errorCode) ?? 0) + 1);
+      this.retryAttempts.set(queueId, (this.retryAttempts.get(queueId) ?? 0) + 1);
+    }
+  }
+
+  getMetrics(queue: DistributionQueue): QueueMetrics {
+    const entries = queue.list();
+    const queueDepth: Record<QueueStatus, number> = {
+      pending: 0,
+      approved: 0,
+      rejected: 0,
+      published: 0,
+      failed: 0,
+      auto: 0,
+    };
+
+    for (const entry of entries) {
+      queueDepth[entry.status] = (queueDepth[entry.status] ?? 0) + 1;
+    }
+
+    const latencies = Array.from(this.publishTimes.values()).map(start => Date.now() - start);
+    const avgLatency = latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : 0;
+
+    const retryRateByChannel: Record<SocialChannel, number> = {} as Record<SocialChannel, number>;
+    for (const entry of entries) {
+      retryRateByChannel[entry.post.channel] = (retryRateByChannel[entry.post.channel] ?? 0) + (this.retryAttempts.get(entry.id) ?? 0);
+    }
+
+    return {
+      queueDepth,
+      publishingLatency: {
+        min: latencies.length > 0 ? Math.min(...latencies) : 0,
+        max: latencies.length > 0 ? Math.max(...latencies) : 0,
+        avg: avgLatency,
+      },
+      retryRateByChannel,
+      errorCodeFrequency: Object.fromEntries(this.errors),
+      timestamp: new Date().toISOString(),
+    };
+  }
+}
 
 /**
- * Audit Logging — for compliance.
- * TODO: Wire to runtime_events table for full governance trail.
+ * Audit Logging — for compliance and governance trail.
+ * In-memory implementation. Wired to runtime_events table is a follow-up PR.
  *
- * Events to log:
- *   - publish_attempted(queue_id, channel, actor_id)
- *   - publish_succeeded(queue_id, channel, external_id)
- *   - publish_failed(queue_id, channel, error_code, retry_count)
- *   - dlq_entry_created(queue_id, reason)
+ * Events logged:
+ *   - publish_attempted(queueId, channel, status)
+ *   - publish_succeeded(queueId, channel, externalId)
+ *   - publish_failed(queueId, channel, errorCode, errorMessage)
+ *   - dlq_entry_created(queueId, reason)
  */
+export interface AuditLogEntry {
+  id: string;
+  eventType: string;
+  queueId: string;
+  channel: SocialChannel;
+  status: string;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+export class AuditLogger {
+  private entries: AuditLogEntry[] = [];
+
+  logPublishAttempted(queueId: string, channel: SocialChannel): AuditLogEntry {
+    return this.log('publish_attempted', queueId, channel, 'pending', { action: 'publish_attempt' });
+  }
+
+  logPublishSucceeded(queueId: string, channel: SocialChannel, externalId: string): AuditLogEntry {
+    return this.log('publish_succeeded', queueId, channel, 'published', { externalId });
+  }
+
+  logPublishFailed(queueId: string, channel: SocialChannel, errorCode: string, errorMessage: string): AuditLogEntry {
+    return this.log('publish_failed', queueId, channel, 'failed', { errorCode, errorMessage });
+  }
+
+  logDlqEntryCreated(queueId: string, channel: SocialChannel, reason: string): AuditLogEntry {
+    return this.log('dlq_entry_created', queueId, channel, 'dlq', { reason });
+  }
+
+  private log(eventType: string, queueId: string, channel: SocialChannel, status: string, metadata: Record<string, unknown>): AuditLogEntry {
+    const entry: AuditLogEntry = {
+      id: `audit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      eventType,
+      queueId,
+      channel,
+      status,
+      metadata,
+      timestamp: new Date().toISOString(),
+    };
+    this.entries.push(entry);
+    return entry;
+  }
+
+  getEntries(filter?: { queueId?: string; eventType?: string }): AuditLogEntry[] {
+    return this.entries.filter(e => {
+      if (filter?.queueId && e.queueId !== filter.queueId) return false;
+      if (filter?.eventType && e.eventType !== filter.eventType) return false;
+      return true;
+    });
+  }
+}

@@ -15,10 +15,10 @@ export type SocialChannel =
   | 'instagram.reel'        // hook-led visual storytelling
   | 'tiktok.fast'           // very short, hook-heavy
   | 'x.alert'               // datapoint + hashtag
-  | 'wordpress.blog'        // WordPress site blog post
-  | 'ghost.blog'            // Ghost CMS blog post
-  | 'webhook.custom'        // Generic HTTP webhook integration
-  | 'email.newsletter';     // Email newsletter distribution
+  | 'wordpress.blog'        // long-form blog posts with embedded media
+  | 'ghost.blog'            // ghost CMS hosted blog
+  | 'webhook.custom'        // generic HTTP webhook for n8n/Zapier integration
+  | 'email.newsletter';     // email distribution to subscriber lists
 
 export const ALL_CHANNELS: readonly SocialChannel[] = [
   'linkedin.enterprise',

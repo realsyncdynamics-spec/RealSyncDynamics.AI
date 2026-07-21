@@ -7,7 +7,7 @@
 //
 // Lösung: Nach `vite build` rendert dieses Script eine Auswahl von Routes
 // via Headless-Chromium und schreibt den vollständig hydrierten HTML-State
-// als `dist/<route>/index.html`. Der Vercel/nginx-Server liefert dann pro
+// als `dist/<route>/index.html`. Cloudflare Pages liefert dann pro
 // Route die korrekte HTML statt den SPA-Shell.
 //
 // Usage:

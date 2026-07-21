@@ -59,7 +59,7 @@ SELECT cron.schedule(
 
 (Set `app.stripe_meter_secret` once via `ALTER DATABASE postgres SET app.stripe_meter_secret = '...';`.)
 
-### C) GitHub Actions / Vercel Cron
+### C) GitHub Actions / Cloudflare Cron Triggers
 
 `curl -X POST -H "Authorization: Bearer $SECRET"
    https://<ref>.functions.supabase.co/stripe-meter-sync`

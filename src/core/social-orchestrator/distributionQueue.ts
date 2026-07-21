@@ -711,15 +711,6 @@ export class LinkedInPublisher extends BasePublisher {
       };
     }
 
-    const personUrn = this.profileMap.get(post.channel);
-    if (!personUrn) {
-      return {
-        ok: false,
-        channel: this.channel,
-        error: { code: 'NO_PROFILE', message: `No LinkedIn profile configured for channel ${post.channel}` },
-      };
-    }
-
     try {
       const result = await this.retryWithBackoff(
         async () => {

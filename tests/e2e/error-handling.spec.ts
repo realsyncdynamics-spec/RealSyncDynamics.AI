@@ -15,7 +15,6 @@ test.describe('[BE-002] Fehlerbehandlung', () => {
     await expect(page.getByRole('link', { name: /Zur Startseite/i })).toBeVisible();
   });
 
-<<<<<<< HEAD
   test('Unbekannter Checkout-Plan leitet zur Preisübersicht um', async ({ page }) => {
     // CheckoutPage leitet ungültige Plan-Keys bewusst nach /pricing um
     // (siehe pricing-flow.spec.ts „invalid checkout slug should redirect to /pricing").

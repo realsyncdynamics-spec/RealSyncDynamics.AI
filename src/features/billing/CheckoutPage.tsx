@@ -23,7 +23,6 @@ import { trackConversion } from '../../lib/pixels';
  * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-<<<<<<< HEAD
 // Yearly-Keys sind buchbar (CTAs in src/config/pricing.ts verlinken auf
 // /checkout/<key>_yearly) — ohne sie hier bounced die Buchung zurück auf /pricing.
 const VALID_PLAN_KEYS = new Set<PlanKey>([

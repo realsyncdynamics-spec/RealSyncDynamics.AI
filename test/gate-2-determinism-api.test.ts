@@ -5,13 +5,19 @@
  * Tests: reproducibility verification via REST endpoint
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-describe('Gate 2: Determinism Test API', () => {
+// Integration suite: requires a live Supabase connection (SUPABASE_URL +
+// SUPABASE_SERVICE_ROLE_KEY). In the unit-test CI job these env vars are not
+// provided, so the suite skips itself instead of failing the build. It runs
+// only in environments where a real database is available (e.g. test:db).
+const hasSupabaseEnv = Boolean(SUPABASE_URL && SERVICE_KEY);
+
+describe.skipIf(!hasSupabaseEnv)('Gate 2: Determinism Test API', () => {
   let client: ReturnType<typeof createClient>;
 
   beforeAll(() => {

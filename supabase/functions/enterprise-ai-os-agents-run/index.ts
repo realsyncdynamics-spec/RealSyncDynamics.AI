@@ -24,6 +24,12 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { recordUsage } from '../_shared/usage.ts';
+
+// Metered entitlement for agent executions (see migration
+// 20260721000000_agent_runs_metering.sql). Every executed run (status !==
+// 'error') is logged once for a tenant; stripe-meter-sync bills the overage.
+const AGENT_RUNS_ENTITLEMENT = 'limit.agent_runs_monthly';
 
 interface AgentRunRequest {
   agentId: string;
@@ -116,6 +122,26 @@ async function executeAgent(req: AgentRunRequest): Promise<AgentRunResponse> {
       }
     } catch (persistErr) {
       result.persist_error = persistErr instanceof Error ? persistErr.message : 'Persistierungsfehler';
+    }
+
+    // Meter the run for billing. Only count runs that actually executed
+    // (status !== 'error') and belong to a tenant. Metering must never break
+    // the agent response, so failures are swallowed into metadata.
+    if (tenantId && result.status !== 'error') {
+      try {
+        await recordUsage(supabase, tenantId, AGENT_RUNS_ENTITLEMENT, 1, {
+          agent_id: agentId,
+          run_id: result.run_id ?? null,
+          status: result.status,
+        });
+        result.metadata = { ...result.metadata, metered: true };
+      } catch (meterErr) {
+        result.metadata = {
+          ...result.metadata,
+          metered: false,
+          meter_error: meterErr instanceof Error ? meterErr.message : 'metering_failed',
+        };
+      }
     }
 
     return result;

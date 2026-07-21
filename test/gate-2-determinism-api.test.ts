@@ -11,11 +11,20 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-describe('Gate 2: Determinism Test API', () => {
-  let client: ReturnType<typeof createClient>;
+// Integrationstest: braucht ein echtes Supabase (Insert/Select gegen
+// audit_determinism_tests). Ohne Credentials im Env sauber skippen, statt
+// beim createClient() in beforeAll die ganze Suite crashen zu lassen.
+const hasSupabase = Boolean(SUPABASE_URL && SERVICE_KEY);
+
+describe.skipIf(!hasSupabase)('Gate 2: Determinism Test API', () => {
+  // Untyped client: no generated Database types are wired into the test env,
+  // so we pin the schema generic to `any`. Without this, supabase-js resolves
+  // unknown tables (e.g. audit_determinism_tests) to `never`, breaking insert
+  // overloads and column access on selected rows.
+  let client: ReturnType<typeof createClient<any>>;
 
   beforeAll(() => {
-    client = createClient(SUPABASE_URL, SERVICE_KEY);
+    client = createClient<any>(SUPABASE_URL, SERVICE_KEY);
   });
 
   it('should verify determinism for golden fixture with consistent hashes', async () => {

@@ -71,6 +71,17 @@ enabled = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Stillgelegte Ad-hoc-Admin-Tools (Vorfall 2026-05-28 / 2026-07-20).
+# Liefern nur noch 410 Gone; verify_jwt=false ist Absicht, damit jeder Aufruf
+# des alten Endpoints den Deprecation-Hinweis bekommt (auth-unabhaengig).
+# Loeschen, sobald das Supabase-Function-Limit aufgeloest ist → dann auch
+# diese Eintraege entfernen. Kontext: SECURITY.md.
+[functions.stripe-webhook-fixer]
+verify_jwt = false
+
+[functions.stripe-webhook-provision]
+verify_jwt = false
+
 [functions.shopify-webhooks]
 verify_jwt = false
 

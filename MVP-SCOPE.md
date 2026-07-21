@@ -132,7 +132,7 @@ Agenturen nutzen KI-Tools & Third-Party Services auf Websites, wissen aber nicht
 - [ ] Landing Page: Copy + CTA
 - [ ] Monitoring: Error tracking (Sentry)
 - [ ] Tests: E2E for happy path
-- [ ] Deployment: Vercel/Supabase production setup
+- [ ] Deployment: Cloudflare Pages/Supabase production setup
 
 ---
 

@@ -29,7 +29,10 @@ import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/ag
 import { AgentActivityPanel } from './AgentActivityPanel';
 import { AgentRunOutput } from './AgentRunOutput';
 import { AgentRunForm } from './AgentRunForm';
+import { FeedbackReportsInput } from './FeedbackReportsInput';
 import { AGENT_INPUT_SCHEMAS, hasInputSchema } from './agentInputSchemas';
+
+const FEEDBACK_AGENT_ID = 'feedback-intelligence-agent';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {
@@ -213,7 +216,7 @@ export function AgentsCenterView() {
     // Agenten mit Eingabe-Schema öffnen zuerst ein Formular; alle anderen
     // starten direkt (leeres payload — z. B. Infrastructure, Feedback).
     onRun: (agent) => {
-      if (hasInputSchema(agent.id)) setRunForm(agent);
+      if (hasInputSchema(agent.id) || agent.id === FEEDBACK_AGENT_ID) setRunForm(agent);
       else void executeRun(agent);
     },
     onHistory: async (agent) => {
@@ -306,11 +309,18 @@ export function AgentsCenterView() {
           <p className="mb-3 text-xs text-titanium-500">
             Optionale Eingaben für diesen Lauf. Leere Felder werden weggelassen.
           </p>
-          <AgentRunForm
-            fields={AGENT_INPUT_SCHEMAS[runForm.id] ?? []}
-            busy={busyId === runForm.id}
-            onSubmit={(payload) => void executeRun(runForm, payload)}
-          />
+          {runForm.id === FEEDBACK_AGENT_ID ? (
+            <FeedbackReportsInput
+              busy={busyId === runForm.id}
+              onSubmit={(payload) => void executeRun(runForm, payload)}
+            />
+          ) : (
+            <AgentRunForm
+              fields={AGENT_INPUT_SCHEMAS[runForm.id] ?? []}
+              busy={busyId === runForm.id}
+              onSubmit={(payload) => void executeRun(runForm, payload)}
+            />
+          )}
         </Modal>
       )}
 

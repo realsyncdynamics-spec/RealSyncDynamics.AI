@@ -27,8 +27,7 @@ import {
 } from './agentsApi';
 import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/agents/types';
 import { AgentActivityPanel } from './AgentActivityPanel';
-import { AuthGate } from '../../kodee/connections/AuthGate';
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+import { AgentRunOutput } from './AgentRunOutput';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {
@@ -145,10 +144,6 @@ function Toast({ message, tone }: { message: string; tone: 'ok' | 'error' }) {
       {message}
     </div>
   );
-}
-
-function Inner() {
-  return <div className="p-4 text-titanium-300">Implementation pending</div>;
 }
 
 // ── AgentsCenterView ───────────────────────────────────────────────────────
@@ -297,28 +292,7 @@ export function AgentsCenterView() {
       {/* Run-Result-Modal */}
       {runResult && (
         <Modal title={`${runResult.agent.name} — Ergebnis`} onClose={() => setRunResult(null)}>
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-titanium-600 uppercase">Status</span>
-              <span className="font-mono text-titanium-100">{runResult.result.status}</span>
-            </div>
-            <p className="text-titanium-300">{runResult.result.summary}</p>
-            <div>
-              <div className="font-mono text-[10px] text-titanium-600 uppercase mb-1">Findings ({runResult.result.findings.length})</div>
-              <pre className="bg-obsidian-950 border border-titanium-800 p-2 overflow-x-auto font-mono text-[10px] text-titanium-300 max-h-40">
-                {JSON.stringify(runResult.result.findings, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <div className="font-mono text-[10px] text-titanium-600 uppercase mb-1">Empfehlungen ({runResult.result.recommendations.length})</div>
-              <pre className="bg-obsidian-950 border border-titanium-800 p-2 overflow-x-auto font-mono text-[10px] text-titanium-300 max-h-40">
-                {JSON.stringify(runResult.result.recommendations, null, 2)}
-              </pre>
-            </div>
-            {runResult.result.persist_error && (
-              <p className="text-amber-400 font-mono text-[10px]">Hinweis: Lauf nicht persistiert ({runResult.result.persist_error}).</p>
-            )}
-          </div>
+          <AgentRunOutput result={runResult.result} />
         </Modal>
       )}
 

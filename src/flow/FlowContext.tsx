@@ -26,9 +26,12 @@ export interface FlowState {
   lastStepId: string | null;
   /** Liste bereits besuchter Flow-IDs (für einfache Verlaufsanzeige). */
   visited: string[];
+  /** Timestamp when flow state was created (for 24h TTL). */
+  createdAt?: number;
 }
 
 const STORAGE_KEY = 'rsd.flow.state.v1';
+const FLOW_STATE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const DEFAULT_STATE: FlowState = {
   scanDomain: null,
@@ -47,6 +50,14 @@ function readStored(): FlowState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as Partial<FlowState>;
+
+    // Check if flow state has expired (24h TTL)
+    if (parsed.createdAt && Date.now() - parsed.createdAt > FLOW_STATE_TTL_MS) {
+      // State has expired, return fresh default
+      window.localStorage.removeItem(STORAGE_KEY);
+      return DEFAULT_STATE;
+    }
+
     return { ...DEFAULT_STATE, ...parsed };
   } catch {
     return DEFAULT_STATE;
@@ -66,13 +77,24 @@ interface FlowContextValue {
 const FlowContext = createContext<FlowContextValue | undefined>(undefined);
 
 export function FlowProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<FlowState>(readStored);
+  const [state, setState] = useState<FlowState>(() => {
+    const stored = readStored();
+    // Set createdAt on first load if not set
+    if (!stored.createdAt || stored === DEFAULT_STATE) {
+      return { ...stored, createdAt: Date.now() };
+    }
+    return stored;
+  });
 
   // Persistieren bei jeder Änderung.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const stateWithTimestamp = {
+        ...state,
+        createdAt: state.createdAt || Date.now(),
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateWithTimestamp));
     } catch {
       /* LocalStorage nicht verfügbar (Privatmodus) — Zustand bleibt in-memory. */
     }
@@ -100,7 +122,9 @@ export function FlowProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const reset = useCallback(() => setState(DEFAULT_STATE), []);
+  const reset = useCallback(() => {
+    setState({ ...DEFAULT_STATE, createdAt: Date.now() });
+  }, []);
 
   const value = useMemo<FlowContextValue>(
     () => ({ state, applyEffect, markStep, reset }),

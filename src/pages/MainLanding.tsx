@@ -150,7 +150,7 @@ function Header() {
           ))}
           <SmartLink to="/flow/login" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
-        <SmartLink to="/flow/start-scan?source=nav-startfree" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
+        <SmartLink to="/flow/start-scan?source=nav-startfree" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 transition-all duration-300 rounded-lg flex-shrink-0 shadow-md hover:shadow-lg">
           Kostenlos starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </SmartLink>
       </div>
@@ -173,7 +173,7 @@ function Hero() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <SmartLink to="/claude-code-optimizer?source=home-hero-pill" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
+            <SmartLink to="/claude-code-optimizer?source=home-hero-pill" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-8 sm:mb-10 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
               <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
               <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
                 CLAUDE CODE OPTIMIZER<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -206,10 +206,10 @@ function Hero() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 transition-colors rounded-lg shadow-lg hover:shadow-xl">
                 Kostenlos starten<ArrowRight className="w-4 h-4" />
               </SmartLink>
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/30 hover:border-white/50 hover:bg-white/10 active:bg-white/20 transition-colors rounded-lg">
                 <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
               </SmartLink>
             </div>
@@ -262,11 +262,11 @@ function Platform() {
     <Section id="product" eyebrow="DIE PLATTFORM" title="Eine Runtime. Vollständige KI-Governance." subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur, mit integriertem Claude-Code-Audit.">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {PLATFORM.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
-            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
+          <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.04] transition-all duration-300">
+            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/15 border border-cyan-500/30 mb-5 group-hover:bg-cyan-500/20 transition-colors">
               <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
             </div>
-            <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
+            <h3 className="text-lg font-semibold mb-2.5 group-hover:text-cyan-300 transition-colors">{title}</h3>
             <p className="text-sm text-white/60 leading-relaxed">{text}</p>
           </div>
         ))}
@@ -281,8 +281,8 @@ function Runtime() {
     <Section eyebrow="SO FUNKTIONIERT ES" title="Compliance, die ab Minute eins läuft" subtitle="Keine Monate-Projekte, keine statischen PDFs — Governance läuft ab dem ersten Tag zur Laufzeit.">
       <div className="grid md:grid-cols-3 gap-6">
         {STEPS.map(({ no, title, text }) => (
-          <div key={no} className="relative p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
-            <span className="font-mono text-5xl font-bold text-cyan-400/20">{no}</span>
+          <div key={no} className="relative p-8 border border-white/10 rounded-2xl bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300">
+            <span className="font-mono text-5xl font-bold text-cyan-400/20 group-hover:text-cyan-400/30 transition-colors">{no}</span>
             <h3 className="text-xl font-semibold mt-4 mb-2.5">{title}</h3>
             <p className="text-sm text-white/60 leading-relaxed">{text}</p>
           </div>
@@ -298,12 +298,12 @@ function Industries() {
     <Section eyebrow="FÜR WEN" title="Gebaut für Teams, die Governance betreiben müssen" subtitle="Dieselbe Runtime — auf den jeweiligen regulatorischen Schmerzpunkt zugeschnitten.">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {CORE_SEGMENTS.map(({ icon: Icon, title, text, to }) => (
-          <SmartLink key={title} to={to} className="group flex gap-4 p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
-            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
+          <SmartLink key={title} to={to} className="group flex gap-4 p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.04] transition-all duration-300">
+            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/15 border border-cyan-500/30 shrink-0 group-hover:bg-cyan-500/20 transition-colors">
               <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
             </div>
             <div>
-              <h3 className="flex items-center gap-1.5 text-base sm:text-lg font-semibold mb-1.5">
+              <h3 className="flex items-center gap-1.5 text-base sm:text-lg font-semibold mb-1.5 group-hover:text-cyan-300 transition-colors">
                 {title}
                 <ArrowRight className="w-4 h-4 text-cyan-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
               </h3>
@@ -344,7 +344,7 @@ function Pricing() {
     <Section id="pricing" eyebrow="PREISE" title="Preise, die mit Ihrer Verantwortung skalieren" subtitle="14 Tage kostenlos testen · transparent, metered, jederzeit kündbar — ohne Setup-Gebühr und ohne Berater-Tagessätze.">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {PRICING.map((p) => (
-          <div key={p.name} className={`relative flex flex-col p-7 rounded-2xl border ${p.featured ? 'border-cyan-400/60 bg-cyan-500/[0.06]' : 'border-white/10 bg-white/[0.02]'}`}>
+          <div key={p.name} className={`relative flex flex-col p-7 rounded-2xl border transition-all duration-300 hover:shadow-lg ${p.featured ? 'border-cyan-400/60 bg-cyan-500/[0.08] hover:border-cyan-400 hover:bg-cyan-500/[0.12]' : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}>
             {p.featured && (
               <span className="absolute -top-3 left-7 px-3 py-1 text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded-full">BELIEBT</span>
             )}
@@ -360,7 +360,7 @@ function Pricing() {
                 </li>
               ))}
             </ul>
-            <SmartLink to={p.to} className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-colors ${p.featured ? 'text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300' : 'text-white border border-white/20 hover:border-white/40 hover:bg-white/5'}`}>
+            <SmartLink to={p.to} className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-lg transition-all duration-300 ${p.featured ? 'text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 shadow-md hover:shadow-lg' : 'text-white border border-white/20 hover:border-white/40 hover:bg-white/5'}`}>
               {p.cta}<ArrowRight className="w-4 h-4" />
             </SmartLink>
           </div>
@@ -377,7 +377,7 @@ function Pricing() {
             <p className="text-xs sm:text-sm text-white/60 leading-relaxed">Custom Runtime, SLA, AI-Act-Modul, DSB-Integration, Private Cloud, unlimitierte Domains.</p>
           </div>
         </div>
-        <SmartLink to="/contact-sales?tier=enterprise&source=home" className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg whitespace-nowrap flex-shrink-0">
+        <SmartLink to="/contact-sales?tier=enterprise&source=home" className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white border border-white/30 hover:border-white/50 hover:bg-white/10 active:bg-white/20 transition-all duration-300 rounded-lg whitespace-nowrap flex-shrink-0">
           Enterprise anfragen<ArrowRight className="w-4 h-4" />
         </SmartLink>
       </div>
@@ -396,7 +396,7 @@ function Security() {
     <Section id="security" eyebrow="SICHERHEIT & COMPLIANCE" title="Vertrauen ist in die Architektur eingebaut" subtitle="Nicht nachgelagert, sondern Fundament: Souveränität, Nachweisbarkeit und Isolation by Design.">
       <div className="grid md:grid-cols-3 gap-6">
         {points.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
+          <div key={title} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all duration-300">
             <Icon className="w-6 h-6 text-cyan-400 mb-5" strokeWidth={1.5} />
             <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
             <p className="text-sm text-white/60 leading-relaxed">{text}</p>
@@ -434,11 +434,11 @@ function ProductEntryPoints() {
     <Section eyebrow="NEUE PRODUKTE" title="KI-Assistenten & Compliance-Tools" subtitle="Starten Sie sofort — neue Einstiege für Website-Audits, Chat und Telefon-Automatisierung.">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {products.map(({ icon: Icon, title, text, to }) => (
-          <SmartLink key={title} to={to} className="group flex flex-col p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
-            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
+          <SmartLink key={title} to={to} className="group flex flex-col p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.04] transition-all duration-300">
+            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/15 border border-cyan-500/30 mb-5 group-hover:bg-cyan-500/20 transition-colors">
               <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
             </div>
-            <h3 className="flex items-center gap-1.5 text-lg font-semibold mb-2.5">
+            <h3 className="flex items-center gap-1.5 text-lg font-semibold mb-2.5 group-hover:text-cyan-300 transition-colors">
               {title}
               <ArrowRight className="w-4 h-4 text-cyan-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
             </h3>
@@ -464,10 +464,10 @@ function FinalCta() {
             Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+            <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 active:bg-cyan-500 transition-all duration-300 rounded-lg shadow-lg hover:shadow-xl">
               Kostenlos starten<ArrowRight className="w-4 h-4" />
             </SmartLink>
-            <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+            <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/30 hover:border-white/50 hover:bg-white/10 active:bg-white/20 transition-all duration-300 rounded-lg">
               <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
             </SmartLink>
           </div>
@@ -574,7 +574,7 @@ type Metric = { label: string; value: string; suffix?: string; accent?: boolean 
 
 function CardShell({ className = '', children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={`px-4 py-3 sm:px-5 sm:py-4 border border-white/10 bg-white/5 backdrop-blur-md rounded-xl shadow-2xl ${className}`}>
+    <div className={`px-4 py-3 sm:px-5 sm:py-4 border border-white/15 bg-white/8 backdrop-blur-xl rounded-xl shadow-2xl ${className}`}>
       {children}
     </div>
   );

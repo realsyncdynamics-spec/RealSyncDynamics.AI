@@ -127,9 +127,9 @@ So either:
 
 A standalone nginx vhost config that points at `/var/www/realsyncdynamicsai.de/dist`. This **predates** the Traefik+Docker setup — likely from a pre-Traefik era when nginx-on-host served the frontend directly. Same operator-confirm question as above: is anything on the VPS using this config today, or is it reference material?
 
-### `vercel.json` — **DELETED IN THIS PR**
+### `cloudflare.json` — **DELETED IN THIS PR**
 
-Vite + dist + framework=vite scaffold with a SPA rewrite rule. No `.vercel/` folder, no Vercel project linked, no commits referencing `vercel` in the build pipeline. Pure leftover from an early scaffold; deleting it removes a footgun (someone connecting a Vercel project would deploy a duplicate frontend at a third URL).
+Vite + dist + framework=vite scaffold with a SPA rewrite rule. No `.cloudflare/` folder, no Cloudflare project linked, no commits referencing `cloudflare` in the build pipeline. Pure leftover from an early scaffold; deleting it removes a footgun (someone connecting a Cloudflare project would deploy a duplicate frontend at a third URL).
 
 ---
 

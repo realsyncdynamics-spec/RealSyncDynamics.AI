@@ -41,7 +41,7 @@ export function FlowStepPage({ step }: { step: FlowStep }) {
   if (state.checkoutStatus !== 'idle') contextBits.push(`Checkout: ${state.checkoutStatus}`);
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="flow-context min-h-screen bg-obsidian-950 text-titanium-100">
       <Navbar />
 
       <main className="pt-20">

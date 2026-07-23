@@ -154,7 +154,9 @@ export function CeoCockpitView() {
                   {data.readinessTrend && <TrendChip {...data.readinessTrend} />}
                 </div>
                 <p className="mt-3 text-xs text-titanium-400">
-                  Anteil Ihrer Objekte mit zugeordneten Kontrollen. Höher = besser prüfbar.
+                  {data.readiness === null
+                    ? 'Noch kein KPI-Snapshot vorhanden. Der Wert erscheint, sobald die erste tägliche Auswertung gelaufen ist.'
+                    : 'Anteil Ihrer Objekte mit zugeordneten Kontrollen. Höher = besser prüfbar.'}
                 </p>
               </CardBody>
             </Card>

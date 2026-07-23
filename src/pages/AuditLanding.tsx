@@ -118,7 +118,7 @@ export function AuditLanding() {
   }
 
   return (
-    <div className="min-h-screen bg-obsidian-950 text-titanium-100">
+    <div className="flow-context min-h-screen bg-obsidian-950 text-titanium-100">
       <Header />
 
       <main className="px-4 sm:px-6 py-12 sm:py-16">

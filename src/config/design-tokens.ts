@@ -17,16 +17,16 @@
  * to help users understand where they are in the journey
  */
 export const CONTEXT_COLORS = {
-  /** Public landing pages — welcoming, soft, professional */
+  /** Public landing pages — MainLanding uses dark/obsidian (design-locked baseline) */
   landing: {
-    /** Petrol #0F766E — trust, governance, professional */
-    accent: 'petrol-700',
-    /** Slate-900 — text on light backgrounds */
-    text: 'slate-900',
-    /** White/light backgrounds for friendly feel */
-    background: 'white',
-    /** Slate secondary accent */
-    secondary: 'slate-600',
+    /** Cyan-400 — accent (MainLanding enterprise hero) */
+    accent: 'cyan-400',
+    /** Obsidian-950 — dark background */
+    background: 'obsidian-950',
+    /** Titanium-100 — text on dark background */
+    text: 'titanium-100',
+    /** Titanium-400 — secondary actions */
+    secondary: 'titanium-400',
   },
 
   /** Audit-flow — progressive, warm, forward momentum */

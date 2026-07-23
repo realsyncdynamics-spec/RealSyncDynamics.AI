@@ -27,18 +27,18 @@
   --context-radius-input: 0;
 }
 
-/* Landing Context — welcoming, soft, light theme */
+/* Landing Context — public pages (MainLanding is dark/obsidian baseline due to design-lock) */
 .landing-context {
-  --context-accent: var(--petrol-700);
-  --context-bg: white;
-  --context-text: var(--slate-900);
-  --context-secondary: var(--slate-600);
-  --context-section-py: theme(padding.24);
-  --context-section-gap: theme(gap.8);
-  --context-card-p: theme(padding.8);
-  --context-radius-card: 1rem; /* 16px, rounded-2xl */
-  --context-radius-button: 1rem; /* 16px, rounded-2xl */
-  --context-radius-input: 0.75rem; /* 12px, rounded-xl */
+  --context-accent: var(--cyan-400);
+  --context-bg: var(--obsidian-950);
+  --context-text: var(--titanium-100);
+  --context-secondary: var(--titanium-400);
+  --context-section-py: theme(padding.12);
+  --context-section-gap: theme(gap.6);
+  --context-card-p: theme(padding.6);
+  --context-radius-card: 0;
+  --context-radius-button: 0;
+  --context-radius-input: 0;
 }
 
 /* Flow Context — progressive, warm, gold-accented */

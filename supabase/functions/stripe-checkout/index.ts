@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
   const userId = userResp.user.id;
   const userEmail = userResp.user.email;
 
-  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean };
+  let body: { tenant_id?: string; plan_key?: string; return_url?: string; pilot?: boolean; addons?: string[] };
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   if (!body.tenant_id || !body.plan_key) {
@@ -72,6 +72,9 @@ Deno.serve(async (req) => {
   if (body.plan_key === 'free_audit') {
     return jsonError(400, 'BAD_REQUEST', 'Free Audit braucht keinen Checkout');
   }
+
+  // Normalize addons to empty array if not provided
+  const selectedAddons = Array.isArray(body.addons) ? body.addons.filter(a => typeof a === 'string') : [];
 
   // Membership + role check
   const { data: membership, error: memberErr } = await userClient
@@ -140,11 +143,46 @@ Deno.serve(async (req) => {
       stripeCustomerId = customer.id;
     }
 
+    // Resolve add-on prices if provided
+    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      { price: realPrice.stripe_price_id, quantity: 1 }
+    ];
+
+    if (selectedAddons.length > 0) {
+      const { data: addonProducts, error: addonErr } = await admin
+        .from('products')
+        .select('id, stripe_price_id, name')
+        .eq('is_addon', true);
+
+      if (addonErr) {
+        return jsonError(500, 'INTERNAL', `failed to fetch add-on products: ${addonErr.message}`);
+      }
+
+      const addonMap = new Map(addonProducts?.map(p => [p.id, p]) ?? []);
+
+      for (const addonId of selectedAddons) {
+        const addonProduct = addonMap.get(addonId);
+        if (!addonProduct) {
+          return jsonError(400, 'INVALID_ADDON', `add-on ${addonId} not found or not available`);
+        }
+
+        // Only add real Stripe prices, not internal sentinels
+        if (!addonProduct.stripe_price_id.startsWith('internal_default_')) {
+          lineItems.push({ price: addonProduct.stripe_price_id, quantity: 1 });
+        }
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: stripeCustomerId!,
-      line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
-      metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
+      line_items: lineItems,
+      metadata: {
+        tenant_id: body.tenant_id,
+        plan_key: body.plan_key,
+        pilot: body.pilot ? 'true' : 'false',
+        addons: selectedAddons.length > 0 ? JSON.stringify(selectedAddons) : '',
+      },
       subscription_data: subscriptionData,
       success_url: successUrl,
       cancel_url: cancelUrl,

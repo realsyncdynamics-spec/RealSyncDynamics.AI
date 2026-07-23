@@ -202,8 +202,10 @@ export class JWTVerifier {
   private cacheToken(token: string, payload: JWTPayload): void {
     // Simple LRU: clear if cache is full
     if (this.cache.size >= this.cacheMaxSize) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      const firstKey = this.cache.keys().next().value as string | undefined;
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
     }
     this.cache.set(token, { payload, timestamp: Date.now() });
   }

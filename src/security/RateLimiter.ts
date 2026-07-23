@@ -26,7 +26,7 @@ interface BucketState {
 export class RateLimiter {
   private buckets: Map<string, BucketState> = new Map();
   private config: RateLimitConfig;
-  private cleanupInterval: NodeJS.Timer | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: RateLimitConfig) {
     this.config = config;

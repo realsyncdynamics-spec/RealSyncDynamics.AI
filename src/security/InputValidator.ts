@@ -316,7 +316,7 @@ export class InputValidator {
   ): Promise<Record<string, unknown>> {
     const result = await this.validate(input, schema);
     if (!result.valid) {
-      throw new ValidationError(result.errors);
+      throw new ValidationErrorClass(result.errors);
     }
     return result.data!;
   }

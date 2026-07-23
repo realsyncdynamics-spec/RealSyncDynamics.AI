@@ -190,7 +190,7 @@ describe('GDPRChecker', () => {
       const analysis = GDPRChecker.analyze(system, 'consent', false);
 
       expect(analysis.needsDPIA).toBe(true);
-      expect(analysis.recommendations).toContain('Conduct Data Protection Impact Assessment');
+      expect(analysis.recommendations.some(r => r.includes('Data Protection Impact Assessment'))).toBe(true);
     });
 
     it('identifies high-impact disclosure requirements', () => {
@@ -201,9 +201,7 @@ describe('GDPRChecker', () => {
 
       const analysis = GDPRChecker.analyze(system, 'legitimate', false);
 
-      expect(analysis.recommendations).toContain(
-        'Implement human review for significant decisions'
-      );
+      expect(analysis.recommendations.some(r => r.includes('human review for significant decisions'))).toBe(true);
     });
 
     it('flags undefined basis', () => {

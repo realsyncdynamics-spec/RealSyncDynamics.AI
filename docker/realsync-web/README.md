@@ -253,7 +253,7 @@ docker volume ls | grep realsync
 
 ## Häufige Fragen
 
-**F: Warum nicht Vercel?**  
+**F: Warum nicht Cloudflare?**  
 A: VPS-Deployment ermöglicht EU-Datenhaltung, vollständige Kontrolle, eigene n8n/Ollama-Integration.
 
 **F: Warum nginx, nicht Node?**  

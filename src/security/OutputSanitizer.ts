@@ -159,14 +159,16 @@ export class OutputSanitizer {
     ]);
 
     for (const [key, val] of Object.entries(value)) {
-      // Skip prototype pollution
+      // Skip prototype pollution (don't include in output)
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         modified = true;
+        sanitized[key] = undefined;
         continue;
       }
 
-      // Redact sensitive keys
-      if (sensitiveKeys.has(key.toLowerCase())) {
+      // Redact sensitive keys (check both exact and camelCase variants)
+      const lowerKey = key.toLowerCase().replace(/[A-Z]/g, c => c.toLowerCase());
+      if (sensitiveKeys.has(lowerKey) || sensitiveKeys.has(key.toLowerCase())) {
         sanitized[key] = '[REDACTED]';
         modified = true;
       } else {

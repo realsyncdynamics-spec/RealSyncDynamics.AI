@@ -312,7 +312,12 @@ function Inner() {
       {selectedEvidence && (
         <DetailPanel
           evidence={selectedEvidence}
+          tenantId={activeTenantId}
           onClose={() => setSelectedEvidence(null)}
+          onArchived={() => {
+            setSelectedEvidence(null);
+            loadEvidence();
+          }}
         />
       )}
     </div>
@@ -530,12 +535,17 @@ function UploadModal({
 
 function DetailPanel({
   evidence,
+  tenantId,
   onClose,
+  onArchived,
 }: {
   evidence: EvidenceItem;
+  tenantId: string;
   onClose: () => void;
+  onArchived: () => void;
 }) {
   const typeInfo = EVIDENCE_TYPE_LABELS[evidence.evidence_type];
+  const [archiving, setArchiving] = useState(false);
 
   const handleDownload = () => {
     if (evidence.file_path) {
@@ -545,11 +555,32 @@ function DetailPanel({
 
   const handleArchive = async () => {
     if (!window.confirm('Archive this evidence? It will be hidden from the default view.')) return;
+    setArchiving(true);
     try {
-      // TODO: Implement archive API call
-      console.log('Archive evidence:', evidence.id);
+      const token = await getAuthToken();
+      const response = await fetch(
+        `/functions/v1/iso42001-evidence-vault?tenant_id=${tenantId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ evidence_id: evidence.id }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to archive evidence');
+      }
+
+      onArchived();
     } catch (err) {
       console.error('Archive failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to archive evidence');
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -657,10 +688,11 @@ function DetailPanel({
         )}
         <button
           onClick={handleArchive}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 text-titanium-200 text-sm font-semibold rounded-none transition"
+          disabled={archiving}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 disabled:opacity-50 disabled:cursor-not-allowed text-titanium-200 text-sm font-semibold rounded-none transition"
         >
           <Trash2 className="h-4 w-4" />
-          Archive
+          {archiving ? 'Archiving...' : 'Archive'}
         </button>
       </div>
     </div>

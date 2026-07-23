@@ -180,5 +180,56 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonError(405, 'BAD_REQUEST', 'POST or GET only');
+  // PATCH: Archive evidence item
+  if (req.method === 'PATCH') {
+    try {
+      const { evidence_id } = await req.json();
+
+      if (!evidence_id) {
+        return jsonError(400, 'BAD_REQUEST', 'evidence_id required');
+      }
+
+      // Verify the evidence exists and belongs to this tenant
+      const { data: evidence, error: fetchError } = await userClient
+        .from('evidence_items')
+        .select('id, tenant_id')
+        .eq('id', evidence_id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (fetchError || !evidence) {
+        return jsonError(404, 'NOT_FOUND', 'evidence not found or access denied');
+      }
+
+      // Archive the evidence
+      const { error: updateError } = await userClient
+        .from('evidence_items')
+        .update({ archived_at: new Date().toISOString() })
+        .eq('id', evidence_id);
+
+      if (updateError) throw updateError;
+
+      // Log audit action
+      await audit(admin, {
+        tenant_id: tenantId,
+        user_id: userId,
+        user_email: userEmail,
+        action: 'evidence_archived',
+        resource_type: 'evidence_item',
+        resource_id: evidence_id,
+        changes: { archived_at: new Date().toISOString() },
+        severity: 'info',
+      });
+
+      return jsonResponse({
+        success: true,
+        message: 'Evidence archived successfully',
+      });
+    } catch (err) {
+      console.error('Evidence archive error:', err);
+      return jsonError(500, 'ERROR', 'failed to archive evidence');
+    }
+  }
+
+  return jsonError(405, 'BAD_REQUEST', 'GET, POST, or PATCH only');
 });

@@ -8,57 +8,11 @@
 # - Pages: Env vars via GitHub Actions → VITE_* env vars
 # - Workers: Secrets via `wrangler secret put KEY --env production`
 #   (sensitive keys: ANTHROPIC_API_KEY, STRIPE_SECRET_KEY, etc.)
+#
+# NOTE: Future Cloudflare Workers configuration (Phase B1+)
+# will be added in a separate wrangler-workers.toml file.
+# This file is optimized for Pages-only deployments.
 
 name = "realsyncdynamics-ai"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-06-23"
-
-# ─────────────────────────────────────────────────────────────
-# Environment: production
-# Used for: Future Cloudflare Workers deployment
-# ─────────────────────────────────────────────────────────────
-[env.production]
-name = "realsyncdynamics-ai-production"
-
-# Static configuration (non-sensitive)
-[env.production.vars]
-ENVIRONMENT = "production"
-LOG_LEVEL = "info"
-RATE_LIMIT_WINDOW_MS = "60000"
-RATE_LIMIT_MAX_REQUESTS = "100"
-SUPABASE_URL = "https://your-project.supabase.co"
-
-# Secrets stored in Cloudflare Vault (sensitive keys only)
-# Deploy via: wrangler secret put ANTHROPIC_API_KEY --env production
-# Never commit secrets to version control
-# Required secrets for production Workers:
-#   - SUPABASE_SERVICE_ROLE_KEY
-#   - ANTHROPIC_API_KEY
-#   - STRIPE_SECRET_KEY
-#   - RESEND_API_KEY
-
-# KV Namespaces (for caching policy definitions, governance rules)
-[[env.production.kv_namespaces]]
-binding = "POLICY_CACHE"
-id = "your-kv-namespace-id-here"
-preview_id = "your-kv-preview-namespace-id-here"
-
-[[env.production.kv_namespaces]]
-binding = "RATE_LIMIT_STATE"
-id = "your-kv-rate-limit-id-here"
-preview_id = "your-kv-rate-limit-preview-id-here"
-
-# R2 Buckets (for Evidence Vault blob storage)
-[[env.production.r2_buckets]]
-binding = "EVIDENCE_VAULT"
-bucket_name = "realsyncdynamics-evidence"
-jurisdiction = "eu"
-
-# Cron triggers (for background jobs)
-[[triggers.crons]]
-cron = "0 2 * * *"  # Daily at 2 AM UTC
-handler = "audit-monitor-cron"
-
-[[triggers.crons]]
-cron = "0 0 * * 0"  # Weekly at midnight Sunday UTC
-handler = "evidence-retention-prune"

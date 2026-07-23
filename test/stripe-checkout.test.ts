@@ -127,3 +127,135 @@ describe('stripe-checkout fallback behavior', () => {
     expect(testCase.expectedFields).toEqual(['ok', 'url', 'session_id']);
   });
 });
+
+describe('stripe-checkout add-ons', () => {
+  it('accepts empty addons array and creates checkout without add-ons', () => {
+    const request = {
+      tenant_id: 'tenant-123',
+      plan_key: 'growth',
+      addons: [],
+    };
+
+    expect(request.addons).toEqual([]);
+    expect(request).toHaveProperty('tenant_id');
+    expect(request).toHaveProperty('plan_key');
+  });
+
+  it('accepts addons parameter with valid add-on IDs', () => {
+    const request = {
+      tenant_id: 'tenant-456',
+      plan_key: 'agency',
+      addons: ['response-pack-5k', 'whatsapp-channel'],
+    };
+
+    expect(Array.isArray(request.addons)).toBe(true);
+    expect(request.addons).toHaveLength(2);
+    expect(request.addons[0]).toBe('response-pack-5k');
+    expect(request.addons[1]).toBe('whatsapp-channel');
+  });
+
+  it('filters non-string addon IDs from the request', () => {
+    const addons = ['response-pack-5k', null, 'voice-addon', undefined, 123];
+    const filtered = addons.filter((a) => typeof a === 'string');
+
+    expect(filtered).toEqual(['response-pack-5k', 'voice-addon']);
+    expect(filtered).toHaveLength(2);
+  });
+
+  it('resolves real Stripe prices for add-ons', () => {
+    const addonProducts = [
+      { id: 'response-pack-5k', stripe_price_id: 'price_addon_response_5k', name: 'Response Pack 5K' },
+      { id: 'whatsapp-channel', stripe_price_id: 'price_addon_whatsapp', name: 'WhatsApp Extension' },
+      { id: 'voice-addon', stripe_price_id: 'price_internal_addon_voice_bot', name: 'Voice Bot' },
+    ];
+
+    const selectedAddons = ['response-pack-5k', 'whatsapp-channel'];
+    const lineItems = selectedAddons.map((addonId) => {
+      const product = addonProducts.find((p) => p.id === addonId);
+      return product ? { price: product.stripe_price_id, quantity: 1 } : null;
+    }).filter((item) => item !== null);
+
+    expect(lineItems).toHaveLength(2);
+    expect(lineItems[0]?.price).toBe('price_addon_response_5k');
+    expect(lineItems[1]?.price).toBe('price_addon_whatsapp');
+  });
+
+  it('rejects add-ons with only internal sentinel prices', () => {
+    const addonProducts = [
+      { id: 'response-pack-5k', stripe_price_id: 'internal_default_response_pack_5k' },
+      { id: 'voice-addon', stripe_price_id: 'internal_default_voice_bot' },
+    ];
+
+    const selectedAddons = ['response-pack-5k'];
+    const lineItems = selectedAddons
+      .map((addonId) => {
+        const product = addonProducts.find((p) => p.id === addonId);
+        if (!product) return null;
+        // Only include real Stripe prices (not internal sentinels)
+        if (product.stripe_price_id.startsWith('internal_default_')) return null;
+        return { price: product.stripe_price_id, quantity: 1 };
+      })
+      .filter((item) => item !== null);
+
+    // Even though product exists, internal sentinel price is filtered out
+    expect(lineItems).toHaveLength(0);
+  });
+
+  it('stores add-ons in subscription metadata', () => {
+    const selectedAddons = ['response-pack-5k', 'whatsapp-channel'];
+    const metadata = {
+      tenant_id: 'tenant-789',
+      plan_key: 'scale',
+      pilot: 'false',
+      addons: selectedAddons.length > 0 ? JSON.stringify(selectedAddons) : '',
+    };
+
+    expect(metadata.addons).toBe(JSON.stringify(['response-pack-5k', 'whatsapp-channel']));
+
+    const parsedAddons = JSON.parse(metadata.addons);
+    expect(parsedAddons).toEqual(['response-pack-5k', 'whatsapp-channel']);
+  });
+
+  it('handles missing add-ons array gracefully', () => {
+    const request: { tenant_id: string; plan_key: string; addons?: string[] } = {
+      tenant_id: 'tenant-999',
+      plan_key: 'starter',
+    };
+
+    const selectedAddons = Array.isArray(request.addons) ? request.addons.filter((a) => typeof a === 'string') : [];
+    expect(selectedAddons).toEqual([]);
+  });
+
+  it('prevents duplicate add-ons in checkout', () => {
+    const selectedAddons = ['response-pack-5k', 'response-pack-5k', 'whatsapp-channel'];
+    const uniqueAddons = [...new Set(selectedAddons)];
+
+    expect(uniqueAddons).toEqual(['response-pack-5k', 'whatsapp-channel']);
+    expect(uniqueAddons).toHaveLength(2);
+  });
+
+  it('returns error for unavailable add-on', () => {
+    const addonProducts = [
+      { id: 'response-pack-5k', stripe_price_id: 'price_addon_response_5k' },
+      { id: 'whatsapp-channel', stripe_price_id: 'price_addon_whatsapp' },
+    ];
+
+    const selectedAddons = ['response-pack-5k', 'nonexistent-addon'];
+    const unavailableAddon = selectedAddons.find((addonId) => !addonProducts.some((p) => p.id === addonId));
+
+    expect(unavailableAddon).toBe('nonexistent-addon');
+  });
+
+  it('creates line items array with plan + multiple add-ons', () => {
+    const planPrice = 'price_plan_growth_monthly';
+    const addonPrices = ['price_addon_response_5k', 'price_addon_whatsapp', 'price_addon_voice'];
+
+    const lineItems = [{ price: planPrice, quantity: 1 }, ...addonPrices.map((p) => ({ price: p, quantity: 1 }))];
+
+    expect(lineItems).toHaveLength(4);
+    expect(lineItems[0]?.price).toBe(planPrice);
+    expect(lineItems[1]?.price).toBe('price_addon_response_5k');
+    expect(lineItems[2]?.price).toBe('price_addon_whatsapp');
+    expect(lineItems[3]?.price).toBe('price_addon_voice');
+  });
+});

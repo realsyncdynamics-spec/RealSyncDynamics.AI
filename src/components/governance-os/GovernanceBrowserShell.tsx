@@ -12,6 +12,7 @@ import { GovernanceStatusBar } from './GovernanceStatusBar';
 import { MobileBottomNavigation } from './MobileBottomNavigation';
 import { EmbeddedBrowserCanvas } from './EmbeddedBrowserCanvas';
 import { GovernanceChatSidebar } from './GovernanceChatSidebar';
+import { GovernanceMobileMenu } from './GovernanceMobileMenu';
 
 interface GovernanceBrowserShellProps {
   children: React.ReactNode;
@@ -39,6 +40,7 @@ export function GovernanceBrowserShell({ children }: GovernanceBrowserShellProps
         onLoadUrl={handleLoadUrl}
         activeEmbedUrl={embeddedUrl ?? undefined}
       />
+      <GovernanceMobileMenu open={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
       <div className="hidden lg:block">
         <GovernanceTabs />

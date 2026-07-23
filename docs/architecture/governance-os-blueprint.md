@@ -838,7 +838,7 @@ Stored in Postgres (`agent_runs`) with the prompt/completion content offloaded t
 | Server SDK (TS/Py/Go) | HTTPS POST batched 1s | 1M–100M events/day |
 | Cloud connectors (AWS/Azure/GCP) | Periodic pulls + SNS/EventGrid push | 100k–10M/day |
 | AI provider connectors (OpenAI/Anthropic/Azure OpenAI) | Webhook + API pulls | 10k–1M/day |
-| CI/CD hooks (GitHub/GitLab/Vercel) | Webhook | 100–10k/day |
+| CI/CD hooks (GitHub/GitLab) | Webhook | 100–10k/day |
 | Workflow tools (Jira/Linear/ServiceNow) | Webhook + API pulls | 100–10k/day |
 
 ### 7.2 Pipeline
@@ -1057,7 +1057,6 @@ The graph + audit log together support "what did our governance posture look lik
 | **AWS** | Cross-account IAM role (per tenant) | Inbound (we pull) | CloudTrail, Bedrock invocations, IAM auth events |
 | **Azure** | Managed Identity + custom RBAC role | Inbound | Azure Monitor, Azure OpenAI logs, Entra audit |
 | **GCP** | Workload Identity Federation | Inbound | Audit logs, Vertex AI usage |
-| **Vercel** | Vercel integration | Inbound | Deployment webhooks, runtime logs (Edge) |
 | **Netlify** | OAuth + site token | Inbound | Deploy webhooks |
 | **Cloudflare** | API token (scoped) | Inbound | Workers events, Pages deploys, Zero Trust audit |
 | **OpenAI** | Org API key (read-only) | Inbound | Org usage, audit logs |
@@ -1076,7 +1075,7 @@ The graph + audit log together support "what did our governance posture look lik
 
 Three patterns, picked per provider:
 
-1. **Push (webhook).** Provider POSTs to `https://api.rsd.eu/connectors/<provider>/<connector_id>`. We verify the signature, dedupe by provider event id, enqueue to telemetry pipeline. Used: GitHub, GitLab, Vercel, Netlify, Slack, Teams.
+1. **Push (webhook).** Provider POSTs to `https://api.rsd.eu/connectors/<provider>/<connector_id>`. We verify the signature, dedupe by provider event id, enqueue to telemetry pipeline. Used: GitHub, GitLab, Netlify, Slack, Teams.
 2. **Pull (poll).** Cron job per connector_id pulls deltas from the provider API. Cursor stored in Postgres. Used: OpenAI/Anthropic usage (no webhooks today), HuggingFace.
 3. **Streaming (push via cloud-native).** AWS EventBridge → our SQS → our worker. Azure EventGrid → our endpoint. GCP Pub/Sub → our subscriber. Used: AWS, Azure, GCP.
 
@@ -1298,7 +1297,7 @@ Five phases. Each phase ships in 4–8 months.
 |---|---|
 | Architecture | Split into 6 first-class services (Telemetry Collector, Policy Engine, Risk Engine, Evidence Engine, Notification, Reporting). Postgres + Apache AGE for graph. NATS JetStream for events. |
 | Features | Governance Graph v1, AI-Act classifier service, Annex IV generator, regulatory intelligence MVP, drift detector, real-time policy enforcement (inline mode for SDK), evidence vault v2 (hash chain + Ed25519 + RFC 3161 timestamping) |
-| Integrations | + AWS / Azure / GCP read-only connectors, OpenAI / Anthropic / Azure OpenAI usage pulls, Vercel deploy hooks |
+| Integrations | + AWS / Azure / GCP read-only connectors, OpenAI / Anthropic / Azure OpenAI usage pulls, Cloudflare Pages deploy hooks |
 | Data model | Graph nodes/edges; evidence chain enforced by trigger; policy bundle storage |
 | Agents | First three: AI Risk Classification Agent, Website Drift Agent, Evidence Generation Agent. Approval gates in production. |
 | Target customers | First 50 paying enterprises. AI-Act high-risk operators (HR-tech, healthtech, fintech, edtech) prioritised. |

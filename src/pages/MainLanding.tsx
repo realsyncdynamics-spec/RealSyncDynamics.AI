@@ -35,8 +35,8 @@ import {
  * Design: Obsidian-Hintergrund (rgb(3,7,18)), Earth-at-Night-Hero (Europa),
  * Cyan-Akzent, Plus Jakarta Sans + JetBrains Mono (Metadaten).
  *
- * Positionierung: „Das KI-Betriebssystem für DSGVO, EU AI Act &
- * Code-Compliance" — Governance + Claude-Code-Optimierung in einer Runtime.
+ * Positionierung: Governance Runtime Layer für sichere, transparente,
+ * und rechtskonform AI-Betrieb (nicht: AI-Deployment-Tool)
  */
 
 const BG = 'rgb(3, 7, 18)';
@@ -181,16 +181,15 @@ function Hero() {
             </SmartLink>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] sm:leading-[1.05] tracking-tight mb-4 sm:mb-6">
-              Das KI-Betriebssystem<br />für <span className="text-cyan-400">DSGVO, EU AI Act<br />&amp; Code-Compliance</span>
+              Das Governance<br />Runtime Layer für<span className="text-cyan-400"><br />Enterprise-KI</span>
             </h1>
 
             <p className="font-mono text-[11px] sm:text-sm tracking-[0.25em] text-cyan-400/90 mb-4 sm:mb-6">
-              AI GOVERNANCE &amp; CODE OPTIMIZATION OS FOR TRUST &amp; VALUE
+              AI-GOVERNANCE-CONTROL-PLANE — NICHT AI-DEPLOYMENT-TOOL
             </p>
 
             <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-7 sm:mb-8">
-              RealSync Dynamics AI überwacht Websites, KI-Systeme, Code und Evidenz
-              kontinuierlich — DSGVO-konform, AI-Act-ready, Claude-Code-auditiert und prüfbar.
+              Während andere Plattformen helfen KI schneller einzuführen, hilft RealSync KI sicher zu betreiben — mit kontinuierlicher Risikoüberwachung, DSGVO-Konformität, EU-AI-Act-Readiness und lückenlosem Audit-Trail.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4 mb-8 sm:mb-10 max-w-xl">
@@ -259,7 +258,7 @@ function TrustStrip() {
 /* ── PLATTFORM ──────────────────────────────────────────── */
 function Platform() {
   return (
-    <Section id="product" eyebrow="DIE PLATTFORM" title="Eine Runtime. Vollständige KI-Governance." subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur, mit integriertem Claude-Code-Audit.">
+    <Section id="product" eyebrow="GOVERNANCE RUNTIME LAYER" title="Der Kontroll- und Betriebsplane für Enterprise-KI" subtitle="Nicht nachgelagert, sondern Fundament: Governance ist in die Architektur eingebaut. Von kontinuierlicher Risikobewertung bis zu kryptografischer Nachweisführung — alles automatisiert und auditierbar.">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {PLATFORM.map(({ icon: Icon, title, text }) => (
           <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
@@ -278,7 +277,7 @@ function Platform() {
 /* ── GOVERNANCE-RUNTIME ─────────────────────────────────── */
 function Runtime() {
   return (
-    <Section eyebrow="SO FUNKTIONIERT ES" title="Compliance, die ab Minute eins läuft" subtitle="Keine Monate-Projekte, keine statischen PDFs — Governance läuft ab dem ersten Tag zur Laufzeit.">
+    <Section eyebrow="GOVERNANCE-RUNTIME" title="Drei Schritte zu KI-Betrieb unter Kontrolle" subtitle="Nicht-projektbasiert, nicht statisch — echte Governance: Kontinuierliche Überwachung, automatische Nachweise, live Compliance.">
       <div className="grid md:grid-cols-3 gap-6">
         {STEPS.map(({ no, title, text }) => (
           <div key={no} className="relative p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
@@ -295,7 +294,7 @@ function Runtime() {
 /* ── BRANCHEN ───────────────────────────────────────────── */
 function Industries() {
   return (
-    <Section eyebrow="FÜR WEN" title="Gebaut für Teams, die Governance betreiben müssen" subtitle="Dieselbe Runtime — auf den jeweiligen regulatorischen Schmerzpunkt zugeschnitten.">
+    <Section eyebrow="ZIELGRUPPEN" title="Für Unternehmen, bei denen Governance nicht optional ist" subtitle="RealSync beherbergt den Governance-Kern für Industrien, wo KI-Auditierbarkeit und Compliance zum Geschäftsrisiko werden.">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {CORE_SEGMENTS.map(({ icon: Icon, title, text, to }) => (
           <SmartLink key={title} to={to} className="group flex gap-4 p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
@@ -457,11 +456,10 @@ function FinalCta() {
       <div className="max-w-5xl mx-auto px-6 lg:px-10">
         <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
-            Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit läuft?
+            Governance-Infrastruktur<br className="hidden sm:block" /> für Enterprise-KI starten
           </h2>
           <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-            Starten Sie mit einem kostenlosen Scan — ohne Account, in unter fünf Minuten. Sehen Sie
-            Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
+            Kostenloser Scan: Sehen Sie Ihren DSGVO-Readiness, EU-AI-Act-Klassifizierung und Governance-Reifegrad in unter 5 Minuten — ohne Account, ohne Verkaufsgespräch.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
@@ -519,7 +517,7 @@ function Footer() {
               <span className="text-sm sm:text-base font-semibold tracking-tight">RealSync Dynamics.AI</span>
             </Link>
             <p className="text-[11px] sm:text-xs text-white/50 leading-relaxed max-w-xs">
-              Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance.
+              Das Governance Runtime Layer für sichere, transparente und rechtskonform AI-Betrieb.
             </p>
           </div>
           {cols.map((c) => (

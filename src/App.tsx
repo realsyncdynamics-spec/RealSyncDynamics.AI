@@ -21,6 +21,8 @@ import { DemoTourProvider } from './core/demo/DemoTourContext';
 // ── Public entry: Governance-OS Workspace Preview (replaces Marketing Landing on /)
 // ── Public entry: MainLanding (Unternehmenshauptseite, Earth-at-Night) auf /
 import { MainLanding } from './pages/MainLanding';
+// ── Governance Runtime Layer Page (Positioning Page)
+import { GovernanceRuntimeLayerPage } from './pages/GovernanceRuntimeLayerPage';
 // ── Product Entry Points (/scan/start, /chatbot/start, /phonebot/start)
 import { ScanStartPage } from './pages/product-entry-points/ScanStartPage';
 import { ChatbotStartPage } from './pages/product-entry-points/ChatbotStartPage';
@@ -453,6 +455,7 @@ function RoutesWithTracking() {
       {/* Public — Startseite ist die Governance-OS-Workspace-Vorschau;
           die Marketing-Landing bleibt unter /landing erreichbar. */}
       <Route path="/" element={<MainLanding />} />
+      <Route path="/governance-runtime-layer" element={<GovernanceRuntimeLayerPage />} />
       {/* Product Entry Points */}
       <Route path="/scan/start" element={<ScanStartPage />} />
       <Route path="/chatbot/start" element={<ChatbotStartPage />} />

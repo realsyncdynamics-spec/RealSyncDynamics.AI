@@ -6,16 +6,18 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 describe('Gate 2: Determinism Test API', () => {
-  let client: ReturnType<typeof createClient>;
+  // Ohne generierte DB-Typen kollabiert der typisierte Client auf `never`
+  // (audit_determinism_tests fehlt in den Codegen-Typen) — daher `any`-Schema.
+  let client: SupabaseClient<any>;
 
   beforeAll(() => {
-    client = createClient(SUPABASE_URL, SERVICE_KEY);
+    client = createClient<any>(SUPABASE_URL, SERVICE_KEY);
   });
 
   it('should verify determinism for golden fixture with consistent hashes', async () => {

@@ -186,15 +186,6 @@ CREATE POLICY governance_webhooks_tenant_read
   TO authenticated
   USING (public.is_tenant_member(tenant_id));
 
--- ─── Policy Refactoring: governance_incidents ───────────────────────────────────
-
-DROP POLICY IF EXISTS governance_incidents_tenant_read ON public.governance_incidents;
-CREATE POLICY governance_incidents_tenant_read
-  ON public.governance_incidents
-  FOR SELECT
-  TO authenticated
-  USING (public.is_tenant_member(tenant_id));
-
 -- ─── Policy Refactoring: runtime_events ────────────────────────────────────────
 
 DROP POLICY IF EXISTS runtime_events_tenant_read ON public.runtime_events;

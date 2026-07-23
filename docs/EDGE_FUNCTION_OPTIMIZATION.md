@@ -272,7 +272,7 @@ Edge Functions have ~100ms–500ms cold-start (Deno init + deps).
 ### Strategies
 1. **Warmer Cron:** Run dummy health check every 5min
    ```bash
-   # In Vercel/Supabase cron job:
+   # In Supabase cron job:
    curl -X POST https://xxx.supabase.co/functions/v1/health -H 'Authorization: Bearer ...'
    ```
 
@@ -367,8 +367,8 @@ ORDER BY p95_ms DESC;
 
 ## Questions & Decisions
 
-**Q: Should we use Vercel KV or Redis?**
-A: Redis (self-hosted or Upstash) for cost-effectiveness. Vercel KV is ~2x more expensive but easier to deploy.
+**Q: Caching strategy for performance?**
+A: Redis (self-hosted or Upstash) for cost-effectiveness. Alternatively, Cloudflare KV for edge caching.
 
 **Q: Stream or batch responses?**
 A: **Stream** for UI responsiveness. Batch for internal APIs.

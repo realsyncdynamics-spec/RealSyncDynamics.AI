@@ -150,25 +150,28 @@ export class OutputSanitizer {
       return { sanitized, modified };
     }
 
-    // Object
-    const sanitized: Record<string, unknown> = {};
-    const sensitiveKeys = new Set([
-      'password', 'secret', 'token', 'apiKey', 'api_key',
-      'privateKey', 'private_key', 'secretKey', 'secret_key',
+    // Object (created without prototype to prevent prototype pollution)
+    const sanitized: Record<string, unknown> = Object.create(null);
+    const sensitiveKeyPatterns = [
+      'password', 'secret', 'token', 'apikey', 'api_key',
+      'privatekey', 'private_key', 'secretkey', 'secret_key',
       'authorization', 'cookie', 'session', 'refresh_token'
-    ]);
+    ];
 
     for (const [key, val] of Object.entries(value)) {
-      // Skip prototype pollution (don't include in output)
+      // Skip prototype pollution keys (don't include in output)
       if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
         modified = true;
-        sanitized[key] = undefined;
         continue;
       }
 
-      // Redact sensitive keys (check both exact and camelCase variants)
-      const lowerKey = key.toLowerCase().replace(/[A-Z]/g, c => c.toLowerCase());
-      if (sensitiveKeys.has(lowerKey) || sensitiveKeys.has(key.toLowerCase())) {
+      // Redact sensitive keys (case-insensitive check)
+      const keyLower = key.toLowerCase().replace(/_/g, '');
+      const isSensitive = sensitiveKeyPatterns.some(pattern =>
+        keyLower === pattern.toLowerCase().replace(/_/g, '')
+      );
+
+      if (isSensitive) {
         sanitized[key] = '[REDACTED]';
         modified = true;
       } else {

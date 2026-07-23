@@ -217,7 +217,7 @@ export class GDPRChecker {
     ];
 
     if (requirements.requiresRightToErasure) {
-      rights.push('Right to erasure ("right to be forgotten")');
+      rights.push('Right to erasure');
     }
 
     if (requirements.requiresRightToObjection) {

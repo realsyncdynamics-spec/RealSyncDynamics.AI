@@ -177,7 +177,7 @@ export class AIActClassifier {
       case 'prohibited':
         return 'Prohibited use case that violates EU AI Act Article 5';
       case 'high':
-        return 'High-risk system requiring comprehensive compliance measures';
+        return 'high-risk system requiring comprehensive compliance measures';
       case 'limited':
         return 'Limited-risk system requiring transparency and documentation';
       case 'minimal':

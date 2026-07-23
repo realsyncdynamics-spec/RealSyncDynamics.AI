@@ -147,7 +147,7 @@ export function FreeTierDashboard() {
   }, [tenantDetails]);
 
   return (
-    <div className="min-h-screen bg-obsidian-950 p-6">
+    <div className="dashboard-context min-h-screen bg-obsidian-950 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">

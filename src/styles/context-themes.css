@@ -1,0 +1,214 @@
+/**
+ * Context-based theme CSS variables
+ *
+ * Each context (landing, flow, dashboard) has distinct CSS variables
+ * for colors, spacing, and border-radius.
+ *
+ * Usage:
+ * - Landing pages: wrap in .landing-context
+ * - Audit-flow pages: wrap in .flow-context
+ * - Dashboard pages: wrap in .dashboard-context
+ *
+ * CSS variables automatically cascade to child elements, ensuring
+ * consistent theming without class-hell on individual components.
+ */
+
+:root {
+  /* Default to dashboard theme (most common in authenticated app) */
+  --context-accent: var(--security-blue-500);
+  --context-bg: var(--obsidian-950);
+  --context-text: var(--titanium-100);
+  --context-secondary: var(--titanium-400);
+  --context-section-py: theme(padding.8);
+  --context-section-gap: theme(gap.3);
+  --context-card-p: theme(padding.3);
+  --context-radius-card: 0;
+  --context-radius-button: 0;
+  --context-radius-input: 0;
+}
+
+/* Landing Context — public pages (MainLanding is dark/obsidian baseline due to design-lock) */
+.landing-context {
+  --context-accent: var(--cyan-400);
+  --context-bg: var(--obsidian-950);
+  --context-text: var(--titanium-100);
+  --context-secondary: var(--titanium-400);
+  --context-section-py: theme(padding.12);
+  --context-section-gap: theme(gap.6);
+  --context-card-p: theme(padding.6);
+  --context-radius-card: 0;
+  --context-radius-button: 0;
+  --context-radius-input: 0;
+}
+
+/* Flow Context — progressive, warm, gold-accented */
+.flow-context {
+  --context-accent: var(--gold-500);
+  --context-bg: var(--obsidian-950);
+  --context-text: white;
+  --context-secondary: var(--titanium-400);
+  --context-section-py: theme(padding.8);
+  --context-section-gap: theme(gap.4);
+  --context-card-p: theme(padding.4);
+  --context-radius-card: 0;
+  --context-radius-button: 0;
+  --context-radius-input: 0.125rem; /* 4px, rounded-sm */
+}
+
+/* Dashboard Context — authoritative, hard-edge, blue-accented */
+.dashboard-context {
+  --context-accent: var(--security-blue-500);
+  --context-bg: var(--obsidian-950);
+  --context-text: var(--titanium-100);
+  --context-secondary: var(--titanium-400);
+  --context-section-py: theme(padding.8);
+  --context-section-gap: theme(gap.3);
+  --context-card-p: theme(padding.3);
+  --context-radius-card: 0;
+  --context-radius-button: 0;
+  --context-radius-input: 0;
+}
+
+/* Light mode overrides (for landing pages that support light/dark toggle) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --context-bg: var(--slate-50);
+    --context-text: var(--slate-900);
+  }
+
+  .landing-context {
+    --context-bg: white;
+    --context-text: var(--slate-900);
+  }
+}
+
+/* Button hierarchy variables — Primary, Secondary, Tertiary */
+:root {
+  --button-primary-bg: var(--gold-500);
+  --button-primary-text: var(--obsidian-950);
+  --button-primary-hover: var(--gold-600);
+
+  --button-secondary-bg: var(--titanium-200);
+  --button-secondary-text: var(--obsidian-950);
+  --button-secondary-hover: var(--titanium-300);
+
+  --button-tertiary-bg: transparent;
+  --button-tertiary-text: var(--titanium-400);
+  --button-tertiary-border: var(--titanium-400);
+  --button-tertiary-hover: var(--titanium-100);
+}
+
+/* Semantic colors */
+:root {
+  --color-success: var(--emerald-500);
+  --color-success-bg: var(--emerald-50);
+  --color-success-border: var(--emerald-200);
+
+  --color-error: var(--red-500);
+  --color-error-bg: var(--red-50);
+  --color-error-border: var(--red-200);
+
+  --color-warning: var(--amber-500);
+  --color-warning-bg: var(--amber-50);
+  --color-warning-border: var(--amber-200);
+
+  --color-info: var(--blue-500);
+  --color-info-bg: var(--blue-50);
+  --color-info-border: var(--blue-200);
+
+  --color-neutral: var(--titanium-400);
+  --color-neutral-bg: var(--titanium-100);
+  --color-neutral-border: var(--titanium-300);
+}
+
+/* Risk severity colors */
+:root {
+  --risk-critical: var(--red-600);
+  --risk-high: var(--orange-500);
+  --risk-medium: var(--amber-500);
+  --risk-low: var(--teal-500);
+  --risk-passed: var(--green-500);
+}
+
+/* Context-aware text color */
+@supports (color: var(--context-text)) {
+  body {
+    color: var(--context-text);
+  }
+}
+
+/* Utility classes for context-aware styling */
+
+/* Text colors */
+.context-text { color: var(--context-text); }
+.context-text-secondary { color: var(--context-secondary); }
+.context-accent { color: var(--context-accent); }
+
+/* Background colors */
+.context-bg { background-color: var(--context-bg); }
+
+/* Context-aware border radius */
+.context-rounded-card { border-radius: var(--context-radius-card); }
+.context-rounded-button { border-radius: var(--context-radius-button); }
+.context-rounded-input { border-radius: var(--context-radius-input); }
+
+/* Context-aware spacing */
+.context-section { padding: var(--context-section-py) 0; }
+.context-gap { gap: var(--context-section-gap); }
+.context-card-p { padding: var(--context-card-p); }
+
+/* Button hierarchy utilities */
+.btn-primary {
+  background-color: var(--button-primary-bg);
+  color: var(--button-primary-text);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--button-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+  background-color: var(--button-secondary-hover);
+}
+
+.btn-tertiary {
+  background-color: var(--button-tertiary-bg);
+  color: var(--button-tertiary-text);
+  border: 1px solid var(--button-tertiary-border);
+}
+
+.btn-tertiary:hover,
+.btn-tertiary:focus {
+  background-color: var(--button-tertiary-hover);
+}
+
+/* Semantic color utilities */
+.text-success { color: var(--color-success); }
+.bg-success { background-color: var(--color-success-bg); }
+.border-success { border-color: var(--color-success-border); }
+
+.text-error { color: var(--color-error); }
+.bg-error { background-color: var(--color-error-bg); }
+.border-error { border-color: var(--color-error-border); }
+
+.text-warning { color: var(--color-warning); }
+.bg-warning { background-color: var(--color-warning-bg); }
+.border-warning { border-color: var(--color-warning-border); }
+
+.text-info { color: var(--color-info); }
+.bg-info { background-color: var(--color-info-bg); }
+.border-info { border-color: var(--color-info-border); }
+
+/* Risk severity utilities */
+.risk-critical { color: var(--risk-critical); }
+.risk-high { color: var(--risk-high); }
+.risk-medium { color: var(--risk-medium); }
+.risk-low { color: var(--risk-low); }
+.risk-passed { color: var(--risk-passed); }

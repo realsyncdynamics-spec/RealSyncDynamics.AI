@@ -686,7 +686,6 @@ function RoutesWithTracking() {
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
           Die View-eigenen Guards (AuthGate/RequireAal2) bleiben zusaetzlich aktiv. */}
-      <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><CeoCockpitView /></GovernanceBrowserShell></AppGate>} />
       {/* SMB Experience Layer — vereinfachte Ansicht für Einzelunternehmer/kleine
           Unternehmen. Zusätzliche Sicht auf dieselben Services; die
           Enterprise-Ansicht (/app/dashboard) bleibt unverändert. */}
@@ -752,11 +751,6 @@ function RoutesWithTracking() {
       <Route path="/app/bots" element={<GovernanceBrowserShell><BotsView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/inbox" element={<GovernanceBrowserShell><BotInboxView /></GovernanceBrowserShell>} />
       <Route path="/app/bots/:botId" element={<GovernanceBrowserShell><BotBuilderView /></GovernanceBrowserShell>} />
-      <Route path="/app/risks" element={<GovernanceBrowserShell><RiskCenterView /></GovernanceBrowserShell>} />
-      <Route path="/app/compliance" element={<GovernanceBrowserShell><GovernanceComplianceReportView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence" element={<GovernanceBrowserShell><EvidenceVaultView /></GovernanceBrowserShell>} />
-      <Route path="/app/evidence/audit" element={<GovernanceBrowserShell><RequireAal2 action="Evidence-Export"><GovernanceAuditorConsoleView /></RequireAal2></GovernanceBrowserShell>} />
-      <Route path="/app/monitoring" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/monitoring/legacy" element={<GovernanceBrowserShell><MonitoringSurface embedded /></GovernanceBrowserShell>} />
       <Route path="/app/security-signals" element={<GovernanceBrowserShell><SecuritySignalsView /></GovernanceBrowserShell>} />
       <Route path="/app/legal-rag" element={<LegalRagView />} />
@@ -800,7 +794,7 @@ function RoutesWithTracking() {
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       {/* Admin Panel Routes */}
-      <Route path="/app/admin" element={<AdminDashboard />} />
+      <Route path="/app/admin" element={<AppGate><GovernanceBrowserShell><AdminDashboard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin/members" element={<AdminMembersPage />} />
       <Route path="/app/admin/settings" element={<AdminSettingsPage />} />
       <Route path="/app/admin/billing" element={<AdminBillingPage />} />
@@ -892,13 +886,14 @@ function RoutesWithTracking() {
       <Route path="/finance/exports" element={<TaxExportsView />} />
       <Route path="/finance/reminders" element={<TaxRemindersView />} />
       <Route path="/finance/reviews" element={<TaxReviewsView />} />
-      <Route path="/settings" element={<SettingsView />} />
-      <Route path="/settings/ai-residency" element={<AiResidencySettings />} />
-      <Route path="/settings/security" element={<SecuritySettings />} />
-      <Route path="/settings/team" element={<RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2>} />
-      <Route path="/settings/account" element={<AccountSettings />} />
-      <Route path="/settings/api-keys" element={<ApiKeysSettings />} />
-      <Route path="/settings/branding" element={<RequireAal2 action="White-Label Branding"><BrandingSettings /></RequireAal2>} />
+      {/* Settings Routes — Auth-gated with consistent shell UI */}
+      <Route path="/settings" element={<AppGate><GovernanceBrowserShell><SettingsView /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/ai-residency" element={<AppGate><GovernanceBrowserShell><AiResidencySettings /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/security" element={<AppGate><GovernanceBrowserShell><SecuritySettings /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/account" element={<AppGate><GovernanceBrowserShell><AccountSettings /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/api-keys" element={<AppGate><GovernanceBrowserShell><ApiKeysSettings /></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/branding" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="White-Label Branding"><BrandingSettings /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/api/setup" element={<GovernanceBrowserShell><ApiSetupWizard /></GovernanceBrowserShell>} />
       <Route path="/app/api/docs" element={<GovernanceBrowserShell><ApiDocumentation /></GovernanceBrowserShell>} />
       <Route path="/app/api/monitoring" element={<GovernanceBrowserShell><ApiMonitoringDashboard /></GovernanceBrowserShell>} />
@@ -940,10 +935,11 @@ function RoutesWithTracking() {
       <Route path="/limits" element={<Limits />} />
 
       {/* Common auth entry points users expect */}
-      <Route path="/login" element={<Navigate to="/os/login" replace />} />
-      <Route path="/signin" element={<Navigate to="/os/login" replace />} />
-      <Route path="/signup" element={<Navigate to="/os/signup" replace />} />
-      <Route path="/register" element={<Navigate to="/os/signup" replace />} />
+      {/* Auth Entry Points — Canonical path is /welcome (OTP magic link via Supabase) */}
+      <Route path="/login" element={<Navigate to="/welcome" replace />} />
+      <Route path="/signin" element={<Navigate to="/welcome" replace />} />
+      <Route path="/signup" element={<Navigate to="/welcome" replace />} />
+      <Route path="/register" element={<Navigate to="/welcome" replace />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.

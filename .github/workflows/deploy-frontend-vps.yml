@@ -122,15 +122,56 @@ jobs:
           EOF
 
       - name: Verify public URL
+        id: verify
         run: |
           echo "⏳ Warte auf nginx propagation (5s)..."
           sleep 5
 
-          if curl -fsSL https://realsyncdynamicsai.de/healthz >/dev/null 2>&1; then
-            echo "✓ https://realsyncdynamicsai.de erreichbar"
-          else
-            echo "⚠ Warnung: https://realsyncdynamicsai.de nicht sofort erreichbar (könnte sein, dass nginx noch lädt)"
-          fi
+          for i in {1..10}; do
+            if curl -fsSL https://realsyncdynamicsai.de/healthz >/dev/null 2>&1; then
+              echo "✓ https://realsyncdynamicsai.de erreichbar"
+              exit 0
+            fi
+            echo "  Attempt $i/10..."
+            sleep 2
+          done
+
+          echo "❌ https://realsyncdynamicsai.de not responding"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && steps.verify.outcome == 'failure'
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
+          set -Eeuo pipefail
+          echo "⏮️  Rolling back to previous version..."
+
+          COMPOSE_DIR="/var/www/realsyncdynamicsai-frontend/deploy/frontend-vps-deploy-v2"
+          cd "$COMPOSE_DIR"
+
+          # Restore previous image
+          docker image tag realsync-frontend:previous realsync-frontend:latest 2>/dev/null || {
+            echo "⚠️  No previous image found — manual intervention needed"
+            exit 1
+          }
+
+          # Restart
+          docker compose down
+          docker compose up -d
+
+          # Verify rollback
+          for i in {1..20}; do
+            STATUS="$(docker inspect -f '{{.State.Health.Status}}' realsync-frontend 2>/dev/null || echo missing)"
+            if [[ "$STATUS" == "healthy" ]]; then
+              echo "✓ Rollback erfolgreich"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "❌ Rollback fehlgeschlagen — manuelle Intervention erforderlich"
+          exit 1
+          EOF
 
       - name: Log summary
         if: always()

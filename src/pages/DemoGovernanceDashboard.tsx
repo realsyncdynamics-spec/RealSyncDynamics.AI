@@ -111,11 +111,13 @@ function EvidenceItem({
   title,
   date,
   status,
+  onSelect,
 }: {
   id: string;
   title: string;
   date: string;
   status: 'verified' | 'pending' | 'expired';
+  onSelect?: (id: string) => void;
 }) {
   const statusConfig = {
     verified: { color: 'text-green-400', bg: 'bg-green-500/10', label: 'Verified' },
@@ -126,7 +128,10 @@ function EvidenceItem({
   const config = statusConfig[status];
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-titanium-800/30 hover:bg-obsidian-800/30 px-3 rounded transition-colors">
+    <button
+      onClick={() => onSelect?.(id)}
+      className="w-full flex items-center justify-between py-3 border-b border-titanium-800/30 hover:bg-obsidian-800/30 px-3 rounded transition-colors text-left"
+    >
       <div className="flex-1">
         <div className="text-titanium-100 text-sm font-medium">{title}</div>
         <div className="text-titanium-500 text-xs mt-1">{date}</div>
@@ -134,7 +139,7 @@ function EvidenceItem({
       <div className={`${config.bg} ${config.color} px-2 py-1 rounded text-xs font-semibold`}>
         {config.label}
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -142,11 +147,41 @@ export function DemoGovernanceDashboard() {
   const navigate = useNavigate();
   const { logout, user } = useSupabaseAuth();
   const { data: dashboardData } = useDashboardData(user?.id);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleLogout = async () => {
     await logout();
     navigate('/demo-login', { replace: true });
+  }
+
+  const handleScanStart = () => {
+    navigate('/app/scan/start');
   };
+
+  const handleGenerateReport = () => {
+    navigate('/app/compliance/export');
+  };
+
+  const handleSettings = () => {
+    navigate('/app/settings');
+  };
+
+  const handleViewAllEvidence = () => {
+    navigate('/app/evidence');
+  };
+
+  const handleEvidenceDetail = (evidenceId: string) => {
+    navigate(`/app/evidence/${evidenceId}`);
+  };
+
+  const itemsPerPage = 5;
+  const handleNextPage = () => {
+    setCurrentPage(p => p + 1);
+  };
+
+  const handlePrevPage = () => {
+    setCurrentPage(p => Math.max(1, p - 1));
+  };;
 
   // Convert evidence list to the format needed by EvidenceItem
   const evidenceItems = dashboardData.evidenceList.map((item) => ({
@@ -164,7 +199,7 @@ export function DemoGovernanceDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-titanium-100">Governance Dashboard</h1>
-              <p className="text-titanium-400 text-sm mt-1">Welcome, {user?.email}</p>
+              <p className="text-titanium-400 text-sm mt-1">Willkommen zurück, {user?.email?.split('@')[0] || 'Benutzer'}</p>
             </div>
             <button
               onClick={handleLogout}
@@ -272,25 +307,36 @@ export function DemoGovernanceDashboard() {
           <div className="lg:col-span-2 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg p-6 backdrop-blur-xl animate-fade-in" style={{ animationDelay: '300ms' }}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-titanium-100 font-semibold">Recent Evidence</h2>
-              <button className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm transition-colors">
+              <button
+                onClick={handleViewAllEvidence}
+                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 text-sm transition-colors"
+              >
                 View All <ChevronRight size={16} />
               </button>
             </div>
 
             <div className="space-y-0">
               {evidenceItems.map((item) => (
-                <EvidenceItem key={item.id} {...item} />
+                <EvidenceItem key={item.id} {...item} onSelect={handleEvidenceDetail} />
               ))}
             </div>
 
             {/* Pagination */}
             <div className="mt-6 flex items-center justify-between text-titanium-400 text-sm">
-              <span>Showing 1-{evidenceItems.length} of {dashboardData.evidenceCount}</span>
+              <span>Showing {Math.min((currentPage - 1) * itemsPerPage + 1, dashboardData.evidenceCount)}-{Math.min(currentPage * itemsPerPage, dashboardData.evidenceCount)} of {dashboardData.evidenceCount}</span>
               <div className="flex gap-2">
-                <button className="px-3 py-1 bg-obsidian-800/50 border border-titanium-700/30 rounded hover:bg-obsidian-700 transition-colors disabled:opacity-50" disabled>
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-obsidian-800/50 border border-titanium-700/30 rounded hover:bg-obsidian-700 transition-colors disabled:opacity-50"
+                >
                   Previous
                 </button>
-                <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded transition-colors">
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage * itemsPerPage >= dashboardData.evidenceCount}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded transition-colors disabled:opacity-50"
+                >
                   Next
                 </button>
               </div>
@@ -300,19 +346,28 @@ export function DemoGovernanceDashboard() {
 
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg hover:border-blue-500/30 transition-colors group">
+          <button
+            onClick={handleScanStart}
+            className="p-4 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg hover:border-blue-500/30 transition-colors group cursor-pointer"
+          >
             <div className="text-blue-400 mb-2">📊</div>
             <div className="text-titanium-100 font-semibold text-sm">Run Compliance Scan</div>
             <div className="text-titanium-500 text-xs mt-1">Analyze your infrastructure</div>
           </button>
 
-          <button className="p-4 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg hover:border-blue-500/30 transition-colors group">
+          <button
+            onClick={handleGenerateReport}
+            className="p-4 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg hover:border-blue-500/30 transition-colors group cursor-pointer"
+          >
             <div className="text-blue-400 mb-2">📋</div>
             <div className="text-titanium-100 font-semibold text-sm">Generate Report</div>
             <div className="text-titanium-500 text-xs mt-1">Export compliance documentation</div>
           </button>
 
-          <button className="p-4 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg hover:border-blue-500/30 transition-colors group">
+          <button
+            onClick={handleSettings}
+            className="p-4 bg-obsidian-900/50 border border-titanium-800/30 rounded-lg hover:border-blue-500/30 transition-colors group cursor-pointer"
+          >
             <div className="text-blue-400 mb-2">⚙️</div>
             <div className="text-titanium-100 font-semibold text-sm">Settings</div>
             <div className="text-titanium-500 text-xs mt-1">Manage your workspace</div>

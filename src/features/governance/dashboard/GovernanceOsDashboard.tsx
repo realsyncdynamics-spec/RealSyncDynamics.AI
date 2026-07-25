@@ -225,12 +225,14 @@ function OsHeaderBar({ tenantName, dateLabel }: { tenantName: string | null; dat
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-teal-400 font-mono text-xs whitespace-nowrap">● GOVERNANCE OS</span>
           <span className="text-titanium-900">|</span>
-          <span className="text-titanium-100 font-mono text-sm truncate">{tenantName ?? 'Demo Workspace'}</span>
-          {tenantName ? (
-            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
-          ) : (
-            <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Demo</span>
-          )}
+          <div className="flex items-center gap-2">
+            <span className="text-titanium-100 font-mono text-sm truncate">{tenantName ?? 'Demo Workspace'}</span>
+            {tenantName ? (
+              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Enterprise</span>
+            ) : (
+              <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 border border-titanium-700 text-titanium-400 whitespace-nowrap">Demo</span>
+            )}
+          </div>
         </div>
 
         {/* Mitte */}

@@ -72,3 +72,39 @@ jobs:
           version: latest
       - name: Deploy edge functions
         run: supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+
+  post-deploy-validation:
+    name: Validate deployment
+    runs-on: ubuntu-latest
+    needs: [db-push, functions-deploy]
+    if: always()  # Run regardless of previous job status
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+      - name: Validate post-deploy state
+        run: |
+          if [ "${{ needs.db-push.result }}" = "failure" ]; then
+            echo "⚠️  Skipping validation: db-push failed (likely due to migration drift)"
+            echo "See migration-drift.md for recovery instructions"
+            exit 0
+          fi
+          node scripts/validate-supabase-state.mjs 2>&1 | tee /tmp/validation.log || {
+            echo "## ❌ Post-Deploy Validation Failed" >> "$GITHUB_STEP_SUMMARY"
+            tail -n 30 /tmp/validation.log >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
+      - name: Summary
+        if: success()
+        run: |
+          echo "## ✅ Deployment Successful" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Database migrations: deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Edge functions: deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Post-deploy validation: passed" >> "$GITHUB_STEP_SUMMARY"

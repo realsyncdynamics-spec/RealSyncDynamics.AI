@@ -34,7 +34,9 @@
     "release:publish": "bash scripts/publish-release.sh",
     "perf:monthly-report": "tsx scripts/generate-performance-report.ts",
     "validate:supabase": "node scripts/validate-supabase-local.mjs",
-    "validate:supabase:state": "node scripts/validate-supabase-state.mjs"
+    "validate:supabase:state": "node scripts/validate-supabase-state.mjs",
+    "sentry:release:create": "node scripts/sentry-release.mjs create",
+    "sentry:release:list": "node scripts/sentry-release.mjs list"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

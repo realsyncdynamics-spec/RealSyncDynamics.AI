@@ -201,6 +201,40 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=realsyncdynamics-ai --branch=main
 
+  create-sentry-release:
+    name: Create Sentry release
+    needs: [build, deploy]
+    if: needs.build.outputs.cf_ready == 'true'
+    runs-on: ubuntu-latest
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: realsyncdynamics
+      SENTRY_PROJECT: realsyncdynamics
+      ENVIRONMENT: production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="v$(git describe --tags --always --abbrev=0).$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Install Sentry CLI
+        if: env.SENTRY_AUTH_TOKEN != ''
+        run: npm install -g @sentry/cli
+
+      - name: Create Sentry release
+        if: env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          node scripts/sentry-release.mjs create "${{ steps.version.outputs.version }}"
+        continue-on-error: true  # Don't block deploy if Sentry fails
+
   smoke-test:
     name: Smoke test live routes
     needs: [build, deploy]

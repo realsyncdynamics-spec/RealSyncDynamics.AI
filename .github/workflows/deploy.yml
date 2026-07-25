@@ -65,6 +65,8 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    outputs:
+      deploy_success: ${{ job.status == 'success' }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
@@ -108,3 +110,37 @@ jobs:
           echo "- Database migrations: deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "- Edge functions: deployed" >> "$GITHUB_STEP_SUMMARY"
           echo "- Post-deploy validation: passed" >> "$GITHUB_STEP_SUMMARY"
+
+  create-backend-sentry-release:
+    name: Create backend Sentry release
+    runs-on: ubuntu-latest
+    needs: [db-push, functions-deploy]
+    if: needs.functions-deploy.outputs.deploy_success == 'true'
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: realsyncdynamics
+      SENTRY_PROJECT: realsyncdynamics
+      ENVIRONMENT: production
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="backend-v$(git describe --tags --always --abbrev=0).$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      - name: Install Sentry CLI
+        if: env.SENTRY_AUTH_TOKEN != ''
+        run: npm install -g @sentry/cli
+
+      - name: Create Sentry release
+        if: env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          node scripts/sentry-release.mjs create "${{ steps.version.outputs.version }}"
+        continue-on-error: true  # Don't block if Sentry fails

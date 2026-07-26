@@ -18,6 +18,11 @@
  */
 
 import { handleVerifyJwt } from './verify-jwt/index.js';
+import {
+  handleGetPolicy,
+  handleInvalidatePolicy,
+  handleInvalidateTenant,
+} from './kv-cache/index.js';
 
 // Cloudflare Workers environment types
 // (These are provided by Cloudflare at runtime; TypeScript needs the definitions)
@@ -36,6 +41,7 @@ interface R2Bucket {
 export interface WorkersEnv {
   SUPABASE_JWT_SECRET: string;
   SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
   POLICY_CACHE: KVNamespace;
   SESSION_CACHE: KVNamespace;
   EVIDENCE_VAULT: R2Bucket;
@@ -88,9 +94,71 @@ export default {
         return response;
       }
 
-      // Route: Future policy caching endpoints (Phase 2b+)
-      if (url.pathname.startsWith('/api/policies/')) {
-        return errorResponse(501, 'not_implemented', 'Policy caching endpoint (Phase 2b+)');
+      // Route: GET /api/policies/{tenantId}/{policyId}
+      if (url.pathname.match(/^\/api\/policies\/[^/]+\/[^/]+$/) && request.method === 'GET') {
+        const pathParts = url.pathname.split('/');
+        const tenantId = pathParts[3];
+        const policyId = pathParts[4];
+
+        const response = await handleGetPolicy(
+          request,
+          {
+            POLICY_CACHE: env.POLICY_CACHE,
+            SUPABASE_URL: env.SUPABASE_URL,
+            SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+          },
+          policyId,
+          tenantId
+        );
+
+        const elapsed = Date.now() - startTime;
+        response.headers.set('X-Worker-Latency', `${elapsed}ms`);
+        return response;
+      }
+
+      // Route: DELETE /api/cache/invalidate/{tenantId}/{policyId}
+      if (
+        url.pathname.match(/^\/api\/cache\/invalidate\/[^/]+\/[^/]+$/) &&
+        request.method === 'DELETE'
+      ) {
+        const pathParts = url.pathname.split('/');
+        const tenantId = pathParts[4];
+        const policyId = pathParts[5];
+
+        const response = await handleInvalidatePolicy(
+          request,
+          {
+            POLICY_CACHE: env.POLICY_CACHE,
+            SUPABASE_URL: env.SUPABASE_URL,
+            SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+          },
+          policyId,
+          tenantId
+        );
+
+        const elapsed = Date.now() - startTime;
+        response.headers.set('X-Worker-Latency', `${elapsed}ms`);
+        return response;
+      }
+
+      // Route: POST /api/cache/invalidate/tenant/{tenantId}
+      if (url.pathname.match(/^\/api\/cache\/invalidate\/tenant\/[^/]+$/) && request.method === 'POST') {
+        const pathParts = url.pathname.split('/');
+        const tenantId = pathParts[5];
+
+        const response = await handleInvalidateTenant(
+          request,
+          {
+            POLICY_CACHE: env.POLICY_CACHE,
+            SUPABASE_URL: env.SUPABASE_URL,
+            SUPABASE_SERVICE_ROLE_KEY: env.SUPABASE_SERVICE_ROLE_KEY,
+          },
+          tenantId
+        );
+
+        const elapsed = Date.now() - startTime;
+        response.headers.set('X-Worker-Latency', `${elapsed}ms`);
+        return response;
       }
 
       // Route: Future evidence vault endpoints (Phase 2b+)
@@ -105,7 +173,12 @@ export default {
             ok: true,
             timestamp: new Date().toISOString(),
             version: '1.0.0-canary',
-            endpoints: ['/api/auth/verify-jwt'],
+            endpoints: [
+              '/api/auth/verify-jwt (POST)',
+              '/api/policies/{tenantId}/{policyId} (GET)',
+              '/api/cache/invalidate/{tenantId}/{policyId} (DELETE)',
+              '/api/cache/invalidate/tenant/{tenantId} (POST)',
+            ],
           }),
           {
             status: 200,

@@ -132,6 +132,64 @@ jobs:
             echo "⚠ Warnung: https://realsyncdynamicsai.de nicht sofort erreichbar (könnte sein, dass nginx noch lädt)"
           fi
 
+      - name: Deploy failed - Automatic Rollback
+        if: failure() && job.status == 'failure'
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF' || true
+          set -Eeuo pipefail
+          COMPOSE_DIR="/var/www/realsyncdynamicsai-frontend/deploy/frontend-vps-deploy-v2"
+          ENV_FILE="$COMPOSE_DIR/.env"
+
+          echo "⚠️  Deploy failed — triggering automatic rollback..."
+          cd "$COMPOSE_DIR"
+
+          if docker image inspect realsync-frontend:previous >/dev/null 2>&1; then
+            docker image tag realsync-frontend:previous realsync-frontend:latest
+            docker compose --env-file "$ENV_FILE" up -d
+            echo "✓ Rolled back to previous version"
+          else
+            echo "⚠ No previous image available for rollback"
+          fi
+          EOF
+
+      - name: Slack notification - Success
+        if: success()
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          payload: |
+            {
+              "text": "✅ Frontend deployed successfully",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*✅ Frontend Deployment Successful*\n*Repository:* ${{ github.repository }}\n*Branch:* main\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*URL:* <https://realsyncdynamicsai.de|realsyncdynamicsai.de>"
+                  }
+                }
+              ]
+            }
+
+      - name: Slack notification - Failure
+        if: failure()
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          payload: |
+            {
+              "text": "❌ Frontend deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*❌ Frontend Deployment Failed*\n*Repository:* ${{ github.repository }}\n*Branch:* main\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*Action:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }
+
       - name: Log summary
         if: always()
         run: |
@@ -139,10 +197,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** main" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend URL:** https://realsyncdynamicsai.de" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** $([ ${{ job.status }} == 'success' ] && echo '✅ Success' || echo '❌ Failed')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Linting & Type Check" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Quality" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ -f /tmp/lint.log ]]; then
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

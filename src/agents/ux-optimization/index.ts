@@ -143,13 +143,18 @@ export class UXOptimizationAgent {
     // In real implementation, this would parse actual component files
 
     // Check for images without alt text (example)
-    const imagesToCheck = [
+    const imagesToCheck: Array<{ src: string; alt?: string; location: string }> = [
       // Would come from scanning src/components and src/pages
     ];
     findings.push(...convertAccessibilityToFindings(checkImageAltText(imagesToCheck)));
 
     // Check for icon buttons without labels
-    const elementsToCheck = [
+    const elementsToCheck: Array<{
+      type: 'button' | 'icon-button' | 'link' | 'input';
+      text?: string;
+      ariaLabel?: string;
+      location: string;
+    }> = [
       // Would come from scanning interactive elements
     ];
     findings.push(...convertAccessibilityToFindings(checkAriaLabels(elementsToCheck)));

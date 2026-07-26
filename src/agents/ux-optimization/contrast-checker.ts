@@ -159,11 +159,18 @@ export function detectContrastIssues(): Array<{
   status: 'pass' | 'warn' | 'fail';
 }> {
   return validateCommonCombinations()
-    .map(({ textColor, backgroundColor, result }) => ({
-      textColor,
-      backgroundColor,
-      ratio: result.ratio,
-      status: result.wcagAAA ? 'pass' : result.wcagAA ? 'warn' : 'fail',
-    }))
+    .map(({ textColor, backgroundColor, result }) => {
+      const status: 'pass' | 'warn' | 'fail' = result.wcagAAA
+        ? 'pass'
+        : result.wcagAA
+        ? 'warn'
+        : 'fail';
+      return {
+        textColor,
+        backgroundColor,
+        ratio: result.ratio,
+        status,
+      };
+    })
     .filter(item => item.status !== 'pass');
 }

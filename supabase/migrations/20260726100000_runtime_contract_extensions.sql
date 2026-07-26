@@ -84,7 +84,7 @@ create table if not exists public.execution_costs (
 
   -- Metering
   billed_to       text,                                     -- 'tenant' or 'platform'
-  invoice_id      uuid references public.invoices(id) on delete set null,
+  invoice_id      uuid,                                     -- Reference to invoices table (created separately)
 
   created_at      timestamptz not null default now()
 );

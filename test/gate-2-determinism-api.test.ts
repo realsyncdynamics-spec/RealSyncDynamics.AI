@@ -105,7 +105,6 @@ describe.skipIf(!hasSupabaseEnv)('Gate 2: Determinism Test API', () => {
       },
     ];
 
-<<<<<<< HEAD
     const { data } = await client
       .from('audit_determinism_tests')
       .insert(

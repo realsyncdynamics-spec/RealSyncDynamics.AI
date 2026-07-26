@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -7,134 +8,21 @@ import {
   FileCheck2,
   GitBranch,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  AlertCircle
 } from "lucide-react";
 import type { GovernanceRiskLevel } from "./types";
-
-// Inline demo data to avoid import complexity
-const demoGovernanceEvents = [
-  {
-    id: "evt-001",
-    title: "OpenAI API Key Exposure Detected",
-    eventType: "security-scan",
-    eventSource: "website-scanner",
-    riskLevel: "critical" as GovernanceRiskLevel,
-    summary: "Sensitive API key found in public GitHub repository during automated scan.",
-    vendor: "OpenAI",
-    modelName: undefined,
-    policyAction: "notify",
-    dataTypes: ["API Keys", "Secrets"]
-  },
-  {
-    id: "evt-002",
-    title: "Anthropic Model Configuration",
-    eventType: "runtime-event",
-    eventSource: "ai-gateway",
-    riskLevel: "low" as GovernanceRiskLevel,
-    summary: "Claude 3.5 Sonnet instantiated with default system prompt and temperature 0.7.",
-    vendor: "Anthropic",
-    modelName: "claude-3-5-sonnet",
-    policyAction: "log",
-    dataTypes: ["LLM Config"]
-  },
-  {
-    id: "evt-003",
-    title: "GDPR Compliance Audit Trail",
-    eventType: "compliance-report",
-    eventSource: "gdpr-engine",
-    riskLevel: "medium" as GovernanceRiskLevel,
-    summary: "5 data processing activities logged. All subjects have signed consent forms.",
-    vendor: undefined,
-    modelName: undefined,
-    policyAction: "archive",
-    dataTypes: ["Personal Data", "Consent"]
-  }
-];
-
-const demoGovernancePolicies = [
-  {
-    id: "pol-001",
-    name: "Restrict OpenAI Usage",
-    description: "Deprecated provider; migrate to local Ollama.",
-    action: "block-deployment",
-    enabled: true
-  },
-  {
-    id: "pol-002",
-    name: "Enforce DSGVO Audit Trail",
-    description: "Log all data processing to 16d52e table every 30s.",
-    action: "auto-archive",
-    enabled: true
-  },
-  {
-    id: "pol-003",
-    name: "EU AI Act Compliance",
-    description: "High-risk systems require pre-deployment review.",
-    action: "require-approval",
-    enabled: true
-  }
-];
-
-const demoGovernanceAssets = [
-  {
-    id: "ast-001",
-    name: "Chat API",
-    assetType: "edge-function",
-    vendor: "Supabase",
-    riskScore: 45,
-    aiActClass: "Limited Risk",
-    dataTypes: ["Chat Messages", "User Metadata"]
-  },
-  {
-    id: "ast-002",
-    name: "Document Analyzer",
-    assetType: "llm-system",
-    vendor: "Anthropic",
-    riskScore: 72,
-    aiActClass: "High Risk",
-    dataTypes: ["Document Content", "Classification Output"]
-  },
-  {
-    id: "ast-003",
-    name: "Website Scanner",
-    assetType: "crawler",
-    vendor: "Internal",
-    riskScore: 28,
-    aiActClass: "Minimal Risk",
-    dataTypes: ["Public URLs", "HTML Content"]
-  }
-];
-
-const demoFrameworkControls = [
-  {
-    id: "fc-001",
-    framework: "EU AI Act",
-    controlCode: "SEC-4.1",
-    title: "High-Risk System Register",
-    description: "Maintain Registry of AI Systems classified as High-Risk."
-  },
-  {
-    id: "fc-002",
-    framework: "DSGVO",
-    controlCode: "ART-35",
-    title: "Data Protection Impact Assessment",
-    description: "Assess large-scale processing of personal data."
-  },
-  {
-    id: "fc-003",
-    framework: "ISO 42001",
-    controlCode: "5.23",
-    title: "AI Governance Process",
-    description: "Establish processes for managing AI systems."
-  },
-  {
-    id: "fc-004",
-    framework: "SOC 2",
-    controlCode: "CC6.1",
-    title: "Logical Access Controls",
-    description: "Restrict access to assets based on principle of least privilege."
-  }
-];
+import {
+  fetchTenantEvents,
+  fetchTenantAssets,
+  fetchTenantPolicies,
+  fetchFrameworkControls,
+  type DbGovernanceEvent,
+  type DbGovernanceAsset,
+  type DbGovernancePolicy,
+  type DbFrameworkControl
+} from "./governanceApi";
+import { useTenant } from '../../core/access/TenantProvider';
 
 function riskClass(level: GovernanceRiskLevel) {
   switch (level) {
@@ -159,13 +47,65 @@ function scoreClass(score: number) {
 }
 
 export function GovernanceRuntimeDashboard() {
-  const highRiskAssets = demoGovernanceAssets.filter(
-    (asset) => asset.riskScore >= 70
+  const tenant = useTenant();
+  const [events, setEvents] = useState<DbGovernanceEvent[]>([]);
+  const [assets, setAssets] = useState<DbGovernanceAsset[]>([]);
+  const [policies, setPolicies] = useState<DbGovernancePolicy[]>([]);
+  const [controls, setControls] = useState<DbFrameworkControl[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!tenant?.activeTenantId) {
+      setLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const tenantId = tenant.activeTenantId!;
+        const [eventsData, assetsData, policiesData, controlsData] = await Promise.all([
+          fetchTenantEvents(tenantId, 50),
+          fetchTenantAssets(tenantId),
+          fetchTenantPolicies(tenantId),
+          fetchFrameworkControls()
+        ]);
+        setEvents(eventsData);
+        setAssets(assetsData);
+        setPolicies(policiesData);
+        setControls(controlsData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load governance data');
+        console.error('Error loading governance dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [tenant?.activeTenantId]);
+
+  const highRiskAssets = assets.filter(
+    (asset) => asset.risk_score >= 70
   ).length;
 
-  const activePolicies = demoGovernancePolicies.filter(
+  const activePolicies = policies.filter(
     (policy) => policy.enabled
   ).length;
+
+  if (!tenant?.activeTenantId) {
+    return (
+      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-amber-400/10 border border-amber-400/40 text-amber-400 p-4 rounded">
+            <p className="text-sm">Not authenticated. Please log in to view governance data.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
@@ -184,12 +124,34 @@ export function GovernanceRuntimeDashboard() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <MetricCard icon={<Database />} label="Assets" value={demoGovernanceAssets.length.toString()} />
-          <MetricCard icon={<Activity />} label="Runtime Events" value={demoGovernanceEvents.length.toString()} />
-          <MetricCard icon={<AlertTriangle />} label="High Risk" value={highRiskAssets.toString()} />
-          <MetricCard icon={<Lock />} label="Active Policies" value={activePolicies.toString()} />
-        </div>
+        {error && (
+          <div className="mb-6 bg-red-400/10 border border-red-400/40 text-red-400 p-4 rounded flex gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Error loading governance data</p>
+              <p className="text-xs mt-1 opacity-80">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-obsidian-900/60 border border-silver-700/30 p-5 animate-pulse">
+                <div className="h-8 w-8 bg-silver-700/30 rounded mb-4"></div>
+                <div className="h-8 bg-silver-700/30 rounded mb-3"></div>
+                <div className="h-4 bg-silver-700/30 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <MetricCard icon={<Database />} label="Assets" value={assets.length.toString()} />
+            <MetricCard icon={<Activity />} label="Runtime Events" value={events.length.toString()} />
+            <MetricCard icon={<AlertTriangle />} label="High Risk" value={highRiskAssets.toString()} />
+            <MetricCard icon={<Lock />} label="Active Policies" value={activePolicies.toString()} />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 bg-obsidian-900/60 border border-silver-700/30 p-5">
@@ -200,47 +162,67 @@ export function GovernanceRuntimeDashboard() {
               </h3>
             </div>
 
-            <div className="space-y-3">
-              {demoGovernanceEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className="border border-silver-700/30 bg-obsidian-950/60 p-4"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div>
-                      <div className="font-bold text-titanium-50">
-                        {event.title}
-                      </div>
-                      <div className="mt-1 text-xs text-silver-400">
-                        {event.eventType} · {event.eventSource}
-                      </div>
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="border border-silver-700/30 bg-obsidian-950/60 p-4 animate-pulse">
+                    <div className="h-4 bg-silver-700/30 rounded w-1/2 mb-3"></div>
+                    <div className="h-3 bg-silver-700/30 rounded w-1/3 mb-3"></div>
+                    <div className="h-12 bg-silver-700/30 rounded mb-3"></div>
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-silver-700/30 rounded w-20"></div>
+                      <div className="h-6 bg-silver-700/30 rounded w-24"></div>
                     </div>
-                    <span className={`text-[11px] font-mono uppercase tracking-wider px-2 py-1 border ${riskClass(event.riskLevel)}`}>
-                      {event.riskLevel}
-                    </span>
                   </div>
+                ))}
+              </div>
+            ) : events.length > 0 ? (
+              <div className="space-y-3">
+                {events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="border border-silver-700/30 bg-obsidian-950/60 p-4"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div>
+                        <div className="font-bold text-titanium-50">
+                          {event.title}
+                        </div>
+                        <div className="mt-1 text-xs text-silver-400">
+                          {event.event_type} · {event.event_source}
+                        </div>
+                      </div>
+                      <span className={`text-[11px] font-mono uppercase tracking-wider px-2 py-1 border ${riskClass(event.risk_level as GovernanceRiskLevel)}`}>
+                        {event.risk_level}
+                      </span>
+                    </div>
 
-                  <p className="mt-3 text-sm text-silver-300 leading-relaxed">
-                    {event.summary}
-                  </p>
+                    <p className="mt-3 text-sm text-silver-300 leading-relaxed">
+                      {event.summary || 'No summary available'}
+                    </p>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {event.vendor && (
-                      <Tag>{event.vendor}</Tag>
-                    )}
-                    {event.modelName && (
-                      <Tag>{event.modelName}</Tag>
-                    )}
-                    {event.policyAction && (
-                      <Tag>Action: {event.policyAction}</Tag>
-                    )}
-                    {event.dataTypes.map((type) => (
-                      <Tag key={type}>{type}</Tag>
-                    ))}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {event.vendor && (
+                        <Tag>{event.vendor}</Tag>
+                      )}
+                      {event.model_name && (
+                        <Tag>{event.model_name}</Tag>
+                      )}
+                      {event.policy_action && (
+                        <Tag>Action: {event.policy_action}</Tag>
+                      )}
+                      {event.data_types.map((type) => (
+                        <Tag key={type}>{type}</Tag>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-silver-400">
+                <p className="text-sm">No governance events yet</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">
@@ -248,81 +230,124 @@ export function GovernanceRuntimeDashboard() {
               icon={<ShieldCheck />}
               title="Policy Engine"
             >
-              <div className="space-y-3">
-                {demoGovernancePolicies.map((policy) => (
-                  <div
-                    key={policy.id}
-                    className="border border-silver-700/30 bg-obsidian-950/60 p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="font-bold text-sm text-titanium-50">
-                        {policy.name}
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="border border-silver-700/30 bg-obsidian-950/60 p-4 animate-pulse">
+                      <div className="h-4 bg-silver-700/30 rounded w-2/3 mb-2"></div>
+                      <div className="h-3 bg-silver-700/30 rounded w-full"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : policies.length > 0 ? (
+                <div className="space-y-3">
+                  {policies.map((policy) => (
+                    <div
+                      key={policy.id}
+                      className="border border-silver-700/30 bg-obsidian-950/60 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="font-bold text-sm text-titanium-50">
+                          {policy.name}
+                        </div>
+                        {policy.enabled && <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />}
                       </div>
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <p className="mt-2 text-xs text-silver-400 leading-relaxed">
+                        {policy.description || 'No description'}
+                      </p>
+                      <div className="mt-3 text-[11px] font-mono uppercase tracking-wider text-titanium-100">
+                        {policy.action}
+                      </div>
                     </div>
-                    <p className="mt-2 text-xs text-silver-400 leading-relaxed">
-                      {policy.description}
-                    </p>
-                    <div className="mt-3 text-[11px] font-mono uppercase tracking-wider text-titanium-100">
-                      {policy.action}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-silver-400">No policies configured</p>
+              )}
             </Panel>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
           <Panel icon={<Bot />} title="Governance Assets">
-            <div className="space-y-3">
-              {demoGovernanceAssets.map((asset) => (
-                <div
-                  key={asset.id}
-                  className="border border-silver-700/30 bg-obsidian-950/60 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="font-bold text-titanium-50">{asset.name}</div>
-                      <div className="mt-1 text-xs text-silver-400">
-                        {asset.assetType} · {asset.vendor ?? "Internal"}
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="border border-silver-700/30 bg-obsidian-950/60 p-4 animate-pulse">
+                    <div className="h-4 bg-silver-700/30 rounded w-1/2 mb-2"></div>
+                    <div className="h-3 bg-silver-700/30 rounded w-1/3 mb-3"></div>
+                    <div className="flex gap-2">
+                      <div className="h-6 bg-silver-700/30 rounded w-20"></div>
+                      <div className="h-6 bg-silver-700/30 rounded w-24"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : assets.length > 0 ? (
+              <div className="space-y-3">
+                {assets.map((asset) => (
+                  <div
+                    key={asset.id}
+                    className="border border-silver-700/30 bg-obsidian-950/60 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-bold text-titanium-50">{asset.name}</div>
+                        <div className="mt-1 text-xs text-silver-400">
+                          {asset.asset_type} · {asset.vendor ?? "Internal"}
+                        </div>
+                      </div>
+                      <div className={`font-mono text-sm font-bold ${scoreClass(asset.risk_score)}`}>
+                        {asset.risk_score}/100
                       </div>
                     </div>
-                    <div className={`font-mono text-sm font-bold ${scoreClass(asset.riskScore)}`}>
-                      {asset.riskScore}/100
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Tag>{asset.ai_act_class}</Tag>
+                      {asset.data_types.slice(0, 3).map((type) => (
+                        <Tag key={type}>{type}</Tag>
+                      ))}
                     </div>
                   </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Tag>{asset.aiActClass}</Tag>
-                    {asset.dataTypes.slice(0, 3).map((type) => (
-                      <Tag key={type}>{type}</Tag>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-silver-400">No assets registered</p>
+            )}
           </Panel>
 
           <Panel icon={<FileCheck2 />} title="Framework Mapping">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {demoFrameworkControls.map((control) => (
-                <div
-                  key={control.id}
-                  className="border border-silver-700/30 bg-obsidian-950/60 p-4"
-                >
-                  <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-100">
-                    {control.framework} · {control.controlCode}
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="border border-silver-700/30 bg-obsidian-950/60 p-4 animate-pulse">
+                    <div className="h-3 bg-silver-700/30 rounded w-2/3 mb-2"></div>
+                    <div className="h-4 bg-silver-700/30 rounded w-full mt-2"></div>
                   </div>
-                  <div className="mt-2 font-bold text-sm text-titanium-50">
-                    {control.title}
+                ))}
+              </div>
+            ) : controls.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {controls.map((control) => (
+                  <div
+                    key={control.id}
+                    className="border border-silver-700/30 bg-obsidian-950/60 p-4"
+                  >
+                    <div className="text-[11px] font-mono uppercase tracking-wider text-titanium-100">
+                      {control.framework} · {control.control_code}
+                    </div>
+                    <div className="mt-2 font-bold text-sm text-titanium-50">
+                      {control.title}
+                    </div>
+                    <p className="mt-2 text-xs text-silver-400 leading-relaxed">
+                      {control.description || 'No description'}
+                    </p>
                   </div>
-                  <p className="mt-2 text-xs text-silver-400 leading-relaxed">
-                    {control.description}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-silver-400">No framework controls available</p>
+            )}
           </Panel>
         </div>
 

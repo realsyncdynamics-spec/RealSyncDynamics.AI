@@ -121,8 +121,11 @@ jobs:
 
       - name: Prerender high-priority routes (SEO)
         run: |
+          set -e
           npx playwright install --with-deps chromium
           npm run prerender
+        env:
+          PRERENDER_STRICT: '1'
 
       - name: Generate SPA fallback for dynamic routes
         run: |

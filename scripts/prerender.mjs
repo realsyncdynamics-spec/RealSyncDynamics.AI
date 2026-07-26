@@ -139,6 +139,31 @@ async function runWithPool(items, worker, concurrency) {
   return stats;
 }
 
+// ─── Ensure Playwright browsers are installed ───────────────────────────────
+async function ensurePlaywrightBrowsers() {
+  try {
+    const { chromium } = await import('playwright');
+    // Try to launch to detect if chromium exists
+    const browser = await chromium.launch({ headless: true });
+    await browser.close();
+    console.log(`[prerender] ✓ Playwright Chromium ready`);
+  } catch (e) {
+    console.log(`[prerender] Playwright Chromium not found or not working, attempting install...`);
+    return new Promise((resolve, reject) => {
+      const proc = spawn('npx', ['playwright', 'install', '--with-deps', 'chromium']);
+      proc.on('close', (code) => {
+        if (code === 0) {
+          console.log(`[prerender] ✓ Playwright Chromium installed`);
+          resolve();
+        } else {
+          reject(new Error(`playwright install failed with exit code ${code}`));
+        }
+      });
+      proc.on('error', reject);
+    });
+  }
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 async function main() {
   // Sanity: dist/index.html muss existieren
@@ -147,6 +172,8 @@ async function main() {
     console.error(`[prerender] FATAL: ${DIST}/index.html missing — run vite build first`);
     process.exit(2);
   }
+
+  await ensurePlaywrightBrowsers();
 
   const routes = await loadRoutes();
   console.log(`[prerender] ${routes.length} routes (priority >= ${PRIORITY_MIN}) to render`);

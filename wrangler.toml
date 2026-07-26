@@ -15,4 +15,5 @@
 
 name = "realsyncdynamics-ai"
 pages_build_output_dir = "dist"
+build_command = "npm run build && npm run prerender"
 compatibility_date = "2026-06-23"

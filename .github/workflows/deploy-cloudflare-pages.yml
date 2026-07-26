@@ -100,7 +100,7 @@ jobs:
       - name: Lint TypeScript
         run: npm run lint
 
-      - name: Build Vite
+      - name: Build Vite + Prerender
         env:
           VITE_BASE: /
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -116,10 +116,10 @@ jobs:
           VITE_STRIPE_PRICE_SCALE_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_SCALE_YEARLY }}
         run: npm run build
 
-      - name: Generate legal pages markers
+      - name: Generate legal pages
         run: npm run generate:legal-pages
 
-      - name: Prerender high-priority routes
+      - name: Prerender high-priority routes (SEO)
         run: |
           npx playwright install --with-deps chromium
           npm run prerender

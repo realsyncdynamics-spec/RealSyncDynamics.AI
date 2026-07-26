@@ -41,7 +41,6 @@ on:
       - 'vite.config.ts'
       - 'tsconfig.json'
       - 'wrangler.toml'
-      - 'pages.config.js'
       - '_redirects'
       - '_headers'
       - '.github/workflows/deploy-cloudflare-pages.yml'
@@ -57,7 +56,6 @@ on:
       - 'vite.config.ts'
       - 'tsconfig.json'
       - 'wrangler.toml'
-      - 'pages.config.js'
       - '_redirects'
       - '_headers'
       - '.github/workflows/deploy-cloudflare-pages.yml'
@@ -137,7 +135,7 @@ jobs:
           VITE_STRIPE_PRICE_AGENCY_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY_YEARLY }}
           VITE_STRIPE_PRICE_SCALE_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_SCALE_YEARLY }}
           PRERENDER_STRICT: '1'
-        run: npm run build
+        run: npm run build:full
 
       - name: Generate 404 fallback for dynamic routes
         run: |

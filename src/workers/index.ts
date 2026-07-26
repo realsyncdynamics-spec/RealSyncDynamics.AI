@@ -23,6 +23,11 @@ import {
   handleInvalidatePolicy,
   handleInvalidateTenant,
 } from './kv-cache/index.js';
+import {
+  handleIngestEvidence,
+  handleGetEvidence,
+  handleExportEvidence,
+} from './r2-evidence/index.js';
 
 // Cloudflare Workers environment types
 // (These are provided by Cloudflare at runtime; TypeScript needs the definitions)
@@ -32,9 +37,28 @@ interface KVNamespace {
   delete(key: string): Promise<void>;
 }
 
+interface R2Object {
+  key: string;
+  version: string;
+  size: number;
+  etag: string;
+  uploadedDate: Date;
+  httpMetadata: Record<string, string>;
+  customMetadata?: Record<string, string>;
+  text(): Promise<string>;
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+
 interface R2Bucket {
-  put(key: string, value: ReadableStream | ArrayBuffer | string): Promise<void>;
-  get(key: string): Promise<ReadableStream | null>;
+  put(
+    key: string,
+    value: ReadableStream | ArrayBuffer | string,
+    options?: {
+      httpMetadata?: Record<string, string>;
+      customMetadata?: Record<string, string>;
+    }
+  ): Promise<R2Object>;
+  get(key: string): Promise<R2Object | null>;
   delete(key: string): Promise<void>;
 }
 
@@ -161,9 +185,41 @@ export default {
         return response;
       }
 
-      // Route: Future evidence vault endpoints (Phase 2b+)
-      if (url.pathname.startsWith('/api/evidence/')) {
-        return errorResponse(501, 'not_implemented', 'Evidence Vault endpoint (Phase 2b+)');
+      // Route: POST /api/evidence/ingest/{tenantId}
+      if (url.pathname.match(/^\/api\/evidence\/ingest\/[^/]+$/) && request.method === 'POST') {
+        const pathParts = url.pathname.split('/');
+        const tenantId = pathParts[4];
+
+        const response = await handleIngestEvidence(request, env, tenantId);
+
+        const elapsed = Date.now() - startTime;
+        response.headers.set('X-Worker-Latency', `${elapsed}ms`);
+        return response;
+      }
+
+      // Route: GET /api/evidence/{tenantId}/{evidenceId}
+      if (url.pathname.match(/^\/api\/evidence\/[^/]+\/[^/]+$/) && request.method === 'GET') {
+        const pathParts = url.pathname.split('/');
+        const tenantId = pathParts[3];
+        const evidenceId = pathParts[4];
+
+        const response = await handleGetEvidence(request, env, tenantId, evidenceId);
+
+        const elapsed = Date.now() - startTime;
+        response.headers.set('X-Worker-Latency', `${elapsed}ms`);
+        return response;
+      }
+
+      // Route: POST /api/evidence/export/{tenantId}
+      if (url.pathname.match(/^\/api\/evidence\/export\/[^/]+$/) && request.method === 'POST') {
+        const pathParts = url.pathname.split('/');
+        const tenantId = pathParts[4];
+
+        const response = await handleExportEvidence(request, env, tenantId);
+
+        const elapsed = Date.now() - startTime;
+        response.headers.set('X-Worker-Latency', `${elapsed}ms`);
+        return response;
       }
 
       // Health check
@@ -178,6 +234,9 @@ export default {
               '/api/policies/{tenantId}/{policyId} (GET)',
               '/api/cache/invalidate/{tenantId}/{policyId} (DELETE)',
               '/api/cache/invalidate/tenant/{tenantId} (POST)',
+              '/api/evidence/ingest/{tenantId} (POST)',
+              '/api/evidence/{tenantId}/{evidenceId} (GET)',
+              '/api/evidence/export/{tenantId} (POST)',
             ],
           }),
           {

@@ -238,7 +238,7 @@ describe('evidence archival edge cases', () => {
   });
 
   it('handles rapid archive/unarchive operations', () => {
-    let evidence = { id: 'ev-008', archived_at: undefined };
+    let evidence: { id: string; archived_at: string | undefined } = { id: 'ev-008', archived_at: undefined };
 
     // Archive
     evidence = { ...evidence, archived_at: '2026-07-20T14:00:00Z' };

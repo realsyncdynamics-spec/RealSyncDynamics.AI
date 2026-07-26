@@ -19,6 +19,20 @@
 
 import { handleVerifyJwt } from './verify-jwt/index.js';
 
+// Cloudflare Workers environment types
+// (These are provided by Cloudflare at runtime; TypeScript needs the definitions)
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
+interface R2Bucket {
+  put(key: string, value: ReadableStream | ArrayBuffer | string): Promise<void>;
+  get(key: string): Promise<ReadableStream | null>;
+  delete(key: string): Promise<void>;
+}
+
 export interface WorkersEnv {
   SUPABASE_JWT_SECRET: string;
   SUPABASE_URL: string;

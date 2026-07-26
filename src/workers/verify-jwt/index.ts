@@ -29,6 +29,13 @@
  * This maintains security: Worker is stateless, tenant isolation happens in DB layer.
  */
 
+// Cloudflare Workers environment types
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  put(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
 interface Env {
   SUPABASE_JWT_SECRET: string;
   SUPABASE_URL: string;

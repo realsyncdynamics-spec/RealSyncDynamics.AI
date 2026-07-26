@@ -42,6 +42,19 @@ on:
       - '_redirects'
       - '_headers'
       - '.github/workflows/deploy-cloudflare-pages.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'wrangler.toml'
+      - '_redirects'
+      - '_headers'
+      - '.github/workflows/deploy-cloudflare-pages.yml'
   workflow_dispatch:
 
 concurrency:

@@ -9,33 +9,23 @@ let aiClient: GoogleGenAI | null = null;
  * Only warns in dev mode to avoid console spam in production.
  */
 export function validateGeminiConfig(): boolean {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-    if (import.meta.env.DEV) {
-      console.warn(
-        '[gemini] GEMINI_API_KEY is not set. Gemini-backed features will be ' +
-        'disabled. Anthropic / Ollama / OpenAI providers (via Edge Functions) ' +
-        'are unaffected.'
-      );
-    }
-    return false;
+  if (import.meta.env.DEV) {
+    console.warn(
+      '[gemini] Gemini-backed features require Edge Function routing. ' +
+      'Anthropic / Ollama / OpenAI providers (via Edge Functions) ' +
+      'are recommended for production.'
+    );
   }
-  return true;
+  return false;
 }
 
 /**
- * Hard fetch — throws when Gemini is not configured. Use only inside callers
- * that explicitly need the Gemini SDK; never at module import time.
+ * Deprecated: Gemini client initialization is not supported in client code.
+ * Call Edge Functions instead.
  */
 export function getGeminiAI(): GoogleGenAI {
-  if (!aiClient) {
-    if (!validateGeminiConfig()) {
-      throw new Error(
-        'Gemini ist auf diesem Deployment nicht konfiguriert. ' +
-        'Setze GEMINI_API_KEY in den Build-Secrets, oder nutze einen anderen Provider.'
-      );
-    }
-    aiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-  }
-  return aiClient;
+  throw new Error(
+    'Gemini SDK is not available in client code. ' +
+    'Call supabase.functions.invoke("ai-invoke") instead.'
+  );
 }

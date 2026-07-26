@@ -5,26 +5,23 @@
  * Tests: reproducibility verification via REST endpoint
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-// Integrationstest: braucht ein echtes Supabase (Insert/Select gegen
-// audit_determinism_tests). Ohne Credentials im Env sauber skippen, statt
-// beim createClient() in beforeAll die ganze Suite crashen zu lassen.
-const hasSupabase = Boolean(SUPABASE_URL && SERVICE_KEY);
+// Integration suite: requires a live Supabase connection (SUPABASE_URL +
+// SUPABASE_SERVICE_ROLE_KEY). In the unit-test CI job these env vars are not
+// provided, so the suite skips itself instead of failing the build. It runs
+// only in environments where a real database is available (e.g. test:db).
+const hasSupabaseEnv = Boolean(SUPABASE_URL && SERVICE_KEY);
 
-describe.skipIf(!hasSupabase)('Gate 2: Determinism Test API', () => {
-  // Untyped client: no generated Database types are wired into the test env,
-  // so we pin the schema generic to `any`. Without this, supabase-js resolves
-  // unknown tables (e.g. audit_determinism_tests) to `never`, breaking insert
-  // overloads and column access on selected rows.
-  let client: ReturnType<typeof createClient<any>>;
+describe.skipIf(!hasSupabaseEnv)('Gate 2: Determinism Test API', () => {
+  let client: ReturnType<typeof createClient>;
 
   beforeAll(() => {
-    client = createClient<any>(SUPABASE_URL, SERVICE_KEY);
+    client = createClient(SUPABASE_URL, SERVICE_KEY);
   });
 
   it('should verify determinism for golden fixture with consistent hashes', async () => {
@@ -62,7 +59,7 @@ describe.skipIf(!hasSupabase)('Gate 2: Determinism Test API', () => {
           policy_pack_hash: 'policy123',
           execution_started_at: new Date().toISOString(),
           execution_ended_at: new Date().toISOString(),
-        }))
+        })) as any
       )
       .select();
 
@@ -77,7 +74,7 @@ describe.skipIf(!hasSupabase)('Gate 2: Determinism Test API', () => {
       .order('test_cycle', { ascending: true });
 
     // Assert consistency
-    const hashes = cycles.data || [];
+    const hashes = (cycles.data as Array<{ findings_hash: string; decision_hash: string }>) || [];
     const uniqueFindingsHashes = new Set(hashes.map((c) => c.findings_hash));
     const uniqueDecisionHashes = new Set(hashes.map((c) => c.decision_hash));
 
@@ -120,7 +117,7 @@ describe.skipIf(!hasSupabase)('Gate 2: Determinism Test API', () => {
           policy_pack_hash: 'policy123',
           execution_started_at: new Date().toISOString(),
           execution_ended_at: new Date().toISOString(),
-        }))
+        })) as any
       )
       .select();
 
@@ -129,7 +126,7 @@ describe.skipIf(!hasSupabase)('Gate 2: Determinism Test API', () => {
       .select('findings_hash, decision_hash')
       .eq('fixture_id', fixtureId);
 
-    const hashes = cycles.data || [];
+    const hashes = (cycles.data as Array<{ findings_hash: string; decision_hash: string }>) || [];
     const uniqueFindingsHashes = new Set(hashes.map((c) => c.findings_hash));
 
     expect(uniqueFindingsHashes.size).toBeGreaterThan(1); // Non-deterministic

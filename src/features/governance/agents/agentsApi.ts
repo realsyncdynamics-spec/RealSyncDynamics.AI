@@ -37,6 +37,11 @@ export interface AgentRunRow {
   status: string;
   summary: string;
   created_at: string;
+  // Full run detail (returned by enterprise-ai-os-agent-runs-list). Optional so
+  // older cached responses without these fields still typecheck.
+  findings?: Array<Record<string, unknown>>;
+  recommendations?: Array<Record<string, unknown>>;
+  metadata?: Record<string, unknown>;
 }
 
 export const AUTONOMY_LABELS: Record<AgentAutonomyLevel, string> = {
@@ -52,6 +57,25 @@ export const AGENT_STATUS_LABELS: Record<AgentStatus, string> = {
   experimental: 'Experimentell',
   requires_configuration: 'Konfiguration nötig',
 };
+
+/**
+ * Adapts a stored history row into the AgentRunResult shape rendered by
+ * AgentRunOutput, so a past run can be re-opened from the history list.
+ * Missing detail fields (older rows) degrade to empty lists.
+ */
+export function runRowToResult(row: AgentRunRow): AgentRunResult {
+  return {
+    agentId: row.agent_id as AgentId,
+    status: (row.status as AgentRunResult['status']) ?? 'success',
+    summary: row.summary ?? '',
+    findings: row.findings ?? [],
+    recommendations: row.recommendations ?? [],
+    auditEvents: [],
+    metadata: row.metadata ?? {},
+    run_id: row.id,
+    persist_error: null,
+  };
+}
 
 /** Calls `enterprise-ai-os-agents-run`. */
 export async function runAgent(input: {

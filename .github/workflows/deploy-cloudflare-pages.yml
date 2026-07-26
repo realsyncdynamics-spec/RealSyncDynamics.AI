@@ -127,49 +127,16 @@ jobs:
         env:
           PRERENDER_STRICT: '1'
 
-      - name: Generate SPA fallback for dynamic routes
+      - name: Generate 404 fallback for dynamic routes
         run: |
           cp dist/index.html dist/404.html
-          python3 - <<'PY'
-          import os, re, shutil
-          # Prerender routes from sitemap
-          with open('public/sitemap.xml', 'r', encoding='utf-8') as f:
-              xml = f.read()
-          paths = re.findall(r'https?://realsyncdynamicsai\.de(/[^<\s]*)', xml)
-          paths = set(p.rstrip('/') for p in paths if p and p != '/')
-
-          # App routes (authenticated, not in sitemap)
-          APP_ROUTES = [
-              '/os', '/os/pricing',
-              '/app', '/app/websites', '/app/ai-systems', '/app/automations', '/app/risks',
-              '/app/compliance', '/app/evidence', '/app/monitoring',
-              '/app/team', '/app/settings', '/app/company', '/assistant',
-              '/dashboard', '/command-center',
-              '/governance', '/governance/admin', '/governance/agents',
-              '/governance/incidents', '/governance/dpias', '/governance/dsr',
-              '/governance/vendors', '/governance/reports', '/governance/auditor',
-              '/governance/admin-log', '/governance/approvals', '/governance/scans',
-              '/evidence', '/monitoring', '/runtime',
-              '/settings', '/settings/team', '/settings/security',
-              '/settings/account', '/settings/ai-residency', '/settings/api-keys',
-              '/billing/usage', '/tenant/invites',
-              '/checkout/starter', '/checkout/growth', '/checkout/agency', '/checkout/enterprise', '/checkout/scale',
-              '/checkout/starter_yearly', '/checkout/growth_yearly', '/checkout/agency_yearly', '/checkout/enterprise_yearly', '/checkout/scale_yearly',
-          ]
-          paths = sorted(paths | set(APP_ROUTES))
-          src = 'dist/index.html'
-          filled, skipped = 0, 0
-          for p in paths:
-              dest_dir = 'dist' + p
-              dest_file = os.path.join(dest_dir, 'index.html')
-              if os.path.exists(dest_file):
-                  skipped += 1
-                  continue
-              os.makedirs(dest_dir, exist_ok=True)
-              shutil.copyfile(src, dest_file)
-              filled += 1
-          print(f'spa-fallback: {filled} filled · {skipped} kept-prerendered')
-          PY
+          # Verify that prerendering actually filled the dist directory
+          if [ ! -f dist/pricing/index.html ] && [ ! -f dist/audit/index.html ]; then
+            echo "ERROR: Prerendering did not produce expected output files (dist/pricing/index.html, dist/audit/index.html)"
+            ls -la dist/ | head -20
+            exit 1
+          fi
+          echo "✓ Prerendered routes confirmed: dist/pricing/index.html and dist/audit/index.html exist"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

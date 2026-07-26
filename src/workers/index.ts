@@ -28,6 +28,7 @@ import {
   handleGetEvidence,
   handleExportEvidence,
 } from './r2-evidence/index.js';
+import { initializeSentry, withObservability, measureOperation } from './observability.js';
 
 // Cloudflare Workers environment types
 // (These are provided by Cloudflare at runtime; TypeScript needs the definitions)
@@ -66,9 +67,23 @@ export interface WorkersEnv {
   SUPABASE_JWT_SECRET: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  SENTRY_DSN?: string;
   POLICY_CACHE: KVNamespace;
   SESSION_CACHE: KVNamespace;
   EVIDENCE_VAULT: R2Bucket;
+  ANALYTICS_ENGINE?: Record<string, unknown>;
+}
+
+// Initialize Sentry on module load (once per Worker instance)
+if (typeof globalThis !== 'undefined') {
+  const g = globalThis as Record<string, unknown>;
+  if (!g.__sentry_initialized) {
+    const sentryDsn = (g.__env as Record<string, string>)?.SENTRY_DSN;
+    if (sentryDsn) {
+      initializeSentry({ SENTRY_DSN: sentryDsn });
+    }
+    g.__sentry_initialized = true;
+  }
 }
 
 /**

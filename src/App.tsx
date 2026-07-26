@@ -75,6 +75,7 @@ import { EnterpriseAiOs } from './pages/EnterpriseAiOs';
 import { EnterpriseAiOsFoundingAccess } from './pages/EnterpriseAiOsFoundingAccess';
 import { EnterpriseAiOsDashboard } from './pages/EnterpriseAiOsDashboard';
 import { EnhancedGovernanceDashboard } from './pages/EnhancedGovernanceDashboard';
+import { ComponentShowcase } from './pages/ComponentShowcase';
 import { AiCommandCenterShowcase } from './pages/AiCommandCenterShowcase';
 import { EnterpriseAiOsDiscovery } from './pages/EnterpriseAiOsDiscovery';
 import { EnterpriseLanding } from './pages/EnterpriseLanding';
@@ -543,6 +544,8 @@ function RoutesWithTracking() {
       <Route path="/dashboard/enterprise-ai-os" element={<EnterpriseAiOsDashboard />} />
       {/* Enhanced Governance Dashboard — UX-verbesserte Version mit Sidebar-Gruppen, KPI-Hierarchie, AI-Assistant */}
       <Route path="/dashboard/governance-enhanced" element={<EnhancedGovernanceDashboard />} />
+      {/* Component Showcase — Gallery aller neuen UX-Komponenten */}
+      <Route path="/showcase/components" element={<ComponentShowcase />} />
       {/* AI Command Center — kompakte Operating-Layer-UI (frontend-only, no backend) */}
       <Route path="/command-center" element={<Navigate to="/assistant" replace />} />
       <Route path="/ai-command-center" element={<Navigate to="/assistant" replace />} />

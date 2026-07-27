@@ -17,11 +17,14 @@ import {
   fetchTenantAssets,
   fetchTenantPolicies,
   fetchFrameworkControls,
+  fetchTenantMappings,
   type DbGovernanceEvent,
   type DbGovernanceAsset,
   type DbGovernancePolicy,
-  type DbFrameworkControl
+  type DbFrameworkControl,
+  type DbAssetControlMapping
 } from "./governanceApi";
+import { computeAssetCoverage } from "./assetCoverage";
 import { useTenant } from '../../core/access/TenantProvider';
 
 function riskClass(level: GovernanceRiskLevel) {
@@ -46,12 +49,28 @@ function scoreClass(score: number) {
   return "text-emerald-400";
 }
 
+function mappingStatusClass(status: DbAssetControlMapping['status']) {
+  switch (status) {
+    case "implemented":
+      return "text-emerald-400 border-emerald-400/40 bg-emerald-400/10";
+    case "gap":
+      return "text-red-400 border-red-400/40 bg-red-400/10";
+    case "in_progress":
+      return "text-amber-400 border-amber-400/40 bg-amber-400/10";
+    case "not_applicable":
+      return "text-silver-400 border-silver-700/40 bg-silver-900/30";
+    default:
+      return "text-silver-300 border-silver-700/40 bg-silver-900/30";
+  }
+}
+
 export function GovernanceRuntimeDashboard() {
   const tenant = useTenant();
   const [events, setEvents] = useState<DbGovernanceEvent[]>([]);
   const [assets, setAssets] = useState<DbGovernanceAsset[]>([]);
   const [policies, setPolicies] = useState<DbGovernancePolicy[]>([]);
   const [controls, setControls] = useState<DbFrameworkControl[]>([]);
+  const [mappings, setMappings] = useState<DbAssetControlMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,16 +85,18 @@ export function GovernanceRuntimeDashboard() {
         setLoading(true);
         setError(null);
         const tenantId = tenant.activeTenantId!;
-        const [eventsData, assetsData, policiesData, controlsData] = await Promise.all([
+        const [eventsData, assetsData, policiesData, controlsData, mappingsData] = await Promise.all([
           fetchTenantEvents(tenantId, 50),
           fetchTenantAssets(tenantId),
           fetchTenantPolicies(tenantId),
-          fetchFrameworkControls()
+          fetchFrameworkControls(),
+          fetchTenantMappings(tenantId)
         ]);
         setEvents(eventsData);
         setAssets(assetsData);
         setPolicies(policiesData);
         setControls(controlsData);
+        setMappings(mappingsData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load governance data');
         console.error('Error loading governance dashboard:', err);
@@ -94,6 +115,8 @@ export function GovernanceRuntimeDashboard() {
   const activePolicies = policies.filter(
     (policy) => policy.enabled
   ).length;
+
+  const assetCoverage = computeAssetCoverage(assets, mappings);
 
   if (!tenant?.activeTenantId) {
     return (
@@ -347,6 +370,66 @@ export function GovernanceRuntimeDashboard() {
               </div>
             ) : (
               <p className="text-xs text-silver-400">No framework controls available</p>
+            )}
+          </Panel>
+        </div>
+
+        <div className="mt-5">
+          <Panel icon={<CheckCircle2 />} title="Auto-Mapping: Asset → Control-Status">
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="border border-silver-700/30 bg-obsidian-950/60 p-4 animate-pulse">
+                    <div className="h-4 bg-silver-700/30 rounded w-1/3 mb-3"></div>
+                    <div className="h-2 bg-silver-700/30 rounded w-full"></div>
+                  </div>
+                ))}
+              </div>
+            ) : assetCoverage.length > 0 ? (
+              <div className="space-y-3">
+                {assetCoverage.map(({ asset, mappings: assetMappings, implemented, gaps, total, coveragePercent }) => (
+                  <div
+                    key={asset.id}
+                    className="border border-silver-700/30 bg-obsidian-950/60 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="font-bold text-sm text-titanium-50">{asset.name}</div>
+                      <div className="font-mono text-xs text-silver-400">
+                        {implemented}/{total} Controls
+                      </div>
+                    </div>
+
+                    <div className="mt-3 h-2 bg-silver-900/60 border border-silver-700/30 overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-400/70"
+                        style={{ width: `${coveragePercent}%` }}
+                      />
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {gaps > 0 && (
+                        <span className={`text-[11px] font-mono uppercase tracking-wider px-2 py-1 border ${mappingStatusClass('gap')}`}>
+                          {gaps} gap{gaps > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {assetMappings.map((m) => {
+                        const control = controls.find((c) => c.id === m.control_id);
+                        return control ? (
+                          <span
+                            key={m.id}
+                            className={`text-[11px] font-mono uppercase tracking-wider px-2 py-1 border ${mappingStatusClass(m.status)}`}
+                            title={`${control.framework} · ${control.control_code}: ${m.status}`}
+                          >
+                            {control.control_code}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-silver-400">Noch keine Control-Mappings vorhanden. Mappings werden erzeugt, sobald Assets Framework-Controls zugeordnet werden.</p>
             )}
           </Panel>
         </div>

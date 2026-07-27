@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { LandingNavbar } from '../components/LandingNavbar';
-import { Footer } from '../components/sections/Footer';
-import { SovereignButton } from '../components/SovereignButton';
+import { PublicFooter } from '../enterprise-os/layout/PublicFooter';
 import { Check, MessageCircle, Users, Shield, Zap } from 'lucide-react';
 
 /**
@@ -188,16 +187,18 @@ export function WhatsAppPricingPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <SovereignButton variant="primary" size="lg" asChild>
-            <Link to="/checkout/growth?channel=whatsapp&source=pricing&pilot=true">
-              14 Tage kostenlos testen
-            </Link>
-          </SovereignButton>
-          <SovereignButton variant="secondary" size="lg" asChild>
-            <Link to="/contact-sales?channel=whatsapp&source=pricing">
-              Enterprise-Demo
-            </Link>
-          </SovereignButton>
+          <Link
+            to="/checkout/growth?channel=whatsapp&source=pricing&pilot=true"
+            className="px-8 py-3 bg-security-600 hover:bg-security-700 text-white font-semibold rounded-lg transition-colors inline-block text-center"
+          >
+            14 Tage kostenlos testen
+          </Link>
+          <Link
+            to="/contact-sales?channel=whatsapp&source=pricing"
+            className="px-8 py-3 bg-obsidian-800 border border-titanium-600 hover:bg-obsidian-700 text-titanium-100 font-semibold rounded-lg transition-colors inline-block text-center"
+          >
+            Enterprise-Demo
+          </Link>
         </div>
       </section>
 
@@ -279,14 +280,16 @@ export function WhatsAppPricingPage() {
                   ))}
                 </ul>
 
-                <SovereignButton
-                  variant={tier.recommended ? 'primary' : 'secondary'}
-                  size="sm"
-                  className="w-full"
-                  asChild
+                <Link
+                  to={tier.cta.href}
+                  className={`block px-4 py-2 rounded-lg font-semibold transition-colors text-center text-sm ${
+                    tier.recommended
+                      ? 'bg-security-600 hover:bg-security-700 text-white'
+                      : 'bg-obsidian-800 border border-titanium-600 hover:bg-obsidian-700 text-titanium-100'
+                  }`}
                 >
-                  <Link to={tier.cta.href}>{tier.cta.label}</Link>
-                </SovereignButton>
+                  {tier.cta.label}
+                </Link>
               </div>
             </div>
           ))}
@@ -368,20 +371,22 @@ export function WhatsAppPricingPage() {
           14 Tage kostenlos testen. Keine Kreditkarte erforderlich. Monatlich kündbar.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <SovereignButton variant="primary" size="lg" asChild>
-            <Link to="/checkout/growth?channel=whatsapp&source=pricing&pilot=true">
-              Kostenlos starten
-            </Link>
-          </SovereignButton>
-          <SovereignButton variant="secondary" size="lg" asChild>
-            <Link to="/contact-sales?channel=whatsapp&source=pricing">
-              Mit Sales Team sprechen
-            </Link>
-          </SovereignButton>
+          <Link
+            to="/checkout/growth?channel=whatsapp&source=pricing&pilot=true"
+            className="px-8 py-3 bg-security-600 hover:bg-security-700 text-white font-semibold rounded-lg transition-colors inline-block text-center"
+          >
+            Kostenlos starten
+          </Link>
+          <Link
+            to="/contact-sales?channel=whatsapp&source=pricing"
+            className="px-8 py-3 bg-obsidian-800 border border-titanium-600 hover:bg-obsidian-700 text-titanium-100 font-semibold rounded-lg transition-colors inline-block text-center"
+          >
+            Mit Sales Team sprechen
+          </Link>
         </div>
       </section>
 
-      <Footer />
+      <PublicFooter />
     </div>
   );
 }

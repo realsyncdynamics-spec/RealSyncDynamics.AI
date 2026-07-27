@@ -12,7 +12,7 @@ on:
       - 'package-lock.json'
       - 'Dockerfile.frontend'
       - 'docker-compose.yml'
-      - '.env.docker'
+      - '.env.docker.example'
       - 'traefik/**'
       - 'scripts/deploy.sh'
       - '.github/workflows/docker-deploy.yml'
@@ -146,7 +146,10 @@ jobs:
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
             "cd ${{ secrets.DEPLOY_PATH }} && \
              git pull origin main || git pull origin master && \
-             cp .env.docker .env && \
+             if [ ! -f .env ]; then \
+               echo 'FEHLER: .env fehlt auf dem VPS. Einmalig anlegen: cp .env.docker.example .env und Werte eintragen.'; \
+               exit 1; \
+             fi && \
              docker-compose pull && \
              docker-compose up -d --remove-orphans"
         env:

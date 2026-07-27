@@ -138,17 +138,22 @@ check_database() {
   fi
 }
 
-# Check volume sizes
-check_volume_sizes() {
+# Check data directory sizes
+# Der Stack nutzt Bind-Mounts (./data/<dienst>), keine named volumes — eine
+# Abfrage über `docker volume` liefe ins Leere.
+check_data_sizes() {
   echo ""
-  echo "=== Volume Sizes ==="
+  echo "=== Data Directory Sizes ==="
 
-  declare -a volumes=("ollama_data" "hermes_data" "anythingllm_data" "uptime_kuma_data")
+  declare -a data_dirs=("data/ollama" "data/hermes" "data/anythingllm" "data/uptime-kuma")
 
-  for volume in "${volumes[@]}"; do
-    if docker volume ls | grep -q "$volume"; then
-      local size=$(docker run --rm -v "$volume":/data alpine du -sh /data 2>/dev/null | cut -f1)
-      log_info "Volume $volume: $size"
+  for dir in "${data_dirs[@]}"; do
+    if [[ -d "$dir" ]]; then
+      local size
+      size=$(du -sh "$dir" 2>/dev/null | cut -f1)
+      log_info "$dir: $size"
+    else
+      log_warn "$dir: nicht vorhanden"
     fi
   done
 }
@@ -201,7 +206,7 @@ main() {
   check_endpoints
   check_disk_space
   check_resources
-  check_volume_sizes
+  check_data_sizes
   check_certificates
   check_database
   check_logs

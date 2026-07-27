@@ -50,7 +50,7 @@ validate_environment() {
   log_info "Validating environment..."
 
   if [[ ! -f "$PROJECT_ROOT/.env" ]]; then
-    log_error ".env file not found. Copy .env.docker to .env and fill in values."
+    log_error ".env file not found. Copy .env.docker.example to .env and fill in values."
     exit 1
   fi
 

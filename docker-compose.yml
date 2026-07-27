@@ -280,14 +280,9 @@ networks:
       config:
         - subnet: 172.21.0.0/16
 
-volumes:
-  traefik_acme:
-    name: traefik_acme
-  ollama_data:
-    name: ollama_data
-  hermes_data:
-    name: hermes_data
-  anythingllm_data:
-    name: anythingllm_data
-  uptime_kuma_data:
-    name: uptime_kuma_data
+# Bewusst keine named volumes: alle Dienste mounten Bind-Mounts unter ./data
+# bzw. ./traefik. Zuvor deklarierte, aber von keinem Dienst referenzierte
+# Volumes (traefik_acme, ollama_data, …) haben backup.sh und healthcheck.sh in
+# die Irre geführt — die haben leere Volumes gesichert statt der echten Daten.
+# Wer hier wieder Volumes einführt, muss DATA_DIRS in scripts/backup.sh und
+# scripts/restore.sh mitziehen.

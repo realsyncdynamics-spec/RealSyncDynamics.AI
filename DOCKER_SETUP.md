@@ -64,7 +64,7 @@ Traefik (Reverse Proxy, Port 80/443)
 
 ```bash
 # Copy environment template
-cp .env.docker .env
+cp .env.docker.example .env
 
 # Edit .env with your values
 nano .env
@@ -105,7 +105,7 @@ cd /opt/realsyncdynamics
 git clone https://github.com/realsyncdynamics-spec/realsyncdynamics.ai.git .
 
 # Copy environment template
-cp .env.docker .env
+cp .env.docker.example .env
 
 # Edit with real values
 nano .env
@@ -220,13 +220,25 @@ ls backups/
 # Restore from backup
 ./scripts/restore.sh backups/backup-20260726_120000.tar.gz
 
+# Als root bzw. mit sudo ausführen — die Archive tragen die numerischen UIDs
+# der Container-Prozesse.
+
 # The script will:
 # 1. Stop containers
-# 2. Restore volumes
-# 3. Restore configuration
+# 2. Restore data directories (./data/*)
+# 3. Restore configuration (.env, docker-compose.yml, traefik/acme.json)
 # 4. Start containers
 # 5. Verify restore
 ```
+
+Der vorherige Stand wird nicht gelöscht, sondern beiseitegelegt:
+`data/<dienst>.pre-restore-<timestamp>` und `config-backup-<timestamp>`.
+
+> **Hinweis zu den Datenpfaden.** Der Stack nutzt Bind-Mounts unter `./data`,
+> keine named volumes. `scripts/backup.sh` und `scripts/restore.sh` führen die
+> Pfade in `DATA_DIRS`. Wer in `docker-compose.yml` auf named volumes umstellt,
+> muss beide Skripte mitziehen — sonst sichert das Backup ins Leere und meldet
+> trotzdem Erfolg.
 
 ### Update Models
 
@@ -353,10 +365,10 @@ docker-compose up -d frontend
 # Check disk usage
 df -h
 
-# Find large volumes
-docker volume ls -q | xargs -I {} sh -c 'echo "{}:"; docker run --rm -v {}:/data alpine du -sh /data'
+# Find large data directories (der Stack nutzt Bind-Mounts, keine Volumes)
+du -sh data/*
 
-# Clean up dangling volumes
+# Clean up dangling volumes (aus früheren Setups)
 docker volume prune
 
 # Clear old backups

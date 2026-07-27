@@ -1,20 +1,42 @@
 #!/bin/bash
 # scripts/backup.sh — Backup RealSyncDynamics.AI Data
 #
-# Creates backups of:
-#   - Database (Supabase)
-#   - Container volumes (Ollama, Hermes, AnythingLLM)
-#   - Configuration files
+# Sichert:
+#   - Nutzdaten der Container (Bind-Mounts unter ./data)
+#   - Traefik-Zustand (acme.json mit den ausgestellten Zertifikaten)
+#   - Konfiguration (.env, docker-compose.yml, traefik/*.yml)
+#   - Datenbank (Supabase) — derzeit nicht implementiert, siehe backup_database
+#
+# WICHTIG: Die Pfade hier müssen zu den Mounts in docker-compose.yml passen.
+# Der Stack nutzt Bind-Mounts (./data/<dienst>), keine named volumes — ein
+# Backup über `docker volume` würde leere oder gar keine Volumes sichern und
+# ein erfolgreiches Backup melden, das keine Nutzdaten enthält.
 #
 # Usage:
-#   ./scripts/backup.sh [backup-dir]
+#   ./scripts/backup.sh [project-root]
 
 set -euo pipefail
 
-BACKUP_ROOT="${1:-.}/backups"
+# Projektwurzel: Standard ist das übergeordnete Verzeichnis dieses Skripts,
+# damit der Aufruf aus jedem Arbeitsverzeichnis funktioniert.
+PROJECT_ROOT="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+cd "$PROJECT_ROOT"
+
+# Absolut halten: compress_backup wechselt das Verzeichnis, danach würden
+# relative Pfade auf ein Unterverzeichnis von sich selbst zeigen.
+BACKUP_ROOT="$(cd "$PROJECT_ROOT" && pwd)/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="$BACKUP_ROOT/backup-${TIMESTAMP}"
 RETAIN_DAYS="${BACKUP_RETENTION_DAYS:-30}"
+
+# Datenverzeichnisse — Spiegel der Bind-Mounts in docker-compose.yml.
+# ./data/hermes enthält ./data/hermes/data (n8n-SQLite) und wird mitgesichert.
+declare -a DATA_DIRS=(
+  "data/ollama"
+  "data/hermes"
+  "data/anythingllm"
+  "data/uptime-kuma"
+)
 
 # Colors
 GREEN='\033[0;32m'
@@ -42,35 +64,56 @@ log_warn() {
 mkdir -p "$BACKUP_DIR"
 log_info "Backup directory: $BACKUP_DIR"
 
-# Backup volumes
-backup_volumes() {
-  log_info "Backing up Docker volumes..."
+# Backup der Container-Nutzdaten (Bind-Mounts)
+backup_data() {
+  log_info "Backing up container data directories..."
 
-  declare -a volumes=("ollama_data" "hermes_data" "anythingllm_data" "uptime_kuma_data")
+  local found=0
 
-  for volume in "${volumes[@]}"; do
-    log_info "Backing up volume: $volume"
-    if docker volume ls | grep -q "$volume"; then
-      docker run --rm \
-        -v "$volume":/data \
-        -v "$BACKUP_DIR":/backup \
-        alpine tar czf "/backup/${volume}-${TIMESTAMP}.tar.gz" -C / data/
-      log_info "✓ Volume $volume backed up"
-    else
-      log_warn "✗ Volume $volume not found"
+  for dir in "${DATA_DIRS[@]}"; do
+    local name
+    name=$(basename "$dir")
+
+    if [[ ! -d "$dir" ]]; then
+      log_warn "✗ Data directory not found: $dir"
+      continue
     fi
+
+    log_info "Backing up: $dir"
+    # --numeric-owner: die Container laufen unter eigenen UIDs (z.B. n8n als
+    # 1000). Namensauflösung auf dem Host würde beim Restore fremde Konten
+    # treffen.
+    tar czpf "$BACKUP_DIR/${name}-${TIMESTAMP}.tar.gz" \
+      --numeric-owner -C "$PROJECT_ROOT" "$dir"
+    found=$((found + 1))
+    log_info "✓ $dir backed up"
   done
+
+  if [[ $found -eq 0 ]]; then
+    log_error "Kein einziges Datenverzeichnis gefunden — Backup wäre leer."
+    return 1
+  fi
 }
 
 # Backup configuration
 backup_config() {
   log_info "Backing up configuration files..."
 
-  # Copy important config files
   mkdir -p "$BACKUP_DIR/config"
   cp .env "$BACKUP_DIR/config/" 2>/dev/null || log_warn "No .env file found"
   cp docker-compose.yml "$BACKUP_DIR/config/" 2>/dev/null || true
   cp traefik/*.yml "$BACKUP_DIR/config/" 2>/dev/null || true
+
+  # acme.json enthält die ausgestellten Let's-Encrypt-Zertifikate. Ohne sie
+  # fordert Traefik nach einem Restore alles neu an und läuft dabei in die
+  # Rate-Limits von Let's Encrypt.
+  if [[ -f traefik/acme.json ]]; then
+    cp traefik/acme.json "$BACKUP_DIR/config/"
+    chmod 600 "$BACKUP_DIR/config/acme.json"
+    log_info "✓ traefik/acme.json backed up"
+  else
+    log_warn "No traefik/acme.json found"
+  fi
 
   log_info "✓ Configuration backed up"
 }
@@ -92,10 +135,12 @@ backup_database() {
 # Compress backup
 compress_backup() {
   log_info "Compressing backup..."
-  cd "$BACKUP_ROOT"
-  tar czf "backup-${TIMESTAMP}.tar.gz" "backup-${TIMESTAMP}/"
-  rm -rf "backup-${TIMESTAMP}/"
-  log_info "✓ Backup compressed: backup-${TIMESTAMP}.tar.gz"
+  # Unterverzeichnisname bleibt im Archiv erhalten (backup-TIMESTAMP/...),
+  # restore.sh setzt genau darauf auf.
+  tar czf "$BACKUP_ROOT/backup-${TIMESTAMP}.tar.gz" \
+    -C "$BACKUP_ROOT" "backup-${TIMESTAMP}"
+  rm -rf "$BACKUP_DIR"
+  log_info "✓ Backup compressed: $BACKUP_ROOT/backup-${TIMESTAMP}.tar.gz"
 }
 
 # Upload to S3 (optional)
@@ -121,7 +166,7 @@ upload_to_s3() {
 cleanup_old_backups() {
   log_info "Cleaning up backups older than $RETAIN_DAYS days..."
 
-  find "$BACKUP_ROOT" -name "backup-*.tar.gz" -type f -mtime "+$RETAIN_DAYS" -delete
+  find "$BACKUP_ROOT" -maxdepth 1 -name "backup-*.tar.gz" -type f -mtime "+$RETAIN_DAYS" -delete
 
   log_info "✓ Old backups cleaned up"
 }
@@ -131,10 +176,13 @@ main() {
   log_info "=========================================="
   log_info "RealSyncDynamics.AI Backup"
   log_info "Timestamp: $TIMESTAMP"
+  log_info "Project root: $PROJECT_ROOT"
   log_info "=========================================="
 
-  backup_volumes || log_error "Volume backup failed"
-  backup_config || log_error "Config backup failed"
+  # Kein `|| log_error`: ein Backup ohne Nutzdaten darf nicht als Erfolg
+  # durchgehen — sonst fällt der Defekt erst beim Restore auf.
+  backup_data || { log_error "Data backup failed"; exit 1; }
+  backup_config || { log_error "Config backup failed"; exit 1; }
   backup_database || log_warn "Database backup warning"
   compress_backup || { log_error "Compression failed"; exit 1; }
   upload_to_s3 || log_warn "S3 upload warning"

@@ -1,14 +1,30 @@
 #!/bin/bash
 # scripts/restore.sh — Restore RealSyncDynamics.AI from Backup
 #
+# Gegenstück zu scripts/backup.sh. Stellt die Bind-Mounts unter ./data sowie
+# die Konfiguration wieder her — dieselben Pfade, die docker-compose.yml
+# tatsächlich mountet.
+#
+# Als root bzw. mit sudo ausführen: die Archive tragen die numerischen UIDs
+# der Container-Prozesse, die sonst nicht gesetzt werden können.
+#
 # Usage:
-#   ./scripts/restore.sh backup-20260726_120000.tar.gz
+#   ./scripts/restore.sh backups/backup-20260726_120000.tar.gz
 
 set -euo pipefail
 
 BACKUP_FILE="${1:-}"
-RESTORE_DIR="${RESTORE_PATH:-.}"
+PROJECT_ROOT="${RESTORE_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+TEMP_DIR=""
+
+# Muss zu DATA_DIRS in backup.sh passen.
+declare -a DATA_DIRS=(
+  "data/ollama"
+  "data/hermes"
+  "data/anythingllm"
+  "data/uptime-kuma"
+)
 
 # Colors
 GREEN='\033[0;32m'
@@ -32,10 +48,19 @@ log_warn() {
   echo -e "${YELLOW}[WARN]${NC} $*"
 }
 
+# Docker Compose v1 und v2 unterstützen
+compose() {
+  if docker compose version &> /dev/null; then
+    docker compose "$@"
+  else
+    docker-compose "$@"
+  fi
+}
+
 # Validation
 validate_backup() {
   if [[ -z "$BACKUP_FILE" ]]; then
-    log_error "Usage: $0 backup-YYYYMMDD_HHMMSS.tar.gz"
+    log_error "Usage: $0 backups/backup-YYYYMMDD_HHMMSS.tar.gz"
     exit 1
   fi
 
@@ -55,76 +80,107 @@ validate_backup() {
 # Stop containers
 stop_containers() {
   log_info "Stopping containers..."
-  docker-compose down || log_warn "Some containers may not have stopped cleanly"
+  compose down || log_warn "Some containers may not have stopped cleanly"
   sleep 2
   log_info "✓ Containers stopped"
 }
 
 # Extract backup
+# Setzt TEMP_DIR. Bewusst keine Rückgabe über stdout: die log_*-Ausgaben
+# landen sonst in der Kommandosubstitution und verfälschen den Pfad.
 extract_backup() {
-  local temp_dir="$RESTORE_DIR/.restore-temp"
-  mkdir -p "$temp_dir"
+  TEMP_DIR="$PROJECT_ROOT/.restore-temp-${TIMESTAMP}"
+  mkdir -p "$TEMP_DIR"
 
   log_info "Extracting backup..."
-  tar xzf "$BACKUP_FILE" -C "$temp_dir"
+  tar xzf "$BACKUP_FILE" -C "$TEMP_DIR"
 
-  log_info "✓ Backup extracted to $temp_dir"
-  echo "$temp_dir"  # Return temp directory for next step
+  # Das Archiv enthält genau ein Verzeichnis backup-<timestamp>/
+  local inner
+  inner=$(find "$TEMP_DIR" -maxdepth 1 -mindepth 1 -type d -name 'backup-*' | head -n1)
+  if [[ -z "$inner" ]]; then
+    log_error "Unerwartetes Archivformat: kein backup-*/ Verzeichnis gefunden"
+    return 1
+  fi
+  TEMP_DIR="$inner"
+
+  log_info "✓ Backup extracted to $TEMP_DIR"
 }
 
-# Restore volumes
-restore_volumes() {
-  local temp_dir=$1
-  log_info "Restoring volumes..."
+# Restore der Bind-Mounts
+restore_data() {
+  log_info "Restoring container data directories..."
 
-  # Stop containers first
-  docker-compose down
+  local restored=0
 
-  # Remove old volumes
-  docker volume rm ollama_data hermes_data anythingllm_data uptime_kuma_data 2>/dev/null || true
+  for dir in "${DATA_DIRS[@]}"; do
+    local name
+    name=$(basename "$dir")
 
-  # Restore from backup
-  declare -a volumes=("ollama_data" "hermes_data" "anythingllm_data" "uptime_kuma_data")
+    local archive
+    archive=$(find "$TEMP_DIR" -maxdepth 1 -name "${name}-*.tar.gz" | head -n1)
 
-  for volume in "${volumes[@]}"; do
-    local backup_file="$temp_dir/backup-*/data/${volume}-*.tar.gz"
-    if ls $backup_file &>/dev/null; then
-      log_info "Restoring volume: $volume"
-      docker run --rm \
-        -v "$volume":/data \
-        -v "$temp_dir":/restore \
-        alpine tar xzf "/restore/backup-*/data/${volume}-"*.tar.gz -C /
-      log_info "✓ Volume $volume restored"
-    else
-      log_warn "✗ Volume backup not found: $volume"
+    if [[ -z "$archive" ]]; then
+      log_warn "✗ Kein Archiv im Backup für: $dir"
+      continue
     fi
+
+    log_info "Restoring: $dir"
+    # Altbestand beiseitelegen statt löschen — ein fehlgeschlagener Restore
+    # soll nicht auch noch den vorherigen Stand vernichten.
+    if [[ -d "$PROJECT_ROOT/$dir" ]]; then
+      mv "$PROJECT_ROOT/$dir" "$PROJECT_ROOT/${dir}.pre-restore-${TIMESTAMP}"
+    fi
+    mkdir -p "$(dirname "$PROJECT_ROOT/$dir")"
+    tar xzpf "$archive" --numeric-owner -C "$PROJECT_ROOT"
+    restored=$((restored + 1))
+    log_info "✓ $dir restored"
   done
+
+  if [[ $restored -eq 0 ]]; then
+    log_error "Kein einziges Datenverzeichnis wiederhergestellt."
+    return 1
+  fi
 }
 
 # Restore configuration
 restore_config() {
-  local temp_dir=$1
   log_info "Restoring configuration files..."
 
-  # Backup current config
-  mkdir -p "$RESTORE_DIR/config-backup-${TIMESTAMP}"
-  cp .env "$RESTORE_DIR/config-backup-${TIMESTAMP}/" 2>/dev/null || true
-  cp docker-compose.yml "$RESTORE_DIR/config-backup-${TIMESTAMP}/" 2>/dev/null || true
-
-  # Restore from backup
-  if [[ -d "$temp_dir/backup-"/config ]]; then
-    cp "$temp_dir/backup-"/config/.env . 2>/dev/null || log_warn "No .env in backup"
-    cp "$temp_dir/backup-"/config/docker-compose.yml . 2>/dev/null || log_warn "No docker-compose.yml in backup"
-    log_info "✓ Configuration restored"
-  else
+  local config_dir="$TEMP_DIR/config"
+  if [[ ! -d "$config_dir" ]]; then
     log_warn "✗ Configuration backup not found"
+    return 0
   fi
+
+  # Aktuellen Stand sichern
+  local keep="$PROJECT_ROOT/config-backup-${TIMESTAMP}"
+  mkdir -p "$keep"
+  cp "$PROJECT_ROOT/.env" "$keep/" 2>/dev/null || true
+  cp "$PROJECT_ROOT/docker-compose.yml" "$keep/" 2>/dev/null || true
+  cp "$PROJECT_ROOT/traefik/acme.json" "$keep/" 2>/dev/null || true
+
+  cp "$config_dir/.env" "$PROJECT_ROOT/" 2>/dev/null || log_warn "No .env in backup"
+  cp "$config_dir/docker-compose.yml" "$PROJECT_ROOT/" 2>/dev/null \
+    || log_warn "No docker-compose.yml in backup"
+
+  if [[ -f "$config_dir/acme.json" ]]; then
+    mkdir -p "$PROJECT_ROOT/traefik"
+    cp "$config_dir/acme.json" "$PROJECT_ROOT/traefik/acme.json"
+    # Traefik verweigert den Start, wenn acme.json weiter offen steht.
+    chmod 600 "$PROJECT_ROOT/traefik/acme.json"
+    log_info "✓ traefik/acme.json restored"
+  else
+    log_warn "No acme.json in backup — Traefik fordert Zertifikate neu an"
+  fi
+
+  log_info "✓ Configuration restored"
 }
 
 # Start containers
 start_containers() {
   log_info "Starting containers..."
-  docker-compose up -d --remove-orphans
+  compose up -d --remove-orphans
   sleep 5
   log_info "✓ Containers started"
 }
@@ -151,9 +207,11 @@ verify_restore() {
 
 # Cleanup
 cleanup() {
-  local temp_dir=$1
+  [[ -z "$TEMP_DIR" ]] && return 0
   log_info "Cleaning up temporary files..."
-  rm -rf "$temp_dir"
+  # Das Elternverzeichnis entfernen — TEMP_DIR zeigt nach extract_backup auf
+  # das innere backup-*/ Verzeichnis.
+  rm -rf "$(dirname "$TEMP_DIR")"
   log_info "✓ Cleanup completed"
 }
 
@@ -162,21 +220,24 @@ main() {
   log_info "=========================================="
   log_info "RealSyncDynamics.AI Restore"
   log_info "Backup file: $BACKUP_FILE"
+  log_info "Project root: $PROJECT_ROOT"
   log_info "=========================================="
 
-  validate_backup || exit 1
+  validate_backup
+  # Ab hier immer aufräumen, auch bei Abbruch.
+  trap cleanup EXIT
+
   stop_containers || exit 1
-  local temp_dir
-  temp_dir=$(extract_backup) || exit 1
-  restore_volumes "$temp_dir" || { log_error "Volume restore failed"; cleanup "$temp_dir"; exit 1; }
-  restore_config "$temp_dir" || log_warn "Config restore had issues"
-  start_containers || { cleanup "$temp_dir"; exit 1; }
-  verify_restore || { cleanup "$temp_dir"; exit 1; }
-  cleanup "$temp_dir" || log_warn "Cleanup warning"
+  extract_backup || exit 1
+  restore_data || { log_error "Data restore failed"; exit 1; }
+  restore_config || log_warn "Config restore had issues"
+  start_containers || exit 1
+  verify_restore || exit 1
 
   log_info "=========================================="
   log_info "✓ Restore completed successfully!"
-  log_info "Old config backed up to: config-backup-${TIMESTAMP}"
+  log_info "Vorheriger Stand liegt unter: config-backup-${TIMESTAMP}"
+  log_info "und data/<dienst>.pre-restore-${TIMESTAMP}"
   log_info "=========================================="
 }
 

@@ -15,7 +15,7 @@ const MATRIX_TIERS: { id: TierId; label: string }[] = [
 ];
 
 export function GovernanceModuleMatrix() {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
@@ -34,13 +34,15 @@ export function GovernanceModuleMatrix() {
         </div>
 
         {/* Expand/Collapse Button */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-titanium-700/50 hover:border-titanium-400 text-titanium-300 hover:text-titanium-50 transition-colors rounded-none"
-        >
-          <span>{isExpanded ? 'Module ausblenden' : 'Alle Module anzeigen'}</span>
-          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-titanium-700/50 hover:border-titanium-400 text-titanium-300 hover:text-titanium-50 transition-colors rounded-none"
+          >
+            <span>{isExpanded ? 'Module ausblenden' : 'Alle Module anzeigen'}</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
 
         {/* Matrix-Tabelle */}
         {isExpanded && (

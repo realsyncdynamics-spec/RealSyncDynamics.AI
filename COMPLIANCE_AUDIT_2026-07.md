@@ -100,6 +100,7 @@ Risiko, falls sie reaktiviert wird.
 | M-3 | CSP zusätzlich als echter Header in `public/_headers`, inkl. `frame-ancestors 'self'` | Build-Verifikation |
 | M-4 | `*.ingest.de.sentry.io` / `*.ingest.sentry.io` in `connect-src` ergänzt | Build-Verifikation |
 | N-2 | `base-uri 'self'`, `form-action 'self'`, `object-src 'none'` ergänzt | Build-Verifikation |
+| D-1 | Sentry als Auftragsverarbeiter in `SubProcessors.tsx` ergänzt | Build: 9 Prozessoren |
 | — | `Cross-Origin-Opener-Policy: same-origin-allow-popups` ergänzt | Build-Verifikation |
 
 **Zur CSP-Doppelauslieferung:** `deploy/cloudflare/main.tf` dokumentiert eine
@@ -108,6 +109,66 @@ Schnittmengen-Bildung. Beide Policies sind hier deshalb inhaltlich **identisch**
 gehalten; die einzige Ergänzung im Header ist `frame-ancestors`, das die
 Meta-Policy ohnehin ignoriert. Die wirksame Schnittmenge ist damit unverändert.
 Der Kommentar in `main.tf` ist jetzt veraltet und sollte nachgezogen werden.
+
+---
+
+## Drittanbieter-Inventar
+
+Methodik: Suche nach jedem namentlich geforderten Anbieter, anschließend
+Abgleich gegen die **tatsächlichen Script-Injektionen** im Code
+(`createElement('script')`, `injectScript()`, `<script src>`). Nötig, weil die
+Plattform selbst Tracker-Namen als *Produktinhalt* führt — sie scannt fremde
+Seiten darauf. Reine Textnennungen sind daher keine Einbindung.
+
+### Tatsächlich eingebunden
+
+| Anbieter | Host | Einstufung | Consent | Kategorie | Korrekt eingebunden? |
+|----------|------|-----------|---------|-----------|---------------------|
+| Google Analytics 4 | `googletagmanager.com`, `google-analytics.com` | Drittland (US, SCC+DPF) | erforderlich | Statistik | **Jetzt ja** — vorher K-1 |
+| Google Ads | `googletagmanager.com` | Drittland (US, SCC+DPF) | erforderlich | Marketing | **Jetzt ja** — vorher K-1 |
+| Meta Pixel | `connect.facebook.net` | Drittland (US, SCC+DPF) | erforderlich | Marketing | Laden ja; Widerruf vorher K-2 |
+| TikTok Pixel | `analytics.tiktok.com` | Drittland (US, SCC) | erforderlich | Marketing | Laden ja; Widerruf vorher K-2 |
+| LinkedIn Insight | `snap.licdn.com` | Drittland (US, SCC+DPF) | erforderlich | Marketing | Laden ja; Widerruf vorher K-2 |
+| Supabase | `*.supabase.co` | **EU** (Frankfurt, eu-central-1) | nicht erforderlich | technisch notwendig | Ja |
+| Sentry | `*.ingest.de.sentry.io` | **EU** (Frankfurt-Endpoint) | nicht erforderlich (Art. 6 I lit. f) | Fehler-Erfassung | Siehe D-1 |
+
+Alle fünf Tracker werden ausschließlich aus `src/lib/pixels.ts` geladen und sind
+durchgängig consent-gegated — belegt durch drei Tests, die vor der Einwilligung
+*keinerlei* Script-Injektion nachweisen.
+
+**D-1 · Sentry war nicht als Auftragsverarbeiter ausgewiesen** — Art. 13 I lit. e DSGVO
+
+`initSentry()` läuft in `src/main.tsx:12` ohne Consent. Das ist vertretbar: kein
+Cookie, kein Zugriff auf Endgeräte-Speicher zu Trackingzwecken (§ 25 TDDDG
+greift nicht), `sendDefaultPii: false`, Session-Replay auf `0` deaktiviert und
+`beforeSend` entfernt Email und IP. Getragen von Art. 6 I lit. f.
+
+Der Empfänger fehlte jedoch in der Sub-Prozessoren-Liste — eine reine
+Transparenzlücke, kein unzulässiger Datenfluss. **Behoben:** Eintrag in
+`SubProcessors.tsx` ergänzt (Liste jetzt 9 statt 8 Einträge).
+
+### Gesucht, aber nicht vorhanden
+
+| Anbieter | Status |
+|----------|--------|
+| Google Fonts | **Nicht eingebunden** — 8 `.woff2` self-hosted unter `public/fonts/`, kein Request an `fonts.googleapis.com`/`fonts.gstatic.com` |
+| Google Tag Manager (Container) | Nicht eingebunden — nur `gtag.js` direkt, kein GTM-Container |
+| Cloudflare Web Analytics | Nicht eingebunden — 0 Treffer für `cloudflareinsights.com` |
+| Hotjar | Nicht eingebunden — Treffer nur in Scanner-/Marketing-Inhalten |
+| Microsoft Clarity | Nicht eingebunden — 0 Treffer |
+| Plausible, Matomo | Nicht eingebunden — Treffer nur in SEO-Seiten als Code-*Beispiel* (`matomo.example.com`) |
+| Segment, Intercom, HubSpot | Nicht eingebunden — nur Produktinhalte und Typdefinitionen |
+
+### Sonderfälle
+
+- **Tally.so** (`tally.so/widgets/embed.js`) — echte Script-Injektion in
+  `WaitlistSection.tsx`, die Komponente wird aber **nirgends gerendert**.
+  Toter Code, aktuell kein Datenabfluss. Siehe N-3.
+- **JSON-LD** in `SEOHead.tsx` und `useJsonLd.ts` — `type="application/ld+json"`
+  mit `textContent`, kein externes `src`. Kein Drittanbieter.
+- **`RealSyncDynamicsAI.de/sdk/cookie-consent.js`** — auf zahlreichen Seiten als
+  Code-Snippet dargestellt. Das ist das *eigene* Produkt-SDK für Kunden, keine
+  Einbindung in die eigene Seite.
 
 ---
 
@@ -158,6 +219,7 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
 | Weiterlaufendes Tracking nach Widerruf | **Hoch** — Meta/TikTok/LinkedIn dauerhaft | Behoben |
 | Kein Re-Consent bei Zweckänderung möglich | Mittel | Behoben |
 | Versehentlicher Widerruf durch falsche Anzeige | Mittel | Behoben |
+| Auftragsverarbeiter nicht ausgewiesen (Sentry) | Niedrig | Behoben |
 | Tracking vor Einwilligung | *bestand nicht* | — |
 | Drittland-Transfer ohne Information | *bestand nicht* | — |
 
@@ -211,6 +273,8 @@ außerhalb der Chunk-Größe festgestellt.
 | Commit | Inhalt |
 |--------|--------|
 | `2a08c67` | `fix(dsgvo): Consent-Mode-Signale, Widerruf und Consent-Versionierung korrigieren` |
+| `a460000` | `docs: Compliance-Audit-Report Juli 2026` |
+| _(dieser)_ | `fix(dsgvo): Sentry als Auftragsverarbeiter ausweisen` + Drittanbieter-Inventar |
 
 **Geänderte Dateien**
 
@@ -221,6 +285,7 @@ index.html                           CSP: Sentry, base-uri/form-action/object-sr
 public/_headers                      CSP als echter Header, frame-ancestors, COOP
 test/consent-pixels.test.ts          7 Tests (neu)
 test/cookie-consent-banner.test.tsx  10 Tests (neu)
+src/features/legal/SubProcessors.tsx Sentry als Auftragsverarbeiter (D-1)
 ```
 
 **Verifikation**

@@ -82,10 +82,17 @@ Root-Datei wird nie ausgeliefert. Sie steht nur noch im `paths:`-Trigger von
 Kein akuter Angriffspfad, aber fehlende Härtung gegen Base-Tag- und
 Form-Hijacking.
 
-**N-3 · Toter Drittanbieter-Code**
-`src/components/WaitlistSection.tsx` bindet ein Tally.so-Embed ein, die
-Komponente wird jedoch nirgends gerendert. Kein Datenabfluss, aber ein latentes
-Risiko, falls sie reaktiviert wird.
+**N-3 · Toter Drittanbieter-Code** — *behoben*
+`src/components/WaitlistSection.tsx` band ein Tally.so-Embed ein: die Komponente
+injizierte beim Mounten `https://tally.so/widgets/embed.js` ungeprüft in den
+`<head>`, ohne jede Consent-Abfrage. Gerendert wurde sie nirgends — im gesamten
+Repository gab es keine einzige Referenz darauf. Kein Datenabfluss, aber ein
+latentes Risiko, falls sie reaktiviert wird.
+
+**Fix: Datei entfernt.** Eine Consent-Schranke um Code zu legen, den niemand
+aufruft, hätte die Falle nur konserviert. Wird eine Warteliste wieder gebraucht,
+gehört sie hinter den Marketing-Consent gebaut — die Bausteine dafür stehen seit
+K-1/K-2 bereit. Der bisherige Stand bleibt über die Git-Historie erreichbar.
 
 ---
 
@@ -162,9 +169,10 @@ Transparenzlücke, kein unzulässiger Datenfluss. **Behoben:** Eintrag in
 
 ### Sonderfälle
 
-- **Tally.so** (`tally.so/widgets/embed.js`) — echte Script-Injektion in
-  `WaitlistSection.tsx`, die Komponente wird aber **nirgends gerendert**.
-  Toter Code, aktuell kein Datenabfluss. Siehe N-3.
+- **Tally.so** (`tally.so/widgets/embed.js`) — war eine echte Script-Injektion in
+  `WaitlistSection.tsx`, die Komponente wurde aber **nirgends gerendert**.
+  Datei inzwischen entfernt, siehe N-3. Im Repository kommt Tally damit nicht
+  mehr vor.
 - **JSON-LD** in `SEOHead.tsx` und `useJsonLd.ts` — `type="application/ld+json"`
   mit `textContent`, kein externes `src`. Kein Drittanbieter.
 - **`RealSyncDynamicsAI.de/sdk/cookie-consent.js`** — auf zahlreichen Seiten als
@@ -333,16 +341,14 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
    Löschen ist nicht reversibel ohne Git-Kenntnis des Ziel-Deploys, und die
    Dateien stehen in einem Workflow-Trigger. Empfehlung: entfernen und die
    `paths:`-Einträge in `deploy-cloudflare-pages.yml` mitziehen.
-2. **N-3 — `WaitlistSection.tsx`** entweder entfernen oder das Tally-Embed
-   hinter den Marketing-Consent hängen, bevor die Komponente je gerendert wird.
-3. **`deploy/cloudflare/main.tf`** — Kommentar zur CSP-Entscheidung nachziehen.
-4. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
+2. **`deploy/cloudflare/main.tf`** — Kommentar zur CSP-Entscheidung nachziehen.
+3. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
    in ein `<iframe>`, `frame-src` fällt aber auf `default-src 'self'` zurück.
    Das Feature dürfte unter der bestehenden CSP bereits blockiert sein.
    **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
    und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
    nicht eindeutig. Braucht eine Produktentscheidung.
-5. **Laufzeit-Verifikation ausstehend.** Alle Prüfungen erfolgten statisch am
+4. **Laufzeit-Verifikation ausstehend.** Alle Prüfungen erfolgten statisch am
    Code plus Build. Ein Test gegen die *deployte* Seite (echte Response-Header,
    reale Netzwerk-Requests vor Consent, Lighthouse) konnte hier nicht erfolgen —
    die Umgebung hat keinen Zugriff auf realsyncdynamicsai.de.
@@ -448,7 +454,7 @@ npm run build     → erfolgreich, CSP in dist/index.html und dist/_headers
 1. Fixes gegen die deployte Seite verifizieren: Response-Header prüfen und im
    Netzwerk-Tab bestätigen, dass bei „nur Statistik" kein `ad_storage=granted`
    an Google geht.
-2. N-1 (tote Root-`_headers`) und N-3 (`WaitlistSection`) bereinigen.
+2. N-1 (tote Root-`_headers`) bereinigen. N-3 (`WaitlistSection`) ist erledigt.
 3. Kommentar in `deploy/cloudflare/main.tf` nachziehen.
 
 **Mittelfristig**

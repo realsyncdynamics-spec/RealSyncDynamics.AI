@@ -127,7 +127,12 @@ bewusste Entscheidung *gegen* einen CSP-Header neben der Meta-CSP, wegen der
 Schnittmengen-Bildung. Beide Policies sind hier deshalb inhaltlich **identisch**
 gehalten; die einzige Ergänzung im Header ist `frame-ancestors`, das die
 Meta-Policy ohnehin ignoriert. Die wirksame Schnittmenge ist damit unverändert.
-Der Kommentar in `main.tf` ist jetzt veraltet und sollte nachgezogen werden.
+Der Kommentar in `main.tf` und der zugehörige README-Abschnitt sind
+nachgezogen: sie halten jetzt fest, dass der Live-Pfad (Cloudflare Pages) einen
+echten CSP-Header liefert, dass `frame-ancestors` im `<meta>` nie wirksam war,
+und dass die CSP dort ergänzt werden **muss**, falls der Terraform-Pfad
+(Proxy vor GitHub Pages) jemals aktiviert wird — GitHub Pages kann keine Header
+setzen, und `public/_headers` liest nur Cloudflare Pages.
 
 ---
 
@@ -348,14 +353,13 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
 
 ## Noch offene Punkte
 
-1. **`deploy/cloudflare/main.tf`** — Kommentar zur CSP-Entscheidung nachziehen.
-2. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
+1. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
    in ein `<iframe>`, `frame-src` fällt aber auf `default-src 'self'` zurück.
    Das Feature dürfte unter der bestehenden CSP bereits blockiert sein.
    **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
    und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
    nicht eindeutig. Braucht eine Produktentscheidung.
-3. **Laufzeit-Verifikation — Header erledigt, Netzwerkverhalten offen.**
+2. **Laufzeit-Verifikation — Header erledigt, Netzwerkverhalten offen.**
    Die Response-Header sind inzwischen **am ausgelieferten Deployment geprüft**,
    siehe Abschnitt unten. Offen bleibt das Netzwerkverhalten im Browser (keine
    Drittanbieter-Requests vor der Einwilligung, Wirksamkeit des Widerrufs) sowie
@@ -496,7 +500,7 @@ npm run build     → erfolgreich, CSP in dist/index.html und dist/_headers
    Netzwerk-Tab bestätigen, dass bei „nur Statistik" kein `ad_storage=granted`
    an Google geht.
 2. N-1 (tote Root-`_headers`) und N-3 (`WaitlistSection`) sind erledigt.
-3. Kommentar in `deploy/cloudflare/main.tf` nachziehen.
+3. Kommentar in `deploy/cloudflare/main.tf` ist nachgezogen.
 
 **Mittelfristig**
 4. Governance-Browser vs. `frame-src` klären (offener Punkt 4) — Produktentscheidung.

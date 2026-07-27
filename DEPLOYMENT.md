@@ -79,9 +79,18 @@ Review-Pflicht, nicht von Vercel.
 
 Beide gehören zum Team `realsynchost-c3f4cfdf`.
 
-Im Repository gibt es **keine** Vercel-Konfiguration: kein `vercel.json`, kein
-`.vercel/`, keine Erwähnung in einem Workflow, keine Abhängigkeit in
-`package.json`. Die Verbindung besteht ausschließlich im Vercel-Dashboard.
+Die Verbindung besteht ausschließlich im Vercel-Dashboard. Im Repository gibt es
+kein `.vercel/`, keine Erwähnung in einem Workflow und keine Abhängigkeit in
+`package.json`.
+
+Die einzige Vercel-Datei ist `services/realsync-runtime-core/vercel.json` mit
+einem *Ignored Build Step* (`{"ignoreCommand": "exit 0"}`), der das Deployment
+des ersten Projekts überspringt statt scheitern zu lassen. **Das ist eine
+Notlösung gegen den roten Dauer-Check, keine Reparatur** — und sie wirkt nur auf
+dieses eine Projekt. Das gesperrte Konto bleibt rot, weil die Sperre greift,
+bevor Repo-Konfiguration überhaupt gelesen wird; ebenso der Sammelstatus
+`Vercel Deployments – realsynchost`. **Vercel wird aus dem Repository heraus
+nicht grün.** Begründung im Detail: `services/realsync-runtime-core/README.md`.
 
 *(Die beiden `vercel`-Treffer im Quellcode sind unbeteiligt: ein Vendor-Enum in
 `src/features/governance/remediation/types.ts` und ein Doku-Absatz in

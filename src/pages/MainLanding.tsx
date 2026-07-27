@@ -69,7 +69,7 @@ const PLATFORM = [
   {
     icon: FileLock2,
     title: 'Evidence Vault',
-    text: 'Kryptografisch nachvollziehbare Nachweise mit lückenlosem Prüfpfad. Audit-fähig, unveränderlich, exportierbar.',
+    text: 'Hash-verkettete Nachweise mit Ed25519-Signatur — jede Änderung bricht die Kette und wird sofort sichtbar. Audit-fähig, unveränderlich, exportierbar.',
   },
   {
     icon: Scale,
@@ -79,7 +79,7 @@ const PLATFORM = [
   {
     icon: Code2,
     title: 'Claude Code Integration',
-    text: 'Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.',
+    text: 'Erkennt ungeschützte Tracking-Calls, fehlende Consent-Gates und unsichere API-Endpunkte im Code — mit automatisierten Fix-Vorschlägen statt reinem Befund.',
   },
   {
     icon: ServerCog,
@@ -389,7 +389,7 @@ function Pricing() {
 function Security() {
   const points = [
     { icon: Lock, title: 'EU-Souveränität', text: 'Hosting, Verarbeitung und Modelle innerhalb der EU. Optional lokale Modelle für maximale Datenkontrolle.' },
-    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis ist signiert und unveränderlich — ein lückenloser Prüfpfad für Audits und Aufsichtsbehörden.' },
+    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis wird per Hash-Chain verkettet und mit Ed25519 signiert — ein lückenloser, extern verifizierbarer Prüfpfad für Audits und Aufsichtsbehörden.' },
     { icon: ShieldCheck, title: 'Service-Role-Isolation', text: 'Sensible Keys ausschließlich serverseitig. RLS schützt jede Tabelle auf Mandantenebene.' },
   ];
   return (
@@ -655,7 +655,7 @@ function ClaudeCodeIntegrationCard({ className = '' }: { className?: string }) {
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE INTEGRATION</span>
       </div>
       <p className="text-[11px] sm:text-xs text-white/70 leading-relaxed">
-        Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.
+        Erkennt fehlende Consent-Gates, ungeschützte Tracking-Calls und unsichere API-Endpunkte — inklusive automatisierter Fix-Vorschläge.
       </p>
     </CardShell>
   );

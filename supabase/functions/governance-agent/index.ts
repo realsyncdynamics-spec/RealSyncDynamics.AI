@@ -46,6 +46,17 @@ import { checkTenantQuota, checkAnonQuota, recordChatHistory } from '../_shared/
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { selectModel, getModelId, MODEL_PRICING } from '../_shared/modelSelection.ts';
 
+// ACS/ESS/RCS Integration (Phase 2d)
+import { getAgentContract, validateAgentContract } from '../_shared/acs-runtime-integration.ts';
+import {
+  publishAgentStarted, publishAgentIteration, publishAgentCompleted, publishAgentFailed,
+  publishToolRequested, publishToolCompleted, publishToolFailed,
+  generateTraceId, generateSpanId,
+} from '../_shared/ess-event-publisher.ts';
+import {
+  checkExecutionQuota, recordExecutionCost, updateExecutionState, estimateExecutionCost,
+} from '../_shared/rcs-execution-manager.ts';
+
 interface SupabaseAdminClient {
   from(table: string): {
     select(columns: string): {
@@ -154,6 +165,40 @@ interface AnonGateContext {
   requestId: string;
   ipHash:    string;
   startedAt: number;
+}
+
+// Phase 2d: ACS Contract Management
+const AGENT_ID = 'governance-agent';
+let cachedAgentContract: { id: string; version: string; name: string } | null = null;
+
+/**
+ * Load and validate the agent's ACS contract.
+ * Called once per cold-start to bind agent behavior to formal spec.
+ */
+async function loadAgentContract(admin: SupabaseClient): Promise<{
+  id: string;
+  version: string;
+  name: string;
+} | null> {
+  try {
+    const contract = await getAgentContract(admin, AGENT_ID);
+    if (!contract) {
+      console.error(`ACS contract not found for agent: ${AGENT_ID}`);
+      return null;
+    }
+
+    const validationError = validateAgentContract(contract.contract_json);
+    if (validationError) {
+      console.error(`ACS contract validation failed: ${validationError}`);
+      return null;
+    }
+
+    console.log(`✓ Loaded ACS contract: ${AGENT_ID} v${contract.version} (${contract.status})`);
+    return { id: contract.id, version: contract.version, name: contract.name };
+  } catch (e) {
+    console.error(`Failed to load ACS contract: ${(e as Error).message}`);
+    return null;
+  }
 }
 
 /**
@@ -369,9 +414,14 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
 
+  // Phase 2d: Load agent contract on first auth-required request
+  if (!cachedAgentContract) {
+    cachedAgentContract = await loadAgentContract(admin) || { id: AGENT_ID, version: '0.0.0', name: 'governance-agent' };
+  }
+
   try {
     switch (body.op) {
-      case 'chat':         return await handleChat(admin, userId, userEmail, auth, body);
+      case 'chat':         return await handleChat(admin, userId, userEmail, auth, body, cachedAgentContract);
       case 'reset':        return await handleReset(admin, userId, body);
       case 'history':      return await handleHistory(admin, userId, body);
       case 'chat_history': return await handleChatHistoryTenant(admin, userId, body);
@@ -388,6 +438,7 @@ async function handleChat(
   userEmail: string | null,
   bearerAuth: string,
   body: Record<string, unknown>,
+  agentContract: { id: string; version: string; name: string }, // Phase 2d
 ): Promise<Response> {
   const tenant_id = body.tenant_id as string;
   const message = (body.message as string ?? '').trim();
@@ -403,6 +454,18 @@ async function handleChat(
   // check so we don't leak quota state for tenants the user can't see.
   const quotaResp = await enforceTenantQuota(admin, tenant_id);
   if (quotaResp) return quotaResp;
+
+  // Phase 2d: Check RCS execution quota before starting
+  const estimatedTokens = 3000;
+  const estimatedCost = estimateExecutionCost(LLM_MODEL, estimatedTokens, estimatedTokens * 0.3);
+  const quotaCheck = await checkExecutionQuota(admin, tenant_id, AGENT_ID, agentContract.version, estimatedCost);
+  if (!quotaCheck.allowed) {
+    console.warn(`RCS quota exceeded for ${tenant_id}: ${quotaCheck.error}`);
+    return jsonError(429, 'QUOTA_EXCEEDED', quotaCheck.error ?? 'Execution quota exceeded', { remaining_usd: quotaCheck.remaining_usd });
+  }
+  if (quotaCheck.warning) {
+    console.warn(`RCS quota warning: ${quotaCheck.warning}`);
+  }
 
   // EU-routing guard. Tenant chat always uses Anthropic (the
   // ai_gateway switch only flips anon-mode), so the guard must also
@@ -451,8 +514,61 @@ async function handleChat(
   let errorMessage: string | null = null;
   const startedAt = Date.now();
 
+  // Phase 2d: Initialize ESS trace and runtime_executions
+  const traceId = generateTraceId();
+  const sessionTraceSpan = generateSpanId();
+  let executionId: string | null = null;
+
+  // Create runtime_executions record
+  const { data: execution, error: execErr } = await admin
+    .from('runtime_executions')
+    .insert({
+      agent_id: AGENT_ID,
+      tenant_id,
+      status: 'pending',
+      agent_contract_version: agentContract.version,
+      trace_id: traceId,
+    })
+    .select('id')
+    .single();
+
+  if (execErr) {
+    console.error(`Failed to create execution record: ${execErr.message}`);
+    return jsonError(500, 'EXEC_INSERT_FAILED', execErr.message);
+  }
+
+  executionId = (execution as unknown as { id: string }).id;
+
+  // Publish agent.started event
+  await publishAgentStarted(admin, {
+    agentId: AGENT_ID,
+    tenantId: tenant_id,
+    traceId,
+    spanId: sessionTraceSpan,
+    sourceFunction: 'governance-agent',
+    userId,
+  });
+
+  // Update execution state: pending → running
+  await updateExecutionState(admin, executionId, 'running', {
+    agent_contract_version: agentContract.version,
+    trace_id: traceId,
+  });
+
   try {
     for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+      // Phase 2d: Publish agent.iteration event before LLM call
+      const turnSpan = generateSpanId();
+      await publishAgentIteration(admin, {
+        agentId: AGENT_ID,
+        tenantId: tenant_id,
+        traceId,
+        spanId: turnSpan,
+        userId,
+        iteration: iter,
+        message: message.slice(0, 1000),
+      });
+
       const resp = await client.messages.create({
         model: effectiveModel,
         max_tokens: maxTokens,
@@ -491,6 +607,19 @@ async function handleChat(
         const toolResults: Anthropic.ToolResultBlockParam[] = [];
         for (const block of resp.content) {
           if (block.type !== 'tool_use') continue;
+
+          // Phase 2d: Publish tool.requested event
+          const toolSpan = generateSpanId();
+          const toolStartTime = Date.now();
+          await publishToolRequested(admin, {
+            toolName: block.name,
+            tenantId: tenant_id,
+            traceId,
+            spanId: toolSpan,
+            toolInput: block.input as Record<string, unknown>,
+            parentEventId: turnSpan,
+          });
+
           const result = await dispatchTool({
             name: block.name,
             input: block.input as Record<string, unknown>,
@@ -500,12 +629,38 @@ async function handleChat(
             userId,
             userEmail,
           });
+
+          // Phase 2d: Publish tool.completed or tool.failed event
+          const toolDurationMs = Date.now() - toolStartTime;
+          const isToolError = !!(result as { error?: unknown }).error;
+          if (isToolError) {
+            await publishToolFailed(admin, {
+              toolName: block.name,
+              tenantId: tenant_id,
+              traceId,
+              spanId: toolSpan,
+              error: (result as { error?: unknown }).error as string ?? 'Tool execution failed',
+              durationMs: toolDurationMs,
+              parentEventId: turnSpan,
+            });
+          } else {
+            await publishToolCompleted(admin, {
+              toolName: block.name,
+              tenantId: tenant_id,
+              traceId,
+              spanId: toolSpan,
+              toolOutput: result as Record<string, unknown>,
+              durationMs: toolDurationMs,
+              parentEventId: turnSpan,
+            });
+          }
+
           toolCallsLog.push({ tool: block.name, input: block.input, output: result, iter });
           toolResults.push({
             type: 'tool_result',
             tool_use_id: block.id,
             content: JSON.stringify(result),
-            is_error: !!(result as { error?: unknown }).error,
+            is_error: isToolError,
           });
         }
         history.push({ role: 'user', content: toolResults });
@@ -527,6 +682,59 @@ async function handleChat(
   }
 
   const durationMs = Date.now() - startedAt;
+
+  // Phase 2d: Record final cost and state
+  if (executionId) {
+    const totalCost = estimateExecutionCost(effectiveModel, totalIn, totalOut);
+
+    if (outcome === 'success') {
+      // Record cost for successful execution
+      await recordExecutionCost(admin, executionId, tenant_id, totalIn, totalOut, totalCost);
+
+      // Update execution state to completed
+      await updateExecutionState(admin, executionId, 'completed', {
+        tokens_input_tracked: totalIn,
+        tokens_output_tracked: totalOut,
+        estimated_cost_usd: totalCost,
+      });
+
+      // Publish agent.completed event
+      const completionSpan = generateSpanId();
+      await publishAgentCompleted(admin, {
+        agentId: AGENT_ID,
+        tenantId: tenant_id,
+        traceId,
+        spanId: completionSpan,
+        userId,
+        tokensInput: totalIn,
+        tokensOutput: totalOut,
+        durationMs,
+      });
+    } else {
+      // Record partial cost for failed execution
+      const partialCost = estimateExecutionCost(effectiveModel, totalIn, totalOut);
+      await recordExecutionCost(admin, executionId, tenant_id, totalIn, totalOut, partialCost);
+
+      // Update execution state to failed
+      await updateExecutionState(admin, executionId, 'failed', {
+        error_message: errorMessage ?? 'Unknown error',
+        error_retriable: outcome !== 'budget_exceeded' && outcome !== 'timeout',
+        error_retry_count: 0,
+      });
+
+      // Publish agent.failed event
+      const errorSpan = generateSpanId();
+      await publishAgentFailed(admin, {
+        agentId: AGENT_ID,
+        tenantId: tenant_id,
+        traceId,
+        spanId: errorSpan,
+        userId,
+        error: errorMessage ?? 'Unknown error',
+        durationMs,
+      });
+    }
+  }
 
   // Persist session.
   await admin.from('agent_sessions').upsert({
@@ -588,6 +796,8 @@ async function handleChat(
   return jsonResponse({
     ok: outcome === 'success',
     session_id: sessionId,
+    execution_id: executionId,
+    trace_id: traceId,
     response: finalText,
     tool_calls: toolCallsLog.length,
     actions_taken: toolCallsLog.map((t) => t.tool),

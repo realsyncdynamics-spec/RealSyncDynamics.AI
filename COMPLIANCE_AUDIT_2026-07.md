@@ -348,10 +348,44 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
    **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
    und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
    nicht eindeutig. Braucht eine Produktentscheidung.
-4. **Laufzeit-Verifikation ausstehend.** Alle Prüfungen erfolgten statisch am
-   Code plus Build. Ein Test gegen die *deployte* Seite (echte Response-Header,
-   reale Netzwerk-Requests vor Consent, Lighthouse) konnte hier nicht erfolgen —
-   die Umgebung hat keinen Zugriff auf realsyncdynamicsai.de.
+4. **Laufzeit-Verifikation — Header erledigt, Netzwerkverhalten offen.**
+   Die Response-Header sind inzwischen **am ausgelieferten Deployment geprüft**,
+   siehe Abschnitt unten. Offen bleibt das Netzwerkverhalten im Browser (keine
+   Drittanbieter-Requests vor der Einwilligung, Wirksamkeit des Widerrufs) sowie
+   Lighthouse: der Ausgangs-Proxy dieser Umgebung setzt Chromium-Verbindungen
+   zurück (`ERR_CONNECTION_RESET`), `curl` kommt durch. Das ist mit einem Browser
+   auf einem normalen Netzzugang in wenigen Minuten nachzuholen.
+
+---
+
+## Laufzeit-Verifikation der Header
+
+Geprüft am Cloudflare-Preview-Deployment des Branches (Commit `21f4930`), also
+an echten Response-Headern statt am Build-Artefakt:
+
+```
+$ curl -sS -I https://<preview>.realsyncdynamics-ai.pages.dev/
+```
+
+| Erwartet aus | Im Response-Header |
+|--------------|--------------------|
+| **M-3** — CSP als echter Header, nicht nur `<meta>` | `content-security-policy:` vorhanden, mit `frame-ancestors 'self'` — genau die Direktive, die im `<meta>` per Spec ignoriert wird |
+| **M-4** — Sentry nicht mehr durch die eigene CSP blockiert | `connect-src … https://*.ingest.de.sentry.io` |
+| **N-2** — CSP-Härtung | `base-uri 'self'`, `form-action 'self'`, `object-src 'none'` |
+| COOP bewusst nicht `same-origin` (OAuth-Popups) | `cross-origin-opener-policy: same-origin-allow-popups` |
+
+Zusätzlich ausgeliefert: `strict-transport-security` (1 Jahr, `includeSubDomains`,
+`preload`), `permissions-policy: camera=(), microphone=(), geolocation=()`,
+`referrer-policy: strict-origin-when-cross-origin`, `x-content-type-options: nosniff`.
+
+**Nebenbefund zu N-1:** ausgeliefert wird `x-frame-options: SAMEORIGIN`, passend
+zu `frame-ancestors 'self'`. Die tote Root-`_headers` mit ihrem widersprüchlichen
+`X-Frame-Options: DENY` ist also nachweislich nicht die wirksame Datei — was die
+Einschätzung stützt, dass sie gefahrlos entfallen kann.
+
+*Einschränkung:* geprüft wurde die Preview-Domain, nicht `realsyncdynamicsai.de`.
+Beide werden von derselben `public/_headers` bedient; ein Abgleich gegen die
+Produktivdomain nach dem Merge bleibt sinnvoll.
 
 ---
 

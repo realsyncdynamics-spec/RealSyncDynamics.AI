@@ -404,8 +404,11 @@ Produktivdomain nach dem Merge bleibt sinnvoll.
 
 Die 17 Unit-Tests prüfen die Logik von `pixels.ts` isoliert. Sie können nicht
 zeigen, dass im echten Browser kein Drittanbieter kontaktiert wird — dafür gibt
-es jetzt zwei E2E-Tests in `e2e/cookie-consent.spec.ts`, die die
-Netzwerk-Requests der Seite mitschneiden.
+es jetzt **SEC-003** und **SEC-004** in `tests/e2e/consent.spec.ts`, die die
+Netzwerk-Requests der Seite mitschneiden. Sie liegen bewusst dort und nicht in
+`e2e/`: CI führt `npm run test:e2e` aus, und das startet
+`playwright.catalog.config.ts` mit `testDir: ./tests/e2e`. Tests unter `e2e/`
+laufen in CI nicht mit.
 
 | Phase | Gemessen |
 |-------|----------|
@@ -419,6 +422,10 @@ Ohne sie feuert auch nach einer Einwilligung nichts — „vor Consent: 0 Reques
 wäre dann trivial erfüllt, selbst wenn das Gating vollständig kaputt wäre. Die
 Tests messen deshalb **zuerst den Positivfall** und überspringen sich mit
 Begründung, wenn er 0 ergibt, statt eine ungeprüfte Zusicherung zu liefern.
+
+Das gilt auch für das bereits vorhandene **SEC-001**: ohne Pixel-IDs war seine
+Zusicherung ebenfalls ohne Aussage. Mit den Dummy-IDs unten ist der Test
+erstmals beweiskräftig.
 
 `.github/workflows/e2e.yml` setzt dafür zwei **ungültige** Dummy-IDs
 (`G-E2ETEST0000`, `000000000000000`), die zu keinem echten Konto gehören. Die

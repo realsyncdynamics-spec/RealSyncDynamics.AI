@@ -30,6 +30,7 @@
     "qa:smoke": "tsx scripts/qa-smoke-test.ts",
     "qa:load": "tsx scripts/qa-load-test.ts",
     "seed:beta": "tsx scripts/seed-beta-tenant.ts",
+    "agent:browser-x07": "tsx scripts/agents/browser-agent-x07.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh",
     "perf:monthly-report": "tsx scripts/generate-performance-report.ts"
@@ -75,6 +76,7 @@
     "fs-extra": "^11.3.5",
     "jsdom": "^29.1.1",
     "pg": "^8.21.0",
+    "playwright-core": "^1.59.1",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

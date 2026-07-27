@@ -182,12 +182,167 @@ Workflow ist ein Plan, kein Code.
 
 ## 5. Multi-Agent Orchestration (Phase 4)
 
-Erst relevant, wenn mehrere produktive Applications denselben Memory-Scope
-brauchen und sich Skills gegenseitig aufrufen sollen. Bis dahin:
-Skill → Skill innerhalb desselben Workflows reicht.
+> **Status: Entwurf, nicht implementiert.** Alles in diesem Abschnitt ist
+> Zielbild für Phase 4, keine aktuelle Funktionalität. Erst relevant, wenn
+> mehrere produktive Applications denselben Memory-Scope brauchen und sich
+> Skills gegenseitig aufrufen sollen. Bis dahin: Skill → Skill innerhalb
+> desselben Workflows reicht (§4). Diese Sektion existiert, damit Phase 4
+> ein Plan ist, kein Vakuum — nicht als Erlaubnis, sie vorzuziehen (siehe
+> Designprinzip 6, "Keine Feature-Flut").
 
-Zukünftige Rollen: Planner, Executor, Critic. Keine vorgezogene
-Implementierung.
+### 5.1 Warum eine Organisationsform statt einem Alleskönner-Agenten
+
+Ein einzelner, immer mächtigerer Agent ist keine Architektur, sondern ein
+Wette auf ein bestimmtes Modell. Phase 4 verfolgt stattdessen eine
+Unternehmensstruktur aus spezialisierten Rollen — analog zu Planner /
+Executor / Critic aus der bisherigen Kurzfassung, nur konkretisiert:
+
+- **Rolle ≠ Fähigkeit.** Eine Rolle (Teamleiter, Director, AGI Manager)
+  beschreibt Verantwortung und Berichtslinie. Eine Fähigkeit (LLM, Agent,
+  Multi-Agent) beschreibt, womit die Rolle aktuell besetzt ist. Das
+  Organigramm bleibt stabil, auch wenn sich die Fähigkeit hinter einer
+  Rolle ändert oder verbessert.
+- **Jede Rolle bekommt genau die Skills, die ihr Verantwortungsbereich
+  braucht** — keine globalen Tool-Berechtigungen. Deckt sich 1:1 mit CPS
+  (`spec/runtime/capability-permission-standard.md`), das dieses Prinzip
+  bereits für einzelne Agenten formalisiert.
+- **Information verdichtet sich nach oben, sie stapelt sich nicht.** Jede
+  Ebene fasst die Berichte der Ebene darunter zusammen, statt sie
+  durchzureichen. Der AGI Manager entscheidet auf Basis aggregierter
+  Kennzahlen, nie auf Basis von Rohberichten aller Einzelagenten.
+
+### 5.2 Hierarchie → bestehende Runtime-Konzepte
+
+Die Hierarchie ist **konzeptionell** — eine Organisationsansicht über
+bestehende und geplante Runtime-Konzepte, keine neue Ausführungsschicht.
+Jede Ebene bildet direkt auf ein bestehendes oder bereits geplantes Konzept
+ab; es entsteht keine zweite Laufzeit neben Runtime Core / Workflow Engine.
+
+```
+  CEO                     Mandat, keine Runtime-Rolle
+    │
+  AGI Manager              Orchestrator-Rolle — liest AGGREGIERTE
+    │                       runtime_events / Workflow-Ergebnisse,
+    │                       trifft Freigabe-Entscheidungen auf
+    │                       Director-Ebene (Phase 4: Planner)
+    │
+  Directors                 Fachbereichs-Rollen (Governance, Security,
+    │                       Compliance, Platform, Customer Success,
+    │                       Intelligence) — je ein AgentDefinition-
+    │                       Bündel mit eigenem skill_ids-Scope
+    │
+  Team Leads                aggregieren mehrere Executions/Events zu
+    │                       einem Team-Bericht (Rollup, kein Rohdaten-
+    │                       Durchreichen) — Phase 4: Critic-Rolle
+    │
+  Spezialisierte Agenten    heutige AgentDefinition (Skills + Policies
+    │                       + Memory-Scope + Permissions je Tenant)
+    │
+  Skills                    heutige SkillManifest + Handler (§3.1)
+    │
+  Runtime Executor          heutiger Executor (§3.1) — UNVERÄNDERT:
+                            Permission-Check → Approval-Gate-Check →
+                            Handler-Call → Event-Emit → Persist Execution
+```
+
+Konsequenz: **Die Ausführung bleibt beim bestehenden Runtime Executor.**
+Die Hierarchie darüber ist eine Sicht auf `AgentDefinition`-Gruppierungen,
+Report-Rollups über `runtime_events` und Eskalationsregeln über
+`runtime_approval_gates` — keine der oberen vier Ebenen bekommt eine
+eigene Execution-Engine, eigenen Event-Bus oder eigene Approval-Tabelle.
+
+### 5.3 Reporting-Kette
+
+Jede Ebene liefert **maximal 10 Stichpunkte** pro Berichtszyklus und fasst
+die Berichte der Ebene darunter zusammen, statt sie weiterzureichen:
+
+```
+Agent            → Team Lead     : täglich, ≤10 Punkte, roh aus runtime_events
+Team Lead        → Director      : täglich/wöchentlich, ≤10 Punkte, Team-Rollup
+Director         → AGI Manager   : wöchentlich + sofort bei severity=high/critical
+AGI Manager      → CEO           : wöchentlich, Kennzahlen, keine Rohberichte
+```
+
+Diese Berichte sind **Ableitungen aus `runtime_events`**, keine eigene
+Tabelle. Ein Rollup ist eine Abfrage (`name`, `severity`, `occurred_at`
+gruppiert nach `agent_id`/`skill_id` über ein Zeitfenster), kein
+persistenter Report-Datensatz. Sollte sich zeigen, dass Rollups zu teuer
+oder zu verlustreich als Live-Query sind, ist eine materialisierte
+Sicht (`runtime_events` → Aggregat) der additive nächste Schritt — keine
+neue Quelltabelle.
+
+### 5.4 Memory-Strategie
+
+Phase 4 führt **keinen dritten Memory-Store** ein. Es nutzt die zwei
+Stores aus §3.3:
+
+- **Working Memory** bleibt exekutionsgebunden — eine Team-Lead- oder
+  Director-Rolle liest nichts, was nicht über eine `runtime_execution`
+  ihrer unterstellten Agenten sichtbar wurde.
+- **Knowledge Store** ist, wo Phase 4 etwas Neues braucht: ein
+  `kind: 'org_relation'`-Eintrag für Beziehungen, die über eine einzelne
+  Execution hinaus gültig bleiben (siehe 5.5). Das bleibt eine Erweiterung
+  des bestehenden Knowledge-Store-Vertrags (§3.3), keine neue Memory-Art.
+
+### 5.5 Knowledge-Graph-Vision (innerhalb des bestehenden Knowledge Store)
+
+Die im ursprünglichen Organisationsentwurf vorgeschlagene Wissensbasis
+("Komponente → gehört zu → Team", "Fehler → behoben durch → Commit") ist
+in Phase 4 **kein neues Tabellenpaar**, sondern ein `kind: 'org_relation'`
+im bestehenden Knowledge Store: Knoten sind Pointer auf existierende
+Entitäten (`runtime_executions.id`, ein Skill-Id, ein Git-Commit-SHA, eine
+`ai_evidence_events`-Zeile), Kanten sind typisierte, zeitlich gültige
+Beziehungen (`belongs_to`, `fixed_by`, `escalated_to`). Der Graph ist eine
+**Navigationsschicht über bestehende Evidenz**, nie eine Zweitschrift der
+Evidence Chain (ECS) — sicherheits- und compliance-relevante Fakten bleiben
+ausschließlich in der Hash-Chain (`ai_evidence_events` /
+`spec/runtime/evidence-chain.md`) verbindlich.
+
+### 5.6 Browser Agent X07 — Rolle
+
+X07 besetzt in der zukünftigen Hierarchie die Blatt-Ebene eines
+"Platform"-Zweigs unter dem Platform Director. Sein Verantwortungsbereich
+bleibt so eng wie heute umgesetzt (siehe
+`docs/architecture/browser-agent-x07.md`): Chromium, DOM, Konsole,
+Netzwerk, UI-Regressionen. Er beobachtet, er remediiert nicht. Schon heute
+läuft er als regulärer Runtime-Core-Skill
+(`src/core/runtime/skills/browser-monitoring.ts`) — Phase 4 ändert daran
+nichts, sie gibt ihm nur einen Platz im Organigramm und einen Team Lead,
+der seine Befunde zusammen mit anderen Platform-Agenten zu einem
+Director-Report verdichtet.
+
+### 5.7 AGI-Manager-Verantwortlichkeiten
+
+Der AGI Manager ist der Name einer **Rolle**, kein Versprechen einer
+bestimmten Modellfähigkeit (siehe Designprinzip 7, "Kein
+Marketing-Overclaim"). Seine Zuständigkeiten, sobald Phase 4 beginnt:
+
+- liest ausschließlich Director-Rollups (§5.3), nie Rohberichte einzelner
+  Agenten — Kompression ist nicht optional.
+- trifft Freigabe-/Ablehnungs-Entscheidungen für Eskalationen, die einen
+  bestehenden `runtime_approval_gates`-Eintrag bereits ausgelöst haben —
+  er ersetzt HRP (`spec/runtime/human-review-protocol.md`) nicht, er ist
+  ein weiterer, informierter Entscheider *innerhalb* des HRP-Gates.
+- entscheidet nie ohne strukturierten Bericht (kein Freitext-Chat als
+  Entscheidungsgrundlage).
+- besitzt keine eigene Skill-Ausführung — jede von ihm ausgelöste Aktion
+  läuft durch den bestehenden Executor wie jede andere.
+
+### 5.8 Bewusst offene Fragen für Phase 4
+
+- Wie werden `AgentDefinition`-Gruppen (Team, Director) tatsächlich
+  modelliert — ein Tag auf `AgentDefinition.memory_scope`, oder eine
+  eigene, minimale Zuordnungstabelle? Beides ist additiv möglich; die
+  Entscheidung wird erst mit dem ersten echten Mehr-Team-Anwendungsfall
+  getroffen, nicht vorab.
+- Wie verhält sich diese Hierarchie zur bereits bestehenden
+  `spec/runtime/`-Spezifikationssuite (ACS/CPS/HRP/EVC/EM/OC) und zu
+  `apps/agent-runtime/`? Diese Sektion beschreibt eine Organisationssicht
+  *über* der Runtime; sie ersetzt keinen der zehn Standards. Eine formale
+  Zuordnung (z. B. "Director = mehrere ACS-Agent-Contracts unter einem
+  gemeinsamen `owner`") steht noch aus.
+- Ab welcher Team-Anzahl lohnt sich eine materialisierte Rollup-Sicht
+  gegenüber einer Live-Query über `runtime_events` (§5.3)?
 
 ---
 
@@ -248,7 +403,14 @@ werden in Phase 1/2 schrittweise hinter Manifeste gestellt.
 - Bestehende Edge Functions (z. B. `gdpr-audit`, `cookie-scan`) werden
   **nicht** sofort migriert. Sie laufen weiter. Eine Migration findet erst
   statt, wenn eine Application sie über die Runtime aufruft.
+- `src/core/runtime/skills/browser-monitoring.ts` ist der erste Skill, der
+  direkt gegen `SkillRegistry`/`HandlerRegistry` registriert wird, ohne
+  über `src/lib/skills/registry.ts` zu laufen — jenes Registry ist für
+  chat-getriggerte LLM-Skills (Router + Prompt-Guardrails), Browser Agent
+  X07 wird dagegen programmatisch/zeitgesteuert ausgeführt. Siehe
+  `docs/architecture/browser-agent-x07.md`.
 
 ---
 
-*Letzte Aktualisierung: Mai 2026 — Status: Entwurf, Phase 0.*
+*Letzte Aktualisierung: Juli 2026 — Status: Entwurf, Phase 0/1 (§5 Phase 4
+konkretisiert, nicht implementiert — siehe §5-Header).*

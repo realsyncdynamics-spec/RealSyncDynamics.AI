@@ -353,12 +353,9 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
 
 ## Noch offene Punkte
 
-1. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
-   in ein `<iframe>`, `frame-src` fällt aber auf `default-src 'self'` zurück.
-   Das Feature dürfte unter der bestehenden CSP bereits blockiert sein.
-   **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
-   und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
-   nicht eindeutig. Braucht eine Produktentscheidung.
+1. **Governance-Browser vs. CSP** — analysiert, **Empfehlung: CSP so lassen**.
+   Details im Abschnitt „Governance-Browser vs. `frame-src`". Keine Änderung
+   vorgenommen; eine abweichende Produktentscheidung bleibt möglich.
 2. **Laufzeit-Verifikation — nur noch Lighthouse offen.**
    Die Response-Header sind **am ausgelieferten Deployment geprüft** (Abschnitt
    „Laufzeit-Verifikation der Header"), das Netzwerkverhalten **im Browser
@@ -435,6 +432,62 @@ Es geht dabei nichts an Google, Meta oder TikTok raus: der Test bricht die
 Tracker-Requests per `page.route(…).abort()` ab, bevor sie das Netz erreichen.
 Gemessen wird der *Versuch* — das `request`-Event feuert vor dem Routing. Der
 Test hängt damit auch nicht an der Erreichbarkeit der Drittanbieter.
+
+---
+
+## Governance-Browser vs. `frame-src`
+
+Der Punkt stand als „braucht eine Produktentscheidung" offen. Nach Durchsicht
+des Codes ist die Lage klarer als angenommen.
+
+**Was passiert.** `GovernanceAddressBar` nimmt eine URL entgegen und lässt nur
+`http:`/`https:` durch (`javascript:`, `data:` sind damit ausgeschlossen —
+korrekt). `GovernanceBrowserShell` reicht sie an `EmbeddedBrowserCanvas`, das
+sie in ein `<iframe>` legt. `frame-src` fehlt in der CSP und fällt auf
+`default-src 'self' https://*.supabase.co data:` zurück — fremde Hosts werden
+also blockiert. Das ist korrekt beobachtet.
+
+**Warum das trotzdem kein kaputtes Feature ist.** Die Komponente behandelt den
+Blockadefall bereits als vorgesehenen Pfad: `handleError` zeigt „Vorschau nicht
+verfügbar — Diese Seite lässt keine Einbettung zu (X-Frame-Options/CSP). Der
+Scan funktioniert trotzdem" und bietet **„Trotzdem scannen"** sowie **„Direkt
+öffnen"** an. Protokolliert wird das als `IFRAME_LOAD_BLOCKED`. Der Kern des
+Features — der Scan — hängt nicht am Iframe.
+
+Dieser Pfad wird ohnehin gebraucht: Die meisten realen Zielseiten senden selbst
+`X-Frame-Options` oder `frame-ancestors` und lassen sich unabhängig von unserer
+CSP nicht einbetten. Eine Lockerung von `frame-src` würde die Vorschau also nur
+für eine Minderheit von Seiten gewinnen.
+
+**Nebenbefund zum Sandbox-Attribut.** Das Iframe trägt
+`sandbox="allow-scripts allow-same-origin allow-popups allow-forms"`. Die
+Kombination `allow-scripts` + `allow-same-origin` ist bei **gleichorigin**
+geladenem Inhalt ein bekanntes Anti-Pattern: das eingebettete Dokument kann
+dann das Sandbox-Attribut im Elterndokument entfernen, die Sandbox also
+aufheben. Bemerkenswert ist die Konstellation: Die aktuelle CSP erlaubt mit
+`default-src 'self'` **genau den gleichorigin-Fall** — also den einzigen, in
+dem die Flag-Kombination problematisch ist — und blockiert alle
+cross-origin-Fälle, in denen sie vergleichsweise harmlos wäre.
+
+Praktisch ist das Risiko begrenzt: gleichorigin-Inhalt ist die eigene
+Anwendung, und bei einem XSS wäre die Sandbox ohnehin das kleinere Problem
+(`script-src` enthält `'unsafe-inline'`). Es bleibt aber eine unnötige
+Schwächung.
+
+**Empfehlung.**
+
+1. `frame-src` **nicht** lockern. Der Gewinn ist gering, der Preis — beliebige
+   Fremdinhalte im App-Kontext einbettbar — steht dazu in keinem Verhältnis.
+2. Wenn Vorschauen fachlich gebraucht werden, serverseitig rendern
+   (Screenshot-Service) statt live einzubetten. Das passt auch besser zum
+   Evidence-Gedanken: ein gehashter Screenshot ist beweisfähig, ein Live-Iframe
+   nicht.
+3. Unabhängig davon `allow-same-origin` aus dem `sandbox`-Attribut entfernen,
+   sofern die Vorschau keinen Zugriff auf eigene Cookies/Storage braucht.
+   Kleiner Eingriff, beseitigt die Escape-Möglichkeit.
+
+Punkt 3 ist eine Verhaltensänderung an einem Auth-gated Feature und wurde hier
+**nicht** vorgenommen — er gehört in einen eigenen Vorgang mit eigenem Test.
 
 ---
 
@@ -541,7 +594,9 @@ npm run build     → erfolgreich, CSP in dist/index.html und dist/_headers
 3. Kommentar in `deploy/cloudflare/main.tf` ist nachgezogen.
 
 **Mittelfristig**
-4. Governance-Browser vs. `frame-src` klären (offener Punkt 4) — Produktentscheidung.
+4. `allow-same-origin` aus dem `sandbox`-Attribut des Governance-Browsers
+   entfernen — siehe Abschnitt „Governance-Browser vs. `frame-src`". `frame-src`
+   selbst bleibt nach Analyse unverändert.
 5. `'unsafe-inline'` durch Nonces ersetzen.
 6. Bundle-Splitting: `react-pdf` und `LineChart` aus dem Start-Chunk lösen,
    abgesichert durch die vorhandenen Playwright-E2E-Tests.

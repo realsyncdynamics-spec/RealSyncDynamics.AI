@@ -30,6 +30,13 @@ Request einen roten Check.
 Exit-Code 0 bedeutet für Vercel „Build überspringen" (1 hieße „bauen"). Das
 Deployment wird damit übersprungen statt zu scheitern.
 
+Gemessene Wirkung (Commit `4179289`): der Vercel-Bot führt das Deployment als
+`Ignored`, und der Sammelstatus `Vercel Deployments – realsynchost` kippte
+dadurch von „1 required project failed to deploy" auf „All required and affected
+projects deployed". Die beiden projektbezogenen Status (`Vercel – …`) melden
+weiterhin `Account is blocked` — sie werden nach dem Ignorieren nicht mehr
+nachgezogen.
+
 **Das ist eine Notlösung, keine Reparatur.** Der richtige Schritt ist, die
 Vercel-Integration für dieses Repository zu trennen — die Plattform deployt über
 Cloudflare Pages und den VPS-Docker-Stack, nicht über Vercel. Sobald das erledigt

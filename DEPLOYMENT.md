@@ -72,12 +72,28 @@ Zwei Vercel-Projekte hängen als GitHub-App an diesem Repository und erzeugen an
 und blockieren auch keinen Merge — `mergeable_state: blocked` kommt von der
 Review-Pflicht, nicht von Vercel.
 
-| Projekt | Fehler | Ursache |
-|---------|--------|---------|
-| `real-sync-dynamics-ai`<br>`prj_6zUFI7RKzL0yp9mJHfj25EDpAM8g` | `Deployment has failed` | Root Directory zeigt auf `services/realsync-runtime-core` — ein Fastify-Backend mit Postgres/Redis/NATS auf Port 4000. Es hat einen `Dockerfile` und die Scripts `start`, `dev`, `migrate`, aber **kein** `build`. Der Dienst gehört in den Container-Stack, nicht zu Vercel. |
+| Projekt | Fehler (Stand 2026-07-27) | Ursache |
+|---------|---------------------------|---------|
+| `real-sync-dynamics-ai`<br>`prj_6zUFI7RKzL0yp9mJHfj25EDpAM8g` | `Account is blocked` | Zuvor `Deployment has failed`: das Root Directory zeigt auf `services/realsync-runtime-core` — ein Fastify-Backend mit Postgres/Redis/NATS auf Port 4000. Es hat einen `Dockerfile` und die Scripts `start`, `dev`, `migrate`, aber **kein** `build`. Der Dienst gehört in den Container-Stack, nicht zu Vercel. |
 | `real-sync-dynamics-ai-9ue5` | `Account is blocked` | Kontosperre; kommt gar nicht erst zum Bauen. |
 
 Beide gehören zum Team `realsynchost-c3f4cfdf`.
+
+Seit dem 27.07.2026 melden **beide** Einzelstatus `Account is blocked` — zwischen
+zwei Commits im Abstand von drei Minuten wechselte das erste Projekt von
+`Deployment has failed` auf `Account is blocked`.
+
+Wirkung des *Ignored Build Step* (siehe unten), gemessen am Commit `4179289`:
+
+| Status | Vorher | Nachher |
+|--------|--------|---------|
+| `Vercel Deployments – realsynchost` (Sammelstatus) | failure — „1 required project failed to deploy" | **success** — „All required and affected projects deployed" |
+| `Vercel – real-sync-dynamics-ai` | failure | failure (`Account is blocked`) |
+| `Vercel – real-sync-dynamics-ai-9ue5` | failure | failure (`Account is blocked`) |
+
+Das Deployment des ersten Projekts wird laut Vercel-Bot als `Ignored` geführt,
+der Sammelstatus zählt es dadurch nicht mehr als gescheitert. Die beiden
+Einzelstatus werden nach dem Ignorieren nicht mehr nachgezogen und bleiben rot.
 
 Die Verbindung besteht ausschließlich im Vercel-Dashboard. Im Repository gibt es
 kein `.vercel/`, keine Erwähnung in einem Workflow und keine Abhängigkeit in
@@ -86,11 +102,10 @@ kein `.vercel/`, keine Erwähnung in einem Workflow und keine Abhängigkeit in
 Die einzige Vercel-Datei ist `services/realsync-runtime-core/vercel.json` mit
 einem *Ignored Build Step* (`{"ignoreCommand": "exit 0"}`), der das Deployment
 des ersten Projekts überspringt statt scheitern zu lassen. **Das ist eine
-Notlösung gegen den roten Dauer-Check, keine Reparatur** — und sie wirkt nur auf
-dieses eine Projekt. Das gesperrte Konto bleibt rot, weil die Sperre greift,
-bevor Repo-Konfiguration überhaupt gelesen wird; ebenso der Sammelstatus
-`Vercel Deployments – realsynchost`. **Vercel wird aus dem Repository heraus
-nicht grün.** Begründung im Detail: `services/realsync-runtime-core/README.md`.
+Notlösung gegen den roten Dauer-Check, keine Reparatur.** Sie bringt den
+Sammelstatus auf grün, die beiden Einzelstatus bleiben rot — **vollständig grün
+wird Vercel aus dem Repository heraus nicht.** Begründung im Detail:
+`services/realsync-runtime-core/README.md`.
 
 *(Die beiden `vercel`-Treffer im Quellcode sind unbeteiligt: ein Vendor-Enum in
 `src/features/governance/remediation/types.ts` und ein Doku-Absatz in

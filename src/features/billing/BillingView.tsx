@@ -8,6 +8,7 @@ import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
 import { StripeAccountInfo } from './StripeAccountInfo';
 import { PlanUpgradeModal } from './PlanUpgradeModal';
+import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
 import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
@@ -17,6 +18,7 @@ interface Subscription {
   status: string;
   current_period_start: string | null;
   current_period_end: string | null;
+  trial_ends_at: string | null;
   cancel_at_period_end: boolean;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
@@ -71,6 +73,7 @@ export function BillingView() {
   const [opening, setOpening] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradingPlan, setUpgradingPlan] = useState(false);
+  const [dismissedTrialBanner, setDismissedTrialBanner] = useState(false);
 
   useEffect(() => {
     if (!activeTenantId) return;
@@ -81,7 +84,7 @@ export function BillingView() {
       const sb = getSupabase();
       const { data: subRow, error: subErr } = await sb
         .from('subscriptions')
-        .select('plan_key, status, current_period_start, current_period_end, cancel_at_period_end, stripe_customer_id, stripe_subscription_id')
+        .select('plan_key, status, current_period_start, current_period_end, trial_ends_at, cancel_at_period_end, stripe_customer_id, stripe_subscription_id')
         .eq('tenant_id', activeTenantId).maybeSingle();
       if (cancelled) return;
       if (subErr) { setError(subErr.message); return; }
@@ -181,6 +184,14 @@ export function BillingView() {
           Aktueller Plan + Stripe-Portal für Zahlungsmethode, Rechnungen und Kündigung.
         </p>
       </div>
+
+      {sub !== 'none' && sub?.status === 'trialing' && sub?.trial_ends_at && !dismissedTrialBanner && (
+        <TrialCountdownBanner
+          trialEndDate={sub.trial_ends_at}
+          planName={PLAN_LABELS[sub.plan_key ?? 'free'] ?? sub.plan_key ?? 'Free'}
+          onDismiss={() => setDismissedTrialBanner(true)}
+        />
+      )}
 
       {error && (
         <div className="flex items-start gap-2 text-sm text-red-300 bg-red-950/40 border border-red-900 rounded-none p-3">

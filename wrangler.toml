@@ -1,12 +1,18 @@
 # Cloudflare Pages deployment config (modernes Pages-Format).
 #
-# Frueher standen hier die Legacy-Felder `[build] command` und
-# `[build.upload] dir` — das ist Workers-Sites-Syntax und fuer Pages NICHT
-# gueltig; moderne `wrangler pages deploy`-Aufrufe brechen daran ab.
-#
-# Pages erwartet stattdessen `pages_build_output_dir`. Der eigentliche Build
-# laeuft in CI (npm run build → dist/), deployt wird das Artefakt via
+# Pages erwartet `pages_build_output_dir` (anstelle von Legacy-Fields).
+# Build laeuft in CI (npm run build → dist/), deployt via
 # `wrangler pages deploy dist` (siehe .github/workflows/deploy-cloudflare-pages.yml).
+#
+# Secrets Management:
+# - Pages: Env vars via GitHub Actions → VITE_* env vars
+# - Workers: Secrets via `wrangler secret put KEY --env production`
+#   (sensitive keys: ANTHROPIC_API_KEY, STRIPE_SECRET_KEY, etc.)
+#
+# NOTE: Future Cloudflare Workers configuration (Phase B1+)
+# will be added in a separate wrangler-workers.toml file.
+# This file is optimized for Pages-only deployments.
+
 name = "realsyncdynamics-ai"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-06-23"

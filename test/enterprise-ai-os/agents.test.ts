@@ -3,8 +3,8 @@ import { enterpriseAgents, getEnterpriseAgent } from '../../src/lib/enterprise-a
 import { createEnterpriseAgent } from '../../src/lib/enterprise-ai-os/agents/factory';
 
 describe('Enterprise AI OS · Agent Registry', () => {
-  it('contains all 7 agents', () => {
-    expect(enterpriseAgents).toHaveLength(7);
+  it('contains all 8 agents', () => {
+    expect(enterpriseAgents).toHaveLength(8);
   });
 
   it('every agent has a Position with a layer + order + systemBoundary', () => {

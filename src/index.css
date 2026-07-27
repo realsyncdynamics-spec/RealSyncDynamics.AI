@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@import "./styles/context-themes.css";
 
 /* Self-hosted Fonts (Inter, Space Grotesk, JetBrains Mono) — latin + latin-ext.
    Vermeidet CSP-Verstoss + Drittanbieter-Request an fonts.googleapis.com (DSGVO). */

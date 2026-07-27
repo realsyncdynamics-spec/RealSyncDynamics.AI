@@ -13,12 +13,14 @@ import {
   X,
   AlertTriangle,
   ShieldCheck,
+  ChevronRight,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
   enterpriseAgents,
   runAgent,
   fetchAgentRuns,
+  runRowToResult,
   AUTONOMY_LABELS,
   AGENT_STATUS_LABELS,
   type AgentId,
@@ -27,8 +29,12 @@ import {
 } from './agentsApi';
 import type { EnterpriseAgentDefinition } from '../../../lib/enterprise-ai-os/agents/types';
 import { AgentActivityPanel } from './AgentActivityPanel';
-import { AuthGate } from '../../kodee/connections/AuthGate';
-import { withPerformanceMonitoring } from '../withPerformanceMonitoring';
+import { AgentRunOutput } from './AgentRunOutput';
+import { AgentRunForm } from './AgentRunForm';
+import { FeedbackReportsInput } from './FeedbackReportsInput';
+import { AGENT_INPUT_SCHEMAS, hasInputSchema } from './agentInputSchemas';
+
+const FEEDBACK_AGENT_ID = 'feedback-intelligence-agent';
 
 // ── Status-Pill ────────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: EnterpriseAgentDefinition['status'] }) {
@@ -147,10 +153,6 @@ function Toast({ message, tone }: { message: string; tone: 'ok' | 'error' }) {
   );
 }
 
-function Inner() {
-  return <div className="p-4 text-titanium-300">Implementation pending</div>;
-}
-
 // ── AgentsCenterView ───────────────────────────────────────────────────────
 export function AgentsCenterView() {
   const { activeTenantId } = useTenant();
@@ -161,6 +163,8 @@ export function AgentsCenterView() {
   const [config, setConfig] = useState<EnterpriseAgentDefinition | null>(null);
   const [history, setHistory] = useState<{ agent: EnterpriseAgentDefinition; rows: AgentRunRow[] | null; error?: string } | null>(null);
   const [allRuns, setAllRuns] = useState<AgentRunRow[]>([]);
+  const [runForm, setRunForm] = useState<EnterpriseAgentDefinition | null>(null);
+  const [runDetail, setRunDetail] = useState<{ agent: EnterpriseAgentDefinition; result: AgentRunResult; when: string } | null>(null);
 
   function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
     setToast({ msg, tone });
@@ -191,24 +195,32 @@ export function AgentsCenterView() {
     return map;
   }, [allRuns]);
 
+  async function executeRun(agent: EnterpriseAgentDefinition, payload?: Record<string, unknown>) {
+    setBusyId(agent.id);
+    try {
+      const res = await runAgent({ agentId: agent.id, tenantId: activeTenantId ?? undefined, payload });
+      if (!res.ok || !res.result) {
+        showToast(res.error ?? 'Agent-Lauf fehlgeschlagen.', 'error');
+        return;
+      }
+      setRunForm(null);
+      setRunResult({ agent, result: res.result });
+      showToast(`${agent.shortName}: ${res.result.status}`);
+      await loadRuns();
+    } catch (e) {
+      showToast((e as Error).message, 'error');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   const handlers: CardHandlers = {
     busyId,
-    onRun: async (agent) => {
-      setBusyId(agent.id);
-      try {
-        const res = await runAgent({ agentId: agent.id, tenantId: activeTenantId ?? undefined });
-        if (!res.ok || !res.result) {
-          showToast(res.error ?? 'Agent-Lauf fehlgeschlagen.', 'error');
-          return;
-        }
-        setRunResult({ agent, result: res.result });
-        showToast(`${agent.shortName}: ${res.result.status}`);
-        await loadRuns();
-      } catch (e) {
-        showToast((e as Error).message, 'error');
-      } finally {
-        setBusyId(null);
-      }
+    // Agenten mit Eingabe-Schema öffnen zuerst ein Formular; alle anderen
+    // starten direkt (leeres payload — z. B. Infrastructure, Feedback).
+    onRun: (agent) => {
+      if (hasInputSchema(agent.id) || agent.id === FEEDBACK_AGENT_ID) setRunForm(agent);
+      else void executeRun(agent);
     },
     onHistory: async (agent) => {
       setHistory({ agent, rows: null });
@@ -294,31 +306,31 @@ export function AgentsCenterView() {
         <AgentActivityPanel />
       </div>
 
+      {/* Run-Form-Modal — Parameter-Eingabe vor dem Lauf */}
+      {runForm && (
+        <Modal title={`${runForm.name} — Parameter`} onClose={() => setRunForm(null)}>
+          <p className="mb-3 text-xs text-titanium-500">
+            Optionale Eingaben für diesen Lauf. Leere Felder werden weggelassen.
+          </p>
+          {runForm.id === FEEDBACK_AGENT_ID ? (
+            <FeedbackReportsInput
+              busy={busyId === runForm.id}
+              onSubmit={(payload) => void executeRun(runForm, payload)}
+            />
+          ) : (
+            <AgentRunForm
+              fields={AGENT_INPUT_SCHEMAS[runForm.id] ?? []}
+              busy={busyId === runForm.id}
+              onSubmit={(payload) => void executeRun(runForm, payload)}
+            />
+          )}
+        </Modal>
+      )}
+
       {/* Run-Result-Modal */}
       {runResult && (
         <Modal title={`${runResult.agent.name} — Ergebnis`} onClose={() => setRunResult(null)}>
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-titanium-600 uppercase">Status</span>
-              <span className="font-mono text-titanium-100">{runResult.result.status}</span>
-            </div>
-            <p className="text-titanium-300">{runResult.result.summary}</p>
-            <div>
-              <div className="font-mono text-[10px] text-titanium-600 uppercase mb-1">Findings ({runResult.result.findings.length})</div>
-              <pre className="bg-obsidian-950 border border-titanium-800 p-2 overflow-x-auto font-mono text-[10px] text-titanium-300 max-h-40">
-                {JSON.stringify(runResult.result.findings, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <div className="font-mono text-[10px] text-titanium-600 uppercase mb-1">Empfehlungen ({runResult.result.recommendations.length})</div>
-              <pre className="bg-obsidian-950 border border-titanium-800 p-2 overflow-x-auto font-mono text-[10px] text-titanium-300 max-h-40">
-                {JSON.stringify(runResult.result.recommendations, null, 2)}
-              </pre>
-            </div>
-            {runResult.result.persist_error && (
-              <p className="text-amber-400 font-mono text-[10px]">Hinweis: Lauf nicht persistiert ({runResult.result.persist_error}).</p>
-            )}
-          </div>
+          <AgentRunOutput result={runResult.result} />
         </Modal>
       )}
 
@@ -334,16 +346,37 @@ export function AgentsCenterView() {
           ) : (
             <div className="divide-y divide-titanium-900">
               {history.rows.map((r) => (
-                <div key={r.id} className="flex items-center justify-between py-2 text-xs">
-                  <div>
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() =>
+                    setRunDetail({
+                      agent: history.agent,
+                      result: runRowToResult(r),
+                      when: new Date(r.created_at).toLocaleString('de-DE'),
+                    })
+                  }
+                  className="w-full flex items-center justify-between gap-3 py-2 text-xs text-left hover:bg-obsidian-800 transition-colors"
+                >
+                  <div className="min-w-0">
                     <div className="font-mono text-titanium-200">{r.status}</div>
-                    <div className="text-titanium-500">{r.summary}</div>
+                    <div className="text-titanium-500 truncate">{r.summary}</div>
                   </div>
-                  <div className="font-mono text-[10px] text-titanium-600">{new Date(r.created_at).toLocaleString('de-DE')}</div>
-                </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono text-[10px] text-titanium-600">{new Date(r.created_at).toLocaleString('de-DE')}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-titanium-600" />
+                  </div>
+                </button>
               ))}
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Run-Detail-Modal — vollständiges Ergebnis eines vergangenen Laufs */}
+      {runDetail && (
+        <Modal title={`${runDetail.agent.name} — Lauf vom ${runDetail.when}`} onClose={() => setRunDetail(null)}>
+          <AgentRunOutput result={runDetail.result} />
         </Modal>
       )}
 

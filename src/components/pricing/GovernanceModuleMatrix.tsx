@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { GOVERNANCE_MODULES, canAccessModule } from '../governance-os/governanceModules';
-import { ModuleStatusBadge } from '../governance-os/ModuleStatusBadge';
 
 type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
 
@@ -15,6 +15,8 @@ const MATRIX_TIERS: { id: TierId; label: string }[] = [
 ];
 
 export function GovernanceModuleMatrix() {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
     <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
       <div className="max-w-5xl mx-auto">
@@ -31,7 +33,17 @@ export function GovernanceModuleMatrix() {
           </p>
         </div>
 
+        {/* Expand/Collapse Button */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold border border-titanium-700/50 hover:border-titanium-400 text-titanium-300 hover:text-titanium-50 transition-colors rounded-none"
+        >
+          <span>{isExpanded ? 'Module ausblenden' : 'Alle Module anzeigen'}</span>
+          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </button>
+
         {/* Matrix-Tabelle */}
+        {isExpanded && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
@@ -56,10 +68,7 @@ export function GovernanceModuleMatrix() {
                   className={`border-b border-titanium-900 ${i % 2 === 0 ? 'bg-obsidian-950' : 'bg-obsidian-900'}`}
                 >
                   <td className="py-2.5 pr-4 font-medium text-titanium-100 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-2">
-                      {mod.label}
-                      {mod.status !== 'live' && <ModuleStatusBadge status={mod.status} />}
-                    </span>
+                    {mod.label}
                   </td>
                   {MATRIX_TIERS.map((t) => {
                     const ok = canAccessModule(mod, t.id as string);
@@ -80,8 +89,9 @@ export function GovernanceModuleMatrix() {
             </tbody>
           </table>
         </div>
+        )}
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className={`${isExpanded ? 'mt-6' : 'mt-0'} flex flex-wrap gap-3`}>
           <Link
             to="/app"
             className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 transition-colors"

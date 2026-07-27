@@ -482,12 +482,17 @@ Schwächung.
    (Screenshot-Service) statt live einzubetten. Das passt auch besser zum
    Evidence-Gedanken: ein gehashter Screenshot ist beweisfähig, ein Live-Iframe
    nicht.
-3. Unabhängig davon `allow-same-origin` aus dem `sandbox`-Attribut entfernen,
-   sofern die Vorschau keinen Zugriff auf eigene Cookies/Storage braucht.
-   Kleiner Eingriff, beseitigt die Escape-Möglichkeit.
+3. `allow-same-origin` aus dem `sandbox`-Attribut entfernen — **umgesetzt**.
 
-Punkt 3 ist eine Verhaltensänderung an einem Auth-gated Feature und wurde hier
-**nicht** vorgenommen — er gehört in einen eigenen Vorgang mit eigenem Test.
+Zu Punkt 3: Das Attribut lautet jetzt `sandbox="allow-scripts allow-popups
+allow-forms"`. Der eingebettete Inhalt bekommt damit eine opake Herkunft und
+keinen Zugriff auf Cookies oder Storage. Für eine Governance-Vorschau ist das
+kein Verlust, sondern näher am Zweck: man sieht die Seite so, wie sie einem
+Erstbesucher ohne Sitzung begegnet — also im Zustand vor jeder Einwilligung.
+
+Abgesichert durch vier Tests in `test/components/governance/EmbeddedBrowserCanvas.test.tsx`.
+Gegenprobe gemacht: mit wieder eingefügtem `allow-same-origin` schlägt der Test
+fehl, er fängt die Regression also wirklich.
 
 ---
 
@@ -594,9 +599,10 @@ npm run build     → erfolgreich, CSP in dist/index.html und dist/_headers
 3. Kommentar in `deploy/cloudflare/main.tf` ist nachgezogen.
 
 **Mittelfristig**
-4. `allow-same-origin` aus dem `sandbox`-Attribut des Governance-Browsers
-   entfernen — siehe Abschnitt „Governance-Browser vs. `frame-src`". `frame-src`
-   selbst bleibt nach Analyse unverändert.
+4. Serverseitiges Rendering für Vorschauen erwägen (Screenshot-Service statt
+   Live-Iframe) — siehe Abschnitt „Governance-Browser vs. `frame-src`".
+   `frame-src` selbst bleibt nach Analyse unverändert, `allow-same-origin` ist
+   entfernt.
 5. `'unsafe-inline'` durch Nonces ersetzen.
 6. Bundle-Splitting: `react-pdf` und `LineChart` aus dem Start-Chunk lösen,
    abgesichert durch die vorhandenen Playwright-E2E-Tests.

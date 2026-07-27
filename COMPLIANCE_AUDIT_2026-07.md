@@ -248,9 +248,9 @@ nur Pfad, Referrer und UTM-Parameter an die eigene Supabase-Edge-Function.
 § 25 TDDDG greift mangels Zugriff auf Endgeräte-Speicher nicht; die Verarbeitung
 stützt sich auf Art. 6 I lit. f.
 
-**T-1 · `session_hash` rotiert entgegen der Dokumentation nicht** — *offen*
+**T-1 · `session_hash` rotierte entgegen der Dokumentation nicht** — *behoben*
 
-In `supabase/functions/track-pageview/index.ts`:
+Vorher, in `supabase/functions/track-pageview/index.ts`:
 
 ```ts
 const visitorHash = await sha256Hex(`${ipHeader}|${ua}|${today}`);  // rotiert täglich
@@ -272,11 +272,40 @@ Zusätzlich ist der Hash **ungesalzen**. Der IPv4-Raum ist mit 2^32 vollständig
 durchprobierbar, ein bekannter User-Agent-String reduziert den Aufwand weiter —
 die Pseudonymisierung trägt damit nur schwach.
 
-**Bewusst nicht geändert.** Der Fix wäre klein (Tagesbestandteil ergänzen, dazu
-ein serverseitiges Salt aus den Function-Secrets), verändert aber die Semantik
-einer produktiv befüllten, indizierten Analytics-Spalte. Ob eine „Session"
-tagesübergreifend gelten soll, ist eine Produktentscheidung, keine technische.
-Vorgabe des Sprints war ausdrücklich „keine Blindkorrekturen".
+**Fix.** Die Ableitung liegt jetzt in `supabase/functions/_shared/visitor-hash.ts`
+und bildet beide Werte als
+
+```
+HMAC-SHA256(PAGEVIEW_HASH_SALT, scope + ip + user-agent + UTC-Tag)
+```
+
+Damit sind beide auf einen Kalendertag begrenzt, und der Salt aus den
+Function-Secrets nimmt dem kleinen Eingaberaum die Durchprobierbarkeit. Das
+Scope-Tag (`visitor` / `session`) hält die beiden Werte auseinander; die
+Bestandteile sind längenpräfixiert, damit ein `|` im User-Agent keine andere
+IP-/UA-Kombination vortäuschen kann.
+
+Fehlt der Salt, verweigert die Function den Dienst mit HTTP 500, statt
+ungesalzene Werte zu schreiben — die Konfiguration ist damit sichtbar, nicht
+still degradiert. **Deploy-Schritt:** `PAGEVIEW_HASH_SALT` muss vor dem
+Ausrollen gesetzt sein (siehe `DEPLOYMENT.md`), sonst bricht das
+Pageview-Tracking.
+
+Nachgeprüft, warum das gefahrlos ging: `page_views.session_hash` wird von
+**keiner** Auswertung gelesen — die Analytics-RPCs
+(`20260506130000_analytics_rpcs.sql`, `20260506190000_admin_system_health_rpc.sql`)
+und `daily-digest` aggregieren ausschließlich über `visitor_hash` und `count(*)`.
+Die Spalte trägt auch keinen Index. Die im Sprint befürchtete
+Produktentscheidung stand also gar nicht an. Die gleichnamige Spalte in
+`marketing_events` ist davon unberührt — sie wird clientseitig gesetzt und hier
+nicht angefasst.
+
+Bestandsdaten behalten die alten Werte und verfallen mit dem bestehenden
+90-Tage-Cleanup. Hashes über die Umstellung hinweg sind absichtlich nicht
+vergleichbar.
+
+Belegt durch 15 Tests in `test/edge/visitor-hash.test.ts`, darunter der
+Regressionstest „session_hash rotiert täglich — wie visitor_hash".
 
 
 ---
@@ -329,6 +358,7 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
 | Kein Re-Consent bei Zweckänderung möglich | Mittel | Behoben |
 | Versehentlicher Widerruf durch falsche Anzeige | Mittel | Behoben |
 | Auftragsverarbeiter nicht ausgewiesen (Sentry) | Niedrig | Behoben |
+| Wiedererkennbarkeit über 90 Tage via `session_hash` (T-1) | Mittel — stabil je IP/UA, ungesalzen | Behoben |
 | Tracking vor Einwilligung | *bestand nicht* | — |
 | Drittland-Transfer ohne Information | *bestand nicht* | — |
 

@@ -85,9 +85,13 @@ if ! docker ps &> /dev/null; then
 fi
 echo -e "${GREEN}✅ Docker daemon running${NC}"
 
-# Check available disk space
+# Check available disk space.
+# Bewusst gegen / statt /var/www geprüft: das Zielverzeichnis wird erst in
+# Phase 2 angelegt, und df auf einen nicht existierenden Pfad exitet ≠ 0 —
+# was unter "set -e" das Skript hier abbrechen würde.
 echo "Checking disk space..."
-DISK_AVAILABLE=$(df /var/www | awk 'NR==2 {print $4}')
+DISK_AVAILABLE=$(df -P / | awk 'NR==2 {print $4}')
+DISK_AVAILABLE=${DISK_AVAILABLE:-0}
 if [[ $DISK_AVAILABLE -lt 5242880 ]]; then  # 5GB
   echo -e "${YELLOW}⚠️  Warning: Less than 5GB disk space available${NC}"
 else
@@ -176,7 +180,10 @@ echo ""
 echo -e "${YELLOW}🔌 Phase 4: Port Availability Check${NC}"
 echo ""
 
-FRONTEND_PORT=${FRONTEND_HOST_PORT:-8090}
+# Port aus der gerade geschriebenen .env lesen, nicht aus der Shell-Umgebung —
+# sonst prüft das Skript 8090, während der Container laut .env woanders lauscht.
+FRONTEND_PORT=$(grep -E '^FRONTEND_HOST_PORT=' "$ENV_FILE" | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
+FRONTEND_PORT=${FRONTEND_PORT:-8090}
 
 if ss -ltnp 2>/dev/null | grep -q ":${FRONTEND_PORT}\b"; then
   echo -e "${RED}❌ Port ${FRONTEND_PORT} is already in use:${NC}"
@@ -199,8 +206,20 @@ echo ""
 echo -e "${YELLOW}🐳 Phase 5: Initial Docker Test${NC}"
 echo ""
 
-read -p "Ready to test Docker Compose? (y/n) " -n 1 -r
-echo
+# Bei "curl ... | bash" ist stdin der Skript-Stream selbst — ein "read" von dort
+# würde die eigenen Skriptzeilen als Antwort verschlucken. Deshalb explizit von
+# /dev/tty lesen und ohne Terminal überspringen (die .env enthält an dieser
+# Stelle ohnehin noch Platzhalter, der Build würde also fehlschlagen).
+# "[[ -r /dev/tty ]]" genügt nicht: die Datei kann existieren und sich trotzdem
+# nicht öffnen lassen (z.B. in Containern) — daher das Öffnen selbst testen.
+REPLY=""
+if { : < /dev/tty; } 2>/dev/null; then
+  read -p "Ready to test Docker Compose? (y/n) " -n 1 -r < /dev/tty || REPLY=""
+  echo
+else
+  echo "Kein Terminal verfügbar (non-interaktiver Aufruf) — Build-Test übersprungen."
+fi
+
 if [[ $REPLY =~ ^[Yy]$ ]]; then
   cd "$COMPOSE_DIR"
 

@@ -359,13 +359,13 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
    **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
    und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
    nicht eindeutig. Braucht eine Produktentscheidung.
-2. **Laufzeit-Verifikation — Header erledigt, Netzwerkverhalten offen.**
-   Die Response-Header sind inzwischen **am ausgelieferten Deployment geprüft**,
-   siehe Abschnitt unten. Offen bleibt das Netzwerkverhalten im Browser (keine
-   Drittanbieter-Requests vor der Einwilligung, Wirksamkeit des Widerrufs) sowie
-   Lighthouse: der Ausgangs-Proxy dieser Umgebung setzt Chromium-Verbindungen
-   zurück (`ERR_CONNECTION_RESET`), `curl` kommt durch. Das ist mit einem Browser
-   auf einem normalen Netzzugang in wenigen Minuten nachzuholen.
+2. **Laufzeit-Verifikation — nur noch Lighthouse offen.**
+   Die Response-Header sind **am ausgelieferten Deployment geprüft** (Abschnitt
+   „Laufzeit-Verifikation der Header"), das Netzwerkverhalten **im Browser
+   gemessen** (Abschnitt „Consent-Gating im Browser"). Offen bleibt allein
+   Lighthouse; der Ausgangs-Proxy dieser Umgebung setzt Chromium-Verbindungen
+   nach außen zurück (`ERR_CONNECTION_RESET`), gegen `localhost` läuft der
+   Browser aber.
 
 ---
 
@@ -397,6 +397,34 @@ Einschätzung stützt, dass sie gefahrlos entfallen kann.
 *Einschränkung:* geprüft wurde die Preview-Domain, nicht `realsyncdynamicsai.de`.
 Beide werden von derselben `public/_headers` bedient; ein Abgleich gegen die
 Produktivdomain nach dem Merge bleibt sinnvoll.
+
+---
+
+## Consent-Gating im Browser
+
+Die 17 Unit-Tests prüfen die Logik von `pixels.ts` isoliert. Sie können nicht
+zeigen, dass im echten Browser kein Drittanbieter kontaktiert wird — dafür gibt
+es jetzt zwei E2E-Tests in `e2e/cookie-consent.spec.ts`, die die
+Netzwerk-Requests der Seite mitschneiden.
+
+| Phase | Gemessen |
+|-------|----------|
+| Seitenaufruf ohne Einwilligung | **0** Drittanbieter-Requests |
+| nach „Alle ablehnen" | **0** Drittanbieter-Requests |
+| nach „Alles akzeptieren" | > 0 — die Messung greift nachweislich |
+
+**Die Tests validieren sich selbst.** `pixels.ts` lädt die Pixel nur, wenn die
+IDs als `VITE_*_PIXEL_ID` / `VITE_GA4_MEASUREMENT_ID` im Build gesetzt sind.
+Ohne sie feuert auch nach einer Einwilligung nichts — „vor Consent: 0 Requests"
+wäre dann trivial erfüllt, selbst wenn das Gating vollständig kaputt wäre. Die
+Tests messen deshalb **zuerst den Positivfall** und überspringen sich mit
+Begründung, wenn er 0 ergibt, statt eine ungeprüfte Zusicherung zu liefern.
+
+Das ist in CI derzeit der Fall: der E2E-Workflow setzt keine `VITE_`-Variablen,
+die beiden Tests überspringen dort also. Belegt wurden sie lokal gegen einen
+Build mit Dummy-IDs (`G-TESTONLY123`) — dort greifen beide Zusicherungen und
+halten. Wer sie dauerhaft scharf stellen will, ergänzt Dummy-Pixel-IDs in
+`.github/workflows/e2e.yml`.
 
 ---
 

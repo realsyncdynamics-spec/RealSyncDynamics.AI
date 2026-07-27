@@ -72,11 +72,22 @@ in Produktion ins Leere — ohne sichtbaren Fehler.
 
 ### Niedrig
 
-**N-1 · Widersprüchliche, tote Header-Konfiguration**
-Root-`./_headers` setzt `X-Frame-Options: DENY`, `public/_headers` setzt
+**N-1 · Widersprüchliche, tote Header-Konfiguration** — *behoben*
+Root-`./_headers` setzte `X-Frame-Options: DENY`, `public/_headers` setzt
 `SAMEORIGIN`. Vite kopiert ausschließlich `public/` nach `dist/` — die
-Root-Datei wird nie ausgeliefert. Sie steht nur noch im `paths:`-Trigger von
-`deploy-cloudflare-pages.yml` und ist damit irreführender Altbestand.
+Root-Datei wurde nie ausgeliefert. Sie stand nur noch im `paths:`-Trigger von
+`deploy-cloudflare-pages.yml` und war damit irreführender Altbestand.
+
+**Fix: beide Root-Dateien entfernt**, dazu die zwei `paths:`-Einträge im
+Workflow. `public/**` deckt die tatsächlichen Dateien bereits ab, der Trigger
+verliert also keine Abdeckung. `_redirects` war ohnehin inhaltsgleich zur
+Variante unter `public/`.
+
+Der Sprint hatte das bewusst offengelassen, weil unklar war, welche Datei das
+Ziel-Deployment ausliest. Das ist jetzt dreifach belegt: `dist/_headers` ist
+byte-identisch mit `public/_headers`, enthält kein `DENY`, und das ausgelieferte
+Deployment antwortet mit `x-frame-options: SAMEORIGIN` (siehe Abschnitt
+„Laufzeit-Verifikation der Header").
 
 **N-2 · CSP ohne `base-uri`, `form-action`, `object-src`**
 Kein akuter Angriffspfad, aber fehlende Härtung gegen Base-Tag- und
@@ -337,18 +348,14 @@ Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung n
 
 ## Noch offene Punkte
 
-1. **N-1 — Root-`_headers`/`_redirects` bereinigen.** Bewusst *nicht* gelöscht:
-   Löschen ist nicht reversibel ohne Git-Kenntnis des Ziel-Deploys, und die
-   Dateien stehen in einem Workflow-Trigger. Empfehlung: entfernen und die
-   `paths:`-Einträge in `deploy-cloudflare-pages.yml` mitziehen.
-2. **`deploy/cloudflare/main.tf`** — Kommentar zur CSP-Entscheidung nachziehen.
-3. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
+1. **`deploy/cloudflare/main.tf`** — Kommentar zur CSP-Entscheidung nachziehen.
+2. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
    in ein `<iframe>`, `frame-src` fällt aber auf `default-src 'self'` zurück.
    Das Feature dürfte unter der bestehenden CSP bereits blockiert sein.
    **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
    und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
    nicht eindeutig. Braucht eine Produktentscheidung.
-4. **Laufzeit-Verifikation — Header erledigt, Netzwerkverhalten offen.**
+3. **Laufzeit-Verifikation — Header erledigt, Netzwerkverhalten offen.**
    Die Response-Header sind inzwischen **am ausgelieferten Deployment geprüft**,
    siehe Abschnitt unten. Offen bleibt das Netzwerkverhalten im Browser (keine
    Drittanbieter-Requests vor der Einwilligung, Wirksamkeit des Widerrufs) sowie
@@ -415,7 +422,7 @@ aber nicht gegen die Live-Domain.
 | Base-Tag-/Form-Hijacking | Nicht abgedeckt | `base-uri`/`form-action`/`object-src` gesetzt |
 | Cross-Origin-Window-Zugriff | Nicht abgedeckt | COOP `same-origin-allow-popups` |
 | Blindflug bei Produktionsfehlern | Sentry durch CSP blockiert | connect-src ergänzt |
-| Widersprüchliche Header-Konfiguration | Bestand (tot) | Offen — siehe N-1 |
+| Widersprüchliche Header-Konfiguration | Bestand (tot) | Behoben — Root-Dateien entfernt (N-1) |
 
 `'unsafe-inline'` in `script-src` bleibt bestehen. Eine Umstellung auf Nonces
 oder Hashes ist die wirksamste verbleibende Härtung, erfordert aber Eingriffe
@@ -488,7 +495,7 @@ npm run build     → erfolgreich, CSP in dist/index.html und dist/_headers
 1. Fixes gegen die deployte Seite verifizieren: Response-Header prüfen und im
    Netzwerk-Tab bestätigen, dass bei „nur Statistik" kein `ad_storage=granted`
    an Google geht.
-2. N-1 (tote Root-`_headers`) bereinigen. N-3 (`WaitlistSection`) ist erledigt.
+2. N-1 (tote Root-`_headers`) und N-3 (`WaitlistSection`) sind erledigt.
 3. Kommentar in `deploy/cloudflare/main.tf` nachziehen.
 
 **Mittelfristig**

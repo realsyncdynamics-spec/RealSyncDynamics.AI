@@ -101,6 +101,7 @@ Risiko, falls sie reaktiviert wird.
 | M-4 | `*.ingest.de.sentry.io` / `*.ingest.sentry.io` in `connect-src` ergänzt | Build-Verifikation |
 | N-2 | `base-uri 'self'`, `form-action 'self'`, `object-src 'none'` ergänzt | Build-Verifikation |
 | D-1 | Sentry als Auftragsverarbeiter in `SubProcessors.tsx` ergänzt | Build: 9 Prozessoren |
+| P-1 | Favicon deklariert (bestehendes Brand-Asset) — behebt 404 und fehlendes Icon | Browser-Lauf |
 | — | `Cross-Origin-Opener-Policy: same-origin-allow-popups` ergänzt | Build-Verifikation |
 
 **Zur CSP-Doppelauslieferung:** `deploy/cloudflare/main.tf` dokumentiert eine
@@ -169,6 +170,114 @@ Transparenzlücke, kein unzulässiger Datenfluss. **Behoben:** Eintrag in
 - **`RealSyncDynamicsAI.de/sdk/cookie-consent.js`** — auf zahlreichen Seiten als
   Code-Snippet dargestellt. Das ist das *eigene* Produkt-SDK für Kunden, keine
   Einbindung in die eigene Seite.
+
+---
+
+## Laufzeit-Verifikation
+
+Nachgeholt gegen das deployte Cloudflare-Pages-Preview-Artefakt (Response-Header
+per curl) und gegen den lokal ausgelieferten `dist/`-Build (Browser-Verhalten via
+Chromium/Playwright). Damit ist der zuvor als offen markierte Punkt geschlossen.
+
+### Response-Header live bestätigt
+
+Gegen `claude-dsgvo-compliance-hotf.realsyncdynamics-ai.pages.dev`:
+
+```
+content-security-policy: … frame-ancestors 'self'; base-uri 'self';
+                             form-action 'self'; object-src 'none'
+                             connect-src … https://*.ingest.de.sentry.io …
+cross-origin-opener-policy: same-origin-allow-popups
+strict-transport-security:  max-age=31536000; includeSubDomains; preload
+x-frame-options:            SAMEORIGIN
+x-content-type-options:     nosniff
+referrer-policy:            strict-origin-when-cross-origin
+permissions-policy:         camera=(), microphone=(), geolocation=()
+```
+
+M-3, M-4 und N-2 sind damit **laufzeitverifiziert**, nicht nur build-verifiziert.
+HTTP-Status 200 für `/`, `/legal/privacy`, `/datenschutz`, `/legal/datenschutz`,
+`/impressum`, `/legal/impressum`, `/legal/sub-processors`, `/robots.txt`,
+`/sitemap.xml`.
+
+### Browser-Verhalten (17 von 20 Prüfungen bestanden)
+
+| Prüfung | Ergebnis |
+|---------|----------|
+| Neuer Besucher: Drittanbieter-Requests vor Consent | **0 von 12 Requests** |
+| Nach „Alle ablehnen": weiterhin keine Tracker | bestanden |
+| Consent mit Version gespeichert | `{"analytics":false,"marketing":false,"version":1,…}` |
+| Wiederkehrender Besucher: Banner bleibt aus | bestanden |
+| Banner + gleichrangige Ablehnen-Schaltfläche sichtbar | bestanden |
+| Mobile `/legal/privacy` (iPhone 13) | 5.907 Zeichen, 0px Overflow |
+| Mobile `/impressum` | 4.379 Zeichen, 0px Overflow |
+| Mobile `/legal/sub-processors` | 2.878 Zeichen, 0px Overflow |
+| Sentry als Auftragsverarbeiter sichtbar (D-1) | bestanden |
+| JS-Exceptions | keine |
+
+Die drei verbleibenden Fehlschläge sind **ausschließlich**
+`ERR_CONNECTION_RESET` gegen `*.supabase.co` — die Sandbox lässt keinen
+ausgehenden Browser-Traffic zu. Es sind reguläre First-Party-Backend-Aufrufe,
+keine App-Defekte.
+
+**P-1 · Kein Favicon vorhanden** — *behoben*
+
+`index.html` deklarierte kein Icon, und es existierte keines. Browser fragen dann
+konventionsgemäß `/favicon.ico` an — das fängt der SPA-Fallback
+(`/* → /index.html 200`) ab und liefert ein **HTML-Dokument als Icon** aus.
+Auf der Live-Preview bestätigt: `/favicon.ico` → `200 text/html`.
+Folge: kein Favicon plus ein Konsolenfehler bei jedem Seitenaufruf.
+Behoben durch Verweis auf das bestehende `public/brand/logo-square-400.svg`,
+es wurde keine neue Grafik eingeführt.
+
+**Nebenbefund:** Weil der SPA-Fallback jeden unbekannten Pfad mit `200 text/html`
+beantwortet, tauchen fehlende Assets in Produktion **nie als 404 auf**. Das
+verdeckt Fehler systematisch — beim Prüfen von Asset-Pfaden ist der
+Content-Type auszuwerten, nicht der Status-Code.
+
+---
+
+## Tracking ohne Einwilligung — Prüfung
+
+`useTrackPageview()` (`src/lib/track.ts`) feuert bei jedem Routenwechsel vor der
+Einwilligung. Geprüft, ob das zulässig ist:
+
+**Client-seitig unbedenklich.** Kein `localStorage`, kein `sessionStorage`, kein
+`document.cookie`, kein Fingerprinting — per Suche verifiziert. Gesendet werden
+nur Pfad, Referrer und UTM-Parameter an die eigene Supabase-Edge-Function.
+§ 25 TDDDG greift mangels Zugriff auf Endgeräte-Speicher nicht; die Verarbeitung
+stützt sich auf Art. 6 I lit. f.
+
+**T-1 · `session_hash` rotiert entgegen der Dokumentation nicht** — *offen*
+
+In `supabase/functions/track-pageview/index.ts`:
+
+```ts
+const visitorHash = await sha256Hex(`${ipHeader}|${ua}|${today}`);  // rotiert täglich
+const sessionHash = await sha256Hex(`${ipHeader}|${ua}`);           // KEIN Tagesbestandteil
+```
+
+Das widerspricht zwei eigenen Zusagen:
+
+- Dateikopf: *„Different days = different hash, so we can't track across sessions — by design."*
+- Migration `20260506120000_page_views.sql` Z. 11: *„session_hash = visitor_hash + first-visit-day"*
+
+`visitor_hash` verhält sich wie dokumentiert. `session_hash` nicht: es ist ein
+über die Aufbewahrungsfrist von 90 Tagen **stabiler Wiedererkennungswert** für
+dieselbe IP-/User-Agent-Kombination. Der Unterschied ist materiell — „kann
+wiederkehrende Besucher nicht erkennen" gegenüber „kann alle Besuche einer
+IP über 90 Tage verknüpfen".
+
+Zusätzlich ist der Hash **ungesalzen**. Der IPv4-Raum ist mit 2^32 vollständig
+durchprobierbar, ein bekannter User-Agent-String reduziert den Aufwand weiter —
+die Pseudonymisierung trägt damit nur schwach.
+
+**Bewusst nicht geändert.** Der Fix wäre klein (Tagesbestandteil ergänzen, dazu
+ein serverseitiges Salt aus den Function-Secrets), verändert aber die Semantik
+einer produktiv befüllten, indizierten Analytics-Spalte. Ob eine „Session"
+tagesübergreifend gelten soll, ist eine Produktentscheidung, keine technische.
+Vorgabe des Sprints war ausdrücklich „keine Blindkorrekturen".
+
 
 ---
 

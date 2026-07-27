@@ -1,0 +1,260 @@
+# DSGVO- & Compliance-Audit — realsyncdynamicsai.de
+
+**Datum:** 2026-07-27 · **Basis:** `main` @ `c5486a8` · **Branch:** `claude/dsgvo-compliance-hotfix`
+
+Analyse des Ist-Zustands im Code, anschließend Behebung. Jeder behobene Defekt
+wurde zuvor durch einen fehlschlagenden Test belegt. Kein Fund wurde ohne
+Reproduktion korrigiert.
+
+---
+
+## Gefundene Probleme
+
+### Kritisch
+
+**K-1 · Werbe-Einwilligung ohne Marketing-Consent an Google gemeldet**
+`src/lib/pixels.ts` · Art. 6 I lit. a DSGVO, § 25 TDDDG
+
+`loadGoogleTag()` setzte den Google-Consent-Mode-v2-Default pauschal auf
+`granted` — mit der Begründung im Kommentar, das Modul werde ohnehin nur nach
+Einwilligung aufgerufen. Das stimmte nur für die Kategorie insgesamt, nicht pro
+Zweck: Bei **„nur Statistik"** (Marketing abgelehnt) lud GA4, und der Default
+meldete `ad_storage`, `ad_user_data` und `ad_personalization` als `granted`.
+
+Verschärfend war die Reihenfolge in `applyConsent()`: das korrigierende
+`consent → update` lief **vor** dem Laden von gtag und war beim ersten
+Seitenaufruf wirkungslos (`window.gtag` noch `undefined`). Es gab also keinen
+nachgelagerten Korrekturpfad.
+
+Reproduktion (Test `setzt bei „nur Statistik" KEIN Marketing-Signal auf granted`):
+```
+expected 'granted' to be 'denied'   // ad_storage
+```
+
+**K-2 · Widerruf blieb faktisch wirkungslos**
+`src/lib/pixels.ts` · Art. 7 III DSGVO
+
+`pixelsLoaded` wurde nie zurückgesetzt. Meta, TikTok und LinkedIn kennen kein
+Consent Mode — einmal injiziert, feuerten ihre Scripts nach dem Widerruf
+unverändert weiter. Der Widerruf war in der UI vorhanden, aber ohne technische
+Wirkung auf bereits geladene Drittanbieter.
+
+### Mittel
+
+**M-1 · Einwilligung ohne Version gespeichert**
+`src/components/CookieConsent.tsx` · Art. 7 I DSGVO (Nachweisbarkeit)
+
+Der Storage-Key trug `.v1`, das gespeicherte Objekt selbst aber keine
+Versionsnummer. Ein Re-Consent bei geänderten Zwecken oder neuen Empfängern
+war damit nicht möglich, ohne allen Nutzern den Consent zu löschen.
+
+**M-2 · Einstellungen zeigten beim Widerruf einen falschen Ist-Zustand**
+`src/components/CookieConsent.tsx`
+
+Beim Wiederöffnen über den Footer standen „Statistik" und „Marketing"
+unabhängig von der gespeicherten Wahl auf *aus*. Wer zuvor Statistik erlaubt
+hatte und die Einstellungen nur ansehen wollte, widerrief sie beim Speichern
+unbeabsichtigt.
+
+**M-3 · `frame-ancestors` in der CSP wirkungslos**
+`index.html`
+
+Die CSP wurde ausschließlich als `<meta http-equiv>` ausgeliefert.
+`frame-ancestors` wird dort **per Spezifikation ignoriert**. Der
+Clickjacking-Schutz stützte sich faktisch allein auf `X-Frame-Options`.
+
+**M-4 · Sentry durch die eigene CSP blockiert**
+`index.html` · Monitoring
+
+`initSentry()` wird in `src/main.tsx:12` aufgerufen, `*.ingest.sentry.io` fehlte
+aber in `connect-src`. Die im Stack dokumentierte Fehler-Aggregation lief damit
+in Produktion ins Leere — ohne sichtbaren Fehler.
+
+### Niedrig
+
+**N-1 · Widersprüchliche, tote Header-Konfiguration**
+Root-`./_headers` setzt `X-Frame-Options: DENY`, `public/_headers` setzt
+`SAMEORIGIN`. Vite kopiert ausschließlich `public/` nach `dist/` — die
+Root-Datei wird nie ausgeliefert. Sie steht nur noch im `paths:`-Trigger von
+`deploy-cloudflare-pages.yml` und ist damit irreführender Altbestand.
+
+**N-2 · CSP ohne `base-uri`, `form-action`, `object-src`**
+Kein akuter Angriffspfad, aber fehlende Härtung gegen Base-Tag- und
+Form-Hijacking.
+
+**N-3 · Toter Drittanbieter-Code**
+`src/components/WaitlistSection.tsx` bindet ein Tally.so-Embed ein, die
+Komponente wird jedoch nirgends gerendert. Kein Datenabfluss, aber ein latentes
+Risiko, falls sie reaktiviert wird.
+
+---
+
+## Behobene Probleme
+
+| ID | Fix | Nachweis |
+|----|-----|----------|
+| K-1 | Consent-Default ausnahmslos `denied`; Signale werden nach dem Laden pro Kategorie gesetzt; Reihenfolge korrigiert | 3 Tests |
+| K-2 | Widerruf einer geladenen Kategorie setzt den Zustand zurück und erzwingt einen Reload | 2 Tests |
+| M-1 | `CONSENT_VERSION` wird geschrieben und geprüft; Altbestände ohne Feld gelten als Version 1 | 3 Tests |
+| M-2 | Einstellungen werden aus der gespeicherten Wahl vorbefüllt | 1 Test |
+| M-3 | CSP zusätzlich als echter Header in `public/_headers`, inkl. `frame-ancestors 'self'` | Build-Verifikation |
+| M-4 | `*.ingest.de.sentry.io` / `*.ingest.sentry.io` in `connect-src` ergänzt | Build-Verifikation |
+| N-2 | `base-uri 'self'`, `form-action 'self'`, `object-src 'none'` ergänzt | Build-Verifikation |
+| — | `Cross-Origin-Opener-Policy: same-origin-allow-popups` ergänzt | Build-Verifikation |
+
+**Zur CSP-Doppelauslieferung:** `deploy/cloudflare/main.tf` dokumentiert eine
+bewusste Entscheidung *gegen* einen CSP-Header neben der Meta-CSP, wegen der
+Schnittmengen-Bildung. Beide Policies sind hier deshalb inhaltlich **identisch**
+gehalten; die einzige Ergänzung im Header ist `frame-ancestors`, das die
+Meta-Policy ohnehin ignoriert. Die wirksame Schnittmenge ist damit unverändert.
+Der Kommentar in `main.tf` ist jetzt veraltet und sollte nachgezogen werden.
+
+---
+
+## Nicht zu beanstanden
+
+Diese Punkte wurden geprüft und waren **bereits korrekt** — keine Änderung nötig:
+
+- **Consent-Gating** — vor der Einwilligung wird kein einziges Drittanbieter-Script geladen. Durch 3 Tests bestätigt.
+- **Keine Dark Patterns** — „Alles akzeptieren" und „Alle ablehnen" sind gleich breit (`flex-1`), gleich gestaltet und gleichrangig platziert. Durch Test abgesichert.
+- **Widerruf erreichbar** — `openCookieSettings()` ist in `PublicFooter.tsx` und `Landing.tsx` verlinkt.
+- **Fonts self-hosted** — 8 `.woff2` unter `public/fonts/`, kein Request an Google Fonts. Die `fonts.googleapis.com`-Treffer im Code sind Produkt*inhalte* über fremde Verstöße, keine eigenen Loads.
+- **Datenschutzerklärung** — 256 Zeilen, Art.-6-Rechtsgrundlagen, Speicherdauer, Aufsichtsbehörde, Widerspruch, Auftragsverarbeiter, Schrems-II-Hinweis, SCCs/DPF und eine **Tabelle je Pixel** mit Empfänger, Drittstaat, Zweck und Speicherdauer. Überdurchschnittlich vollständig.
+- **Impressum** — 229 Zeilen, alle Pflichtangaben nach § 5 DDG vorhanden (Anschrift, Vertretung, Handelsregister, USt-IdNr., Telefon, E-Mail, inhaltlich Verantwortlicher).
+- **Routing** — `/legal/privacy`, `/datenschutz`, `/legal/datenschutz`, `/impressum`, `/legal/impressum` sind alle registriert; SPA-Fallback `/* → /index.html 200` vorhanden. Kein Routingfehler feststellbar.
+- **robots.txt** — sauber; auth-gated Bereiche und Alias-Routen disallowed, AI-Crawler bewusst erlaubt, Sitemap referenziert.
+- **sitemap.xml** — 105 URLs, wohlgeformt.
+- **Security-Header (Bestand)** — `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, HSTS mit `includeSubDomains; preload` waren bereits gesetzt.
+
+---
+
+## Noch offene Punkte
+
+1. **N-1 — Root-`_headers`/`_redirects` bereinigen.** Bewusst *nicht* gelöscht:
+   Löschen ist nicht reversibel ohne Git-Kenntnis des Ziel-Deploys, und die
+   Dateien stehen in einem Workflow-Trigger. Empfehlung: entfernen und die
+   `paths:`-Einträge in `deploy-cloudflare-pages.yml` mitziehen.
+2. **N-3 — `WaitlistSection.tsx`** entweder entfernen oder das Tally-Embed
+   hinter den Marketing-Consent hängen, bevor die Komponente je gerendert wird.
+3. **`deploy/cloudflare/main.tf`** — Kommentar zur CSP-Entscheidung nachziehen.
+4. **Governance-Browser vs. CSP** — `EmbeddedBrowserCanvas` lädt beliebige URLs
+   in ein `<iframe>`, `frame-src` fällt aber auf `default-src 'self'` zurück.
+   Das Feature dürfte unter der bestehenden CSP bereits blockiert sein.
+   **Bewusst nicht angefasst:** eine Lockerung wäre eine Sicherheits­verschlechterung,
+   und die beabsichtigte Semantik (Proxy? nur same-origin?) ist aus dem Code
+   nicht eindeutig. Braucht eine Produktentscheidung.
+5. **Laufzeit-Verifikation ausstehend.** Alle Prüfungen erfolgten statisch am
+   Code plus Build. Ein Test gegen die *deployte* Seite (echte Response-Header,
+   reale Netzwerk-Requests vor Consent, Lighthouse) konnte hier nicht erfolgen —
+   die Umgebung hat keinen Zugriff auf realsyncdynamicsai.de.
+
+---
+
+## DSGVO-Risiken
+
+| Risiko | Vorher | Nachher |
+|--------|--------|---------|
+| Werbe-Einwilligung ohne Rechtsgrundlage an Google | **Hoch** — bei jedem „nur Statistik"-Nutzer | Behoben |
+| Weiterlaufendes Tracking nach Widerruf | **Hoch** — Meta/TikTok/LinkedIn dauerhaft | Behoben |
+| Kein Re-Consent bei Zweckänderung möglich | Mittel | Behoben |
+| Versehentlicher Widerruf durch falsche Anzeige | Mittel | Behoben |
+| Tracking vor Einwilligung | *bestand nicht* | — |
+| Drittland-Transfer ohne Information | *bestand nicht* | — |
+
+Restrisiko: Punkt 5 oben — die Fixes sind im Code und im Build verifiziert,
+aber nicht gegen die Live-Domain.
+
+---
+
+## Sicherheitsrisiken
+
+| Risiko | Vorher | Nachher |
+|--------|--------|---------|
+| Clickjacking via `frame-ancestors` | Wirkungslos (Meta ignoriert die Direktive) | Als echter Header gesetzt |
+| Base-Tag-/Form-Hijacking | Nicht abgedeckt | `base-uri`/`form-action`/`object-src` gesetzt |
+| Cross-Origin-Window-Zugriff | Nicht abgedeckt | COOP `same-origin-allow-popups` |
+| Blindflug bei Produktionsfehlern | Sentry durch CSP blockiert | connect-src ergänzt |
+| Widersprüchliche Header-Konfiguration | Bestand (tot) | Offen — siehe N-1 |
+
+`'unsafe-inline'` in `script-src` bleibt bestehen. Eine Umstellung auf Nonces
+oder Hashes ist die wirksamste verbleibende Härtung, erfordert aber Eingriffe
+in den Vite-Build und war für einen Hotfix zu risikoreich.
+
+---
+
+## Performance
+
+Gemessen am Produktions-Build (`npm run build`, 26–30 s):
+
+| Chunk | Größe | gzip |
+|-------|-------|------|
+| `index-BQzdmg3A.js` | 3.897 kB | **1.032 kB** |
+| `react-pdf.browser` | 1.468 kB | 491 kB |
+| `LineChart` | 358 kB | 107 kB |
+
+**Befund:** Der Haupt-Chunk liegt mit gut 1 MB gzip deutlich über dem
+Rollup-Warnschwellwert. `react-pdf` (491 kB gzip) wird für die PDF-Erzeugung
+gebraucht, gehört aber nicht in den Startpfad öffentlicher Landingpages.
+
+**Bewusst nicht geändert.** Ein Umbau des Chunkings (`manualChunks`) berührt das
+Lazy-Loading aller 100+ Routen. Das Regressionsrisiko steht in keinem Verhältnis
+zu einem Hotfix-Sprint, dessen Auftrag ausdrücklich lautete, keine Regressionen
+zu erzeugen. Empfehlung als eigener Change mit E2E-Absicherung — siehe unten.
+
+Keine Dynamic-Import-Fehler, keine 404-Assets und keine Build-Warnungen
+außerhalb der Chunk-Größe festgestellt.
+
+---
+
+## Commits
+
+| Commit | Inhalt |
+|--------|--------|
+| `2a08c67` | `fix(dsgvo): Consent-Mode-Signale, Widerruf und Consent-Versionierung korrigieren` |
+
+**Geänderte Dateien**
+
+```
+src/lib/pixels.ts                    Consent-Mode-Default, Widerruf, Versionsprüfung
+src/components/CookieConsent.tsx     Versionierung, Vorbefüllung der Einstellungen
+index.html                           CSP: Sentry, base-uri/form-action/object-src
+public/_headers                      CSP als echter Header, frame-ancestors, COOP
+test/consent-pixels.test.ts          7 Tests (neu)
+test/cookie-consent-banner.test.tsx  10 Tests (neu)
+```
+
+**Verifikation**
+
+```
+npx vitest run test/consent-pixels.test.ts test/cookie-consent-banner.test.tsx
+  → 17 passed
+
+npm test
+  → 202 Dateien, 2529 passed, 0 failed   (Baseline vorher ebenfalls 0 failed)
+
+npm run lint      → tsc --noEmit sauber
+npm run build     → erfolgreich, CSP in dist/index.html und dist/_headers
+```
+
+---
+
+## Empfehlungen
+
+**Kurzfristig**
+1. Fixes gegen die deployte Seite verifizieren: Response-Header prüfen und im
+   Netzwerk-Tab bestätigen, dass bei „nur Statistik" kein `ad_storage=granted`
+   an Google geht.
+2. N-1 (tote Root-`_headers`) und N-3 (`WaitlistSection`) bereinigen.
+3. Kommentar in `deploy/cloudflare/main.tf` nachziehen.
+
+**Mittelfristig**
+4. Governance-Browser vs. `frame-src` klären (offener Punkt 4) — Produktentscheidung.
+5. `'unsafe-inline'` durch Nonces ersetzen.
+6. Bundle-Splitting: `react-pdf` und `LineChart` aus dem Start-Chunk lösen,
+   abgesichert durch die vorhandenen Playwright-E2E-Tests.
+
+**Prozess**
+7. Die 17 neuen Tests decken den Einwilligungspfad ab, der vorher **ungetestet**
+   war — genau dort saßen beide kritischen Defekte. Bei Änderungen an
+   Consent-Kategorien oder Empfängern `CONSENT_VERSION` erhöhen; die
+   Versionsprüfung erzwingt dann automatisch ein Re-Consent.

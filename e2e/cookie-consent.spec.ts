@@ -112,6 +112,12 @@ test.describe('CookieConsent — Netzwerkverhalten', () => {
       if (TRACKER_RE.test(r.url())) hits.push(new URL(r.url()).host);
     });
 
+    // Tracker-Requests abbrechen, bevor sie das Netz erreichen. Gemessen wird
+    // der Versuch — das `request`-Event feuert vor dem Routing, der Zähler oben
+    // sieht ihn also weiterhin. So kontaktiert die CI nie wirklich Google, Meta
+    // oder TikTok, und der Test hängt nicht an deren Erreichbarkeit.
+    await page.route(TRACKER_RE, (route) => route.abort());
+
     await page.goto('/');
     // Sicherstellen, dass wirklich kein Consent aus einem früheren Lauf liegt.
     await page.evaluate((k) => localStorage.removeItem(k), CONSENT_STORAGE_KEY);

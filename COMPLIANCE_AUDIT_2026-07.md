@@ -420,11 +420,14 @@ wäre dann trivial erfüllt, selbst wenn das Gating vollständig kaputt wäre. D
 Tests messen deshalb **zuerst den Positivfall** und überspringen sich mit
 Begründung, wenn er 0 ergibt, statt eine ungeprüfte Zusicherung zu liefern.
 
-Das ist in CI derzeit der Fall: der E2E-Workflow setzt keine `VITE_`-Variablen,
-die beiden Tests überspringen dort also. Belegt wurden sie lokal gegen einen
-Build mit Dummy-IDs (`G-TESTONLY123`) — dort greifen beide Zusicherungen und
-halten. Wer sie dauerhaft scharf stellen will, ergänzt Dummy-Pixel-IDs in
-`.github/workflows/e2e.yml`.
+`.github/workflows/e2e.yml` setzt dafür zwei **ungültige** Dummy-IDs
+(`G-E2ETEST0000`, `000000000000000`), die zu keinem echten Konto gehören. Die
+Tests laufen damit in CI scharf statt sich zu überspringen.
+
+Es geht dabei nichts an Google, Meta oder TikTok raus: der Test bricht die
+Tracker-Requests per `page.route(…).abort()` ab, bevor sie das Netz erreichen.
+Gemessen wird der *Versuch* — das `request`-Event feuert vor dem Routing. Der
+Test hängt damit auch nicht an der Erreichbarkeit der Drittanbieter.
 
 ---
 

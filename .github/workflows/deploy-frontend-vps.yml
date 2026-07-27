@@ -20,6 +20,10 @@ on:
 jobs:
   deploy:
     name: Build and deploy frontend
+    env:
+      # Secret auf Job-Ebene heben: der secrets-Kontext ist in einem
+      # step-level "if" nicht verfuegbar, der env-Kontext dagegen schon.
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -69,6 +73,7 @@ jobs:
             . ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/var/www/realsyncdynamicsai-frontend/
 
       - name: Deploy on VPS via Docker Compose
+        id: vps_deploy
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
           set -Eeuo pipefail
@@ -133,8 +138,13 @@ jobs:
             echo "⚠ Warnung: https://realsyncdynamicsai.de nicht sofort erreichbar (könnte sein, dass nginx noch lädt)"
           fi
 
+      # Nur zurueckrollen, wenn der Deploy-Schritt selbst gescheitert ist.
+      # Ein blosses "failure()" wuerde auch bei einem Build-Fehler auf dem
+      # Runner feuern — dabei wurde der VPS nie angefasst, und der Rollback
+      # wuerde ein laufendes, gesundes Produktiv-Image auf einen aelteren
+      # Stand zurueckdrehen.
       - name: Deploy failed - Automatic Rollback
-        if: failure() && job.status == 'failure'
+        if: failure() && steps.vps_deploy.outcome == 'failure'
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF' || true
           set -Eeuo pipefail
@@ -153,11 +163,25 @@ jobs:
           fi
           EOF
 
+      # Slack-Benachrichtigung ist optional und darf das Deploy-Ergebnis nie
+      # verfaelschen:
+      #   - Die Webhook-URL kommt per env (SLACK_WEBHOOK_URL), NICHT als "with"-
+      #     Input — einen Input "webhook-url" gibt es in v1.26.0 nicht.
+      #   - SLACK_WEBHOOK_TYPE muss auf INCOMING_WEBHOOK stehen; der Default
+      #     waere WORKFLOW_TRIGGER und damit der falsche Modus fuer eine
+      #     hooks.slack.com/services/...-URL.
+      #   - Ohne gesetztes Secret wirft die Action ("Need to provide at least
+      #     one botToken or webhookUrl") — deshalb der Secret-Guard, sonst
+      #     faerbt ein geglueckter Deploy den Job rot.
+      #   - continue-on-error: eine Slack-Stoerung ist kein Deploy-Fehler.
       - name: Slack notification - Success
-        if: success()
+        if: success() && env.SLACK_WEBHOOK != ''
+        continue-on-error: true
         uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
           payload: |
             {
               "text": "✅ Frontend deployed successfully",
@@ -173,10 +197,13 @@ jobs:
             }
 
       - name: Slack notification - Failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK != ''
+        continue-on-error: true
         uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
           payload: |
             {
               "text": "❌ Frontend deployment failed",

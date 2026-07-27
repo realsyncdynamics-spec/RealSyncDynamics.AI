@@ -15,6 +15,10 @@ on:
 jobs:
   deploy:
     name: Manual production deployment
+    env:
+      # Secret auf Job-Ebene heben: der secrets-Kontext ist in einem
+      # step-level "if" nicht verfuegbar, der env-Kontext dagegen schon.
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.event.inputs.environment }}
@@ -100,11 +104,18 @@ jobs:
           sleep 5
           curl -fsSL https://realsyncdynamicsai.de/healthz || echo "⚠️ Health check may not be immediately available"
 
+      # Siehe Kommentar in deploy-frontend-vps.yml: URL per env statt "with",
+      # INCOMING_WEBHOOK explizit, Secret-Guard und continue-on-error, damit
+      # eine fehlende oder gestoerte Slack-Anbindung das Deploy-Ergebnis nicht
+      # verfaelscht.
       - name: Slack notification
-        if: always()
+        if: always() && env.SLACK_WEBHOOK != ''
+        continue-on-error: true
         uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
         with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
           payload: |
             {
               "text": "${{ job.status == 'success' && '✅ Production Deployment Successful' || '❌ Production Deployment Failed' }}",

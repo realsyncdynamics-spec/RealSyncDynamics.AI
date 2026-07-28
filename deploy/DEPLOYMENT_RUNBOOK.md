@@ -1,8 +1,56 @@
 # VPS Frontend Deployment Runbook
 
-**Last Updated:** 2026-07-26  
+**Last Updated:** 2026-07-27  
 **Target VPS:** realsyncdynamicsai.de (187.77.89.1)  
 **Stack:** React 19 + Vite 6.2 → Docker → nginx alpine → Traefik/Host-nginx
+
+---
+
+## Deployment-Topologie (Stand 2026-07-27)
+
+| Pfad | Rolle | Ausloeser |
+|---|---|---|
+| **Cloudflare Pages** | liefert die Live-Site aus | Cloudflares native Git-Integration, baut direkt aus dem Repo |
+| **VPS (dieses Runbook)** | Docker-Container hinter Reverse-Proxy | GitHub Actions, `deploy-frontend-vps.yml` |
+| `deploy-cloudflare-pages.yml` | CI-Validierung (lint + build) | Push auf `main`; der optionale Actions-Deploy-Job laeuft nur mit `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` |
+
+**Vercel gehoert nicht zu diesem Setup.** Es liefert fuer `realsyncdynamicsai.de`
+nichts aus — nachweisbar an den Response-Headern der Live-Site (`server:
+cloudflare`, `cf-ray`, keine `x-vercel-*`). Im Repo existiert entsprechend
+weder `vercel.json` noch `.vercelignore` noch `.vercel/`.
+
+Vercel haengt ausschliesslich als GitHub-App-Integration am Repo: es baut das
+Unterverzeichnis `services/realsync-runtime-core` und meldet einen
+Commit-Status. Dieser Status ist als *required check* konfiguriert und
+blockiert damit Merges — auch dann, wenn der Fehler nichts mit dem jeweiligen
+Diff zu tun hat.
+
+Das Loesen dieser Kopplung passiert ausserhalb des Repos (Repo-Settings +
+Vercel-Dashboard) und ist unten unter „Vercel entkoppeln" beschrieben.
+
+Hinweis: die Treffer auf `vercel` unter `src/features/governance/remediation/`
+und `supabase/functions/` sind **Produktfunktionalitaet** (das Remediation-Modul
+erzeugt Snippets fuer verschiedene Zielplattformen) und haben mit dem Hosting
+dieses Projekts nichts zu tun. Nicht entfernen.
+
+### Vercel entkoppeln
+
+Beide Schritte brauchen Rechte, die nur Repo-Admins bzw. der Vercel-Kontoinhaber
+haben:
+
+1. **Required check entfernen** — Repo → Settings → Branches → Schutzregel fuer
+   `main` → „Require status checks to pass" → die Vercel-Eintraege abwaehlen
+   (`Vercel – real-sync-dynamics-ai`, `Vercel – real-sync-dynamics-ai-9ue5`,
+   `Vercel Deployments – realsynchost`). Danach blockiert Vercel keinen Merge
+   mehr.
+2. **Integration trennen** — im Vercel-Dashboard beim Projekt
+   `real-sync-dynamics-ai` die Git-Verbindung loesen (Project → Settings → Git →
+   Disconnect) oder das Projekt loeschen. Alternativ die Vercel-GitHub-App unter
+   GitHub → Settings → Applications fuer dieses Repo deinstallieren. Erst danach
+   verschwinden die Bot-Kommentare an PRs.
+
+Schritt 1 allein genuegt, um wieder mergen zu koennen; Schritt 2 raeumt zusaetzlich
+die Kommentare und die fehlschlagenden Builds weg.
 
 ---
 

@@ -28,10 +28,11 @@ Internet ──HTTP──▶ Worker (src/worker.js) ──▶ Container (Dockerf
 3. Docker lokal (für `wrangler dev`/`deploy`, das das Image baut). In CI liefert
    `ubuntu-latest` Docker mit.
 4. **Postgres, Redis und NATS müssen von Cloudflares Egress erreichbar sein**
-   (öffentliche, TLS-gesicherte Endpunkte — oder via Cloudflare Tunnel /
-   Hyperdrive für Postgres). Interne VPS-Only-Hostnamen wie
+   (öffentliche, TLS-gesicherte Endpunkte — oder via Cloudflare Tunnel für
+   private Netze). Interne VPS-Only-Hostnamen wie
    `realsync-evidence-runtime:5000` funktionieren aus der Cloud NICHT und müssen
-   auf erreichbare Adressen umgestellt werden.
+   auf erreichbare Adressen umgestellt werden. Details unten unter
+   „Datenbank-/Egress-Erreichbarkeit".
 
 ## Laufzeit-Secrets setzen
 
@@ -72,6 +73,39 @@ Push auf `main`, sobald sich etwas unter `services/realsync-runtime-core/**`
 
 Ohne diese Secrets überspringt der Workflow den Deploy (Guard-Step), statt rot zu
 werden.
+
+## Datenbank-/Egress-Erreichbarkeit (Postgres/Redis/NATS)
+
+Der Container spricht Postgres/Redis/NATS über **direktes TCP** (Container haben
+vollen Netzwerk-Egress). Es gibt zwei Fälle:
+
+1. **Öffentlich erreichbare, TLS-gesicherte Endpunkte** (z. B. managed Postgres):
+   Nichts weiter nötig — die jeweilige Connection-URL als Secret setzen
+   (`RUNTIME_CORE_DATABASE_URL`, `REDIS_URL`, `NATS_URL`).
+
+2. **Private DB/Services (VPS-only, nicht öffentlich):** Per **Cloudflare Tunnel**
+   erreichbar machen. `cloudflared` im privaten Netz starten und die Ziele als
+   Routen/Public-Hostnames veröffentlichen; dann in den Secrets die
+   Tunnel-Hostnames statt der internen Docker-Namen verwenden. So bleibt die DB
+   ohne öffentliche IP erreichbar, ausschließlich über den Tunnel.
+
+### Warum NICHT Hyperdrive
+
+Hyperdrive (Postgres-Pooling/Caching) ist hier **nicht nutzbar**:
+
+- Die Hyperdrive-Connection-String ist laut Cloudflare-Doku „only accessible
+  from your Worker" — sie funktioniert nur im Worker-Isolate, nicht im
+  Container-Prozess.
+- Die einzige Brücke Container → Worker-Bindings ist der **outbound Worker**, und
+  der ist **HTTP/HTTPS-only** (KV, R2, Worker-Funktionen). Das
+  Postgres-Wire-Protokoll (raw TCP) läuft dort nicht durch.
+- Raw-TCP-zu-DB über Hyperdrive gibt es nur **workerseitig** (Workers VPC → VPC
+  Services), nicht aus dem Container.
+
+Hyperdrives Vorteile ließen sich nur erzielen, wenn der DB-Zugriff in einen
+Worker verlagert würde (Worker macht Queries, Container ruft Worker) — ein
+separater, größerer Umbau des Fastify-Monolithen. Für diesen Service bleibt es
+beim direkten Connect (ggf. via Tunnel).
 
 ## Hintergrund-Consumer & Scale-to-zero (wichtig)
 

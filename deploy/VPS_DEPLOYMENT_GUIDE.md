@@ -42,7 +42,12 @@ Your repository already has these secrets configured:
    - `VITE_SUPABASE_ANON_KEY` = Your Supabase Anon Key
    - etc.
 
-**Status:** ✅ All secrets present
+**Status:** ✅ Alle für das Deployment nötigen Secrets vorhanden
+
+**Nicht gesetzt (optional):** `SLACK_WEBHOOK_DEPLOY` und `VITE_SENTRY_DSN`.
+Die Slack-Schritte in beiden Workflows prüfen das Secret und überspringen sich
+selbst, solange es leer ist — es kommen also keine Slack-Meldungen, und das ist
+kein Fehler. Wer sie will: Secret anlegen, dann greifen die Schritte von selbst.
 
 ---
 

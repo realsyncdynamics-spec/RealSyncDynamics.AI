@@ -35,7 +35,7 @@ Set these in **Settings → Secrets and variables → Actions**:
 | Secret | Purpose | Example |
 |--------|---------|---------|
 | `VPS_SSH_HOST` | VPS IP/hostname | `187.77.89.1` |
-| `VPS_SSH_USER` | Deploy user | `deploy` |
+| `VPS_SSH_USER` | Deploy user | `root` (aktuell gesetzter Wert) |
 | `VPS_SSH_KEY` | Private SSH key | `-----BEGIN OPENSSH...` |
 | `VPS_SSH_KNOWN_HOST` | Host fingerprint | `187.77.89.1 ssh-ed25519 AAA...` |
 | `VITE_SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
@@ -46,12 +46,13 @@ Set these in **Settings → Secrets and variables → Actions**:
 ### B. VPS Setup (One-Time)
 
 ```bash
-# SSH into VPS
-ssh deploy@187.77.89.1
+# SSH into VPS — Login-User ist root (entspricht dem Secret VPS_SSH_USER).
+# Wer stattdessen einen unprivilegierten Deploy-User anlegt, muss VPS_SSH_USER
+# und die chown-Zeile unten passend aendern.
+ssh root@187.77.89.1
 
-# Create deployment directory
-sudo mkdir -p /var/www/realsyncdynamicsai-frontend
-sudo chown deploy:deploy /var/www/realsyncdynamicsai-frontend
+# Create deployment directory (als root kein sudo/chown noetig)
+mkdir -p /var/www/realsyncdynamicsai-frontend
 cd /var/www/realsyncdynamicsai-frontend
 
 # Clone repository
@@ -237,7 +238,7 @@ Rollback restores the previous working image tagged as `realsync-frontend:previo
 ### Manual Rollback
 ```bash
 # On VPS
-ssh deploy@187.77.89.1
+ssh root@187.77.89.1
 cd /var/www/realsyncdynamicsai-frontend/deploy/frontend-vps-deploy-v2
 
 # List available images

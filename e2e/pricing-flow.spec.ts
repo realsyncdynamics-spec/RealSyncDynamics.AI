@@ -402,13 +402,16 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should redirect to contact sales', async ({ page }) => {
-      // Navigate to /checkout/enterprise — CheckoutPage immediately redirects via window.location.href
-      // (does not render UI, so no button click needed)
+    test('enterprise checkout shows the self-service checkout gate', async ({ page }) => {
+      // Enterprise ist ein self-service-Checkout-Tier (echte Stripe-Price
+      // hinterlegt) — KEIN /contact-sales-Redirect mehr. Ohne Session zeigt
+      // die Seite das Login-Gate für den Enterprise-Plan.
       await page.goto(`${BASE_URL}/checkout/enterprise`, { waitUntil: 'networkidle' });
 
-      // Verify redirect to /contact-sales occurred
-      await expect(page).toHaveURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/\/checkout\/enterprise/);
+      await expect(
+        page.getByRole('heading', { name: /Anmelden, um Enterprise zu buchen/i }),
+      ).toBeVisible({ timeout: 10000 });
     });
   });
 
@@ -538,10 +541,10 @@ test.describe('Pricing Flow', () => {
         '/checkout/enterprise',
       ];
 
-      // Special redirects mapping
+      // Special redirects mapping. Enterprise ist self-service (kein Redirect
+      // mehr) und bleibt daher auf /checkout/enterprise.
       const expectedDestinations: Record<string, string> = {
         '/checkout/free-audit': '/audit',
-        '/checkout/enterprise': '/contact-sales',
       };
 
       for (const path of paths) {

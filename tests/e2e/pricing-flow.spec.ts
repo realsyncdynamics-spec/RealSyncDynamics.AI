@@ -116,10 +116,14 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should redirect to contact sales', async ({ page }) => {
+    test('enterprise checkout shows the self-service checkout gate', async ({ page }) => {
+      // Enterprise ist self-service (echte Stripe-Price) — kein /contact-sales-
+      // Redirect mehr; ohne Session erscheint das Login-Gate.
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForURL(/\/contact-sales/);
-      await expect(page).toHaveURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/\/checkout\/enterprise/);
+      await expect(
+        page.getByRole('heading', { name: /Anmelden, um Enterprise zu buchen/i }),
+      ).toBeVisible({ timeout: 10000 });
     });
   });
 

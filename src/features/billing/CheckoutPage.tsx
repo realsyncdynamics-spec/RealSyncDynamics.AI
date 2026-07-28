@@ -57,7 +57,7 @@ export function CheckoutPage() {
     : null;
   const tier = validPlan ? tierById(validPlan as TierId) : undefined;
 
-  // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
+  // 2. Free + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
     // 'free_audit' ist der kanonische planKey aus src/config/pricing.ts —
     // alle drei Schreibweisen führen zum kostenlosen Audit statt in den Checkout.
@@ -65,10 +65,10 @@ export function CheckoutPage() {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
-    if (planKey === 'enterprise' || planKey === 'enterprise_yearly') {
-      window.location.href = '/contact-sales?intent=enterprise&source=checkout-redirect';
-      return;
-    }
+    // Enterprise (+ enterprise_yearly) ist ein self-service-Checkout-Tier: für
+    // beide plan_keys ist eine echte Stripe-Price hinterlegt (public.products,
+    // Migration 20260728120000). KEIN /contact-sales-Redirect mehr — die Buchung
+    // läuft wie bei den übrigen Tiers über den Consent-Gate + Stripe.
     // Invalid plan key: redirect to pricing (full page load for E2E test compatibility)
     if (planKey && !VALID_PLAN_KEYS.has(planKey as PlanKey)) {
       window.location.href = '/pricing';

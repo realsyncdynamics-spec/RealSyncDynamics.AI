@@ -105,12 +105,15 @@ test.describe('Checkout Flow', () => {
     // können wir echte Stripe Price-IDs testen
   });
 
-  test('Enterprise Checkout leitet zu Contact-Sales um', async ({ page }) => {
-    // Enterprise hat keinen self-serve Checkout
+  test('Enterprise Checkout zeigt das Self-Service-Gate', async ({ page }) => {
+    // Enterprise ist ein self-service-Checkout-Tier (echte Stripe-Price
+    // hinterlegt) — kein /contact-sales-Redirect mehr. Ohne Session erscheint
+    // das Login-Gate für den Enterprise-Plan.
     await page.goto('http://localhost:3000/checkout/enterprise');
 
-    // Sollte zu /contact-sales umleiten
-    await page.waitForURL('**/contact-sales*');
-    expect(page.url()).toContain('/contact-sales');
+    await expect(page).toHaveURL(/\/checkout\/enterprise/);
+    await expect(
+      page.getByRole('heading', { name: /Anmelden, um Enterprise zu buchen/i }),
+    ).toBeVisible({ timeout: 10000 });
   });
 });

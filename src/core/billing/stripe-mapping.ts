@@ -19,6 +19,11 @@ const PRICE_FALLBACK = {
   growth: 'price_1TVbdbCNKcHrCAICBr5X3NmN',
   agency: 'price_1TVbduCNKcHrCAICT0IYHOmB',
   scale: 'price_1TVbePCNKcHrCAICE2Y5Z0mL',
+  // Enterprise-Prices real im Stripe-Account acct_1TYVIyREjTWueUcG angelegt
+  // (Produkt prod_UxG9V9clbqV7qw). Maßgeblich bleibt public.products (siehe
+  // Migration 20260728120000) — diese Fallbacks dienen nur der Frontend-Anzeige.
+  enterprise: 'price_1TxLdLREjTWueUcGRaXie8Vs',
+  enterprise_yearly: 'price_1Ty8ntREjTWueUcGJHOCMAlU',
   starter_yearly: 'price_internal_starter_yearly_790',
   growth_yearly: 'price_internal_growth_yearly_2490',
   agency_yearly: 'price_internal_agency_yearly_6900',
@@ -47,6 +52,14 @@ export const STRIPE_PLAN_MAPPING: Record<string, { priceId: string; label: strin
   scale: {
     priceId: env.VITE_STRIPE_PRICE_SCALE || PRICE_FALLBACK.scale,
     label: 'Scale (Reseller)',
+  },
+  enterprise: {
+    priceId: env.VITE_STRIPE_PRICE_ENTERPRISE || PRICE_FALLBACK.enterprise,
+    label: 'Unternehmen (Enterprise)',
+  },
+  enterprise_yearly: {
+    priceId: env.VITE_STRIPE_PRICE_ENTERPRISE_YEARLY || PRICE_FALLBACK.enterprise_yearly,
+    label: 'Unternehmen Jährlich (Enterprise)',
   },
   starter_yearly: {
     priceId: env.VITE_STRIPE_PRICE_STARTER_YEARLY || PRICE_FALLBACK.starter_yearly,

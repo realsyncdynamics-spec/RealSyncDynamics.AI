@@ -1,0 +1,22 @@
+# Traefik Dynamic Configuration.
+#
+# Das Routing selbst kommt aus den Container-Labels in docker-compose.yml.
+# Hier liegen nur Middlewares, die dort referenziert werden können.
+
+http:
+  middlewares:
+    # Security-Header für alle öffentlichen Routen.
+    secure-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        referrerPolicy: strict-origin-when-cross-origin
+
+    # Rate-Limit als Basisschutz der API-Endpoints.
+    api-ratelimit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+# TODO(TLS): tls-Sektion mit ACME-Zertifikaten für Staging/Prod ergänzen.

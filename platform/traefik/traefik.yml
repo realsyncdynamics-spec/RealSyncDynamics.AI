@@ -1,0 +1,25 @@
+# Traefik Static Configuration (lokaler Stack, HTTP only).
+#
+# TODO(TLS): Für Staging/Prod einen `websecure`-Entrypoint (:443) plus
+# ACME/Let's-Encrypt-Resolver ergänzen und HTTP auf HTTPS umleiten.
+
+api:
+  dashboard: true
+  insecure: true # nur lokal — im Prod-Stack hinter Auth legen
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: platform_rsd_net
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+log:
+  level: INFO
+
+accessLog: {}

@@ -1,0 +1,114 @@
+# AI-App-Builder + RealSyncDynamicsAI-Governance — lokaler Stack.
+#
+# Start:  docker compose up --build
+# Hosts:  builder.localhost | rsd.localhost | app.localhost | traefik.localhost:8080
+#
+# Hinweis: *.localhost löst auf den meisten Systemen automatisch auf 127.0.0.1 auf.
+# Falls nicht, Einträge in /etc/hosts ergänzen.
+
+services:
+  traefik:
+    image: traefik:v3.2
+    container_name: rsd_traefik
+    command:
+      - --configFile=/etc/traefik/traefik.yml
+    ports:
+      - "80:80"
+      - "8080:8080" # Dashboard (nur lokal!)
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - rsd_net
+
+  governance_backend:
+    build: ./governance_backend
+    container_name: rsd_governance
+    environment:
+      ENVIRONMENT: local
+      LOG_LEVEL: INFO
+      CORS_ORIGINS: "*"
+      # TODO(Persistenz): auf supabase_db umstellen, sobald der In-Memory-Store ersetzt ist.
+      DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8002:8002"
+    depends_on:
+      - supabase_db
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.governance.rule=Host(`rsd.localhost`)
+      - traefik.http.routers.governance.entrypoints=web
+      - traefik.http.services.governance.loadbalancer.server.port=8002
+    networks:
+      - rsd_net
+
+  builder_orchestrator:
+    build: ./builder_orchestrator
+    container_name: rsd_builder
+    environment:
+      ENVIRONMENT: local
+      LOG_LEVEL: INFO
+      CORS_ORIGINS: "*"
+      GOVERNANCE_BASE_URL: http://governance_backend:8002
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+    ports:
+      - "8001:8001"
+    depends_on:
+      - governance_backend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.builder.rule=Host(`builder.localhost`)
+      - traefik.http.routers.builder.entrypoints=web
+      - traefik.http.services.builder.loadbalancer.server.port=8001
+    networks:
+      - rsd_net
+
+  nextjs_frontend:
+    build: ./nextjs_frontend
+    container_name: rsd_frontend
+    environment:
+      # Browser-seitige Calls laufen über Traefik, nicht über Container-Namen.
+      NEXT_PUBLIC_BUILDER_URL: http://builder.localhost
+      NEXT_PUBLIC_GOVERNANCE_URL: http://rsd.localhost
+    ports:
+      - "3000:3000"
+    depends_on:
+      - builder_orchestrator
+      - governance_backend
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`app.localhost`)
+      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.services.frontend.loadbalancer.server.port=3000
+    networks:
+      - rsd_net
+
+  supabase_db:
+    image: postgres:16-alpine
+    container_name: rsd_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - rsd_pgdata:/var/lib/postgresql/data
+      # Migrations laufen beim ersten Start automatisch.
+      - ./governance_backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - rsd_net
+
+volumes:
+  rsd_pgdata:
+
+networks:
+  rsd_net:
+    driver: bridge

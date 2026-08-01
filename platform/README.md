@@ -25,20 +25,48 @@ BuildSpec ──▶ builder_orchestrator
                  │ 1. register_project ──▶ governance_backend
                  │                          risk_evaluator → risk_tier + required_gates
                  │ 2. task_graph.build_graph(spec, project)
-                 │      planner → architect → coder → devops → governance
-                 │ 3. agent_runner.enqueue_initial_tasks
+                 │ 3. agent_runner.run_graph  (Scheduler, nebenläufig)
                  ▼
-            devops-Agent ──▶ /api/v1/governance/gate-check
-                              gate_engine → approved | warning | blocked
-                              blocked ⇒ kein Deployment
+       planner ─▶ architect ─┬─▶ coder:auth ─┐
+                             ├─▶ coder:data ─┼─▶ devops ─▶ governance
+                             └─▶ coder:ui   ─┘
+                                              │
+                        /api/v1/governance/gate-check
+                        gate_engine → approved | warning | blocked
+                        blocked ⇒ kein Deployment ⇒ keine Aktivierung
 ```
 
-Zwei Stellen sind bewusst Fail-Closed:
+Die Coder-Ebene steht zur Bauzeit noch nicht fest — der Modulschnitt kommt aus
+dem Architect-Ergebnis. Die Tasks werden zur Laufzeit **zwischen Spawner und
+dessen Abhängige** eingehängt (`TaskGraph.insert_spawned`), wodurch DevOps
+automatisch zum Fan-in über alle Module wird, ohne die Modulzahl vorab zu kennen.
+
+Drei Stellen sind bewusst Fail-Closed:
 
 - Ist das Governance-Backend nicht erreichbar, antwortet `create-spec` mit
   `502` — es entsteht kein Graph ohne Risiko-Einstufung.
 - Ist ein Projekt als `unacceptable` eingestuft (Art. 5 EU AI Act), werden alle
   produzierenden Tasks sofort blockiert und das Gate blockiert jeden Build.
+- Blockiert das Gate, scheitert der DevOps-Task; die Governance-Task ist sein
+  Nachfolger und wird mitblockiert — ein blockierter Build kann im Inventar
+  also gar nicht als produktiv erscheinen. Abgesichert durch
+  `test_blockiertes_gate_loest_keine_aktivierung_aus`.
+
+## Orchestrierung
+
+| Eigenschaft | Umsetzung |
+|---|---|
+| Nebenläufigkeit | `asyncio.Semaphore`, Limit über `BUILDER_MAX_CONCURRENCY` (Default 4) |
+| Kein Doppel-Dispatch | In-Flight-Register je Projekt, Refcount über parallele Scheduler |
+| Retries | pro Task `max_attempts`, exponentielles Backoff (`BUILDER_RETRY_BASE_SECONDS`) |
+| Nicht wiederholbar | Exceptions mit `retryable = False` (z.B. ein blockiertes Gate) |
+| Timeout | pro Task `timeout_seconds`, Überschreitung ⇒ `failed` |
+| Idempotenz | deterministischer `build_hash` + Entscheidungs-Cache — ein Retry erzeugt keinen zweiten Gate-Eintrag |
+| Fehler-Propagierung | `propagate_block` blockiert alle (auch indirekten) Nachfolger |
+| Abbruch | `POST /api/v1/builder/cancel` — graceful: laufende Tasks enden regulär, nichts Neues wird eingeplant |
+| Prüfpfad | jeder Agentenlauf inkl. Fehlversuchen in `services/audit_log.py` |
+| Tracing | Span je Task, Kontext reist als Carrier auf der Task über die Queue-Grenze |
+| Fortschritt | `GET /api/v1/builder/events` (SSE) statt Polling |
 
 ## Start
 
@@ -94,7 +122,10 @@ cd builder_orchestrator && pip install -r requirements.txt && pytest
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
 Gate-Engine (approved/warning/blocked, unbekanntes Projekt, Art.-5-Hard-Stop),
-Task-Graph (Kettenaufbau, Blockierung, Enqueue-Verhalten).
+Graph-Aufbau und dynamische Expansion, Zyklusprüfung mit Rückbau,
+Fehler-Propagierung, Retries/Timeout/Cancellation, kein Doppel-Dispatch,
+Idempotenz des Gate-Aufrufs und der Nachweis, dass ein blockiertes Gate keine
+Aktivierung auslöst.
 
 ## Risiko-Einstufung (Regelwerk)
 
@@ -113,11 +144,17 @@ Gate-Katalog je Klasse in `governance_backend/app/services/risk_evaluator.py`
 ## Was noch fehlt (TODO-Marker im Code)
 
 - **LLM-Integration**: `builder_orchestrator/app/agents/*.py` sind Stubs mit
-  fertigen System-Prompts und Output-Verträgen.
-- **Persistenz**: beide Services nutzen In-Memory-Stores. Zielschema liegt in
-  `governance_backend/migrations/0001_init.sql` (inkl. RLS).
-- **Queue**: `agent_runner` setzt nur Status; `run_task` ist die Referenz für
-  den späteren Worker.
+  fertigen System-Prompts und Output-Verträgen. Der Architect liefert einen
+  festen Platzhalter-Modulschnitt (`auth`, `data`, `ui`), damit der Fan-out im
+  Graph real ist und nicht nur theoretisch.
+- **Persistenz**: In-Memory, aber hinter `GraphRepository` — der Umstieg auf
+  Postgres ist eine zweite Implementierung, kein Umbau. Zielschema in
+  `governance_backend/migrations/0001_init.sql` und als Skizze in
+  `services/repository.py`.
+- **Queue**: Der Scheduler läuft als `asyncio.Task` im selben Prozess. Die
+  Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht
+  gezogen.
+- **Hartes Cancel**: Ein laufender Agentenaufruf wird nicht abgeschossen.
 - **Alarmierung**: Regionswechsel EU→Nicht-EU wird erkannt und geloggt, aber
   erzeugt noch keinen Incident (`telemetry_handler._handle_region_change`).
 - **TLS**: Traefik läuft HTTP-only; ACME-Resolver fehlt.

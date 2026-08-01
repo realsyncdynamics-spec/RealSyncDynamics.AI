@@ -1,32 +1,59 @@
 """DevOps-Agent: baut, prüft das CI/CD-Gate und deployt.
 
-Input  (task.input): project_id, risk_tier, required_gates (+ Coder-Output)
+Input  (task.input): project_id, risk_tier, required_gates (+ Coder-Outputs)
 Output (task.output): build_hash, gate_status, endpoint
 
 Der Gate-Aufruf ist der Punkt, an dem der Builder die Governance nicht umgehen
 kann: ohne `approved`/`warning` gibt es kein Deployment.
 
+**Idempotenz** ist hier keine Kür. Der Task hat Außenwirkung — jeder Gate-Aufruf
+erzeugt einen Eintrag im Prüfpfad, jedes Deployment kostet. Ein Retry muss
+deshalb denselben `build_hash` verwenden und ein bereits entschiedenes Gate
+nicht erneut aufrufen.
+
 TODO(Build): echten Container-Build ausführen und den Digest als build_hash
-verwenden statt eines Platzhalters.
+verwenden statt eines abgeleiteten Platzhalters.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
-import uuid
 from typing import Dict
 
 from ..clients import rsd_client
-from ..schemas import AgentTask
+from ..schemas import AgentResult, AgentTask, TaskGraph
 
 logger = logging.getLogger(__name__)
 
+# idempotency_key -> bereits getroffene Gate-Entscheidung
+_GATE_DECISIONS: Dict[str, dict] = {}
 
-async def run(task: AgentTask) -> Dict[str, str]:
+
+class GateBlocked(RuntimeError):
+    """Das Gate hat den Build blockiert — ein Retry ändert daran nichts."""
+
+    retryable = False
+
+
+def _build_hash(task: AgentTask, graph: TaskGraph) -> str:
+    """Deterministischer Hash über die Coder-Ergebnisse.
+
+    Deterministisch heißt: ein Retry derselben Task erzeugt denselben Hash.
+    Genau das macht den Gate-Aufruf idempotent.
+    """
+    parts = [task.input.get("project_id", "")]
+    for coder_task in sorted(graph.tasks, key=lambda t: t.id):
+        if coder_task.agent_type == "coder" and coder_task.output:
+            parts.append(f"{coder_task.id}:{coder_task.output.get('files', '')}")
+    digest = hashlib.sha256("|".join(parts).encode()).hexdigest()
+    return f"sha256:{digest}"
+
+
+async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
     project_id = task.input["project_id"]
-
-    # TODO(Build): echter Build; build_hash = Image-Digest.
-    build_hash = f"sha256:{uuid.uuid4().hex}"
+    build_hash = _build_hash(task, graph)
+    key = task.idempotency_key or f"{project_id}:{build_hash}"
 
     # TODO(Artefakte): Werte aus dem tatsächlichen Build ableiten
     # (Testreport, Logging-Config, Model Card, PII-Scan-Report).
@@ -38,18 +65,37 @@ async def run(task: AgentTask) -> Dict[str, str]:
         "pii_scan_passed": False,
     }
 
-    decision = await rsd_client.gate_check(project_id, build_hash, artifacts)
-    logger.info("Gate-Entscheidung für %s: %s", project_id, decision.get("status"))
+    # Idempotenz: eine bereits getroffene Entscheidung wird nicht erneut geholt.
+    decision = _GATE_DECISIONS.get(key)
+    if decision is None:
+        decision = await rsd_client.gate_check(project_id, build_hash, artifacts)
+        _GATE_DECISIONS[key] = decision
+    else:
+        logger.info("Gate-Entscheidung für %s aus Idempotenz-Cache", key)
 
-    if decision.get("status") == "blocked":
-        # Kein Deployment — die Task gilt als fehlgeschlagen.
-        raise RuntimeError(f"Gate blockiert: {decision.get('reason')}")
+    status = decision.get("status")
+    logger.info("Gate-Entscheidung für %s: %s", project_id, status)
 
-    # TODO(Deploy): Traefik-Route + Container ausrollen, danach
-    # /api/v1/inventory/activate mit dem echten Endpoint aufrufen.
-    return {
-        "status": "stub",
-        "build_hash": build_hash,
-        "gate_status": str(decision.get("status")),
-        "endpoint": "",
-    }
+    if status == "blocked":
+        # Kein Deployment. Nicht wiederholbar — das Gate entscheidet nicht
+        # zufällig anders, nur weil man es nochmal fragt.
+        raise GateBlocked(f"Gate blockiert: {decision.get('reason')}")
+
+    # TODO(Deploy): Traefik-Route + Container ausrollen und den echten Endpoint
+    # zurückgeben. Die Aktivierung im Inventar macht der Governance-Agent.
+    endpoint = f"https://{project_id}.builder.local"
+
+    return AgentResult(
+        output={
+            "status": "stub",
+            "build_hash": build_hash,
+            "gate_status": str(status),
+            "endpoint": endpoint,
+        },
+        metrics={"gate_status": str(status)},
+    )
+
+
+def reset() -> None:
+    """Nur für Tests."""
+    _GATE_DECISIONS.clear()

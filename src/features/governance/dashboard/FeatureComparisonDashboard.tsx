@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, ArrowRight } from 'lucide-react';
+import { Lock, ArrowRight, Search, X } from 'lucide-react';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 
 interface ComparisonTile {
@@ -174,9 +174,10 @@ const COLOR_CLASSES: Record<string, {
 export function FeatureComparisonDashboard() {
   const navigate = useNavigate();
   const { hasFeature, canAccess, tier } = useEntitlements();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const comparisons = useMemo(() => {
-    return Object.entries(FEATURE_TIERS).map(([tierKey, tiles]) => ({
+    let allComparisons = Object.entries(FEATURE_TIERS).map(([tierKey, tiles]) => ({
       tier: tierKey,
       label: TIER_LABELS[tierKey],
       tiles: tiles.map((tile) => ({
@@ -186,7 +187,21 @@ export function FeatureComparisonDashboard() {
         isUserTier: tier === tierKey,
       })),
     }));
-  }, [hasFeature, canAccess, tier]);
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      allComparisons = allComparisons.map((comp) => ({
+        ...comp,
+        tiles: comp.tiles.filter(
+          (tile) =>
+            tile.title.toLowerCase().includes(query) ||
+            tile.description.toLowerCase().includes(query)
+        ),
+      })).filter((comp) => comp.tiles.length > 0);
+    }
+
+    return allComparisons;
+  }, [hasFeature, canAccess, tier, searchQuery]);
 
   return (
     <div className="dashboard-context min-h-screen bg-obsidian-950 p-6">
@@ -196,15 +211,50 @@ export function FeatureComparisonDashboard() {
           <h1 className="text-3xl md:text-4xl font-bold text-titanium-50 mb-3">
             Feature-Übersicht
           </h1>
-          <p className="text-titanium-400 max-w-2xl">
+          <p className="text-titanium-400 max-w-2xl mb-6">
             Entdecke alle verfügbaren Governance-Module und ihre Verfügbarkeit nach Plan.
             Dein aktueller Plan: <span className="font-semibold capitalize text-titanium-300">{tier}</span>
           </p>
+
+          {/* Search Bar */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-titanium-400" />
+            <input
+              type="text"
+              placeholder="Features durchsuchen..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-10 py-2.5 rounded-none bg-obsidian-900 border border-titanium-800 text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-ai-cyan-400 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-titanium-400 hover:text-titanium-200 transition-colors"
+                aria-label="Suche löschen"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Feature Tiers Grid */}
-        <div className="space-y-12">
-          {comparisons.map(({ tier: tierKey, label, tiles }) => (
+        {comparisons.length === 0 ? (
+          <div className="py-12 text-center">
+            <Search className="h-12 w-12 text-titanium-600 mx-auto mb-4" />
+            <p className="text-titanium-400">
+              Keine Features gefunden, die "{searchQuery}" enthalten.
+            </p>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="mt-4 text-ai-cyan-400 hover:text-ai-cyan-300 font-semibold text-sm"
+            >
+              Suche löschen
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-12">
+            {comparisons.map(({ tier: tierKey, label, tiles }) => (
             <div key={tierKey}>
               <div className="mb-6">
                 <div className="flex items-center gap-3">
@@ -265,7 +315,8 @@ export function FeatureComparisonDashboard() {
               </div>
             </div>
           ))}
-        </div>
+            </div>
+        )}
 
         {/* Upgrade CTA */}
         {tier === 'free_tier' && (

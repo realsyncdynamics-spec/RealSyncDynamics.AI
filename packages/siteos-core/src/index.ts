@@ -17,6 +17,9 @@ export * from './analysis/observation.ts';
 
 export * from './scoring/scores.ts';
 
+export * from './render/escape.ts';
+export * from './render/renderer.ts';
+
 export * from './agents/registry.ts';
 export * from './agents/remediate.ts';
 

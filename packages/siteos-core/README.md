@@ -63,9 +63,28 @@ const { blueprint, applied, skipped, changed } = applyRemediations(
 mit Begründung. Ein automatisch erfundener Alternativtext wäre schlimmer als ein
 offener Befund, weil er ihn verdeckt.
 
+### Rendern
+
+```ts
+import { renderSite } from '@realsync/siteos-core';
+
+const pages = renderSite(blueprint, { baseUrl: 'https://beispiel.de' });
+// [{ path: '/', html: '<!doctype html>…' }, …]
+```
+
+Der Renderer ist gegen die Live-Analysatoren gebaut: sein Output erzeugt in
+`analyzeObservation` **null Befunde**. Was der Blueprint zusagt, wird auch
+ausgeliefert — `lang`, Titel, Canonical, genau eine `<h1>`, Footer-Links auf
+Impressum/Datenschutz, `data-ai-disclosure`, Labels an jedem Eingabefeld und
+Drittanbieter erst nach Einwilligung.
+
+**Escaping ist die gesamte Sicherheitsgrenze.** Der Renderer baut Strings, kein
+DOM. Jeder Wert läuft durch `escapeHtml` bzw. `safeUrl`; `javascript:`,
+`data:` und protokollrelative Ziele werden verworfen statt escaped.
+
 ## Zusicherungen
 
-Diese Eigenschaften sind durch Tests abgesichert (`test/siteos/`) und dürfen
+Diese Eigenschaften sind durch 108 Tests abgesichert (`test/siteos/`) und dürfen
 nicht ohne Versionsentscheidung gebrochen werden:
 
 1. **Determinismus** — gleicher Brief ⇒ gleicher Blueprint ⇒ gleicher Hash.

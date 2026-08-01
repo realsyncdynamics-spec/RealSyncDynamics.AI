@@ -68,6 +68,8 @@ packages/siteos-core/          Framework- und laufzeitfreier Kern
   src/blueprint/synthesize.ts  Brief → Blueprint
   src/analysis/blueprint.ts    Statische Prüfung (vor Deployment)
   src/analysis/observation.ts  Live-Prüfung (nach Deployment)
+  src/render/escape.ts         Escaping + URL-Prüfung (gesamte XSS-Sicherheit)
+  src/render/renderer.ts       Blueprint → HTML
   src/scoring/scores.ts        Befunde → fünf Kennzahlen
   src/agents/registry.ts       Sieben Agenten: Zuständigkeit + Rechte
   src/agents/remediate.ts      Deterministische Behebung
@@ -156,7 +158,45 @@ Agenten mit `requiresApproval` (Compliance, Content) warten im Zustand
 bestehende Version, sondern erzeugen eine neue, verkettete — die alte bleibt
 mitsamt Nachweis gültig.
 
-### 3.5 Datenminimierung im Scanner
+### 3.5 Der Renderer löst ein, was der Blueprint verspricht
+
+Ein Compliance-Versprechen im Blueprint ist wertlos, wenn es die
+Auslieferung nicht erreicht — für einen Prüfer existiert nur, was im
+ausgelieferten HTML steht. Der Renderer ist deshalb gegen die
+Live-Analysatoren gebaut, nicht neben ihnen:
+
+| Zusage im Blueprint | Umsetzung im HTML | Geprüft durch |
+| --- | --- | --- |
+| Standardsprache | `lang` am `<html>` | `accessibility.missing-lang` |
+| Seitenbeschreibung | `<title>`, `meta[description]`, `link[rel=canonical]` | `seo.*-not-delivered` |
+| Seitenstruktur | genau eine `<h1>` je Seite | `seo.missing-h1` / `seo.multiple-h1` |
+| Pflichtseiten | Footer-Links auf Impressum/Datenschutz | `gdpr.*-link-not-delivered` |
+| Generierter Inhalt | `data-ai-disclosure` | `eu-ai-act.disclosure-not-delivered` |
+| Formularfelder | verbundenes `<label>` je Feld | `accessibility.form-without-labels` |
+| Einwilligungsschranke | kein `src`/`iframe`, nur `data-consent-src` | `tdddg.third-party-before-consent` |
+
+Diese Kopplung ist getestet: `test/siteos/render.test.ts` schickt den
+gerenderten Output durch `analyzeObservation` und verlangt **null Befunde**
+— für jede Seite, über mehrere Branchen. Bricht der Renderer eine Zusage,
+schlägt der Test fehl, nicht erst ein Kunde.
+
+Der Renderer ist ebenfalls deterministisch: gleicher Blueprint ⇒
+byte-gleiches HTML. Damit ist auch das Auslieferungsartefakt hashbar.
+
+**Escaping ist die gesamte Sicherheitsgrenze.** Der Renderer baut Strings,
+nicht ein DOM (er muss in Deno ohne DOM laufen). Blueprint-Inhalte stammen
+aus Prompts und Modellausgaben — beides nicht vertrauenswürdig. Deshalb
+läuft jeder Wert durch `escape.ts`:
+
+- `escapeHtml` deckt Inhalt UND Attribute mit einer Funktion ab; zwei
+  Varianten laden dazu ein, im Zweifel die schwächere zu nehmen.
+- `safeUrl` lässt nur `http`/`https`/`mailto`/`tel` und echte relative
+  Pfade durch — `javascript:`, `data:` und protokollrelative `//host`
+  werden verworfen, nicht escaped.
+- `jsonLdPayload` escaped zusätzlich `<`, `>`, `&` und U+2028/U+2029, damit
+  ein `</script>` in einem Namen den JSON-LD-Block nicht beenden kann.
+
+### 3.6 Datenminimierung im Scanner
 
 `siteos-runtime-scan` liest das HTML für die Analyse, speichert es aber nicht.
 Persistiert werden nur die abgeleiteten Signale (Header, TTFB, Transfergröße,
@@ -202,18 +242,31 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
 
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 84 Tests, AI Builder (Prompt → geprüfter
-Blueprint), acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit
-deterministischer Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard
-unter `/app/siteos`.
+**Umgesetzt**: Domänenkern mit 108 Tests, AI Builder (Prompt → geprüfter
+Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
+acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
+Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
+`/app/siteos`.
 
 **Noch nicht umgesetzt** — bewusst außerhalb dieser Phase:
 
-- **Renderer und Deployment-Pfad.** Der Blueprint beschreibt eine Site
-  vollständig, wird aber noch nicht zu HTML gerendert und ausgeliefert. Bis
-  dahin arbeitet `siteos-runtime-scan` gegen extern gehostete Adressen. *Das ist
-  die größte offene Lücke: ohne Renderer erzeugt der Builder eine geprüfte
-  Beschreibung, keine erreichbare Website.*
+- **Deployment-Pfad.** Der Renderer erzeugt das HTML (siehe §3.5), aber es
+  wird noch nicht auf Cloudflare Pages hochgeladen und unter einer Domain
+  veröffentlicht. Das ist die verbliebene Hälfte der ursprünglich größten
+  Lücke: aus dem Blueprint entsteht jetzt ein vollständiges, geprüftes
+  Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
+  Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das
+  Deployment-Ziel nötig (`website_projects.cloudflare_project_id` ist
+  vorbereitet). Bis dahin arbeitet `siteos-runtime-scan` gegen extern
+  gehostete Adressen.
+- **Rechtstexte im gerenderten HTML.** Der Renderer setzt für
+  `legal-text`-Blöcke nur die Stelle (`<!-- legal:content -->`) und das
+  `data-legal-document`-Attribut. Der Text selbst kommt zur Build-Zeit aus
+  dem Legal-Modul (`scripts/generate-static-legal-pages.mjs`) — der
+  Renderer erfindet keinen Rechtstext.
+- **Kein CSS.** Der Renderer liefert semantisches, barrierefreies Markup
+  ohne Gestaltung. Die Theme Engine (`SiteTheme` ist im Modell vorhanden)
+  ist noch nicht an den Renderer angeschlossen.
 - Visueller Drag-&-Drop-Editor (React Flow)
 - Mehrsprachigkeit über die Modellebene hinaus (`locales` ist vorbereitet,
   Übersetzungspfad fehlt)
@@ -228,7 +281,7 @@ unter `/app/siteos`.
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 84 Tests des Kerns
+npx vitest run test/siteos/      # 108 Tests des Kerns
 supabase db push                 # Migration
 supabase functions deploy siteos-builder siteos-runtime-scan siteos-agents
 ```

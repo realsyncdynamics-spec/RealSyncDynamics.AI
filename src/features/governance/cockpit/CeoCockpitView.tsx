@@ -19,6 +19,7 @@ import { scoreLabel, scoreLevel } from './cockpitScore';
 import { loadCockpitData, type CockpitData } from './cockpitData';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
 import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
+import { GovernanceDashboardTiles } from '../dashboard/GovernanceDashboardTiles';
 
 export function CeoCockpitView() {
   const navigate = useNavigate();
@@ -71,6 +72,14 @@ export function CeoCockpitView() {
           </Link>
         )}
       </div>
+
+      {/* Quick Navigation */}
+      {activeTenantId && (
+        <div className="pt-2">
+          <h3 className="text-sm font-semibold text-titanium-300 mb-4">Module & Features</h3>
+          <GovernanceDashboardTiles layout="compact" />
+        </div>
+      )}
 
       {isFirstTime && (
         <div className="bg-gradient-to-r from-emerald-950/40 to-cyan-950/40 border border-emerald-800 rounded-none p-6 space-y-4">

@@ -2,78 +2,10 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { useTenant } from '../../../core/access/TenantProvider';
-import { ScanActionGuard } from '../../../core/billing/ScanActionGuard';
-import { ArrowRight, Zap, Lock } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { usePerformanceMonitor, measureAsync } from '../../../lib/performance';
-
-interface DashboardCard {
-  id: string;
-  title: string;
-  description: string;
-  feature: string;
-  cta: string;
-  path?: string;
-  action?: () => void;
-  tier: 'free_tier' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
-}
-
-const DASHBOARD_CARDS: DashboardCard[] = [
-  {
-    id: 'scan-count',
-    title: 'Website-Scans verfügbar',
-    description: 'Monatliche Compliance-Scans durchführen',
-    feature: 'website.scan_monthly_limit',
-    cta: 'Scan starten',
-    path: '/app/governance/website-scan',
-    tier: 'free_tier',
-  },
-  {
-    id: 'dsgvo-dir',
-    title: 'DSGVO-Verzeichnis',
-    description: 'Erfasse deine Datenverarbeitung',
-    feature: 'governance.dsgvo_directory',
-    cta: 'Öffnen',
-    path: '/app/governance/dsgvo-directory',
-    tier: 'free_tier',
-  },
-  {
-    id: 'ai-register',
-    title: 'KI-System-Verzeichnis',
-    description: 'Registriere deine KI-Systeme',
-    feature: 'governance.ai_register',
-    cta: 'Öffnen',
-    path: '/app/governance/ai-register',
-    tier: 'free_tier',
-  },
-  {
-    id: 'evidence',
-    title: 'Evidence Vault',
-    description: 'Speichere Compliance-Nachweise',
-    feature: 'evidence.basic_vault',
-    cta: 'Öffnen',
-    path: '/app/evidence',
-    tier: 'free_tier',
-  },
-  {
-    id: 'reports',
-    title: 'Compliance-Reports',
-    description: 'Exportiere Reports für Audits',
-    feature: 'reports.export',
-    cta: 'Öffnen',
-    path: '/app/compliance',
-    tier: 'starter',
-  },
-  {
-    id: 'ai-classification',
-    title: 'AI-Act Klassifizierung',
-    description: 'Klassifiziere Systeme nach EU AI Act',
-    feature: 'ai_classification.limited',
-    cta: 'Öffnen',
-    path: '/app/governance/ai-act-assessment',
-    tier: 'growth',
-  },
-];
+import { GovernanceDashboardTiles } from './GovernanceDashboardTiles';
 
 export function FreeTierDashboard() {
   usePerformanceMonitor('FreeTierDashboard', { threshold: 300 });
@@ -86,6 +18,23 @@ export function FreeTierDashboard() {
   const tenant = useMemo(() => {
     return tenants.find((t) => t.tenantId === activeTenantId);
   }, [tenants, activeTenantId]);
+
+  const GOVERNANCE_FEATURES = [
+    'governance.cockpit',
+    'website.scan_monthly_limit',
+    'governance.ai_register',
+    'governance.risk_findings',
+    'evidence.basic_vault',
+    'reports.export',
+    'governance.tasks',
+    'workspace.management',
+    'integrations.connectors',
+    'ai.assistant',
+  ];
+
+  const accessibleFeaturesCount = useMemo(() => {
+    return GOVERNANCE_FEATURES.filter((feature) => hasFeature(feature)).length;
+  }, [hasFeature]);
 
   // Fetch tenant org_name and tenant_type from database
   useEffect(() => {
@@ -120,13 +69,6 @@ export function FreeTierDashboard() {
     return () => { cancelled = true; };
   }, [activeTenantId]);
 
-  const accessibleCards = useMemo(() => {
-    return DASHBOARD_CARDS.map((card) => ({
-      ...card,
-      accessible: hasFeature(card.feature),
-      access: canAccess(card.feature),
-    }));
-  }, [hasFeature, canAccess]);
 
   const welcomeMessage = useMemo(() => {
     if (tenantDetails?.orgName) {
@@ -188,106 +130,16 @@ export function FreeTierDashboard() {
             <div className="p-4 bg-obsidian-900 border border-titanium-800 rounded-none">
               <p className="text-xs text-titanium-500 font-mono mb-1">FEATURES</p>
               <p className="text-lg font-semibold text-titanium-300">
-                {accessibleCards.filter((c) => c.accessible).length}/{accessibleCards.length}
+                {accessibleFeaturesCount}/{GOVERNANCE_FEATURES.length}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Feature Cards */}
+        {/* Governance Modules */}
         <div className="mb-12">
-          <h2 className="text-xl font-bold text-titanium-50 mb-6">Verfügbare Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {accessibleCards.map((card) => {
-              // Wrap scan card with limit guard
-              if (card.id === 'scan-count' && card.accessible) {
-                return (
-                  <ScanActionGuard key={card.id}>
-                    {(canScan, onScan) => (
-                      <button
-                        onClick={onScan}
-                        disabled={!canScan}
-                        className={`
-                          text-left p-5 rounded-none border transition-all
-                          ${canScan
-                            ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
-                            : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
-                          }
-                        `}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="text-sm font-semibold text-titanium-50 flex-1">
-                            {card.title}
-                          </h3>
-                        </div>
-
-                        <p className="text-xs text-titanium-400 mb-4">
-                          {card.description}
-                        </p>
-
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs font-mono px-2 py-1 rounded-none ${
-                            canScan
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-amber-500/10 text-amber-400'
-                          }`}>
-                            {canScan ? 'Verfügbar' : 'Limit erreicht'}
-                          </span>
-                          <ArrowRight className="w-4 h-4 text-titanium-500" />
-                        </div>
-                      </button>
-                    )}
-                  </ScanActionGuard>
-                );
-              }
-
-              // Regular card rendering for other features
-              return (
-                <button
-                  key={card.id}
-                  onClick={() => {
-                    if (card.accessible && card.path) {
-                      navigate(card.path);
-                    } else if (!card.accessible && card.access.upgradeUrl) {
-                      navigate(card.access.upgradeUrl);
-                    }
-                  }}
-                  disabled={!card.accessible}
-                  className={`
-                    text-left p-5 rounded-none border transition-all
-                    ${card.accessible
-                      ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
-                      : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-titanium-50 flex-1">
-                      {card.title}
-                    </h3>
-                    {!card.accessible && (
-                      <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
-                    )}
-                  </div>
-
-                  <p className="text-xs text-titanium-400 mb-4">
-                    {card.description}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-mono px-2 py-1 rounded-none ${
-                      card.accessible
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : 'bg-amber-500/10 text-amber-400'
-                    }`}>
-                      {card.accessible ? 'Verfügbar' : `Ab ${card.tier}`}
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-titanium-500" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+          <h2 className="text-xl font-bold text-titanium-50 mb-6">Governance-Module</h2>
+          <GovernanceDashboardTiles layout="grid" />
         </div>
 
         {/* Upgrade CTA for Free Tier */}

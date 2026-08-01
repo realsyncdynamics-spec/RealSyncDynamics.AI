@@ -1,0 +1,8 @@
+{
+  "buildCommand": "exit 0",
+  "installCommand": "exit 0",
+  "outputDirectory": "dist",
+  "git": {
+    "deploymentEnabled": false
+  }
+}

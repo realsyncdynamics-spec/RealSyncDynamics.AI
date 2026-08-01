@@ -7,7 +7,14 @@ import { Button } from '../../enterprise-os/components/Button';
 import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card';
 import { sha256Hex } from '../../lib/provenance';
 import { trustBand } from '../../lib/provenance/trustScore';
-import { registerProvenance, verifyProvenance, type VerifyResponse, type ProvenanceError } from './provenanceApi';
+import {
+  registerProvenance,
+  verifyProvenance,
+  independentlyVerifySignatures,
+  type VerifyResponse,
+  type ProvenanceError,
+  type IndependentVerification,
+} from './provenanceApi';
 import { AuditTrailVisualization, type CustodyEvent } from './AuditTrailVisualization';
 import { ComplianceGapReport, type ComplianceGap } from './ComplianceGapReport';
 
@@ -47,6 +54,7 @@ function ProvenanceInner() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [result, setResult] = useState<VerifyResponse | null>(null);
+  const [independentCheck, setIndependentCheck] = useState<IndependentVerification | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -71,10 +79,14 @@ function ProvenanceInner() {
 
   async function onVerify() {
     if (!activeTenantId || !assetRef.trim()) return;
-    setBusy(true); setError(null); setNotice(null); setResult(null);
+    setBusy(true); setError(null); setNotice(null); setResult(null); setIndependentCheck(null);
     const r = await verifyProvenance({ tenant_id: activeTenantId, asset_ref: assetRef.trim(), content_sha256: digest ?? undefined });
-    if (r.kind === 'ok') setResult(r.data);
-    else setError(errorMessage(r));
+    if (r.kind === 'ok') {
+      setResult(r.data);
+      independentlyVerifySignatures(r.data.custody).then(setIndependentCheck);
+    } else {
+      setError(errorMessage(r));
+    }
     setBusy(false);
   }
 
@@ -189,6 +201,18 @@ function ProvenanceInner() {
                             : 'border-titanium-700 text-titanium-400'}`}
                         >
                           {result.signature.externally_verifiable ? 'Ed25519 · extern prüfbar' : `${result.signature.algorithm} · intern`}
+                        </span>
+                      )}
+                      {independentCheck?.publicKeyAvailable && (
+                        <span
+                          title="Im Browser mit dem öffentlichen Schlüssel neu berechnet — kein Vertrauen in den Server nötig."
+                          className={`border px-2 py-1 ${independentCheck.failedSeqs.length === 0
+                            ? 'border-emerald-500/40 bg-emerald-500/5 text-emerald-300'
+                            : 'border-risk-critical/40 bg-risk-critical/5 text-risk-critical'}`}
+                        >
+                          {independentCheck.failedSeqs.length === 0
+                            ? `Client-seitig verifiziert (${independentCheck.verifiedCount}/${independentCheck.checkedCount})`
+                            : `Signatur-Mismatch bei seq ${independentCheck.failedSeqs.join(', ')}`}
                         </span>
                       )}
                     </div>

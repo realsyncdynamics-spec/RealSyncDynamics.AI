@@ -445,9 +445,10 @@ describe('Time Window Constraints', () => {
 describe('SLA Constraints', () => {
   let orders: OrderContext[];
   let route: RouteContext;
+  let tomorrow: Date;
 
   beforeEach(() => {
-    const tomorrow = new Date();
+    tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     orders = [

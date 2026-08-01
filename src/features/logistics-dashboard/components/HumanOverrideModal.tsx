@@ -97,7 +97,7 @@ export function HumanOverrideModal({
                 <span className="text-titanium-300">Stops:</span> {route.stops?.length || 0}
               </div>
               <div>
-                <span className="text-titanium-300">Distance:</span> {route.total_distance_km.toFixed(1)} km
+                <span className="text-titanium-300">Distance:</span> {(route.total_distance_km || 0).toFixed(1)} km
               </div>
               <div>
                 <span className="text-titanium-300">Cost:</span> ${route.estimated_cost?.toFixed(2) || 'N/A'}

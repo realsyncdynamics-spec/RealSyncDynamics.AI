@@ -40,7 +40,10 @@ export function DecisionExplainabilityPanel({
     }
 
     // Time windows
-    const breachCount = route.stops?.filter(s => !s.within_time_window).length || 0;
+    const breachCount = route.stops?.filter(s => {
+      // Check if stop arrival is outside estimated time range
+      return s.actual_arrival_time && new Date(s.actual_arrival_time) > new Date(s.estimated_departure_time);
+    }).length || 0;
     result.push({
       name: 'Delivery Time Windows',
       status: breachCount > 0 ? 'warning' : 'passed',
@@ -62,7 +65,7 @@ export function DecisionExplainabilityPanel({
     result.push({
       name: 'Environmental CO2',
       status: 'passed',
-      message: `${(route.estimated_co2_grams || 0).toFixed(0)} g CO2 (${(route.total_distance_km * 250).toFixed(0)} g est.)`,
+      message: `${(route.estimated_co2_grams || 0).toFixed(0)} g CO2 (${((route.total_distance_km || 0) * 250).toFixed(0)} g est.)`,
       penalty: 0
     });
 

@@ -132,7 +132,7 @@ export function LogisticsDashboard() {
     if (state.filters.status.length > 0 && !state.filters.status.includes(route.status)) {
       return false;
     }
-    if (state.filters.vehicle.length > 0 && !state.filters.vehicle.includes(route.vehicle_id)) {
+    if (state.filters.vehicle.length > 0 && route.vehicle_id && !state.filters.vehicle.includes(route.vehicle_id)) {
       return false;
     }
     if (state.filters.slaStatus !== 'all') {

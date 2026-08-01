@@ -34,9 +34,9 @@ export function AnalyticsDashboard({
     const slaRate = (slaCompliantRoutes / routes.length) * 100;
 
     // Average Route Efficiency
-    const avgDistance = routes.reduce((sum, r) => sum + r.total_distance_km, 0) / routes.length;
+    const avgDistance = routes.reduce((sum, r) => sum + (r.total_distance_km || 0), 0) / routes.length;
     const avgStops = routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0) / routes.length;
-    const avgEfficiency = avgStops / avgDistance;
+    const avgEfficiency = avgDistance > 0 ? avgStops / avgDistance : 0;
 
     // Total Cost
     const totalCost = routes.reduce((sum, r) => sum + (r.estimated_cost || 0), 0);
@@ -44,11 +44,12 @@ export function AnalyticsDashboard({
 
     // Environmental Impact
     const totalCO2 = routes.reduce((sum, r) => sum + (r.estimated_co2_grams || 0), 0);
-    const avgCO2PerKm = totalCO2 / routes.reduce((sum, r) => sum + r.total_distance_km, 0);
+    const totalDistance = routes.reduce((sum, r) => sum + (r.total_distance_km || 0), 0);
+    const avgCO2PerKm = totalDistance > 0 ? totalCO2 / totalDistance : 0;
 
     // Vehicle Utilization
     const totalCapacityUsed = routes.reduce((sum, r) => sum + (r.utilized_weight_kg || 0), 0);
-    const totalCapacity = routes.reduce((sum, r) => sum + r.max_weight_kg, 0);
+    const totalCapacity = routes.reduce((sum, r) => sum + (r.max_weight_kg || 0), 0);
     const utilizationRate = (totalCapacityUsed / totalCapacity) * 100;
 
     // Decision Confidence
@@ -178,7 +179,7 @@ export function AnalyticsDashboard({
           <span className="font-semibold">Total Routes:</span> {routes.length}
         </div>
         <div>
-          <span className="font-semibold">Total Distance:</span> {routes.reduce((sum, r) => sum + r.total_distance_km, 0).toFixed(0)} km
+          <span className="font-semibold">Total Distance:</span> {routes.reduce((sum, r) => sum + (r.total_distance_km || 0), 0).toFixed(0)} km
         </div>
         <div>
           <span className="font-semibold">Total Orders:</span> {routes.reduce((sum, r) => sum + (r.stops?.length || 0), 0)}

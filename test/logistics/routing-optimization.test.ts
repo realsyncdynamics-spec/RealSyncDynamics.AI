@@ -3,7 +3,7 @@
  * Test VRP solver, route generation, and optimization scoring
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // ============================================================================
 // MOCK ROUTING ENGINE

@@ -15,7 +15,7 @@ interface RouteVisualizationProps {
 
 interface RoutePath {
   id: string;
-  vehicle_id: string;
+  vehicle_id?: string;
   lat: number[];
   lng: number[];
   stopCount: number;
@@ -58,7 +58,7 @@ export function RouteVisualization({
     });
   }, [routes]);
 
-  const getRouteColor = (slaCompliant: boolean | null, status: string): string => {
+  const getRouteColor = (slaCompliant: boolean | undefined, status: string): string => {
     if (status === 'completed') return '#10b981'; // emerald
     if (slaCompliant === true) return '#0052ff'; // security-blue
     if (slaCompliant === false) return '#ef4444'; // red

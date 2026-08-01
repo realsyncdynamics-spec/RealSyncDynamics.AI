@@ -25,6 +25,7 @@
 
 import type { SiteBlock, SiteBlueprint, SitePage } from '../types.ts';
 import { attr, escapeHtml, jsonLdPayload, safeUrl } from './escape.ts';
+import { renderThemeCss } from './theme.ts';
 
 export interface RenderOptions {
   /**
@@ -71,6 +72,10 @@ export function renderPage(blueprint: SiteBlueprint, page: SitePage, options: Re
     `<link rel="canonical" href="${canonical}">`,
     page.noindex ? '<meta name="robots" content="noindex">' : '',
     renderStructuredData(blueprint, page, options),
+    // Inline statt externer Datei: das Stylesheet ist klein, und ein
+    // eigener Request würde die erste Darstellung verzögern. Die Werte
+    // sind in theme.ts geprüft, nicht escaped — CSS kennt kein Escaping.
+    `<style>${renderThemeCss(blueprint.theme)}</style>`,
     '</head>',
     '<body>',
     // Sprungmarke zum Inhalt (WCAG 2.2 — 2.4.1).

@@ -1,6 +1,6 @@
 # RealSync SiteOS — Architektur
 
-**Status**: Phase 1 umgesetzt · **Stand**: 2026-07-28
+**Status**: Phase 1 umgesetzt · **Stand**: 2026-08-01
 **Kurzfassung**: SiteOS ist kein Website-Baukasten, sondern die Website-Ebene des
 bestehenden Governance-Betriebssystems. Jede Version einer Site ist geprüft,
 gehasht und im Herkunftsnachweis erfasst.
@@ -69,6 +69,7 @@ packages/siteos-core/          Framework- und laufzeitfreier Kern
   src/analysis/blueprint.ts    Statische Prüfung (vor Deployment)
   src/analysis/observation.ts  Live-Prüfung (nach Deployment)
   src/render/escape.ts         Escaping + URL-Prüfung (gesamte XSS-Sicherheit)
+  src/render/theme.ts          Theme → CSS (Wertprüfung) + WCAG-Kontrast
   src/render/renderer.ts       Blueprint → HTML
   src/scoring/scores.ts        Befunde → fünf Kennzahlen
   src/agents/registry.ts       Sieben Agenten: Zuständigkeit + Rechte
@@ -196,7 +197,38 @@ läuft jeder Wert durch `escape.ts`:
 - `jsonLdPayload` escaped zusätzlich `<`, `>`, `&` und U+2028/U+2029, damit
   ein `</script>` in einem Namen den JSON-LD-Block nicht beenden kann.
 
-### 3.6 Datenminimierung im Scanner
+### 3.6 CSS lässt sich nicht escapen — nur verwerfen
+
+Die Theme-Werte stammen aus dem Blueprint und damit mittelbar aus Prompt
+oder Modellausgabe. Ein Wert wie
+
+```
+accent: "red } body { display: none } .x {"
+```
+
+würde in einem naiv zusammengesetzten Stylesheet ausbrechen. Anders als bei
+HTML gibt es dagegen **kein Escaping** — CSS kennt keine Entity-Schreibweise,
+die einen Wert neutralisiert.
+
+`render/theme.ts` folgt deshalb derselben Linie wie `safeUrl`: jeder Wert
+muss ein enges Muster erfüllen, sonst greift der dokumentierte Default.
+`var()`, `url()` und `calc()` sind ausgeschlossen — alle drei erlauben
+Konstruktionen, die ausbrechen oder externe Ressourcen laden. Das
+Stylesheet enthält damit ausschließlich Werte, die dieses Modul selbst
+gebilligt hat.
+
+Der Umfang des Stylesheets ist bewusst klein: Kontrast, Zeilenlänge,
+sichtbarer Fokus (`:focus-visible` wird nie auf `none` gesetzt),
+fokussierbare Sprungmarke und `prefers-reduced-motion`. Das ist
+Grundbedienbarkeit, kein Design-System.
+
+`contrastRatio()` und `meetsWcagAA()` rechnen nach WCAG 2.2 — 1.4.3. Nicht
+bestimmbare Farben liefern `null` und gelten als **nicht bestanden**: im
+Zweifel wird hingeschaut, nicht durchgewunken. Ein Test hält fest, dass die
+Plattform-Defaults (Obsidian/Titanium) AA erfüllen — sonst lieferte der
+Builder von Haus aus unlesbare Seiten.
+
+### 3.7 Datenminimierung im Scanner
 
 `siteos-runtime-scan` liest das HTML für die Analyse, speichert es aber nicht.
 Persistiert werden nur die abgeleiteten Signale (Header, TTFB, Transfergröße,
@@ -242,7 +274,7 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
 
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 108 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 134 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -264,9 +296,12 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   `data-legal-document`-Attribut. Der Text selbst kommt zur Build-Zeit aus
   dem Legal-Modul (`scripts/generate-static-legal-pages.mjs`) — der
   Renderer erfindet keinen Rechtstext.
-- **Kein CSS.** Der Renderer liefert semantisches, barrierefreies Markup
-  ohne Gestaltung. Die Theme Engine (`SiteTheme` ist im Modell vorhanden)
-  ist noch nicht an den Renderer angeschlossen.
+- **Kontrastprüfung ist noch kein Befund.** `meetsWcagAA()` steht bereit,
+  ist aber nicht als Analysator verdrahtet: ein neuer Befund-Code ist
+  versionsrelevant (§3.3) und braucht eine Entscheidung.
+- **Keine Komponentenbibliothek.** Das Stylesheet deckt Grundgestaltung ab
+  (Kontrast, Zeilenlänge, Fokus, Sprungmarke); Layout-Varianten je Block
+  fehlen.
 - Visueller Drag-&-Drop-Editor (React Flow)
 - Mehrsprachigkeit über die Modellebene hinaus (`locales` ist vorbereitet,
   Übersetzungspfad fehlt)
@@ -281,7 +316,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 108 Tests des Kerns
+npx vitest run test/siteos/      # 134 Tests des Kerns
 supabase db push                 # Migration
 supabase functions deploy siteos-builder siteos-runtime-scan siteos-agents
 ```

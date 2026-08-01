@@ -4,7 +4,7 @@
  * All types are RLS-protected and tenant-isolated
  */
 
-import { UUID } from './shared';
+export type UUID = string;
 
 // ============================================================================
 // ORDER TYPES
@@ -129,10 +129,12 @@ export interface LogisticsRoute {
 
   // Assignment
   assigned_vehicle_id: UUID;
+  vehicle_id?: UUID; // Alias for assigned_vehicle_id
   assigned_driver_id?: string;
 
   // Details
   route_stops: RouteStop[];
+  stops?: RouteStop[]; // Alias for route_stops
   total_distance_km?: number;
   estimated_duration_minutes?: number;
 
@@ -140,7 +142,13 @@ export interface LogisticsRoute {
   route_score?: number;            // 0-100
   optimization_efficiency?: number; // 0.8-1.0
   cost_estimate?: number;
+  estimated_cost?: number; // Alias for cost_estimate
   co2_estimate_grams?: number;
+  estimated_co2_grams?: number; // Alias for co2_estimate_grams
+
+  // Utilization
+  utilized_weight_kg?: number;
+  max_weight_kg?: number;
 
   // Constraints
   constraints_satisfied: boolean;
@@ -148,6 +156,7 @@ export interface LogisticsRoute {
 
   // Status
   status: RouteStatus;
+  sla_compliant?: boolean; // Derived from SLA compliance
 
   // Tracking
   actual_start_time?: string; // ISO 8601
@@ -159,6 +168,12 @@ export interface LogisticsRoute {
   sla_compliance_count: number;
   sla_violation_count: number;
   sla_compliance_rate?: number;
+  estimated_sla_breaches?: number;
+
+  // Decision
+  decision_id?: UUID;
+  reasoning?: string;
+  details?: Record<string, any>;
 
   // Metadata
   created_by?: UUID;
@@ -249,6 +264,7 @@ export interface LogisticsDecision {
   policy_constraints_evaluated?: Record<string, ConstraintEvaluation>;
 
   // Reasoning
+  reasoning?: string; // Primary reasoning string
   reasoning_summary?: string;
   reasoning_detailed?: Record<string, any>;
   confidence_score?: number;
@@ -344,6 +360,7 @@ export interface LogisticsEvent {
 
   // Data
   event_data: Record<string, any>;
+  details?: Record<string, any>; // Additional event details
   event_timestamp: string; // ISO 8601
 
   // Location

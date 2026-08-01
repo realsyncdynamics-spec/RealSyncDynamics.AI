@@ -413,9 +413,9 @@ CREATE POLICY "tenant_isolation_compliance_reports"
   USING (public.is_tenant_member(tenant_id))
   WITH CHECK (public.is_tenant_member(tenant_id));
 
-CREATE INDEX idx_compliance_reports_tenant ON public.logistics_compliance_reports(tenant_id);
-CREATE INDEX idx_compliance_reports_type ON public.logistics_compliance_reports(report_type);
-CREATE INDEX idx_compliance_reports_period ON public.logistics_compliance_reports(report_period_start, report_period_end);
+CREATE INDEX idx_logistics_compliance_reports_tenant ON public.logistics_compliance_reports(tenant_id);
+CREATE INDEX idx_logistics_compliance_reports_type ON public.logistics_compliance_reports(report_type);
+CREATE INDEX idx_logistics_compliance_reports_period ON public.logistics_compliance_reports(report_period_start, report_period_end);
 
 -- ============================================================================
 -- SUMMARY

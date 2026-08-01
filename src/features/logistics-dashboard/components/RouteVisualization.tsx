@@ -94,7 +94,7 @@ export function RouteVisualization({
               {/* Route line */}
               {path.lat.length > 1 && (
                 <polyline
-                  points={path.lat.map((lat, i) => `${(lng + 180) * 3},${(90 - lat) * 3}`).join(' ')}
+                  points={path.lat.map((lat, i) => `${(path.lng[i] + 180) * 3},${(90 - lat) * 3}`).join(' ')}
                   fill="none"
                   stroke={path.color}
                   strokeWidth={selectedRoute?.id === path.id ? '3' : '2'}

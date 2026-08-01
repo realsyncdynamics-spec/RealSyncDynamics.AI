@@ -6,6 +6,7 @@ import { AuditAgent } from './audit-agent';
 import { FeedbackIntelligenceAgent } from './feedback-intelligence-agent';
 import { RemediationAgent } from './remediation-agent';
 import { WorkflowAgent } from './workflow-agent';
+import { InfrastructureAgent } from './infrastructure-agent';
 import type { AgentId } from './types';
 
 export function createEnterpriseAgent(agentId: AgentId): BaseEnterpriseAgent {
@@ -24,6 +25,8 @@ export function createEnterpriseAgent(agentId: AgentId): BaseEnterpriseAgent {
       return new RemediationAgent();
     case 'workflow-agent':
       return new WorkflowAgent();
+    case 'infrastructure-agent':
+      return new InfrastructureAgent();
     default: {
       const _exhaust: never = agentId;
       throw new Error(`Unknown agent: ${_exhaust as string}`);

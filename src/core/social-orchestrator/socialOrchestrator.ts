@@ -66,7 +66,7 @@ export class SocialOrchestrator {
     const posts: SocialPost[] = generatePostsForChannels(socialEvent, this.channels);
 
     // 4. Enqueue (BLOCKED posts return null — filtered by queue itself).
-    const queueEntries = this.queue.enqueueMany(posts);
+    const queueEntries = await this.queue.enqueueMany(posts);
 
     return {
       socialEvent,

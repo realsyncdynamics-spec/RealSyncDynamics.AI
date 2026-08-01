@@ -71,6 +71,7 @@ packages/siteos-core/          Framework- und laufzeitfreier Kern
   src/render/escape.ts         Escaping + URL-Prüfung (gesamte XSS-Sicherheit)
   src/render/theme.ts          Theme → CSS (Wertprüfung) + WCAG-Kontrast
   src/render/renderer.ts       Blueprint → HTML
+  src/deploy/artifact.ts       HTML → Dateibündel mit eigenem Hash
   src/scoring/scores.ts        Befunde → fünf Kennzahlen
   src/agents/registry.ts       Sieben Agenten: Zuständigkeit + Rechte
   src/agents/remediate.ts      Deterministische Behebung
@@ -243,7 +244,23 @@ deshalb auf **#4C82FF** (5.60:1, gleiche Farbfamilie) geändert; das
 Dashboard behält das Marken-Blau. Zwei Tests halten Messwert und
 Entscheidung fest, damit sie nicht versehentlich zurückgedreht werden.
 
-### 3.7 Datenminimierung im Scanner
+### 3.7 Die Nachweiskette endet nicht am Blueprint
+
+Ein Prüfer sieht nicht den Blueprint, sondern die ausgelieferten Dateien.
+Eine Kette, die vor dem letzten Schritt aufhört, belegt nicht, was
+tatsächlich im Netz stand. `deploy/artifact.ts` schließt sie:
+
+```
+Blueprint-Hash → Artefakt-Hash → veröffentlichte Site
+```
+
+Der Artefakt-Hash deckt Pfade **und** Inhalte ab — nur die Inhalte zu
+hashen würde ein Umbenennen von Seiten verschweigen. Die Dateiliste wird
+vor dem Hashen nach Pfad sortiert: eine reine Umsortierung der Seiten im
+Blueprint ändert nichts an der ausgelieferten Site und darf deshalb den
+Hash nicht ändern. Beide Eigenschaften sind getestet.
+
+### 3.8 Datenminimierung im Scanner
 
 `siteos-runtime-scan` liest das HTML für die Analyse, speichert es aber nicht.
 Persistiert werden nur die abgeleiteten Signale (Header, TTFB, Transfergröße,
@@ -289,7 +306,7 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
 
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 140 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 155 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -328,7 +345,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 140 Tests des Kerns
+npx vitest run test/siteos/      # 155 Tests des Kerns
 supabase db push                 # Migration
 supabase functions deploy siteos-builder siteos-runtime-scan siteos-agents
 ```

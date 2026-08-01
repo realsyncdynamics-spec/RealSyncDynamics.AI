@@ -21,6 +21,8 @@ export * from './render/escape.ts';
 export * from './render/theme.ts';
 export * from './render/renderer.ts';
 
+export * from './deploy/artifact.ts';
+
 export * from './agents/registry.ts';
 export * from './agents/remediate.ts';
 

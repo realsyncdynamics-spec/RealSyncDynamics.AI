@@ -102,6 +102,7 @@ const SmbDashboardView = lazy(() => import('./features/smb/SmbDashboardView').th
 // ── Phase 3: Advanced Governance Views
 const ComplianceFrameworkSelector = lazy(() => import('./features/governance/dashboard/ComplianceFrameworkSelector').then((m) => ({ default: m.ComplianceFrameworkSelector })));
 const Iso42001ComplianceHub = lazy(() => import('./features/governance/dashboard/Iso42001ComplianceHub').then((m) => ({ default: m.Iso42001ComplianceHub })));
+const FeatureComparisonDashboard = lazy(() => import('./features/governance/dashboard/FeatureComparisonDashboard').then((m) => ({ default: m.FeatureComparisonDashboard })));
 // BusinessDashboard zieht recharts → aus dem Landing-Critical-Path lazyen.
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard').then((m) => ({ default: m.BusinessDashboard })));
 // CreatorDashboard ist auth-gated → lazy
@@ -467,6 +468,7 @@ function RoutesWithTracking() {
       <Route path="/runtime"    element={<RuntimePage />} />
       <Route path="/monitoring" element={<MonitoringPage />} />
       <Route path="/governance" element={<Navigate to="/app" replace />} />
+      <Route path="/features"   element={<FeatureComparisonDashboard />} />
       <Route path="/agents"     element={<AgentsPage />} />
       <Route path="/evidence"   element={<EvidencePage />} />
       <Route path="/digitale-souveraenitaet" element={<DigitalSovereignty />} />

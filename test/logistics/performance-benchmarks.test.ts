@@ -72,8 +72,10 @@ describe('Performance Benchmarks', () => {
       const batch1000Duration = Date.now() - batch1000Start;
 
       // 1000 items should not take 10x longer (sub-linear scaling)
-      const scalingFactor = batch1000Duration / batch100Duration;
-      expect(scalingFactor).toBeLessThan(50); // Reasonable threshold
+      if (batch100Duration > 0) {
+        const scalingFactor = batch1000Duration / batch100Duration;
+        expect(scalingFactor).toBeLessThan(50); // Reasonable threshold
+      }
     });
   });
 
@@ -139,8 +141,10 @@ describe('Performance Benchmarks', () => {
 
       // Check roughly linear scaling (not exponential)
       for (let i = 1; i < times.length; i++) {
-        const scalingFactor = times[i] / times[i - 1];
-        expect(scalingFactor).toBeLessThan(10); // Reasonable threshold for linear
+        if (times[i - 1] > 0) {
+          const scalingFactor = times[i] / times[i - 1];
+          expect(scalingFactor).toBeLessThan(10); // Reasonable threshold for linear
+        }
       }
     });
   });

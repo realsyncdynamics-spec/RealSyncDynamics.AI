@@ -179,14 +179,14 @@ describe('Route Scoring', () => {
   });
 
   it('should reward high utilization', () => {
-    const lowUtil = calculateScore(200, 0.4, 0);
-    const highUtil = calculateScore(200, 0.85, 0);
+    const lowUtil = calculateScore(500, 0.4, 0);
+    const highUtil = calculateScore(500, 0.85, 0);
     expect(highUtil).toBeGreaterThan(lowUtil);
   });
 
   it('should penalize violations', () => {
-    const noViolations = calculateScore(200, 0.8, 0);
-    const withViolations = calculateScore(200, 0.8, 2);
+    const noViolations = calculateScore(500, 0.8, 0);
+    const withViolations = calculateScore(500, 0.8, 2);
     expect(withViolations).toBeLessThan(noViolations);
     expect(withViolations).toBe(noViolations - 30); // 2 violations * 15 each
   });

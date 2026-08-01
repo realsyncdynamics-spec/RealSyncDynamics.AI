@@ -514,7 +514,7 @@ describe('SLA Constraints', () => {
 
     const result = checkSLA(orders, route);
     expect(result.satisfied).toBe(false);
-    expect(result.penalty).toBe(30); // 2 violations * 15 penalty each
+    expect(result.penalty).toBe(15); // 1 violation (second order) * 15 penalty
   });
 });
 

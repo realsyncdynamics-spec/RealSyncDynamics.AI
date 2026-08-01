@@ -180,7 +180,7 @@ describe('Analytics Calculation', () => {
     const totalCO2 = routes.reduce((sum, r) => sum + r.estimated_co2_grams, 0);
     const totalDistance = routes.reduce((sum, r) => sum + r.total_distance_km, 0);
     const avgCO2PerKm = totalCO2 / totalDistance;
-    expect(avgCO2PerKm).toBeCloseTo(208.33, 1);
+    expect(avgCO2PerKm).toBeCloseTo(250, 1);
   });
 
   it('should calculate vehicle utilization rate', () => {

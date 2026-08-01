@@ -372,7 +372,9 @@ describe('Audit Trail Retrieval', () => {
       compliance_approved: true
     };
 
-    const completeness = Object.values(trail).filter(Boolean).length / (Object.keys(trail).length - 1); // -1 for id
+    const booleanKeys = Object.keys(trail).filter(k => k !== 'decision_id');
+    const trueBooleans = Object.entries(trail).filter(([k, v]) => k !== 'decision_id' && v === true).length;
+    const completeness = trueBooleans / booleanKeys.length;
     expect(completeness).toBe(1.0); // 100%
   });
 

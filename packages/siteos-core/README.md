@@ -84,7 +84,7 @@ DOM. Jeder Wert läuft durch `escapeHtml` bzw. `safeUrl`; `javascript:`,
 
 ## Zusicherungen
 
-Diese Eigenschaften sind durch 134 Tests abgesichert (`test/siteos/`) und dürfen
+Diese Eigenschaften sind durch 140 Tests abgesichert (`test/siteos/`) und dürfen
 nicht ohne Versionsentscheidung gebrochen werden:
 
 1. **Determinismus** — gleicher Brief ⇒ gleicher Blueprint ⇒ gleicher Hash.

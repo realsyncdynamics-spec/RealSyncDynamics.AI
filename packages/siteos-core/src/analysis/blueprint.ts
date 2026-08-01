@@ -10,6 +10,7 @@
 // Fremdschlüssel in `governance_controls` und in Kundenberichten.
 
 import type { RuntimeFinding, SiteBlock, SiteBlueprint } from '../types.ts';
+import { contrastRatio } from '../render/theme.ts';
 
 export function analyzeBlueprint(blueprint: SiteBlueprint): RuntimeFinding[] {
   return [
@@ -18,6 +19,7 @@ export function analyzeBlueprint(blueprint: SiteBlueprint): RuntimeFinding[] {
     ...checkAiTransparency(blueprint),
     ...checkThirdParties(blueprint),
     ...checkAccessibility(blueprint),
+    ...checkContrast(blueprint),
     ...checkSeo(blueprint),
     ...checkContentReadiness(blueprint),
     ...checkDpia(blueprint),
@@ -189,6 +191,47 @@ function checkAccessibility(bp: SiteBlueprint): RuntimeFinding[] {
         locator: `${page.path}#${block.id}`,
       });
     }
+  }
+
+  return findings;
+}
+
+// ── Kontrast ────────────────────────────────────────────────────────────
+
+/** Mindestkontrast für Fließtext nach WCAG 2.2 — 1.4.3 (Stufe AA). */
+const MIN_CONTRAST_BODY = 4.5;
+
+/**
+ * Prüft die Farbpaare des Themes gegen den AA-Schwellwert.
+ *
+ * Wichtig ist hier die Behandlung nicht bestimmbarer Farben. `meetsWcagAA()`
+ * wertet `null` als „nicht bestanden" — richtig für ein Gate, das im Zweifel
+ * blockiert. Für einen Analysator wäre es falsch: benannte oder funktionale
+ * Farben (`rebeccapurple`, `rgb(…)`) sind nicht berechenbar, aber deswegen
+ * nicht schlecht. Ein Befund daraus wäre eine Falschmeldung im Kundenbericht.
+ * Deshalb wird hier `contrastRatio()` direkt genutzt und nur gemeldet, wenn
+ * ein Wert vorliegt UND er zu niedrig ist.
+ */
+function checkContrast(bp: SiteBlueprint): RuntimeFinding[] {
+  const pairs: { fg: string; bg: string; label: string; locator: string }[] = [
+    { fg: bp.theme.foreground, bg: bp.theme.surface, label: 'Fließtext auf Hintergrund', locator: 'theme.foreground/surface' },
+    { fg: bp.theme.accent, bg: bp.theme.surface, label: 'Links und Bedienelemente auf Hintergrund', locator: 'theme.accent/surface' },
+  ];
+
+  const findings: RuntimeFinding[] = [];
+  for (const pair of pairs) {
+    const ratio = contrastRatio(pair.fg, pair.bg);
+    if (ratio === null || ratio >= MIN_CONTRAST_BODY) continue;
+
+    findings.push({
+      code: 'accessibility.insufficient-contrast',
+      dimension: 'accessibility',
+      severity: 'high',
+      title: `Zu geringer Kontrast: ${pair.label} (${ratio.toFixed(2)}:1)`,
+      reference: 'WCAG 2.2 — 1.4.3 (AA)',
+      remediation: `Farben so anpassen, dass mindestens ${MIN_CONTRAST_BODY}:1 erreicht wird (${pair.fg} auf ${pair.bg}).`,
+      locator: pair.locator,
+    });
   }
 
   return findings;

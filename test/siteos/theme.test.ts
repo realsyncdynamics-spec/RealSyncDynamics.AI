@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  analyzeBlueprint,
+  computeScores,
   contrastRatio,
   meetsWcagAA,
   parseBrief,
@@ -176,10 +178,19 @@ describe('Kontrast (WCAG 2.2 — 1.4.3)', () => {
     expect(meetsWcagAA('#767676', '#ffffff')).toBe(true);
   });
 
-  it('bestätigt das Default-Theme als AA-konform', () => {
-    // Die Plattform-Defaults (Obsidian/Titanium) müssen die Prüfung
-    // bestehen, sonst liefert der Builder von Haus aus unlesbare Seiten.
+  it('bestätigt das Default-Theme als AA-konform — beide Farbpaare', () => {
+    // Die Plattform-Defaults müssen die eigene Prüfung bestehen, sonst
+    // liefert der Builder von Haus aus unlesbare Seiten. Der Akzent war
+    // hier zuerst durchgefallen (Marken-Blau #0052FF auf Obsidian = 3.44:1);
+    // dieser Test hält die Korrektur fest.
     expect(meetsWcagAA(THEME_FALLBACK.foreground, THEME_FALLBACK.surface)).toBe(true);
+    expect(meetsWcagAA(THEME_FALLBACK.accent, THEME_FALLBACK.surface)).toBe(true);
+  });
+
+  it('hält fest, warum das Marken-Blau nicht der Default sein kann', () => {
+    // Dokumentiert den Messwert, damit die Entscheidung nachvollziehbar
+    // bleibt und nicht versehentlich zurückgedreht wird.
+    expect(contrastRatio('#0052FF', '#0A0A0B')!).toBeLessThan(4.5);
   });
 });
 
@@ -197,5 +208,54 @@ describe('Renderer bindet das Theme ein', () => {
 
     const html = renderPage(bp, bp.pages[0]);
     expect(html).not.toContain('evil.example');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// Kontrast als Befund (Entscheidung 2026-08-01: eigener Befund-Code)
+// ─────────────────────────────────────────────────────────────────────
+
+describe('accessibility.insufficient-contrast', () => {
+  function bpWithTheme(theme: Partial<{ foreground: string; surface: string; accent: string }>) {
+    const bp = synthesizeBlueprint(parseBrief('Zahnarzt in Hamburg'), { model: 'm' });
+    Object.assign(bp.theme, theme);
+    return bp;
+  }
+
+  it('meldet nichts beim Default-Theme', () => {
+    const codes = analyzeBlueprint(bpWithTheme({})).map((f) => f.code);
+    expect(codes).not.toContain('accessibility.insufficient-contrast');
+  });
+
+  it('meldet zu schwachen Fließtext-Kontrast', () => {
+    const finding = analyzeBlueprint(bpWithTheme({ foreground: '#999999', surface: '#ffffff' }))
+      .find((f) => f.code === 'accessibility.insufficient-contrast');
+
+    expect(finding?.severity).toBe('high');
+    expect(finding?.reference).toContain('1.4.3');
+    expect(finding?.locator).toBe('theme.foreground/surface');
+  });
+
+  it('prüft auch die Akzentfarbe für Links', () => {
+    const findings = analyzeBlueprint(bpWithTheme({
+      foreground: '#000000', surface: '#ffffff', accent: '#dddddd',
+    })).filter((f) => f.code === 'accessibility.insufficient-contrast');
+
+    expect(findings.map((f) => f.locator)).toEqual(['theme.accent/surface']);
+  });
+
+  it('meldet nicht bestimmbare Farben NICHT als Befund', () => {
+    // Der Unterschied zu meetsWcagAA(): dort gilt null als nicht bestanden
+    // (richtig für ein Gate). Im Analysator wäre das eine Falschmeldung im
+    // Kundenbericht — benannte Farben sind nicht berechenbar, nicht schlecht.
+    const codes = analyzeBlueprint(bpWithTheme({ foreground: 'rebeccapurple', surface: 'white' }))
+      .map((f) => f.code);
+    expect(codes).not.toContain('accessibility.insufficient-contrast');
+  });
+
+  it('senkt den Accessibility-Score messbar', () => {
+    const good = computeScores(analyzeBlueprint(bpWithTheme({})));
+    const bad = computeScores(analyzeBlueprint(bpWithTheme({ foreground: '#999999', surface: '#ffffff' })));
+    expect(bad.dimensions.accessibility).toBeLessThan(good.dimensions.accessibility);
   });
 });

@@ -16,10 +16,22 @@
 
 import type { SiteTheme } from '../types.ts';
 
-/** Fällt ein Wert durch die Prüfung, gilt dieser Default. */
+/**
+ * Fällt ein Wert durch die Prüfung, gilt dieser Default.
+ *
+ * Der Akzent ist bewusst NICHT das Marken-Blau #0052FF: auf Obsidian
+ * (#0A0A0B) erreicht es nur 3.44:1 und verfehlt damit WCAG AA für
+ * Fließtext (4.5:1) — Links wären für viele Nutzer schwer lesbar.
+ * #4C82FF ist die aufgehellte Variante derselben Farbfamilie und
+ * erreicht 5.60:1. Das Marken-Blau bleibt im Dashboard unverändert;
+ * betroffen ist allein das Default-Theme generierter Kundenseiten.
+ *
+ * Ein Default, der die eigene Prüfung nicht besteht, wäre der Kern des
+ * Problems, das diese Plattform lösen soll.
+ */
 export const THEME_FALLBACK: Readonly<SiteTheme> = Object.freeze({
   mode: 'dark',
-  accent: '#0052FF',
+  accent: '#4C82FF',
   surface: '#0A0A0B',
   foreground: '#E2E2E2',
   fontDisplay: 'system-ui, sans-serif',

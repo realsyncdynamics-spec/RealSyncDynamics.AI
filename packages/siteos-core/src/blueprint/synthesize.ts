@@ -30,10 +30,17 @@ export interface SynthesizeOptions {
   theme?: Partial<SiteTheme>;
 }
 
-/** Hard-Edge-Industrial als Plattform-Default (siehe CLAUDE.md). */
+/**
+ * Hard-Edge-Industrial als Plattform-Default (siehe CLAUDE.md).
+ *
+ * Der Akzent ist die aufgehellte Variante des Marken-Blaus: #0052FF
+ * erreicht auf Obsidian nur 3.44:1 und verfehlt WCAG AA. Begründung im
+ * Detail bei THEME_FALLBACK in render/theme.ts — beide Werte müssen
+ * übereinstimmen.
+ */
 const DEFAULT_THEME: SiteTheme = Object.freeze({
   mode: 'dark',
-  accent: '#0052FF',
+  accent: '#4C82FF',
   surface: '#0A0A0B',
   foreground: '#E2E2E2',
   fontDisplay: 'Space Grotesk, sans-serif',

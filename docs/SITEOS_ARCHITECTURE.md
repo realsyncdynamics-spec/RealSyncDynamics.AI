@@ -222,11 +222,26 @@ sichtbarer Fokus (`:focus-visible` wird nie auf `none` gesetzt),
 fokussierbare Sprungmarke und `prefers-reduced-motion`. Das ist
 Grundbedienbarkeit, kein Design-System.
 
-`contrastRatio()` und `meetsWcagAA()` rechnen nach WCAG 2.2 — 1.4.3. Nicht
-bestimmbare Farben liefern `null` und gelten als **nicht bestanden**: im
-Zweifel wird hingeschaut, nicht durchgewunken. Ein Test hält fest, dass die
-Plattform-Defaults (Obsidian/Titanium) AA erfüllen — sonst lieferte der
-Builder von Haus aus unlesbare Seiten.
+`contrastRatio()` und `meetsWcagAA()` rechnen nach WCAG 2.2 — 1.4.3.
+
+Die beiden Funktionen behandeln nicht bestimmbare Farben (benannt,
+funktional) **absichtlich unterschiedlich**, und der Unterschied ist der
+Punkt:
+
+- `meetsWcagAA()` wertet `null` als *nicht bestanden* — richtig für ein
+  Gate, das im Zweifel blockiert.
+- Der Analysator (`accessibility.insufficient-contrast`) meldet bei `null`
+  **nichts**. Ein Befund über eine nicht berechenbare Farbe wäre eine
+  Falschmeldung im Kundenbericht — `rebeccapurple` ist nicht berechenbar,
+  aber deswegen nicht schlecht.
+
+**Der Check hat sofort einen echten Defekt gefunden:** das Marken-Blau
+#0052FF erreicht auf Obsidian nur **3.44:1** und verfehlt AA. Als
+Default-Akzent generierter Seiten hätte das jede Site mit einem
+hochstufigen Barrierefreiheits-Befund ausgeliefert. Der Default ist
+deshalb auf **#4C82FF** (5.60:1, gleiche Farbfamilie) geändert; das
+Dashboard behält das Marken-Blau. Zwei Tests halten Messwert und
+Entscheidung fest, damit sie nicht versehentlich zurückgedreht werden.
 
 ### 3.7 Datenminimierung im Scanner
 
@@ -274,7 +289,7 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
 
 ## 6. Stand und Grenzen
 
-**Umgesetzt**: Domänenkern mit 134 Tests, AI Builder (Prompt → geprüfter
+**Umgesetzt**: Domänenkern mit 140 Tests, AI Builder (Prompt → geprüfter
 Blueprint), Renderer (Blueprint → HTML, gegen die Live-Analyse abgesichert),
 acht Runtime-Analysen, fünf Kennzahlen, sieben Agenten mit deterministischer
 Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
@@ -296,9 +311,6 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   `data-legal-document`-Attribut. Der Text selbst kommt zur Build-Zeit aus
   dem Legal-Modul (`scripts/generate-static-legal-pages.mjs`) — der
   Renderer erfindet keinen Rechtstext.
-- **Kontrastprüfung ist noch kein Befund.** `meetsWcagAA()` steht bereit,
-  ist aber nicht als Analysator verdrahtet: ein neuer Befund-Code ist
-  versionsrelevant (§3.3) und braucht eine Entscheidung.
 - **Keine Komponentenbibliothek.** Das Stylesheet deckt Grundgestaltung ab
   (Kontrast, Zeilenlänge, Fokus, Sprungmarke); Layout-Varianten je Block
   fehlen.
@@ -316,7 +328,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 
 ```bash
 npm run lint                     # tsc --noEmit
-npx vitest run test/siteos/      # 134 Tests des Kerns
+npx vitest run test/siteos/      # 140 Tests des Kerns
 supabase db push                 # Migration
 supabase functions deploy siteos-builder siteos-runtime-scan siteos-agents
 ```

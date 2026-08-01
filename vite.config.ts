@@ -19,6 +19,22 @@ export default defineConfig(({mode}) => {
           },
           build: {
                   chunkSizeWarningLimit: 600,
+                  rollupOptions: {
+                          output: {
+                                  manualChunks(id) {
+                                          // Split heavy vendor libs only; keep React & core together
+                                          // to avoid breaking context providers
+                                          if (id.includes('node_modules/recharts')) {
+                                                  return 'vendor-recharts';
+                                          }
+                                          if (id.includes('node_modules/@supabase/supabase-js')) {
+                                                  return 'vendor-supabase';
+                                          }
+                                          // Keep React, React Router, and app code together in main chunk
+                                          // Context providers (src/core/) must stay in entry chunk
+                                  },
+                          },
+                  },
           },
           server: {
                   // HMR is disabled in AI Studio via DISABLE_HMR env var.

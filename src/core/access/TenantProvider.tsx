@@ -4,7 +4,7 @@ import {
   hasFeature as hasFeatureRaw, getLimit as getLimitRaw,
   type TenantSummary, type EntitlementSet,
 } from './load-entitlements';
-import { isSupabaseConfigured } from '../../lib/supabase';
+import { isSupabaseConfigured, getSupabase } from '../../lib/supabase';
 
 interface TenantState {
   loading: boolean;
@@ -61,7 +61,16 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    if (!isSupabaseConfigured()) return;
+    // Listen for auth state changes (e.g., MFA step-up from AAL1 to AAL2)
+    // and refresh tenants/entitlements when session updates.
+    const { data: sub } = getSupabase().auth.onAuthStateChange(() => {
+      void refresh();
+    });
+    return () => { sub.subscription.unsubscribe(); };
+  }, [refresh]);
 
   // Reload entitlements when the active tenant changes (without reloading the tenant list).
   useEffect(() => {

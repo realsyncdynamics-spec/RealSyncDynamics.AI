@@ -12,18 +12,26 @@
 # Ein hier eingetragenes `build_command` wird stillschweigend ignoriert.
 #
 # Der Build-Befehl der Git-Integration steht ausschliesslich im Cloudflare-
-# Dashboard. Solange dort `npm run build` konfiguriert ist, laeuft KEIN
-# Prerender — die Live-Site liefert weiterhin den SPA-Shell, egal was in
-# diesem Repo steht. Zwei Wege, das zu aendern:
-#   1. Actions-Deploy (empfohlen): CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
-#      als Repo-Secrets setzen. Dann laeuft der `deploy`-Job mit
-#      `npm run build:full` (inkl. Prerender) und deployt via wrangler.
-#      Danach die Git-Integration deaktivieren, damit nicht zwei Pfade
-#      gleichzeitig deployen. Siehe
-#      docs/runbooks/cloudflare-actions-deploy-cutover.md
-#   2. Dashboard-Build-Command auf `npm run build:full` umstellen.
-#      Achtung: Prerender braucht Playwright/Chromium im Build-Image —
-#      in der Pages-Build-Sandbox bereits einmal fehlgeschlagen.
+# Dashboard; dort ist `npm run build` konfiguriert (siehe
+# deploy/cloudflare-pages/README.md). Deshalb haengt das Prerendering jetzt
+# genau dort dran — KEINE Dashboard-Aenderung noetig:
+#
+#   build:base  = vite build + Legal-Pages          (ohne Prerender)
+#   build       = build:base + prerender:safe       ← Dashboard/Git-Integration
+#   build:full  = build:base + prerender (strikt)   ← GitHub Actions
+#
+# `prerender:safe` ist bewusst non-fatal: schlaegt Chromium in der Pages-
+# Build-Sandbox fehl, laeuft der Build normal weiter und die Site bleibt beim
+# SPA-Shell — also schlimmstenfalls der Stand von vorher, nie ein roter Deploy.
+# Genau daran ist der frueherer Versuch gescheitert, der Prerender hart in
+# `npm run build` gehaengt hat. PRERENDER_MAX_MS (Default 480000) deckelt die
+# Laufzeit, damit ein haengender Chromium den Deploy nicht ins Timeout zieht.
+#
+# Der Actions-Pfad bleibt strikt (PRERENDER_STRICT=1): dort ist ein
+# fehlgeschlagenes Prerender ein echter Fehler und soll den Build rot machen.
+# Er deployt aber nur, wenn CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID
+# gesetzt sind — sonst uebernimmt weiterhin die Git-Integration. Umstellung auf
+# den Actions-Pfad: docs/runbooks/cloudflare-actions-deploy-cutover.md
 #
 # Secrets Management:
 # - Pages: Env vars via GitHub Actions → VITE_* env vars

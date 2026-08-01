@@ -33,6 +33,11 @@ const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
 const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
+// Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
+// zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.
+// Ein Fehler ist tolerierbar (Build laeuft ohne Prerender weiter), ein Hang nicht.
+const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '480000', 10);
 
 if (process.env.SKIP_PRERENDER === '1') {
   console.log('[prerender] SKIP_PRERENDER=1 — exit 0 without work');
@@ -62,13 +67,39 @@ async function loadRoutes() {
   return entries;
 }
 
+// Referenz auf den laufenden vite-preview-Prozess, damit der Watchdog ihn
+// beim harten Abbruch mit beenden kann (das `finally` in main() laeuft dann
+// nicht mehr).
+let activePreview = null;
+
+// `npx vite preview` startet vite als ENKELPROZESS von npx. Ein kill() auf das
+// npx-Handle laesst vite laufen — es haelt Port 4173 und damit potenziell den
+// Build-Container. Deshalb spawnen wir in einer eigenen Prozessgruppe
+// (detached) und signalisieren die GRUPPE via negativer PID.
+function killPreview(signal) {
+  const proc = activePreview;
+  if (!proc?.pid) return;
+  activePreview = null;
+  try {
+    process.kill(-proc.pid, signal);
+  } catch {
+    // Gruppe schon weg — Einzelprozess als Rueckfallebene versuchen.
+    try { proc.kill(signal); } catch { /* bereits beendet */ }
+  }
+}
+
 // ─── Vite preview server starten + auf "ready" warten ───────────────────────
 async function startPreviewServer() {
   console.log(`[prerender] starting vite preview on port ${PORT}...`);
   const proc = spawn('npx', ['vite', 'preview', `--port=${PORT}`, '--host=127.0.0.1'], {
     cwd: ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true, // eigene Prozessgruppe — siehe killPreview()
   });
+  // SOFORT registrieren — nicht erst wenn der Server antwortet. Zwischen Spawn
+  // und "ready" liegen bis zu 15s; feuert der Watchdog in diesem Fenster, waere
+  // das Child sonst verwaist und wuerde Port 4173 im Build-Container halten.
+  activePreview = proc;
   proc.stdout.on('data', (d) => process.stdout.write(`[vite-preview] ${d}`));
   proc.stderr.on('data', (d) => process.stderr.write(`[vite-preview] ${d}`));
 
@@ -84,7 +115,7 @@ async function startPreviewServer() {
     } catch { /* not yet */ }
     await new Promise((r) => setTimeout(r, 250));
   }
-  proc.kill();
+  killPreview('SIGKILL');
   throw new Error('vite preview did not respond within 15s');
 }
 
@@ -193,7 +224,7 @@ async function main() {
       await browser.close();
     }
   } finally {
-    previewProc.kill('SIGTERM');
+    killPreview('SIGTERM');
     await new Promise((r) => setTimeout(r, 200));
   }
 
@@ -202,6 +233,16 @@ async function main() {
     process.exit(1);
   }
 }
+
+// Watchdog: haerteste Absicherung gegen einen Hang. Laeuft als unref'ter Timer
+// (blockiert den Event-Loop nicht) und beendet den Prozess hart, falls MAX_MS
+// ueberschritten wird — inkl. vite-preview-Child, das sonst weiterlaufen wuerde.
+const watchdog = setTimeout(() => {
+  console.error(`[prerender] ABBRUCH: ${MAX_MS}ms Zeitlimit ueberschritten (PRERENDER_MAX_MS).`);
+  killPreview('SIGKILL');
+  process.exit(process.env.PRERENDER_STRICT === '1' ? 1 : 0);
+}, MAX_MS);
+watchdog.unref();
 
 main()
   .then(() => process.exit(0))

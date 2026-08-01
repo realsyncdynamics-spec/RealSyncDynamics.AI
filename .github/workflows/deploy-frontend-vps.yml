@@ -1,20 +1,14 @@
-name: Deploy Frontend to Hostinger VPS
+name: Deploy Frontend to Hostinger VPS (v2, manual)
+
+# v2 ist laut deploy/frontend-vps-deploy-v2/README.md ein paralleler,
+# noch nicht oeffentlich verdrahteter Deploy-Pfad (bindet nur an
+# 127.0.0.1:8090, Reverse-Proxy-Anbindung erst nach expliziter Freigabe).
+# Der automatische Push-Trigger wurde deshalb entfernt, damit dieser
+# rsync+Docker-Deploy nicht parallel zum Live-Pfad
+# (deploy-frontend-production.yml, Traefik/docker/realsync-web) auf
+# jeden Push zu main feuert. Manuell ausloesen ueber "Run workflow".
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
-      - 'tailwind.config.js'
-      - 'Dockerfile.frontend'
-      - 'deploy/frontend-vps-deploy-v2/**'
-      - '.github/workflows/deploy-frontend-vps.yml'
   workflow_dispatch:
 
 jobs:

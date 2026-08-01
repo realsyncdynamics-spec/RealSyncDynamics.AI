@@ -179,20 +179,59 @@ async function ensurePlaywrightBrowsers() {
     await browser.close();
     console.log(`[prerender] ✓ Playwright Chromium ready`);
   } catch (e) {
-    console.log(`[prerender] Playwright Chromium not found or not working, attempting install...`);
-    return new Promise((resolve, reject) => {
-      const proc = spawn('npx', ['playwright', 'install', '--with-deps', 'chromium']);
-      proc.on('close', (code) => {
-        if (code === 0) {
-          console.log(`[prerender] ✓ Playwright Chromium installed`);
-          resolve();
-        } else {
-          reject(new Error(`playwright install failed with exit code ${code}`));
-        }
+    console.log(`[prerender] Chromium nicht startbar (${e instanceof Error ? e.message.split('\n')[0] : e}) — versuche Installation...`);
+    // `--with-deps` ruft intern apt-get und braucht damit root. In der
+    // Cloudflare-Pages-Build-Sandbox laeuft der Build NICHT als root, dort
+    // scheitert die Variante immer. Deshalb zuerst ohne --with-deps (holt nur
+    // den Browser-Download, keine System-Pakete) und erst danach mit.
+    const variants = [
+      ['playwright', 'install', 'chromium'],
+      ['playwright', 'install', '--with-deps', 'chromium'],
+    ];
+    const errors = [];
+    for (const args of variants) {
+      const label = args.includes('--with-deps') ? 'mit --with-deps' : 'ohne --with-deps';
+      const code = await new Promise((resolve) => {
+        const proc = spawn('npx', args, { stdio: ['ignore', 'inherit', 'inherit'] });
+        proc.on('close', resolve);
+        proc.on('error', () => resolve(-1));
       });
-      proc.on('error', reject);
-    });
+      if (code !== 0) {
+        errors.push(`${label}: exit ${code}`);
+        continue;
+      }
+      // Installation meldet Erfolg — aber erst ein echter Launch beweist es.
+      try {
+        const browser = await chromium.launch({ headless: true });
+        await browser.close();
+        console.log(`[prerender] ✓ Chromium installiert (${label})`);
+        return;
+      } catch (launchErr) {
+        errors.push(`${label}: installiert, Launch scheiterte (${launchErr instanceof Error ? launchErr.message.split('\n')[0] : launchErr})`);
+      }
+    }
+    throw new Error(`Chromium nicht verfuegbar — ${errors.join(' | ')}`);
   }
+}
+
+// ─── Build-Status als Datei ablegen ─────────────────────────────────────────
+// Die Cloudflare-Pages-Build-Logs sind nur im Dashboard einsehbar. Damit ohne
+// Dashboard-Zugriff nachvollziehbar bleibt, ob ein Deploy prerendert wurde,
+// legen wir das Ergebnis in dist/ ab — es wird mitdeployt und ist danach unter
+// /prerender-status.json abrufbar.
+// Bewusst nur Status + Kurzgrund: keine Stacktraces, keine absoluten Pfade.
+async function writeStatus(fields) {
+  const sanitize = (s) => String(s ?? '')
+    .split('\n')[0]
+    .replaceAll(ROOT, '.')
+    .replace(/\/[^\s:]*\/(node_modules|\.cache)\/\S*/g, '<pfad>')
+    .slice(0, 300);
+  const payload = { ...fields, at: new Date().toISOString() };
+  if (payload.reason) payload.reason = sanitize(payload.reason);
+  try {
+    await mkdir(DIST, { recursive: true });
+    await writeFile(join(DIST, 'prerender-status.json'), JSON.stringify(payload, null, 2), 'utf8');
+  } catch { /* Status ist Diagnose, nie ein Grund den Build zu kippen */ }
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -201,6 +240,7 @@ async function main() {
   try { await access(join(DIST, 'index.html')); }
   catch {
     console.error(`[prerender] FATAL: ${DIST}/index.html missing — run vite build first`);
+    await writeStatus({ ok: false, rendered: 0, reason: 'dist/index.html fehlt — vite build lief nicht' });
     process.exit(2);
   }
 
@@ -229,6 +269,7 @@ async function main() {
   }
 
   console.log(`[prerender] done: ${stats.done} rendered, ${stats.failed} failed, ${stats.skipped} skipped`);
+  await writeStatus({ ok: stats.failed === 0, rendered: stats.done, failed: stats.failed, skipped: stats.skipped });
   if (stats.failed > 0 && process.env.PRERENDER_STRICT === '1') {
     process.exit(1);
   }
@@ -246,7 +287,8 @@ watchdog.unref();
 
 main()
   .then(() => process.exit(0))
-  .catch((e) => {
+  .catch(async (e) => {
     console.error('[prerender] FATAL:', e);
+    await writeStatus({ ok: false, rendered: 0, reason: e instanceof Error ? e.message : String(e) });
     process.exit(1);
   });

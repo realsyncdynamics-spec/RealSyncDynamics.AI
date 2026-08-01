@@ -70,11 +70,14 @@ describe('/about — Self-Service-First-Positionierung', () => {
   // Der Abschluss-Block der Seite; davor steht im Founder-Absatz ein
   // Prosa-Link auf /contact-sales (Presse/Investoren) — der ist kein CTA.
   const ctaBlockStart = about.indexOf('Mit uns starten');
-  const ctaBlock      = about.slice(ctaBlockStart);
+  // Guard vor dem slice: bei -1 würde slice(-1) das letzte Zeichen der Datei
+  // liefern statt eines leeren Strings und die Folgetests irreführend brechen.
+  if (ctaBlockStart === -1) {
+    throw new Error('CTA-Block „Mit uns starten" fehlt in About.tsx');
+  }
+  const ctaBlock = about.slice(ctaBlockStart);
 
   it('primärer CTA ist der Free Audit, nicht der Kontakt-Kanal', () => {
-    expect(ctaBlockStart, 'CTA-Block „Mit uns starten" fehlt auf /about').toBeGreaterThan(-1);
-
     const audit   = ctaBlock.indexOf('/audit?source=about');
     const contact = ctaBlock.indexOf('/contact-sales');
 
@@ -91,5 +94,11 @@ describe('/about — Self-Service-First-Positionierung', () => {
   it('nutzt die kanonischen CTA-Strings aus runtimeVocab', () => {
     expect(about).toContain('CTA.startFreeAudit');
     expect(about).toContain('CTA.enterprise');
+  });
+
+  it('Enterprise-CTA trägt intent + source für die Lead-Qualifizierung', () => {
+    // `intent` qualifiziert den Lead, `source` attribuiert die Herkunft —
+    // beide werden von ContactSales gelesen und an sales-lead gesendet.
+    expect(ctaBlock).toContain('/contact-sales?intent=enterprise&source=about');
   });
 });

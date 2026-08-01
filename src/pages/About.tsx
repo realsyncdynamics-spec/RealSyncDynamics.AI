@@ -165,15 +165,17 @@ export function About() {
             </div>
 
             <div className="mt-6 pt-5 border-t border-titanium-900">
-              <div className="text-xs font-bold uppercase tracking-wider text-titanium-500 mb-1.5">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-titanium-500 mb-1.5">
                 Wenn Self-Service nicht reicht
-              </div>
+              </h3>
               <p className="text-titanium-400 text-sm mb-3">
                 SSO, On-Premise, Behördenverträge, Custom-DPA — dafür gibt es einen Menschen.
                 Presse, Media-Kit und Investor-Anfragen laufen über denselben Kanal.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
-                <Link to="/contact-sales?source=about&intent=enterprise" className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                {/* Param-Reihenfolge nach Repo-Konvention (HeroSection, CheckoutPage):
+                    intent qualifiziert den Lead, source attribuiert die Herkunft. */}
+                <Link to="/contact-sales?intent=enterprise&source=about" className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
                   {CTA.enterprise}
                 </Link>
                 <Link to="/press" className="inline-flex items-center justify-center gap-2 px-4 py-2 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">

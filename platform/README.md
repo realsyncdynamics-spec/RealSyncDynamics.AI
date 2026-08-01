@@ -124,8 +124,32 @@ Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
 Gate-Engine (approved/warning/blocked, unbekanntes Projekt, Art.-5-Hard-Stop),
 Graph-Aufbau und dynamische Expansion, Zyklusprüfung mit Rückbau,
 Fehler-Propagierung, Retries/Timeout/Cancellation, kein Doppel-Dispatch,
-Idempotenz des Gate-Aufrufs und der Nachweis, dass ein blockiertes Gate keine
-Aktivierung auslöst.
+Idempotenz des Gate-Aufrufs, der Nachweis, dass ein blockiertes Gate keine
+Aktivierung auslöst, sowie Regions- und Modelldrift inklusive Dispatch-Fehlern.
+
+## Laufzeitüberwachung
+
+Registrierung und Gate decken den Weg **in** die Produktion ab. Danach greift
+die Telemetrie: Was zur Laufzeit passiert, muss zu dem passen, was bewertet
+wurde. Zwei Regeln erzeugen heute einen nachverfolgbaren Befund statt einer
+Logzeile:
+
+| Befund | Auslöser | Schwere |
+|---|---|---|
+| `region_drift` | Verarbeitung verlässt die EU (Kap. V DSGVO, ohne TIA) | `critical` bei `high`-Risiko, sonst `high` |
+| `model_drift` | Modellversion in Produktion war nie registriert | `high` bei `high`/`limited`, sonst `medium` |
+
+Ein Befund legt einen Incident an, setzt das Projekt im Cockpit auf
+`at_risk` und feuert den n8n-Webhook (`GOVERNANCE_WEBHOOK_URL`). Ist kein
+Webhook konfiguriert oder nicht erreichbar, bleibt der Incident trotzdem
+bestehen und ist über `GET /api/v1/governance/incidents` sichtbar — ein
+Zustellungsproblem darf keinen Befund verschlucken.
+
+Modelldrift wird bei **jedem** Event geprüft, nicht nur bei einem eigenen
+Event-Typ: Ein stillschweigend getauschtes Modell meldet sich nicht selbst an.
+Der Vergleich ist präfixbasiert, damit `claude-3-5-sonnet-20241022` als
+registriert gilt, wenn `claude-3-5-sonnet` gemeldet wurde — ein anderer
+Modellstamm dagegen nicht.
 
 ## Risiko-Einstufung (Regelwerk)
 
@@ -155,7 +179,7 @@ Gate-Katalog je Klasse in `governance_backend/app/services/risk_evaluator.py`
   Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht
   gezogen.
 - **Hartes Cancel**: Ein laufender Agentenaufruf wird nicht abgeschossen.
-- **Alarmierung**: Regionswechsel EU→Nicht-EU wird erkannt und geloggt, aber
-  erzeugt noch keinen Incident (`telemetry_handler._handle_region_change`).
+- **Incident-Zustellung**: Ein fehlgeschlagener Webhook wird am Incident
+  vermerkt, aber nicht erneut versucht (kein Retry-Cron).
 - **TLS**: Traefik läuft HTTP-only; ACME-Resolver fehlt.
 - **Frontend**: zwei Stub-Seiten ohne Auth und ohne Design-System.

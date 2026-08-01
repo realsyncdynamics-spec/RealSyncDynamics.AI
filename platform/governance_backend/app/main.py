@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,13 +19,15 @@ from .otel import get_tracer, setup_tracing
 from .schemas import (
     GateCheckRequest,
     GateCheckResponse,
+    Incident,
+    IncidentListResponse,
     InventoryActivate,
     ProjectListResponse,
     ProjectRegistration,
     ProjectRegistrationResponse,
     RuntimeTelemetry,
 )
-from .services import gate_engine, inventory, risk_evaluator, telemetry_handler
+from .services import gate_engine, incidents, inventory, risk_evaluator, telemetry_handler
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
@@ -119,3 +122,26 @@ async def runtime_telemetry(payload: RuntimeTelemetry) -> dict:
 
         await telemetry_handler.handle(payload)
         return {"status": "accepted"}
+
+
+@app.get(
+    "/api/v1/governance/incidents",
+    response_model=IncidentListResponse,
+    summary="Offene und quittierte Befunde der Laufzeitüberwachung",
+)
+async def list_incidents(
+    project_id: Optional[str] = None, status: Optional[str] = None
+) -> IncidentListResponse:
+    return IncidentListResponse(incidents=incidents.list_incidents(project_id, status))
+
+
+@app.post(
+    "/api/v1/governance/incidents/{incident_id}/acknowledge",
+    response_model=Incident,
+    summary="Befund quittieren",
+)
+async def acknowledge_incident(incident_id: str) -> Incident:
+    incident = incidents.acknowledge(incident_id)
+    if incident is None:
+        raise HTTPException(status_code=404, detail=f"Incident {incident_id} nicht gefunden")
+    return incident

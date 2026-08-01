@@ -102,6 +102,46 @@ class ProjectRecord(BaseModel):
     jurisdiction: Optional[str] = "eu"
     last_gate_status: Optional[Literal["approved", "warning", "blocked"]] = None
 
+    # Bei der Registrierung gemeldete Modelle — Referenz für die Drift-Erkennung
+    # zur Laufzeit. Ein Modell, das nie bewertet wurde, darf nicht unbemerkt
+    # in Produktion laufen.
+    models: List[str] = Field(default_factory=list)
+
+    # Ergebnis der Laufzeitüberwachung, unabhängig vom Deployment-Status.
+    compliance_status: Literal["ok", "at_risk"] = "ok"
+
 
 class ProjectListResponse(BaseModel):
     projects: List[ProjectRecord]
+
+
+# --- Incidents -------------------------------------------------------------
+
+IncidentType = Literal[
+    "region_drift",       # Verarbeitung verlässt die EU (Kap. V DSGVO)
+    "model_drift",        # nicht registrierte Modellversion in Produktion
+    "gate_bypass",        # Deployment ohne bestandenes Gate
+    "runtime_error",      # gemeldeter Laufzeitfehler des Projekts
+]
+
+IncidentSeverity = Literal["low", "medium", "high", "critical"]
+
+
+class Incident(BaseModel):
+    incident_id: str
+    project_id: str
+    incident_type: IncidentType
+    severity: IncidentSeverity
+    title: str
+    detail: str
+    evidence: Dict[str, str] = Field(default_factory=dict)
+    status: Literal["open", "acknowledged", "resolved"] = "open"
+    created_at: str
+
+    # Zustellung an die Automatisierung (n8n).
+    dispatch_status: Literal["pending", "delivered", "failed", "not_configured"] = "pending"
+    dispatch_error: Optional[str] = None
+
+
+class IncidentListResponse(BaseModel):
+    incidents: List[Incident]

@@ -66,12 +66,36 @@ create table if not exists governance_runtime_events (
 
 create index if not exists idx_runtime_events_project on governance_runtime_events(project_id, created_at desc);
 
+-- Befunde der Laufzeitüberwachung ------------------------------------------
+
+create table if not exists governance_incidents (
+  incident_id     text primary key,
+  project_id      text not null references governance_projects(project_id) on delete cascade,
+  tenant_id       uuid not null,
+  incident_type   text not null
+                  check (incident_type in ('region_drift','model_drift','gate_bypass','runtime_error')),
+  severity        text not null check (severity in ('low','medium','high','critical')),
+  title           text not null,
+  detail          text not null default '',
+  evidence        jsonb not null default '{}'::jsonb,
+  status          text not null default 'open'
+                  check (status in ('open','acknowledged','resolved')),
+  dispatch_status text not null default 'pending'
+                  check (dispatch_status in ('pending','delivered','failed','not_configured')),
+  dispatch_error  text,
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists idx_incidents_project on governance_incidents(project_id, created_at desc);
+create index if not exists idx_incidents_open on governance_incidents(status) where status = 'open';
+
 -- RLS -----------------------------------------------------------------------
 -- Jede Tabelle mandantengetrennt; Anwendungszugriff nur auf eigenen Tenant.
 
 alter table governance_projects      enable row level security;
 alter table governance_gate_checks   enable row level security;
 alter table governance_runtime_events enable row level security;
+alter table governance_incidents     enable row level security;
 
 -- TODO(RLS): tenant_id-Auflösung an das bestehende `tenants`-Mapping der
 -- Hauptplattform angleichen (profiles.tenant_id statt auth.uid()-Direktvergleich).
@@ -82,6 +106,9 @@ create policy gate_checks_tenant_read on governance_gate_checks
   for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
 
 create policy runtime_events_tenant_read on governance_runtime_events
+  for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
+
+create policy incidents_tenant_read on governance_incidents
   for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
 
 -- Schreibzugriff erfolgt ausschließlich über die Service-Role (Backends),

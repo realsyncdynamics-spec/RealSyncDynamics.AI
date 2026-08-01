@@ -1,7 +1,17 @@
 """Verarbeitung von Laufzeit-Telemetrie deployter Projekte.
 
 Aufgabe: Drift zwischen registriertem Soll-Zustand und Laufzeit-Ist-Zustand
-erkennen (Region, Modellversion, Vorfälle).
+erkennen und daraus einen nachverfolgbaren Vorgang machen — nicht nur eine
+Logzeile.
+
+Zwei Regeln greifen heute:
+
+  * **Regionsdrift** — die Verarbeitung verlässt die EU. Ohne Transfer Impact
+    Assessment ist das ein meldepflichtiger Befund (Kap. V DSGVO), kein
+    Betriebsdetail.
+  * **Modelldrift** — in Produktion läuft eine Modellversion, die bei der
+    Registrierung nie bewertet wurde. Die Risikoklasse des Projekts wurde auf
+    Basis der gemeldeten Modelle bestimmt; ein anderes Modell entwertet sie.
 """
 
 from __future__ import annotations
@@ -11,7 +21,7 @@ from collections import deque
 from typing import Deque, Dict, List, Optional
 
 from ..schemas import RuntimeTelemetry
-from . import inventory
+from . import incidents, inventory
 
 logger = logging.getLogger("governance.telemetry")
 
@@ -46,26 +56,102 @@ async def handle(payload: RuntimeTelemetry) -> None:
         _LAST_REGION[payload.project_id] = payload.region
 
     if payload.event_type == "region_change":
-        _handle_region_change(payload, previous_region)
+        await _handle_region_change(payload, previous_region)
+
+    # Modelldrift wird bei jedem Event geprüft, nicht nur bei einem
+    # dedizierten Event-Typ — ein stillschweigend getauschtes Modell meldet
+    # sich nicht selbst an.
+    if payload.model_version:
+        await _check_model_drift(payload)
 
 
-def _handle_region_change(payload: RuntimeTelemetry, previous_region: Optional[str]) -> None:
+async def _handle_region_change(
+    payload: RuntimeTelemetry, previous_region: Optional[str]
+) -> None:
     """Bewertet einen Regionswechsel (Drittlandtransfer, Kap. V DSGVO)."""
     source = (previous_region or payload.details.get("from") or "").lower()
     target = (payload.region or payload.details.get("to") or "").lower()
 
-    left_eu = source in EU_REGIONS and target not in EU_REGIONS and target != ""
-    if left_eu:
-        logger.warning(
-            "DRIFT: Projekt %s verlässt EU-Region (%s -> %s)",
-            payload.project_id,
-            source,
-            target,
-        )
-        # TODO(Alarmierung): Incident in `governance_incidents` anlegen,
-        # n8n-Webhook feuern und Projekt-Status auf 'at_risk' setzen.
-        # Ein Transfer eu -> us ohne Transfer Impact Assessment ist ein
-        # meldepflichtiger Befund, kein reines Log-Ereignis.
+    if not target or target in EU_REGIONS:
+        return
+    if source and source not in EU_REGIONS:
+        # Bereits außerhalb der EU — der Befund steht schon.
+        return
+
+    logger.warning(
+        "DRIFT: Projekt %s verlässt EU-Region (%s -> %s)",
+        payload.project_id,
+        source or "unbekannt",
+        target,
+    )
+
+    project = inventory.get_project(payload.project_id)
+    # Ein high-risk-System außerhalb der EU wiegt schwerer als ein minimales.
+    severity = "critical" if project and project.risk_tier == "high" else "high"
+
+    await incidents.open_incident(
+        project_id=payload.project_id,
+        incident_type="region_drift",
+        severity=severity,
+        title="Verarbeitung außerhalb der EU",
+        detail=(
+            f"Die Verarbeitung wechselte von '{source or 'unbekannt'}' nach '{target}'. "
+            "Ohne Transfer Impact Assessment liegt ein Drittlandtransfer nach "
+            "Kap. V DSGVO vor."
+        ),
+        evidence={
+            "from": source or "unbekannt",
+            "to": target,
+            "event_type": payload.event_type,
+        },
+    )
+
+
+async def _check_model_drift(payload: RuntimeTelemetry) -> None:
+    """Meldet Modellversionen, die nie bewertet wurden."""
+    project = inventory.get_project(payload.project_id)
+    if project is None or not project.models:
+        return
+
+    running = (payload.model_version or "").lower()
+    # Präfix-Vergleich: 'claude-3-5-sonnet-20241022' zählt als registriert,
+    # wenn 'claude-3-5-sonnet' gemeldet wurde. Ein anderer Modellstamm nicht.
+    registered = [m.lower() for m in project.models]
+    if any(running.startswith(m) or m.startswith(running) for m in registered):
+        return
+
+    # Doppelmeldungen für dasselbe Modell vermeiden.
+    for existing in incidents.list_incidents(payload.project_id):
+        if (
+            existing.incident_type == "model_drift"
+            and existing.evidence.get("running_model") == running
+            and existing.status != "resolved"
+        ):
+            return
+
+    logger.warning(
+        "DRIFT: Projekt %s nutzt nicht registriertes Modell %s (registriert: %s)",
+        payload.project_id,
+        running,
+        ", ".join(registered),
+    )
+
+    await incidents.open_incident(
+        project_id=payload.project_id,
+        incident_type="model_drift",
+        severity="high" if project.risk_tier in ("high", "limited") else "medium",
+        title="Nicht registrierte Modellversion in Produktion",
+        detail=(
+            f"In Produktion läuft '{payload.model_version}', registriert und bewertet "
+            f"wurden: {', '.join(project.models)}. Die Risikoklasse "
+            f"'{project.risk_tier}' beruht auf den registrierten Modellen."
+        ),
+        evidence={
+            "running_model": running,
+            "registered_models": ",".join(registered),
+            "risk_tier": project.risk_tier,
+        },
+    )
 
 
 def recent_events(project_id: Optional[str] = None, limit: int = 50) -> List[RuntimeTelemetry]:

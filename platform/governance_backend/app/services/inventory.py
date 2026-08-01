@@ -39,6 +39,8 @@ async def create_project(
         required_gates=required_gates,
         status="registered",
         jurisdiction=payload.jurisdiction,
+        # Referenzstand für die Drift-Erkennung: was hier steht, wurde bewertet.
+        models=list(payload.models),
     )
     return project_id
 

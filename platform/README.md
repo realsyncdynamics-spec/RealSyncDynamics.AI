@@ -120,12 +120,48 @@ cd governance_backend && pip install -r requirements.txt && pytest
 cd builder_orchestrator && pip install -r requirements.txt && pytest
 ```
 
+Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
+übersprungen:
+
+```bash
+docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
+cd governance_backend
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres pytest
+```
+
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
 Gate-Engine (approved/warning/blocked, unbekanntes Projekt, Art.-5-Hard-Stop),
 Graph-Aufbau und dynamische Expansion, Zyklusprüfung mit Rückbau,
 Fehler-Propagierung, Retries/Timeout/Cancellation, kein Doppel-Dispatch,
 Idempotenz des Gate-Aufrufs, der Nachweis, dass ein blockiertes Gate keine
 Aktivierung auslöst, sowie Regions- und Modelldrift inklusive Dispatch-Fehlern.
+Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit der Migration und dass
+Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen Reconnect
+überstehen.
+
+## Persistenz
+
+Das Governance-Backend hält den Compliance-Nachweis — Inventar, Gate-Ergebnisse,
+Befunde. Ein Prüfpfad, der beim Deploy verdampft, ist keiner, deshalb liegt
+dieser Zustand in Postgres.
+
+Die Umschaltung hängt allein an `DATABASE_URL`:
+
+| `DATABASE_URL` | Speicher | `/health` meldet |
+|---|---|---|
+| gesetzt und erreichbar | Postgres | `"storage": "postgres"` |
+| leer | prozesslokal | `"storage": "memory"` |
+| gesetzt, aber nicht erreichbar | prozesslokal + Fehler im Log | `"storage": "memory"` |
+
+Der dritte Fall ist Absicht: Ein kurzzeitig nicht erreichbarer Datenbankserver
+soll die Annahme von Telemetrie nicht verhindern. Dass der Dienst dann ohne
+dauerhaften Prüfpfad läuft, steht im Log und unter `/health` — es passiert
+also nicht still.
+
+Die Migration wendet das Backend beim Start selbst an. Sie ist **wiederholbar**
+(RLS-Policies werden vorher verworfen und neu angelegt, weil `create policy`
+kein `IF NOT EXISTS` kennt) — der `docker-entrypoint-initdb.d`-Hook wäre
+unzuverlässig, weil er nur beim allerersten Start eines leeren Volumes läuft.
 
 ## Laufzeitüberwachung
 
@@ -171,10 +207,9 @@ Gate-Katalog je Klasse in `governance_backend/app/services/risk_evaluator.py`
   fertigen System-Prompts und Output-Verträgen. Der Architect liefert einen
   festen Platzhalter-Modulschnitt (`auth`, `data`, `ui`), damit der Fan-out im
   Graph real ist und nicht nur theoretisch.
-- **Persistenz**: In-Memory, aber hinter `GraphRepository` — der Umstieg auf
-  Postgres ist eine zweite Implementierung, kein Umbau. Zielschema in
-  `governance_backend/migrations/0001_init.sql` und als Skizze in
-  `services/repository.py`.
+- **Persistenz des Orchestrators**: Task-Graphen liegen weiterhin im Prozess,
+  aber hinter `GraphRepository` — der Umstieg ist eine zweite Implementierung,
+  kein Umbau. Das Governance-Backend ist bereits auf Postgres umgestellt.
 - **Queue**: Der Scheduler läuft als `asyncio.Task` im selben Prozess. Die
   Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht
   gezogen.

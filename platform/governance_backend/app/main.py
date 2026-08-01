@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
@@ -27,14 +29,34 @@ from .schemas import (
     ProjectRegistrationResponse,
     RuntimeTelemetry,
 )
-from .services import gate_engine, incidents, inventory, risk_evaluator, telemetry_handler
+from .services import db, gate_engine, incidents, inventory, risk_evaluator, telemetry_handler
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
+MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Verbindet die Datenbank, falls konfiguriert, und wendet die Migration an.
+
+    Schlägt das fehl, läuft der Dienst im In-Memory-Modus weiter — ein
+    kurzzeitig nicht erreichbarer Datenbankserver soll die Annahme von
+    Telemetrie nicht verhindern. Der Modus steht im Log und unter /health.
+    """
+    if await db.connect():
+        await db.apply_migrations(str(MIGRATION))
+    try:
+        yield
+    finally:
+        await db.disconnect()
+
+
 app = FastAPI(
     title="RealSyncDynamicsAI Governance Backend",
-    version="0.1.0",
+    version="0.3.0",
     description="EU-AI-Act-/DSGVO-Governance: Registry, CI-CD-Gate, Runtime-Telemetrie.",
+    lifespan=lifespan,
 )
 
 # Frontend läuft unter eigener Origin (app.localhost) -> CORS nötig.
@@ -51,7 +73,12 @@ tracer = get_tracer(__name__)
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "governance_backend"}
+    # `storage` macht sichtbar, ob der Prüfpfad einen Neustart überlebt.
+    return {
+        "status": "ok",
+        "service": "governance_backend",
+        "storage": "postgres" if db.is_enabled() else "memory",
+    }
 
 
 @app.post(
@@ -83,7 +110,7 @@ async def register_project(payload: ProjectRegistration) -> ProjectRegistrationR
 )
 async def gate_check(payload: GateCheckRequest) -> GateCheckResponse:
     with tracer.start_as_current_span("governance.gate_check") as span:
-        decision = gate_engine.evaluate(payload)
+        decision = await gate_engine.evaluate(payload)
 
         span.set_attribute("project_id", payload.project_id)
         span.set_attribute("build_hash", payload.build_hash)
@@ -100,7 +127,7 @@ async def gate_check(payload: GateCheckRequest) -> GateCheckResponse:
     summary="Projektliste für das Governance-Cockpit",
 )
 async def list_projects() -> ProjectListResponse:
-    return ProjectListResponse(projects=inventory.list_projects())
+    return ProjectListResponse(projects=await inventory.list_projects())
 
 
 @app.post("/api/v1/inventory/activate", summary="Projekt als produktiv melden")
@@ -132,7 +159,7 @@ async def runtime_telemetry(payload: RuntimeTelemetry) -> dict:
 async def list_incidents(
     project_id: Optional[str] = None, status: Optional[str] = None
 ) -> IncidentListResponse:
-    return IncidentListResponse(incidents=incidents.list_incidents(project_id, status))
+    return IncidentListResponse(incidents=await incidents.list_incidents(project_id, status))
 
 
 @app.post(
@@ -141,7 +168,7 @@ async def list_incidents(
     summary="Befund quittieren",
 )
 async def acknowledge_incident(incident_id: str) -> Incident:
-    incident = incidents.acknowledge(incident_id)
+    incident = await incidents.acknowledge(incident_id)
     if incident is None:
         raise HTTPException(status_code=404, detail=f"Incident {incident_id} nicht gefunden")
     return incident

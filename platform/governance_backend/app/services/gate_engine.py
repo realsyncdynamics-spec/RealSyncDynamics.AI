@@ -56,9 +56,9 @@ SEVERITY_BY_TIER: Dict[str, Severity] = {
 }
 
 
-def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
+async def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
     """Prüft die Build-Artefakte gegen den Gate-Katalog des Projekts."""
-    project = inventory.get_project(payload.project_id)
+    project = await inventory.get_project(payload.project_id)
 
     # Unbekanntes Projekt: kein Nachweis über Risiko-Einstufung -> blockieren.
     if project is None:
@@ -79,7 +79,7 @@ def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
             remediation="Anwendungsfall streichen oder so umbauen, dass keine verbotene Praktik vorliegt.",
             severity="high",
         )
-        inventory.record_gate_result(payload.project_id, decision.status)
+        await inventory.record_gate_result(payload.project_id, decision.status)
         return decision
 
     artifacts = payload.artifacts.model_dump()
@@ -113,7 +113,7 @@ def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
     else:
         decision = GateCheckResponse(status="approved")
 
-    inventory.record_gate_result(payload.project_id, decision.status)
+    await inventory.record_gate_result(payload.project_id, decision.status)
 
     # TODO(Evidence Vault): Gate-Entscheidung inkl. build_hash als
     # unveränderliches Evidence-Event (Hash-Chain) ablegen.

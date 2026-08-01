@@ -29,13 +29,17 @@ services:
       ENVIRONMENT: local
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
-      # TODO(Persistenz): auf supabase_db umstellen, sobald der In-Memory-Store ersetzt ist.
+      # Gesetzt = Inventar und Befunde liegen in Postgres und überleben einen
+      # Neustart. Leeren, um bewusst In-Memory zu fahren.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
+      # Incident-Dispatch an n8n; leer = Befunde nur über die API sichtbar.
+      GOVERNANCE_WEBHOOK_URL: ""
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8002:8002"
     depends_on:
-      - supabase_db
+      supabase_db:
+        condition: service_healthy
     labels:
       - traefik.enable=true
       - traefik.http.routers.governance.rule=Host(`rsd.localhost`)
@@ -96,8 +100,9 @@ services:
       - "5432:5432"
     volumes:
       - rsd_pgdata:/var/lib/postgresql/data
-      # Migrations laufen beim ersten Start automatisch.
-      - ./governance_backend/migrations:/docker-entrypoint-initdb.d:ro
+      # Die Migration wendet das Backend beim Start selbst an (sie ist
+      # wiederholbar). Der initdb-Hook wäre unzuverlässig, weil er nur beim
+      # allerersten Start eines leeren Volumes läuft.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s

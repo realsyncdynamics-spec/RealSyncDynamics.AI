@@ -12,11 +12,11 @@ from app.services import gate_engine, inventory, risk_evaluator, telemetry_handl
 
 
 @pytest.fixture(autouse=True)
-def clean_state():
-    inventory.reset()
+async def clean_state():
+    await inventory.reset()
     telemetry_handler.reset()
     yield
-    inventory.reset()
+    await inventory.reset()
     telemetry_handler.reset()
 
 
@@ -99,7 +99,7 @@ async def test_gate_approved_wenn_alle_nachweise_da():
     project_id = await inventory.create_project(
         _registration(models=["claude"]), "limited", ["tests_passed", "transparency_notice_enabled"]
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(project_id=project_id, build_hash="sha256:abc", artifacts=_artifacts())
     )
     assert decision.status == "approved"
@@ -112,7 +112,7 @@ async def test_gate_blockiert_ohne_model_card_bei_high():
         "high",
         ["tests_passed", "model_card_included", "pii_scan_passed"],
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(
             project_id=project_id,
             build_hash="sha256:abc",
@@ -131,7 +131,7 @@ async def test_gate_warnt_bei_weichem_befund():
         "limited",
         ["tests_passed", "transparency_notice_enabled", "audit_logging_active"],
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(
             project_id=project_id,
             build_hash="sha256:abc",
@@ -141,8 +141,9 @@ async def test_gate_warnt_bei_weichem_befund():
     assert decision.status == "warning"
 
 
-def test_gate_blockiert_unbekanntes_projekt():
-    decision = gate_engine.evaluate(
+@pytest.mark.asyncio
+async def test_gate_blockiert_unbekanntes_projekt():
+    decision = await gate_engine.evaluate(
         GateCheckRequest(project_id="prj_unknown", build_hash="x", artifacts=_artifacts())
     )
     assert decision.status == "blocked"
@@ -154,7 +155,7 @@ async def test_gate_blockiert_unacceptable_immer():
     project_id = await inventory.create_project(
         _registration(data_types=["social_scoring"]), "unacceptable", []
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(project_id=project_id, build_hash="x", artifacts=_artifacts())
     )
     assert decision.status == "blocked"

@@ -15,14 +15,14 @@ from app.services import incidents, inventory, telemetry_handler
 
 
 @pytest.fixture(autouse=True)
-def clean_state():
-    inventory.reset()
+async def clean_state():
+    await inventory.reset()
     telemetry_handler.reset()
-    incidents.reset()
+    await incidents.reset()
     yield
-    inventory.reset()
+    await inventory.reset()
     telemetry_handler.reset()
-    incidents.reset()
+    await incidents.reset()
 
 
 async def _projekt(risk_tier="limited", models=None) -> str:
@@ -50,7 +50,7 @@ async def test_eu_nach_us_erzeugt_incident():
         RuntimeTelemetry(project_id=pid, event_type="region_change", region="us")
     )
 
-    befunde = incidents.list_incidents(pid)
+    befunde = await incidents.list_incidents(pid)
     assert len(befunde) == 1
     assert befunde[0].incident_type == "region_drift"
     assert befunde[0].severity == "high"
@@ -69,7 +69,7 @@ async def test_high_risk_projekt_bekommt_critical():
         RuntimeTelemetry(project_id=pid, event_type="region_change", region="us-east-1")
     )
 
-    assert incidents.list_incidents(pid)[0].severity == "critical"
+    assert (await incidents.list_incidents(pid))[0].severity == "critical"
 
 
 @pytest.mark.asyncio
@@ -83,7 +83,7 @@ async def test_wechsel_innerhalb_der_eu_ist_kein_befund():
         RuntimeTelemetry(project_id=pid, event_type="region_change", region="eu-west-1")
     )
 
-    assert incidents.list_incidents(pid) == []
+    assert await incidents.list_incidents(pid) == []
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,7 @@ async def test_projekt_wird_als_gefaehrdet_markiert():
         RuntimeTelemetry(project_id=pid, event_type="region_change", region="us")
     )
 
-    assert inventory.get_project(pid).compliance_status == "at_risk"
+    assert (await inventory.get_project(pid)).compliance_status == "at_risk"
 
 
 @pytest.mark.asyncio
@@ -114,7 +114,7 @@ async def test_drift_aus_details_ohne_vorheriges_event():
         )
     )
 
-    assert len(incidents.list_incidents(pid)) == 1
+    assert len(await incidents.list_incidents(pid)) == 1
 
 
 # --- Modelldrift -----------------------------------------------------------
@@ -128,7 +128,7 @@ async def test_nicht_registriertes_modell_erzeugt_incident():
         RuntimeTelemetry(project_id=pid, event_type="heartbeat", model_version="gpt-4o")
     )
 
-    befunde = incidents.list_incidents(pid)
+    befunde = await incidents.list_incidents(pid)
     assert len(befunde) == 1
     assert befunde[0].incident_type == "model_drift"
     assert befunde[0].evidence["running_model"] == "gpt-4o"
@@ -145,7 +145,7 @@ async def test_registriertes_modell_mit_datumssuffix_ist_kein_befund():
         )
     )
 
-    assert incidents.list_incidents(pid) == []
+    assert await incidents.list_incidents(pid) == []
 
 
 @pytest.mark.asyncio
@@ -157,7 +157,7 @@ async def test_modelldrift_wird_nicht_doppelt_gemeldet():
             RuntimeTelemetry(project_id=pid, event_type="heartbeat", model_version="gpt-4o")
         )
 
-    assert len(incidents.list_incidents(pid)) == 1
+    assert len(await incidents.list_incidents(pid)) == 1
 
 
 @pytest.mark.asyncio
@@ -168,7 +168,7 @@ async def test_ohne_registrierte_modelle_keine_modelldrift():
         RuntimeTelemetry(project_id=pid, event_type="heartbeat", model_version="gpt-4o")
     )
 
-    assert incidents.list_incidents(pid) == []
+    assert await incidents.list_incidents(pid) == []
 
 
 # --- Dispatch --------------------------------------------------------------
@@ -189,7 +189,7 @@ async def test_ohne_webhook_bleibt_der_incident_trotzdem_bestehen(monkeypatch):
     )
 
     assert incident.dispatch_status == "not_configured"
-    assert incidents.get_incident(incident.incident_id) is not None
+    assert await incidents.get_incident(incident.incident_id) is not None
 
 
 @pytest.mark.asyncio
@@ -205,7 +205,7 @@ async def test_fehlgeschlagener_dispatch_bricht_nichts_ab(monkeypatch):
         RuntimeTelemetry(project_id=pid, event_type="region_change", region="us")
     )
 
-    befund = incidents.list_incidents(pid)[0]
+    befund = (await incidents.list_incidents(pid))[0]
     assert befund.dispatch_status == "failed"
     assert befund.dispatch_error
 
@@ -220,12 +220,12 @@ async def test_quittieren_setzt_status():
         project_id=pid, incident_type="runtime_error", severity="low", title="t", detail="d"
     )
 
-    quittiert = incidents.acknowledge(incident.incident_id)
+    quittiert = await incidents.acknowledge(incident.incident_id)
     assert quittiert.status == "acknowledged"
 
     # Zweites Quittieren ändert nichts.
-    assert incidents.acknowledge(incident.incident_id).status == "acknowledged"
-    assert incidents.acknowledge("inc_unbekannt") is None
+    assert (await incidents.acknowledge(incident.incident_id)).status == "acknowledged"
+    assert await incidents.acknowledge("inc_unbekannt") is None
 
 
 @pytest.mark.asyncio
@@ -239,8 +239,8 @@ async def test_filter_nach_projekt_und_status():
     await incidents.open_incident(
         project_id=pid_b, incident_type="runtime_error", severity="low", title="b", detail=""
     )
-    incidents.acknowledge(a.incident_id)
+    await incidents.acknowledge(a.incident_id)
 
-    assert len(incidents.list_incidents(pid_a)) == 1
-    assert len(incidents.list_incidents(status="open")) == 1
-    assert len(incidents.list_incidents()) == 2
+    assert len(await incidents.list_incidents(pid_a)) == 1
+    assert len(await incidents.list_incidents(status="open")) == 1
+    assert len(await incidents.list_incidents()) == 2

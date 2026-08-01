@@ -27,9 +27,18 @@ create table if not exists governance_projects (
                        check (status in ('registered','active','retired')),
   endpoint             text,
   deployment_timestamp timestamptz,
+  -- Letztes CI/CD-Gate-Ergebnis (Cockpit-Anzeige).
+  last_gate_status     text check (last_gate_status in ('approved','warning','blocked')),
+  -- Ergebnis der Laufzeitüberwachung, unabhängig vom Deployment-Status.
+  compliance_status    text not null default 'ok' check (compliance_status in ('ok','at_risk')),
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now()
 );
+
+-- Additiv nachziehbar, falls die Tabelle aus einer früheren Fassung stammt.
+alter table governance_projects
+  add column if not exists last_gate_status text,
+  add column if not exists compliance_status text not null default 'ok';
 
 create index if not exists idx_governance_projects_tenant on governance_projects(tenant_id);
 create index if not exists idx_governance_projects_tier on governance_projects(risk_tier);
@@ -97,17 +106,27 @@ alter table governance_gate_checks   enable row level security;
 alter table governance_runtime_events enable row level security;
 alter table governance_incidents     enable row level security;
 
+-- `create policy` kennt kein IF NOT EXISTS. Damit die Migration wiederholbar
+-- bleibt (Repo-Konvention: additiv, mehrfach anwendbar), wird jede Policy
+-- vorher verworfen. Das ist gefahrlos, weil Schreibzugriff ohnehin nur über
+-- die Service-Role läuft, die RLS umgeht.
+--
 -- TODO(RLS): tenant_id-Auflösung an das bestehende `tenants`-Mapping der
 -- Hauptplattform angleichen (profiles.tenant_id statt auth.uid()-Direktvergleich).
+
+drop policy if exists governance_projects_tenant_read on governance_projects;
 create policy governance_projects_tenant_read on governance_projects
   for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
 
+drop policy if exists gate_checks_tenant_read on governance_gate_checks;
 create policy gate_checks_tenant_read on governance_gate_checks
   for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
 
+drop policy if exists runtime_events_tenant_read on governance_runtime_events;
 create policy runtime_events_tenant_read on governance_runtime_events
   for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
 
+drop policy if exists incidents_tenant_read on governance_incidents;
 create policy incidents_tenant_read on governance_incidents
   for select using (tenant_id::text = current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id');
 

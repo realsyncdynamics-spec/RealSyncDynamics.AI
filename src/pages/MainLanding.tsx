@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { useHealthStatus } from '../hooks/useHealthStatus';
-import { planById, formatLimit, policyPacksFor, checkoutHrefForPlan, type PlanId } from '@/shared/pricing';
+import { planById, formatLimit, policyPacksFor, checkoutHrefForPlan, RUNTIME_PIPELINE, type PlanId } from '@/shared/pricing';
 import {
   Snowflake,
   ShieldCheck,
@@ -110,17 +110,16 @@ const STEPS = [
 /**
  * Preis-Karten der Startseite.
  *
- * Design-Lock beachtet: Layout, Klassen und Kartenanzahl bleiben unverändert.
- * Geändert wurde ausschließlich die DATENQUELLE — Name, Preis, Kennzahlen und
- * Link-Ziel kommen jetzt aus der Pricing-SSoT (`shared/pricing.ts`), damit die
- * Startseite nicht mehr eigene Preise und Domain-Zahlen führt, die von
- * /pricing abwichen (z.B. „5 Domains" bei Growth statt 3, „25 Domains" bei
- * Agency statt 10).
+ * Name, Preis, Kennzahlen und Link-Ziel kommen aus der Pricing-SSoT
+ * (`shared/pricing.ts`), damit die Startseite keine eigenen Preise und
+ * Domain-Zahlen mehr führt, die von /pricing abwichen (z.B. „5 Domains" bei
+ * Growth statt 3, „25 Domains" bei Agency statt 10).
  *
- * Offen für Design-Freigabe: Enterprise (1.249 €) fehlt hier weiterhin, weil
- * eine fünfte Karte das gesperrte 4-Spalten-Raster verändern würde.
+ * Alle fünf buchbaren Pläne werden gezeigt — inklusive Enterprise (1.249 €).
+ * Das Raster wechselt dafür auf Desktop von vier auf fünf Spalten; Karten-
+ * Aufbau, Klassen und Farbwelt bleiben unverändert.
  */
-const LANDING_PLAN_IDS: PlanId[] = ['starter', 'growth', 'agency', 'partner'];
+const LANDING_PLAN_IDS: PlanId[] = ['starter', 'growth', 'agency', 'enterprise', 'partner'];
 
 const PRICING = LANDING_PLAN_IDS.map((id) => {
   const plan = planById(id);
@@ -315,6 +314,33 @@ function Runtime() {
           </div>
         ))}
       </div>
+
+      {/* Runtime-Kette — identische Reihenfolge wie auf /pricing und in der
+          Dokumentation. Die Stufen kommen aus RUNTIME_PIPELINE der
+          Pricing-SSoT, damit die Architektur überall gleich dargestellt wird. */}
+      <div className="mt-6 p-6 sm:p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
+        <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/40">
+          Die Runtime-Kette
+        </p>
+        <ol className="flex flex-wrap items-stretch gap-2">
+          {RUNTIME_PIPELINE.map((stage, i) => (
+            <li key={stage.id} className="flex items-stretch gap-2">
+              <div
+                title={stage.description}
+                className="flex flex-col justify-center px-3.5 py-2.5 rounded-lg border border-white/10 bg-[rgb(3,7,18)]"
+              >
+                <span className="font-mono text-[10px] text-cyan-400/60">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="text-xs sm:text-sm font-medium whitespace-nowrap">{stage.label}</span>
+              </div>
+              {i < RUNTIME_PIPELINE.length - 1 && (
+                <ArrowRight className="self-center w-4 h-4 text-cyan-400/40 shrink-0" aria-hidden="true" />
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
     </Section>
   );
 }
@@ -369,7 +395,7 @@ function ProofBand() {
 function Pricing() {
   return (
     <Section id="pricing" eyebrow="PREISE" title="Preise, die mit Ihrer Verantwortung skalieren" subtitle="14 Tage kostenlos testen · transparent, metered, jederzeit kündbar — ohne Setup-Gebühr und ohne Berater-Tagessätze.">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {PRICING.map((p) => (
           <div key={p.name} className={`relative flex flex-col p-7 rounded-2xl border ${p.featured ? 'border-cyan-400/60 bg-cyan-500/[0.06]' : 'border-white/10 bg-white/[0.02]'}`}>
             {p.featured && (

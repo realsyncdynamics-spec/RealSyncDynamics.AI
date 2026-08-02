@@ -70,5 +70,41 @@ jobs:
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
+      # Frueher: "supabase functions deploy" ohne Argument — die CLI baut dann
+      # EINEN Modulgraph ueber alle Functions. Ein einziger Syntaxfehler
+      # ("failed to create the graph") hat damit den Deploy ALLER Functions
+      # gekippt: 73 von 168 erreichten die Produktion wochenlang nie.
+      # Siehe DEBUG_ROOT_CAUSE_2026-08-02.md.
+      #
+      # Neu: pro Function deployen. Ein defektes Modul blockiert nur sich
+      # selbst; alles andere geht live. Am Ende exit != 0, damit der Fehler
+      # sichtbar bleibt und nicht still verschluckt wird.
       - name: Deploy edge functions
-        run: supabase functions deploy --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+        run: |
+          set -uo pipefail
+          ok=0; failed=""
+          for dir in supabase/functions/*/; do
+            name="$(basename "$dir")"
+            case "$name" in _*) continue ;; esac
+            [ -f "$dir/index.ts" ] || continue
+            if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
+              ok=$((ok + 1))
+            else
+              failed="$failed $name"
+              echo "::error::Edge Function '$name' konnte nicht deployt werden."
+            fi
+          done
+          {
+            echo "## Edge Functions"
+            echo "- deployt: $ok"
+            if [ -n "$failed" ]; then
+              echo "- fehlgeschlagen:$failed"
+            else
+              echo "- fehlgeschlagen: keine"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$failed" ]; then
+            echo "Fehlgeschlagen:$failed"
+            exit 1
+          fi
+          echo "Alle $ok Edge Functions deployt."

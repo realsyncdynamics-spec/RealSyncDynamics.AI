@@ -21,6 +21,7 @@ from fastapi.responses import StreamingResponse
 
 from . import auth
 from .clients import rsd_client
+from .config import get_config
 from .middleware import (
     ErrorSanitizationMiddleware,
     RateLimitMiddleware,
@@ -39,12 +40,15 @@ MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.s
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Verbindet die Datenbank, falls konfiguriert, und wählt das Backend.
+    """Validiert Konfiguration, verbindet die Datenbank und wählt das Backend.
 
     Ohne erreichbare Datenbank läuft der Orchestrator prozesslokal weiter —
     Builds gehen dann bei einem Neustart verloren, aber der Dienst nimmt
     weiterhin Aufträge an. Welcher Modus aktiv ist, steht unter /health.
     """
+    # Konfiguration validieren vor dem Starten
+    get_config()
+
     if await db.connect():
         await db.apply_migrations(str(MIGRATION))
     repository.select_backend()

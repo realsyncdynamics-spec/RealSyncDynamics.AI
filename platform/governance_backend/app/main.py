@@ -19,6 +19,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import auth
+from .config import get_config
 from .middleware import (
     ErrorSanitizationMiddleware,
     RateLimitMiddleware,
@@ -67,12 +68,15 @@ async def _redelivery_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Verbindet die Datenbank, falls konfiguriert, und wendet die Migration an.
+    """Validiert Konfiguration, verbindet die Datenbank und wendet die Migration an.
 
     Schlägt das fehl, läuft der Dienst im In-Memory-Modus weiter — ein
     kurzzeitig nicht erreichbarer Datenbankserver soll die Annahme von
     Telemetrie nicht verhindern. Der Modus steht im Log und unter /health.
     """
+    # Konfiguration validieren vor dem Starten
+    get_config()
+
     if await db.connect():
         await db.apply_migrations(str(MIGRATION))
 

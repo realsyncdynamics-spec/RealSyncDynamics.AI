@@ -49,7 +49,7 @@ Da die Dateien inhaltlich abweichen, ist unklar, welche Variante gilt. Beide anz
 
 Beide fügen `supabase/migrations/20260728000000_siteos_core.sql` hinzu — **byte-identisch** (md5 `f66707cb…`). PR #932 ist als „Hybrid Merge — 3 Major Features (SiteOS, C2PA, AI Builder)" beschrieben und enthält SiteOS bereits vollständig.
 
-**Vorgehen**: Genau einen der beiden Wege wählen. Empfehlung: #932 als Sammel-PR aufgeben (113 Dateien, +12963 — zu groß für Review) und stattdessen #904 einzeln mergen; die übrigen Bestandteile von #932 laufen ohnehin über #929 (C2PA) und #901 (AI Builder).
+**Vorgehen**: Genau einen der beiden Wege wählen. Die Entscheidung ist in §7.1 mit Messwerten ausgearbeitet — Ergebnis: **#904 mergen, #932 schließen**.
 
 ### 2.4 Migrations-Timestamps liegen vor dem Stand von `main`
 
@@ -64,7 +64,11 @@ Beide fügen `supabase/migrations/20260728000000_siteos_core.sql` hinzu — **by
 
 Die Supabase-CLI wendet beim `db push` standardmäßig nur Migrationen an, deren Version **über** der zuletzt in `supabase_migrations.schema_migrations` eingetragenen liegt; ältere Dateien werden übersprungen (Nachziehen nur mit `--include-all`). Ein grüner Merge bedeutet hier also nicht, dass das Schema in der Zieldatenbank ankommt.
 
+**Das Problem ist nicht theoretisch.** PR #941 dokumentiert in `scripts/check-migration-drift.mjs` denselben Befund für den Bestand: *„118 von 243 Migrationen hatten die Produktion nie erreicht, weil `db push` an Richtung 1 abbrach"*. Genau diese Klasse von Fehler entsteht erneut, wenn die vier PRs oben unverändert gemerged werden.
+
 **Vorgehen**: Vor dem Merge die betroffenen Migrationsdateien auf einen Timestamp **nach** `20260723000000` umbenennen und Referenzen in Tests/Docs mitziehen. Migrationen müssen zusätzlich idempotent bleiben (`IF NOT EXISTS`, `CREATE OR REPLACE`), damit ein Nachziehen mit `--include-all` gefahrlos ist.
+
+**Reichweite des Guards aus #941**: `check-migration-drift.mjs` prüft **keine Timestamp-Reihenfolge**. Er vergleicht die Repo-Migrationen mit der Remote-History in beide Richtungen und meldet eine nie angewendete Repo-Migration erst nach `MAX_UNAPPLIED_AGE_DAYS` (Default 7). Er fängt also die *Folge* (Migration kommt nie an) mit Verzögerung, nicht die *Ursache* (falscher Timestamp) zum PR-Zeitpunkt. Ohne `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_ID` überspringt er sich sauber (Exit 0) — in Fork-PRs läuft er gar nicht. Die Timestamp-Korrektur bleibt damit ein manueller Schritt der Checkliste in §6.
 
 ### 2.5 PR #939 ist ein No-Op
 
@@ -137,7 +141,7 @@ Regel für jede Stufe: nach dem Merge `npm run lint && npm test` gegen `main` gr
 Reihenfolge nach Abhängigkeit: **#942 → #941 → #943 → #946 → #929 → #944**
 
 - #942 zuerst: benennt Tabellen um und beseitigt die Namenskollision mit `agent_os_substrate`; alle späteren Agent-PRs bauen darauf auf. Migrations-Timestamp vorher nach §2.4 anheben.
-- #941 entsperrt den Edge-Function-Deploy — Voraussetzung dafür, dass die Funktionen aus #943/#946/#929 überhaupt ausgerollt werden. Timestamp der eigenen Migration (`20260608000001_user_consents.sql`) nach §2.4 anheben. Der PR bringt zusätzlich `scripts/check-migration-drift.mjs` samt Workflow `migration-drift.yml` mit — genau die Prüfung, die die Timestamp-Probleme aus §2.4 künftig automatisch abfängt. Das ist ein Argument, ihn früh zu mergen und die restlichen Migrations-PRs danach gegen den neuen Check laufen zu lassen.
+- #941 entsperrt den Edge-Function-Deploy — Voraussetzung dafür, dass die Funktionen aus #943/#946/#929 überhaupt ausgerollt werden. Timestamp der eigenen Migration (`20260608000001_user_consents.sql`) nach §2.4 anheben. Der PR bringt zusätzlich `scripts/check-migration-drift.mjs` samt Workflow `migration-drift.yml` mit (siehe §2.4 zu Reichweite und Grenzen des Guards). Das ist ein Argument, ihn früh zu mergen.
 - #943, #946, #929, #944 sind je ≤5 Dateien und berühren keine der Kollisionsdateien.
 
 ### Stufe 2 — Billing / Entitlements
@@ -198,3 +202,57 @@ Die in CLAUDE.md genannten „Social-Orchestrator (14 TODOs)" sind nicht mehr zu
 5. Bei Änderungen an öffentlichen Routen: `npm run e2e` grün
 6. Bei Änderungen an `src/pages/MainLanding.tsx`: nur Strings/Link-Ziele, sonst Freigabe einholen
 7. Neue Tabellen mit RLS-Policy und `tenant_id`-Isolation
+
+---
+
+## 7. Die beiden Projektentscheidungen
+
+Beide Fragen aus §2 sind mit Dateivergleichen unterlegt, nicht mit Einschätzung.
+
+### 7.1 SiteOS: #904 oder #932? → **#904 mergen, #932 schließen**
+
+Messung (`git diff --name-only` gegen den jeweiligen Merge-Base, md5 je Datei):
+
+| Prüfung | Ergebnis |
+|---|---|
+| Dateien in #904 | 34 |
+| Dateien in #932 | 113 |
+| Dateien aus #904, die in #932 fehlen | **0** |
+| Gemeinsame Dateien mit abweichendem Inhalt | **0** (alle 34 byte-identisch) |
+| Überlappung #932 ↔ #901 (AI Builder) | 62 Dateien |
+| Überlappung #932 ↔ #929 (C2PA) | 4 Dateien |
+| **Exklusiv in #932** | **13 Dateien** |
+
+#932 ist damit exakt die Vereinigung von #904, #901 und #929 plus 13 Dateien — kein eigener Feature-Beitrag, sondern ein Sammel-Branch. Für #904 spricht zusätzlich:
+
+- #904 ist mit 34 Dateien reviewbar, #932 mit 113 nicht.
+- #904s Migration `20260728000000_siteos_core.sql` liegt **nach** dem Stand von `main` (`20260723000000`) — das Timestamp-Problem aus §2.4 entfällt für den SiteOS-Pfad vollständig. #932 brächte stattdessen 12 Migrationen mit, davon 7 mit zu altem Timestamp.
+- Die Defekte aus §2.2 (drei doppelte Migrationspaare) stecken ausschließlich in #932.
+
+**Aus #932 zu retten** (die 13 exklusiven Dateien, aufgeschlüsselt):
+
+| Datei | Bewertung |
+|---|---|
+| 6× `20260628*_bots_{foundation,entitlements,ai_tool}.sql` | die defekten Duplikatpaare aus §2.2 — **verwerfen**, bis geklärt ist, welche Variante gilt |
+| `20260715105402_create_document_vault.sql` | `document_vault` existiert in `main` nicht → **echter Neubeitrag** |
+| `20260720124405_restrict_document_vault_to_super_admin.sql` | gehört zur vorigen Migration → **mitnehmen** |
+| `20260701121059_remove_duplicate_auth_user_trigger.sql` | `main` hat `20260501000000_auto_tenant_on_signup.sql` → **prüfen**, ob der Duplikat-Trigger dort noch existiert |
+| `20260720123711_add_missing_tenants_industry_column.sql` | `main` hat bereits `20260702130000_tenant_industry.sql` → **vermutlich redundant**, vor Übernahme verifizieren |
+| `20260720123325_perf_lint_fixes_rls_initplan_dup_index_search_path.sql` | RLS-/Index-Optimierungen → **prüfen und ggf. mitnehmen** |
+| `scripts/check-migration-drift.mjs` | **Kollision**: #941 liefert eine andere Fassung derselben Datei (md5 `da61544a…` vs. `5b5e6734…`). Die Fassung aus #941 gilt, weil sie mit dem zugehörigen Workflow kommt |
+| `docs/runtime/PRODUCTION_BLOCKERS.md` | Doku → **mitnehmen** |
+
+Vorschlag: die drei bis fünf tragfähigen Migrationen mit korrigierten Timestamps in einen eigenen, kleinen PR („Migrations-Nachzug aus #932") legen und #932 mit Verweis darauf schließen.
+
+### 7.2 Was aus #945 übernehmen? → **eine Datei sicher, eine optional, der Rest nicht**
+
+`git diff --name-status origin/main origin/claude/preise-wjbt73` ergibt 3 A / 194 M / 163 D. Nur die drei `A`-Dateien sind überhaupt neu; die 194 `M` sind #945s **ältere** Fassung von Dateien, die `main` seither weiterentwickelt hat (Beispiel `distributionQueue.ts`: +459/−909 — die 909 Zeilen sind die Persistenz-Schicht aus `656c28e`, die #945 noch nicht kennt). Die 163 `D` sind Dateien, die in #945 schlicht fehlen.
+
+| Datei | Empfehlung |
+|---|---|
+| `test/social-orchestrator/publishers.test.ts` (663 Zeilen) | **übernehmen.** In `main` existiert `test/social-orchestrator/` überhaupt nicht — die Publisher (`LinkedInPublisher`, `WordPressPublisher`, `GhostPublisher`, `EmailPublisher`, `WebhookPublisher`, `DeadLetterQueue`, `AuditLogger`) sind aktuell ungetestet. Anpassung nötig: 4 der 13 Importe treffen `main` nicht mehr — `XPublisher`, `TikTokPublisher` und `MetaPublisher` liegen dort in eigenen Modulen (`xPublisher.ts`, `tiktokPublisher.ts`, `metaPublisher.ts`), und `QueueStatsCollector` heißt in `main` `QueueMetricsCollector`. |
+| `src/core/social-orchestrator/publisherUtils.ts` (5 Helfer) | **optional.** `loadSecretFromVault`, `missingConfigError`, `extractBlogExcerpt`, `escapeHtml`, `generateSlug` existieren in `main` nirgends — echter Neubeitrag, aber ohne Aufrufer. Nur sinnvoll, wenn die Publisher im selben Zug darauf umgestellt werden. |
+| `src/lib/hoc.ts` | **nicht übernehmen.** `withPerformanceMonitoring` umschließt die Komponente ohne jede Messung — ein Stub. Nichts in `main` importiert ihn. |
+| alle übrigen 194 M / 163 D | **nicht übernehmen** — Rückschritt gegenüber `main`. |
+
+Konkret heißt das: `git checkout origin/claude/preise-wjbt73 -- test/social-orchestrator/publishers.test.ts` auf einem frischen Branch von `main`, die vier Importe korrigieren, `npm test` laufen lassen. Danach kann #945 gefahrlos geschlossen werden.

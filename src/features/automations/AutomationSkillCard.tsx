@@ -7,6 +7,7 @@ import {
   type AutomationSkillStatus,
 } from '../../content/automationSkills';
 import { AutomationSkillRunner } from './AutomationSkillRunner';
+import { tierById } from '../../config/pricing';
 
 // Skills mit Direct-Execution in automation-trigger (kein n8n nötig, siehe
 // supabase/functions/automation-trigger/index.ts).
@@ -18,19 +19,9 @@ const STATUS_CLS: Record<AutomationSkillStatus, string> = {
   planned: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
 };
 
-const PLAN_LABEL: Record<AutomationSkill['planRequired'], string> = {
-  free: 'Free',
-  starter: 'Starter',
-  growth: 'Growth',
-  agency: 'Agency',
-  enterprise: 'Enterprise',
-  scale: 'Scale',
-  starter_yearly: 'Starter (Jährlich)',
-  growth_yearly: 'Growth (Jährlich)',
-  agency_yearly: 'Agency (Jährlich)',
-  enterprise_yearly: 'Enterprise (Jährlich)',
-  scale_yearly: 'Scale (Jährlich)',
-};
+// Plan-Anzeigenamen kommen aus der Pricing-SSoT — keine zweite Namensliste.
+const planLabel = (planKey: AutomationSkill['planRequired']): string =>
+  tierById(planKey)?.name ?? planKey;
 
 export function AutomationSkillStatusBadge({ status }: { status: AutomationSkillStatus }) {
   return (
@@ -51,7 +42,7 @@ export function AutomationSkillCard({ skill, tenantId }: { skill: AutomationSkil
             {skill.title}
           </h3>
           <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-            {AUTOMATION_SKILL_CATEGORIES[skill.category]} · Plan: {PLAN_LABEL[skill.planRequired]}
+            {AUTOMATION_SKILL_CATEGORIES[skill.category]} · Plan: {planLabel(skill.planRequired)}
           </p>
         </div>
         <AutomationSkillStatusBadge status={skill.status} />

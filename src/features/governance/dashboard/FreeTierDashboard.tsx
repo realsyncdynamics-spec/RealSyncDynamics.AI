@@ -15,7 +15,7 @@ interface DashboardCard {
   cta: string;
   path?: string;
   action?: () => void;
-  tier: 'free_tier' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+  tier: 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
 }
 
 const DASHBOARD_CARDS: DashboardCard[] = [
@@ -26,7 +26,7 @@ const DASHBOARD_CARDS: DashboardCard[] = [
     feature: 'website.scan_monthly_limit',
     cta: 'Scan starten',
     path: '/app/governance/website-scan',
-    tier: 'free_tier',
+    tier: 'free',
   },
   {
     id: 'dsgvo-dir',
@@ -35,7 +35,7 @@ const DASHBOARD_CARDS: DashboardCard[] = [
     feature: 'governance.dsgvo_directory',
     cta: 'Öffnen',
     path: '/app/governance/dsgvo-directory',
-    tier: 'free_tier',
+    tier: 'free',
   },
   {
     id: 'ai-register',
@@ -44,7 +44,7 @@ const DASHBOARD_CARDS: DashboardCard[] = [
     feature: 'governance.ai_register',
     cta: 'Öffnen',
     path: '/app/governance/ai-register',
-    tier: 'free_tier',
+    tier: 'free',
   },
   {
     id: 'evidence',
@@ -53,7 +53,7 @@ const DASHBOARD_CARDS: DashboardCard[] = [
     feature: 'evidence.basic_vault',
     cta: 'Öffnen',
     path: '/app/evidence',
-    tier: 'free_tier',
+    tier: 'free',
   },
   {
     id: 'reports',
@@ -291,7 +291,7 @@ export function FreeTierDashboard() {
         </div>
 
         {/* Upgrade CTA for Free Tier */}
-        {tier === 'free_tier' && (
+        {tier === 'free' && (
           <div className="bg-obsidian-900/50 border border-ai-cyan-500/30 rounded-none p-6 text-center">
             <h3 className="text-lg font-bold text-titanium-50 mb-2">
               Mehr Features freischalten?

@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../lib/useAuth';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
-import type { TierId } from '../../config/pricing';
+import {
+  hasPermission,
+  minimumPlanForPermission,
+  planById,
+  resolvePlan,
+  type TierId,
+} from '../../config/pricing';
 
 interface ApiAccessStatus {
   hasAccess: boolean;
@@ -13,8 +19,8 @@ interface ApiAccessStatus {
   error: string | null;
 }
 
-// API ist in diesen Tiers enthalten
-const API_ENABLED_TIERS: TierId[] = ['agency', 'scale', 'enterprise'];
+// Der niedrigste Plan mit API-Berechtigung — abgeleitet, nicht gepflegt.
+const MIN_API_PLAN = minimumPlanForPermission('api');
 
 export function useApiAccess(): ApiAccessStatus {
   const { user } = useAuth();
@@ -47,8 +53,10 @@ export function useApiAccess(): ApiAccessStatus {
 
         if (tenantErr) throw tenantErr;
 
-        const tier = (tenantData?.subscription_tier ?? tenantData?.plan_id ?? 'free') as TierId;
-        const hasAccess = API_ENABLED_TIERS.includes(tier);
+        // Altdaten (`scale`) werden über resolvePlan() auf `partner` abgebildet.
+        const plan = resolvePlan(tenantData?.subscription_tier ?? tenantData?.plan_id ?? 'free');
+        const tier = (plan?.id ?? 'free') as TierId;
+        const hasAccess = hasPermission(plan, 'api');
 
         // 2. Zähle aktive API-Keys
         const { data: keysData, error: keysErr } = await sb
@@ -63,7 +71,9 @@ export function useApiAccess(): ApiAccessStatus {
 
         let message = 'Lade…';
         if (!hasAccess) {
-          message = `API-Zugriff ist im ${tier === 'free' ? 'Free' : tier === 'starter' ? 'Starter' : 'Growth'} Paket nicht enthalten. Upgrade zu Agency erforderlich.`;
+          const current = plan ? plan.name : 'aktuellen';
+          const required = MIN_API_PLAN ? planById(MIN_API_PLAN).name : 'einem höheren';
+          message = `API-Zugriff ist im Plan ${current} nicht enthalten. Ab ${required} verfügbar.`;
         } else if (keysCount === 0) {
           message = 'Noch kein API-Key erstellt. Starten Sie mit dem Wizard.';
         } else {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { ScanFinding, GovernanceProfile, GovernanceAnswer, Recommendation, Sector } from '../core/onboarding/types';
+import type { ScanFinding, GovernanceProfile, GovernanceAnswer, Recommendation, Sector, PlanTier } from '../core/onboarding/types';
 import { classifyAllFindings, groupFindingsByDimension, scoreDimensionCriticality } from '../core/onboarding/findingClassifier';
 import { generateContextualQuestions } from '../core/onboarding/questionEngine';
 import { generateRecommendation } from '../core/onboarding/recommendationEngine';
@@ -39,8 +39,10 @@ export function useGovernanceOnboarding(
   const profile = useMemo((): GovernanceProfile => {
     const dimensionScores = dimensions.map((dim) => {
       const score = scoreDimensionCriticality(classified, dim);
-      const recommendedPlan: 'starter_governance' | 'professional_governance' | 'governance_os' =
-        score >= 70 ? 'governance_os' : score >= 40 ? 'professional_governance' : 'starter_governance';
+      // Je höher die Kritikalität, desto mehr Runtime-Reichweite ist nötig.
+      // Die Plan-IDs sind kanonisch (siehe shared/pricing.ts).
+      const recommendedPlan: PlanTier =
+        score >= 70 ? 'agency' : score >= 40 ? 'growth' : 'starter';
       return {
         dimension: dim,
         criticalityScore: score,

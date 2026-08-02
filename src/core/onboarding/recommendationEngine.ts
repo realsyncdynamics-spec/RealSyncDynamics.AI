@@ -1,5 +1,13 @@
-import type { GovernanceProfile, Recommendation, ClassifiedFinding, GovernanceAnswer } from './types';
+import type { GovernanceProfile, Recommendation, ClassifiedFinding, GovernanceAnswer, PlanTier } from './types';
 import { scoreDimensionCriticality } from './findingClassifier';
+import {
+  PLAN_ORDER,
+  isUpgrade,
+  moduleById,
+  planById,
+  planRank,
+  resolvePlan,
+} from '@/shared/pricing';
 
 /**
  * Score-based recommendation logic
@@ -23,7 +31,7 @@ import { scoreDimensionCriticality } from './findingClassifier';
  */
 
 interface RecommendationScore {
-  plan: 'starter_governance' | 'professional_governance' | 'governance_os' | 'enterprise_regulated';
+  plan: 'starter' | 'growth' | 'agency' | 'enterprise';
   score: number;
   factors: string[];
 }
@@ -58,10 +66,10 @@ function scoreDimension(
  */
 export function generateRecommendation(profile: GovernanceProfile): Recommendation {
   const scores: RecommendationScore[] = [
-    { plan: 'starter_governance', score: 0, factors: [] },
-    { plan: 'professional_governance', score: 0, factors: [] },
-    { plan: 'governance_os', score: 0, factors: [] },
-    { plan: 'enterprise_regulated', score: 0, factors: [] },
+    { plan: 'starter', score: 0, factors: [] },
+    { plan: 'growth', score: 0, factors: [] },
+    { plan: 'agency', score: 0, factors: [] },
+    { plan: 'enterprise', score: 0, factors: [] },
   ];
 
   let totalCriticality = 0;
@@ -117,8 +125,8 @@ export function generateRecommendation(profile: GovernanceProfile): Recommendati
 
   // Ensure minimum plan recommendation
   let recommendedPlan = topRecommendation.plan;
-  if (profile.riskLevel === 'critical' && recommendedPlan === 'starter_governance') {
-    recommendedPlan = 'professional_governance';
+  if (profile.riskLevel === 'critical' && recommendedPlan === 'starter') {
+    recommendedPlan = 'growth';
   }
 
   // Build factors and reasoning
@@ -136,13 +144,13 @@ export function generateRecommendation(profile: GovernanceProfile): Recommendati
   }
 
   const planReasons: Record<string, string> = {
-    starter_governance:
+    starter:
       'Your website has minimal compliance gaps. Website scanning and basic DSGVO checks are sufficient.',
-    professional_governance:
+    growth:
       'You need monitoring and multiple-domain support. Evidence Vault and team access required for governance.',
-    governance_os:
+    agency:
       'Complex governance needs detected. Policy automation, DPIA, and advanced AI-Act classification required.',
-    enterprise_regulated:
+    enterprise:
       'Regulated industry + complex AI governance. Industry-specific agents and SLA essential for compliance.',
   };
 
@@ -178,27 +186,31 @@ export function generateRecommendation(profile: GovernanceProfile): Recommendati
  * Compare two plans to show upgrade path
  */
 export function compareUpgradePath(
-  currentPlan: 'starter_governance' | 'professional_governance' | 'governance_os',
-  recommendedPlan: string
+  currentPlan: PlanTier,
+  recommendedPlan: PlanTier
 ): string {
-  const paths: Record<string, Record<string, string>> = {
-    starter_governance: {
-      professional_governance: 'Upgrade to Starter → Professional for monitoring + team access',
-      governance_os: 'Upgrade to Starter → Professional → Governance OS for full automation',
-      enterprise_regulated: 'Upgrade to full Enterprise for regulated industry + agents',
-    },
-    professional_governance: {
-      governance_os: 'Upgrade to Professional → Governance OS for policy automation + DPIA',
-      enterprise_regulated: 'Upgrade to Professional → Enterprise for industry-specific agents + SLA',
-    },
-    governance_os: {
-      enterprise_regulated: 'Upgrade to Governance OS → Enterprise for industry agents + dedicated support',
-    },
-  };
+  const from = resolvePlan(currentPlan);
+  const to = resolvePlan(recommendedPlan);
+  if (!from || !to) return 'Vergleich nicht möglich — unbekannter Plan.';
+  if (!isUpgrade(from.id, to.id)) {
+    return `${to.name} liegt nicht über ${from.name} — kein Upgrade erforderlich.`;
+  }
 
-  return (
-    paths[currentPlan]?.[recommendedPlan] || `Consider upgrading to ${recommendedPlan} for enhanced governance capabilities`
-  );
+  // Der Pfad folgt der kanonischen Plan-Reihenfolge; die dazugewonnenen
+  // Module kommen direkt aus der SSoT, damit hier kein Feature-Text
+  // gepflegt werden muss, der veralten kann.
+  const path = PLAN_ORDER.slice(planRank(from.id), planRank(to.id) + 1)
+    .map((id) => planById(id).name)
+    .join(' → ');
+  const gained = to.modules
+    .filter((m) => !from.modules.includes(m))
+    .map((m) => moduleById(m)?.name ?? m);
+
+  const gainedText = gained.length > 0
+    ? ` — zusätzlich: ${gained.slice(0, 4).join(', ')}${gained.length > 4 ? ` und ${gained.length - 4} weitere` : ''}`
+    : '';
+
+  return `Upgrade ${path}${gainedText}`;
 }
 
 /**

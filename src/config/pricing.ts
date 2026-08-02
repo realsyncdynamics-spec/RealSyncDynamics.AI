@@ -19,6 +19,7 @@ import {
   PLAN_ORDER,
   planById,
   planByKey,
+  normalizePlanKey,
   planKeyFor,
   checkoutHrefForPlan,
   formatPriceEur,
@@ -197,9 +198,15 @@ export function tierById(id: TierId): PricingTier | undefined {
  * Liefert die Monatsvariante, sofern der Key keine Jahresvariante ist.
  */
 export function tierByPlanKey(rawKey: string | null | undefined): PricingTier | undefined {
-  const plan = planByKey(rawKey);
+  // Erst normalisieren: `scale_yearly` muss auf die JAHRES-Variante von
+  // Partner zeigen, nicht auf die Monatsvariante. Ein Vergleich gegen den
+  // Rohwert würde die Jahresvariante verfehlen und still auf den Monatsplan
+  // zurückfallen.
+  const key = normalizePlanKey(rawKey);
+  if (!key) return undefined;
+  const plan = planByKey(key);
   if (!plan) return undefined;
-  return PRICING_TIERS.find((tier) => tier.planKey === rawKey)
+  return PRICING_TIERS.find((tier) => tier.planKey === key)
     ?? PRICING_TIERS.find((tier) => tier.id === plan.id);
 }
 

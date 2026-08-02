@@ -274,9 +274,9 @@ describe('pricingContent', () => {
       expect(agencyFeatures.length).toBe(17);
     });
 
-    it('Scale should have 18 features', () => {
-      const scaleFeatures = getFeaturesByPlan('scale');
-      expect(scaleFeatures.length).toBe(18);
+    it('Partner should have 18 features', () => {
+      const partnerFeatures = getFeaturesByPlan('partner');
+      expect(partnerFeatures.length).toBe(18);
     });
 
     it('Enterprise should have 18 features', () => {

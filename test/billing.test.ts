@@ -60,9 +60,9 @@ describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
 
   it('should have 5 public tiers sorted by price ascending', () => {
     expect(PUBLIC_PRICING_TIERS).toHaveLength(5);
-    // Preis-aufsteigend: Enterprise (1.249 €) steht VOR Partner/scale (1.999 €),
+    // Preis-aufsteigend: Enterprise (1.249 €) steht VOR Partner (1.999 €),
     // damit das Pricing-Grid die Pakete in korrekter Preisreihenfolge zeigt.
-    const baseIds = ['starter', 'growth', 'agency', 'enterprise', 'scale'];
+    const baseIds = ['starter', 'growth', 'agency', 'enterprise', 'partner'];
     expect(PUBLIC_PRICING_TIERS.map((t) => t.id)).toEqual(baseIds);
   });
 
@@ -99,10 +99,10 @@ describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
     expect(agency.botsQuota.channels).toContain('whatsapp');
   });
 
-  it('scale should support 50+ bots for resellers', () => {
-    const scale = tierById('scale')!;
-    expect(scale.botsQuota.maxBots).toBe(50);
-    expect(scale.botsQuota.maxAnswersPerMonth).toBe(100000);
+  it('partner should support 50 bots for resellers', () => {
+    const partner = tierById('partner')!;
+    expect(partner.botsQuota.maxBots).toBe(50);
+    expect(partner.botsQuota.maxAnswersPerMonth).toBe(100000);
   });
 
   it('enterprise should have 20 bots with 50k answers/month', () => {
@@ -231,11 +231,11 @@ describe('Billing Workflows', () => {
     expect(agencyFeatures).toContain('api');
   });
 
-  it('scale plan should be for resellers with multi-tenant', () => {
-    const scale = tierById('scale')!;
-    const scaleDesc = scale.bullets.join(' ').toLowerCase();
-    expect(scaleDesc).toContain('mandant');
-    expect(scaleDesc).toContain('multi-tenant');
+  it('partner plan should be for resellers with multi-tenant', () => {
+    const partner = tierById('partner')!;
+    const partnerDesc = partner.bullets.join(' ').toLowerCase();
+    expect(partnerDesc).toContain('mandant');
+    expect(partner.plan.permissions.multiTenant).toBe(true);
   });
 
   it('enterprise should have checkout CTA', () => {
@@ -273,10 +273,11 @@ describe('Feature Quotas by Tier', () => {
     expect(agency.botsQuota.channels.length).toBe(7); // all channels
   });
 
-  it('bots quota should have metering notes for Phase 3', () => {
+  it('jeder Tier mit Bots hat mindestens einen Kanal und Faehigkeiten', () => {
     PRICING_TIERS.forEach((tier) => {
       if (tier.botsQuota.maxBots > 0) {
-        expect(tier.botsQuota.meteringNotes).toBeDefined();
+        expect(tier.botsQuota.channels.length, `${tier.id} ohne Kanal`).toBeGreaterThan(0);
+        expect(tier.botsQuota.capabilities.length, `${tier.id} ohne Faehigkeiten`).toBeGreaterThan(0);
       }
     });
   });

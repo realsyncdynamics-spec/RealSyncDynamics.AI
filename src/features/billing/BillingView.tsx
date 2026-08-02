@@ -11,7 +11,7 @@ import { PlanUpgradeModal } from './PlanUpgradeModal';
 import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
-import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, planByKey, type TierId } from '../../config/pricing';
 
 interface Subscription {
   plan_key: string | null;
@@ -35,19 +35,16 @@ interface Product {
 // canonical for new accounts — legacy keys (bronze/silver/gold) are kept
 // here only so historical subscriptions render correctly until a one-time
 // data migration renames them.
-const PLAN_LABELS: Record<string, string> = {
-  free: 'Free Audit',
-  free_audit: 'Free Audit',
-  starter: 'Starter',
-  growth: 'Growth',
-  agency: 'Agency',
-  enterprise: 'Enterprise',
-  enterprise_public: 'Enterprise',
-  // legacy — historical subscriptions only
-  bronze: 'Bronze (legacy)',
-  silver: 'Silver (legacy)',
-  gold: 'Gold (legacy)',
-};
+/**
+ * Anzeigename zu einem beliebigen Plan-Key aus der Datenbank.
+ * Auflösung über die Pricing-SSoT — inklusive Altdaten wie `scale`.
+ * Historische Keys ohne Entsprechung werden als solche gekennzeichnet,
+ * statt sie mit einem erfundenen Namen zu versehen.
+ */
+function planLabelFor(planKey: string | null | undefined): string {
+  if (!planKey) return 'Kein Plan';
+  return planByKey(planKey)?.name ?? `${planKey} (historisch)`;
+}
 
 // Available plans for billing dashboard — excluding yearly variants
 const AVAILABLE_PLANS = PUBLIC_PRICING_TIERS
@@ -170,7 +167,7 @@ export function BillingView() {
 
   const planLabel = sub === 'none'
     ? 'Free (kein Abonnement)'
-    : (PLAN_LABELS[sub.plan_key ?? 'free'] ?? sub.plan_key ?? 'Free');
+    : planLabelFor(sub.plan_key);
 
   const periodEnd = sub !== 'none' && sub.current_period_end
     ? new Date(sub.current_period_end).toLocaleDateString('de-DE')
@@ -188,7 +185,7 @@ export function BillingView() {
       {sub !== 'none' && sub?.status === 'trialing' && sub?.trial_ends_at && !dismissedTrialBanner && (
         <TrialCountdownBanner
           trialEndDate={sub.trial_ends_at}
-          planName={PLAN_LABELS[sub.plan_key ?? 'free'] ?? sub.plan_key ?? 'Free'}
+          planName={planLabelFor(sub.plan_key)}
           onDismiss={() => setDismissedTrialBanner(true)}
         />
       )}

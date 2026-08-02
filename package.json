@@ -13,7 +13,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "sync:pricing": "node scripts/sync-shared-pricing.mjs",
-    "check:pricing": "node scripts/sync-shared-pricing.mjs --check && node scripts/check-pricing-consistency.mjs",
+    "check:pricing": "node scripts/sync-shared-pricing.mjs --check && tsx scripts/generate-plan-catalog-sql.ts --check supabase/migrations/20260802000000_canonical_plan_catalog.sql",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",
@@ -34,7 +34,8 @@
     "seed:beta": "tsx scripts/seed-beta-tenant.ts",
     "release:merge": "bash scripts/release-merge-deploy.sh",
     "release:publish": "bash scripts/publish-release.sh",
-    "perf:monthly-report": "tsx scripts/generate-performance-report.ts"
+    "perf:monthly-report": "tsx scripts/generate-performance-report.ts",
+    "gen:plan-catalog": "tsx scripts/generate-plan-catalog-sql.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

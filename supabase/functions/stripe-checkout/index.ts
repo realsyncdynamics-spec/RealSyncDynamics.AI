@@ -13,11 +13,16 @@
 //    so the existing stripe-webhook can sync the resulting subscription.
 // 4. Creates a Stripe Checkout Session and returns its URL.
 //
-// `plan_key = 'free'` short-circuits with 400 — there's nothing to charge.
+// `plan_key = 'free_audit'` short-circuits with 400 — there's nothing to charge.
+//
+// Der Plan-Key wird gegen die Pricing-SSoT validiert und normalisiert
+// (`scale` → `partner`), bevor irgendetwas mit Stripe passiert. So kann kein
+// unbekannter oder veralteter Key eine Checkout-Session erzeugen.
 
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -69,9 +74,23 @@ Deno.serve(async (req) => {
   if (!body.tenant_id || !body.plan_key) {
     return jsonError(400, 'BAD_REQUEST', 'tenant_id and plan_key required');
   }
-  if (body.plan_key === 'free_audit') {
+
+  // Validierung gegen die Pricing-SSoT. `normalizePlanKey` bildet Altdaten
+  // (`scale`, `scale_yearly`, `free`) auf die kanonischen Keys ab; alles
+  // andere wird abgewiesen, statt später an Stripe zu scheitern.
+  const planKey = normalizePlanKey(body.plan_key);
+  const plan = planKey ? planByKey(planKey) : null;
+  if (!planKey || !plan) {
+    return jsonError(400, 'UNKNOWN_PLAN', `unbekannter plan_key: ${body.plan_key}`);
+  }
+  if (plan.purchaseMode === 'free') {
     return jsonError(400, 'BAD_REQUEST', 'Free Audit braucht keinen Checkout');
   }
+  if (plan.purchaseMode === 'inquiry') {
+    return jsonError(400, 'INQUIRY_ONLY',
+      `${plan.name} wird über /contact-sales abgeschlossen, nicht über Self-Service-Checkout`);
+  }
+  body.plan_key = planKey;
 
   // Membership + role check
   const { data: membership, error: memberErr } = await userClient
@@ -119,8 +138,8 @@ Deno.serve(async (req) => {
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (body.pilot === true) {
-    subscriptionData.trial_period_days = 14;
+  if (body.pilot === true && plan.trialDays > 0) {
+    subscriptionData.trial_period_days = plan.trialDays;
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
 

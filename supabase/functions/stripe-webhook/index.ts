@@ -10,6 +10,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
+import { normalizePlanKey } from '../_shared/pricing.generated.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -208,6 +209,11 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
 
 // Plan-Key-Auflösung mit additivem Fallback.
 //
+// Jeder Kandidat wird über die Pricing-SSoT normalisiert: Altdaten wie
+// `scale` werden auf `partner` abgebildet, unbekannte Keys verworfen. So
+// landet niemals ein Plan-Bezeichner in `subscriptions.plan_key`, den das
+// Berechtigungsmodell nicht auflösen kann.
+//
 // Bevorzugt `price.metadata.plan_key` (im Stripe-Dashboard am Preis gesetzt).
 // Fehlt es — ein häufiger Konfigurationsfehler — wird der Plan aus
 // public.products via `stripe_price_id` aufgelöst, statt stillschweigend auf
@@ -216,7 +222,7 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
 // nichts findet, greift 'free'.
 // deno-lint-ignore no-explicit-any
 async function resolvePlanKey(admin: SupabaseAdminClient, item: Stripe.SubscriptionItem | undefined): Promise<string> {
-  const fromMeta = item?.price?.metadata?.plan_key;
+  const fromMeta = normalizePlanKey(item?.price?.metadata?.plan_key);
   if (fromMeta) return fromMeta;
 
   const priceId = item?.price?.id;
@@ -226,10 +232,11 @@ async function resolvePlanKey(admin: SupabaseAdminClient, item: Stripe.Subscript
       .select('default_for_plan_key')
       .eq('stripe_price_id', priceId)
       .maybeSingle();
-    if (data?.default_for_plan_key) return data.default_for_plan_key;
+    const fromProducts = normalizePlanKey(data?.default_for_plan_key);
+    if (fromProducts) return fromProducts;
   }
 
-  return 'free';
+  return 'free_audit';
 }
 
 // deno-lint-ignore no-explicit-any

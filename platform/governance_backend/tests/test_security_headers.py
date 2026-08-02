@@ -6,7 +6,12 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.middleware import RateLimitMiddleware, RequestSizeLimitMiddleware, SecurityHeadersMiddleware
+from app.middleware import (
+    ErrorSanitizationMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 
 @pytest.fixture
@@ -17,6 +22,7 @@ def app_with_security():
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RateLimitMiddleware, requests_per_minute=5)
     app.add_middleware(RequestSizeLimitMiddleware)
+    app.add_middleware(ErrorSanitizationMiddleware)
 
     @app.get("/api/test")
     async def test_endpoint():
@@ -25,6 +31,10 @@ def app_with_security():
     @app.post("/api/register")
     async def register_endpoint():
         return {"status": "ok"}
+
+    @app.get("/api/error")
+    async def error_endpoint():
+        raise RuntimeError("Database connection failed")
 
     @app.get("/health")
     async def health():
@@ -132,3 +142,19 @@ def test_additional_security_headers(app_with_security):
     assert "Cache-Control" in response.headers
     assert "no-store" in response.headers["Cache-Control"]
     assert "no-cache" in response.headers["Cache-Control"]
+
+
+def test_error_sanitization(app_with_security):
+    """Server-Errors werden sanitiert um interne Details nicht preiszugeben."""
+    client = TestClient(app_with_security)
+
+    # 5xx Error sollte sanitiert werden
+    response = client.get("/api/error")
+    assert response.status_code == 500
+
+    # Response sollte nur generic message enthalten, nicht den echten Fehler
+    data = response.json()
+    assert "detail" in data
+    assert data["detail"] == "An internal error occurred"
+    # Der echte Fehler "Database connection failed" sollte NICHT sichtbar sein
+    assert "Database connection failed" not in str(data)

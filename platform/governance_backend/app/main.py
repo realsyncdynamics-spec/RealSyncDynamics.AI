@@ -19,7 +19,12 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import auth
-from .middleware import RateLimitMiddleware, RequestSizeLimitMiddleware, SecurityHeadersMiddleware
+from .middleware import (
+    ErrorSanitizationMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from .otel import get_tracer, setup_tracing
 from .schemas import (
     GateCheckRequest,
@@ -102,10 +107,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Sicherheits-Middlewares (Reihenfolge: SecurityHeaders → RateLimit → RequestSize → App)
+# Sicherheits-Middlewares (Reihenfolge: SecurityHeaders → RateLimit → RequestSize → ErrorSanitization → App)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(ErrorSanitizationMiddleware)
 
 setup_tracing(app, service_name="governance_backend")
 tracer = get_tracer(__name__)

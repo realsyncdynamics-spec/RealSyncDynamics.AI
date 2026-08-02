@@ -3,10 +3,13 @@
 Rate Limiting: Einfacher In-Memory-Approach, der pro IP zählt.
 Security Headers: Standard-Sicherheitsheader für alle Responses.
 Request Size Limits: Begrenzt Payload-Größe um DoS-Angriffe zu verhindern.
+Error Sanitization: Verhindert Preisgabe interner Implementierungsdetails.
 """
 
 from __future__ import annotations
 
+import json
+import logging
 import os
 import time
 from collections import defaultdict
@@ -14,6 +17,8 @@ from typing import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+
+logger = logging.getLogger("builder.security")
 
 # Max 10 MB pro Request-Body (konfigurierbar via MAX_BODY_SIZE)
 MAX_BODY_SIZE = int(os.getenv("MAX_BODY_SIZE", "10485760"))
@@ -116,3 +121,44 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
                 media_type="application/json",
             )
         return await call_next(request)
+
+
+class ErrorSanitizationMiddleware(BaseHTTPMiddleware):
+    """Sanitiert Error-Responses um interne Details nicht preiszugeben."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        response = await call_next(request)
+
+        # Nur 5xx Errors (Server Errors) sanitieren
+        # 4xx sind Nutzer-Fehler und dürfen Details enthalten
+        if 500 <= response.status_code < 600:
+            try:
+                body = b""
+                async for chunk in response.body_iterator:
+                    body += chunk
+
+                # Versuchen, den Body zu parsen
+                try:
+                    data = json.loads(body)
+                    # Nur "detail" mit generic message behalten, Details löschen
+                    sanitized = {"detail": "An internal error occurred"}
+                    logger.error(
+                        f"Internal error on {request.method} {request.url.path}: {data.get('detail', 'unknown')}"
+                    )
+                    response.body_iterator = self._iterate_body(
+                        json.dumps(sanitized).encode()
+                    )
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    # Nicht-JSON Response: ebenfalls sanitieren
+                    sanitized = {"detail": "An internal error occurred"}
+                    response.body_iterator = self._iterate_body(
+                        json.dumps(sanitized).encode()
+                    )
+            except Exception:
+                pass
+
+        return response
+
+    @staticmethod
+    async def _iterate_body(body: bytes):
+        yield body

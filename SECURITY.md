@@ -36,7 +36,7 @@ Both:
 - **Status:** De-facto disabled without code redeploy
 
 ⚠️ **`stripe-webhook-provision`:**
-- Auth token hardcoded in compiled source (`rsd_prov_7Qk2Vx9mB4tLpZ0aN8se_2026`)
+- Auth token hardcoded in compiled source (value redacted; prefix `rsd_prov_***`)
 - Cannot rotate token without rebuilding/redeploying function
 - Remains live and accessible to anyone who knows the hardcoded string
 - **Status:** Exposed, blocked from remediation by Supabase plan limit (see "Blockers" below)

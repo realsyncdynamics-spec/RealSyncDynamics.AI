@@ -3,8 +3,8 @@
  *
  * SECURITY INCIDENT:
  * This function was a temporary admin tool for one-off Stripe webhook setup.
- * It accepted auth via header x-provision-token with a hardcoded string:
- *   rsd_prov_7Qk2Vx9mB4tLpZ0aN8se_2026
+ * It accepted auth via header x-provision-token with a hardcoded string
+ * (value redacted from source; it becomes inert once this function is deleted).
  *
  * Capabilities:
  * - Delete Stripe webhook endpoint

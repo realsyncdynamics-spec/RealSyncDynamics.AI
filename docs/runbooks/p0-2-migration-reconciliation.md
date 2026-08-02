@@ -18,7 +18,7 @@ nicht kosmetisch:
 |---|---|
 | #941 | Macht `20260608000001_user_consents` idempotent. Ohne das bricht `db push` an Position ~13 von 118 mit `42710 policy already exists` ab. |
 | #942 | Benennt die `autonomous_agents_core`-Tabellen um. Ohne das aktiviert der Push RLS und legt Policies auf **drei produktiven Tabellen** an (`agent_runs`, `agent_tasks`, `agent_events`) — fehlerfrei und damit unbemerkt. |
-| #949 | Erfasst `document_vault` und `tenants.industry`, die nur in Prod existieren. Ohne das gehen sie beim Ledger-Revert dauerhaft aus dem Repo verloren. |
+| #932 | Liefert die Repo-Dateien für die 11 Ledger-Waisen nach. **Damit entfällt die Ledger-Operation komplett** — siehe Schritt 1. |
 
 Zusätzlich:
 - **PITR-/Backup-Punkt** im Supabase-Dashboard anlegen und Zeitstempel notieren.
@@ -26,10 +26,26 @@ Zusätzlich:
 
 ---
 
-## Schritt 1 — Ledger bereinigen
+## Schritt 1 — Ledger: nichts tun (sofern #932 gemergt ist)
 
-12 Remote-Versionen haben keine passende Repo-Datei und blockieren `db push` vollständig
-(`Remote migration versions not found in local migrations directory`).
+`db push` bricht ab, solange eine Remote-Version keine passende Repo-Datei hat
+(`Remote migration versions not found in local migrations directory`). Betroffen sind
+12 Versionen.
+
+**#932 löst das, ohne den Ledger anzufassen:** Der PR stellt für die 11 echten Waisen die
+Original-Migrationen 1:1 aus `supabase_migrations.schema_migrations` wieder her. Die
+zwölfte (`20260510`) hat mit `20260510_ai_governance_core.sql` bereits eine Repo-Datei.
+Danach hat jede Remote-Version ihr lokales Gegenstück und `db push` läuft direkt durch.
+
+> **Diesen Weg bevorzugen.** Er ist der sicherere: Der Ledger bleibt unangetastet, die
+> reale Historie bleibt im Repo nachspielbar (`supabase db reset` reproduziert Prod), und
+> es gehen keine Informationen verloren.
+
+<details>
+<summary>Nur als Notfallpfad, falls #932 nicht mergebar ist: Ledger reverten</summary>
+
+Diese Variante wirft die Historie der 11 Waisen weg — die Objekte bleiben zwar in Prod,
+aber ein frisches Environment hätte sie nie. Nur einsetzen, wenn #932 ausfällt.
 
 ```bash
 supabase link --project-ref "$SUPABASE_PROJECT_ID"
@@ -42,15 +58,11 @@ supabase migration repair --status reverted \
   20260720123325 20260720123711 20260720124405
 ```
 
-Warum jede einzelne unbedenklich ist — vorab verifiziert:
+`20260510` ist dabei unbedenklich (5× `CREATE TABLE IF NOT EXISTS`, der eine
+`ADD CONSTRAINT` hat ein `drop constraint if exists` davor), ebenso die sechs `bots_*`
+(Duplikate der idempotenten Repo-Fassung `20260628120000/100/200`).
 
-| Version | Begründung |
-|---|---|
-| `20260510` | Repo-Datei `20260510_ai_governance_core.sql` existiert; 5× `CREATE TABLE IF NOT EXISTS`, der eine `ADD CONSTRAINT` hat ein `drop constraint if exists` davor → läuft gefahrlos erneut |
-| 6× `bots_*` | Duplikate von `20260628120000/100/200`; Repo-Fassung ist idempotent (5× `IF NOT EXISTS`, 10× `DROP POLICY IF EXISTS`, alle Inserts mit `ON CONFLICT`) |
-| `20260701121059` | `20260501000000` legt `on_auth_user_created` bereits mit vorangestelltem `DROP IF EXISTS` an; Prod hat genau diesen einen Trigger |
-| `20260715105402`, `20260720124405`, `20260720123711` | durch #949 im Repo erfasst |
-| `20260720123325` | reine Performance-Optimierung, bewusst nicht nachgebildet (siehe #949) |
+</details>
 
 ---
 

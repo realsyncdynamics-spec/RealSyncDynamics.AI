@@ -25,8 +25,9 @@ Deshalb:
      nicht trifft, sie auch beim zehnten nicht trifft — jede weitere Runde
      kostet nur Geld und Latenz.
 
-TODO(Kosten): Token-Budget je Build erzwingen. Aktuell wird verbraucht, was
-die Agenten anfordern; der Prüfpfad zeigt es hinterher, bremst aber nicht.
+Vor jedem Modellaufruf greift das Token-Budget des Builds (`budget.py`) —
+auch vor jedem Reparaturversuch, denn eine Reparatur ist ein vollwertiger
+Aufruf und darf ein aufgebrauchtes Budget nicht weiter überziehen.
 """
 
 from __future__ import annotations
@@ -39,6 +40,8 @@ from typing import Any, Dict, Optional, Tuple, Type, TypeVar
 
 import httpx
 from pydantic import BaseModel, ValidationError
+
+from . import budget
 
 logger = logging.getLogger("builder.llm")
 
@@ -440,6 +443,7 @@ async def complete_json(
     effort: str = "medium",
     provider: Any = None,
     max_repairs: Optional[int] = None,
+    project_id: str = "",
 ) -> Tuple[T, LLMResponse]:
     """Ruft das Modell auf und gibt ein validiertes Ergebnis zurück.
 
@@ -451,15 +455,21 @@ async def complete_json(
 
     Rückgabe ist ein Paar aus validiertem Objekt und der letzten `LLMResponse`
     — Letztere trägt den Verbrauch für den Prüfpfad.
+
+    Mit `project_id` greift zusätzlich das Token-Budget des Builds. Geprüft
+    wird vor jedem Aufruf — auch vor jedem Reparaturversuch, denn eine
+    Reparatur ist ein vollwertiger Modellaufruf und darf ein aufgebrauchtes
+    Budget nicht weiter überziehen.
     """
     provider = provider or get_provider()
-    budget = LLM_MAX_REPAIRS if max_repairs is None else max_repairs
+    budget_versuche = LLM_MAX_REPAIRS if max_repairs is None else max_repairs
     schema = build_schema(model_cls)
 
     prompt = user
     last_error = ""
 
-    for attempt in range(budget + 1):
+    for attempt in range(budget_versuche + 1):
+        budget.ensure_within(project_id)
         response = await provider.complete(
             system=system, user=prompt, schema=schema, effort=effort
         )
@@ -472,7 +482,7 @@ async def complete_json(
                 provider.name,
                 model_cls.__name__,
                 attempt + 1,
-                budget + 1,
+                budget_versuche + 1,
                 last_error,
             )
             # Der Reparatur-Prompt enthält die kaputte Antwort und den
@@ -491,6 +501,6 @@ async def complete_json(
         return parsed, response
 
     raise LLMContractError(
-        f"{provider.name} lieferte nach {budget + 1} Versuchen kein gültiges "
+        f"{provider.name} lieferte nach {budget_versuche + 1} Versuchen kein gültiges "
         f"{model_cls.__name__}: {last_error}"
     )

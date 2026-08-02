@@ -23,7 +23,7 @@ from . import auth
 from .clients import rsd_client
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
-from .services import agent_runner, db, events, llm, repository, task_graph
+from .services import agent_runner, budget, db, events, llm, repository, task_graph
 from .services.audit_log import records as audit_records
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -168,4 +168,9 @@ async def stream_events(project_id: str) -> StreamingResponse:
     summary="Prüfpfad der Agentenläufe eines Projekts",
 )
 async def get_audit(project_id: str) -> dict:
-    return {"records": [r.model_dump() for r in audit_records(project_id)]}
+    # Der Verbrauch kommt aus denselben Datensaetzen — kein zweiter Zaehler,
+    # der irgendwann abweicht.
+    return {
+        "records": [r.model_dump() for r in audit_records(project_id)],
+        "usage": budget.summary(project_id),
+    }

@@ -59,6 +59,7 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
         system=SYSTEM_PROMPT,
         user=_user_prompt(task, graph),
         model_cls=ArchitectOutput,
+        project_id=task.input.get("project_id", ""),
         effort="high",
     )
 

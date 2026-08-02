@@ -42,6 +42,7 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
         system=SYSTEM_PROMPT,
         user=_user_prompt(task),
         model_cls=PlannerOutput,
+        project_id=task.input.get("project_id", ""),
         # Der Modulschnitt und alle Folgeschritte hängen an diesem Ergebnis —
         # hier zu sparen verteuert jeden nachgelagerten Lauf.
         effort="high",

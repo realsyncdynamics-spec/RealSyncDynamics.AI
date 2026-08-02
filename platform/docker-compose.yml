@@ -76,6 +76,8 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
       LLM_MAX_REPAIRS: ${LLM_MAX_REPAIRS:-1}
+      # Token-Obergrenze je Build. 0 = unbegrenzt.
+      BUILDER_TOKEN_BUDGET: ${BUILDER_TOKEN_BUDGET:-0}
       # Generierte Dateien. Ohne Volume sind sie nach einem Neustart weg —
       # der Task-Graph in Postgres verweist dann auf ein leeres Verzeichnis.
       BUILDER_WORKSPACE_ROOT: /workspaces

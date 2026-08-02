@@ -54,6 +54,7 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
         system=SYSTEM_PROMPT,
         user=_user_prompt(task, graph),
         model_cls=CoderOutput,
+        project_id=task.input.get("project_id", ""),
         # Ein Modul ist ein abgegrenzter Auftrag mit fertigem Schema und
         # API-Vertrag — die Architekturarbeit ist hier schon getan.
         effort="medium",

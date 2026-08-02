@@ -4,6 +4,10 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Kein Root im Container: Ein Prozess, der generierten Code ausfuehrt
+# (BUILDER_TEST_COMMAND), soll das nicht als Root tun.
+RUN useradd --create-home --uid 10001 dienst
+
 WORKDIR /srv
 
 COPY requirements.txt .
@@ -14,6 +18,8 @@ COPY app ./app
 # Fehlt sie, bricht der Lifespan mit FileNotFoundError ab und der
 # Container startet gar nicht (nur mit gesetzter DATABASE_URL sichtbar).
 COPY migrations ./migrations
+
+USER dienst
 
 EXPOSE 8002
 

@@ -126,8 +126,8 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 ```bash
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
-cd governance_backend   && pytest    # 56 statt 42
-cd ../builder_orchestrator && pytest # 122 statt 108
+cd governance_backend   && pytest    # 57 statt 43
+cd ../builder_orchestrator && pytest # 136 statt 122
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -335,6 +335,32 @@ damit im Prüfpfad nicht nur steht, *dass* etwas erfüllt war, sondern *warum*.
 Der `build_hash` ist der Hash über Pfade und Inhalte aller Dateien — dadurch
 trifft ein Retry denselben Hash und ruft das bereits entschiedene Gate nicht
 erneut auf.
+
+## Token-Budget
+
+`BUILDER_TOKEN_BUDGET` begrenzt den Verbrauch je Build (Ein- und Ausgabe
+zusammen, 0 = unbegrenzt). Ohne Grenze startet ein breiter Modulschnitt zwölf
+Coder-Läufe mit Retries, und niemand hält an — auf einer Plattform mit
+verbrauchsabhängiger Abrechnung ist das die Lücke, die am schnellsten Geld
+kostet.
+
+Zwei Entscheidungen dahinter:
+
+- **Der Verbrauch wird nicht doppelt gebucht.** Er wird aus dem Prüfpfad
+  gelesen, der ihn ohnehin je Lauf mitschreibt. Ein zweiter Zähler wäre ein
+  zweiter Speicherort für dieselbe Zahl — und irgendwann gäbe es zwei
+  Antworten darauf, was ein Build gekostet hat.
+- **Geprüft wird vor jedem Modellaufruf**, auch vor jedem Reparaturversuch.
+  Ein Build kann sein Budget deshalb um höchstens einen Aufruf überschreiten:
+  Die Tokens des gerade laufenden Aufrufs stehen noch nicht im Prüfpfad.
+  Nachträglich abzubrechen wäre nicht billiger — bezahlt ist der Aufruf dann
+  ohnehin.
+
+Ein gerissenes Budget lässt die Task **nicht wiederholbar** scheitern (ein
+zweiter Versuch verbraucht mehr, nicht weniger). Damit greift dieselbe Mechanik
+wie beim blockierten Gate: Nachfolger werden blockiert, DevOps deployt nicht,
+der Governance-Agent aktiviert nichts. `GET /api/v1/builder/audit` liefert den
+Stand als `usage`.
 
 ## Authentifizierung und Mandantentrennung
 

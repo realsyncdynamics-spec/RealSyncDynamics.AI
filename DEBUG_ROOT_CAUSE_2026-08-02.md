@@ -206,6 +206,61 @@ Danach greifen 73 nachgelagerte Function-Deploys automatisch.
 5. Die 13 `.<version>.sql.bak`-Dateien im Repo-Root sind **Duplikate** der gleichnamigen Dateien
    in `supabase/migrations/`. Klären, welche Variante gilt, und die Kopien im Root entfernen.
 
+#### Nachtrag 2026-08-02 — Trockenanalyse der 118 Migrationen gegen Prod (read-only)
+
+Vor jedem Schreibzugriff wurde statisch geprüft, welche der 118 offenen Migrationen auf
+bereits existierende Objekte treffen. Grundlage: vollständiges Objekt-Inventar der Prod-DB
+(178 Tabellen, 220 Funktionen, 654 Indizes, 2 124 Spalten) gegen die Statements der
+Migrationsdateien, **guard-bewusst** — also unter Berücksichtigung von
+`DROP … IF EXISTS`, `DO $$ … IF NOT EXISTS (pg_constraint …)` und
+`EXCEPTION WHEN duplicate_object`.
+
+**Ergebnis: genau ein echter Blocker.**
+
+| Prüfklasse | Treffer | Bewertung |
+|---|---|---|
+| `CREATE TABLE` ohne `IF NOT EXISTS` auf existierender Tabelle | 0 | — |
+| `CREATE VIEW` / MV | 0 | alle mit `DROP … IF EXISTS` davor |
+| `CREATE TRIGGER` auf existierender Tabelle | 0 | — |
+| `ALTER TABLE … ADD CONSTRAINT` auf existierendem Constraint | 0 | 18 Constraints existieren zwar, **alle** Statements sind geguardet |
+| `CREATE POLICY` auf existierender Policy | **2** | ❌ `20260608000001_user_consents.sql` |
+
+`CREATE POLICY` kennt kein `IF NOT EXISTS` und schlägt mit `42710` fehl. Beide Policies
+(`user_own_consents`, `service_role_all`) existieren in Prod bereits, während die Migration
+im Ledger nie als angewendet steht. Da `db push` in Versionsreihenfolge arbeitet und diese
+Migration an Position ~13 von 118 liegt, wäre der Push dort abgebrochen — die restlichen
+~105 Migrationen hätten die Produktion weiterhin nie erreicht.
+
+Behoben durch vorangestellte `DROP POLICY IF EXISTS` (gleiches Muster wie in
+`20260611000000` / `20260701150000`). Gegen eine Wegwerf-PostgreSQL-16-Instanz real
+verifiziert:
+
+| Szenario | alt | neu |
+|---|---|---|
+| Frische DB (CI-Fall) | ok | ok |
+| DB mit bereits vorhandenen Policies (Prod-Fall) | `ERROR: policy … already exists` | ok |
+
+**Zwei Befunde, die kein Blocker sind, aber vor dem Go bekannt sein müssen:**
+
+1. **`agent_runs` / `agent_tasks` / `agent_events` — Namenskollision zweier Features.**
+   In Prod existieren sie aus `20260526000000_agent_os_substrate` als LLM-Run-Protokoll
+   (`session_id`, `user_message`, `tool_calls`, `input_tokens` …).
+   `20260705180000_autonomous_agents_core.sql` erwartet unter demselben Namen ein
+   Scheduler-Modell (`agent_id`, `triggered_by`, `input_params`, `status` …). Die Migration
+   ist per `DO $$ IF NOT EXISTS` abgesichert, **überspringt also still** — der `db push`
+   läuft durch, aber das Autonomous-Agents-Feature bekommt die falschen Spalten und
+   scheitert erst zur Laufzeit. Muss fachlich entschieden werden (Umbenennung eines der
+   beiden Sets), nicht durch die Migration.
+
+2. **`bots_*` liegt dreifach vor.** Repo: `20260628120000/120100/120200`.
+   Remote-Ledger: `…121531/121551/121603` **und** `…193744/193759/193820` — dieselben drei
+   Migrationen also zweimal unter verschiedenen Zeitstempeln angewendet. Beim Ledger-Repair
+   ist zu entscheiden, welche Einträge `reverted` werden, bevor die Repo-Fassung greift.
+
+**Noch offen und ausdrücklich nicht ausgeführt** (erfordert separate Freigabe + PITR-Punkt):
+`supabase migration repair` für die 11 Orphan-Versionen und der eigentliche
+`supabase db push` gegen die Produktions-DB.
+
 ### P1 — CI-Lücken schließen
 - Edge-Function-Parse-Gate im PR-CI (`deno check` oder ein Skript wie das hier verwendete
   TypeScript-Parser-Snippet über alle `supabase/functions/*/index.ts`).

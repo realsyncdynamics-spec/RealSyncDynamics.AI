@@ -9,7 +9,25 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
 
 **Phase**: 2 Production-Ready (31 Commits seit Design-Lock, 0 Rollbacks) | **Go-live**: 2026-08-01
 
-## Module (Phase 2)
+> ### ⚠️ Repo-Stand ≠ Produktions-Stand
+>
+> Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
+> Produktion läuft. Beides ist seit ~2026-07 auseinandergelaufen, weil der
+> `Deploy`-Workflow durchgehend fehlschlug (Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`).
+>
+> Messwerte vom 2026-08-02:
+>
+> | | Repo | in Produktion |
+> |---|---|---|
+> | Edge Functions | 169 | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
+> | Migrationen | 244 | 136 angewendet — **118 nie angewendet** |
+> | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** |
+>
+> Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
+> egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
+> immer gegen die Live-DB bzw. `supabase functions list` prüfen, nicht gegen diese Liste.
+
+## Module (Phase 2) — Repo-Vollständigkeit
 - **Audit Module** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, Industrie-spezifisch; Auto-Empfehlung nach Tenant-Branche
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
@@ -24,7 +42,7 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
 - **Automation**: n8n (Webhook-Trigger, governance-incidents → workflow_runs)
 - **Billing**: Stripe (10 Edge Functions, Metered Billing für Module)
 - **Monitoring**: Sentry 8.55.2 (Release-Tracking, Error-Aggregation)
-- **Testing**: Vitest (251 Test-Dateien, 100% logic) + Playwright (25 E2E green, 3 expected skip)
+- **Testing**: Vitest (219 Test-Dateien: 200 grün, 19 skipped — 2512 Tests) + Playwright (E2E grün)
 
 ## Wichtige Ordner
 - `src/`                          — React-SPA (100+ Pages, Hard-Edge Industrial UI)
@@ -34,7 +52,7 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
   - `src/enterprise-os/` — Workspace-Layouts, Governance-Branding
   - `src/flow/` — Seitenbasierter Navigation-Flow (/flow/*)
   - `src/runtime/` — Agent-Integration, Telemetry-Typen
-- `supabase/functions/` (101) — Edge Functions
+- `supabase/functions/` (169 im Repo, 100 in Produktion) — Edge Functions
   - **Governance Core** (10): governance-agent, governance-approvals, governance-dpias, governance-dsr, governance-ingest, governance-incidents, governance-connectors, governance-vendors, governance-keys, governance-risk-score
   - **Evidence & Provenance** (3): evidence-vault, evidence-export, provenance (C2PA Ed25519)
   - **Policy Packs** (1): policy-packs (Auto-Empfehlung, Tenant-Branche-Signaling)

@@ -10,6 +10,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+# Die Migration wird beim Start angewendet — sie MUSS ins Image.
+# Fehlt sie, bricht der Lifespan mit FileNotFoundError ab und der
+# Container startet gar nicht (nur mit gesetzter DATABASE_URL sichtbar).
+COPY migrations ./migrations
 
 EXPOSE 8001
 

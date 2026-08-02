@@ -177,3 +177,22 @@ async def test_region_change_wird_erfasst():
     events = telemetry_handler.recent_events("prj_x")
     assert len(events) == 2
     assert events[-1].event_type == "region_change"
+
+
+@pytest.mark.asyncio
+async def test_unbekanntes_gate_blockiert_statt_500():
+    """`required_gates` ist persistierter Zustand und kann einen Namen
+    enthalten, den der Katalog nicht mehr kennt — etwa ein Projekt, das vor
+    einer Katalogaenderung registriert wurde. Eine direkte Indizierung in
+    GATE_DESCRIPTIONS ergaebe dort einen KeyError, also HTTP 500 statt einer
+    Gate-Entscheidung. Die Entscheidung muss fail-closed bleiben."""
+    project_id = await inventory.create_project(
+        _registration(models=["claude"]), "high", ["ein_laengst_entferntes_gate"]
+    )
+
+    decision = await gate_engine.evaluate(
+        GateCheckRequest(project_id=project_id, build_hash="sha256:abc", artifacts=_artifacts())
+    )
+
+    assert decision.status == "blocked"
+    assert "ein_laengst_entferntes_gate" in decision.reason

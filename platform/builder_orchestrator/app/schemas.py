@@ -81,8 +81,11 @@ class AgentResult(BaseModel):
     spawn: List[AgentTask] = Field(default_factory=list)
     metrics: Dict[str, str] = Field(default_factory=dict)
 
-    # False = ein erneuter Versuch ist sinnlos (z.B. Gate hat hart blockiert).
-    retryable: bool = True
+    # Bewusst **kein** `retryable`-Feld: Ein Handler, der zurückkehrt, hat
+    # Erfolg gehabt — da gibt es nichts zu wiederholen. Wiederholbarkeit
+    # gehört an den Fehlerfall, und der wird geworfen: Der Scheduler liest
+    # `retryable` am Exception-Objekt (siehe `_run_task`). Ein Feld hier hätte
+    # nie eine Leseseite gehabt und genau das vorgetäuscht.
 
 
 class TaskGraph(BaseModel):

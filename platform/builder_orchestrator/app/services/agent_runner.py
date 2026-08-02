@@ -63,6 +63,13 @@ _RUNNERS: Dict[str, int] = {}
 # Task hart abbrechen; ohne Handle bliebe nur das Setzen eines Flags.
 _HANDLES: Dict[str, Dict[str, "asyncio.Task"]] = {}
 
+# Starke Referenzen auf die Scheduler-Schleifen. Die Event-Loop hält auf
+# laufende Tasks nur *schwache* Referenzen — ein `asyncio.create_task(...)`,
+# dessen Rückgabe niemand behält, kann mitten im Lauf eingesammelt werden und
+# der Build bricht ohne Fehlermeldung ab. Deshalb hier festhalten und erst im
+# Callback wieder loslassen.
+_SCHEDULER_TASKS: Set["asyncio.Task"] = set()
+
 
 class GraphCancelled(RuntimeError):
     """Der Graph wurde während der Ausführung abgebrochen."""
@@ -86,7 +93,9 @@ async def enqueue_initial_tasks(graph: TaskGraph) -> TaskGraph:
         return graph
 
     # TODO(Queue): hier stattdessen einen Queue-Job einstellen.
-    asyncio.create_task(run_graph(graph.project_id))
+    handle = asyncio.create_task(run_graph(graph.project_id))
+    _SCHEDULER_TASKS.add(handle)
+    handle.add_done_callback(_SCHEDULER_TASKS.discard)
     return graph
 
 
@@ -141,17 +150,19 @@ async def run_graph(project_id: str) -> Optional[TaskGraph]:
 
 
 async def cancel_graph(project_id: str) -> Optional[TaskGraph]:
-    """Bricht den Build ab (graceful).
+    """Bricht den Build ab.
 
-    Semantik, damit sie nicht überschätzt wird: Es wird **nichts Neues mehr
-    eingeplant**, und alle noch nicht terminalen Tasks werden als `cancelled`
-    markiert. Ein bereits laufender Agentenaufruf wird **nicht** mitten im
-    Aufruf abgeschossen — er läuft zu Ende oder bis zu seiner Zeitgrenze. Das
-    ist Absicht: Ein DevOps-Task, der gerade deployt, darf nicht auf halber
-    Strecke abbrechen.
+    Die Härte hängt am Task, nicht am Abbruchbefehl (`AgentTask.interruptible`):
 
-    TODO(hartes Cancel): Für teure LLM-Läufe zusätzlich das asyncio-Task-Handle
-    festhalten und `.cancel()` aufrufen, wenn der Nutzer sofort abbrechen will.
+      * **Unterbrechbare Tasks** (LLM-Aufrufe) werden über ihr asyncio-Handle
+        sofort abgeschossen. Jede weitere Sekunde kostet Geld, und das Ergebnis
+        wird ohnehin verworfen.
+      * **Tasks mit Außenwirkung** (Deployment, Aktivierung im Inventar) laufen
+        zu Ende oder bis zu ihrer Zeitgrenze. Ein halb ausgerolltes Deployment
+        ist schlimmer als ein paar Sekunden Wartezeit.
+
+    In beiden Fällen wird nichts Neues mehr eingeplant, und alle noch nicht
+    terminalen Tasks werden als abgebrochen vermerkt.
     """
     graph = await task_graph.get_graph(project_id)
     if graph is None:
@@ -305,12 +316,18 @@ async def _run_task(project_id: str, task_id: str) -> None:
         task.status = "completed"
 
         if result.spawn:
-            graph.insert_spawned(task.id, result.spawn)
+            # Vor dem Einhängen festhalten, wessen `depends_on` sich gleich
+            # ändert — danach sind die neuen Tasks selbst Abhängige.
+            umgehaengt = graph.dependents_of(task.id)
+            neu = graph.insert_spawned(task.id, result.spawn)
 
-        if result.spawn:
-            # Neue Tasks und die umgehängten Abhängigkeiten betreffen mehrere
-            # Zeilen — hier ist der Vollschreibvorgang der richtige.
-            await task_graph.save_graph(graph)
+            # Nur die tatsächlich geänderten Zeilen schreiben. Ein
+            # `save_graph` aus dieser Task-Kopie wäre der Vollschreibvorgang,
+            # den `repository.py` gerade ausschließt: Er würde nebenläufige
+            # Statusänderungen anderer Tasks überschreiben. Dass hier aktuell
+            # nichts parallel läuft, ist eine Eigenschaft der heutigen
+            # Graphform — keine, auf die sich der Scheduler verlassen darf.
+            await task_graph.save_tasks(graph.project_id, [task, *neu, *umgehaengt])
             _publish(graph.project_id, task)
         else:
             await _persist(graph, task)

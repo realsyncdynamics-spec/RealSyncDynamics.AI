@@ -126,8 +126,8 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 ```bash
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
-cd governance_backend   && pytest    # 41 statt 30
-cd ../builder_orchestrator && pytest # 104 statt 92
+cd governance_backend   && pytest    # 43 statt 32
+cd ../builder_orchestrator && pytest # 105 statt 93
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -332,6 +332,18 @@ erneut auf.
 
 ## Was noch fehlt (TODO-Marker im Code)
 
+- **Authentifizierung**: Es gibt keine. Jeder Endpoint ist offen, und
+  `project_id` ist ein freier Query-Parameter — fremde Task-Graphen und
+  Prüfpfade sind lesbar, fremde Builds abbrechbar. Damit sind auch die
+  RLS-Policies faktisch wirkungslos: Beide Dienste schreiben mit einer
+  Datenbankrolle und einer konstanten `tenant_id`
+  (`BUILDER_DEFAULT_TENANT_ID`). Für einen lokalen Draft tragbar, für alles
+  andere die erste offene Baustelle.
+- **Horizontale Skalierung**: Der Scheduler hält seinen Laufzeitzustand im
+  Prozess (`_INFLIGHT`, `_HANDLES`), die Task-Zustände liegen in Postgres.
+  Zwei Repliken würden denselben Graphen doppelt fahren — das löst erst die
+  externe Queue.
+- **Container laufen als root** (kein `USER` im Dockerfile).
 - **Container-Build**: Der DevOps-Schritt misst den Workspace, baut aber kein
   Image. `build_hash` ist der Hash über die generierten Dateien, nicht ein
   Image-Digest.

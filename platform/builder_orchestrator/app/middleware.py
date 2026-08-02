@@ -2,16 +2,21 @@
 
 Rate Limiting: Einfacher In-Memory-Approach, der pro IP zählt.
 Security Headers: Standard-Sicherheitsheader für alle Responses.
+Request Size Limits: Begrenzt Payload-Größe um DoS-Angriffe zu verhindern.
 """
 
 from __future__ import annotations
 
+import os
 import time
 from collections import defaultdict
 from typing import Callable
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+
+# Max 10 MB pro Request-Body (konfigurierbar via MAX_BODY_SIZE)
+MAX_BODY_SIZE = int(os.getenv("MAX_BODY_SIZE", "10485760"))
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -85,4 +90,29 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "frame-ancestors 'none';"
         )
 
+        # HSTS für HTTPS (wird in Produktion relevant)
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        # Blockiert Cross-Domain-Policy-Misbrauch
+        response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+
+        # Verhindert Browser-Caching sensativer Daten
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
         return response
+
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """Begrenzt die Größe eingehender Requests."""
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > MAX_BODY_SIZE:
+            return Response(
+                content={"detail": f"Request body exceeds maximum size of {MAX_BODY_SIZE} bytes"},
+                status_code=413,
+                media_type="application/json",
+            )
+        return await call_next(request)

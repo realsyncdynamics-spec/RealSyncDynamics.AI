@@ -22,8 +22,8 @@ def app_with_security():
     async def test_endpoint():
         return {"status": "ok"}
 
-    @app.post("/api/upload")
-    async def upload_endpoint():
+    @app.post("/api/register")
+    async def register_endpoint():
         return {"status": "ok"}
 
     @app.get("/health")
@@ -108,7 +108,7 @@ def test_request_size_limit_enforced(app_with_security):
     # Großer Request sollte blockiert werden (> 10 MB)
     large_payload = "x" * (11 * 1024 * 1024)  # 11 MB
     response = client.post(
-        "/api/upload",
+        "/api/register",
         content=large_payload,
         headers={"Content-Length": str(len(large_payload))},
     )

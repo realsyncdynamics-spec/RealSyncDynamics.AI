@@ -120,7 +120,21 @@ The 5 genuine orphans — those with no local counterpart under any name — wer
 recovered verbatim from `supabase_migrations.schema_migrations` and committed.
 This is correct under either resolution option below.
 
-#### Remaining decision (User/DB Admin) — the 6 `bots_*` rows
+#### ✅ ENTSCHIEDEN 2026-08-02: Option A ausgefuehrt
+
+Alle sechs Remote-Versionen liegen jetzt als Migrations-Dateien im Repo, 1:1 aus
+`supabase_migrations.schema_migrations` uebernommen. Kein Eingriff in Prod. Damit
+ist der Drift vollstaendig aufgeloest — alle 11 Remote-only-Versionen haben eine
+Repo-Datei. Feature B's Quelle ist gerettet.
+
+Die Kollision selbst ist damit **dokumentiert, nicht behoben**: `bot_conversations`
+und `bot_messages` tragen weiterhin A's Form. Der naechste Schritt (B's sieben
+leere Tabellen droppen, oder B's Konversations-Tabellen umbenennen) bleibt offen
+und ist bewusst nicht Teil dieser Aufraeumaktion.
+
+Die Optionen sind unten zur Nachvollziehbarkeit erhalten.
+
+#### Optionen (historisch) — die 6 `bots_*` Zeilen
 
 **Option A — commit the source.** Add 6 more files matching the remote
 timestamps. Zero prod mutation; repo ends up with duplicate near-identical bots

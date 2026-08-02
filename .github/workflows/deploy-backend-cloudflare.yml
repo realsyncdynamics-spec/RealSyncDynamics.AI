@@ -1,0 +1,66 @@
+name: Deploy Backend (Cloudflare Containers)
+
+# Deployt services/realsync-runtime-core als Cloudflare **Container** (Worker +
+# Container aus dem Dockerfile). Ersetzt den früheren, defekten Vercel-Deploy
+# dieses Backend-Services (Projekt `-remu`).
+#
+# Voraussetzungen (Repo-Secrets):
+#   - CLOUDFLARE_API_TOKEN   (Token mit Workers/Containers-Deploy-Rechten)
+#   - CLOUDFLARE_ACCOUNT_ID
+# Laufzeit-Secrets des Containers (DB/Redis/NATS/JWT/API-Key) werden NICHT hier
+# gesetzt, sondern einmalig via `wrangler secret put` — siehe
+# services/realsync-runtime-core/DEPLOY_CLOUDFLARE.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/realsync-runtime-core/**'
+      - '.github/workflows/deploy-backend-cloudflare.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-runtime-core
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    defaults:
+      run:
+        working-directory: services/realsync-runtime-core
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — Cloudflare-Secrets vorhanden?
+        id: guard
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "CLOUDFLARE_API_TOKEN/ACCOUNT_ID nicht gesetzt — Deploy übersprungen."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Cloudflare Containers baut das Docker-Image beim Deploy — Buildx auf dem
+      # Runner bereitstellen (Docker ist auf ubuntu-latest vorhanden).
+      - name: Setup Docker Buildx
+        if: steps.guard.outputs.skip == 'false'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install deps (inkl. wrangler + @cloudflare/containers)
+        if: steps.guard.outputs.skip == 'false'
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      - name: Deploy (wrangler)
+        if: steps.guard.outputs.skip == 'false'
+        run: npx wrangler deploy

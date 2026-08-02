@@ -17,11 +17,22 @@
 //
 // Skipping in CI? `SKIP_PRERENDER=1 npm run prerender` exit 0 ohne work.
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+
+// Setup-Fehler (kein Browser, Preview-Server startet nicht) sind kategorisch
+// anders als einzelne Route-Fehler: sie liefern 0 prerenderte Seiten. Getrennt
+// markiert, damit main() sie gezielt behandeln kann.
+class SetupError extends Error {
+  constructor(message, cause) {
+    super(message);
+    this.name = 'SetupError';
+    this.cause = cause;
+  }
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -85,7 +96,34 @@ async function startPreviewServer() {
     await new Promise((r) => setTimeout(r, 250));
   }
   proc.kill();
-  throw new Error('vite preview did not respond within 15s');
+  throw new SetupError('vite preview did not respond within 15s');
+}
+
+// ─── Chromium starten, bei Bedarf nachinstallieren ──────────────────────────
+// Der Prerender laeuft nicht nur in CI (wo `npx playwright install` explizit
+// als eigener Step steht), sondern auch im Cloudflare-Pages-Build, wenn dort
+// `npm run build:full` als Build-Befehl konfiguriert ist. In dem Image ist der
+// Chromium-Download nicht garantiert vorhanden — deshalb ein einmaliger
+// Install-Versuch, bevor wir aufgeben.
+async function launchBrowser() {
+  try {
+    return await chromium.launch({ headless: true });
+  } catch (first) {
+    console.warn(`[prerender] chromium launch failed (${first.message.split('\n')[0]}) — trying \`playwright install chromium\` once...`);
+    const install = spawnSync('npx', ['playwright', 'install', 'chromium'], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      timeout: 300_000,
+    });
+    if (install.status !== 0) {
+      throw new SetupError('chromium not available and automatic install failed', first);
+    }
+    try {
+      return await chromium.launch({ headless: true });
+    } catch (second) {
+      throw new SetupError('chromium still not launchable after install', second);
+    }
+  }
 }
 
 // ─── Render single route ─────────────────────────────────────────────────────
@@ -155,7 +193,7 @@ async function main() {
 
   let stats = { done: 0, failed: 0, skipped: 0 };
   try {
-    const browser = await chromium.launch({ headless: true });
+    const browser = await launchBrowser();
     try {
       stats = await runWithPool(routes, async (item) => {
         const html = await renderRoute(browser, item.route);
@@ -179,6 +217,25 @@ async function main() {
 main()
   .then(() => process.exit(0))
   .catch((e) => {
+    // Ein gescheiterter Prerender darf den Deploy NICHT abbrechen: das Ergebnis
+    // waere eine komplett nicht deploybare Site statt einer Site ohne
+    // pre-rendertes HTML. Ohne Prerender faellt Cloudflare ueber die
+    // `/*  /index.html  200`-Regel in public/_redirects auf die SPA-Shell
+    // zurueck — schlechter fuer Crawler, aber funktionsfaehig.
+    //
+    // In CI (PRERENDER_STRICT=1) gilt das Gegenteil: dort SOLL ein fehlender
+    // Browser hart auffallen, sonst verliert man den Prerender unbemerkt.
+    if (e instanceof SetupError) {
+      console.error(`[prerender] SETUP FAILED: ${e.message}`);
+      if (e.cause) console.error(`[prerender]   cause: ${e.cause.message?.split('\n')[0]}`);
+      if (process.env.PRERENDER_STRICT === '1') {
+        console.error('[prerender] PRERENDER_STRICT=1 — treating as fatal');
+        process.exit(1);
+      }
+      console.warn('[prerender] WARNUNG: 0 Seiten pre-rendert. Der Build laeuft weiter,');
+      console.warn('[prerender] aber Crawler ohne JS-Ausfuehrung sehen nur die SPA-Shell.');
+      process.exit(0);
+    }
     console.error('[prerender] FATAL:', e);
     process.exit(1);
   });

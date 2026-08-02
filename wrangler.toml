@@ -4,6 +4,25 @@
 # Build laeuft in CI (npm run build → dist/), deployt via
 # `wrangler pages deploy dist` (siehe .github/workflows/deploy-cloudflare-pages.yml).
 #
+# ─── WICHTIG: Build-Befehl der Git-Integration ──────────────────────────────
+# Der Live-Deploy laeuft ueber Cloudflares Git-Integration, deren Build-Befehl
+# NUR im Cloudflare-Dashboard konfigurierbar ist (nicht in dieser Datei):
+#
+#   Workers & Pages → realsyncdynamics-ai → Settings → Build → Build command
+#
+# Dort muss `npm run build:full` stehen, NICHT `npm run build`.
+#
+# Grund: nur `build:full` ruft `scripts/prerender.mjs` auf und erzeugt echtes
+# statisches HTML pro Route (dist/<route>/index.html). Mit blossem
+# `npm run build` greift fuer jede URL die Regel `/*  /index.html  200` aus
+# public/_redirects — Crawler ohne JS-Ausfuehrung sehen dann auf KEINER Seite
+# Inhalt, auch nicht auf /impressum. Das war bis 2026-08 der Live-Zustand.
+#
+# Faellt der Prerender im Build-Image aus (kein Chromium), bricht der Deploy
+# nicht ab: prerender.mjs installiert Chromium einmalig nach und faellt sonst
+# mit lauter Warnung auf den bisherigen SPA-Shell-Zustand zurueck (Exit 0).
+# Mit PRERENDER_STRICT=1 wird derselbe Fall stattdessen hart zum Fehler.
+#
 # Secrets Management:
 # - Pages: Env vars via GitHub Actions → VITE_* env vars
 # - Workers: Secrets via `wrangler secret put KEY --env production`

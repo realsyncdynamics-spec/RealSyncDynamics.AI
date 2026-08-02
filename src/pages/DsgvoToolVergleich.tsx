@@ -171,7 +171,7 @@ export function DsgvoToolVergleich() {
               <div key={t.name} className="bg-obsidian-900 border border-titanium-900 rounded-none p-4">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <h3 className="font-display font-bold text-titanium-50">{t.name}</h3>
+                    <h2 className="font-display font-bold text-titanium-50">{t.name}</h2>
                     <div className="text-[11px] text-titanium-500">{t.category.join(' · ')}</div>
                   </div>
                   <a href={t.url} target="_blank" rel="noopener noreferrer" className="text-xs text-security-400 hover:underline inline-flex items-center gap-1 shrink-0">

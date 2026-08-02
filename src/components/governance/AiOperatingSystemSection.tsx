@@ -105,10 +105,14 @@ export function AiOperatingSystemSection() {
           </span>
         </div>
 
-        <h2 className="text-3xl sm:text-5xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.1] mb-4">
+        {/* h1: Das ist die Hauptueberschrift von /runtime — die Seite hatte
+            sonst gar kein h1. Diese Sektion wird ausschliesslich von
+            RuntimePage eingebunden, ein zweites h1 kann also nicht entstehen.
+            Klassen unveraendert. */}
+        <h1 className="text-3xl sm:text-5xl font-display font-semibold tracking-[-0.02em] text-titanium-50 leading-[1.1] mb-4">
           Governance ist eine{' '}
           <span className="text-cyan-300">Runtime</span>, keine Checkliste.
-        </h2>
+        </h1>
         <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl mb-10">
           KI- und Datenschutz-Systeme werden kontinuierlich beobachtet, Agenten
           übernehmen die wiederkehrende Governance-Arbeit, Evidence entsteht als

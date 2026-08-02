@@ -92,7 +92,9 @@ export function SubProcessors() {
             <Shield className="h-4 w-4 text-white" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Sub-Prozessoren</div>
+            {/* h1 statt div: /legal/sub-processors hatte im gesamten Body
+                keine einzige Ueberschrift. Klassen unveraendert. */}
+            <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Sub-Prozessoren</h1>
             <div className="text-[11px] text-titanium-400 font-medium">DSGVO Art. 28 Transparenz</div>
           </div>
         </div>

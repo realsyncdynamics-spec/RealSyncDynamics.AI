@@ -140,8 +140,39 @@ async function main() {
     );
   }
 
+  // ── Check 4: Ueberschriften-Hierarchie ──────────────────────────────────
+  // Genau ein h1 pro Seite, keine uebersprungenen Level (h2 → h4).
+  // Seobility bewertet beides direkt ab. Vor dem Fix in diesem Branch:
+  // 5 Seiten ohne h1, 82 Seiten mit Level-Sprung (fast alle durch ein
+  // h4 im geteilten Footer-Shell).
+  const noH1 = [];
+  const manyH1 = [];
+  const skips = [];
+  for (const p of real) {
+    const html = await readFile(p.file, 'utf8');
+    const body = html.split('<body')[1] ?? html;
+    const levels = [...body.matchAll(/<h([1-6])[^>]*>/g)].map((m) => Number(m[1]));
+    if (levels.length === 0) continue;
+    const h1s = levels.filter((l) => l === 1).length;
+    if (h1s === 0) noH1.push(p.route);
+    else if (h1s > 1) manyH1.push(`${p.route} (${h1s}×)`);
+    for (let i = 1; i < levels.length; i++) {
+      if (levels[i] > levels[i - 1] + 1) {
+        skips.push(`${p.route} (h${levels[i - 1]}→h${levels[i]})`);
+        break;
+      }
+    }
+  }
+  const list = (arr, max = 5) =>
+    arr.slice(0, max).join(', ') + (arr.length > max ? `, … (+${arr.length - max})` : '');
+
+  if (noH1.length > 0) failures.push(`${noH1.length} Seite(n) ohne <h1>: ${list(noH1)}`);
+  if (manyH1.length > 0) failures.push(`${manyH1.length} Seite(n) mit mehreren <h1>: ${list(manyH1)}`);
+  if (skips.length > 0) failures.push(`${skips.length} Seite(n) mit uebersprungenem Heading-Level: ${list(skips)}`);
+
   // ── Report ──────────────────────────────────────────────────────────────
   console.log(`[verify] ${pages.length} HTML-Dateien · ${real.length} mit Content · ${uniqueTitles.size} unterschiedliche Titles`);
+  console.log(`[verify] Headings: ${noH1.length} ohne h1 · ${manyH1.length} mit mehreren h1 · ${skips.length} mit Level-Sprung`);
   console.log(`[verify] Startseite: H1=${homeH1 ? JSON.stringify(homeH1.slice(0, 60)) : 'KEINE'} · ~${homeText} Zeichen Text`);
 
   if (failures.length > 0) {

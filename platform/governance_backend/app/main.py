@@ -8,6 +8,7 @@ Drei Aufgaben:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -35,6 +36,27 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
 
+# Wie oft fällige Zustellungen wiederholt werden.
+REDELIVERY_INTERVAL = float(os.getenv("GOVERNANCE_REDELIVERY_INTERVAL", "60"))
+
+
+async def _redelivery_loop() -> None:
+    """Wiederholt periodisch die Zustellung gescheiterter Befunde.
+
+    Ohne diese Schleife bliebe ein Befund, dessen Webhook einmal danebenging,
+    für immer unzugestellt liegen — ein Compliance-Loch, das niemand bemerkt.
+    """
+    while True:
+        try:
+            await asyncio.sleep(REDELIVERY_INTERVAL)
+            await incidents.redeliver_pending()
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - die Schleife darf nie sterben
+            logging.getLogger("governance.incidents").exception(
+                "Wiederholte Zustellung fehlgeschlagen"
+            )
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -46,9 +68,20 @@ async def lifespan(_: FastAPI):
     """
     if await db.connect():
         await db.apply_migrations(str(MIGRATION))
+
+    # Nur sinnvoll, wenn überhaupt ein Webhook konfiguriert ist.
+    redelivery = (
+        asyncio.create_task(_redelivery_loop()) if incidents.WEBHOOK_URL else None
+    )
     try:
         yield
     finally:
+        if redelivery is not None:
+            redelivery.cancel()
+            try:
+                await redelivery
+            except asyncio.CancelledError:
+                pass
         await db.disconnect()
 
 
@@ -160,6 +193,15 @@ async def list_incidents(
     project_id: Optional[str] = None, status: Optional[str] = None
 ) -> IncidentListResponse:
     return IncidentListResponse(incidents=await incidents.list_incidents(project_id, status))
+
+
+@app.post(
+    "/api/v1/governance/incidents/redeliver",
+    summary="Fällige, zuvor gescheiterte Zustellungen jetzt wiederholen",
+)
+async def redeliver_incidents() -> dict:
+    """Stößt an, was sonst die Hintergrundschleife erledigt (Ops-Handgriff)."""
+    return await incidents.redeliver_pending()
 
 
 @app.post(

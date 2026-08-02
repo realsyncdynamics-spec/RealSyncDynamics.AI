@@ -17,7 +17,7 @@ import json
 import logging
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 import httpx
@@ -29,6 +29,12 @@ logger = logging.getLogger("governance.incidents")
 
 WEBHOOK_URL = os.getenv("GOVERNANCE_WEBHOOK_URL", "")
 WEBHOOK_TIMEOUT = float(os.getenv("GOVERNANCE_WEBHOOK_TIMEOUT", "5"))
+
+# Zustellung wird wiederholt, bis sie klappt oder das Limit erreicht ist.
+# Danach bleibt der Befund als `exhausted` auffindbar — aufgeben heißt nicht
+# vergessen.
+DISPATCH_MAX_ATTEMPTS = int(os.getenv("GOVERNANCE_DISPATCH_MAX_ATTEMPTS", "5"))
+DISPATCH_RETRY_BASE_SECONDS = float(os.getenv("GOVERNANCE_DISPATCH_RETRY_BASE", "60"))
 
 # incident_id -> Incident (In-Memory-Backend)
 _INCIDENTS: Dict[str, Incident] = {}
@@ -81,24 +87,89 @@ async def _dispatch(incident: Incident) -> None:
 
     Ohne konfigurierten Endpunkt passiert nichts — der Incident ist dann
     ausschließlich über die API sichtbar. Fehler werden geschluckt und am
-    Incident vermerkt, statt den Aufrufer scheitern zu lassen.
+    Incident vermerkt, statt den Aufrufer scheitern zu lassen; die Wiederholung
+    übernimmt `redeliver_pending`.
     """
     if not WEBHOOK_URL:
         incident.dispatch_status = "not_configured"
         return
+
+    incident.dispatch_attempts += 1
 
     try:
         async with httpx.AsyncClient(timeout=WEBHOOK_TIMEOUT) as client:
             response = await client.post(WEBHOOK_URL, json=incident.model_dump())
             response.raise_for_status()
         incident.dispatch_status = "delivered"
+        incident.dispatch_error = None
+        incident.next_dispatch_at = None
+        return
     except httpx.HTTPError as exc:
-        # TODO(Zustellung): Retry mit Backoff über einen Cron, damit ein
-        # kurzzeitig nicht erreichbarer n8n keinen Befund verschluckt. Die
-        # offenen Fälle sind über dispatch_status='failed' auffindbar.
-        incident.dispatch_status = "failed"
         incident.dispatch_error = str(exc)
-        logger.error("Incident %s nicht zugestellt: %s", incident.incident_id, exc)
+
+    if incident.dispatch_attempts >= DISPATCH_MAX_ATTEMPTS:
+        incident.dispatch_status = "exhausted"
+        incident.next_dispatch_at = None
+        logger.error(
+            "Incident %s endgültig nicht zugestellt (%d Versuche): %s",
+            incident.incident_id,
+            incident.dispatch_attempts,
+            incident.dispatch_error,
+        )
+        return
+
+    delay = DISPATCH_RETRY_BASE_SECONDS * (2 ** (incident.dispatch_attempts - 1))
+    incident.dispatch_status = "failed"
+    incident.next_dispatch_at = (
+        datetime.now(timezone.utc) + timedelta(seconds=delay)
+    ).isoformat()
+    logger.warning(
+        "Incident %s nicht zugestellt (Versuch %d), nächster Versuch in %.0fs: %s",
+        incident.incident_id,
+        incident.dispatch_attempts,
+        delay,
+        incident.dispatch_error,
+    )
+
+
+async def redeliver_pending(limit: int = 50) -> Dict[str, int]:
+    """Stellt fällige, zuvor gescheiterte Befunde erneut zu.
+
+    Wird periodisch aus dem Lifespan aufgerufen und lässt sich über
+    `POST /api/v1/governance/incidents/redeliver` von Hand anstoßen.
+    """
+    if not WEBHOOK_URL:
+        return {"versucht": 0, "zugestellt": 0, "aufgegeben": 0}
+
+    jetzt = datetime.now(timezone.utc)
+    faellig = [
+        incident
+        for incident in await list_incidents(status=None)
+        if incident.dispatch_status == "failed"
+        and (
+            incident.next_dispatch_at is None
+            or datetime.fromisoformat(incident.next_dispatch_at) <= jetzt
+        )
+    ][:limit]
+
+    zugestellt = aufgegeben = 0
+    for incident in faellig:
+        await _dispatch(incident)
+        await _update_dispatch(incident)
+        if incident.dispatch_status == "delivered":
+            zugestellt += 1
+        elif incident.dispatch_status == "exhausted":
+            aufgegeben += 1
+
+    if faellig:
+        logger.info(
+            "Zustellung wiederholt: %d versucht, %d zugestellt, %d aufgegeben",
+            len(faellig),
+            zugestellt,
+            aufgegeben,
+        )
+
+    return {"versucht": len(faellig), "zugestellt": zugestellt, "aufgegeben": aufgegeben}
 
 
 async def get_incident(incident_id: str) -> Optional[Incident]:
@@ -170,7 +241,8 @@ async def reset() -> None:
 
 _COLUMNS = (
     "incident_id, project_id, incident_type, severity, title, detail, evidence, "
-    "status, dispatch_status, dispatch_error, created_at"
+    "status, dispatch_status, dispatch_error, created_at, dispatch_attempts, "
+    "next_dispatch_at"
 )
 
 
@@ -210,9 +282,16 @@ async def _update_dispatch(incident: Incident) -> None:
 
     async with db.pool().connection() as conn:
         await conn.execute(
-            "update governance_incidents set dispatch_status = %s, dispatch_error = %s"
+            "update governance_incidents set dispatch_status = %s, dispatch_error = %s,"
+            " dispatch_attempts = %s, next_dispatch_at = %s::timestamptz"
             " where incident_id = %s",
-            (incident.dispatch_status, incident.dispatch_error, incident.incident_id),
+            (
+                incident.dispatch_status,
+                incident.dispatch_error,
+                incident.dispatch_attempts,
+                incident.next_dispatch_at,
+                incident.incident_id,
+            ),
         )
 
 
@@ -232,4 +311,6 @@ def _to_incident(row) -> Incident:
         dispatch_status=row[8],
         dispatch_error=row[9],
         created_at=row[10].isoformat(),
+        dispatch_attempts=row[11],
+        next_dispatch_at=row[12].isoformat() if row[12] else None,
     )

@@ -139,8 +139,15 @@ class Incident(BaseModel):
     created_at: str
 
     # Zustellung an die Automatisierung (n8n).
-    dispatch_status: Literal["pending", "delivered", "failed", "not_configured"] = "pending"
+    #   failed     = fehlgeschlagen, wird erneut versucht
+    #   exhausted  = endgültig aufgegeben; der Befund bleibt bestehen und ist
+    #                über den Filter auffindbar, damit er nicht still verschwindet
+    dispatch_status: Literal[
+        "pending", "delivered", "failed", "exhausted", "not_configured"
+    ] = "pending"
     dispatch_error: Optional[str] = None
+    dispatch_attempts: int = 0
+    next_dispatch_at: Optional[str] = None
 
 
 class IncidentListResponse(BaseModel):

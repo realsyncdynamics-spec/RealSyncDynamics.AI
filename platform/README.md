@@ -126,7 +126,7 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 ```bash
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
-cd governance_backend   && pytest    # 36 statt 25
+cd governance_backend   && pytest    # 41 statt 30
 cd ../builder_orchestrator && pytest # 45 statt 33
 ```
 
@@ -139,7 +139,9 @@ Aktivierung auslöst, sowie Regions- und Modelldrift inklusive Dispatch-Fehlern.
 Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit beider Migrationen,
 dass Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen
 Reconnect überstehen, und dass nebenläufige Tasks sich nicht gegenseitig
-überschreiben.
+überschreiben. Für die Zustellung: Wiederholung nach Ausfall, Aufgabe nach dem
+Versuchslimit, Einhaltung des Backoffs und dass Zugestelltes nicht erneut
+versucht wird.
 
 ## Persistenz
 
@@ -192,6 +194,14 @@ Ein Befund legt einen Incident an, setzt das Projekt im Cockpit auf
 Webhook konfiguriert oder nicht erreichbar, bleibt der Incident trotzdem
 bestehen und ist über `GET /api/v1/governance/incidents` sichtbar — ein
 Zustellungsproblem darf keinen Befund verschlucken.
+
+**Gescheiterte Zustellungen werden wiederholt.** Eine Hintergrundschleife
+(`GOVERNANCE_REDELIVERY_INTERVAL`, Default 60s) nimmt sich fällige Fälle mit
+exponentiellem Backoff erneut vor; `POST /api/v1/governance/incidents/redeliver`
+stößt dasselbe von Hand an. Nach `GOVERNANCE_DISPATCH_MAX_ATTEMPTS` Versuchen
+(Default 5) steht der Befund auf `dispatch_status = 'exhausted'` — aufgeben
+heißt nicht vergessen: Er bleibt bestehen und ist über den Filter auffindbar,
+statt still zu verschwinden.
 
 Modelldrift wird bei **jedem** Event geprüft, nicht nur bei einem eigenen
 Event-Typ: Ein stillschweigend getauschtes Modell meldet sich nicht selbst an.

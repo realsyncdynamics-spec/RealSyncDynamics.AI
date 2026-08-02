@@ -89,11 +89,28 @@ create table if not exists governance_incidents (
   evidence        jsonb not null default '{}'::jsonb,
   status          text not null default 'open'
                   check (status in ('open','acknowledged','resolved')),
-  dispatch_status text not null default 'pending'
-                  check (dispatch_status in ('pending','delivered','failed','not_configured')),
+  dispatch_status text not null default 'pending',
   dispatch_error  text,
+  -- Zustellversuche und Fälligkeit der Wiederholung. 'exhausted' heißt
+  -- aufgegeben, nicht vergessen — der Befund bleibt auffindbar.
+  dispatch_attempts integer not null default 0,
+  next_dispatch_at  timestamptz,
   created_at      timestamptz not null default now()
 );
+
+-- Additiv nachziehbar, falls die Tabelle aus einer früheren Fassung stammt.
+alter table governance_incidents
+  add column if not exists dispatch_attempts integer not null default 0,
+  add column if not exists next_dispatch_at timestamptz;
+
+-- Der CHECK wird neu gesetzt, weil 'exhausted' hinzugekommen ist.
+alter table governance_incidents drop constraint if exists governance_incidents_dispatch_status_check;
+alter table governance_incidents add constraint governance_incidents_dispatch_status_check
+  check (dispatch_status in ('pending','delivered','failed','exhausted','not_configured'));
+
+-- Fällige Wiederholungen schnell finden.
+create index if not exists idx_incidents_zustellung on governance_incidents(next_dispatch_at)
+  where dispatch_status = 'failed';
 
 create index if not exists idx_incidents_project on governance_incidents(project_id, created_at desc);
 create index if not exists idx_incidents_open on governance_incidents(status) where status = 'open';

@@ -27,6 +27,8 @@ export type PolicyAction =
   | "block"
   | "require_approval";
 
+export type RiskLevel = "info" | "low" | "medium" | "high" | "critical";
+
 const ACTION_PRECEDENCE: Record<PolicyAction, number> = {
   allow: 0,
   log: 1,
@@ -66,6 +68,21 @@ export interface AssetForEval {
 export interface PolicyDecision {
   policy_id: string;
   action: PolicyAction;
+}
+
+export interface RiskThresholdRow {
+  id: string;
+  tenant_id: string | null;
+  risk_level: RiskLevel;
+  action: PolicyAction;
+  dispatch_incident: boolean;
+  enabled: boolean;
+}
+
+export interface EscalationDecision {
+  threshold_id: string;
+  action: PolicyAction;
+  dispatch_incident: boolean;
 }
 
 const DIRECT_EVENT_FIELDS = new Set([
@@ -141,4 +158,30 @@ export function evaluatePolicies(
     }
   }
   return best;
+}
+
+/**
+ * Evaluate risk thresholds as a fallback when no explicit policy
+ * matches. Returns the escalation decision for the event's risk_level,
+ * or null if auto-escalation is disabled.
+ *
+ * Caller should prioritize tenant-specific thresholds over global ones.
+ * Pass the effective thresholds (after merging tenant + global defaults).
+ */
+export function evaluateRiskThresholds(
+  event: EventForEval,
+  thresholds: RiskThresholdRow[],
+): EscalationDecision | null {
+  if (!event.risk_level || event.risk_level === "info") {
+    return null;
+  }
+  const threshold = thresholds.find((t) => t.risk_level === event.risk_level);
+  if (!threshold || !threshold.enabled) {
+    return null;
+  }
+  return {
+    threshold_id: threshold.id,
+    action: threshold.action,
+    dispatch_incident: threshold.dispatch_incident,
+  };
 }

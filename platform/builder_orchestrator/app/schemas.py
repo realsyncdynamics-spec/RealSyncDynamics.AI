@@ -6,19 +6,21 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from .validators import Description, Jurisdiction, ProjectId, ProjectName, Prompt, TargetStack
+
 
 class BuildSpec(BaseModel):
     """Eingabe des Nutzers: was gebaut werden soll und mit welchen Daten."""
 
-    project_name: str
-    description: str
-    prompt: str
+    project_name: ProjectName
+    description: Description
+    prompt: Prompt
     data_types: List[str] = Field(default_factory=list)
     data_subjects: List[str] = Field(default_factory=list)
     models: List[str] = Field(default_factory=list)
     llm_provider: Optional[str] = None
-    jurisdiction: Optional[str] = "eu"
-    target_stack: str = "nextjs_supabase"
+    jurisdiction: Jurisdiction = "eu"
+    target_stack: TargetStack = "nextjs_supabase"
 
 
 TaskStatus = Literal["pending", "running", "completed", "failed", "blocked"]
@@ -89,7 +91,7 @@ class AgentResult(BaseModel):
 
 
 class TaskGraph(BaseModel):
-    project_id: str
+    project_id: ProjectId
     tasks: List[AgentTask]
 
     # Wird von der Cancel-Route gesetzt; der Scheduler bricht daraufhin ab.
@@ -225,4 +227,4 @@ class GovernanceContext(BaseModel):
 
 
 class CancelRequest(BaseModel):
-    project_id: str
+    project_id: ProjectId

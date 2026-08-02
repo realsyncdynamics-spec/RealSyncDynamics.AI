@@ -94,36 +94,67 @@ Tests to add: at minimum, one `'<new-channel>' produces post for tracker.detecte
 
 ---
 
-## How to wire a real publisher
+## Wiring real publishers
+
+Production publishers are already implemented and imported into `DistributionQueue`. Register them as needed:
 
 ```ts
 import {
   DistributionQueue,
-  type SocialPublisher,
+  LinkedInPublisher,
+  XPublisher,
+  TikTokPublisher,
+  MetaPublisher,
 } from '@/src/core/social-orchestrator/distributionQueue';
 
-class LinkedInEnterprisePublisher implements SocialPublisher {
-  channel = 'linkedin.enterprise' as const;
-
-  async publish(post) {
-    // 1. Read OAuth token from Supabase Vault (NEVER from env / repo).
-    // 2. POST https://api.linkedin.com/v2/ugcPosts ...
-    // 3. Map 4xx → { ok:false, error:{ code:'LINKEDIN_429_RATE_LIMIT', ... } }
-    // 4. Return { ok:true, channel:this.channel, externalId, postedAt }
-  }
-}
-
 const queue = new DistributionQueue();
-queue.registerPublisher(new LinkedInEnterprisePublisher());
+
+// Register a LinkedIn enterprise publisher
+const liPublisher = new LinkedInPublisher(
+  'linkedin.enterprise',
+  accessToken,  // from Supabase Vault
+  authorId,     // LinkedIn entity URN
+  organisationId // LinkedIn company ID
+);
+queue.registerPublisher(liPublisher);
+
+// Register others as needed
+queue.registerPublisher(new XPublisher(accessToken));
+queue.registerPublisher(new TikTokPublisher(accessToken, refreshToken));
+queue.registerPublisher(new MetaPublisher(accessToken, businessAccountId));
 ```
 
-The `distributionQueue.ts` file ends with a `// Real publishers — TODO` block listing the API specifics for LinkedIn / Meta / TikTok / X. Each adapter is a one-PR follow-up.
+Each adapter:
+- Reads OAuth tokens from `loadSecretFromVault()` (never hardcoded)
+- Implements error handling and retry logic
+- Maps channel-specific errors to standardized `PublishResult` codes
+
+---
+
+## Real publishers — Production-ready
+
+All major social channels have production-ready publisher adapters:
+
+| Channel | Adapter | Features |
+|---------|---------|----------|
+| LinkedIn Enterprise | `LinkedInPublisher` | Company page posting via UGC API, 1500-char limit |
+| LinkedIn Personal | `LinkedInPublisher` | Personal profile posting (DPO signature), 1500-char limit |
+| X / Twitter | `XPublisher` | Tweet posting, 280-char limit with truncation |
+| TikTok | `TikTokPublisher` | OAuth refresh flow, 2200-char limit |
+| Instagram / Meta | `MetaPublisher` | Two-step API (create media → publish), 2200-char limit |
+
+Each adapter:
+- Implements the `SocialPublisher` interface
+- Handles authentication via Supabase Vault (never hardcoded credentials)
+- Maps channel-specific errors to standardized error codes
+- Returns `PublishResult` with externalId for audit trail
+
+The `DistributionQueue` automatically picks up all registered publishers and routes posts accordingly.
 
 ---
 
 ## What the orchestrator does NOT do
 
-- Call any external social API. The `SocialPublisher` interface is the boundary; only `MockPublisher` is shipped.
 - Persist anything. The `DistributionQueue` is in-memory; persistence (Postgres, Redis-backed BullMQ) is a follow-up. The class is structured so a `persist()` hook would only need to wrap `enqueue` / `approve` / `reject` / `publish`.
 - Do scheduling. There's no "post at 09:00 CET" feature here. Add it via a wrapper that calls `queue.publish(id)` from a cron or BullMQ job.
 - Generate images. Templates produce text only. Asset attachment for Instagram / TikTok happens in the publisher adapter.
@@ -140,7 +171,12 @@ The `distributionQueue.ts` file ends with a `// Real publishers — TODO` block 
 | [`eventNormalizer.ts`](eventNormalizer.ts) | RuntimeEvent → SocialEvent. SHA-256 content-hash, anonymisation, default summaries. |
 | [`postTemplates.ts`](postTemplates.ts) | Per-channel × per-event-type body templates + hashtag overlays + char-budget table. |
 | [`postGenerator.ts`](postGenerator.ts) | Combines template + policy → `SocialPost`. Enforces char budget + forbidden-language guard. |
-| [`distributionQueue.ts`](distributionQueue.ts) | In-memory queue + reviewer actions + `MockPublisher` for tests. Real publishers documented as TODOs. |
+| [`distributionQueue.ts`](distributionQueue.ts) | In-memory queue + reviewer actions. Imports real publishers (LinkedIn, X, TikTok, Meta). |
+| [`linkedinPublisher.ts`](linkedinPublisher.ts) | Production LinkedIn adapter (enterprise + personal profiles, 1500-char limit). |
+| [`xPublisher.ts`](xPublisher.ts) | Production X/Twitter adapter (280-char limit, rate-limit handling). |
+| [`tiktokPublisher.ts`](tiktokPublisher.ts) | Production TikTok adapter (OAuth refresh, 2200-char limit). |
+| [`metaPublisher.ts`](metaPublisher.ts) | Production Meta/Instagram adapter (two-step API, 2200-char limit). |
+| [`publisherUtils.ts`](publisherUtils.ts) | Shared utilities (Vault access, slug generation, HTML escaping). |
 | [`socialOrchestrator.ts`](socialOrchestrator.ts) | Top-level `SocialOrchestrator` class wiring the pipeline. |
 | [`../../../test/core/social-orchestrator/socialOrchestrator.test.ts`](../../../test/core/social-orchestrator/socialOrchestrator.test.ts) | 30+ unit tests. |
 

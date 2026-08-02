@@ -38,10 +38,20 @@ try {
 console.log(out);
 
 // Tabellen-Output: "LOCAL | REMOTE | TIME". Remote-only = LOCAL leer, REMOTE gesetzt.
+//
+// ACHTUNG (Fix 2026-08-02): die CLI rahmt jede Zelle in Backticks —
+//     ` `              | `20260720123711` | `2026-07-20 12:37:11`
+// Die vorherige Fassung hat nur getrimmt. Dadurch war cols[0] die Zeichenkette
+// "` `" (also truthy statt leer) und cols[1] "`20260720123711`" (scheitert an
+// /^[0-9]+$/). Beide Bedingungen konnten nie gleichzeitig zutreffen, der Guard
+// hat also IMMER gruen gemeldet — auch am 2026-08-01, als echter Drift in
+// seiner eigenen Ausgabe stand. Zellen daher erst entkleiden, dann pruefen.
+const strip = (c) => c.replace(/`/g, '').trim();
+
 const remoteOnly = [];
 for (const line of out.split('\n')) {
   if (!line.includes('|')) continue;
-  const cols = line.split('|').map((c) => c.trim());
+  const cols = line.split('|').map(strip);
   if (cols.length < 2) continue;
   const local = cols[0];
   const remote = cols[1];
@@ -49,6 +59,24 @@ for (const line of out.split('\n')) {
   if (!local && /^[0-9]+$/.test(remote) && !LEGACY_VERSIONS.has(remote)) {
     remoteOnly.push(remote);
   }
+}
+
+// Wenn keine einzige Datenzeile geparst wurde, hat sich das Ausgabeformat
+// vermutlich erneut geaendert. Still gruen zu melden waere genau der Fehler
+// von oben — deshalb hart failen statt so zu tun, als sei alles geprueft.
+const parsedRows = out
+  .split('\n')
+  .filter((l) => l.includes('|'))
+  .map((l) => l.split('|').map(strip))
+  .filter((c) => c.length >= 2 && (/^[0-9]+$/.test(c[0]) || /^[0-9]+$/.test(c[1])));
+
+if (parsedRows.length === 0) {
+  console.error(
+    '\n❌ Migrations-Drift-Check: keine einzige Versionszeile erkannt.\n' +
+    'Das Ausgabeformat von `supabase migration list` hat sich vermutlich geaendert.\n' +
+    'Nicht als "kein Drift" werten — Parser in scripts/check-migration-drift.mjs pruefen.',
+  );
+  process.exit(1);
 }
 
 if (remoteOnly.length > 0) {

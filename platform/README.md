@@ -127,7 +127,7 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
 cd governance_backend   && pytest    # 41 statt 30
-cd ../builder_orchestrator && pytest # 48 statt 36
+cd ../builder_orchestrator && pytest # 74 statt 62
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -136,6 +136,12 @@ Graph-Aufbau und dynamische Expansion, Zyklusprüfung mit Rückbau,
 Fehler-Propagierung, Retries/Timeout/Cancellation, kein Doppel-Dispatch,
 Idempotenz des Gate-Aufrufs, der Nachweis, dass ein blockiertes Gate keine
 Aktivierung auslöst, sowie Regions- und Modelldrift inklusive Dispatch-Fehlern.
+Für die LLM-Anbindung: die Begrenzung der Reparaturschleife (über die Zahl der
+Provider-Aufrufe nachgewiesen, nicht über das Endergebnis), die Auflösung
+verschachtelter Schemata, die Normalisierung der Modulnamen, die
+Providerauswahl — und, gegen einen lokalen Fake-Endpunkt, die tatsächliche
+Form des Claude-Requests inklusive der Parameter, die auf diesem Modell einen
+400 auslösen würden.
 Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit beider Migrationen,
 dass Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen
 Reconnect überstehen, und dass nebenläufige Tasks sich nicht gegenseitig
@@ -240,12 +246,54 @@ Gate-Katalog je Klasse in `governance_backend/app/services/risk_evaluator.py`
 (`GATES_BY_TIER`). Härte der Gates (blockierend vs. warnend) in
 `gate_engine.py` (`BLOCKING_TIERS`, `ALWAYS_BLOCKING`).
 
+## LLM-Anbindung der Agenten
+
+Planner, Architect und Coder rufen ein echtes Modell auf
+(`builder_orchestrator/app/services/llm.py`). Drei Provider hinter einem
+Vertrag:
+
+| Provider | Wann aktiv | Modell |
+|---|---|---|
+| `anthropic` | `ANTHROPIC_API_KEY` gesetzt | `claude-opus-5`, adaptives Thinking, `effort` je Agent |
+| `ollama` | `OLLAMA_BASE_URL` gesetzt | EU-lokal auf eigener Hardware, ohne US-Anbieter |
+| `stub` | sonst | deterministisch, ohne Netz — `docker compose up` läuft ohne Zugangsdaten |
+
+`LLM_PROVIDER` überschreibt die Erkennung. Welcher Provider läuft, steht unter
+`GET /health` — ein Stack, der versehentlich mit dem Stub produktiv geht, soll
+das nicht verstecken.
+
+**Warum das JSON zweimal abgesichert ist.** Der Modulschnitt des Architects
+wird direkt zu Coder-Tasks; eine halb geparste Antwort würde also den Graphen
+bauen. Deshalb:
+
+1. **Structured Outputs** (`output_config.format`) bei Claude — das Schema
+   kommt aus demselben Pydantic-Modell, gegen das anschließend validiert wird
+   (`app/agents/contracts.py`). Verschachtelte Modelle werden vorher inline
+   aufgelöst und alle Felder als Pflicht markiert (`build_schema`).
+2. **Begrenzte Reparaturschleife** für Provider ohne diese Garantie: Der
+   konkrete Validierungsfehler geht zurück ans Modell — aber nur
+   `LLM_MAX_REPAIRS` mal (Default 1). Ein Modell, das die Form nach dem ersten
+   Hinweis nicht trifft, trifft sie auch nach dem fünften nicht, und jede Runde
+   kostet einen vollen Aufruf.
+
+Modulnamen aus der Modellantwort gehen in Task-IDs ein und werden deshalb
+normalisiert und gedeckelt (`sanitize_modules`, `MAX_MODULES = 12`) — sonst
+bestimmt die Antwort, wie viele parallele Coder-Läufe ein Build auslöst.
+
+Fehlerbilder tragen `retryable`, das der Scheduler ausliest: Ein Netzfehler
+wird wiederholt, eine Ablehnung des Modells (`stop_reason == "refusal"`) und
+ein dauerhaft verletztes Schema nicht. Modell, Provider, Tokens und die Zahl
+der Reparaturrunden landen je Lauf im Prüfpfad.
+
 ## Was noch fehlt (TODO-Marker im Code)
 
-- **LLM-Integration**: `builder_orchestrator/app/agents/*.py` sind Stubs mit
-  fertigen System-Prompts und Output-Verträgen. Der Architect liefert einen
-  festen Platzhalter-Modulschnitt (`auth`, `data`, `ui`), damit der Fan-out im
-  Graph real ist und nicht nur theoretisch.
+- **Echter Build**: Der DevOps-Schritt ruft das Gate auf, führt aber keinen
+  Container-Build aus. Die Artefakt-Flags (`tests_passed`, `pii_scan_passed`,
+  …) stehen deshalb noch fest auf `false` — das Gate blockiert also
+  zuverlässig, aber es prüft noch nichts Gemessenes.
+- **Workspace**: Generierte Dateien liegen im Task-Output (JSONB) statt auf
+  einem Volume. Für einen echten Build brauchen sie einen Pfad.
+- **Token-Budget**: Verbrauch steht im Prüfpfad, bremst aber nichts.
 - **Queue**: Der Scheduler läuft als `asyncio.Task` im selben Prozess. Die
   Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht
   gezogen.

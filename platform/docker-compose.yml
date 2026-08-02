@@ -59,6 +59,16 @@ services:
       # Gesetzt = laufende und abgeschlossene Builds überleben einen Neustart.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
       BUILDER_MAX_CONCURRENCY: "4"
+      # LLM-Provider. Ohne Key antwortet der Stub-Provider deterministisch —
+      # der Stack startet also auch ohne Zugangsdaten, die Agenten liefern
+      # dann leere, aber schema-konforme Ergebnisse. Für echte Läufe den Key
+      # in eine .env legen (nicht ins Repo).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      # EU-lokale Alternative: LLM_PROVIDER=ollama + OLLAMA_BASE_URL setzen.
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      LLM_MAX_REPAIRS: ${LLM_MAX_REPAIRS:-1}
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8001:8001"

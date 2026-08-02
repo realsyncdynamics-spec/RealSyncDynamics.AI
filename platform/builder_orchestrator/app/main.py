@@ -22,7 +22,7 @@ from fastapi.responses import StreamingResponse
 from .clients import rsd_client
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
-from .services import agent_runner, db, events, repository, task_graph
+from .services import agent_runner, db, events, llm, repository, task_graph
 from .services.audit_log import records as audit_records
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -41,6 +41,7 @@ async def lifespan(_: FastAPI):
     if await db.connect():
         await db.apply_migrations(str(MIGRATION))
     repository.select_backend()
+    llm.select_provider()
     try:
         yield
     finally:
@@ -67,11 +68,16 @@ tracer = get_tracer(__name__)
 
 @app.get("/health")
 async def health() -> dict:
-    # `storage` macht sichtbar, ob laufende Builds einen Neustart überleben.
+    # `storage` macht sichtbar, ob laufende Builds einen Neustart überleben,
+    # `llm_provider`, ob wirklich ein Modell antwortet oder der Stub — beides
+    # sind Betriebszustände, die man von außen sehen können muss.
+    provider = llm.get_provider()
     return {
         "status": "ok",
         "service": "builder_orchestrator",
         "storage": "postgres" if db.is_enabled() else "memory",
+        "llm_provider": provider.name,
+        "llm_model": getattr(provider, "model", "?"),
     }
 
 

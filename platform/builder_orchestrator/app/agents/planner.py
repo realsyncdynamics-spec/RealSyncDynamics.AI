@@ -3,14 +3,17 @@
 Input  (task.input): prompt, description, risk_tier, required_gates, target_stack
 Output (task.output): features (JSON-String), open_questions, compliance_notes
 
-TODO(LLM): Prompt-Template unten an einen Claude-Aufruf hängen und die Antwort
-über `validate_json_output` gegen ein Schema prüfen. Provider-Auswahl über ENV
-(EU-lokal: Ollama als Fallback).
+Der erste Knoten des Graphen und damit der einzige, der den Nutzerwunsch im
+Original sieht. Alles Folgende arbeitet auf seinem Ergebnis.
 """
 
 from __future__ import annotations
 
+import json
+
 from ..schemas import AgentResult, AgentTask, TaskGraph
+from ..services.llm import complete_json
+from .contracts import PlannerOutput
 
 SYSTEM_PROMPT = """Du bist der Planner-Agent eines AI-App-Builders.
 Zerlege die Nutzeranfrage in ein umsetzbares Feature-Backlog.
@@ -20,20 +23,44 @@ Antworte ausschließlich als JSON mit den Schlüsseln:
 features[], open_questions[], compliance_notes[]."""
 
 
+def _user_prompt(task: AgentTask) -> str:
+    return (
+        f"Projektbeschreibung: {task.input.get('description', '')}\n"
+        f"Nutzeranfrage: {task.input.get('prompt', '')}\n"
+        f"Ziel-Stack: {task.input.get('target_stack', 'nextjs_supabase')}\n"
+        f"Rechtsraum: {task.input.get('jurisdiction', 'eu')}\n"
+        f"Risikoklasse (EU AI Act): {task.input.get('risk_tier', 'minimal')}\n"
+        f"Verpflichtende Gates: {task.input.get('required_gates', '')}\n\n"
+        "Erzeuge das Feature-Backlog."
+    )
+
+
 async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
-    prompt = task.input.get("prompt", "")
     risk_tier = task.input.get("risk_tier", "minimal")
 
-    # TODO(LLM): Ersetzen durch echten Modellaufruf:
-    #   raw = await llm.complete(system=SYSTEM_PROMPT, user=prompt, ...)
-    #   data = validate_json_output(raw, PlannerOutput)   # mit Repair-Versuch
+    plan, response = await complete_json(
+        system=SYSTEM_PROMPT,
+        user=_user_prompt(task),
+        model_cls=PlannerOutput,
+        # Der Modulschnitt und alle Folgeschritte hängen an diesem Ergebnis —
+        # hier zu sparen verteuert jeden nachgelagerten Lauf.
+        effort="high",
+    )
+
+    # Der Prüfpfad muss belegen können, dass die Risikoklasse berücksichtigt
+    # wurde — auch wenn das Modell von sich aus nichts dazu geschrieben hat.
+    notes = list(plan.compliance_notes)
+    notes.append(f"Risikoklasse {risk_tier} — Gates: {task.input.get('required_gates', '')}")
+
     return AgentResult(
         output={
-            "status": "stub",
-            "features": "[]",
-            "open_questions": "[]",
-            "compliance_notes": f"Risikoklasse {risk_tier} — Gates: {task.input.get('required_gates', '')}",
-            "echo_prompt": prompt[:200],
+            "status": "ok",
+            "features": json.dumps(
+                [feature.model_dump() for feature in plan.features], ensure_ascii=False
+            ),
+            "open_questions": json.dumps(plan.open_questions, ensure_ascii=False),
+            "compliance_notes": json.dumps(notes, ensure_ascii=False),
+            "feature_count": str(len(plan.features)),
         },
-        metrics={"model": "stub", "tokens_in": "0", "tokens_out": "0"},
+        metrics=response.as_metrics(),
     )

@@ -750,7 +750,9 @@ export const PLANS: Plan[] = [
     purchaseMode: 'inquiry',
     highlight: false,
     badges: ['Reseller', 'Multi Tenant'],
-    ctaLabel: 'Partner-Gespräch anfragen',
+    // „Partner anfragen" folgt CTA.enterprise aus runtimeVocab.ts. Formen wie
+    // „Partner-Gespräch" sind als Sales-Sprache untersagt (CI_FORBIDDEN_CTA).
+    ctaLabel: 'Partner anfragen',
     limits: {
       bots: 50,
       answersPerMonth: 100_000,

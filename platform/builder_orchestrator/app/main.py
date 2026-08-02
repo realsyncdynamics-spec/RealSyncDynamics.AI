@@ -21,6 +21,7 @@ from fastapi.responses import StreamingResponse
 
 from . import auth
 from .clients import rsd_client
+from .middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
 from .services import agent_runner, budget, db, events, llm, repository, task_graph
@@ -62,6 +63,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Sicherheits-Middlewares (Reihenfolge: SecurityHeaders → RateLimit → App)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 
 setup_tracing(app, service_name="builder_orchestrator")
 tracer = get_tracer(__name__)

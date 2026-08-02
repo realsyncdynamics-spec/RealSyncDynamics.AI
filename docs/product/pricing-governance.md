@@ -104,6 +104,23 @@ Starter ausgewiesen, in der Navigation aber erst ab Agency sichtbar.
 - Der Webhook normalisiert jeden eingehenden Plan-Key, bevor er in
   `subscriptions.plan_key` landet.
 
+### Katalog abgleichen
+
+```
+STRIPE_SECRET_KEY=sk_test_… npm run stripe:diff   # nur Diff, schreibt nichts
+STRIPE_SECRET_KEY=sk_test_… npm run stripe:sync   # wendet an
+```
+
+Erst gegen den Testmodus, dann gegen Live. Das Skript ist idempotent und
+setzt `metadata.plan_key` auf Produkten und Preisen, benennt Produkte
+passend zum Katalog und legt fehlende Preise an.
+
+Bewusst **nicht** automatisiert: Beträge bestehender Preise ändern (Stripe-
+Preise sind unveränderlich — das wäre ein neuer Preis plus Migration
+laufender Abos, also eine Geschäftsentscheidung), Produkte oder Preise
+deaktivieren, bestehende Subscriptions umstellen. Solche Fälle meldet das
+Skript als Hinweis.
+
 ## API
 
 `GET /functions/v1/plans` liefert den Katalog. Jeder Plan hat dieselbe

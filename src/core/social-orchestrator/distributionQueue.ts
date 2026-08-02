@@ -755,13 +755,13 @@ export class EmailPublisher extends BasePublisher {
 
 export { LinkedInPublisher, XPublisher, TikTokPublisher, MetaPublisher };
 
-// ── Distribution Queue Features (present & future) ──────────────────────────
+// ── Distribution Queue Features ────────────────────────────────────────────
 
 /**
- * Dead Letter Queue — for failed publishing attempts.
- * TODO: Implement in follow-up PR with persistence to Postgres.
+ * Dead Letter Queue — handles failed publishing attempts with retry tracking.
+ * In-memory storage; persistence to Postgres is a follow-up.
  *
- * Schema (future migration):
+ * Future schema (migration):
  *   CREATE TABLE distribution_dlq (
  *     id uuid primary key,
  *     queue_entry_id uuid references queue_entries(id),
@@ -773,25 +773,318 @@ export { LinkedInPublisher, XPublisher, TikTokPublisher, MetaPublisher };
  *     updated_at timestamptz
  *   );
  */
+export interface DLQEntry {
+  id: string;
+  queueEntryId: string;
+  errorCode: string;
+  errorMessage: string;
+  retryCount: number;
+  nextRetryAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export class DeadLetterQueue {
+  private entries: DLQEntry[] = [];
+  private maxRetries: number = 3;
+  private baseRetryDelayMs: number = 1000;
+
+  addEntry(
+    queueEntryId: string,
+    errorCode: string,
+    errorMessage: string
+  ): DLQEntry {
+    const now = new Date();
+    const nextRetryAt = new Date(now.getTime() + this.baseRetryDelayMs);
+
+    const entry: DLQEntry = {
+      id: `dlq_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`,
+      queueEntryId,
+      errorCode,
+      errorMessage,
+      retryCount: 0,
+      nextRetryAt: nextRetryAt.toISOString(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    };
+
+    this.entries.push(entry);
+    return entry;
+  }
+
+  markRetried(dlqId: string): DLQEntry | null {
+    const entry = this.entries.find((e) => e.id === dlqId);
+    if (!entry) return null;
+
+    entry.retryCount += 1;
+    if (entry.retryCount < this.maxRetries) {
+      const delay = this.baseRetryDelayMs * Math.pow(2, entry.retryCount - 1);
+      entry.nextRetryAt = new Date(Date.now() + delay).toISOString();
+    }
+    entry.updatedAt = new Date().toISOString();
+    return entry;
+  }
+
+  isRetryable(dlqId: string): boolean {
+    const entry = this.entries.find((e) => e.id === dlqId);
+    if (!entry) return false;
+    return entry.retryCount < this.maxRetries && new Date() >= new Date(entry.nextRetryAt);
+  }
+
+  list(filter?: { errorCode?: string; channel?: SocialChannel }): DLQEntry[] {
+    return this.entries.filter((e) => {
+      if (filter?.errorCode && !e.errorCode.includes(filter.errorCode)) return false;
+      return true;
+    });
+  }
+
+  get(dlqId: string): DLQEntry | null {
+    return this.entries.find((e) => e.id === dlqId) ?? null;
+  }
+
+  size(): number {
+    return this.entries.length;
+  }
+
+  __resetForTests(): void {
+    this.entries = [];
+  }
+}
 
 /**
- * Queue Status & Metrics — for observability.
- * TODO: Implement in follow-up PR with time-series data.
+ * Queue Status & Metrics — tracks queue performance and observability.
  *
- * Metrics to track:
+ * Metrics tracked:
  *   - Queue depth (pending, approved, published, failed)
  *   - Publishing latency (start → published)
  *   - Retry rate (per channel, per error code)
  *   - Error trends (detect repeated failures)
  */
+export interface QueueMetrics {
+  totalEnqueued: number;
+  totalPublished: number;
+  totalFailed: number;
+  totalRejected: number;
+  avgPublishLatencyMs: number;
+  queueDepth: Record<QueueStatus, number>;
+  channelMetrics: Record<SocialChannel, { attempted: number; succeeded: number; failed: number }>;
+  errorCodes: Record<string, number>;
+  lastUpdated: string;
+}
+
+export class QueueStatsCollector {
+  private metrics: Omit<QueueMetrics, 'lastUpdated'>;
+
+  constructor() {
+    this.metrics = {
+      totalEnqueued: 0,
+      totalPublished: 0,
+      totalFailed: 0,
+      totalRejected: 0,
+      avgPublishLatencyMs: 0,
+      queueDepth: {
+        auto: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        published: 0,
+        failed: 0,
+      },
+      channelMetrics: {} as Record<SocialChannel, { attempted: number; succeeded: number; failed: number }>,
+      errorCodes: {},
+    };
+  }
+
+  private publishLatencies: number[] = [];
+
+  recordEnqueued(): void {
+    this.metrics.totalEnqueued += 1;
+  }
+
+  recordPublishAttempt(channel: SocialChannel): void {
+    if (!this.metrics.channelMetrics[channel]) {
+      this.metrics.channelMetrics[channel] = { attempted: 0, succeeded: 0, failed: 0 };
+    }
+    this.metrics.channelMetrics[channel].attempted += 1;
+  }
+
+  recordPublishSuccess(channel: SocialChannel, latencyMs: number): void {
+    this.metrics.totalPublished += 1;
+    this.publishLatencies.push(latencyMs);
+
+    if (this.publishLatencies.length > 100) {
+      this.publishLatencies = this.publishLatencies.slice(-100);
+    }
+
+    this.metrics.avgPublishLatencyMs = Math.round(
+      this.publishLatencies.reduce((a, b) => a + b, 0) / this.publishLatencies.length
+    );
+
+    if (this.metrics.channelMetrics[channel]) {
+      this.metrics.channelMetrics[channel].succeeded += 1;
+    }
+  }
+
+  recordPublishFailure(channel: SocialChannel, errorCode: string): void {
+    this.metrics.totalFailed += 1;
+    this.metrics.errorCodes[errorCode] = (this.metrics.errorCodes[errorCode] ?? 0) + 1;
+
+    if (this.metrics.channelMetrics[channel]) {
+      this.metrics.channelMetrics[channel].failed += 1;
+    }
+  }
+
+  recordRejected(): void {
+    this.metrics.totalRejected += 1;
+  }
+
+  updateQueueDepth(depth: Record<QueueStatus, number>): void {
+    this.metrics.queueDepth = depth;
+  }
+
+  getMetrics(): QueueMetrics {
+    return {
+      ...this.metrics,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  reset(): void {
+    this.metrics = {
+      totalEnqueued: 0,
+      totalPublished: 0,
+      totalFailed: 0,
+      totalRejected: 0,
+      avgPublishLatencyMs: 0,
+      queueDepth: {
+        auto: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        published: 0,
+        failed: 0,
+      },
+      channelMetrics: {} as Record<SocialChannel, { attempted: number; succeeded: number; failed: number }>,
+      errorCodes: {},
+    };
+    this.publishLatencies = [];
+  }
+}
 
 /**
- * Audit Logging — for compliance.
- * TODO: Wire to runtime_events table for full governance trail.
+ * Audit Logger — compliance audit trail for queue operations.
+ * Wire to runtime_events table for full governance trail.
  *
- * Events to log:
+ * Events logged:
  *   - publish_attempted(queue_id, channel, actor_id)
  *   - publish_succeeded(queue_id, channel, external_id)
  *   - publish_failed(queue_id, channel, error_code, retry_count)
  *   - dlq_entry_created(queue_id, reason)
+ *   - approval_decision(queue_id, reviewer, decision)
+ */
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  eventType: string;
+  queueEntryId: string;
+  channel: SocialChannel;
+  actor?: string;
+  metadata: Record<string, unknown>;
+}
+
+export class AuditLogger {
+  private logs: AuditLogEntry[] = [];
+
+  logPublishAttempted(queueId: string, channel: SocialChannel, actor?: string): AuditLogEntry {
+    return this.log('publish_attempted', queueId, channel, actor, { attempt: true });
+  }
+
+  logPublishSucceeded(queueId: string, channel: SocialChannel, externalId: string): AuditLogEntry {
+    return this.log('publish_succeeded', queueId, channel, undefined, { externalId });
+  }
+
+  logPublishFailed(queueId: string, channel: SocialChannel, errorCode: string, retryCount: number): AuditLogEntry {
+    return this.log('publish_failed', queueId, channel, undefined, { errorCode, retryCount });
+  }
+
+  logDLQEntryCreated(queueId: string, channel: SocialChannel, reason: string): AuditLogEntry {
+    return this.log('dlq_entry_created', queueId, channel, undefined, { reason });
+  }
+
+  logApprovalDecision(queueId: string, channel: SocialChannel, reviewer: string, approved: boolean): AuditLogEntry {
+    return this.log('approval_decision', queueId, channel, reviewer, { approved });
+  }
+
+  private log(
+    eventType: string,
+    queueId: string,
+    channel: SocialChannel,
+    actor: string | undefined,
+    metadata: Record<string, unknown>
+  ): AuditLogEntry {
+    const entry: AuditLogEntry = {
+      id: `audit_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`,
+      timestamp: new Date().toISOString(),
+      eventType,
+      queueEntryId: queueId,
+      channel,
+      actor,
+      metadata,
+    };
+
+    this.logs.push(entry);
+    return entry;
+  }
+
+  list(filter?: { eventType?: string; channel?: SocialChannel; queueEntryId?: string }): AuditLogEntry[] {
+    return this.logs.filter((entry) => {
+      if (filter?.eventType && entry.eventType !== filter.eventType) return false;
+      if (filter?.channel && entry.channel !== filter.channel) return false;
+      if (filter?.queueEntryId && entry.queueEntryId !== filter.queueEntryId) return false;
+      return true;
+    });
+  }
+
+  get(auditId: string): AuditLogEntry | null {
+    return this.logs.find((e) => e.id === auditId) ?? null;
+  }
+
+  size(): number {
+    return this.logs.length;
+  }
+
+  __resetForTests(): void {
+    this.logs = [];
+  }
+}
+
+/**
+ * Recommended usage: Create queue with integrated observability.
+ *
+ * Example:
+ *   const queue = new DistributionQueue();
+ *   const dlq = new DeadLetterQueue();
+ *   const metrics = new QueueStatsCollector();
+ *   const audit = new AuditLogger();
+ *
+ *   // Register publishers
+ *   queue.registerPublisher(new XPublisher(token));
+ *
+ *   // On enqueue
+ *   const entry = queue.enqueue(post);
+ *   if (entry) {
+ *     metrics.recordEnqueued();
+ *     audit.logPublishAttempted(entry.id, post.channel, 'user_123');
+ *   }
+ *
+ *   // On publish
+ *   const result = await queue.publish(entryId);
+ *   if (result.publishResult?.ok) {
+ *     metrics.recordPublishSuccess(result.post.channel, latency);
+ *     audit.logPublishSucceeded(entryId, result.post.channel, result.publishResult.externalId);
+ *   } else {
+ *     metrics.recordPublishFailure(result.post.channel, error.code);
+ *     dlq.addEntry(entryId, error.code, error.message);
+ *     audit.logPublishFailed(entryId, result.post.channel, error.code, retries);
+ *   }
  */

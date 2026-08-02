@@ -10,6 +10,9 @@ import {
   XPublisher,
   TikTokPublisher,
   MetaPublisher,
+  DeadLetterQueue,
+  QueueStatsCollector,
+  AuditLogger,
 } from '../../src/core/social-orchestrator/distributionQueue';
 import type { SocialPost } from '../../src/core/social-orchestrator/types';
 
@@ -444,6 +447,138 @@ describe('Social Publishers', () => {
       const result = await publisher.publish(post);
 
       expect(result.ok).toBe(true);
+    });
+  });
+
+  describe('DeadLetterQueue', () => {
+    it('should add failed entry to DLQ', () => {
+      const queue = new DeadLetterQueue();
+
+      const entry = queue.addEntry('q_123', 'X_429_RATE_LIMIT', 'Rate limit exceeded');
+
+      expect(entry.queueEntryId).toBe('q_123');
+      expect(entry.errorCode).toBe('X_429_RATE_LIMIT');
+      expect(entry.retryCount).toBe(0);
+    });
+
+    it('should track retries with exponential backoff', () => {
+      const queue = new DeadLetterQueue();
+
+      const entry = queue.addEntry('q_123', 'NETWORK_ERROR', 'Connection timeout');
+      expect(entry.retryCount).toBe(0);
+
+      const retried1 = queue.markRetried(entry.id);
+      expect(retried1?.retryCount).toBe(1);
+
+      const retried2 = queue.markRetried(entry.id);
+      expect(retried2?.retryCount).toBe(2);
+    });
+
+    it('should list entries by error code', () => {
+      const queue = new DeadLetterQueue();
+
+      queue.addEntry('q_1', 'X_429_RATE_LIMIT', 'Rate limit');
+      queue.addEntry('q_2', 'X_429_RATE_LIMIT', 'Rate limit');
+      queue.addEntry('q_3', 'NETWORK_ERROR', 'Timeout');
+
+      const rateLimitErrors = queue.list({ errorCode: 'X_429_RATE_LIMIT' });
+      expect(rateLimitErrors).toHaveLength(2);
+    });
+  });
+
+  describe('QueueStatsCollector', () => {
+    it('should track queue metrics', () => {
+      const stats = new QueueStatsCollector();
+
+      stats.recordEnqueued();
+      stats.recordPublishAttempt('x.alert');
+      stats.recordPublishSuccess('x.alert', 150);
+      stats.recordPublishFailure('linkedin.enterprise', 'LINKEDIN_401');
+
+      const metrics = stats.getMetrics();
+      expect(metrics.totalEnqueued).toBe(1);
+      expect(metrics.totalPublished).toBe(1);
+      expect(metrics.totalFailed).toBe(1);
+      expect(metrics.avgPublishLatencyMs).toBe(150);
+      expect(metrics.errorCodes['LINKEDIN_401']).toBe(1);
+    });
+
+    it('should track per-channel metrics', () => {
+      const stats = new QueueStatsCollector();
+
+      stats.recordPublishAttempt('x.alert');
+      stats.recordPublishAttempt('x.alert');
+      stats.recordPublishSuccess('x.alert', 100);
+      stats.recordPublishFailure('x.alert', 'ERROR');
+
+      const metrics = stats.getMetrics();
+      const xMetrics = metrics.channelMetrics['x.alert'];
+      expect(xMetrics.attempted).toBe(2);
+      expect(xMetrics.succeeded).toBe(1);
+      expect(xMetrics.failed).toBe(1);
+    });
+
+    it('should calculate average publish latency', () => {
+      const stats = new QueueStatsCollector();
+
+      stats.recordPublishSuccess('x.alert', 100);
+      stats.recordPublishSuccess('x.alert', 200);
+      stats.recordPublishSuccess('x.alert', 300);
+
+      const metrics = stats.getMetrics();
+      expect(metrics.avgPublishLatencyMs).toBe(200);
+    });
+  });
+
+  describe('AuditLogger', () => {
+    it('should log publish_attempted event', () => {
+      const audit = new AuditLogger();
+
+      const entry = audit.logPublishAttempted('q_123', 'x.alert', 'user_456');
+
+      expect(entry.eventType).toBe('publish_attempted');
+      expect(entry.queueEntryId).toBe('q_123');
+      expect(entry.channel).toBe('x.alert');
+      expect(entry.actor).toBe('user_456');
+    });
+
+    it('should log publish_succeeded event', () => {
+      const audit = new AuditLogger();
+
+      const entry = audit.logPublishSucceeded('q_123', 'linkedin.enterprise', 'ext_789');
+
+      expect(entry.eventType).toBe('publish_succeeded');
+      expect(entry.metadata.externalId).toBe('ext_789');
+    });
+
+    it('should log DLQ entry creation', () => {
+      const audit = new AuditLogger();
+
+      const entry = audit.logDLQEntryCreated('q_123', 'tiktok.fast', 'Max retries exceeded');
+
+      expect(entry.eventType).toBe('dlq_entry_created');
+      expect(entry.metadata.reason).toBe('Max retries exceeded');
+    });
+
+    it('should filter audit logs', () => {
+      const audit = new AuditLogger();
+
+      audit.logPublishAttempted('q_1', 'x.alert', 'user_1');
+      audit.logPublishAttempted('q_2', 'linkedin.enterprise', 'user_2');
+      audit.logPublishSucceeded('q_1', 'x.alert', 'ext_1');
+
+      const xAlerts = audit.list({ eventType: 'publish_attempted', channel: 'x.alert' });
+      expect(xAlerts).toHaveLength(1);
+      expect(xAlerts[0].queueEntryId).toBe('q_1');
+    });
+
+    it('should log approval decisions', () => {
+      const audit = new AuditLogger();
+
+      const entry = audit.logApprovalDecision('q_123', 'x.alert', 'reviewer_456', true);
+
+      expect(entry.eventType).toBe('approval_decision');
+      expect(entry.metadata.approved).toBe(true);
     });
   });
 

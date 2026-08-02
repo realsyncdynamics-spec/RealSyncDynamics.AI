@@ -108,12 +108,27 @@ async function renderRoute(browser, route) {
   }
 }
 
-// ─── Write HTML to dist/<route>/index.html ───────────────────────────────────
+// ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
+//
+// Flaches `<route>.html` statt `<route>/index.html` — das ist kein
+// Geschmacksdetail, sondern entscheidet ueber den HTTP-Status der
+// Sitemap-URLs:
+//
+//   dist/pricing/index.html → Cloudflare Pages antwortet auf /pricing mit
+//                             308 auf /pricing/ (Directory-Index-Normali-
+//                             sierung). Sitemap und <link rel=canonical>
+//                             zeigen aber auf /pricing ohne Slash — jede
+//                             Sitemap-URL waere damit eine Weiterleitung.
+//   dist/pricing.html       → /pricing wird direkt mit 200 ausgeliefert.
+//
+// Verifiziert am Cloudflare-Pages-Preview-Deployment von PR #947.
+// nginx (VPS/Docker) deckt beide Layouts ab, seit `$uri.html` in den
+// try_files-Ketten steht (deploy/**/nginx.conf, docker/**/nginx.conf).
 async function writeRoute(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/$/, '');
   const target = cleanRoute === ''
     ? join(DIST, 'index.html')
-    : join(DIST, cleanRoute, 'index.html');
+    : join(DIST, `${cleanRoute}.html`);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html, 'utf8');
 }

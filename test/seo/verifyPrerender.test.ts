@@ -56,8 +56,7 @@ describe('verify-prerender', () => {
     await mkdir(dist, { recursive: true });
     await writeFile(join(dist, 'index.html'), SHELL);
     for (const route of ['pricing', 'ai-act', 'faq', 'security', 'trust', 'docs']) {
-      await mkdir(join(dist, route), { recursive: true });
-      await writeFile(join(dist, route, 'index.html'), SHELL);
+      await writeFile(join(dist, `${route}.html`), SHELL);
     }
 
     const { code, out } = runVerify(dist);
@@ -73,9 +72,7 @@ describe('verify-prerender', () => {
 
     // Über der MIN_ROUTES-Schwelle (20) bleiben, sonst greift Check 2.
     for (let i = 0; i < 25; i++) {
-      const route = `route-${i}`;
-      await mkdir(join(dist, route), { recursive: true });
-      await writeFile(join(dist, route, 'index.html'), rendered(`Seite ${i}`, `Überschrift ${i}`));
+      await writeFile(join(dist, `route-${i}.html`), rendered(`Seite ${i}`, `Überschrift ${i}`));
     }
 
     const { code, out } = runVerify(dist);
@@ -89,9 +86,7 @@ describe('verify-prerender', () => {
     await mkdir(dist, { recursive: true });
     await writeFile(join(dist, 'index.html'), rendered('Immergleich', 'Startseite'));
     for (let i = 0; i < 25; i++) {
-      const route = `route-${i}`;
-      await mkdir(join(dist, route), { recursive: true });
-      await writeFile(join(dist, route, 'index.html'), rendered('Immergleich', `Überschrift ${i}`));
+      await writeFile(join(dist, `route-${i}.html`), rendered('Immergleich', `Überschrift ${i}`));
     }
 
     const { code, out } = runVerify(dist);

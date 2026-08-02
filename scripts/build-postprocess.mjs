@@ -173,9 +173,14 @@ async function sitemapRoutes() {
 }
 
 /**
- * Fuer jede Route einen Ordner mit index.html anlegen. Bereits
- * prerenderte Dateien werden NICHT ueberschrieben — die enthalten den
- * echten Content und sind genau das, was wir schuetzen wollen.
+ * Fuer jede Route eine `<route>.html` anlegen. Bereits prerenderte
+ * Dateien werden NICHT ueberschrieben — die enthalten den echten Content
+ * und sind genau das, was wir schuetzen wollen.
+ *
+ * Flaches Layout statt `<route>/index.html`: Cloudflare Pages wuerde bei
+ * Directory-Indizes /pricing per 308 auf /pricing/ normalisieren, waehrend
+ * Sitemap und Canonical auf die Variante ohne Slash zeigen. Siehe die
+ * ausfuehrliche Begruendung in scripts/prerender.mjs → writeRoute().
  */
 async function fillSpaFallback() {
   const src = join(DIST, 'index.html');
@@ -184,7 +189,7 @@ async function fillSpaFallback() {
   let filled = 0;
   let keptPrerendered = 0;
   for (const route of routes) {
-    const dest = join(DIST, route, 'index.html');
+    const dest = join(DIST, `${route}.html`);
     if (await exists(dest)) {
       keptPrerendered++;
       continue;

@@ -65,7 +65,16 @@ function title(html) {
   return /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim() ?? null;
 }
 
-/** Alle dist/**\/index.html einsammeln — ohne fs.glob (Node-Version-agnostisch). */
+/**
+ * Alle HTML-Seiten in dist/ einsammeln — ohne fs.glob (Node-agnostisch).
+ *
+ * Erfasst beide Layouts: das flache `<route>.html` (aktuell, siehe
+ * prerender.mjs → writeRoute) und `<route>/index.html` (Alt-Layout, falls
+ * noch Reste eines frueheren Builds herumliegen).
+ *
+ * 404.html bleibt aussen vor: das IST bewusst der SPA-Shell und wuerde den
+ * Content-Check sonst faelschlich rot faerben.
+ */
 async function collectPages(dir, base = '') {
   const { readdir } = await import('node:fs/promises');
   const out = [];
@@ -74,8 +83,12 @@ async function collectPages(dir, base = '') {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       out.push(...(await collectPages(full, `${base}/${entry.name}`)));
+    } else if (entry.name === '404.html') {
+      continue;
     } else if (entry.name === 'index.html') {
       out.push({ route: base || '/', file: full });
+    } else if (entry.name.endsWith('.html')) {
+      out.push({ route: `${base}/${entry.name.replace(/\.html$/, '')}`, file: full });
     }
   }
   return out;

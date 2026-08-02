@@ -40,4 +40,27 @@ DROP INDEX IF EXISTS public.idx_governance_events_risk;
 
 -- Fix function_search_path_mutable WARN: pin search_path so the trigger
 -- function can't be hijacked via a mutable search_path.
-ALTER FUNCTION public.bots_touch_updated_at() SET search_path = '';
+--
+-- ABWEICHUNG vom Prod-Original (bewusst, 2026-08-02):
+-- In Prod steht hier ein nacktes
+--     ALTER FUNCTION public.bots_touch_updated_at() SET search_path = '';
+-- Das laeuft dort, weil `bots_touch_updated_at()` von der NUR-IN-PROD
+-- angewendeten Migration 20260628121531 (bots_foundation) stammt. Die im Repo
+-- committete Variante 20260628120000_bots_foundation.sql legt diese Funktion
+-- NICHT an — sie nutzt stattdessen `update_modified_column()`. Die beiden
+-- bots-Staende sind also inhaltlich verschieden, nicht nur unterschiedlich
+-- getimestamped.
+--
+-- Ungeschuetzt bricht daher jeder `supabase db reset` / `npm run test:db` mit
+--     ERROR: function public.bots_touch_updated_at() does not exist
+-- Der Guard haelt die Migration in beiden Welten lauffaehig: in Prod pinnt sie
+-- weiterhin den search_path, lokal wird sie uebersprungen. Sobald die
+-- bots-Divergenz aufgeloest ist (siehe docs/runtime/PRODUCTION_BLOCKERS.md,
+-- Blocker 2), kann der Guard wieder entfallen.
+DO $$
+BEGIN
+  IF to_regprocedure('public.bots_touch_updated_at()') IS NOT NULL THEN
+    ALTER FUNCTION public.bots_touch_updated_at() SET search_path = '';
+  END IF;
+END
+$$;

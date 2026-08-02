@@ -126,12 +126,31 @@ This is correct under either resolution option below.
 timestamps. Zero prod mutation; repo ends up with duplicate near-identical bots
 migrations.
 
-**Option B — repair the duplicates (cleaner).** `migration repair --status
-reverted` only deletes the history row, it runs no down-migration, so the
-already-created bots objects are untouched. The committed
-`20260628120000/120100/120200` files then apply cleanly — verified idempotent
-(16/16 `CREATE ... IF NOT EXISTS`; all 10 `CREATE POLICY` preceded by a matching
-`DROP POLICY IF EXISTS`).
+**Option B — repair the duplicates.** `migration repair --status reverted` only
+deletes the history row, it runs no down-migration, so the already-created bots
+objects are untouched. The committed `20260628120000/120100/120200` files are
+idempotent (16/16 `CREATE ... IF NOT EXISTS`; all 10 `CREATE POLICY` preceded by
+a matching `DROP POLICY IF EXISTS`), so they would apply without erroring.
+
+> ⚠️ **Option B would NOT reproduce prod — the two bots lineages have diverged in
+> substance, not just in timestamp.** Discovered 2026-08-02 via a CI failure on
+> the recovered `20260720123325`:
+>
+> - committed `20260628120000_bots_foundation.sql` → triggers use
+>   `update_modified_column()`
+> - prod-only `20260628121531_bots_foundation` → triggers use
+>   `bots_touch_updated_at()`
+>
+> `bots_touch_updated_at()` is created by **no** committed migration. That is why
+> a fresh `supabase db reset` died with
+> `ERROR: function public.bots_touch_updated_at() does not exist`.
+>
+> So Option B does not merely tidy history — it would swap the trigger
+> implementation underneath the bots tables. Before choosing it, diff the two
+> `bots_foundation` bodies (the prod SQL is in
+> `supabase_migrations.schema_migrations`, 9309 bytes vs the 8843-byte re-apply)
+> and decide which implementation is the intended one. **Option A is the safer
+> default** precisely because it preserves what is actually running.
 
 ```bash
 supabase link --project-ref ebljyceifhnlzhjfyxup

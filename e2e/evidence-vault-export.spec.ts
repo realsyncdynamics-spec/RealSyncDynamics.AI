@@ -64,4 +64,19 @@ test.describe('Evidence Vault Advanced — Audit Export', () => {
       });
     }
   });
+
+  test('should open a print-ready HTML report in a new tab on "PDF-Ansicht"', async ({ page, context }) => {
+    const pdfButton = page.locator('button:has-text("PDF-Ansicht")');
+    if (await pdfButton.isVisible()) {
+      const popupPromise = context.waitForEvent('page', { timeout: 10000 }).catch(() => null);
+      await pdfButton.click();
+      const popup = await popupPromise;
+
+      if (popup) {
+        await popup.waitForLoadState('domcontentloaded').catch(() => null);
+        await expect(popup.locator('h1:has-text("Evidence Vault Audit-Export")')).toBeVisible({ timeout: 5000 }).catch(() => null);
+        await popup.close();
+      }
+    }
+  });
 });

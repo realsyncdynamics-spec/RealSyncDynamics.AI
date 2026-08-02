@@ -90,12 +90,17 @@ def build_graph(spec: BuildSpec, project: GovernanceContext) -> TaskGraph:
     return graph
 
 
-def spawn_coder_tasks(graph: TaskGraph, spawner_id: str, modules: List[str]) -> List[AgentTask]:
-    """Hängt je Modul eine Coder-Task ein (vom Architect aufgerufen)."""
+def build_coder_tasks(graph: TaskGraph, spawner_id: str, modules: List[str]) -> List[AgentTask]:
+    """Baut je Modul eine Coder-Task — **ohne** sie einzuhängen.
+
+    Der Architect gibt sie über `AgentResult.spawn` zurück; einhängen und
+    persistieren macht der Scheduler. Würde der Agent selbst einhängen, hätte
+    der Scheduler keine Gelegenheit, die neuen Zeilen zu schreiben.
+    """
     spawner = graph.by_id(spawner_id)
     base_input = dict(spawner.input) if spawner else {}
 
-    new_tasks = [
+    return [
         AgentTask(
             id=f"task_coder:{module}",
             agent_type="coder",
@@ -105,7 +110,11 @@ def spawn_coder_tasks(graph: TaskGraph, spawner_id: str, modules: List[str]) -> 
         )
         for module in modules
     ]
-    return graph.insert_spawned(spawner_id, new_tasks)
+
+
+def spawn_coder_tasks(graph: TaskGraph, spawner_id: str, modules: List[str]) -> List[AgentTask]:
+    """Baut die Coder-Tasks und hängt sie direkt ein (für Tests und Skripte)."""
+    return graph.insert_spawned(spawner_id, build_coder_tasks(graph, spawner_id, modules))
 
 
 async def get_graph(project_id: str) -> Optional[TaskGraph]:
@@ -113,7 +122,25 @@ async def get_graph(project_id: str) -> Optional[TaskGraph]:
 
 
 async def save_graph(graph: TaskGraph) -> None:
+    """Schreibt den kompletten Graphen (Anlage, Expansion)."""
     await get_repository().save(graph)
+
+
+async def save_task(project_id: str, task: AgentTask) -> None:
+    """Schreibt genau eine Task — der Normalfall im Scheduler.
+
+    Wichtig gegenüber `save_graph`: Zwei nebenläufige Tasks würden sich beim
+    Zurückschreiben des ganzen Graphen gegenseitig überschreiben.
+    """
+    await get_repository().save_task(project_id, task)
+
+
+async def save_tasks(project_id: str, tasks: List[AgentTask]) -> None:
+    await get_repository().save_tasks(project_id, tasks)
+
+
+async def set_cancelled(project_id: str, cancelled: bool = True) -> None:
+    await get_repository().set_cancelled(project_id, cancelled)
 
 
 def reset() -> None:

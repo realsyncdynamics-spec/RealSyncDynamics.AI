@@ -145,7 +145,7 @@ async def cancel_graph(project_id: str) -> Optional[TaskGraph]:
         return None
 
     graph.cancelled = True
-    await task_graph.save_graph(graph)
+    await task_graph.set_cancelled(project_id, True)
 
     # Läuft gerade kein Scheduler, muss hier direkt aufgeräumt werden.
     if not _INFLIGHT.get(project_id):
@@ -267,7 +267,13 @@ async def _run_task(project_id: str, task_id: str) -> None:
         if result.spawn:
             graph.insert_spawned(task.id, result.spawn)
 
-        await _persist(graph, task)
+        if result.spawn:
+            # Neue Tasks und die umgehängten Abhängigkeiten betreffen mehrere
+            # Zeilen — hier ist der Vollschreibvorgang der richtige.
+            await task_graph.save_graph(graph)
+            _publish(graph.project_id, task)
+        else:
+            await _persist(graph, task)
         return
 
 
@@ -294,12 +300,15 @@ async def _fail(graph: TaskGraph, task: AgentTask, status: str, reason: str) -> 
     blocked = graph.propagate_block(task.id, f"Vorgänger {task.id} fehlgeschlagen: {reason}")
 
     await _persist(graph, task)
+    if blocked:
+        await task_graph.save_tasks(graph.project_id, blocked)
     for blocked_task in blocked:
         _publish(graph.project_id, blocked_task, detail=reason)
 
 
 async def _cancel_graph(graph: TaskGraph) -> None:
     """Bricht alle noch nicht terminalen Tasks ab."""
+    abgebrochen: list[AgentTask] = []
     for task in graph.tasks:
         if task.is_terminal():
             continue
@@ -314,12 +323,20 @@ async def _cancel_graph(graph: TaskGraph) -> None:
             duration_ms=0,
         )
         _publish(graph.project_id, task, detail="cancelled")
+        abgebrochen.append(task)
 
-    await task_graph.save_graph(graph)
+    await task_graph.save_tasks(graph.project_id, abgebrochen)
+    await task_graph.set_cancelled(graph.project_id, True)
 
 
 async def _persist(graph: TaskGraph, task: AgentTask) -> None:
-    await task_graph.save_graph(graph)
+    """Schreibt genau die geänderte Task — nicht den ganzen Graphen.
+
+    Zwei nebenläufige Tasks würden sich beim Zurückschreiben des kompletten
+    Graphen gegenseitig überschreiben, sobald der Speicher Kopien liefert
+    (Datenbank-Backend) statt einer gemeinsamen Objektreferenz.
+    """
+    await task_graph.save_task(graph.project_id, task)
     _publish(graph.project_id, task)
 
 

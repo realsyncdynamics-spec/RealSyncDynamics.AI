@@ -1,6 +1,6 @@
 # platform/ — AI-App-Builder + Governance-Backend
 
-Erster Monorepo-Draft: ein App-Builder-Orchestrator mit Multi-Agent-Task-Graph,
+Monorepo: ein App-Builder-Orchestrator mit Multi-Agent-Task-Graph,
 der **nicht ohne Governance-Freigabe baut**, und ein Governance-Backend nach
 Vorbild von RealSyncDynamicsAI (EU AI Act / DSGVO, CI/CD-Gate, Runtime-Telemetrie).
 
@@ -15,7 +15,7 @@ zum Repo-Root).
 | `builder_orchestrator` | 8001 | `builder.localhost` | BuildSpec → Task-Graph → Agenten |
 | `governance_backend`   | 8002 | `rsd.localhost`     | Registry, Risiko-Einstufung, CI/CD-Gate, Telemetrie |
 | `nextjs_frontend`      | 3000 | `app.localhost`     | Builder-Stub + Governance-Cockpit-Stub |
-| `supabase_db`          | 5432 | –                   | Postgres 16 (Zielschema, noch ungenutzt) |
+| `supabase_db`          | 5432 | –                   | Postgres 16 (Zustand beider Backends) |
 | `traefik`              | 80   | `:8080` Dashboard   | Reverse Proxy |
 
 ## Ablauf
@@ -125,8 +125,9 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 
 ```bash
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
-cd governance_backend
-TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres pytest
+export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
+cd governance_backend   && pytest    # 36 statt 25
+cd ../builder_orchestrator && pytest # 45 statt 33
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -135,15 +136,26 @@ Graph-Aufbau und dynamische Expansion, Zyklusprüfung mit Rückbau,
 Fehler-Propagierung, Retries/Timeout/Cancellation, kein Doppel-Dispatch,
 Idempotenz des Gate-Aufrufs, der Nachweis, dass ein blockiertes Gate keine
 Aktivierung auslöst, sowie Regions- und Modelldrift inklusive Dispatch-Fehlern.
-Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit der Migration und dass
-Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen Reconnect
-überstehen.
+Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit beider Migrationen,
+dass Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen
+Reconnect überstehen, und dass nebenläufige Tasks sich nicht gegenseitig
+überschreiben.
 
 ## Persistenz
 
-Das Governance-Backend hält den Compliance-Nachweis — Inventar, Gate-Ergebnisse,
-Befunde. Ein Prüfpfad, der beim Deploy verdampft, ist keiner, deshalb liegt
-dieser Zustand in Postgres.
+Beide Services halten ihren Zustand in Postgres: das Governance-Backend den
+Compliance-Nachweis (Inventar, Gate-Ergebnisse, Befunde), der Orchestrator die
+Task-Graphen. Ein Prüfpfad, der beim Deploy verdampft, ist keiner.
+
+**Tasks liegen in eigenen Zeilen, nicht als JSONB-Blob am Graphen.** Das ist
+keine Stilfrage: Der Scheduler führt Tasks nebenläufig aus, und jede lädt sich
+den Graphen selbst. In-Memory ist das dieselbe Objektreferenz; mit einer
+Datenbank bekommt jede Task eine Kopie. Würde jede den ganzen Graphen
+zurückschreiben, überschriebe die zuletzt fertige die `completed`-Zustände der
+anderen — der Scheduler fände sie wieder als `pending` vor und würde sie **ein
+zweites Mal ausführen**. Der Endzustand verrät das nicht, deshalb zählt
+`test_nebenlaeufige_tasks_verlieren_keine_status` die Aufrufe. Gegen die naive
+Variante schlägt er an: `{'auth': 3, 'data': 2, 'ui': 1}` statt je einmal.
 
 Die Umschaltung hängt allein an `DATABASE_URL`:
 
@@ -158,7 +170,7 @@ soll die Annahme von Telemetrie nicht verhindern. Dass der Dienst dann ohne
 dauerhaften Prüfpfad läuft, steht im Log und unter `/health` — es passiert
 also nicht still.
 
-Die Migration wendet das Backend beim Start selbst an. Sie ist **wiederholbar**
+Beide Services wenden ihre Migration beim Start selbst an. Sie sind **wiederholbar**
 (RLS-Policies werden vorher verworfen und neu angelegt, weil `create policy`
 kein `IF NOT EXISTS` kennt) — der `docker-entrypoint-initdb.d`-Hook wäre
 unzuverlässig, weil er nur beim allerersten Start eines leeren Volumes läuft.
@@ -207,9 +219,6 @@ Gate-Katalog je Klasse in `governance_backend/app/services/risk_evaluator.py`
   fertigen System-Prompts und Output-Verträgen. Der Architect liefert einen
   festen Platzhalter-Modulschnitt (`auth`, `data`, `ui`), damit der Fan-out im
   Graph real ist und nicht nur theoretisch.
-- **Persistenz des Orchestrators**: Task-Graphen liegen weiterhin im Prozess,
-  aber hinter `GraphRepository` — der Umstieg ist eine zweite Implementierung,
-  kein Umbau. Das Governance-Backend ist bereits auf Postgres umgestellt.
 - **Queue**: Der Scheduler läuft als `asyncio.Task` im selben Prozess. Die
   Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht
   gezogen.

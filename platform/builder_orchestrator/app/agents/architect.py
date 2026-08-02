@@ -17,7 +17,7 @@ from __future__ import annotations
 from typing import List
 
 from ..schemas import AgentResult, AgentTask, TaskGraph
-from ..services.task_graph import spawn_coder_tasks
+from ..services.task_graph import build_coder_tasks
 
 SYSTEM_PROMPT = """Du bist der Architect-Agent.
 Entwirf aus dem Feature-Backlog ein Postgres-Schema und einen Modulschnitt.
@@ -33,9 +33,10 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
     # TODO(LLM): echten Modellaufruf einsetzen; `modules` aus der Antwort lesen.
     modules: List[str] = list(STUB_MODULES)
 
-    # Coder-Tasks einhängen. Der DevOps-Task hängt danach an allen davon
+    # Nur bauen, nicht einhängen: Der Scheduler hängt sie ein und schreibt sie
+    # in einem Zug. Der DevOps-Task hängt danach an allen davon
     # (siehe TaskGraph.insert_spawned) — Fan-in ohne Vorabwissen.
-    spawned = spawn_coder_tasks(graph, task.id, modules)
+    coder_tasks = build_coder_tasks(graph, task.id, modules)
 
     return AgentResult(
         output={
@@ -45,8 +46,6 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
             "api_contract": "[]",
             "target_stack": task.input.get("target_stack", "nextjs_supabase"),
         },
-        # Bereits eingehängt; die Liste bleibt leer, damit der Runner sie nicht
-        # ein zweites Mal einfügt.
-        spawn=[],
-        metrics={"model": "stub", "spawned_tasks": str(len(spawned))},
+        spawn=coder_tasks,
+        metrics={"model": "stub", "spawned_tasks": str(len(coder_tasks))},
     )

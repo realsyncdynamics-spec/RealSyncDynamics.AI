@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,15 +22,36 @@ from fastapi.responses import StreamingResponse
 from .clients import rsd_client
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
-from .services import agent_runner, events, task_graph
+from .services import agent_runner, db, events, repository, task_graph
 from .services.audit_log import records as audit_records
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
+MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Verbindet die Datenbank, falls konfiguriert, und wählt das Backend.
+
+    Ohne erreichbare Datenbank läuft der Orchestrator prozesslokal weiter —
+    Builds gehen dann bei einem Neustart verloren, aber der Dienst nimmt
+    weiterhin Aufträge an. Welcher Modus aktiv ist, steht unter /health.
+    """
+    if await db.connect():
+        await db.apply_migrations(str(MIGRATION))
+    repository.select_backend()
+    try:
+        yield
+    finally:
+        await db.disconnect()
+
+
 app = FastAPI(
     title="App Builder Orchestrator",
-    version="0.2.0",
+    version="0.3.0",
     description="Multi-Agent-Task-Graph für den AI-App-Builder, gekoppelt an RealSyncDynamicsAI.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -44,7 +67,12 @@ tracer = get_tracer(__name__)
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "builder_orchestrator"}
+    # `storage` macht sichtbar, ob laufende Builds einen Neustart überleben.
+    return {
+        "status": "ok",
+        "service": "builder_orchestrator",
+        "storage": "postgres" if db.is_enabled() else "memory",
+    }
 
 
 @app.post(

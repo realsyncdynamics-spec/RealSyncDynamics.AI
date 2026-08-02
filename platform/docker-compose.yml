@@ -56,11 +56,17 @@ services:
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
       GOVERNANCE_BASE_URL: http://governance_backend:8002
+      # Gesetzt = laufende und abgeschlossene Builds überleben einen Neustart.
+      DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
+      BUILDER_MAX_CONCURRENCY: "4"
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8001:8001"
     depends_on:
-      - governance_backend
+      governance_backend:
+        condition: service_started
+      supabase_db:
+        condition: service_healthy
     labels:
       - traefik.enable=true
       - traefik.http.routers.builder.rule=Host(`builder.localhost`)

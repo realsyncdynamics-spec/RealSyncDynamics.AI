@@ -64,12 +64,23 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void refresh();
     if (!isSupabaseConfigured()) return;
-    // Listen for auth state changes (e.g., MFA step-up from AAL1 to AAL2)
-    // and refresh tenants/entitlements when session updates.
-    const { data: sub } = getSupabase().auth.onAuthStateChange(() => {
-      void refresh();
+    // Nach einem MFA-Step-up (AAL1 → AAL2) gilt ein neues Access-Token mit
+    // höherem AAL. Ohne Neuladen behält der Provider die alten Tenant-/
+    // Entitlement-Daten und nachgelagerte Views (z. B. Billing) warten
+    // dauerhaft auf Daten, die nie kommen.
+    //
+    // Bewusst NICHT auf `TOKEN_REFRESHED` reagieren: das feuert periodisch
+    // (~stündlich) ohne Änderung an Rechten und würde die gesamte App in den
+    // Ladezustand zurückwerfen. `INITIAL_SESSION` ist ebenfalls ausgenommen,
+    // da der direkte `refresh()`-Aufruf oben diesen Fall bereits abdeckt.
+    const RELOAD_ON: string[] = ['MFA_CHALLENGE_VERIFIED', 'SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED'];
+    // Defensiv: Der Provider umschließt die gesamte App — ein fehlender oder
+    // eingeschränkter Auth-Client darf hier niemals werfen, sonst reißt es den
+    // kompletten Baum mit. Im Zweifel lieber ohne Live-Reload weiterlaufen.
+    const sub = getSupabase().auth?.onAuthStateChange((event) => {
+      if (RELOAD_ON.includes(event)) void refresh();
     });
-    return () => { sub.subscription.unsubscribe(); };
+    return () => { sub?.data?.subscription?.unsubscribe(); };
   }, [refresh]);
 
   // Reload entitlements when the active tenant changes (without reloading the tenant list).

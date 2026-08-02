@@ -121,16 +121,52 @@ jobs:
           echo "✓ Frontend deployment erfolgreich"
           EOF
 
-      - name: Verify public URL
+      # Frueher wurde hier die OEFFENTLICHE URL gecurlt:
+      #     curl -fsSL https://realsyncdynamicsai.de/healthz
+      # Das war ein False Positive. realsyncdynamicsai.de wird von Cloudflare
+      # ausgeliefert, nicht vom VPS — gemessen am 2026-08-02: der Response traegt
+      # `server: cloudflare` und liefert unter /healthz text/html (die SPA-Shell
+      # aus dem Catch-all-Rewrite), waehrend die nginx.conf dieses Deployments
+      # fuer genau diese Location text/plain garantiert. Der Aufruf lieferte also
+      # 200 voellig unabhaengig davon, ob das VPS-Deployment etwas bewirkt hat.
+      # Zusaetzlich hat der Schritt bei Misserfolg nur ein echo abgesetzt und den
+      # Job nie fehlschlagen lassen — der Workflow konnte "erfolgreich deployed"
+      # melden, ohne irgendetwas veraendert zu haben.
+      #
+      # Jetzt wird der VPS-Origin direkt adressiert (--resolve umgeht Cloudflare)
+      # und der Content-Type geprueft, der VPS-nginx von der SPA-Shell
+      # unterscheidet. Schlaegt das fehl, faellt der Job.
+      - name: Verify VPS origin (not the Cloudflare edge)
         run: |
+          set -Eeuo pipefail
           echo "⏳ Warte auf nginx propagation (5s)..."
           sleep 5
 
-          if curl -fsSL https://realsyncdynamicsai.de/healthz >/dev/null 2>&1; then
-            echo "✓ https://realsyncdynamicsai.de erreichbar"
-          else
-            echo "⚠ Warnung: https://realsyncdynamicsai.de nicht sofort erreichbar (könnte sein, dass nginx noch lädt)"
+          HOST=realsyncdynamicsai.de
+          IP="${{ secrets.VPS_SSH_HOST }}"
+
+          if [ -z "$IP" ]; then
+            echo "::error::VPS_SSH_HOST ist leer — Origin laesst sich nicht gezielt pruefen."
+            exit 1
           fi
+
+          # Direkt gegen den Origin, Cloudflare umgangen.
+          CT="$(curl -fsS --max-time 20 -o /dev/null -w '%{content_type}' \
+                 --resolve "${HOST}:443:${IP}" "https://${HOST}/healthz")" || {
+            echo "::error::VPS-Origin ${IP} antwortet nicht auf https://${HOST}/healthz."
+            exit 1
+          }
+
+          echo "Origin content-type: ${CT}"
+          case "$CT" in
+            text/plain*)
+              echo "✓ VPS-Origin liefert /healthz als text/plain — Deployment ist live."
+              ;;
+            *)
+              echo "::error::/healthz liefert '${CT}' statt text/plain. Der Origin serviert nicht die nginx.conf dieses Deployments (vermutlich antwortet die SPA-Shell oder ein anderer Dienst)."
+              exit 1
+              ;;
+          esac
 
       - name: Log summary
         if: always()

@@ -6,10 +6,14 @@ Output (task.output): files (JSON), tests (JSON), notes
 Läuft je Modul einmal — die Tasks entstehen dynamisch im Architect-Schritt und
 laufen parallel bis zur Nebenläufigkeitsgrenze des Schedulers.
 
-TODO(Workspace): Ergebnisse in ein Volume schreiben statt im Task-Output zu
-halten. Der Output landet in einer JSONB-Spalte; ein Modul mit vielen Dateien
-sprengt das irgendwann, und der DevOps-Schritt braucht ohnehin Dateien auf
-Platte, um wirklich zu bauen.
+Die generierten Dateien wandern auf Platte (`services/workspace.py`), nicht in
+den Task-Output. Zwei Gründe: Der Output landet in einer JSONB-Spalte, die ein
+Modul mit vielen Dateien sprengt — und der DevOps-Schritt kann nur messen, was
+an einem Pfad liegt. Im Output bleibt das Manifest: welche Dateien entstanden
+sind. Genau das gehört in den Prüfpfad.
+
+Jedes Modul schreibt in ein eigenes Unterverzeichnis, deshalb kommen sich die
+parallel laufenden Coder-Tasks nicht in die Quere.
 """
 
 from __future__ import annotations
@@ -17,6 +21,7 @@ from __future__ import annotations
 import json
 
 from ..schemas import AgentResult, AgentTask, TaskGraph
+from ..services import workspace
 from ..services.llm import complete_json
 from .contracts import CoderOutput
 
@@ -54,18 +59,28 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
         effort="medium",
     )
 
+    # Auf Platte schreiben. `write_module` wirft bei einem Pfad, der das
+    # Projektverzeichnis verlässt — der Task scheitert dann nicht wiederholbar,
+    # und der Befund steht im Prüfpfad. Das ist gewollt: Ein Pfad aus einer
+    # Modellantwort darf nirgendwo anders landen.
+    project_id = task.input["project_id"]
+    dateien = workspace.write_module(
+        project_id, module, [(datei.path, datei.content) for datei in ergebnis.files]
+    )
+    tests = workspace.write_module(
+        project_id, f"{module}/__tests__", [(datei.path, datei.content) for datei in ergebnis.tests]
+    )
+
     return AgentResult(
         output={
             "status": "ok",
             "module": module,
-            "files": json.dumps(
-                [datei.model_dump() for datei in ergebnis.files], ensure_ascii=False
-            ),
-            "tests": json.dumps(
-                [datei.model_dump() for datei in ergebnis.tests], ensure_ascii=False
-            ),
+            # Manifest statt Inhalt: Was zählt, ist welche Dateien entstanden
+            # sind — der Inhalt liegt im Workspace.
+            "files": json.dumps(dateien, ensure_ascii=False),
+            "tests": json.dumps(tests, ensure_ascii=False),
             "notes": json.dumps(ergebnis.notes, ensure_ascii=False),
-            "file_count": str(len(ergebnis.files)),
+            "file_count": str(len(dateien)),
         },
         metrics={**response.as_metrics(), "module": module},
     )

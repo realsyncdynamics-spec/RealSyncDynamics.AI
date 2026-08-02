@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from app.agents import architect, coder, planner
 from app.agents.contracts import ArchitectOutput, MAX_MODULES, PlannerOutput, sanitize_modules
 from app.schemas import AgentTask, BuildSpec, GovernanceContext, TaskGraph
-from app.services import llm, task_graph
+from app.services import llm, task_graph, workspace
 from app.services.llm import (
     LLMContractError,
     LLMRefusalError,
@@ -302,8 +302,9 @@ async def test_architect_faellt_auf_platzhalter_zurueck():
 
 
 @pytest.mark.asyncio
-async def test_coder_bekommt_architekturkontext():
+async def test_coder_bekommt_architekturkontext(tmp_path, monkeypatch):
     """Ohne Schema und API-Vertrag im Prompt generiert der Coder ins Blaue."""
+    monkeypatch.setattr(workspace, "WORKSPACE_ROOT", tmp_path)
     graph = _graph()
     architect_task = graph.by_id("task_architect")
     architect_task.output = {
@@ -316,7 +317,11 @@ async def test_coder_bekommt_architekturkontext():
     )
     llm.set_provider(provider)
 
-    task = AgentTask(id="task_coder:auth", agent_type="coder", input={"module": "auth"})
+    task = AgentTask(
+        id="task_coder:auth",
+        agent_type="coder",
+        input={"module": "auth", "project_id": "proj_1"},
+    )
     result = await coder.run(task, graph)
 
     assert result.output["file_count"] == "1"

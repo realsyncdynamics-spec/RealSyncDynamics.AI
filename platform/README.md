@@ -127,7 +127,7 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
 cd governance_backend   && pytest    # 41 statt 30
-cd ../builder_orchestrator && pytest # 74 statt 62
+cd ../builder_orchestrator && pytest # 104 statt 92
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -141,7 +141,11 @@ Provider-Aufrufe nachgewiesen, nicht über das Endergebnis), die Auflösung
 verschachtelter Schemata, die Normalisierung der Modulnamen, die
 Providerauswahl — und, gegen einen lokalen Fake-Endpunkt, die tatsächliche
 Form des Claude-Requests inklusive der Parameter, die auf diesem Modell einen
-400 auslösen würden.
+400 auslösen würden. Für Workspace und Build-Messung: jeder Pfad-Ausbruch
+einzeln (inklusive Symlink), die Limits, die Stabilität des Build-Hashes über
+Wiederholungen, jeder der fünf Nachweise in beiden Richtungen — und dass ein
+hängender Testlauf samt Kindprozessen innerhalb der Zeitgrenze abgebrochen
+wird (über die gemessene Dauer nachgewiesen, nicht über die Rückgabe).
 Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit beider Migrationen,
 dass Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen
 Reconnect überstehen, und dass nebenläufige Tasks sich nicht gegenseitig
@@ -285,14 +289,56 @@ wird wiederholt, eine Ablehnung des Modells (`stop_reason == "refusal"`) und
 ein dauerhaft verletztes Schema nicht. Modell, Provider, Tokens und die Zahl
 der Reparaturrunden landen je Lauf im Prüfpfad.
 
+## Workspace und Build-Messung
+
+Die vom Coder generierten Dateien liegen auf Platte
+(`builder_orchestrator/app/services/workspace.py`), nicht im Task-Output. Im
+Output steht das Manifest — welche Dateien entstanden sind. Jedes Modul
+bekommt ein eigenes Unterverzeichnis, deshalb schreiben die parallel laufenden
+Coder-Tasks konfliktfrei.
+
+**Die Pfade kommen aus einer Modellantwort.** Deshalb steht vor jedem Schreiben
+eine Prüfung: relative Pfade, keine absoluten, und nach `Path.resolve()` muss
+das Ziel unterhalb des Projektverzeichnisses liegen. Die Auflösung ist der
+Punkt — eine Textprüfung auf `..` ginge an einem Symlink vorbei. Dazu
+Obergrenzen für Dateizahl und -größe. Ein Verstoß ist ein Fehler, keine
+Warnung: Der Coder-Task scheitert nicht wiederholbar, der Befund steht im
+Prüfpfad.
+
+Auf dieser Grundlage misst der DevOps-Schritt die fünf Nachweise, die das Gate
+verlangt (`services/build_checks.py`), statt sie wie bisher fest auf `false` zu
+setzen:
+
+| Nachweis | Wie gemessen |
+|---|---|
+| `transparency_notice_enabled` | Marker im generierten Code (Art. 50 EU AI Act) |
+| `audit_logging_active` | Aufruf einer Protokollierung im generierten Code |
+| `model_card_included` | Datei `MODEL_CARD.md` im Projekt |
+| `pii_scan_passed` | keine Treffer der PII-/Secret-Muster |
+| `tests_passed` | Exit-Code von `BUILDER_TEST_COMMAND` — sonst nichts |
+
+`tests_passed` hängt bewusst **nur** an einem echten Testlauf: Vorhandene
+Testdateien beweisen nichts. Ohne konfiguriertes Kommando bleibt der Nachweis
+aus und das Gate blockiert — für einen Build ohne Testnachweis ist das die
+richtige Antwort. Der Testlauf bekommt eine eigene Prozessgruppe, damit ein
+Timeout den ganzen Prozessbaum trifft; ein überlebender Worker würde die Pipe
+offen halten und den Timeout wirkungslos machen.
+
+Je Nachweis wird die Begründung mitgeführt (`check_reasons` im Task-Output),
+damit im Prüfpfad nicht nur steht, *dass* etwas erfüllt war, sondern *warum*.
+Der `build_hash` ist der Hash über Pfade und Inhalte aller Dateien — dadurch
+trifft ein Retry denselben Hash und ruft das bereits entschiedene Gate nicht
+erneut auf.
+
 ## Was noch fehlt (TODO-Marker im Code)
 
-- **Echter Build**: Der DevOps-Schritt ruft das Gate auf, führt aber keinen
-  Container-Build aus. Die Artefakt-Flags (`tests_passed`, `pii_scan_passed`,
-  …) stehen deshalb noch fest auf `false` — das Gate blockiert also
-  zuverlässig, aber es prüft noch nichts Gemessenes.
-- **Workspace**: Generierte Dateien liegen im Task-Output (JSONB) statt auf
-  einem Volume. Für einen echten Build brauchen sie einen Pfad.
+- **Container-Build**: Der DevOps-Schritt misst den Workspace, baut aber kein
+  Image. `build_hash` ist der Hash über die generierten Dateien, nicht ein
+  Image-Digest.
+- **Deployment**: Der Endpoint ist abgeleitet, es wird keine Traefik-Route
+  ausgerollt.
+- **PII-Scanner**: Die Muster in `build_checks.py` finden Offensichtliches
+  (E-Mail, IBAN, Schlüssel, Klartextpasswörter), keine Namen in Fixtures.
 - **Token-Budget**: Verbrauch steht im Prüfpfad, bremst aber nichts.
 - **Queue**: Der Scheduler läuft als `asyncio.Task` im selben Prozess. Die
   Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht

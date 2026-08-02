@@ -69,7 +69,14 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
       LLM_MAX_REPAIRS: ${LLM_MAX_REPAIRS:-1}
+      # Generierte Dateien. Ohne Volume sind sie nach einem Neustart weg —
+      # der Task-Graph in Postgres verweist dann auf ein leeres Verzeichnis.
+      BUILDER_WORKSPACE_ROOT: /workspaces
+      # Leer = kein Testnachweis => das Gate blockiert (fail-closed).
+      BUILDER_TEST_COMMAND: ${BUILDER_TEST_COMMAND:-}
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+    volumes:
+      - builder_workspaces:/workspaces
     ports:
       - "8001:8001"
     depends_on:
@@ -129,6 +136,10 @@ services:
 
 volumes:
   rsd_pgdata:
+  # Generierte Anwendungsdateien. Eigenes Volume, damit ein Neustart des
+  # Orchestrators die Ergebnisse nicht mitnimmt — der Task-Graph in Postgres
+  # zeigt sonst auf ein leeres Verzeichnis.
+  builder_workspaces:
 
 networks:
   rsd_net:

@@ -15,7 +15,7 @@ interface DashboardCard {
   cta: string;
   path?: string;
   action?: () => void;
-  tier: 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+  tier: 'free' | 'starter' | 'growth' | 'agency' | 'partner' | 'enterprise';
 }
 
 const DASHBOARD_CARDS: DashboardCard[] = [

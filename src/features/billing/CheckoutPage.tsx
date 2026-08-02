@@ -26,8 +26,8 @@ import { trackConversion } from '../../lib/pixels';
 // Yearly-Keys sind buchbar (CTAs in src/config/pricing.ts verlinken auf
 // /checkout/<key>_yearly) — ohne sie hier bounced die Buchung zurück auf /pricing.
 const VALID_PLAN_KEYS = new Set<PlanKey>([
-  'free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise',
-  'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly', 'enterprise_yearly',
+  'free-audit', 'starter', 'growth', 'agency', 'partner', 'enterprise',
+  'starter_yearly', 'growth_yearly', 'agency_yearly', 'partner_yearly', 'enterprise_yearly',
 ]);
 // DE enterprise checkout – feature/de-enterprise-frontend-checkout
 type AuthState =

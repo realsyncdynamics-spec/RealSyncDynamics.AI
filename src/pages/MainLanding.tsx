@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { useHealthStatus } from '../hooks/useHealthStatus';
+import { planById, formatLimit, policyPacksFor, checkoutHrefForPlan, type PlanId } from '@/shared/pricing';
 import {
   Snowflake,
   ShieldCheck,
@@ -106,12 +107,38 @@ const STEPS = [
   { no: '03', title: 'Nachweisen', text: 'Jede Maßnahme landet als kryptografische Evidenz im auditfähigen Prüfpfad.' },
 ];
 
-const PRICING = [
-  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: '14 Tage testen', to: '/checkout/starter?source=home&pilot=true' },
-  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Konversations-Bots'], cta: '14 Tage testen', featured: true, to: '/checkout/growth?source=home&pilot=true' },
-  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Herkunftsnachweis (C2PA)', 'API-Zugriff'], cta: '14 Tage testen', to: '/checkout/agency?source=home&pilot=true' },
-  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
-];
+/**
+ * Preis-Karten der Startseite.
+ *
+ * Design-Lock beachtet: Layout, Klassen und Kartenanzahl bleiben unverändert.
+ * Geändert wurde ausschließlich die DATENQUELLE — Name, Preis, Kennzahlen und
+ * Link-Ziel kommen jetzt aus der Pricing-SSoT (`shared/pricing.ts`), damit die
+ * Startseite nicht mehr eigene Preise und Domain-Zahlen führt, die von
+ * /pricing abwichen (z.B. „5 Domains" bei Growth statt 3, „25 Domains" bei
+ * Agency statt 10).
+ *
+ * Offen für Design-Freigabe: Enterprise (1.249 €) fehlt hier weiterhin, weil
+ * eine fünfte Karte das gesperrte 4-Spalten-Raster verändern würde.
+ */
+const LANDING_PLAN_IDS: PlanId[] = ['starter', 'growth', 'agency', 'partner'];
+
+const PRICING = LANDING_PLAN_IDS.map((id) => {
+  const plan = planById(id);
+  return {
+    name: plan.name,
+    price: new Intl.NumberFormat('de-DE').format(plan.price.monthlyEur),
+    cadence: '/Monat',
+    features: [
+      `${formatLimit(plan.limits.domains)} Domains`,
+      `${formatLimit(plan.limits.bots)} Bots · ${formatLimit(plan.limits.answersPerMonth)} Antworten`,
+      `${formatLimit(plan.limits.automationRunsPerMonth)} Automation-Runs`,
+      `${policyPacksFor(plan).length} Policy Packs`,
+    ],
+    cta: plan.purchaseMode === 'inquiry' ? `${plan.name} anfragen` : '14 Tage testen',
+    featured: plan.highlight,
+    to: checkoutHrefForPlan(plan, { source: 'home' }),
+  };
+});
 
 export function MainLanding() {
   return (

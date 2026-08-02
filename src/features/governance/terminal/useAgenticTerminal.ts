@@ -58,7 +58,7 @@ function parseCommand(input: string): ParsedCommand {
 
     case 'upgrade': {
       const tier = parts[1]?.toLowerCase();
-      if (tier && ['starter', 'growth', 'agency', 'scale'].includes(tier)) {
+      if (tier && ['starter', 'growth', 'agency', 'partner'].includes(tier)) {
         args.tier = tier;
       }
       return { type: 'upgrade', args };
@@ -82,7 +82,7 @@ function parseCommand(input: string): ParsedCommand {
 
     case 'pay': {
       const tier = parts[1]?.toLowerCase();
-      if (tier && ['starter', 'growth', 'agency', 'scale'].includes(tier)) {
+      if (tier && ['starter', 'growth', 'agency', 'partner'].includes(tier)) {
         args.tier = tier;
       }
       return { type: 'pay', args };

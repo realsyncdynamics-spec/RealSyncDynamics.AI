@@ -11,8 +11,8 @@ import { getSupabase } from '../../lib/supabase';
  */
 export type PlanKey =
   | 'free' | 'free-audit' | 'free_audit'
-  | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise'
-  | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'scale_yearly' | 'enterprise_yearly';
+  | 'starter' | 'growth' | 'agency' | 'partner' | 'enterprise'
+  | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'partner_yearly' | 'enterprise_yearly';
 
 export interface CheckoutResult {
   ok: boolean;

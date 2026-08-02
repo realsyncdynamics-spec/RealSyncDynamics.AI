@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, HelpCircle, Plus, Minus } from 'lucide-react';
+import { ORDERED_PLANS, formatLimit } from '@/shared/pricing';
 
 type Item = { q: string; a: React.ReactNode; tag: 'DSGVO' | 'AI Act' | 'Pricing' | 'Technik' | 'Migration' };
 
@@ -118,11 +119,16 @@ const ITEMS: Item[] = [
           bzw. Twilio-Webhook ein. Optional aktivierbar: <strong className="text-titanium-50">Terminbuchung</strong> und
           <strong className="text-titanium-50"> Bestellannahme</strong>.
         </p>
+        {/* Kontingente kommen aus der Pricing-SSoT — keine gepflegten Zahlen. */}
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li><strong className="text-titanium-50">Growth</strong> — Chat, Telegram & WhatsApp · bis 2 Bots · 2.000 Antworten/Monat</li>
-          <li><strong className="text-titanium-50">Agency</strong> — zusätzlich Telefonie (Voice) · bis 10 Bots · 10.000 Antworten + 500 Voice-Minuten/Monat</li>
-          <li><strong className="text-titanium-50">Scale</strong> — bis 50 Bots · 50.000 Antworten + 2.500 Voice-Minuten/Monat</li>
-          <li><strong className="text-titanium-50">Enterprise</strong> — ohne Limit</li>
+          {ORDERED_PLANS.filter((plan) => plan.limits.bots > 0).map((plan) => (
+            <li key={plan.id}>
+              <strong className="text-titanium-50">{plan.name}</strong>
+              {' — bis '}{formatLimit(plan.limits.bots)}{' Bots · '}
+              {formatLimit(plan.limits.answersPerMonth)}{' Antworten/Monat · '}
+              {plan.channels.length}{' Kanäle'}
+            </li>
+          ))}
         </ul>
         <p className="mt-2">
           Jede Bot-Antwort ist RLS-geschützt, gedeckelt und mit Prüfpfad geloggt. Anlegen im Dashboard: <Link to="/app/bots" className="text-security-400">/app/bots</Link>
@@ -140,7 +146,15 @@ const ITEMS: Item[] = [
           Lead-Risk u. a.). Jeder Lauf wird mit Kosten und Prüfpfad protokolliert. Kontingente pro Monat:
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li><strong className="text-titanium-50">Free</strong> 3 · <strong className="text-titanium-50">Starter</strong> 25 · <strong className="text-titanium-50">Growth</strong> 100 · <strong className="text-titanium-50">Agency</strong> 500 · <strong className="text-titanium-50">Scale</strong> 2.500 · <strong className="text-titanium-50">Enterprise</strong> unbegrenzt</li>
+          <li>
+            {ORDERED_PLANS.map((plan, i) => (
+              <span key={plan.id}>
+                {i > 0 && ' · '}
+                <strong className="text-titanium-50">{plan.name}</strong>
+                {' '}{formatLimit(plan.limits.automationRunsPerMonth)}
+              </span>
+            ))}
+          </li>
         </ul>
         <p className="mt-2">
           Übersicht der Skills: <Link to="/automations" className="text-security-400">/automations</Link>
@@ -197,7 +211,17 @@ const ITEMS: Item[] = [
           automatischem Retry eingereiht. Fortschritt je Batch ist live sichtbar, Abbrechen jederzeit möglich.
         </p>
         <ul className="list-disc pl-5 space-y-1 mt-2">
-          <li>Kontingent: <strong className="text-titanium-50">Agency</strong> 50 · <strong className="text-titanium-50">Scale</strong> 500 · <strong className="text-titanium-50">Enterprise</strong> unbegrenzt Batches/Monat</li>
+          <li>
+            {'Kontingent: '}
+            {ORDERED_PLANS.filter((plan) => plan.limits.bulkJobsPerMonth !== 0).map((plan, i) => (
+              <span key={plan.id}>
+                {i > 0 && ' · '}
+                <strong className="text-titanium-50">{plan.name}</strong>
+                {' '}{formatLimit(plan.limits.bulkJobsPerMonth)}
+              </span>
+            ))}
+            {' Batches/Monat'}
+          </li>
         </ul>
         <p className="mt-2">
           Im Dashboard: <Link to="/app/bulk" className="text-security-400">/app/bulk</Link>

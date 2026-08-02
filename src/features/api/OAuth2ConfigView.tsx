@@ -25,7 +25,7 @@ export interface OAuth2Application {
 export interface RateLimitConfig {
   requests_per_minute: number;
   requests_per_day: number;
-  plan_tier: 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+  plan_tier: 'free' | 'starter' | 'growth' | 'agency' | 'partner' | 'enterprise';
 }
 
 const RATE_LIMIT_DEFAULTS: Record<string, RateLimitConfig> = {
@@ -33,7 +33,7 @@ const RATE_LIMIT_DEFAULTS: Record<string, RateLimitConfig> = {
   starter: { requests_per_minute: 60, requests_per_day: 5000, plan_tier: 'starter' },
   growth: { requests_per_minute: 300, requests_per_day: 50000, plan_tier: 'growth' },
   agency: { requests_per_minute: 1000, requests_per_day: 500000, plan_tier: 'agency' },
-  scale: { requests_per_minute: 5000, requests_per_day: 5000000, plan_tier: 'scale' },
+  partner: { requests_per_minute: 5000, requests_per_day: 5000000, plan_tier: 'partner' },
   enterprise: { requests_per_minute: 0, requests_per_day: 0, plan_tier: 'enterprise' }, // Unlimited
 };
 
@@ -70,7 +70,7 @@ function Inner() {
   // Determine plan tier based on features
   let planTier: keyof typeof RATE_LIMIT_DEFAULTS = 'starter';
   if (hasFeature('enterprise.tier')) planTier = 'enterprise';
-  else if (hasFeature('scale.tier')) planTier = 'scale';
+  else if (hasFeature('partner.tier')) planTier = 'partner';
   else if (hasFeature('agency.tier')) planTier = 'agency';
   else if (hasFeature('growth.tier')) planTier = 'growth';
 

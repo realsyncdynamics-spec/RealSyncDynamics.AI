@@ -29,7 +29,7 @@ export function PricingTeaserSection({ sourceTag }: PricingTeaserProps) {
             Preise
           </div>
           <h2 className="font-display font-bold text-2xl sm:text-4xl text-titanium-50 tracking-tight leading-tight">
-            Free Audit · Starter · Growth · Agency · Scale
+            Free Audit · Starter · Growth · Agency · Enterprise · Partner
           </h2>
         </div>
 

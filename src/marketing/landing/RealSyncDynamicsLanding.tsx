@@ -471,7 +471,7 @@ export const RealSyncDynamicsLanding = () => {
               </div>
 
               <div className="bg-slate-900/80 backdrop-blur p-6 rounded-lg border border-titanium/20 hover:border-titanium/40 flex flex-col transition">
-                <h3 className="text-lg font-bold text-titanium mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Scale</h3>
+                <h3 className="text-lg font-bold text-titanium mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Partner</h3>
                 <p className="text-3xl font-bold text-titanium mb-1">1.999 €</p>
                 <p className="text-xs font-mono uppercase tracking-wider text-titanium/50 mb-4">pro Monat</p>
                 <ul className="space-y-2 text-sm text-titanium/70 mb-6 flex-1">

@@ -146,11 +146,53 @@ a matching `DROP POLICY IF EXISTS`), so they would apply without erroring.
 > `ERROR: function public.bots_touch_updated_at() does not exist`.
 >
 > So Option B does not merely tidy history — it would swap the trigger
-> implementation underneath the bots tables. Before choosing it, diff the two
-> `bots_foundation` bodies (the prod SQL is in
-> `supabase_migrations.schema_migrations`, 9309 bytes vs the 8843-byte re-apply)
-> and decide which implementation is the intended one. **Option A is the safer
-> default** precisely because it preserves what is actually running.
+> implementation underneath the bots tables. **Option A is the safer default**
+> precisely because it preserves what is actually running.
+
+#### 🔴 Root cause found (2026-08-02): two *different* bots features, not two copies
+
+Diffing the two prod bodies line-by-line settles it. They are not re-applications
+of one migration — they are **two unrelated bot schemas**, applied to the same
+database roughly seven hours apart on 2026-06-28:
+
+| | **A — 12:15:31** (matches committed `20260628120000`) | **B — 19:37:44** (no committed source) |
+|---|---|---|
+| Bot table | `bots` | `bot_agents` |
+| Domain tables | `bot_appointments`, `bot_orders` | `appointments`, `orders`, `order_items`, `availability_rules`, `voice_channels`, `bot_question_catalog` |
+| Touch trigger | `update_modified_column()` | `bots_touch_updated_at()` |
+| RLS style | explicit `CREATE POLICY` per table | `DO` loop over a table array |
+
+**Both declare `bot_conversations` and `bot_messages`.** B ran second, and its
+definitions use `create table if not exists` — so they were **silently skipped**.
+Those two tables therefore carry A's shape while the rest of B's schema assumes
+B's. Verified against live constraints:
+
+- `bot_conversations.bot_id` → FK to **`bots(id)`**, not `bot_agents(id)`
+- `bot_messages.role` CHECK → `('user','assistant','system')` — B needs `'tool'`
+- `bot_conversations.status` CHECK → `('open','closed')` — B needs `'handed_off'`
+
+**How bad is it right now: not bad — but only by luck.** Every application code
+path targets A. A repo-wide search for `from('bot_agents')`, `from('orders')`,
+`from('appointments')`, `from('order_items')`, `from('availability_rules')`,
+`from('voice_channels')` and `from('bot_question_catalog')` returns **zero
+hits** — nothing reads or writes B. And all twelve tables hold **0 rows**.
+
+So there is no active user-facing bug. What exists is seven dead tables in prod
+plus a trap: the first person to build on `bot_agents` hits FK and CHECK
+violations that look nothing like their cause, because the two tables they'd
+naturally reach for silently belong to a different feature.
+
+#### Recommendation
+
+1. **For the six rows — take Option A.** It records what is actually deployed.
+   Option B would additionally erase B's only surviving source (it exists
+   nowhere but `supabase_migrations.schema_migrations`).
+2. **Then decide B's fate separately.** With 0 rows and 0 code references, this
+   is the cheapest moment this cleanup will ever be. Either drop B's seven
+   tables, or — if B is the intended direction — give its conversation/message
+   tables distinct names so they stop colliding with A.
+3. Not actioned here: dropping prod tables is a call for whoever owns the bots
+   roadmap, not a drift cleanup.
 
 ```bash
 supabase link --project-ref ebljyceifhnlzhjfyxup

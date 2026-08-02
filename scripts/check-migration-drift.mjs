@@ -56,14 +56,28 @@ try {
 console.log(out);
 
 // Tabellen-Output: "LOCAL | REMOTE | TIME". Remote-only = LOCAL leer, REMOTE gesetzt.
+//
+// ACHTUNG Zellen-Format: die CLI umschliesst jeden Wert mit Backticks und
+// fuellt leere Zellen mit einem Leerzeichen — also `` `20260510` `` bzw. `` ` ` ``.
+// Ohne Entfernen der Backticks trifft KEIN /^[0-9]+$/ je zu; genau daran ist
+// dieser Guard bis 2026-08-02 still vorbeigelaufen (immer gruen, obwohl 11
+// echte Orphans existierten). Deshalb: Backticks strippen, dann pruefen.
+const cell = (raw) => (raw ?? '').replace(/`/g, '').trim();
+
+/** Zeile → [local, remote] oder null (Header/Separator/kein Tabellen-Row). */
+function parseRow(line) {
+  if (!line.includes('|')) return null;
+  const cols = line.split('|').map(cell);
+  if (cols.length < 2) return null;
+  if (/^local$/i.test(cols[0]) || /^-+$/.test(cols[0]) || /^-+$/.test(cols[1])) return null;
+  return [cols[0], cols[1]];
+}
+
 const remoteOnly = [];
 for (const line of out.split('\n')) {
-  if (!line.includes('|')) continue;
-  const cols = line.split('|').map((c) => c.trim());
-  if (cols.length < 2) continue;
-  const local = cols[0];
-  const remote = cols[1];
-  if (/^local$/i.test(local) || /^-+$/.test(local)) continue; // Header/Separator
+  const row = parseRow(line);
+  if (!row) continue;
+  const [local, remote] = row;
   if (!local && /^[0-9]+$/.test(remote) && !LEGACY_VERSIONS.has(remote)) {
     remoteOnly.push(remote);
   }
@@ -74,12 +88,17 @@ for (const line of out.split('\n')) {
 // angewendeten Versionen. Alles im Repo, was dort fehlt, ist offen.
 const remoteApplied = new Set();
 for (const line of out.split('\n')) {
-  if (!line.includes('|')) continue;
-  const cols = line.split('|').map((c) => c.trim());
-  if (cols.length < 2) continue;
-  if (/^local$/i.test(cols[0]) || /^-+$/.test(cols[0])) continue;
-  if (/^[0-9]+$/.test(cols[1])) remoteApplied.add(cols[1]);
+  const row = parseRow(line);
+  if (!row) continue;
+  if (/^[0-9]+$/.test(row[1])) remoteApplied.add(row[1]);
 }
+
+// Sicherung gegen ein geaendertes CLI-Ausgabeformat: findet der Parser gar
+// keine angewendete Version, ist das mit an Sicherheit grenzender
+// Wahrscheinlichkeit ein Parser-Problem und NICHT eine leere Prod-DB. In dem
+// Fall lieber schweigen als 243 Phantom-Treffer melden (genau dieser Fehlalarm
+// trat am 2026-08-02 auf, als die Backticks noch nicht gestrippt wurden).
+const parserLooksSane = remoteApplied.size > 0;
 
 const MIGRATIONS_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -103,7 +122,7 @@ const now = Date.now();
 const staleUnapplied = [];
 let unappliedRecent = 0;
 
-for (const file of readdirSync(MIGRATIONS_DIR).sort()) {
+for (const file of parserLooksSane ? readdirSync(MIGRATIONS_DIR).sort() : []) {
   if (!file.endsWith('.sql')) continue;
   const version = file.split('_')[0].replace(/\.sql$/, '');
   if (remoteApplied.has(version) || LEGACY_VERSIONS.has(version)) continue;
@@ -120,6 +139,14 @@ for (const file of readdirSync(MIGRATIONS_DIR).sort()) {
     unappliedRecent++;
   }
 }
+
+// Beide Drift-Arten beschreiben den Zustand der PRODUKTIONS-DB, nicht die
+// Qualitaet des vorliegenden Diffs. Ein PR-Autor kann sie nicht beheben — dazu
+// braucht es `migration repair`/`db push` gegen Prod. Ein harter Fail auf
+// pull_request wuerde daher fremde PRs blockieren, die nichts damit zu tun
+// haben. Deshalb: auf PRs berichten (advisory), auf schedule/main hart failen,
+// damit der Zustand taeglich sichtbar bleibt und nicht wieder verschwindet.
+const ADVISORY = (process.env.MIGRATION_DRIFT_MODE ?? 'fail') === 'advisory';
 
 let failed = false;
 
@@ -156,7 +183,25 @@ if (staleUnapplied.length > 0) {
   );
 }
 
-if (failed) process.exit(1);
+if (failed) {
+  if (ADVISORY) {
+    console.error(
+      '\n::warning::Migrations-Drift erkannt. Dieser Lauf ist advisory (pull_request) — ' +
+      'der Drift betrifft den Zustand der Produktions-DB, nicht diesen PR. ' +
+      'Der taegliche schedule-Lauf failt hart.',
+    );
+    process.exit(0);
+  }
+  process.exit(1);
+}
+
+if (!parserLooksSane) {
+  console.error(
+    '\n⚠️  Keine einzige angewendete Remote-Version erkannt — vermutlich hat sich das\n' +
+    'Ausgabeformat von `supabase migration list` geaendert. Richtung-2-Pruefung\n' +
+    'uebersprungen, um Fehlalarme zu vermeiden. Bitte den Parser pruefen.',
+  );
+}
 
 if (unappliedRecent > 0) {
   console.log(

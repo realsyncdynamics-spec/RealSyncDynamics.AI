@@ -15,6 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Playwright-Container statt `npx playwright install --with-deps`:
+    # Chromium/Firefox/WebKit inkl. GTK-, NSS-, X11-Libs und Fonts sind
+    # bereits im Image. Kein root/apt noetig, reproduzierbar, unabhaengig
+    # von Ubuntu-Updates auf den GitHub-Runnern.
+    #
+    # Der Tag MUSS exakt zur installierten @playwright/test-Version passen
+    # (aktuell 1.59.1) — sonst sucht der npm-Client eine Browser-Revision,
+    # die das Image nicht mitbringt ("Executable doesn't exist").
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+
     env:
       # CI testet den PR-eigenen Build über einen lokalen Preview-Server.
       # Die Live-Produktion ist als Ziel ungeeignet: ihr Bot-Schutz liefert
@@ -38,10 +49,11 @@ jobs:
         run: npm ci
 
       - name: Build Application
+        # E2E testet die laufende SPA, nicht das prerenderte HTML — der
+        # Prerender wuerde hier nur ~1 Minute kosten.
+        env:
+          SKIP_PRERENDER: '1'
         run: npm run build
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
 
       - name: Start Preview Server
         run: |

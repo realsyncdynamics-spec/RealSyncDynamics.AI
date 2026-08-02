@@ -26,6 +26,10 @@ jobs:
         run: npm test
 
       - name: Build
+        # Prerender ist hier reine Wartezeit — CI validiert nur, dass der
+        # Build durchlaeuft. Die SEO-Sichtbarkeit prueft der Deploy-Workflow.
+        env:
+          SKIP_PRERENDER: '1'
         run: npm run build
 
   db:

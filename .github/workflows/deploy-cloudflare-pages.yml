@@ -55,6 +55,14 @@ jobs:
   build:
     name: Build SPA
     runs-on: ubuntu-latest
+
+    # Playwright-Container: der Prerender-Step braucht Chromium inkl.
+    # System-Libs. Im Image ist beides fertig vorhanden — kein
+    # `playwright install --with-deps`, kein apt, kein root-Problem.
+    # Tag exakt = installierte @playwright/test-Version (1.59.1).
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+
     # Signalisiert nachgelagerten Jobs, ob die Cloudflare-Credentials
     # vorhanden sind. Secrets sind in job-level `if:` nicht lesbar, darum
     # hier als Job-Output abgeleitet.
@@ -114,59 +122,17 @@ jobs:
           VITE_STRIPE_PRICE_GROWTH_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_GROWTH_YEARLY }}
           VITE_STRIPE_PRICE_AGENCY_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY_YEARLY }}
           VITE_STRIPE_PRICE_SCALE_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_SCALE_YEARLY }}
+        # `npm run build` erledigt seit 2026-08 selbst: vite build →
+        # legal-pages → Prerender → SPA-Fallback (scripts/build-postprocess.mjs).
+        # Bewusst NICHT mehr als einzelne Steps hier: der Live-Deploy laeuft
+        # ueber Cloudflares Git-Integration, die nur `npm run build` aufruft.
+        # Alles was hier extra stuende, wuerde die Live-Site nie erreichen.
         run: npm run build
 
-      - name: Generate legal pages markers
-        run: npm run generate:legal-pages
-
-      - name: Prerender high-priority routes
-        run: |
-          npx playwright install --with-deps chromium
-          npm run prerender
-
-      - name: Generate SPA fallback for dynamic routes
-        run: |
-          cp dist/index.html dist/404.html
-          python3 - <<'PY'
-          import os, re, shutil
-          # Prerender routes from sitemap
-          with open('public/sitemap.xml', 'r', encoding='utf-8') as f:
-              xml = f.read()
-          paths = re.findall(r'https?://realsyncdynamicsai\.de(/[^<\s]*)', xml)
-          paths = set(p.rstrip('/') for p in paths if p and p != '/')
-
-          # App routes (authenticated, not in sitemap)
-          APP_ROUTES = [
-              '/os', '/os/pricing',
-              '/app', '/app/websites', '/app/ai-systems', '/app/automations', '/app/risks',
-              '/app/compliance', '/app/evidence', '/app/monitoring',
-              '/app/team', '/app/settings', '/app/company', '/assistant',
-              '/dashboard', '/command-center',
-              '/governance', '/governance/admin', '/governance/agents',
-              '/governance/incidents', '/governance/dpias', '/governance/dsr',
-              '/governance/vendors', '/governance/reports', '/governance/auditor',
-              '/governance/admin-log', '/governance/approvals', '/governance/scans',
-              '/evidence', '/monitoring', '/runtime',
-              '/settings', '/settings/team', '/settings/security',
-              '/settings/account', '/settings/ai-residency', '/settings/api-keys',
-              '/billing/usage', '/tenant/invites',
-              '/checkout/starter', '/checkout/growth', '/checkout/agency', '/checkout/enterprise', '/checkout/scale',
-              '/checkout/starter_yearly', '/checkout/growth_yearly', '/checkout/agency_yearly', '/checkout/enterprise_yearly', '/checkout/scale_yearly',
-          ]
-          paths = sorted(paths | set(APP_ROUTES))
-          src = 'dist/index.html'
-          filled, skipped = 0, 0
-          for p in paths:
-              dest_dir = 'dist' + p
-              dest_file = os.path.join(dest_dir, 'index.html')
-              if os.path.exists(dest_file):
-                  skipped += 1
-                  continue
-              os.makedirs(dest_dir, exist_ok=True)
-              shutil.copyfile(src, dest_file)
-              filled += 1
-          print(f'spa-fallback: {filled} filled · {skipped} kept-prerendered')
-          PY
+      - name: Verify SEO visibility (Content im HTML?)
+        # Faengt die Regression ab, die die Live-Site auf Seobility 56 %
+        # gedrueckt hat: SPA-Shell ohne H1/Text auf jeder Route.
+        run: npm run verify:prerender
 
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

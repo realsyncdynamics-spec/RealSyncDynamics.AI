@@ -59,7 +59,7 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
   - `pages/`                 — Public + protected pages (1 file = 1 route)
   - `features/`              — Auth-gated feature modules (billing, governance, etc.)
   - `components/`            — Shared UI components
-  - `config/`                — Centralized config (pricing.ts, seo.ts, etc.) — Single Source of Truth
+  - `config/`                — Centralized config (seo.ts, etc.); Preise siehe `shared/pricing.ts`
   - `lib/`                   — Utilities (auth, tracking, etc.)
   - `core/`                  — Core providers (TenantProvider, DemoModeProvider, etc.)
 - `supabase/functions/`      — Edge Functions (ai-invoke, stripe-*, gdpr-*, kodee-*, workflow-*)
@@ -113,7 +113,10 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
 
 ### Centralized Config Pattern
 - **Single Source of Truth**: `src/config/*.ts` enthält strukturierte Daten
-  - `pricing.ts` → PUBLIC_PRICING_TIERS, ENTERPRISE_TIER (konsumiert von PricingPage, PricingTeaserSection, index.html JSON-LD)
+  - ⚠️ **Preise/Pläne NICHT hier**: Die Single Source of Truth für Produkt-,
+    Preis- und Berechtigungsmodell ist `shared/pricing.ts` (Repo-Wurzel).
+    `src/config/pricing.ts` ist nur noch eine Projektion davon.
+    Regeln und Workflow: `docs/product/pricing-governance.md`
   - `seo.ts` → SEO-Metadaten, Open-Graph-Tags
   - `competitor-comparisons.ts` → Alternative-Doorway-Inhalte
   - Änderungen in config propagieren überall — niemals duplizieren

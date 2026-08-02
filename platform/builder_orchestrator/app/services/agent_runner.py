@@ -59,6 +59,10 @@ _INFLIGHT: Dict[str, Set[str]] = {}
 # project_id -> Anzahl aktiver Scheduler-Schleifen (Refcount, siehe run_graph)
 _RUNNERS: Dict[str, int] = {}
 
+# project_id -> {task_id: asyncio-Handle}. Nur damit lässt sich ein laufender
+# Task hart abbrechen; ohne Handle bliebe nur das Setzen eines Flags.
+_HANDLES: Dict[str, Dict[str, "asyncio.Task"]] = {}
+
 
 class GraphCancelled(RuntimeError):
     """Der Graph wurde während der Ausführung abgebrochen."""
@@ -114,9 +118,17 @@ async def run_graph(project_id: str) -> Optional[TaskGraph]:
                 return graph  # terminal
 
             if ready:
-                await asyncio.gather(
-                    *(_dispatch(project_id, task.id, semaphore) for task in ready)
-                )
+                handles = _HANDLES.setdefault(project_id, {})
+                laufend = []
+                for task in ready:
+                    handle = asyncio.create_task(_dispatch(project_id, task.id, semaphore))
+                    handles[task.id] = handle
+                    laufend.append((task.id, handle))
+                # return_exceptions: ein abgebrochener Task darf die Schleife
+                # nicht mitreißen — sie muss danach noch aufräumen können.
+                await asyncio.gather(*(h for _, h in laufend), return_exceptions=True)
+                for task_id, _ in laufend:
+                    handles.pop(task_id, None)
             else:
                 # Nur noch laufende Tasks: kurz warten statt heiß zu drehen.
                 await asyncio.sleep(0.01)
@@ -125,6 +137,7 @@ async def run_graph(project_id: str) -> Optional[TaskGraph]:
         if _RUNNERS[project_id] <= 0:
             _RUNNERS.pop(project_id, None)
             _INFLIGHT.pop(project_id, None)
+            _HANDLES.pop(project_id, None)
 
 
 async def cancel_graph(project_id: str) -> Optional[TaskGraph]:
@@ -146,6 +159,14 @@ async def cancel_graph(project_id: str) -> Optional[TaskGraph]:
 
     graph.cancelled = True
     await task_graph.set_cancelled(project_id, True)
+
+    # Laufende Tasks hart abbrechen — aber nur die, die es vertragen.
+    # Ein DevOps-Task mitten im Deployment läuft zu Ende; ein LLM-Aufruf nicht.
+    for task_id, handle in list(_HANDLES.get(project_id, {}).items()):
+        task = graph.by_id(task_id)
+        if task is not None and task.interruptible and not handle.done():
+            logger.info("Breche laufenden Task %s ab", task_id)
+            handle.cancel()
 
     # Läuft gerade kein Scheduler, muss hier direkt aufgeräumt werden.
     if not _INFLIGHT.get(project_id):
@@ -214,6 +235,25 @@ async def _run_task(project_id: str, task_id: str) -> None:
                     handler(task, graph), timeout=task.timeout_seconds
                 )
                 span.set_attribute("status", "completed")
+        except asyncio.CancelledError:
+            # Harter Abbruch von außen. Der Task wird als abgebrochen vermerkt
+            # und die Ausnahme weitergereicht, damit asyncio sauber abwickelt.
+            duration = _ms(started)
+            audit_log.record(
+                project_id=project_id,
+                task_id=task.id,
+                agent_type=task.agent_type,
+                attempt=task.attempt,
+                status="cancelled",
+                duration_ms=duration,
+            )
+            task.status = "failed"
+            task.output = {"reason": "cancelled"}
+            # `shield`: Der Vermerk muss die Abbruch-Ausnahme überleben, sonst
+            # bliebe der Task in der Datenbank auf `running` stehen.
+            await asyncio.shield(task_graph.save_task(project_id, task))
+            _publish(project_id, task, detail="cancelled")
+            raise
         except asyncio.TimeoutError:
             duration = _ms(started)
             audit_log.record(
@@ -361,3 +401,4 @@ def reset() -> None:
     """Nur für Tests."""
     _INFLIGHT.clear()
     _RUNNERS.clear()
+    _HANDLES.clear()

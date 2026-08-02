@@ -63,7 +63,7 @@ Drei Stellen sind bewusst Fail-Closed:
 | Timeout | pro Task `timeout_seconds`, Überschreitung ⇒ `failed` |
 | Idempotenz | deterministischer `build_hash` + Entscheidungs-Cache — ein Retry erzeugt keinen zweiten Gate-Eintrag |
 | Fehler-Propagierung | `propagate_block` blockiert alle (auch indirekten) Nachfolger |
-| Abbruch | `POST /api/v1/builder/cancel` — graceful: laufende Tasks enden regulär, nichts Neues wird eingeplant |
+| Abbruch | `POST /api/v1/builder/cancel` — unterbrechbare Tasks werden hart abgebrochen, Tasks mit Außenwirkung laufen zu Ende |
 | Prüfpfad | jeder Agentenlauf inkl. Fehlversuchen in `services/audit_log.py` |
 | Tracing | Span je Task, Kontext reist als Carrier auf der Task über die Queue-Grenze |
 | Fortschritt | `GET /api/v1/builder/events` (SSE) statt Polling |
@@ -127,7 +127,7 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
 cd governance_backend   && pytest    # 41 statt 30
-cd ../builder_orchestrator && pytest # 45 statt 33
+cd ../builder_orchestrator && pytest # 48 statt 36
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -142,6 +142,23 @@ Reconnect überstehen, und dass nebenläufige Tasks sich nicht gegenseitig
 überschreiben. Für die Zustellung: Wiederholung nach Ausfall, Aufgabe nach dem
 Versuchslimit, Einhaltung des Backoffs und dass Zugestelltes nicht erneut
 versucht wird.
+
+## Abbruch
+
+`POST /api/v1/builder/cancel` bricht einen Build ab. Die Härte hängt am Task,
+nicht am Abbruchbefehl — `AgentTask.interruptible`:
+
+| Task | `interruptible` | Verhalten beim Abbruch |
+|---|---|---|
+| Planner, Architect, Coder | `True` | wird sofort abgeschossen |
+| DevOps, Governance | `False` | läuft zu Ende |
+
+Der Grund für die Unterscheidung: Ein LLM-Aufruf kostet für jede weitere
+Sekunde Geld, und sein Ergebnis will nach dem Abbruch niemand mehr. Ein
+DevOps-Task deployt dagegen und schreibt den Gate-Eintrag — ein halb
+ausgerollter Zustand ist schlimmer als ein paar Sekunden Wartezeit. In beiden
+Fällen wird **nichts Neues mehr eingeplant**, und der Abbruch landet im
+Prüfpfad.
 
 ## Persistenz
 
@@ -232,7 +249,6 @@ Gate-Katalog je Klasse in `governance_backend/app/services/risk_evaluator.py`
 - **Queue**: Der Scheduler läuft als `asyncio.Task` im selben Prozess. Die
   Queue-Grenze ist vorbereitet (Trace-Carrier auf der Task), aber noch nicht
   gezogen.
-- **Hartes Cancel**: Ein laufender Agentenaufruf wird nicht abgeschossen.
 - **Incident-Zustellung**: Ein fehlgeschlagener Webhook wird am Incident
   vermerkt, aber nicht erneut versucht (kein Retry-Cron).
 - **TLS**: Traefik läuft HTTP-only; ACME-Resolver fehlt.

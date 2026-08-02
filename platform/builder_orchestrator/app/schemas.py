@@ -53,6 +53,15 @@ class AgentTask(BaseModel):
     # doppelte Einträge im Prüfpfad.
     idempotency_key: Optional[str] = None
 
+    # Darf ein Abbruch diesen Task mitten im Lauf abschießen?
+    #
+    # Für einen LLM-Aufruf: ja — jede weitere Sekunde kostet Geld, und das
+    # Ergebnis wird ohnehin verworfen. Für einen Task mit Außenwirkung: nein —
+    # ein halb ausgerolltes Deployment oder ein angefangener Gate-Eintrag ist
+    # schlimmer als ein paar Sekunden Wartezeit. Deshalb hängt die Härte des
+    # Abbruchs am Task, nicht am Abbruchbefehl.
+    interruptible: bool = True
+
     # Trace-Kontext, der die Queue-Grenze überlebt (W3C traceparent).
     otel_carrier: Dict[str, str] = Field(default_factory=dict)
 

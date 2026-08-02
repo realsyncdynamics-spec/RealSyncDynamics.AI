@@ -148,8 +148,8 @@ class PostgresGraphRepository:
             insert into builder_agent_tasks (
                 project_id, task_id, tenant_id, agent_type, status, input, output,
                 depends_on, attempt, max_attempts, timeout_seconds,
-                idempotency_key, otel_carrier
-            ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                idempotency_key, otel_carrier, interruptible
+            ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             on conflict (project_id, task_id) do update set
                 status          = excluded.status,
                 input           = excluded.input,
@@ -160,6 +160,7 @@ class PostgresGraphRepository:
                 timeout_seconds = excluded.timeout_seconds,
                 idempotency_key = excluded.idempotency_key,
                 otel_carrier    = excluded.otel_carrier,
+                interruptible   = excluded.interruptible,
                 updated_at      = now()
             """,
             (
@@ -176,13 +177,14 @@ class PostgresGraphRepository:
                 task.timeout_seconds,
                 task.idempotency_key,
                 json.dumps(task.otel_carrier),
+                task.interruptible,
             ),
         )
 
 
 _TASK_COLUMNS = (
     "task_id, agent_type, status, input, output, depends_on, attempt, "
-    "max_attempts, timeout_seconds, idempotency_key, otel_carrier"
+    "max_attempts, timeout_seconds, idempotency_key, otel_carrier, interruptible"
 )
 
 
@@ -205,6 +207,7 @@ def _to_task(row) -> AgentTask:
         timeout_seconds=row[8],
         idempotency_key=row[9],
         otel_carrier=_as_dict(row[10]) or {},
+        interruptible=row[11],
     )
 
 

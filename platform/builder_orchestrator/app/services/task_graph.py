@@ -63,6 +63,8 @@ def build_graph(spec: BuildSpec, project: GovernanceContext) -> TaskGraph:
         max_attempts=DEVOPS_MAX_ATTEMPTS,
         timeout_seconds=DEVOPS_TIMEOUT_SECONDS,
         idempotency_key=f"{project.project_id}:deploy",
+        # Außenwirkung: baut und deployt — nicht mitten im Lauf abschießen.
+        interruptible=False,
     )
     governance = AgentTask(
         id="task_governance",
@@ -71,6 +73,8 @@ def build_graph(spec: BuildSpec, project: GovernanceContext) -> TaskGraph:
         depends_on=[devops.id],
         max_attempts=1,
         idempotency_key=f"{project.project_id}:activate",
+        # Außenwirkung: aktiviert im Inventar und meldet Telemetrie.
+        interruptible=False,
     )
 
     graph = TaskGraph(

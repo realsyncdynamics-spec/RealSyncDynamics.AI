@@ -34,6 +34,9 @@ create table if not exists builder_agent_tasks (
   max_attempts    integer not null default 3,
   timeout_seconds double precision not null default 120,
   idempotency_key text,
+  -- False bei Tasks mit Außenwirkung: ein Abbruch schießt sie nicht mitten
+  -- im Lauf ab, sondern lässt sie zu Ende laufen.
+  interruptible   boolean not null default true,
   otel_carrier    jsonb not null default '{}'::jsonb,
   -- Reihenfolge der Anlage, damit der Graph stabil zurückgelesen wird.
   position        bigserial,
@@ -41,6 +44,10 @@ create table if not exists builder_agent_tasks (
   updated_at      timestamptz not null default now(),
   primary key (project_id, task_id)
 );
+
+-- Additiv nachziehbar, falls die Tabelle aus einer früheren Fassung stammt.
+alter table builder_agent_tasks
+  add column if not exists interruptible boolean not null default true;
 
 create index if not exists idx_builder_tasks_project on builder_agent_tasks(project_id, position);
 create index if not exists idx_builder_tasks_offen on builder_agent_tasks(project_id)

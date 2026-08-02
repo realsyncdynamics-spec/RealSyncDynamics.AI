@@ -1,10 +1,12 @@
 # AI-App-Builder + RealSyncDynamicsAI-Governance — lokaler Stack.
 #
 # Start:  docker compose up --build
-# Hosts:  builder.localhost | rsd.localhost | app.localhost | traefik.localhost:8080
+# Hosts:  http://builder.localhost | http://rsd.localhost | http://app.localhost
+#         https://builder.localhost | https://rsd.localhost | https://app.localhost (selbstsigniertes Zert)
+#         traefik.localhost:8080 (Dashboard)
 #
 # Hinweis: *.localhost löst auf den meisten Systemen automatisch auf 127.0.0.1 auf.
-# Falls nicht, Einträge in /etc/hosts ergänzen.
+# Falls nicht, Einträge in /etc/hosts ergänzen. Browser-Warnung bei HTTPS ignorieren (self-signed cert).
 
 services:
   traefik:
@@ -14,10 +16,13 @@ services:
       - --configFile=/etc/traefik/traefik.yml
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080" # Dashboard (nur lokal!)
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./traefik/certs:/etc/traefik/certs:ro
+      - ./traefik/acme.json:/etc/traefik/acme.json
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - rsd_net
@@ -46,7 +51,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.governance.rule=Host(`rsd.localhost`)
-      - traefik.http.routers.governance.entrypoints=web
+      - traefik.http.routers.governance.entrypoints=web,websecure
+      - traefik.http.routers.governance.tls=true
       - traefik.http.services.governance.loadbalancer.server.port=8002
     networks:
       - rsd_net
@@ -96,7 +102,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.builder.rule=Host(`builder.localhost`)
-      - traefik.http.routers.builder.entrypoints=web
+      - traefik.http.routers.builder.entrypoints=web,websecure
+      - traefik.http.routers.builder.tls=true
       - traefik.http.services.builder.loadbalancer.server.port=8001
     networks:
       - rsd_net
@@ -106,8 +113,9 @@ services:
     container_name: rsd_frontend
     environment:
       # Browser-seitige Calls laufen über Traefik, nicht über Container-Namen.
-      NEXT_PUBLIC_BUILDER_URL: http://builder.localhost
-      NEXT_PUBLIC_GOVERNANCE_URL: http://rsd.localhost
+      # Lokal: HTTP; Prod: HTTPS (über Umgebungsvariable setzen).
+      NEXT_PUBLIC_BUILDER_URL: ${NEXT_PUBLIC_BUILDER_URL:-http://builder.localhost}
+      NEXT_PUBLIC_GOVERNANCE_URL: ${NEXT_PUBLIC_GOVERNANCE_URL:-http://rsd.localhost}
     ports:
       - "3000:3000"
     depends_on:
@@ -116,7 +124,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.frontend.rule=Host(`app.localhost`)
-      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.entrypoints=web,websecure
+      - traefik.http.routers.frontend.tls=true
       - traefik.http.services.frontend.loadbalancer.server.port=3000
     networks:
       - rsd_net

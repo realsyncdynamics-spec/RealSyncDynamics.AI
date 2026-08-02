@@ -81,13 +81,10 @@ async def apply_migrations(sql_path: str) -> None:
     logger.info("Migration angewendet: %s", sql_path)
 
 
-# Mandant für den Draft. Die Hauptplattform löst tenant_id über das
-# JWT-Mapping auf; hier steht ein fester Wert, bis die Auth-Kopplung steht.
-# TODO(Multi-Tenancy): tenant_id aus dem Request-Kontext ziehen.
-DEFAULT_TENANT_ID = os.getenv(
-    "GOVERNANCE_DEFAULT_TENANT_ID", "00000000-0000-0000-0000-000000000001"
-)
-
-
+# Mandant des laufenden Vorgangs. Kommt aus dem geprüften Token (siehe
+# app/auth.py) und nicht mehr aus einer Konstanten. Ohne konfigurierte Token
+# liefert `auth.current_tenant()` den Default — dann ist Auth bewusst aus.
 def tenant_id() -> str:
-    return DEFAULT_TENANT_ID
+    from ..auth import current_tenant
+
+    return current_tenant()

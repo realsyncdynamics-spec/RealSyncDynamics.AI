@@ -279,3 +279,66 @@ async def test_task_upsert_ist_idempotent():
     geladen = await task_graph.get_graph("prj_pg")
     assert len([t for t in geladen.tasks if t.id == "task_planner"]) == 1
     assert geladen.by_id("task_planner").status == "completed"
+
+
+# --- Mandantentrennung gegen echtes Postgres ---------------------------------
+#
+# Die Isolationstests in test_auth.py laufen gegen den In-Memory-Speicher. Die
+# WHERE-Klauseln der SQL-Abfragen sind dort nicht beteiligt — genau sie sind
+# aber die Stelle, an der Mandantentrennung mit Datenbank steht oder fällt.
+
+
+@pytest.mark.asyncio
+async def test_fremder_graph_ist_in_postgres_nicht_lesbar():
+    from app import auth
+
+    auth.set_tenant("11111111-1111-1111-1111-111111111111")
+    await task_graph.save_graph(_graph("prj_isoliert"))
+
+    auth.set_tenant("22222222-2222-2222-2222-222222222222")
+    assert await task_graph.get_graph("prj_isoliert") is None
+    assert await repository.get_repository().list_ids() == []
+
+    auth.set_tenant("11111111-1111-1111-1111-111111111111")
+    graph = await task_graph.get_graph("prj_isoliert")
+    assert graph is not None and len(graph.tasks) == 4
+    auth.set_tenant(auth.DEFAULT_TENANT_ID)
+
+
+@pytest.mark.asyncio
+async def test_fremder_upsert_ueberschreibt_keine_daten():
+    """`on conflict do update` ohne Mandantenbedingung waere ein Schreibweg in
+    fremde Zeilen: Dieselbe project_id genuegt, um Status und Ausgabe eines
+    fremden Builds zu ueberschreiben.
+
+    Auf `tenant_id` zu pruefen reicht dafuer nicht — die Spalte steht nicht in
+    der SET-Liste und bleibt so oder so stehen. Geprueft wird deshalb, was
+    tatsaechlich Schaden anrichtet: die Nutzdaten.
+    """
+    from app import auth
+
+    MANDANT_A = "11111111-1111-1111-1111-111111111111"
+    MANDANT_B = "22222222-2222-2222-2222-222222222222"
+
+    auth.set_tenant(MANDANT_A)
+    graph_a = _graph("prj_kollision")
+    graph_a.by_id("task_planner").status = "completed"
+    graph_a.by_id("task_planner").output = {"gehoert": "mandant_a"}
+    await task_graph.save_graph(graph_a)
+
+    # Mandant B schreibt unter derselben project_id — mit anderem Zustand.
+    auth.set_tenant(MANDANT_B)
+    graph_b = _graph("prj_kollision")
+    graph_b.cancelled = True
+    graph_b.by_id("task_planner").status = "failed"
+    graph_b.by_id("task_planner").output = {"gehoert": "mandant_b"}
+    await task_graph.save_graph(graph_b)
+
+    auth.set_tenant(MANDANT_A)
+    danach = await task_graph.get_graph("prj_kollision")
+    planer = danach.by_id("task_planner")
+
+    assert danach.cancelled is False, "fremder Mandant hat den Build abgebrochen"
+    assert planer.status == "completed", f"Status ueberschrieben: {planer.status}"
+    assert planer.output == {"gehoert": "mandant_a"}, f"Ausgabe ueberschrieben: {planer.output}"
+    auth.set_tenant(auth.DEFAULT_TENANT_ID)

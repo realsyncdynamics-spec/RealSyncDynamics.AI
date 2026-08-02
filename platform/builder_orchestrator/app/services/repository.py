@@ -12,6 +12,13 @@ der anderen (lost update).
 
 Deshalb gibt es `save_task` / `save_tasks`: Geschrieben wird nur, was sich
 tatsächlich geändert hat. Das Problem verschwindet strukturell, ohne Sperren.
+
+**Mandantentrennung greift beim Lesen, nicht nur beim Schreiben.** Die
+`tenant_id` wurde vorher zwar in jede Zeile geschrieben, aber nie abgefragt —
+ein `project_id` aus einer fremden Anfrage lieferte den fremden Graphen aus.
+Beide Backends filtern deshalb jetzt jeden Lese- **und** Schreibzugriff über
+`db.tenant_id()`; auch der In-Memory-Speicher, sonst prüfte ein Test die
+Trennung nur mit Datenbank.
 """
 
 from __future__ import annotations
@@ -44,22 +51,28 @@ class GraphRepository(Protocol):
 
 
 class InMemoryGraphRepository:
-    """Prozesslokaler Speicher.
+    """Prozesslokaler Speicher, nach Mandant geschlüsselt.
 
     Die Task-Methoden sind No-Ops: Der Aufrufer hält bereits eine Referenz auf
     dasselbe Objekt, die Mutation ist also schon passiert.
     """
 
     def __init__(self) -> None:
-        self._graphs: Dict[str, TaskGraph] = {}
+        # (tenant_id, project_id) -> Graph. Der Mandant gehört in den
+        # Schlüssel, nicht in eine Prüfung daneben: So kann kein Lesepfad ihn
+        # versehentlich auslassen.
+        self._graphs: Dict[tuple, TaskGraph] = {}
         self._lock = asyncio.Lock()
 
+    def _key(self, project_id: str) -> tuple:
+        return (db.tenant_id(), project_id)
+
     async def get(self, project_id: str) -> Optional[TaskGraph]:
-        return self._graphs.get(project_id)
+        return self._graphs.get(self._key(project_id))
 
     async def save(self, graph: TaskGraph) -> None:
         async with self._lock:
-            self._graphs[graph.project_id] = graph
+            self._graphs[self._key(graph.project_id)] = graph
 
     async def save_task(self, project_id: str, task: AgentTask) -> None:
         return None
@@ -68,12 +81,13 @@ class InMemoryGraphRepository:
         return None
 
     async def set_cancelled(self, project_id: str, cancelled: bool) -> None:
-        graph = self._graphs.get(project_id)
+        graph = self._graphs.get(self._key(project_id))
         if graph is not None:
             graph.cancelled = cancelled
 
     async def list_ids(self) -> List[str]:
-        return list(self._graphs)
+        mandant = db.tenant_id()
+        return [pid for (tid, pid) in self._graphs if tid == mandant]
 
     def reset(self) -> None:
         self._graphs.clear()
@@ -85,8 +99,9 @@ class PostgresGraphRepository:
     async def get(self, project_id: str) -> Optional[TaskGraph]:
         async with db.pool().connection() as conn:
             cursor = await conn.execute(
-                "select cancelled from builder_task_graphs where project_id = %s",
-                (project_id,),
+                "select cancelled from builder_task_graphs"
+                " where project_id = %s and tenant_id = %s",
+                (project_id, db.tenant_id()),
             )
             head = await cursor.fetchone()
             if head is None:
@@ -94,8 +109,8 @@ class PostgresGraphRepository:
 
             cursor = await conn.execute(
                 f"select {_TASK_COLUMNS} from builder_agent_tasks"
-                " where project_id = %s order by position",
-                (project_id,),
+                " where project_id = %s and tenant_id = %s order by position",
+                (project_id, db.tenant_id()),
             )
             rows = await cursor.fetchall()
 
@@ -113,6 +128,10 @@ class PostgresGraphRepository:
                      values (%s, %s, %s)
                 on conflict (project_id) do update
                         set cancelled = excluded.cancelled, updated_at = now()
+                      -- Ein fremder Mandant darf eine bestehende Zeile nicht
+                      -- uebernehmen. Ohne diese Bedingung waere der Upsert ein
+                      -- Weg, sich an einer fremden project_id zu bedienen.
+                      where builder_task_graphs.tenant_id = excluded.tenant_id
                 """,
                 (graph.project_id, db.tenant_id(), graph.cancelled),
             )
@@ -132,13 +151,16 @@ class PostgresGraphRepository:
         async with db.pool().connection() as conn:
             await conn.execute(
                 "update builder_task_graphs set cancelled = %s, updated_at = now()"
-                " where project_id = %s",
-                (cancelled, project_id),
+                " where project_id = %s and tenant_id = %s",
+                (cancelled, project_id, db.tenant_id()),
             )
 
     async def list_ids(self) -> List[str]:
         async with db.pool().connection() as conn:
-            cursor = await conn.execute("select project_id from builder_task_graphs")
+            cursor = await conn.execute(
+                "select project_id from builder_task_graphs where tenant_id = %s",
+                (db.tenant_id(),),
+            )
             return [row[0] for row in await cursor.fetchall()]
 
     @staticmethod
@@ -162,6 +184,7 @@ class PostgresGraphRepository:
                 otel_carrier    = excluded.otel_carrier,
                 interruptible   = excluded.interruptible,
                 updated_at      = now()
+            where builder_agent_tasks.tenant_id = excluded.tenant_id
             """,
             (
                 project_id,

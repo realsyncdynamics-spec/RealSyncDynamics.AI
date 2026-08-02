@@ -32,6 +32,9 @@ services:
       # Gesetzt = Inventar und Befunde liegen in Postgres und überleben einen
       # Neustart. Leeren, um bewusst In-Memory zu fahren.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
+      # Auth. Leer = aus (nur lokal!) — /health meldet den Zustand.
+      GOVERNANCE_AUTH_TOKENS: ${GOVERNANCE_AUTH_TOKENS:-}
+      GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
       # Incident-Dispatch an n8n; leer = Befunde nur über die API sichtbar.
       GOVERNANCE_WEBHOOK_URL: ""
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
@@ -56,6 +59,10 @@ services:
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
       GOVERNANCE_BASE_URL: http://governance_backend:8002
+      # Auth. Leer = aus (nur lokal!). Das Service-Token muss dem des
+      # Governance-Backends entsprechen, sonst weist es die Aufrufe ab.
+      BUILDER_AUTH_TOKENS: ${BUILDER_AUTH_TOKENS:-}
+      GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
       # Gesetzt = laufende und abgeschlossene Builds überleben einen Neustart.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
       BUILDER_MAX_CONCURRENCY: "4"

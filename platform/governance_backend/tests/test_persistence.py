@@ -260,3 +260,90 @@ async def test_incident_ohne_projekt_wird_abgelehnt(monkeypatch):
             title="t",
             detail="d",
         )
+
+
+# --- Mandantentrennung gegen echtes Postgres ---------------------------------
+#
+# Die Isolationstests in test_auth.py laufen In-Memory. Die WHERE-Klauseln der
+# SQL-Abfragen sind dort nicht beteiligt — genau sie tragen die Trennung aber,
+# sobald eine Datenbank im Spiel ist.
+
+MANDANT_A = "11111111-1111-1111-1111-111111111111"
+MANDANT_B = "22222222-2222-2222-2222-222222222222"
+
+
+def _reg(name: str = "Isolationstest") -> ProjectRegistration:
+    return ProjectRegistration(
+        project_name=name,
+        description="Testprojekt",
+        models=["claude"],
+        data_types=["email"],
+        data_subjects=["kunden"],
+    )
+
+
+@pytest.mark.asyncio
+async def test_fremdes_projekt_ist_in_postgres_nicht_lesbar():
+    from app import auth
+
+    auth.set_tenant(MANDANT_A)
+    project_id = await inventory.create_project(_reg(), "limited", ["tests_passed"])
+
+    auth.set_tenant(MANDANT_B)
+    assert await inventory.get_project(project_id) is None
+    assert await inventory.list_projects() == []
+
+    auth.set_tenant(MANDANT_A)
+    assert await inventory.get_project(project_id) is not None
+    auth.set_tenant(auth.DEFAULT_TENANT_ID)
+
+
+@pytest.mark.asyncio
+async def test_fremder_befund_ist_in_postgres_nicht_lesbar():
+    """Befunde sind der Prüfpfad — hier waere ein fehlender Filter der
+    Schaden, gegen den das Produkt verkauft wird."""
+    from app import auth
+
+    auth.set_tenant(MANDANT_A)
+    project_id = await inventory.create_project(_reg(), "high", [])
+    befund = await incidents.open_incident(
+        project_id=project_id,
+        incident_type="region_drift",
+        severity="high",
+        title="Regionsdrift",
+        detail="Verarbeitung in us-east-1",
+    )
+
+    auth.set_tenant(MANDANT_B)
+    assert await incidents.list_incidents() == []
+    assert await incidents.get_incident(befund.incident_id) is None
+    assert await incidents.acknowledge(befund.incident_id) is None
+
+    auth.set_tenant(MANDANT_A)
+    weiterhin = await incidents.get_incident(befund.incident_id)
+    assert weiterhin is not None and weiterhin.status == "open"
+    auth.set_tenant(auth.DEFAULT_TENANT_ID)
+
+
+@pytest.mark.asyncio
+async def test_wiederzustellung_sieht_in_postgres_alle_mandanten():
+    """Die Ausnahme von der Regel — dokumentiert in `_faellige_zustellungen`."""
+    from app import auth
+
+    for mandant in (MANDANT_A, MANDANT_B):
+        auth.set_tenant(mandant)
+        project_id = await inventory.create_project(_reg(), "high", [])
+        befund = await incidents.open_incident(
+            project_id=project_id,
+            incident_type="region_drift",
+            severity="high",
+            title="Drift",
+            detail="Drift",
+        )
+        befund.dispatch_status = "failed"
+        befund.next_dispatch_at = None
+        await incidents._update_dispatch(befund)
+
+    auth.set_tenant(auth.DEFAULT_TENANT_ID)
+    faellig = await incidents._faellige_zustellungen()
+    assert len(faellig) == 2, f"Wiederzustellung sieht nur {len(faellig)} von 2 Befunden"

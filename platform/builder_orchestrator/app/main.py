@@ -15,10 +15,11 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from . import auth
 from .clients import rsd_client
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
@@ -78,11 +79,15 @@ async def health() -> dict:
         "storage": "postgres" if db.is_enabled() else "memory",
         "llm_provider": provider.name,
         "llm_model": getattr(provider, "model", "?"),
+        # Ein Dienst, der versehentlich ohne Auth laeuft, soll das nicht
+        # verstecken — deshalb steht der Zustand hier und nicht nur im Log.
+        "auth": "enabled" if auth.is_enabled() else "disabled",
     }
 
 
 @app.post(
     "/api/v1/builder/create-spec",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=TaskGraph,
     summary="BuildSpec registrieren, Task-Graph erzeugen und starten",
 )
@@ -110,6 +115,7 @@ async def create_spec(spec: BuildSpec) -> TaskGraph:
 
 @app.get(
     "/api/v1/builder/task-status",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=TaskGraph,
     summary="Status des Task-Graphen abfragen",
 )
@@ -122,6 +128,7 @@ async def get_task_status(project_id: str) -> TaskGraph:
 
 @app.post(
     "/api/v1/builder/cancel",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=TaskGraph,
     summary="Laufenden Build abbrechen",
 )
@@ -134,6 +141,7 @@ async def cancel(payload: CancelRequest) -> TaskGraph:
 
 @app.get(
     "/api/v1/builder/events",
+    dependencies=[Depends(auth.require_tenant)],
     summary="Task-Übergänge als Server-Sent-Events",
 )
 async def stream_events(project_id: str) -> StreamingResponse:
@@ -156,6 +164,7 @@ async def stream_events(project_id: str) -> StreamingResponse:
 
 @app.get(
     "/api/v1/builder/audit",
+    dependencies=[Depends(auth.require_tenant)],
     summary="Prüfpfad der Agentenläufe eines Projekts",
 )
 async def get_audit(project_id: str) -> dict:

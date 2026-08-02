@@ -15,9 +15,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import auth
 from .otel import get_tracer, setup_tracing
 from .schemas import (
     GateCheckRequest,
@@ -111,11 +112,15 @@ async def health() -> dict:
         "status": "ok",
         "service": "governance_backend",
         "storage": "postgres" if db.is_enabled() else "memory",
+        # Ein Dienst, der versehentlich ohne Auth laeuft, soll das nicht
+        # verstecken — deshalb steht der Zustand hier und nicht nur im Log.
+        "auth": "enabled" if auth.is_enabled() else "disabled",
     }
 
 
 @app.post(
     "/api/v1/governance/register-project",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=ProjectRegistrationResponse,
     summary="Projekt registrieren und Risikoklasse bestimmen",
 )
@@ -138,6 +143,7 @@ async def register_project(payload: ProjectRegistration) -> ProjectRegistrationR
 
 @app.post(
     "/api/v1/governance/gate-check",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=GateCheckResponse,
     summary="Build-Artefakte gegen den Gate-Katalog prüfen",
 )
@@ -156,6 +162,7 @@ async def gate_check(payload: GateCheckRequest) -> GateCheckResponse:
 
 @app.get(
     "/api/v1/governance/projects",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=ProjectListResponse,
     summary="Projektliste für das Governance-Cockpit",
 )
@@ -163,7 +170,10 @@ async def list_projects() -> ProjectListResponse:
     return ProjectListResponse(projects=await inventory.list_projects())
 
 
-@app.post("/api/v1/inventory/activate", summary="Projekt als produktiv melden")
+@app.post(
+    "/api/v1/inventory/activate",
+    dependencies=[Depends(auth.require_tenant)],
+    summary="Projekt als produktiv melden")
 async def activate_inventory(payload: InventoryActivate) -> dict:
     try:
         await inventory.activate(payload)
@@ -172,7 +182,10 @@ async def activate_inventory(payload: InventoryActivate) -> dict:
     return {"status": "ok"}
 
 
-@app.post("/api/v1/runtime/telemetry", summary="Laufzeit-Event entgegennehmen")
+@app.post(
+    "/api/v1/runtime/telemetry",
+    dependencies=[Depends(auth.require_tenant)],
+    summary="Laufzeit-Event entgegennehmen")
 async def runtime_telemetry(payload: RuntimeTelemetry) -> dict:
     with tracer.start_as_current_span("governance.runtime_telemetry") as span:
         span.set_attribute("project_id", payload.project_id)
@@ -186,6 +199,7 @@ async def runtime_telemetry(payload: RuntimeTelemetry) -> dict:
 
 @app.get(
     "/api/v1/governance/incidents",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=IncidentListResponse,
     summary="Offene und quittierte Befunde der Laufzeitüberwachung",
 )
@@ -197,6 +211,7 @@ async def list_incidents(
 
 @app.post(
     "/api/v1/governance/incidents/redeliver",
+    dependencies=[Depends(auth.require_tenant)],
     summary="Fällige, zuvor gescheiterte Zustellungen jetzt wiederholen",
 )
 async def redeliver_incidents() -> dict:
@@ -206,6 +221,7 @@ async def redeliver_incidents() -> dict:
 
 @app.post(
     "/api/v1/governance/incidents/{incident_id}/acknowledge",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=Incident,
     summary="Befund quittieren",
 )

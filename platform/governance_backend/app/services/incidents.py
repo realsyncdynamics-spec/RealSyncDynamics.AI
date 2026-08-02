@@ -37,7 +37,9 @@ DISPATCH_MAX_ATTEMPTS = int(os.getenv("GOVERNANCE_DISPATCH_MAX_ATTEMPTS", "5"))
 DISPATCH_RETRY_BASE_SECONDS = float(os.getenv("GOVERNANCE_DISPATCH_RETRY_BASE", "60"))
 
 # incident_id -> Incident (In-Memory-Backend)
-_INCIDENTS: Dict[str, Incident] = {}
+# (tenant_id, incident_id) -> Befund. Der Mandant gehört in den Schlüssel und
+# nicht in eine Prüfung daneben: So kann kein Lesepfad ihn auslassen.
+_INCIDENTS: Dict[tuple, Incident] = {}
 
 
 async def open_incident(
@@ -132,6 +134,40 @@ async def _dispatch(incident: Incident) -> None:
     )
 
 
+async def _faellige_zustellungen() -> List[Incident]:
+    """Alle offenen Zustellversuche — **mandantenübergreifend**.
+
+    Das ist die eine Stelle, an der der Mandantenfilter absichtlich fehlt. Die
+    Wiederzustellung läuft als Hintergrundschleife aus dem Lifespan, also ohne
+    Request und damit ohne Mandantenkontext; `db.tenant_id()` lieferte dort den
+    Default. Mit Filter würde die Schleife stillschweigend nur die Befunde
+    *eines* Mandanten wiederholen und alle anderen liegen lassen — ein
+    verschluckter Befund ist genau das, was die Zustellung verhindern soll.
+
+    Nach außen ist das ungefährlich: Die Funktion ist privat, ihr Ergebnis
+    verlässt den Prozess nur als Webhook an die konfigurierte URL.
+    """
+    jetzt = datetime.now(timezone.utc)
+
+    if db.is_enabled():
+        async with db.pool().connection() as conn:
+            cursor = await conn.execute(
+                f"select {_COLUMNS} from governance_incidents"
+                " where dispatch_status = 'failed' order by created_at",
+            )
+            rows = await cursor.fetchall()
+        kandidaten = [_to_incident(row) for row in rows]
+    else:
+        kandidaten = [i for i in _INCIDENTS.values() if i.dispatch_status == "failed"]
+
+    return [
+        incident
+        for incident in kandidaten
+        if incident.next_dispatch_at is None
+        or datetime.fromisoformat(incident.next_dispatch_at) <= jetzt
+    ]
+
+
 async def redeliver_pending(limit: int = 50) -> Dict[str, int]:
     """Stellt fällige, zuvor gescheiterte Befunde erneut zu.
 
@@ -141,16 +177,7 @@ async def redeliver_pending(limit: int = 50) -> Dict[str, int]:
     if not WEBHOOK_URL:
         return {"versucht": 0, "zugestellt": 0, "aufgegeben": 0}
 
-    jetzt = datetime.now(timezone.utc)
-    faellig = [
-        incident
-        for incident in await list_incidents(status=None)
-        if incident.dispatch_status == "failed"
-        and (
-            incident.next_dispatch_at is None
-            or datetime.fromisoformat(incident.next_dispatch_at) <= jetzt
-        )
-    ][:limit]
+    faellig = (await _faellige_zustellungen())[:limit]
 
     zugestellt = aufgegeben = 0
     for incident in faellig:
@@ -176,27 +203,29 @@ async def get_incident(incident_id: str) -> Optional[Incident]:
     if db.is_enabled():
         async with db.pool().connection() as conn:
             cursor = await conn.execute(
-                f"select {_COLUMNS} from governance_incidents where incident_id = %s",
-                (incident_id,),
+                f"select {_COLUMNS} from governance_incidents"
+                " where incident_id = %s and tenant_id = %s",
+                (incident_id, db.tenant_id()),
             )
             row = await cursor.fetchone()
         return _to_incident(row) if row else None
 
-    return _INCIDENTS.get(incident_id)
+    return _INCIDENTS.get((db.tenant_id(), incident_id))
 
 
 async def list_incidents(
     project_id: Optional[str] = None, status: Optional[str] = None
 ) -> List[Incident]:
     if db.is_enabled():
-        clauses, params = [], []
+        # Der Mandant ist keine optionale Bedingung, sondern die erste.
+        clauses, params = ["tenant_id = %s"], [db.tenant_id()]
         if project_id:
             clauses.append("project_id = %s")
             params.append(project_id)
         if status:
             clauses.append("status = %s")
             params.append(status)
-        where = f"where {' and '.join(clauses)}" if clauses else ""
+        where = f"where {' and '.join(clauses)}"
         async with db.pool().connection() as conn:
             cursor = await conn.execute(
                 f"select {_COLUMNS} from governance_incidents {where} order by created_at desc",
@@ -205,7 +234,8 @@ async def list_incidents(
             rows = await cursor.fetchall()
         return [_to_incident(row) for row in rows]
 
-    incidents = list(_INCIDENTS.values())
+    mandant = db.tenant_id()
+    incidents = [i for (tid, _), i in _INCIDENTS.items() if tid == mandant]
     if project_id:
         incidents = [i for i in incidents if i.project_id == project_id]
     if status:
@@ -218,12 +248,12 @@ async def acknowledge(incident_id: str) -> Optional[Incident]:
         async with db.pool().connection() as conn:
             await conn.execute(
                 "update governance_incidents set status = 'acknowledged'"
-                " where incident_id = %s and status = 'open'",
-                (incident_id,),
+                " where incident_id = %s and status = 'open' and tenant_id = %s",
+                (incident_id, db.tenant_id()),
             )
         return await get_incident(incident_id)
 
-    incident = _INCIDENTS.get(incident_id)
+    incident = _INCIDENTS.get((db.tenant_id(), incident_id))
     if incident is not None and incident.status == "open":
         incident.status = "acknowledged"
     return incident
@@ -248,7 +278,7 @@ _COLUMNS = (
 
 async def _insert(incident: Incident) -> None:
     if not db.is_enabled():
-        _INCIDENTS[incident.incident_id] = incident
+        _INCIDENTS[(db.tenant_id(), incident.incident_id)] = incident
         return
 
     async with db.pool().connection() as conn:

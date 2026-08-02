@@ -126,8 +126,8 @@ Die Persistenz-Tests brauchen eine echte Datenbank und werden ohne sie
 ```bash
 docker run -d --rm -p 5433:5432 -e POSTGRES_PASSWORD=postgres postgres:16-alpine
 export TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres
-cd governance_backend   && pytest    # 43 statt 32
-cd ../builder_orchestrator && pytest # 105 statt 93
+cd governance_backend   && pytest    # 56 statt 42
+cd ../builder_orchestrator && pytest # 122 statt 108
 ```
 
 Abgedeckt: Risiko-Einstufung (alle vier Klassen, Drittland-Regel),
@@ -145,7 +145,13 @@ Form des Claude-Requests inklusive der Parameter, die auf diesem Modell einen
 einzeln (inklusive Symlink), die Limits, die Stabilität des Build-Hashes über
 Wiederholungen, jeder der fünf Nachweise in beiden Richtungen — und dass ein
 hängender Testlauf samt Kindprozessen innerhalb der Zeitgrenze abgebrochen
-wird (über die gemessene Dauer nachgewiesen, nicht über die Rückgabe).
+wird (über die gemessene Dauer nachgewiesen, nicht über die Rückgabe). Für
+Auth und Mandantentrennung: Tokenprüfung, dass ein Nutzer-Token einen
+gefälschten `X-Tenant-Id`-Header nicht überstimmt, dass ein Service-Token ohne
+Mandantenangabe abgewiesen wird, dass der Mandant den Wechsel in einen
+Hintergrundtask überlebt — und die Isolation selbst, jeweils **doppelt**: gegen
+den In-Memory-Speicher und gegen echtes Postgres, weil nur Letzteres die
+SQL-WHERE-Klauseln überhaupt ausführt.
 Gegen eine echte Datenbank zusätzlich: Wiederholbarkeit beider Migrationen,
 dass Projekte, Gate-Ergebnisse, Befunde und `at_risk`-Markierungen einen
 Reconnect überstehen, und dass nebenläufige Tasks sich nicht gegenseitig
@@ -330,15 +336,62 @@ Der `build_hash` ist der Hash über Pfade und Inhalte aller Dateien — dadurch
 trifft ein Retry denselben Hash und ruft das bereits entschiedene Gate nicht
 erneut auf.
 
+## Authentifizierung und Mandantentrennung
+
+Jeder `/api/v1/**`-Endpoint verlangt ein Bearer-Token; `/health` bleibt offen.
+**Der Token bestimmt den Mandanten** — ein Client kann ihn beweisen, nicht
+wählen:
+
+| Tokenart | Mandant | Wofür |
+|---|---|---|
+| Nutzer-Token (`BUILDER_AUTH_TOKENS` / `GOVERNANCE_AUTH_TOKENS`) | fest zugeordnet, `X-Tenant-Id` wird ignoriert | normale API-Aufrufe |
+| Service-Token (`GOVERNANCE_SERVICE_TOKEN`) | darf einen Mandanten per `X-Tenant-Id` behaupten — und **muss** es, sonst 400 | Orchestrator → Governance-Backend |
+
+Der Service-Token existiert, weil der Orchestrator das Governance-Backend im
+Hintergrund aufruft, lange nachdem die HTTP-Anfrage beantwortet ist. Die
+Alternative wäre, das Nutzer-Token bis dahin aufzubewahren — also fremde
+Zugangsdaten zu speichern.
+
+Innerhalb des Prozesses liegt der Mandant in einem `ContextVar`. Das ist der
+Grund, warum der Hintergrund-Scheduler ihn überhaupt hat: `asyncio.create_task`
+kopiert den Kontext, der Wert reist ohne zusätzlichen Parameter in den Build.
+Ein eigener Test hält das fest, weil es sonst eine Annahme über asyncio wäre.
+
+**Die Trennung greift jetzt beim Lesen.** Vorher wurde `tenant_id` zwar in jede
+Zeile geschrieben, aber nie abgefragt — ein fremdes `project_id` lieferte den
+fremden Graphen aus, und die RLS-Policies der Migration waren wirkungslos, weil
+beide Dienste mit einer Datenbankrolle arbeiten. Gefiltert wird jetzt in beiden
+Backends, auch im In-Memory-Speicher: Sonst prüfte ein Test die Trennung nur
+mit Datenbank, und der Default-Betrieb ist In-Memory. Zusätzlich sind die
+Upserts mandantengeschützt (`where … tenant_id = excluded.tenant_id`), sonst
+wäre `on conflict do update` ein Schreibweg in fremde Zeilen.
+
+**Eine Ausnahme, bewusst und dokumentiert:** Die Wiederzustellung gescheiterter
+Incident-Webhooks (`_faellige_zustellungen`) liest mandantenübergreifend. Sie
+läuft aus dem Lifespan, also ohne Request und ohne Mandantenkontext; mit Filter
+würde sie stillschweigend nur die Befunde eines Mandanten wiederholen — und ein
+verschluckter Befund ist genau das, was sie verhindern soll.
+
+**Ohne konfigurierte Token ist Auth aus.** Dann gilt der Default-Mandant, und
+`GET /health` meldet `"auth": "disabled"`. Damit bleibt `docker compose up`
+ohne Konfiguration startbar, ohne dass ein versehentlich offener Dienst das
+verstecken kann.
+
+```bash
+# Mit Auth starten
+export BUILDER_AUTH_TOKENS=tok_kunde_a:11111111-1111-1111-1111-111111111111
+export GOVERNANCE_AUTH_TOKENS=tok_kunde_a:11111111-1111-1111-1111-111111111111
+export GOVERNANCE_SERVICE_TOKEN=tok_service_geheim
+docker compose up --build
+
+curl -H "Authorization: Bearer tok_kunde_a" http://builder.localhost/api/v1/builder/task-status?project_id=...
+```
+
 ## Was noch fehlt (TODO-Marker im Code)
 
-- **Authentifizierung**: Es gibt keine. Jeder Endpoint ist offen, und
-  `project_id` ist ein freier Query-Parameter — fremde Task-Graphen und
-  Prüfpfade sind lesbar, fremde Builds abbrechbar. Damit sind auch die
-  RLS-Policies faktisch wirkungslos: Beide Dienste schreiben mit einer
-  Datenbankrolle und einer konstanten `tenant_id`
-  (`BUILDER_DEFAULT_TENANT_ID`). Für einen lokalen Draft tragbar, für alles
-  andere die erste offene Baustelle.
+- **Nutzerverwaltung**: Token stehen in einer Umgebungsvariablen, es gibt
+  keine Rotation, kein Ablaufdatum und keine Rollen. Für echten Betrieb gehört
+  dort ein Identity-Provider hin (OIDC/JWT), nicht eine Liste.
 - **Horizontale Skalierung**: Der Scheduler hält seinen Laufzeitzustand im
   Prozess (`_INFLIGHT`, `_HANDLES`), die Task-Zustände liegen in Postgres.
   Zwei Repliken würden denselben Graphen doppelt fahren — das löst erst die

@@ -25,7 +25,13 @@ from . import db
 
 # --- In-Memory-Backend ------------------------------------------------------
 
-_PROJECTS: Dict[str, ProjectRecord] = {}
+# (tenant_id, project_id) -> Projekt. Der Mandant gehört in den Schlüssel und
+# nicht in eine Prüfung daneben: So kann kein Lesepfad ihn auslassen.
+_PROJECTS: Dict[tuple, ProjectRecord] = {}
+
+
+def _key(project_id: str) -> tuple:
+    return (db.tenant_id(), project_id)
 
 
 # --- Öffentliche API --------------------------------------------------------
@@ -77,7 +83,7 @@ async def create_project(
                 ),
             )
     else:
-        _PROJECTS[project_id] = record
+        _PROJECTS[_key(project_id)] = record
 
     return project_id
 
@@ -93,10 +99,10 @@ async def activate(payload: InventoryActivate) -> ProjectRecord:
                        endpoint = %s,
                        deployment_timestamp = %s::timestamptz,
                        updated_at = now()
-                 where project_id = %s
+                 where project_id = %s and tenant_id = %s
              returning project_id
                 """,
-                (payload.endpoint, payload.deployment_timestamp, payload.project_id),
+                (payload.endpoint, payload.deployment_timestamp, payload.project_id, db.tenant_id()),
             )
             if await cursor.fetchone() is None:
                 raise KeyError(payload.project_id)
@@ -104,7 +110,7 @@ async def activate(payload: InventoryActivate) -> ProjectRecord:
         assert project is not None
         return project
 
-    project = _PROJECTS.get(payload.project_id)
+    project = _PROJECTS.get(_key(payload.project_id))
     if project is None:
         raise KeyError(payload.project_id)
 
@@ -118,13 +124,14 @@ async def get_project(project_id: str) -> Optional[ProjectRecord]:
     if db.is_enabled():
         async with db.pool().connection() as conn:
             cursor = await conn.execute(
-                f"select {_COLUMNS} from governance_projects where project_id = %s",
-                (project_id,),
+                f"select {_COLUMNS} from governance_projects"
+                " where project_id = %s and tenant_id = %s",
+                (project_id, db.tenant_id()),
             )
             row = await cursor.fetchone()
         return _to_record(row) if row else None
 
-    return _PROJECTS.get(project_id)
+    return _PROJECTS.get(_key(project_id))
 
 
 async def record_gate_result(project_id: str, status: str) -> None:
@@ -133,12 +140,12 @@ async def record_gate_result(project_id: str, status: str) -> None:
         async with db.pool().connection() as conn:
             await conn.execute(
                 "update governance_projects set last_gate_status = %s, updated_at = now()"
-                " where project_id = %s",
-                (status, project_id),
+                " where project_id = %s and tenant_id = %s",
+                (status, project_id, db.tenant_id()),
             )
         return
 
-    project = _PROJECTS.get(project_id)
+    project = _PROJECTS.get(_key(project_id))
     if project is not None:
         project.last_gate_status = status  # type: ignore[assignment]
 
@@ -149,12 +156,12 @@ async def set_compliance_status(project_id: str, status: str) -> None:
         async with db.pool().connection() as conn:
             await conn.execute(
                 "update governance_projects set compliance_status = %s, updated_at = now()"
-                " where project_id = %s",
-                (status, project_id),
+                " where project_id = %s and tenant_id = %s",
+                (status, project_id, db.tenant_id()),
             )
         return
 
-    project = _PROJECTS.get(project_id)
+    project = _PROJECTS.get(_key(project_id))
     if project is not None:
         project.compliance_status = status  # type: ignore[assignment]
 
@@ -163,12 +170,15 @@ async def list_projects() -> List[ProjectRecord]:
     if db.is_enabled():
         async with db.pool().connection() as conn:
             cursor = await conn.execute(
-                f"select {_COLUMNS} from governance_projects order by created_at desc"
+                f"select {_COLUMNS} from governance_projects"
+                " where tenant_id = %s order by created_at desc",
+                (db.tenant_id(),),
             )
             rows = await cursor.fetchall()
         return [_to_record(row) for row in rows]
 
-    return list(_PROJECTS.values())
+    mandant = db.tenant_id()
+    return [p for (tid, _), p in _PROJECTS.items() if tid == mandant]
 
 
 async def reset() -> None:

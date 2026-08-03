@@ -5,9 +5,9 @@ import { minimumPlanForPermission, planById } from '@/shared/pricing';
 /**
  * Developer Experience — REST API, SDKs, OpenAPI, Webhooks, CI/CD.
  *
- * Die Codebeispiele werden aus der OpenAPI-Beschreibung der Governance-API
- * abgeleitet (siehe docs/api/openapi.yaml). Der Plan-Hinweis kommt aus der
- * Pricing-SSoT, damit hier kein zweiter Plan-Name gepflegt wird.
+ * Die Codebeispiele sind handgepflegt und spiegeln die öffentliche
+ * Governance-API. Der Plan-Hinweis kommt aus der Pricing-SSoT, damit hier
+ * kein zweiter Plan-Name gepflegt wird.
  */
 
 const MIN_API_PLAN = minimumPlanForPermission('api');
@@ -159,13 +159,13 @@ export function DeveloperSection() {
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
-            to="/docs/api"
+            to="/api-docs"
             className="inline-flex items-center gap-2 bg-ai-cyan-400 px-4 py-2 text-sm font-semibold text-obsidian-950 transition-colors hover:bg-ai-cyan-300"
           >
             API-Dokumentation <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/governance/docs"
+            to="/docs/governance"
             className="inline-flex items-center gap-2 border border-titanium-700 px-4 py-2 text-sm font-semibold text-titanium-200 transition-colors hover:border-titanium-500"
           >
             Governance-Handbuch

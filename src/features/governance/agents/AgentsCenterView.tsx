@@ -21,6 +21,7 @@ import {
   runAgent,
   fetchAgentRuns,
   runRowToResult,
+  countRunsThisMonth,
   AUTONOMY_LABELS,
   AGENT_STATUS_LABELS,
   type AgentId,
@@ -244,6 +245,7 @@ export function AgentsCenterView() {
   const activeCount = enterpriseAgents.filter((a) => a.status === 'active').length;
   const totalRuns = allRuns.length;
   const successRuns = allRuns.filter((r) => r.status === 'success').length;
+  const monthlyRuns = countRunsThisMonth(allRuns);
 
   return (
     <div className="flex flex-col h-full bg-obsidian-950 text-titanium-100">
@@ -265,16 +267,18 @@ export function AgentsCenterView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 divide-x divide-titanium-900 border-b border-titanium-900 shrink-0">
+      <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-titanium-900 border-b border-titanium-900 shrink-0">
         {[
-          { label: 'Agenten gesamt', value: totalAgents, color: 'text-titanium-100' },
-          { label: 'Aktiv', value: activeCount, color: 'text-teal-400' },
-          { label: 'Läufe gesamt', value: totalRuns, color: 'text-titanium-100' },
-          { label: 'Erfolgreich', value: successRuns, color: 'text-teal-400' },
-        ].map(({ label, value, color }) => (
+          { label: 'Agenten gesamt', value: totalAgents, color: 'text-titanium-100', caption: undefined as string | undefined },
+          { label: 'Aktiv', value: activeCount, color: 'text-teal-400', caption: undefined },
+          { label: 'Läufe (Monat)', value: monthlyRuns, color: 'text-titanium-100', caption: 'abgerechnet' },
+          { label: 'Läufe gesamt', value: totalRuns, color: 'text-titanium-100', caption: undefined },
+          { label: 'Erfolgreich', value: successRuns, color: 'text-teal-400', caption: undefined },
+        ].map(({ label, value, color, caption }) => (
           <div key={label} className="px-6 py-3">
             <div className={`font-mono text-xl font-bold ${color}`}>{value}</div>
             <div className="font-mono text-[10px] text-titanium-600 uppercase tracking-wider">{label}</div>
+            {caption && <div className="font-mono text-[9px] text-teal-600/80 uppercase tracking-wider">{caption}</div>}
           </div>
         ))}
       </div>

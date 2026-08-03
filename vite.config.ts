@@ -5,9 +5,7 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, '.', '');
-    // GitHub Pages serves project sites under <user>.github.io/<repo>/.
-                              // VITE_BASE lets us override at build-time (e.g. for Netlify which serves at root).
-                              const base = env.VITE_BASE ?? '/';
+    const base = env.VITE_BASE ?? '/';
     return {
           base,
           plugins: [react(), tailwindcss()],
@@ -21,6 +19,22 @@ export default defineConfig(({mode}) => {
           },
           build: {
                   chunkSizeWarningLimit: 600,
+                  rollupOptions: {
+                          output: {
+                                  manualChunks(id) {
+                                          // Split heavy vendor libs only; keep React & core together
+                                          // to avoid breaking context providers
+                                          if (id.includes('node_modules/recharts')) {
+                                                  return 'vendor-recharts';
+                                          }
+                                          if (id.includes('node_modules/@supabase/supabase-js')) {
+                                                  return 'vendor-supabase';
+                                          }
+                                          // Keep React, React Router, and app code together in main chunk
+                                          // Context providers (src/core/) must stay in entry chunk
+                                  },
+                          },
+                  },
           },
           server: {
                   // HMR is disabled in AI Studio via DISABLE_HMR env var.

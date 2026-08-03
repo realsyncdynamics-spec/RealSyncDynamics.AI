@@ -17,22 +17,11 @@
 //
 // Skipping in CI? `SKIP_PRERENDER=1 npm run prerender` exit 0 ohne work.
 
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
-
-// Setup-Fehler (kein Browser, Preview-Server startet nicht) sind kategorisch
-// anders als einzelne Route-Fehler: sie liefern 0 prerenderte Seiten. Getrennt
-// markiert, damit main() sie gezielt behandeln kann.
-class SetupError extends Error {
-  constructor(message, cause) {
-    super(message);
-    this.name = 'SetupError';
-    this.cause = cause;
-  }
-}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -44,6 +33,11 @@ const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
 const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
 const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
+// Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
+// zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.
+// Ein Fehler ist tolerierbar (Build laeuft ohne Prerender weiter), ein Hang nicht.
+const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '480000', 10);
 
 if (process.env.SKIP_PRERENDER === '1') {
   console.log('[prerender] SKIP_PRERENDER=1 — exit 0 without work');
@@ -73,13 +67,39 @@ async function loadRoutes() {
   return entries;
 }
 
+// Referenz auf den laufenden vite-preview-Prozess, damit der Watchdog ihn
+// beim harten Abbruch mit beenden kann (das `finally` in main() laeuft dann
+// nicht mehr).
+let activePreview = null;
+
+// `npx vite preview` startet vite als ENKELPROZESS von npx. Ein kill() auf das
+// npx-Handle laesst vite laufen — es haelt Port 4173 und damit potenziell den
+// Build-Container. Deshalb spawnen wir in einer eigenen Prozessgruppe
+// (detached) und signalisieren die GRUPPE via negativer PID.
+function killPreview(signal) {
+  const proc = activePreview;
+  if (!proc?.pid) return;
+  activePreview = null;
+  try {
+    process.kill(-proc.pid, signal);
+  } catch {
+    // Gruppe schon weg — Einzelprozess als Rueckfallebene versuchen.
+    try { proc.kill(signal); } catch { /* bereits beendet */ }
+  }
+}
+
 // ─── Vite preview server starten + auf "ready" warten ───────────────────────
 async function startPreviewServer() {
   console.log(`[prerender] starting vite preview on port ${PORT}...`);
   const proc = spawn('npx', ['vite', 'preview', `--port=${PORT}`, '--host=127.0.0.1'], {
     cwd: ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
+    detached: true, // eigene Prozessgruppe — siehe killPreview()
   });
+  // SOFORT registrieren — nicht erst wenn der Server antwortet. Zwischen Spawn
+  // und "ready" liegen bis zu 15s; feuert der Watchdog in diesem Fenster, waere
+  // das Child sonst verwaist und wuerde Port 4173 im Build-Container halten.
+  activePreview = proc;
   proc.stdout.on('data', (d) => process.stdout.write(`[vite-preview] ${d}`));
   proc.stderr.on('data', (d) => process.stderr.write(`[vite-preview] ${d}`));
 
@@ -95,35 +115,8 @@ async function startPreviewServer() {
     } catch { /* not yet */ }
     await new Promise((r) => setTimeout(r, 250));
   }
-  proc.kill();
-  throw new SetupError('vite preview did not respond within 15s');
-}
-
-// ─── Chromium starten, bei Bedarf nachinstallieren ──────────────────────────
-// Der Prerender laeuft nicht nur in CI (wo `npx playwright install` explizit
-// als eigener Step steht), sondern auch im Cloudflare-Pages-Build, wenn dort
-// `npm run build:full` als Build-Befehl konfiguriert ist. In dem Image ist der
-// Chromium-Download nicht garantiert vorhanden — deshalb ein einmaliger
-// Install-Versuch, bevor wir aufgeben.
-async function launchBrowser() {
-  try {
-    return await chromium.launch({ headless: true });
-  } catch (first) {
-    console.warn(`[prerender] chromium launch failed (${first.message.split('\n')[0]}) — trying \`playwright install chromium\` once...`);
-    const install = spawnSync('npx', ['playwright', 'install', 'chromium'], {
-      cwd: ROOT,
-      stdio: 'inherit',
-      timeout: 300_000,
-    });
-    if (install.status !== 0) {
-      throw new SetupError('chromium not available and automatic install failed', first);
-    }
-    try {
-      return await chromium.launch({ headless: true });
-    } catch (second) {
-      throw new SetupError('chromium still not launchable after install', second);
-    }
-  }
+  killPreview('SIGKILL');
+  throw new Error('vite preview did not respond within 15s');
 }
 
 // ─── Render single route ─────────────────────────────────────────────────────
@@ -177,14 +170,81 @@ async function runWithPool(items, worker, concurrency) {
   return stats;
 }
 
+// ─── Ensure Playwright browsers are installed ───────────────────────────────
+async function ensurePlaywrightBrowsers() {
+  try {
+    const { chromium } = await import('playwright');
+    // Try to launch to detect if chromium exists
+    const browser = await chromium.launch({ headless: true });
+    await browser.close();
+    console.log(`[prerender] ✓ Playwright Chromium ready`);
+  } catch (e) {
+    console.log(`[prerender] Chromium nicht startbar (${e instanceof Error ? e.message.split('\n')[0] : e}) — versuche Installation...`);
+    // `--with-deps` ruft intern apt-get und braucht damit root. In der
+    // Cloudflare-Pages-Build-Sandbox laeuft der Build NICHT als root, dort
+    // scheitert die Variante immer. Deshalb zuerst ohne --with-deps (holt nur
+    // den Browser-Download, keine System-Pakete) und erst danach mit.
+    const variants = [
+      ['playwright', 'install', 'chromium'],
+      ['playwright', 'install', '--with-deps', 'chromium'],
+    ];
+    const errors = [];
+    for (const args of variants) {
+      const label = args.includes('--with-deps') ? 'mit --with-deps' : 'ohne --with-deps';
+      const code = await new Promise((resolve) => {
+        const proc = spawn('npx', args, { stdio: ['ignore', 'inherit', 'inherit'] });
+        proc.on('close', resolve);
+        proc.on('error', () => resolve(-1));
+      });
+      if (code !== 0) {
+        errors.push(`${label}: exit ${code}`);
+        continue;
+      }
+      // Installation meldet Erfolg — aber erst ein echter Launch beweist es.
+      try {
+        const browser = await chromium.launch({ headless: true });
+        await browser.close();
+        console.log(`[prerender] ✓ Chromium installiert (${label})`);
+        return;
+      } catch (launchErr) {
+        errors.push(`${label}: installiert, Launch scheiterte (${launchErr instanceof Error ? launchErr.message.split('\n')[0] : launchErr})`);
+      }
+    }
+    throw new Error(`Chromium nicht verfuegbar — ${errors.join(' | ')}`);
+  }
+}
+
+// ─── Build-Status als Datei ablegen ─────────────────────────────────────────
+// Die Cloudflare-Pages-Build-Logs sind nur im Dashboard einsehbar. Damit ohne
+// Dashboard-Zugriff nachvollziehbar bleibt, ob ein Deploy prerendert wurde,
+// legen wir das Ergebnis in dist/ ab — es wird mitdeployt und ist danach unter
+// /prerender-status.json abrufbar.
+// Bewusst nur Status + Kurzgrund: keine Stacktraces, keine absoluten Pfade.
+async function writeStatus(fields) {
+  const sanitize = (s) => String(s ?? '')
+    .split('\n')[0]
+    .replaceAll(ROOT, '.')
+    .replace(/\/[^\s:]*\/(node_modules|\.cache)\/\S*/g, '<pfad>')
+    .slice(0, 300);
+  const payload = { ...fields, at: new Date().toISOString() };
+  if (payload.reason) payload.reason = sanitize(payload.reason);
+  try {
+    await mkdir(DIST, { recursive: true });
+    await writeFile(join(DIST, 'prerender-status.json'), JSON.stringify(payload, null, 2), 'utf8');
+  } catch { /* Status ist Diagnose, nie ein Grund den Build zu kippen */ }
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 async function main() {
   // Sanity: dist/index.html muss existieren
   try { await access(join(DIST, 'index.html')); }
   catch {
     console.error(`[prerender] FATAL: ${DIST}/index.html missing — run vite build first`);
+    await writeStatus({ ok: false, rendered: 0, reason: 'dist/index.html fehlt — vite build lief nicht' });
     process.exit(2);
   }
+
+  await ensurePlaywrightBrowsers();
 
   const routes = await loadRoutes();
   console.log(`[prerender] ${routes.length} routes (priority >= ${PRIORITY_MIN}) to render`);
@@ -193,7 +253,7 @@ async function main() {
 
   let stats = { done: 0, failed: 0, skipped: 0 };
   try {
-    const browser = await launchBrowser();
+    const browser = await chromium.launch({ headless: true });
     try {
       stats = await runWithPool(routes, async (item) => {
         const html = await renderRoute(browser, item.route);
@@ -204,38 +264,31 @@ async function main() {
       await browser.close();
     }
   } finally {
-    previewProc.kill('SIGTERM');
+    killPreview('SIGTERM');
     await new Promise((r) => setTimeout(r, 200));
   }
 
   console.log(`[prerender] done: ${stats.done} rendered, ${stats.failed} failed, ${stats.skipped} skipped`);
+  await writeStatus({ ok: stats.failed === 0, rendered: stats.done, failed: stats.failed, skipped: stats.skipped });
   if (stats.failed > 0 && process.env.PRERENDER_STRICT === '1') {
     process.exit(1);
   }
 }
 
+// Watchdog: haerteste Absicherung gegen einen Hang. Laeuft als unref'ter Timer
+// (blockiert den Event-Loop nicht) und beendet den Prozess hart, falls MAX_MS
+// ueberschritten wird — inkl. vite-preview-Child, das sonst weiterlaufen wuerde.
+const watchdog = setTimeout(() => {
+  console.error(`[prerender] ABBRUCH: ${MAX_MS}ms Zeitlimit ueberschritten (PRERENDER_MAX_MS).`);
+  killPreview('SIGKILL');
+  process.exit(process.env.PRERENDER_STRICT === '1' ? 1 : 0);
+}, MAX_MS);
+watchdog.unref();
+
 main()
   .then(() => process.exit(0))
-  .catch((e) => {
-    // Ein gescheiterter Prerender darf den Deploy NICHT abbrechen: das Ergebnis
-    // waere eine komplett nicht deploybare Site statt einer Site ohne
-    // pre-rendertes HTML. Ohne Prerender faellt Cloudflare ueber die
-    // `/*  /index.html  200`-Regel in public/_redirects auf die SPA-Shell
-    // zurueck — schlechter fuer Crawler, aber funktionsfaehig.
-    //
-    // In CI (PRERENDER_STRICT=1) gilt das Gegenteil: dort SOLL ein fehlender
-    // Browser hart auffallen, sonst verliert man den Prerender unbemerkt.
-    if (e instanceof SetupError) {
-      console.error(`[prerender] SETUP FAILED: ${e.message}`);
-      if (e.cause) console.error(`[prerender]   cause: ${e.cause.message?.split('\n')[0]}`);
-      if (process.env.PRERENDER_STRICT === '1') {
-        console.error('[prerender] PRERENDER_STRICT=1 — treating as fatal');
-        process.exit(1);
-      }
-      console.warn('[prerender] WARNUNG: 0 Seiten pre-rendert. Der Build laeuft weiter,');
-      console.warn('[prerender] aber Crawler ohne JS-Ausfuehrung sehen nur die SPA-Shell.');
-      process.exit(0);
-    }
+  .catch(async (e) => {
     console.error('[prerender] FATAL:', e);
+    await writeStatus({ ok: false, rendered: 0, reason: e instanceof Error ? e.message : String(e) });
     process.exit(1);
   });

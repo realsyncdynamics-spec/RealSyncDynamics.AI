@@ -1,0 +1,75 @@
+# traefik/traefik.yml — Traefik Static Configuration
+#
+# Defines global Traefik settings, entry points, certificate resolvers,
+# and Docker provider configuration.
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true
+
+api:
+  insecure: true      # Dashboard accessible on :8080 (protected by Traefik itself)
+  debug: false        # Enable debug logging if needed
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entrypoint:
+          regex: "^http://(.*)$"
+          replacement: "https://$1"
+          permanent: true
+
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "realsyncdynamicsai.de"
+            sans:
+              - "*.realsyncdynamicsai.de"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false     # Only expose containers with traefik.enable=true
+    network: traefik_proxy
+    swarmMode: false
+    useBindPortIP: false
+    defaultRule: "Host(`{{ normalize .Name }}`)"
+
+  file:
+    filename: /config.yml       # Load additional config from file
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "${ACME_EMAIL}"
+      storage: acme.json
+      httpChallenge:
+        entryPoint: web
+      # Optionally use DNS challenge for wildcard certs
+      # dnsChallenge:
+      #   provider: cloudflare
+      #   resolvers:
+      #     - "1.1.1.1:53"
+      #     - "1.0.0.1:53"
+
+log:
+  level: INFO
+  filePath: /var/log/traefik/traefik.log
+
+accessLog:
+  filePath: /var/log/traefik/access.log
+  filters:
+    statusCodes:
+      - "400-499"
+      - "500-599"
+
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true

@@ -1,0 +1,288 @@
+# docker-compose.yml — RealSyncDynamics.AI Production Stack
+#
+# Architecture:
+#   Internet (HTTPS via Let's Encrypt)
+#       ↓
+#   Traefik (Reverse Proxy, TLS)
+#       ├─ Frontend (React/Vite + nginx)
+#       ├─ Ollama (Local LLM)
+#       ├─ Hermes (Task Automation)
+#       ├─ AnythingLLM (RAG)
+#       └─ Uptime Kuma (Monitoring)
+#
+# Services:
+#   - traefik: Reverse proxy with auto TLS
+#   - frontend: React SPA (nginx)
+#   - ollama: Local LLM (Gemma, Qwen)
+#   - hermes: Workflow automation
+#   - anythingllm: RAG system
+#   - uptime-kuma: Monitoring & healthchecks
+#   - watchtower: Auto-update images
+
+version: '3.8'
+
+services:
+  # ──────────────────────────────────────────────────────────────────────────
+  # INFRASTRUCTURE: Traefik Reverse Proxy + Let's Encrypt
+  # ──────────────────────────────────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.0-alpine
+    container_name: realsync-traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - traefik_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Dashboard (protected by basicauth)
+    environment:
+      # Cloudflare API for DNS challenge (optional, for wildcard certs)
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/traefik.yml:ro
+      - ./traefik/acme.json:/acme.json
+      - ./traefik/config.yml:/config.yml:ro
+      - ./logs/traefik:/var/log/traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+
+      # Dashboard
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_HOST:-traefik.realsyncdynamicsai.de}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.middlewares=traefik-basicauth"
+
+      # Basic Auth für Dashboard (user:password in htpasswd format)
+      - "traefik.http.middlewares.traefik-basicauth.basicauth.users=${TRAEFIK_BASICAUTH_USERS:-admin:$$2y$$05$$mY5Bz.AZX9lJzJf.Y7uC5uNjsQ1D3b5N4J.kQ5D5V5Z5V5ZV5Z5Z}"
+
+      # HTTP → HTTPS redirect
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=https-redirect"
+
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # APPLICATION: Frontend (React/Vite + nginx)
+  # ──────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_GOOGLE_GENAI_API_KEY: ${VITE_GOOGLE_GENAI_API_KEY:-}
+        VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+        VITE_AUTH_GOOGLE_ENABLED: ${VITE_AUTH_GOOGLE_ENABLED:-true}
+        VITE_AUTH_AZURE_ENABLED: ${VITE_AUTH_AZURE_ENABLED:-true}
+        VITE_AUTH_GITHUB_ENABLED: ${VITE_AUTH_GITHUB_ENABLED:-true}
+
+    container_name: realsync-frontend
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-realsyncdynamicsai.de}`) || Host(`www.${DOMAIN:-realsyncdynamicsai.de}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # AI SERVICES: Ollama (Local LLM)
+  # ──────────────────────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: realsync-ollama
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+      - internal
+    volumes:
+      - ./data/ollama:/root/.ollama
+    environment:
+      - OLLAMA_MODELS_DIR=/root/.ollama/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:11434/api/tags"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.ollama.rule=Host(`ollama.${DOMAIN:-realsyncdynamicsai.de}`)"
+      - "traefik.http.routers.ollama.entrypoints=websecure"
+      - "traefik.http.routers.ollama.tls=true"
+      - "traefik.http.routers.ollama.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # AI SERVICES: Hermes (Workflow Automation)
+  # ──────────────────────────────────────────────────────────────────────────
+  hermes:
+    image: n8n/n8n:latest
+    container_name: realsync-hermes
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+      - internal
+    volumes:
+      - ./data/hermes:/home/node/.n8n
+      - ./data/hermes/data:/data
+    environment:
+      - DB_TYPE=sqlite
+      - DB_SQLITE_PATH=/data/n8n.db
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_HOST=${DOMAIN:-realsyncdynamicsai.de}
+      - N8N_PROTOCOL=https
+      - N8N_WEBHOOK_URL=https://hermes.${DOMAIN:-realsyncdynamicsai.de}/
+      - WEBHOOK_TUNNEL_URL=https://hermes.${DOMAIN:-realsyncdynamicsai.de}/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5678/api/v1/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.hermes.rule=Host(`hermes.${DOMAIN:-realsyncdynamicsai.de}`)"
+      - "traefik.http.routers.hermes.entrypoints=websecure"
+      - "traefik.http.routers.hermes.tls=true"
+      - "traefik.http.routers.hermes.tls.certresolver=letsencrypt"
+      - "traefik.http.services.hermes.loadbalancer.server.port=5678"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # AI SERVICES: AnythingLLM (RAG)
+  # ──────────────────────────────────────────────────────────────────────────
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    container_name: realsync-anythingllm
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+      - internal
+    volumes:
+      - ./data/anythingllm:/app/server/storage
+    environment:
+      - STORAGE_DIR=/app/server/storage
+      - JWT_SECRET=${JWT_SECRET}
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_PATH=http://ollama:11434
+      - OLLAMA_MODEL_PREF=${OLLAMA_MODEL_PREF:-gemma2}
+    depends_on:
+      - ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3001/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.anythingllm.rule=Host(`rag.${DOMAIN:-realsyncdynamicsai.de}`)"
+      - "traefik.http.routers.anythingllm.entrypoints=websecure"
+      - "traefik.http.routers.anythingllm.tls=true"
+      - "traefik.http.routers.anythingllm.tls.certresolver=letsencrypt"
+      - "traefik.http.services.anythingllm.loadbalancer.server.port=3001"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # MONITORING: Uptime Kuma (Health Monitoring)
+  # ──────────────────────────────────────────────────────────────────────────
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: realsync-uptime-kuma
+    restart: unless-stopped
+    networks:
+      - traefik_proxy
+      - internal
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001"]
+      interval: 60s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.http.routers.uptime-kuma.rule=Host(`status.${DOMAIN:-realsyncdynamicsai.de}`)"
+      - "traefik.http.routers.uptime-kuma.entrypoints=websecure"
+      - "traefik.http.routers.uptime-kuma.tls=true"
+      - "traefik.http.routers.uptime-kuma.tls.certresolver=letsencrypt"
+      - "traefik.http.services.uptime-kuma.loadbalancer.server.port=3001"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # MAINTENANCE: Watchtower (Auto-Update Images)
+  # ──────────────────────────────────────────────────────────────────────────
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: realsync-watchtower
+    restart: unless-stopped
+    networks:
+      - internal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_REMOVE_VOLUMES=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_SCHEDULE=0 2 * * 0  # Every Sunday at 2 AM
+      - WATCHTOWER_NOTIFICATIONS=email
+      - WATCHTOWER_NOTIFICATION_EMAIL_FROM=${WATCHTOWER_EMAIL_FROM:-noreply@realsyncdynamicsai.de}
+      - WATCHTOWER_NOTIFICATION_EMAIL_TO=${WATCHTOWER_EMAIL_TO}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER=${WATCHTOWER_EMAIL_SERVER}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT=${WATCHTOWER_EMAIL_SERVER_PORT:-587}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER=${WATCHTOWER_EMAIL_USER}
+      - WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD=${WATCHTOWER_EMAIL_PASSWORD}
+
+networks:
+  # Traefik-managed network (all services connected for routing)
+  traefik_proxy:
+    name: traefik_proxy
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+  # Internal network (services communication without Traefik)
+  internal:
+    name: internal
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# Bewusst keine named volumes: alle Dienste mounten Bind-Mounts unter ./data
+# bzw. ./traefik. Zuvor deklarierte, aber von keinem Dienst referenzierte
+# Volumes (traefik_acme, ollama_data, …) haben backup.sh und healthcheck.sh in
+# die Irre geführt — die haben leere Volumes gesichert statt der echten Daten.
+# Wer hier wieder Volumes einführt, muss DATA_DIRS in scripts/backup.sh und
+# scripts/restore.sh mitziehen.

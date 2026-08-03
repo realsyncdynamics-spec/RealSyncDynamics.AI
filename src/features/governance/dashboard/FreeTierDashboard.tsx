@@ -2,8 +2,9 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useMfaRequirements } from '../../../core/billing/useMfaRequirements';
 import { ScanActionGuard } from '../../../core/billing/ScanActionGuard';
-import { ArrowRight, Zap, Lock } from 'lucide-react';
+import { ArrowRight, Zap, Lock, ShieldAlert } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { usePerformanceMonitor, measureAsync } from '../../../lib/performance';
 
@@ -16,6 +17,7 @@ interface DashboardCard {
   path?: string;
   action?: () => void;
   tier: 'free_tier' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+  mfaFeatureKey?: string; // Optional MFA feature key for sensitive operations
 }
 
 const DASHBOARD_CARDS: DashboardCard[] = [
@@ -81,6 +83,7 @@ export function FreeTierDashboard() {
   const navigate = useNavigate();
   const { tier, hasFeature, canAccess } = useEntitlements();
   const { activeTenantId, tenants } = useTenant();
+  const { checkMfaRequired } = useMfaRequirements();
   const [tenantDetails, setTenantDetails] = useState<{ orgName?: string; tenantType?: string } | null>(null);
 
   const tenant = useMemo(() => {
@@ -145,6 +148,15 @@ export function FreeTierDashboard() {
         return 'Willkommen!';
     }
   }, [tenantDetails]);
+
+  // Determine why a feature is locked (plan tier or MFA requirement)
+  const getFeatureLockReason = (feature: DashboardCard) => {
+    const mfaReq = checkMfaRequired(feature.mfaFeatureKey || '');
+    if (mfaReq.requiresMfa && mfaReq.reason) {
+      return mfaReq.reason;
+    }
+    return `Verfügbar ab Plan: ${feature.tier}`;
+  };
 
   return (
     <div className="dashboard-context min-h-screen bg-obsidian-950 p-6">
@@ -242,49 +254,60 @@ export function FreeTierDashboard() {
               }
 
               // Regular card rendering for other features
+              const lockReason = !card.accessible ? getFeatureLockReason(card) : undefined;
+
               return (
-                <button
-                  key={card.id}
-                  onClick={() => {
-                    if (card.accessible && card.path) {
-                      navigate(card.path);
-                    } else if (!card.accessible && card.access.upgradeUrl) {
-                      navigate(card.access.upgradeUrl);
-                    }
-                  }}
-                  disabled={!card.accessible}
-                  className={`
-                    text-left p-5 rounded-none border transition-all
-                    ${card.accessible
-                      ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
-                      : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-titanium-50 flex-1">
-                      {card.title}
-                    </h3>
-                    {!card.accessible && (
-                      <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
-                    )}
-                  </div>
+                <div key={card.id} className="relative group">
+                  <button
+                    onClick={() => {
+                      if (card.accessible && card.path) {
+                        navigate(card.path);
+                      } else if (!card.accessible && card.access.upgradeUrl) {
+                        navigate(card.access.upgradeUrl);
+                      }
+                    }}
+                    disabled={!card.accessible}
+                    className={`
+                      text-left p-5 rounded-none border transition-all w-full
+                      ${card.accessible
+                        ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
+                        : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
+                      }
+                    `}
+                    title={lockReason}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-titanium-50 flex-1">
+                        {card.title}
+                      </h3>
+                      {!card.accessible && (
+                        <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
+                      )}
+                    </div>
 
-                  <p className="text-xs text-titanium-400 mb-4">
-                    {card.description}
-                  </p>
+                    <p className="text-xs text-titanium-400 mb-4">
+                      {card.description}
+                    </p>
 
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-mono px-2 py-1 rounded-none ${
-                      card.accessible
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : 'bg-amber-500/10 text-amber-400'
-                    }`}>
-                      {card.accessible ? 'Verfügbar' : `Ab ${card.tier}`}
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-titanium-500" />
-                  </div>
-                </button>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-mono px-2 py-1 rounded-none ${
+                        card.accessible
+                          ? 'bg-emerald-500/10 text-emerald-400'
+                          : 'bg-amber-500/10 text-amber-400'
+                      }`}>
+                        {card.accessible ? 'Verfügbar' : `Ab ${card.tier}`}
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-titanium-500" />
+                    </div>
+                  </button>
+
+                  {/* Tooltip on hover for locked cards */}
+                  {!card.accessible && lockReason && (
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-obsidian-800 border border-titanium-600 rounded px-2 py-1 text-xs text-titanium-300 whitespace-nowrap z-10">
+                      {lockReason}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

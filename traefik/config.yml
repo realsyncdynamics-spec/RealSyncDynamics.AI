@@ -1,0 +1,67 @@
+# traefik/config.yml — Traefik Dynamic Configuration
+#
+# Additional routing rules, middlewares, and services that are not managed
+# by Docker labels. Reloaded on changes (watch: true in traefik.yml).
+
+http:
+  middlewares:
+    # Security Headers
+    securityHeaders:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "https://realsyncdynamicsai.de"
+          - "https://www.realsyncdynamicsai.de"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        frameDeny: true
+        stsIncludeSubdomains: true
+        stsMaxAge: 63072000
+        stsPreload: true
+        referrerPolicy: "no-referrer"
+        permissionsPolicy: "geolocation=(), microphone=(), camera=()"
+
+    # Rate Limiting
+    rateLimitMiddleware:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1m
+
+    # CORS
+    corsMiddleware:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "https://realsyncdynamicsai.de"
+        accessControlMaxAge: 100
+
+  # Global default router (catch-all)
+  routers:
+    # Health check endpoint
+    healthz:
+      rule: "PathPrefix(`/healthz`)"
+      entrypoints:
+        - web
+        - websecure
+      service: healthz-service
+      middlewares:
+        - securityHeaders
+
+  services:
+    healthz-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8080"

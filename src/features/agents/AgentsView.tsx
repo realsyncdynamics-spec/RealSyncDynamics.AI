@@ -38,7 +38,7 @@ export function AgentsView() {
   async function fetchAgents() {
     setLoading(true);
     const { data, error } = await supabase
-      .from('agents')
+      .from('autonomous_agents')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -54,7 +54,7 @@ export function AgentsView() {
 
   async function fetchRuns(agentId: string) {
     const { data, error } = await supabase
-      .from('agent_runs')
+      .from('autonomous_agent_runs')
       .select('*')
       .eq('agent_id', agentId)
       .order('started_at', { ascending: false })
@@ -67,7 +67,7 @@ export function AgentsView() {
 
   async function toggleAgent(agent: Agent) {
     const { error } = await supabase
-      .from('agents')
+      .from('autonomous_agents')
       .update({ enabled: !agent.enabled })
       .eq('id', agent.id);
 
@@ -78,7 +78,7 @@ export function AgentsView() {
 
   async function triggerAgent(agentId: string) {
     const { error } = await supabase
-      .from('agent_runs')
+      .from('autonomous_agent_runs')
       .insert({
         agent_id: agentId,
         triggered_by: 'manual',

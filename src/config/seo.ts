@@ -850,7 +850,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/legal/impressum': {
     title: 'Impressum | RealSyncDynamics.AI',
     description:
-      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 TMG.',
+      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
     canonical: `${SITE_URL}/legal/impressum`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -861,7 +861,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/impressum': {
     title: 'Impressum | RealSyncDynamics.AI',
     description:
-      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 TMG.',
+      'Impressum von RealSyncDynamics.AI (RealSync Dynamics, Neuhaus am Rennweg). Angaben gemäß § 5 DDG und § 18 MStV.',
     canonical: `${SITE_URL}/legal/impressum`,
   },
   '/legal/sub-processors': {

@@ -235,7 +235,7 @@ function Hero() {
                 Free Audit starten<ArrowRight className="w-4 h-4" />
               </SmartLink>
               <SmartLink to="/demo-tour" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-                <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
+                <PlayCircle className="w-4 h-4" />Dashboard-Demo ansehen
               </SmartLink>
             </div>
           </div>

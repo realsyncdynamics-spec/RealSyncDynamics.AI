@@ -1,14 +1,30 @@
-import type { GovernanceModule } from './governanceBrowserTypes';
+import type { GovernanceModule, ModuleGate } from './governanceBrowserTypes';
+import {
+  PLAN_ORDER,
+  planById,
+  hasModule,
+  hasPermission,
+  limitOf,
+  planRank,
+  resolvePlan,
+  type PlanId,
+} from '@/shared/pricing';
 
-// Tier-Hierarchie (inklusiv: höherer Tier bekommt immer alles aus niedrigeren):
-// free → starter → growth → agency → scale → enterprise
-//
-// Governance OS Browser Plan-Mapping:
-//   Free       = free
-//   Starter    = starter
-//   Professional = growth
-//   Enterprise = agency / scale / enterprise
-
+/**
+ * Navigations-Module des Governance-Workspace.
+ *
+ * ⚠️  Kein Modul führt eine eigene Plan-Liste. Der Zugriff wird über ein
+ *     `gate` aus der Pricing-SSoT abgeleitet (`shared/pricing.ts`) — sonst
+ *     driften Navigation und Pricing auseinander, was vor diesem Refactoring
+ *     nachweislich passiert ist (z.B. war der Evidence Vault im Pricing ab
+ *     Starter enthalten, in der Navigation aber erst ab Agency sichtbar).
+ *
+ * Gate-Arten:
+ *   all         — für jeden Plan sichtbar (Konto-, Übersichts- und Free-Audit-Flächen)
+ *   module      — Modul muss im Plan freigeschaltet sein
+ *   permission  — Berechtigung muss im Plan gesetzt sein
+ *   limit       — numerisches Limit muss mindestens `min` betragen
+ */
 export const GOVERNANCE_MODULES: GovernanceModule[] = [
   {
     id: 'overview',
@@ -16,7 +32,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Home',
     route: '/app',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    gate: { kind: 'all' },
     description: 'Zentrale Governance-Übersicht',
   },
   {
@@ -25,7 +41,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'LayoutDashboard',
     route: '/app/home',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    gate: { kind: 'all' },
     description: 'Echtzeit-Workspace mit Live-Daten (Auth erforderlich)',
   },
   {
@@ -34,7 +50,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Globe',
     route: '/app/websites',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
+    gate: { kind: 'all' },
     description: 'Website-Governance, Scans und Findings',
   },
   {
@@ -43,8 +59,8 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'FileCheck2',
     route: '/app/evidence',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Hashes, Snapshots und Audit Trails (read-only im Free-Plan)',
+    gate: { kind: 'all' },
+    description: 'Hashes, Snapshots und Prüfpfade (read-only im Free Audit)',
   },
   {
     id: 'ai-systems',
@@ -52,7 +68,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Cpu',
     route: '/app/ai-systems',
     status: 'beta',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    gate: { kind: 'module', module: 'eu_ai_act' },
     description: 'KI-System-Registry und EU-AI-Act-Dokumentation',
   },
   {
@@ -61,7 +77,7 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'AlertTriangle',
     route: '/app/risks',
     status: 'beta',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
+    gate: { kind: 'module', module: 'risk_register' },
     description: 'Risikoidentifikation und Priorisierung',
   },
   {
@@ -70,8 +86,8 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Activity',
     route: '/app/monitoring',
     status: 'beta',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Runtime Monitoring und Drift Alerts',
+    gate: { kind: 'module', module: 'monitoring' },
+    description: 'Laufende Überwachung von Assets und Kontrollen',
   },
   {
     id: 'security-signals',
@@ -79,35 +95,35 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'ShieldAlert',
     route: '/app/security-signals',
     status: 'beta',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Externe Security-Findings (blacklens, Cloudflare, GitHub, SIEM) → Governance',
+    gate: { kind: 'module', module: 'monitoring' },
+    description: 'Sicherheitssignale und Auffälligkeiten',
   },
   {
     id: 'vendors',
-    label: 'Vendors',
+    label: 'Dienstleister',
     icon: 'Building2',
     route: '/app/vendors',
     status: 'beta',
-    plans: ['growth', 'agency', 'scale', 'enterprise'],
-    description: 'Vendor- und DPA-Tracking',
+    gate: { kind: 'module', module: 'policy_engine' },
+    description: 'Auftragsverarbeiter und Drittparteienrisiko',
   },
   {
     id: 'reports',
-    label: 'Reports',
+    label: 'Berichte',
     icon: 'BarChart3',
     route: '/app/reports',
     status: 'beta',
-    plans: ['growth', 'agency', 'scale', 'enterprise'],
-    description: 'Compliance- und Audit-Reports',
+    gate: { kind: 'module', module: 'compliance_reports' },
+    description: 'Compliance-Berichte je Rahmenwerk',
   },
   {
     id: 'dpia',
     label: 'DSFA',
-    icon: 'ClipboardList',
+    icon: 'FileSearch',
     route: '/app/dpia',
     status: 'roadmap',
-    plans: ['growth', 'agency', 'scale', 'enterprise'],
-    description: 'DSFA/DPIA Generator',
+    gate: { kind: 'module', module: 'policy_engine' },
+    description: 'Datenschutz-Folgenabschätzung',
   },
   {
     id: 'alerts',
@@ -115,26 +131,26 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Bell',
     route: '/app/alerts',
     status: 'beta',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Laufzeit-Alerts aus Scans, Policy-Engine und Evidence',
+    gate: { kind: 'module', module: 'alerts' },
+    description: 'Benachrichtigungen bei neuen Findings',
   },
   {
     id: 'remediation',
-    label: 'Remediation',
+    label: 'Maßnahmen',
     icon: 'Wrench',
     route: '/app/remediation',
     status: 'roadmap',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Auto-Fixes, Pull Requests und Maßnahmen',
+    gate: { kind: 'module', module: 'remediation' },
+    description: 'Behebungspläne und Fortschrittsverfolgung',
   },
   {
     id: 'billing',
-    label: 'Billing',
+    label: 'Abrechnung',
     icon: 'CreditCard',
     route: '/app/billing',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Plan, Abonnement und Abrechnung',
+    gate: { kind: 'all' },
+    description: 'Plan, Rechnungen und Zahlungsmittel',
   },
   {
     id: 'team',
@@ -142,71 +158,71 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Users',
     route: '/app/team',
     status: 'live',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Rollen, Team und Zugriff',
+    gate: { kind: 'limit', limit: 'seats', min: 2 },
+    description: 'Mitglieder, Rollen und Einladungen',
   },
   {
     id: 'workflows',
     label: 'Workflows',
-    icon: 'GitMerge',
+    icon: 'GitBranch',
     route: '/app/workflows',
     status: 'live',
-    plans: ['starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'DSGVO-Prozesse automatisieren (n8n-Integration)',
+    gate: { kind: 'module', module: 'workflows' },
+    description: 'Mehrstufige Governance-Abläufe mit Freigaben',
   },
   {
     id: 'agents',
-    label: 'Agenten',
+    label: 'Agents',
     icon: 'Bot',
     route: '/app/agents',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Enterprise Skills - 15 spezialisierte Governance-Agenten',
+    gate: { kind: 'all' },
+    description: 'Governance-Agents und ihre Läufe',
   },
   {
     id: 'bots',
     label: 'Bots',
-    icon: 'MessagesSquare',
+    icon: 'MessageSquare',
     route: '/app/bots',
     status: 'live',
-    plans: ['growth', 'agency', 'scale', 'enterprise'],
-    description: 'Konversations-Bots für Chat, Telefonie, Telegram & WhatsApp (inkl. Terminbuchung & Bestellannahme)',
+    gate: { kind: 'module', module: 'ai_bots' },
+    description: 'Governance-Bots über alle Kanäle',
   },
   {
     id: 'automations',
-    label: 'Automations',
+    label: 'Automationen',
     icon: 'Zap',
     route: '/app/automations',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Automatisierungs-Skills: Audit, Dokumente, Lead-Risk u. a. — mit Kosten- und Prüfpfad-Logging',
+    gate: { kind: 'module', module: 'automation_engine' },
+    description: 'Automationsläufe und Skills',
   },
   {
     id: 'kodee',
     label: 'Kodee',
-    icon: 'Server',
+    icon: 'Terminal',
     route: '/kodee',
     status: 'live',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Kodee VPS-Assistent: Server-Ops per SSH (Status, Logs, TLS/DNS) inkl. Risiko-Advisor',
+    gate: { kind: 'module', module: 'kodee' },
+    description: 'Server-Operations-Assistent per SSH',
   },
   {
     id: 'provenance',
-    label: 'Herkunft',
-    icon: 'ShieldCheck',
+    label: 'Herkunftsnachweis',
+    icon: 'BadgeCheck',
     route: '/app/provenance',
     status: 'live',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Herkunftsnachweis (C2PA-angelehnt): Content Credentials, Chain-of-Custody, Trust-Score',
+    gate: { kind: 'permission', permission: 'provenanceSigning' },
+    description: 'Signatur, Chain-of-Custody und Trust-Score',
   },
   {
     id: 'bulk',
-    label: 'Bulk-Jobs',
+    label: 'Bulk Jobs',
     icon: 'Layers',
     route: '/app/bulk',
     status: 'live',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Massen-Scan vieler Domains: CSV-Import, Prioritäts-Queue, Retry, Fortschritt',
+    gate: { kind: 'permission', permission: 'bulkOperations' },
+    description: 'Massenläufe über viele Domains',
   },
   {
     id: 'scheduler',
@@ -214,26 +230,26 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'CalendarClock',
     route: '/app/scheduler',
     status: 'live',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Geplante Scans (täglich/wöchentlich/monatlich) mit Slack/Teams/Webhook-Benachrichtigung',
+    gate: { kind: 'permission', permission: 'scheduler' },
+    description: 'Geplante Läufe und Alarmierung',
   },
   {
     id: 'evidence-vault',
-    label: 'Vault',
+    label: 'Evidence Vault',
     icon: 'Archive',
     route: '/app/evidence-vault',
     status: 'live',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Evidence Vault Advanced: versionierte Immutable Snapshots, Retention, Legal-Hold, Audit-Timeline',
+    gate: { kind: 'permission', permission: 'evidenceVault' },
+    description: 'Unveränderliche Snapshots, Retention und Legal Hold',
   },
   {
     id: 'policy-packs',
     label: 'Policy Packs',
-    icon: 'Library',
+    icon: 'Scale',
     route: '/app/policy-packs',
     status: 'live',
-    plans: ['agency', 'scale', 'enterprise'],
-    description: 'Aktivierbare Compliance-Regelwerke: DSGVO, EU AI Act, NIS2, DORA, ISO 27001, TISAX',
+    gate: { kind: 'module', module: 'dsgvo' },
+    description: 'Aktive Rahmenwerke des Plans verwalten',
   },
   {
     id: 'documents',
@@ -241,17 +257,17 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'FileText',
     route: '/app/documents',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'DSGVO-Dokumentengenerator: DSE, AVV, TOM, VVT, DSFA',
+    gate: { kind: 'all' },
+    description: 'Erzeugte Dokumente und Nachweise',
   },
   {
     id: 'audit',
-    label: 'Audit Export',
+    label: 'Audit Center',
     icon: 'ClipboardCheck',
     route: '/app/audit',
     status: 'live',
-    plans: ['growth', 'agency', 'scale', 'enterprise'],
-    description: 'Audit-Ready Reports und Behördenexporte',
+    gate: { kind: 'module', module: 'audit_center' },
+    description: 'Prüfpfad, Audit-Läufe und Exporte',
   },
   {
     id: 'settings',
@@ -259,35 +275,69 @@ export const GOVERNANCE_MODULES: GovernanceModule[] = [
     icon: 'Settings',
     route: '/app/settings',
     status: 'live',
-    plans: ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'],
-    description: 'Mandant, Sicherheit und Integrationen',
+    gate: { kind: 'all' },
+    description: 'Konto, Sicherheit und Integrationen',
   },
 ];
 
-// Alle nicht-Roadmap-Module für die Tab-Leiste
+/** Alle nicht-Roadmap-Module für die Tab-Leiste. */
 export const TAB_MODULES = GOVERNANCE_MODULES.filter(
   (m) => m.status === 'live' || m.status === 'beta',
 );
 
-// Roadmap-Module für den More-Dock
+/** Roadmap-Module für den More-Dock. */
 export const DOCK_MODULES = GOVERNANCE_MODULES.filter(
   (m) => m.status === 'roadmap',
 );
 
-// Tier-Reihenfolge für inklusiven Vergleich
-const TIER_ORDER: GovernanceModule['plans'][number][] = [
-  'free', 'starter', 'growth', 'agency', 'scale', 'enterprise',
-];
-
-/** Gibt true zurück wenn `userPlan` Zugriff auf das Modul hat. */
-export function canAccessModule(module: GovernanceModule, userPlan: string): boolean {
-  return module.plans.includes(userPlan as GovernanceModule['plans'][number]);
-}
-
-/** Mindest-Tier für ein Modul (erster Eintrag im plans-Array nach TIER_ORDER). */
-export function minimumPlanForModule(module: GovernanceModule): string {
-  for (const tier of TIER_ORDER) {
-    if (module.plans.includes(tier)) return tier;
+/** Wertet ein Gate gegen einen konkreten Plan aus. */
+function gateAllows(gate: ModuleGate, planId: PlanId): boolean {
+  switch (gate.kind) {
+    case 'all':
+      return true;
+    case 'module':
+      return hasModule(planId, gate.module);
+    case 'permission':
+      return hasPermission(planId, gate.permission);
+    case 'limit': {
+      const value = limitOf(planId, gate.limit);
+      return value === -1 || value >= gate.min;
+    }
   }
-  return 'enterprise';
 }
+
+/**
+ * Die Pläne, die auf ein Modul zugreifen dürfen — abgeleitet, nicht gepflegt.
+ */
+export function plansForModule(module: GovernanceModule): PlanId[] {
+  return PLAN_ORDER.filter((planId) => gateAllows(module.gate, planId));
+}
+
+/**
+ * Hat `userPlan` Zugriff auf das Modul?
+ * Akzeptiert PlanId, Plan-Key und Altdaten (`scale` → `partner`).
+ * Unbekannte Pläne erhalten keinen Zugriff — defensiver Default.
+ */
+export function canAccessModule(module: GovernanceModule, userPlan: string | null | undefined): boolean {
+  const plan = resolvePlan(userPlan);
+  if (!plan) return false;
+  return gateAllows(module.gate, plan.id);
+}
+
+/**
+ * Mindest-Plan für ein Modul (niedrigster Plan nach kanonischer Reihenfolge,
+ * der das Gate erfüllt). Liefert `enterprise`, wenn kein Plan es erfüllt —
+ * dieser Fall sollte durch den Konsistenztest ausgeschlossen sein.
+ */
+export function minimumPlanForModule(module: GovernanceModule): PlanId {
+  const allowed = plansForModule(module);
+  return allowed.length > 0 ? allowed[0] : 'enterprise';
+}
+
+/** Anzeigename des Mindest-Plans, z.B. für Upgrade-Hinweise. */
+export function minimumPlanLabelForModule(module: GovernanceModule): string {
+  return planById(minimumPlanForModule(module)).name;
+}
+
+/** Sortierrang eines Plans — Re-Export für Navigations-Logik. */
+export { planRank };

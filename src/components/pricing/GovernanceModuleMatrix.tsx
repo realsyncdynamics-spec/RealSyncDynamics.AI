@@ -2,17 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { GOVERNANCE_MODULES, canAccessModule } from '../governance-os/governanceModules';
+import { ORDERED_PLANS } from '@/shared/pricing';
 
-type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
-
-const MATRIX_TIERS: { id: TierId; label: string }[] = [
-  { id: 'free',       label: 'Free' },
-  { id: 'starter',    label: 'Starter' },
-  { id: 'growth',     label: 'Growth' },
-  { id: 'agency',     label: 'Agency' },
-  { id: 'scale',      label: 'Scale' },
-  { id: 'enterprise', label: 'Enterprise' },
-];
+// Spalten und Häkchen stammen beide aus der Pricing-SSoT — die Matrix kann
+// damit nicht von den Preis-Karten abweichen. Eine eigene Tier-Liste hier
+// wäre genau die Duplikation, die der Governance-Refactor beseitigt hat.
+const MATRIX_PLANS = ORDERED_PLANS.map((plan) => ({ id: plan.id, label: plan.name }));
 
 export function GovernanceModuleMatrix() {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -53,7 +48,7 @@ export function GovernanceModuleMatrix() {
                 <th className="text-left py-3 pr-4 font-mono text-[10px] uppercase tracking-widest text-titanium-600 w-40">
                   Modul
                 </th>
-                {MATRIX_TIERS.map((t) => (
+                {MATRIX_PLANS.map((t) => (
                   <th key={t.id} className="text-center py-3 px-3 font-mono text-[10px] uppercase tracking-widest text-titanium-400 whitespace-nowrap">
                     {t.label}
                   </th>
@@ -72,8 +67,8 @@ export function GovernanceModuleMatrix() {
                   <td className="py-2.5 pr-4 font-medium text-titanium-100 whitespace-nowrap">
                     {mod.label}
                   </td>
-                  {MATRIX_TIERS.map((t) => {
-                    const ok = canAccessModule(mod, t.id as string);
+                  {MATRIX_PLANS.map((t) => {
+                    const ok = canAccessModule(mod, t.id);
                     return (
                       <td key={t.id} className="text-center py-2.5 px-3">
                         {ok

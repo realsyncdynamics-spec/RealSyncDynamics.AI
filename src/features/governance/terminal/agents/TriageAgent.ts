@@ -17,7 +17,7 @@ export interface ScanResult {
 }
 
 export interface TriageRecommendation {
-  tier: 'free_tier' | 'starter' | 'growth' | 'agency' | 'scale';
+  tier: 'free' | 'starter' | 'growth' | 'agency' | 'partner';
   message: string;
   urgency: 'low' | 'medium' | 'high' | 'critical';
 }

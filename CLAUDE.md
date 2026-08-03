@@ -237,7 +237,7 @@ src/
   pages/         104+ Seiten (1 Datei = 1 Route), public, eager imports
   features/      Auth-gated Module (billing, governance, …), lazy-loaded
   components/    Shared UI
-  config/        Single Source of Truth (pricing, seo, industries)
+  config/        Zentrale Konfiguration (seo, industries) — Preise siehe shared/
   core/          Provider (TenantProvider, DemoModeProvider, …)
   lib/           Utilities (auth, tracking)
   hooks/         React Hooks
@@ -247,6 +247,8 @@ src/
   runtime/       Agent-Integration, Telemetry-Typen
   security/      Security-Utilities
   sdk/           Client-SDK-Anbindung
+shared/
+  pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 supabase/
   functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
   migrations/    243 Migrations
@@ -258,6 +260,21 @@ deploy/ docker/ infra/  VPS-Stack (Traefik, Ollama, n8n)
 scripts/                Build-, Release-, QA-Skripte
 test/ tests/ e2e/       Vitest + Playwright
 ```
+
+### Preise, Pläne und Berechtigungen
+
+`shared/pricing.ts` ist die **einzige** Quelle für Plan-Namen, Preise,
+Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
+`src/config/pricing.ts` ist nur noch eine Projektion davon.
+
+- Änderungen ausschließlich in `shared/pricing.ts`, danach `npm run sync:pricing`
+- `npm run check:pricing` prüft Deno-Zwilling und DB-Katalog gegen die Quelle
+- Zugriff **nie** über Plan-Namen (`if (plan === 'agency')`), sondern über
+  `hasPermission()`, `hasModule()`, `limitOf()`
+- Es gibt genau sechs Pläne: Free Audit · Starter · Growth · Agency ·
+  Enterprise · Partner. Der Name „Scale" ist untersagt.
+
+Vollständige Regeln: `docs/product/pricing-governance.md`
 
 ### Routing-Struktur
 - `/` → MainLanding (Grunddesign gesperrt, Texte/Buttons frei — siehe §10)

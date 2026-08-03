@@ -6,7 +6,13 @@ import {
 } from 'lucide-react';
 import type { Recommendation, GovernanceProfile, ClassifiedFinding } from '../core/onboarding/types';
 import { estimateTimeToValue } from '../core/onboarding/recommendationEngine';
-import { PLAN_CONFIG } from '../core/billing/plan-config';
+import {
+  planById,
+  formatPriceEur,
+  checkoutHrefForPlan,
+  modulesForArea,
+  PRODUCT_AREAS,
+} from '@/shared/pricing';
 
 interface LocationState {
   profile?: GovernanceProfile;
@@ -54,24 +60,18 @@ export function GovernanceRecommendation() {
     );
   }
 
-  const planConfig = PLAN_CONFIG[recommendation.recommendedPlan];
+  // Der empfohlene Plan ist bereits kanonisch (PlanId) — es gibt keine
+  // Übersetzungstabelle mehr zwischen Onboarding und Pricing.
+  const plan = planById(recommendation.recommendedPlan);
   const timeToValue = estimateTimeToValue(recommendation.recommendedPlan, profile.dimensions[0]?.criticalityScore || 0);
 
-  // Governance-Empfehlungs-Keys → kanonische Pricing-Tiers. So landet der
-  // geführte Flow auf der EINEN Paket-Auswahl (/pricing) mit vorgewähltem
-  // Paket — statt in einem ungültigen /checkout/<*_governance> (das der
-  // Checkout ablehnt).
-  const GOV_TO_TIER: Record<string, string> = {
-    starter_governance: 'starter',
-    professional_governance: 'growth',
-    governance_os: 'agency',
-    enterprise_regulated: 'enterprise',
-  };
+  // Governance Score → Planempfehlung → CTA → Stripe Checkout.
+  // Das Ziel kommt aus checkoutHrefForPlan(), damit Empfehlung und
+  // Pricing-Karten dieselbe URL benutzen.
   const handleCheckout = () => {
-    const tier = GOV_TO_TIER[recommendation.recommendedPlan] ?? 'growth';
-    navigate(
-      `/pricing?plan=${tier}&source=governance_recommendation&audit_id=${scanId}&sector=${profile.sector}`
-    );
+    const href = checkoutHrefForPlan(plan, { source: 'governance_recommendation' });
+    const separator = href.includes('?') ? '&' : '?';
+    navigate(`${href}${separator}audit_id=${encodeURIComponent(scanId)}&sector=${encodeURIComponent(profile.sector)}`);
   };
 
   return (
@@ -104,9 +104,12 @@ export function GovernanceRecommendation() {
               ✓ Empfohlen für Dich
             </div>
             <h1 className="text-4xl sm:text-5xl font-display font-bold text-titanium-50">
-              {planConfig.metadata?.displayName}
+              {plan.name}
             </h1>
             <p className="text-lg text-titanium-300 max-w-lg mx-auto">
+              {plan.outcomeHeadline}
+            </p>
+            <p className="text-sm text-titanium-400 max-w-lg mx-auto">
               {recommendation.reasoning}
             </p>
           </div>
@@ -116,19 +119,12 @@ export function GovernanceRecommendation() {
             {/* Pricing */}
             <div className="flex items-baseline justify-between mb-6">
               <div>
-                {planConfig.metadata?.monthlyPrice ? (
-                  <>
-                    <div className="font-display font-bold text-5xl text-titanium-50">
-                      €{planConfig.metadata.monthlyPrice}
-                    </div>
-                    <div className="text-sm text-titanium-400 mt-1">/Monat · jederzeit kündbar</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="font-display font-bold text-5xl text-titanium-50">Individuell</div>
-                    <div className="text-sm text-titanium-400 mt-1">Kontaktiere unser Sales-Team</div>
-                  </>
-                )}
+                <div className="font-display font-bold text-5xl text-titanium-50">
+                  {formatPriceEur(plan.price.monthlyEur)}
+                </div>
+                <div className="text-sm text-titanium-400 mt-1">
+                  {plan.price.monthlyEur > 0 ? '/Monat · jederzeit kündbar' : 'einmalig · kein Account'}
+                </div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-cyan-300 mb-1">Zeit bis ROI</div>
@@ -204,14 +200,23 @@ export function GovernanceRecommendation() {
           {/* Plan benefits */}
           <div className="border border-titanium-700 bg-obsidian-900 p-6 rounded-none space-y-4">
             <h2 className="font-display font-bold text-titanium-50 text-lg mb-4">Was ist inbegriffen</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {['website.scan', 'website.resan', 'dsgvo.monitoring', 'aiact.classification', 'evidence.vault', 'policy.engine', 'team.members', 'api.access'].map((feature) => {
-                const hasFeature = planConfig.features[feature as keyof typeof planConfig.features];
-                if (!hasFeature) return null;
+            <div className="space-y-4">
+              {PRODUCT_AREAS.map((area) => {
+                const modules = modulesForArea(plan, area.id);
+                if (modules.length === 0) return null;
                 return (
-                  <div key={feature} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span className="text-sm text-titanium-300 capitalize">{feature.replace(/\./g, ' ')}</span>
+                  <div key={area.id}>
+                    <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-titanium-500">
+                      {area.label}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {modules.map((module) => (
+                        <div key={module.id} className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                          <span className="text-sm text-titanium-300">{module.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -220,22 +225,12 @@ export function GovernanceRecommendation() {
 
           {/* Checkout CTA */}
           <div className="flex flex-col sm:flex-row gap-3">
-            {planConfig.metadata?.monthlyPrice && (
-              <button
-                onClick={handleCheckout}
-                className="flex-1 bg-cyan-500 text-obsidian-950 px-8 py-4 font-bold text-lg rounded-none hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2"
-              >
-                Jetzt starten <ArrowRight className="h-5 w-5" />
-              </button>
-            )}
-            {!planConfig.metadata?.monthlyPrice && (
-              <a
-                href="/contact-sales?source=governance_recommendation"
-                className="flex-1 bg-cyan-500 text-obsidian-950 px-8 py-4 font-bold text-lg rounded-none hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2"
-              >
-                Enterprise anfragen <ArrowRight className="h-5 w-5" />
-              </a>
-            )}
+            <button
+              onClick={handleCheckout}
+              className="flex-1 bg-cyan-500 text-obsidian-950 px-8 py-4 font-bold text-lg rounded-none hover:bg-cyan-400 transition-colors flex items-center justify-center gap-2"
+            >
+              {plan.ctaLabel} <ArrowRight className="h-5 w-5" />
+            </button>
             <button
               onClick={() => navigate('/pricing')}
               className="flex-1 border border-titanium-700 text-titanium-200 px-8 py-4 font-bold text-lg rounded-none hover:border-titanium-400 transition-colors"

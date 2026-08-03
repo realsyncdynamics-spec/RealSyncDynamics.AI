@@ -27,7 +27,7 @@ const ZERO_USAGE: CurrentUsage = {
   complianceExportsMonthly: 0,
 };
 
-const FREE_PLAN: PlanKey = 'free';
+const FREE_PLAN: PlanKey = 'free_audit';
 
 const periodMonth = (d = new Date()): string =>
   `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-01`;

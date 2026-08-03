@@ -16,7 +16,7 @@ import { getActivePlanForTenant } from '../../lib/billing/planAccess';
 
 interface NavItem { to: string; label: string; icon: typeof Home }
 
-// KMU-Tarife sehen die „Mein Unternehmen"-Sicht; Agency/Scale/Enterprise nicht.
+// KMU-Tarife sehen die „Mein Unternehmen"-Sicht; Agency, Enterprise und Partner nicht.
 const KMU_PLANS = new Set(['free', 'starter', 'growth']);
 
 // Nav-Gruppen (Governance-OS-Finalisierung): START / GOVERNANCE / COMPLIANCE /

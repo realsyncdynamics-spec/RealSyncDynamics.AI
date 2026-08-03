@@ -1,629 +1,285 @@
 /**
- * Single Source of Truth fuer alle Pricing-Tiers (6-Tier seit PR #XXX).
+ * Frontend-Sicht auf die Pricing-SSoT.
  *
- * Konsumenten:
- *   - src/features/billing/PricingPage.tsx  (volle Pricing-Page)
- *   - src/components/sections/PricingTeaserSection.tsx (Hero + Niche-Landings)
- *   - index.html JSON-LD <script type=application/ld+json>
- *   - Stripe-Webhook + Edge-Functions (plan_key Mapping in supabase/...)
+ * ⚠️  Diese Datei enthält KEINE eigenen Preise, Limits oder Feature-Listen.
+ *     Sie leitet alles aus `shared/pricing.ts` ab und ergänzt ausschließlich
+ *     darstellungsbezogene Dinge (Tailwind-Klassen, Anzeige-Strings).
  *
- * Aenderungen hier propagieren ueberall — niemals duplizieren.
+ *     Neue Konsumenten sollten direkt aus `@/shared/pricing` importieren.
+ *     Die Typen `PricingTier` / `TierId` bestehen als Adapter für die
+ *     bestehenden Oberflächen fort — sie sind Projektionen, keine Quelle.
  *
- * Pricing-Rebalance 2026-07 (Strukturoptimierung):
- *   Neue Struktur:
- *   - Free:       kostenlos (Audit-Scan)
- *   - Starter:    79 € / Monat (Einzelunternehmen)
- *   - Growth:     249 € / Monat (KMU, kleine Teams)
- *   - Agency:     699 € / Monat (mittlere Agenturen)
- *   - Enterprise: 1.249 € / Monat (Konzerne, Großunternehmen)
- *   - Partner:    1.999 € / Monat (Reseller, Kanzleien, MSPs — Multi-Tenant)
- *
- * Reasoning:
- *   - Enterprise als Zwischenschicht zwischen Agency und Partner
- *   - Bessere Preissprünge: 79 → 249 (215%) → 699 (180%) → 1.249 (78%) → 1.999 (60%)
- *   - Partner klar als spezialisiertes Multi-Tenant-Produkt positioniert
- *   - Reduziert Kaufabbrüche durch granularere Upsell-Pfade
+ * Konsumenten: PricingPage, PricingTeaserSection, PlanSelector, BillingView,
+ * CheckoutPage, GovernanceTierGate, CostCalculator, index.html JSON-LD.
  */
 
-export type TierId = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'scale' | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'enterprise_yearly' | 'scale_yearly';
+import {
+  PLANS,
+  ORDERED_PLANS,
+  PLAN_ORDER,
+  planById,
+  planByKey,
+  normalizePlanKey,
+  planKeyFor,
+  checkoutHrefForPlan,
+  formatPriceEur,
+  formatLimit,
+  addonsFor,
+  ADDONS,
+  type Plan,
+  type PlanId,
+  type PlanKey,
+  type ChannelId,
+  type AddOn,
+  type AddOnId,
+  type FeatureGroupId,
+  type PlanFeatureMatrix,
+} from '@/shared/pricing';
 
-export type BotChannelType = 'website' | 'whatsapp' | 'telegram' | 'slack' | 'teams' | 'email' | 'voice';
+// Alles aus der SSoT bleibt über diese Datei erreichbar, damit Oberflächen
+// nicht zwischen zwei Import-Pfaden wählen müssen.
+export * from '@/shared/pricing';
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Adapter-Typen für bestehende Oberflächen
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Tier-ID inklusive Jahresvarianten.
+ *
+ * Hinweis: `scale` existiert nicht mehr. Der Plan heißt `partner`.
+ * Eingehende Altdaten werden über `normalizePlanKey()` abgebildet.
+ */
+export type TierId =
+  | PlanId
+  | 'starter_yearly'
+  | 'growth_yearly'
+  | 'agency_yearly'
+  | 'enterprise_yearly'
+  | 'partner_yearly';
+
+/** Kanal-Typ — Alias auf die SSoT, damit alte Importe weiter funktionieren. */
+export type BotChannelType = ChannelId;
 
 export interface GovernanceBotsQuota {
-  /** Maximale Anzahl produktiver Governance-Bots */
   maxBots: number;
-  /** Maximale Antworten pro Monat */
   maxAnswersPerMonth: number;
-  /** Verfuegbare Kanäle */
   channels: BotChannelType[];
-  /** Fähigkeiten (z.B. "Terminbuchung", "Risk-Tags") */
   capabilities: string[];
-  /** Besonderheiten für Phase 3 Metering */
-  meteringNotes?: string;
 }
 
+/**
+ * Projektion eines Plans auf das Karten-Format der Pricing-Oberflächen.
+ * Jedes Feld wird aus der SSoT berechnet — nichts davon ist eigenständig
+ * gepflegt.
+ */
 export interface PricingTier {
   id: TierId;
-  /** Marketing-Label */
   name: string;
-  /** Plan-Key fuer Stripe / DB (matcht public.products.default_for_plan_key) */
-  planKey: string;
-  /** Anzeige-Preis (Euro). Fuer Enterprise: priceEur=0, priceString='individuell' */
+  planKey: PlanKey;
+  /** Referenz auf den zugrundeliegenden Plan der SSoT */
+  plan: Plan;
   priceEur: number;
-  /** "0", "79", "249", "699" — als String fuer Stripe Offer-Schema */
+  /** Formatierter Betrag ohne Währungszeichen, z.B. "1.999" */
   priceString: string;
-  /** "/ Monat", "einmalig", "individuell ab 1.500 €" */
+  /** "/ Monat", "/ Jahr" oder "einmalig · kein Account" */
   priceSuffix: string;
-  /** isRecurring → mode: subscription bei Stripe Checkout */
   recurring: boolean;
-  /** Kurz-Tagline */
+  /** Ergebnis-orientierte Headline */
   tagline: string;
-  /** 3-7 Bullets fuer Tier-Card */
+  /** Technische Subheadline */
+  subline: string;
+  /** Flache Feature-Liste (aus den vier Gruppen zusammengeführt) */
   bullets: string[];
-  /** Optionale Badges (z.B. "Empfohlen", "Neu") */
-  badges?: string[];
-  /** Highlight-Ring auf der Card */
+  /** Features nach den vier verbindlichen Gruppen */
+  featureGroups: PlanFeatureMatrix;
+  badges: string[];
   highlight: boolean;
-  /** Primary-CTA-Label + Ziel */
   cta: { label: string; href: string };
-  /** Governance-Bots Kontingent für diesen Tier */
   botsQuota: GovernanceBotsQuota;
+  isYearly: boolean;
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+//  Projektion
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Bot-Fähigkeiten aus Modulen und Berechtigungen ableiten, statt sie je
+ * Plan erneut aufzuschreiben. So kann die Liste nicht von den tatsächlich
+ * freigeschalteten Modulen abweichen.
+ */
+function capabilitiesFor(plan: Plan): string[] {
+  if (plan.limits.bots === 0) return [];
+  const caps = ['AI-Act-Transparenzhinweis', 'Antwort-Logging'];
+  if (plan.modules.includes('risk_register')) caps.push('Risiko-Tags & Compliance-Flags');
+  if (plan.modules.includes('workflows')) caps.push('Terminbuchung & Fallbearbeitung');
+  if (plan.modules.includes('human_handoff')) caps.push('Human Handoff mit Eskalation');
+  if (plan.permissions.auditExport) caps.push('Evidence-Export');
+  if (plan.permissions.whiteLabelReports) caps.push('Bot-White-Label');
+  if (plan.permissions.multiTenant) caps.push('Mandanten-Isolation & Unterkonten');
+  return caps;
+}
+
+function flattenFeatures(matrix: PlanFeatureMatrix): string[] {
+  return [
+    ...matrix.audit_evidence,
+    ...matrix.ai_governance,
+    ...matrix.automation_ops,
+    ...matrix.multi_tenant_reseller,
+  ];
+}
+
+function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
+  const isYearly = interval === 'year';
+  const priceEur = isYearly ? (plan.price.yearlyEur ?? 0) : plan.price.monthlyEur;
+  const id = (isYearly ? `${plan.id}_yearly` : plan.id) as TierId;
+
+  const priceSuffix = plan.price.monthlyEur === 0
+    ? 'einmalig · kein Account'
+    : isYearly ? '/ Jahr' : '/ Monat';
+
+  return {
+    id,
+    name: isYearly ? `${plan.name} (Jährlich)` : plan.name,
+    planKey: planKeyFor(plan.id, interval),
+    plan,
+    priceEur,
+    priceString: new Intl.NumberFormat('de-DE').format(priceEur),
+    priceSuffix,
+    recurring: plan.price.monthlyEur > 0,
+    tagline: plan.outcomeHeadline,
+    subline: plan.technicalSubheadline,
+    bullets: flattenFeatures(plan.features),
+    featureGroups: plan.features,
+    badges: isYearly ? [...plan.badges, 'Zwei Monate sparen'] : [...plan.badges],
+    highlight: plan.highlight,
+    cta: {
+      label: isYearly ? `${plan.ctaLabel} (jährlich)` : plan.ctaLabel,
+      href: checkoutHrefForPlan(plan, { interval, source: 'pricing' }),
+    },
+    botsQuota: {
+      maxBots: plan.limits.bots,
+      maxAnswersPerMonth: plan.limits.answersPerMonth,
+      channels: [...plan.channels],
+      capabilities: capabilitiesFor(plan),
+    },
+    isYearly,
+  };
+}
+
+/**
+ * Alle Tiers: erst die sechs Monatspläne in kanonischer Reihenfolge,
+ * danach die Jahresvarianten in derselben Reihenfolge.
+ */
 export const PRICING_TIERS: PricingTier[] = [
-  {
-    id: 'free',
-    name: 'Free Audit',
-    planKey: 'free_audit',
-    priceEur: 0,
-    priceString: '0',
-    priceSuffix: 'einmalig · kein Account',
-    recurring: false,
-    tagline: 'Für alle, die zuerst wissen wollen, ob ihre Website offensichtliche DSGVO-Risiken hat',
-    bullets: [
-      'URL-Scan mit Compliance-Score 0–100',
-      'Top-3-Risiken sichtbar',
-      'Mini-PDF-Report',
-      'Kein Account, kein Setup',
-    ],
-    highlight: false,
-    cta: { label: 'Kostenlos starten', href: '/audit?source=pricing-free' },
-    botsQuota: {
-      maxBots: 0,
-      maxAnswersPerMonth: 0,
-      channels: [],
-      capabilities: [],
-      meteringNotes: 'Keine produktiven Bots im Free Audit',
-    },
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    planKey: 'starter',
-    priceEur: 79,
-    priceString: '79',
-    priceSuffix: '/ Monat',
-    recurring: true,
-    tagline: 'Für Unternehmen mit niedriger Governance-Komplexität, die ein klares, nachweisbares Fundament wollen',
-    bullets: [
-      'Vollständiger DSGVO-Scan mit Paragraphenbezug',
-      'DSE-Generator',
-      'Technische Consent-Setup-Empfehlungen',
-      'Kontinuierliches DSGVO-Monitoring',
-      'Lückenloser Evidence-Trail (Hash-Chain) + Audit-Export',
-      'E-Mail-Alert bei neuen Findings',
-      'Automatisierungs-Skills (Audit, Dokumente, Lead-Risk) – 25 Läufe/Monat',
-    ],
-    highlight: false,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/starter?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 1,
-      maxAnswersPerMonth: 500,
-      channels: ['website'],
-      capabilities: ['Basic Q&A', 'AI-Act-Transparenzhinweis', 'Usage-Logging'],
-      meteringNotes: 'Test-Bot mit reduzierten Limits',
-    },
-  },
-  {
-    id: 'growth',
-    name: 'Growth',
-    planKey: 'growth',
-    priceEur: 249,
-    priceString: '249',
-    priceSuffix: '/ Monat',
-    recurring: true,
-    tagline: 'Für mittlere Governance-Komplexität: KI-Governance, AI Risk Register und kontinuierliches Monitoring',
-    bullets: [
-      'Alles aus Starter',
-      'KI-Governance + AI Risk Register',
-      'Tägliches Monitoring + Drift-Detection',
-      'Consent-Timing-Analyse (pre-consent requests)',
-      'Fix-Empfehlungen mit Code-Snippets zum Copy-Paste',
-      'Risk-Dashboard im Browser',
-      'Governance-Bots (2 Bots, 2.000 Antworten/Monat, Website+WhatsApp+Telegram)',
-      'Bot-Fähigkeiten: Terminbuchung, Bestellannahme, Risk-Tags',
-      'Mehr Automatisierungs-Läufe (100/Monat)',
-    ],
-    badges: ['Empfohlen'],
-    highlight: true,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/growth?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 2,
-      maxAnswersPerMonth: 2000,
-      channels: ['website', 'whatsapp', 'telegram'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging',
-        'Risiko-Tags',
-        'Terminbuchung',
-        'Bestellannahme',
-        'Evidence-Export'
-      ],
-      meteringNotes: 'Produktive Governance-Bots mit Compliance-Features',
-    },
-  },
-  {
-    id: 'agency',
-    name: 'Agency',
-    planKey: 'agency',
-    priceEur: 699,
-    priceString: '699',
-    priceSuffix: '/ Monat',
-    recurring: true,
-    tagline: 'Für hohe Governance-Komplexität: Branchenbibliothek, Governance Agents und auditfähige Automatisierung',
-    bullets: [
-      'Alles aus Growth',
-      'Governance-Bots (10 Bots, 25.000 Antworten/Monat, alle Kanäle inkl. Voice)',
-      'Bot-White-Label mit eigenem Branding',
-      'Bot-Fähigkeiten: Fallbearbeitung, Human Handoff, Custom Intent-Matching',
-      'Branchenbibliothek (vorkonfigurierte Governance-Profile)',
-      'Governance Agents für Prüfungen & vorbereitete Maßnahmen (Review-pflichtig)',
-      'Automatische Dokumentation + Audit-Trail',
-      'White-Label-Reports mit eigenem Logo',
-      'API + Webhooks für CI/CD-Integration',
-      'Kodee VPS-Assistent (Server-Ops per SSH: Status, Logs, TLS/DNS + Risiko-Advisor)',
-      'Automatisierungs-Skills bis 500 Läufe/Monat',
-      'Herkunftsnachweis (C2PA-angelehnt): Signatur, Chain-of-Custody & Trust-Score',
-      'Bulk-Jobs: Massen-Scan vieler Domains (CSV-Import, Prioritäts-Queue, Retry)',
-      'Scheduler: geplante Scans (täglich/wöchentlich/monatlich) + Slack/Teams/Webhook-Alerts',
-      'Evidence Vault Advanced: versionierte Immutable Snapshots, Retention & Legal-Hold',
-      'Policy Packs: DSGVO, EU AI Act, NIS2, DORA, ISO 27001, TISAX (aktivierbar)',
-      'Priority-Support',
-    ],
-    badges: [],
-    highlight: false,
-    cta: { label: '14 Tage Agency testen', href: '/checkout/agency?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 10,
-      maxAnswersPerMonth: 25000,
-      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging & Audit-Trail',
-        'Risiko-Tags & Compliance-Flags',
-        'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation',
-        'Custom Intent-Matching',
-        'Evidence-Export',
-        'Bot-White-Label',
-        'Analytics & Sentiment-Analyse'
-      ],
-      meteringNotes: 'Vollständige Governance-Bots mit Enterprise-Features, Phase 3: botQuota im Subscription-Payload',
-    },
-  },
-  {
-    id: 'scale',
-    name: 'Partner',
-    planKey: 'scale',
-    priceEur: 1999,
-    priceString: '1.999',
-    priceSuffix: '/ Monat',
-    recurring: true,
-    tagline: 'Für Reseller, Kanzleien und MSPs: Multi-Tenant-Plattform für bis zu 50 Mandanten',
-    bullets: [
-      'Alles aus Enterprise',
-      'Governance-Bots (bis 50 Bots, 100.000 Antworten/Monat, Mandanten-segregiert)',
-      'Multi-Tenant-Dashboard für bis zu 50 Mandanten',
-      'White-Label-Subdomain pro Mandant (Einrichtung im Onboarding)',
-      'White-Label Branding (Logos, Farben, Texte)',
-      'Voller API-Zugriff + Webhooks',
-      'Mandanten-Isolation & Sub-Accounts',
-      'SLA 4 h auf Bug-Reports + Dedicated Support',
-    ],
-    badges: ['Reseller', 'Multi-Tenant'],
-    highlight: false,
-    cta: { label: 'Partner anfragen', href: '/contact-sales?tier=scale&source=pricing' },
-    botsQuota: {
-      maxBots: 50,
-      maxAnswersPerMonth: 100000,
-      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging & Audit-Trail',
-        'Risiko-Tags & Compliance-Flags',
-        'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation',
-        'Custom Intent-Matching',
-        'Evidence-Export',
-        'Bot-White-Label (Mandanten-segregiert)',
-        'Analytics & Sentiment-Analyse',
-        'Mandanten-Isolation & Sub-Accounts'
-      ],
-      meteringNotes: 'Multi-Tenant Governance-Bots für DSB-Kanzleien und Reseller, Phase 3: Pro-Mandant Usage-Tracking',
-    },
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    planKey: 'enterprise',
-    priceEur: 1249,
-    priceString: '1.249',
-    priceSuffix: '/ Monat',
-    recurring: true,
-    tagline: 'Für Großunternehmen und Konzerne mit erweiterten Governance-Anforderungen und SLA-Bedarf',
-    bullets: [
-      'Alles aus Agency',
-      'Governance-Bots (bis 20 Bots, 50.000 Antworten/Monat, alle Kanäle)',
-      'Multi-Tenant-Dashboard für bis zu 5 Organisationen',
-      'Zentrale Benutzerverwaltung & Rollen/Rechte',
-      'API Premium + Webhooks',
-      'White-Label Light (Branding, Logo, Farben)',
-      'Priority Support (4h Response-Zeit)',
-      'Audit Center Pro + Evidence Vault Enterprise',
-      'Scheduler Unlimited für geplante Scans',
-      'Advanced Analytics & Risk-Scoring',
-    ],
-    highlight: false,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/enterprise?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 20,
-      maxAnswersPerMonth: 50000,
-      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging & Audit-Trail',
-        'Risiko-Tags & Compliance-Flags',
-        'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation',
-        'Custom Intent-Matching',
-        'Evidence-Export',
-        'Bot-White-Label',
-        'Advanced Analytics & Sentiment-Analyse',
-        'Multi-Tenant Support'
-      ],
-      meteringNotes: 'Enterprise Governance-Bots mit Multi-Tenant-Support für Großunternehmen, Phase 3: Pro-Org Usage-Tracking',
-    },
-  },
-  // ─── Yearly Pricing Variants ────────────────────────────────────────────
-  // 12 Monate zum Preis von 10 = 2-Monate-Rabatt (16,67%).
-  // Ausnahme Agency/Partner: auf runde Beträge abgerundet (6.900 statt 6.990,
-  // 19.000 statt 19.990) — Rabatt dort also etwas höher als 2 Monatsraten.
-  // Die Beträge sind in Stripe-Mappings verankert (stripe-mapping.ts) und
-  // dürfen nicht ohne Billing-Abgleich geändert werden.
-  {
-    id: 'starter_yearly',
-    name: 'Starter (Jährlich)',
-    planKey: 'starter_yearly',
-    priceEur: 790,
-    priceString: '790',
-    priceSuffix: '/ Jahr',
-    recurring: true,
-    tagline: 'Starter mit 2-Monate-Rabatt: 79 € × 10 = 790 €/Jahr',
-    bullets: [
-      'Alles aus Starter (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
-      'Kontinuierliche DSGVO-Compliance',
-    ],
-    highlight: false,
-    badges: ['Sparen Sie 2 Monate'],
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/starter_yearly?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 1,
-      maxAnswersPerMonth: 500,
-      channels: ['website'],
-      capabilities: ['Basic Q&A', 'AI-Act-Transparenzhinweis', 'Usage-Logging'],
-      meteringNotes: 'Jährliche Abrechnung mit Rabatt',
-    },
-  },
-  {
-    id: 'growth_yearly',
-    name: 'Growth (Jährlich)',
-    planKey: 'growth_yearly',
-    priceEur: 2490,
-    priceString: '2.490',
-    priceSuffix: '/ Jahr',
-    recurring: true,
-    tagline: 'Growth mit 2-Monate-Rabatt: 249 € × 10 = 2.490 €/Jahr',
-    bullets: [
-      'Alles aus Growth (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
-      'KI-Governance + AI Risk Register (ganz Jahr)',
-    ],
-    badges: ['Empfohlen', 'Mit Rabatt'],
-    highlight: true,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/growth_yearly?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 2,
-      maxAnswersPerMonth: 2000,
-      channels: ['website', 'whatsapp', 'telegram'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging',
-        'Risiko-Tags',
-        'Terminbuchung',
-        'Bestellannahme',
-        'Evidence-Export'
-      ],
-      meteringNotes: 'Jährliche Abrechnung mit Rabatt',
-    },
-  },
-  {
-    id: 'agency_yearly',
-    name: 'Agency (Jährlich)',
-    planKey: 'agency_yearly',
-    priceEur: 6900,
-    priceString: '6.900',
-    priceSuffix: '/ Jahr',
-    recurring: true,
-    tagline: 'Agency mit Jahresrabatt: 6.900 € statt 8.388 €/Jahr',
-    bullets: [
-      'Alles aus Agency (monatlich)',
-      'Mehr als 2 Monatsraten Rabatt: 6.900 € statt 8.388 €/Jahr',
-      'Automatische Jahres-Verlängerung',
-      'Branchenbibliothek + White-Label (ganz Jahr)',
-    ],
-    highlight: false,
-    badges: ['Mit Rabatt'],
-    cta: { label: 'Agency jährlich testen', href: '/checkout/agency_yearly?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 10,
-      maxAnswersPerMonth: 25000,
-      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging & Audit-Trail',
-        'Risiko-Tags & Compliance-Flags',
-        'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation',
-        'Custom Intent-Matching',
-        'Evidence-Export',
-        'Bot-White-Label',
-        'Analytics & Sentiment-Analyse'
-      ],
-      meteringNotes: 'Jährliche Abrechnung mit Rabatt',
-    },
-  },
-  {
-    id: 'scale_yearly',
-    name: 'Partner (Jährlich)',
-    planKey: 'scale_yearly',
-    priceEur: 19000,
-    priceString: '19.000',
-    priceSuffix: '/ Jahr',
-    recurring: true,
-    tagline: 'Partner mit Jahresrabatt: 19.000 € statt 23.988 €/Jahr',
-    bullets: [
-      'Alles aus Partner (monatlich)',
-      'Mehr als 2 Monatsraten Rabatt: 19.000 € statt 23.988 €/Jahr',
-      'Automatische Jahres-Verlängerung',
-      'Multi-Tenant für bis zu 50 Mandanten (ganz Jahr)',
-    ],
-    badges: ['Reseller', 'Mit Rabatt'],
-    highlight: false,
-    cta: { label: 'Partner jährlich anfragen', href: '/contact-sales?tier=scale_yearly&source=pricing' },
-    botsQuota: {
-      maxBots: 50,
-      maxAnswersPerMonth: 100000,
-      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging & Audit-Trail',
-        'Risiko-Tags & Compliance-Flags',
-        'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation',
-        'Custom Intent-Matching',
-        'Evidence-Export',
-        'Bot-White-Label (Mandanten-segregiert)',
-        'Analytics & Sentiment-Analyse',
-        'Mandanten-Isolation & Sub-Accounts'
-      ],
-      meteringNotes: 'Jährliche Abrechnung mit Rabatt für Multi-Tenant DSB-Kanzleien',
-    },
-  },
-  {
-    id: 'enterprise_yearly',
-    name: 'Enterprise (Jährlich)',
-    planKey: 'enterprise_yearly',
-    priceEur: 12490,
-    priceString: '12.490',
-    priceSuffix: '/ Jahr',
-    recurring: true,
-    tagline: 'Enterprise mit 2-Monate-Rabatt: 1.249 € × 10 = 12.490 €/Jahr',
-    bullets: [
-      'Alles aus Enterprise (monatlich)',
-      '2-Monate-Rabatt: zahle 10, nutze 12 Monate',
-      'Automatische Jahres-Verlängerung',
-      'Multi-Tenant für bis zu 5 Organisationen (ganz Jahr)',
-    ],
-    highlight: false,
-    cta: { label: '14 Tage kostenlos testen', href: '/checkout/enterprise_yearly?source=pricing&pilot=true' },
-    botsQuota: {
-      maxBots: 20,
-      maxAnswersPerMonth: 50000,
-      channels: ['website', 'whatsapp', 'telegram', 'slack', 'teams', 'email', 'voice'],
-      capabilities: [
-        'AI-Act-Transparenzhinweis',
-        'Antwort-Logging & Audit-Trail',
-        'Risiko-Tags & Compliance-Flags',
-        'Terminbuchung & Fallbearbeitung',
-        'Human Handoff mit Eskalation',
-        'Custom Intent-Matching',
-        'Evidence-Export',
-        'Bot-White-Label',
-        'Advanced Analytics & Sentiment-Analyse',
-        'Multi-Tenant Support'
-      ],
-      meteringNotes: 'Jährliche Abrechnung mit Rabatt für Enterprise Multi-Tenant',
-    },
-  },
+  ...ORDERED_PLANS.map((plan) => toTier(plan, 'month')),
+  ...ORDERED_PLANS.filter((plan) => plan.yearlyPlanKey !== null).map((plan) => toTier(plan, 'year')),
 ];
 
-/** Quick-Lookup nach id */
+/** Die fünf buchbaren Monatspläne (Starter … Partner) für Pricing-Grids. */
+export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
+  (tier) => !tier.isYearly && tier.priceEur > 0,
+);
+
+/** Alle Monats-Tiers inklusive Free — für Vergleichstabellen. */
+export const MONTHLY_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter((tier) => !tier.isYearly);
+
+/** Die Jahresvarianten. */
+export const YEARLY_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter((tier) => tier.isYearly);
+
+/** Lookup nach Tier-ID. */
 export function tierById(id: TierId): PricingTier | undefined {
-  return PRICING_TIERS.find((t) => t.id === id);
+  return PRICING_TIERS.find((tier) => tier.id === id);
 }
 
 /**
- * Die 5 selbst buchbaren Pakete (Starter 79 € → Partner 1.999 €) für Pricing-
- * Grids auf Landing/Pricing/Checkout. Enterprise ist jetzt ein 1.249 €
- * self-service-Tier zwischen Agency (699 €) und Partner (1.999 €).
- * Yearly-Varianten sind hier ausgeschlossen (werden separat verwaltet).
- *
- * Aufsteigend nach Preis sortiert — PRICING_TIERS führt `scale` vor
- * `enterprise` (historische Array-Position, von test/config/pricing.test.ts
- * gepinnt), im Grid muss Enterprise (1.249 €) aber VOR Partner (1.999 €)
- * stehen.
+ * Lookup nach beliebigem Plan-Key — inklusive Altdaten wie `scale`.
+ * Liefert die Monatsvariante, sofern der Key keine Jahresvariante ist.
  */
-export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
-  (t) => !['free', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'scale_yearly'].includes(t.id)
-).sort((a, b) => a.priceEur - b.priceEur);
+export function tierByPlanKey(rawKey: string | null | undefined): PricingTier | undefined {
+  // Erst normalisieren: `scale_yearly` muss auf die JAHRES-Variante von
+  // Partner zeigen, nicht auf die Monatsvariante. Ein Vergleich gegen den
+  // Rohwert würde die Jahresvariante verfehlen und still auf den Monatsplan
+  // zurückfallen.
+  const key = normalizePlanKey(rawKey);
+  if (!key) return undefined;
+  const plan = planByKey(key);
+  if (!plan) return undefined;
+  return PRICING_TIERS.find((tier) => tier.planKey === key)
+    ?? PRICING_TIERS.find((tier) => tier.id === plan.id);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Darstellung
+// ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Akzentfarbe pro Tier — sorgt für farbliche Trennung der Pakete in
- * Pricing-Grids. Klassen sind als vollstaendige Literale hinterlegt, damit
- * Tailwinds Content-Scanner sie erkennt (dynamisch zusammengesetzte
- * Klassennamen wie `border-t-${x}` werden NICHT erkannt).
+ * Akzentfarbe je Plan. Klassen sind vollständige Literale, damit Tailwinds
+ * Content-Scanner sie erkennt — dynamisch zusammengesetzte Klassennamen
+ * werden NICHT erkannt.
  */
-export const TIER_ACCENT: Record<TierId, { border: string; text: string }> = {
-  free:              { border: 'border-t-silver-400',    text: 'text-silver-400' },
-  starter:           { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
-  growth:            { border: 'border-t-security-500',  text: 'text-security-500' },
-  agency:            { border: 'border-t-violet-400',    text: 'text-violet-400' },
-  enterprise:        { border: 'border-t-emerald-400',   text: 'text-emerald-400' },
-  scale:             { border: 'border-t-gold-400',      text: 'text-gold-400' },
-  starter_yearly:    { border: 'border-t-ai-cyan-400',   text: 'text-ai-cyan-400' },
-  growth_yearly:     { border: 'border-t-security-500',  text: 'text-security-500' },
-  agency_yearly:     { border: 'border-t-violet-400',    text: 'text-violet-400' },
-  enterprise_yearly: { border: 'border-t-emerald-400',   text: 'text-emerald-400' },
-  scale_yearly:      { border: 'border-t-gold-400',      text: 'text-gold-400' },
+const PLAN_ACCENT: Record<PlanId, { border: string; text: string; ring: string }> = {
+  free:       { border: 'border-t-silver-400',   text: 'text-silver-400',   ring: 'ring-silver-400/30' },
+  starter:    { border: 'border-t-ai-cyan-400',  text: 'text-ai-cyan-400',  ring: 'ring-ai-cyan-400/30' },
+  growth:     { border: 'border-t-security-500', text: 'text-security-500', ring: 'ring-security-500/30' },
+  agency:     { border: 'border-t-violet-400',   text: 'text-violet-400',   ring: 'ring-violet-400/30' },
+  enterprise: { border: 'border-t-emerald-400',  text: 'text-emerald-400',  ring: 'ring-emerald-400/30' },
+  partner:    { border: 'border-t-gold-400',     text: 'text-gold-400',     ring: 'ring-gold-400/30' },
 };
 
-/** Trust-Note unter Pricing-Cards */
-export const PRICING_TRUST_NOTE =
-  'Free Audit kostenlos · 14 Tage kostenlos testen · Monatlich kündbar · Keine Setup-Gebühren · Made in Germany';
+/** Akzentfarbe je Tier — Jahresvarianten erben die Farbe ihres Basisplans. */
+export const TIER_ACCENT: Record<TierId, { border: string; text: string; ring: string }> = (() => {
+  const map = {} as Record<TierId, { border: string; text: string; ring: string }>;
+  for (const plan of PLANS) {
+    map[plan.id] = PLAN_ACCENT[plan.id];
+    if (plan.yearlyPlanKey) {
+      map[`${plan.id}_yearly` as TierId] = PLAN_ACCENT[plan.id];
+    }
+  }
+  return map;
+})();
 
-// ─── Governance-Bots Add-ons ──────────────────────────────────────────────────
+/** Akzentfarbe je Produktbereich — einheitlich über alle Oberflächen. */
+export const AREA_ACCENT = {
+  govern:   { text: 'text-security-500',  border: 'border-security-500/40',  bg: 'bg-security-500/10' },
+  automate: { text: 'text-ai-cyan-400',   border: 'border-ai-cyan-400/40',   bg: 'bg-ai-cyan-400/10' },
+  engage:   { text: 'text-violet-400',    border: 'border-violet-400/40',    bg: 'bg-violet-400/10' },
+} as const;
+
+// ─────────────────────────────────────────────────────────────────────────
+//  Add-on-Adapter
+// ─────────────────────────────────────────────────────────────────────────
 
 export interface BotAddOn {
-  id: string;
+  id: AddOnId;
   name: string;
   description: string;
   bullets: string[];
   priceEur: number;
   priceSuffix: string;
-  includeInTiers: TierId[]; // Welche Tiers zeigen dieses Add-on?
 }
 
-/**
- * Bot Add-on-Karten — zusätzlich buchbar für Growth/Agency/Scale/Enterprise.
- * Free/Starter: keine Add-ons, da maxBots=0 oder sehr niedrig.
- *
- * Phase 3 TODO: Diese Add-ons in den Checkout-Payload mit answerQuota, channels, addons[] weben.
- */
-export const BOT_ADDONS: BotAddOn[] = [
-  {
-    id: 'response-pack-5k',
-    name: 'Response Pack 5K',
-    description: 'Zusätzliche 5.000 Bot-Antworten pro Monat',
-    bullets: [
-      'Weitere 5.000 Antworten/Monat',
-      'Alle Kanäle nutzbar',
-      'Zur bestehenden Quote addierbar',
-      'Überschuss-Antworten: automatisch auf nächsten Monat verrechnet',
-    ],
-    priceEur: 49,
-    priceSuffix: '/ Monat',
-    includeInTiers: ['growth', 'agency', 'scale', 'enterprise'],
-  },
-  {
-    id: 'whatsapp-channel',
-    name: 'WhatsApp Bot Erweiterung',
-    description: 'WhatsApp Business-Integration für Ihre Governance-Bots',
-    bullets: [
-      'WhatsApp Business API Integration',
-      'Nachrichten-Verifizierung & Compliance-Badges',
-      'Media-Support (Bilder, Dokumente)',
-      'Service-Level: 24/7 Verfügbarkeit',
-      'Setup: ~2 Stunden Onboarding durch Team',
-    ],
-    priceEur: 99,
-    priceSuffix: '/ Monat',
-    includeInTiers: ['growth', 'agency', 'scale', 'enterprise'],
-  },
-  {
-    id: 'voice-addon',
-    name: 'Voice-Bot Addon',
-    description: 'Sprach-Bots über Telefonie (Voice + IVR)',
-    bullets: [
-      'Eingehend & Ausgehend Anrufe unterstützen',
-      'IVR (Interactive Voice Response)',
-      'Speech-to-Text & Text-to-Speech (Neural)',
-      'Multilingual-Support (DE, EN, FR, ES)',
-      'Abrechnung: pro Minute (ab min. 500 Min./Monat)',
-    ],
-    priceEur: 150,
-    priceSuffix: '/ Monat + 0,25 € pro Minute',
-    includeInTiers: ['agency', 'scale', 'enterprise'],
-  },
-  {
-    id: 'agency-bot-pack',
-    name: 'Agency Bot Pack (5 zusätzliche Bots)',
-    description: 'Für Agenturen: 5 weitere Governance-Bots (z.B. für Kundenprojekte)',
-    bullets: [
-      'Weitere 5 produktive Governance-Bots',
-      'Kundensegmentierung per API',
-      'White-Label pro Bot konfigurierbar',
-      'Multi-Account Management',
-      'Priority Onboarding (24h Support)',
-    ],
-    priceEur: 199,
-    priceSuffix: '/ Monat',
-    includeInTiers: ['agency', 'scale', 'enterprise'],
-  },
-  {
-    id: 'white-label-bot',
-    name: 'White-Label Bot',
-    description: 'Vollständig gebranded Bot mit eigener Domain',
-    bullets: [
-      'Subdomain oder Custom-Domain',
-      'Branding: Logo, Farben, Texte vollständig anpassbar',
-      'Eigener Bot-Name & Persona',
-      'Custom Welcome-Message & Fallback-Flows',
-      'Analytics unter eigenem Dashboard',
-    ],
-    priceEur: 299,
-    priceSuffix: '/ Monat',
-    includeInTiers: ['agency', 'scale', 'enterprise'],
-  },
-  {
-    id: 'compliance-pack',
-    name: 'Compliance Pack',
-    description: 'Erweitertes Logging, Audit-Export & Compliance-Features',
-    bullets: [
-      'DSGVO-Audit-Trail (alle Interactions + Entscheidungen)',
-      'EU AI Act Risk-Tagging (automatisch per Inferenzen)',
-      'Quarterly Compliance-Report (PDF export-ready)',
-      'Human-Review Workflow für sensible Intents',
-      'GDPR-Export auf Anfrage (Kundendaten, Konversationen)',
-    ],
-    priceEur: 149,
-    priceSuffix: '/ Monat',
-    includeInTiers: ['agency', 'scale', 'enterprise'],
-  },
-];
+function toBotAddOn(addon: AddOn): BotAddOn {
+  return {
+    id: addon.id,
+    name: addon.name,
+    description: addon.description,
+    bullets: addon.bullets,
+    priceEur: addon.priceEur,
+    priceSuffix: addon.priceNote,
+  };
+}
+
+export const BOT_ADDONS: BotAddOn[] = ADDONS.map(toBotAddOn);
 
 export function botAddonsByTier(tierId: TierId): BotAddOn[] {
-  return BOT_ADDONS.filter((addon) => addon.includeInTiers.includes(tierId));
+  const tier = tierById(tierId);
+  if (!tier) return [];
+  return addonsFor(tier.plan).map(toBotAddOn);
 }
+
+// Hinweis: `PLANS`, `planById`, `formatPriceEur`, `PRICING_TRUST_NOTE` &c.
+// sind bereits über `export * from '@/shared/pricing'` (oben) verfügbar.
+// Sie werden hier bewusst NICHT erneut exportiert — ein zweiter Export
+// desselben Symbols wäre exakt die Duplizierung, die diese Datei verhindert.

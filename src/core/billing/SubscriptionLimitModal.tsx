@@ -43,7 +43,7 @@ const FEATURE_INFO: Record<string, { tier: string; description: string; benefits
     ],
   },
   'evidence.advanced_vault': {
-    tier: 'Scale',
+    tier: 'Partner',
     description: 'Erweiterte Evidence-Management mit Versionierung und Audit-Trail.',
     benefits: [
       'Unlimited Storage',

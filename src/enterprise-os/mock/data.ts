@@ -282,7 +282,7 @@ export interface PricingPlan {
 
 // Plan-Daten gespiegelt aus src/config/pricing.ts (Single Source of Truth).
 // Diese 3 Karten sind ein Ausschnitt (Starter/Growth/Agency) des dortigen
-// 5-Pakete-Modells (Free → Scale 1.999 €) — Preise/Namen MÜSSEN mit
+// 6-Pläne-Modells (Free Audit → Partner 1.999 €) — Preise/Namen MÜSSEN mit
 // PRICING_TIERS übereinstimmen, sonst entsteht "Durcheinander" zwischen
 // /os/pricing und /pricing.
 export const PRICING_PLANS: PricingPlan[] = [

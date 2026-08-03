@@ -3,7 +3,7 @@ import { getTrialStatus } from '../../../src/core/billing/trial';
 import type { EntitlementDecision } from '../../../src/core/billing/types';
 
 const baseDecision: EntitlementDecision = {
-  planKey: 'silver',
+  planKey: 'growth',
   status: 'trialing',
   isActive: true,
   features: {} as EntitlementDecision['features'],

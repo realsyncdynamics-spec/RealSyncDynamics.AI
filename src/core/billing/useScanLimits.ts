@@ -30,7 +30,7 @@ export function useScanLimits(): ScanLimitStatus | null {
     }
 
     // Only free tier has limits
-    if (tier !== 'free_tier') {
+    if (tier !== 'free') {
       setStatus(null);
       setLoading(false);
       return;

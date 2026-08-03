@@ -1,7 +1,23 @@
-import type { TierId } from '../../config/pricing';
+import type { ModuleId, PermissionKey, PlanId, PlanLimits } from '@/shared/pricing';
 
 export type ModuleStatus = 'live' | 'beta' | 'roadmap';
-export type Plan = TierId;
+
+/** Plan-Bezeichner des Workspace — identisch mit der Pricing-SSoT. */
+export type Plan = PlanId;
+
+/**
+ * Zugriffsregel eines Navigations-Moduls. Immer eine Ableitung aus der
+ * Pricing-SSoT — niemals eine eigene Plan-Liste.
+ */
+export type ModuleGate =
+  /** Für jeden Plan sichtbar (Konto-, Übersichts- und Free-Audit-Flächen). */
+  | { kind: 'all' }
+  /** Das Modul muss im Plan freigeschaltet sein. */
+  | { kind: 'module'; module: ModuleId }
+  /** Die Berechtigung muss im Plan gesetzt sein. */
+  | { kind: 'permission'; permission: PermissionKey }
+  /** Das numerische Limit muss mindestens `min` betragen (-1 = unbegrenzt zählt immer). */
+  | { kind: 'limit'; limit: keyof PlanLimits; min: number };
 
 export interface GovernanceModule {
   id: string;
@@ -9,7 +25,10 @@ export interface GovernanceModule {
   icon: string;
   route: string;
   status: ModuleStatus;
-  /** Tiers that may access this module (inclusive: a higher tier always includes lower). */
-  plans: Plan[];
+  /**
+   * Zugriffsregel. Die konkrete Plan-Liste wird über `plansForModule()`
+   * aus der SSoT berechnet und nicht hier gepflegt.
+   */
+  gate: ModuleGate;
   description: string;
 }

@@ -10,7 +10,7 @@ interface NavItem {
   path: string;
   feature: string;
   group: string;
-  requiredTier?: 'free_tier' | 'starter' | 'growth' | 'agency' | 'scale' | 'enterprise';
+  requiredTier?: 'free' | 'starter' | 'growth' | 'agency' | 'partner' | 'enterprise';
   icon?: React.ReactNode;
 }
 

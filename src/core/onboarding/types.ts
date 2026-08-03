@@ -1,3 +1,4 @@
+import type { PlanId } from '@/shared/pricing';
 // Type system for post-scan guided onboarding flow
 
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'info';
@@ -60,7 +61,8 @@ export interface GovernanceProfile {
   }[];
 }
 
-export type PlanTier = 'starter_governance' | 'professional_governance' | 'governance_os' | 'enterprise_regulated';
+// Der empfohlene Plan ist immer einer der sechs kanonischen Plaene.
+export type PlanTier = PlanId;
 
 export interface Recommendation {
   recommendedPlan: PlanTier;

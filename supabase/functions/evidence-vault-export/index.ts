@@ -24,12 +24,14 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 import { applyPolicy, sumHits, type RedactionPolicy } from '../_shared/redact.ts';
 import { buildCorsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { hasPermission, resolvePlan } from '../_shared/pricing.generated.ts';
 
-// Tier-Gate: Der Audit-Export ist die Kaufbegründung des ersten zahlenden
-// Tiers (siehe docs/PRODUCT_PRIORITIZATION.md). Free-Tenants sehen den Trail
-// in der App read-only, exportieren können erst zahlende Tiers. Synchron zu
-// src/lib/billing/planAccess.ts (Feature 'evidence_export' ab Starter).
-const PAID_PLANS = new Set(['starter', 'growth', 'agency', 'scale', 'enterprise']);
+// Plan-Gate: Der Audit-Export ist die Kaufbegründung des ersten zahlenden
+// Plans (siehe docs/PRODUCT_PRIORITIZATION.md). Free-Tenants sehen den Prüfpfad
+// in der App read-only, exportieren können erst zahlende Pläne.
+//
+// Entschieden wird über die Berechtigung `auditExport` der Pricing-SSoT —
+// keine eigene Plan-Liste, die von den Preisen abweichen könnte.
 
 async function tenantHasPaidPlan(admin: SupabaseClient, tenantId: string): Promise<boolean> {
   const { data, error } = await admin
@@ -41,7 +43,8 @@ async function tenantHasPaidPlan(admin: SupabaseClient, tenantId: string): Promi
     .maybeSingle();
   if (error || !data) return false;
   if (data.status !== 'active' && data.status !== 'trialing') return false;
-  return PAID_PLANS.has(String(data.plan_key));
+  // resolvePlan() bildet Altdaten (`scale`) transparent auf `partner` ab.
+  return hasPermission(resolvePlan(String(data.plan_key)), 'auditExport');
 }
 
 // Diese Funktion exportiert fuer Aufsichtsbehoerden / externe Auditoren.

@@ -12,7 +12,7 @@ import {
 // Future work that would let us extend this page:
 //   - Affiliate-tracking table + Edge Function (no code today)
 //   - 50-tenant quota enforcement (Scale-Tier ships in #349)
-//   - Stripe price IDs for Scale + recurring partner-rev-share
+//   - Stripe price IDs for Partner + recurring partner-rev-share
 //   - 30-day trial backend (not implemented)
 //
 // Until those exist, this page commits ONLY to manual partner onboarding,
@@ -86,7 +86,7 @@ export function PartnersPage() {
               cta={{ label: 'Direkt buchen', href: '/audit?plan=agency&source=partners' }}
             />
             <TierCard
-              name="Scale"
+              name="Partner"
               price="€1.999 / Monat"
               capacity="bis 50 Mandanten"
               accent="text-emerald-300"

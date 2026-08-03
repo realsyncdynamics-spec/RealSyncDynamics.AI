@@ -222,7 +222,7 @@ export function GovernanceBotsSection() {
                       </div>
                     </div>
                     <div className="text-[10px] text-silver-500 italic">
-                      Für Growth/Agency/Scale/Enterprise
+                      Für Growth, Agency, Enterprise und Partner
                     </div>
                   </div>
                 </div>

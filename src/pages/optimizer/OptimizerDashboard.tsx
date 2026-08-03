@@ -25,7 +25,7 @@ import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { getScanResult, clearOptimizerState } from '../../lib/optimizer/state';
 import { bucketForSeverity, type OptimizerIssue, type SeverityBucket } from '../../lib/optimizer/types';
 import { useOptimizerEntitlement, type OptimizerCapabilities } from '../../lib/optimizer/entitlement';
-import { tierById } from '../../config/pricing';
+import { tierByPlanKey } from '../../config/pricing';
 
 const BUCKET_ORDER: SeverityBucket[] = ['kritisch', 'wichtig', 'info'];
 const BUCKET_META: Record<SeverityBucket, { label: string; icon: typeof ShieldAlert; dot: string; border: string }> = {
@@ -95,7 +95,7 @@ export function OptimizerDashboard() {
     );
   }
 
-  const tierName = planKey ? (tierById(planKey)?.name ?? planKey) : 'Free';
+  const tierName = planKey ? (tierByPlanKey(planKey)?.name ?? planKey) : 'Free';
   const paid = capabilities.fullReport;
 
   return (

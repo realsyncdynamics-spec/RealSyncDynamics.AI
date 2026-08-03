@@ -93,15 +93,15 @@ test.describe('Checkout Flow', () => {
     await expect(yearText).toBeVisible();
   });
 
-  test('Scale Plan Checkout wird korrekt verwaltet', async ({ page }) => {
-    // Scale ist noch nicht vollständig konfiguriert (fehlende Stripe Prices)
+  test('Partner Plan Checkout wird korrekt verwaltet', async ({ page }) => {
+    // Partner ist ein Inquiry-Plan — der Self-Service-Checkout lehnt ihn ab.
     // Diese Test dokumentiert das erwartete Verhalten
 
-    await page.goto('http://localhost:3000/checkout/scale');
+    await page.goto('http://localhost:3000/checkout/partner');
 
     // Sollte entweder fehlende Konfiguration anzeigen oder warten auf Prices
     // Für jetzt: Dokumentiere dass Test pending ist
-    // TODO: Nach Migration 20260707000000_stripe_missing_price_ids_scale_yearly.sql
+    // TODO: Nach Migration 20260707000000_stripe_missing_price_ids_partner_yearly.sql
     // können wir echte Stripe Price-IDs testen
   });
 

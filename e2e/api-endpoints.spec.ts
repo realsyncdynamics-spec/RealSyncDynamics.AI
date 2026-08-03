@@ -279,7 +279,7 @@ test.describe.skip('API Tier-Based Quotas', () => {
     test.skip();
   });
 
-  test('should enforce scale tier quota (10,000 calls/month)', async () => {
+  test('should enforce partner plan quota', async () => {
     test.skip();
   });
 

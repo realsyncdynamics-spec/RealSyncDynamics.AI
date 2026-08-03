@@ -11,7 +11,7 @@ import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig, planForTier } from '../
 describe('PRICING_TIERS — Single Source of Truth', () => {
   it('has all 11 tier ids (6 base + 5 yearly variants)', () => {
     const ids = PRICING_TIERS.map((t) => t.id).sort();
-    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'enterprise_yearly', 'free', 'growth', 'growth_yearly', 'scale', 'scale_yearly', 'starter', 'starter_yearly']);
+    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'enterprise_yearly', 'free', 'growth', 'growth_yearly', 'partner', 'partner_yearly', 'starter', 'starter_yearly']);
   });
 
   it('Starter price is 79 €', () => {
@@ -26,15 +26,15 @@ describe('PRICING_TIERS — Single Source of Truth', () => {
     expect(tierById('agency')?.priceEur).toBe(699);
   });
 
-  it('Scale (Partner) price is 1999 € and comes before Enterprise in PRICING_TIERS', () => {
-    expect(tierById('scale')?.priceEur).toBe(1999);
-    // Verify array order: agency → scale → enterprise
+  it('Partner price is 1999 € and follows Enterprise in PRICING_TIERS', () => {
+    expect(tierById('partner')?.priceEur).toBe(1999);
+    // Kanonische Reihenfolge: agency → enterprise → partner (aufsteigend nach Preis)
     const order = PRICING_TIERS.map((t) => t.id);
     const agencyIdx = order.indexOf('agency');
-    const scaleIdx = order.indexOf('scale');
     const enterpriseIdx = order.indexOf('enterprise');
-    expect(scaleIdx).toBeGreaterThan(agencyIdx);
-    expect(enterpriseIdx).toBeGreaterThan(scaleIdx);
+    const partnerIdx = order.indexOf('partner');
+    expect(enterpriseIdx).toBeGreaterThan(agencyIdx);
+    expect(partnerIdx).toBeGreaterThan(enterpriseIdx);
   });
 
   it('Free tier has priceEur=0 and recurring=false', () => {
@@ -78,10 +78,9 @@ describe('PLAN_CONFIG alignment with PRICING_TIERS', () => {
     expect(mismatches).toEqual([]);
   });
 
-  it('planForTier returns a config entry for every tier', () => {
+  it('planForTier returns a config entry for every plan', () => {
     for (const t of PRICING_TIERS) {
-      const id = t.id as TierId;
-      const entry = planForTier(id);
+      const entry = planForTier(t.plan.id);
       expect(entry).toBeTruthy();
       expect(entry.mode).toMatch(/^(free|checkout|inquiry)$/);
     }

@@ -19,7 +19,7 @@ describe('getEntitlementsForTenant — unconfigured fallback', () => {
 
     const decision = await getEntitlementsForTenant('00000000-0000-0000-0000-000000000001');
 
-    expect(decision.planKey).toBe('free');
+    expect(decision.planKey).toBe('free_audit');
     expect(decision.features).toBeDefined();
     expect(typeof decision.isActive).toBe('boolean');
     // Free tier never reports overages — usage is zero across the board.

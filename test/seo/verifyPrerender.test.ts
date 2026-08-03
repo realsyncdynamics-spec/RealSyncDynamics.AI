@@ -9,7 +9,7 @@ import { join } from 'node:path';
  *
  * Hintergrund (2026-08-02): Die Live-Site lieferte auf JEDER Route denselben
  * leeren SPA-Shell aus — kein H1, kein Text, identischer <title>. Ursache war
- * ein Build-Pfad ohne Prerender (siehe scripts/build-postprocess.mjs).
+ * ein Build-Pfad ohne Prerender (siehe scripts/prerender.mjs).
  * verify-prerender.mjs ist der Wächter dagegen; dieser Test stellt sicher,
  * dass der Wächter selbst nicht stillschweigend kaputtgeht — ein Check, der
  * immer grün ist, wäre schlimmer als gar keiner.

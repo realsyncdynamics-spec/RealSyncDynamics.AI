@@ -180,7 +180,8 @@ async function main() {
     for (const f of failures) console.error(`  ✗ ${f}`);
     console.error(
       '\n  Hintergrund: Ohne Prerender liefert die SPA jedem Crawler ohne\n' +
-      '  JS-Rendering eine leere Seite. Siehe scripts/build-postprocess.mjs.'
+      '  JS-Rendering eine leere Seite. Siehe scripts/prerender.mjs und den\n' +
+      '  Build-Command in package.json (build → build:base + prerender:safe).'
     );
     return 1;
   }

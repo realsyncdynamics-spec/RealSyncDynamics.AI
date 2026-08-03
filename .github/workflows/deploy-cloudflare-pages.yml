@@ -149,13 +149,16 @@ jobs:
       - name: Generate 404 fallback for dynamic routes
         run: |
           cp dist/index.html dist/404.html
-          # Verify that prerendering actually filled the dist directory
-          if [ ! -f dist/pricing/index.html ] && [ ! -f dist/audit/index.html ]; then
-            echo "ERROR: Prerendering did not produce expected output files (dist/pricing/index.html, dist/audit/index.html)"
+          # Verify that prerendering actually filled the dist directory.
+          # Flaches Layout (dist/pricing.html), NICHT dist/pricing/index.html —
+          # Directory-Indizes wuerden auf Cloudflare Pages einen 308 auf die
+          # Trailing-Slash-Variante ausloesen. Siehe scripts/prerender.mjs.
+          if [ ! -f dist/pricing.html ] && [ ! -f dist/audit.html ]; then
+            echo "ERROR: Prerendering did not produce expected output files (dist/pricing.html, dist/audit.html)"
             ls -la dist/ | head -20
             exit 1
           fi
-          echo "✓ Prerendered routes confirmed: dist/pricing/index.html and dist/audit/index.html exist"
+          echo "✓ Prerendered routes confirmed: dist/pricing.html and dist/audit.html exist"
 
       - name: Verify SEO visibility (Content im HTML?)
         # Faengt die Regression ab, die die Live-Site auf Seobility 56 %

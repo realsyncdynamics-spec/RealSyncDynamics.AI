@@ -7,7 +7,7 @@
 //
 // Lösung: Nach `vite build` rendert dieses Script eine Auswahl von Routes
 // via Headless-Chromium und schreibt den vollständig hydrierten HTML-State
-// als `dist/<route>/index.html`. Der Vercel/nginx-Server liefert dann pro
+// als `dist/<route>.html`. Der Cloudflare-Pages-/nginx-Server liefert dann pro
 // Route die korrekte HTML statt den SPA-Shell.
 //
 // Usage:
@@ -31,13 +31,30 @@ const SITEMAP = join(DIST, 'sitemap.xml');
 const PORT = parseInt(process.env.PRERENDER_PORT ?? '4173', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
-const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 6 statt 4: seit die Schwelle alle 105 Sitemap-Routen erfasst (vorher 78)
+// ist der Prerender der laengste Build-Schritt. Hoeher als 6 lohnt nicht —
+// die Cloudflare-Pages-Build-Sandbox hat wenig RAM, und jede Chromium-
+// Context kostet dort spuerbar.
+const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '6', 10);
+// Schwelle 0.4 = alles, was in der sitemap.xml steht (niedrigste vergebene
+// Priority). Bewusst so: die Sitemap enthaelt ausschliesslich URLs, die
+// indexiert werden sollen — eine davon NICHT zu prerendern heisst, sie einem
+// Crawler ohne JS als leeren Shell auszuliefern. Die frueheren 0.6 liessen
+// 27 der 105 Sitemap-URLs ohne Inhalt zurueck.
+// Fuer schnelle lokale Builds weiterhin ueberschreibbar:
+//   PRERENDER_PRIORITY_MIN=0.8 npm run build
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 // Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
 // Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
 // zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.
 // Ein Fehler ist tolerierbar (Build laeuft ohne Prerender weiter), ein Hang nicht.
-const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '480000', 10);
+//
+// 15 min statt 8: mit allen 105 Sitemap-Routen liegt ein gesunder Lauf lokal
+// bei ~5,5 min. 8 min waeren auf einem langsameren Build-Runner ein
+// Fehlalarm gewesen — der Watchdog haette einen funktionierenden Prerender
+// abgeschossen und die Seite ohne Inhalt ausgeliefert. Cloudflare Pages
+// bricht Builds erst nach 20 min ab, der Puffer bleibt also erhalten.
+const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '900000', 10);
 
 if (process.env.SKIP_PRERENDER === '1') {
   console.log('[prerender] SKIP_PRERENDER=1 — exit 0 without work');
@@ -139,12 +156,28 @@ async function renderRoute(browser, route) {
   }
 }
 
-// ─── Write HTML to dist/<route>/index.html ───────────────────────────────────
+// ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
+//
+// Flaches `<route>.html` statt `<route>/index.html` — das ist kein
+// Geschmacksdetail, sondern entscheidet ueber den HTTP-Status der
+// Sitemap-URLs. Am Cloudflare-Pages-Preview von PR #947 gemessen:
+//
+//   dist/pricing/index.html → GET /pricing antwortet 308 auf /pricing/
+//                             (Pages normalisiert Directory-Indizes).
+//                             Sitemap und <link rel=canonical> zeigen aber
+//                             auf /pricing OHNE Slash — damit waere jede
+//                             der 105 Sitemap-URLs eine Weiterleitung, und
+//                             das Canonical der Zielseite zeigte zurueck.
+//   dist/pricing.html       → GET /pricing liefert direkt 200.
+//
+// Verifiziert: mit flachem Layout 105/105 Sitemap-URLs mit 200 und Content,
+// 0 Redirects. nginx (VPS/Docker/Traefik) deckt beide Layouts ab, seit
+// `$uri.html` in den try_files-Ketten steht.
 async function writeRoute(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/$/, '');
   const target = cleanRoute === ''
     ? join(DIST, 'index.html')
-    : join(DIST, cleanRoute, 'index.html');
+    : join(DIST, `${cleanRoute}.html`);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html, 'utf8');
 }

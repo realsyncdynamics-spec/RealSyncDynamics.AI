@@ -177,7 +177,7 @@ jobs:
       - name: Slack notification - Success
         if: success() && env.SLACK_WEBHOOK != ''
         continue-on-error: true
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
@@ -199,7 +199,7 @@ jobs:
       - name: Slack notification - Failure
         if: failure() && env.SLACK_WEBHOOK != ''
         continue-on-error: true
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8049efc460eb8699c4aeb9b0e # v1.26.0
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

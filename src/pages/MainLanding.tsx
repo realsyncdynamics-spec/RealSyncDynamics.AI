@@ -27,10 +27,12 @@ import {
 } from 'lucide-react';
 
 /**
- * ⛔ DESIGN-LOCK (genehmigte Baseline, Commit 3b972f3) — siehe CLAUDE.md.
- * Nur TEXTE/COPY und BUTTON-Beschriftungen (Strings) sowie Button-Link-Ziele
- * dürfen ohne Rückfrage geändert werden. JEDE Design-/Layout-/Struktur-/
- * Farb-/Komponenten-/Spacing-/Icon-Änderung braucht ausdrückliche Genehmigung.
+ * ⛔ DESIGN-LOCK (genehmigte Baseline, Commit 3b972f3) — siehe CLAUDE.md §10.
+ * Gesperrt ist das GRUNDDESIGN, nicht der Inhalt: Texte/Copy sowie Buttons und
+ * Links dürfen ohne Rückfrage geändert, ergänzt und entfernt werden — solange
+ * die vorhandenen Komponenten und Klassen verwendet werden. JEDE Design-/
+ * Layout-/Struktur-/Farb-/Spacing-/Icon-Änderung und jede neue Design-Variante
+ * braucht ausdrückliche Genehmigung.
  *
  * MainLanding — Unternehmenshauptseite (Root-Route).
  * Design: Obsidian-Hintergrund (rgb(3,7,18)), Earth-at-Night-Hero (Europa),
@@ -45,6 +47,9 @@ const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 
 const NAV_LINKS = [
   { label: 'Produkt', to: '#product' },
+  // Einstieg zu /features und den /features/:slug-Detailseiten — die waren
+  // bis 2026-08 aus dem gesamten Frontend heraus nicht verlinkt.
+  { label: 'Funktionen', to: '/features' },
   { label: 'Automatisierung', to: '/automations' },
   { label: 'Evidence', to: '/evidence' },
   { label: 'AI Act', to: '/ai-act' },

@@ -6,6 +6,9 @@ import { CTA } from '../content/runtimeVocab';
 
 const NAV_ITEMS = [
   { label: 'Produkt',         to: '/runtime' },
+  // Einstieg zu /features und den /features/:slug-Detailseiten — die hatten
+  // bis 2026-08 keinen einzigen Link im gesamten Frontend.
+  { label: 'Funktionen',      to: '/features' },
   { label: 'Lösungen',        to: '/branchen' },
   { label: 'Automatisierung', to: '/ai-governance' },
   { label: 'Sicherheit',      to: '/sicherheit' },

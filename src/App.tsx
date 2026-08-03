@@ -109,6 +109,13 @@ const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard').then((m) 
 // Compliance Tools (Free)
 import { AvvGenerator } from './pages/AvvGenerator';
 import { CookieScanner } from './pages/CookieScanner';
+// Consent-Timing prueft Requests VOR der Einwilligung (§ 25 TDDDG) — Free-Tier,
+// daher public und eager. Lag bis 2026-08 ohne Route im Repo.
+import { ConsentTimingAnalysis } from './pages/ConsentTimingAnalysis';
+import { Features } from './pages/Features';
+// Risiko-Uebersicht ueber ueberwachte Domains — liest tenant_users/monitored_domains,
+// deshalb hinter ProtectedRoute.
+import { RiskDashboard } from './pages/RiskDashboard';
 import { DokumenteBundle } from './pages/DokumenteBundle';
 import { AiActWorkflows } from './pages/AiActWorkflows';
 import { SaasLanding } from './pages/niche/SaasLanding';
@@ -495,6 +502,9 @@ function RoutesWithTracking() {
       <Route path="/automations" element={<AutomationsLanding />} />
       <Route path="/cookie-scanner" element={<CookieScanner />} />
       <Route path="/tools/cookie-scanner" element={<CookieScanner />} />
+      {/* Route-Pfad stammt aus dem Datei-Kommentar der Seite; Quick-Scan ist Free-Tier. */}
+      <Route path="/consent-timing" element={<ConsentTimingAnalysis />} />
+      <Route path="/tools/consent-timing" element={<ConsentTimingAnalysis />} />
       <Route path="/dokumente-bundle" element={<DokumenteBundle />} />
       <Route path="/tools/dokumente-bundle" element={<DokumenteBundle />} />
       <Route path="/ai-act-workflows" element={<AiActWorkflows />} />
@@ -693,6 +703,8 @@ function RoutesWithTracking() {
       <Route path="/app/mein-geschaeft" element={<AppGate><SmbDashboardView /></AppGate>} />
       <Route path="/app/simple" element={<Navigate to="/app/mein-geschaeft" replace />} />
       <Route path="/app/intelligence" element={<AppGate><ProtectedRoute><DashboardView /></ProtectedRoute></AppGate>} />
+      {/* Liest tenant_users/monitored_domains — Tenant-Daten, daher auth-gegatet. */}
+      <Route path="/app/risk" element={<AppGate><ProtectedRoute><RiskDashboard /></ProtectedRoute></AppGate>} />
       {/* DashboardRouter conditionally shows FreeTierDashboard or CeoCockpitView. */}
       <Route path="/app/dashboard" element={<AppGate><GovernanceBrowserShell><DashboardRouter /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/cockpit/brief" element={<CeoBriefPrintView />} />
@@ -827,6 +839,8 @@ function RoutesWithTracking() {
       <Route path="/pricing/whatsapp" element={<WhatsAppPricingPage />} />
       {/* Pricing Detail Routes */}
       <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
+      {/* Uebersicht zu den bereits vorhandenen /features/:slug-Detailseiten. */}
+      <Route path="/features" element={<Features />} />
       <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />
       {/* Checkout routes - specific paths must come before parameterized routes */}
       <Route path="/checkout/success" element={<CheckoutSuccessPage />} />

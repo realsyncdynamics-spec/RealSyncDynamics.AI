@@ -31,11 +31,12 @@ export function useAgentBrowser() {
 
       try {
         const supabase = getSupabase();
-        const { data: session } = await supabase.auth.getSession();
-        if (!session?.access_token) {
+        const { data } = await supabase.auth.getSession();
+        if (!data.session?.access_token) {
           setError('Not authenticated');
           return null;
         }
+        const accessToken = data.session.access_token;
 
         const request: AgentBrowserRequest = {
           tenant_id: tenant.id,
@@ -49,7 +50,7 @@ export function useAgentBrowser() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify(request),
         });

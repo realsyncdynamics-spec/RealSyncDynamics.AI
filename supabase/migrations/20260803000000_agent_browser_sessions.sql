@@ -20,7 +20,7 @@ create table if not exists public.agent_browser_sessions (
 
   -- Agent context
   agent_id         text not null,                -- e.g., 'hermes-01', 'compliance-bot-v2'
-  agent_run_id     text references public.enterprise_agent_runs(id) on delete set null,
+  agent_run_id     uuid references public.enterprise_agent_runs(id) on delete set null,
   tool_run_id      uuid references public.ai_tool_runs(id) on delete set null,
 
   -- Session metadata

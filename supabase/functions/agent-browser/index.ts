@@ -24,7 +24,7 @@ interface BrowserAction {
 interface AgentBrowserRequest {
   tenant_id: string;
   agent_id: string;
-  agent_run_id?: string;
+  agent_run_id?: string; // UUID as string
   initial_url: string;
   actions: BrowserAction[];
   policy_override?: boolean;

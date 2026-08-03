@@ -223,10 +223,28 @@ SUPABASE_SERVICE_ROLE_KEY
 STRIPE_SECRET_KEY
 ANTHROPIC_API_KEY
 RESEND_API_KEY
+PAGEVIEW_HASH_SALT   # Pflicht für track-pageview — siehe unten
 
 # Local development uses .env.local (gitignored)
 # Production uses Cloudflare Secrets and Supabase Vault
 ```
+
+#### `PAGEVIEW_HASH_SALT` (erforderlich)
+
+`track-pageview` pseudonymisiert Besucher als
+`HMAC-SHA256(PAGEVIEW_HASH_SALT, scope + ip + user-agent + UTC-Tag)`. Ohne den
+Salt wäre der Hash über den kleinen Eingaberaum (IPv4 + gängige User-Agents)
+praktisch umkehrbar; die Function verweigert deshalb den Dienst mit HTTP 500,
+statt schwach pseudonymisierte Werte zu schreiben.
+
+```bash
+supabase secrets set PAGEVIEW_HASH_SALT="$(openssl rand -hex 32)"
+```
+
+Den Salt **nicht rotieren**, solange Auswertungen über den laufenden Tag nötig
+sind: eine Rotation ändert alle Hashwerte, wodurch derselbe Besucher vor und
+nach der Rotation als zwei Besucher gezählt wird. Zum Tageswechsel ist eine
+Rotation folgenlos, da die Werte ohnehin täglich wechseln.
 
 ## Scaling Considerations
 

@@ -56,8 +56,9 @@ on:
       - 'vite.config.ts'
       - 'tsconfig.json'
       - 'wrangler.toml'
-      - '_redirects'
-      - '_headers'
+      # _headers/_redirects liegen unter public/ und sind von 'public/**' bereits
+      # abgedeckt. Die frueheren Root-Varianten waren tot: Vite kopiert public/
+      # nach dist/, die Root-Dateien erreichten das Build-Ergebnis nie.
       - '.github/workflows/deploy-cloudflare-pages.yml'
   workflow_dispatch:
 

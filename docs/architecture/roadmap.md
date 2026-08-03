@@ -6,6 +6,12 @@
 > Diese Roadmap beschreibt die technische Reifung der Runtime-Architektur
 > aus `docs/architecture/agent-os.md`. Phasen sind sequenziell, nicht
 > parallel.
+>
+> Für den **Ist-Zustand der heute schon laufenden Agenten-Subsysteme**
+> (Legacy-Scheduler, Agent-OS-Runtime, Enterprise-AI-OS-Agents, n8n
+> Growth-Stack) und die Roadmap zu einer zentralen **Manager-Schicht**, die
+> diese vier Subsysteme koordiniert, siehe
+> `docs/architecture/agent-manager-roadmap.md`.
 
 ## Leitplanken
 

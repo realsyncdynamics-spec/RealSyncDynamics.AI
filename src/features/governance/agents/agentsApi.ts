@@ -44,6 +44,23 @@ export interface AgentRunRow {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Counts runs created in the same UTC month as `now`. Agent runs are metered
+ * per calendar month (entitlement limit.agent_runs_monthly), so this is the
+ * billable count the Agent Center surfaces. Rows with an unparseable
+ * created_at are ignored.
+ */
+export function countRunsThisMonth(rows: AgentRunRow[], now: Date = new Date()): number {
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  let count = 0;
+  for (const r of rows) {
+    const t = new Date(r.created_at);
+    if (!Number.isNaN(t.getTime()) && t.getUTCFullYear() === y && t.getUTCMonth() === m) count++;
+  }
+  return count;
+}
+
 export const AUTONOMY_LABELS: Record<AgentAutonomyLevel, string> = {
   observe_only: 'Nur Beobachten',
   recommend_only: 'Nur Empfehlen',

@@ -23,14 +23,32 @@
     <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <!--
       Security headers via meta-equivalents.
-      GitHub Pages doesn't let us set HTTP-headers, so we declare what we can:
-      CSP frame-ancestors prevents iframe-clickjacking; X-Content-Type sniffing-Schutz;
-      Referrer-Policy für privacy. These improve our own /audit score significantly.
+      CSP, X-Content-Type, and Referrer-Policy improve /audit score and prevent
+      iframe-clickjacking. _headers file (Cloudflare) also enforces these.
+    -->
+    <!--
+      Hinweis: `frame-ancestors` wird in einem <meta>-CSP per Spezifikation
+      IGNORIERT. Der Clickjacking-Schutz kommt daher aus public/_headers
+      (frame-ancestors + X-Frame-Options). Diese Meta-Policy bleibt als
+      Fallback für Hosts ohne _headers-Unterstützung bestehen und muss mit
+      public/_headers inhaltlich synchron gehalten werden — beide Policies
+      gelten gleichzeitig und werden als Schnittmenge ausgewertet.
     -->
     <meta http-equiv="Content-Security-Policy"
-          content="frame-ancestors 'self'; default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com" />
+          content="default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; base-uri 'self'; form-action 'self'; object-src 'none'" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!--
+      Favicon. Ohne diese Deklaration fragt der Browser konventionsgemaess
+      /favicon.ico an — das faengt der SPA-Fallback (_redirects: /* -> /index.html 200)
+      ab und liefert ein HTML-Dokument als Icon aus. Ergebnis: kein Favicon und
+      ein Konsolenfehler bei jedem Seitenaufruf. Verweist auf das bestehende
+      Brand-Asset, es wird keine neue Grafik eingefuehrt.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/brand/logo-square-400.svg" />
+    <link rel="alternate icon" type="image/png" href="/brand/logo-square-400.png" />
+    <link rel="apple-touch-icon" href="/brand/logo-square-400.png" />
     <link rel="canonical" href="https://realsyncdynamicsai.de/" />
 
     <!-- Performance: pre-connect zu kritischen Origins damit TLS-Handshake

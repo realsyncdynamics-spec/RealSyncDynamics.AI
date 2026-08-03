@@ -26,7 +26,8 @@
 //   scan_runs   ← startScanRun(detector='gdpr-audit')
 //   findings    ← recordScanFinding pro Issue (category-Guess via id)
 //   gdpr_audits ← unverändert (durch internen gdpr-audit-Aufruf)
-//   runtime_events ← TODO (PR P0-impl-3 wired später automatisch)
+//   runtime_events ← emitRuntimeEvent() an den Scan-Lifecycle-Übergängen
+//     (audit.scan_started / audit.scan_completed / audit.scan_failed)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { observeAal2 } from '../_shared/requireAal2.ts';
@@ -138,6 +139,13 @@ Deno.serve(async (req) => {
   if ('error' in started) return jsonError(500, 'PIPELINE_START_FAILED', started.error);
   const { scan_run_id, correlation_id } = started;
 
+  await emitRuntimeEvent(admin, {
+    tenant_id: tenantId,
+    type: 'audit.scan_started',
+    correlation_id,
+    payload: { scan_run_id, url, website_id: websiteId, triggered_by: userId, detector: 'gdpr-audit' },
+  });
+
   // 2. Internen gdpr-audit-Aufruf — Single-Source-of-Truth für die Regeln.
   let auditResp: GdprAuditResponse;
   try {
@@ -158,11 +166,19 @@ Deno.serve(async (req) => {
     if (!r.ok) {
       const text = await r.text();
       await failScanRun(admin, scan_run_id, 'GDPR_AUDIT_HTTP', `${r.status}: ${text.slice(0, 300)}`);
+      await emitRuntimeEvent(admin, {
+        tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
+        payload: { scan_run_id, error_code: 'GDPR_AUDIT_HTTP', status: r.status },
+      });
       return jsonError(502, 'DETECTOR_FAILED', `gdpr-audit returned ${r.status}`);
     }
     auditResp = await r.json() as GdprAuditResponse;
   } catch (e) {
     await failScanRun(admin, scan_run_id, 'GDPR_AUDIT_FETCH', String(e));
+    await emitRuntimeEvent(admin, {
+      tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
+      payload: { scan_run_id, error_code: 'GDPR_AUDIT_FETCH', message: (e as Error)?.message ?? String(e) },
+    });
     return jsonError(502, 'DETECTOR_FAILED', `gdpr-audit fetch failed: ${(e as Error).message}`);
   }
 
@@ -189,6 +205,10 @@ Deno.serve(async (req) => {
     });
     if (!r.ok) {
       await failScanRun(admin, scan_run_id, 'FINDING_INSERT', r.error ?? 'unknown');
+      await emitRuntimeEvent(admin, {
+        tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
+        payload: { scan_run_id, error_code: 'FINDING_INSERT', message: r.error ?? 'unknown' },
+      });
       return jsonError(500, 'PIPELINE_INSERT_FAILED', r.error ?? 'unknown');
     }
   }
@@ -197,8 +217,26 @@ Deno.serve(async (req) => {
   //    aus den eben eingefügten findings aggregiert.
   const completed = await completeScanRun(admin, scan_run_id);
   if (!completed.ok) {
+    await emitRuntimeEvent(admin, {
+      tenant_id: tenantId, type: 'audit.scan_failed', severity: 'medium', correlation_id,
+      payload: { scan_run_id, error_code: 'PIPELINE_COMPLETE_FAILED', message: completed.error ?? 'unknown' },
+    });
     return jsonError(500, 'PIPELINE_COMPLETE_FAILED', completed.error ?? 'unknown');
   }
+
+  await emitRuntimeEvent(admin, {
+    tenant_id: tenantId,
+    type: 'audit.scan_completed',
+    severity: completed.severity_max === 'critical' || completed.severity_max === 'high' ? 'high' : 'info',
+    correlation_id,
+    payload: {
+      scan_run_id,
+      finding_count: completed.finding_count ?? auditResp.issues.length,
+      severity_max: completed.severity_max ?? null,
+      gdpr_audit_id: auditResp.audit_id,
+      score: auditResp.score,
+    },
+  });
 
   return jsonResponse({
     ok:             true,
@@ -213,3 +251,49 @@ Deno.serve(async (req) => {
 });
 
 // ─── helpers ─────────────────────────────────────────────────────────
+
+// SupabaseAdminClient hier bewusst als struktureller Typ (nicht importiert)
+// gehalten — spiegelt das Muster aus governance-vendors/governance-dsr, wo
+// jede Function ihren eigenen minimalen runtime_events-Emitter trägt statt
+// eine geteilte Abstraktion zu erzwingen (noch kein zweiter Nutzer, der die
+// Form diktieren würde).
+interface RuntimeEventAdminClient {
+  from(table: string): {
+    insert(row: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+  };
+}
+
+/**
+ * Emittiert ein runtime_events-Event für den Audit-Scan-Lifecycle. Fehler
+ * beim Emit werden geloggt, aber NICHT propagiert — ein Telemetrie-Ausfall
+ * darf die eigentliche Scan-Pipeline nicht blockieren oder scheitern lassen.
+ */
+async function emitRuntimeEvent(admin: RuntimeEventAdminClient, args: {
+  tenant_id: string;
+  type: 'audit.scan_started' | 'audit.scan_completed' | 'audit.scan_failed';
+  severity?: 'info' | 'low' | 'medium' | 'high' | 'critical';
+  correlation_id: string | null;
+  payload: Record<string, unknown>;
+}): Promise<void> {
+  try {
+    const { error } = await admin.from('runtime_events').insert({
+      tenant_id: args.tenant_id,
+      type: args.type,
+      severity: args.severity ?? 'info',
+      source: 'tenant-audit',
+      // spec_version CHECK ist auf ('0.1','0.2') verschärft; der Spalten-
+      // Default lag lange bei '1.0' (Fix in 20260626000000) — explizit
+      // setzen, damit der Insert unabhängig von der Deploy-Reihenfolge gilt.
+      spec_version: '0.2',
+      correlation_id: args.correlation_id,
+      payload: args.payload,
+    });
+    if (error) throw error;
+  } catch (e) {
+    console.error(JSON.stringify({
+      level: 'error', scope: 'audit_runtime_event_emit_failed',
+      event_type: args.type, tenant_id: args.tenant_id,
+      error: (e as Error)?.message ?? String(e),
+    }));
+  }
+}

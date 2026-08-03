@@ -20,6 +20,10 @@ on:
 jobs:
   deploy:
     name: Build and deploy frontend
+    env:
+      # Secret auf Job-Ebene heben: der secrets-Kontext ist in einem
+      # step-level "if" nicht verfuegbar, der env-Kontext dagegen schon.
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -47,6 +51,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          CI: true
 
       - name: Configure SSH
         run: |
@@ -68,6 +73,7 @@ jobs:
             . ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }}:/var/www/realsyncdynamicsai-frontend/
 
       - name: Deploy on VPS via Docker Compose
+        id: vps_deploy
         run: |
           ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
           set -Eeuo pipefail
@@ -132,6 +138,86 @@ jobs:
             echo "⚠ Warnung: https://realsyncdynamicsai.de nicht sofort erreichbar (könnte sein, dass nginx noch lädt)"
           fi
 
+      # Nur zurueckrollen, wenn der Deploy-Schritt selbst gescheitert ist.
+      # Ein blosses "failure()" wuerde auch bei einem Build-Fehler auf dem
+      # Runner feuern — dabei wurde der VPS nie angefasst, und der Rollback
+      # wuerde ein laufendes, gesundes Produktiv-Image auf einen aelteren
+      # Stand zurueckdrehen.
+      - name: Deploy failed - Automatic Rollback
+        if: failure() && steps.vps_deploy.outcome == 'failure'
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF' || true
+          set -Eeuo pipefail
+          COMPOSE_DIR="/var/www/realsyncdynamicsai-frontend/deploy/frontend-vps-deploy-v2"
+          ENV_FILE="$COMPOSE_DIR/.env"
+
+          echo "⚠️  Deploy failed — triggering automatic rollback..."
+          cd "$COMPOSE_DIR"
+
+          if docker image inspect realsync-frontend:previous >/dev/null 2>&1; then
+            docker image tag realsync-frontend:previous realsync-frontend:latest
+            docker compose --env-file "$ENV_FILE" up -d
+            echo "✓ Rolled back to previous version"
+          else
+            echo "⚠ No previous image available for rollback"
+          fi
+          EOF
+
+      # Slack-Benachrichtigung ist optional und darf das Deploy-Ergebnis nie
+      # verfaelschen:
+      #   - Die Webhook-URL kommt per env (SLACK_WEBHOOK_URL), NICHT als "with"-
+      #     Input — einen Input "webhook-url" gibt es in v1.26.0 nicht.
+      #   - SLACK_WEBHOOK_TYPE muss auf INCOMING_WEBHOOK stehen; der Default
+      #     waere WORKFLOW_TRIGGER und damit der falsche Modus fuer eine
+      #     hooks.slack.com/services/...-URL.
+      #   - Ohne gesetztes Secret wirft die Action ("Need to provide at least
+      #     one botToken or webhookUrl") — deshalb der Secret-Guard, sonst
+      #     faerbt ein geglueckter Deploy den Job rot.
+      #   - continue-on-error: eine Slack-Stoerung ist kein Deploy-Fehler.
+      - name: Slack notification - Success
+        if: success() && env.SLACK_WEBHOOK != ''
+        continue-on-error: true
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {
+              "text": "✅ Frontend deployed successfully",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*✅ Frontend Deployment Successful*\n*Repository:* ${{ github.repository }}\n*Branch:* main\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*URL:* <https://realsyncdynamicsai.de|realsyncdynamicsai.de>"
+                  }
+                }
+              ]
+            }
+
+      - name: Slack notification - Failure
+        if: failure() && env.SLACK_WEBHOOK != ''
+        continue-on-error: true
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {
+              "text": "❌ Frontend deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*❌ Frontend Deployment Failed*\n*Repository:* ${{ github.repository }}\n*Branch:* main\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*Action:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }
+
       - name: Log summary
         if: always()
         run: |
@@ -139,10 +225,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** main" >> $GITHUB_STEP_SUMMARY
           echo "- **Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend URL:** https://realsyncdynamicsai.de" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** $([ ${{ job.status }} == 'success' ] && echo '✅ Success' || echo '❌ Failed')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Linting & Type Check" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Quality" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ -f /tmp/lint.log ]]; then
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

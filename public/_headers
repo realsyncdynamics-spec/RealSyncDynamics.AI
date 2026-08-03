@@ -4,6 +4,8 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Content-Security-Policy: default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
   Cache-Control: public, max-age=3600, s-maxage=86400
 
 /index.html

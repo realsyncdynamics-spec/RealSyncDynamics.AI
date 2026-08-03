@@ -166,19 +166,16 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
-
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   const op = String(body.op ?? '');
-  const tenantId = String(body.tenant_id ?? '');
-  const assetRef = String(body.asset_ref ?? '');
   if (!['register', 'append', 'verify', 'pubkey'].includes(op)) return jsonError(400, 'BAD_REQUEST', 'op must be register|append|verify|pubkey');
 
   // Öffentlicher Signaturschlüssel — kein Geheimnis, keine Tenant-Bindung.
-  // Ermöglicht unabhängige Prüfung der Ed25519-Signaturen (Client/Verify-Seite).
+  // Bewusst VOR dem Auth-Gate: externe Prüfer (Regulatoren, Kunden ohne
+  // Tenant-Zugang) haben keinen Supabase-Account, müssen den Schlüssel aber
+  // abrufen können, um Ed25519-Signaturen unabhängig zu verifizieren.
   if (op === 'pubkey') {
     const spki = Deno.env.get('PROVENANCE_ED25519_PUBLIC_KEY') ?? null;
     return jsonResponse({
@@ -189,6 +186,11 @@ Deno.serve(async (req) => {
     });
   }
 
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
+
+  const tenantId = String(body.tenant_id ?? '');
+  const assetRef = String(body.asset_ref ?? '');
   if (!tenantId || !assetRef) return jsonError(400, 'BAD_REQUEST', 'tenant_id and asset_ref required');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -331,7 +333,7 @@ Deno.serve(async (req) => {
       ok: true, asset_ref: assetRef,
       tamper_state: custodyState, broken_at_seq: brokenAtSeq,
       trust: { assetId: assetRef, trustScore: trust.trustScore, riskLabels: trust.riskLabels, escalationTriggered: trust.escalationTriggered, evaluatedAt: nowIso },
-      custody: rows.map((r) => ({ seq: r.seq, action: r.action, actor: r.actor, timestamp: r.event_ts, event_hash: r.event_hash, signed: r.signature !== null, signature_alg: r.signature_alg })),
+      custody: rows.map((r) => ({ seq: r.seq, action: r.action, actor: r.actor, timestamp: r.event_ts, event_hash: r.event_hash, signed: r.signature !== null, signature: r.signature, signature_alg: r.signature_alg })),
       signature: {
         algorithm: rows.length > 0 ? (rows[rows.length - 1].signature_alg ?? (rows[rows.length - 1].signature ? 'hmac-sha256' : null)) : null,
         externally_verifiable: rows.length > 0 && rows[rows.length - 1].signature_alg === 'ed25519',

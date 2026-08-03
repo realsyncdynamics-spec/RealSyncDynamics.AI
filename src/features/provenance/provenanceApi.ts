@@ -7,6 +7,7 @@
 
 import { getSupabase } from '../../lib/supabase';
 import type { TrustOutput } from '../../types/models';
+import { importEd25519PublicKeySpki, verifyEd25519 } from '../../lib/provenance/signature';
 
 export type SignatureAlg = 'ed25519' | 'hmac-sha256';
 
@@ -17,6 +18,8 @@ export interface CustodyEntry {
   timestamp: string;
   event_hash: string;
   signed: boolean;
+  /** Rohe Ed25519/HMAC-Signatur (Hex) — nötig für unabhängige Client-Prüfung. */
+  signature?: string | null;
   signature_alg?: SignatureAlg | null;
 }
 
@@ -109,4 +112,47 @@ export function verifyProvenance(args: {
 /** Öffentlicher Ed25519-Signaturschlüssel für die unabhängige Signaturprüfung. */
 export function getProvenancePublicKey(): Promise<ProvenanceResult<PublicKeyResponse>> {
   return invoke<PublicKeyResponse>({ op: 'pubkey' });
+}
+
+export interface IndependentVerification {
+  /** false, solange kein öffentlicher Ed25519-Schlüssel konfiguriert ist. */
+  publicKeyAvailable: boolean;
+  checkedCount: number;
+  verifiedCount: number;
+  /** seq-Nummern, deren Signatur mit dem öffentlichen Schlüssel NICHT passt. */
+  failedSeqs: number[];
+}
+
+/**
+ * Prüft die Ed25519-Signaturen einer Custody-Kette rein clientseitig gegen den
+ * öffentlichen Schlüssel — ohne dem "signed: true"-Claim des Servers zu
+ * vertrauen. Das ist der eigentliche Zweck der asymmetrischen Signatur: jeder
+ * Dritte (Regulator, Kunde, externe Prüfstelle) kann dies ohne Tenant-Zugang
+ * und ohne geteiltes Geheimnis nachvollziehen (getProvenancePublicKey() ist
+ * öffentlich, kein Auth nötig).
+ */
+export async function independentlyVerifySignatures(
+  custody: CustodyEntry[],
+): Promise<IndependentVerification> {
+  const signed = custody.filter((c) => c.signature_alg === 'ed25519' && c.signature);
+  if (signed.length === 0) {
+    return { publicKeyAvailable: false, checkedCount: 0, verifiedCount: 0, failedSeqs: [] };
+  }
+
+  const keyResult = await getProvenancePublicKey();
+  if (keyResult.kind !== 'ok' || keyResult.data.alg !== 'ed25519' || !keyResult.data.public_key_spki_b64) {
+    return { publicKeyAvailable: false, checkedCount: 0, verifiedCount: 0, failedSeqs: [] };
+  }
+
+  const publicKey = await importEd25519PublicKeySpki(keyResult.data.public_key_spki_b64);
+
+  const failedSeqs: number[] = [];
+  let verifiedCount = 0;
+  for (const entry of signed) {
+    const ok = await verifyEd25519(publicKey, entry.event_hash, entry.signature!);
+    if (ok) verifiedCount++;
+    else failedSeqs.push(entry.seq);
+  }
+
+  return { publicKeyAvailable: true, checkedCount: signed.length, verifiedCount, failedSeqs };
 }

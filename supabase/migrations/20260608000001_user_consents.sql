@@ -21,11 +21,19 @@ CREATE TABLE IF NOT EXISTS public.user_consents (
 
 ALTER TABLE public.user_consents ENABLE ROW LEVEL SECURITY;
 
+-- Idempotent halten: CREATE POLICY kennt kein IF NOT EXISTS und schlaegt mit
+-- 42710 fehl, wenn die Policy schon da ist. Beide Policies existieren in der
+-- Produktions-DB bereits (dort out-of-band angelegt), waehrend diese Migration
+-- im Ledger nie als angewendet steht — ohne die DROPs bricht `supabase db push`
+-- genau hier ab und alle nachfolgenden Migrationen kommen nicht mehr durch.
+-- Gleiches Muster wie in 20260611000000 / 20260701150000.
+DROP POLICY IF EXISTS "user_own_consents" ON public.user_consents;
 CREATE POLICY "user_own_consents" ON public.user_consents
   FOR ALL TO authenticated
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "service_role_all" ON public.user_consents;
 CREATE POLICY "service_role_all" ON public.user_consents
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 

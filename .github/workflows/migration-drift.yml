@@ -42,4 +42,10 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          # Drift beschreibt den Zustand der PROD-DB, nicht die Qualitaet des
+          # Diffs — ein PR-Autor kann ihn nicht beheben (dafuer braucht es
+          # `migration repair`/`db push` gegen Prod). Auf PRs daher advisory,
+          # im taeglichen schedule-Lauf hart. So blockiert bestehender Drift
+          # keine fremden PRs, bleibt aber jeden Tag sichtbar.
+          MIGRATION_DRIFT_MODE: ${{ github.event_name == 'pull_request' && 'advisory' || 'fail' }}
         run: node scripts/check-migration-drift.mjs

@@ -180,6 +180,7 @@ import { EuAiActCheck } from './pages/seo/EuAiActCheck';
 import { CookieCompliance } from './pages/seo/CookieCompliance';
 // Public Legal-Pages bleiben eager (SEO + small bundle)
 import { PricingPage } from './features/billing/PricingPage';
+import { WhatsAppPricingPage } from './pages/WhatsAppPricingPage';
 import { CheckoutPage } from './features/billing/CheckoutPage';
 import { CheckoutSuccessPage } from './features/billing/CheckoutSuccessPage';
 import { CheckoutCancelledPage } from './features/billing/CheckoutCancelledPage';
@@ -823,6 +824,7 @@ function RoutesWithTracking() {
       <Route path="/kodee/connections" element={<ConnectionsView />} />
       <Route path="/billing/usage" element={<RequireAal2 action="Billing-Verwaltung"><UsageView /></RequireAal2>} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/pricing/whatsapp" element={<WhatsAppPricingPage />} />
       {/* Pricing Detail Routes */}
       <Route path="/pricing/:slug" element={<PricingDetailPageWrapper />} />
       <Route path="/features/:slug" element={<FeatureDetailPageWrapper />} />

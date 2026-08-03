@@ -236,7 +236,7 @@ test/ tests/ e2e/       Vitest + Playwright
 ```
 
 ### Routing-Struktur
-- `/` → MainLanding (**Design-Locked**, siehe §10)
+- `/` → MainLanding (Grunddesign gesperrt, Texte/Buttons frei — siehe §10)
 - `/app/*` → Auth-gated Dashboard (Onboarding-First-Gate)
 - `/flow/*` → Seitenbasierter Flow (Trial, Onboarding, Assessment)
 - `/governance/*` → Public Features (Runtime, Docs, Score, Browser)
@@ -301,11 +301,26 @@ betroffene EU-AI-Act-Anforderung · DSGVO-Bezug.
 
 ## 10. Design-System & Design-Lock
 
-### 🔒 Design-Lock: `src/pages/MainLanding.tsx`
-**GESPERRT (Baseline: Commit `3b972f3`, 2026-07-01).**
-- **Erlaubt ohne Rückfrage**: nur Texte/Copy, Button-Beschriftungen, Link-Ziele.
-- **Nur mit ausdrücklicher Genehmigung**: jede Design-, Layout-, Struktur-, Farb-, Komponenten-,
-  Spacing- oder Icon-Änderung, Sektions-Umbau, Theme-Wechsel, Seiten-Ersatz.
+### 🔒 Grundregel: Inhalt frei, Grunddesign gesperrt
+
+Gilt für **Landing und Frontend** (`src/pages/`, `src/components/`, inkl. `MainLanding.tsx`,
+Baseline: Commit `3b972f3`, 2026-07-01):
+
+- **Erlaubt ohne Rückfrage — Inhalt**
+  - Texte/Copy ändern, ergänzen, entfernen
+  - Buttons und Links **hinzufügen**, umbenennen, Ziele ändern, entfernen
+  - Neue Buttons/CTAs in bestehende Sektionen einsetzen — **mit den vorhandenen
+    Button-/Link-Komponenten und Klassen**, keine neuen Varianten erfinden
+
+- **Nur mit ausdrücklicher Genehmigung — Grunddesign**
+  - Layout, Grid, Struktur, Sektions-Reihenfolge, Sektions-Umbau
+  - Farben, Theme-Wechsel, Typografie-Skala, Spacing-System, Radien, Schatten
+  - Austausch/Neubau von UI-Komponenten, neue Design-Varianten, Icon-Set-Wechsel
+  - Seiten-Ersatz oder Neuentwurf einer bestehenden Seite
+
+**Faustregel**: *Was drinsteht* ist frei. *Wie es aussieht* ist gesperrt.
+Ein neuer Button im bestehenden Stil ist Inhalt. Ein Button in neuer Farbe oder
+neuer Form ist Design — vorher fragen.
 - Im Zweifel: **fragen, nicht ändern.**
 
 ### Aktive Design-Tokens (`tailwind.config.ts` — verbindlich)

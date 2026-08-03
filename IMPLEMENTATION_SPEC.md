@@ -154,7 +154,7 @@ Reihenfolge nach Abhängigkeit: **#942 → #941 → #943 → #946 → #929 → #
 
 Alle berühren `src/App.tsx` oder `index.html`. #908 und #911 sind konfliktbehaftet und werden nach den konfliktfreien PRs rebased. #894 (WhatsApp-Pricing) zuletzt, weil es eine neue Route in `src/App.tsx` einhängt.
 
-**Achtung Design-Lock**: `src/pages/MainLanding.tsx` ist laut CLAUDE.md auf Commit `3b972f3` eingefroren. #908 (Landing-Copy) und #898 (Feature-Kommunikation Startseite) sind nur zulässig, soweit sie **ausschließlich Strings und Link-Ziele** ändern. Beide PRs vor dem Merge gegen diese Regel prüfen; jede Layout-, Farb- oder Komponentenänderung braucht ausdrückliche Freigabe.
+**Achtung Design-Lock**: `src/pages/MainLanding.tsx` ist laut CLAUDE.md §10 auf Commit `3b972f3` eingefroren — gesperrt ist das **Grunddesign**, nicht der Inhalt. #908 (Landing-Copy) und #898 (Feature-Kommunikation Startseite) sind zulässig, soweit sie **Texte, Buttons und Link-Ziele** ändern oder ergänzen (mit den bestehenden Komponenten/Klassen). Beide PRs vor dem Merge gegen diese Regel prüfen; jede Layout-, Farb-, Spacing- oder Komponentenänderung braucht ausdrückliche Freigabe.
 
 ### Stufe 4 — DSGVO
 **#892** — 23 Dateien, eine Migration (`20260727000000`, Timestamp bereits nach `main`). Eigenständige Stufe, weil Consent-Versionierung sowohl Tracking als auch die Landing-Pages betrifft und nach den Copy-PRs aus Stufe 3 sauber getestet werden muss.

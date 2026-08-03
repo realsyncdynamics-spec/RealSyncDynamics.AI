@@ -164,7 +164,7 @@ export function CheckoutPage() {
   if (auth.status === 'loading') {
     return (
       <ShellWithMessage
-        title="Prüfe Anmelde-Status..."
+        title="Prüfe Anmelde-Status …"
         body="Einen Moment."
         loading
         backTo={`/pricing/${validPlan}`}

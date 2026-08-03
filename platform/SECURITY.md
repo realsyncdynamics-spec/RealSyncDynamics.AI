@@ -259,7 +259,7 @@ npm test -- test_security_headers.py
 **If a security issue is discovered:**
 
 1. **Do not** open a public GitHub issue
-2. Email: security@realsyncdynamics.ai (placeholder)
+2. Email: security@realsyncdynamicsai.de (placeholder)
 3. Include: Description, reproduction steps, impact assessment
 4. Allow 90 days for patch development before disclosure
 

@@ -17,7 +17,7 @@ import { RealSyncDynamicsSDK } from '@realsyncdynamics/sdk';
 
 const sdk = new RealSyncDynamicsSDK({
   apiKey: 'your-api-key',
-  baseURL: 'https://api.realsyncdynamics.ai', // optional, defaults shown
+  baseURL: 'https://api.realsyncdynamicsai.de', // optional, defaults shown
   timeout: 30000, // optional, milliseconds
 });
 
@@ -265,9 +265,9 @@ All endpoints support rate limiting. Check response headers:
 
 ## Support
 
-- Documentation: https://docs.realsyncdynamics.ai
+- Documentation: https://docs.realsyncdynamicsai.de
 - Issues: https://github.com/realsyncdynamics/sdk-ts
-- Email: support@realsyncdynamics.ai
+- Email: support@realsyncdynamicsai.de
 
 ## License
 

@@ -105,7 +105,7 @@ function FeaturePaywall({ feature, upgradeUrl }: FeaturePaywallProps) {
           </div>
 
           <p className="text-xs text-titanium-600">
-            Kontaktiere uns für Enterprise-Lösungen: hello@realsyncdynamics.ai
+            Kontaktiere uns für Enterprise-Lösungen: hello@realsyncdynamicsai.de
           </p>
         </div>
       </div>

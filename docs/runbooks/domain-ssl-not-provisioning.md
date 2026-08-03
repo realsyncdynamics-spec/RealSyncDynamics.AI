@@ -124,7 +124,7 @@ fetch('https://yourdomain.com', { mode: 'no-cors' })
 
 ### If DNS Records Are Missing or Incorrect
 
-**For Subdomain (realsyncdynamics.ai):**
+**For Subdomain (realsyncdynamicsai.de):**
 ```sql
 -- Update database with correct status
 UPDATE website_domains
@@ -242,7 +242,7 @@ WHERE id = 'domain-uuid';
 **Solution:**
 1. Wait 1 week for rate limit reset
 2. Use existing certificate (if available)
-3. Alternative: Change domain to subdomain (realsyncdynamics.ai)
+3. Alternative: Change domain to subdomain (realsyncdynamicsai.de)
 
 **Check rate limits:**
 ```bash

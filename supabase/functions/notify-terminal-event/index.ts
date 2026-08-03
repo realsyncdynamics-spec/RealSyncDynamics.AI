@@ -89,7 +89,7 @@ async function sendEmail(
           },
         ],
         from: {
-          email: 'noreply@realsyncdynamics.ai',
+          email: 'noreply@realsyncdynamicsai.de',
           name: 'RealSync Dynamics',
         },
         content: [

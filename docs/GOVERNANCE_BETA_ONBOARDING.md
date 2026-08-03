@@ -204,12 +204,12 @@ This release includes:
 ✓ PDF audit reports (for regulators & auditors)
 
 To get started:
-1. Log in: https://app.realsyncdynamics.ai
+1. Log in: https://app.realsyncdynamicsai.de
 2. Go to: /flow/governance-setup
 3. Select your industry & create first asset
 4. We'll recommend compliance packs → activate with one click!
 
-Questions? Email: support@realsyncdynamics.ai
+Questions? Email: support@realsyncdynamicsai.de
 
 Beta terms: 2-week early access, feedback gathering phase.
 

@@ -22,7 +22,7 @@
    - Verify Supabase project not paused
    - Check JWT token expiration
 4. Rollback last deployment if recently changed: `git revert <commit-sha> && git push origin main`
-5. Notify affected users via status page: https://status.realsyncdynamics.ai
+5. Notify affected users via status page: https://status.realsyncdynamicsai.de
 
 **Recovery Time Target:** 30 minutes
 
@@ -92,7 +92,7 @@
    git log -p | grep -i "sk_live\|sk-ant\|SUPABASE_SERVICE"
    ```
 5. If found in committed history, force-push remediation or contact GitHub support
-6. Notify security@realsyncdynamics.ai and affected users
+6. Notify security@realsyncdynamicsai.de and affected users
 7. Enable MFA on all service provider accounts
 8. File incident report with compliance team
 
@@ -207,7 +207,7 @@ After every incident (P1 and P2):
 |------|---------|---------|
 | **Engineering Lead** | TBD | +49 XXX XXXX |
 | **DevOps/Infrastructure** | TBD | slack: #incident-response |
-| **Security** | TBD | security@realsyncdynamics.ai |
+| **Security** | TBD | security@realsyncdynamicsai.de |
 | **Supabase Support** | | https://supabase.com/support |
 | **Stripe Support** | | https://support.stripe.com |
 | **Anthropic API Support** | | support@anthropic.com |
@@ -237,7 +237,7 @@ We apologize for the disruption and thank you for your patience.
 
 Next steps: Full incident report within 24 hours.
 
-Status Page: https://status.realsyncdynamics.ai
+Status Page: https://status.realsyncdynamicsai.de
 ```
 
 ## Monitoring & Alerting Rules

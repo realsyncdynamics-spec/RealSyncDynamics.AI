@@ -27,7 +27,7 @@ interface SupabaseAdminClient {
 }
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const FROM_EMAIL = 'alerts@realsyncdynamics.ai';
+const FROM_EMAIL = 'alerts@realsyncdynamicsai.de';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
 serve(async () => {

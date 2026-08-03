@@ -220,7 +220,7 @@ Manages domain lifecycle: connect, validate, disconnect, SSL checks.
 | `CLOUDFLARE_NOT_CONFIGURED` | Missing API token/account ID | Set env vars: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
 | `PROJECT_NOT_FOUND` | Invalid project_id | Verify project exists and user has access |
 | `DOMAIN_ALREADY_EXISTS` | Domain in use | Choose different domain |
-| `INVALID_DOMAIN` | Malformed domain | Use format: `example.com` or `subdomain.realsyncdynamics.ai` |
+| `INVALID_DOMAIN` | Malformed domain | Use format: `example.com` or `subdomain.realsyncdynamicsai.de` |
 | `DNS_PROPAGATION_TIMEOUT` | DNS not propagating | Retry after 5 minutes, check DNS provider |
 | `CF_API_ERROR` | Cloudflare API error | Check Cloudflare status page, retry |
 | `SSL_PROVISIONING_FAILED` | Certificate issuance failed | Usually temporary, retry in 5 minutes |

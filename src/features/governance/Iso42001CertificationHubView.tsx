@@ -282,7 +282,7 @@ function Inner() {
                 <p className="text-[11px] text-titanium-400 mb-3">
                   Fragen zur Zertifizierung? Kontaktieren Sie unser Team
                 </p>
-                <a href="mailto:certification@realsyncdynamics.ai" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300">
+                <a href="mailto:certification@realsyncdynamicsai.de" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300">
                   E-Mail schreiben →
                 </a>
               </div>

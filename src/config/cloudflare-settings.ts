@@ -42,10 +42,10 @@ export function getCloudflareConfig(): CloudflareConfig {
 
     // Domain configuration
     supportedTlds: [
-      'realsyncdynamics.ai', // Primary managed domain
+      'realsyncdynamicsai.de', // Primary managed domain
       'de', 'com', 'eu', 'info', 'net', 'org', // Popular TLDs
     ],
-    defaultSubdomainSuffix: 'realsyncdynamics.ai',
+    defaultSubdomainSuffix: 'realsyncdynamicsai.de',
 
     // Rate limiting (Cloudflare API limits)
     rateLimit: {
@@ -66,7 +66,7 @@ export const PAGES_CONFIG = {
 
   // Environment variables to pass to build
   buildEnvVars: {
-    VITE_API_URL: 'https://realsyncdynamics.ai/api',
+    VITE_API_URL: 'https://realsyncdynamicsai.de/api',
     VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || '',
     VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || '',
   },
@@ -110,7 +110,7 @@ export const R2_CONFIG = {
   },
 
   // Public access settings
-  publicUrlTemplate: 'https://cdn.realsyncdynamics.ai/{key}',
+  publicUrlTemplate: 'https://cdn.realsyncdynamicsai.de/{key}',
   cacheControl: {
     html: 'public, max-age=300', // 5 minutes for HTML
     assets: 'public, max-age=31536000', // 1 year for versioned assets

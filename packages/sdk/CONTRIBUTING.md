@@ -273,8 +273,8 @@ All public APIs must be documented with:
 
 - **Questions**: Open a GitHub Discussion
 - **Bugs**: Report via GitHub Issues
-- **Security**: Email security@realsyncdynamics.ai
-- **Support**: Email support@realsyncdynamics.ai
+- **Security**: Email security@realsyncdynamicsai.de
+- **Support**: Email support@realsyncdynamicsai.de
 
 ## License
 

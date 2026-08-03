@@ -25,3 +25,16 @@ scripts/ops/.migration-drift-suggested.sh
 
 # Agent-Worktrees (isolierte Subagent-Checkouts) — lokal, nicht commitbar.
 .claude/worktrees/
+
+# Privates Schlüsselmaterial gehört nie ins Repo (siehe CLAUDE.md, "DON'T").
+# Greift nur für NEUE Dateien — bereits getrackte Dateien bleibt davon unberührt.
+*.key
+*.pem
+*.p12
+*.pfx
+# Öffentliche Schlüssel sind unkritisch (z. B. tools/realsync-cli/data/demo.pub.pem).
+!*.pub.pem
+# Bewusste Ausnahme: selbstsigniertes Dev-Zertifikat des lokalen Traefik-Stacks
+# (CN=*.localhost, nur für platform/traefik/tests/). Die Negation hält es
+# hinzufügbar, falls es je neu erzeugt werden muss.
+!platform/traefik/certs/server.key

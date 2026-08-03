@@ -970,6 +970,9 @@ const LEGACY_PLAN_KEY_ALIASES: Record<string, PlanKey> = {
   scale_yearly: 'partner_yearly',
   free: 'free_audit',
   free_tier: 'free_audit',
+  // Bindestrich-Schreibweise aus oeffentlichen URLs (/checkout/free-audit).
+  // Sie steht in ausgelieferten Links und darf deshalb nicht ins Leere laufen.
+  'free-audit': 'free_audit',
 };
 
 /**

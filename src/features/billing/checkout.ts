@@ -1,18 +1,15 @@
 import { getSupabase } from '../../lib/supabase';
+import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
 
 /**
- * PlanKey-Werte muessen mit:
- *   - PRICING_TIERS[i].planKey aus src/config/pricing.ts
- *   - public.products.default_for_plan_key in der DB
- * uebereinstimmen. 5-Tier seit PR #145.
+ * Plan-Bezeichner kommen ausschliesslich aus der Pricing-SSoT.
  *
- * Hinweis: 'free_audit' ist das externe Identifier (Marketing, CTAs),
- * aber dieser Checkout verneint es — Free braucht keinen Checkout.
+ * Frueher stand hier eine eigene Union mit Altschreibweisen (`free`,
+ * `free-audit`). Eine zweite Plan-Liste im Frontend laeuft zwangslaeufig
+ * gegen `shared/pricing.ts` auseinander — die Altschreibweisen loest jetzt
+ * `normalizePlanKey()` auf.
  */
-export type PlanKey =
-  | 'free' | 'free-audit' | 'free_audit'
-  | 'starter' | 'growth' | 'agency' | 'partner' | 'enterprise'
-  | 'starter_yearly' | 'growth_yearly' | 'agency_yearly' | 'partner_yearly' | 'enterprise_yearly';
+export type { PlanKey };
 
 export interface CheckoutResult {
   ok: boolean;
@@ -31,16 +28,30 @@ export interface CheckoutResult {
  */
 export async function createCheckoutSession(
   tenantId: string,
-  planKey: PlanKey,
+  planKey: string,
   pilot?: boolean,
 ): Promise<CheckoutResult> {
-  if (planKey === 'free' || planKey === 'free-audit' || planKey === 'free_audit') {
-    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free plan needs no checkout' } };
+  // Gleiche Reihenfolge wie in der Edge Function `stripe-checkout`: erst
+  // normalisieren, dann ueber den Kaufmodus des Plans entscheiden — kein
+  // Vergleich gegen Plan-Namen.
+  const key = normalizePlanKey(planKey);
+  const plan = key ? planByKey(key) : null;
+  if (!key || !plan) {
+    return { ok: false, error: { code: 'UNKNOWN_PLAN', message: `Unbekannter Plan: ${planKey}` } };
+  }
+  if (plan.purchaseMode === 'free') {
+    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free Audit braucht keinen Checkout' } };
+  }
+  if (plan.purchaseMode === 'inquiry') {
+    return {
+      ok: false,
+      error: { code: 'INQUIRY_ONLY', message: `${plan.name} wird über /contact-sales abgeschlossen` },
+    };
   }
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('stripe-checkout', {
-    body: { tenant_id: tenantId, plan_key: planKey, return_url: window.location.origin, pilot: isPilot },
+    body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot },
   });
   if (error) {
     // FunctionsHttpError.message ist immer nur "non-2xx status code" — der

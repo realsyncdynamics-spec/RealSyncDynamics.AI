@@ -23,6 +23,9 @@ import {
   Scan,
   MessageCircle,
   Phone,
+  Timer,
+  Wrench,
+  GitCompare,
 } from 'lucide-react';
 
 /**
@@ -69,7 +72,7 @@ const PLATFORM = [
   {
     icon: FileLock2,
     title: 'Evidence Vault',
-    text: 'Kryptografisch nachvollziehbare Nachweise mit lückenlosem Prüfpfad. Audit-fähig, unveränderlich, exportierbar.',
+    text: 'Hash-verkettete Nachweise mit Ed25519-Signatur — jede Änderung bricht die Kette und wird sofort sichtbar. Audit-fähig, unveränderlich, exportierbar.',
   },
   {
     icon: Scale,
@@ -79,7 +82,7 @@ const PLATFORM = [
   {
     icon: Code2,
     title: 'Claude Code Integration',
-    text: 'Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.',
+    text: 'Erkennt ungeschützte Tracking-Calls, fehlende Consent-Gates und unsichere API-Endpunkte im Code — mit automatisierten Fix-Vorschlägen statt reinem Befund.',
   },
   {
     icon: ServerCog,
@@ -90,6 +93,27 @@ const PLATFORM = [
     icon: GitBranch,
     title: 'Automatisierung',
     text: 'DSGVO-Selfservice (Art. 15 + 17), Workflows und Alerts — orchestriert und nahtlos integriert.',
+  },
+];
+
+const DIFFERENTIATORS = [
+  {
+    icon: Timer,
+    title: 'Consent-Timing-Analyse',
+    text: 'Playwright-Headless prüft, ob Tracking-Calls tatsächlich erst nach Consent-Bestätigung feuern — nicht nur, ob ein Banner existiert.',
+    example: 'Beispiel-Finding: Google Analytics feuert 340ms vor Consent-Bestätigung',
+  },
+  {
+    icon: Wrench,
+    title: 'Auto-Remediation',
+    text: 'Findings landen nicht nur als Report, sondern als fertiger Fix-Vorschlag inklusive Code-Diff, den Sie direkt übernehmen können.',
+    example: 'Beispiel-Fix: Consent-Gate vor gtag(\'config\', ...) einfügen',
+  },
+  {
+    icon: GitCompare,
+    title: 'Drift-Detection',
+    text: 'Erkennt, wenn sich Code, Tracking-Verhalten oder Datenflüsse nach einem Deploy unbemerkt ändern — bevor daraus ein Compliance-Vorfall wird.',
+    example: 'Beispiel-Alert: neuer Tracking-Call in main nach Deploy #482',
   },
 ];
 
@@ -107,10 +131,10 @@ const STEPS = [
 ];
 
 const PRICING = [
-  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: '14 Tage testen', to: '/checkout/starter?source=home&pilot=true' },
-  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Konversations-Bots'], cta: '14 Tage testen', featured: true, to: '/checkout/growth?source=home&pilot=true' },
-  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Herkunftsnachweis (C2PA)', 'API-Zugriff'], cta: '14 Tage testen', to: '/checkout/agency?source=home&pilot=true' },
-  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
+  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice', 'Consent-Timing-Check (wöchentlich)'], cta: '14 Tage testen', to: '/checkout/starter?source=home&pilot=true' },
+  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Konversations-Bots', 'Drift-Detection (täglich)'], cta: '14 Tage testen', featured: true, to: '/checkout/growth?source=home&pilot=true' },
+  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Herkunftsnachweis (C2PA)', 'Auto-Remediation (Fix-Vorschläge)', 'API-Zugriff (10.000 Calls/Monat)'], cta: '14 Tage testen', to: '/checkout/agency?source=home&pilot=true' },
+  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Drift-Detection (Echtzeit)', 'Voller API-Zugriff (kein Rate-Limit)', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
 ];
 
 export function MainLanding() {
@@ -121,6 +145,7 @@ export function MainLanding() {
       <Hero />
       <TrustStrip />
       <Platform />
+      <Differentiators />
       <Runtime />
       <Industries />
       <ProofBand />
@@ -219,8 +244,7 @@ function Hero() {
           <div className="relative hidden lg:block min-h-[560px]">
             <MetricCard className="absolute top-0 right-24" metric={{ label: 'DSGVO', value: 'Konform', accent: true }} />
             <RiskCard className="absolute top-24 right-0" />
-            <MetricCard className="absolute top-44 left-4" metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
-            <ClaudeCodeAuditCard className="absolute top-64 right-6" />
+            <ClaudeCodeAuditCard className="absolute top-52 left-4" />
             <MetricCard className="absolute top-64 right-64" metric={{ label: 'EU AI ACT', value: 'READY', accent: true }} />
             <MonitoringCard className="absolute bottom-16 right-40" label={monitoringLabel} pulse={pulse} />
             <ClaudeCodeIntegrationCard className="absolute bottom-0 left-0" />
@@ -231,7 +255,6 @@ function Hero() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 lg:hidden">
           <MetricCard metric={{ label: 'DSGVO', value: 'Konform', accent: true }} />
           <RiskCard />
-          <MetricCard metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
           <MetricCard metric={{ label: 'EU AI ACT', value: 'READY', accent: true }} />
           <ClaudeCodeAuditCard className="sm:col-span-2" />
           <MonitoringCard label={monitoringLabel} pulse={pulse} />
@@ -268,6 +291,26 @@ function Platform() {
             </div>
             <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
             <p className="text-sm text-white/60 leading-relaxed">{text}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+/* ── DIFFERENZIERER ─────────────────────────────────────── */
+function Differentiators() {
+  return (
+    <Section eyebrow="WAS UNS UNTERSCHEIDET" title="Mehr als ein Cookie-Banner-Check" subtitle="Drei Mechanismen, die über generische Compliance-Tools hinausgehen — technisch nachvollziehbar, nicht nur behauptet.">
+      <div className="grid md:grid-cols-3 gap-6">
+        {DIFFERENTIATORS.map(({ icon: Icon, title, text, example }) => (
+          <div key={title} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
+            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
+              <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
+            <p className="text-sm text-white/60 leading-relaxed mb-4">{text}</p>
+            <p className="font-mono text-[11px] text-cyan-400/80 leading-relaxed border-t border-white/10 pt-4">{example}</p>
           </div>
         ))}
       </div>
@@ -389,7 +432,7 @@ function Pricing() {
 function Security() {
   const points = [
     { icon: Lock, title: 'EU-Souveränität', text: 'Hosting, Verarbeitung und Modelle innerhalb der EU. Optional lokale Modelle für maximale Datenkontrolle.' },
-    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis ist signiert und unveränderlich — ein lückenloser Prüfpfad für Audits und Aufsichtsbehörden.' },
+    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis wird per Hash-Chain verkettet und mit Ed25519 signiert — ein lückenloser, extern verifizierbarer Prüfpfad für Audits und Aufsichtsbehörden.' },
     { icon: ShieldCheck, title: 'Service-Role-Isolation', text: 'Sensible Keys ausschließlich serverseitig. RLS schützt jede Tabelle auf Mandantenebene.' },
   ];
   return (
@@ -609,6 +652,7 @@ function RiskCard({ className = '' }: { className?: string }) {
       <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
         <div className="h-full w-[87%] rounded-full bg-cyan-400" />
       </div>
+      <div className="mt-2 font-mono text-[9px] text-white/30">Beispiel-Scan</div>
     </CardShell>
   );
 }
@@ -639,10 +683,7 @@ function ClaudeCodeAuditCard({ className = '' }: { className?: string }) {
         <span className="font-mono font-bold text-white text-2xl sm:text-3xl">94.2%</span>
         <span className="font-mono text-[11px] sm:text-xs text-cyan-400">Code-Ready</span>
       </div>
-      <div className="space-y-0.5">
-        <div className="font-mono text-[10px] text-white/50">Analysierte Codezeilen: <span className="text-white/80">2.1 Mio</span></div>
-        <div className="font-mono text-[10px] text-white/50">Behobene Sicherheitslücken: <span className="text-white/80">11.350</span></div>
-      </div>
+      <div className="font-mono text-[9px] text-white/30">Beispiel-Repository</div>
     </CardShell>
   );
 }
@@ -655,7 +696,7 @@ function ClaudeCodeIntegrationCard({ className = '' }: { className?: string }) {
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE INTEGRATION</span>
       </div>
       <p className="text-[11px] sm:text-xs text-white/70 leading-relaxed">
-        Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.
+        Erkennt fehlende Consent-Gates, ungeschützte Tracking-Calls und unsichere API-Endpunkte — inklusive automatisierter Fix-Vorschläge.
       </p>
     </CardShell>
   );

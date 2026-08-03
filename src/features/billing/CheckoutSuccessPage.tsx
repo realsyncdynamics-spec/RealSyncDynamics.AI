@@ -15,7 +15,7 @@ import { getSupabase } from '../../lib/supabase';
  * For Agency+ customers, offers quick onboarding to API setup wizard
  */
 
-const API_ENABLED_TIERS = ['agency', 'scale', 'enterprise'];
+const API_ENABLED_TIERS = ['agency', 'partner', 'enterprise'];
 
 export function CheckoutSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -51,7 +51,7 @@ export function CheckoutSuccessPage() {
       starter: 'Starter',
       growth: 'Growth',
       agency: 'Agency',
-      scale: 'Scale',
+      scale: 'Partner',
       enterprise: 'Enterprise',
     };
     return labels[planKey] || planKey;
@@ -292,7 +292,7 @@ function labelForPlanKey(planKey: string | null): string | null {
     case 'starter':    return 'Starter';
     case 'growth':     return 'Growth';
     case 'agency':     return 'Agency';
-    case 'scale':      return 'Scale';
+    case 'partner':      return 'Partner';
     case 'enterprise': return 'Enterprise';
     default:           return null;
   }

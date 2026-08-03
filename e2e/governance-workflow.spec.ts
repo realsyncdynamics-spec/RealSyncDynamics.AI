@@ -88,7 +88,7 @@ test.describe('Governance OS Workflow', () => {
       await page.waitForLoadState('networkidle');
 
       // Verify tier recommendation displayed
-      const tierHeading = page.locator('text=/Wir empfehlen:.*(?:Starter|Growth|Agency|Scale)/');
+      const tierHeading = page.locator('text=/Wir empfehlen:.*(?:Starter|Growth|Agency|Enterprise|Partner)/');
       await expect(tierHeading).toBeVisible();
 
       // Verify pricing displayed
@@ -120,7 +120,7 @@ test.describe('Governance OS Workflow', () => {
 
       if (await upgradeButton.isVisible()) {
         const checkoutUrl = await upgradeButton.getAttribute('href');
-        expect(checkoutUrl).toMatch(/checkout\/(starter|growth|agency|scale)/);
+        expect(checkoutUrl).toMatch(/checkout\/(starter|growth|agency|enterprise|partner)/);
       }
     });
   });

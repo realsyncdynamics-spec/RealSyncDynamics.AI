@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { priceForPlanKey } from '@/shared/pricing';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, AlertTriangle, RefreshCw, Users, ExternalLink, Building2,
@@ -74,8 +75,9 @@ function Inner({ session }: { session: Session }) {
     trialing: customers.filter((c) => c.status === 'trialing').length,
     no_sub: customers.filter((c) => !c.status).length,
     mrr_eur: customers.filter((c) => c.status === 'active').reduce((sum, c) => {
-      const price = c.plan_key === 'bronze' ? 29 : c.plan_key === 'silver' ? 99 : c.plan_key === 'gold' ? 299 : 0;
-      return sum + price;
+      // Preis kommt aus der Pricing-SSoT; unbekannte oder Legacy-Keys
+      // zählen mit 0 statt mit einem geratenen Betrag.
+      return sum + (priceForPlanKey(c.plan_key) ?? 0);
     }, 0),
   }), [customers]);
 

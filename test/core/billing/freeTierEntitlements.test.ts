@@ -61,14 +61,14 @@ describe('inferTier', () => {
   const ents = (...pairs: Array<[string, number]>): EntitlementValue[] =>
     pairs.map(([key, value]) => ({ key, value, kind: 'boolean' }));
 
-  it('stuft den Free-Tier-Fallback als free_tier ein', () => {
-    expect(inferTier(FREE_TIER_FALLBACK)).toBe('free_tier');
+  it('stuft den Free-Tier-Fallback als free ein', () => {
+    expect(inferTier(FREE_TIER_FALLBACK)).toBe('free');
   });
 
   it('stuft evidence.basic_vault allein nicht als starter ein', () => {
     // Free-Tier bekommt evidence.basic_vault=1 — als Indikator wuerde die
     // Heuristik jeden Free-Tier-Nutzer faelschlich hochstufen.
-    expect(inferTier(ents(['evidence.basic_vault', 1]))).toBe('free_tier');
+    expect(inferTier(ents(['evidence.basic_vault', 1]))).toBe('free');
   });
 
   it('erkennt starter an reports.export', () => {
@@ -83,11 +83,11 @@ describe('inferTier', () => {
     expect(inferTier(ents(['ai_classification.limited', 1], ['bots.count', 3]))).toBe('agency');
   });
 
-  it('faellt ohne Entitlements auf free_tier zurueck', () => {
-    expect(inferTier([])).toBe('free_tier');
+  it('faellt ohne Entitlements auf free zurueck', () => {
+    expect(inferTier([])).toBe('free');
   });
 
   it('ignoriert auf 0 gesetzte Keys', () => {
-    expect(inferTier(ents(['reports.export', 0], ['bots.count', 0]))).toBe('free_tier');
+    expect(inferTier(ents(['reports.export', 0], ['bots.count', 0]))).toBe('free');
   });
 });

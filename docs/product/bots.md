@@ -4,7 +4,9 @@ Konversations-Bots für Kundenservice mit optionaler Terminbuchung und
 Bestellannahme. Multi-Tenant, RLS-geschützt, in die bestehende
 Entitlements-/Usage-/AI-Tool-Infrastruktur integriert.
 
-Bots sind ein **Growth+**-Feature (Growth · Agency · Scale · Enterprise).
+Bots sind ab **Starter** verfügbar (Starter · Growth · Agency · Enterprise · Partner).
+Die verbindlichen Kontingente stehen in `shared/pricing.ts` — die Tabelle unten
+spiegelt sie und darf nicht davon abweichen.
 
 ## Architektur
 
@@ -52,16 +54,17 @@ zusätzlich von Tenant-Mitgliedern direkt verwaltbar (Bot-Builder im Frontend).
 
 ## Entitlements (Migration `20260628120100`)
 
-| Key                                | Art     | Growth | Agency | Scale | Enterprise |
-|------------------------------------|---------|-------:|-------:|------:|-----------:|
-| `bots.enabled`                     | boolean | ✓      | ✓      | ✓     | ✓          |
-| `bots.voice`                       | boolean | –      | ✓      | ✓     | ✓          |
-| `ai.tool.bot_reply`                | boolean | ✓      | ✓      | ✓     | ✓          |
-| `limit.bots`                       | limit   | 2      | 10     | 50    | ∞          |
-| `limit.bot_messages_monthly`       | limit   | 2.000  | 10.000 | 50.000| ∞          |
-| `limit.bot_voice_minutes_monthly`  | limit   | –      | 500    | 2.500 | ∞          |
+| Key                          | Art     | Starter | Growth | Agency | Enterprise | Partner |
+|------------------------------|---------|--------:|-------:|-------:|-----------:|--------:|
+| `bots.enabled`               | boolean | ✓       | ✓      | ✓      | ✓          | ✓       |
+| `bots.voice`                 | boolean | –       | –      | ✓      | ✓          | ✓       |
+| `ai.tool.bot_reply`          | boolean | ✓       | ✓      | ✓      | ✓          | ✓       |
+| `limit.bots`                 | limit   | 1       | 2      | 10     | 20         | 50      |
+| `limit.bot_messages_monthly` | limit   | 500     | 2.000  | 25.000 | 50.000     | 100.000 |
+| Kanäle                       | –       | 1       | 3      | 7      | 7          | 7       |
 
-Starter und die Legacy-Pläne (bronze/silver/gold) erhalten Bots **nicht**.
+Free Audit erhält keine produktiven Bots. Voice folgt dem Kanal `voice` der
+Pricing-SSoT und ist damit ab Agency enthalten.
 
 ## API
 

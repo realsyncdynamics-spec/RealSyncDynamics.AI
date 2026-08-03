@@ -1,143 +1,83 @@
 /**
- * Plan-Config redundancy check.
+ * PlanConfig — Billing-Sicht auf die Pricing-SSoT.
  *
- * The spec asked for a `PLAN_CONFIG` map at this path. The repo already
- * has `src/config/pricing.ts` as the Single Source of Truth — adding a
- * second config object would cause exactly the kind of drift this QA
- * audit is trying to prevent.
+ * ⚠️  Diese Datei enthält KEINE eigenen Preise. Sie berechnet ihre Einträge
+ *     aus `shared/pricing.ts` und ergänzt nur die beiden Dinge, die im
+ *     Preismodell selbst nichts zu suchen haben:
+ *       - das Abrechnungsintervall je Plan-Key
+ *       - die Zahlungsart (checkout / inquiry / free)
  *
- * Instead, this file re-exports a typed view onto the canonical config
- * with the additional fields the spec requested (stripePriceId from
- * env vars + payment mode). Anything that needs PlanConfig-shape data
- * imports from here; anything that renders pricing data imports from
- * `src/config/pricing.ts` directly.
- *
- * Diff-check (run by audit/contract test):
- *   PRICING_TIERS[id].priceEur === PLAN_CONFIG[planKey].price
- *   PRICING_TIERS[id].planKey   === planKey
- *
- * Mismatch === build-time error.
+ * Stripe-Price-IDs stehen bewusst NICHT hier. Der Checkout löst sie
+ * serverseitig aus `public.products.default_for_plan_key` auf
+ * (siehe supabase/functions/stripe-checkout). Ein Frontend-Mapping wäre
+ * eine zweite Preisautorität und ist deshalb entfallen.
  */
 
-import { PRICING_TIERS, type TierId } from '../../config/pricing';
+import {
+  PLANS,
+  allPlanKeys,
+  intervalForPlanKey,
+  planByKey,
+  priceForPlanKey,
+  type BillingInterval,
+  type PlanId,
+  type PlanKey,
+  type PurchaseMode,
+} from '@/shared/pricing';
 
-export type PaymentMode = 'free' | 'checkout' | 'inquiry';
+export type PaymentMode = PurchaseMode;
 
 export interface PlanConfigEntry {
-  price: number | null;
-  interval: 'none' | 'month' | 'year';
-  /**
-   * Stripe Price ID — pulled from Vite env (build-time). Server-side
-   * code MUST look up the live ID from `public.products` table via the
-   * canonical lookup in `stripe-checkout` Edge Function — env vars are
-   * a developer-time fallback, not a production source-of-truth.
-   */
-  stripePriceId: string | null;
+  /** Preis in Euro für genau diesen Plan-Key (monatlich oder jährlich). */
+  price: number;
+  interval: BillingInterval;
   mode: PaymentMode;
 }
 
-const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env as Record<string, string | undefined> : {};
+/**
+ * Plan-Key → Abrechnungsdaten. Vollständig aus der SSoT berechnet,
+ * inklusive aller Jahresvarianten.
+ */
+export const PLAN_CONFIG: Record<PlanKey, PlanConfigEntry> = allPlanKeys().reduce(
+  (acc, key) => {
+    const plan = planByKey(key)!;
+    acc[key] = {
+      price: priceForPlanKey(key) ?? 0,
+      interval: intervalForPlanKey(key),
+      mode: plan.purchaseMode,
+    };
+    return acc;
+  },
+  {} as Record<PlanKey, PlanConfigEntry>,
+);
 
-export const PLAN_CONFIG: Record<string, PlanConfigEntry> = {
-  free_audit: {
-    price: 0,
-    interval: 'none',
-    stripePriceId: null,
-    mode: 'free',
-  },
-  starter: {
-    price: 79,
-    interval: 'month',
-    stripePriceId: env.VITE_STRIPE_PRICE_STARTER ?? null,
-    mode: 'checkout',
-  },
-  growth: {
-    price: 249,
-    interval: 'month',
-    stripePriceId: env.VITE_STRIPE_PRICE_GROWTH ?? null,
-    mode: 'checkout',
-  },
-  agency: {
-    price: 699,
-    interval: 'month',
-    stripePriceId: env.VITE_STRIPE_PRICE_AGENCY ?? null,
-    mode: 'inquiry',
-  },
-  scale: {
-    price: 1999,
-    interval: 'month',
-    stripePriceId: env.VITE_STRIPE_PRICE_SCALE ?? null,
-    // 'inquiry' until the 50-tenant quota is enforced backend-side AND a
-    // Stripe price ID exists. The pricing-page CTA routes interested
-    // customers to /contact-sales for manual onboarding (see pricing.ts).
-    mode: 'inquiry',
-  },
-  enterprise: {
-    price: 1249,
-    interval: 'month',
-    stripePriceId: env.VITE_STRIPE_PRICE_ENTERPRISE ?? null,
-    mode: 'checkout',
-  },
-  // Yearly variants (12 Monate zum Preis von 10 = 2-Monate-Rabatt)
-  starter_yearly: {
-    price: 790,
-    interval: 'year',
-    stripePriceId: env.VITE_STRIPE_PRICE_STARTER_YEARLY ?? null,
-    mode: 'checkout',
-  },
-  growth_yearly: {
-    price: 2490,
-    interval: 'year',
-    stripePriceId: env.VITE_STRIPE_PRICE_GROWTH_YEARLY ?? null,
-    mode: 'checkout',
-  },
-  agency_yearly: {
-    price: 6900,
-    interval: 'year',
-    stripePriceId: env.VITE_STRIPE_PRICE_AGENCY_YEARLY ?? null,
-    mode: 'inquiry',
-  },
-  scale_yearly: {
-    price: 19000,
-    interval: 'year',
-    stripePriceId: env.VITE_STRIPE_PRICE_SCALE_YEARLY ?? null,
-    mode: 'inquiry',
-  },
-  enterprise_yearly: {
-    price: 12490,
-    interval: 'year',
-    stripePriceId: env.VITE_STRIPE_PRICE_ENTERPRISE_YEARLY ?? null,
-    mode: 'checkout',
-  },
-} as const;
+export type { PlanKey };
+
+/** Abrechnungsdaten für eine Plan-ID (Monatsvariante). */
+export function planForTier(id: PlanId): PlanConfigEntry {
+  const plan = PLANS.find((p) => p.id === id);
+  if (!plan) throw new Error(`unknown plan id: ${id}`);
+  return PLAN_CONFIG[plan.planKey];
+}
 
 /**
- * Diff-check between PLAN_CONFIG and PRICING_TIERS. Returns the list
- * of mismatched keys. Empty array === aligned. Used by the contract
- * test in tests/contracts/audit-contract.test.ts.
+ * Konsistenzprüfung: jeder Plan-Key der SSoT muss in PLAN_CONFIG mit
+ * identischem Preis auftauchen. Da beide aus derselben Quelle berechnet
+ * werden, kann das nur fehlschlagen, wenn jemand PLAN_CONFIG von Hand
+ * überschreibt. Genau davor schützt der Contract-Test.
  */
 export function diffPricingTiersAgainstPlanConfig(): string[] {
   const mismatches: string[] = [];
-  for (const tier of PRICING_TIERS) {
-    const planKey = tier.planKey;
-    const entry = PLAN_CONFIG[planKey];
+  for (const key of allPlanKeys()) {
+    const entry = PLAN_CONFIG[key];
     if (!entry) {
-      mismatches.push(`PLAN_CONFIG missing planKey: ${planKey}`);
+      mismatches.push(`PLAN_CONFIG missing planKey: ${key}`);
       continue;
     }
-    if (entry.price !== null && entry.price !== tier.priceEur) {
-      mismatches.push(`price mismatch ${planKey}: tier=${tier.priceEur} vs config=${entry.price}`);
+    const expected = priceForPlanKey(key);
+    if (expected !== null && entry.price !== expected) {
+      mismatches.push(`price mismatch ${key}: ssot=${expected} vs config=${entry.price}`);
     }
   }
   return mismatches;
-}
-
-export type PlanKey = keyof typeof PLAN_CONFIG;
-
-export function planForTier(id: TierId): PlanConfigEntry {
-  const tier = PRICING_TIERS.find((t) => t.id === id);
-  if (!tier) throw new Error(`unknown tier id: ${id}`);
-  const entry = PLAN_CONFIG[tier.planKey];
-  if (!entry) throw new Error(`PLAN_CONFIG missing for planKey: ${tier.planKey}`);
-  return entry;
 }

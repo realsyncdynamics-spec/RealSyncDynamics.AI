@@ -36,7 +36,7 @@ export const OPTIMIZER_TIERS: OptimizerTier[] = [
   { id: 'bronze', name: 'Bronze', planKey: 'starter', tagline: 'Vollständiger Bericht', optimizerFeature: 'Alle Befunde im Detail + monatlicher Scan' },
   { id: 'silber', name: 'Silber', planKey: 'growth', tagline: 'Fix-Snippets & Monitoring', optimizerFeature: 'Fix-Snippets, tägliches Monitoring, Drift-Erkennung', highlight: true },
   { id: 'gold', name: 'Gold', planKey: 'agency', tagline: 'Multi-Domain & White-Label', optimizerFeature: 'Bis zu 10 Domains, White-Label-Reports, API/Webhooks' },
-  { id: 'platin', name: 'Platin', planKey: 'scale', tagline: 'Skalierung', optimizerFeature: '50 Mandanten, eigene Subdomain, White-Label-Dashboard' },
+  { id: 'platin', name: 'Platin', planKey: 'partner', tagline: 'Mandanten & Reseller', optimizerFeature: '50 Mandanten, eigene Subdomain, White-Label-Dashboard' },
   { id: 'diamant', name: 'Diamant', planKey: 'enterprise', tagline: 'Enterprise-Umfang', optimizerFeature: 'Dedizierter Runtime, SLA, Evidence-Vault, eigene Policies' },
 ];
 

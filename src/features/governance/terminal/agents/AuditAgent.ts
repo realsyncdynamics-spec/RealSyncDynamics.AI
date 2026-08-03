@@ -2,7 +2,7 @@ import { TerminalMessage } from '../useAgenticTerminal';
 
 export interface AuditConfig {
   scanId: string;
-  tier: 'free' | 'starter' | 'growth' | 'agency' | 'scale';
+  tier: 'free' | 'starter' | 'growth' | 'agency' | 'partner';
   frameworks: string[];
   controls: number;
   evidenceCount: number;
@@ -34,7 +34,7 @@ function generateSHA256Hash(): string {
 
 export function generateAudit(
   scanId: string,
-  tier: 'free' | 'starter' | 'growth' | 'agency' | 'scale',
+  tier: 'free' | 'starter' | 'growth' | 'agency' | 'partner',
   frameworks: string[] = [],
   controls: number = 0,
   evidenceCount: number = 0

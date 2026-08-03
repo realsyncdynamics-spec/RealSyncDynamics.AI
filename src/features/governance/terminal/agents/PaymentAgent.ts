@@ -1,7 +1,7 @@
 import { TerminalMessage } from '../useAgenticTerminal';
 
 export interface StripeCheckoutConfig {
-  tier: 'starter' | 'growth' | 'agency' | 'scale';
+  tier: 'starter' | 'growth' | 'agency' | 'partner';
   monthlyPrice: number;
   currency: string;
   features: string[];
@@ -26,8 +26,8 @@ const TIER_CONFIGS: Record<string, StripeCheckoutConfig> = {
     currency: 'EUR',
     features: ['Unlimited scans', 'Full AI governance', 'Team collaboration', 'Dedicated support'],
   },
-  scale: {
-    tier: 'scale',
+  partner: {
+    tier: 'partner',
     monthlyPrice: 2999,
     currency: 'EUR',
     features: ['Enterprise features', 'Custom SLA', 'Priority support', 'Compliance certifications'],

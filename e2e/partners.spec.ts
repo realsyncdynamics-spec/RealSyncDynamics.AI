@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
  * Smoke-E2E für /partners — die DSB-Kanzlei-Landing.
  *
  * Schützt die im Code dokumentierten ehrlichen Promises:
- *   - 3 Tiers (Agency, Scale, Enterprise) mit echten Preisen
+ *   - 3 Stufen (Agency, Enterprise, Partner) mit echten Preisen
  *   - Lead-Capture-CTA → /contact-sales (kein erfundenes Affiliate-Tracking)
  *   - Roadmap-Hinweis: Affiliate-Tracking + 50-Tenant-Quota = Q4 2026
  */

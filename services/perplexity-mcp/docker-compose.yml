@@ -1,0 +1,82 @@
+# Perplexity MCP Server — Docker Compose für RealSyncDynamicsAI
+#
+# Usage (Standalone Testing):
+#   docker compose up -d
+#
+# Usage (Integration in bestehenden Stack):
+#   Kopiere die `perplexity-mcp` Service-Definition in deine Haupt-Compose
+#   oder nutze: docker compose -f platform/docker-compose.yml -f services/perplexity-mcp/docker-compose.yml up -d
+#
+# Environment:
+#   PERPLEXITY_API_KEY — Erforderlich
+#   LOG_LEVEL — Optional (default: info)
+
+version: '3.9'
+
+services:
+  perplexity-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perplexity-mcp
+    restart: unless-stopped
+
+    environment:
+      # API Key für Perplexity (erforderlich)
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}
+
+      # Logging-Level (debug, info, warn, error)
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Node.js Speicherlimit (optional)
+      # NODE_OPTIONS: '--max-old-space-size=512'
+
+    # Traefik Labels für Reverse Proxy Integration
+    labels:
+      # Enable Traefik discovery
+      - traefik.enable=true
+
+      # HTTP Router
+      - traefik.http.routers.perplexity.rule=Host(`mcp.realsyncdynamicsai.de`)
+      - traefik.http.routers.perplexity.entrypoints=web,websecure
+      - traefik.http.routers.perplexity.tls=true
+
+      # Backend Service (Port 3000)
+      - traefik.http.services.perplexity.loadbalancer.server.port=3000
+
+    # Ports (nur für lokales Testen, in Prod über Traefik)
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    # Network — nutze "proxy" wenn Traefik extern ist, sonst "rsd_net"
+    networks:
+      - proxy
+
+    # Health Check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Ressourcen-Limits (optional)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+networks:
+  # Traefik External Network
+  # Falls Traefik nicht im gleichen Compose ist, muss dieses Netzwerk extern sein:
+  proxy:
+    external: true
+    name: proxy  # Passe den Namen an dein Setup an
+
+  # Alternativ: Internal Network (falls alles im gleichen Compose läuft)
+  # rsd_net:
+  #   driver: bridge

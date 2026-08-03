@@ -15,7 +15,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "sync:pricing": "node scripts/sync-shared-pricing.mjs",
-    "check:pricing": "node scripts/sync-shared-pricing.mjs --check && tsx scripts/generate-plan-catalog-sql.ts --check supabase/migrations/20260802000000_canonical_plan_catalog.sql",
+    "check:pricing": "node scripts/sync-shared-pricing.mjs --check && tsx scripts/generate-plan-catalog-sql.ts --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "bash -c 'export TEST_DB_URL=$(bash scripts/test-db/up.sh) && echo \"Using $TEST_DB_URL\" && vitest run test/runtime/db/ --no-file-parallelism'",

@@ -55,7 +55,7 @@ Genau sechs Pläne, in dieser Reihenfolge (`PLAN_ORDER`):
 Andere Plan-Namen sind unzulässig. Insbesondere existiert **kein Plan
 „Scale"** mehr — er heißt seit dem Governance-Refactoring `partner`.
 Bestandsdaten werden über `normalizePlanKey()` abgebildet; die Migration
-`20260802000000_canonical_plan_catalog.sql` stellt die DB-Zeilen um.
+`20260802001000_canonical_plan_catalog.sql` stellt die DB-Zeilen um.
 
 ## Runtime-Architektur
 

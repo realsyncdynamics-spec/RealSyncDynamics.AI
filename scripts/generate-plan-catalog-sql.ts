@@ -9,15 +9,20 @@
  *   von Hand nach SQL übertragen werden muss.
  *
  * Verwendung:
- *   npx tsx scripts/generate-plan-catalog-sql.ts            → nach stdout
- *   npx tsx scripts/generate-plan-catalog-sql.ts --check FILE → vergleicht
+ *   npx tsx scripts/generate-plan-catalog-sql.ts          → nach stdout
+ *   npx tsx scripts/generate-plan-catalog-sql.ts --check   → vergleicht gegen
+ *       die aktuelle Katalog-Migration (wird selbst gefunden — ein fest
+ *       verdrahteter Zeitstempel bricht, sobald die Migration umbenannt
+ *       werden muss, etwa wegen einer Stempel-Kollision)
  *
  * Der Konsistenztest (`test/config/pricing-ssot.test.ts`) ruft
  * `buildPlanCatalogSql()` auf und prüft, dass die aktuelle Katalog-Migration
  * exakt diesen Block enthält. Weicht sie ab, ist eine neue Migration fällig.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ORDERED_PLANS, ADDONS, allPlanKeys, type Plan } from '../shared/pricing';
 
 /** Escaped einen String für ein SQL-Literal. */
@@ -109,14 +114,27 @@ export function buildPlanCatalogSql(): string {
   return lines.join('\n');
 }
 
+/**
+ * Findet die aktuelle Katalog-Migration. Bei mehreren gewinnt die mit dem
+ * höchsten Zeitstempel — das ist die zuletzt erzeugte.
+ */
+function findCatalogMigration(): string | null {
+  const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
+  const match = readdirSync(dir)
+    .filter((f) => f.endsWith('_canonical_plan_catalog.sql'))
+    .sort()
+    .pop();
+  return match ? join(dir, match) : null;
+}
+
 function main() {
   const checkIndex = process.argv.indexOf('--check');
   const sql = buildPlanCatalogSql();
 
   if (checkIndex >= 0) {
-    const file = process.argv[checkIndex + 1];
+    const file = process.argv[checkIndex + 1] ?? findCatalogMigration();
     if (!file) {
-      console.error('--check benötigt einen Dateipfad');
+      console.error('Keine *_canonical_plan_catalog.sql unter supabase/migrations gefunden.');
       process.exit(2);
     }
     const content = readFileSync(file, 'utf8');

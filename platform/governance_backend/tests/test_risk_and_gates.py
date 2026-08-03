@@ -12,11 +12,11 @@ from app.services import gate_engine, inventory, risk_evaluator, telemetry_handl
 
 
 @pytest.fixture(autouse=True)
-def clean_state():
-    inventory.reset()
+async def clean_state():
+    await inventory.reset()
     telemetry_handler.reset()
     yield
-    inventory.reset()
+    await inventory.reset()
     telemetry_handler.reset()
 
 
@@ -99,7 +99,7 @@ async def test_gate_approved_wenn_alle_nachweise_da():
     project_id = await inventory.create_project(
         _registration(models=["claude"]), "limited", ["tests_passed", "transparency_notice_enabled"]
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(project_id=project_id, build_hash="sha256:abc", artifacts=_artifacts())
     )
     assert decision.status == "approved"
@@ -112,7 +112,7 @@ async def test_gate_blockiert_ohne_model_card_bei_high():
         "high",
         ["tests_passed", "model_card_included", "pii_scan_passed"],
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(
             project_id=project_id,
             build_hash="sha256:abc",
@@ -131,7 +131,7 @@ async def test_gate_warnt_bei_weichem_befund():
         "limited",
         ["tests_passed", "transparency_notice_enabled", "audit_logging_active"],
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(
             project_id=project_id,
             build_hash="sha256:abc",
@@ -141,8 +141,9 @@ async def test_gate_warnt_bei_weichem_befund():
     assert decision.status == "warning"
 
 
-def test_gate_blockiert_unbekanntes_projekt():
-    decision = gate_engine.evaluate(
+@pytest.mark.asyncio
+async def test_gate_blockiert_unbekanntes_projekt():
+    decision = await gate_engine.evaluate(
         GateCheckRequest(project_id="prj_unknown", build_hash="x", artifacts=_artifacts())
     )
     assert decision.status == "blocked"
@@ -154,7 +155,7 @@ async def test_gate_blockiert_unacceptable_immer():
     project_id = await inventory.create_project(
         _registration(data_types=["social_scoring"]), "unacceptable", []
     )
-    decision = gate_engine.evaluate(
+    decision = await gate_engine.evaluate(
         GateCheckRequest(project_id=project_id, build_hash="x", artifacts=_artifacts())
     )
     assert decision.status == "blocked"
@@ -176,3 +177,22 @@ async def test_region_change_wird_erfasst():
     events = telemetry_handler.recent_events("prj_x")
     assert len(events) == 2
     assert events[-1].event_type == "region_change"
+
+
+@pytest.mark.asyncio
+async def test_unbekanntes_gate_blockiert_statt_500():
+    """`required_gates` ist persistierter Zustand und kann einen Namen
+    enthalten, den der Katalog nicht mehr kennt — etwa ein Projekt, das vor
+    einer Katalogaenderung registriert wurde. Eine direkte Indizierung in
+    GATE_DESCRIPTIONS ergaebe dort einen KeyError, also HTTP 500 statt einer
+    Gate-Entscheidung. Die Entscheidung muss fail-closed bleiben."""
+    project_id = await inventory.create_project(
+        _registration(models=["claude"]), "high", ["ein_laengst_entferntes_gate"]
+    )
+
+    decision = await gate_engine.evaluate(
+        GateCheckRequest(project_id=project_id, build_hash="sha256:abc", artifacts=_artifacts())
+    )
+
+    assert decision.status == "blocked"
+    assert "ein_laengst_entferntes_gate" in decision.reason

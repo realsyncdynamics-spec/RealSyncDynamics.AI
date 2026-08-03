@@ -221,9 +221,9 @@ VITE_SENTRY_ENVIRONMENT=production
 ### 4.3 Custom Domain & SSL
 
 1. Go to Custom domains
-2. Add: `realsyncdynamics.ai`
+2. Add: `realsyncdynamicsai.de`
 3. Add CNAME record in DNS registrar:
-   - **Name:** realsyncdynamics.ai
+   - **Name:** realsyncdynamicsai.de
    - **Type:** CNAME
    - **Value:** realsyncdynamics-spec.pages.dev
 4. SSL certificate auto-provisioned (1-5 min)
@@ -283,7 +283,7 @@ In Stripe → Products:
 ### 5.3 Configure Webhooks
 
 1. Go to Webhooks
-2. Add endpoint: `https://api.realsyncdynamics.ai/functions/v1/stripe-webhook`
+2. Add endpoint: `https://api.realsyncdynamicsai.de/functions/v1/stripe-webhook`
 3. Subscribe to events:
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -327,7 +327,7 @@ emails/
 ### 6.3 Sender Identity
 
 In Resend dashboard:
-- Verify sender domain: `noreply@realsyncdynamics.ai`
+- Verify sender domain: `noreply@realsyncdynamicsai.de`
 - Add SPF/DKIM records to DNS
 - Set bounce/complaint handlers
 
@@ -552,7 +552,7 @@ wrangler kv:key list <namespace>
 # Monitoring
 sentry-cli releases list
 sentry-cli health-check
-curl https://realsyncdynamics.ai/health
+curl https://realsyncdynamicsai.de/health
 
 # Database
 psql -h db.supabase.co -U postgres -d postgres \

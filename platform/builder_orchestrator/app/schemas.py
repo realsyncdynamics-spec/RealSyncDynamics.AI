@@ -6,19 +6,21 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from .validators import Description, Jurisdiction, ProjectId, ProjectName, Prompt, TargetStack
+
 
 class BuildSpec(BaseModel):
     """Eingabe des Nutzers: was gebaut werden soll und mit welchen Daten."""
 
-    project_name: str
-    description: str
-    prompt: str
+    project_name: ProjectName
+    description: Description
+    prompt: Prompt
     data_types: List[str] = Field(default_factory=list)
     data_subjects: List[str] = Field(default_factory=list)
     models: List[str] = Field(default_factory=list)
     llm_provider: Optional[str] = None
-    jurisdiction: Optional[str] = "eu"
-    target_stack: str = "nextjs_supabase"
+    jurisdiction: Jurisdiction = "eu"
+    target_stack: TargetStack = "nextjs_supabase"
 
 
 TaskStatus = Literal["pending", "running", "completed", "failed", "blocked"]
@@ -53,6 +55,15 @@ class AgentTask(BaseModel):
     # doppelte Einträge im Prüfpfad.
     idempotency_key: Optional[str] = None
 
+    # Darf ein Abbruch diesen Task mitten im Lauf abschießen?
+    #
+    # Für einen LLM-Aufruf: ja — jede weitere Sekunde kostet Geld, und das
+    # Ergebnis wird ohnehin verworfen. Für einen Task mit Außenwirkung: nein —
+    # ein halb ausgerolltes Deployment oder ein angefangener Gate-Eintrag ist
+    # schlimmer als ein paar Sekunden Wartezeit. Deshalb hängt die Härte des
+    # Abbruchs am Task, nicht am Abbruchbefehl.
+    interruptible: bool = True
+
     # Trace-Kontext, der die Queue-Grenze überlebt (W3C traceparent).
     otel_carrier: Dict[str, str] = Field(default_factory=dict)
 
@@ -72,12 +83,15 @@ class AgentResult(BaseModel):
     spawn: List[AgentTask] = Field(default_factory=list)
     metrics: Dict[str, str] = Field(default_factory=dict)
 
-    # False = ein erneuter Versuch ist sinnlos (z.B. Gate hat hart blockiert).
-    retryable: bool = True
+    # Bewusst **kein** `retryable`-Feld: Ein Handler, der zurückkehrt, hat
+    # Erfolg gehabt — da gibt es nichts zu wiederholen. Wiederholbarkeit
+    # gehört an den Fehlerfall, und der wird geworfen: Der Scheduler liest
+    # `retryable` am Exception-Objekt (siehe `_run_task`). Ein Feld hier hätte
+    # nie eine Leseseite gehabt und genau das vorgetäuscht.
 
 
 class TaskGraph(BaseModel):
-    project_id: str
+    project_id: ProjectId
     tasks: List[AgentTask]
 
     # Wird von der Cancel-Route gesetzt; der Scheduler bricht daraufhin ab.
@@ -213,4 +227,4 @@ class GovernanceContext(BaseModel):
 
 
 class CancelRequest(BaseModel):
-    project_id: str
+    project_id: ProjectId

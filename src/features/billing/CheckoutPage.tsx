@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Loader2, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
-import { tierById, type TierId } from '../../config/pricing';
-import { createCheckoutSession, type PlanKey } from './checkout';
+import { tierByPlanKey } from '../../config/pricing';
+import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
+import { createCheckoutSession } from './checkout';
 import { classifyStripeError, getStripeDiagnostic, type StripeDiagnostic } from './stripeDiagnostics';
 import { OAuthProviderButtons } from '../auth/OAuthProviderButtons';
 import { trackMarketingEvent } from '../../lib/marketingAnalytics';
@@ -23,13 +24,10 @@ import { trackConversion } from '../../lib/pixels';
  * Free: hier nicht angezeigt — wird vor dem Routing umgeleitet (free -> /audit).
  */
 
-// Yearly-Keys sind buchbar (CTAs in src/config/pricing.ts verlinken auf
-// /checkout/<key>_yearly) — ohne sie hier bounced die Buchung zurück auf /pricing.
-const VALID_PLAN_KEYS = new Set<PlanKey>([
-  'free-audit', 'starter', 'growth', 'agency', 'scale', 'enterprise',
-  'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly', 'enterprise_yearly',
-]);
-// DE enterprise checkout – feature/de-enterprise-frontend-checkout
+// Gueltige Plan-Keys kommen aus der Pricing-SSoT — inklusive der
+// Jahres-Varianten (CTAs verlinken auf /checkout/<key>_yearly) und der
+// Altschreibweisen, die `normalizePlanKey()` aufloest. Eine handgepflegte
+// Liste hier lief zwangslaeufig gegen shared/pricing.ts auseinander.
 type AuthState =
   | { status: 'loading' }
   | { status: 'no_user' }
@@ -51,27 +49,29 @@ export function CheckoutPage() {
   const [agreedToTerms,    setAgreedToTerms]    = useState(false);
   const [acknowledgedWithdrawal, setAcknowledgedWithdrawal] = useState(false);
 
-  // 1. Validate planKey
-  const validPlan = planKey && VALID_PLAN_KEYS.has(planKey as PlanKey)
-    ? (planKey as PlanKey)
-    : null;
-  const tier = validPlan ? tierById(validPlan as TierId) : undefined;
+  // 1. Validate planKey gegen die SSoT
+  const validPlan: PlanKey | null = normalizePlanKey(planKey);
+  const tier = validPlan ? tierByPlanKey(validPlan) : undefined;
 
   // 2. Free + Enterprise + Invalid: redirect away — diese Page nicht zustaendig
   useEffect(() => {
     // 'free_audit' ist der kanonische planKey aus src/config/pricing.ts —
     // alle drei Schreibweisen führen zum kostenlosen Audit statt in den Checkout.
-    if (planKey === 'free' || planKey === 'free-audit' || planKey === 'free_audit') {
+    // Invalid plan key: redirect to pricing (full page load for E2E test compatibility)
+    if (planKey && !validPlan) {
+      window.location.href = '/pricing';
+      return;
+    }
+    const plan = validPlan ? planByKey(validPlan) : null;
+    if (!plan) return;
+    // Kaufmodus statt Plan-Name: `free` fuehrt ins kostenlose Audit,
+    // `inquiry` (Partner) in den Vertriebskontakt.
+    if (plan.purchaseMode === 'free') {
       window.location.href = '/audit?source=checkout-free-redirect';
       return;
     }
-    if (planKey === 'enterprise' || planKey === 'enterprise_yearly') {
-      window.location.href = '/contact-sales?intent=enterprise&source=checkout-redirect';
-      return;
-    }
-    // Invalid plan key: redirect to pricing (full page load for E2E test compatibility)
-    if (planKey && !VALID_PLAN_KEYS.has(planKey as PlanKey)) {
-      window.location.href = '/pricing';
+    if (plan.purchaseMode === 'inquiry') {
+      window.location.href = `/contact-sales?plan=${encodeURIComponent(plan.planKey)}&source=checkout-redirect`;
       return;
     }
   }, [planKey]);
@@ -154,8 +154,8 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency / scale (monatlich oder jährlich).`}
-        cta={{ label: 'Zur Preisuebersicht', to: '/pricing' }}
+        body={`"${planKey}" ist kein bekannter Plan. Verfügbar: starter / growth / agency / scale (monatlich oder jährlich).`}
+        cta={{ label: 'Zur Preisübersicht', to: '/pricing' }}
         backTo="/pricing"
       />
     );
@@ -164,7 +164,7 @@ export function CheckoutPage() {
   if (auth.status === 'loading') {
     return (
       <ShellWithMessage
-        title="Pruefe Anmelde-Status..."
+        title="Prüfe Anmelde-Status …"
         body="Einen Moment."
         loading
         backTo={`/pricing/${validPlan}`}
@@ -189,7 +189,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Workspace einrichten"
-        body={`Eingeloggt als ${auth.userEmail}, aber noch kein Workspace vorhanden. Im naechsten Schritt richten wir Ihren Tenant ein, dann koennen Sie ${tier.name} buchen.`}
+        body={`Eingeloggt als ${auth.userEmail}, aber noch kein Workspace vorhanden. Im nächsten Schritt richten wir Ihren Tenant ein, dann können Sie ${tier.name} buchen.`}
         cta={{
           label: 'Workspace einrichten',
           to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,

@@ -6,7 +6,7 @@ const PLAN_LABELS: Record<string, string> = {
   starter: 'Starter',
   growth:  'Professional',
   agency:  'Agency',
-  scale:   'Scale',
+  partner: 'Partner',
   enterprise: 'Enterprise',
 };
 

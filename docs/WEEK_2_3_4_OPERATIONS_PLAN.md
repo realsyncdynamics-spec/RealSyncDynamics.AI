@@ -540,7 +540,7 @@ npm run qa:governance -- --smoke
 bash deploy/deploy-to-staging.sh
 
 # Check staging health
-curl https://staging-realsyncdynamics.ai/api/governance/status
+curl https://staging-realsyncdynamicsai.de/api/governance/status
 
 # View live Sentry errors
 # https://sentry.io/organizations/realsyncdynamics/issues/?project=...

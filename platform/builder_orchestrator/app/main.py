@@ -12,23 +12,58 @@ from __future__ import annotations
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from . import auth
 from .clients import rsd_client
+from .config import get_config
+from .middleware import (
+    ErrorSanitizationMiddleware,
+    RateLimitMiddleware,
+    RequestSizeLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
-from .services import agent_runner, events, task_graph
+from .services import agent_runner, budget, db, events, llm, repository, task_graph
 from .services.audit_log import records as audit_records
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
+MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Validiert Konfiguration, verbindet die Datenbank und wählt das Backend.
+
+    Ohne erreichbare Datenbank läuft der Orchestrator prozesslokal weiter —
+    Builds gehen dann bei einem Neustart verloren, aber der Dienst nimmt
+    weiterhin Aufträge an. Welcher Modus aktiv ist, steht unter /health.
+    """
+    # Konfiguration validieren vor dem Starten
+    get_config()
+
+    if await db.connect():
+        await db.apply_migrations(str(MIGRATION))
+    repository.select_backend()
+    llm.select_provider()
+    try:
+        yield
+    finally:
+        await db.disconnect()
+
+
 app = FastAPI(
     title="App Builder Orchestrator",
-    version="0.2.0",
+    version="0.3.0",
     description="Multi-Agent-Task-Graph für den AI-App-Builder, gekoppelt an RealSyncDynamicsAI.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -38,17 +73,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Sicherheits-Middlewares (Reihenfolge: SecurityHeaders → RateLimit → RequestSize → ErrorSanitization → App)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
+app.add_middleware(RequestSizeLimitMiddleware)
+app.add_middleware(ErrorSanitizationMiddleware)
+
 setup_tracing(app, service_name="builder_orchestrator")
 tracer = get_tracer(__name__)
 
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "service": "builder_orchestrator"}
+    # `storage` macht sichtbar, ob laufende Builds einen Neustart überleben,
+    # `llm_provider`, ob wirklich ein Modell antwortet oder der Stub — beides
+    # sind Betriebszustände, die man von außen sehen können muss.
+    provider = llm.get_provider()
+    return {
+        "status": "ok",
+        "service": "builder_orchestrator",
+        "storage": "postgres" if db.is_enabled() else "memory",
+        "llm_provider": provider.name,
+        "llm_model": getattr(provider, "model", "?"),
+        # Ein Dienst, der versehentlich ohne Auth laeuft, soll das nicht
+        # verstecken — deshalb steht der Zustand hier und nicht nur im Log.
+        "auth": "enabled" if auth.is_enabled() else "disabled",
+    }
 
 
 @app.post(
     "/api/v1/builder/create-spec",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=TaskGraph,
     summary="BuildSpec registrieren, Task-Graph erzeugen und starten",
 )
@@ -76,6 +131,7 @@ async def create_spec(spec: BuildSpec) -> TaskGraph:
 
 @app.get(
     "/api/v1/builder/task-status",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=TaskGraph,
     summary="Status des Task-Graphen abfragen",
 )
@@ -88,6 +144,7 @@ async def get_task_status(project_id: str) -> TaskGraph:
 
 @app.post(
     "/api/v1/builder/cancel",
+    dependencies=[Depends(auth.require_tenant)],
     response_model=TaskGraph,
     summary="Laufenden Build abbrechen",
 )
@@ -100,6 +157,7 @@ async def cancel(payload: CancelRequest) -> TaskGraph:
 
 @app.get(
     "/api/v1/builder/events",
+    dependencies=[Depends(auth.require_tenant)],
     summary="Task-Übergänge als Server-Sent-Events",
 )
 async def stream_events(project_id: str) -> StreamingResponse:
@@ -122,7 +180,13 @@ async def stream_events(project_id: str) -> StreamingResponse:
 
 @app.get(
     "/api/v1/builder/audit",
+    dependencies=[Depends(auth.require_tenant)],
     summary="Prüfpfad der Agentenläufe eines Projekts",
 )
 async def get_audit(project_id: str) -> dict:
-    return {"records": [r.model_dump() for r in audit_records(project_id)]}
+    # Der Verbrauch kommt aus denselben Datensaetzen — kein zweiter Zaehler,
+    # der irgendwann abweicht.
+    return {
+        "records": [r.model_dump() for r in audit_records(project_id)],
+        "usage": budget.summary(project_id),
+    }

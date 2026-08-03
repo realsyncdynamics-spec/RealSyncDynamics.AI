@@ -19,6 +19,12 @@ from . import inventory
 Severity = Literal["low", "medium", "high"]
 
 # Gate-Name -> (Klartext-Begründung, Remediation-Hinweis)
+#
+# Die Schlüssel werden mit Werten aus `required_gates` nachgeschlagen, und das
+# ist **persistierter** Zustand: Ein Projekt, das vor einer Katalogänderung
+# registriert wurde, kann einen Namen tragen, den es hier nicht mehr gibt.
+# Deshalb wird über `_beschreibung` gelesen und nie direkt indiziert — ein
+# KeyError wäre hier ein HTTP 500 statt einer Gate-Entscheidung.
 GATE_DESCRIPTIONS: Dict[str, Tuple[str, str]] = {
     "tests_passed": (
         "Test-Suite nicht grün",
@@ -42,6 +48,17 @@ GATE_DESCRIPTIONS: Dict[str, Tuple[str, str]] = {
     ),
 }
 
+def _beschreibung(gate: str) -> Tuple[str, str]:
+    """Beschreibung eines Gates — auch für unbekannte Namen belastbar."""
+    return GATE_DESCRIPTIONS.get(
+        gate,
+        (
+            f"Unbekanntes Gate '{gate}' nicht erfüllt",
+            f"Gate '{gate}' im Katalog nachtragen oder aus dem Projekt entfernen.",
+        ),
+    )
+
+
 # Ab welcher Risikoklasse ein fehlendes Gate hart blockiert (statt zu warnen).
 BLOCKING_TIERS = {"high", "unacceptable"}
 
@@ -56,9 +73,9 @@ SEVERITY_BY_TIER: Dict[str, Severity] = {
 }
 
 
-def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
+async def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
     """Prüft die Build-Artefakte gegen den Gate-Katalog des Projekts."""
-    project = inventory.get_project(payload.project_id)
+    project = await inventory.get_project(payload.project_id)
 
     # Unbekanntes Projekt: kein Nachweis über Risiko-Einstufung -> blockieren.
     if project is None:
@@ -79,7 +96,7 @@ def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
             remediation="Anwendungsfall streichen oder so umbauen, dass keine verbotene Praktik vorliegt.",
             severity="high",
         )
-        inventory.record_gate_result(payload.project_id, decision.status)
+        await inventory.record_gate_result(payload.project_id, decision.status)
         return decision
 
     artifacts = payload.artifacts.model_dump()
@@ -98,22 +115,22 @@ def evaluate(payload: GateCheckRequest) -> GateCheckResponse:
     if blocking:
         decision = GateCheckResponse(
             status="blocked",
-            reason="Gates nicht erfüllt: " + ", ".join(GATE_DESCRIPTIONS[g][0] for g in blocking),
-            remediation=" ".join(GATE_DESCRIPTIONS[g][1] for g in blocking),
+            reason="Gates nicht erfüllt: " + ", ".join(_beschreibung(g)[0] for g in blocking),
+            remediation=" ".join(_beschreibung(g)[1] for g in blocking),
             severity=SEVERITY_BY_TIER[tier],
         )
     elif warnings:
         decision = GateCheckResponse(
             status="warning",
             reason="Nicht blockierende Befunde: "
-            + ", ".join(GATE_DESCRIPTIONS[g][0] for g in warnings),
-            remediation=" ".join(GATE_DESCRIPTIONS[g][1] for g in warnings),
+            + ", ".join(_beschreibung(g)[0] for g in warnings),
+            remediation=" ".join(_beschreibung(g)[1] for g in warnings),
             severity="low",
         )
     else:
         decision = GateCheckResponse(status="approved")
 
-    inventory.record_gate_result(payload.project_id, decision.status)
+    await inventory.record_gate_result(payload.project_id, decision.status)
 
     # TODO(Evidence Vault): Gate-Entscheidung inkl. build_hash als
     # unveränderliches Evidence-Event (Hash-Chain) ablegen.

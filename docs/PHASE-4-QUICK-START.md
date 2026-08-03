@@ -13,7 +13,7 @@ Establish production performance baselines, configure alerts, and build a monito
 ### Day 1: Activate Sentry
 ```bash
 # Verify DSN is set in production
-curl https://realsyncdynamics.ai -I | grep -i sentry
+curl https://realsyncdynamicsai.de -I | grep -i sentry
 
 # Check Sentry dashboard
 # https://sentry.io/projects/realsyncdynamicsai/
@@ -77,7 +77,7 @@ Actions:
 ### Smoke Test Alerts (Day 13)
 ```bash
 # Trigger each alert type once to verify notifications work
-curl -X POST https://realsyncdynamics.ai/api/test/slow-endpoint
+curl -X POST https://realsyncdynamicsai.de/api/test/slow-endpoint
 
 # Verify Slack notifications received
 ```

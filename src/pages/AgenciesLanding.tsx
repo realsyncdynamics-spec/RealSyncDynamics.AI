@@ -114,7 +114,7 @@ function ValueCard({ icon, title, text }: { icon: React.ReactNode; title: string
       <div className="w-9 h-9 mb-3 bg-security-900/30 border border-security-800 text-security-300 flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4">
         {icon}
       </div>
-      <h4 className="font-display font-bold text-titanium-50 mb-1.5">{title}</h4>
+      <h3 className="font-display font-bold text-titanium-50 mb-1.5">{title}</h3>
       <p className="text-sm text-titanium-400 leading-relaxed">{text}</p>
     </div>
   );
@@ -148,7 +148,7 @@ function UseCases() {
         <div className="grid md:grid-cols-2 gap-4">
           {cases.map((c) => (
             <div key={c.title} className="p-5 bg-obsidian-900 border border-titanium-900 rounded-none">
-              <h4 className="font-display font-bold text-titanium-50 mb-1.5">{c.title}</h4>
+              <h3 className="font-display font-bold text-titanium-50 mb-1.5">{c.title}</h3>
               <p className="text-sm text-titanium-400 leading-relaxed">{c.body}</p>
             </div>
           ))}

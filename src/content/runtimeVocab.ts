@@ -77,12 +77,12 @@ export const PLANS = [
     cta: { label: 'Enable governance', to: '/audit?plan=governance', kind: 'primary' as const },
   },
   {
-    id: 'scale',
-    name: 'Scale',
-    tagline: 'Multi-domain',
+    id: 'partner',
+    name: 'Partner',
+    tagline: 'Multi-tenant',
     headline: 'Custom',
     bullets: ['Unlimited Domains', 'Agent-Customisation', 'SSO · SCIM', 'Dedicated Runtime'],
-    cta: { label: 'Talk to runtime', to: '/contact-sales?intent=scale', kind: 'secondary' as const },
+    cta: { label: 'Talk to runtime', to: '/contact-sales?intent=partner', kind: 'secondary' as const },
   },
 ] as const;
 
@@ -153,6 +153,12 @@ export const CI_FORBIDDEN_CTA = [
   'Beratungstermin',
   'Vertrieb kontaktieren',
   'Sales kontaktieren',
+  // Termin-/Kalender-Sprache: widerspricht direkt der Positionierung
+  // „Tools statt Beratung". Auch der Enterprise-Pfad — die einzige
+  // kontaktbasierte Ausnahme — nutzt `CTA.enterprise`, nicht einen Termin.
+  'Termin vereinbaren',
+  'Termin buchen',
+  'Beratungsanfrage',
 ] as const;
 
 /**

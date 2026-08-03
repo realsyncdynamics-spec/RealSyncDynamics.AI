@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Shield, Target, Compass, Users } from 'lucide-react';
+import { CTA } from '../content/runtimeVocab';
 
 export function About() {
   return (
@@ -77,7 +78,7 @@ export function About() {
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong className="text-titanium-50">Tools statt Beratung</strong>: 8 kostenlose Self-Service-Tools (AVV, VVT, DSFA, AI-Act-Klassifikator, Bußgeld-Rechner, …) statt PowerPoint-Audits.</span>
+                <span><strong className="text-titanium-50">Tools statt Beratung</strong>: 8 kostenlose Self-Service-Tools (AVV, VVT, DSFA, AI-Act-Klassifikator, Bußgeld-Rechner, …) statt PowerPoint-Audits. Der Free Audit läuft ohne Account und ohne Vorgespräch — Ergebnis in Minuten, nicht nach Terminvergabe.</span>
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
@@ -132,24 +133,58 @@ export function About() {
             </ul>
           </Section>
 
+          {/*
+            Positionierungs-Kontrakt: Der Einstieg führt über das Produkt, nicht
+            über einen Kalender. „Tools statt Beratung" (siehe „Was uns
+            unterscheidet") und ein Termin-CTA an gleicher Stelle widersprechen
+            sich — deshalb ist der Self-Service-Pfad primär und der menschliche
+            Kanal explizit auf die Fälle beschränkt, die Self-Service nicht
+            abdeckt (Enterprise, Presse, Investoren).
+            CTA-Strings kommen aus runtimeVocab → CTA (Single Source of Truth,
+            CI-geprüft via .github/workflows/cta-enforcement.yml).
+          */}
           <div className="mt-12 p-6 sm:p-8 bg-obsidian-900 border border-security-700 rounded-none">
             <div className="flex items-center gap-2 mb-2">
               <Users className="h-5 w-5 text-security-400" />
-              <h2 className="font-display font-bold text-titanium-50 text-xl">Mit uns arbeiten</h2>
+              <h2 className="font-display font-bold text-titanium-50 text-xl">Mit uns starten</h2>
             </div>
             <p className="text-titanium-300 text-sm mb-4">
-              Pilotkunden, Early-Access, Beratungsanfragen, Presse, Investor-Decks — alles über einen Kanal.
+              Selbst ausprobieren ist der schnellste Weg, uns kennenzulernen: Free Audit starten,
+              Report herunterladen, Tools nutzen — ohne Account, ohne Vertriebsgespräch.
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <Link to="/contact-sales?source=about" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
-                Termin vereinbaren <ArrowRight className="h-4 w-4" />
+              <Link to="/audit?source=about" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-security-500 hover:bg-security-600 text-white text-sm font-bold rounded-none">
+                {CTA.startFreeAudit} <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/press" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
-                Media-Kit ansehen
+              <Link to="/tools?source=about" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                8 kostenlose Tools ansehen
               </Link>
-              <Link to="/legal/compliance-matrix" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
-                Compliance-Matrix
+              <Link to="/pricing?source=about" className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
+                Preise
               </Link>
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-titanium-900">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-titanium-500 mb-1.5">
+                Wenn Self-Service nicht reicht
+              </h3>
+              <p className="text-titanium-400 text-sm mb-3">
+                SSO, On-Premise, Behördenverträge, Custom-DPA — dafür gibt es einen Menschen.
+                Presse, Media-Kit und Investor-Anfragen laufen über denselben Kanal.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                {/* Param-Reihenfolge nach Repo-Konvention (HeroSection, CheckoutPage):
+                    intent qualifiziert den Lead, source attribuiert die Herkunft. */}
+                <Link to="/contact-sales?intent=enterprise&source=about" className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-obsidian-950 border border-titanium-700 hover:border-security-500 text-titanium-200 text-sm font-bold rounded-none">
+                  {CTA.enterprise}
+                </Link>
+                <Link to="/press" className="inline-flex items-center justify-center gap-2 px-4 py-2 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
+                  Media-Kit ansehen
+                </Link>
+                <Link to="/legal/compliance-matrix" className="inline-flex items-center justify-center gap-2 px-4 py-2 text-titanium-400 hover:text-titanium-200 text-sm rounded-none">
+                  Compliance-Matrix
+                </Link>
+              </div>
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 
 -- ─── 1. Agent Registry ───
 
-CREATE TABLE IF NOT EXISTS public.agents (
+CREATE TABLE IF NOT EXISTS public.autonomous_agents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
@@ -32,19 +32,19 @@ CREATE TABLE IF NOT EXISTS public.agents (
   UNIQUE(tenant_id, type) -- only one agent per type per tenant (can be overridden with custom types)
 );
 
-CREATE INDEX IF NOT EXISTS idx_agents_tenant_id ON public.agents(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_agents_enabled ON public.agents(enabled);
-CREATE INDEX IF NOT EXISTS idx_agents_type ON public.agents(type);
+CREATE INDEX IF NOT EXISTS idx_autonomous_agents_tenant_id ON public.autonomous_agents(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_autonomous_agents_enabled ON public.autonomous_agents(enabled);
+CREATE INDEX IF NOT EXISTS idx_autonomous_agents_type ON public.autonomous_agents(type);
 
 -- ─── 2. Agent Execution Runs ───
 
 -- Create agent_runs table only if it doesn't exist
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_runs' AND table_schema = 'public') THEN
-    CREATE TABLE public.agent_runs (
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public') THEN
+    CREATE TABLE public.autonomous_agent_runs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+      agent_id UUID NOT NULL REFERENCES public.autonomous_agents(id) ON DELETE CASCADE,
       tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
       -- Execution Metadata
@@ -77,24 +77,24 @@ END $$;
 -- Create indexes on agent_runs (only if table exists and column exists)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'agent_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_runs_agent_id ON public.agent_runs(agent_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public' AND column_name = 'agent_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_runs_agent_id ON public.autonomous_agent_runs(agent_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_runs_tenant_id ON public.agent_runs(tenant_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_runs_tenant_id ON public.autonomous_agent_runs(tenant_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'status') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_runs_status ON public.agent_runs(status);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_runs_status ON public.autonomous_agent_runs(status);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'triggered_by') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_runs_triggered_by ON public.agent_runs(triggered_by);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public' AND column_name = 'triggered_by') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_runs_triggered_by ON public.autonomous_agent_runs(triggered_by);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_runs' AND table_schema = 'public' AND column_name = 'created_at') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_runs_created_at ON public.agent_runs(created_at);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_runs_created_at ON public.autonomous_agent_runs(created_at);
   END IF;
 END $$;
 
@@ -103,11 +103,11 @@ END $$;
 -- Create agent_tasks table only if it doesn't exist
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_tasks' AND table_schema = 'public') THEN
-    CREATE TABLE public.agent_tasks (
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public') THEN
+    CREATE TABLE public.autonomous_agent_tasks (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-      agent_run_id UUID NOT NULL REFERENCES public.agent_runs(id) ON DELETE CASCADE,
+      agent_id UUID NOT NULL REFERENCES public.autonomous_agents(id) ON DELETE CASCADE,
+      agent_run_id UUID NOT NULL REFERENCES public.autonomous_agent_runs(id) ON DELETE CASCADE,
       tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
       -- Task Details
@@ -136,24 +136,24 @@ END $$;
 -- Create indexes on agent_tasks (only if columns exist)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'agent_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_id ON public.agent_tasks(agent_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'agent_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_tasks_agent_id ON public.autonomous_agent_tasks(agent_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'agent_run_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_run_id ON public.agent_tasks(agent_run_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'agent_run_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_tasks_agent_run_id ON public.autonomous_agent_tasks(agent_run_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_tasks_tenant_id ON public.agent_tasks(tenant_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_tasks_tenant_id ON public.autonomous_agent_tasks(tenant_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'assigned_to') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_tasks_assigned_to ON public.agent_tasks(assigned_to);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'assigned_to') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_tasks_assigned_to ON public.autonomous_agent_tasks(assigned_to);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'status') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON public.agent_tasks(status);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_tasks_status ON public.autonomous_agent_tasks(status);
   END IF;
 END $$;
 
@@ -162,10 +162,10 @@ END $$;
 -- Create agent_events table only if it doesn't exist
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_events' AND table_schema = 'public') THEN
-    CREATE TABLE public.agent_events (
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public') THEN
+    CREATE TABLE public.autonomous_agent_events (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      agent_id UUID NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+      agent_id UUID NOT NULL REFERENCES public.autonomous_agents(id) ON DELETE CASCADE,
       tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
 
       -- Event Details
@@ -175,7 +175,7 @@ BEGIN
       -- Context
       description TEXT,
       changes JSONB DEFAULT '{}', -- before/after for config changes
-      related_run_id UUID REFERENCES public.agent_runs(id) ON DELETE SET NULL,
+      related_run_id UUID REFERENCES public.autonomous_agent_runs(id) ON DELETE SET NULL,
 
       -- Metadata
       created_at TIMESTAMPTZ DEFAULT now()
@@ -186,20 +186,20 @@ END $$;
 -- Create indexes on agent_events (only if columns exist)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'agent_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_events_agent_id ON public.agent_events(agent_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public' AND column_name = 'agent_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_events_agent_id ON public.autonomous_agent_events(agent_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_events_tenant_id ON public.agent_events(tenant_id);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_events_tenant_id ON public.autonomous_agent_events(tenant_id);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'event_type') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_events_event_type ON public.agent_events(event_type);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public' AND column_name = 'event_type') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_events_event_type ON public.autonomous_agent_events(event_type);
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'created_at') THEN
-    CREATE INDEX IF NOT EXISTS idx_agent_events_created_at ON public.agent_events(created_at);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_autonomous_agent_events_created_at ON public.autonomous_agent_events(created_at);
   END IF;
 END $$;
 
@@ -208,46 +208,46 @@ END $$;
 -- Enable RLS on all agent tables (only if they exist)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agents' AND table_schema = 'public') THEN
-    ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agents' AND table_schema = 'public') THEN
+    ALTER TABLE public.autonomous_agents ENABLE ROW LEVEL SECURITY;
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_runs' AND table_schema = 'public') THEN
-    ALTER TABLE public.agent_runs ENABLE ROW LEVEL SECURITY;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public') THEN
+    ALTER TABLE public.autonomous_agent_runs ENABLE ROW LEVEL SECURITY;
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_tasks' AND table_schema = 'public') THEN
-    ALTER TABLE public.agent_tasks ENABLE ROW LEVEL SECURITY;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public') THEN
+    ALTER TABLE public.autonomous_agent_tasks ENABLE ROW LEVEL SECURITY;
   END IF;
 
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_events' AND table_schema = 'public') THEN
-    ALTER TABLE public.agent_events ENABLE ROW LEVEL SECURITY;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public') THEN
+    ALTER TABLE public.autonomous_agent_events ENABLE ROW LEVEL SECURITY;
   END IF;
 END $$;
 
 -- Agents: tenant members can view/manage
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agents' AND table_schema = 'public') THEN
-    DROP POLICY IF EXISTS "agents tenant_read" ON public.agents;
-    CREATE POLICY "agents tenant_read"
-      ON public.agents FOR SELECT
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agents' AND table_schema = 'public') THEN
+    DROP POLICY IF EXISTS "autonomous_agents tenant_read" ON public.autonomous_agents;
+    CREATE POLICY "autonomous_agents tenant_read"
+      ON public.autonomous_agents FOR SELECT
       USING (public.is_tenant_member(tenant_id));
 
-    DROP POLICY IF EXISTS "agents tenant_write" ON public.agents;
-    CREATE POLICY "agents tenant_write"
-      ON public.agents FOR INSERT
+    DROP POLICY IF EXISTS "autonomous_agents tenant_write" ON public.autonomous_agents;
+    CREATE POLICY "autonomous_agents tenant_write"
+      ON public.autonomous_agents FOR INSERT
       WITH CHECK (public.is_tenant_member(tenant_id));
 
-    DROP POLICY IF EXISTS "agents tenant_update" ON public.agents;
-    CREATE POLICY "agents tenant_update"
-      ON public.agents FOR UPDATE
+    DROP POLICY IF EXISTS "autonomous_agents tenant_update" ON public.autonomous_agents;
+    CREATE POLICY "autonomous_agents tenant_update"
+      ON public.autonomous_agents FOR UPDATE
       USING (public.is_tenant_member(tenant_id))
       WITH CHECK (public.is_tenant_member(tenant_id));
 
-    DROP POLICY IF EXISTS "agents service_only_delete" ON public.agents;
-    CREATE POLICY "agents service_only_delete"
-      ON public.agents FOR DELETE
+    DROP POLICY IF EXISTS "autonomous_agents service_only_delete" ON public.autonomous_agents;
+    CREATE POLICY "autonomous_agents service_only_delete"
+      ON public.autonomous_agents FOR DELETE
       USING (auth.role() = 'service_role');
   END IF;
 END $$;
@@ -255,20 +255,20 @@ END $$;
 -- Agent Runs: service role (scheduler) creates, all tenant members can read
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_runs' AND table_schema = 'public') THEN
-    DROP POLICY IF EXISTS "agent_runs tenant_read" ON public.agent_runs;
-    CREATE POLICY "agent_runs tenant_read"
-      ON public.agent_runs FOR SELECT
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_runs' AND table_schema = 'public') THEN
+    DROP POLICY IF EXISTS "autonomous_agent_runs tenant_read" ON public.autonomous_agent_runs;
+    CREATE POLICY "autonomous_agent_runs tenant_read"
+      ON public.autonomous_agent_runs FOR SELECT
       USING (public.is_tenant_member(tenant_id));
 
-    DROP POLICY IF EXISTS "agent_runs service_insert" ON public.agent_runs;
-    CREATE POLICY "agent_runs service_insert"
-      ON public.agent_runs FOR INSERT
+    DROP POLICY IF EXISTS "autonomous_agent_runs service_insert" ON public.autonomous_agent_runs;
+    CREATE POLICY "autonomous_agent_runs service_insert"
+      ON public.autonomous_agent_runs FOR INSERT
       WITH CHECK (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id));
 
-    DROP POLICY IF EXISTS "agent_runs service_update" ON public.agent_runs;
-    CREATE POLICY "agent_runs service_update"
-      ON public.agent_runs FOR UPDATE
+    DROP POLICY IF EXISTS "autonomous_agent_runs service_update" ON public.autonomous_agent_runs;
+    CREATE POLICY "autonomous_agent_runs service_update"
+      ON public.autonomous_agent_runs FOR UPDATE
       USING (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id))
       WITH CHECK (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id));
   END IF;
@@ -277,22 +277,22 @@ END $$;
 -- Agent Tasks: assigned users and admins can see
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_tasks' AND table_schema = 'public')
-     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'tenant_id')
-     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_tasks' AND table_schema = 'public' AND column_name = 'assigned_to') THEN
-    DROP POLICY IF EXISTS "agent_tasks tenant_read" ON public.agent_tasks;
-    CREATE POLICY "agent_tasks tenant_read"
-      ON public.agent_tasks FOR SELECT
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'tenant_id')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_tasks' AND table_schema = 'public' AND column_name = 'assigned_to') THEN
+    DROP POLICY IF EXISTS "autonomous_agent_tasks tenant_read" ON public.autonomous_agent_tasks;
+    CREATE POLICY "autonomous_agent_tasks tenant_read"
+      ON public.autonomous_agent_tasks FOR SELECT
       USING (public.is_tenant_member(tenant_id) OR auth.uid() = assigned_to);
 
-    DROP POLICY IF EXISTS "agent_tasks tenant_insert" ON public.agent_tasks;
-    CREATE POLICY "agent_tasks tenant_insert"
-      ON public.agent_tasks FOR INSERT
+    DROP POLICY IF EXISTS "autonomous_agent_tasks tenant_insert" ON public.autonomous_agent_tasks;
+    CREATE POLICY "autonomous_agent_tasks tenant_insert"
+      ON public.autonomous_agent_tasks FOR INSERT
       WITH CHECK (public.is_tenant_member(tenant_id) OR auth.role() = 'service_role');
 
-    DROP POLICY IF EXISTS "agent_tasks update" ON public.agent_tasks;
-    CREATE POLICY "agent_tasks update"
-      ON public.agent_tasks FOR UPDATE
+    DROP POLICY IF EXISTS "autonomous_agent_tasks update" ON public.autonomous_agent_tasks;
+    CREATE POLICY "autonomous_agent_tasks update"
+      ON public.autonomous_agent_tasks FOR UPDATE
       USING (public.is_tenant_member(tenant_id) OR auth.uid() = assigned_to)
       WITH CHECK (public.is_tenant_member(tenant_id) OR auth.uid() = assigned_to);
   END IF;
@@ -301,23 +301,23 @@ END $$;
 -- Agent Events: audit log (tenant members can read)
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'agent_events' AND table_schema = 'public')
-     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'agent_events' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
-    DROP POLICY IF EXISTS "agent_events tenant_read" ON public.agent_events;
-    CREATE POLICY "agent_events tenant_read"
-      ON public.agent_events FOR SELECT
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public')
+     AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'autonomous_agent_events' AND table_schema = 'public' AND column_name = 'tenant_id') THEN
+    DROP POLICY IF EXISTS "autonomous_agent_events tenant_read" ON public.autonomous_agent_events;
+    CREATE POLICY "autonomous_agent_events tenant_read"
+      ON public.autonomous_agent_events FOR SELECT
       USING (public.is_tenant_member(tenant_id));
 
-    DROP POLICY IF EXISTS "agent_events service_insert" ON public.agent_events;
-    CREATE POLICY "agent_events service_insert"
-      ON public.agent_events FOR INSERT
+    DROP POLICY IF EXISTS "autonomous_agent_events service_insert" ON public.autonomous_agent_events;
+    CREATE POLICY "autonomous_agent_events service_insert"
+      ON public.autonomous_agent_events FOR INSERT
       WITH CHECK (auth.role() = 'service_role' OR public.is_tenant_member(tenant_id));
   END IF;
 END $$;
 
 -- ─── 6. Helper RPC: Get or Create Default Agents ───
 
-CREATE OR REPLACE FUNCTION public.get_or_create_default_agents(p_tenant_id UUID)
+CREATE OR REPLACE FUNCTION public.get_or_create_default_autonomous_agents(p_tenant_id UUID)
 RETURNS TABLE (
   agent_id UUID,
   agent_name TEXT,
@@ -333,7 +333,7 @@ DECLARE
   v_monitoring_agent UUID;
 BEGIN
   -- Create governance agent if it doesn't exist
-  INSERT INTO public.agents (tenant_id, name, type, description, schedule, enabled, config)
+  INSERT INTO public.autonomous_agents (tenant_id, name, type, description, schedule, enabled, config)
   VALUES (
     p_tenant_id,
     'Governance Analyzer',
@@ -349,12 +349,12 @@ BEGIN
   -- Get it if it already exists
   IF v_governance_agent IS NULL THEN
     SELECT id INTO v_governance_agent
-    FROM public.agents
+    FROM public.autonomous_agents
     WHERE tenant_id = p_tenant_id AND type = 'governance';
   END IF;
 
   -- Create remediation agent if it doesn't exist
-  INSERT INTO public.agents (tenant_id, name, type, description, schedule, enabled, config)
+  INSERT INTO public.autonomous_agents (tenant_id, name, type, description, schedule, enabled, config)
   VALUES (
     p_tenant_id,
     'Remediation Planner',
@@ -369,12 +369,12 @@ BEGIN
 
   IF v_remediation_agent IS NULL THEN
     SELECT id INTO v_remediation_agent
-    FROM public.agents
+    FROM public.autonomous_agents
     WHERE tenant_id = p_tenant_id AND type = 'remediation';
   END IF;
 
   -- Create monitoring agent if it doesn't exist
-  INSERT INTO public.agents (tenant_id, name, type, description, schedule, enabled, config)
+  INSERT INTO public.autonomous_agents (tenant_id, name, type, description, schedule, enabled, config)
   VALUES (
     p_tenant_id,
     'Compliance Monitor',
@@ -389,30 +389,30 @@ BEGIN
 
   IF v_monitoring_agent IS NULL THEN
     SELECT id INTO v_monitoring_agent
-    FROM public.agents
+    FROM public.autonomous_agents
     WHERE tenant_id = p_tenant_id AND type = 'monitoring';
   END IF;
 
   -- Return all three agents
   RETURN QUERY
-  SELECT id, name, type FROM public.agents
+  SELECT id, name, type FROM public.autonomous_agents
   WHERE tenant_id = p_tenant_id AND type IN ('governance', 'remediation', 'monitoring');
 END;
 $$;
 
 -- ─── 7. Audit Logging Trigger ───
 
-CREATE OR REPLACE FUNCTION public.log_agent_events()
+CREATE OR REPLACE FUNCTION public.log_autonomous_agent_events()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN
-    INSERT INTO public.agent_events (agent_id, tenant_id, event_type, actor_id, description)
+    INSERT INTO public.autonomous_agent_events (agent_id, tenant_id, event_type, actor_id, description)
     VALUES (NEW.id, NEW.tenant_id, 'created', auth.uid(), 'Agent created: ' || NEW.name);
   ELSIF TG_OP = 'UPDATE' THEN
     IF NEW.enabled != OLD.enabled THEN
-      INSERT INTO public.agent_events (agent_id, tenant_id, event_type, actor_id, description, changes)
+      INSERT INTO public.autonomous_agent_events (agent_id, tenant_id, event_type, actor_id, description, changes)
       VALUES (
         NEW.id,
         NEW.tenant_id,
@@ -422,7 +422,7 @@ BEGIN
         jsonb_build_object('enabled', OLD.enabled || ' -> ' || NEW.enabled)
       );
     ELSIF NEW.config != OLD.config OR NEW.schedule != OLD.schedule THEN
-      INSERT INTO public.agent_events (agent_id, tenant_id, event_type, actor_id, description, changes)
+      INSERT INTO public.autonomous_agent_events (agent_id, tenant_id, event_type, actor_id, description, changes)
       VALUES (
         NEW.id,
         NEW.tenant_id,
@@ -437,7 +437,12 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER agents_audit_log
-  AFTER INSERT OR UPDATE ON public.agents
+-- CREATE TRIGGER kennt kein IF NOT EXISTS — ohne den DROP scheitert ein
+-- zweiter Durchlauf (z. B. lokales `supabase db reset` oder ein Retry) mit
+-- "trigger already exists". Alle uebrigen Statements dieser Migration sind
+-- bereits wiederholbar; das war die letzte Ausnahme.
+DROP TRIGGER IF EXISTS autonomous_agents_audit_log ON public.autonomous_agents;
+CREATE TRIGGER autonomous_agents_audit_log
+  AFTER INSERT OR UPDATE ON public.autonomous_agents
   FOR EACH ROW
-  EXECUTE FUNCTION public.log_agent_events();
+  EXECUTE FUNCTION public.log_autonomous_agent_events();

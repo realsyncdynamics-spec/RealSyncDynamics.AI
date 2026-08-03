@@ -1,155 +1,128 @@
 /**
- * planAccess — Single-Source Feature-Matrix fuer die kommerziellen Tiers.
+ * planAccess — Feature-Prüfung für die kommerziellen Pläne.
  *
- * Diese Datei ist absichtlich getrennt von `src/core/auth/entitlements.ts`
- * (das eine aeltere bronze/silver/gold/platinum-Hierarchie modelliert).
- * `planAccess` bedient die in `src/config/pricing.ts` definierten
- * SaaS-Tiers (free/starter/growth/agency/scale/enterprise) und liefert
- * eine direkte, zentrale Feature-Pruefung — ohne in jeder UI-Komponente
- * Strings hartzucodieren.
+ * ⚠️  Diese Datei führte früher eine eigene Feature-Matrix samt eigener
+ *     Tier-Vererbung. Beides ist entfallen: Berechtigungen kommen jetzt
+ *     ausschließlich aus `shared/pricing.ts` (`plan.permissions`,
+ *     `plan.modules`, `plan.limits`).
  *
  * Verwendung:
  *   import { hasFeature, getActivePlanForTenant, requireFeature } from '...';
  *
  *   if (hasFeature(plan, 'daily_monitoring')) { ... }
  *   const plan = await getActivePlanForTenant(tenantId);
- *   requireFeature(plan, 'multi_tenant'); // wirft, wenn kein Zugriff
+ *   requireFeature(plan, 'multi_tenant');
  */
 
 import { getSupabase } from '../supabase';
-import type { TierId } from '../../config/pricing';
+import {
+  resolvePlan,
+  hasModule,
+  hasPermission,
+  limitOf,
+  minimumPlanForModule,
+  minimumPlanForPermission,
+  planById,
+  type ModuleId,
+  type PermissionKey,
+  type PlanId,
+} from '@/shared/pricing';
 
-export type PlanKey = TierId;
+/** Plan-Bezeichner — akzeptiert PlanId, Plan-Key und Altdaten. */
+export type PlanKey = PlanId | string;
 
+/**
+ * Fachliche Feature-Schlüssel der Anwendung.
+ * Jeder Schlüssel ist auf genau eine Modul- oder Berechtigungs-Abfrage der
+ * SSoT abgebildet — es gibt keine zweite Wahrheit über Plan-Zugehörigkeit.
+ */
 export type FeatureKey =
-  // free
   | 'one_time_scan'
-  // starter
   | 'monthly_scan'
   | 'dse_generator'
   | 'basic_alerts'
   | 'evidence_export'
-  // growth
   | 'daily_monitoring'
   | 'drift_detection'
   | 'fix_snippets'
   | 'ai_governance_basic'
-  // agency
   | 'multi_tenant'
   | 'white_label_reports'
   | 'api_webhooks'
-  | 'ten_domains'
-  // scale
-  | 'fifty_clients'
-  | 'custom_subdomain'
-  | 'white_label_dashboard'
-  // enterprise
-  | 'dedicated_runtime'
-  | 'sla'
+  | 'scheduler'
+  | 'bulk_jobs'
   | 'evidence_vault'
-  | 'custom_policies';
+  | 'custom_policies'
+  | 'provenance'
+  | 'sso'
+  | 'sla';
+
+type FeatureRule =
+  | { kind: 'module'; module: ModuleId }
+  | { kind: 'permission'; permission: PermissionKey };
 
 /**
- * Feature-Matrix: pro Plan die direkt verfuegbaren Features.
- * Tier-Inheritance (Growth bekommt automatisch Starter-Features) wird
- * durch `PLAN_INHERITANCE` aufgeloest, NICHT hier dupliziert. So bleibt
- * die Matrix lesbar und stale-Duplikate werden vermieden.
+ * Abbildung der fachlichen Feature-Schlüssel auf die SSoT.
+ * Dies ist eine Übersetzungstabelle, KEINE Feature-Matrix — sie enthält
+ * keine Plan-Namen und kann daher nicht von den Preisen abweichen.
  */
-const PLAN_DIRECT_FEATURES: Record<PlanKey, FeatureKey[]> = {
-  free: [
-    'one_time_scan',
-  ],
-  starter: [
-    'monthly_scan',
-    'dse_generator',
-    'basic_alerts',
-    // Evidence-Trail-Export ist die Kaufbegründung des ersten zahlenden
-    // Tiers (siehe docs/PRODUCT_PRIORITIZATION.md). Free sieht den Trail
-    // read-only, exportieren kann erst ab Starter.
-    'evidence_export',
-  ],
-  growth: [
-    'daily_monitoring',
-    'drift_detection',
-    'fix_snippets',
-    'ai_governance_basic',
-  ],
-  agency: [
-    'multi_tenant',
-    'white_label_reports',
-    'api_webhooks',
-    'ten_domains',
-  ],
-  scale: [
-    'fifty_clients',
-    'custom_subdomain',
-    'white_label_dashboard',
-  ],
-  enterprise: [
-    'dedicated_runtime',
-    'sla',
-    'evidence_vault',
-    'custom_policies',
-  ],
-  // Yearly variants erben von ihren Base-Tiers
-  starter_yearly: [],
-  growth_yearly: [],
-  agency_yearly: [],
-  enterprise_yearly: [],
-  scale_yearly: [],
+const FEATURE_RULES: Record<FeatureKey, FeatureRule> = {
+  one_time_scan:       { kind: 'module', module: 'audit_center' },
+  monthly_scan:        { kind: 'module', module: 'monitoring' },
+  dse_generator:       { kind: 'module', module: 'dsgvo' },
+  basic_alerts:        { kind: 'module', module: 'alerts' },
+  evidence_export:     { kind: 'permission', permission: 'auditExport' },
+  daily_monitoring:    { kind: 'module', module: 'drift_detection' },
+  drift_detection:     { kind: 'module', module: 'drift_detection' },
+  fix_snippets:        { kind: 'module', module: 'remediation' },
+  ai_governance_basic: { kind: 'module', module: 'eu_ai_act' },
+  multi_tenant:        { kind: 'permission', permission: 'multiTenant' },
+  white_label_reports: { kind: 'permission', permission: 'whiteLabelReports' },
+  api_webhooks:        { kind: 'permission', permission: 'api' },
+  scheduler:           { kind: 'permission', permission: 'scheduler' },
+  bulk_jobs:           { kind: 'permission', permission: 'bulkOperations' },
+  evidence_vault:      { kind: 'permission', permission: 'evidenceVault' },
+  custom_policies:     { kind: 'module', module: 'policy_engine' },
+  provenance:          { kind: 'permission', permission: 'provenanceSigning' },
+  sso:                 { kind: 'permission', permission: 'sso' },
+  sla:                 { kind: 'permission', permission: 'prioritySupport' },
 };
-
-/**
- * Tier-Inheritance — jedes hoehere Tier inkludiert die Features des
- * direkt darunter liegenden. So bleibt die Matrix DRY und additiv.
- *
- * Hinweis: `free` ist absichtlich kein Sub-Tier von `starter` — Free
- * erlaubt NUR den one_time_scan, niemals monthly_scan & Co.
- */
-const PLAN_INHERITANCE: Record<PlanKey, PlanKey | null> = {
-  free:              null,
-  starter:           null,
-  growth:            'starter',
-  agency:            'growth',
-  enterprise:        'agency',
-  scale:             'agency',
-  starter_yearly:    'starter',
-  growth_yearly:     'growth',
-  agency_yearly:     'agency',
-  enterprise_yearly: 'enterprise',
-  scale_yearly:      'scale',
-};
-
-/**
- * Berechnet die volle effektive Feature-Menge fuer einen Plan,
- * inklusive geerbter Features.
- */
-export function featuresForPlan(plan: PlanKey): Set<FeatureKey> {
-  const features = new Set<FeatureKey>();
-  let cursor: PlanKey | null = plan;
-  const visited = new Set<PlanKey>();
-  while (cursor && !visited.has(cursor)) {
-    visited.add(cursor);
-    for (const feature of PLAN_DIRECT_FEATURES[cursor]) {
-      features.add(feature);
-    }
-    cursor = PLAN_INHERITANCE[cursor];
-  }
-  return features;
-}
 
 /**
  * Hat der Plan Zugriff auf das Feature?
  * `null`/`undefined` Plan → kein Zugriff (defensiv).
  */
 export function hasFeature(plan: PlanKey | null | undefined, feature: FeatureKey): boolean {
-  if (!plan) return false;
-  return featuresForPlan(plan).has(feature);
+  const resolved = resolvePlan(plan);
+  if (!resolved) return false;
+  const rule = FEATURE_RULES[feature];
+  if (!rule) return false;
+  return rule.kind === 'module'
+    ? hasModule(resolved, rule.module)
+    : hasPermission(resolved, rule.permission);
+}
+
+/** Die volle effektive Feature-Menge eines Plans. */
+export function featuresForPlan(plan: PlanKey | null | undefined): Set<FeatureKey> {
+  const features = new Set<FeatureKey>();
+  for (const key of Object.keys(FEATURE_RULES) as FeatureKey[]) {
+    if (hasFeature(plan, key)) features.add(key);
+  }
+  return features;
+}
+
+/** Niedrigster Plan, der das Feature enthält. */
+export function minimumPlanForFeature(feature: FeatureKey): PlanId | null {
+  const rule = FEATURE_RULES[feature];
+  if (!rule) return null;
+  return rule.kind === 'module'
+    ? minimumPlanForModule(rule.module)
+    : minimumPlanForPermission(rule.permission);
 }
 
 /**
  * Erzwingt das Feature — wirft, wenn der Plan keinen Zugriff hat.
- * Aufrufer ist verantwortlich fuer User-freundliche Fehlerbehandlung.
+ * Aufrufer ist verantwortlich für nutzerfreundliche Fehlerbehandlung.
  */
 export function requireFeature(plan: PlanKey | null | undefined, feature: FeatureKey): void {
   if (!hasFeature(plan, feature)) {
@@ -158,22 +131,40 @@ export function requireFeature(plan: PlanKey | null | undefined, feature: Featur
 }
 
 export class PlanAccessError extends Error {
+  /** Der niedrigste Plan, der das Feature freischaltet — für Upgrade-CTAs. */
+  readonly requiredPlan: PlanId | null;
+
   constructor(public plan: string, public feature: FeatureKey) {
-    super(`plan "${plan}" has no access to feature "${feature}"`);
+    const required = minimumPlanForFeature(feature);
+    super(
+      `plan "${plan}" has no access to feature "${feature}"` +
+      (required ? ` (requires ${planById(required).name})` : ''),
+    );
     this.name = 'PlanAccessError';
+    this.requiredPlan = required;
   }
 }
 
+/** Limit-Abfrage über die SSoT — `-1` bedeutet unbegrenzt. */
+export function planLimit(
+  plan: PlanKey | null | undefined,
+  limit: Parameters<typeof limitOf>[1],
+): number {
+  return limitOf(plan, limit);
+}
+
 /**
- * Aktiver Plan fuer einen Tenant via Supabase `subscriptions`-Tabelle.
+ * Aktiver Plan für einen Tenant via Supabase `subscriptions`-Tabelle.
  * Liefert `null`, wenn keine aktive Subscription vorhanden ist —
  * Aufrufer behandelt das als „free" (oder zeigt Upgrade-CTA).
  *
- * „aktiv" = status in ('trialing', 'active') ohne `cancel_at_period_end`
- * nach `current_period_end`. Wir vertrauen darauf, dass der Stripe-Webhook
- * die Tabelle aktuell haelt.
+ * „aktiv" = status in ('trialing', 'active'). Wir vertrauen darauf, dass der
+ * Stripe-Webhook die Tabelle aktuell hält.
+ *
+ * Bestandszeilen mit dem alten Plan-Key `scale` werden über
+ * `resolvePlan()` transparent auf `partner` abgebildet.
  */
-export async function getActivePlanForTenant(tenantId: string): Promise<PlanKey | null> {
+export async function getActivePlanForTenant(tenantId: string): Promise<PlanId | null> {
   if (!tenantId) return null;
   const sb = getSupabase();
   const { data, error } = await sb
@@ -185,9 +176,5 @@ export async function getActivePlanForTenant(tenantId: string): Promise<PlanKey 
     .maybeSingle();
   if (error || !data) return null;
   if (data.status !== 'active' && data.status !== 'trialing') return null;
-  const planKey = data.plan_key as PlanKey | undefined;
-  if (!planKey) return null;
-  // Validate planKey is one of the known tiers.
-  if (!(planKey in PLAN_INHERITANCE)) return null;
-  return planKey;
+  return resolvePlan(data.plan_key as string | undefined)?.id ?? null;
 }

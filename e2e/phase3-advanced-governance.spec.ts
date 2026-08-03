@@ -144,7 +144,7 @@ test.describe('Phase 3: Advanced Governance Views', () => {
     }
   });
 
-  test('ISO 42001 hub shows upgrade CTA for Scale plan features', async ({ page }) => {
+  test('ISO 42001 hub shows upgrade CTA for higher plan features', async ({ page }) => {
     await page.goto('/app/governance/iso-42001-hub');
 
     // Upgrade section should be visible

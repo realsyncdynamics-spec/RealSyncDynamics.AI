@@ -36,8 +36,11 @@ Disallow: /tools/tom-generator
 Disallow: /tools/vvt-wizard
 
 # Routen-Aliase
+# /datenschutz absichtlich NICHT geblockt: der Footer verlinkt darauf und die
+# URL steht in der sitemap.xml — ein Disallow erzeugt Search-Console-Konflikte
+# und blockt per Prefix-Matching auch /datenschutz-generator. Dedup läuft über
+# das Canonical-Tag (→ /legal/privacy, siehe src/config/seo.ts).
 Disallow: /funktionen
-Disallow: /datenschutz
 Disallow: /website-as-a-service
 Disallow: /website-rundum-service
 

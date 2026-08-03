@@ -4,6 +4,7 @@ import { Zap, AlertTriangle, CheckCircle2, Clock, Lock, ArrowRight } from 'lucid
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { useTenant } from '../../../core/access/TenantProvider';
 import { FeatureGate } from '../../../core/billing/FeatureGate';
+import { hasModule, minimumPlanForModule, planById } from '@/shared/pricing';
 
 interface ComplianceItem {
   id: string;
@@ -127,10 +128,12 @@ function Inner() {
                 Verwalte deine KI-Systeme nach ISO 42001 Standard. Sicherstelle, dass alle
                 KI-Assets dokumentiert, bewertet und konform mit den Anforderungen sind.
               </p>
-              {tier !== 'enterprise' && tier !== 'scale' && tier !== 'agency' && (
+              {/* Freischaltung folgt dem ISO-27001-Pack der SSoT — kein
+                  Vergleich gegen Plan-Namen. */}
+              {!hasModule(tier, 'iso_27001') && (
                 <p className="text-xs text-amber-300 flex items-center gap-2">
                   <Lock className="w-3 h-3" />
-                  Verfügbar ab Growth-Plan
+                  Verfügbar ab {planById(minimumPlanForModule('iso_27001') ?? 'growth').name}-Plan
                 </p>
               )}
             </div>

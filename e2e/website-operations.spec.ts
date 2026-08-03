@@ -64,13 +64,13 @@ test.describe('Website Operations Workflow', () => {
     await page.click('button:has-text("Add Domain")');
 
     // Fill subdomain
-    await page.fill('input[placeholder*="domain"]', 'my-studio.realsyncdynamics.ai');
+    await page.fill('input[placeholder*="domain"]', 'my-studio.realsyncdynamicsai.de');
 
     // Submit
     await page.click('button:has-text("Connect Domain")');
 
     // Verify success
-    await expect(page.locator('text=my-studio.realsyncdynamics.ai')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=my-studio.realsyncdynamicsai.de')).toBeVisible({ timeout: 10000 });
   });
 
   test('Compliance dashboard displays correctly', async ({ page }) => {

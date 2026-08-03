@@ -25,7 +25,7 @@ const FRAMEWORKS: Framework[] = [
     description: 'Datenschutz-Grundverordnung - Basis für alle EU-Organisationen',
     icon: Shield,
     path: '/app/governance/dsgvo-directory',
-    tier: 'free_tier',
+    tier: 'free',
     status: 'available',
     completionPercent: 45,
   },

@@ -1,524 +1,141 @@
 /**
- * Governance OS Feature-Gating Configuration
+ * Governance-Feature-Gating — abgeleitete Sicht auf die Pricing-SSoT.
  *
- * Maps pricing tiers to available governance modules and features.
- * Single Source of Truth for tier-based access control.
+ * ⚠️  Diese Datei führte früher eine eigene Tier-Matrix mit eigenen Limits,
+ *     Rahmenwerken und Feature-Listen. Genau daraus entstand die Drift, die
+ *     dieses Refactoring beseitigt. Es gibt hier nur noch Ableitungen aus
+ *     `shared/pricing.ts`.
  *
- * Consumed by:
+ * Konsumenten:
  *   - src/components/governance/GovernanceTierGate.tsx
- *   - Edge Functions: /governance-* (tier validation)
- *   - UI: View-level access control in src/features/governance/
+ *   - Edge Functions: /governance-* (Tier-Validierung)
+ *   - View-Level-Zugriffskontrolle in src/features/governance/
  */
 
+import {
+  ALL_MODULES,
+  PLAN_ORDER,
+  planById,
+  resolvePlan,
+  policyPacksFor,
+  minimumPlanForModule as ssotMinimumPlanForModule,
+  type ModuleDefinition,
+  type ModuleId,
+  type PlanId,
+  type SupportLevel,
+} from '@/shared/pricing';
 import type { TierId } from './pricing';
 
 export interface GovernanceFeature {
-  id: string;
+  id: ModuleId;
   name: string;
   description: string;
-  icon: string; // lucide icon name
-  requiredTier: TierId; // minimum tier to access
-  beta?: boolean;
+  /** Lucide-Icon-Name */
+  icon: string;
+  /** Niedrigster Plan, der das Modul enthält */
+  requiredTier: PlanId;
 }
 
 export interface GovernanceTierConfig {
-  tier: TierId;
+  tier: PlanId;
   label: string;
-  /** Maximum number of audit reports per month */
   auditReportsPerMonth: number;
-  /** Maximum number of concurrent remediation plans */
   remediationPlans: number;
-  /** Evidence items storage (GB) */
   evidenceStorageGb: number;
-  /** API keys allowed */
   apiKeysAllowed: number;
-  /** Frameworks covered */
-  frameworks: string[];
-  /** Features available in this tier */
-  features: string[];
-  /** Support tier: email, priority, dedicated */
-  support: 'email' | 'priority' | 'dedicated';
+  /** Aktive Rahmenwerke (Policy Packs) */
+  frameworks: ModuleId[];
+  /** Freigeschaltete Modul-IDs */
+  features: ModuleId[];
+  support: SupportLevel;
+}
+
+function toTierConfig(planId: PlanId): GovernanceTierConfig {
+  const plan = planById(planId);
+  return {
+    tier: plan.id,
+    label: plan.name,
+    auditReportsPerMonth: plan.limits.auditReportsPerMonth,
+    remediationPlans: plan.limits.remediationPlans,
+    evidenceStorageGb: plan.limits.evidenceStorageGb,
+    apiKeysAllowed: plan.limits.apiKeys,
+    frameworks: policyPacksFor(plan),
+    features: plan.modules,
+    support: plan.support,
+  };
 }
 
 /**
- * Tier-to-Feature Matrix
- *
- * Free / Starter: Basic DSGVO compliance only
- * Growth: Full multi-framework (DSGVO + AI Act + ISO 27001)
- * Agency: All Growth + NIS2 + ISO 42001 + Advanced Automation
- * Scale/Enterprise: Unlimited access to all modules
- *
- * Yearly variants (starter_yearly, growth_yearly, agency_yearly, scale_yearly)
- * have identical features to their monthly counterparts.
+ * Tier-zu-Feature-Matrix, vollständig aus der SSoT berechnet.
+ * Jahresvarianten haben per Definition dieselben Features wie ihr
+ * Monatsplan — deshalb existieren sie hier gar nicht erst als
+ * eigene Einträge; `governanceTierFor()` löst sie auf.
  */
-export const GOVERNANCE_TIERS: Record<TierId, GovernanceTierConfig> = {
-  free: {
-    tier: 'free',
-    label: 'Free Audit',
-    auditReportsPerMonth: 1,
-    remediationPlans: 0,
-    evidenceStorageGb: 0.5,
-    apiKeysAllowed: 0,
-    frameworks: ['dsgvo_basic'],
-    features: ['ai_register', 'dsgvo_directory_read'],
-    support: 'email',
+export const GOVERNANCE_TIERS: Record<PlanId, GovernanceTierConfig> = PLAN_ORDER.reduce(
+  (acc, planId) => {
+    acc[planId] = toTierConfig(planId);
+    return acc;
   },
+  {} as Record<PlanId, GovernanceTierConfig>,
+);
 
-  starter: {
-    tier: 'starter',
-    label: 'Starter',
-    auditReportsPerMonth: 2,
-    remediationPlans: 5,
-    evidenceStorageGb: 2,
-    apiKeysAllowed: 1,
-    frameworks: ['dsgvo', 'ai_act_basic'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment_read',
-      'evidence_vault_basic',
-      'gap_analysis_read',
-      'audit_report_basic',
-    ],
-    support: 'email',
-  },
-
-  growth: {
-    tier: 'growth',
-    label: 'Growth',
-    auditReportsPerMonth: 12,
-    remediationPlans: 20,
-    evidenceStorageGb: 10,
-    apiKeysAllowed: 3,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan_basic',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-    ],
-    support: 'priority',
-  },
-
-  agency: {
-    tier: 'agency',
-    label: 'Agency',
-    auditReportsPerMonth: 50,
-    remediationPlans: 100,
-    evidenceStorageGb: 50,
-    apiKeysAllowed: 10,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'iso42001_controls',
-      'nis2_incidents',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-      'gap_remediation_automation',
-      'evidence_versioning',
-      'api_access',
-      'webhook_notifications',
-      'bulk_operations',
-      'report_scheduling',
-    ],
-    support: 'priority',
-  },
-
-  scale: {
-    tier: 'scale',
-    label: 'Scale',
-    auditReportsPerMonth: 200,
-    remediationPlans: 500,
-    evidenceStorageGb: 200,
-    apiKeysAllowed: 50,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001', 'dora'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'iso42001_controls',
-      'nis2_incidents',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-      'gap_remediation_automation',
-      'evidence_versioning',
-      'api_access',
-      'webhook_notifications',
-      'bulk_operations',
-      'report_scheduling',
-      'multi_tenant_management',
-      'custom_workflows',
-      'sso_integration',
-      'advanced_analytics',
-    ],
-    support: 'dedicated',
-  },
-
-  enterprise: {
-    tier: 'enterprise',
-    label: 'Enterprise',
-    auditReportsPerMonth: -1, // unlimited
-    remediationPlans: -1,
-    evidenceStorageGb: -1,
-    apiKeysAllowed: -1,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001', 'dora', 'nist', 'sox', 'hipaa'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'iso42001_controls',
-      'nis2_incidents',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-      'gap_remediation_automation',
-      'evidence_versioning',
-      'api_access',
-      'webhook_notifications',
-      'bulk_operations',
-      'report_scheduling',
-      'multi_tenant_management',
-      'custom_workflows',
-      'sso_integration',
-      'advanced_analytics',
-      'dedicated_environment',
-      'custom_integrations',
-      'sla_monitoring',
-    ],
-    support: 'dedicated',
-  },
-
-  starter_yearly: {
-    tier: 'starter_yearly',
-    label: 'Starter (Yearly)',
-    auditReportsPerMonth: 2,
-    remediationPlans: 5,
-    evidenceStorageGb: 2,
-    apiKeysAllowed: 1,
-    frameworks: ['dsgvo', 'ai_act_basic'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment_read',
-      'evidence_vault_basic',
-      'gap_analysis_read',
-      'audit_report_basic',
-    ],
-    support: 'email',
-  },
-
-  growth_yearly: {
-    tier: 'growth_yearly',
-    label: 'Growth (Yearly)',
-    auditReportsPerMonth: 12,
-    remediationPlans: 20,
-    evidenceStorageGb: 10,
-    apiKeysAllowed: 3,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan_basic',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-    ],
-    support: 'priority',
-  },
-
-  agency_yearly: {
-    tier: 'agency_yearly',
-    label: 'Agency (Yearly)',
-    auditReportsPerMonth: 50,
-    remediationPlans: 100,
-    evidenceStorageGb: 50,
-    apiKeysAllowed: 10,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'iso42001_controls',
-      'nis2_incidents',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-      'gap_remediation_automation',
-      'evidence_versioning',
-      'api_access',
-      'webhook_notifications',
-      'bulk_operations',
-      'report_scheduling',
-    ],
-    support: 'priority',
-  },
-
-  scale_yearly: {
-    tier: 'scale_yearly',
-    label: 'Scale (Yearly)',
-    auditReportsPerMonth: 200,
-    remediationPlans: 500,
-    evidenceStorageGb: 200,
-    apiKeysAllowed: 50,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001', 'dora'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'iso42001_controls',
-      'nis2_incidents',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-      'gap_remediation_automation',
-      'evidence_versioning',
-      'api_access',
-      'webhook_notifications',
-      'bulk_operations',
-      'report_scheduling',
-      'multi_tenant_management',
-      'custom_workflows',
-      'sso_integration',
-      'advanced_analytics',
-    ],
-    support: 'dedicated',
-  },
-
-  enterprise_yearly: {
-    tier: 'enterprise_yearly',
-    label: 'Enterprise (Yearly)',
-    auditReportsPerMonth: -1, // unlimited
-    remediationPlans: -1,
-    evidenceStorageGb: -1,
-    apiKeysAllowed: -1,
-    frameworks: ['dsgvo', 'ai_act', 'iso27001', 'nis2', 'iso42001', 'dora', 'nist', 'sox', 'hipaa'],
-    features: [
-      'ai_register',
-      'dsgvo_directory',
-      'ai_act_risk_assessment',
-      'iso27001_controls',
-      'iso42001_controls',
-      'nis2_incidents',
-      'evidence_vault_advanced',
-      'gap_analysis',
-      'remediation_plan',
-      'audit_report',
-      'workflow_onboarding',
-      'compliance_scoring',
-      'gap_remediation_automation',
-      'evidence_versioning',
-      'api_access',
-      'webhook_notifications',
-      'bulk_operations',
-      'report_scheduling',
-      'multi_tenant_management',
-      'custom_workflows',
-      'sso_integration',
-      'advanced_analytics',
-      'dedicated_environment',
-      'custom_integrations',
-      'sla_monitoring',
-    ],
-    support: 'dedicated',
-  },
-};
+/** Alle Module als Feature-Definitionen mit ihrem Mindest-Plan. */
+export const GOVERNANCE_FEATURES: GovernanceFeature[] = ALL_MODULES.map(
+  (module: ModuleDefinition): GovernanceFeature => ({
+    id: module.id,
+    name: module.name,
+    description: module.description,
+    icon: module.icon,
+    requiredTier: ssotMinimumPlanForModule(module.id) ?? 'enterprise',
+  }),
+);
 
 /**
- * Feature-level configuration
+ * Tier-Konfiguration für einen beliebigen Plan-Bezeichner — inklusive
+ * Jahresvarianten (`growth_yearly`) und Altdaten (`scale`).
  */
-export const GOVERNANCE_FEATURES: GovernanceFeature[] = [
-  {
-    id: 'ai_register',
-    name: 'AI-System Register',
-    description: 'Register and classify all AI systems in your organization',
-    icon: 'Brain',
-    requiredTier: 'starter',
-  },
-  {
-    id: 'dsgvo_directory',
-    name: 'DSGVO-Verzeichnis',
-    description: 'GDPR data processing directory (Art. 5)',
-    icon: 'FileText',
-    requiredTier: 'starter',
-  },
-  {
-    id: 'ai_act_risk_assessment',
-    name: 'AI-Act Risikoprüfung',
-    description: 'Automatic AI Act risk classification (minimal/limited/high/prohibited)',
-    icon: 'AlertTriangle',
-    requiredTier: 'growth',
-  },
-  {
-    id: 'iso27001_controls',
-    name: 'ISO 27001 Kontrollen',
-    description: 'Information Security Management System controls',
-    icon: 'Lock',
-    requiredTier: 'growth',
-  },
-  {
-    id: 'iso42001_controls',
-    name: 'ISO 42001 Kontrollen',
-    description: 'AI Management System controls',
-    icon: 'Brain',
-    requiredTier: 'agency',
-  },
-  {
-    id: 'nis2_incidents',
-    name: 'NIS2-Meldepflichten',
-    description: 'Incident reporting deadlines and compliance tracking (6h/24h/72h)',
-    icon: 'Clock',
-    requiredTier: 'agency',
-  },
-  {
-    id: 'gap_analysis',
-    name: 'Gap-Analyse',
-    description: 'Identify and track compliance gaps across frameworks',
-    icon: 'Target',
-    requiredTier: 'growth',
-  },
-  {
-    id: 'evidence_vault_advanced',
-    name: 'Nachweis-Vault Advanced',
-    description: 'Evidence management with framework linking and versioning',
-    icon: 'FileText',
-    requiredTier: 'growth',
-  },
-  {
-    id: 'remediation_plan',
-    name: 'Behebungsplan',
-    description: 'Milestone tracking and remediation progress management',
-    icon: 'Target',
-    requiredTier: 'growth',
-  },
-  {
-    id: 'audit_report',
-    name: 'Audit-Berichte',
-    description: 'Multi-framework compliance reporting',
-    icon: 'BarChart3',
-    requiredTier: 'growth',
-  },
-  {
-    id: 'api_access',
-    name: 'API & Webhooks',
-    description: 'Programmatic access to governance data and events',
-    icon: 'Zap',
-    requiredTier: 'agency',
-  },
-  {
-    id: 'bulk_operations',
-    name: 'Massen-Operationen',
-    description: 'Bulk import/export, batch processing',
-    icon: 'Upload',
-    requiredTier: 'agency',
-  },
-  {
-    id: 'report_scheduling',
-    name: 'Report-Planung',
-    description: 'Schedule and automate compliance reports',
-    icon: 'Clock',
-    requiredTier: 'agency',
-  },
-  {
-    id: 'multi_tenant_management',
-    name: 'Multi-Tenant-Verwaltung',
-    description: 'Manage compliance across multiple organizations/domains',
-    icon: 'Users',
-    requiredTier: 'scale',
-  },
-  {
-    id: 'sso_integration',
-    name: 'SSO-Integration',
-    description: 'Single Sign-On and identity provider integration',
-    icon: 'Lock',
-    requiredTier: 'scale',
-  },
-  {
-    id: 'dedicated_environment',
-    name: 'Dedicated Environment',
-    description: 'Isolated infrastructure with custom configuration',
-    icon: 'Server',
-    requiredTier: 'enterprise',
-    beta: false,
-  },
-];
+export function governanceTierFor(
+  tier: TierId | string | null | undefined,
+): GovernanceTierConfig | undefined {
+  const plan = resolvePlan(tier);
+  if (!plan) return undefined;
+  return GOVERNANCE_TIERS[plan.id];
+}
 
-/**
- * Check if a tier has access to a feature
- */
-export function tierHasFeature(tier: TierId, featureId: string): boolean {
-  const tierConfig = GOVERNANCE_TIERS[tier];
-  if (!tierConfig) return false;
-  return tierConfig.features.includes(featureId);
+/** Hat der Plan Zugriff auf das Modul? */
+export function tierHasFeature(
+  tier: TierId | string | null | undefined,
+  featureId: ModuleId,
+): boolean {
+  const config = governanceTierFor(tier);
+  if (!config) return false;
+  return config.features.includes(featureId);
+}
+
+/** Mindest-Plan für ein Modul. */
+export function getFeatureMinimumTier(featureId: ModuleId): PlanId | undefined {
+  return GOVERNANCE_FEATURES.find((f) => f.id === featureId)?.requiredTier;
+}
+
+/** Alle im Plan verfügbaren Module als Feature-Definitionen. */
+export function getFeaturesByTier(
+  tier: TierId | string | null | undefined,
+): GovernanceFeature[] {
+  const config = governanceTierFor(tier);
+  if (!config) return [];
+  return GOVERNANCE_FEATURES.filter((f) => config.features.includes(f.id));
 }
 
 /**
- * Get minimum tier required for a feature
+ * Niedrigster Plan, der ALLE geforderten Module abdeckt.
+ * Nutzt die kanonische Plan-Reihenfolge — kein eigenes Ranking.
  */
-export function getFeatureMinimumTier(featureId: string): TierId | undefined {
-  const feature = GOVERNANCE_FEATURES.find(f => f.id === featureId);
-  return feature?.requiredTier;
-}
-
-/**
- * List all features available in a tier
- */
-export function getFeaturesByTier(tier: TierId): GovernanceFeature[] {
-  const tierConfig = GOVERNANCE_TIERS[tier];
-  if (!tierConfig) return [];
-  return GOVERNANCE_FEATURES.filter(f => tierConfig.features.includes(f.id));
-}
-
-/**
- * Calculate tier upgrade cost recommendation based on needed features
- */
-export function getRecommendedTierForFeatures(requiredFeatures: string[]): TierId {
-  let minTier: TierId = 'free';
-  const tierOrder: TierId[] = ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise', 'starter_yearly', 'growth_yearly', 'agency_yearly', 'scale_yearly'];
-
+export function getRecommendedTierForFeatures(requiredFeatures: ModuleId[]): PlanId {
+  let minRank = 0;
   for (const feature of requiredFeatures) {
-    const requiredTier = getFeatureMinimumTier(feature);
-    if (requiredTier) {
-      const currentIndex = tierOrder.indexOf(minTier);
-      const requiredIndex = tierOrder.indexOf(requiredTier);
-      if (requiredIndex > currentIndex) {
-        minTier = requiredTier;
-      }
-    }
+    const required = getFeatureMinimumTier(feature);
+    if (!required) continue;
+    minRank = Math.max(minRank, PLAN_ORDER.indexOf(required));
   }
-
-  return minTier;
+  return PLAN_ORDER[minRank];
 }

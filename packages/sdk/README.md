@@ -386,10 +386,10 @@ const sdk = new RealSyncDynamicsSDK({
 
 ## Support
 
-- **Documentation**: https://docs.realsyncdynamics.ai
-- **API Reference**: https://api-docs.realsyncdynamics.ai
+- **Documentation**: https://docs.realsyncdynamicsai.de
+- **API Reference**: https://api-docs.realsyncdynamicsai.de
 - **Issues**: https://github.com/realsyncdynamics/sdk-ts/issues
-- **Email**: support@realsyncdynamics.ai
+- **Email**: support@realsyncdynamicsai.de
 
 ## License
 

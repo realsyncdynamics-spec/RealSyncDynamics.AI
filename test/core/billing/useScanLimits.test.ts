@@ -36,7 +36,7 @@ describe('useScanLimits', () => {
   it('returns status object for free tier users', async () => {
     // Mock useEntitlements to return free tier
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
-      tier: 'free_tier',
+      tier: 'free',
       loading: false,
       error: undefined,
       features: {},
@@ -48,6 +48,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -81,7 +84,7 @@ describe('useScanLimits', () => {
 
   it('returns isAtLimit=true when used >= limit', async () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
-      tier: 'free_tier',
+      tier: 'free',
       loading: false,
       error: undefined,
       features: {},
@@ -93,6 +96,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -122,7 +128,7 @@ describe('useScanLimits', () => {
 
   it('returns resetDate as first day of next month', async () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
-      tier: 'free_tier',
+      tier: 'free',
       loading: false,
       error: undefined,
       features: {},
@@ -134,6 +140,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -161,7 +170,7 @@ describe('useScanLimits', () => {
 
   it('handles Supabase errors gracefully', async () => {
     vi.spyOn(useEntitlementsModule, 'useEntitlements').mockReturnValue({
-      tier: 'free_tier',
+      tier: 'free',
       loading: false,
       error: undefined,
       features: {},
@@ -173,6 +182,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({

@@ -39,7 +39,7 @@ async def handle(payload: RuntimeTelemetry) -> None:
     """Nimmt ein Telemetrie-Event entgegen und wertet es aus."""
     _EVENTS.append(payload)
 
-    project = inventory.get_project(payload.project_id)
+    project = await inventory.get_project(payload.project_id)
     project_name = project.project_name if project else "<unbekannt>"
 
     logger.info(
@@ -85,7 +85,7 @@ async def _handle_region_change(
         target,
     )
 
-    project = inventory.get_project(payload.project_id)
+    project = await inventory.get_project(payload.project_id)
     # Ein high-risk-System außerhalb der EU wiegt schwerer als ein minimales.
     severity = "critical" if project and project.risk_tier == "high" else "high"
 
@@ -109,7 +109,7 @@ async def _handle_region_change(
 
 async def _check_model_drift(payload: RuntimeTelemetry) -> None:
     """Meldet Modellversionen, die nie bewertet wurden."""
-    project = inventory.get_project(payload.project_id)
+    project = await inventory.get_project(payload.project_id)
     if project is None or not project.models:
         return
 
@@ -121,7 +121,7 @@ async def _check_model_drift(payload: RuntimeTelemetry) -> None:
         return
 
     # Doppelmeldungen für dasselbe Modell vermeiden.
-    for existing in incidents.list_incidents(payload.project_id):
+    for existing in await incidents.list_incidents(payload.project_id):
         if (
             existing.incident_type == "model_drift"
             and existing.evidence.get("running_model") == running

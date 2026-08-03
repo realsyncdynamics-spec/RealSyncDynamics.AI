@@ -37,7 +37,6 @@ async def run(task: AgentTask, graph: TaskGraph) -> AgentResult:
         logger.warning("Governance-Task für %s ohne Endpoint — keine Aktivierung", project_id)
         return AgentResult(
             output={"status": "skipped", "reason": "kein Endpoint aus dem DevOps-Schritt"},
-            retryable=False,
         )
 
     timestamp = datetime.now(timezone.utc).isoformat()

@@ -2,17 +2,16 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Lock, ChevronRight, Zap } from 'lucide-react';
 import type { TierId } from '../../config/pricing';
-import { tierById } from '../../config/pricing';
+import { tierById, checkoutHrefForPlan, type ModuleId } from '../../config/pricing';
 import {
   tierHasFeature,
   getFeatureMinimumTier,
-  GOVERNANCE_TIERS,
-  getRecommendedTierForFeatures,
+  governanceTierFor,
 } from '../../config/governance-features';
 
 interface GovernanceTierGateProps {
-  /** Feature ID being accessed */
-  featureId: string;
+  /** Modul-ID aus der Pricing-SSoT */
+  featureId: ModuleId;
   /** User's current tier */
   userTier: TierId;
   /** Children to render if access granted */
@@ -86,10 +85,10 @@ export function GovernanceTierGate({
                 <div className="mt-3 text-[12px] text-titanium-400">
                   <div className="font-semibold text-titanium-300 mb-1">Enthält außerdem:</div>
                   <ul className="space-y-1">
-                    {GOVERNANCE_TIERS[requiredTier as TierId]?.frameworks?.slice(0, 3).map(fw => (
+                    {governanceTierFor(requiredTier)?.frameworks?.slice(0, 3).map((fw) => (
                       <li key={fw} className="text-[11px]">• {fw.replace(/_/g, ' ').toUpperCase()}</li>
                     ))}
-                    {(GOVERNANCE_TIERS[requiredTier as TierId]?.frameworks?.length || 0) > 3 && (
+                    {(governanceTierFor(requiredTier)?.frameworks?.length || 0) > 3 && (
                       <li className="text-[11px]">+ mehr...</li>
                     )}
                   </ul>
@@ -102,7 +101,9 @@ export function GovernanceTierGate({
         {/* CTA Buttons */}
         <div className="flex items-center gap-3 justify-center flex-wrap">
           <Link
-            to={`/checkout/${requiredTier}?source=governance-tier-gate&feature=${featureId}`}
+            to={requiredTier
+              ? `${checkoutHrefForPlan(requiredTier, { source: 'governance-tier-gate' })}&feature=${featureId}`
+              : '/pricing'}
             className="inline-flex items-center gap-2 px-6 py-3 bg-violet-500 hover:bg-violet-400 text-obsidian-950 font-semibold rounded-none transition-colors"
           >
             Upgrade zu {requiredTierInfo?.name}
@@ -133,7 +134,7 @@ export function GovernanceTierGate({
  * Hook version for easier integration
  * Returns whether user has access and metadata
  */
-export function useGovernanceFeatureAccess(featureId: string, userTier: TierId) {
+export function useGovernanceFeatureAccess(featureId: ModuleId, userTier: TierId) {
   const hasAccess = tierHasFeature(userTier, featureId);
   const requiredTier = getFeatureMinimumTier(featureId);
 

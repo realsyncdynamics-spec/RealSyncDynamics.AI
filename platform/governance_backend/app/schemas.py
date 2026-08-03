@@ -11,6 +11,8 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from .validators import Description, Jurisdiction, ProjectId, ProjectName
+
 # EU-AI-Act-Risikoklassen (Art. 5 / Art. 6 / Art. 50).
 RiskTier = Literal["minimal", "limited", "high", "unacceptable"]
 
@@ -28,18 +30,18 @@ GateName = Literal[
 class ProjectRegistration(BaseModel):
     """Registrierung eines neuen KI-Projekts im Governance-Inventar."""
 
-    project_name: str
-    description: str
+    project_name: ProjectName
+    description: Description
     data_types: List[str]
     data_subjects: List[str]
     models: List[str]
     llm_provider: Optional[str] = None
-    jurisdiction: Optional[str] = "eu"
+    jurisdiction: Jurisdiction = "eu"
     tags: Dict[str, str] = Field(default_factory=dict)
 
 
 class ProjectRegistrationResponse(BaseModel):
-    project_id: str
+    project_id: ProjectId
     risk_tier: RiskTier
     required_gates: List[str]
 
@@ -55,7 +57,7 @@ class GateCheckArtifacts(BaseModel):
 
 
 class GateCheckRequest(BaseModel):
-    project_id: str
+    project_id: ProjectId
     build_hash: str
     artifacts: GateCheckArtifacts
 
@@ -70,7 +72,7 @@ class GateCheckResponse(BaseModel):
 class InventoryActivate(BaseModel):
     """Aktivierung: Projekt geht produktiv (Deployment gemeldet)."""
 
-    project_id: str
+    project_id: ProjectId
     endpoint: str
     deployment_timestamp: str
 
@@ -78,7 +80,7 @@ class InventoryActivate(BaseModel):
 class RuntimeTelemetry(BaseModel):
     """Laufzeit-Signal aus einer deployten App (Sentinel-Loop-Input)."""
 
-    project_id: str
+    project_id: ProjectId
     event_type: str
     model_version: Optional[str] = None
     region: Optional[str] = None
@@ -91,15 +93,15 @@ class RuntimeTelemetry(BaseModel):
 class ProjectRecord(BaseModel):
     """Projektzeile, wie sie das Governance-Cockpit anzeigt."""
 
-    project_id: str
-    project_name: str
-    description: str
+    project_id: ProjectId
+    project_name: ProjectName
+    description: Description
     risk_tier: RiskTier
     required_gates: List[str]
     status: Literal["registered", "active", "retired"] = "registered"
     endpoint: Optional[str] = None
     deployment_timestamp: Optional[str] = None
-    jurisdiction: Optional[str] = "eu"
+    jurisdiction: Jurisdiction = "eu"
     last_gate_status: Optional[Literal["approved", "warning", "blocked"]] = None
 
     # Bei der Registrierung gemeldete Modelle — Referenz für die Drift-Erkennung
@@ -129,7 +131,7 @@ IncidentSeverity = Literal["low", "medium", "high", "critical"]
 
 class Incident(BaseModel):
     incident_id: str
-    project_id: str
+    project_id: ProjectId
     incident_type: IncidentType
     severity: IncidentSeverity
     title: str
@@ -139,8 +141,15 @@ class Incident(BaseModel):
     created_at: str
 
     # Zustellung an die Automatisierung (n8n).
-    dispatch_status: Literal["pending", "delivered", "failed", "not_configured"] = "pending"
+    #   failed     = fehlgeschlagen, wird erneut versucht
+    #   exhausted  = endgültig aufgegeben; der Befund bleibt bestehen und ist
+    #                über den Filter auffindbar, damit er nicht still verschwindet
+    dispatch_status: Literal[
+        "pending", "delivered", "failed", "exhausted", "not_configured"
+    ] = "pending"
     dispatch_error: Optional[str] = None
+    dispatch_attempts: int = 0
+    next_dispatch_at: Optional[str] = None
 
 
 class IncidentListResponse(BaseModel):

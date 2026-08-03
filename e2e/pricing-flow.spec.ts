@@ -33,7 +33,7 @@ test.describe('Pricing Flow', () => {
         'starter',
         'growth',
         'agency',
-        'scale',
+        'partner',
       ];
 
       for (const slug of expectedSlugs) {
@@ -64,7 +64,7 @@ test.describe('Pricing Flow', () => {
         'starter',
         'growth',
         'agency',
-        'scale',
+        'partner',
         'enterprise',
       ];
 
@@ -85,7 +85,7 @@ test.describe('Pricing Flow', () => {
         'starter',
         'growth',
         'agency',
-        'scale',
+        'partner',
         'enterprise',
       ];
 
@@ -120,7 +120,7 @@ test.describe('Pricing Flow', () => {
         'starter',
         'growth',
         'agency',
-        'scale',
+        'partner',
         'enterprise',
       ];
 
@@ -336,7 +336,7 @@ test.describe('Pricing Flow', () => {
         'starter',
         'growth',
         'agency',
-        'scale',
+        'partner',
         'enterprise',
       ];
 
@@ -485,7 +485,7 @@ test.describe('Pricing Flow', () => {
         'free-audit',
         'starter',
         'agency',
-        'scale',
+        'partner',
         'enterprise',
       ];
 
@@ -510,7 +510,7 @@ test.describe('Pricing Flow', () => {
         '/pricing/starter',
         '/pricing/growth',
         '/pricing/agency',
-        '/pricing/scale',
+        '/pricing/partner',
         '/pricing/enterprise',
         '/features/dsgvo-scan',
         '/features/consent-timing',
@@ -534,7 +534,7 @@ test.describe('Pricing Flow', () => {
         '/checkout/starter',
         '/checkout/growth',
         '/checkout/agency',
-        '/checkout/scale',
+        '/checkout/partner',
         '/checkout/enterprise',
       ];
 

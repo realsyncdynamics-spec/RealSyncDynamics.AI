@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { usePageMeta } from '../lib/usePageMeta';
+import { CTA } from '../content/runtimeVocab';
 
 /**
  * /enterprise — Enterprise-Landing mit Case Studies & Testimonials.
@@ -317,13 +318,14 @@ export function EnterpriseLanding() {
             Bereit für Enterprise-Grade Governance?
           </h2>
           <p className="text-lg text-silver-300 mb-8 leading-relaxed">
-            Termin vereinbaren, Fragen stellen, oder Technical Deep-Dive mit unserem Team.
+            SSO, On-Premise, Custom-DPA und Behördenverträge klären wir direkt — alles andere
+            läuft self-serve über den Free Audit.
           </p>
           <Link
             to="/contact-sales?intent=enterprise"
             className="surface-gold inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-bold rounded-none"
           >
-            Termin vereinbaren <ArrowRight className="h-5 w-5" />
+            {CTA.enterprise} <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
       </section>

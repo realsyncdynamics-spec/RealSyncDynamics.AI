@@ -28,7 +28,7 @@ export function DashboardRouter() {
   }
 
   // Show FreeTierDashboard for free tier users
-  if (tier === 'free_tier') {
+  if (tier === 'free') {
     return <FreeTierDashboard />;
   }
 

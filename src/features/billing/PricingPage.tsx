@@ -6,44 +6,40 @@ import {
 import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
 import {
-  PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, TIER_ACCENT,
-  type PricingTier, type TierId,
+  PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
+  PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById,
+  type PricingTier, type PlanId,
 } from '../../config/pricing';
 import { PricingRoiExampleSection } from '../../components/sections/PricingRoiExampleSection';
 import { GovernanceBotsSection } from '../../components/pricing/GovernanceBotsSection';
 import { CostCalculator } from '../../components/pricing/CostCalculator';
-import { GOVERNANCE_MODULES, canAccessModule } from '../../components/governance-os/governanceModules';
-import { ModuleStatusBadge } from '../../components/governance-os/ModuleStatusBadge';
+import { RuntimePipeline } from '../../components/pricing/RuntimePipeline';
+import { DeveloperSection } from '../../components/pricing/DeveloperSection';
+import {
+  PlanFeatureGroups, PlanRuntimeLimits, PlanModuleAreas, PlanComparisonMatrix,
+} from '../../components/pricing/PlanFeatureGroups';
+import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
 
 /**
- * /pricing — public Pricing-Page mit 5 Paketen (Starter → Partner/Scale 1.999 €).
+ * /pricing — öffentliche Preisseite der AI Governance Runtime.
  *
- * Tier-Daten kommen ausschließlich aus src/config/pricing.ts
- * (Single Source of Truth, geteilt mit PricingTeaserSection + index.html JSON-LD).
+ * Sämtliche Plan-Daten (Preise, Limits, Module, Berechtigungen, Features)
+ * stammen aus der SSoT `shared/pricing.ts`. Diese Datei enthält KEINE
+ * eigenen Preise, Limits oder Feature-Listen — sie rendert nur.
  *
- * 5-Karten-Grid (PUBLIC_PRICING_TIERS, Stand 2026-07):
- *   Starter      79 €/Monat    Einzelunternehmen
- *   Growth      249 €/Monat    KMU, Monitoring + Auto-Fix (HIGHLIGHT)
- *   Agency      699 €/Monat    Mid-size, White-Label, API
- *   Enterprise 1.249 €/Monat   Großunternehmen, Multi-Org, SLA
- *   Partner   1.999 €/Monat    Reseller/MSP, bis 50 Mandanten
- *
- * Jede Karte hat eine Akzentfarbe (TIER_ACCENT) zur visuellen Trennung der Pakete.
- * Yearly-Varianten werden separat verwaltet (nicht im Grid).
+ * Aufbau je Karte (verbindlich):
+ *   Outcome-Headline → technische Subheadline → Preis → Runtime-Limits
+ *   → Governance-Module (GOVERN/AUTOMATE/ENGAGE) → Features in vier
+ *   Gruppen → CTA
  */
 
-const TIER_ICONS: Record<TierId, typeof Cookie> = {
+const PLAN_ICONS: Record<PlanId, typeof Cookie> = {
   free: Cookie,
   starter: ShieldCheck,
   growth: Zap,
   agency: Globe,
   enterprise: Building2,
-  scale: Briefcase,
-  starter_yearly: ShieldCheck,
-  growth_yearly: Zap,
-  agency_yearly: Globe,
-  enterprise_yearly: Building2,
-  scale_yearly: Briefcase,
+  partner: Briefcase,
 };
 
 export function PricingPage() {
@@ -83,24 +79,25 @@ export function PricingPage() {
               <Logo size={48} iconOnly />
             </div>
             <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-titanium-100">
-              Preise · Public
+              {PRODUCT_POSITIONING} · Preise
             </div>
           </div>
           <h1 className="font-display font-bold text-3xl sm:text-5xl text-titanium-50 tracking-tight leading-[1.05] mb-4">
-            Welche Governance-Abdeckung passt zu Ihnen?
+            Wie viel Governance-Runtime brauchen Sie?
           </h1>
           <p className="text-base sm:text-lg text-silver-300 leading-relaxed max-w-2xl mx-auto">
-            Vom kostenlosen Erst-Scan bis zur kompletten Governance-Runtime — alle Pläne sind EU-gehostet,
-            alle Pläne enthalten den AVV. Sie wählen nicht nach Anzahl der Webseiten, sondern nach Ihrer
-            Governance-Komplexität: Branche, Datenkategorien, KI-Nutzung, Drittanbieter und Dokumentationspflichten.
+            Jeder Plan enthält dieselbe Runtime: Scan, Policy Engine, Evidence Vault, Risk Engine,
+            Automation und Audit Export. Der Unterschied liegt in Reichweite und Tempo — wie viele
+            Rahmenwerke geprüft werden, wie oft die Runtime läuft, wie weit die Automatisierung reicht
+            und für wie viele Mandanten sie arbeitet.
           </p>
 
-          {/* GCS-Teaser — Paketempfehlung nach Governance-Komplexität */}
+          {/* Free Audit → Governance Score → automatische Planempfehlung */}
           <Link
-            to="/governance-score"
+            to="/audit?source=pricing-hero"
             className="mt-7 inline-flex items-center gap-2 surface-mono px-5 py-3 text-sm font-bold rounded-none"
           >
-            Governance Complexity Score ermitteln <ArrowRight className="h-4 w-4" />
+            Governance Score ermitteln — der Plan folgt daraus <ArrowRight className="h-4 w-4" />
           </Link>
 
           {/* 14-Tage-Trial klar sichtbar — Starter/Growth/Agency starten mit
@@ -126,10 +123,11 @@ export function PricingPage() {
               {PRICING_TRUST_NOTE}
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Erstcheck (Free Audit) kostenlos · kein Account nötig · Starter/Growth/Agency: 14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Scale/Enterprise: nach Anfrage
+              Free Audit kostenlos · kein Account nötig · Starter, Growth, Agency und Enterprise:
+              14 Tage kostenlos testen — keine Kosten bis Tag 15, monatlich kündbar · Partner: nach Anfrage
             </p>
             <p className="text-[10px] font-mono text-titanium-600">
-              Alle Preise in EUR. Keine Umsatzsteuer ausgewiesen — Kleinunternehmer gemäß § 19 UStG.
+              Alle Preise in EUR. {PRICING_TAX_NOTE}
             </p>
           </div>
 
@@ -144,6 +142,28 @@ export function PricingPage() {
               </p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Runtime-Architektur — dieselbe Kette wie auf der Landingpage */}
+      <RuntimePipeline />
+
+      {/* Vergleich nach den vier Feature-Gruppen */}
+      <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-8">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-2">
+              Leistungsumfang
+            </p>
+            <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
+              Vier Bereiche, sechs Pläne
+            </h2>
+            <p className="text-sm text-titanium-400 max-w-2xl leading-relaxed">
+              Alle Leistungen sind in vier Bereiche gegliedert: Audit &amp; Evidence,
+              AI Governance, Automation &amp; Ops sowie Multi Tenant &amp; Reseller.
+            </p>
+          </div>
+          <PlanComparisonMatrix />
         </div>
       </section>
 
@@ -198,6 +218,9 @@ export function PricingPage() {
 
       {/* Governance OS Browser — Module-Matrix */}
       <GovernanceModuleMatrix />
+
+      {/* Developer Experience — API, SDKs, OpenAPI, Webhooks, CI/CD */}
+      <DeveloperSection />
 
       {/* FAQ */}
       <section id="pricing-faq" className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
@@ -290,10 +313,9 @@ export function PricingPage() {
 }
 
 function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: boolean }) {
-  const TierIcon = TIER_ICONS[tier.id];
-  const priceDisplay =
-    tier.priceEur > 0 ? `${tier.priceEur} €` : (tier.id === 'free' ? '0 €' : 'Anfrage');
-
+  const plan = tier.plan;
+  const TierIcon = PLAN_ICONS[plan.id];
+  const priceDisplay = formatPriceEur(tier.priceEur);
   const accent = TIER_ACCENT[tier.id];
 
   return (
@@ -322,7 +344,12 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
         <div className="text-xs font-mono uppercase tracking-wider text-silver-400">{tier.priceSuffix}</div>
       </div>
 
-      <div className="text-[11px] font-mono uppercase tracking-wider text-silver-400 mb-4">{tier.tagline}</div>
+      {/* Outcome-Headline — was der Kunde bekommt */}
+      <p className="font-display text-sm font-semibold leading-snug text-titanium-100 mb-1.5">
+        {tier.tagline}
+      </p>
+      {/* Technische Subheadline — wie die Runtime das leistet */}
+      <p className="text-xs leading-relaxed text-silver-400 mb-4">{tier.subline}</p>
 
       {tier.badges && tier.badges.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
@@ -337,14 +364,20 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
         </div>
       )}
 
-      <ul className="space-y-2 text-sm text-silver-200 mb-6 flex-1">
-        {tier.bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2 leading-relaxed">
-            <Check className="h-3.5 w-3.5 text-titanium-100 shrink-0 mt-1" />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
+      {/* Runtime-Limits */}
+      <div className="mb-4">
+        <PlanRuntimeLimits plan={plan} />
+      </div>
+
+      {/* Governance-Module nach GOVERN / AUTOMATE / ENGAGE */}
+      <div className="mb-4">
+        <PlanModuleAreas plan={plan} />
+      </div>
+
+      {/* Features in den vier verbindlichen Gruppen */}
+      <div className="mb-6 flex-1">
+        <PlanFeatureGroups plan={plan} />
+      </div>
 
       <div className="flex flex-col gap-3">
         {/* Primary CTA: Book / Start */}
@@ -387,103 +420,3 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
   );
 }
 
-// ─── Governance OS Browser — Module-Matrix ───────────────────────────────────
-// Zeigt welche Module in welchem Plan verfügbar sind.
-// Alle 5 buchbaren Pakete + Enterprise — Namen identisch zu PUBLIC_PRICING_TIERS,
-// damit Pricing-Karten und Modul-Matrix nicht auseinanderlaufen ("Professional"
-// existiert in den Karten nicht — hieß dort schon immer "Growth").
-
-const MATRIX_TIERS: { id: TierId; label: string }[] = [
-  { id: 'free',       label: 'Free' },
-  { id: 'starter',    label: 'Starter' },
-  { id: 'growth',     label: 'Growth' },
-  { id: 'agency',     label: 'Agency' },
-  { id: 'scale',      label: 'Scale' },
-  { id: 'enterprise', label: 'Enterprise' },
-];
-
-function GovernanceModuleMatrix() {
-  return (
-    <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20 bg-obsidian-900/20">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-8">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-2">
-            Governance OS Browser
-          </p>
-          <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
-            Welche Module sind in welchem Plan?
-          </h2>
-          <p className="text-sm text-titanium-400 max-w-2xl">
-            Alle Module im Überblick — von der kostenlosen Übersicht bis zur
-            vollständigen Governance-Runtime.
-          </p>
-        </div>
-
-        {/* Matrix-Tabelle */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-titanium-900">
-                <th className="text-left py-3 pr-4 font-mono text-[10px] uppercase tracking-widest text-titanium-600 w-40">
-                  Modul
-                </th>
-                {MATRIX_TIERS.map((t) => (
-                  <th key={t.id} className="text-center py-3 px-3 font-mono text-[10px] uppercase tracking-widest text-titanium-400 whitespace-nowrap">
-                    {t.label}
-                  </th>
-                ))}
-                <th className="text-left py-3 pl-4 font-mono text-[10px] uppercase tracking-widest text-titanium-600">
-                  Beschreibung
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {GOVERNANCE_MODULES.map((mod, i) => (
-                <tr
-                  key={mod.id}
-                  className={`border-b border-titanium-900 ${i % 2 === 0 ? 'bg-obsidian-950' : 'bg-obsidian-900'}`}
-                >
-                  <td className="py-2.5 pr-4 font-medium text-titanium-100 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-2">
-                      {mod.label}
-                      {mod.status !== 'live' && <ModuleStatusBadge status={mod.status} />}
-                    </span>
-                  </td>
-                  {MATRIX_TIERS.map((t) => {
-                    const ok = canAccessModule(mod, t.id);
-                    return (
-                      <td key={t.id} className="text-center py-2.5 px-3">
-                        {ok
-                          ? <span className="text-emerald-400 text-base leading-none">✓</span>
-                          : <span className="text-titanium-800 text-base leading-none">—</span>
-                        }
-                      </td>
-                    );
-                  })}
-                  <td className="py-2.5 pl-4 text-xs text-titanium-500 leading-relaxed">
-                    {mod.description}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            to="/app"
-            className="inline-flex items-center gap-2 bg-cyan-400 text-obsidian-950 px-4 py-2 text-sm font-semibold hover:bg-cyan-300 transition-colors"
-          >
-            Governance OS öffnen <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            to="/audit?source=pricing-matrix"
-            className="inline-flex items-center gap-2 border border-titanium-700 text-titanium-200 px-4 py-2 text-sm font-semibold hover:border-titanium-500 transition-colors"
-          >
-            Kostenlosen Audit starten
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}

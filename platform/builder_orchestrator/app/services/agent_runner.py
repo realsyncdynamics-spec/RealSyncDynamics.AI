@@ -59,6 +59,17 @@ _INFLIGHT: Dict[str, Set[str]] = {}
 # project_id -> Anzahl aktiver Scheduler-Schleifen (Refcount, siehe run_graph)
 _RUNNERS: Dict[str, int] = {}
 
+# project_id -> {task_id: asyncio-Handle}. Nur damit lässt sich ein laufender
+# Task hart abbrechen; ohne Handle bliebe nur das Setzen eines Flags.
+_HANDLES: Dict[str, Dict[str, "asyncio.Task"]] = {}
+
+# Starke Referenzen auf die Scheduler-Schleifen. Die Event-Loop hält auf
+# laufende Tasks nur *schwache* Referenzen — ein `asyncio.create_task(...)`,
+# dessen Rückgabe niemand behält, kann mitten im Lauf eingesammelt werden und
+# der Build bricht ohne Fehlermeldung ab. Deshalb hier festhalten und erst im
+# Callback wieder loslassen.
+_SCHEDULER_TASKS: Set["asyncio.Task"] = set()
+
 
 class GraphCancelled(RuntimeError):
     """Der Graph wurde während der Ausführung abgebrochen."""
@@ -82,7 +93,9 @@ async def enqueue_initial_tasks(graph: TaskGraph) -> TaskGraph:
         return graph
 
     # TODO(Queue): hier stattdessen einen Queue-Job einstellen.
-    asyncio.create_task(run_graph(graph.project_id))
+    handle = asyncio.create_task(run_graph(graph.project_id))
+    _SCHEDULER_TASKS.add(handle)
+    handle.add_done_callback(_SCHEDULER_TASKS.discard)
     return graph
 
 
@@ -114,9 +127,17 @@ async def run_graph(project_id: str) -> Optional[TaskGraph]:
                 return graph  # terminal
 
             if ready:
-                await asyncio.gather(
-                    *(_dispatch(project_id, task.id, semaphore) for task in ready)
-                )
+                handles = _HANDLES.setdefault(project_id, {})
+                laufend = []
+                for task in ready:
+                    handle = asyncio.create_task(_dispatch(project_id, task.id, semaphore))
+                    handles[task.id] = handle
+                    laufend.append((task.id, handle))
+                # return_exceptions: ein abgebrochener Task darf die Schleife
+                # nicht mitreißen — sie muss danach noch aufräumen können.
+                await asyncio.gather(*(h for _, h in laufend), return_exceptions=True)
+                for task_id, _ in laufend:
+                    handles.pop(task_id, None)
             else:
                 # Nur noch laufende Tasks: kurz warten statt heiß zu drehen.
                 await asyncio.sleep(0.01)
@@ -125,27 +146,38 @@ async def run_graph(project_id: str) -> Optional[TaskGraph]:
         if _RUNNERS[project_id] <= 0:
             _RUNNERS.pop(project_id, None)
             _INFLIGHT.pop(project_id, None)
+            _HANDLES.pop(project_id, None)
 
 
 async def cancel_graph(project_id: str) -> Optional[TaskGraph]:
-    """Bricht den Build ab (graceful).
+    """Bricht den Build ab.
 
-    Semantik, damit sie nicht überschätzt wird: Es wird **nichts Neues mehr
-    eingeplant**, und alle noch nicht terminalen Tasks werden als `cancelled`
-    markiert. Ein bereits laufender Agentenaufruf wird **nicht** mitten im
-    Aufruf abgeschossen — er läuft zu Ende oder bis zu seiner Zeitgrenze. Das
-    ist Absicht: Ein DevOps-Task, der gerade deployt, darf nicht auf halber
-    Strecke abbrechen.
+    Die Härte hängt am Task, nicht am Abbruchbefehl (`AgentTask.interruptible`):
 
-    TODO(hartes Cancel): Für teure LLM-Läufe zusätzlich das asyncio-Task-Handle
-    festhalten und `.cancel()` aufrufen, wenn der Nutzer sofort abbrechen will.
+      * **Unterbrechbare Tasks** (LLM-Aufrufe) werden über ihr asyncio-Handle
+        sofort abgeschossen. Jede weitere Sekunde kostet Geld, und das Ergebnis
+        wird ohnehin verworfen.
+      * **Tasks mit Außenwirkung** (Deployment, Aktivierung im Inventar) laufen
+        zu Ende oder bis zu ihrer Zeitgrenze. Ein halb ausgerolltes Deployment
+        ist schlimmer als ein paar Sekunden Wartezeit.
+
+    In beiden Fällen wird nichts Neues mehr eingeplant, und alle noch nicht
+    terminalen Tasks werden als abgebrochen vermerkt.
     """
     graph = await task_graph.get_graph(project_id)
     if graph is None:
         return None
 
     graph.cancelled = True
-    await task_graph.save_graph(graph)
+    await task_graph.set_cancelled(project_id, True)
+
+    # Laufende Tasks hart abbrechen — aber nur die, die es vertragen.
+    # Ein DevOps-Task mitten im Deployment läuft zu Ende; ein LLM-Aufruf nicht.
+    for task_id, handle in list(_HANDLES.get(project_id, {}).items()):
+        task = graph.by_id(task_id)
+        if task is not None and task.interruptible and not handle.done():
+            logger.info("Breche laufenden Task %s ab", task_id)
+            handle.cancel()
 
     # Läuft gerade kein Scheduler, muss hier direkt aufgeräumt werden.
     if not _INFLIGHT.get(project_id):
@@ -214,6 +246,25 @@ async def _run_task(project_id: str, task_id: str) -> None:
                     handler(task, graph), timeout=task.timeout_seconds
                 )
                 span.set_attribute("status", "completed")
+        except asyncio.CancelledError:
+            # Harter Abbruch von außen. Der Task wird als abgebrochen vermerkt
+            # und die Ausnahme weitergereicht, damit asyncio sauber abwickelt.
+            duration = _ms(started)
+            audit_log.record(
+                project_id=project_id,
+                task_id=task.id,
+                agent_type=task.agent_type,
+                attempt=task.attempt,
+                status="cancelled",
+                duration_ms=duration,
+            )
+            task.status = "failed"
+            task.output = {"reason": "cancelled"}
+            # `shield`: Der Vermerk muss die Abbruch-Ausnahme überleben, sonst
+            # bliebe der Task in der Datenbank auf `running` stehen.
+            await asyncio.shield(task_graph.save_task(project_id, task))
+            _publish(project_id, task, detail="cancelled")
+            raise
         except asyncio.TimeoutError:
             duration = _ms(started)
             audit_log.record(
@@ -265,9 +316,21 @@ async def _run_task(project_id: str, task_id: str) -> None:
         task.status = "completed"
 
         if result.spawn:
-            graph.insert_spawned(task.id, result.spawn)
+            # Vor dem Einhängen festhalten, wessen `depends_on` sich gleich
+            # ändert — danach sind die neuen Tasks selbst Abhängige.
+            umgehaengt = graph.dependents_of(task.id)
+            neu = graph.insert_spawned(task.id, result.spawn)
 
-        await _persist(graph, task)
+            # Nur die tatsächlich geänderten Zeilen schreiben. Ein
+            # `save_graph` aus dieser Task-Kopie wäre der Vollschreibvorgang,
+            # den `repository.py` gerade ausschließt: Er würde nebenläufige
+            # Statusänderungen anderer Tasks überschreiben. Dass hier aktuell
+            # nichts parallel läuft, ist eine Eigenschaft der heutigen
+            # Graphform — keine, auf die sich der Scheduler verlassen darf.
+            await task_graph.save_tasks(graph.project_id, [task, *neu, *umgehaengt])
+            _publish(graph.project_id, task)
+        else:
+            await _persist(graph, task)
         return
 
 
@@ -294,12 +357,15 @@ async def _fail(graph: TaskGraph, task: AgentTask, status: str, reason: str) -> 
     blocked = graph.propagate_block(task.id, f"Vorgänger {task.id} fehlgeschlagen: {reason}")
 
     await _persist(graph, task)
+    if blocked:
+        await task_graph.save_tasks(graph.project_id, blocked)
     for blocked_task in blocked:
         _publish(graph.project_id, blocked_task, detail=reason)
 
 
 async def _cancel_graph(graph: TaskGraph) -> None:
     """Bricht alle noch nicht terminalen Tasks ab."""
+    abgebrochen: list[AgentTask] = []
     for task in graph.tasks:
         if task.is_terminal():
             continue
@@ -314,12 +380,20 @@ async def _cancel_graph(graph: TaskGraph) -> None:
             duration_ms=0,
         )
         _publish(graph.project_id, task, detail="cancelled")
+        abgebrochen.append(task)
 
-    await task_graph.save_graph(graph)
+    await task_graph.save_tasks(graph.project_id, abgebrochen)
+    await task_graph.set_cancelled(graph.project_id, True)
 
 
 async def _persist(graph: TaskGraph, task: AgentTask) -> None:
-    await task_graph.save_graph(graph)
+    """Schreibt genau die geänderte Task — nicht den ganzen Graphen.
+
+    Zwei nebenläufige Tasks würden sich beim Zurückschreiben des kompletten
+    Graphen gegenseitig überschreiben, sobald der Speicher Kopien liefert
+    (Datenbank-Backend) statt einer gemeinsamen Objektreferenz.
+    """
+    await task_graph.save_task(graph.project_id, task)
     _publish(graph.project_id, task)
 
 
@@ -344,3 +418,4 @@ def reset() -> None:
     """Nur für Tests."""
     _INFLIGHT.clear()
     _RUNNERS.clear()
+    _HANDLES.clear()

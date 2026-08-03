@@ -11,7 +11,7 @@ import { PlanUpgradeModal } from './PlanUpgradeModal';
 import { TrialCountdownBanner } from './TrialCountdownBanner';
 import { createCheckoutSession } from '../../lib/stripe';
 import { useAuth } from '../../lib/useAuth';
-import { PUBLIC_PRICING_TIERS, type TierId } from '../../config/pricing';
+import { PUBLIC_PRICING_TIERS, planByKey, type TierId } from '../../config/pricing';
 
 interface Subscription {
   plan_key: string | null;
@@ -35,19 +35,16 @@ interface Product {
 // canonical for new accounts — legacy keys (bronze/silver/gold) are kept
 // here only so historical subscriptions render correctly until a one-time
 // data migration renames them.
-const PLAN_LABELS: Record<string, string> = {
-  free: 'Free Audit',
-  free_audit: 'Free Audit',
-  starter: 'Starter',
-  growth: 'Growth',
-  agency: 'Agency',
-  enterprise: 'Enterprise',
-  enterprise_public: 'Enterprise',
-  // legacy — historical subscriptions only
-  bronze: 'Bronze (legacy)',
-  silver: 'Silver (legacy)',
-  gold: 'Gold (legacy)',
-};
+/**
+ * Anzeigename zu einem beliebigen Plan-Key aus der Datenbank.
+ * Auflösung über die Pricing-SSoT — inklusive Altdaten wie `scale`.
+ * Historische Keys ohne Entsprechung werden als solche gekennzeichnet,
+ * statt sie mit einem erfundenen Namen zu versehen.
+ */
+function planLabelFor(planKey: string | null | undefined): string {
+  if (!planKey) return 'Kein Plan';
+  return planByKey(planKey)?.name ?? `${planKey} (historisch)`;
+}
 
 // Available plans for billing dashboard — excluding yearly variants
 const AVAILABLE_PLANS = PUBLIC_PRICING_TIERS
@@ -62,7 +59,7 @@ const AVAILABLE_PLANS = PUBLIC_PRICING_TIERS
   }));
 
 export function BillingView() {
-  const { tenants, activeTenantId, entitlements, loading, getLimit } = useTenant();
+  const { tenants, activeTenantId, entitlements, loading, getLimit, error: tenantError, refresh: refreshTenant } = useTenant();
   const { user } = useAuth();
   const activeTenant = tenants.find((t) => t.tenantId === activeTenantId);
   const canManage = activeTenant?.role === 'owner' || activeTenant?.role === 'admin';
@@ -70,6 +67,11 @@ export function BillingView() {
   const [sub, setSub] = useState<Subscription | null | 'none'>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Fehler beim initialen Laden des Abos — getrennt von `error` (Aktions-Fehler),
+  // damit der Ladezustand verlassen wird statt dauerhaft im Spinner zu hängen.
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // Erhöht sich beim „Erneut versuchen" → triggert den Lade-Effekt neu.
+  const [reloadKey, setReloadKey] = useState(0);
   const [opening, setOpening] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradingPlan, setUpgradingPlan] = useState(false);
@@ -78,31 +80,40 @@ export function BillingView() {
   useEffect(() => {
     if (!activeTenantId) return;
     let cancelled = false;
-    setSub(null); setProduct(null); setError(null);
+    setSub(null); setProduct(null); setError(null); setLoadError(null);
 
     (async () => {
-      const sb = getSupabase();
-      const { data: subRow, error: subErr } = await sb
-        .from('subscriptions')
-        .select('plan_key, status, current_period_start, current_period_end, trial_ends_at, cancel_at_period_end, stripe_customer_id, stripe_subscription_id')
-        .eq('tenant_id', activeTenantId).maybeSingle();
-      if (cancelled) return;
-      if (subErr) { setError(subErr.message); return; }
+      try {
+        const sb = getSupabase();
+        const { data: subRow, error: subErr } = await sb
+          .from('subscriptions')
+          .select('plan_key, status, current_period_start, current_period_end, trial_ends_at, cancel_at_period_end, stripe_customer_id, stripe_subscription_id')
+          .eq('tenant_id', activeTenantId).maybeSingle();
+        if (cancelled) return;
+        // Wichtig: Bei einem Fehler MUSS der Ladezustand verlassen werden,
+        // sonst bleibt die Seite dauerhaft im Spinner (z. B. wenn die Abfrage
+        // während des AAL1→AAL2-Wechsels nach MFA-Bestätigung fehlschlägt).
+        if (subErr) { setLoadError(subErr.message); return; }
 
-      if (!subRow) { setSub('none'); return; }
-      setSub(subRow as Subscription);
+        if (!subRow) { setSub('none'); return; }
+        setSub(subRow as Subscription);
 
-      if (subRow.plan_key) {
-        const { data: prod } = await sb
-          .from('products').select('name, default_for_plan_key, stripe_price_id')
-          .eq('default_for_plan_key', subRow.plan_key)
-          .not('stripe_price_id', 'like', 'internal_default_%')
-          .maybeSingle();
-        if (!cancelled) setProduct(prod as Product | null);
+        if (subRow.plan_key) {
+          const { data: prod } = await sb
+            .from('products').select('name, default_for_plan_key, stripe_price_id')
+            .eq('default_for_plan_key', subRow.plan_key)
+            .not('stripe_price_id', 'like', 'internal_default_%')
+            .maybeSingle();
+          if (!cancelled) setProduct(prod as Product | null);
+        }
+      } catch (e) {
+        // Netzwerk-/Transport-Fehler (z. B. abgebrochener Request beim
+        // Session-Wechsel) dürfen ebenfalls nicht im Spinner enden.
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e));
       }
     })();
     return () => { cancelled = true; };
-  }, [activeTenantId]);
+  }, [activeTenantId, reloadKey]);
 
   async function openPortal() {
     if (!activeTenantId) return;
@@ -160,17 +171,29 @@ export function BillingView() {
     }
   }
 
+  // Reihenfolge der Guards ist kritisch: `sub` verlässt `null` nur auf dem
+  // Erfolgspfad. Würde der Lade-Guard zuerst greifen, wären "kein Workspace"
+  // und "Ladefehler" unerreichbar und die Seite hinge dauerhaft im Spinner.
+  if (!loading && !activeTenantId) {
+    return <NoTenant />;
+  }
+
+  if (loadError ?? tenantError) {
+    return (
+      <LoadError
+        message={(loadError ?? tenantError)!}
+        onRetry={() => { setLoadError(null); setReloadKey((k) => k + 1); void refreshTenant(); }}
+      />
+    );
+  }
+
   if (loading || sub === null) {
     return <Loading />;
   }
 
-  if (!activeTenantId) {
-    return <NoTenant />;
-  }
-
   const planLabel = sub === 'none'
     ? 'Free (kein Abonnement)'
-    : (PLAN_LABELS[sub.plan_key ?? 'free'] ?? sub.plan_key ?? 'Free');
+    : planLabelFor(sub.plan_key);
 
   const periodEnd = sub !== 'none' && sub.current_period_end
     ? new Date(sub.current_period_end).toLocaleDateString('de-DE')
@@ -188,7 +211,7 @@ export function BillingView() {
       {sub !== 'none' && sub?.status === 'trialing' && sub?.trial_ends_at && !dismissedTrialBanner && (
         <TrialCountdownBanner
           trialEndDate={sub.trial_ends_at}
-          planName={PLAN_LABELS[sub.plan_key ?? 'free'] ?? sub.plan_key ?? 'Free'}
+          planName={planLabelFor(sub.plan_key)}
           onDismiss={() => setDismissedTrialBanner(true)}
         />
       )}
@@ -422,6 +445,22 @@ function Loading() {
   return (
     <div className="flex items-center gap-2 text-titanium-500 text-sm py-12 justify-center">
       <Loader2 className="h-4 w-4 animate-spin" /> Lade…
+    </div>
+  );
+}
+
+function LoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="max-w-md mx-auto text-center py-16 px-4">
+      <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto mb-3" />
+      <h2 className="font-display text-lg font-bold text-titanium-50 mb-1">Abrechnung konnte nicht geladen werden</h2>
+      <p className="text-sm text-titanium-400 mb-4">{message}</p>
+      <button
+        onClick={onRetry}
+        className="px-4 py-2 bg-security-500 hover:bg-security-600 text-white text-sm font-semibold rounded-none"
+      >
+        Erneut versuchen
+      </button>
     </div>
   );
 }

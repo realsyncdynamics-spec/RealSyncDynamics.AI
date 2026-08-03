@@ -54,7 +54,7 @@ Done! Your AI system is now governed. 📋
 
 ### Our Commitment During Beta
 
-- **Support:** Email support@realsyncdynamics.ai (24h response time)
+- **Support:** Email support@realsyncdynamicsai.de (24h response time)
 - **Slack Channel:** We'll add you to our beta community Slack for real-time help
 - **Your Feedback:** We're actively developing — your input shapes what we build next
 - **No Lock-In:** Your data is yours. If you leave, you can export everything.
@@ -84,7 +84,7 @@ We'd love your help making RealSyncDynamics better:
 1. **Use It:** Set up your assets and run auto-mapping
 2. **Feedback:** What worked well? What was confusing? What would you change?
 3. **Survey:** At the end of the beta, we'll ask a quick 2-minute NPS survey
-4. **Bugs:** Report any issues to support@realsyncdynamics.ai
+4. **Bugs:** Report any issues to support@realsyncdynamicsai.de
 
 Your feedback will directly influence our product roadmap.
 
@@ -93,7 +93,7 @@ Your feedback will directly influence our product roadmap.
 - **Onboarding Guide:** [ONBOARDING_GUIDE_LINK]
 - **Feature Overview:** [FEATURE_DOC_LINK]
 - **FAQ:** [FAQ_LINK]
-- **Support:** support@realsyncdynamics.ai
+- **Support:** support@realsyncdynamicsai.de
 
 ### Questions Before You Start?
 
@@ -126,8 +126,8 @@ P.P.S. — Following this email will be:
 
 | Field | Value |
 |-------|-------|
-| **From:** | [beta@realsyncdynamics.ai] |
-| **Reply-To:** | support@realsyncdynamics.ai |
+| **From:** | [beta@realsyncdynamicsai.de] |
+| **Reply-To:** | support@realsyncdynamicsai.de |
 | **Subject Line:** | Join RealSyncDynamics Beta — Free Compliance AI for 2 Weeks |
 | **Preheader:** | AI-powered governance for your organization |
 | **Send Time:** | Tuesday-Thursday, 10am customer's local time |

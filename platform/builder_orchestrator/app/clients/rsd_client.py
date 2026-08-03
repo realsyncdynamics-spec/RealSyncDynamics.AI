@@ -11,12 +11,33 @@ import os
 
 import httpx
 
+from ..auth import current_tenant
 from ..schemas import BuildSpec, GovernanceContext
 
 logger = logging.getLogger(__name__)
 
 GOVERNANCE_BASE_URL = os.getenv("GOVERNANCE_BASE_URL", "http://governance_backend:8002")
 REQUEST_TIMEOUT = float(os.getenv("GOVERNANCE_TIMEOUT_SECONDS", "10"))
+
+# Token für Dienst-zu-Dienst-Aufrufe. Muss dem GOVERNANCE_SERVICE_TOKEN des
+# Governance-Backends entsprechen.
+SERVICE_TOKEN = os.getenv("GOVERNANCE_SERVICE_TOKEN", "")
+
+
+def _headers() -> dict:
+    """Dienst-Token plus der Mandant, in dessen Auftrag gerufen wird.
+
+    Der Mandant kommt aus dem Kontext und wird nicht mitgereicht — im
+    Hintergrund-Scheduler steht er dort, weil `asyncio.create_task` den
+    Kontext der ursprünglichen Anfrage kopiert. Das Nutzer-Token bis dahin
+    aufzubewahren hiesse, fremde Zugangsdaten zu speichern.
+    """
+    if not SERVICE_TOKEN:
+        return {}
+    return {
+        "Authorization": f"Bearer {SERVICE_TOKEN}",
+        "X-Tenant-Id": current_tenant(),
+    }
 
 
 class GovernanceUnavailableError(RuntimeError):
@@ -39,7 +60,7 @@ async def register_project(spec: BuildSpec) -> GovernanceContext:
     url = f"{GOVERNANCE_BASE_URL}/api/v1/governance/register-project"
     try:
         async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-            response = await client.post(url, json=payload)
+            response = await client.post(url, json=payload, headers=_headers())
             response.raise_for_status()
             data = response.json()
     except httpx.HTTPError as exc:
@@ -63,6 +84,7 @@ async def gate_check(project_id: str, build_hash: str, artifacts: dict) -> dict:
         response = await client.post(
             url,
             json={"project_id": project_id, "build_hash": build_hash, "artifacts": artifacts},
+            headers=_headers(),
         )
         response.raise_for_status()
         return response.json()
@@ -83,6 +105,7 @@ async def activate_inventory(project_id: str, endpoint: str, deployment_timestam
                 "endpoint": endpoint,
                 "deployment_timestamp": deployment_timestamp,
             },
+            headers=_headers(),
         )
         response.raise_for_status()
         return response.json()
@@ -108,6 +131,6 @@ async def send_telemetry(project_id: str, event_type: str, **details: str) -> No
 
     try:
         async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-            await client.post(url, json=payload)
+            await client.post(url, json=payload, headers=_headers())
     except httpx.HTTPError as exc:
         logger.warning("Telemetrie nicht zugestellt (%s): %s", event_type, exc)

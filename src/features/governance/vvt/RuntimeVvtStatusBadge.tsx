@@ -28,7 +28,7 @@ const RISK_CLS: Record<VvtRiskLevel, string> = {
 
 const AI_LABEL: Record<VvtAiActRelevance, string> = {
   none:                         'KI · keine',
-  possible:                     'KI · moeglich',
+  possible:                     'KI · möglich',
   likely:                       'KI · wahrscheinlich',
   high_risk_review_required:    'KI · High-Risk Review',
 };

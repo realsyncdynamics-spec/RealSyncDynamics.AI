@@ -3,27 +3,47 @@ import {
   GOVERNANCE_MODULES,
   canAccessModule,
   minimumPlanForModule,
+  plansForModule,
   TAB_MODULES,
   DOCK_MODULES,
 } from '../../src/components/governance-os/governanceModules';
+import { PLAN_ORDER } from '../../shared/pricing';
 
 describe('GOVERNANCE_MODULES config', () => {
   it('enthält mindestens 10 Module', () => {
     expect(GOVERNANCE_MODULES.length).toBeGreaterThanOrEqual(10);
   });
 
-  it('jedes Modul hat id, label, route, status und plans', () => {
+  it('jedes Modul hat id, label, route, status und ein Gate', () => {
     for (const mod of GOVERNANCE_MODULES) {
       expect(mod.id, `id fehlt`).toBeTruthy();
       expect(mod.label, `label fehlt für ${mod.id}`).toBeTruthy();
       expect(mod.route, `route fehlt für ${mod.id}`).toMatch(/^\//);
       expect(['live', 'beta', 'roadmap'], `status ungültig für ${mod.id}`).toContain(mod.status);
-      expect(mod.plans.length, `plans leer für ${mod.id}`).toBeGreaterThan(0);
+      expect(['all', 'module', 'permission', 'limit'], `gate ungültig für ${mod.id}`)
+        .toContain(mod.gate.kind);
+      // Jedes Gate muss von mindestens einem Plan erfüllbar sein — sonst wäre
+      // das Modul für niemanden erreichbar.
+      expect(plansForModule(mod).length, `kein Plan erreicht ${mod.id}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('Modulzugriff ist entlang der Plan-Reihenfolge monoton', () => {
+    for (const mod of GOVERNANCE_MODULES) {
+      const allowed = plansForModule(mod);
+      const firstIndex = PLAN_ORDER.indexOf(allowed[0]);
+      // Ab dem ersten berechtigten Plan darf kein höherer Plan mehr fehlen.
+      for (let i = firstIndex; i < PLAN_ORDER.length; i++) {
+        expect(
+          canAccessModule(mod, PLAN_ORDER[i]),
+          `${mod.id}: ${PLAN_ORDER[i]} verliert Zugriff, den ${allowed[0]} hat`,
+        ).toBe(true);
+      }
     }
   });
 
   it('overview und settings sind für alle Pläne zugänglich', () => {
-    const allPlans = ['free', 'starter', 'growth', 'agency', 'scale', 'enterprise'];
+    const allPlans = PLAN_ORDER;
     const overview = GOVERNANCE_MODULES.find((m) => m.id === 'overview');
     const settings = GOVERNANCE_MODULES.find((m) => m.id === 'settings');
     expect(overview).toBeDefined();
@@ -43,14 +63,28 @@ describe('GOVERNANCE_MODULES config', () => {
     expect(canAccessModule(risks!, 'free')).toBe(false);
   });
 
-  it('Remediation ist nur für agency+ zugänglich', () => {
-    const remediation = GOVERNANCE_MODULES.find((m) => m.id === 'remediation');
-    expect(remediation).toBeDefined();
-    expect(canAccessModule(remediation!, 'free')).toBe(false);
-    expect(canAccessModule(remediation!, 'starter')).toBe(false);
-    expect(canAccessModule(remediation!, 'growth')).toBe(false);
-    expect(canAccessModule(remediation!, 'agency')).toBe(true);
-    expect(canAccessModule(remediation!, 'enterprise')).toBe(true);
+  it('Scheduler und Bulk Jobs folgen der Agency-Berechtigung', () => {
+    const scheduler = GOVERNANCE_MODULES.find((m) => m.id === 'scheduler')!;
+    const bulk = GOVERNANCE_MODULES.find((m) => m.id === 'bulk')!;
+    for (const mod of [scheduler, bulk]) {
+      expect(canAccessModule(mod, 'growth'), mod.id).toBe(false);
+      expect(canAccessModule(mod, 'agency'), mod.id).toBe(true);
+      expect(canAccessModule(mod, 'enterprise'), mod.id).toBe(true);
+      expect(canAccessModule(mod, 'partner'), mod.id).toBe(true);
+    }
+  });
+
+  it('Evidence Vault ist ab Starter sichtbar — wie im Pricing ausgewiesen', () => {
+    // Vor dem SSoT-Refactoring war der Vault im Pricing ab Starter enthalten,
+    // in der Navigation aber erst ab Agency. Dieser Test pinnt die Auflösung.
+    const vault = GOVERNANCE_MODULES.find((m) => m.id === 'evidence-vault')!;
+    expect(canAccessModule(vault, 'free')).toBe(false);
+    expect(canAccessModule(vault, 'starter')).toBe(true);
+  });
+
+  it('akzeptiert Altdaten `scale` als Partner', () => {
+    const scheduler = GOVERNANCE_MODULES.find((m) => m.id === 'scheduler')!;
+    expect(canAccessModule(scheduler, 'scale')).toBe(true);
   });
 });
 
@@ -78,9 +112,9 @@ describe('minimumPlanForModule', () => {
     expect(minimumPlanForModule(aiSystems)).toBe('starter');
   });
 
-  it('gibt agency zurück für remediation', () => {
-    const remediation = GOVERNANCE_MODULES.find((m) => m.id === 'remediation')!;
-    expect(minimumPlanForModule(remediation)).toBe('agency');
+  it('gibt agency zurück für Scheduler (Berechtigungs-Gate)', () => {
+    const scheduler = GOVERNANCE_MODULES.find((m) => m.id === 'scheduler')!;
+    expect(minimumPlanForModule(scheduler)).toBe('agency');
   });
 });
 

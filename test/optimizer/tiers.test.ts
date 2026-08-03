@@ -18,7 +18,7 @@ describe('OPTIMIZER_TIERS', () => {
   });
   it('ist mit realen Plan-Keys aufsteigend verknüpft', () => {
     expect(OPTIMIZER_TIERS.map((t) => t.planKey)).toEqual([
-      'free', 'starter', 'growth', 'agency', 'scale', 'enterprise',
+      'free', 'starter', 'growth', 'agency', 'partner', 'enterprise',
     ]);
   });
 });
@@ -29,7 +29,7 @@ describe('isSelfServeCheckout', () => {
     expect(isSelfServeCheckout('growth')).toBe(true);
     expect(isSelfServeCheckout('agency')).toBe(true);
     expect(isSelfServeCheckout('free')).toBe(false);
-    expect(isSelfServeCheckout('scale')).toBe(false);
+    expect(isSelfServeCheckout('partner')).toBe(false);
     expect(isSelfServeCheckout('enterprise')).toBe(false);
   });
 });

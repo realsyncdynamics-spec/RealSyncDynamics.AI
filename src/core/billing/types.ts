@@ -1,17 +1,11 @@
-export type PlanKey =
-  // Provenance plans
-  | 'free'
-  | 'bronze'
-  | 'silver'
-  | 'gold'
-  | 'enterprise_public'
-  // Governance OS plans
-  | 'starter_governance'
-  | 'professional_governance'
-  | 'governance_os'
-  | 'enterprise_regulated';
+// Plan-Bezeichner kommen ausschliesslich aus der Pricing-SSoT.
+// Die frueheren Parallel-Welten (bronze/silver/gold, *_governance) sind
+// entfallen — es gibt genau sechs Plaene.
+import type { PlanKey as CanonicalPlanKey, BillingInterval as CanonicalInterval } from '@/shared/pricing';
 
-export type BillingInterval = 'month' | 'year' | 'custom';
+export type PlanKey = CanonicalPlanKey;
+
+export type BillingInterval = CanonicalInterval | 'custom';
 
 export type ProductType = 'provenance' | 'governance' | 'both';
 

@@ -31,7 +31,7 @@ Phase 7 delivers comprehensive test coverage for the Website Operations Layer, v
 - Tenant ID requirement enforcement
 
 #### 3. Domain Validation (5 tests)
-- Subdomain format validation (`test-site.realsyncdynamics.ai`)
+- Subdomain format validation (`test-site.realsyncdynamicsai.de`)
 - Custom domain format validation (`*.de`, `*.com`, `*.eu`)
 - Domain type enforcement: `subdomain`, `custom`
 - Domain status values: `pending`, `active`, `failed`, `expired`

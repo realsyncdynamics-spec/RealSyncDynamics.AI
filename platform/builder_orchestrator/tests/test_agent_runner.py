@@ -207,31 +207,41 @@ async def test_kein_doppel_dispatch(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_cancel_plant_nichts_neues_mehr_ein(monkeypatch):
-    """Cancel ist graceful: der laufende Task endet regulär, der Rest wird abgebrochen."""
+    """Nach einem Abbruch startet kein weiterer Task.
+
+    Der laufende Planner wird hart abgebrochen (er ist unterbrechbar), und der
+    Architect darf danach gar nicht erst anlaufen — sonst würde ein Abbruch
+    Geld für Arbeit kosten, deren Ergebnis niemand mehr will.
+    """
     gestartet = asyncio.Event()
+    architect_lief = {"ja": False}
 
     async def langsam(task, graph):
         gestartet.set()
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(30)
         return AgentResult(output={"ok": "1"})
 
-    _stub_dispatch(monkeypatch, planner=langsam)
+    async def architect(task, graph):
+        architect_lief["ja"] = True
+        return AgentResult()
+
+    _stub_dispatch(monkeypatch, planner=langsam, architect=architect)
     graph = _graph()
     await task_graph.save_graph(graph)
 
     runner = asyncio.create_task(agent_runner.run_graph(graph.project_id))
     await gestartet.wait()
     await agent_runner.cancel_graph(graph.project_id)
-    await runner
+    await asyncio.wait_for(runner, timeout=5)
 
     result = await task_graph.get_graph(graph.project_id)
     assert result.cancelled is True
     assert all(t.is_terminal() for t in result.tasks)
 
-    # Der laufende Task lief zu Ende; die noch nicht gestarteten sind abgebrochen.
-    assert result.by_id("task_planner").status == "completed"
-    assert result.by_id("task_governance").output["reason"] == "cancelled"
+    assert architect_lief["ja"] is False
+    assert result.by_id("task_planner").output["reason"] == "cancelled"
     assert result.by_id("task_architect").output["reason"] == "cancelled"
+    assert result.by_id("task_governance").output["reason"] == "cancelled"
 
 
 @pytest.mark.asyncio
@@ -318,3 +328,95 @@ async def test_statuswechsel_werden_als_events_gemeldet(monkeypatch):
     stati = {(e.task_id, e.status) for e in empfangen}
     assert ("task_planner", "running") in stati
     assert ("task_planner", "completed") in stati
+
+
+# --- Hartes Cancel ---------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_unterbrechbarer_task_wird_sofort_abgeschossen(monkeypatch):
+    """Ein LLM-Aufruf soll nicht zu Ende laufen, wenn abgebrochen wird."""
+    gestartet = asyncio.Event()
+    zuende = {"nein": True}
+
+    async def sehr_langsam(task, graph):
+        gestartet.set()
+        await asyncio.sleep(30)
+        zuende["nein"] = False  # darf nie erreicht werden
+        return AgentResult()
+
+    _stub_dispatch(monkeypatch, planner=sehr_langsam)
+    graph = _graph()
+    await task_graph.save_graph(graph)
+
+    runner = asyncio.create_task(agent_runner.run_graph(graph.project_id))
+    await gestartet.wait()
+
+    beginn = asyncio.get_running_loop().time()
+    await agent_runner.cancel_graph(graph.project_id)
+    await asyncio.wait_for(runner, timeout=5)
+    dauer = asyncio.get_running_loop().time() - beginn
+
+    # Ohne hartes Cancel müsste hier 30s gewartet werden.
+    assert dauer < 2, f"Abbruch dauerte {dauer:.1f}s"
+    assert zuende["nein"] is True
+
+    result = await task_graph.get_graph(graph.project_id)
+    assert result.by_id("task_planner").output["reason"] == "cancelled"
+    assert all(t.is_terminal() for t in result.tasks)
+
+
+@pytest.mark.asyncio
+async def test_task_mit_aussenwirkung_laeuft_zu_ende(monkeypatch):
+    """Ein laufendes Deployment wird nicht mitten im Lauf abgeschossen."""
+    gestartet = asyncio.Event()
+    fertig = {"ja": False}
+
+    async def deployt(task, graph):
+        gestartet.set()
+        await asyncio.sleep(0.2)
+        fertig["ja"] = True
+        return AgentResult(output={"endpoint": "https://x"})
+
+    async def sofort(task, graph):
+        return AgentResult()
+
+    _stub_dispatch(monkeypatch, planner=sofort, architect=sofort, devops=deployt)
+    graph = _graph()
+    # Direkt beim DevOps-Task starten.
+    graph.by_id("task_planner").status = "completed"
+    graph.by_id("task_architect").status = "completed"
+    await task_graph.save_graph(graph)
+
+    runner = asyncio.create_task(agent_runner.run_graph(graph.project_id))
+    await gestartet.wait()
+    await agent_runner.cancel_graph(graph.project_id)
+    await asyncio.wait_for(runner, timeout=5)
+
+    assert fertig["ja"] is True, "DevOps wurde mitten im Deployment abgebrochen"
+    result = await task_graph.get_graph(graph.project_id)
+    assert result.by_id("task_devops").status == "completed"
+    # Der Nachfolger wurde dagegen nicht mehr eingeplant.
+    assert result.by_id("task_governance").output["reason"] == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_abbruch_landet_im_pruefpfad(monkeypatch):
+    gestartet = asyncio.Event()
+
+    async def langsam(task, graph):
+        gestartet.set()
+        await asyncio.sleep(30)
+        return AgentResult()
+
+    _stub_dispatch(monkeypatch, planner=langsam)
+    graph = _graph(project_id="prj_abbruch")
+    await task_graph.save_graph(graph)
+
+    runner = asyncio.create_task(agent_runner.run_graph("prj_abbruch"))
+    await gestartet.wait()
+    await agent_runner.cancel_graph("prj_abbruch")
+    await asyncio.wait_for(runner, timeout=5)
+
+    eintraege = [e for e in audit_log.records("prj_abbruch") if e.task_id == "task_planner"]
+    assert eintraege[-1].status == "cancelled"

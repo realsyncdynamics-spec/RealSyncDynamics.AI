@@ -149,6 +149,14 @@ export const __test = { normaliseDomain };
 
 // ─── Tenant-scoped scan trigger (via tenant-audit Edge Function) ────
 
+function scanErrorForStatus(status: number): string {
+  if (status === 401 || status === 403) return 'Keine Berechtigung für diesen Scan.';
+  if (status === 429) return 'Scan-Limit erreicht. Bitte später erneut versuchen.';
+  if (status === 504) return 'Der Scan hat zu lange gedauert (Timeout).';
+  if (status >= 500)  return 'Der Scan-Dienst ist derzeit nicht verfügbar.';
+  return `Scan fehlgeschlagen (HTTP ${status}).`;
+}
+
 /**
  * Trigger an authenticated scan for the active tenant. Calls the
  * `tenant-audit` Edge Function which fans out to `gdpr-audit` and
@@ -164,24 +172,45 @@ export async function triggerTenantAudit(
   const accessToken = sess?.session?.access_token;
   if (!accessToken) throw new Error('Bitte einloggen, um einen Scan zu starten.');
 
-  const r = await fetch(`${SUPABASE_URL}/functions/v1/tenant-audit`, {
-    method:  'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-      'X-Tenant-Id':   tenantId,
-    },
-    body: JSON.stringify({ url, website_id: opts.website_id }),
-  });
-  const body = await r.json() as {
+  let r: Response;
+  try {
+    r = await fetch(`${SUPABASE_URL}/functions/v1/tenant-audit`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Tenant-Id':   tenantId,
+      },
+      body: JSON.stringify({ url, website_id: opts.website_id }),
+    });
+  } catch {
+    throw new Error('Scan-Dienst nicht erreichbar. Bitte Verbindung prüfen und erneut versuchen.');
+  }
+
+  // Die Edge Function antwortet bei Gateway-Timeouts und 5xx teils mit leerem
+  // Body — r.json() würde dann „Unexpected end of JSON input" ins UI werfen.
+  const raw = await r.text().catch(() => '');
+  let body: {
     ok?: boolean;
     scan_run_id?: string;
     finding_count?: number;
     severity_max?: string | null;
     error?: { message?: string };
-  };
+  } = {};
+  if (raw.trim()) {
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      throw new Error(
+        r.ok
+          ? 'Ungültige Antwort vom Scan-Dienst erhalten.'
+          : `Scan fehlgeschlagen (HTTP ${r.status}).`,
+      );
+    }
+  }
+
   if (!r.ok || !body.ok || !body.scan_run_id) {
-    throw new Error(body.error?.message ?? `tenant-audit fehlgeschlagen (HTTP ${r.status})`);
+    throw new Error(body.error?.message ?? scanErrorForStatus(r.status));
   }
   return {
     scan_run_id:   body.scan_run_id,

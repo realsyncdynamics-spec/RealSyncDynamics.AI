@@ -1,4 +1,5 @@
-import { Check, MessageCircle, Zap, MessageSquare, Globe } from 'lucide-react';
+import { Check, MessageCircle, Zap, MessageSquare, Globe, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { PUBLIC_PRICING_TIERS, BOT_ADDONS, botAddonsByTier } from '../../config/pricing';
 
 /**
@@ -30,6 +31,28 @@ export function GovernanceBotsSection() {
             <strong> Jede KI-Kommunikation bleibt nachvollziehbar: Wer fragte, was antwortete der Bot, welcher Kanal,
             welche Compliance-Regeln waren aktiv?</strong>
           </p>
+        </div>
+
+        {/* WhatsApp-Specific CTA */}
+        <div className="mb-12 p-6 bg-gradient-to-r from-ai-cyan-500/10 to-security-500/10 border border-ai-cyan-500/30 rounded-lg">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <MessageCircle className="h-5 w-5 text-ai-cyan-400" />
+                <h3 className="font-bold text-titanium-50">WhatsApp Business Integration?</h3>
+              </div>
+              <p className="text-sm text-silver-300">
+                Sehen Sie unsere dedizierte WhatsApp Pricing-Seite mit Tier-Vergleich, Feature-Highlights und Setup-Informationen.
+              </p>
+            </div>
+            <Link
+              to="/pricing/whatsapp"
+              className="flex items-center gap-2 px-4 py-2 bg-ai-cyan-600 hover:bg-ai-cyan-700 text-white font-semibold rounded-lg transition-colors flex-shrink-0 whitespace-nowrap"
+            >
+              Mehr erfahren
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
         {/* Bot-Quotas pro Tier */}
@@ -199,7 +222,7 @@ export function GovernanceBotsSection() {
                       </div>
                     </div>
                     <div className="text-[10px] text-silver-500 italic">
-                      Für Growth/Agency/Scale/Enterprise
+                      Für Growth, Agency, Enterprise und Partner
                     </div>
                   </div>
                 </div>

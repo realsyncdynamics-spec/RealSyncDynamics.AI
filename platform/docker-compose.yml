@@ -1,10 +1,12 @@
 # AI-App-Builder + RealSyncDynamicsAI-Governance — lokaler Stack.
 #
 # Start:  docker compose up --build
-# Hosts:  builder.localhost | rsd.localhost | app.localhost | traefik.localhost:8080
+# Hosts:  http://builder.localhost | http://rsd.localhost | http://app.localhost
+#         https://builder.localhost | https://rsd.localhost | https://app.localhost (selbstsigniertes Zert)
+#         traefik.localhost:8080 (Dashboard)
 #
 # Hinweis: *.localhost löst auf den meisten Systemen automatisch auf 127.0.0.1 auf.
-# Falls nicht, Einträge in /etc/hosts ergänzen.
+# Falls nicht, Einträge in /etc/hosts ergänzen. Browser-Warnung bei HTTPS ignorieren (self-signed cert).
 
 services:
   traefik:
@@ -14,10 +16,13 @@ services:
       - --configFile=/etc/traefik/traefik.yml
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080" # Dashboard (nur lokal!)
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./traefik/certs:/etc/traefik/certs:ro
+      - ./traefik/acme.json:/etc/traefik/acme.json
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - rsd_net
@@ -29,17 +34,25 @@ services:
       ENVIRONMENT: local
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
-      # TODO(Persistenz): auf supabase_db umstellen, sobald der In-Memory-Store ersetzt ist.
+      # Gesetzt = Inventar und Befunde liegen in Postgres und überleben einen
+      # Neustart. Leeren, um bewusst In-Memory zu fahren.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
+      # Auth. Leer = aus (nur lokal!) — /health meldet den Zustand.
+      GOVERNANCE_AUTH_TOKENS: ${GOVERNANCE_AUTH_TOKENS:-}
+      GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
+      # Incident-Dispatch an n8n; leer = Befunde nur über die API sichtbar.
+      GOVERNANCE_WEBHOOK_URL: ""
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8002:8002"
     depends_on:
-      - supabase_db
+      supabase_db:
+        condition: service_healthy
     labels:
       - traefik.enable=true
       - traefik.http.routers.governance.rule=Host(`rsd.localhost`)
-      - traefik.http.routers.governance.entrypoints=web
+      - traefik.http.routers.governance.entrypoints=web,websecure
+      - traefik.http.routers.governance.tls=true
       - traefik.http.services.governance.loadbalancer.server.port=8002
     networks:
       - rsd_net
@@ -52,15 +65,45 @@ services:
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
       GOVERNANCE_BASE_URL: http://governance_backend:8002
+      # Auth. Leer = aus (nur lokal!). Das Service-Token muss dem des
+      # Governance-Backends entsprechen, sonst weist es die Aufrufe ab.
+      BUILDER_AUTH_TOKENS: ${BUILDER_AUTH_TOKENS:-}
+      GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
+      # Gesetzt = laufende und abgeschlossene Builds überleben einen Neustart.
+      DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
+      BUILDER_MAX_CONCURRENCY: "4"
+      # LLM-Provider. Ohne Key antwortet der Stub-Provider deterministisch —
+      # der Stack startet also auch ohne Zugangsdaten, die Agenten liefern
+      # dann leere, aber schema-konforme Ergebnisse. Für echte Läufe den Key
+      # in eine .env legen (nicht ins Repo).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      # EU-lokale Alternative: LLM_PROVIDER=ollama + OLLAMA_BASE_URL setzen.
+      LLM_PROVIDER: ${LLM_PROVIDER:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      LLM_MAX_REPAIRS: ${LLM_MAX_REPAIRS:-1}
+      # Token-Obergrenze je Build. 0 = unbegrenzt.
+      BUILDER_TOKEN_BUDGET: ${BUILDER_TOKEN_BUDGET:-0}
+      # Generierte Dateien. Ohne Volume sind sie nach einem Neustart weg —
+      # der Task-Graph in Postgres verweist dann auf ein leeres Verzeichnis.
+      BUILDER_WORKSPACE_ROOT: /workspaces
+      # Leer = kein Testnachweis => das Gate blockiert (fail-closed).
+      BUILDER_TEST_COMMAND: ${BUILDER_TEST_COMMAND:-}
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+    volumes:
+      - builder_workspaces:/workspaces
     ports:
       - "8001:8001"
     depends_on:
-      - governance_backend
+      governance_backend:
+        condition: service_started
+      supabase_db:
+        condition: service_healthy
     labels:
       - traefik.enable=true
       - traefik.http.routers.builder.rule=Host(`builder.localhost`)
-      - traefik.http.routers.builder.entrypoints=web
+      - traefik.http.routers.builder.entrypoints=web,websecure
+      - traefik.http.routers.builder.tls=true
       - traefik.http.services.builder.loadbalancer.server.port=8001
     networks:
       - rsd_net
@@ -70,8 +113,9 @@ services:
     container_name: rsd_frontend
     environment:
       # Browser-seitige Calls laufen über Traefik, nicht über Container-Namen.
-      NEXT_PUBLIC_BUILDER_URL: http://builder.localhost
-      NEXT_PUBLIC_GOVERNANCE_URL: http://rsd.localhost
+      # Lokal: HTTP; Prod: HTTPS (über Umgebungsvariable setzen).
+      NEXT_PUBLIC_BUILDER_URL: ${NEXT_PUBLIC_BUILDER_URL:-http://builder.localhost}
+      NEXT_PUBLIC_GOVERNANCE_URL: ${NEXT_PUBLIC_GOVERNANCE_URL:-http://rsd.localhost}
     ports:
       - "3000:3000"
     depends_on:
@@ -80,7 +124,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.frontend.rule=Host(`app.localhost`)
-      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.entrypoints=web,websecure
+      - traefik.http.routers.frontend.tls=true
       - traefik.http.services.frontend.loadbalancer.server.port=3000
     networks:
       - rsd_net
@@ -96,8 +141,9 @@ services:
       - "5432:5432"
     volumes:
       - rsd_pgdata:/var/lib/postgresql/data
-      # Migrations laufen beim ersten Start automatisch.
-      - ./governance_backend/migrations:/docker-entrypoint-initdb.d:ro
+      # Die Migration wendet das Backend beim Start selbst an (sie ist
+      # wiederholbar). Der initdb-Hook wäre unzuverlässig, weil er nur beim
+      # allerersten Start eines leeren Volumes läuft.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -108,6 +154,10 @@ services:
 
 volumes:
   rsd_pgdata:
+  # Generierte Anwendungsdateien. Eigenes Volume, damit ein Neustart des
+  # Orchestrators die Ergebnisse nicht mitnimmt — der Task-Graph in Postgres
+  # zeigt sonst auf ein leeres Verzeichnis.
+  builder_workspaces:
 
 networks:
   rsd_net:

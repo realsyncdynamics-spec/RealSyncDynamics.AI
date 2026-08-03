@@ -20,6 +20,7 @@ export interface BrowserAgentTaskInput {
   waitFor?: string;
   /** Custom User-Agent */
   user_agent?: string;
+  [key: string]: unknown;
 }
 
 export interface BrowserSystemFound {

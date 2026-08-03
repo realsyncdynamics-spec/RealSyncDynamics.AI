@@ -26,9 +26,9 @@ const ROOT = join(__dirname, '..');
 const DIST = process.env.VERIFY_DIST ? resolve(process.env.VERIFY_DIST) : join(ROOT, 'dist');
 
 // Wie viele prerenderte Routen wir mindestens erwarten. prerender.mjs
-// rendert alles mit sitemap-priority >= 0.6 (aktuell 76 Routen) — die
-// Schwelle liegt bewusst darunter, damit ein einzelner Render-Timeout den
-// Check nicht rot macht.
+// rendert alles, was in der sitemap.xml steht (priority >= 0.4, aktuell
+// 103 Routen) — die Schwelle liegt bewusst weit darunter, damit ein
+// einzelner Render-Timeout den Check nicht rot macht.
 const MIN_ROUTES = parseInt(process.env.VERIFY_MIN_ROUTES ?? '20', 10);
 
 // Ab wann gilt eine Seite als "hat echten Text"?
@@ -140,7 +140,28 @@ async function main() {
     );
   }
 
-  // ── Check 4: Ueberschriften-Hierarchie ──────────────────────────────────
+  // ── Check 4: Soft-404 ───────────────────────────────────────────────────
+  // Eine Route, die in der sitemap.xml steht, aber im Router fehlt, rendert
+  // die NotFound-Komponente — und wird trotzdem mit HTTP 200 ausgeliefert.
+  // Fuer Crawler ist das ein Soft-404: wir bewerben eine URL als indexierbar
+  // und liefern "Seite nicht gefunden". Gefunden am Preview von PR #947:
+  // /features (Sitemap-Priority 1.0!) und /dsgvo-website hatten nie eine
+  // Route. Beide aus der Sitemap entfernt; dieser Check haelt es so.
+  const soft404 = [];
+  for (const p of real) {
+    const html = await readFile(p.file, 'utf8');
+    const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html)?.[1]?.replace(/<[^>]+>/g, '') ?? '';
+    if (/seite nicht gefunden|page not found/i.test(h1)) soft404.push(p.route);
+  }
+  if (soft404.length > 0) {
+    failures.push(
+      `${soft404.length} Seite(n) rendern die 404-Seite, werden aber mit 200 ` +
+      `ausgeliefert (Soft-404): ${soft404.slice(0, 5).join(', ')}. ` +
+      'Route fehlt im Router — entweder anlegen oder aus public/sitemap.xml entfernen.'
+    );
+  }
+
+  // ── Check 5: Ueberschriften-Hierarchie ──────────────────────────────────
   // Genau ein h1 pro Seite, keine uebersprungenen Level (h2 → h4).
   // Seobility bewertet beides direkt ab. Vor dem Fix in diesem Branch:
   // 5 Seiten ohne h1, 82 Seiten mit Level-Sprung (fast alle durch ein
@@ -172,7 +193,7 @@ async function main() {
 
   // ── Report ──────────────────────────────────────────────────────────────
   console.log(`[verify] ${pages.length} HTML-Dateien · ${real.length} mit Content · ${uniqueTitles.size} unterschiedliche Titles`);
-  console.log(`[verify] Headings: ${noH1.length} ohne h1 · ${manyH1.length} mit mehreren h1 · ${skips.length} mit Level-Sprung`);
+  console.log(`[verify] Soft-404: ${soft404.length} · Headings: ${noH1.length} ohne h1 · ${manyH1.length} mit mehreren h1 · ${skips.length} mit Level-Sprung`);
   console.log(`[verify] Startseite: H1=${homeH1 ? JSON.stringify(homeH1.slice(0, 60)) : 'KEINE'} · ~${homeText} Zeichen Text`);
 
   if (failures.length > 0) {

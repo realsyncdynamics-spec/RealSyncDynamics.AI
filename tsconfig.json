@@ -39,6 +39,7 @@
     "worker",
     "apps/agent-runtime",
     "extension",
+    "platform",
     "packages/sdk/examples",
     "packages/sdk/test",
     "deploy"

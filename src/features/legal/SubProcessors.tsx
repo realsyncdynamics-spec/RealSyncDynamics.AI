@@ -76,6 +76,18 @@ const SUB_PROCESSORS: SubProcessor[] = [
     dpa_url: 'https://github.com/customer-terms/github-data-protection-agreement',
     status: 'available',
   },
+  {
+    name: 'Functional Software, Inc. (Sentry)',
+    purpose: 'Fehler-Erfassung und Stabilitätsüberwachung der Web-Anwendung (Art. 6 I lit. f)',
+    data_categories: [
+      'Fehlermeldung + Stacktrace',
+      'Browser- und Geräte-Angaben',
+      'interne Nutzer-ID (Email und IP werden clientseitig entfernt, kein Session-Replay)',
+    ],
+    region: 'EU (Frankfurt, de.sentry.io Region-Endpoint)',
+    dpa_url: 'https://sentry.io/legal/dpa/',
+    status: 'available',
+  },
 ];
 
 export function SubProcessors() {

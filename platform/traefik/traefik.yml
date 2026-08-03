@@ -1,0 +1,44 @@
+# Traefik Static Configuration.
+#
+# Lokal: HTTP + selbstsigniertes Zertifikat.
+# Prod: ACME/Let's-Encrypt-Resolver mit HTTP→HTTPS-Umleitung.
+
+api:
+  dashboard: true
+  insecure: true # nur lokal — im Prod-Stack hinter Auth legen
+
+entryPoints:
+  web:
+    address: ":80"
+    # Prod: HTTP→HTTPS umleiten
+    # http:
+    #   redirections:
+    #     entrypoint:
+    #       to: websecure
+    #       scheme: https
+  websecure:
+    address: ":443"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: platform_rsd_net
+  file:
+    filename: /etc/traefik/dynamic.yml
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # Prod: https://acme-v02.api.letsencrypt.org/directory
+      # Staging: nur für Tests, bevor es ernst wird.
+      server: https://acme-staging-v02.api.letsencrypt.org/directory
+      email: ${ACME_EMAIL:-noreply@example.com}
+      storage: /etc/traefik/acme.json
+      httpChallenge:
+        entryPoint: web
+
+log:
+  level: INFO
+
+accessLog: {}

@@ -188,6 +188,7 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'governance-approvals',
   'governance-risk-score',
   'governance-dpias',
+  'governance-agents-list',
 
   // Telegram webhook — called by Telegram's servers without JWT.
   'telegram-webhook',

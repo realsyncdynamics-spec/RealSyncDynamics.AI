@@ -231,6 +231,15 @@ verify_jwt = false
 [functions.governance-risk-score]
 verify_jwt = false
 
+# governance-risk-escalate — internal function (called by governance-agent,
+# governance-ingest). Authenticated users; defaults to verify_jwt = true.
+[functions.governance-risk-escalate]
+
+# governance-agents-list — public discovery endpoint for agent registry.
+# No JWT required (tenant_id filtering in endpoint logic).
+[functions.governance-agents-list]
+verify_jwt = false
+
 [functions.governance-dpias]
 verify_jwt = false
 

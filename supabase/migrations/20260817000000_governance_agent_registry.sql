@@ -35,10 +35,18 @@ CREATE TABLE IF NOT EXISTS public.governance_agent_registry (
   metadata JSONB DEFAULT '{}',
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_tenant_agent_name UNIQUE NULLS NOT DISTINCT (tenant_id, agent_name)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Unique constraint for tenant-scoped agents (tenant_id IS NOT NULL)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_governance_agent_registry_unique_tenant_agent
+  ON public.governance_agent_registry(tenant_id, agent_name)
+  WHERE tenant_id IS NOT NULL;
+
+-- Unique constraint for global agents (tenant_id IS NULL)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_governance_agent_registry_unique_global_agent
+  ON public.governance_agent_registry(agent_name)
+  WHERE tenant_id IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_governance_agent_registry_tenant
   ON public.governance_agent_registry(tenant_id);

@@ -30,6 +30,7 @@ interface PublishConfig {
   webhookUrl?: string;
   emailFrom?: string;
   emailService?: 'sendgrid' | 'mailgun';
+  xToken?: string;
 }
 
 const config: PublishConfig = {
@@ -41,6 +42,7 @@ const config: PublishConfig = {
   webhookUrl: Deno.env.get('WEBHOOK_URL'),
   emailFrom: Deno.env.get('EMAIL_FROM_ADDRESS'),
   emailService: (Deno.env.get('EMAIL_SERVICE') as 'sendgrid' | 'mailgun') || 'sendgrid',
+  xToken: Deno.env.get('X_ACCESS_TOKEN'),
 };
 
 // ── Job processor ──────────────────────────────────────────────────
@@ -101,7 +103,14 @@ async function publishViaChannel(
     case 'email.newsletter':
       return publishEmail(job);
 
-    // TODO: instagram.reel, tiktok.fast, x.alert publishers
+    case 'x.alert':
+      return publishX(job);
+
+    // TODO: instagram.reel, tiktok.fast — both need a video-upload flow
+    // (Instagram Graph API container-then-publish, TikTok Content Posting
+    // API chunked upload), not a text-only POST like the channels above.
+    // QueueJob carries no video URL field yet; needs a media-hosting
+    // decision before an adapter can be written and actually tested.
 
     default:
       return { ok: false, error: `Unknown channel: ${channel}` };
@@ -145,6 +154,52 @@ async function publishLinkedIn(job: QueueJob): Promise<{ ok: boolean; externalId
 
     const data = await response.json();
     return { ok: true, externalId: data.id };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+// ── X (Twitter) Publisher ──────────────────────────────────────────
+// Mirrors src/core/social-orchestrator/xPublisher.ts (X API v2 /2/tweets,
+// OAuth 2.0 Bearer). That module's orchestrator has no wired entry point
+// yet — this queue-poller is the one actually deployed and cron-triggered,
+// so the real X integration lives here rather than duplicated later.
+
+async function publishX(job: QueueJob): Promise<{ ok: boolean; externalId?: string; error?: string }> {
+  if (!config.xToken) {
+    return { ok: false, error: 'X access token not configured' };
+  }
+
+  const text = job.hashtags.length > 0
+    ? `${job.body} ${job.hashtags.join(' ')}`
+    : job.body;
+
+  if (text.length > 280) {
+    return { ok: false, error: `Text exceeds 280 characters: ${text.length} chars` };
+  }
+
+  try {
+    const response = await fetch('https://api.twitter.com/2/tweets', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.xToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
+      const errors = (errorData as Record<string, unknown>).errors;
+      const message = Array.isArray(errors)
+        ? (errors[0] as Record<string, unknown>)?.message ?? 'Tweet creation failed'
+        : (errorData as Record<string, unknown>).title ?? `HTTP ${response.status}`;
+      return { ok: false, error: `X ${response.status}: ${message}` };
+    }
+
+    const result = await response.json();
+    const tweetId = (result as Record<string, unknown>).data as Record<string, unknown> | undefined;
+    return { ok: true, externalId: (tweetId?.id as string) ?? `x_${Date.now()}` };
   } catch (err) {
     return { ok: false, error: String(err) };
   }
@@ -403,7 +458,8 @@ async function processAllChannels(): Promise<void> {
     'ghost.blog',
     'webhook.custom',
     'email.newsletter',
-    // TODO: instagram.reel, tiktok.fast, x.alert
+    'x.alert',
+    // TODO: instagram.reel, tiktok.fast — see publishViaChannel() comment.
   ];
 
   const results = await Promise.allSettled(

@@ -48,26 +48,50 @@ These 4 can be deleted via GitHub Web UI or gh CLI when needed.
 
 ---
 
-## Phase 3: Cloudflare Optimization — Ready to Implement
+## Phase 3: Cloudflare Optimization — In Progress
 
-**Status:** 📋 **PLANNED** (Requires Cloudflare authentication)
+**Status:** 🔄 **40% COMPLETE** (KV + Cache Invalidation Done, R2 Pending)
 
-### Completed
-- [x] Cache policies in `public/_headers` (implemented in main)
+**Date Started:** 2026-07-23  
+**Cloudflare Auth:** ✅ Available (authenticated MCP server)
+
+### ✅ Completed
+- [x] Cache policies in `public/_headers` (on main)
   - HTML: max-age=0, s-maxage=3600
   - Assets: max-age=31536000, immutable
   - APIs: private, no-cache
   - Governance/Audit: custom TTLs
 
-### Pending (Requires Cloudflare Setup)
-- [ ] Create KV namespace `governance_policy_cache`
-- [ ] Implement policy cache reads in edge functions
-- [ ] Deploy `/api/cache/invalidate` webhook
-- [ ] Create R2 bucket `realsyncdynamics-evidence-vault`
-- [ ] Configure lifecycle policies (7-year retention)
-- [ ] Plan Worker Migration B1 (4-week timeline)
+- [x] KV Namespace `governance_policy_cache`
+  - Namespace ID: `5bb700e74b83404caee6223533db1e90`
+  - Configured in wrangler.toml
+  - Helper module created (`supabase/functions/_shared/governance-cache.ts`)
 
-**Note:** Phase 3 implementation requires Cloudflare Developer Platform authentication (MCP server unavailable in non-interactive session). See `PHASE_3_CLOUDFLARE_OPTIMIZATION.md` for detailed implementation guide.
+- [x] Cache Invalidation Webhook
+  - Edge function: `supabase/functions/cache-invalidate/index.ts`
+  - Supports policy.updated, policy.created, policy.deleted events
+  - Pattern-based invalidation support
+
+### 🔄 Pending
+
+**R2 Evidence Vault** (Blocked: R2 not enabled in account)
+- [ ] Enable R2 in Cloudflare Dashboard
+- [ ] Create bucket `realsyncdynamics-evidence-vault`
+- [ ] Configure 7-year lifecycle retention
+- [ ] Set up folder structure by tenant/audit/compliance
+
+**Worker Migration B1** (4-week timeline)
+- [ ] Design routing architecture
+- [ ] Implement middleware stack
+- [ ] Migrate governance-core functions
+- [ ] Test and rollout
+
+### Next Actions
+1. Enable R2 in Cloudflare Dashboard
+2. Create evidence vault bucket
+3. Configure lifecycle policies
+4. Integrate edge functions with KV binding
+5. Plan Worker migration
 
 ---
 

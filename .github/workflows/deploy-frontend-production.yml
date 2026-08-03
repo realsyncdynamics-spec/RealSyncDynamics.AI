@@ -1,18 +1,17 @@
 name: Deploy Frontend to Production
 
+# Stillgelegt am 2026-08-03: Production-Ziel des Frontends ist Cloudflare Pages
+# (CLAUDE.md §2). Dieser Workflow deployte parallel auf den Hostinger-VPS und
+# schlug bei jedem Push nach main fehl — der VPS ist ueber Port 22 nicht
+# erreichbar (`dial tcp :22 i/o timeout`, siehe deploy-hostinger.yml).
+# Nur noch manuell ausloesbar, damit main nicht dauerhaft rot ist.
+#
+# Die Secret-Namen unten sind seit #967 korrekt (VPS_SSH_*). Das behebt aber nur
+# den frueheren `exit 255` (ssh ohne Zielhost), nicht die Ursache: der VPS
+# antwortet auf Port 22 nicht. Vor dem Reaktivieren daher zuerst SSH-Erreichbar-
+# keit klaeren — Firewall, Port und aktuelle IP.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - 'vite.config.ts'
-      - 'tailwind.config.ts'
-      - 'docker/realsync-web/**'
-      - '.github/workflows/deploy-frontend-production.yml'
+  workflow_dispatch:
 
 concurrency:
   group: production-deploy

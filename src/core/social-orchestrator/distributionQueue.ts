@@ -1036,20 +1036,32 @@ export class EmailPublisher extends BasePublisher {
   private createAdapter(service: string, config: Record<string, string>): EmailAdapter {
     switch (service) {
       case 'sendgrid':
-        return new SendGridAdapter(config.sendgridApiKey || process.env.SENDGRID_API_KEY || '');
+        if (!config.sendgridApiKey) {
+          throw new Error('SendGrid adapter requires sendgridApiKey in config. Use Edge Functions to fetch secrets.');
+        }
+        return new SendGridAdapter(config.sendgridApiKey);
       case 'ses':
+        if (!config.awsAccessKey || !config.awsSecretKey) {
+          throw new Error('AWS SES adapter requires awsAccessKey and awsSecretKey in config. Use Edge Functions to fetch secrets.');
+        }
         return new AWSSESAdapter(
           config.awsRegion || 'us-east-1',
-          config.awsAccessKey || process.env.AWS_ACCESS_KEY_ID || '',
-          config.awsSecretKey || process.env.AWS_SECRET_ACCESS_KEY || ''
+          config.awsAccessKey,
+          config.awsSecretKey
         );
       case 'mailgun':
+        if (!config.mailgunDomain || !config.mailgunApiKey) {
+          throw new Error('Mailgun adapter requires mailgunDomain and mailgunApiKey in config. Use Edge Functions to fetch secrets.');
+        }
         return new MailgunAdapter(
-          config.mailgunDomain || process.env.MAILGUN_DOMAIN || '',
-          config.mailgunApiKey || process.env.MAILGUN_API_KEY || ''
+          config.mailgunDomain,
+          config.mailgunApiKey
         );
       default:
-        return new SendGridAdapter(config.sendgridApiKey || process.env.SENDGRID_API_KEY || '');
+        if (!config.sendgridApiKey) {
+          throw new Error('SendGrid adapter requires sendgridApiKey in config. Use Edge Functions to fetch secrets.');
+        }
+        return new SendGridAdapter(config.sendgridApiKey);
     }
   }
 

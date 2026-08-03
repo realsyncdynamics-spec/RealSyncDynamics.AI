@@ -29,6 +29,11 @@ interface AgentRunRow {
   status: string;
   summary: string;
   created_at: string;
+  // Full run detail — lets the UI re-open a past run's findings/recommendations
+  // from the history list without a second round-trip.
+  findings: Array<Record<string, unknown>>;
+  recommendations: Array<Record<string, unknown>>;
+  metadata: Record<string, unknown>;
 }
 
 interface ListResponse {
@@ -63,7 +68,7 @@ async function listAgentRuns(params: {
     // Build query with filters
     let query = supabase
       .from('enterprise_agent_runs')
-      .select('id, tenant_id, agent_id, actor, status, summary, created_at', { count: 'exact' });
+      .select('id, tenant_id, agent_id, actor, status, summary, created_at, findings, recommendations, metadata', { count: 'exact' });
 
     if (params.tenantId) {
       query = query.eq('tenant_id', params.tenantId);

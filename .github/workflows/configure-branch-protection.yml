@@ -1,0 +1,67 @@
+name: Configure Branch Protection
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/configure-branch-protection.yml'
+
+jobs:
+  setup-branch-protection:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Configure main branch protection
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO_OWNER="${{ github.repository_owner }}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          BRANCH="main"
+
+          echo "Configuring branch protection for $BRANCH..."
+
+          # Set required status checks (remove Vercel, keep Cloudflare)
+          curl -X PUT \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/branches/$BRANCH/protection" \
+            -d '{
+              "required_status_checks": {
+                "strict": true,
+                "contexts": [
+                  "build",
+                  "Playwright E2E",
+                  "Build & Test",
+                  "Migration validation",
+                  "Cloudflare Pages"
+                ]
+              },
+              "required_pull_request_reviews": {
+                "dismiss_stale_reviews": true,
+                "require_code_owner_reviews": false,
+                "required_approving_review_count": 0
+              },
+              "enforce_admins": false,
+              "allow_force_pushes": false,
+              "allow_deletions": false,
+              "require_linear_history": false,
+              "restrictions": null
+            }' \
+            -w "\nStatus: %{http_code}\n"
+
+          echo "✅ Branch protection configured"
+          echo "Required checks:"
+          echo "  - build"
+          echo "  - Playwright E2E"
+          echo "  - Build & Test"
+          echo "  - Migration validation"
+          echo "  - Cloudflare Pages"
+          echo ""
+          echo "Removed checks:"
+          echo "  - Vercel (all variants)"

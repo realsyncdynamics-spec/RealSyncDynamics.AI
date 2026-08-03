@@ -2,7 +2,7 @@ import React from 'react';
 import { BUTTON_VARIANTS, BUTTON_SIZES, COLORS } from '../../styles/design-tokens';
 
 interface SovereignButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning' | 'subtle';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'outline' | 'ghost' | 'danger' | 'success' | 'warning' | 'subtle';
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   children: React.ReactNode;
   leftIcon?: React.ReactNode;
@@ -61,6 +61,7 @@ export const SovereignButton = ({
   const variantStyles = {
     primary: `bg-security-blue text-obsidian hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg`,
     secondary: `bg-petrol text-white hover:bg-teal-700 active:bg-teal-800 shadow-md hover:shadow-lg`,
+    tertiary: `bg-transparent border-2 border-titanium text-titanium hover:bg-titanium/10 active:bg-titanium/20 focus:ring-titanium`,
     outline: `bg-transparent border-2 border-titanium/50 text-titanium hover:border-titanium hover:bg-titanium/10 active:bg-titanium/20`,
     ghost: `bg-transparent text-titanium hover:bg-obsidian/40 active:bg-obsidian/60`,
     danger: `bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-md hover:shadow-lg`,

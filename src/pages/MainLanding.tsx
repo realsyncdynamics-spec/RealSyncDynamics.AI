@@ -115,7 +115,7 @@ const PRICING = [
 
 export function MainLanding() {
   return (
-    <div className="min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
+    <div className="landing-context min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
       <SEOHead />
       <Header />
       <Hero />

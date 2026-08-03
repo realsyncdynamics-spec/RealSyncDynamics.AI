@@ -13,12 +13,14 @@ import {
   X,
   AlertTriangle,
   ShieldCheck,
+  ChevronRight,
 } from 'lucide-react';
 import { useTenant } from '../../../core/access/TenantProvider';
 import {
   enterpriseAgents,
   runAgent,
   fetchAgentRuns,
+  runRowToResult,
   AUTONOMY_LABELS,
   AGENT_STATUS_LABELS,
   type AgentId,
@@ -162,6 +164,7 @@ export function AgentsCenterView() {
   const [history, setHistory] = useState<{ agent: EnterpriseAgentDefinition; rows: AgentRunRow[] | null; error?: string } | null>(null);
   const [allRuns, setAllRuns] = useState<AgentRunRow[]>([]);
   const [runForm, setRunForm] = useState<EnterpriseAgentDefinition | null>(null);
+  const [runDetail, setRunDetail] = useState<{ agent: EnterpriseAgentDefinition; result: AgentRunResult; when: string } | null>(null);
 
   function showToast(msg: string, tone: 'ok' | 'error' = 'ok') {
     setToast({ msg, tone });
@@ -343,16 +346,37 @@ export function AgentsCenterView() {
           ) : (
             <div className="divide-y divide-titanium-900">
               {history.rows.map((r) => (
-                <div key={r.id} className="flex items-center justify-between py-2 text-xs">
-                  <div>
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() =>
+                    setRunDetail({
+                      agent: history.agent,
+                      result: runRowToResult(r),
+                      when: new Date(r.created_at).toLocaleString('de-DE'),
+                    })
+                  }
+                  className="w-full flex items-center justify-between gap-3 py-2 text-xs text-left hover:bg-obsidian-800 transition-colors"
+                >
+                  <div className="min-w-0">
                     <div className="font-mono text-titanium-200">{r.status}</div>
-                    <div className="text-titanium-500">{r.summary}</div>
+                    <div className="text-titanium-500 truncate">{r.summary}</div>
                   </div>
-                  <div className="font-mono text-[10px] text-titanium-600">{new Date(r.created_at).toLocaleString('de-DE')}</div>
-                </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-mono text-[10px] text-titanium-600">{new Date(r.created_at).toLocaleString('de-DE')}</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-titanium-600" />
+                  </div>
+                </button>
               ))}
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Run-Detail-Modal — vollständiges Ergebnis eines vergangenen Laufs */}
+      {runDetail && (
+        <Modal title={`${runDetail.agent.name} — Lauf vom ${runDetail.when}`} onClose={() => setRunDetail(null)}>
+          <AgentRunOutput result={runDetail.result} />
         </Modal>
       )}
 

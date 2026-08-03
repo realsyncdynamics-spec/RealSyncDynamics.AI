@@ -24,20 +24,16 @@ export interface CloudflareConfig {
 }
 
 /**
- * Load Cloudflare configuration from environment
+ * Load Cloudflare configuration from Edge Function only.
+ * Secrets must never be accessed from client-side process.env.
  */
 export function getCloudflareConfig(): CloudflareConfig {
-  const apiToken = process.env.CLOUDFLARE_API_TOKEN;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-
-  if (!apiToken || !accountId) {
-    console.warn('Cloudflare API token or account ID not configured');
-  }
+  console.warn('Cloudflare credentials must be accessed via Edge Functions only');
 
   return {
-    enabled: !!apiToken && !!accountId,
-    apiToken: apiToken || '',
-    accountId: accountId || '',
+    enabled: false,
+    apiToken: '',
+    accountId: '',
 
     // Project naming convention
     pagesProjectName: 'realsyncdynamics-customer-sites',

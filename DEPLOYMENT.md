@@ -225,7 +225,7 @@ ANTHROPIC_API_KEY
 RESEND_API_KEY
 
 # Local development uses .env.local (gitignored)
-# Production uses platform secrets (Vercel, Cloudflare, etc.)
+# Production uses Cloudflare Secrets and Supabase Vault
 ```
 
 ## Scaling Considerations

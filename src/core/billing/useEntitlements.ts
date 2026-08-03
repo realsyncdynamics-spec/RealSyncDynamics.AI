@@ -20,6 +20,38 @@ export interface UserEntitlements {
   canAccess: (featureKey: string) => { allowed: boolean; upgradeUrl?: string };
 }
 
+// Spiegelt die free_tier-Zeilen aus 20260707010000_phase2_free_tier_setup.sql.
+// Muss vollständig bleiben: fehlende Keys sperren im Dashboard Karten, die im
+// Free-Tier tatsächlich freigeschaltet sind.
+export const FREE_TIER_FALLBACK: EntitlementValue[] = [
+  { key: 'dashboard.access',              value: 1, kind: 'boolean' },
+  { key: 'website.scan',                  value: 1, kind: 'boolean' },
+  { key: 'website.scan_monthly_limit',    value: 3, kind: 'limit'   },
+  { key: 'evidence.basic_vault',          value: 1, kind: 'boolean' },
+  { key: 'governance.dsgvo_directory',    value: 1, kind: 'boolean' },
+  { key: 'governance.ai_register',        value: 1, kind: 'boolean' },
+  { key: 'reports.export',                value: 0, kind: 'boolean' },
+  { key: 'ai_classification.limited',     value: 0, kind: 'boolean' },
+  { key: 'bots.count',                    value: 0, kind: 'limit'   },
+];
+
+/**
+ * Leitet den Plan aus den Entitlements ab. Betrachtet nur Keys, die
+ * Free-Tier laut Migration *nicht* aktiv hat. `evidence.basic_vault` taugt
+ * dafür nicht — das ist auch im Free-Tier aktiv.
+ * This will be improved once subscription.plan_key is available.
+ */
+export function inferTier(entitlements: EntitlementValue[]): TierId {
+  if (!entitlements.length) return 'free_tier';
+  const on = (key: string) =>
+    entitlements.some((e) => e.key === key && (e.value === true || (e.value as number) > 0));
+
+  if (on('bots.count')) return 'agency'; // Bots only in agency+
+  if (on('ai_classification.limited')) return 'growth';
+  if (on('reports.export')) return 'starter';
+  return 'free_tier';
+}
+
 const CACHE_TTL_MS = 60000; // 60 seconds
 let cacheKey = '';
 let cacheData: EntitlementValue[] | null = null;
@@ -54,12 +86,7 @@ export function useEntitlements(): UserEntitlements {
 
       if (rpcError) {
         console.error('Failed to fetch entitlements:', rpcError);
-        // Fallback to free tier
-        setEntitlements([
-          { key: 'dashboard.access', value: 1, kind: 'boolean' },
-          { key: 'website.scan', value: 1, kind: 'boolean' },
-          { key: 'website.scan_monthly_limit', value: 3, kind: 'limit' },
-        ]);
+        setEntitlements(FREE_TIER_FALLBACK);
         setError('Failed to load entitlements; reverting to free tier');
       } else {
         const ents = data || [];
@@ -83,19 +110,7 @@ export function useEntitlements(): UserEntitlements {
   }, [fetchEntitlements]);
 
   // Determine tier from entitlements or subscription
-  const tier: TierId = (() => {
-    if (!entitlements.length) return 'free_tier';
-    // Heuristic: count features to infer tier
-    // This will be improved once subscription.plan_key is available
-    const hasAiAct = entitlements.some((e) => e.key === 'ai_classification.limited' && e.value);
-    const hasEvidence = entitlements.some((e) => e.key === 'evidence.basic_vault' && e.value);
-    const hasBots = entitlements.some((e) => e.key === 'bots.count' && (e.value as number) > 0);
-
-    if (hasBots) return 'agency'; // Bots only in agency+
-    if (hasAiAct && hasEvidence) return 'growth';
-    if (hasEvidence) return 'starter';
-    return 'free_tier';
-  })();
+  const tier: TierId = inferTier(entitlements);
 
   // Convert flat entitlements array to feature flags object
   const features = entitlements.reduce(

@@ -104,11 +104,26 @@ resource "cloudflare_ruleset" "security_headers" {
         operation = "set"
         value     = "camera=(), microphone=(), geolocation=()"
       }
-      # CSP bewusst NICHT hier: index.html liefert bereits eine wirksame
-      # <meta>-CSP. Ein zusätzlicher CSP-Header würde mit der Meta-CSP zur
-      # restriktivsten Schnittmenge kombiniert (Risiko: blockierte Assets).
-      # Wenn die Meta-CSP entfernt wird, hier einen CSP-Header ergänzen —
-      # siehe README.md.
+      # CSP hier NICHT gesetzt — aber aus einem anderen Grund als früher
+      # dokumentiert. Der alte Kommentar sagte, die <meta>-CSP in index.html
+      # sei ausreichend. Das gilt so nicht mehr:
+      #
+      #   - Der Live-Pfad ist Cloudflare Pages, und der liefert seit dem
+      #     DSGVO-Hotfix einen echten CSP-Header aus `public/_headers`
+      #     (am Deployment per curl verifiziert).
+      #   - `frame-ancestors` war im <meta> ohnehin nie wirksam: die Direktive
+      #     wird dort per Spezifikation ignoriert. Genau deshalb kam der
+      #     Header dazu.
+      #
+      # Diese Datei beschreibt einen anderen Pfad: einen Cloudflare-Proxy vor
+      # GitHub Pages. Wird der jemals aktiviert, MUSS die CSP hier ergänzt
+      # werden — `public/_headers` wird ausschließlich von Cloudflare Pages
+      # ausgewertet, GitHub Pages kann keine Header setzen.
+      #
+      # Beim Ergänzen: Meta-CSP und Header-CSP inhaltlich identisch halten
+      # (plus `frame-ancestors`). Beide werden zur restriktivsten Schnittmenge
+      # kombiniert; abweichende Policies blockieren sonst Assets. Siehe
+      # README.md und COMPLIANCE_AUDIT_2026-07.md (M-3).
     }
   }
 }

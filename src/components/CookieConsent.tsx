@@ -7,6 +7,13 @@ const STORAGE_KEY = 'realsync.cookie-consent.v1';
 const OPEN_SETTINGS_EVENT = 'realsync:open-cookie-settings';
 
 /**
+ * Version der Einwilligung. Erhöhen, sobald sich Zwecke oder Empfänger ändern
+ * (z.B. neuer Drittanbieter) — ältere Einwilligungen gelten dann als ungültig
+ * und der Banner erscheint erneut (Art. 7 I DSGVO, Nachweisbarkeit).
+ */
+export const CONSENT_VERSION = 1;
+
+/**
  * Öffnet den Cookie-Banner erneut — DSGVO Art. 7(3) Widerruf.
  * Kann aus Footer, Datenschutzseite usw. aufgerufen werden.
  */
@@ -17,11 +24,38 @@ export function openCookieSettings(): void {
 }
 
 type Consent = {
+  version: number;
   decided_at: string;
   necessary: true;          // immer true (technisch zwingend)
   analytics: boolean;
   marketing: boolean;
 };
+
+/**
+ * Liest die gespeicherte Einwilligung. Gibt `null` zurück, wenn keine oder eine
+ * veraltete Einwilligung vorliegt — dann muss der Banner erneut erscheinen.
+ *
+ * Einträge ohne `version` stammen aus der Zeit vor der Versionierung und werden
+ * als Version 1 behandelt; bestehende Nutzer werden dadurch nicht erneut gefragt.
+ */
+function readStoredConsent(): Consent | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<Consent>;
+    const version = typeof parsed.version === 'number' ? parsed.version : 1;
+    if (version < CONSENT_VERSION) return null;
+    return {
+      version,
+      decided_at: typeof parsed.decided_at === 'string' ? parsed.decided_at : '',
+      necessary: true,
+      analytics: parsed.analytics === true,
+      marketing: parsed.marketing === true,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Cookie-Consent-Banner gemäß TDDDG / DSGVO Art. 7.
@@ -37,52 +71,53 @@ export function CookieConsent() {
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      setDecided(!!raw);
-    } catch {
-      setDecided(false);
+    const stored = readStoredConsent();
+    setDecided(!!stored);
+    if (stored) {
+      setAnalytics(stored.analytics);
+      setMarketing(stored.marketing);
     }
   }, []);
 
   // DSGVO Art. 7(3): Widerruf jederzeit ermöglichen — Banner auf Event wieder einblenden.
+  // Die zuletzt gespeicherte Auswahl wird dabei vorbefüllt, damit der Nutzer seinen
+  // tatsächlichen Ist-Zustand sieht und nicht versehentlich eine Kategorie widerruft.
   useEffect(() => {
-    const handler = () => setDecided(false);
+    const handler = () => {
+      const stored = readStoredConsent();
+      setAnalytics(stored?.analytics ?? false);
+      setMarketing(stored?.marketing ?? false);
+      setShowCustom(true);
+      setDecided(false);
+    };
     window.addEventListener(OPEN_SETTINGS_EVENT, handler);
     return () => window.removeEventListener(OPEN_SETTINGS_EVENT, handler);
   }, []);
 
-  function save(consent: Consent) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(consent)); } catch { /* ignore */ }
+  function save(consent: Omit<Consent, 'version' | 'decided_at'>) {
+    const record: Consent = {
+      ...consent,
+      version: CONSENT_VERSION,
+      decided_at: new Date().toISOString(),
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(record)); } catch { /* ignore */ }
+    setAnalytics(record.analytics);
+    setMarketing(record.marketing);
+    setShowCustom(false);
     setDecided(true);
     emitConsentChanged();
   }
 
   function acceptAll() {
-    save({
-      decided_at: new Date().toISOString(),
-      necessary: true,
-      analytics: true,
-      marketing: true,
-    });
+    save({ necessary: true, analytics: true, marketing: true });
   }
 
   function acceptNecessary() {
-    save({
-      decided_at: new Date().toISOString(),
-      necessary: true,
-      analytics: false,
-      marketing: false,
-    });
+    save({ necessary: true, analytics: false, marketing: false });
   }
 
   function acceptCustom() {
-    save({
-      decided_at: new Date().toISOString(),
-      necessary: true,
-      analytics,
-      marketing,
-    });
+    save({ necessary: true, analytics, marketing });
   }
 
   if (decided === null || decided === true) return null;

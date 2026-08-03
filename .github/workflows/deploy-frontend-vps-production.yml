@@ -1,0 +1,131 @@
+name: Deploy Frontend to Production (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: Manual production deployment
+    env:
+      # Secret auf Job-Ebene heben: der secrets-Kontext ist in einem
+      # step-level "if" nicht verfuegbar, der env-Kontext dagegen schon.
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          echo "${{ secrets.VPS_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Tag image with version
+        run: |
+          echo "IMAGE_TAG=$(date +%Y%m%d-%H%M%S)-${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Deploy to VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
+          set -Eeuo pipefail
+
+          REPO_PATH="/var/www/realsyncdynamicsai-frontend"
+          COMPOSE_DIR="$REPO_PATH/deploy/frontend-vps-deploy-v2"
+          ENV_FILE="$COMPOSE_DIR/.env"
+
+          if [[ ! -f "$ENV_FILE" ]]; then
+            echo "ERROR: $ENV_FILE not found"
+            exit 1
+          fi
+
+          cd "$COMPOSE_DIR"
+
+          # Backup current image
+          if docker image inspect realsync-frontend:latest >/dev/null 2>&1; then
+            docker image tag realsync-frontend:latest "realsync-frontend:backup-$(date +%Y%m%d-%H%M%S)" || true
+          fi
+
+          # Build and deploy with version tag
+          docker compose --env-file "$ENV_FILE" up -d --build
+          docker image prune -f >/dev/null 2>&1 || true
+
+          # Wait for healthy status
+          echo -n "⏳ Waiting for service to be healthy "
+          for i in {1..30}; do
+            STATUS="$(docker inspect -f '{{.State.Health.Status}}' realsync-frontend 2>/dev/null || echo missing)"
+            if [[ "$STATUS" == "healthy" ]]; then
+              echo " ✓"
+              break
+            fi
+            echo -n "."
+            sleep 2
+          done
+
+          if [[ "${STATUS:-}" != "healthy" ]]; then
+            echo " ERROR"
+            docker compose logs --tail=50 frontend
+            exit 4
+          fi
+
+          echo "✓ Production deployment successful"
+          EOF
+
+      - name: Verify deployment
+        run: |
+          sleep 5
+          curl -fsSL https://realsyncdynamicsai.de/healthz || echo "⚠️ Health check may not be immediately available"
+
+      # Siehe Kommentar in deploy-frontend-vps.yml: URL per env statt "with",
+      # INCOMING_WEBHOOK explizit, Secret-Guard und continue-on-error, damit
+      # eine fehlende oder gestoerte Slack-Anbindung das Deploy-Ergebnis nicht
+      # verfaelscht.
+      - name: Slack notification
+        if: always() && env.SLACK_WEBHOOK != ''
+        continue-on-error: true
+        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅ Production Deployment Successful' || '❌ Production Deployment Failed' }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*${{ job.status == 'success' && '✅' || '❌' }} Production Deployment ${{ job.status == 'success' && 'Successful' || 'Failed' }}*\n*Environment:* ${{ github.event.inputs.environment }}\n*Triggered by:* ${{ github.actor }}\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*URL:* <https://realsyncdynamicsai.de|realsyncdynamicsai.de>"
+                  }
+                }
+              ]
+            }

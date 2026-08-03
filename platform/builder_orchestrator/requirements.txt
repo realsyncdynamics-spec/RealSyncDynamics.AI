@@ -1,0 +1,22 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+httpx==0.28.1
+
+# LLM-Provider. Optional: ohne ANTHROPIC_API_KEY antwortet der Stub-Provider,
+# der Stack startet also auch ohne Zugangsdaten (siehe app/services/llm.py).
+anthropic==0.120.2
+
+# Persistenz (optional — ohne DATABASE_URL laeuft alles In-Memory)
+psycopg[binary]==3.2.3
+psycopg-pool==3.2.4
+
+# OpenTelemetry (Tracing)
+opentelemetry-api==1.29.0
+opentelemetry-sdk==1.29.0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-exporter-otlp-proto-http==1.29.0
+
+# Dev/Test
+pytest==8.3.4
+pytest-asyncio==0.25.0

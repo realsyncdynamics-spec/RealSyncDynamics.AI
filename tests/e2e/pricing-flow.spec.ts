@@ -116,10 +116,11 @@ test.describe('Pricing Flow', () => {
       await expect(page).toHaveURL(/\/audit/);
     });
 
-    test('enterprise checkout should redirect to contact sales', async ({ page }) => {
+    test('enterprise checkout should stay on checkout page', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      await page.waitForURL(/\/contact-sales/);
-      await expect(page).toHaveURL(/\/contact-sales/);
+      // Enterprise ist Self-Service-Checkout wie Agency — kein redirect zu contact-sales.
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page).toHaveURL(/\/checkout\/enterprise/);
     });
   });
 

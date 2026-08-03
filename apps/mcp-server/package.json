@@ -1,0 +1,30 @@
+{
+  "name": "realsync-mcp-governance",
+  "version": "0.1.0",
+  "description": "MCP Governance Control Plane for RealSyncDynamics.AI — Evidence Vault, Governance Runtime, Agent Operations.",
+  "type": "module",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test --import tsx ./test/*.test.ts",
+    "docker:build": "docker build -t realsync-mcp-server:latest -f Dockerfile .",
+    "docker:run": "docker run -p 3001:3001 --env-file .env realsync-mcp-server:latest"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "fastify": "^4.25.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

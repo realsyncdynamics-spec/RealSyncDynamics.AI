@@ -244,7 +244,8 @@ function Hero() {
           <div className="relative hidden lg:block min-h-[560px]">
             <MetricCard className="absolute top-0 right-24" metric={{ label: 'DSGVO', value: 'Konform', accent: true }} />
             <RiskCard className="absolute top-24 right-0" />
-            <ClaudeCodeAuditCard className="absolute top-52 left-4" />
+            <MetricCard className="absolute top-44 left-4" metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
+            <ClaudeCodeAuditCard className="absolute top-64 right-6" />
             <MetricCard className="absolute top-64 right-64" metric={{ label: 'EU AI ACT', value: 'READY', accent: true }} />
             <MonitoringCard className="absolute bottom-16 right-40" label={monitoringLabel} pulse={pulse} />
             <ClaudeCodeIntegrationCard className="absolute bottom-0 left-0" />
@@ -255,6 +256,7 @@ function Hero() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 lg:hidden">
           <MetricCard metric={{ label: 'DSGVO', value: 'Konform', accent: true }} />
           <RiskCard />
+          <MetricCard metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
           <MetricCard metric={{ label: 'EU AI ACT', value: 'READY', accent: true }} />
           <ClaudeCodeAuditCard className="sm:col-span-2" />
           <MonitoringCard label={monitoringLabel} pulse={pulse} />

@@ -1,6 +1,6 @@
 # Runbook — P0-2: Migrations-Ledger reconcilen und `db push` entsperren
 
-**Stand:** 2026-08-02 · **Befund:** `DEBUG_ROOT_CAUSE_2026-08-02.md` · **Status:** noch nicht ausgeführt
+**Stand:** 2026-08-03 · **Befund:** `DEBUG_ROOT_CAUSE_2026-08-02.md` · **Status:** noch nicht ausgeführt
 
 Stellt den Produktions-Zustand wieder her, in dem `supabase db push` durchläuft.
 Aktuell erreichen **118 von 244** Migrationen die Produktion nicht, wodurch **66 von 148**
@@ -16,7 +16,7 @@ nicht kosmetisch:
 
 | PR | Warum zwingend vorher |
 |---|---|
-| #941 | Macht `20260608000001_user_consents` idempotent. Ohne das bricht `db push` an Position ~13 von 118 mit `42710 policy already exists` ab. |
+| ~~#941~~ ✅ **gemergt 2026-08-03** | Machte `20260608000001_user_consents` idempotent. Ohne das wäre `db push` an Position ~13 von 118 mit `42710 policy already exists` abgebrochen. Auf `main` verifiziert: zwei `DROP POLICY IF EXISTS` vorhanden. |
 | #942 | Benennt die `autonomous_agents_core`-Tabellen um. Ohne das aktiviert der Push RLS und legt Policies auf **drei produktiven Tabellen** an (`agent_runs`, `agent_tasks`, `agent_events`) — fehlerfrei und damit unbemerkt. |
 | #932 | Liefert die Repo-Dateien für die 11 Ledger-Waisen nach. **Damit entfällt die Ledger-Operation komplett** — siehe Schritt 1. |
 

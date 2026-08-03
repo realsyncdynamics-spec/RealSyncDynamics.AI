@@ -26,6 +26,7 @@
     "smoke:production": "node scripts/smoke-production-routing.mjs",
     "diagnose:domain": "node scripts/diagnose-domain-routing.mjs",
     "check:edge-functions": "node scripts/check-edge-function-drift.mjs",
+    "check:edge-syntax": "node scripts/check-edge-function-syntax.mjs",
     "qa:skills": "tsx scripts/qa-skills-smoke.ts",
     "qa:governance": "tsx scripts/qa-governance-test.ts",
     "qa:governance-test": "tsx scripts/qa-governance-test.ts",

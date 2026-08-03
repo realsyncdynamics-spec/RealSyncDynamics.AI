@@ -95,13 +95,53 @@ These 4 can be deleted via GitHub Web UI or gh CLI when needed.
 
 ---
 
+## Complete Status Overview
+
+### Infrastructure Layers
+
+**Layer 1: Repository** ✅ Complete
+- 109/113 old branches deleted
+- Documentation versionized
+- Audit trail preserved
+
+**Layer 2: CI/CD** 🔄 On Hold
+- PR #875 closed (awaiting user decision)
+- Workflow ready to activate on main
+- Removes Vercel, sets Cloudflare as gate
+
+**Layer 3: Caching** ✅ 60% Complete
+- Cache policies: ✅ Implemented (public/_headers)
+- KV namespace: ✅ Created (governance_policy_cache)
+- Cache invalidation: ✅ Edge function deployed
+- R2 vault: 🔄 Blocked (R2 not enabled in account)
+
+**Layer 4: Middleware** 📋 Planned
+- Worker migration B1: Fully designed (4-week timeline)
+- Middleware stack: Documented (auth, rate-limiting, signing, logging)
+- Routes & handlers: Template provided
+
+### Phase 3 Documentation
+
+- ✅ `PHASE_3_CLOUDFLARE_OPTIMIZATION.md` — Main guide
+- ✅ `PHASE_3_R2_SETUP_GUIDE.md` — R2 enablement steps (manual)
+- ✅ `PHASE_3_WORKER_MIGRATION_B1.md` — 4-week implementation plan
+
+### Action Items
+
+1. **Immediate:** Enable R2 in Cloudflare Dashboard (manual step)
+2. **After R2:** Deploy evidence vault edge function
+3. **After R2:** Begin Worker migration (4-week sprint)
+4. **Optional:** Reopen PR #875 for automated branch protection
+
 ## Repository State
 
 ✅ Clean branches (109/113 deleted)  
 ✅ Documentation versionized  
 ✅ Audit trail preserved  
 ✅ Cache policies configured (`_headers`)  
-🔄 CI/CD automation: PR pending approval  
-⏳ Cloudflare KV + R2: awaiting authentication  
+✅ KV namespace created and bound  
+✅ Cache invalidation webhook deployed  
+✅ Worker migration fully planned  
+🔄 R2 vault: Pending enablement  
 
-**Next:** Merge PR #875 → Phase 3 infrastructure setup
+**Next:** Enable R2 → Evidence vault deployment → Worker migration

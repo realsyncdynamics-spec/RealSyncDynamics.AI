@@ -157,7 +157,7 @@ export function ComplianceMatrix() {
         </div>
 
         <div className="mt-10 p-5 bg-obsidian-900 border border-titanium-900 print:bg-titanium-100 print:border-titanium-300 print:text-[#1a1f2b]">
-          <h3 className="font-display font-bold text-titanium-50 print:text-[#0d1117] mb-2">Wie Du diese Tabelle liest</h3>
+          <h2 className="font-display font-bold text-titanium-50 print:text-[#0d1117] mb-2">Wie Du diese Tabelle liest</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
             <div className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 print:text-[#2f855a] mt-0.5 shrink-0" /><span><strong>Ja</strong> — Anforderung erfüllt out-of-the-box.</span></div>
             <div className="flex items-start gap-2"><AlertTriangle className="h-4 w-4 text-amber-400 print:text-[#d97706] mt-0.5 shrink-0" /><span><strong>Teilweise</strong> — funktioniert mit Einschränkungen / Zusatzaufwand.</span></div>

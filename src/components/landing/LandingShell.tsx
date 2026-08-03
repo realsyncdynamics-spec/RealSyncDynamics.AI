@@ -191,7 +191,11 @@ export function LandingFooter() {
           </div>
           {cols.map((c) => (
             <div key={c.title}>
-              <h4 className="font-mono text-[11px] tracking-widest text-slate-400 uppercase mb-4">{c.title}</h4>
+              {/* h3, nicht h4: der Footer folgt auf ein h2 der letzten
+                  Sektion — h4 waere ein uebersprungenes Level, und weil
+                  dieser Shell 80 Landing-Pages traegt, war es das auf jeder
+                  einzelnen. Klassen unveraendert, Darstellung identisch. */}
+              <h3 className="font-mono text-[11px] tracking-widest text-slate-400 uppercase mb-4">{c.title}</h3>
               <ul className="space-y-2.5">
                 {c.links.map((l) => (
                   <li key={l.label}>

@@ -182,7 +182,7 @@ function StudyCard({ study }: { study: CaseStudy }) {
           </div>
         )}
       </div>
-      <h3 className="font-display font-bold text-titanium-50 text-xl mb-2">{study.company}</h3>
+      <h2 className="font-display font-bold text-titanium-50 text-xl mb-2">{study.company}</h2>
       <div className="text-xs text-titanium-500 mb-3">{study.size}</div>
       <p className="text-sm text-titanium-300 leading-relaxed mb-2"><strong className="text-titanium-200">Problem:</strong> {study.challenge}</p>
       <p className="text-sm text-titanium-300 leading-relaxed mb-4"><strong className="text-titanium-200">Lösung:</strong> {study.solution}</p>

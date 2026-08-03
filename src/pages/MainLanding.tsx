@@ -576,7 +576,10 @@ function Footer() {
           </div>
           {cols.map((c) => (
             <div key={c.title}>
-              <h4 className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase mb-3 sm:mb-4">{c.title}</h4>
+              {/* h3, nicht h4: davor steht das h2 der FinalCta-Sektion — h4
+                  waere ein uebersprungenes Level. Klassen unveraendert, die
+                  Darstellung ist identisch (Groesse kommt aus text-[10px]). */}
+              <h3 className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase mb-3 sm:mb-4">{c.title}</h3>
               <ul className="space-y-2">
                 {c.links.map((l) => (
                   <li key={l.label}><SmartLink to={l.to} className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">{l.label}</SmartLink></li>

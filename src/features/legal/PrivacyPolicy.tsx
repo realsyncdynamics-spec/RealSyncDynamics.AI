@@ -22,7 +22,10 @@ export function PrivacyPolicy() {
             <Shield className="h-4 w-4 text-white" />
           </div>
           <div className="leading-tight">
-            <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Datenschutzerklärung</div>
+            {/* h1 statt div: Die Seite (und ihre Alias-Routen /legal/datenschutz
+                und /legal/privacy) hatte kein h1 — sie stieg direkt mit den
+                nummerierten h2-Sektionen ein. Klassen unveraendert. */}
+            <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Datenschutzerklärung</h1>
             <div className="text-[11px] text-titanium-400 font-medium">Stand {new Date().toISOString().slice(0, 10)}</div>
           </div>
         </div>

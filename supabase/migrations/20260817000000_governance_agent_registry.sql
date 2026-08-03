@@ -79,6 +79,6 @@ USING (
 DROP POLICY IF EXISTS "agent_registry_tenant_write" ON public.governance_agent_registry;
 CREATE POLICY "agent_registry_tenant_write"
 ON public.governance_agent_registry
-FOR INSERT, UPDATE, DELETE TO service_role
+FOR ALL TO service_role
 USING (true)
 WITH CHECK (true);

@@ -40,7 +40,7 @@ describe('sales-lead: intent-Weitergabe', () => {
   });
 
   it('sales-lead schreibt intent nach metadata', () => {
-    expect(salesLead).toMatch(/metadata:\s*intent\s*\?/);
+    expect(salesLead).toMatch(/metadata:\s*\{[\s\S]*?intent[\s\S]*?\}/);
   });
 
   it('intent wird wie alle Freitext-Felder gekappt', () => {
@@ -50,5 +50,25 @@ describe('sales-lead: intent-Weitergabe', () => {
 
   it('metadata existiert im Schema — der Fix braucht keine Migration', () => {
     expect(schema).toMatch(/metadata\s+JSONB\s+NOT NULL\s+DEFAULT/i);
+  });
+});
+
+/**
+ * `tier` kam über den Merge von main dazu (Founding-Access-Tarif-Links) und
+ * hatte dieselbe Lücke: ContactSales sendet ihn, die Function verwarf ihn.
+ * Er teilt sich jetzt die metadata-Spalte mit intent.
+ */
+describe('sales-lead: tier-Weitergabe', () => {
+  it('ContactSales sendet tier im POST-Body', () => {
+    expect(contactSales).toMatch(/\btier:\s*tier\s*\|\|\s*undefined/);
+  });
+
+  it('sales-lead akzeptiert tier im Body-Typ und kappt ihn', () => {
+    expect(salesLead).toMatch(/tier\?:\s*string/);
+    expect(salesLead).toMatch(/cap\(body\.tier,\s*\d+\)/);
+  });
+
+  it('metadata trägt intent und tier gemeinsam, ohne sich zu überschreiben', () => {
+    expect(salesLead).toMatch(/metadata:\s*\{\s*\.\.\.\(intent[\s\S]*?\.\.\.\(tier/);
   });
 });

@@ -164,7 +164,7 @@ export function FreeTierDashboard() {
     if (mfaReq.requiresMfa && mfaReq.reason) {
       return mfaReq.reason;
     }
-    return `Verfügbar ab Plan: ${feature.tier}`;
+    return `Verfügbar ab Plan: ${TIER_LABELS[feature.tier]}`;
   };
 
   return (

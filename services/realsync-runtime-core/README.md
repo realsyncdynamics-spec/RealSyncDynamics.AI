@@ -21,21 +21,25 @@ sein Root Directory auf dieses Verzeichnis gezeigt und versucht bei jedem Push
 einen Build, der mangels `build`-Script scheitert. Das erzeugte an jedem Pull
 Request einen roten Check.
 
-`vercel.json` setzt deshalb einen *Ignored Build Step*:
+`vercel.json` schaltet deshalb die Git-Deployments für dieses Projekt ab:
 
 ```json
-{ "ignoreCommand": "exit 0" }
+{ "git": { "deploymentEnabled": false } }
 ```
 
-Exit-Code 0 bedeutet für Vercel „Build überspringen" (1 hieße „bauen"). Das
-Deployment wird damit übersprungen statt zu scheitern.
+Vercel legt damit für Pushes gar kein Deployment mehr an.
 
-Gemessene Wirkung (Commit `4179289`): der Vercel-Bot führt das Deployment als
-`Ignored`, und der Sammelstatus `Vercel Deployments – realsynchost` kippte
-dadurch von „1 required project failed to deploy" auf „All required and affected
-projects deployed". Die beiden projektbezogenen Status (`Vercel – …`) melden
-weiterhin `Account is blocked` — sie werden nach dem Ignorieren nicht mehr
-nachgezogen.
+*Zur Historie:* Auf dem Branch dieser PR stand zuerst ein *Ignored Build Step*
+(`{"ignoreCommand": "exit 0"}`). Der wirkte auch — gemessen am Commit `4179289`
+führte der Vercel-Bot das Deployment als `Ignored`, und der Sammelstatus
+`Vercel Deployments – realsynchost` kippte von „1 required project failed to
+deploy" auf „All required and affected projects deployed". Parallel kam über
+PR #844 die obige Variante nach `main`. Beim Merge wurde sie übernommen, weil
+sie das Deployment von vornherein verhindert, statt es anzulegen und dann zu
+überspringen.
+
+Die beiden projektbezogenen Status (`Vercel – …`) melden unabhängig davon
+weiterhin `Account is blocked`.
 
 **Das ist eine Notlösung, keine Reparatur.** Der richtige Schritt ist, die
 Vercel-Integration für dieses Repository zu trennen — die Plattform deployt über

@@ -1,5 +1,18 @@
 # Live-Routing-Status — realsyncdynamicsai.de
 
+> **⚠️ ERLEDIGT / HISTORISCH (Stand 2026-08-02).**
+> Der hier dokumentierte Apex-`500` **existiert nicht mehr**. Nachgemessen am
+> 2026-08-02: `realsyncdynamicsai.de`, `www.realsyncdynamicsai.de` und
+> `realsyncdynamics-ai.pages.dev` liefern auf `/`, `/pricing`, `/audit`, `/app`
+> und `/governance-runtime` jeweils **HTTP 200**; das ausgelieferte HTML des
+> Apex ist identisch mit dem von `pages.dev` (gleiche Asset-Hashes, einziger
+> Unterschied ist Cloudflares am Edge injiziertes Bot-Challenge-Script).
+> Die Custom-Domain-Bindung ist also sauber.
+>
+> Dieses Dokument wird nur noch als Historie aufbewahrt — die unten genannten
+> offenen Cloudflare-Dashboard-Schritte sind **nicht mehr auszufuehren**.
+> Aktueller Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`.
+
 Stand: 2026-06-23 · nach Merge PR #674 (`public/404.html` entfernt)
 
 ## TL;DR

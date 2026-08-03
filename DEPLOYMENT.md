@@ -83,7 +83,9 @@ Seit dem 27.07.2026 melden **beide** Einzelstatus `Account is blocked` — zwisc
 zwei Commits im Abstand von drei Minuten wechselte das erste Projekt von
 `Deployment has failed` auf `Account is blocked`.
 
-Wirkung des *Ignored Build Step* (siehe unten), gemessen am Commit `4179289`:
+Wirkung der Abschaltung (siehe unten). Gemessen wurde sie am Commit `4179289`
+mit der damaligen Variante *Ignored Build Step*; seit dem Merge von `main` steht
+dort das stärkere `git.deploymentEnabled: false`:
 
 | Status | Vorher | Nachher |
 |--------|--------|---------|
@@ -99,12 +101,13 @@ Die Verbindung besteht ausschließlich im Vercel-Dashboard. Im Repository gibt e
 kein `.vercel/`, keine Erwähnung in einem Workflow und keine Abhängigkeit in
 `package.json`.
 
-Die einzige Vercel-Datei ist `services/realsync-runtime-core/vercel.json` mit
-einem *Ignored Build Step* (`{"ignoreCommand": "exit 0"}`), der das Deployment
-des ersten Projekts überspringt statt scheitern zu lassen. **Das ist eine
-Notlösung gegen den roten Dauer-Check, keine Reparatur.** Sie bringt den
-Sammelstatus auf grün, die beiden Einzelstatus bleiben rot — **vollständig grün
-wird Vercel aus dem Repository heraus nicht.** Begründung im Detail:
+Die einzige Vercel-Datei ist `services/realsync-runtime-core/vercel.json`. Sie
+schaltet mit `{"git": {"deploymentEnabled": false}}` die Git-Deployments für das
+betroffene Projekt ab, sodass Vercel dafür gar kein Deployment mehr anlegt.
+**Das ist eine Notlösung gegen den roten Dauer-Check, keine Reparatur.** Sie
+bringt den Sammelstatus auf grün, die beiden Einzelstatus bleiben rot, solange
+das Konto gesperrt ist — **vollständig grün wird Vercel aus dem Repository
+heraus nicht.** Begründung im Detail:
 `services/realsync-runtime-core/README.md`.
 
 *(Die beiden `vercel`-Treffer im Quellcode sind unbeteiligt: ein Vendor-Enum in
@@ -292,10 +295,28 @@ SUPABASE_SERVICE_ROLE_KEY
 STRIPE_SECRET_KEY
 ANTHROPIC_API_KEY
 RESEND_API_KEY
+PAGEVIEW_HASH_SALT   # Pflicht für track-pageview — siehe unten
 
 # Local development uses .env.local (gitignored)
 # Production uses Cloudflare Secrets and Supabase Vault
 ```
+
+#### `PAGEVIEW_HASH_SALT` (erforderlich)
+
+`track-pageview` pseudonymisiert Besucher als
+`HMAC-SHA256(PAGEVIEW_HASH_SALT, scope + ip + user-agent + UTC-Tag)`. Ohne den
+Salt wäre der Hash über den kleinen Eingaberaum (IPv4 + gängige User-Agents)
+praktisch umkehrbar; die Function verweigert deshalb den Dienst mit HTTP 500,
+statt schwach pseudonymisierte Werte zu schreiben.
+
+```bash
+supabase secrets set PAGEVIEW_HASH_SALT="$(openssl rand -hex 32)"
+```
+
+Den Salt **nicht rotieren**, solange Auswertungen über den laufenden Tag nötig
+sind: eine Rotation ändert alle Hashwerte, wodurch derselbe Besucher vor und
+nach der Rotation als zwei Besucher gezählt wird. Zum Tageswechsel ist eine
+Rotation folgenlos, da die Werte ohnehin täglich wechseln.
 
 ## Scaling Considerations
 

@@ -11,11 +11,19 @@ const STORAGE_KEY = 'realsync.cookie-consent.v1';
 const CONSENT_EVENT = 'realsync:consent-changed';
 
 type Consent = {
+  version: number;
   decided_at: string;
   necessary: true;
   analytics: boolean;
   marketing: boolean;
 };
+
+/**
+ * Muss mit CONSENT_VERSION aus components/CookieConsent.tsx übereinstimmen.
+ * Bewusst dupliziert statt importiert: dieses Modul wird im App-Root vor dem
+ * Rendern geladen und soll keine React-Komponente in den Startpfad ziehen.
+ */
+const CONSENT_VERSION = 1;
 
 type StandardEvent =
   | 'PageView'
@@ -48,7 +56,19 @@ function readConsent(): Consent | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as Consent;
+    const parsed = JSON.parse(raw) as Partial<Consent>;
+    // Einträge ohne `version` stammen aus der Zeit vor der Versionierung → Version 1.
+    const version = typeof parsed.version === 'number' ? parsed.version : 1;
+    // Veraltete Einwilligung zählt als keine Einwilligung — kein Pixel lädt,
+    // bis der Nutzer im neu erscheinenden Banner erneut entschieden hat.
+    if (version < CONSENT_VERSION) return null;
+    return {
+      version,
+      decided_at: typeof parsed.decided_at === 'string' ? parsed.decided_at : '',
+      necessary: true,
+      analytics: parsed.analytics === true,
+      marketing: parsed.marketing === true,
+    };
   } catch {
     return null;
   }
@@ -100,21 +120,29 @@ function loadGoogleTag(ga4Id: string | null, googleAdsId: string | null): void {
   const primaryId = ga4Id ?? googleAdsId;
   if (!primaryId) return;
 
-  injectScript(`https://www.googletagmanager.com/gtag/js?id=${primaryId}`);
+  // Reihenfolge ist zwingend: dataLayer + gtag + Consent-Default müssen stehen,
+  // BEVOR gtag.js ausgeführt wird — sonst wertet Google den Default-Zustand nicht.
   window.dataLayer = window.dataLayer ?? [];
   window.gtag = function gtag(): void {
     // eslint-disable-next-line prefer-rest-params
     window.dataLayer!.push(arguments);
   };
 
-  // Consent Mode v2 — Default explizit auf granted setzen (Banner hat bereits zugestimmt).
-  // Vor Consent würde das Modul nicht aufgerufen, daher hier 'granted'.
+  // Consent Mode v2 — Default ist ausnahmslos 'denied'.
+  //
+  // Dieses Modul wird auch bei reinem Statistik-Consent aufgerufen (GA4 ohne
+  // Marketing). Ein pauschaler 'granted'-Default würde Google Werbe-Einwilligung
+  // signalisieren, die der Nutzer nie erteilt hat (Art. 6 I lit. a DSGVO,
+  // § 25 TDDDG). Die tatsächlichen Signale setzt applyConsent() unmittelbar
+  // danach per 'update' — pro Kategorie getrennt.
   window.gtag('consent', 'default', {
-    ad_storage: 'granted',
-    ad_user_data: 'granted',
-    ad_personalization: 'granted',
-    analytics_storage: 'granted',
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
   });
+
+  injectScript(`https://www.googletagmanager.com/gtag/js?id=${primaryId}`);
 
   window.gtag('js', new Date());
   if (ga4Id) window.gtag('config', ga4Id, { anonymize_ip: true });
@@ -139,24 +167,50 @@ function loadLinkedInInsight(partnerId: string): void {
 let pixelsLoaded = { analytics: false, marketing: false };
 
 /**
+ * Spiegelt den aktuellen Consent in die Google-Consent-Mode-v2-Signale.
+ * no-op solange gtag nicht geladen ist.
+ */
+function syncConsentMode(consent: Consent | null): void {
+  if (typeof window === 'undefined' || !window.gtag) return;
+  window.gtag('consent', 'update', {
+    analytics_storage: consent?.analytics ? 'granted' : 'denied',
+    ad_storage: consent?.marketing ? 'granted' : 'denied',
+    ad_user_data: consent?.marketing ? 'granted' : 'denied',
+    ad_personalization: consent?.marketing ? 'granted' : 'denied',
+  });
+}
+
+/**
+ * Widerruf (Art. 7 III DSGVO): Meta, TikTok und LinkedIn kennen kein Consent
+ * Mode — einmal injizierte Scripts lassen sich nicht wieder entladen und würden
+ * bis zum nächsten Navigationsvorgang weiterfeuern. Ein Reload ist die einzige
+ * verlässliche Umsetzung. Ausgelagert, damit Tests die Navigation stubben können.
+ */
+function reloadAfterWithdrawal(): void {
+  if (typeof window !== 'undefined') window.location.reload();
+}
+
+/**
  * Lädt Pixel basierend auf Consent. Idempotent — kann beliebig oft aufgerufen werden.
  * Wird automatisch beim Module-Load + bei Consent-Änderungen ausgeführt.
  */
 export function applyConsent(): void {
   const consent = readConsent();
 
-  // Consent Mode v2: Signale bei jeder Consent-Änderung aktualisieren —
-  // auch bei Widerruf. no-op wenn gtag noch nicht geladen wurde.
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('consent', 'update', {
-      analytics_storage: consent?.analytics ? 'granted' : 'denied',
-      ad_storage: consent?.marketing ? 'granted' : 'denied',
-      ad_user_data: consent?.marketing ? 'granted' : 'denied',
-      ad_personalization: consent?.marketing ? 'granted' : 'denied',
-    });
+  // Widerruf einer zuvor bereits geladenen Kategorie → harter Reset.
+  const analyticsRevoked = pixelsLoaded.analytics && !consent?.analytics;
+  const marketingRevoked = pixelsLoaded.marketing && !consent?.marketing;
+  if (analyticsRevoked || marketingRevoked) {
+    pixelsLoaded = { analytics: false, marketing: false };
+    syncConsentMode(consent);
+    reloadAfterWithdrawal();
+    return;
   }
 
-  if (!consent) return;
+  if (!consent) {
+    syncConsentMode(consent);
+    return;
+  }
 
   const env = import.meta.env;
   const META_ID = env.VITE_META_PIXEL_ID as string | undefined;
@@ -179,6 +233,11 @@ export function applyConsent(): void {
     if (LINKEDIN_ID) loadLinkedInInsight(LINKEDIN_ID);
     pixelsLoaded.marketing = true;
   }
+
+  // Signale erst NACH dem Laden setzen: loadGoogleTag() initialisiert den
+  // Consent-Default auf 'denied' — ohne dieses abschließende 'update' bliebe
+  // selbst erteilter Consent beim allerersten Seitenaufruf wirkungslos.
+  syncConsentMode(consent);
 }
 
 /**

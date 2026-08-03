@@ -154,8 +154,8 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Unbekanntes Paket"
-        body={`"${planKey}" ist kein bekannter Plan. Verfuegbar: starter / growth / agency / scale (monatlich oder jährlich).`}
-        cta={{ label: 'Zur Preisuebersicht', to: '/pricing' }}
+        body={`"${planKey}" ist kein bekannter Plan. Verfügbar: starter / growth / agency / scale (monatlich oder jährlich).`}
+        cta={{ label: 'Zur Preisübersicht', to: '/pricing' }}
         backTo="/pricing"
       />
     );
@@ -164,7 +164,7 @@ export function CheckoutPage() {
   if (auth.status === 'loading') {
     return (
       <ShellWithMessage
-        title="Pruefe Anmelde-Status..."
+        title="Prüfe Anmelde-Status..."
         body="Einen Moment."
         loading
         backTo={`/pricing/${validPlan}`}
@@ -189,7 +189,7 @@ export function CheckoutPage() {
     return (
       <ShellWithMessage
         title="Workspace einrichten"
-        body={`Eingeloggt als ${auth.userEmail}, aber noch kein Workspace vorhanden. Im naechsten Schritt richten wir Ihren Tenant ein, dann koennen Sie ${tier.name} buchen.`}
+        body={`Eingeloggt als ${auth.userEmail}, aber noch kein Workspace vorhanden. Im nächsten Schritt richten wir Ihren Tenant ein, dann können Sie ${tier.name} buchen.`}
         cta={{
           label: 'Workspace einrichten',
           to: `/welcome?next=${encodeURIComponent(`/checkout/${validPlan}`)}`,

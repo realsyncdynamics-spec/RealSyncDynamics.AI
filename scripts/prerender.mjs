@@ -31,8 +31,31 @@ const SITEMAP = join(DIST, 'sitemap.xml');
 const PORT = parseInt(process.env.PRERENDER_PORT ?? '4173', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
-const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 8 statt 4, seit PRIORITY_MIN alle 105 Sitemap-Routen erfasst (vorher 78).
+// Das Rendern wartet ueberwiegend auf `networkidle`, ist also nicht CPU-, sondern
+// wartegebunden — hoehere Parallelitaet skaliert hier fast linear. Kalt gemessen:
+// 368s bei 4, 105s bei 8. Entscheidend ist der Abstand zum MAX_MS-Watchdog
+// (480s): mit 4 blieben 112s Reserve, was ein langsamerer Build-Container
+// aufgezehrt haette — ein Abbruch mittendrin liesse einen Teil der Routen
+// unrendert und damit wieder auf dem Startseiten-Fallback landen.
+const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '8', 10);
+// Schwelle bewusst unterhalb der niedrigsten Sitemap-Priority (0.4): ALLE
+// Sitemap-Routen bekommen statisches HTML.
+//
+// Der Grund ist nicht Ranking, sondern der SPA-Fallback. `public/_redirects`
+// liefert jeder nicht prerenderten URL dist/index.html — und das ist seit
+// Einfuehrung des Prerenders die gerenderte STARTSEITE. Solche Routen gaben
+// damit Startseiten-Inhalt samt `<link rel="canonical" href=".../">` aus; in
+// der Produktion an /agb gemessen. Suchmaschinen werten sie als Duplikate
+// von `/` und nehmen sie aus dem Index. Bei Schwelle 0.6 traf das 27 Routen,
+// darunter /ai-act-klassifikator, /avv-generator und /vvt-wizard.
+//
+// Den Fallback stattdessen auf eine inhaltsleere Shell umzubiegen wurde
+// versucht und verworfen: auf Cloudflare Pages erzeugt ein anderes Ziel als
+// /index.html entweder eine 308-Endlosschleife (.html-Endung wird entfernt)
+// oder haengt die statische Auslieferung komplett aus — inklusive
+// /sitemap.xml und der JS-Bundles. Siehe PR #966.
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 // Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
 // Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
 // zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.

@@ -82,35 +82,3 @@ ON public.governance_agent_registry
 FOR INSERT, UPDATE, DELETE TO service_role
 USING (true)
 WITH CHECK (true);
-
--- ============================================================
--- Bootstrap: Governance Agent Core
--- ============================================================
--- Default registry entry for the governance-agent itself.
--- The function that runs governance-agent can update this
--- on startup to reflect current version/capabilities.
-
--- Bootstrap entry for the core governance agent
--- (idempotent: will fail silently if already exists due to unique index)
-INSERT INTO public.governance_agent_registry (
-  tenant_id,
-  agent_name,
-  description,
-  version,
-  status,
-  owner_email,
-  capabilities,
-  runtime,
-  metadata
-) VALUES
-  (
-    NULL,
-    'governance-agent-core',
-    'Core governance agent for policy evaluation, evidence capture, and incident escalation',
-    '2.0.0',
-    'active',
-    'platform@realsyncdynamics.ai',
-    ARRAY['policy_evaluation', 'risk_assessment', 'evidence_capture', 'incident_escalation'],
-    'deno',
-    '{"module": "governance-agent", "endpoints": ["evaluate", "ingest", "approve"]}'::jsonb
-  );

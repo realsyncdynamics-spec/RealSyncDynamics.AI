@@ -1,7 +1,11 @@
 // Sales-Lead-Capture für die /contact-sales-Form auf Apex und /agencies.
 //
 // POST /functions/v1/sales-lead   (verify_jwt = false — public endpoint)
-// Body: { name?, email, company?, use_case?, message?, source?, path? }
+// Body: { name?, email, company?, use_case?, message?, source?, intent?, path? }
+//
+// `intent` qualifiziert den Lead (enterprise, migration, pricing, …) und kommt
+// aus dem `?intent=`-Query-Param der verlinkenden CTA. Er landet in der
+// bestehenden metadata-JSONB-Spalte — keine eigene Spalte, keine Migration.
 //
 // 1. Validate email + cap field lengths (no overflow attacks)
 // 2. Hash X-Forwarded-For → ip_hash for rate-limiting without storing PII
@@ -33,7 +37,7 @@ Deno.serve(async (req: Request) => {
   const text = await req.text();
   if (text.length > 8192) return jsonError(413, 'BODY_TOO_LARGE', 'max 8 KB');
 
-  let body: { name?: string; email?: string; company?: string; use_case?: string; message?: string; source?: string; path?: string };
+  let body: { name?: string; email?: string; company?: string; use_case?: string; message?: string; source?: string; intent?: string; path?: string };
   try { body = JSON.parse(text); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   const email = (body.email ?? '').trim().toLowerCase();
@@ -56,6 +60,8 @@ Deno.serve(async (req: Request) => {
     .eq('ip_hash', ipHash).gte('created_at', oneHourAgo);
   if ((count ?? 0) >= 5) return jsonError(429, 'RATE_LIMITED', 'too many submissions, retry later');
 
+  const intent = cap(body.intent, 100);
+
   const { data, error } = await admin.from('sales_leads').insert({
     name: cap(body.name, 200),
     email,
@@ -66,6 +72,7 @@ Deno.serve(async (req: Request) => {
     path: cap(body.path, 500),
     user_agent: cap(req.headers.get('user-agent'), 500),
     ip_hash: ipHash,
+    metadata: intent ? { intent } : {},
   }).select('id, created_at').single();
 
   if (error) return jsonError(500, 'INTERNAL', error.message);
@@ -84,6 +91,7 @@ Deno.serve(async (req: Request) => {
             (body.use_case ? `Use case: ${body.use_case}\n` : '') +
             (body.message ? `Message: ${body.message.slice(0, 500)}\n` : '') +
             (body.source ? `Source: ${body.source}\n` : '') +
+            (intent ? `Intent: ${intent}\n` : '') +
             (body.path ? `Path: ${body.path}\n` : ''),
         }),
         signal: AbortSignal.timeout(5000),

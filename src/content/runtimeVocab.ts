@@ -153,6 +153,12 @@ export const CI_FORBIDDEN_CTA = [
   'Beratungstermin',
   'Vertrieb kontaktieren',
   'Sales kontaktieren',
+  // Termin-/Kalender-Sprache: widerspricht direkt der Positionierung
+  // „Tools statt Beratung". Auch der Enterprise-Pfad — die einzige
+  // kontaktbasierte Ausnahme — nutzt `CTA.enterprise`, nicht einen Termin.
+  'Termin vereinbaren',
+  'Termin buchen',
+  'Beratungsanfrage',
 ] as const;
 
 /**

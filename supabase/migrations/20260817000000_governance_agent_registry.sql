@@ -73,7 +73,7 @@ ON public.governance_agent_registry
 FOR SELECT TO authenticated
 USING (
   tenant_id IS NULL OR
-  tenant_id IN (SELECT tenant_id FROM public.memberships WHERE user_id = auth.uid())
+  public.is_tenant_member(tenant_id)
 );
 
 DROP POLICY IF EXISTS "agent_registry_tenant_write" ON public.governance_agent_registry;

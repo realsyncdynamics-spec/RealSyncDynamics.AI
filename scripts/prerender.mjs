@@ -19,7 +19,7 @@
 
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
@@ -137,14 +137,22 @@ async function startPreviewServer() {
 }
 
 // ─── Render single route ─────────────────────────────────────────────────────
-async function renderRoute(browser, route) {
+async function renderRoute(browser, route, timeout = TIMEOUT) {
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await context.newPage();
   try {
     const url = BASE_URL + route;
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
     // Wait for React hydration + lazy components to finish
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUT }).catch(() => { /* tolerant */ });
+    await page.waitForLoadState('networkidle', { timeout }).catch(() => { /* tolerant */ });
+
+    // networkidle ist bewusst tolerant — aber genau deshalb reicht es als
+    // Fertigkriterium nicht: laeuft es ab, speichern wir sonst stillschweigend
+    // ein halb gerendertes DOM. Auf dem Cloudflare-Pages-Preview von PR #947
+    // kam /claude-code-optimizer so mit 18 kB und ohne h1 an, waehrend lokal
+    // 42 kB mit h1 entstanden. Ein h1 ist das billigste verlaessliche Signal
+    // dafuer, dass die Seiten-Komponente wirklich gemountet ist.
+    await page.waitForSelector('h1', { timeout, state: 'attached' }).catch(() => { /* unten geprueft */ });
 
     // Canonical wird vom SEOHead-Component aus src/config/seo.ts gesetzt
     // (auch fuer Alias-Routes auf die Primary-URL). Hier nicht ueberschreiben.
@@ -154,6 +162,39 @@ async function renderRoute(browser, route) {
   } finally {
     await context.close();
   }
+}
+
+/**
+ * Sieht das Ergebnis nach einer fertig gerenderten Seite aus?
+ *
+ * Exportiert, damit test/seo/prerenderComplete.test.ts das Kriterium
+ * pruefen kann — es entscheidet darueber, ob eine Seite als vollstaendig
+ * gilt, und darf nicht unbemerkt aufweichen.
+ */
+export function looksComplete(html) {
+  return /<h1[\s>]/i.test(html);
+}
+
+/**
+ * Rendern mit einem Wiederholungsversuch.
+ *
+ * Der Build-Sandbox von Cloudflare Pages steht spuerbar weniger CPU zur
+ * Verfuegung als einem lokalen Rechner; schwere Seiten brauchen dort
+ * laenger als TIMEOUT. Statt das Ergebnis zu verwerfen (dann greift der
+ * _redirects-Catch-All und die URL liefert die Startseite — Duplicate
+ * Content) versuchen wir es einmal mit dreifachem Timeout erneut.
+ *
+ * Bleibt es unvollstaendig, wird die Seite trotzdem geschrieben, aber als
+ * `failed` gezaehlt: mit PRERENDER_STRICT=1 (Deploy-Workflow) faellt der
+ * Build damit auf, und verify-prerender.mjs meldet die fehlende h1 ohnehin.
+ */
+async function renderRouteWithRetry(browser, route) {
+  let html = await renderRoute(browser, route);
+  if (looksComplete(html)) return { html, complete: true };
+
+  console.warn(`[prerender] ${route}: unvollstaendig (kein h1) — Wiederholung mit ${TIMEOUT * 3}ms`);
+  html = await renderRoute(browser, route, TIMEOUT * 3);
+  return { html, complete: looksComplete(html) };
 }
 
 // ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
@@ -289,8 +330,14 @@ async function main() {
     const browser = await chromium.launch({ headless: true });
     try {
       stats = await runWithPool(routes, async (item) => {
-        const html = await renderRoute(browser, item.route);
+        const { html, complete } = await renderRouteWithRetry(browser, item.route);
+        // Auch das unvollstaendige Ergebnis schreiben: ohne Datei greift der
+        // _redirects-Catch-All und die URL liefert die Startseite — Duplicate
+        // Content waere schlechter als eine duenne, aber eigene Seite.
         await writeRoute(item.route, html);
+        if (!complete) {
+          throw new Error('auch nach Wiederholung kein h1 im HTML — Seite unvollstaendig gerendert');
+        }
         console.log(`[prerender] ✓ ${item.route} (priority ${item.prio})`);
       }, CONCURRENCY);
     } finally {
@@ -318,6 +365,12 @@ const watchdog = setTimeout(() => {
 }, MAX_MS);
 watchdog.unref();
 
+// Nur ausfuehren, wenn direkt gestartet — nicht beim Import aus Tests.
+const isDirectRun = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (!isDirectRun) {
+  clearTimeout(watchdog);
+} else {
 main()
   .then(() => process.exit(0))
   .catch(async (e) => {
@@ -325,3 +378,4 @@ main()
     await writeStatus({ ok: false, rendered: 0, reason: e instanceof Error ? e.message : String(e) });
     process.exit(1);
   });
+}

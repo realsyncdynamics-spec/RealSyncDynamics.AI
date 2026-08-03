@@ -123,7 +123,7 @@ export function LandingPage() {
                 <span className="h-2.5 w-2.5 rounded-full bg-risk-medium/70" />
                 <span className="h-2.5 w-2.5 rounded-full bg-risk-passed/70" />
                 <span className="ml-3 font-mono text-[10px] uppercase tracking-wider text-titanium-500">
-                  app.realsyncdynamics.ai/app
+                  app.realsyncdynamicsai.de/app
                 </span>
               </div>
               <div className="space-y-4 p-5">

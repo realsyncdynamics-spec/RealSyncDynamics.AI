@@ -259,8 +259,8 @@ async function setupDomain(
   }
 
   // For subdomains, create CNAME record
-  if (domain.endsWith('realsyncdynamics.ai')) {
-    const subdomain = domain.replace('.realsyncdynamics.ai', '');
+  if (domain.endsWith('realsyncdynamicsai.de')) {
+    const subdomain = domain.replace('.realsyncdynamicsai.de', '');
 
     // In production, would create actual DNS records
     // For now, simulate success
@@ -301,8 +301,8 @@ async function setupDomain(
       domain,
       type: 'custom',
       nameserver_records: [
-        { name: 'ns1.realsyncdynamics.ai', value: '1.2.3.4' },
-        { name: 'ns2.realsyncdynamics.ai', value: '5.6.7.8' },
+        { name: 'ns1.realsyncdynamicsai.de', value: '1.2.3.4' },
+        { name: 'ns2.realsyncdynamicsai.de', value: '5.6.7.8' },
       ],
       status: 'pending_dns_validation',
       dns_check_interval: 300,

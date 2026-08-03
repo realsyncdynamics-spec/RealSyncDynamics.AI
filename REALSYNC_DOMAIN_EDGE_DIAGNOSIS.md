@@ -1,5 +1,16 @@
 # Domain-/Edge-Diagnose — realsyncdynamicsai.de vs pages.dev
 
+> **⚠️ ERLEDIGT / HISTORISCH (Stand 2026-08-02).**
+> Das hier beschriebene „Edge-/Domain-Split-Brain" ist **behoben**. Nachgemessen
+> am 2026-08-02 antwortet der Apex auf allen geprueften Routen mit **HTTP 200**
+> und liefert dasselbe HTML wie `pages.dev`. Die unten aufgefuehrten
+> Cloudflare-Dashboard-Schritte 1–9 sind **nicht mehr auszufuehren**.
+>
+> Der Schlusssatz „zuerst die Domain-Edge-Schicht stabilisieren" gilt damit
+> **nicht mehr**. Der tatsaechliche Blocker liegt inzwischen woanders: der
+> Backend-Deploy (Migrationen + Edge Functions) laeuft seit ~2026-07 nicht
+> mehr durch. Aktueller Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`.
+
 Stand: 2026-06-23 · Tool: `npm run diagnose:domain` (`scripts/diagnose-domain-routing.mjs`)
 
 ## Ergebnis in einem Satz

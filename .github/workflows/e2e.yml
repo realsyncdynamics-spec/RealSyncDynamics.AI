@@ -54,6 +54,19 @@ jobs:
         env:
           SKIP_PRERENDER: '1'
         run: npm run build
+        env:
+          # Dummy-Pixel-IDs, damit die Consent-Gating-Tests in
+          # e2e/cookie-consent.spec.ts wirklich messen können. `pixels.ts` lädt
+          # die Pixel nur bei gesetzten IDs — ohne sie feuert auch nach einer
+          # Einwilligung nichts, und „vor Consent: 0 Requests" wäre trivial
+          # erfüllt, selbst wenn das Gating kaputt wäre. Die Tests erkennen das
+          # und überspringen sich dann; mit diesen Werten laufen sie scharf.
+          #
+          # Die IDs sind bewusst ungültig und gehören zu keinem echten Konto.
+          # Der Test bricht die Tracker-Requests zudem ab, bevor sie das Netz
+          # erreichen — es geht nichts an Google, Meta oder TikTok raus.
+          VITE_GA4_MEASUREMENT_ID: G-E2ETEST0000
+          VITE_META_PIXEL_ID: '000000000000000'
 
       - name: Start Preview Server
         run: |

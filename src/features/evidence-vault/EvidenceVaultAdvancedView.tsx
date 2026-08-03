@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Archive, AlertTriangle, FileUp, Fingerprint, Lock, LockOpen, RefreshCw, Camera, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Archive, AlertTriangle, FileUp, Fingerprint, Lock, LockOpen, RefreshCw, Camera, ShieldCheck, ShieldAlert, Download, FileText } from 'lucide-react';
 import { AuthGate } from '../kodee/connections/AuthGate';
 import { useTenant } from '../../core/access/TenantProvider';
 import { Button } from '../../enterprise-os/components/Button';
@@ -8,7 +8,8 @@ import { Card, CardHeader, CardBody } from '../../enterprise-os/components/Card'
 import { sha256Hex } from '../../lib/provenance';
 import { describeRetention, RETENTION_CLASSES, type RetentionClass } from '../../lib/evidence/retention';
 import { verifyAllChains, type ChainReport } from '../../lib/evidence/verifyChain';
-import { createSnapshot, setLegalHold, listTimeline, listSnapshotsForVerification, type TimelineEntry, type VaultError } from './evidenceVaultApi';
+import { createSnapshot, setLegalHold, listTimeline, listSnapshotsForVerification, exportEvidenceBundle, type TimelineEntry, type VaultError } from './evidenceVaultApi';
+import { buildEvidenceExportReportHtml } from './exportReportHtml';
 
 // WebCrypto-Adapter für die Verifizierung (string → hex), teilt sich die
 // SHA-256-Implementierung mit der Snapshot-Erzeugung.
@@ -31,6 +32,15 @@ function errorMessage(e: VaultError): string {
   }
 }
 
+// exportEvidenceBundle() nutzt eine eigene Fehler-Zuordnung (mapExportError
+// statt mapError) — dessen payment_required-Fall trägt bereits die passende
+// Meldung ("...ab Starter-Tarif..."), anders als die generische Vault-
+// errorMessage() oben, die für Snapshot/Hold auf "ab Agency" hardcoded ist.
+function exportErrorMessage(e: VaultError): string {
+  if (e.kind === 'payment_required') return e.message;
+  return errorMessage(e);
+}
+
 function VaultInner() {
   const { activeTenantId, hasFeature } = useTenant();
   const advanced = hasFeature('evidence.advanced');
@@ -46,6 +56,8 @@ function VaultInner() {
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [verifying, setVerifying] = useState(false);
   const [reports, setReports] = useState<ChainReport[] | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const reload = useCallback(async () => {
     if (!activeTenantId) { setTimeline([]); return; }
@@ -96,6 +108,48 @@ function VaultInner() {
     setVerifying(false);
   }
 
+  async function onExport() {
+    if (!activeTenantId) return;
+    setExporting(true); setError(null); setNotice(null);
+    const r = await exportEvidenceBundle({ tenant_id: activeTenantId });
+    if (r.kind === 'ok') {
+      const blob = new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evidence-vault-export-${activeTenantId}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setNotice(`Export bereit: ${r.data.count} Event(s), Zeitraum ${new Date(r.data.range.from).toLocaleDateString('de-DE')}–${new Date(r.data.range.to).toLocaleDateString('de-DE')}.`);
+    } else {
+      setError(exportErrorMessage(r));
+    }
+    setExporting(false);
+  }
+
+  async function onExportPdf() {
+    if (!activeTenantId) return;
+    setExportingPdf(true); setError(null); setNotice(null);
+    const r = await exportEvidenceBundle({ tenant_id: activeTenantId });
+    if (r.kind === 'ok') {
+      const html = buildEvidenceExportReportHtml(r.data);
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) {
+        setError('Pop-up wurde blockiert — bitte Pop-ups für diese Seite erlauben und erneut versuchen.');
+      } else {
+        setNotice(`PDF-Ansicht geöffnet (${r.data.count} Event(s)) — im Browser-Druckdialog „Als PDF speichern" wählen.`);
+      }
+      // Object URL must outlive the initial navigation of the new tab —
+      // revoke on a delay rather than immediately after window.open().
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } else {
+      setError(exportErrorMessage(r));
+    }
+    setExportingPdf(false);
+  }
+
   const inputCls = 'w-full border border-titanium-700 bg-obsidian-900 px-3 py-2 text-sm text-titanium-100 placeholder:text-titanium-600 focus:border-security-500 focus:outline-none';
   const labelCls = 'mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-titanium-500';
 
@@ -121,6 +175,12 @@ function VaultInner() {
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={onVerify} disabled={verifying || !activeTenantId}>
             <ShieldCheck className="h-3.5 w-3.5" /> {verifying ? 'Prüfe…' : 'Integrität prüfen'}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={onExport} disabled={exporting || !activeTenantId}>
+            <Download className="h-3.5 w-3.5" /> {exporting ? 'Exportiere…' : 'Audit-Export (JSON)'}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={onExportPdf} disabled={exportingPdf || !activeTenantId}>
+            <FileText className="h-3.5 w-3.5" /> {exportingPdf ? 'Öffne…' : 'PDF-Ansicht'}
           </Button>
           <Button variant="secondary" size="sm" onClick={reload}><RefreshCw className="h-3.5 w-3.5" /> Aktualisieren</Button>
         </div>

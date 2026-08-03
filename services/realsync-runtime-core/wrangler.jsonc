@@ -1,0 +1,45 @@
+{
+  // Cloudflare-Containers-Deployment für realsync-runtime-core.
+  //
+  // Der Worker (src/worker.js) ist nur der Router; die eigentliche App läuft
+  // im Container aus ./Dockerfile (Fastify + Postgres/Redis/NATS). Secrets
+  // werden NICHT hier hinterlegt, sondern via `wrangler secret put` gesetzt
+  // (siehe DEPLOY_CLOUDFLARE.md) und in worker.js -> envVars in den Container
+  // gespiegelt.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "realsync-runtime-core",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-06-23",
+
+  "containers": [
+    {
+      "class_name": "RuntimeCoreContainer",
+      "image": "./Dockerfile",
+      // Single-Instance: Migrations + NATS-Consumer sollen genau einmal laufen.
+      "max_instances": 1,
+      // standard-1 = mehr RAM/CPU für die persistenten Clients; bei Bedarf auf
+      // "basic" reduzieren.
+      "instance_type": "standard-1"
+    }
+  ],
+
+  "durable_objects": {
+    "bindings": [
+      { "class_name": "RuntimeCoreContainer", "name": "RUNTIME_CORE" }
+    ]
+  },
+
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["RuntimeCoreContainer"] }
+  ],
+
+  // Keep-warm alle 5 Minuten, damit der NATS-Event-Consumer nicht durch
+  // Scale-to-zero abgewürgt wird (siehe worker.js -> scheduled()).
+  "triggers": { "crons": ["*/5 * * * *"] },
+
+  "observability": { "enabled": true },
+
+  // Nicht-geheime Defaults. Geheimnisse (DB/Redis/NATS/JWT/API-Key) via
+  // `wrangler secret put`.
+  "vars": { "LOG_LEVEL": "info" }
+}

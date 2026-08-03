@@ -22,6 +22,13 @@ jobs:
       - name: Typecheck
         run: npm run lint
 
+      # tsc deckt nur `src/` ab — Edge Functions laufen unter Deno und wurden
+      # bisher von KEINEM PR-Check angefasst. Ein einzelner Syntaxfehler dort
+      # blockiert `supabase functions deploy` fuer ALLE Functions (Modulgraph
+      # alles-oder-nichts). Siehe DEBUG_ROOT_CAUSE_2026-08-02.md.
+      - name: Edge Function syntax
+        run: npm run check:edge-syntax
+
       - name: Unit tests
         run: npm test
 

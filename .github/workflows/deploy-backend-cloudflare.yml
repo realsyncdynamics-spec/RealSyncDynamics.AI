@@ -1,0 +1,66 @@
+name: Deploy Backend (Cloudflare Containers)
+
+# Deployt services/realsync-runtime-core als Cloudflare **Container** (Worker +
+# Container aus dem Dockerfile). Ersetzt den früheren, defekten Vercel-Deploy
+# dieses Backend-Services (Projekt `-remu`).
+#
+# Voraussetzungen (Repo-Secrets):
+#   - CLOUDFLARE_API_TOKEN   (Token mit Workers/Containers-Deploy-Rechten)
+#   - CLOUDFLARE_ACCOUNT_ID
+# Laufzeit-Secrets des Containers (DB/Redis/NATS/JWT/API-Key) werden NICHT hier
+# gesetzt, sondern einmalig via `wrangler secret put` — siehe
+# services/realsync-runtime-core/DEPLOY_CLOUDFLARE.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/realsync-runtime-core/**'
+      - '.github/workflows/deploy-backend-cloudflare.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-runtime-core
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    defaults:
+      run:
+        working-directory: services/realsync-runtime-core
+    steps:
+      # Actions müssen im Repo auf volle Commit-SHAs gepinnt sein (Org-Policy).
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Guard — Cloudflare-Secrets vorhanden?
+        id: guard
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "CLOUDFLARE_API_TOKEN/ACCOUNT_ID nicht gesetzt — Deploy übersprungen."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '20'
+
+      # Kein expliziter Docker-Buildx-Setup nötig: ubuntu-latest liefert Docker
+      # inkl. Buildx vorinstalliert, und `wrangler deploy` baut das
+      # Container-Image über den Docker-Daemon. (Ein zusätzliches Setup-Action
+      # müsste zudem auf einen vollen Commit-SHA gepinnt werden — Org-Policy.)
+
+      - name: Install deps (inkl. wrangler + @cloudflare/containers)
+        if: steps.guard.outputs.skip == 'false'
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+
+      - name: Deploy (wrangler)
+        if: steps.guard.outputs.skip == 'false'
+        run: npx wrangler deploy

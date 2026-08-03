@@ -23,6 +23,9 @@ import {
   Scan,
   MessageCircle,
   Phone,
+  Timer,
+  Wrench,
+  GitCompare,
 } from 'lucide-react';
 
 /**
@@ -35,8 +38,8 @@ import {
  * Design: Obsidian-Hintergrund (rgb(3,7,18)), Earth-at-Night-Hero (Europa),
  * Cyan-Akzent, Plus Jakarta Sans + JetBrains Mono (Metadaten).
  *
- * Positionierung: „Das KI-Betriebssystem für DSGVO, EU AI Act &
- * Code-Compliance" — Governance + Claude-Code-Optimierung in einer Runtime.
+ * Positionierung Phase 5: AI Compliance Operations OS for Europe —
+ * Discover → Classify → Enforce → Prove.
  */
 
 const BG = 'rgb(3, 7, 18)';
@@ -51,25 +54,25 @@ const NAV_LINKS = [
   { label: 'Preise', to: '#pricing' },
 ];
 
-// Hero-Feature-Spalten (Screenshot: Icon + Titel + Kurztext).
+// Hero-Feature-Spalten — Workflow-orientiert (Discover / Classify / Prove).
 const HERO_FEATURES = [
-  { icon: ShieldCheck, title: 'DSGVO-KONFORM', text: 'Evidenz, Prozesse und Policies automatisiert.' },
-  { icon: Globe2, title: 'AI-ACT-READY', text: 'Risikobewertung, Transparenz & Dokumentation.' },
-  { icon: LineChart, title: 'KONTINUIERLICH', text: 'Monitoring, Alerts & Evidenz in Echtzeit.' },
+  { icon: ShieldCheck, title: 'DISCOVER', text: 'Assets, Vendoren und KI-Systeme automatisch erkennen.' },
+  { icon: Globe2, title: 'CLASSIFY', text: 'Risikoklassen nach EU AI Act & DSGVO zuordnen.' },
+  { icon: LineChart, title: 'PROVE', text: 'Evidence Vault: auditfähige Nachweise in Echtzeit.' },
 ];
 
 const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TDDDG', 'BAIT', 'MaRisk', 'EU-Hosting'];
 
 const PLATFORM = [
   {
-    icon: Radar,
-    title: 'Runtime-Monitoring',
-    text: 'Kontinuierliche Telemetrie über Websites, Datenflüsse und KI-Systeme — regulatorische Risiken werden erkannt, sobald sie entstehen.',
-  },
-  {
     icon: FileLock2,
     title: 'Evidence Vault',
-    text: 'Kryptografisch nachvollziehbare Nachweise mit lückenlosem Prüfpfad. Audit-fähig, unveränderlich, exportierbar.',
+    text: 'Hash-verkettete Nachweise mit Ed25519-Signatur — jede Änderung bricht die Kette und wird sofort sichtbar. Audit-fähig, unveränderlich, exportierbar.',
+  },
+  {
+    icon: Radar,
+    title: 'Runtime-Monitoring',
+    text: 'Kontinuierliche Telemetrie über Websites, Datenflüsse und KI-Systeme — Risiken werden erkannt, sobald sie entstehen.',
   },
   {
     icon: Scale,
@@ -79,17 +82,38 @@ const PLATFORM = [
   {
     icon: Code2,
     title: 'Claude Code Integration',
-    text: 'Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.',
+    text: 'Erkennt ungeschützte Tracking-Calls, fehlende Consent-Gates und unsichere API-Endpunkte im Code — mit automatisierten Fix-Vorschlägen statt reinem Befund.',
   },
   {
     icon: ServerCog,
     title: 'Governance-Runtime',
-    text: 'Policies werden zur Laufzeit durchgesetzt — nicht nur dokumentiert. Jeder externe Call wird geloggt und bewertet.',
+    text: 'Policies werden zur Laufzeit durchgesetzt — Enforce, nicht nur dokumentieren. Jeder externe Call wird geloggt und bewertet.',
   },
   {
     icon: GitBranch,
     title: 'Automatisierung',
     text: 'DSGVO-Selfservice (Art. 15 + 17), Workflows und Alerts — orchestriert und nahtlos integriert.',
+  },
+];
+
+const DIFFERENTIATORS = [
+  {
+    icon: Timer,
+    title: 'Consent-Timing-Analyse',
+    text: 'Playwright-Headless prüft, ob Tracking-Calls tatsächlich erst nach Consent-Bestätigung feuern — nicht nur, ob ein Banner existiert.',
+    example: 'Beispiel-Finding: Google Analytics feuert 340ms vor Consent-Bestätigung',
+  },
+  {
+    icon: Wrench,
+    title: 'Auto-Remediation',
+    text: 'Findings landen nicht nur als Report, sondern als fertiger Fix-Vorschlag inklusive Code-Diff, den Sie direkt übernehmen können.',
+    example: 'Beispiel-Fix: Consent-Gate vor gtag(\'config\', ...) einfügen',
+  },
+  {
+    icon: GitCompare,
+    title: 'Drift-Detection',
+    text: 'Erkennt, wenn sich Code, Tracking-Verhalten oder Datenflüsse nach einem Deploy unbemerkt ändern — bevor daraus ein Compliance-Vorfall wird.',
+    example: 'Beispiel-Alert: neuer Tracking-Call in main nach Deploy #482',
   },
 ];
 
@@ -101,16 +125,16 @@ const CORE_SEGMENTS = [
 ];
 
 const STEPS = [
-  { no: '01', title: 'Verbinden', text: 'Domains, KI-Systeme, Code und Datenflüsse in Minuten anbinden — ohne schwere Integration.' },
-  { no: '02', title: 'Überwachen', text: 'Die Runtime erfasst kontinuierlich Telemetrie und bewertet Risiken in Echtzeit.' },
-  { no: '03', title: 'Nachweisen', text: 'Jede Maßnahme landet als kryptografische Evidenz im auditfähigen Prüfpfad.' },
+  { no: '01', title: 'Discover', text: 'Domains, KI-Systeme, Vendoren und Datenflüsse in Minuten erkennen — ohne schwere Integration.' },
+  { no: '02', title: 'Classify & Enforce', text: 'Risikoklassen zuordnen und Policies zur Laufzeit durchsetzen — nicht nur in PDFs dokumentieren.' },
+  { no: '03', title: 'Prove', text: 'Jede Maßnahme landet als kryptografische Evidenz im Evidence Vault — auditfähig und exportierbar.' },
 ];
 
 const PRICING = [
-  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice'], cta: '14 Tage testen', to: '/checkout/starter?source=home&pilot=true' },
-  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Konversations-Bots'], cta: '14 Tage testen', featured: true, to: '/checkout/growth?source=home&pilot=true' },
-  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Herkunftsnachweis (C2PA)', 'API-Zugriff'], cta: '14 Tage testen', to: '/checkout/agency?source=home&pilot=true' },
-  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Voller API-Zugriff', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
+  { name: 'Starter', price: '79', cadence: '/Monat', features: ['1 Domain', 'Runtime-Monitoring', 'Evidence Vault', 'DSGVO-Selfservice', 'Consent-Timing-Check (wöchentlich)'], cta: '14 Tage testen', to: '/checkout/starter?source=home&pilot=true' },
+  { name: 'Growth', price: '249', cadence: '/Monat', features: ['5 Domains', 'AI-Act-Klassifizierung', 'Alerts & Workflows', 'Konversations-Bots', 'Drift-Detection (täglich)'], cta: '14 Tage testen', featured: true, to: '/checkout/growth?source=home&pilot=true' },
+  { name: 'Agency', price: '699', cadence: '/Monat', features: ['25 Domains', 'White-Label', 'Herkunftsnachweis (C2PA)', 'Auto-Remediation (Fix-Vorschläge)', 'API-Zugriff (10.000 Calls/Monat)'], cta: '14 Tage testen', to: '/checkout/agency?source=home&pilot=true' },
+  { name: 'Scale', price: '1.999', cadence: '/Monat', features: ['Bis zu 50 Mandanten', 'DSB-Kanzlei-Modus', 'Drift-Detection (Echtzeit)', 'Voller API-Zugriff (kein Rate-Limit)', 'SLA'], cta: 'Scale anfragen', to: '/contact-sales?tier=scale&source=home' },
 ];
 
 export function MainLanding() {
@@ -121,6 +145,7 @@ export function MainLanding() {
       <Hero />
       <TrustStrip />
       <Platform />
+      <Differentiators />
       <Runtime />
       <Industries />
       <ProofBand />
@@ -148,10 +173,10 @@ function Header() {
           {NAV_LINKS.map((l) => (
             <SmartLink key={l.label} to={l.to} className="text-sm text-white/70 hover:text-white transition-colors">{l.label}</SmartLink>
           ))}
-          <SmartLink to="/flow/login" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
+          <SmartLink to="/welcome" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
         <SmartLink to="/flow/start-scan?source=nav-startfree" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
-          Kostenlos starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          Free Audit starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </SmartLink>
       </div>
     </header>
@@ -181,16 +206,16 @@ function Hero() {
             </SmartLink>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] sm:leading-[1.05] tracking-tight mb-4 sm:mb-6">
-              Das KI-Betriebssystem<br />für <span className="text-cyan-400">DSGVO, EU AI Act<br />&amp; Code-Compliance</span>
+              AI Compliance<br />Operations OS<br />for <span className="text-cyan-400">Europe</span>
             </h1>
 
-            <p className="font-mono text-[11px] sm:text-sm tracking-[0.25em] text-cyan-400/90 mb-4 sm:mb-6">
-              AI GOVERNANCE &amp; CODE OPTIMIZATION OS FOR TRUST &amp; VALUE
+            <p className="font-mono text-[11px] sm:text-sm tracking-[0.15em] text-cyan-400/90 mb-4 sm:mb-6">
+              DISCOVER → CLASSIFY → ENFORCE → PROVE
             </p>
 
             <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-7 sm:mb-8">
-              RealSync Dynamics AI überwacht Websites, KI-Systeme, Code und Evidenz
-              kontinuierlich — DSGVO-konform, AI-Act-ready, Claude-Code-auditiert und prüfbar.
+              Discover, classify, enforce and prove AI, website and vendor compliance continuously —
+              DSGVO-konform, EU-AI-Act-ready, evidence-backed.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4 mb-8 sm:mb-10 max-w-xl">
@@ -207,10 +232,10 @@ function Hero() {
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-                Kostenlos starten<ArrowRight className="w-4 h-4" />
+                Free Audit starten<ArrowRight className="w-4 h-4" />
               </SmartLink>
-              <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-                <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
+              <SmartLink to="/demo-tour" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+                <PlayCircle className="w-4 h-4" />Dashboard-Demo ansehen
               </SmartLink>
             </div>
           </div>
@@ -259,7 +284,7 @@ function TrustStrip() {
 /* ── PLATTFORM ──────────────────────────────────────────── */
 function Platform() {
   return (
-    <Section id="product" eyebrow="DIE PLATTFORM" title="Eine Runtime. Vollständige KI-Governance." subtitle="Vom kontinuierlichen Monitoring bis zum kryptografischen Nachweis — alles in einer auditfähigen Infrastruktur, mit integriertem Claude-Code-Audit.">
+    <Section id="product" eyebrow="DIE PLATTFORM" title="Evidence zuerst. Runtime danach." subtitle="Discover → Classify → Enforce → Prove — Evidence Vault als Kern, Monitoring und Policies als durchgängige Runtime.">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {PLATFORM.map(({ icon: Icon, title, text }) => (
           <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
@@ -275,10 +300,30 @@ function Platform() {
   );
 }
 
+/* ── DIFFERENZIERER ─────────────────────────────────────── */
+function Differentiators() {
+  return (
+    <Section eyebrow="WAS UNS UNTERSCHEIDET" title="Mehr als ein Cookie-Banner-Check" subtitle="Drei Mechanismen, die über generische Compliance-Tools hinausgehen — technisch nachvollziehbar, nicht nur behauptet.">
+      <div className="grid md:grid-cols-3 gap-6">
+        {DIFFERENTIATORS.map(({ icon: Icon, title, text, example }) => (
+          <div key={title} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
+            <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/20 mb-5">
+              <Icon className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
+            </div>
+            <h3 className="text-lg font-semibold mb-2.5">{title}</h3>
+            <p className="text-sm text-white/60 leading-relaxed mb-4">{text}</p>
+            <p className="font-mono text-[11px] text-cyan-400/80 leading-relaxed border-t border-white/10 pt-4">{example}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 /* ── GOVERNANCE-RUNTIME ─────────────────────────────────── */
 function Runtime() {
   return (
-    <Section eyebrow="SO FUNKTIONIERT ES" title="Compliance, die ab Minute eins läuft" subtitle="Keine Monate-Projekte, keine statischen PDFs — Governance läuft ab dem ersten Tag zur Laufzeit.">
+    <Section eyebrow="SO FUNKTIONIERT ES" title="Ein Workflow. Vier Schritte." subtitle="Keine Monate-Projekte, keine statischen PDFs — Governance läuft ab dem ersten Tag zur Laufzeit.">
       <div className="grid md:grid-cols-3 gap-6">
         {STEPS.map(({ no, title, text }) => (
           <div key={no} className="relative p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
@@ -389,7 +434,7 @@ function Pricing() {
 function Security() {
   const points = [
     { icon: Lock, title: 'EU-Souveränität', text: 'Hosting, Verarbeitung und Modelle innerhalb der EU. Optional lokale Modelle für maximale Datenkontrolle.' },
-    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis ist signiert und unveränderlich — ein lückenloser Prüfpfad für Audits und Aufsichtsbehörden.' },
+    { icon: FileLock2, title: 'Kryptografische Evidenz', text: 'Jeder Nachweis wird per Hash-Chain verkettet und mit Ed25519 signiert — ein lückenloser, extern verifizierbarer Prüfpfad für Audits und Aufsichtsbehörden.' },
     { icon: ShieldCheck, title: 'Service-Role-Isolation', text: 'Sensible Keys ausschließlich serverseitig. RLS schützt jede Tabelle auf Mandantenebene.' },
   ];
   return (
@@ -457,18 +502,17 @@ function FinalCta() {
       <div className="max-w-5xl mx-auto px-6 lg:px-10">
         <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.08] via-white/[0.02] to-transparent p-8 sm:p-12 md:p-16 text-center">
           <h2 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight mb-4 sm:mb-5">
-            Bereit für Governance,<br className="hidden sm:block" /> die zur Laufzeit läuft?
+            Bereit zu beweisen,<br className="hidden sm:block" /> dass Compliance läuft?
           </h2>
           <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
-            Starten Sie mit einem kostenlosen Scan — ohne Account, in unter fünf Minuten. Sehen Sie
-            Ihren DSGVO-, AI-Act- und Claude-Code-Readiness-Score sofort.
+            Starten Sie mit einem Free Audit — ohne Account, in unter fünf Minuten. Discover → Classify → Prove auf Ihrer Domain.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-              Kostenlos starten<ArrowRight className="w-4 h-4" />
+              Free Audit starten<ArrowRight className="w-4 h-4" />
             </SmartLink>
             <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-              <PlayCircle className="w-4 h-4" />Produkt-Tour ansehen
+              <PlayCircle className="w-4 h-4" />Dashboard-Demo ansehen
             </SmartLink>
           </div>
           <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
@@ -519,7 +563,7 @@ function Footer() {
               <span className="text-sm sm:text-base font-semibold tracking-tight">RealSync Dynamics.AI</span>
             </Link>
             <p className="text-[11px] sm:text-xs text-white/50 leading-relaxed max-w-xs">
-              Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance.
+              AI Compliance Operations OS for Europe — Discover, classify, enforce and prove.
             </p>
           </div>
           {cols.map((c) => (
@@ -537,7 +581,7 @@ function Footer() {
           ))}
         </div>
         <div className="mt-10 sm:mt-12 pt-5 sm:pt-6 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-center sm:text-left">
-          <p className="font-mono text-[10px] sm:text-xs text-white/50">© 2026 RealSync Dynamics. SaaS &amp; KI-Innovationen.</p>
+          <p className="font-mono text-[10px] sm:text-xs text-white/50">© 2026 RealSync Dynamics. SaaS & KI-Innovationen.</p>
           <nav className="flex flex-wrap items-center justify-center sm:justify-end gap-x-3 sm:gap-x-5 gap-y-2">
             <Link to="/impressum" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">Impressum</Link>
             <Link to="/datenschutz" className="font-mono text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors">Datenschutz</Link>
@@ -612,6 +656,7 @@ function RiskCard({ className = '' }: { className?: string }) {
       <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
         <div className="h-full w-[87%] rounded-full bg-cyan-400" />
       </div>
+      <div className="mt-2 font-mono text-[9px] text-white/30">Beispiel-Scan</div>
     </CardShell>
   );
 }
@@ -642,10 +687,7 @@ function ClaudeCodeAuditCard({ className = '' }: { className?: string }) {
         <span className="font-mono font-bold text-white text-2xl sm:text-3xl">94.2%</span>
         <span className="font-mono text-[11px] sm:text-xs text-cyan-400">Code-Ready</span>
       </div>
-      <div className="space-y-0.5">
-        <div className="font-mono text-[10px] text-white/50">Analysierte Codezeilen: <span className="text-white/80">2.1 Mio</span></div>
-        <div className="font-mono text-[10px] text-white/50">Behobene Sicherheitslücken: <span className="text-white/80">11.350</span></div>
-      </div>
+      <div className="font-mono text-[9px] text-white/30">Beispiel-Repository</div>
     </CardShell>
   );
 }
@@ -658,7 +700,7 @@ function ClaudeCodeIntegrationCard({ className = '' }: { className?: string }) {
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE INTEGRATION</span>
       </div>
       <p className="text-[11px] sm:text-xs text-white/70 leading-relaxed">
-        Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.
+        Erkennt fehlende Consent-Gates, ungeschützte Tracking-Calls und unsichere API-Endpunkte — inklusive automatisierter Fix-Vorschläge.
       </p>
     </CardShell>
   );

@@ -1,0 +1,12 @@
+# Cloudflare Containers baut das Image aus diesem Verzeichnis. Nur das
+# Nötige in den Build-Context lassen — der Worker-Kram (wrangler, containers)
+# gehört NICHT ins Container-Image (Dockerfile installiert mit --omit=dev).
+node_modules
+.wrangler
+wrangler.jsonc
+src/worker.js
+DEPLOY_CLOUDFLARE.md
+.dockerignore
+npm-debug.log*
+.env
+.env.*

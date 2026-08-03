@@ -1,3 +1,15 @@
+// DEPRECATED — never deployed to production. Verified 2026-07-29 against
+// RealSyncDynamicsLive: its migration (20260705180000_autonomous_agents_core.sql)
+// was never applied (public.agents does not exist), and no pg_cron job
+// invokes this function. Do not wire this up as-is — its target tables
+// (agent_runs, agent_tasks) are now owned by governance-agent and the
+// Agent OS substrate with incompatible schemas; applying the stale
+// migration would silently no-op those table creations. See
+// docs/architecture/agent-manager-roadmap.md §2/§M4 for the retirement
+// decision. Any replacement for its compliance_gaps analysis should be
+// built as a new skill under the Agent OS Runtime (agent-os-runner), not
+// by reactivating this file.
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.105.1";
 

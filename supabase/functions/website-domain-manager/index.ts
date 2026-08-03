@@ -94,7 +94,7 @@ async function connectDomain(
     return { success: false, error: 'Invalid domain format', code: 'INVALID_DOMAIN' };
   }
 
-  const isSubdomain = domain.endsWith('realsyncdynamics.ai');
+  const isSubdomain = domain.endsWith('realsyncdynamicsai.de');
   const domainType = isSubdomain ? 'subdomain' : 'custom';
 
   // Check if domain already exists

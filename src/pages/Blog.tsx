@@ -76,7 +76,7 @@ export function Blog() {
     title: 'RealSync Dynamics Blog — KI-Governance, DSGVO, EU AI Act',
     description:
       'Enterprise-Leitfäden zu DSGVO-Compliance, EU AI Act Klassifizierung, KI-Governance, Evidence Management, Privacy by Design und Vendor Governance. Praxisorientiert, technisch fundiert, ohne Marketing-Lyrik.',
-    url: 'https://realsyncdynamics.ai/blog',
+    url: 'https://realsyncdynamicsai.de/blog',
   });
 
   return (

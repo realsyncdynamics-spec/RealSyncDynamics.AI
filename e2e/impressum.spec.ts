@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * Vertrag mit der Live-Page (siehe src/features/legal/Impressum.tsx +
  * scripts/production-readiness-check.mjs):
  *
- *   1. Pflichtsektionen § 5 TMG sind sichtbar
+ *   1. Pflichtsektionen § 5 DDG sind sichtbar
  *   2. Die Page hat ein semantisches <h1>Impressum</h1>
  *   3. Im PROD-Build erscheint KEIN Alarm-Banner mit „Pflichtangaben
  *      unvollstaendig" oder „USt-IdNr. fehlt" — das wuerde gleichzeitig
@@ -24,7 +24,7 @@ test.describe('/legal/impressum', () => {
     await page.goto('/legal/impressum');
 
     for (const heading of [
-      /Anbieter \/ Verantwortlicher i\. S\. d\. § 5 TMG/i,
+      /Anbieter \/ Verantwortlicher i\. S\. d\. § 5 DDG/i,
       /Kontakt/i,
       /Vertretungsberechtigte/i,
       /Umsatzsteuer/i,

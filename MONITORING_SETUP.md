@@ -190,7 +190,7 @@ In Supabase dashboard → Database → Alarms:
 ```
 Condition: Error Rate (5xx) > 1% in last 10 minutes
 Webhook: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
-Message: "⚠️ High 5xx error rate on realsyncdynamics.ai"
+Message: "⚠️ High 5xx error rate on realsyncdynamicsai.de"
 ```
 
 ---
@@ -199,7 +199,7 @@ Message: "⚠️ High 5xx error rate on realsyncdynamics.ai"
 
 ### Configure Webhook Logging
 1. Go to Stripe Dashboard → Webhooks
-2. Ensure webhook endpoint: `https://api.realsyncdynamics.ai/functions/v1/stripe-webhook`
+2. Ensure webhook endpoint: `https://api.realsyncdynamicsai.de/functions/v1/stripe-webhook`
 3. Subscribe to events:
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -308,7 +308,7 @@ Create dashboard with:
 ### Uptime Monitoring
 Use service like Uptime.com or Pingdom:
 ```
-Monitor: https://realsyncdynamics.ai
+Monitor: https://realsyncdynamicsai.de
 Frequency: Every 60 seconds
 Locations: EU (recommended), US, Asia
 Alert: SMS + Slack on failure
@@ -344,7 +344,7 @@ export async function handler(req: Request) {
 }
 ```
 
-Monitor: `https://api.realsyncdynamics.ai/functions/v1/health-check`
+Monitor: `https://api.realsyncdynamicsai.de/functions/v1/health-check`
 
 ---
 
@@ -418,7 +418,7 @@ Rule 3 (Info): Deployment successful
 ### Email Distribution
 - P1 incidents → realsyncdynamics-leads@gmail.com + on-call SMS
 - P2 incidents → realsyncdynamics-engineers@gmail.com
-- Weekly digest → team@realsyncdynamics.ai
+- Weekly digest → team@realsyncdynamicsai.de
 
 ### PagerDuty Integration (Optional)
 For automatic incident escalation:

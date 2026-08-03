@@ -219,7 +219,7 @@ jobs:
       - run: npm ci
       - run: npm run qa:smoke
         env:
-          PRODUCTION_URL: https://realsyncdynamics.ai
+          PRODUCTION_URL: https://realsyncdynamicsai.de
       
       - name: Report Results
         if: failure()
@@ -287,16 +287,16 @@ PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 1. **Automatic staging deploys:**
    - Every commit to `develop` branch
-   - Deploy to `staging.realsyncdynamics.ai` subdomain
+   - Deploy to `staging.realsyncdynamicsai.de` subdomain
    - Use staging database credentials
 
 2. **Testing in staging:**
    ```bash
    # Run full E2E test suite
-   npm run e2e -- --url=https://staging.realsyncdynamics.ai
+   npm run e2e -- --url=https://staging.realsyncdynamicsai.de
    
    # Run smoke tests
-   npm run qa:smoke -- --url=https://staging.realsyncdynamics.ai
+   npm run qa:smoke -- --url=https://staging.realsyncdynamicsai.de
    ```
 
 3. **Staging database reset:**
@@ -327,19 +327,19 @@ Post-deployment checklist (automated in GitHub Actions):
 
 ```bash
 # 1. Health check
-curl https://realsyncdynamics.ai/health
+curl https://realsyncdynamicsai.de/health
 
 # 2. Frontend loads
-curl -s https://realsyncdynamics.ai | grep -o "<title>.*</title>"
+curl -s https://realsyncdynamicsai.de | grep -o "<title>.*</title>"
 
 # 3. API responding
-curl https://api.realsyncdynamics.ai/functions/v1/health
+curl https://api.realsyncdynamicsai.de/functions/v1/health
 
 # 4. Sentry health
 sentry-cli releases info realsyncdynamics@$COMMIT_SHA
 
 # 5. Smoke test critical flows
-npm run qa:smoke -- --url=https://realsyncdynamics.ai
+npm run qa:smoke -- --url=https://realsyncdynamicsai.de
 ```
 
 ---

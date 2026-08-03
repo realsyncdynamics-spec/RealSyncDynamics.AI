@@ -27,7 +27,7 @@ Professional governance reports with custody chain visualization for regulators 
 
 ### Step 1: Log In or Sign Up
 
-**URL:** https://app.realsyncdynamics.ai
+**URL:** https://app.realsyncdynamicsai.de
 
 - Sign up with your work email
 - Verify your email address
@@ -247,7 +247,7 @@ Your feedback helps us improve the AI engine!
 
 ### Getting Help
 
-**Email:** support@realsyncdynamics.ai  
+**Email:** support@realsyncdynamicsai.de  
 **Slack:** [Invite link in welcome email]  
 **Response Time:** Best effort (24 hours typical, urgent = 4 hours)
 
@@ -270,7 +270,7 @@ Your feedback helps us improve the AI engine!
 
 Found something broken? Help us fix it!
 
-1. Email: support@realsyncdynamics.ai
+1. Email: support@realsyncdynamicsai.de
 2. Subject: `[BUG] <short description>`
 3. Include: screenshot, asset ID, steps to reproduce
 
@@ -308,7 +308,7 @@ Before you get started, make sure you have:
 ## Next Steps
 
 1. **Join the beta:** Click the link in your welcome email
-2. **Log in:** https://app.realsyncdynamics.ai
+2. **Log in:** https://app.realsyncdynamicsai.de
 3. **Select industry:** Choose the option that fits your business
 4. **Create first asset:** Use the example in this guide
 5. **Run auto-mapping:** Watch the AI work!
@@ -321,8 +321,8 @@ Before you get started, make sure you have:
 
 Thank you for being part of the RealSyncDynamics Beta Program. Your feedback will shape the future of compliance automation.
 
-**Questions?** → support@realsyncdynamics.ai  
-**Ready to start?** → https://app.realsyncdynamics.ai
+**Questions?** → support@realsyncdynamicsai.de  
+**Ready to start?** → https://app.realsyncdynamicsai.de
 
 ---
 

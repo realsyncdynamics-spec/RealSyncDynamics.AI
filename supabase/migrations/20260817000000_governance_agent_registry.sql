@@ -90,6 +90,8 @@ WITH CHECK (true);
 -- The function that runs governance-agent can update this
 -- on startup to reflect current version/capabilities.
 
+-- Bootstrap entry for the core governance agent
+-- (idempotent: will fail silently if already exists due to unique index)
 INSERT INTO public.governance_agent_registry (
   tenant_id,
   agent_name,
@@ -111,6 +113,4 @@ INSERT INTO public.governance_agent_registry (
     ARRAY['policy_evaluation', 'risk_assessment', 'evidence_capture', 'incident_escalation'],
     'deno',
     '{"module": "governance-agent", "endpoints": ["evaluate", "ingest", "approve"]}'::jsonb
-  )
-ON CONFLICT (tenant_id, agent_name) DO UPDATE
-SET version = '2.0.0', updated_at = NOW();
+  );

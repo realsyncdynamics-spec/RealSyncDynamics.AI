@@ -297,6 +297,20 @@ PR als Draft öffnen, Review anfordern, dann mergen. Deploy erfolgt via GitHub A
 Bei Governance-Code zusätzlich dokumentieren: Zweck der Funktion · Sicherheitsrelevanz ·
 betroffene EU-AI-Act-Anforderung · DSGVO-Bezug.
 
+### Doku-Hygiene: erledigte Aufgaben dürfen gelöscht werden
+
+Abgearbeitete und veraltete Aufgaben-Dokumente werden **ohne Rückfrage entfernt** —
+die Git-History bleibt als Archiv erhalten.
+
+- **Löschen**: erledigte Checklisten · Tages-/Wochenpläne mit vergangenem Datum ·
+  Status-Snapshots abgeschlossener Arbeiten · Dokumente mit ✅-COMPLETE- oder
+  ERLEDIGT-Markierung, deren Inhalt nicht mehr gebraucht wird
+- **Behalten**: Runbooks, Playbooks, Templates, Specs, Architektur- und
+  Compliance-Nachweise — auch wenn die zugehörige Aufgabe erledigt ist
+- **Vor dem Löschen prüfen**: Wird die Datei noch referenziert (`grep -rl <name> .`)?
+  Bei Verweisen aus bleibenden Dateien entweder Referenz mitkorrigieren oder Datei behalten.
+  Keine toten Links hinterlassen.
+
 ---
 
 ## 10. Design-System & Design-Lock

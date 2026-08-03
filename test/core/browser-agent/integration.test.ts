@@ -16,10 +16,11 @@ describe('Browser-Agent Integration', () => {
   beforeEach(() => {
     orchestrator = new Orchestrator();
 
-    // Mock fetch for both scanner and logger
-    global.fetch = vi.fn((url: string) => {
+    // Mock fetch for both scanner and logger (correct fetch signature)
+    global.fetch = vi.fn((input: string | URL | Request) => {
+      const urlStr = typeof input === 'string' ? input : input.toString();
       // Mock playwright-scanner
-      if (url.includes('/scan')) {
+      if (urlStr.includes('/scan')) {
         return Promise.resolve(
           new Response(
             JSON.stringify({
@@ -63,7 +64,7 @@ describe('Browser-Agent Integration', () => {
       }
 
       // Mock browser-action-log
-      if (url.includes('browser-action-log')) {
+      if (urlStr.includes('browser-action-log')) {
         return Promise.resolve(
           new Response(JSON.stringify({ success: true, id: 'log-123' }), {
             status: 201,
@@ -71,7 +72,7 @@ describe('Browser-Agent Integration', () => {
         );
       }
 
-      return Promise.reject(new Error(`Unmocked URL: ${url}`));
+      return Promise.reject(new Error(`Unmocked URL: ${urlStr}`));
     });
   });
 
@@ -156,8 +157,9 @@ describe('Browser-Agent Integration', () => {
 
   it('should handle scanner failures gracefully', async () => {
     // Mock scanner failure
-    (global.fetch as any).mockImplementation((url: string) => {
-      if (url.includes('/scan')) {
+    (global.fetch as any).mockImplementation((input: string | URL | Request) => {
+      const urlStr = typeof input === 'string' ? input : input.toString();
+      if (urlStr.includes('/scan')) {
         return Promise.resolve(
           new Response(
             JSON.stringify({

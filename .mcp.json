@@ -1,5 +1,10 @@
 {
   "mcpServers": {
+    "perplexity-mcp": {
+      "command": "node",
+      "args": ["services/perplexity-mcp/src/index.js"],
+      "env": { "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}" }
+    },
     "hostinger-hosting": {
       "command": "npx",
       "args": ["--package=hostinger-api-mcp@latest", "hostinger-hosting-mcp"],

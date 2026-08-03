@@ -1,0 +1,25 @@
+{
+  "name": "perplexity-mcp",
+  "version": "1.0.0",
+  "description": "Perplexity MCP Server for RealSyncDynamicsAI — Web Search & Real-time Information",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "perplexity-mcp": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "axios": "^1.7.2",
+    "zod": "^3.23.8",
+    "pino": "^9.3.2",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

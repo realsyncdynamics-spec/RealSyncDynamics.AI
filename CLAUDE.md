@@ -17,7 +17,7 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
 - **Provenance (C2PA)** (80%) — Ed25519-Signatur, Custody-Auto-Capture, Externe Verifizierung
 
 ## Stack
-- **Frontend**: Vite 6.2.0 + React 19.0.0, TypeScript 5.8.2 (⚠️ strict: false), Tailwind 4.1.14 (Hard-Edge)
+- **Frontend**: Vite 6.2.0 + React 19.0.0, TypeScript 5.8.2 (strict: true), Tailwind 4.1.14 (Hard-Edge)
 - **Routing**: react-router-dom 7.17.0 (Lazy-loading Dashboard, /flow/*, /governance/*)
 - **Backend**: Supabase Cloud (PostgreSQL 16, RLS 100%, Edge Functions V8, Realtime Subscriptions)
 - **AI-Provider**: Anthropic SDK 0.32.1 (Claude 3.5 Sonnet) | Google GenAI 1.29.0 | OpenAI 4.77.0 | Ollama gemma3:4b + qwen3 (EU-lokal, Fallback)
@@ -50,7 +50,7 @@ Automatisierte Audit, Policy Management, Evidence Vault, Governance Runtime, C2P
 ## Befehle
 - **Dev**:           `npm run dev` (http://localhost:3000, Hot-Reload Vite)
 - **Build**:         `npm run build` (Vite SPA, dist/)
-- **Lint/Type**:     `npm run lint` (tsc --noEmit, ESLint) — **Note**: strict: false (Recommendation: Phase 3)
+- **Lint/Type**:     `npm run lint` (tsc --noEmit, ESLint)
 - **Tests**:         `npm test` (Vitest run, 251 Files)
 - **E2E**:           `npm run e2e` (Playwright, 25 passed + 3 skipped)
 - **Prod-Check**:    `npm run check:production` (TS noEmit, Sentry Release, Bundle-size)
@@ -257,7 +257,8 @@ Neue Datenstruktur in `src/config/`:
 - ✅ Evidence Vault mit Hash-Verifizierung produktiv nehmen
 - ✅ Governance Runtime Sentinel-Loop optimieren
 - ✅ Provenance (C2PA) mit Ed25519-Signatur + Custody-Auto-Capture
-- 🔄 **Phase 3 vorbereiten**: TypeScript strict-Migration, Social-Orchestrator (14 TODOs), Dashboard-UI (15% remaining)
+- ✅ TypeScript strict-Migration (tsconfig.json strict: true, 0 @ts-nocheck-Dateien)
+- 🔄 **Phase 3 vorbereiten**: Social-Orchestrator (14 TODOs), Dashboard-UI (15% remaining)
 - ⚠️ Migrations sauber additiv halten (RLS nicht brechen)
 - ⚠️ Tests (vitest/playwright) für neue Features ergänzen
 - ⚠️ Refactorings ohne Breaking Changes an öffentlichen Routen

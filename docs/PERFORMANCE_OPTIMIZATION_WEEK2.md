@@ -79,7 +79,7 @@ return result.industry;
 
 **Environment Variables:**
 ```bash
-REDIS_URL=redis://staging-redis.realsyncdynamics.ai:6379
+REDIS_URL=redis://staging-redis.realsyncdynamicsai.de:6379
 REDIS_PASSWORD=[staging-redis-password]
 REDIS_DB=2  # Separate DB for governance cache
 CACHE_TTL_POLICY_PACKS=3600  # 1 hour

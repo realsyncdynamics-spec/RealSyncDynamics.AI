@@ -258,7 +258,7 @@ Home
   ├─ Check: What is failing?
   │  ├─ Cloudflare Pages build → Check build logs
   │  ├─ Edge functions deploy → Check wrangler output
-  │  ├─ Health check failed → Manual verify: curl https://realsyncdynamics.ai/health
+  │  ├─ Health check failed → Manual verify: curl https://realsyncdynamicsai.de/health
   │  └─ Sentry notification failed → Check Sentry API token
   │
   ├─ Decision: Rollback or fix?

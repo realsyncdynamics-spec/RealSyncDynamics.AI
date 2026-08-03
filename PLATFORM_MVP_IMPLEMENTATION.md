@@ -282,6 +282,6 @@ function detectComplianceGaps(framework: string, currentState: ComplianceState):
 ## Contact & Support
 
 For issues or questions about implementation:
-- Email: hello@realsyncdynamics.ai
+- Email: hello@realsyncdynamicsai.de
 - GitHub: realsyncdynamics-spec/RealSyncDynamics.AI
 - PR: #806 (Platform-First Architecture MVP)

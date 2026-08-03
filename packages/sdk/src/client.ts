@@ -25,7 +25,7 @@ export class RealSyncDynamicsSDK {
 
   constructor(options: RealSyncDynamicsSDKOptions) {
     this.apiKey = options.apiKey;
-    this.baseURL = options.baseURL || 'https://api.realsyncdynamics.ai';
+    this.baseURL = options.baseURL || 'https://api.realsyncdynamicsai.de';
     this.timeout = options.timeout || 30000;
   }
 

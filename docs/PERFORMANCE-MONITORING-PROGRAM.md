@@ -359,7 +359,7 @@ scripts/
 ### Verification
 ```bash
 # Once deployed to production:
-curl https://realsyncdynamics.ai -I | grep -i sentry
+curl https://realsyncdynamicsai.de -I | grep -i sentry
 # Should return: Sentry-Trace header
 
 # In browser console on production site:

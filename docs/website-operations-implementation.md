@@ -379,7 +379,7 @@ POST /functions/v1/website-operations-agent {
 POST /functions/v1/website-domain-manager {
   project_id: "...",
   action: "connect-domain",
-  domain: "ink-art.realsyncdynamics.ai"
+  domain: "ink-art.realsyncdynamicsai.de"
 }
 // Response: { status: 'pending_validation', preview_url: '...' }
 ```
@@ -400,7 +400,7 @@ POST /functions/v1/cloudflare-deployer {
 
 POST /functions/v1/cloudflare-deployer {
   action: "setup-domain",
-  domain: "ink-art.realsyncdynamics.ai"
+  domain: "ink-art.realsyncdynamicsai.de"
 }
 // → Creates DNS CNAME record
 

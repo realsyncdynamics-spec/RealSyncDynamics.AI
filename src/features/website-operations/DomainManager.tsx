@@ -230,7 +230,7 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
               <div className="input-group">
                 <Input
                   label="Domain"
-                  placeholder="example.com or subdomain.realsyncdynamics.ai"
+                  placeholder="example.com or subdomain.realsyncdynamicsai.de"
                   value={newDomain}
                   onChange={(e) => setNewDomain(e.target.value)}
                 />
@@ -242,7 +242,7 @@ export function DomainManager({ projectId, onDomainConnected }: DomainManagerPro
 
               <div className="info-box">
                 <p>
-                  <strong>Subdomains:</strong> Use realsyncdynamics.ai subdomains for instant activation.
+                  <strong>Subdomains:</strong> Use realsyncdynamicsai.de subdomains for instant activation.
                 </p>
                 <p>
                   <strong>Custom domains:</strong> Bring your own domain (requires DNS update).

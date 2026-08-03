@@ -91,8 +91,8 @@ describe('Website Operations Layer', () => {
 
   describe('Domain Validation', () => {
     it('should validate subdomain format', () => {
-      const validSubdomain = 'test-site.realsyncdynamics.ai';
-      const regex = /^[a-z0-9-]+\.realsyncdynamics\.ai$/;
+      const validSubdomain = 'test-site.realsyncdynamicsai.de';
+      const regex = /^[a-z0-9-]+\.realsyncdynamicsai\.de$/;
       expect(regex.test(validSubdomain)).toBe(true);
     });
 
@@ -299,7 +299,7 @@ describe('Website Operations Layer', () => {
       const config = {
         pagesProjectName: 'realsyncdynamics-customer-sites',
         r2BucketName: 'realsyncdynamics-websites',
-        supportedTlds: ['realsyncdynamics.ai', 'de', 'com', 'eu'],
+        supportedTlds: ['realsyncdynamicsai.de', 'de', 'com', 'eu'],
       };
 
       expect(config.pagesProjectName).toBeDefined();
@@ -308,7 +308,7 @@ describe('Website Operations Layer', () => {
 
     it('should have valid email config for compliance notifications', () => {
       const emailConfig = {
-        fromAddress: 'compliance@realsyncdynamics.ai',
+        fromAddress: 'compliance@realsyncdynamicsai.de',
         fromName: 'RealSyncDynamics Compliance',
         templates: ['compliance-alert', 'dsgvo-warning', 'eu-ai-act-finding'],
       };

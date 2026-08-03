@@ -115,7 +115,7 @@ export function ImpressumPage() {
         },
         {
           heading: 'Kontakt',
-          body: ['E-Mail: kontakt@realsyncdynamics.ai', 'Telefon: [Telefonnummer]'],
+          body: ['E-Mail: kontakt@realsyncdynamicsai.de', 'Telefon: [Telefonnummer]'],
         },
         {
           heading: 'Vertreten durch',

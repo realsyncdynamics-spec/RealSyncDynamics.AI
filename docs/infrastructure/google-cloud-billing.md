@@ -43,7 +43,7 @@ realsync-dev-gcp-YYYY-MM  (für Staging/Testing)
 - Typ: „Enterprise" (für Revenue Sharing, kostenlos)
 - Zahlungsmethode: Kreditkarte (Primary) + SEPA-Überweisung (Secondary)
 - Rechnungsadresse: RealSyncDynamicsAI UG Registeradresse (Deutschland)
-- Kontakt: finance@realsyncdynamics.ai, ops@realsyncdynamics.ai
+- Kontakt: finance@realsyncdynamicsai.de, ops@realsyncdynamicsai.de
 
 **Linked Projects:**
 - realsync-prod-gcp-* → automatisch gebillt
@@ -52,7 +52,7 @@ realsync-dev-gcp-YYYY-MM  (für Staging/Testing)
 **Budget Alerts:**
 ```
 - Monthly alert at 80%, 100%, 120% of projected spend
-- Linked to ops@realsyncdynamics.ai
+- Linked to ops@realsyncdynamicsai.de
 - Automated notification via Cloud Monitoring
 ```
 
@@ -305,7 +305,7 @@ resource "google_project_iam_member" "vertex_ai_user" {
 Rotationszyklus: 90 Tage
 Gültigkeitsfenster: 30 Tage Overlap (alte + neue Schlüssel parallel)
 Audit-Trail: Cloud Audit Logs (25 Monate Retention)
-Benachrichtigung: ops-team@realsyncdynamics.ai (7 Tage vor Ablauf)
+Benachrichtigung: ops-team@realsyncdynamicsai.de (7 Tage vor Ablauf)
 ```
 
 **Prozess:**

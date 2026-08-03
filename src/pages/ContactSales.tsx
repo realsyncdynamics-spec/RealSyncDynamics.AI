@@ -20,6 +20,11 @@ export function ContactSales() {
   });
   const [source, setSource] = useState('direct');
   const [tier, setTier] = useState<string | null>(null);
+  // `?intent=` qualifiziert den Lead (enterprise, migration, pricing, …) und
+  // wird von ~12 Call-Sites gesetzt. Bis hierher wurde er nur für das
+  // Vorbelegen von use_case gelesen und dann verworfen — der Kanal, über den
+  // der Lead reinkam, ging im Backend verloren.
+  const [intent, setIntent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -44,8 +49,9 @@ export function ContactSales() {
     }
 
     // Pre-populate use_case based on intent parameter
-    const intent = params.get('intent');
-    if (intent === 'policy-customization') {
+    const i = params.get('intent')?.trim().slice(0, 100);
+    if (i) setIntent(i);
+    if (i === 'policy-customization') {
       setForm((prev) => ({ ...prev, use_case: 'compliance' }));
     }
   }, []);
@@ -71,6 +77,7 @@ export function ContactSales() {
           message: form.message.trim() || undefined,
           tier: tier || undefined,
           source,
+          intent: intent ?? undefined,
           path: window.location.pathname,
         }),
       });

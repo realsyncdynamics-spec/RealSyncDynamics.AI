@@ -36,43 +36,48 @@ bestehenden Subsysteme zu brechen.
 
 | # | Subsystem | Orchestrator | Run-/State-Tabellen | Agenten-Scope | Status |
 |---|---|---|---|---|---|
-| A | **Legacy Table-Scheduler** (`agent-scheduler`) | pg_cron → Edge Function, iteriert `agents` (enabled + Zeitfenster) | `agents` (aus `20260705180000_autonomous_agents_core.sql`); `agent_runs`/`agent_tasks` **wollte** dieselbe Migration ebenfalls anlegen, s. u. | 3 Typen: `governance`, `remediation`, `monitoring` — generische Compliance-Gap-Analyse | 🔴 vermutlich defekt — Schema-Kollision, s. u. (nicht 🟡, siehe Beleg) |
+| A | **Legacy Table-Scheduler** (`agent-scheduler`) | **kein** pg_cron-Job registriert (verifiziert gegen Produktion, s. u.) | keine — `public.agents` existiert nicht in Produktion | 3 Typen geplant: `governance`, `remediation`, `monitoring` — generische Compliance-Gap-Analyse | ⚪ nie deployed — Code liegt im Repo, aber weder Migration noch Cron-Trigger sind live (s. u.) |
 | B | **Agent OS Runtime (Phase B)** (`agent-os-runner`) | pg_cron (`hourly`/`daily`) → ein Runner, dispatcht an `deadlineSentinelRunner`, `monitoringSloRunner`, `governanceBriefRunner` | `agent_observations`, `agent_events`, `governance_alerts` (aus `20260526000000_agent_os_substrate.sql`) | Deadline-Sentinel (deterministisch), Monitoring-SLO (deterministisch), Hermes Governance-Brief (LLM, nur daily) | 🟢 deterministische Teile produktiv, LLM-Brief separat markiert |
 | C | **Enterprise AI-OS Agents** (`enterprise-ai-os-agents-run`) | On-demand über Edge Function, kein eigener Cron | `enterprise_agent_runs` (aus `20260513400000_enterprise_agent_runs.sql`, erweitert `20260720110000_enterprise_agents_runs.sql`) | 7-Agenten-Registry: Discovery, Risk Classification, Policy Enforcement, Audit, Feedback Intelligence, Remediation, Workflow (`_shared/enterprise-ai-os-agents.ts`) | 🟢 Logik produktiv, `autonomyLevel` pro Agent deklariert, aber **kein** gemeinsamer Approval-Gate-Mechanismus mit B |
 | D | **Growth-/Compliance-Agenten-Stack** | **n8n** auf Hostinger-VPS (SQLite für Workflow-Definitionen) | Supabase bleibt Datenwahrheit (`scan_runs`, `findings`, `workflow_runs`) | 5 Rollen: Growth Intelligence, Compliance Audit, Sales Conversion, Finance, DevOps Monitoring (`docs/growth-agent-stack.md`) | 🔴 Workflows **inaktiv** (Templates importiert, kein Echtbetrieb) |
 | — | **Governance Agent** (`governance-agent`) | On-demand, kein Cron | `agent_sessions`, `agent_runs` (Chat-Turns) | Konversationeller Compliance-Assistent, tool-use-loop über `agent-tools.ts` | 🟢 produktiv — **und** faktischer Eigentümer des `agent_runs`-Schemas, s. u. |
 
-**Konkreter Beleg der Fragmentierung — kein friedliches Nebeneinander,
-sondern ein stiller Migrations-Konflikt:** `agent_runs` und `agent_tasks`
-werden in **drei** Migrationen adressiert, chronologisch:
+**Konkreter Beleg — verifiziert gegen die Produktions-DB
+(`RealSyncDynamicsLive`, Projekt `ebljyceifhnlzhjfyxup`, 2026-07-29):**
 
-1. `20260516100000_governance_agent.sql` (16.05.) legt `agent_runs` **zuerst**
-   an — Schema für Chat-Turns (`session_id`, `actor_user_id` NOT NULL,
+1. `20260516100000_governance_agent.sql` (16.05.) legt `agent_runs` an —
+   Schema für Chat-Turns (`session_id`, `actor_user_id` NOT NULL,
    `user_message` NOT NULL, `llm_provider` NOT NULL, `llm_model` NOT NULL, …).
+   **Live bestätigt** via `information_schema.columns` — exakt dieses Schema
+   ist produktiv, kein `status`/`agent_id`/`input_params`.
 2. `20260526000000_agent_os_substrate.sql` (26.05.) legt `agent_tasks` und
-   `agent_events` **zuerst** an — Schema für die Agent-OS-Task-Queue
-   (`agent`, `task`, `priority`, `status`, `input`, `output`, …).
-3. `20260705180000_autonomous_agents_core.sql` (05.07., Subsystem A) versucht
-   **dieselben drei Tabellennamen** erneut anzulegen, aber jeweils in einem
-   `DO $$ … IF NOT EXISTS (SELECT … information_schema.tables …) …$$`-Block.
-   Da `agent_runs`/`agent_tasks`/`agent_events` zu diesem Zeitpunkt bereits
-   existieren, sind diese Blöcke **No-ops** — Subsystem A's eigenes Schema
-   wird nie angelegt. Nur `agents` selbst ist migrationsseitig kollisionsfrei.
+   `agent_events` an — Schema für die Agent-OS-Task-Queue (`agent`, `task`,
+   `priority`, `status`, `input`, `output`, …). **Live bestätigt**, `agent_tasks`
+   steht bei 0 Zeilen.
+3. `20260705180000_autonomous_agents_core.sql` (05.07., Subsystem A) — für
+   `agent_runs`/`agent_tasks`/`agent_events` in
+   `DO $$ … IF NOT EXISTS (SELECT … information_schema.tables …) …$$`-Blöcken
+   verpackt, die wegen (1)/(2) No-ops wären. **Entscheidender Fund:** diese
+   Migration ist laut `supabase_migrations.schema_migrations` **nie
+   angewendet worden** — nur `governance_agent` und `agent_os_substrate`
+   sind dort verzeichnet. Damit existiert `public.agents` in Produktion
+   **überhaupt nicht** (`relation "public.agents" does not exist`, live
+   verifiziert).
+4. `pg_cron`-Job-Liste (live abgefragt): nur `agent-os-runner-hourly` und
+   `agent-os-runner-daily` sind registriert. **Kein Cron-Job ruft
+   `agent-scheduler` auf.**
 
-**Praktische Konsequenz:** `agent-scheduler/index.ts` schreibt in
-`executeAgent()` u. a. `agent_id`, `triggered_by`, `status`, `input_params`
-nach `agent_runs` — Spalten, die im tatsächlich lebenden Schema (Governance-
-Agent-Chat-Log) nicht existieren, während dessen eigene `NOT NULL`-Spalten
-(`actor_user_id`, `user_message`, `llm_provider`, `llm_model`) fehlen.
-Dasselbe Muster trifft `executeRemediationAgent()`s Insert nach `agent_tasks`
-gegen das Agent-OS-Substrate-Schema. Beide Inserts sollten bei jedem Lauf mit
-einem Postgres-Fehler abbrechen — geprüft wurde dies nicht per Live-Query
-(kein DB-Zugriff aus diesem Review heraus), sondern rein migrationsseitig
-über Spaltenvergleich; eine Verifikation gegen die echte Staging-DB steht
-noch aus. Bis dahin gilt Status A als **vermutlich defekt, nicht als
-aktiv** — dieser Fund ist selbst das beste Argument für M0: eine Registry
-hätte "Subsystem A: 0 erfolgreiche Läufe" sofort sichtbar gemacht, statt
-dass es sich hinter drei getrennten Migrationen versteckt.
+**Praktische Konsequenz:** Subsystem A ist kein „vermutlich defektes,
+aktives" System, sondern **nie in Produktion gelandet**. `agent-scheduler/
+index.ts` liegt im Repo und ist deploybar, aber (a) niemand triggert es
+automatisiert und (b) selbst ein manueller Aufruf würde bei der ersten
+Zeile (`supabase.from("agents").select(...)`) mit „relation does not
+exist" abbrechen, weil seine eigene Migration nie lief. Der ursprünglich
+vermutete Schema-Konflikt bei `agent_runs`/`agent_tasks` ist damit real,
+aber nachrangig — das System kommt gar nicht so weit, ihn auszulösen.
+Dieser Fund ist selbst das beste Argument für M0: eine Registry hätte
+"Subsystem A: nie deployed" sofort sichtbar gemacht, statt dass es sich
+hinter einer nie angewendeten Migration versteckt.
 
 **Konsequenz für Beobachtbarkeit:** Um heute den Zustand *aller* Agenten
 eines Tenants zu sehen, müssen vier verschiedene Tabellen-Gruppen und ein
@@ -121,25 +126,21 @@ Prinzipien (analog `docs/architecture/agent-os.md` §1):
 existieren und wann sie zuletzt liefen — ohne ein bestehendes Subsystem
 anzufassen.
 
-- [ ] **Vorab-Klärung Subsystem A:** gegen Staging verifizieren, ob
-      `agent-scheduler`s Inserts nach `agent_runs`/`agent_tasks` tatsächlich
-      fehlschlagen (siehe Schema-Kollision, Abschnitt 2). Falls ja: A
-      entweder auf ein eigenes, kollisionsfreies Tabellenpräfix umziehen
-      (`legacy_agent_runs`/`legacy_agent_tasks`) oder — falls A ungenutzt
-      ist — bewusst als inaktiv/retired markieren, **bevor** A in die
-      Unified-View aufgenommen wird. Ein Union über eine Tabelle, die A gar
-      nicht wie erwartet beschreibt, würde falsche Daten zeigen.
+- [x] **Vorab-Klärung Subsystem A** — erledigt, siehe Abschnitt 2: gegen
+      Produktion verifiziert, dass `agent-scheduler` nie deployed wurde
+      (keine `agents`-Tabelle, kein Cron-Trigger). **Damit entfällt A als
+      Kandidat für die Unified-View** — es gibt nichts zu unionieren, nur
+      eine formale Retire-Entscheidung zu treffen (vorgezogen aus M4,
+      siehe dort).
 - [ ] `agent_registry`-View (oder Tabelle mit manuellem Seed): pro Agent
       `subsystem` (`legacy_scheduler` \| `agent_os_runtime` \|
       `enterprise_ai_os` \| `growth_stack` \| `governance_chat`),
       `agent_key`, `tenant_id`, `status`.
-- [ ] SQL-View `agent_runs_unified` — `UNION ALL` über `agent_runs`
-      (A, **erst nach obiger Klärung** — bis dahin schreibt A faktisch in
-      den Governance-Agent-Chat-Log oder gar nicht),
-      `agent_observations`/`agent_events` (B), `enterprise_agent_runs` (C).
-      n8n (D) bleibt vorerst außen vor (kein direkter DB-Zugriff aus n8n auf
-      Run-Ebene) und wird über `workflow_runs` gespiegelt, das D bereits
-      schreibt.
+- [ ] SQL-View `agent_runs_unified` — `UNION ALL` über
+      `agent_observations`/`agent_events` (B) und `enterprise_agent_runs`
+      (C). **A entfällt** (nie deployed, siehe Abschnitt 2). n8n (D) bleibt
+      vorerst außen vor (kein direkter DB-Zugriff aus n8n auf Run-Ebene) und
+      wird über `workflow_runs` gespiegelt, das D bereits schreibt.
 - [ ] Read-only Admin-Seite `/app/agents` (oder Erweiterung von
       `GovernanceRuntime*`): Liste aller Agenten mit letztem Lauf, Status,
       Fehlerquote der letzten 24h.
@@ -208,24 +209,26 @@ Queue ab, unabhängig davon, welches Subsystem sie erzeugt hat.
 
 ### M4 — Konsolidierung / Migrationsentscheidung
 
-**Ziel:** Datenbasierte Entscheidung, ob A (Legacy-Scheduler) in B (Agent OS
-Runtime) aufgeht, oder als eigenständiges, aber jetzt überwachtes Subsystem
-bestehen bleibt.
+**Ziel:** Datenbasierte Entscheidung für die verbleibenden Subsysteme B–D.
 
-- [ ] Auswertung aus M0–M3: Nutzungsvolumen, Fehlerquote, Tenant-Abdeckung
-      pro Subsystem.
-- [ ] Migrationsplan **nur** falls A signifikant genutzt wird UND
-      Funktionslücke zu B besteht (aktuell: A deckt generische
-      `compliance_gaps`-Analyse ab, die B nicht hat — vor Migration prüfen,
-      ob dieser Anwendungsfall noch gebraucht wird oder inzwischen durch C
-      abgedeckt ist).
+- [x] **Subsystem A ist bereits entschieden, vorgezogen aus M0:** nie
+      deployed (keine Tabelle, kein Cron), also keine Migration nötig —
+      nur Retire-Kennzeichnung. `agent-scheduler/index.ts` bleibt als
+      Referenzcode im Repo (mit Deprecation-Hinweis im Datei-Header), wird
+      aber nicht aktiviert. Falls die generische
+      `compliance_gaps`-Analyse, die A abdecken sollte, weiterhin gebraucht
+      wird, ist das ein **Neubau als Skill unter B/C**, keine Reaktivierung
+      von A — dessen Zieltabellen sind inzwischen anderweitig belegt
+      (Abschnitt 2).
+- [ ] Auswertung B/C/D aus M0–M3: Nutzungsvolumen, Fehlerquote,
+      Tenant-Abdeckung pro Subsystem.
 - [ ] n8n (D) bleibt bewusst **außerhalb** einer Runtime-Migration —
       Workflow-Orchestrierung auf VPS-Ebene ist kein Kandidat für die
       Postgres-Runtime, bleibt aber an M1/M2 angebunden.
 
-**Exit-Kriterium:** Für jedes Subsystem A–D existiert eine bewusste
+**Exit-Kriterium:** Für jedes Subsystem B–D existiert eine bewusste
 Entscheidung — "bleibt eigenständig, aber überwacht" oder "wird migriert" —
-keine unbeobachteten Alt-Systeme mehr.
+keine unbeobachteten Alt-Systeme mehr. (A: erledigt, s. o.)
 
 ---
 
@@ -253,16 +256,16 @@ keine unbeobachteten Alt-Systeme mehr.
   Kommunikation; "Agent Runtime"-Zeile referenziert diese Roadmap
 - `supabase/functions/_shared/enterprise-ai-os-agents.ts` — Subsystem-C-Registry
 - `supabase/functions/agent-os-runner/index.ts` — Subsystem-B-Runner
-- `supabase/functions/agent-scheduler/index.ts` — Subsystem-A-Runner, mutmaßlich
-  von der Schema-Kollision betroffen (Abschnitt 2)
+- `supabase/functions/agent-scheduler/index.ts` — Subsystem-A-Runner, nie
+  deployed, mit Deprecation-Hinweis im Header (Abschnitt 2)
 - `supabase/migrations/20260516100000_governance_agent.sql`,
   `20260526000000_agent_os_substrate.sql`,
-  `20260705180000_autonomous_agents_core.sql` — chronologischer Beleg der
-  `agent_runs`/`agent_tasks`/`agent_events`-Migrationskollision (Abschnitt 2)
+  `20260705180000_autonomous_agents_core.sql` — chronologischer Beleg;
+  Letztere ist laut `supabase_migrations.schema_migrations` nie angewendet
+  worden (Abschnitt 2)
 
 ---
 
-*Letzte Aktualisierung: 2026-07-29 — Status: M0 in Planung, kein Subsystem
-migriert. Offener Punkt: Live-Verifikation der `agent_runs`/`agent_tasks`-
-Schema-Kollision für Subsystem A gegen Staging (siehe Abschnitt 2) steht
-noch aus.*
+*Letzte Aktualisierung: 2026-07-29 — Status: M0-Vorabklärung für Subsystem A
+abgeschlossen (nie deployed, gegen Produktions-DB verifiziert). B/C/D:
+Read-Layer weiterhin in Planung. Kein Subsystem migriert.*

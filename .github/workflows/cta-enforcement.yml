@@ -35,7 +35,7 @@ jobs:
       - name: Grep public frontend for forbidden CTA phrases
         run: |
           # Mehrwort-CTA-Phrasen (synchron zu runtimeVocab.ts CI_FORBIDDEN_CTA).
-          PATTERN='Pilot anfragen|Pilot starten|Demo anfragen|Demo buchen|Gespräch buchen|Call buchen|Migration-Call|Strategie-Call|Beratung-Call|Sales-Call|Partner-Gespräch|Erstgespräch|Beratung anfragen|Beratungstermin|Vertrieb kontaktieren|Sales kontaktieren'
+          PATTERN='Pilot anfragen|Pilot starten|Demo anfragen|Demo buchen|Gespräch buchen|Call buchen|Migration-Call|Strategie-Call|Beratung-Call|Sales-Call|Partner-Gespräch|Erstgespräch|Beratung anfragen|Beratungstermin|Vertrieb kontaktieren|Sales kontaktieren|Termin vereinbaren|Termin buchen|Beratungsanfrage'
 
           # Scope: öffentliches Frontend, ohne Tests.
           if grep -rniE "$PATTERN" src/pages src/components \

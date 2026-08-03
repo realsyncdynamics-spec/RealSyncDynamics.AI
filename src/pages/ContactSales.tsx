@@ -19,11 +19,17 @@ export function ContactSales() {
     name: '', email: '', company: '', use_case: '', message: '',
   });
   const [source, setSource] = useState('direct');
+  const [tier, setTier] = useState<string | null>(null);
+  // `?intent=` qualifiziert den Lead (enterprise, migration, pricing, …) und
+  // wird von ~12 Call-Sites gesetzt. Bis hierher wurde er nur für das
+  // Vorbelegen von use_case gelesen und dann verworfen — der Kanal, über den
+  // der Lead reinkam, ging im Backend verloren.
+  const [intent, setIntent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  // Capture source (utm_source / ?source / referrer) and intent on mount
+  // Capture source (utm_source / ?source / referrer), tier, and intent on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const s = params.get('source') ?? params.get('utm_source');
@@ -36,9 +42,16 @@ export function ContactSales() {
       } catch { /* ignore */ }
     }
 
+    // Capture tier parameter (scale, enterprise, etc.)
+    const tierParam = params.get('tier');
+    if (tierParam) {
+      setTier(tierParam);
+    }
+
     // Pre-populate use_case based on intent parameter
-    const intent = params.get('intent');
-    if (intent === 'policy-customization') {
+    const i = params.get('intent')?.trim().slice(0, 100);
+    if (i) setIntent(i);
+    if (i === 'policy-customization') {
       setForm((prev) => ({ ...prev, use_case: 'compliance' }));
     }
   }, []);
@@ -62,7 +75,9 @@ export function ContactSales() {
           company: form.company.trim() || undefined,
           use_case: form.use_case || undefined,
           message: form.message.trim() || undefined,
+          tier: tier || undefined,
           source,
+          intent: intent ?? undefined,
           path: window.location.pathname,
         }),
       });
@@ -116,10 +131,10 @@ export function ContactSales() {
 
       <main className="max-w-xl mx-auto px-4 sm:px-6 py-10">
         <h1 className="font-display text-3xl font-bold text-titanium-50 tracking-tight mb-2">
-          Founding Access anfragen
+          {tier ? `${tier.charAt(0).toUpperCase()}${tier.slice(1)} — Founding Access` : 'Founding Access anfragen'}
         </h1>
         <p className="text-sm text-titanium-400 leading-relaxed mb-6">
-          14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 02.08.2026.
+          14 Tage kostenloser Enterprise-Zugang für 100 Unternehmen bis 31.12.2026.
           Gegenleistung: Feedback, Verbesserungsvorschläge und Screenshots von Fehlern. Onboarding
           komplett AI-geführt: Der Agent gleicht Deinen Use-Case mit den relevanten Features ab und
           schaltet den Zugang automatisiert frei.

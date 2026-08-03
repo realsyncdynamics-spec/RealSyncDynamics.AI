@@ -40,6 +40,41 @@ interface CacheEntry {
   planId: PlanId;
 }
 
+// Spiegelt die free_tier-Zeilen aus 20260707010000_phase2_free_tier_setup.sql.
+// Muss vollständig bleiben: fehlende Keys sperren im Dashboard Karten, die im
+// Free-Plan tatsächlich freigeschaltet sind.
+export const FREE_TIER_FALLBACK: EntitlementValue[] = [
+  { key: 'dashboard.access',              value: 1, kind: 'boolean' },
+  { key: 'website.scan',                  value: 1, kind: 'boolean' },
+  { key: 'website.scan_monthly_limit',    value: 3, kind: 'limit'   },
+  { key: 'evidence.basic_vault',          value: 1, kind: 'boolean' },
+  { key: 'governance.dsgvo_directory',    value: 1, kind: 'boolean' },
+  { key: 'governance.ai_register',        value: 1, kind: 'boolean' },
+  { key: 'reports.export',                value: 0, kind: 'boolean' },
+  { key: 'ai_classification.limited',     value: 0, kind: 'boolean' },
+  { key: 'bots.count',                    value: 0, kind: 'limit'   },
+];
+
+/**
+ * Leitet den Plan aus den Entitlements ab — der Rückfallweg, wenn keine
+ * aktive Subscription existiert. Betrachtet nur Keys, die der Free-Plan laut
+ * Migration *nicht* aktiv hat; `evidence.basic_vault` taugt dafür nicht, das
+ * ist auch im Free-Plan aktiv.
+ *
+ * Die maßgebliche Quelle ist `subscriptions.plan_key` (siehe unten) — diese
+ * Heuristik greift nur, solange dort nichts steht.
+ */
+export function inferTier(entitlements: EntitlementValue[]): TierId {
+  if (!entitlements.length) return 'free';
+  const on = (key: string) =>
+    entitlements.some((e) => e.key === key && (e.value === true || (e.value as number) > 0));
+
+  if (on('bots.count')) return 'agency';
+  if (on('ai_classification.limited')) return 'growth';
+  if (on('reports.export')) return 'starter';
+  return 'free';
+}
+
 const CACHE_TTL_MS = 60000; // 60 Sekunden
 let cacheKey = '';
 let cacheData: CacheEntry | null = null;
@@ -80,9 +115,11 @@ export function useEntitlements(): UserEntitlements {
       setLoading(true);
       const supabase = getSupabase();
 
-      // Der Plan ist die maßgebliche Quelle; die Entitlements liefern die
-      // aufgelösten Einzelwerte. Beide werden gemeinsam geladen, damit der
-      // Plan nicht mehr heuristisch aus Feature-Flags erraten werden muss.
+      // `subscriptions.plan_key` ist die maßgebliche Quelle; die Entitlements
+      // liefern die aufgelösten Einzelwerte. Beide werden gemeinsam geladen,
+      // damit der Plan nicht mehr heuristisch erraten werden muss — die
+      // Heuristik `inferTier()` bleibt nur als Rückfallweg für Tenants ohne
+      // Subscription-Zeile.
       const [entitlementsResult, subscriptionResult] = await Promise.all([
         supabase.rpc('tenant_entitlements', { p_tenant_id: activeTenantId }),
         supabase
@@ -98,17 +135,22 @@ export function useEntitlements(): UserEntitlements {
       const subscription = subscriptionResult.data;
       const active = subscription?.status === 'active' || subscription?.status === 'trialing';
       const resolvedPlan = active ? resolvePlan(subscription?.plan_key) : null;
-      const nextPlanId: PlanId = resolvedPlan?.id ?? 'free';
 
       if (entitlementsResult.error) {
         console.error('Failed to fetch entitlements:', entitlementsResult.error);
-        setEntitlements([]);
+        // Nicht auf ein leeres Array zurückfallen: fehlende Keys sperren im
+        // Dashboard Karten, die im Free-Plan tatsächlich freigeschaltet sind.
+        setEntitlements(FREE_TIER_FALLBACK);
         setPlanId('free');
         setError('Failed to load entitlements; reverting to free plan');
         return;
       }
 
       const ents = (entitlementsResult.data || []) as EntitlementValue[];
+      // Ohne aktive Subscription den Plan aus den Entitlements ableiten,
+      // statt pauschal `free` anzunehmen — sonst verlieren Tenants, deren
+      // Plan nur über Entitlements gesetzt ist, ihre Freischaltungen.
+      const nextPlanId: PlanId = resolvedPlan?.id ?? inferTier(ents);
       setEntitlements(ents);
       setPlanId(nextPlanId);
       cacheKey = activeTenantId;

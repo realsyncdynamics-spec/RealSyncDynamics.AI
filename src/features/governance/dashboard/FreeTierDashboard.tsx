@@ -1,9 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { ORDERED_PLANS, type PlanId } from '@/shared/pricing';
 import { useNavigate } from 'react-router-dom';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { useTenant } from '../../../core/access/TenantProvider';
+import { useMfaRequirements } from '../../../core/billing/useMfaRequirements';
 import { ScanActionGuard } from '../../../core/billing/ScanActionGuard';
-import { ArrowRight, Zap, Lock } from 'lucide-react';
+import { ArrowRight, Zap, Lock, ShieldAlert } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 import { usePerformanceMonitor, measureAsync } from '../../../lib/performance';
 
@@ -15,8 +17,16 @@ interface DashboardCard {
   cta: string;
   path?: string;
   action?: () => void;
-  tier: 'free' | 'starter' | 'growth' | 'agency' | 'partner' | 'enterprise';
+  // Plan-Bezeichner aus der Pricing-SSoT — kein eigenes Tier-Vokabular.
+  tier: PlanId;
+  mfaFeatureKey?: string; // Optional MFA feature key for sensitive operations
 }
+
+// Anzeigenamen kommen aus der Pricing-SSoT — keine zweite Namensliste.
+const TIER_LABELS: Record<PlanId, string> = ORDERED_PLANS.reduce(
+  (acc, plan) => { acc[plan.id] = plan.name; return acc; },
+  {} as Record<PlanId, string>,
+);
 
 const DASHBOARD_CARDS: DashboardCard[] = [
   {
@@ -79,8 +89,9 @@ export function FreeTierDashboard() {
   usePerformanceMonitor('FreeTierDashboard', { threshold: 300 });
 
   const navigate = useNavigate();
-  const { tier, hasFeature, canAccess } = useEntitlements();
+  const { tier, loading: entitlementsLoading, hasFeature, canAccess } = useEntitlements();
   const { activeTenantId, tenants } = useTenant();
+  const { checkMfaRequired } = useMfaRequirements();
   const [tenantDetails, setTenantDetails] = useState<{ orgName?: string; tenantType?: string } | null>(null);
 
   const tenant = useMemo(() => {
@@ -146,6 +157,15 @@ export function FreeTierDashboard() {
     }
   }, [tenantDetails]);
 
+  // Determine why a feature is locked (plan tier or MFA requirement)
+  const getFeatureLockReason = (feature: DashboardCard) => {
+    const mfaReq = checkMfaRequired(feature.mfaFeatureKey || '');
+    if (mfaReq.requiresMfa && mfaReq.reason) {
+      return mfaReq.reason;
+    }
+    return `Verfügbar ab Plan: ${TIER_LABELS[feature.tier]}`;
+  };
+
   return (
     <div className="dashboard-context min-h-screen bg-obsidian-950 p-6">
       <div className="max-w-7xl mx-auto">
@@ -157,7 +177,9 @@ export function FreeTierDashboard() {
                 {welcomeMessage}
               </h1>
               <p className="text-titanium-400">
-                Plan: <span className="font-semibold capitalize text-titanium-300">{tier}</span>
+                Plan: <span className="font-semibold text-titanium-300">
+                  {entitlementsLoading ? '…' : TIER_LABELS[tier]}
+                </span>
               </p>
             </div>
             <button
@@ -173,7 +195,9 @@ export function FreeTierDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-4 bg-obsidian-900 border border-titanium-800 rounded-none">
               <p className="text-xs text-titanium-500 font-mono mb-1">PLAN</p>
-              <p className="text-lg font-semibold text-titanium-300 capitalize">{tier}</p>
+              <p className="text-lg font-semibold text-titanium-300">
+                {entitlementsLoading ? '–' : TIER_LABELS[tier]}
+              </p>
             </div>
             <div className="p-4 bg-obsidian-900 border border-titanium-800 rounded-none">
               <p className="text-xs text-titanium-500 font-mono mb-1">ORG-TYP</p>
@@ -188,7 +212,9 @@ export function FreeTierDashboard() {
             <div className="p-4 bg-obsidian-900 border border-titanium-800 rounded-none">
               <p className="text-xs text-titanium-500 font-mono mb-1">FEATURES</p>
               <p className="text-lg font-semibold text-titanium-300">
-                {accessibleCards.filter((c) => c.accessible).length}/{accessibleCards.length}
+                {entitlementsLoading
+                  ? '–'
+                  : `${accessibleCards.filter((c) => c.accessible).length}/${accessibleCards.length}`}
               </p>
             </div>
           </div>
@@ -242,49 +268,69 @@ export function FreeTierDashboard() {
               }
 
               // Regular card rendering for other features
+              // Während Entitlements laden: kein Schloss, kein Upgrade-Hinweis —
+              // sonst erscheinen freigeschaltete Features fälschlich gesperrt.
+              const locked = !entitlementsLoading && !card.accessible;
+              const lockReason = locked ? getFeatureLockReason(card) : undefined;
+
               return (
-                <button
-                  key={card.id}
-                  onClick={() => {
-                    if (card.accessible && card.path) {
-                      navigate(card.path);
-                    } else if (!card.accessible && card.access.upgradeUrl) {
-                      navigate(card.access.upgradeUrl);
-                    }
-                  }}
-                  disabled={!card.accessible}
-                  className={`
-                    text-left p-5 rounded-none border transition-all
-                    ${card.accessible
-                      ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
-                      : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-titanium-50 flex-1">
-                      {card.title}
-                    </h3>
-                    {!card.accessible && (
-                      <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
-                    )}
-                  </div>
+                <div key={card.id} className="relative group">
+                  <button
+                    onClick={() => {
+                      if (card.accessible && card.path) {
+                        navigate(card.path);
+                      } else if (locked && card.access.upgradeUrl) {
+                        navigate(card.access.upgradeUrl);
+                      }
+                    }}
+                    disabled={entitlementsLoading || !card.accessible}
+                    className={`
+                      text-left p-5 rounded-none border transition-all w-full
+                      ${card.accessible
+                        ? 'bg-obsidian-900 border-titanium-700 hover:border-ai-cyan-400 hover:bg-obsidian-800 cursor-pointer'
+                        : 'bg-obsidian-950 border-titanium-900 opacity-60 cursor-not-allowed'
+                      }
+                    `}
+                    title={lockReason}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-titanium-50 flex-1">
+                        {card.title}
+                      </h3>
+                      {locked && (
+                        <Lock className="w-4 h-4 text-amber-600 shrink-0 ml-2" />
+                      )}
+                    </div>
 
-                  <p className="text-xs text-titanium-400 mb-4">
-                    {card.description}
-                  </p>
+                    <p className="text-xs text-titanium-400 mb-4">
+                      {card.description}
+                    </p>
 
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-mono px-2 py-1 rounded-none ${
-                      card.accessible
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : 'bg-amber-500/10 text-amber-400'
-                    }`}>
-                      {card.accessible ? 'Verfügbar' : `Ab ${card.tier}`}
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-titanium-500" />
-                  </div>
-                </button>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-mono px-2 py-1 rounded-none ${
+                        entitlementsLoading
+                          ? 'bg-titanium-500/10 text-titanium-400'
+                          : card.accessible
+                            ? 'bg-emerald-500/10 text-emerald-400'
+                            : 'bg-amber-500/10 text-amber-400'
+                      }`}>
+                        {entitlementsLoading
+                          ? 'Lädt …'
+                          : card.accessible
+                            ? 'Verfügbar'
+                            : `Ab ${TIER_LABELS[card.tier]}`}
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-titanium-500" />
+                    </div>
+                  </button>
+
+                  {/* Tooltip on hover for locked cards */}
+                  {locked && lockReason && (
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-obsidian-800 border border-titanium-600 rounded px-2 py-1 text-xs text-titanium-300 whitespace-nowrap z-10">
+                      {lockReason}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

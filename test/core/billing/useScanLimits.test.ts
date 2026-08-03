@@ -48,6 +48,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -93,6 +96,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -134,6 +140,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -173,6 +182,9 @@ describe('useScanLimits', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured').mockReturnValue(true);
 
     const mockSupabase = {
+      // TenantProvider registriert einen onAuthStateChange-Listener —
+      // der Mock muss die Auth-API daher mit abbilden.
+      auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }) },
       from: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({

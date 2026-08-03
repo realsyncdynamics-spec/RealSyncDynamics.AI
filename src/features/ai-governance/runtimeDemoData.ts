@@ -124,7 +124,7 @@ export const demoRuntimeEvents: AiRuntimeEventDemo[] = [
     dataClass: 'internal',
     riskLevel: 'low',
     policyStatus: 'logged',
-    summary: 'Agent ruft internen Webhook-Tool fuer Deployment-Status auf',
+    summary: 'Agent ruft internen Webhook-Tool für Deployment-Status auf',
   },
   {
     id: 'rte-009',

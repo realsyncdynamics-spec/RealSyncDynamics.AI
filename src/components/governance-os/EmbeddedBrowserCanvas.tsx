@@ -366,12 +366,26 @@ export function EmbeddedBrowserCanvas({
           </div>
         )}
 
+        {/*
+          Kein `allow-same-origin`: zusammen mit `allow-scripts` hebt es die
+          Sandbox auf, sobald der eingebettete Inhalt gleichorigin ist — das
+          Dokument kann dann das sandbox-Attribut im Elterndokument entfernen.
+          Genau dieser Fall ist der einzige, den die CSP überhaupt zulässt
+          (`frame-src` fällt auf `default-src 'self'` zurück), fremde Hosts
+          werden ohnehin blockiert.
+
+          Ohne das Flag bekommt der eingebettete Inhalt eine opake Herkunft und
+          damit keinen Zugriff auf Cookies oder Storage. Für eine
+          Governance-Vorschau ist das kein Verlust, sondern näher am Zweck: man
+          sieht die Seite so, wie sie einem Erstbesucher ohne Sitzung begegnet.
+          Siehe COMPLIANCE_AUDIT_2026-07.md, „Governance-Browser vs. frame-src".
+        */}
         <iframe
           ref={iframeRef}
           src={url}
           title={`Governance Preview: ${displayHost}`}
           className="w-full h-full border-0"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          sandbox="allow-scripts allow-popups allow-forms"
           onLoad={handleLoad}
           onError={handleError}
         />

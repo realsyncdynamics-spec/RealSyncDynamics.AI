@@ -164,11 +164,26 @@ Nach korrektem DS-Eintrag wechselt der Status üblicherweise innerhalb von
 | Cloudflare bietet DNSSEC gar nicht an | Domain liegt noch (teilweise) bei Registrar-DNS | DNSSEC deaktivieren, Domain vollständig zu Cloudflare migrieren, Nameserver umstellen, danach erneut aktivieren |
 | Seite nach DNSSEC-Aktivierung nicht erreichbar | DS-Record falsch eingetragen (Validierungsfehler) | DS-Record beim Registrar löschen, mit korrekten Werten neu eintragen |
 
-## CSP-Hinweis (bewusst kein Header hier)
+## CSP-Hinweis (hier kein Header — anderer Deployment-Pfad)
 
-`index.html` liefert eine wirksame `<meta http-equiv="Content-Security-Policy">`.
-Ein zusätzlicher CSP-**Header** würde mit der Meta-CSP zur **restriktivsten
-Schnittmenge** kombiniert → Risiko blockierter Assets. Wenn die Meta-CSP
-künftig entfernt wird, kann in `main.tf` ein `Content-Security-Policy`-Header
-(inkl. `frame-ancestors 'self'`) ergänzt werden — dann ist `X-Frame-Options`
-sogar redundant.
+Frühere Fassung dieses Abschnitts sagte, die `<meta>`-CSP in `index.html` sei
+ausreichend. Das gilt seit dem DSGVO-Hotfix (M-3) nicht mehr:
+
+- Der **Live-Pfad ist Cloudflare Pages**, und der liefert einen echten
+  `Content-Security-Policy`-Header aus `public/_headers` — am ausgelieferten
+  Deployment per `curl` verifiziert.
+- `frame-ancestors` war im `<meta>` **nie wirksam**: die Direktive wird dort per
+  Spezifikation ignoriert. Genau deshalb kam der Header dazu.
+
+Dieses Terraform-Artefakt beschreibt einen **anderen** Pfad: einen
+Cloudflare-Proxy vor GitHub Pages. Für den gilt:
+
+- `public/_headers` wird ausschließlich von Cloudflare Pages ausgewertet.
+  GitHub Pages kann keine Response-Header setzen.
+- Wird dieser Pfad also jemals aktiviert, **muss** die CSP in `main.tf`
+  ergänzt werden — sonst liefe die Seite ganz ohne CSP-Header.
+
+Beim Ergänzen: Meta-CSP und Header-CSP inhaltlich identisch halten, plus
+`frame-ancestors 'self'` im Header. Beide werden zur **restriktivsten
+Schnittmenge** kombiniert; abweichende Policies blockieren sonst Assets. Mit
+`frame-ancestors` im Header ist `X-Frame-Options` dann redundant.

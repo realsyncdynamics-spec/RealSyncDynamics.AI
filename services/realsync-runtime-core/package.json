@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "migrate": "node src/db/migrate.js"
+    "migrate": "node src/db/migrate.js",
+    "cf:dev": "wrangler dev",
+    "cf:deploy": "wrangler deploy"
   },
   "dependencies": {
     "fastify": "^4.28.1",
@@ -20,5 +22,9 @@
     "pino": "^9.3.2",
     "dotenv": "^16.4.5",
     "crypto": "^1.0.1"
+  },
+  "devDependencies": {
+    "@cloudflare/containers": "^0.3.7",
+    "wrangler": "^4.112.0"
   }
 }

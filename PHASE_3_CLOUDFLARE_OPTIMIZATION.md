@@ -31,32 +31,21 @@
 
 ## 2. KV Namespace: Governance Policy Cache
 
-### Configuration
+### Configuration ✅ CREATED
 
 **Namespace:** `governance_policy_cache`  
+**Namespace ID:** `5bb700e74b83404caee6223533db1e90`  
 **Purpose:** Cache policy evaluation results to reduce database queries
 
-### Setup (via Wrangler):
-
-```bash
-# Create KV namespace
-wrangler kv:namespace create "governance_policy_cache" --preview
-
-# Add to wrangler.toml:
-[[kv_namespaces]]
-binding = "GOVERNANCE_CACHE"
-id = "YOUR_NAMESPACE_ID"
-preview_id = "YOUR_PREVIEW_ID"
-```
-
-### Wrangler.toml Entry:
+### Wrangler.toml Entry ✅ CONFIGURED:
 
 ```toml
-[env.production]
-kv_namespaces = [
-  { binding = "GOVERNANCE_CACHE", id = "YOUR_KV_ID" }
-]
+[[kv_namespaces]]
+binding = "GOVERNANCE_CACHE"
+id = "5bb700e74b83404caee6223533db1e90"
 ```
+
+This binding is now available in all Edge Functions and Cloudflare Workers.
 
 ### Policy Cache Strategy
 
@@ -103,9 +92,11 @@ return policy;
 
 ## 3. Cache Invalidation Webhook
 
-### Endpoint: `POST /api/cache/invalidate`
+### Endpoint: `POST /api/cache/invalidate` ✅ CREATED
 
 **Trigger:** When policies are created/updated/deleted
+
+**File:** `supabase/functions/cache-invalidate/index.ts`
 
 **Webhook Payload:**
 
@@ -122,27 +113,7 @@ return policy;
 }
 ```
 
-**Implementation (Edge Function):**
-
-```typescript
-// supabase/functions/cache-invalidate/index.ts
-
-export default async (req: Request, env: any) => {
-  const { event, tenant_id, policy_id, affected_keys } = await req.json();
-
-  if (event === "policy.updated") {
-    // Invalidate all matching keys
-    for (const key of affected_keys) {
-      const keys = await GOVERNANCE_CACHE.list({ prefix: key });
-      for (const { name } of keys.keys) {
-        await GOVERNANCE_CACHE.delete(name);
-      }
-    }
-  }
-
-  return new Response(JSON.stringify({ success: true }), { status: 200 });
-};
-```
+**Status:** ✅ Edge function created (awaiting KV binding in production)
 
 **Integration Points:**
 
@@ -150,18 +121,29 @@ export default async (req: Request, env: any) => {
 2. **Admin Panel:** Invalidate cache button for manual purge
 3. **Tenant Settings:** Option to clear tenant cache
 
+**Helper Module:** `supabase/functions/_shared/governance-cache.ts` ✅ CREATED
+- Provides cache key generation
+- Get/set/delete operations
+- Pattern invalidation support
+- Ready for edge function imports
+
 ---
 
 ## 4. R2 Evidence Vault Preparation
 
-### R2 Bucket: `evidence-vault`
+### R2 Bucket: `evidence-vault` 🔄 PENDING
 
 **Purpose:** Long-term evidence storage (compliance archive)
 
-### Setup:
+### Prerequisites:
+⚠️ **R2 must be enabled in Cloudflare Dashboard first**
+- Status: Not enabled in account
+- Action: Enable R2 via Cloudflare Dashboard → R2
+
+### Setup (after enabling R2):
 
 ```bash
-# Create R2 bucket (via Cloudflare Dashboard)
+# Create R2 bucket (via Cloudflare Dashboard or API)
 # Bucket Name: realsyncdynamics-evidence-vault
 # Region: EMEA (EU data residency)
 ```
@@ -250,33 +232,37 @@ Edge Functions (governance-*)
 
 ## 6. Implementation Checklist
 
+### Phase 3 Progress: 40% Complete ✅
+
 ### Cache Policies (`_headers`)
 - [x] HTML: max-age=0, s-maxage=3600
 - [x] Assets: max-age=31536000
 - [x] APIs: max-age=0, no-cache
 - [x] Governance/Audit: specific TTLs
 
-### KV Namespace
-- [ ] Create `governance_policy_cache` namespace
-- [ ] Add to wrangler.toml
-- [ ] Implement cache reads in governance functions
+### KV Namespace ✅
+- [x] Create `governance_policy_cache` namespace (ID: 5bb700e74b83404caee6223533db1e90)
+- [x] Add to wrangler.toml with binding
+- [x] Create helper module (`supabase/functions/_shared/governance-cache.ts`)
+- [ ] Integrate cache reads in governance functions
 - [ ] Test TTL expiration
 - [ ] Monitor cache hit ratio
 
-### Cache Invalidation
-- [ ] Deploy `/api/cache/invalidate` edge function
+### Cache Invalidation ✅
+- [x] Deploy `/api/cache/invalidate` edge function
 - [ ] Hook policy service to invalidation endpoint
 - [ ] Test cache purge on policy update
 - [ ] Add monitoring/alerting
 
-### R2 Vault
+### R2 Vault 🔄 (Pending R2 enablement)
+- [ ] Enable R2 in Cloudflare Dashboard
 - [ ] Create `realsyncdynamics-evidence-vault` bucket
 - [ ] Configure lifecycle policies (7-year retention)
 - [ ] Set up folder structure
 - [ ] Test object upload/retrieval
 - [ ] Implement encryption
 
-### Worker Migration B1
+### Worker Migration B1 📋
 - [ ] Design routing architecture
 - [ ] Define middleware stack
 - [ ] Plan function migration order

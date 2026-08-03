@@ -16,3 +16,8 @@
 name = "realsyncdynamics-ai"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-06-23"
+
+# Phase 3: KV Namespace for Governance Policy Cache
+[[kv_namespaces]]
+binding = "GOVERNANCE_CACHE"
+id = "5bb700e74b83404caee6223533db1e90"

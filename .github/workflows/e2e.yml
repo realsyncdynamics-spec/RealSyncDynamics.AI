@@ -49,12 +49,11 @@ jobs:
         run: npm ci
 
       - name: Build Application
-        # E2E testet die laufende SPA, nicht das prerenderte HTML — der
-        # Prerender wuerde hier nur ~1 Minute kosten.
-        env:
-          SKIP_PRERENDER: '1'
         run: npm run build
         env:
+          # E2E testet die laufende SPA, nicht das prerenderte HTML — der
+          # Prerender waere hier reine Wartezeit.
+          SKIP_PRERENDER: '1'
           # Dummy-Pixel-IDs, damit die Consent-Gating-Tests in
           # e2e/cookie-consent.spec.ts wirklich messen können. `pixels.ts` lädt
           # die Pixel nur bei gesetzten IDs — ohne sie feuert auch nach einer

@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build && npm run generate:legal-pages",
-    "build:full": "npm run build && npm run prerender",
+    "build:base": "vite build && npm run generate:legal-pages",
+    "build": "npm run build:base && npm run prerender:safe",
+    "build:full": "npm run build:base && npm run prerender",
     "generate:legal-pages": "node scripts/generate-static-legal-pages.mjs",
     "prerender": "node scripts/prerender.mjs",
+    "prerender:safe": "node scripts/prerender.mjs || echo '[prerender] uebersprungen (non-fatal) — Build laeuft ohne Prerender weiter'",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
@@ -62,6 +64,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
+    "playwright": "^1.59.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/chrome": "^0.2.0",

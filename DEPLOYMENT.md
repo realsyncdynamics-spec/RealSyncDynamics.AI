@@ -56,6 +56,78 @@ RealSyncDynamics.AI is a complete EU-sovereign SaaS compliance platform for the 
 3. **Client SDK** - `@realsyncdynamics/sdk` (npm package)
 4. **Webhooks** - Event delivery system with retry logic
 
+### Deployment-Ziele — was tatsächlich deployt
+
+| Ziel | Was | Steuerung |
+|------|-----|-----------|
+| **Cloudflare Pages** | Frontend (Live-Site) | Native Git-Integration von Cloudflare, ohne Repo-Secret. `deploy-cloudflare-pages.yml` ist primär Build-Validierung; der `deploy`-Job springt nur an, wenn `CLOUDFLARE_API_TOKEN` und `CLOUDFLARE_ACCOUNT_ID` gesetzt sind. |
+| **Supabase** | Datenbank, Edge Functions | `supabase db push` + `supabase functions deploy`, nur von `main`. |
+| **VPS (Docker/Traefik)** | Ollama, Hermes, AnythingLLM, Uptime Kuma | `docker-deploy.yml` → `scripts/deploy.sh`. Siehe `DOCKER_SETUP.md`. |
+| **Vercel** | *nichts* | Siehe unten. |
+
+#### Vercel ist nicht in Benutzung
+
+Zwei Vercel-Projekte hängen als GitHub-App an diesem Repository und erzeugen an
+**jedem** Pull Request zwei rote Checks plus Bot-Kommentare. Sie deployen nichts
+und blockieren auch keinen Merge — `mergeable_state: blocked` kommt von der
+Review-Pflicht, nicht von Vercel.
+
+| Projekt | Fehler (Stand 2026-07-27) | Ursache |
+|---------|---------------------------|---------|
+| `real-sync-dynamics-ai`<br>`prj_6zUFI7RKzL0yp9mJHfj25EDpAM8g` | `Account is blocked` | Zuvor `Deployment has failed`: das Root Directory zeigt auf `services/realsync-runtime-core` — ein Fastify-Backend mit Postgres/Redis/NATS auf Port 4000. Es hat einen `Dockerfile` und die Scripts `start`, `dev`, `migrate`, aber **kein** `build`. Der Dienst gehört in den Container-Stack, nicht zu Vercel. |
+| `real-sync-dynamics-ai-9ue5` | `Account is blocked` | Kontosperre; kommt gar nicht erst zum Bauen. |
+
+Beide gehören zum Team `realsynchost-c3f4cfdf`.
+
+Seit dem 27.07.2026 melden **beide** Einzelstatus `Account is blocked` — zwischen
+zwei Commits im Abstand von drei Minuten wechselte das erste Projekt von
+`Deployment has failed` auf `Account is blocked`.
+
+Wirkung der Abschaltung (siehe unten). Gemessen wurde sie am Commit `4179289`
+mit der damaligen Variante *Ignored Build Step*; seit dem Merge von `main` steht
+dort das stärkere `git.deploymentEnabled: false`:
+
+| Status | Vorher | Nachher |
+|--------|--------|---------|
+| `Vercel Deployments – realsynchost` (Sammelstatus) | failure — „1 required project failed to deploy" | **success** — „All required and affected projects deployed" |
+| `Vercel – real-sync-dynamics-ai` | failure | failure (`Account is blocked`) |
+| `Vercel – real-sync-dynamics-ai-9ue5` | failure | failure (`Account is blocked`) |
+
+Das Deployment des ersten Projekts wird laut Vercel-Bot als `Ignored` geführt,
+der Sammelstatus zählt es dadurch nicht mehr als gescheitert. Die beiden
+Einzelstatus werden nach dem Ignorieren nicht mehr nachgezogen und bleiben rot.
+
+Die Verbindung besteht ausschließlich im Vercel-Dashboard. Im Repository gibt es
+kein `.vercel/`, keine Erwähnung in einem Workflow und keine Abhängigkeit in
+`package.json`.
+
+Die einzige Vercel-Datei ist `services/realsync-runtime-core/vercel.json`. Sie
+schaltet mit `{"git": {"deploymentEnabled": false}}` die Git-Deployments für das
+betroffene Projekt ab, sodass Vercel dafür gar kein Deployment mehr anlegt.
+**Das ist eine Notlösung gegen den roten Dauer-Check, keine Reparatur.** Sie
+bringt den Sammelstatus auf grün, die beiden Einzelstatus bleiben rot, solange
+das Konto gesperrt ist — **vollständig grün wird Vercel aus dem Repository
+heraus nicht.** Begründung im Detail:
+`services/realsync-runtime-core/README.md`.
+
+*(Die beiden `vercel`-Treffer im Quellcode sind unbeteiligt: ein Vendor-Enum in
+`src/features/governance/remediation/types.ts` und ein Doku-Absatz in
+`DeploymentGovernancePage.tsx` darüber, dass die Plattform fremde Seiten auf
+`vercel.json` scannt.)*
+
+**Aufräumen** (nur im Dashboard möglich, nicht aus dem Repo):
+
+1. Pro Projekt unter https://vercel.com/realsynchost-c3f4cfdf → *Settings → Git → Disconnect*.
+   Das allein beendet die PR-Checks und die Bot-Kommentare.
+2. Falls die Projekte ohnehin nichts deployen: *Settings → Advanced → Delete Project*.
+3. Alternativ für beide auf einmal: die GitHub-App unter
+   https://github.com/settings/installations für dieses Repository entziehen.
+
+> Stand der Prüfung: statisch am Repository verifiziert. Die Projektangaben
+> stammen aus den Commit-Status- und Bot-Payloads der PRs — ein Abgleich über
+> die Vercel-API war nicht möglich (`list_teams` leer, `get_project` 403),
+> vermutlich wegen der Kontosperre.
+
 ## Environment Configuration
 
 ### Required Environment Variables

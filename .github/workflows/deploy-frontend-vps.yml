@@ -1,20 +1,10 @@
 name: Deploy Frontend to Hostinger VPS
 
+# Stillgelegt am 2026-08-03: Production-Ziel des Frontends ist Cloudflare Pages
+# (CLAUDE.md §2). Der Push-Trigger wurde entfernt, weil der Hostinger-VPS ueber
+# Port 22 nicht erreichbar ist und jeder Push nach main dadurch rot wurde.
+# Die Secret-Namen hier sind korrekt (VPS_SSH_*) — es fehlt nur die Konnektivitaet.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'tsconfig.json'
-      - 'tailwind.config.js'
-      - 'Dockerfile.frontend'
-      - 'deploy/frontend-vps-deploy-v2/**'
-      - '.github/workflows/deploy-frontend-vps.yml'
   workflow_dispatch:
 
 jobs:

@@ -1,21 +1,11 @@
 name: Docker Deploy to VPS
 
-# Trigger on push to main branch
+# Stillgelegt am 2026-08-03: deployt den Docker-Stack auf den Hostinger-VPS, der
+# ueber Port 22 nicht erreichbar ist. Zusaetzlich referenziert dieser Workflow die
+# Secret-Namen VPS_HOST, VPS_USER und DEPLOY_PATH, die im Repo nicht existieren
+# (gesetzt sind VPS_SSH_HOST, VPS_SSH_USER, VPS_FRONTEND_PATH) — er konnte also
+# ohnehin nie durchlaufen. Beides vor dem Reaktivieren beheben.
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'Dockerfile.frontend'
-      - 'docker-compose.yml'
-      - '.env.docker.example'
-      - 'traefik/**'
-      - 'scripts/deploy.sh'
-      - '.github/workflows/docker-deploy.yml'
   workflow_dispatch:  # Allow manual trigger
 
 env:

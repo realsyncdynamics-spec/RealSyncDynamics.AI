@@ -61,11 +61,11 @@ CREATE TABLE IF NOT EXISTS agent_memory (
   tags                  TEXT[] DEFAULT '{}',
 
   CONSTRAINT memory_fact_needs_evidence
-    CHECK (classification != 'fact' OR array_length(evidence_refs, 1) >= 1),
+    CHECK (classification != 'fact' OR COALESCE(array_length(evidence_refs, 1), 0) >= 1),
   CONSTRAINT memory_risk_signal_needs_computation
     CHECK (classification != 'risk_signal' OR computation_id IS NOT NULL),
   CONSTRAINT memory_correlation_needs_both_ends
-    CHECK (classification != 'correlation' OR (evidence_refs IS NOT NULL AND array_length(evidence_refs, 1) >= 2)),
+    CHECK (classification != 'correlation' OR COALESCE(array_length(evidence_refs, 1), 0) >= 2),
   CONSTRAINT memory_supersession_immutable
     CHECK (supersedes_id IS NOT NULL OR state IN ('active', 'cooling', 'archived', 'expired')),
   CONSTRAINT memory_purged_cannot_supersede

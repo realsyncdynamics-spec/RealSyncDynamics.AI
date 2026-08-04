@@ -232,7 +232,7 @@ export class MemoryValidationError extends Error {
  * Validate memory item invariants on insert.
  * Throws MemoryValidationError if violated.
  */
-export function validateMemoryOnInsert(item: Omit<MemoryItem, 'id' | 'created_at' | 'state_transitioned_at'>): void {
+export function validateMemoryOnInsert(item: Omit<MemoryItem, 'id' | 'created_at' | 'state_transitioned_at' | 'state'>): void {
   const { classification, evidence_refs, derived_from, computation_id } = item;
 
   // Hard Rule §2.1: Fact without evidence_refs is invalid

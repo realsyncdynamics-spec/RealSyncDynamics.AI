@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MemoryClassification,
   MemoryState,
+  MemoryItem,
   calculateFreshness,
   getAgeDays,
   getNextStateAfterDecay,
@@ -92,6 +93,9 @@ describe('RFC-003 / state machine transitions', () => {
     pii_class: 'public' as const,
     evidence_refs: ['evt-1'],
     derived_from: [],
+    classification: 'inference' as MemoryClassification,
+    state: 'active' as MemoryState,
+    state_transitioned_at: new Date(),
     created_at: new Date(),
     freshness_half_life_days: 30,
     confidence: 0.8,
@@ -209,6 +213,9 @@ describe('RFC-003 / hold semantics', () => {
     pii_class: 'public' as const,
     evidence_refs: ['evt-1'],
     derived_from: [],
+    classification: 'inference' as MemoryClassification,
+    state: 'expired' as MemoryState,
+    state_transitioned_at: new Date(),
     created_at: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000),
     freshness_half_life_days: 30,
     confidence: 0.1,
@@ -231,7 +238,7 @@ describe('RFC-003 / hold semantics', () => {
       ...expiredItem,
       state: 'expired' as MemoryState,
       regulatory_hold: true,
-    };
+    } as MemoryItem;
 
     const nextState = getNextStateAfterDecay(item.state, item, { type: 'retention_expiry' });
     expect(nextState).toBeNull();
@@ -242,7 +249,7 @@ describe('RFC-003 / hold semantics', () => {
       ...expiredItem,
       state: 'expired' as MemoryState,
       incident_hold: true,
-    };
+    } as MemoryItem;
 
     const nextState = getNextStateAfterDecay(item.state, item, { type: 'retention_expiry' });
     expect(nextState).toBeNull();
@@ -254,7 +261,7 @@ describe('RFC-003 / hold semantics', () => {
       state: 'expired' as MemoryState,
       regulatory_hold: true,
       incident_hold: true,
-    };
+    } as MemoryItem;
 
     const nextState = getNextStateAfterDecay(item.state, item, { type: 'retention_expiry' });
     expect(nextState).toBeNull();
@@ -369,7 +376,7 @@ describe('RFC-003 / classification immutability', () => {
 // ============================================================
 
 describe('RFC-003 / purge atomicity', () => {
-  const expiredItem = {
+  const expiredItem: MemoryItem = {
     id: 'mem-001',
     tenant_id: 'tenant-1',
     key: 'test',
@@ -385,6 +392,7 @@ describe('RFC-003 / purge atomicity', () => {
     automated_purge_date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
     classification: 'inference' as MemoryClassification,
     state: 'expired' as MemoryState,
+    state_transitioned_at: new Date(),
     regulatory_hold: false,
     incident_hold: false,
     supersedes_id: null,
@@ -440,6 +448,7 @@ describe('RFC-003 / effective freshness per classification', () => {
       automated_purge_date: null,
       classification: 'fact' as MemoryClassification,
       state: 'active' as MemoryState,
+      state_transitioned_at: new Date(),
       regulatory_hold: false,
       incident_hold: false,
       supersedes_id: null,
@@ -471,6 +480,7 @@ describe('RFC-003 / effective freshness per classification', () => {
       automated_purge_date: null,
       classification: 'inference' as MemoryClassification,
       state: 'active' as MemoryState,
+      state_transitioned_at: new Date(),
       regulatory_hold: false,
       incident_hold: false,
       supersedes_id: null,

@@ -312,7 +312,7 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
     });
   }
   if (!/impressum|imprint/i.test(html)) {
-    // § 5 TMG / § 18 MStV sind deutsches Recht — gilt nur für Anbieter in
+    // § 5 DDG / § 18 MStV sind deutsches Recht — gilt nur für Anbieter in
     // DE/AT/CH (oder mit DE-Niederlassung). Bei ausländischen Sites
     // melden wir den fehlenden Link informativ, ohne den Compliance-Score
     // zu drücken und ohne abmahnbare Schein-Aussage. Für extraterritorial
@@ -325,15 +325,15 @@ function runChecks(url: string, html: string, h: Headers | null, status: number 
             id: 'no_imprint_link',
             severity: 'critical',
             title: 'Kein Impressum-Link gefunden',
-            detail: 'Impressum ist nach § 5 TMG / § 18 MStV Pflicht für gewerbliche Websites in Deutschland.',
-            paragraph_ref: '§ 5 TMG / § 18 MStV',
+            detail: 'Impressum ist nach § 5 DDG / § 18 MStV Pflicht für gewerbliche Websites in Deutschland.',
+            paragraph_ref: '§ 5 DDG / § 18 MStV',
           }
         : {
             id: 'no_imprint_link_non_de',
             severity: 'info',
             title: 'Kein Impressum-Link (DE-spezifisch)',
-            detail: 'Die Site weist keine deutschen Anbieter-Signale auf (TLD, lang-Attribut, Rechtsform). § 5 TMG / § 18 MStV gilt nur für Anbieter in Deutschland — dieser Befund ist daher informativ.',
-            paragraph_ref: '§ 5 TMG / § 18 MStV',
+            detail: 'Die Site weist keine deutschen Anbieter-Signale auf (TLD, lang-Attribut, Rechtsform). § 5 DDG / § 18 MStV gilt nur für Anbieter in Deutschland — dieser Befund ist daher informativ.',
+            paragraph_ref: '§ 5 DDG / § 18 MStV',
           },
     );
   }
@@ -603,7 +603,7 @@ async function fetchWithTimeout(url: string, ms: number): Promise<Response> {
 // - Verarbeitungs-Zwecke (Art. 13 lit. c)
 // - Beschwerderecht (Art. 13 lit. d)
 // - Drittlandtransfer-Hinweise (Art. 44)
-// - Impressum-Pflichtfelder (§ 5 TMG)
+// - Impressum-Pflichtfelder (§ 5 DDG)
 async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]> {
   const issues: Issue[] = [];
   const base = new URL(baseUrl);
@@ -721,7 +721,7 @@ async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]>
     }
 
     if (f.kind === 'imprint') {
-      // Impressum-Pflichtfelder § 5 TMG
+      // Impressum-Pflichtfelder § 5 DDG
       const hasName = /\b(GmbH|UG|AG|GbR|KG|e\.K\.|inhaber|geschäftsführer)\b/i.test(lc);
       const hasAddress = /\b(straße|str\.|allee|platz|weg|gasse)\s+\d/i.test(f.html);
       const hasContact = /(\bemail\b|@|tel\.|telefon|phone)/i.test(lc);
@@ -731,8 +731,8 @@ async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]>
           id: 'sub_imprint_no_legal_form',
           severity: 'critical',
           title: 'Impressum nennt keine Rechtsform',
-          detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 TMG: vollständige Angabe der Firma inkl. Rechtsform (GmbH, UG, e.K. etc.) bzw. Inhaber-Name bei Einzelunternehmen.',
-          paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+          detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 DDG: vollständige Angabe der Firma inkl. Rechtsform (GmbH, UG, e.K. etc.) bzw. Inhaber-Name bei Einzelunternehmen.',
+          paragraph_ref: '§ 5 Abs. 1 Nr. 1 DDG',
         });
       }
       if (!hasAddress) {
@@ -740,8 +740,8 @@ async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]>
           id: 'sub_imprint_no_address',
           severity: 'critical',
           title: 'Impressum hat keine ladungsfähige Anschrift',
-          detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 TMG. Postfach reicht nicht.',
-          paragraph_ref: '§ 5 Abs. 1 Nr. 1 TMG',
+          detail: 'Pflicht nach § 5 Abs. 1 Nr. 1 DDG. Postfach reicht nicht.',
+          paragraph_ref: '§ 5 Abs. 1 Nr. 1 DDG',
         });
       }
       if (!hasContact) {
@@ -749,8 +749,8 @@ async function scanSubpages(baseUrl: string, baseHtml: string): Promise<Issue[]>
           id: 'sub_imprint_no_contact',
           severity: 'high',
           title: 'Impressum ohne unmittelbaren Kontaktweg',
-          detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 TMG: Email + Telefon müssen genannt sein.',
-          paragraph_ref: '§ 5 Abs. 1 Nr. 2 TMG',
+          detail: 'Pflicht nach § 5 Abs. 1 Nr. 2 DDG: Email + Telefon müssen genannt sein.',
+          paragraph_ref: '§ 5 Abs. 1 Nr. 2 DDG',
         });
       }
     }

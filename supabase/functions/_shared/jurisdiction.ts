@@ -2,10 +2,10 @@
  * Jurisdiction-Detection für den DSGVO-Audit-Scanner.
  *
  * Hintergrund: Der gdpr-audit-Scanner triggert seit jeher einen
- * `no_imprint_link` Befund mit Severity `critical` und §-5-TMG-Referenz,
+ * `no_imprint_link` Befund mit Severity `critical` und §-5-DDG-Referenz,
  * sobald das HTML kein „Impressum"-Wort enthält. Für gewerbliche
  * DE-/AT-/CH-Sites ist das korrekt; für ausländische Mega-Sites
- * (gmail.com, github.com, ...) ist es ein False-Positive — § 5 TMG ist
+ * (gmail.com, github.com, ...) ist es ein False-Positive — § 5 DDG ist
  * deutsches Recht, das nur greift, wenn der Anbieter in DE sitzt.
  *
  * Diese Heuristik erkennt deutschsprachige Anbieter konservativ:
@@ -61,7 +61,7 @@ function hasGermanProviderSignals(html: string): boolean {
 
 /**
  * True, wenn die Site mit hoher Wahrscheinlichkeit von einem DE/AT/CH-
- * Anbieter betrieben wird — und damit § 5 TMG / § 18 MStV in Reichweite
+ * Anbieter betrieben wird — und damit § 5 DDG / § 18 MStV in Reichweite
  * sind. Konservativ: lieber false-negativ (DE-Anbieter wird als non-DE
  * erkannt → Befund wird zu info, aber kein false-positive `critical`)
  * als false-positiv.

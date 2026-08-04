@@ -106,7 +106,7 @@ export function ImpressumPage() {
       updatedAt="Juni 2026"
       sections={[
         {
-          heading: 'Angaben gemäß § 5 TMG',
+          heading: 'Angaben gemäß § 5 DDG',
           body: [
             'RealSync Dynamics.AI',
             '[Straße & Hausnummer]',

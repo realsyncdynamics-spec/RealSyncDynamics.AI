@@ -23,16 +23,28 @@ export function AdminSocialPreviewPage() {
 
 function Inner() {
   const { activeTenantId } = useTenant();
-  const store = getAdminSocialStore();
+  const store = getAdminSocialStore(activeTenantId ?? undefined);
   const [entries, setEntries]   = useState<QueueEntry[]>([]);
   const [filter, setFilter]     = useState<Filter>('all');
   const [chanFilter, setChan]   = useState<SocialChannel | 'all'>('all');
   const [busy, setBusy]         = useState(false);
   const [lastResult, setLastResult] = useState<OrchestrationResult | null>(null);
 
-  // Hydrate from the store on mount.
+  // Hydrate from the store on mount/tenant change. In persisted mode this
+  // loads distribution_queue_entries from Postgres and subscribes to live
+  // updates (social-publisher-worker publishes asynchronously server-side).
   useEffect(() => {
-    setEntries(store.getSnapshot());
+    let cancelled = false;
+    void store.hydrate().then(() => {
+      if (!cancelled) setEntries(store.getSnapshot());
+    });
+    const unsubscribe = store.subscribeToUpdates((next) => {
+      if (!cancelled) setEntries(next);
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [store]);
 
   const refresh = () => setEntries(store.getSnapshot());
@@ -94,7 +106,7 @@ function Inner() {
             </h1>
             <p className="text-sm text-titanium-400">
               Generierte Posts pro Runtime-Event · Status AUTO / REVIEW / BLOCKED ·
-              Persistiert lokal pro Tab
+              {store.isPersisted ? ' Persistiert in Postgres' : ' Persistiert lokal pro Tab'}
             </p>
           </div>
         </header>
@@ -104,12 +116,20 @@ function Inner() {
           <AlertTriangle className="h-4 w-4 shrink-0 text-amber-400" />
           <div>
             <p className="font-semibold text-amber-50">Vorschau-Modus</p>
-            <p className="mt-1 text-amber-200/90">
-              Diese Ansicht verbindet sich noch nicht zu echten Social-APIs.
-              Posten erzeugt einen Mock-Eintrag. Persistenz liegt in
-              <code className="mx-1 rounded bg-obsidian-900 px-1 py-0.5">localStorage</code>
-              und ist tab-lokal. DB-Persistenz + echte Publisher folgen.
-            </p>
+            {store.isPersisted ? (
+              <p className="mt-1 text-amber-200/90">
+                Freigegebene / Auto-Posts landen in <code className="mx-1 rounded bg-obsidian-900 px-1 py-0.5">distribution_queue_entries</code>
+                und werden serverseitig von <code className="mx-1 rounded bg-obsidian-900 px-1 py-0.5">social-publisher-worker</code> veröffentlicht —
+                echte API-Tokens verlassen nie den Browser. Der Status aktualisiert sich automatisch, sobald der Worker einen Eintrag abholt.
+              </p>
+            ) : (
+              <p className="mt-1 text-amber-200/90">
+                Kein aktiver Tenant — diese Ansicht läuft im lokalen Vorschau-Modus.
+                Posten erzeugt einen Mock-Eintrag. Persistenz liegt in
+                <code className="mx-1 rounded bg-obsidian-900 px-1 py-0.5">localStorage</code>
+                und ist tab-lokal.
+              </p>
+            )}
           </div>
         </div>
 
@@ -212,12 +232,14 @@ function Inner() {
               ))}
             </select>
           </div>
-          <button
-            onClick={onClearAll}
-            className="inline-flex items-center gap-1.5 border border-rose-500/40 bg-rose-500/5 px-2.5 py-1 text-xs text-rose-200 hover:bg-rose-500/10"
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Queue leeren
-          </button>
+          {store.isPersisted ? null : (
+            <button
+              onClick={onClearAll}
+              className="inline-flex items-center gap-1.5 border border-rose-500/40 bg-rose-500/5 px-2.5 py-1 text-xs text-rose-200 hover:bg-rose-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Queue leeren
+            </button>
+          )}
         </div>
 
         {/* Queue list */}
@@ -237,7 +259,7 @@ function Inner() {
                 entry={e}
                 onApprove={onApprove}
                 onReject={onReject}
-                onPublish={onPublish}
+                onPublish={store.isPersisted ? undefined : onPublish}
               />
             ))}
           </div>
@@ -245,7 +267,7 @@ function Inner() {
 
         <footer className="mt-8 text-center text-[11px] text-titanium-500">
           <StatusBadge status="pending" /> = Review erforderlich · <StatusBadge status="auto" /> = direkt postable ·
-          {' '}<StatusBadge status="published" /> = bereits gepostet (mock)
+          {' '}<StatusBadge status="published" /> = bereits gepostet{store.isPersisted ? '' : ' (mock)'}
         </footer>
       </div>
     </div>

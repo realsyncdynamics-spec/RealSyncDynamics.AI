@@ -10,7 +10,7 @@
  *   <UnifiedPricingGrid variant="pricing-page" highlight="growth" />
  */
 
-import { type PlanId, ORDERED_PLANS, planById, checkoutHrefForPlan, type Plan } from '../../config/pricing';
+import { type PlanId, ORDERED_PLANS, planById, checkoutHrefForPlan, type Plan } from '@/config/pricing';
 import { UnifiedPlanCard, type UnifiedPlanCardVariant } from './UnifiedPlanCard';
 
 export type UnifiedPricingGridVariant = 'landing' | 'pricing-page' | 'compact' | 'full';

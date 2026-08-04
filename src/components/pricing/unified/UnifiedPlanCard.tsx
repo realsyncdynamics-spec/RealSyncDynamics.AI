@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import {
   type Plan, formatPriceEur, TIER_ACCENT, type PlanId,
-} from '../../config/pricing';
+} from '@/config/pricing';
 
 export type UnifiedPlanCardVariant = 'compact' | 'full' | 'hero';
 

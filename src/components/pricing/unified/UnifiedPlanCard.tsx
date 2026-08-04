@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import {
   type Plan, formatPriceEur, TIER_ACCENT, type PlanId,
-} from '@/config/pricing';
+} from '../../../config/pricing';
 
 export type UnifiedPlanCardVariant = 'compact' | 'full' | 'hero';
 
@@ -100,7 +100,7 @@ export function UnifiedPlanCard({
 
         {/* Top Features */}
         <ul className="space-y-1.5 flex-1 mb-4">
-          {plan.features.audit_evidence.slice(0, 3).map((feature) => (
+          {plan.features.audit_evidence.slice(0, 3).map((feature: string) => (
             <li key={feature} className="flex items-start gap-2 text-sm text-titanium-300">
               <Check className="h-4 w-4 text-gold-400 mt-0.5 shrink-0" />
               <span>{feature}</span>
@@ -221,7 +221,7 @@ export function UnifiedPlanCard({
             <div>
               <h5 className="text-xs font-semibold text-titanium-300 mb-1.5">Audit & Evidence</h5>
               <ul className="space-y-1">
-                {plan.features.audit_evidence.slice(0, 2).map((f) => (
+                {plan.features.audit_evidence.slice(0, 2).map((f: string) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-titanium-400">
                     <Check className="h-3.5 w-3.5 text-gold-400 mt-0.5 shrink-0" />
                     {f}
@@ -234,7 +234,7 @@ export function UnifiedPlanCard({
             <div>
               <h5 className="text-xs font-semibold text-titanium-300 mb-1.5">AI Governance</h5>
               <ul className="space-y-1">
-                {plan.features.ai_governance.slice(0, 2).map((f) => (
+                {plan.features.ai_governance.slice(0, 2).map((f: string) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-titanium-400">
                     <Check className="h-3.5 w-3.5 text-gold-400 mt-0.5 shrink-0" />
                     {f}
@@ -247,7 +247,7 @@ export function UnifiedPlanCard({
             <div>
               <h5 className="text-xs font-semibold text-titanium-300 mb-1.5">Automation & Ops</h5>
               <ul className="space-y-1">
-                {plan.features.automation_ops.slice(0, 2).map((f) => (
+                {plan.features.automation_ops.slice(0, 2).map((f: string) => (
                   <li key={f} className="flex items-start gap-2 text-xs text-titanium-400">
                     <Check className="h-3.5 w-3.5 text-gold-400 mt-0.5 shrink-0" />
                     {f}

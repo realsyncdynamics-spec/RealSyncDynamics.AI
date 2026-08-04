@@ -10,7 +10,7 @@
  *   <UnifiedPricingGrid variant="pricing-page" highlight="growth" />
  */
 
-import { type PlanId, ORDERED_PLANS, planById, checkoutHrefForPlan, type Plan } from '@/config/pricing';
+import { type PlanId, ORDERED_PLANS, planById, checkoutHrefForPlan, type Plan } from '../../../config/pricing';
 import { UnifiedPlanCard, type UnifiedPlanCardVariant } from './UnifiedPlanCard';
 
 export type UnifiedPricingGridVariant = 'landing' | 'pricing-page' | 'compact' | 'full';
@@ -43,11 +43,11 @@ export function UnifiedPricingGrid({
 }: UnifiedPricingGridProps) {
   // Welche Pläne anzeigen?
   let plansToShow: Plan[] = ORDERED_PLANS.filter(
-    (p) => includeFree || p.price.monthlyEur > 0,
+    (p: Plan) => includeFree || p.price.monthlyEur > 0,
   );
 
   if (include) {
-    plansToShow = plansToShow.filter((p) => include.includes(p.id as PlanId));
+    plansToShow = plansToShow.filter((p: Plan) => include.includes(p.id as PlanId));
   }
 
   // Kompakte vs. volle Darstellung

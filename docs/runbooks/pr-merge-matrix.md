@@ -61,9 +61,9 @@ Legende Entscheidung: **MERGE** = mergefähig, sobald Voraussetzung erfüllt ·
 | **#970** | Agent Browser + Governance | **HOLD** | **hoch** | 3 Sicherheitsauflagen (§3) **und** freier Function-Slot | nach Slot-Freigabe + Fix |
 | **#971** | MCP Governance Control Plane | **HOLD** | **hoch** | Auth-Stub ersetzen, Service-Role entfernen, Fake-Compliance-Endpoints entfernen (§3) | nach Fix |
 | **#932** | Phase 2 Hybrid Merge (SiteOS, C2PA, AI Builder) | **HOLD** | **hoch** | Vault-Secrets **und** `supabase db push --dry-run` gegen 126 pending Migrationen | nach Infra |
-| **#890** | Evidence Vault Archive | **REOPEN** | hoch | Neu öffnen oder neu implementieren — Arbeit ist nirgends gelandet (§4) | Stage 1, blockiert |
-| **#896** | Governance Runtime: Live-Daten | **REOPEN** | hoch | dito | Stage 1, blockiert |
-| **#889** | MCP Server Authentication | **REOPEN** | hoch | dito; überschneidet sich mit #971 — eine Lösung wählen | Stage 1, blockiert |
+| **#896** | Governance Runtime + Evidence + MCP | **REOPEN** | hoch | Enthält #890 und #889 vollständig. `profiles.tenant_id` → `memberships`, RLS auf `is_tenant_member()`, Credential-Klartext beheben, freier Function-Slot (§4) | **5** |
+| **#890** | Evidence Vault Archive | **geschlossen lassen** | — | Vollständig in #896 enthalten (byte-identisch) | — |
+| **#889** | MCP Server Authentication | **geschlossen lassen** | — | Vollständig in #896 enthalten; überschneidet sich mit #971 — eine Lösung wählen | — |
 | **#874** | Evidence Archive (Duplikat von #890) | **geschlossen lassen** | — | Inhaltlich in #890 enthalten | — |
 
 **#926** existiert nicht als Pull Request (`GET /pulls/926` → 404). Falls es eine Issue-Nummer
@@ -189,6 +189,33 @@ auf `main`.
 
 **Das ist kein Reihenfolge-Problem, sondern offene Arbeit.** Stage 1 ist deshalb faktisch leer.
 
+### Reopen statt Neuimplementierung — gemessen
+
+| Prüfung | Ergebnis |
+|---|---|
+| Branches auf `origin` vorhanden | **alle vier ja** |
+| Merge gegen aktuelles `main` (`git merge-tree`) | **alle drei konfliktfrei**, trotz 179 Commits Rückstand |
+| Drift auf berührten Dateien seit Fork `c5486a8` | **0 Commits** auf `Iso42001EvidenceVaultView.tsx`, `iso42001-evidence-vault/index.ts`, `GovernanceRuntimeDashboard.tsx` |
+| Verhältnis der drei PRs | **#889 ⊂ #890 ⊂ #896**, geteilte Dateien byte-identisch (Blob-SHA) |
+
+→ **#896 allein stellt die Arbeit aller drei wieder her.** #890 und #889 bleiben geschlossen.
+
+Zwei Blocker sind dabei vorher zu beheben — beide live gegen `information_schema` verifiziert:
+
+- `mcp-server-management/index.ts` liest `profiles.tenant_id`. **Diese Spalte existiert in
+  Produktion nicht** → die Function wirft bei jedem Aufruf `User profile not found`.
+- `20260726000000_mcp_servers.sql` baut RLS auf `(SELECT tenant_id FROM auth.users …)`.
+  **Auch diese Spalte existiert nicht.** 44 Repo-Migrationen nutzen dieses Muster, und in
+  Produktion referenziert **0** aktive Policy `FROM auth.users` — sie gehören zu den 118
+  nie angewendeten. Korrekt ist `public.is_tenant_member(tenant_id)` über `public.memberships`.
+- Zusätzlich: Credentials werden im Klartext in eine Spalte namens
+  `credential_value_encrypted` geschrieben (`index.ts:198-206`).
+
+Schritt-für-Schritt-Behebung: [`release-train-phase2.md`](./release-train-phase2.md) § Stage 1.
+
+**#896 bringt außerdem eine neue Edge Function** (`mcp-server-management`) — Stage 0.5
+(Slot-Freigabe) ist damit auch für Stage 1 Vorbedingung, nicht nur für Stage 3.
+
 ---
 
 ## 5. Release-Zug (korrigiert)
@@ -204,8 +231,11 @@ Stage 0.5 — Kapazität schaffen        ← NEU, blockiert alles Weitere
 │   stripe-webhook-fixer, stripe-webhook-provision)
 └── Drift-Allowlist nachziehen
 
-Stage 1 — Governance/Evidence         ← derzeit LEER
-├── #890 / #896 / #889 neu öffnen oder neu implementieren
+Stage 1 — Governance/Evidence
+├── #896 wiedereröffnen (enthält #890 + #889 vollständig)
+│   ├── profiles.tenant_id -> memberships korrigieren
+│   ├── RLS auf is_tenant_member() umstellen
+│   └── Credential-Klartext beheben
 └── #972 nach Orchestrator-Registrierung
 
 Stage 2 — Infrastruktur

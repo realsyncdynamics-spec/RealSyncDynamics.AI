@@ -441,7 +441,26 @@ und Design-Lock-Freigabe einholen. Nicht ad hoc in einzelne Komponenten einstreu
 
 ---
 
-## 14. Aktuelle Ziele
+## 14. Arbeitsprinzip & Aktuelle Ziele
+
+### 🎯 Leitprinzip: Unsichtbares sichtbar, Funktionen funktionsfähig
+
+Gilt für **alle Repos** dieses Projekts. Bei jeder Aufgabe mitprüfen:
+
+- **Unsichtbares sichtbar machen** — fertiger Code, den niemand erreichen kann, ist
+  verschwendete Arbeit. Verwaiste Seiten ohne Route, Routen ohne Link, Features ohne
+  Einstiegspunkt: einbinden und verlinken. Links und Buttons hinzufügen ist laut §10
+  **Inhalt** und damit ohne Rückfrage erlaubt.
+- **Funktionen funktionsfähig machen** — Buttons ohne Handler, `href="#"`, dauerhaft
+  `disabled` ohne Grund, „coming soon" ohne Termin, TODO-Stubs in Produktionspfaden:
+  entweder fertigstellen oder entfernen. Kein Element vortäuschen, das nichts tut.
+- **Abgelöstes benennen** — wird eine Seite durch einen Redirect ersetzt, gehört die
+  alte Datei entfernt, nicht als toter Code liegengelassen.
+
+Befunde, die den Rahmen der aktuellen Aufgabe sprengen, werden **berichtet**, nicht
+stillschweigend übergangen.
+
+### Aktuelle Ziele
 
 - 🔄 **Phase 3 vorbereiten**: Cloudflare-Optimierung (Cache, KV, R2), Social-Orchestrator, Dashboard-UI-Rest
 - ⚠️ Migrations sauber additiv halten (RLS nicht brechen)

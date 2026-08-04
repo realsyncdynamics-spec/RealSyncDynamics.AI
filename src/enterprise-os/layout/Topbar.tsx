@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bot, Sun, Moon, Menu, ChevronRight } from 'lucide-react';
+import { Search, Bot, Sun, Moon, Menu, ChevronRight, Zap, Maximize2 } from 'lucide-react';
 
 interface TopbarProps {
   title: string;
@@ -7,8 +7,10 @@ interface TopbarProps {
   onOpenCommandPalette: () => void;
   onToggleAgent: () => void;
   onToggleMobileNav: () => void;
+  onToggleAgentBrowser?: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  agentStatus?: 'active' | 'inactive';
 }
 
 export function Topbar({
@@ -17,12 +19,14 @@ export function Topbar({
   onOpenCommandPalette,
   onToggleAgent,
   onToggleMobileNav,
+  onToggleAgentBrowser,
   theme,
   onToggleTheme,
+  agentStatus = 'inactive',
 }: TopbarProps) {
   return (
-    <header className="flex h-14 items-center justify-between gap-3 border-b border-titanium-800 bg-obsidian-900/80 px-4 backdrop-blur-sm">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="flex h-16 items-center justify-between gap-3 border-b border-titanium-800 bg-obsidian-900/80 px-4 backdrop-blur-sm">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         <button
           type="button"
           onClick={onToggleMobileNav}
@@ -42,7 +46,16 @@ export function Topbar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 md:gap-2">
+        {/* Agent Status Indicator */}
+        {agentStatus === 'active' && (
+          <div className="hidden items-center gap-2 rounded border border-security-500/40 bg-security-500/10 px-3 py-1.5 md:flex">
+            <div className="h-2 w-2 rounded-full bg-security-400 animate-pulse" />
+            <span className="text-xs font-medium text-security-400">Agenten aktiv</span>
+          </div>
+        )}
+
+        {/* Search Bar */}
         <button
           type="button"
           onClick={onOpenCommandPalette}
@@ -60,6 +73,8 @@ export function Topbar({
         >
           <Search className="h-4 w-4" />
         </button>
+
+        {/* Theme Toggle */}
         <button
           type="button"
           onClick={onToggleTheme}
@@ -68,6 +83,19 @@ export function Topbar({
         >
           {theme === 'dark' ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         </button>
+
+        {/* Agent Browser Control (Chromium) */}
+        <button
+          type="button"
+          onClick={onToggleAgentBrowser}
+          className="flex h-8 w-8 items-center justify-center border border-security-500/30 bg-security-500/10 text-security-400 transition-colors hover:border-security-500/50 hover:bg-security-500/15"
+          aria-label="Agent Browser (Chromium) öffnen"
+          title="Steuere Agenten live über Browser"
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </button>
+
+        {/* AI Agent Chat */}
         <button
           type="button"
           onClick={onToggleAgent}
@@ -76,7 +104,9 @@ export function Topbar({
         >
           <Bot className="h-4 w-4" />
         </button>
-        <div className="flex h-8 w-8 items-center justify-center border border-titanium-700 bg-titanium-800 font-mono text-[11px] font-semibold text-titanium-100">
+
+        {/* User Avatar */}
+        <div className="flex h-8 w-8 items-center justify-center border border-titanium-700 bg-titanium-800 font-mono text-[11px] font-semibold text-titanium-100 rounded">
           MB
         </div>
       </div>

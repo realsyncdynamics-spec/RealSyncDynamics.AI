@@ -5,6 +5,7 @@ import { MobileNav } from './MobileNav';
 import { Topbar } from './Topbar';
 import { CommandPalette, type CommandItem } from '../components/CommandPalette';
 import { AgentChatPanel } from '../components/AgentChatPanel';
+import { AgentBrowserControl } from '../components/AgentBrowserControl';
 import { AGENT_MESSAGES, NAV_GROUPS } from '../mock/data';
 
 interface AppShellProps {
@@ -19,6 +20,7 @@ export function AppShell({ title, breadcrumb, children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [agentOpen, setAgentOpen] = useState(false);
+  const [agentBrowserOpen, setAgentBrowserOpen] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -48,6 +50,13 @@ export function AppShell({ title, breadcrumb, children }: AppShellProps) {
     onSelect: () => setAgentOpen(true),
   });
   commandItems.push({
+    id: 'toggle-agent-browser',
+    label: 'Agent Browser öffnen',
+    group: 'Aktionen',
+    shortcut: '⌘B',
+    onSelect: () => setAgentBrowserOpen(true),
+  });
+  commandItems.push({
     id: 'toggle-theme',
     label: theme === 'dark' ? 'Light Mode aktivieren' : 'Dark Mode aktivieren',
     group: 'Aktionen',
@@ -65,9 +74,11 @@ export function AppShell({ title, breadcrumb, children }: AppShellProps) {
           breadcrumb={breadcrumb}
           onOpenCommandPalette={() => setPaletteOpen(true)}
           onToggleAgent={() => setAgentOpen((o) => !o)}
+          onToggleAgentBrowser={() => setAgentBrowserOpen((o) => !o)}
           onToggleMobileNav={() => setMobileNavOpen(true)}
           theme={theme}
           onToggleTheme={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+          agentStatus="active"
         />
         <main className="flex-1 overflow-y-auto bg-obsidian-950">
           <div className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">{children}</div>
@@ -76,6 +87,7 @@ export function AppShell({ title, breadcrumb, children }: AppShellProps) {
 
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} items={commandItems} />
       <AgentChatPanel open={agentOpen} onClose={() => setAgentOpen(false)} messages={AGENT_MESSAGES} />
+      <AgentBrowserControl isOpen={agentBrowserOpen} onClose={() => setAgentBrowserOpen(false)} />
     </div>
   );
 }

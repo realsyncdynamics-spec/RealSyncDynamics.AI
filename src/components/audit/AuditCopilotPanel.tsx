@@ -262,8 +262,8 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
               <AudioLines className="h-3.5 w-3.5" />
             </span>
             <div className="min-w-0 leading-tight">
-              <div className="text-sm font-semibold text-titanium-50 truncate">Befund-Erklärung</div>
-              <div className="text-[10px] text-titanium-400 mt-0.5 truncate">
+              <div className="text-sm font-semibold text-titanium-50 truncate">🤖 KI-Befund-Erklärung</div>
+              <div className="text-[10px] text-cyan-400 mt-0.5 truncate">
                 {SEV_LABEL[issue.severity]} · {issue.title}
               </div>
             </div>
@@ -277,6 +277,10 @@ export function AuditCopilotPanel({ issue, domain, open, onClose }: AuditCopilot
             <X className="h-4 w-4" />
           </button>
         </header>
+
+        <div className="border-b border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-[11px] text-cyan-300 leading-relaxed">
+          <span className="font-semibold">KI-System (Art. 52 EU AI Act):</span> Die Erklärungen werden von einer KI generiert. Keine Rechtsberatung – Prüfung durch Spezialist empfohlen.
+        </div>
 
         {phase === 'us_routing' && (
           <div className="border-b border-amber-400/30 bg-amber-400/10 p-3 text-[12px] text-amber-200">

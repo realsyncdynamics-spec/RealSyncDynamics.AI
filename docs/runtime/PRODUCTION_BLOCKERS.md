@@ -32,31 +32,89 @@ The project is **architecturally ready** for production (Phase 2 complete), but 
 
 **Current Impact:**
 - **Email Delivery:** 0/67 audits have `email_sent_at` set (email-drip non-functional)
-- **Stripe:** `vault.secrets.stripe_secret_key` contains placeholder `sk_live_PLACEHOLDER_KEY`
-  - Subscriptions table: 0 active subscriptions
-  - Webhook events: 0 received (only ping tests)
-  - Live checkout: HTTP 500 on payment button
+- **Stripe:** 0 active subscriptions, 0 webhook events received (only ping tests),
+  HTTP 500 on the live checkout button
 
-**Action Required (User/Ops Team):**
+#### ❌ Korrektur 2026-08-04: die bisherigen Befehle waeren wirkungslos gewesen
+
+Die urspruengliche Fassung schrieb:
+
 ```bash
-# Step 1: Get keys from provider dashboards
-1. Log into https://resend.com → Dashboard → API Keys → Copy "live" key
-2. Log into https://dashboard.stripe.com → Developers → API Keys → Copy "Secret Key"
-3. Log into https://dashboard.stripe.com → Developers → Webhooks → Copy "Signing secret"
-
-# Step 2: Store in Supabase Vault
-supabase link --project-ref ebljyceifhnlzhjfyxup
 supabase secrets set resend_api_key="re_..."
 supabase secrets set stripe_secret_key="sk_live_..."
 supabase secrets set stripe_webhook_secret="whsec_..."
-
-# Step 3: Backfill pending email audits
-supabase functions deploy audit-report-email --project-ref ebljyceifhnlzhjfyxup
-# Run backfill script (TBD: exists in scripts/ or manual SQL)
 ```
 
-**Effort:** 15-30 min (once keys acquired from Resend + Stripe dashboards)
-**Blocker Type:** External (requires third-party API keys)
+Alle drei Namen sind **klein geschrieben**. `supabase secrets set` setzt
+Edge-Function-**Umgebungsvariablen**, und deren Namen sind case-sensitiv. Der
+Code liest aber durchgehend GROSS:
+
+| Stelle | Zugriff |
+|---|---|
+| `audit-report-email`, `invoice-email`, `welcome-email` u. a. (11 Fundstellen) | `Deno.env.get('RESEND_API_KEY')` |
+| `checkout-website-rebuild`, `stripe-oauth-callback` | `Deno.env.get('STRIPE_SECRET_KEY')` |
+| `stripe-webhook` | `getSecret('STRIPE_WEBHOOK_SECRET', 'stripe_webhook_secret')` |
+
+Die Befehle haetten also drei Variablen angelegt, die **niemand liest**. Der
+Email-Pfad haette weiter `skipped: 'no_api_key'` geliefert, Stripe weiter 500 —
+und zwar so, dass es aussieht, als sei der Fix nicht angekommen, ohne
+erkennbare Ursache.
+
+Ebenfalls falsch: die Behauptung, `vault.secrets.stripe_secret_key` enthalte den
+Platzhalter `sk_live_PLACEHOLDER_KEY`. Der Vault enthaelt (Stand 2026-08-04)
+genau vier Secrets — `business_metrics_shared_secret`,
+`governance_erasure_sweeper_token`, `market_scanner_token`,
+`stripe_meter_shared_secret` — keines davon ein Platzhalter, und keines der
+drei hier gesuchten.
+
+Die klein geschriebenen Namen sind nicht sinnlos: sie sind **Vault**-Eintraege,
+gelesen ueber die SECURITY-DEFINER-Funktion `get_app_secret(secret_name text)`.
+Nur schreibt `supabase secrets set` eben nicht in den Vault.
+
+#### ✅ Korrekte Vorgehensweise
+
+Es gibt zwei gangbare Wege; **Weg A genuegt**.
+
+**Weg A — Edge-Function-Env (einfachste Variante, GROSS schreiben):**
+
+```bash
+supabase link --project-ref ebljyceifhnlzhjfyxup
+supabase secrets set RESEND_API_KEY=re_...
+supabase secrets set STRIPE_SECRET_KEY=sk_live_...
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Genau so steht es auch in `supabase/functions/stripe-webhook/README.md` — die
+Repo-eigene Anleitung war die ganze Zeit richtig, nur dieses Dokument nicht.
+
+**Weg B — Vault (klein geschrieben), falls Secrets zentral in der DB liegen sollen:**
+Eintrag unter `resend_api_key` / `stripe_webhook_secret` anlegen; `get_app_secret`
+liefert sie dann an die Functions aus.
+
+**Reihenfolge beachten — sie ist pro Function unterschiedlich:**
+- `audit-report-email`: **erst Env**, dann Vault-Fallback
+- `stripe-webhook` (`getSecret`): **erst Vault**, dann Env
+
+**Stolperfalle:** `audit-report-email` akzeptiert den Key nur, wenn er mit
+`re_` beginnt (`env.startsWith('re_')`). Ein Key mit Leerzeichen, Anfuehrungs-
+zeichen oder falschem Prefix wird **still verworfen** — die Function meldet
+weiterhin `skipped: 'no_api_key'`, ohne Fehler.
+
+**Verifikation nach dem Setzen** (kein Secret-Wert wird ausgegeben):
+
+```sql
+-- nur bei Weg B relevant
+select name, length(decrypted_secret) as len
+from vault.decrypted_secrets
+where name in ('resend_api_key','stripe_secret_key','stripe_webhook_secret');
+```
+
+Danach `audit-report-email` einmal aufrufen: liefert sie weiterhin
+`skipped: 'no_api_key'`, ist der Key nicht angekommen oder hat das falsche
+Prefix.
+
+**Effort:** 15–30 min (sobald die Keys aus den Dashboards vorliegen)
+**Blocker Type:** External (benoetigt Drittanbieter-Keys)
 
 ---
 

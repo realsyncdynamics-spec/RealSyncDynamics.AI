@@ -27,13 +27,12 @@ export function PlanUpgradeModal({
   error,
 }: PlanUpgradeModalProps) {
   const [selectedPlanId, setSelectedPlanId] = useState<TierId | null>(null);
-  const currentTier = PUBLIC_PRICING_TIERS.find((t) => t.id === currentPlanId);
-  const selectedTier = selectedPlanId ? PUBLIC_PRICING_TIERS.find((t) => t.id === selectedPlanId) : null;
+  const currentPlan = PUBLIC_PRICING_TIERS.find((t) => t.id === currentPlanId);
+  const selectedPlan = selectedPlanId ? PUBLIC_PRICING_TIERS.find((t) => t.id === selectedPlanId) : null;
 
-  const isUpgrade = selectedPlanId
-    ? PUBLIC_PRICING_TIERS.findIndex((t) => t.id === selectedPlanId) >
-      PUBLIC_PRICING_TIERS.findIndex((t) => t.id === currentPlanId)
-    : false;
+  const currentIndex = PUBLIC_PRICING_TIERS.findIndex((t) => t.id === currentPlanId);
+  const selectedIndex = selectedPlanId ? PUBLIC_PRICING_TIERS.findIndex((t) => t.id === selectedPlanId) : -1;
+  const isUpgrade = selectedIndex > currentIndex;
 
   async function handleConfirm() {
     if (!selectedPlanId) return;
@@ -58,11 +57,13 @@ export function PlanUpgradeModal({
         {/* Content */}
         <div className="p-6 space-y-6">
           {/* Current Plan */}
-          <div className="bg-obsidian-900 border border-titanium-700 rounded-none p-4">
-            <p className="text-xs text-titanium-400 uppercase tracking-wider mb-2">Aktueller Plan</p>
-            <p className="text-lg font-bold text-titanium-50">{currentTier?.name}</p>
-            <p className="text-sm text-titanium-400 mt-1">{currentTier?.tagline}</p>
-          </div>
+          {currentPlan && (
+            <div className="bg-obsidian-900 border border-titanium-700 rounded-none p-4">
+              <p className="text-xs text-titanium-400 uppercase tracking-wider mb-2">Aktueller Plan</p>
+              <p className="text-lg font-bold text-titanium-50">{currentPlan.name}</p>
+              <p className="text-sm text-titanium-400 mt-1">{currentPlan.tagline}</p>
+            </div>
+          )}
 
           {/* Plan Selection Grid */}
           <div>
@@ -98,7 +99,7 @@ export function PlanUpgradeModal({
           </div>
 
           {/* Change Summary */}
-          {selectedTier && selectedTier.id !== currentPlanId && (
+          {selectedPlan && selectedPlan.id !== currentPlanId && (
             <div className={`rounded-none p-4 ${
               isUpgrade
                 ? 'bg-emerald-950/40 border border-emerald-800'
@@ -110,7 +111,7 @@ export function PlanUpgradeModal({
                   : 'Bei einem Downgrade wird dein Plan zum nächsten Abrechnungsdatum geändert. Du erhältst eine Gutschrift.'}
               </p>
               <div className="text-lg font-bold text-titanium-50 mt-3">
-                {isUpgrade ? '↑' : '↓'} Wechsel von {currentTier?.name} zu {selectedTier.name}
+                {isUpgrade ? '↑' : '↓'} Wechsel von {currentPlan?.name} zu {selectedPlan.name}
               </div>
             </div>
           )}

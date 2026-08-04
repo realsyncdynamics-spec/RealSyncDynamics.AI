@@ -28,9 +28,9 @@ const WELCOME_BUBBLE: Bubble = {
   id: 'welcome',
   role: 'assistant',
   content:
-    'Hi. Ich bin der Assistent. Frag mich kurz, was du wissen willst — z. B. ' +
+    'Hi. Ich bin ein KI-System – ein automatisierter Assistent. Frag mich kurz, was du wissen willst — z. B. ' +
     '„Was deckt der DSGVO-Audit ab?" oder „Was ist EU-lokale KI?". ' +
-    'Für einen vollständigen Website-Scan klick unten auf „Audit starten".',
+    'Für einen vollständigen Website-Scan klick unten auf „Audit starten". Keine Rechtsberatung.',
 };
 
 export function AssistentQuickChatModal({ open, onClose }: Props) {
@@ -194,8 +194,8 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
               <Sparkles className="h-3.5 w-3.5" />
             </span>
             <div className="leading-tight">
-              <div className="text-sm font-semibold text-titanium-50">Assistent</div>
-              <div className="text-[10px] text-titanium-400 mt-0.5">EU-lokal · ohne Login · keine Rechtsberatung</div>
+              <div className="text-sm font-semibold text-titanium-50">KI-Assistent</div>
+              <div className="text-[10px] text-cyan-400 mt-0.5">🤖 Automatisiertes KI-System · EU-lokal · keine Rechtsberatung</div>
             </div>
           </div>
           <button
@@ -207,6 +207,10 @@ export function AssistentQuickChatModal({ open, onClose }: Props) {
             <X className="h-4 w-4" />
           </button>
         </header>
+
+        <div className="border-b border-cyan-500/20 bg-cyan-500/5 px-4 py-2 text-[11px] text-cyan-300 leading-relaxed">
+          <span className="font-semibold">KI-Transparenz:</span> Sie interagieren mit einem automatisierten Sprachmodell (AI Act Art. 52). Antworten können Fehler enthalten.
+        </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {bubbles.map((b) => <BubbleView key={b.id} bubble={b} />)}

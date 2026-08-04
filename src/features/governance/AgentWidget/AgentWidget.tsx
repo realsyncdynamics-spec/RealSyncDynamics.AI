@@ -4,6 +4,7 @@ import { ChatInput, ANON_QUICK } from './ChatInput';
 import { ChatMessageView } from './ChatMessageView';
 import { useAgentChat } from './useAgentChat';
 import { useAnonChat } from './useAgentChat';
+import { AIDisclosureNotice } from './AIDisclosureNotice';
 
 // Floating compliance-assistant widget.
 //
@@ -95,6 +96,8 @@ function TenantWidget() {
           onClose={() => setOpen(false)}
         />
 
+        <AIDisclosureNotice variant="compact" />
+
         {chat.usRoutingRequired && (
           <UsRoutingBanner onAck={chat.acknowledgeUsRouting} />
         )}
@@ -170,6 +173,8 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
         onReset={chat.reset}
         onClose={onClose}
       />
+
+      <AIDisclosureNotice variant="full" />
 
       {chat.rateLimited && (
         <div className="border-b border-orange-400/30 bg-orange-400/10 px-4 py-2.5 text-[12px] text-orange-200">

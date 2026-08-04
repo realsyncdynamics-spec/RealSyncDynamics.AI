@@ -14,7 +14,7 @@ CREATE TYPE retention_class AS ENUM ('forever', '7y', '3y', '1y', '90d', '30d', 
 -- §2 Main Memory Table
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS agent_memory (
+CREATE TABLE IF NOT EXISTS governance_memory (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id             UUID NOT NULL,
 
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS agent_memory (
   incident_hold         BOOLEAN NOT NULL DEFAULT false,
 
   -- Supersession (Immutability via new rows)
-  supersedes_id         UUID REFERENCES agent_memory(id),
+  supersedes_id         UUID REFERENCES governance_memory(id),
 
   -- Subject Reference (GDPR DSR binding)
   subject_ref           TEXT,
@@ -77,39 +77,39 @@ CREATE TABLE IF NOT EXISTS agent_memory (
 -- ============================================================
 
 -- Hot-path: Active memory per tenant
-CREATE INDEX idx_memory_tenant_state ON agent_memory (
+CREATE INDEX idx_gov_memory_tenant_state ON governance_memory (
   tenant_id,
   state,
   state_transitioned_at DESC
 ) WHERE state = 'active';
 
 -- Decay worker: Expiring items
-CREATE INDEX idx_memory_decay_candidates ON agent_memory (
+CREATE INDEX idx_gov_memory_decay_candidates ON governance_memory (
   automated_purge_date
 ) WHERE state IN ('archived', 'expired') AND NOT regulatory_hold AND NOT incident_hold;
 
 -- Subject-based erasure (GDPR DSR)
-CREATE INDEX idx_memory_subject_ref ON agent_memory (
+CREATE INDEX idx_gov_memory_subject_ref ON governance_memory (
   tenant_id,
   subject_ref
 ) WHERE subject_ref IS NOT NULL;
 
 -- Re-validation: Find derived items
-CREATE INDEX idx_memory_derived_from_gin ON agent_memory USING GIN (derived_from);
+CREATE INDEX idx_gov_memory_derived_from_gin ON governance_memory USING GIN (derived_from);
 
 -- Supersession chain
-CREATE INDEX idx_memory_supersedes ON agent_memory (supersedes_id) WHERE supersedes_id IS NOT NULL;
+CREATE INDEX idx_gov_memory_supersedes ON governance_memory (supersedes_id) WHERE supersedes_id IS NOT NULL;
 
 -- Correlation tracking
-CREATE INDEX idx_memory_correlation ON agent_memory (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX idx_gov_memory_correlation ON governance_memory (correlation_id) WHERE correlation_id IS NOT NULL;
 
 -- ============================================================
 -- §4 Row-Level Security (Multi-Tenancy)
 -- ============================================================
 
-ALTER TABLE agent_memory ENABLE ROW LEVEL SECURITY;
+ALTER TABLE governance_memory ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY memory_tenant_isolation ON agent_memory
+CREATE POLICY memory_tenant_isolation ON governance_memory
   FOR ALL
   USING (tenant_id = auth.uid());
 
@@ -139,7 +139,7 @@ CREATE OR REPLACE FUNCTION calculate_automated_purge_date(
 $$ LANGUAGE SQL IMMUTABLE;
 
 -- Set automated_purge_date on insert
-CREATE OR REPLACE FUNCTION agent_memory_before_insert()
+CREATE OR REPLACE FUNCTION governance_memory_before_insert()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.automated_purge_date := calculate_automated_purge_date(NEW.created_at, NEW.retention_class);
@@ -147,10 +147,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER agent_memory_set_purge_date
-  BEFORE INSERT ON agent_memory
+CREATE TRIGGER governance_memory_set_purge_date
+  BEFORE INSERT ON governance_memory
   FOR EACH ROW
-  EXECUTE FUNCTION agent_memory_before_insert();
+  EXECUTE FUNCTION governance_memory_before_insert();
 
 -- ============================================================
 -- §6 Materialized Views for Performance
@@ -164,7 +164,7 @@ SELECT
   COUNT(*) as item_count,
   SUM(octet_length(value::text)) as total_bytes,
   MAX(state_transitioned_at) as last_transition
-FROM agent_memory
+FROM governance_memory
 WHERE state = 'active'
 GROUP BY tenant_id, classification;
 
@@ -182,7 +182,7 @@ SELECT
   incident_hold,
   subject_ref,
   EXTRACT(EPOCH FROM (automated_purge_date - now())) / 86400 as days_until_purge
-FROM agent_memory
+FROM governance_memory
 WHERE automated_purge_date IS NOT NULL
   AND state IN ('archived', 'expired')
   AND NOT regulatory_hold

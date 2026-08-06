@@ -49,7 +49,7 @@ describe('admin social store', () => {
     const pending = entries.find(e => e.status === 'pending');
     expect(pending).toBeDefined();
 
-    const updated = store.approve(pending!.id, 'reviewer-1');
+    const updated = await store.approve(pending!.id, 'reviewer-1');
     expect(updated?.status).toBe('approved');
     expect(updated?.reviewer).toBe('reviewer-1');
     expect(store.getSnapshot().find(e => e.id === pending!.id)?.status).toBe('approved');
@@ -64,7 +64,7 @@ describe('admin social store', () => {
     const pending = store.getSnapshot().find(e => e.status === 'pending');
     expect(pending).toBeDefined();
 
-    const updated = store.reject(pending!.id, 'reviewer-2');
+    const updated = await store.reject(pending!.id, 'reviewer-2');
     expect(updated?.status).toBe('rejected');
     expect(updated?.reviewer).toBe('reviewer-2');
   });

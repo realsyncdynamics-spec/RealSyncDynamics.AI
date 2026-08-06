@@ -20,6 +20,7 @@ import type {
   ApprovalStatus,
 } from '../../../core/social-orchestrator/types';
 import { ALL_CHANNELS } from '../../../core/social-orchestrator/types';
+import { getSupabase, isSupabaseConfigured } from '../../../lib/supabase';
 
 const STORAGE_KEY = 'rsd:admin-social:queue:v1';
 
@@ -58,19 +59,60 @@ class AdminSocialStore {
   private orch: SocialOrchestrator;
   private queue: DistributionQueue;
   private entries: QueueEntry[];
+  /** True when this store writes to distribution_queue_entries (Postgres)
+   *  instead of localStorage. Real publishing then happens server-side in
+   *  social-publisher-worker — the browser never holds channel API tokens
+   *  (CLAUDE.md §5: "Keine Secrets im Frontend", "Keine Admin-/
+   *  Service-Role-Zugriffe aus dem Browser"), so this store only ever
+   *  generates and enqueues; it does not publish. */
+  readonly isPersisted: boolean;
 
-  constructor() {
-    this.queue = new DistributionQueue();
-    // Register a MockPublisher for every channel so `publish()` works
-    // in the admin preview. Real publishers ship in follow-up PRs.
-    for (const ch of ALL_CHANNELS) {
-      this.queue.registerPublisher(new MockPublisher(ch));
+  constructor(tenantId?: string) {
+    this.isPersisted = Boolean(tenantId && isSupabaseConfigured());
+
+    if (this.isPersisted) {
+      this.queue = new DistributionQueue({ supabase: getSupabase(), tenantId });
+      this.orch = new SocialOrchestrator({ queue: this.queue });
+      this.entries = [];
+    } else {
+      this.queue = new DistributionQueue();
+      // Register a MockPublisher for every channel so `publish()` works
+      // in the unauthenticated/no-tenant preview.
+      for (const ch of ALL_CHANNELS) {
+        this.queue.registerPublisher(new MockPublisher(ch));
+      }
+      this.orch = new SocialOrchestrator({ queue: this.queue });
+      // Re-hydrate from localStorage (NOT into the queue's internal
+      // state — only into our `entries` snapshot, since approve/reject
+      // operate on the snapshot).
+      this.entries = loadFromStorage();
     }
-    this.orch = new SocialOrchestrator({ queue: this.queue });
-    // Re-hydrate from localStorage (NOT into the queue's internal
-    // state — only into our `entries` snapshot, since approve/reject
-    // operate on the snapshot).
-    this.entries = loadFromStorage();
+  }
+
+  /** Persisted mode only: load existing rows from distribution_queue_entries.
+   *  No-op in local/mock mode (already hydrated from localStorage above). */
+  async hydrate(): Promise<void> {
+    if (!this.isPersisted) return;
+    await this.queue.loadFromDatabase();
+    this.entries = this.queue.list();
+  }
+
+  /** Persisted mode only: refresh the snapshot from Postgres (e.g. after a
+   *  realtime notification that social-publisher-worker changed a row). */
+  async refreshFromDatabase(): Promise<void> {
+    if (!this.isPersisted) return;
+    await this.queue.loadFromDatabase();
+    this.entries = this.queue.list();
+  }
+
+  /** Persisted mode only: subscribe to distribution_queue_entries changes
+   *  so publish results from social-publisher-worker show up live. Returns
+   *  an unsubscribe function, or null in local/mock mode. */
+  subscribeToUpdates(onChange: (entries: QueueEntry[]) => void): (() => void) | null {
+    if (!this.isPersisted) return null;
+    return this.queue.subscribeToNotifications(() => {
+      void this.refreshFromDatabase().then(() => onChange(this.getSnapshot()));
+    });
   }
 
   getSnapshot(): QueueEntry[] {
@@ -82,14 +124,29 @@ class AdminSocialStore {
    *  can render the SocialEvent + per-channel posts. */
   async submitEvent(event: RuntimeEvent): Promise<OrchestrationResult> {
     const result = await this.orch.process(event);
-    // Append fresh entries to our snapshot (BLOCKED ones don't get
-    // queue entries so this naturally excludes them).
-    this.entries = [...this.entries, ...result.queueEntries];
-    saveToStorage(this.entries);
+    if (this.isPersisted) {
+      // enqueueMany() already awaited the Postgres insert; the queue's
+      // own in-memory mirror is authoritative for the snapshot.
+      this.entries = this.queue.list();
+    } else {
+      // Append fresh entries to our snapshot (BLOCKED ones don't get
+      // queue entries so this naturally excludes them).
+      this.entries = [...this.entries, ...result.queueEntries];
+      saveToStorage(this.entries);
+    }
     return result;
   }
 
-  approve(queueId: string, reviewer: string): QueueEntry | null {
+  async approve(queueId: string, reviewer: string): Promise<QueueEntry | null> {
+    if (this.isPersisted) {
+      try {
+        const updated = await this.queue.approve(queueId, reviewer);
+        this.entries = this.queue.list();
+        return updated;
+      } catch {
+        return null;
+      }
+    }
     const i = this.entries.findIndex(e => e.id === queueId);
     if (i < 0) return null;
     const e = this.entries[i]!;
@@ -109,7 +166,16 @@ class AdminSocialStore {
     return updated;
   }
 
-  reject(queueId: string, reviewer: string): QueueEntry | null {
+  async reject(queueId: string, reviewer: string): Promise<QueueEntry | null> {
+    if (this.isPersisted) {
+      try {
+        const updated = await this.queue.reject(queueId, reviewer);
+        this.entries = this.queue.list();
+        return updated;
+      } catch {
+        return null;
+      }
+    }
     const i = this.entries.findIndex(e => e.id === queueId);
     if (i < 0) return null;
     const e = this.entries[i]!;
@@ -129,9 +195,15 @@ class AdminSocialStore {
     return updated;
   }
 
-  /** Mark an approved / auto entry as published (against the
-   *  MockPublisher). Returns the updated entry. */
+  /** Local/mock mode only: mark an approved / auto entry as published
+   *  against the MockPublisher. In persisted mode there is nothing to do
+   *  here — social-publisher-worker claims and publishes 'auto'/'approved'
+   *  rows on its own cron + NOTIFY trigger; the UI reflects that via
+   *  subscribeToUpdates()/refreshFromDatabase(), not a button. */
   async publish(queueId: string): Promise<QueueEntry | null> {
+    if (this.isPersisted) {
+      return this.entries.find(e => e.id === queueId) ?? null;
+    }
     const e = this.entries.find(x => x.id === queueId);
     if (!e) return null;
     if (e.status !== 'approved' && e.status !== 'auto') return e;
@@ -159,22 +231,31 @@ class AdminSocialStore {
   }
 
   clearAll(): void {
+    if (this.isPersisted) return; // queue entries live in Postgres, not bulk-deletable from the admin preview
     this.entries = [];
     saveToStorage(this.entries);
   }
 }
 
 // ── Module-level singleton ─────────────────────────────────────────
+//
+// Keyed by tenantId so switching the active tenant (or logging out)
+// gets a fresh store instead of leaking the previous tenant's queue.
 
 let _store: AdminSocialStore | null = null;
+let _storeTenantId: string | undefined;
 
-export function getAdminSocialStore(): AdminSocialStore {
-  if (!_store) _store = new AdminSocialStore();
+export function getAdminSocialStore(tenantId?: string): AdminSocialStore {
+  if (!_store || _storeTenantId !== tenantId) {
+    _store = new AdminSocialStore(tenantId);
+    _storeTenantId = tenantId;
+  }
   return _store;
 }
 
 export function __resetAdminSocialStoreForTests(): void {
   _store = null;
+  _storeTenantId = undefined;
   if (typeof window !== 'undefined') {
     try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
   }

@@ -33,10 +33,21 @@ import type {
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recordPublishMetric, recordQueueMetric } from './metrics';
 
-let queueIdCounter = 0;
+// distribution_queue_entries.id is `uuid primary key default gen_random_uuid()`
+// (see supabase/migrations/20260720081352_social_distribution_queue_persistence.sql).
+// Entry ids must be valid UUIDs from creation so the in-memory id and the
+// persisted row id are always the same value — no reconciliation step needed.
 function nextQueueId(): string {
-  queueIdCounter += 1;
-  return `q_${Date.now().toString(36)}_${queueIdCounter.toString(36)}`;
+  const c: { randomUUID?: () => string } | undefined =
+    typeof globalThis !== 'undefined' ? (globalThis as unknown as { crypto?: { randomUUID?: () => string } }).crypto : undefined;
+  if (c?.randomUUID) return c.randomUUID();
+  // Fallback for environments without Web Crypto (not cryptographically
+  // strong — only reachable in odd test sandboxes, never in prod).
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
+    const r = (Math.random() * 16) | 0;
+    const v = ch === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 export interface DistributionQueueOptions {
@@ -585,7 +596,6 @@ export class DistributionQueue {
   __resetForTests(): void {
     this.entries = [];
     this.publishers.clear();
-    queueIdCounter = 0;
   }
 
   // ── Private ─────────────────────────────────────────────────────

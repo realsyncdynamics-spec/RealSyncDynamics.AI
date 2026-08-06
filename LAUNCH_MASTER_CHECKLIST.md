@@ -489,3 +489,57 @@
 **Last Updated**: 2026-07-20  
 **Next Review**: 2026-08-02 (Post-launch)
 
+
+---
+
+## Release Gate
+
+**Vor dem Merge der letzten kritischen PR:**
+
+| Kriterium | Status | Verantwortlich | Datum |
+|----------|--------|---------------|-------|
+| CI grün | [ ] | [Name] | [Datum] |
+| Smoke Tests bestanden | [ ] | [Name] | [Datum] |
+| Secrets vorhanden | [ ] | [Name] | [Datum] |
+| Branch Protection aktiv | [ ] | [Name] | [Datum] |
+| Domain erreichbar | [ ] | [Name] | [Datum] |
+| Monitoring aktiv | [ ] | [Name] | [Datum] |
+| Rollback dokumentiert | [ ] | [Name] | [Datum] |
+
+**Status**: ❌ Nicht bereit / ⏳ In Arbeit / ✅ Bereit für Release
+
+---
+
+## Rollback Procedures
+
+Für jede kritische PR muss ein Rollback-Plan dokumentiert sein:
+
+### Rollback-Optionen
+1. **Revert Commit**: `git revert <commit-hash>`
+2. **GitHub Revert PR**: Automatisch über GitHub UI
+3. **Manueller Rollback**: [Spezifische Schritte dokumentieren]
+
+### Rollback-Test
+- [ ] Rollback-Prozedur für jede kritische PR getestet
+- [ ] Rollback-Zeit dokumentiert (Ziel: < 5 Minuten)
+- [ ] Rollback-Verantwortlicher benannt
+
+---
+
+## Release Outcome
+
+**Nach Abschluss der Phase 5 soll die Plattform den End-to-End-Workflow abbilden:**
+
+```
+Discover → Classify → Enforce → Prove
+```
+
+### Erfolgskriterien
+
+- [ ] Website Discovery: Automatische Erkennung und Indexierung von Websites
+- [ ] AI System Register: Registrierung aller AI-Systeme
+- [ ] Vendor Register: Registrierung aller Anbieter
+- [ ] Risk Register: Risikobewertung und -kategorisierung
+- [ ] Evidence Vault: Nachweisführung und Audit-Trail
+- [ ] Audit Export: Exportfunktionalität für Audits
+- [ ] Runtime Monitoring: Echtzeit-Überwachung der Systeme

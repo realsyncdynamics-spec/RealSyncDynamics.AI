@@ -168,3 +168,11 @@ labels: ["gate", "phase-4b", "monetization", "revenue"]
 ---
 
 **Related Roadmap:** `docs/RELEASE_ROADMAP_INTEGRATION_ORDER.md` (see Phase 4B Revenue Gate section for full scenario details)
+
+## Merge-Kriterien
+
+- CI erfolgreich
+- Keine offenen Review-Blocker
+- Keine bekannten Security-Regressionen
+- Staging Smoke-Test erfolgreich
+

@@ -21,7 +21,12 @@ nicht kosmetisch:
 | #932 | Liefert die Repo-Dateien für die 11 Ledger-Waisen nach. **Damit entfällt die Ledger-Operation komplett** — siehe Schritt 1. |
 
 Zusätzlich:
-- **PITR-/Backup-Punkt** im Supabase-Dashboard anlegen und Zeitstempel notieren.
+- **Logischen Dump ziehen** (siehe Rollback — auf dem Free-Plan gibt es keinen
+  automatischen Wiederherstellungspunkt):
+  ```bash
+  supabase db dump --linked -f "pre-push-$(date -u +%Y%m%dT%H%M%SZ).sql"
+  ```
+  Datei außerhalb des Repos ablegen und Zeitstempel notieren.
 - `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`, `SUPABASE_DB_PASSWORD` verfügbar.
 
 ---
@@ -114,14 +119,41 @@ node scripts/check-migration-drift.mjs   # muss in beide Richtungen grün sein
 
 ## Rollback
 
-PITR auf den in den Vorbedingungen notierten Zeitstempel. Der Push ist nicht
-transaktional über alle Migrationen hinweg — ein Teilabbruch hinterlässt einen
-teilmigrierten Zustand, der ohne PITR nur von Hand zu reparieren ist.
+> ⚠️ **Es gibt keinen automatischen Wiederherstellungspunkt.** Die Organisation
+> `realsyncdynamics-spec's Org` läuft auf dem **Free-Plan**. Supabase legt dort
+> weder tägliche Backups noch PITR an — beides beginnt beim Pro-Plan (PITR
+> zusätzlich als kostenpflichtiges Add-on). Eine frühere Fassung dieses Runbooks
+> nannte „PITR auf den notierten Zeitstempel" als Rollback; das war nicht
+> ausführbar. Verifiziert am 2026-08-03 über `get_organization` (`"plan":"free"`)
+> und die Supabase-Doku zu Backups.
+
+Der Push ist nicht transaktional über alle Migrationen hinweg — ein Teilabbruch
+hinterlässt einen teilmigrierten Zustand. Rückweg ist deshalb ausschließlich der
+in den Vorbedingungen gezogene logische Dump:
+
+```bash
+# Nur im Notfall und mit Bedacht: spielt den Stand VOR dem Push zurück.
+psql "$DATABASE_URL" -f pre-push-<zeitstempel>.sql
+```
+
+Der Dump ist logisch, kein physisches Abbild: Storage-Objekte, Auth-Sessions und
+alles, was zwischen Dump und Rollback geschrieben wurde, sind damit **nicht**
+abgedeckt. Wer diesen Rückweg nicht akzeptieren will, hebt vor dem Push auf den
+Pro-Plan an — dann stehen tägliche Backups zur Verfügung, und PITR lässt sich
+als Add-on zubuchen.
 
 ---
 
 ## Danach noch offen
 
+- **P0-3 — Edge-Function-Quota.** Der Push repariert die Datenbank-Seite, nicht die
+  Function-Seite. Der Free-Plan erlaubt **100** Edge Functions, das Projekt steht
+  exakt darauf; im Repo liegen 170. Neue Functions scheitern mit
+  `402 Max number of functions reached for project` — betroffen sind u. a.
+  `evidence-vault`, `policy-packs`, `provenance` und alle `iso42001-*`. Tabellen
+  allein reichen also nicht: Ein Modul braucht beides. Konsolidierung schließt die
+  Lücke rechnerisch nicht (fünf Waisen ohne Repo-Gegenstück plus 20 statisch
+  unreferenzierte Functions gegen 75 fehlende), Pro erlaubt 500.
 - **`VITE_SENTRY_DSN`** in den Cloudflare-Pages-Umgebungsvariablen setzen. Ohne DSN gibt
   es kein Error-Tracking in Produktion — genau deshalb blieb die 404-Flut wochenlang
   unbemerkt. Liegt außerhalb des Repos.

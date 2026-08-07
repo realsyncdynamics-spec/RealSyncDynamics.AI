@@ -51,7 +51,7 @@ const CHECKS = [
 
   // ── Legal-Surface vollständigkeitchecks ─────────────────────────
   //
-  // Gate gegen Live-Schaltung mit unvollständigen § 5 TMG-Pflichtangaben.
+  // Gate gegen Live-Schaltung mit unvollständigen § 5 DDG-Pflichtangaben.
   // mustNotInclude blockt, wenn der Pre-Launch-Banner aus Impressum.tsx
   // im prerendered HTML sichtbar ist (= VITE_BUSINESS_VAT_ID fehlt).
   { id: 'impressum',         name: 'Impressum reachable + Pflichtsektionen present',

@@ -570,7 +570,7 @@ export const RealSyncDynamicsLanding = () => {
         >
           <div className="max-w-4xl">
             <h2 className="text-5xl font-bold mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Impressum</h2>
-            <p className="text-titanium/60 text-sm mb-12 font-mono">§ 5 TMG · § 18 MStV</p>
+            <p className="text-titanium/60 text-sm mb-12 font-mono">§ 5 DDG · § 18 MStV</p>
             <div className="space-y-8 text-titanium/80">
               <div>
                 <h3 className="text-xl font-bold text-titanium mb-3">Anbieter / Verantwortlicher</h3>

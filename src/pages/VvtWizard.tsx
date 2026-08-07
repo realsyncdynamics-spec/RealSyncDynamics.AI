@@ -81,7 +81,7 @@ export function VvtWizard() {
               {/* Org (show only once) */}
               {activeId === entries[0].id && (
                 <div style={card}>
-                  <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Organisation (einmalig)</h3>
+                  <h2 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Organisation (einmalig)</h2>
                   {[
                     { key: 'name', label: 'Unternehmensname', ph: 'Kanzlei Müller GmbH' },
                     { key: 'adresse', label: 'Anschrift', ph: 'Musterstr. 1, 80333 München' },
@@ -97,7 +97,7 @@ export function VvtWizard() {
               )}
 
               <div style={card}>
-                <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Verarbeitungstätigkeit</h3>
+                <h2 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Verarbeitungstätigkeit</h2>
                 <div style={{ marginBottom: '0.75rem' }}>
                   <label style={label}>Bezeichnung *</label>
                   <input style={input} value={active.bezeichnung} onChange={e => update({ bezeichnung: e.target.value })} placeholder="z.B. Mandanten-CRM mit KI-Auswertung" />
@@ -120,7 +120,7 @@ export function VvtWizard() {
               </div>
 
               <div style={card}>
-                <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Datenkategorien & Empfänger</h3>
+                <h2 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Datenkategorien & Empfänger</h2>
                 <div style={{ marginBottom: '0.75rem' }}>
                   <label style={label}>Kategorien personenbezogener Daten (kommagetrennt)</label>
                   <input style={input} value={active.kategorien.join(', ')} onChange={e => update({ kategorien: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="Name, E-Mail, Vertragsdaten, IP-Adresse" />
@@ -145,7 +145,7 @@ export function VvtWizard() {
               </div>
 
               <div style={card}>
-                <h3 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Technische & Organisatorische Maßnahmen (Art. 32)</h3>
+                <h2 style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '0.95rem' }}>Technische & Organisatorische Maßnahmen (Art. 32)</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
                   {TOM_OPTIONS.map(opt => (
                     <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', padding: '0.4rem', border: `1px solid ${active.tom.includes(opt) ? '#3b82f6' : '#374151'}`, borderRadius: 4 }}>

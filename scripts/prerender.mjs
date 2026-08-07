@@ -7,7 +7,7 @@
 //
 // Lösung: Nach `vite build` rendert dieses Script eine Auswahl von Routes
 // via Headless-Chromium und schreibt den vollständig hydrierten HTML-State
-// als `dist/<route>/index.html`. Der Vercel/nginx-Server liefert dann pro
+// als `dist/<route>.html`. Der Cloudflare-Pages-/nginx-Server liefert dann pro
 // Route die korrekte HTML statt den SPA-Shell.
 //
 // Usage:
@@ -19,7 +19,7 @@
 
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, access } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
@@ -31,13 +31,30 @@ const SITEMAP = join(DIST, 'sitemap.xml');
 const PORT = parseInt(process.env.PRERENDER_PORT ?? '4173', 10);
 const BASE_URL = `http://localhost:${PORT}`;
 const TIMEOUT = parseInt(process.env.PRERENDER_TIMEOUT ?? '15000', 10);
-const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '4', 10);
-const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.6');
+// 6 statt 4: seit die Schwelle alle 105 Sitemap-Routen erfasst (vorher 78)
+// ist der Prerender der laengste Build-Schritt. Hoeher als 6 lohnt nicht —
+// die Cloudflare-Pages-Build-Sandbox hat wenig RAM, und jede Chromium-
+// Context kostet dort spuerbar.
+const CONCURRENCY = parseInt(process.env.PRERENDER_CONCURRENCY ?? '6', 10);
+// Schwelle 0.4 = alles, was in der sitemap.xml steht (niedrigste vergebene
+// Priority). Bewusst so: die Sitemap enthaelt ausschliesslich URLs, die
+// indexiert werden sollen — eine davon NICHT zu prerendern heisst, sie einem
+// Crawler ohne JS als leeren Shell auszuliefern. Die frueheren 0.6 liessen
+// 27 der 105 Sitemap-URLs ohne Inhalt zurueck.
+// Fuer schnelle lokale Builds weiterhin ueberschreibbar:
+//   PRERENDER_PRIORITY_MIN=0.8 npm run build
+const PRIORITY_MIN = parseFloat(process.env.PRERENDER_PRIORITY_MIN ?? '0.4');
 // Wall-Clock-Obergrenze fuer den GESAMTEN Lauf. Wichtig fuer die Cloudflare-
 // Pages-Build-Sandbox: dort kann der Chromium-Download haengen statt sauber
 // zu scheitern, und ein Hang wuerde den kompletten Deploy ins Timeout ziehen.
 // Ein Fehler ist tolerierbar (Build laeuft ohne Prerender weiter), ein Hang nicht.
-const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '480000', 10);
+//
+// 15 min statt 8: mit allen 105 Sitemap-Routen liegt ein gesunder Lauf lokal
+// bei ~5,5 min. 8 min waeren auf einem langsameren Build-Runner ein
+// Fehlalarm gewesen — der Watchdog haette einen funktionierenden Prerender
+// abgeschossen und die Seite ohne Inhalt ausgeliefert. Cloudflare Pages
+// bricht Builds erst nach 20 min ab, der Puffer bleibt also erhalten.
+const MAX_MS = parseInt(process.env.PRERENDER_MAX_MS ?? '900000', 10);
 
 if (process.env.SKIP_PRERENDER === '1') {
   console.log('[prerender] SKIP_PRERENDER=1 — exit 0 without work');
@@ -120,14 +137,22 @@ async function startPreviewServer() {
 }
 
 // ─── Render single route ─────────────────────────────────────────────────────
-async function renderRoute(browser, route) {
+async function renderRoute(browser, route, timeout = TIMEOUT) {
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const page = await context.newPage();
   try {
     const url = BASE_URL + route;
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
     // Wait for React hydration + lazy components to finish
-    await page.waitForLoadState('networkidle', { timeout: TIMEOUT }).catch(() => { /* tolerant */ });
+    await page.waitForLoadState('networkidle', { timeout }).catch(() => { /* tolerant */ });
+
+    // networkidle ist bewusst tolerant — aber genau deshalb reicht es als
+    // Fertigkriterium nicht: laeuft es ab, speichern wir sonst stillschweigend
+    // ein halb gerendertes DOM. Auf dem Cloudflare-Pages-Preview von PR #947
+    // kam /claude-code-optimizer so mit 18 kB und ohne h1 an, waehrend lokal
+    // 42 kB mit h1 entstanden. Ein h1 ist das billigste verlaessliche Signal
+    // dafuer, dass die Seiten-Komponente wirklich gemountet ist.
+    await page.waitForSelector('h1', { timeout, state: 'attached' }).catch(() => { /* unten geprueft */ });
 
     // Canonical wird vom SEOHead-Component aus src/config/seo.ts gesetzt
     // (auch fuer Alias-Routes auf die Primary-URL). Hier nicht ueberschreiben.
@@ -139,12 +164,61 @@ async function renderRoute(browser, route) {
   }
 }
 
-// ─── Write HTML to dist/<route>/index.html ───────────────────────────────────
+/**
+ * Sieht das Ergebnis nach einer fertig gerenderten Seite aus?
+ *
+ * Exportiert, damit test/seo/prerenderComplete.test.ts das Kriterium
+ * pruefen kann — es entscheidet darueber, ob eine Seite als vollstaendig
+ * gilt, und darf nicht unbemerkt aufweichen.
+ */
+export function looksComplete(html) {
+  return /<h1[\s>]/i.test(html);
+}
+
+/**
+ * Rendern mit einem Wiederholungsversuch.
+ *
+ * Der Build-Sandbox von Cloudflare Pages steht spuerbar weniger CPU zur
+ * Verfuegung als einem lokalen Rechner; schwere Seiten brauchen dort
+ * laenger als TIMEOUT. Statt das Ergebnis zu verwerfen (dann greift der
+ * _redirects-Catch-All und die URL liefert die Startseite — Duplicate
+ * Content) versuchen wir es einmal mit dreifachem Timeout erneut.
+ *
+ * Bleibt es unvollstaendig, wird die Seite trotzdem geschrieben, aber als
+ * `failed` gezaehlt: mit PRERENDER_STRICT=1 (Deploy-Workflow) faellt der
+ * Build damit auf, und verify-prerender.mjs meldet die fehlende h1 ohnehin.
+ */
+async function renderRouteWithRetry(browser, route) {
+  let html = await renderRoute(browser, route);
+  if (looksComplete(html)) return { html, complete: true };
+
+  console.warn(`[prerender] ${route}: unvollstaendig (kein h1) — Wiederholung mit ${TIMEOUT * 3}ms`);
+  html = await renderRoute(browser, route, TIMEOUT * 3);
+  return { html, complete: looksComplete(html) };
+}
+
+// ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
+//
+// Flaches `<route>.html` statt `<route>/index.html` — das ist kein
+// Geschmacksdetail, sondern entscheidet ueber den HTTP-Status der
+// Sitemap-URLs. Am Cloudflare-Pages-Preview von PR #947 gemessen:
+//
+//   dist/pricing/index.html → GET /pricing antwortet 308 auf /pricing/
+//                             (Pages normalisiert Directory-Indizes).
+//                             Sitemap und <link rel=canonical> zeigen aber
+//                             auf /pricing OHNE Slash — damit waere jede
+//                             der 105 Sitemap-URLs eine Weiterleitung, und
+//                             das Canonical der Zielseite zeigte zurueck.
+//   dist/pricing.html       → GET /pricing liefert direkt 200.
+//
+// Verifiziert: mit flachem Layout 105/105 Sitemap-URLs mit 200 und Content,
+// 0 Redirects. nginx (VPS/Docker/Traefik) deckt beide Layouts ab, seit
+// `$uri.html` in den try_files-Ketten steht.
 async function writeRoute(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/$/, '');
   const target = cleanRoute === ''
     ? join(DIST, 'index.html')
-    : join(DIST, cleanRoute, 'index.html');
+    : join(DIST, `${cleanRoute}.html`);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html, 'utf8');
 }
@@ -256,8 +330,14 @@ async function main() {
     const browser = await chromium.launch({ headless: true });
     try {
       stats = await runWithPool(routes, async (item) => {
-        const html = await renderRoute(browser, item.route);
+        const { html, complete } = await renderRouteWithRetry(browser, item.route);
+        // Auch das unvollstaendige Ergebnis schreiben: ohne Datei greift der
+        // _redirects-Catch-All und die URL liefert die Startseite — Duplicate
+        // Content waere schlechter als eine duenne, aber eigene Seite.
         await writeRoute(item.route, html);
+        if (!complete) {
+          throw new Error('auch nach Wiederholung kein h1 im HTML — Seite unvollstaendig gerendert');
+        }
         console.log(`[prerender] ✓ ${item.route} (priority ${item.prio})`);
       }, CONCURRENCY);
     } finally {
@@ -285,6 +365,12 @@ const watchdog = setTimeout(() => {
 }, MAX_MS);
 watchdog.unref();
 
+// Nur ausfuehren, wenn direkt gestartet — nicht beim Import aus Tests.
+const isDirectRun = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (!isDirectRun) {
+  clearTimeout(watchdog);
+} else {
 main()
   .then(() => process.exit(0))
   .catch(async (e) => {
@@ -292,3 +378,4 @@ main()
     await writeStatus({ ok: false, rendered: 0, reason: e instanceof Error ? e.message : String(e) });
     process.exit(1);
   });
+}

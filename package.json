@@ -11,6 +11,7 @@
     "generate:legal-pages": "node scripts/generate-static-legal-pages.mjs",
     "prerender": "node scripts/prerender.mjs",
     "prerender:safe": "node scripts/prerender.mjs || echo '[prerender] uebersprungen (non-fatal) — Build laeuft ohne Prerender weiter'",
+    "verify:prerender": "node scripts/verify-prerender.mjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",

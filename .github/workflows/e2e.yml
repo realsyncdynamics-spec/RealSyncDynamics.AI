@@ -15,6 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Playwright-Container statt `npx playwright install --with-deps`:
+    # Chromium/Firefox/WebKit inkl. GTK-, NSS-, X11-Libs und Fonts sind
+    # bereits im Image. Kein root/apt noetig, reproduzierbar, unabhaengig
+    # von Ubuntu-Updates auf den GitHub-Runnern.
+    #
+    # Der Tag MUSS exakt zur installierten @playwright/test-Version passen
+    # (aktuell 1.59.1) — sonst sucht der npm-Client eine Browser-Revision,
+    # die das Image nicht mitbringt ("Executable doesn't exist").
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+
     env:
       # CI testet den PR-eigenen Build über einen lokalen Preview-Server.
       # Die Live-Produktion ist als Ziel ungeeignet: ihr Bot-Schutz liefert
@@ -40,6 +51,9 @@ jobs:
       - name: Build Application
         run: npm run build
         env:
+          # E2E testet die laufende SPA, nicht das prerenderte HTML — der
+          # Prerender waere hier reine Wartezeit.
+          SKIP_PRERENDER: '1'
           # Dummy-Pixel-IDs, damit die Consent-Gating-Tests in
           # e2e/cookie-consent.spec.ts wirklich messen können. `pixels.ts` lädt
           # die Pixel nur bei gesetzten IDs — ohne sie feuert auch nach einer
@@ -52,9 +66,6 @@ jobs:
           # erreichen — es geht nichts an Google, Meta oder TikTok raus.
           VITE_GA4_MEASUREMENT_ID: G-E2ETEST0000
           VITE_META_PIXEL_ID: '000000000000000'
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
 
       - name: Start Preview Server
         run: |

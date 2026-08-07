@@ -109,7 +109,7 @@ export function TomGenerator() {
 
             {CATEGORIES.map(cat => (
               <div key={cat.name} style={{ border: '1px solid #374151', borderRadius: 4, padding: '1.25rem', marginBottom: '1rem' }}>
-                <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#f3f4f6' }}>{cat.name}</h3>
+                <h2 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem', color: '#f3f4f6' }}>{cat.name}</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   {cat.measures.map(m => {
                     const key = cat.name + ':' + m;

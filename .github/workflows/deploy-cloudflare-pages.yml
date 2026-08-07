@@ -73,6 +73,14 @@ jobs:
   build:
     name: Build SPA
     runs-on: ubuntu-latest
+
+    # Playwright-Container: der Prerender-Step braucht Chromium inkl.
+    # System-Libs. Im Image ist beides fertig vorhanden — kein
+    # `playwright install --with-deps`, kein apt, kein root-Problem.
+    # Tag exakt = installierte @playwright/test-Version (1.59.1).
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+
     # Signalisiert nachgelagerten Jobs, ob die Cloudflare-Credentials
     # vorhanden sind. Secrets sind in job-level `if:` nicht lesbar, darum
     # hier als Job-Output abgeleitet.
@@ -139,13 +147,23 @@ jobs:
       - name: Generate 404 fallback for dynamic routes
         run: |
           cp dist/index.html dist/404.html
-          # Verify that prerendering actually filled the dist directory
-          if [ ! -f dist/pricing/index.html ] && [ ! -f dist/audit/index.html ]; then
-            echo "ERROR: Prerendering did not produce expected output files (dist/pricing/index.html, dist/audit/index.html)"
+          # Verify that prerendering actually filled the dist directory.
+          # Flaches Layout (dist/pricing.html), NICHT dist/pricing/index.html —
+          # Directory-Indizes wuerden auf Cloudflare Pages einen 308 auf die
+          # Trailing-Slash-Variante ausloesen. Siehe scripts/prerender.mjs.
+          if [ ! -f dist/pricing.html ] && [ ! -f dist/audit.html ]; then
+            echo "ERROR: Prerendering did not produce expected output files (dist/pricing.html, dist/audit.html)"
             ls -la dist/ | head -20
             exit 1
           fi
-          echo "✓ Prerendered routes confirmed: dist/pricing/index.html and dist/audit/index.html exist"
+          echo "✓ Prerendered routes confirmed: dist/pricing.html and dist/audit.html exist"
+
+      - name: Verify SEO visibility (Content im HTML?)
+        # Faengt die Regression ab, die die Live-Site auf Seobility 56 %
+        # gedrueckt hat: SPA-Shell ohne H1/Text auf jeder Route. Prueft
+        # zusaetzlich die Ueberschriften-Hierarchie (kein fehlendes h1,
+        # keine uebersprungenen Level).
+        run: npm run verify:prerender
 
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -10,6 +10,8 @@ AI-Inferenz, transparentes Billing.
 (EU-Region) · **AI-Stack:** Anthropic / Google / OpenAI für Cloud-Pfad,
 [Ollama](https://ollama.com) (gemma3:4b) für EU-lokal-Pfad.
 
+**Monorepo?** → Siehe [`MONOREPO.md`](MONOREPO.md) für vollständige Navigation durch alle Services & Workspaces.
+
 ---
 
 ## Was steckt drin
@@ -60,7 +62,57 @@ Alle Tabellen RLS-geschützt. Service-Role nur in Edge Functions.
 Audit-Log (`ai_tool_runs`, `workflow_runs`) zeigt jeden externen Call
 mit Provider, Residenz und Cost.
 
+## Repository-Struktur
+
+```
+RealSyncDynamics.AI/
+├── src/                          # Hauptfrontend (Vite/React SPA)
+├── supabase/                      # Edge Functions + Migrations
+├── apps/                          # Node/TS-Services
+│   └── agent-runtime/             # Agent Runtime (Docker)
+├── services/                      # Spezialisierte Services (Docker)
+│   ├── realsync-runtime-core/
+│   ├── realsync-evidence-runtime/
+│   ├── openclaw-agent/
+│   └── playwright-scanner/
+├── packages/                      # Shared Packages
+│   └── sdk/                       # Public SDK (CJS + ESM)
+├── platform/                      # 🏗️ Monorepo: Website Builder + Governance
+│   ├── builder_orchestrator/      # AI-App-Builder mit Multi-Agent-Task-Graph (Python)
+│   ├── governance_backend/        # Governance + Risk-Engine (Python)
+│   ├── nextjs_frontend/           # Builder- + Governance-Frontend (Next.js)
+│   └── docker-compose.yml         # Start alle Platform-Services lokal
+└── docs/                          # Dokumentation + Runbooks
+```
+
+### Platform-Monorepo (`platform/`)
+
+Eine **in sich geschlossene Microservice-Suite** für Website-Automation mit Compliance-Gating:
+
+- **builder_orchestrator** (Port 8001, `builder.localhost`)
+  - AI-Agenten-Orchestrator für Website-Generierung
+  - BuildSpec → Task-Graph → Code-Generierung
+  - Multi-Agent-Scheduler mit Governance-Gate-Check
+  - **Start:** `cd platform && docker compose up --build`
+  - **Docs:** http://builder.localhost/docs (OpenAPI)
+
+- **governance_backend** (Port 8002, `rsd.localhost`)
+  - Risk-Evaluator für EU-AI-Act-Konformität
+  - CI/CD-Gate-Engine
+  - Telemetrie- und Audit-Log
+  - **Docs:** http://rsd.localhost/docs (OpenAPI)
+
+- **nextjs_frontend** (Port 3000, `app.localhost`)
+  - Steuerung des Builders
+  - Governance-Cockpit
+
+**Weitere Details:** `platform/README.md`
+
+---
+
 ## Lokale Entwicklung
+
+### Hauptanwendung (Vite/React SPA)
 
 **Voraussetzungen:** Node 20+, Supabase-Projekt + Anon-Key.
 
@@ -76,6 +128,22 @@ EOF
 
 npm run dev    # http://localhost:3000
 ```
+
+### Website Builder + Governance (Platform-Monorepo)
+
+```bash
+cd platform
+cp .env.example .env
+docker compose up --build
+
+# Services:
+# - Builder: http://builder.localhost/docs
+# - Governance: http://rsd.localhost/docs
+# - Frontend: http://app.localhost
+# - Traefik Dashboard: http://localhost:8080
+```
+
+Siehe `platform/README.md` für Details zum Workflow und API-Nutzung.
 
 ## E2E / Visual Functional Tests
 

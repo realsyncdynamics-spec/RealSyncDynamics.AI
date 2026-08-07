@@ -233,33 +233,81 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 Vor jeder Änderung erst analysieren:
 
 ```
-src/
-  pages/         104+ Seiten (1 Datei = 1 Route), public, eager imports
-  features/      Auth-gated Module (billing, governance, …), lazy-loaded
-  components/    Shared UI
-  config/        Zentrale Konfiguration (seo, industries) — Preise siehe shared/
-  core/          Provider (TenantProvider, DemoModeProvider, …)
-  lib/           Utilities (auth, tracking)
-  hooks/         React Hooks
-  enterprise-os/ Workspace-Layouts, Governance-Branding
-  flow/          Seitenbasierter Flow (/flow/*)
-  governance/    Governance-UI
-  runtime/       Agent-Integration, Telemetry-Typen
-  security/      Security-Utilities
-  sdk/           Client-SDK-Anbindung
-shared/
-  pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
-supabase/
-  functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
-  migrations/    243 Migrations
-apps/agent-runtime      Agent Runtime (Node/TS, Docker)
-services/               runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
-packages/sdk            Öffentliches SDK (CJS + ESM)
-connectors/             Externe Integrationen
-deploy/ docker/ infra/  VPS-Stack (Traefik, Ollama, n8n)
-scripts/                Build-, Release-, QA-Skripte
-test/ tests/ e2e/       Vitest + Playwright
+RealSyncDynamics.AI/
+├── src/
+│   ├── pages/         104+ Seiten (1 Datei = 1 Route), public, eager imports
+│   ├── features/      Auth-gated Module (billing, governance, …), lazy-loaded
+│   ├── components/    Shared UI
+│   ├── config/        Zentrale Konfiguration (seo, industries) — Preise siehe shared/
+│   ├── core/          Provider (TenantProvider, DemoModeProvider, …)
+│   ├── lib/           Utilities (auth, tracking)
+│   ├── hooks/         React Hooks
+│   ├── enterprise-os/ Workspace-Layouts, Governance-Branding
+│   ├── flow/          Seitenbasierter Flow (/flow/*)
+│   ├── governance/    Governance-UI
+│   ├── runtime/       Agent-Integration, Telemetry-Typen
+│   ├── security/      Security-Utilities
+│   └── sdk/           Client-SDK-Anbindung
+├── shared/
+│   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
+├── supabase/
+│   ├── functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    243 Migrations
+├── apps/
+│   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
+├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
+├── packages/sdk       Öffentliches SDK (CJS + ESM)
+├── connectors/        Externe Integrationen
+├── deploy/ docker/ infra/ VPS-Stack (Traefik, Ollama, n8n)
+├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** (siehe unten)
+├── scripts/           Build-, Release-, QA-Skripte
+└── test/ tests/ e2e/  Vitest + Playwright
 ```
+
+### 🏗️ Platform-Monorepo (`platform/`) — Website Builder + Governance
+
+In-sich-geschlossener Microservice-Stack für **automatisierte Website-Generierung mit Compliance-Gating**:
+
+**Struktur:**
+```
+platform/
+├── builder_orchestrator/    Python/FastAPI — AI-App-Builder
+│                             • Multi-Agent-Task-Graph
+│                             • BuildSpec → Code-Generierung
+│                             • OpenAPI: /docs
+├── governance_backend/       Python/FastAPI — Risk & Compliance Engine
+│                             • EU-AI-Act-Konformität
+│                             • CI/CD-Gate-Engine
+│                             • Audit-Log + Telemetrie
+├── nextjs_frontend/          Next.js — Builder-Cockpit + Governance-UI
+├── migrations/               SQL-Migrations (Postgres)
+├── docker-compose.yml        Lokale Orchestrierung (alle 4 Services)
+└── README.md                 Workflow, API-Nutzung, Start-Guide
+```
+
+**Start (lokal):**
+```bash
+cd platform
+cp .env.example .env
+docker compose up --build
+```
+
+**Zugang:**
+- Builder-API: http://builder.localhost/docs (Port 8001)
+- Governance-API: http://rsd.localhost/docs (Port 8002)
+- Frontend: http://app.localhost (Port 3000)
+- Traefik-Dashboard: http://localhost:8080
+
+**Zweck:** Die Seite wird **weder** von der Root-package.json noch vom Root-npm noch in den
+Root-CI/CD-Workflows verwaltet. Sie ist physisch ein eigenständiges Projekt, das
+`docker compose` koordiniert. Änderungen dort brauchen weder `npm run lint` noch
+`npm run build` in der Root — nur Docker.
+
+**Modifikationen im `platform/`:**
+- Keine Node-Dependencies (alles Python/Deno)
+- RLS + Migrations wie im Hauptrepo (selbe DB-Conn in `docker-compose.yml`)
+- OpenAPI-First: Endpoints mit `@app.post`, `@app.get` + Schemas in Pydantic
+- Prüfpfad: `audit_log` + `workflow_runs` (selbe Tabellen wie Root-Governance)
 
 ### Preise, Pläne und Berechtigungen
 

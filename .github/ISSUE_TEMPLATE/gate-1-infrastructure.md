@@ -63,3 +63,11 @@ labels: ["gate", "phase-1", "infrastructure"]
 ---
 
 **Related Roadmap:** `docs/RELEASE_ROADMAP_INTEGRATION_ORDER.md`
+
+## Merge-Kriterien
+
+- CI erfolgreich
+- Keine offenen Review-Blocker
+- Keine bekannten Security-Regressionen
+- Staging Smoke-Test erfolgreich
+

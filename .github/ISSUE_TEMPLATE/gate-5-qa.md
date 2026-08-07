@@ -233,3 +233,11 @@ labels: ["gate", "phase-5", "qa"]
 **Timeline:** Week 7 → Production Go-Live
 
 **Related Roadmap:** `docs/RELEASE_ROADMAP_INTEGRATION_ORDER.md`
+
+## Merge-Kriterien
+
+- CI erfolgreich
+- Keine offenen Review-Blocker
+- Keine bekannten Security-Regressionen
+- Staging Smoke-Test erfolgreich
+

@@ -14,6 +14,10 @@ jobs:
       # Secret auf Job-Ebene heben: der secrets-Kontext ist in einem
       # step-level "if" nicht verfuegbar, der env-Kontext dagegen schon.
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY }}
+      # SSH-Port. Optionales Secret VPS_SSH_PORT; ohne dieses Secret 22.
+      # Laeuft sshd auf dem VPS auf einem abweichenden Port, genuegt es, das
+      # Secret zu setzen — der Workflow selbst muss nicht angefasst werden.
+      VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || '22' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -51,10 +55,33 @@ jobs:
           echo "${{ secrets.VPS_SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
+      # Ohne Vorabtest haengt der rsync unten bei nicht erreichbarem Host rund
+      # zwei Minuten und endet mit "rsync error: unexplained error (code 255)"
+      # — einer Meldung, die die eigentliche Ursache nicht nennt. Dieser Test
+      # scheitert in 15 Sekunden mit klarer Diagnose.
+      - name: Preflight - ist der VPS per SSH erreichbar?
+        run: |
+          if timeout 15 bash -c "cat < /dev/null > /dev/tcp/${{ secrets.VPS_SSH_HOST }}/${VPS_SSH_PORT}" 2>/dev/null; then
+            echo "✓ VPS auf Port ${VPS_SSH_PORT} erreichbar"
+          else
+            echo "::error::VPS auf Port ${VPS_SSH_PORT} nicht erreichbar — Deployment abgebrochen, bevor rsync ins Timeout laeuft."
+            echo ""
+            echo "Der Build ist in Ordnung; die Verbindung zum Server nicht. Uebliche Ursachen:"
+            echo "  1. Firewall laesst Port ${VPS_SSH_PORT} nicht fuer GitHub-Runner zu (deren IPs wechseln)."
+            echo "     Pruefen: hPanel -> VPS -> Firewall, bzw. auf dem Server 'ufw status'."
+            echo "  2. sshd laeuft auf einem anderen Port. Dann Secret VPS_SSH_PORT setzen."
+            echo "     Pruefen: 'ss -ltnp | grep sshd' ueber die Hostinger-Konsole."
+            echo "  3. sshd laeuft nicht. Pruefen: 'systemctl status ssh'."
+            echo ""
+            echo "Zugang zum Server geht notfalls ueber die Browser-Konsole im hPanel,"
+            echo "die kein SSH benoetigt."
+            exit 1
+          fi
+
       - name: Sync source to VPS
         run: |
           rsync -avz \
-            -e "ssh -i ~/.ssh/deploy_key" \
+            -e "ssh -i ~/.ssh/deploy_key -p ${VPS_SSH_PORT} -o ConnectTimeout=15" \
             --delete \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -65,7 +92,7 @@ jobs:
       - name: Deploy on VPS via Docker Compose
         id: vps_deploy
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
+          ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15 ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF'
           set -Eeuo pipefail
 
           REPO_PATH="/var/www/realsyncdynamicsai-frontend"
@@ -136,7 +163,7 @@ jobs:
       - name: Deploy failed - Automatic Rollback
         if: failure() && steps.vps_deploy.outcome == 'failure'
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF' || true
+          ssh -i ~/.ssh/deploy_key -p "${VPS_SSH_PORT}" -o ConnectTimeout=15 ${{ secrets.VPS_SSH_USER }}@${{ secrets.VPS_SSH_HOST }} <<'EOF' || true
           set -Eeuo pipefail
           COMPOSE_DIR="/var/www/realsyncdynamicsai-frontend/deploy/frontend-vps-deploy-v2"
           ENV_FILE="$COMPOSE_DIR/.env"

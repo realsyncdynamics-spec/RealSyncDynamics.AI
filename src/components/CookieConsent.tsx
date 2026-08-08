@@ -132,7 +132,10 @@ export function CookieConsent() {
           <div className="flex-1 min-w-0">
             {!showCustom ? (
               <>
-                <h2 className="font-display font-bold text-sm sm:text-base text-titanium-50 mb-1">Datenschutz auf RealSyncDynamicsAI.de</h2>
+                {/* p statt h2: Der Banner wird vom Prerender in JEDE Seite gerendert
+                    und zaehlte damit ueberall als Dokument-Ueberschrift ausserhalb
+                    der Content-Hierarchie (SEO-Audit 2026-08). Klassen unveraendert. */}
+                <p className="font-display font-bold text-sm sm:text-base text-titanium-50 mb-1">Datenschutz auf RealSyncDynamicsAI.de</p>
                 <p className="text-[11px] sm:text-xs text-titanium-300 leading-snug sm:leading-relaxed mb-2 sm:mb-3">
                   Technisch notwendige Cookies für Login + Session. Optional:
                   Statistik- und Marketing-Cookies mit Deiner Einwilligung. Mehr
@@ -163,7 +166,7 @@ export function CookieConsent() {
               </>
             ) : (
               <>
-                <h2 className="font-display font-bold text-sm sm:text-base text-titanium-50 mb-2">Cookie-Auswahl</h2>
+                <p className="font-display font-bold text-sm sm:text-base text-titanium-50 mb-2">Cookie-Auswahl</p>
                 <div className="space-y-2 mb-3 text-xs">
                   <CookieRow
                     label="Notwendig" desc="Login, Session, CSRF — ohne diese funktioniert die App nicht."

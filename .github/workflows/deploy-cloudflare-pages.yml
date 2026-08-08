@@ -139,13 +139,15 @@ jobs:
       - name: Generate 404 fallback for dynamic routes
         run: |
           cp dist/index.html dist/404.html
-          # Verify that prerendering actually filled the dist directory
-          if [ ! -f dist/pricing/index.html ] && [ ! -f dist/audit/index.html ]; then
-            echo "ERROR: Prerendering did not produce expected output files (dist/pricing/index.html, dist/audit/index.html)"
+          # Verify that prerendering actually filled the dist directory.
+          # Flache .html-Dateien (dist/<route>.html) statt dist/<route>/index.html:
+          # Pages serviert sie extensionless ohne Trailing-Slash-308 (SEO-Audit 2026-08).
+          if [ ! -f dist/pricing.html ] && [ ! -f dist/audit.html ]; then
+            echo "ERROR: Prerendering did not produce expected output files (dist/pricing.html, dist/audit.html)"
             ls -la dist/ | head -20
             exit 1
           fi
-          echo "✓ Prerendered routes confirmed: dist/pricing/index.html and dist/audit/index.html exist"
+          echo "✓ Prerendered routes confirmed: dist/pricing.html and dist/audit.html exist"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

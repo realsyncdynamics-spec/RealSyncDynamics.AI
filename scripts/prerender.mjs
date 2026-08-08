@@ -7,8 +7,8 @@
 //
 // Lösung: Nach `vite build` rendert dieses Script eine Auswahl von Routes
 // via Headless-Chromium und schreibt den vollständig hydrierten HTML-State
-// als `dist/<route>/index.html`. Der Vercel/nginx-Server liefert dann pro
-// Route die korrekte HTML statt den SPA-Shell.
+// als `dist/<route>.html`. Cloudflare Pages liefert die Datei extensionless
+// unter /<route> aus — ohne Trailing-Slash-Redirect (siehe writeRoute()).
 //
 // Usage:
 //   npm run build              # vite build (unverändert)
@@ -139,12 +139,17 @@ async function renderRoute(browser, route) {
   }
 }
 
-// ─── Write HTML to dist/<route>/index.html ───────────────────────────────────
+// ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
+// Flache .html-Dateien statt dist/<route>/index.html: Cloudflare Pages serviert
+// <route>.html extensionless unter /<route> OHNE Trailing-Slash. Die fruehere
+// Verzeichnis-Variante erzwang einen 308 auf /<route>/ — im Widerspruch zu
+// Canonicals und sitemap.xml, die durchgehend slashlos sind (SEO-Audit 2026-08:
+// Canonical ≠ finale URL auf allen prerenderten Routen).
 async function writeRoute(route, html) {
   const cleanRoute = route === '/' ? '' : route.replace(/\/$/, '');
   const target = cleanRoute === ''
     ? join(DIST, 'index.html')
-    : join(DIST, cleanRoute, 'index.html');
+    : join(DIST, `${cleanRoute}.html`);
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, html, 'utf8');
 }

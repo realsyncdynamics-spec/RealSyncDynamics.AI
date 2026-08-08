@@ -3,12 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform</title>
-    <meta name="description" content="RealSyncDynamics.AI ist eine europäische Runtime-native AI-Governance- und Compliance-Infrastruktur: kontinuierliche Telemetrie für Websites, Daten- und KI-Systeme, regulatorische Risiko-Erkennung und kryptografisch nachvollziehbare Evidenz." />
+    <!-- Title ~60 Zeichen, Hauptkeyword zuerst; Description 130-155 Zeichen
+         (SEO-Report 2026-08: Title zu lang, Description deutlich zu lang).
+         62 Zeichen: Keyword vollstaendig vorn, nur das Brand-Suffix koennte
+         in der SERP abgeschnitten werden. -->
+    <title>AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI</title>
+    <meta name="description" content="AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern." />
     <meta name="keywords" content="AI Governance Runtime, Runtime Compliance, Continuous AI Governance, EU AI Act Monitoring, Agentic Compliance, Evidence Infrastructure, Operational Governance Runtime, DSGVO Monitoring, TTDSG Consent Monitoring" />
     <meta name="theme-color" content="#0A0A0B" />
-    <meta property="og:title" content="RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform" />
-    <meta property="og:description" content="Europäische Governance-Runtime für Web-, Daten- und KI-Systeme. Kontinuierliche Überwachung, regulatorische Risiko-Erkennung, kryptografisch nachvollziehbare Evidenz. Pläne ab 79 €/Monat." />
+    <meta property="og:title" content="AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI" />
+    <meta property="og:description" content="Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern. EU-Hosting, Pläne ab 79 €/Monat." />
     <meta property="og:site_name" content="RealSyncDynamics.AI" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="de_DE" />
@@ -16,9 +20,9 @@
     <meta property="og:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform" />
+    <meta property="og:image:alt" content="AI Compliance Software für DSGVO & EU AI Act — RealSyncDynamicsAI" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="RealSyncDynamics.AI — Runtime-native AI-Governance-Plattform" />
+    <meta name="twitter:title" content="AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI" />
     <meta name="twitter:description" content="Europäische Governance-Runtime für Web-, Daten- und KI-Systeme. Telemetrie, Policy, Evidence — auditfähig." />
     <meta name="twitter:image" content="https://realsyncdynamicsai.de/og-image.png" />
     <!--
@@ -120,40 +124,16 @@
             {"@type": "Offer", "name": "Partner (Jährlich)", "price": "19000", "priceCurrency": "EUR", "priceSpecification": {"@type": "UnitPriceSpecification", "price": "19000", "priceCurrency": "EUR", "billingDuration": "P1Y"}, "description": "Partner mit 2-Monate-Rabatt: zahle 10, nutze 12 Monate"}
           ],
           "publisher": {"@id": "https://realsyncdynamicsai.de/#org"}
-        },
-        {
-          "@type": "FAQPage",
-          "mainEntity": [
-            {
-              "@type": "Question",
-              "name": "Ist RealSyncDynamics.AI DSGVO-konform?",
-              "acceptedAnswer": {"@type": "Answer", "text": "Ja. EU-Datenresidenz, AVV gemäß DSGVO Art. 28 inklusive, lückenloser Audit-Trail (Art. 32) und automatisierter Selfservice für Auskunfts- und Löschrechte (Art. 15 + 17)."}
-            },
-            {
-              "@type": "Question",
-              "name": "Erfüllt die Plattform den AI Act?",
-              "acceptedAnswer": {"@type": "Answer", "text": "Ja. Risiko-Klassifikation, technische Dokumentation, Transparenzpflichten und Human-Oversight sind in der Plattform integriert."}
-            },
-            {
-              "@type": "Question",
-              "name": "Werden Daten in die USA übertragen?",
-              "acceptedAnswer": {"@type": "Answer", "text": "Standardmäßig nein. EU-Datenresidenz ist Default; Schrems-II-Konformität durch EU-Hosting (Frankfurt) und optional self-hosted Ollama für vollständige Datenhoheit."}
-            },
-            {
-              "@type": "Question",
-              "name": "Was kostet RealSyncDynamics.AI?",
-              "acceptedAnswer": {"@type": "Answer", "text": "Free Audit (0 €, kein Account), Starter (79 €/Monat, 1 Domain), Growth (249 €/Monat, 3 Domains, tägliches Monitoring + Drift Detection), Agency (699 €/Monat, 10 Domains, Scheduler + API + White-Label), Enterprise (1.249 €/Monat, 25 Domains, bis 5 Organisationen, SSO + SLA), Partner (1.999 €/Monat, bis 50 Mandanten, White-Label-Subdomain + Reseller-Programm)."}
-            },
-            {
-              "@type": "Question",
-              "name": "Wo werden die Server gehostet?",
-              "acceptedAnswer": {"@type": "Answer", "text": "Frankfurt am Main (Hostinger DE / Hetzner Falkenstein). Supabase-Postgres in eu-central-1. Kein US-Cloud-Default. Vollständige AVV nach Art. 28 DSGVO."}
-            }
-          ]
         }
       ]
     }
     </script>
+    <!--
+      Kein FAQPage-Schema auf der Homepage: Google verlangt, dass Schema-Inhalte
+      sichtbar auf der Seite stehen — die FAQ-Fragen waren hier aber nirgends
+      gerendert (SEO-Audit 2026-08). FAQPage-Markup lebt auf /ai-act-faq, wo die
+      Fragen als Akkordeon sichtbar sind (src/config/seo.ts).
+    -->
     <script type="text/javascript">
       // SPA on GitHub Pages — restore deep-link path written by 404.html.
       // Pattern: rafgraph/spa-github-pages
@@ -180,14 +160,21 @@
       <p>RealSync Dynamics — DSGVO-konforme KI-Compliance-Plattform.</p>
       <ul>
         <li><a href="/legal/privacy">Datenschutzerklärung</a></li>
-        <li><a href="/legal/sub-processors">Sub-Prozessoren / Impressum</a></li>
+        <li><a href="/legal/impressum">Impressum</a></li>
+        <li><a href="/legal/sub-processors">Sub-Prozessoren</a></li>
         <li><a href="/pricing">Preise</a></li>
         <li><a href="/contact-sales">Kontakt</a></li>
       </ul>
     </noscript>
+    <!--
+      Anker-Texte muessen zum Ziel passen: "Impressum" zeigte hier auf
+      /legal/sub-processors, waehrend der Footer "Impressum" auf /impressum
+      verlinkt — identischer Anker, divergente Ziele (SEO-Audit 2026-08).
+    -->
     <div style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
       <a href="/legal/privacy">Datenschutz</a>
-      <a href="/legal/sub-processors">Impressum</a>
+      <a href="/legal/impressum">Impressum</a>
+      <a href="/legal/sub-processors">Sub-Prozessoren</a>
     </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

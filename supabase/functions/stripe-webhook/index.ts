@@ -221,19 +221,23 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
   if (error) throw error;
 }
 
-// Einmalkauf festhalten (z.B. Governance Launch, 349 € einmalig).
+// Einmalkauf als Entitlement-Grant festhalten (z.B. Governance Launch, 349 €).
 //
-// Warum eine eigene Tabelle statt `subscriptions`?
-//   `subscriptions` trägt UNIQUE(tenant_id) — dort ist pro Tenant genau eine
-//   Zeile möglich. Ein Einmalkauf per UPSERT in diese Tabelle würde das
-//   laufende Abo eines zahlenden Kunden ÜBERSCHREIBEN und ihn faktisch auf
-//   den Umfang des Einmalprodukts herabsetzen. Einmalkäufe kommen deshalb in
-//   `tenant_one_time_purchases`; `tenant_entitlements()` vereinigt beide
-//   Quellen per MAX(), sodass sich Abo und Einmalkauf ergänzen.
+// Warum `entitlement_grants` und nicht `subscriptions`?
+//   Das Subscription-Modell ist „genau eine aktive Subscription pro Tenant".
+//   Ein Einmalkauf dort würde das laufende Abo überschreiben und den Kunden
+//   auf den Umfang des Einmalprodukts herabsetzen. Zusätzlich wählt
+//   `tenant_entitlements()` per ORDER BY updated_at DESC LIMIT 1 ohnehin nur
+//   EINE Subscription-Zeile aus — eine zweite Zeile wirkte also nicht
+//   additiv, sondern verdrängend. Grants sind deshalb eine eigene Achse;
+//   `tenant_entitlements()` vereinigt beide per MAX().
 //
-// Idempotenz: Der Upsert läuft über `stripe_checkout_session_id`. Ein
-// Stripe-Retry desselben Events schreibt dieselbe Zeile erneut, statt einen
-// zweiten Kauf zu erzeugen.
+// Der Grant verweist auf ein `products`-Zeile; deren `product_entitlements`
+// definieren, was er gewährt. Es gibt damit keine zweite Rechte-Definition.
+//
+// Idempotenz: UNIQUE(source, purchase_reference) mit der Checkout-Session-ID
+// als Referenz. Ein Stripe-Retry aktualisiert dieselbe Zeile, statt einen
+// zweiten Grant zu erzeugen.
 async function recordOneTimePurchase(
   admin: SupabaseAdminClient,
   stripe: Stripe,
@@ -265,31 +269,79 @@ async function recordOneTimePurchase(
     throw new Error(`one-time checkout ${session.id}: plan_key not resolvable (price=${price?.id ?? 'unknown'})`);
   }
 
+  // Das Produkt, dessen Entitlements der Grant gewährt. Ohne Treffer gibt es
+  // nichts zu gewähren — dann muss der Kauf als Fehler auffallen, statt einen
+  // wirkungslosen Grant zu schreiben, für den der Kunde bezahlt hat.
+  const productId = await resolveGrantProductId(admin, price?.id ?? null, planKey);
+  if (!productId) {
+    throw new Error(
+      `one-time checkout ${session.id}: no products row for plan_key=${planKey} (price=${price?.id ?? 'unknown'}) — grant would be empty`,
+    );
+  }
+
   const paymentIntentId = typeof session.payment_intent === 'string'
     ? session.payment_intent
     : session.payment_intent?.id ?? null;
 
+  // `payment_status` ist bei erfolgreichem Checkout 'paid'; 'unpaid' tritt bei
+  // asynchronen Zahlarten auf. Nur ein bezahlter Kauf darf Rechte gewähren —
+  // ein unbezahlter wird als widerrufen geführt und später über
+  // `checkout.session.async_payment_succeeded` o. ä. nachgezogen.
+  const paid = session.payment_status === 'paid';
+
   const row = {
     tenant_id: tenantId,
+    product_id: productId,
     plan_key: planKey,
+    source: 'one_time_purchase',
+    purchase_reference: session.id,
     stripe_checkout_session_id: session.id,
-    stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null,
     stripe_payment_intent_id: paymentIntentId,
-    stripe_price_id: price?.id ?? null,
-    stripe_product_id: typeof price?.product === 'string' ? price.product : price?.product?.id ?? null,
+    stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null,
     amount_total_cents: session.amount_total ?? 0,
     currency: (session.currency ?? 'eur').toLowerCase(),
-    // `payment_status` ist bei erfolgreichem Checkout 'paid'; 'unpaid' tritt
-    // bei asynchronen Zahlarten auf, die später über andere Events nachziehen.
-    status: session.payment_status === 'paid' ? 'paid' : 'pending',
-    purchased_at: new Date(session.created * 1000).toISOString(),
+    status: paid ? 'active' : 'revoked',
+    // Der CHECK entitlement_grants_revocation_consistent verlangt, dass
+    // revoked_at genau dann gesetzt ist, wenn der Status 'revoked' lautet.
+    revoked_at: paid ? null : new Date().toISOString(),
+    revoked_reason: paid ? null : `payment_status=${session.payment_status ?? 'unknown'}`,
+    // Governance Launch gewährt dauerhaft — kein Ablaufdatum.
+    expires_at: null,
+    granted_at: new Date(session.created * 1000).toISOString(),
     updated_at: new Date().toISOString(),
   };
 
   const { error } = await admin
-    .from('tenant_one_time_purchases')
-    .upsert(row, { onConflict: 'stripe_checkout_session_id' });
+    .from('entitlement_grants')
+    .upsert(row, { onConflict: 'source,purchase_reference' });
   if (error) throw error;
+}
+
+// Produkt-Zeile für einen Grant auflösen: erst über die konkrete Stripe-Price,
+// sonst über `default_for_plan_key`. Dieselbe Reihenfolge wie in
+// `tenant_entitlements()`, damit Grant und Subscription dasselbe Produkt
+// treffen, sobald Ops die echte Price-ID nachträgt.
+async function resolveGrantProductId(
+  admin: SupabaseAdminClient,
+  priceId: string | null,
+  planKey: string,
+): Promise<string | null> {
+  if (priceId) {
+    const { data } = await admin
+      .from('products')
+      .select('id')
+      .eq('stripe_price_id', priceId)
+      .maybeSingle();
+    const id = (data as { id?: string } | null)?.id;
+    if (id) return id;
+  }
+
+  const { data } = await admin
+    .from('products')
+    .select('id')
+    .eq('default_for_plan_key', planKey)
+    .maybeSingle();
+  return (data as { id?: string } | null)?.id ?? null;
 }
 
 // Plan-Key eines Einmalkaufs auflösen.

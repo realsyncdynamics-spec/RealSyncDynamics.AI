@@ -226,7 +226,7 @@ export type BillingInterval = 'none' | 'month' | 'year' | 'one_time';
  *
  * `one_time` erzeugt eine Stripe-Checkout-Session im Modus `payment`
  * (statt `subscription`) — es entsteht keine Subscription und keine
- * Verlängerung. Der Kauf wird in `tenant_one_time_purchases` festgehalten
+ * Verlängerung. Der Kauf wird als `entitlement_grants`-Zeile festgehalten
  * und ergänzt die Entitlements des laufenden Abos.
  */
 export type PurchaseMode = 'free' | 'checkout' | 'inquiry' | 'one_time';
@@ -851,7 +851,7 @@ export const PLANS: Plan[] = [
   // in `PLAN_ORDER` und nimmt an den Monotonie-Invarianten (Module/
   // Berechtigungen/Limits wachsen entlang der Leiter) nicht teil.
   //
-  // Wirkung: Der Kauf wird in `tenant_one_time_purchases` festgehalten und
+  // Wirkung: Der Kauf wird als Grant in `entitlement_grants` festgehalten und
   // seine Entitlements werden von `tenant_entitlements()` per MAX() mit dem
   // laufenden Abo vereinigt — ein zahlender Growth-Kunde verliert also
   // nichts, wenn er zusätzlich Governance Launch bucht.

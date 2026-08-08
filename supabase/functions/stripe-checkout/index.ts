@@ -16,8 +16,8 @@
 //    request body:
 //      purchaseMode 'checkout'  → mode 'subscription' (recurring, trial-capable)
 //      purchaseMode 'one_time'  → mode 'payment'      (single charge, no trial)
-//    One-time purchases land in `tenant_one_time_purchases` via the webhook and
-//    ADD to the tenant's subscription entitlements rather than replacing them.
+//    One-time purchases land in `entitlement_grants` via the webhook and ADD to
+//    the tenant's subscription entitlements rather than replacing them.
 //
 // `plan_key = 'free_audit'` short-circuits with 400 — there's nothing to charge.
 //

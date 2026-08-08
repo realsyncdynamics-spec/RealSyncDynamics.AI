@@ -323,9 +323,9 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
   Enterprise · Partner. Der Name „Scale" ist untersagt.
 - Daneben gibt es **Einmalprodukte** (`purchaseMode: 'one_time'`), derzeit
   Governance Launch (349 € einmalig). Sie sind kein Rang der Abo-Leiter:
-  nicht in `PLAN_ORDER`, Preis in `price.oneTimeEur`, Persistenz in
-  `tenant_one_time_purchases` (nicht `subscriptions` — dort gilt
-  `UNIQUE(tenant_id)`), Anzeige über `ONE_TIME_PRICING_TIERS`.
+  nicht in `PLAN_ORDER`, Preis in `price.oneTimeEur`, Persistenz als Grant in
+  `entitlement_grants` (nicht `subscriptions` — dort gilt „genau ein Abo pro
+  Tenant"), Anzeige über `ONE_TIME_PRICING_TIERS`.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 

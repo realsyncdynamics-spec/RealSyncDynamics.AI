@@ -72,14 +72,22 @@ in `PLAN_ORDER` / `ORDERED_PLANS`, sondern in `ONE_TIME_PLANS`
 | `isUpgrade()` | immer `false`, in beide Richtungen (unvergleichbar) |
 | Monotonie-Invarianten | gelten nicht (nur entlang `PLAN_ORDER`) |
 | Stripe | Checkout-Modus `payment`, kein `subscription_data`, kein Trial |
-| Persistenz | `public.tenant_one_time_purchases` — **nicht** `subscriptions` |
-| Entitlements | `tenant_entitlements()` vereinigt Abo + Einmalkauf per `MAX()` |
+| Persistenz | Grant in `public.entitlement_grants` — **nicht** `subscriptions` |
+| Entitlements | `tenant_entitlements()` vereinigt Abo + Grants per `MAX()` |
 | Frontend-Grids | `ONE_TIME_PRICING_TIERS`, **nicht** `PUBLIC_PRICING_TIERS` |
 
-Warum eine eigene Tabelle: `subscriptions` trägt `UNIQUE(tenant_id)`. Ein
-Einmalkauf in dieser Tabelle würde das laufende Abo eines zahlenden Kunden
-überschreiben und ihn auf den Umfang des Einmalprodukts herabsetzen.
-Einmalkäufe müssen sich zum Abo **addieren**.
+Warum eine eigene Tabelle: Das Subscription-Modell ist „genau eine aktive
+Subscription pro Tenant" (im Repo per `UNIQUE(tenant_id)` erzwungen). Ein
+Einmalkauf dort würde das laufende Abo überschreiben. Zusätzlich wählt
+`tenant_entitlements()` per `ORDER BY updated_at DESC LIMIT 1` ohnehin nur
+EINE Subscription-Zeile — eine zweite Zeile wirkte also nicht additiv,
+sondern verdrängend. Grants sind deshalb eine eigene Achse.
+
+`entitlement_grants` ist bewusst generisch (`source`, `expires_at`): derselbe
+Mechanismus trägt Einmalkäufe, manuelle Kulanz-Grants und befristete Aktionen.
+Ein Grant verweist auf eine `products`-Zeile; deren `product_entitlements`
+definieren, was er gewährt — es gibt keine zweite Rechte-Definition.
+Idempotenz über `UNIQUE(source, purchase_reference)`.
 
 Warum nicht in `PUBLIC_PRICING_TIERS`: diese Liste ist an mehreren Stellen
 implizit die Abo-Leiter — `PlanUpgradeModal` leitet Upgrade/Downgrade aus

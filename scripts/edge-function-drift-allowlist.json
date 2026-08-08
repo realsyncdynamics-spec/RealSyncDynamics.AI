@@ -1,5 +1,6 @@
 {
   "_comment": "Bekannter Altbestand: live deployte Edge Functions, die (noch) nicht im Repo liegen. Grandfathered, damit der Drift-Guard gruen startet und nur NEUEN Drift blockt. Beim Aufraeumen (supabase functions delete <slug>) Eintrag hier entfernen. Ziel: leere Liste. Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md.",
+  "_pending_deletion": "debug-secret-shape, stripe-webhook-fixer und stripe-webhook-provision sind unter .archive/retired-edge-functions/ gesichert und zur Loeschung vorgesehen (Stage 0.5, docs/runbooks/release-train-phase2.md). Reihenfolge beachten: erst 'supabase functions delete', DANN den Eintrag aus 'allow' entfernen. Umgekehrt geht der Drift-Check rot, weil die Function dann live und weder im Repo noch allowlisted ist.",
   "allow": [
     "governance-dsr",
     "governance-incidents",

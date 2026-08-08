@@ -41,17 +41,23 @@ async function getUserTenantId(authHeader: string | null): Promise<string> {
     throw new Error('Invalid or expired token');
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
+  // Tenant-Zugehoerigkeit kommt aus public.memberships, nicht aus profiles:
+  // profiles fuehrt keine tenant_id, und auth.users ebenfalls nicht. memberships
+  // ist die Quelle, auf der auch public.is_tenant_member() aufsetzt — damit
+  // entscheiden Edge Function und RLS-Policy nach derselben Regel.
+  const { data: membership, error: membershipError } = await supabase
+    .from('memberships')
     .select('tenant_id')
-    .eq('id', user.id)
-    .single();
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
 
-  if (profileError || !profile) {
-    throw new Error('User profile not found');
+  if (membershipError || !membership) {
+    throw new Error('User is not a member of any tenant');
   }
 
-  return profile.tenant_id;
+  return membership.tenant_id;
 }
 
 async function createServer(
@@ -195,7 +201,21 @@ async function setCredential(
     throw new Error('MCP server not found');
   }
 
-  // Store credential (encrypted via RLS + edge function context)
+  // Der Geheimniswert geht in Supabase Vault, die Tabelle behaelt nur den
+  // Namen. RLS ist Zugriffskontrolle, keine Verschluesselung — ein Wert in
+  // einer per SELECT-Policy lesbaren Spalte waere fuer jedes Tenant-Mitglied
+  // sichtbar und laege zusaetzlich in Backups und WAL.
+  const vaultSecretName = `mcp_cred_${serverId}_${payload.credential_key}`;
+
+  const { error: vaultError } = await supabase.rpc('set_app_secret', {
+    secret_name: vaultSecretName,
+    secret_value: payload.credential_value,
+  });
+
+  if (vaultError) {
+    throw new Error(`Failed to store credential in vault: ${vaultError.message}`);
+  }
+
   const { error } = await supabase
     .from('mcp_server_credentials')
     .upsert(
@@ -203,7 +223,7 @@ async function setCredential(
         server_id: serverId,
         tenant_id: tenantId,
         credential_key: payload.credential_key,
-        credential_value_encrypted: payload.credential_value,
+        vault_secret_name: vaultSecretName,
         credential_type: payload.credential_type,
         expires_at: payload.expires_at,
       },

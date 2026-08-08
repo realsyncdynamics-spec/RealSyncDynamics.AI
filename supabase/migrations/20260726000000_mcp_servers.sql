@@ -29,31 +29,31 @@ CREATE POLICY "Users can view their tenant's MCP servers"
   ON public.mcp_servers
   FOR SELECT
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can create MCP servers in their tenant"
   ON public.mcp_servers
   FOR INSERT
   WITH CHECK (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can update MCP servers in their tenant"
   ON public.mcp_servers
   FOR UPDATE
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   )
   WITH CHECK (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Users can delete MCP servers in their tenant"
   ON public.mcp_servers
   FOR DELETE
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE INDEX idx_mcp_servers_tenant_id ON public.mcp_servers(tenant_id);
@@ -66,8 +66,13 @@ CREATE TABLE IF NOT EXISTS public.mcp_server_credentials (
   server_id UUID NOT NULL REFERENCES public.mcp_servers(id) ON DELETE CASCADE,
   tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
   credential_key VARCHAR NOT NULL,
-  -- Stored encrypted via Supabase Secrets or Vault
-  credential_value_encrypted TEXT NOT NULL,
+  -- Referenz auf das Secret in Supabase Vault, NICHT der Wert selbst.
+  -- Die Spalte hiess frueher credential_value_encrypted und enthielt den
+  -- Klartext — der Name behauptete eine Verschluesselung, die es nicht gab,
+  -- und die SELECT-Policy unten gibt die Zeile jedem Tenant-Mitglied frei.
+  -- Ein Vault-Name ist gefahrlos lesbar; der Wert liegt ausschliesslich in
+  -- vault.secrets und wird nur serverseitig ueber get_app_secret() aufgeloest.
+  vault_secret_name TEXT NOT NULL,
   credential_type VARCHAR NOT NULL CHECK (credential_type IN ('api_key', 'token', 'password', 'oauth_token', 'custom')),
   expires_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -79,11 +84,13 @@ CREATE TABLE IF NOT EXISTS public.mcp_server_credentials (
 -- RLS for mcp_server_credentials (strictly read-only for users, managed via edge function)
 ALTER TABLE public.mcp_server_credentials ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view credential metadata only (encrypted values hidden)"
+-- Tenant-Mitglieder sehen die Zeile vollstaendig. Das ist zulaessig, weil die
+-- Zeile keinen Geheimniswert mehr traegt, sondern nur den Vault-Namen.
+CREATE POLICY "Users can view credential metadata"
   ON public.mcp_server_credentials
   FOR SELECT
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Edge function can manage credentials"
@@ -120,7 +127,7 @@ CREATE POLICY "Users can view usage for their tenant's servers"
   ON public.mcp_server_usage
   FOR SELECT
   USING (
-    tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
+    public.is_tenant_member(tenant_id)
   );
 
 CREATE POLICY "Edge function can insert usage records"

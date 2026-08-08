@@ -199,6 +199,8 @@ function ShortcutsSection() {
           desc="Zwei-Faktor (TOTP), Recovery-Codes, MFA-Erzwingung pro Tenant." />
         <ShortcutLink to="/settings/team" title="Team & Zugriff"
           desc="Mitglieder, Rollen, Sicherheit, Prüfprotokoll — Tenant-Verwaltung." />
+        <ShortcutLink to="/settings/mcp-servers" title="MCP-Server"
+          desc="Externe MCP-Server registrieren, Credentials im Vault ablegen, Verbindung testen." icon={<Key className="h-3.5 w-3.5" />} />
         <ShortcutLink to="/settings/ai-residency" title="AI-Datenstandort"
           desc="Cloud (Anthropic/Google/OpenAI) vs. EU-lokal (Ollama auf Hostinger DE) toggeln." />
         <ShortcutLink to="/settings/account" title="Mein Account · DSGVO"

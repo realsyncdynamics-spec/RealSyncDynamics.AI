@@ -313,6 +313,7 @@ function Inner() {
         <DetailPanel
           evidence={selectedEvidence}
           onClose={() => setSelectedEvidence(null)}
+          onArchive={loadEvidence}
         />
       )}
     </div>
@@ -531,11 +532,15 @@ function UploadModal({
 function DetailPanel({
   evidence,
   onClose,
+  onArchive,
 }: {
   evidence: EvidenceItem;
   onClose: () => void;
+  onArchive?: () => Promise<void>;
 }) {
   const typeInfo = EVIDENCE_TYPE_LABELS[evidence.evidence_type];
+  const [archiving, setArchiving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDownload = () => {
     if (evidence.file_path) {
@@ -546,10 +551,29 @@ function DetailPanel({
   const handleArchive = async () => {
     if (!window.confirm('Archive this evidence? It will be hidden from the default view.')) return;
     try {
-      // TODO: Implement archive API call
-      console.log('Archive evidence:', evidence.id);
+      setArchiving(true);
+      setError(null);
+      const token = await getAuthToken();
+      const response = await fetch(
+        `/functions/v1/iso42001-evidence-vault?evidence_id=${evidence.id}&archived=true`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to archive evidence');
+      }
+
+      if (onArchive) await onArchive();
+      onClose();
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Archive failed');
       console.error('Archive failed:', err);
+    } finally {
+      setArchiving(false);
     }
   };
 
@@ -563,6 +587,12 @@ function DetailPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {error && (
+          <div className="p-3 bg-red-900 border border-red-700 text-red-100 text-sm rounded-none">
+            {error}
+          </div>
+        )}
+
         {/* Type Badge */}
         <div className="flex items-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 rounded-none w-fit">
           <FileText className={`h-4 w-4 ${COLOR_CLASSES[typeInfo.color]}`} />
@@ -657,10 +687,11 @@ function DetailPanel({
         )}
         <button
           onClick={handleArchive}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 text-titanium-200 text-sm font-semibold rounded-none transition"
+          disabled={archiving}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-obsidian-800 border border-titanium-800 hover:bg-obsidian-700 text-titanium-200 text-sm font-semibold rounded-none transition disabled:opacity-50"
         >
-          <Trash2 className="h-4 w-4" />
-          Archive
+          <Archive className="h-4 w-4" />
+          {archiving ? 'Archiving...' : 'Archive'}
         </button>
       </div>
     </div>

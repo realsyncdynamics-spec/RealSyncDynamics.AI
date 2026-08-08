@@ -180,5 +180,122 @@ Deno.serve(async (req) => {
     }
   }
 
-  return jsonError(405, 'BAD_REQUEST', 'POST or GET only');
+  // PATCH: Archive/unarchive evidence
+  if (req.method === 'PATCH') {
+    try {
+      const url = new URL(req.url);
+      const evidenceId = url.searchParams.get('evidence_id');
+      const archived = url.searchParams.get('archived') === 'true';
+
+      if (!evidenceId) {
+        return jsonError(400, 'BAD_REQUEST', 'evidence_id required');
+      }
+
+      // Verify evidence belongs to tenant
+      const { data: evidence, error: lookupErr } = await userClient
+        .from('evidence_items')
+        .select('id, archived_at')
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (lookupErr || !evidence) {
+        return jsonError(404, 'NOT_FOUND', 'evidence not found');
+      }
+
+      const now = new Date().toISOString();
+      const { error: updateErr } = await userClient
+        .from('evidence_items')
+        .update({
+          archived_at: archived ? now : null,
+          updated_at: now,
+        })
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId);
+
+      if (updateErr) throw updateErr;
+
+      // Log audit action
+      await audit(admin, {
+        tenant_id: tenantId,
+        user_id: userId,
+        user_email: userEmail,
+        action: archived ? 'evidence_archived' : 'evidence_unarchived',
+        resource_type: 'evidence_item',
+        resource_id: evidenceId,
+        changes: {
+          archived_at: archived ? now : null,
+        },
+        severity: 'info',
+      });
+
+      return jsonResponse({
+        success: true,
+        message: `Evidence ${archived ? 'archived' : 'unarchived'} successfully`,
+        evidence_id: evidenceId,
+        archived_at: archived ? now : null,
+      });
+    } catch (err) {
+      console.error('Evidence archive error:', err);
+      return jsonError(500, 'ERROR', 'failed to update evidence archive status');
+    }
+  }
+
+  // DELETE: Delete evidence permanently
+  if (req.method === 'DELETE') {
+    try {
+      const url = new URL(req.url);
+      const evidenceId = url.searchParams.get('evidence_id');
+
+      if (!evidenceId) {
+        return jsonError(400, 'BAD_REQUEST', 'evidence_id required');
+      }
+
+      // Verify evidence belongs to tenant
+      const { data: evidence, error: lookupErr } = await userClient
+        .from('evidence_items')
+        .select('id, title')
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (lookupErr || !evidence) {
+        return jsonError(404, 'NOT_FOUND', 'evidence not found');
+      }
+
+      // Delete evidence item
+      const { error: deleteErr } = await userClient
+        .from('evidence_items')
+        .delete()
+        .eq('id', evidenceId)
+        .eq('tenant_id', tenantId);
+
+      if (deleteErr) throw deleteErr;
+
+      // Log audit action
+      await audit(admin, {
+        tenant_id: tenantId,
+        user_id: userId,
+        user_email: userEmail,
+        action: 'evidence_deleted',
+        resource_type: 'evidence_item',
+        resource_id: evidenceId,
+        changes: {
+          title: evidence.title,
+        },
+        severity: 'warning',
+      });
+
+      return jsonResponse({
+        success: true,
+        message: 'Evidence deleted permanently',
+        evidence_id: evidenceId,
+      });
+    } catch (err) {
+      console.error('Evidence delete error:', err);
+      return jsonError(500, 'ERROR', 'failed to delete evidence');
+    }
+  }
+
+  return jsonError(405, 'BAD_REQUEST', 'GET, POST, PATCH, or DELETE only');
 });

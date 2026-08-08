@@ -260,6 +260,7 @@ const AuditorEngagementView = lazy(() => import('./features/governance/AuditorEn
 const CertificationReportGeneratorView = lazy(() => import('./features/governance/CertificationReportGeneratorView').then((m) => ({ default: m.CertificationReportGeneratorView })));
 const Iso42001CertificationHubView = lazy(() => import('./features/governance/Iso42001CertificationHubView').then((m) => ({ default: m.Iso42001CertificationHubView })));
 const Iso42001EvidenceVaultView = lazy(() => import('./features/governance/Iso42001EvidenceVaultView').then((m) => ({ default: m.Iso42001EvidenceVaultView })));
+const MCPServersSettings = lazy(() => import('./features/mcp').then((m) => ({ default: m.MCPServersSettings })));
 const Iso42001GapAnalysisView = lazy(() => import('./features/governance/Iso42001GapAnalysisView').then((m) => ({ default: m.Iso42001GapAnalysisView })));
 const Iso42001RemediationWorkflowView = lazy(() => import('./features/governance/Iso42001RemediationWorkflowView').then((m) => ({ default: m.Iso42001RemediationWorkflowView })));
 const Iso42001MaintenanceView = lazy(() => import('./features/governance/Iso42001MaintenanceView').then((m) => ({ default: m.Iso42001MaintenanceView })));
@@ -806,6 +807,8 @@ function RoutesWithTracking() {
       <Route path="/app/monitoring/sources" element={<GovernanceBrowserShell><MonitoringSourcesView /></GovernanceBrowserShell>} />
       <Route path="/app/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
       <Route path="/app/settings/team" element={<GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell>} />
+      {/* MCP-Server verwalten Credentials fremder Systeme — daher AAL2, wie bei der Team-Verwaltung. */}
+      <Route path="/app/settings/mcp-servers" element={<GovernanceBrowserShell><RequireAal2 action="MCP-Server-Verwaltung"><MCPServersSettings /></RequireAal2></GovernanceBrowserShell>} />
       {/* Admin Panel Routes */}
       <Route path="/app/admin" element={<AppGate><GovernanceBrowserShell><AdminDashboard /></GovernanceBrowserShell></AppGate>} />
       <Route path="/app/admin/members" element={<AdminMembersPage />} />
@@ -907,6 +910,7 @@ function RoutesWithTracking() {
       <Route path="/settings/ai-residency" element={<AppGate><GovernanceBrowserShell><AiResidencySettings /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/security" element={<AppGate><GovernanceBrowserShell><SecuritySettings /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/team" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="Team-Verwaltung"><TenantAdminConsole /></RequireAal2></GovernanceBrowserShell></AppGate>} />
+      <Route path="/settings/mcp-servers" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="MCP-Server-Verwaltung"><MCPServersSettings /></RequireAal2></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/account" element={<AppGate><GovernanceBrowserShell><AccountSettings /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/api-keys" element={<AppGate><GovernanceBrowserShell><ApiKeysSettings /></GovernanceBrowserShell></AppGate>} />
       <Route path="/settings/branding" element={<AppGate><GovernanceBrowserShell><RequireAal2 action="White-Label Branding"><BrandingSettings /></RequireAal2></GovernanceBrowserShell></AppGate>} />

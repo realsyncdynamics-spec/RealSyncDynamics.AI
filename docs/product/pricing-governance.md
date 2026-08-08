@@ -48,14 +48,43 @@ Drei Bereiche, definiert in `PRODUCT_AREAS`:
 
 ## Pläne
 
-Genau sechs Pläne, in dieser Reihenfolge (`PLAN_ORDER`):
+### Abo-Leiter — genau sechs Pläne, in dieser Reihenfolge (`PLAN_ORDER`)
 
 `free` · `starter` · `growth` · `agency` · `enterprise` · `partner`
 
-Andere Plan-Namen sind unzulässig. Insbesondere existiert **kein Plan
+Andere Abo-Namen sind unzulässig. Insbesondere existiert **kein Plan
 „Scale"** mehr — er heißt seit dem Governance-Refactoring `partner`.
 Bestandsdaten werden über `normalizePlanKey()` abgebildet; die Migration
 `20260802001000_canonical_plan_catalog.sql` stellt die DB-Zeilen um.
+
+### Einmalprodukte (`purchaseMode: 'one_time'`)
+
+`governance_launch` — Governance Launch, 349 € einmalig.
+
+Einmalprodukte sind **kein Rang der Abo-Leiter**. Sie stehen deshalb nicht
+in `PLAN_ORDER` / `ORDERED_PLANS`, sondern in `ONE_TIME_PLANS`
+(`ALL_PLANS_ORDERED` enthält beides). Konkret gilt:
+
+| Aspekt | Verhalten |
+|---|---|
+| Preis | in `price.oneTimeEur`; `price.monthlyEur` ist 0, weil nichts wiederkehrend abgerechnet wird |
+| `planRank()` | `-1` — nicht auf der Leiter |
+| `isUpgrade()` | immer `false`, in beide Richtungen (unvergleichbar) |
+| Monotonie-Invarianten | gelten nicht (nur entlang `PLAN_ORDER`) |
+| Stripe | Checkout-Modus `payment`, kein `subscription_data`, kein Trial |
+| Persistenz | `public.tenant_one_time_purchases` — **nicht** `subscriptions` |
+| Entitlements | `tenant_entitlements()` vereinigt Abo + Einmalkauf per `MAX()` |
+| Frontend-Grids | `ONE_TIME_PRICING_TIERS`, **nicht** `PUBLIC_PRICING_TIERS` |
+
+Warum eine eigene Tabelle: `subscriptions` trägt `UNIQUE(tenant_id)`. Ein
+Einmalkauf in dieser Tabelle würde das laufende Abo eines zahlenden Kunden
+überschreiben und ihn auf den Umfang des Einmalprodukts herabsetzen.
+Einmalkäufe müssen sich zum Abo **addieren**.
+
+Warum nicht in `PUBLIC_PRICING_TIERS`: diese Liste ist an mehreren Stellen
+implizit die Abo-Leiter — `PlanUpgradeModal` leitet Upgrade/Downgrade aus
+der Position via `findIndex()` ab. Ein Einmalprodukt darin wäre als „höher
+als Partner" gewertet worden.
 
 ## Runtime-Architektur
 
@@ -146,7 +175,12 @@ policyPacks, features, addons, support
 
 ## Was die Tests garantieren
 
-- Genau sechs Pläne mit den vorgegebenen Preisen
+- Genau sechs Abo-Pläne mit den vorgegebenen Preisen; jeder Plan ist
+  entweder auf der Abo-Leiter oder ein Einmalprodukt
+- Einmalprodukte: Preis in `oneTimeEur`, `planRank() === -1`, kein
+  Trial-Parameter im Checkout-Ziel, in `isUpgrade()` unvergleichbar
+- Kein Plan verspricht ein Limit ohne die zugehörige Berechtigung
+  (API, Bulk Jobs; Behebungspläne mit dokumentierter Altabweichung)
 - Kein Plan-Bezeichner enthält „scale"; keine Legacy-Namen im Code
 - Module, Berechtigungen und Limits sind entlang der Plan-Reihenfolge
   monoton — ein höherer Plan kann nie weniger als ein niedrigerer

@@ -11,7 +11,13 @@
 //    against Stripe's API).
 // 3. Re-uses or creates a Stripe Customer carrying metadata.tenant_id
 //    so the existing stripe-webhook can sync the resulting subscription.
-// 4. Creates a Stripe Checkout Session and returns its URL.
+// 4. Creates a Stripe Checkout Session and returns its URL. The Stripe mode is
+//    derived from `plan.purchaseMode` in the pricing SSoT — NOT from the
+//    request body:
+//      purchaseMode 'checkout'  → mode 'subscription' (recurring, trial-capable)
+//      purchaseMode 'one_time'  → mode 'payment'      (single charge, no trial)
+//    One-time purchases land in `tenant_one_time_purchases` via the webhook and
+//    ADD to the tenant's subscription entitlements rather than replacing them.
 //
 // `plan_key = 'free_audit'` short-circuits with 400 — there's nothing to charge.
 //
@@ -131,14 +137,20 @@ Deno.serve(async (req) => {
   const successUrl = `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan_key=${encodeURIComponent(body.plan_key!)}`;
   const cancelUrl  = `${base}/pricing?checkout=cancelled`;
 
+  // Einmalkauf vs. Abo. Der Modus stammt AUSSCHLIESSLICH aus der Pricing-SSoT
+  // (`plan.purchaseMode`) und niemals aus dem Request-Body — sonst könnte ein
+  // Aufrufer ein Abo als Einmalzahlung abschließen.
+  const isOneTime = plan.purchaseMode === 'one_time';
+
   // Pilot-Trial: 14 Tage kostenlos für Demo-zu-Customer-Conversion.
   // Triggered via body.pilot=true (typically set from /contact-sales after
   // a sales call agreed on the pilot terms in marketing/demo-skript.md).
   // Stripe will not charge until day 15 — user can cancel anytime in trial.
+  // Für Einmalkäufe existiert keine Subscription und damit auch kein Trial.
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
   };
-  if (body.pilot === true && plan.trialDays > 0) {
+  if (!isOneTime && body.pilot === true && plan.trialDays > 0) {
     subscriptionData.trial_period_days = plan.trialDays;
     subscriptionData.metadata = { ...subscriptionData.metadata, pilot: 'true' };
   }
@@ -160,11 +172,30 @@ Deno.serve(async (req) => {
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
+      mode: isOneTime ? 'payment' : 'subscription',
       customer: stripeCustomerId!,
       line_items: [{ price: realPrice.stripe_price_id, quantity: 1 }],
-      metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key, pilot: body.pilot ? 'true' : 'false' },
-      subscription_data: subscriptionData,
+      metadata: {
+        tenant_id: body.tenant_id,
+        plan_key: body.plan_key,
+        pilot: body.pilot ? 'true' : 'false',
+        purchase_mode: plan.purchaseMode,
+      },
+      // `subscription_data` ist im Modus `payment` von Stripe nicht erlaubt und
+      // würde die Session-Erstellung mit einem 400 abweisen. Stattdessen tragen
+      // wir die Tenant-Zuordnung über `payment_intent_data.metadata`, damit
+      // auch Charge-Events (charge.failed / charge.refunded) auf den Tenant
+      // zurückführbar bleiben.
+      ...(isOneTime
+        ? {
+            payment_intent_data: {
+              metadata: { tenant_id: body.tenant_id, plan_key: body.plan_key },
+            },
+            // Einmalkäufe erzeugen ohne dies keine Rechnung; für einen
+            // B2B-Kauf muss ein Belegdokument existieren.
+            invoice_creation: { enabled: true },
+          }
+        : { subscription_data: subscriptionData }),
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,

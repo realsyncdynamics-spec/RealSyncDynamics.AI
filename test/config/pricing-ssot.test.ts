@@ -6,7 +6,9 @@ import { fileURLToPath } from 'node:url';
 import {
   ADDONS,
   ALL_MODULES,
+  ALL_PLANS_ORDERED,
   FEATURE_GROUPS,
+  ONE_TIME_PLANS,
   ORDERED_PLANS,
   PLANS,
   PLAN_ORDER,
@@ -16,10 +18,14 @@ import {
   addonsFor,
   allPlanKeys,
   checkoutHrefForPlan,
+  intervalForPlanKey,
+  isOneTimePlan,
+  isPlanId,
   isUpgrade,
   normalizePlanKey,
   planByKey,
   planById,
+  planRank,
   priceForPlanKey,
   recommendPlan,
   resolvePlan,
@@ -36,8 +42,11 @@ const ROOT = join(__dirname, '..', '..');
  * stammen und dass alle abgeleiteten Artefakte synchron bleiben.
  */
 describe('Pricing SSoT — Struktur', () => {
-  it('definiert exakt sechs Pläne mit den vorgegebenen Preisen', () => {
-    expect(PLANS).toHaveLength(6);
+  it('definiert exakt sechs Abo-Pläne mit den vorgegebenen Preisen', () => {
+    // Die Abo-Leiter bleibt bei sechs Rängen. Einmalprodukte werden separat
+    // geführt und dürfen sie nicht verlängern.
+    expect(ORDERED_PLANS).toHaveLength(6);
+    expect(PLAN_ORDER).toHaveLength(6);
     expect(ORDERED_PLANS.map((p) => [p.id, p.price.monthlyEur])).toEqual([
       ['free', 0],
       ['starter', 79],
@@ -46,6 +55,14 @@ describe('Pricing SSoT — Struktur', () => {
       ['enterprise', 1249],
       ['partner', 1999],
     ]);
+  });
+
+  it('führt jeden Plan entweder auf der Abo-Leiter oder als Einmalprodukt', () => {
+    // Kein Plan darf aus beiden Listen herausfallen — sonst wäre er in
+    // abgeleiteten Artefakten (Plan-Katalog, Pricing-Grids) unsichtbar.
+    expect(ALL_PLANS_ORDERED).toHaveLength(PLANS.length);
+    expect(new Set(ALL_PLANS_ORDERED.map((p) => p.id)).size).toBe(PLANS.length);
+    expect(ORDERED_PLANS.length + ONE_TIME_PLANS.length).toBe(PLANS.length);
   });
 
   it('kennt keinen Plan-Bezeichner, der „scale" enthält', () => {
@@ -213,6 +230,18 @@ describe('Pricing SSoT — Checkout-Ziele', () => {
       if (plan.purchaseMode === 'free') expect(href).toContain('/audit');
       if (plan.purchaseMode === 'inquiry') expect(href).toContain('/contact-sales');
       if (plan.purchaseMode === 'checkout') expect(href).toContain(`/checkout/${plan.planKey}`);
+      // Einmalprodukte nutzen denselben Checkout-Einstieg wie Abos; der
+      // Kaufmodus wird serverseitig aus der SSoT abgeleitet, nicht aus der URL.
+      if (plan.purchaseMode === 'one_time') expect(href).toContain(`/checkout/${plan.planKey}`);
+    }
+  });
+
+  it('hängt an Einmalprodukte keinen Pilot-Trial-Parameter', () => {
+    // Ein Trial ist ohne Subscription nicht darstellbar — `pilot=true` würde
+    // in der Edge Function ins Leere laufen.
+    for (const plan of ONE_TIME_PLANS) {
+      expect(checkoutHrefForPlan(plan)).not.toContain('pilot');
+      expect(plan.trialDays).toBe(0);
     }
   });
 
@@ -246,6 +275,95 @@ describe('Governance Score → Planempfehlung', () => {
     for (const score of [0, 30, 60, 90, 100]) {
       expect(recommendPlan({ score }).reason.length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe('Pricing SSoT — Einmalprodukte', () => {
+  it('kennt Governance Launch als Einmalkauf zu 349 €', () => {
+    const plan = planByKey('governance_launch');
+    expect(plan).not.toBeNull();
+    expect(plan!.purchaseMode).toBe('one_time');
+    expect(plan!.name).toBe('Governance Launch');
+    // Der Betrag steht in `oneTimeEur`; `monthlyEur` ist 0, weil nichts
+    // wiederkehrend abgerechnet wird.
+    expect(plan!.price.oneTimeEur).toBe(349);
+    expect(plan!.price.monthlyEur).toBe(0);
+    expect(plan!.price.yearlyEur).toBeNull();
+    expect(priceForPlanKey('governance_launch')).toBe(349);
+    expect(intervalForPlanKey('governance_launch')).toBe('one_time');
+  });
+
+  it('isOneTimePlan trennt Einmalkäufe von Abos', () => {
+    expect(isOneTimePlan('governance_launch')).toBe(true);
+    expect(isOneTimePlan('starter')).toBe(false);
+    expect(isOneTimePlan('free_audit')).toBe(false);
+    expect(isOneTimePlan('unbekannt')).toBe(false);
+    expect(isOneTimePlan(null)).toBe(false);
+  });
+
+  it('ONE_TIME_PLANS enthält genau die Pläne mit purchaseMode one_time', () => {
+    expect(ONE_TIME_PLANS.length).toBeGreaterThan(0);
+    expect(ONE_TIME_PLANS.every((p) => p.purchaseMode === 'one_time')).toBe(true);
+    expect(ONE_TIME_PLANS.map((p) => p.id)).toEqual(
+      PLANS.filter((p) => p.purchaseMode === 'one_time').map((p) => p.id),
+    );
+  });
+
+  it('hält Einmalprodukte von der Abo-Leiter fern', () => {
+    for (const plan of ONE_TIME_PLANS) {
+      // Nicht auf der Leiter: sonst würden die Monotonie-Invarianten
+      // (Module/Berechtigungen/Limits wachsen) fälschlich auf ein
+      // Einmalprodukt angewandt.
+      expect(PLAN_ORDER).not.toContain(plan.id);
+      expect(planRank(plan.id)).toBe(-1);
+      expect(plan.yearlyPlanKey).toBeNull();
+    }
+  });
+
+  it('behandelt Einmalprodukte in isUpgrade als unvergleichbar', () => {
+    // Ohne Sonderfall würde Rang -1 jedes Abo als „Upgrade" ausweisen und
+    // nachgelagerte PLAN_ORDER.slice(-1, …)-Pfade leerlaufen lassen.
+    expect(isUpgrade('governance_launch', 'growth')).toBe(false);
+    expect(isUpgrade('growth', 'governance_launch')).toBe(false);
+  });
+
+  it('löst Einmalprodukte über jeden Auflösungsweg auf', () => {
+    // resolvePlan() nimmt den PlanId-Pfad nur, wenn isPlanId() greift —
+    // deshalb muss isPlanId() auch Pläne abseits der Leiter kennen.
+    expect(isPlanId('governance_launch')).toBe(true);
+    expect(resolvePlan('governance_launch')?.id).toBe('governance_launch');
+    expect(planById('governance_launch').planKey).toBe('governance_launch');
+    expect(allPlanKeys()).toContain('governance_launch');
+  });
+
+  it('verspricht kein Limit ohne die zugehörige Berechtigung', () => {
+    // Ein Kontingent > 0, das kein Gate freigibt, würde in der
+    // Limit-Anzeige einen Umfang vorspiegeln, den der Plan nicht hat.
+    for (const plan of PLANS) {
+      if (!plan.permissions.api) {
+        expect(plan.limits.apiCallsPerMonth, `${plan.id}.apiCallsPerMonth`).toBe(0);
+        expect(plan.limits.apiKeys, `${plan.id}.apiKeys`).toBe(0);
+      }
+      if (!plan.permissions.bulkOperations) {
+        expect(plan.limits.bulkJobsPerMonth, `${plan.id}.bulkJobsPerMonth`).toBe(0);
+      }
+    }
+  });
+
+  it('verspricht keine Behebungspläne ohne das Modul remediation', () => {
+    // Bekannte Altabweichung: `starter` führt remediationPlans = 5, hat das
+    // Modul `remediation` aber nicht — `hasFeature(plan, 'fix_snippets')` ist
+    // dort also false, während die Limit-Anzeige 5 Pläne verspricht. Das ist
+    // eine Produktentscheidung (Limit senken oder Modul ergänzen) und wird
+    // hier bewusst nur festgehalten, nicht stillschweigend korrigiert.
+    const KNOWN_DRIFT: string[] = ['starter'];
+    for (const plan of PLANS) {
+      if (plan.modules.includes('remediation')) continue;
+      if (KNOWN_DRIFT.includes(plan.id)) continue;
+      expect(plan.limits.remediationPlans, `${plan.id}.remediationPlans`).toBe(0);
+    }
+    // Die Ausnahmeliste darf nicht wachsen, ohne dass es auffällt.
+    expect(KNOWN_DRIFT).toEqual(['starter']);
   });
 });
 

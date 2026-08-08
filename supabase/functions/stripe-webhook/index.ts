@@ -10,7 +10,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { reportServerConversion } from '../_shared/conversions-api.ts';
-import { normalizePlanKey } from '../_shared/pricing.generated.ts';
+import { normalizePlanKey, planByKey } from '../_shared/pricing.generated.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -25,9 +25,13 @@ interface SupabaseAdminClient {
         maybeSingle(): Promise<{ data: unknown; error: unknown }>;
       };
     };
-    upsert(row: Record<string, unknown>, options?: Record<string, unknown>): {
-      select(columns?: string): Promise<{ data: unknown; error: unknown }>;
-    };
+    // PostgrestBuilder ist selbst awaitable UND kann mit .select() verkettet
+    // werden — beide Formen werden hier genutzt (upsert ohne select in
+    // syncSubscription, mit select bei der Idempotenz-Prüfung).
+    upsert(row: Record<string, unknown>, options?: Record<string, unknown>):
+      Promise<{ data: unknown; error: unknown }> & {
+        select(columns?: string): Promise<{ data: unknown; error: unknown }>;
+      };
     insert(row: Record<string, unknown>): {
       select(columns?: string): {
         single(): Promise<{ data: unknown; error: unknown }>;
@@ -147,6 +151,16 @@ Deno.serve(async (req) => {
         break;
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Einmalkäufe (Modus `payment`) erzeugen KEINE Stripe-Subscription und
+        // damit auch kein `customer.subscription.created`. Ohne diesen Zweig
+        // hätte ein bezahlter Einmalkauf nirgends eine Spur und der Kunde
+        // bekäme keine Entitlements.
+        //
+        // Abos werden hier bewusst NICHT synchronisiert: das übernimmt
+        // `customer.subscription.created` mit dem echten Subscription-Objekt.
+        if (session.mode === 'payment') {
+          await recordOneTimePurchase(admin, stripe, session);
+        }
         await sendOnboardingWelcome(admin, session);
         await triggerWebsiteRebuildIfApplicable(admin, session);
         await reportPurchaseToAdPlatforms(session, req);
@@ -205,6 +219,110 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
     .from('subscriptions')
     .upsert(row, { onConflict: 'stripe_subscription_id' });
   if (error) throw error;
+}
+
+// Einmalkauf festhalten (z.B. Governance Launch, 349 € einmalig).
+//
+// Warum eine eigene Tabelle statt `subscriptions`?
+//   `subscriptions` trägt UNIQUE(tenant_id) — dort ist pro Tenant genau eine
+//   Zeile möglich. Ein Einmalkauf per UPSERT in diese Tabelle würde das
+//   laufende Abo eines zahlenden Kunden ÜBERSCHREIBEN und ihn faktisch auf
+//   den Umfang des Einmalprodukts herabsetzen. Einmalkäufe kommen deshalb in
+//   `tenant_one_time_purchases`; `tenant_entitlements()` vereinigt beide
+//   Quellen per MAX(), sodass sich Abo und Einmalkauf ergänzen.
+//
+// Idempotenz: Der Upsert läuft über `stripe_checkout_session_id`. Ein
+// Stripe-Retry desselben Events schreibt dieselbe Zeile erneut, statt einen
+// zweiten Kauf zu erzeugen.
+async function recordOneTimePurchase(
+  admin: SupabaseAdminClient,
+  stripe: Stripe,
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const tenantId = session.metadata?.tenant_id;
+  if (!tenantId) {
+    // Ohne Tenant-Zuordnung ist der Kauf nicht zuordenbar. Das ist ein
+    // Konfigurationsfehler in der Checkout-Erstellung und darf nicht still
+    // verschluckt werden — werfen sorgt für einen Stripe-Retry und einen
+    // sichtbaren Fehler im Function-Log.
+    throw new Error(`one-time checkout ${session.id} has no metadata.tenant_id`);
+  }
+
+  // `line_items` ist im Webhook-Payload NICHT enthalten (Stripe liefert es nur
+  // bei expliziter Expansion). Es muss deshalb nachgeladen werden — ein Zugriff
+  // auf session.line_items wäre hier immer `undefined`.
+  let lineItem: Stripe.LineItem | undefined;
+  try {
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+    lineItem = lineItems.data[0];
+  } catch (e) {
+    console.warn(`[stripe-webhook] one-time ${session.id}: listLineItems failed: ${(e as Error).message}`);
+  }
+
+  const price = lineItem?.price ?? null;
+  const planKey = await resolveOneTimePlanKey(admin, session, price);
+  if (!planKey) {
+    throw new Error(`one-time checkout ${session.id}: plan_key not resolvable (price=${price?.id ?? 'unknown'})`);
+  }
+
+  const paymentIntentId = typeof session.payment_intent === 'string'
+    ? session.payment_intent
+    : session.payment_intent?.id ?? null;
+
+  const row = {
+    tenant_id: tenantId,
+    plan_key: planKey,
+    stripe_checkout_session_id: session.id,
+    stripe_customer_id: typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null,
+    stripe_payment_intent_id: paymentIntentId,
+    stripe_price_id: price?.id ?? null,
+    stripe_product_id: typeof price?.product === 'string' ? price.product : price?.product?.id ?? null,
+    amount_total_cents: session.amount_total ?? 0,
+    currency: (session.currency ?? 'eur').toLowerCase(),
+    // `payment_status` ist bei erfolgreichem Checkout 'paid'; 'unpaid' tritt
+    // bei asynchronen Zahlarten auf, die später über andere Events nachziehen.
+    status: session.payment_status === 'paid' ? 'paid' : 'pending',
+    purchased_at: new Date(session.created * 1000).toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await admin
+    .from('tenant_one_time_purchases')
+    .upsert(row, { onConflict: 'stripe_checkout_session_id' });
+  if (error) throw error;
+}
+
+// Plan-Key eines Einmalkaufs auflösen.
+//
+// Reihenfolge: Session-Metadaten (von `stripe-checkout` gesetzt) →
+// Preis-Metadaten (im Stripe-Dashboard gepflegt) → `public.products` über die
+// Price-ID. Es gibt bewusst KEINEN 'free'-Fallback wie bei Abos: ein bezahlter
+// Einmalkauf, dessen Plan sich nicht auflösen lässt, muss als Fehler
+// auffallen, statt als Free-Kauf verbucht zu werden.
+async function resolveOneTimePlanKey(
+  admin: SupabaseAdminClient,
+  session: Stripe.Checkout.Session,
+  price: Stripe.Price | null,
+): Promise<string | null> {
+  const fromSession = normalizePlanKey(session.metadata?.plan_key);
+  if (fromSession) return fromSession;
+
+  const fromPrice = normalizePlanKey(price?.metadata?.plan_key);
+  if (fromPrice) return fromPrice;
+
+  if (price?.id) {
+    const { data } = await admin
+      .from('products')
+      .select('default_for_plan_key')
+      .eq('stripe_price_id', price.id)
+      .maybeSingle();
+    const fromProducts = normalizePlanKey(
+      (data as { default_for_plan_key?: string } | null)?.default_for_plan_key,
+    );
+    if (fromProducts) return fromProducts;
+  }
+
+  return null;
 }
 
 // Plan-Key-Auflösung mit additivem Fallback.
@@ -417,11 +535,18 @@ async function sendOnboardingWelcome(admin: SupabaseAdminClient, session: Stripe
   const currency = (session.currency ?? "eur").toUpperCase();
   const isOneTime = session.mode === "payment";
   const isSubscription = session.mode === "subscription";
-  const productLabel = isSubscription
-    ? "RealSync Cookie-SDK Pro"
-    : isOneTime
-      ? "RealSync Audit-Pro"
-      : "RealSync Dynamics";
+  // Der Plan-Name kommt aus der Pricing-SSoT, sobald die Session einen
+  // plan_key trägt (das tut jede von `stripe-checkout` erzeugte Session).
+  // Die Literale darunter sind nur noch der Fallback für Alt-Sessions —
+  // ohne diese Auflösung bekäme ein Governance-Launch-Käufer eine
+  // Willkommensmail über „RealSync Audit-Pro".
+  const purchasedPlan = planByKey(session.metadata?.plan_key ?? null);
+  const productLabel = purchasedPlan?.name
+    ?? (isSubscription
+      ? "RealSync Cookie-SDK Pro"
+      : isOneTime
+        ? "RealSync Audit-Pro"
+        : "RealSync Dynamics");
 
   // Setup-Wizard-URL mit session-id für Auto-Linking
   const setupUrl = `${SITE}/welcome?session=${encodeURIComponent(session.id)}&product=${encodeURIComponent(productLabel)}`;

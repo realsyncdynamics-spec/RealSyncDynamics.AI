@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase,
+  ArrowRight, Check, Sparkles, Award, Building2, Cookie, ShieldCheck, Zap, Globe, Briefcase, Rocket,
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
@@ -40,6 +40,7 @@ const PLAN_ICONS: Record<PlanId, typeof Cookie> = {
   agency: Globe,
   enterprise: Building2,
   partner: Briefcase,
+  governance_launch: Rocket,
 };
 
 export function PricingPage() {

@@ -23,7 +23,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ORDERED_PLANS, ADDONS, allPlanKeys, type Plan } from '../shared/pricing';
+import { ALL_PLANS_ORDERED, ADDONS, allPlanKeys, type Plan } from '../shared/pricing';
 
 /** Escaped einen String für ein SQL-Literal. */
 function sqlString(value: string): string {
@@ -37,6 +37,7 @@ function sqlJson(value: unknown): string {
 
 function planRow(plan: Plan): string {
   const yearly = plan.price.yearlyEur;
+  const oneTime = plan.price.oneTimeEur;
   return `  (
     ${sqlString(plan.planKey)},
     ${sqlString(plan.id)},
@@ -45,6 +46,7 @@ function planRow(plan: Plan): string {
     ${sqlString(plan.technicalSubheadline)},
     ${plan.price.monthlyEur},
     ${yearly === null ? 'NULL' : yearly},
+    ${oneTime === null ? 'NULL' : oneTime},
     ${sqlString(plan.currency)},
     ${sqlString(plan.purchaseMode)},
     ${plan.trialDays},
@@ -71,15 +73,15 @@ export function buildPlanCatalogSql(): string {
   lines.push('');
   lines.push('INSERT INTO public.plan_catalog (');
   lines.push('  plan_key, plan_id, name, outcome_headline, technical_subheadline,');
-  lines.push('  price_monthly_eur, price_yearly_eur, currency, purchase_mode, trial_days,');
+  lines.push('  price_monthly_eur, price_yearly_eur, price_one_time_eur, currency, purchase_mode, trial_days,');
   lines.push('  recurring, max_bots, max_answers_per_month,');
   lines.push('  limits, modules, permissions, channels, addons, features, support');
   lines.push(') VALUES');
-  lines.push(ORDERED_PLANS.map(planRow).join(',\n'));
+  lines.push(ALL_PLANS_ORDERED.map(planRow).join(',\n'));
   lines.push('ON CONFLICT (plan_key) DO UPDATE SET');
   for (const column of [
     'plan_id', 'name', 'outcome_headline', 'technical_subheadline',
-    'price_monthly_eur', 'price_yearly_eur', 'currency', 'purchase_mode', 'trial_days',
+    'price_monthly_eur', 'price_yearly_eur', 'price_one_time_eur', 'currency', 'purchase_mode', 'trial_days',
     'recurring', 'max_bots', 'max_answers_per_month',
     'limits', 'modules', 'permissions', 'channels', 'addons', 'features', 'support',
   ]) {

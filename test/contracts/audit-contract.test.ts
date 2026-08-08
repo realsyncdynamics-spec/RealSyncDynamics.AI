@@ -9,9 +9,9 @@ import { PRICING_TIERS, tierById, type TierId } from '../../src/config/pricing';
 import { PLAN_CONFIG, diffPricingTiersAgainstPlanConfig, planForTier } from '../../src/lib/billing/planConfig';
 
 describe('PRICING_TIERS — Single Source of Truth', () => {
-  it('has all 11 tier ids (6 base + 5 yearly variants)', () => {
+  it('has all 12 tier ids (6 base + 5 yearly variants + 1 one-time)', () => {
     const ids = PRICING_TIERS.map((t) => t.id).sort();
-    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'enterprise_yearly', 'free', 'growth', 'growth_yearly', 'partner', 'partner_yearly', 'starter', 'starter_yearly']);
+    expect(ids).toEqual(['agency', 'agency_yearly', 'enterprise', 'enterprise_yearly', 'free', 'governance_launch', 'growth', 'growth_yearly', 'partner', 'partner_yearly', 'starter', 'starter_yearly']);
   });
 
   it('Starter price is 79 €', () => {
@@ -82,7 +82,9 @@ describe('PLAN_CONFIG alignment with PRICING_TIERS', () => {
     for (const t of PRICING_TIERS) {
       const entry = planForTier(t.plan.id);
       expect(entry).toBeTruthy();
-      expect(entry.mode).toMatch(/^(free|checkout|inquiry)$/);
+      // `one_time` ist der Kaufmodus der Einmalprodukte (Stripe-Modus
+      // `payment`) — siehe PurchaseMode in shared/pricing.ts.
+      expect(entry.mode).toMatch(/^(free|checkout|inquiry|one_time)$/);
     }
   });
 

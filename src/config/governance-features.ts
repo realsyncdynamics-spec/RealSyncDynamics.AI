@@ -14,6 +14,7 @@
 
 import {
   ALL_MODULES,
+  PLANS,
   PLAN_ORDER,
   planById,
   resolvePlan,
@@ -71,9 +72,9 @@ function toTierConfig(planId: PlanId): GovernanceTierConfig {
  * Monatsplan — deshalb existieren sie hier gar nicht erst als
  * eigene Einträge; `governanceTierFor()` löst sie auf.
  */
-export const GOVERNANCE_TIERS: Record<PlanId, GovernanceTierConfig> = PLAN_ORDER.reduce(
-  (acc, planId) => {
-    acc[planId] = toTierConfig(planId);
+export const GOVERNANCE_TIERS: Record<PlanId, GovernanceTierConfig> = PLANS.reduce(
+  (acc, plan) => {
+    acc[plan.id] = toTierConfig(plan.id);
     return acc;
   },
   {} as Record<PlanId, GovernanceTierConfig>,

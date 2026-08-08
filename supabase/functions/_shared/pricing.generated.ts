@@ -194,8 +194,19 @@ export const POLICY_PACK_IDS: GovernModuleId[] = GOVERN_MODULES
 //  Pläne
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Die sechs — und ausschließlich diese sechs — gültigen Pläne. */
-export type PlanId = 'free' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'partner';
+/**
+ * Die sechs Abo-Pläne plus die Einmalprodukte.
+ *
+ * Die Abo-Leiter besteht aus genau sechs Rängen (`PLAN_ORDER`):
+ * free → starter → growth → agency → enterprise → partner.
+ * Einmalprodukte (`purchaseMode: 'one_time'`, z.B. `governance_launch`)
+ * sind bewusst KEIN Rang dieser Leiter: sie werden zusätzlich zu einem
+ * Abo gekauft, ersetzen es nicht, und nehmen deshalb weder an
+ * `planRank()`/`isUpgrade()` noch an den Monotonie-Invarianten teil.
+ */
+export type PlanId =
+  | 'free' | 'starter' | 'growth' | 'agency' | 'enterprise' | 'partner'
+  | 'governance_launch';
 
 /** Plan-Key inkl. Jahresvariante. Bindeglied zu Stripe und DB. */
 export type PlanKey =
@@ -204,12 +215,21 @@ export type PlanKey =
   | 'growth' | 'growth_yearly'
   | 'agency' | 'agency_yearly'
   | 'enterprise' | 'enterprise_yearly'
-  | 'partner' | 'partner_yearly';
+  | 'partner' | 'partner_yearly'
+  | 'governance_launch';
 
-export type BillingInterval = 'none' | 'month' | 'year';
+/** `'one_time'` steht für einen Einmalkauf ohne wiederkehrende Abrechnung. */
+export type BillingInterval = 'none' | 'month' | 'year' | 'one_time';
 
-/** Wie ein Plan erworben wird. */
-export type PurchaseMode = 'free' | 'checkout' | 'inquiry';
+/**
+ * Wie ein Plan erworben wird.
+ *
+ * `one_time` erzeugt eine Stripe-Checkout-Session im Modus `payment`
+ * (statt `subscription`) — es entsteht keine Subscription und keine
+ * Verlängerung. Der Kauf wird als `entitlement_grants`-Zeile festgehalten
+ * und ergänzt die Entitlements des laufenden Abos.
+ */
+export type PurchaseMode = 'free' | 'checkout' | 'inquiry' | 'one_time';
 
 export type ChannelId = 'website' | 'whatsapp' | 'telegram' | 'slack' | 'teams' | 'email' | 'voice';
 
@@ -323,7 +343,7 @@ export const FEATURE_GROUPS: FeatureGroupDefinition[] = [
 export type PlanFeatureMatrix = Record<FeatureGroupId, string[]>;
 
 export interface PlanPrice {
-  /** Monatspreis in Euro (0 für Free) */
+  /** Monatspreis in Euro (0 für Free und für Einmalprodukte) */
   monthlyEur: number;
   /**
    * Jahrespreis in Euro. `null` = keine Jahresvariante (nur Free).
@@ -331,6 +351,12 @@ export interface PlanPrice {
    * Beträge abgerundet.
    */
   yearlyEur: number | null;
+  /**
+   * Einmalpreis in Euro. Nur für `purchaseMode: 'one_time'` gesetzt,
+   * sonst `null`. Damit bleibt der Betrag auch für Einmalprodukte in der
+   * SSoT und muss nirgendwo im Frontend hart codiert werden.
+   */
+  oneTimeEur: number | null;
 }
 
 export interface Plan {
@@ -405,7 +431,7 @@ export const PLANS: Plan[] = [
     name: 'Free Audit',
     outcomeHeadline: 'Sehen Sie in 90 Sekunden, wo Ihre Governance-Lücken liegen.',
     technicalSubheadline: 'Einmaliger Runtime-Scan Ihrer Domain mit Governance Score, Top-Risiken und Planempfehlung.',
-    price: { monthlyEur: 0, yearlyEur: null },
+    price: { monthlyEur: 0, yearlyEur: null, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'free',
     highlight: false,
@@ -457,7 +483,7 @@ export const PLANS: Plan[] = [
     name: 'Starter',
     outcomeHeadline: 'Ein nachweisbares Governance-Fundament, das jeden Prüfer überzeugt.',
     technicalSubheadline: 'Kontinuierlicher DSGVO- und AI-Act-Scan mit lückenloser Hash-Chain und exportierbarem Prüfpfad.',
-    price: { monthlyEur: 79, yearlyEur: 790 },
+    price: { monthlyEur: 79, yearlyEur: 790, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
     highlight: false,
@@ -521,7 +547,7 @@ export const PLANS: Plan[] = [
     name: 'Growth',
     outcomeHeadline: 'KI-Governance, die sich selbst überwacht — statt einmal im Jahr geprüft zu werden.',
     technicalSubheadline: 'Tägliche Runtime-Läufe mit Drift Detection, Risk Register und Policy Engine über drei Rahmenwerke.',
-    price: { monthlyEur: 249, yearlyEur: 2490 },
+    price: { monthlyEur: 249, yearlyEur: 2490, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
     highlight: true,
@@ -586,7 +612,7 @@ export const PLANS: Plan[] = [
     name: 'Agency',
     outcomeHeadline: 'Governance für viele Kunden gleichzeitig — automatisiert und mit Ihrem Logo.',
     technicalSubheadline: 'Scheduler, Bulk Jobs und REST-API über fünf Rahmenwerke, mit White-Label-Berichten und signiertem Herkunftsnachweis.',
-    price: { monthlyEur: 699, yearlyEur: 6900 },
+    price: { monthlyEur: 699, yearlyEur: 6900, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
     highlight: false,
@@ -664,7 +690,7 @@ export const PLANS: Plan[] = [
     name: 'Enterprise',
     outcomeHeadline: 'Konzernweite Governance über alle sechs Rahmenwerke — mit SLA und SSO.',
     technicalSubheadline: 'Multi-Tenant-Runtime für bis zu 5 Organisationen, zentrale Rechteverwaltung und unbegrenzte geplante Läufe.',
-    price: { monthlyEur: 1_249, yearlyEur: 12_490 },
+    price: { monthlyEur: 1_249, yearlyEur: 12_490, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'checkout',
     highlight: false,
@@ -745,7 +771,7 @@ export const PLANS: Plan[] = [
     name: 'Partner',
     outcomeHeadline: 'Verkaufen Sie Governance als eigenes Produkt — bis zu 50 Mandanten unter Ihrer Marke.',
     technicalSubheadline: 'Vollständig mandantengetrennte Runtime mit White-Label-Subdomain, eigenem Branding und voller API.',
-    price: { monthlyEur: 1_999, yearlyEur: 19_000 },
+    price: { monthlyEur: 1_999, yearlyEur: 19_000, oneTimeEur: null },
     currency: 'EUR',
     purchaseMode: 'inquiry',
     highlight: false,
@@ -815,6 +841,80 @@ export const PLANS: Plan[] = [
         'Mandanten-Isolation mit Unterkonten',
         'Unbegrenzte API-Schlüssel',
       ],
+    },
+    trialDays: 0,
+  },
+
+  // ── Governance Launch — 349 € einmalig ──────────────────────────────────
+  //
+  // Einmalige Implementierungsleistung, KEIN Abo-Rang. Steht deshalb nicht
+  // in `PLAN_ORDER` und nimmt an den Monotonie-Invarianten (Module/
+  // Berechtigungen/Limits wachsen entlang der Leiter) nicht teil.
+  //
+  // Wirkung: Der Kauf wird als Grant in `entitlement_grants` festgehalten und
+  // seine Entitlements werden von `tenant_entitlements()` per MAX() mit dem
+  // laufenden Abo vereinigt — ein zahlender Growth-Kunde verliert also
+  // nichts, wenn er zusätzlich Governance Launch bucht.
+  {
+    id: 'governance_launch',
+    planKey: 'governance_launch',
+    yearlyPlanKey: null,
+    name: 'Governance Launch',
+    outcomeHeadline: 'Einmalige Governance-Implementierung für Ihren ersten Anwendungsfall.',
+    technicalSubheadline: 'Einmalige Einrichtung: Rahmenwerk-Konfiguration, Evidence Vault und Audit Center für eine Domain.',
+    price: { monthlyEur: 0, yearlyEur: null, oneTimeEur: 349 },
+    currency: 'EUR',
+    purchaseMode: 'one_time',
+    // `highlight` markiert genau EINEN Plan als Empfehlung im Abo-Grid
+    // (das ist Growth). Ein zweiter hervorgehobener Eintrag würde die
+    // Empfehlung entwerten — das Einmalprodukt trägt stattdessen das
+    // Badge „Einmalig".
+    highlight: false,
+    badges: ['Einmalig'],
+    ctaLabel: 'Jetzt buchen',
+    limits: {
+      bots: 1,
+      answersPerMonth: 1_000,
+      domains: 1,
+      automationRunsPerMonth: 10,
+      seats: 3,
+      // Kein API-Zugriff in diesem Produkt (`permissions.api === false`).
+      // Ein Limit > 0 ohne die zugehörige Berechtigung würde in der
+      // Limit-Anzeige ein Kontingent versprechen, das kein Gate freigibt.
+      apiCallsPerMonth: 0,
+      tenants: 1,
+      evidenceStorageGb: 5,
+      auditReportsPerMonth: 5,
+      // Ohne das Modul `remediation` gibt es keine Behebungspläne — ein
+      // Kontingent hier wäre eine Anzeige ohne Funktion.
+      remediationPlans: 0,
+      bulkJobsPerMonth: 0,
+      apiKeys: 0,
+    },
+    channels: ['website'],
+    modules: ['dsgvo', 'policy_engine', 'evidence_vault', 'audit_center', 'compliance_reports'],
+    permissions: permissions({
+      evidenceVault: true,
+      auditExport: true,
+    }),
+    support: 'email',
+    addons: [],
+    features: {
+      audit_evidence: [
+        'Evidence Vault mit 5 GB Nachweisspeicher',
+        'Audit Center mit vollständigem Prüfpfad',
+        'Fünf Audit-Berichte inklusive',
+      ],
+      ai_governance: [
+        'Policy Pack DSGVO eingerichtet und aktiv',
+        'Policy Engine für eigene Richtlinien',
+        'Compliance Reports als PDF und JSON',
+      ],
+      automation_ops: [
+        'Zehn Automationsläufe für die Einrichtung',
+        'Ein Governance-Bot für die Website',
+      ],
+      multi_tenant_reseller: [],
     },
     trialDays: 0,
   },
@@ -968,7 +1068,13 @@ export const RUNTIME_PIPELINE: RuntimeStage[] = [
 //  Lookups und Ableitungen
 // ─────────────────────────────────────────────────────────────────────────
 
-/** Reihenfolge der Pläne, aufsteigend nach Preis. Verbindlich für jedes Grid. */
+/**
+ * Die Abo-Leiter, aufsteigend nach Preis. Verbindlich für jedes Grid.
+ *
+ * Enthält bewusst NUR die sechs wiederkehrenden Pläne. Einmalprodukte
+ * (`ONE_TIME_PLANS`) sind kein Rang der Leiter — sie werden zusätzlich
+ * gekauft und dürfen die Monotonie-Invarianten nicht verwässern.
+ */
 export const PLAN_ORDER: PlanId[] = ['free', 'starter', 'growth', 'agency', 'enterprise', 'partner'];
 
 /**
@@ -1006,8 +1112,14 @@ export function isPlanKey(value: string): value is PlanKey {
   return (ALL_PLAN_KEYS as string[]).includes(value);
 }
 
+/**
+ * Prüft gegen ALLE Plan-IDs, nicht nur gegen die Abo-Leiter `PLAN_ORDER` —
+ * `governance_launch` ist eine gültige `PlanId`, steht aber nicht auf der
+ * Leiter. Eine Prüfung gegen `PLAN_ORDER` würde sie fälschlich verwerfen
+ * und `resolvePlan()` auf den Plan-Key-Pfad umleiten.
+ */
 export function isPlanId(value: string): value is PlanId {
-  return (PLAN_ORDER as string[]).includes(value);
+  return PLANS.some((p) => p.id === value);
 }
 
 /** Alle gültigen Plan-Keys (monatlich + jährlich). */
@@ -1044,14 +1156,20 @@ export function isYearlyPlanKey(rawKey: string | null | undefined): boolean {
 export function intervalForPlanKey(rawKey: string | null | undefined): BillingInterval {
   const plan = planByKey(rawKey);
   if (!plan) return 'none';
+  if (plan.purchaseMode === 'one_time') return 'one_time';
   if (plan.price.monthlyEur === 0) return 'none';
   return isYearlyPlanKey(rawKey) ? 'year' : 'month';
 }
 
-/** Preis in Euro für einen konkreten Plan-Key (monatlich oder jährlich). */
+/**
+ * Preis in Euro für einen konkreten Plan-Key (monatlich, jährlich oder
+ * einmalig). Einmalprodukte führen ihren Betrag in `price.oneTimeEur` —
+ * `monthlyEur` ist dort 0, weil nichts wiederkehrend abgerechnet wird.
+ */
 export function priceForPlanKey(rawKey: string | null | undefined): number | null {
   const plan = planByKey(rawKey);
   if (!plan) return null;
+  if (plan.purchaseMode === 'one_time') return plan.price.oneTimeEur;
   return isYearlyPlanKey(rawKey) ? plan.price.yearlyEur : plan.price.monthlyEur;
 }
 
@@ -1062,20 +1180,53 @@ export function planKeyFor(id: PlanId, interval: 'month' | 'year' = 'month'): Pl
   return plan.planKey;
 }
 
-/** Die fünf buchbaren Pläne (ohne Free) — für Pricing-Grids. */
+/** Die fünf buchbaren Abo-Pläne (ohne Free) — für Pricing-Grids. */
 export const PAID_PLANS: Plan[] = PLANS.filter((p) => p.price.monthlyEur > 0);
 
-/** Alle Pläne in verbindlicher Reihenfolge. */
+/** Alle Abo-Pläne in verbindlicher Reihenfolge (ohne Einmalprodukte). */
 export const ORDERED_PLANS: Plan[] = PLAN_ORDER.map((id) => planById(id));
 
-/** Rang eines Plans (0 = free … 5 = partner). Für Upgrade-/Downgrade-Logik. */
+/**
+ * Einmalprodukte — Käufe ohne Verlängerung, die zusätzlich zu einem Abo
+ * gebucht werden. Sie sind kein Rang der Abo-Leiter und deshalb nicht in
+ * `PLAN_ORDER` / `ORDERED_PLANS` enthalten.
+ */
+export const ONE_TIME_PLANS: Plan[] = PLANS.filter((p) => p.purchaseMode === 'one_time');
+
+/** Ist der Plan-Key ein Einmalkauf (Stripe-Modus `payment`)? */
+export function isOneTimePlan(rawKey: string | null | undefined): boolean {
+  return planByKey(rawKey)?.purchaseMode === 'one_time';
+}
+
+/**
+ * Alle Pläne in einer stabilen Reihenfolge: erst die Abo-Leiter, dann die
+ * Einmalprodukte. Basis für abgeleitete Artefakte (Plan-Katalog-SQL,
+ * vollständige `Record<PlanId, …>`-Tabellen), die jeden Plan kennen müssen.
+ */
+export const ALL_PLANS_ORDERED: Plan[] = [...ORDERED_PLANS, ...ONE_TIME_PLANS];
+
+/**
+ * Rang eines Plans auf der Abo-Leiter (0 = free … 5 = partner).
+ * `-1` für Pläne, die nicht auf der Leiter stehen (Einmalprodukte) —
+ * Aufrufer müssen diesen Fall behandeln, statt mit dem Wert zu rechnen.
+ */
 export function planRank(id: PlanId): number {
   return PLAN_ORDER.indexOf(id);
 }
 
-/** Ist `candidate` ein Upgrade gegenüber `current`? */
+/**
+ * Ist `candidate` ein Upgrade gegenüber `current`?
+ *
+ * Einmalprodukte stehen nicht auf der Abo-Leiter und sind deshalb mit
+ * keinem Abo vergleichbar — für sie ist die Antwort immer `false`. Ohne
+ * diese Prüfung würde ihr Rang `-1` jedes Abo als „Upgrade" erscheinen
+ * lassen und nachgelagerte `PLAN_ORDER.slice(-1, …)`-Pfade leerlaufen.
+ */
 export function isUpgrade(current: PlanId, candidate: PlanId): boolean {
-  return planRank(candidate) > planRank(current);
+  const currentRank = planRank(current);
+  const candidateRank = planRank(candidate);
+  if (currentRank < 0 || candidateRank < 0) return false;
+  return candidateRank > currentRank;
 }
 
 // ── Berechtigungs-Ableitungen (nie über Plan-Namen!) ──────────────────────
@@ -1271,6 +1422,10 @@ export function checkoutHrefForPlan(
   if (resolved.purchaseMode === 'inquiry') {
     return `/contact-sales?plan=${encodeURIComponent(key)}&source=${encodeURIComponent(source)}`;
   }
+  // `checkout` und `one_time` teilen denselben Einstieg: /checkout/<planKey>.
+  // Ob daraus eine Subscription oder ein Einmalkauf wird, entscheidet die
+  // Edge Function `stripe-checkout` anhand von `plan.purchaseMode` — der
+  // Kaufmodus darf nicht über die URL manipulierbar sein.
   const trial = resolved.trialDays > 0 ? '&pilot=true' : '';
   return `/checkout/${key}?source=${encodeURIComponent(source)}${trial}`;
 }

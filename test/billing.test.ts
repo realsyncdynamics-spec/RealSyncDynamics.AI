@@ -54,8 +54,8 @@ describe('Company Configuration (UG/GmbH Ready)', () => {
 // ─── Pricing Tier Tests ──────────────────────────────────────────────────────
 
 describe('Pricing Tiers (6-Tier Model + Yearly Variants)', () => {
-  it('should have 11 tiers (6 base + 5 yearly variants)', () => {
-    expect(PRICING_TIERS).toHaveLength(11);
+  it('should have 12 tiers (6 base + 5 yearly variants + 1 one-time)', () => {
+    expect(PRICING_TIERS).toHaveLength(12);
   });
 
   it('should have 5 public tiers sorted by price ascending', () => {

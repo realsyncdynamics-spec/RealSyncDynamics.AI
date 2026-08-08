@@ -319,8 +319,13 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
 - `npm run check:pricing` prüft Deno-Zwilling und DB-Katalog gegen die Quelle
 - Zugriff **nie** über Plan-Namen (`if (plan === 'agency')`), sondern über
   `hasPermission()`, `hasModule()`, `limitOf()`
-- Es gibt genau sechs Pläne: Free Audit · Starter · Growth · Agency ·
+- Es gibt genau sechs **Abo-Pläne**: Free Audit · Starter · Growth · Agency ·
   Enterprise · Partner. Der Name „Scale" ist untersagt.
+- Daneben gibt es **Einmalprodukte** (`purchaseMode: 'one_time'`), derzeit
+  Governance Launch (349 € einmalig). Sie sind kein Rang der Abo-Leiter:
+  nicht in `PLAN_ORDER`, Preis in `price.oneTimeEur`, Persistenz als Grant in
+  `entitlement_grants` (nicht `subscriptions` — dort gilt „genau ein Abo pro
+  Tenant"), Anzeige über `ONE_TIME_PRICING_TIERS`.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 

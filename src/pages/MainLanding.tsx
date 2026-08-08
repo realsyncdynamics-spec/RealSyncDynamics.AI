@@ -64,7 +64,17 @@ const HERO_FEATURES = [
   { icon: LineChart, title: 'PROVE', text: 'Evidence Vault: auditfähige Nachweise in Echtzeit.' },
 ];
 
-const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TDDDG', 'BAIT', 'MaRisk', 'EU-Hosting'];
+// href = externer Referenzlink auf den Normtext (EUR-Lex). Der SEO-Report
+// 2026-08 bemängelte fehlende externe Referenzlinks — die Rechtsquellen sind
+// die natürlichste Stelle dafür.
+const TRUST: Array<{ label: string; href?: string }> = [
+  { label: 'DSGVO Art. 32', href: 'https://eur-lex.europa.eu/eli/reg/2016/679/oj' },
+  { label: 'EU AI Act', href: 'https://eur-lex.europa.eu/eli/reg/2024/1689/oj' },
+  { label: 'TDDDG' },
+  { label: 'BAIT' },
+  { label: 'MaRisk' },
+  { label: 'EU-Hosting' },
+];
 
 const PLATFORM = [
   {
@@ -181,7 +191,7 @@ function Header() {
           ))}
           <SmartLink to="/welcome" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
-        <SmartLink to="/flow/start-scan?source=nav-startfree" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
+        <SmartLink to="/flow/start-scan" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
           Free Audit starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </SmartLink>
       </div>
@@ -204,7 +214,7 @@ function Hero() {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <SmartLink to="/claude-code-optimizer?source=home-hero-pill" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
+            <SmartLink to="/claude-code-optimizer" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
               <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
               <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
                 CLAUDE CODE OPTIMIZER<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -237,7 +247,7 @@ function Hero() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+              <SmartLink to="/flow/start-scan" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
                 Free Audit starten<ArrowRight className="w-4 h-4" />
               </SmartLink>
               <SmartLink to="/demo-tour" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
@@ -279,9 +289,13 @@ function TrustStrip() {
     <section className="relative z-10 border-y border-white/10 bg-white/[0.02]">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-5 sm:py-6 flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-8 lg:gap-x-10 gap-y-2.5 sm:gap-y-3">
         <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase">Konform mit</span>
-        {TRUST.map((t) => (
-          <span key={t} className="font-mono text-[11px] sm:text-xs tracking-wider text-white/60">{t}</span>
-        ))}
+        {TRUST.map((t) =>
+          t.href ? (
+            <a key={t.label} href={t.href} target="_blank" rel="noopener noreferrer" className="font-mono text-[11px] sm:text-xs tracking-wider text-white/60 hover:text-white transition-colors">{t.label}</a>
+          ) : (
+            <span key={t.label} className="font-mono text-[11px] sm:text-xs tracking-wider text-white/60">{t.label}</span>
+          )
+        )}
       </div>
     </section>
   );
@@ -290,7 +304,7 @@ function TrustStrip() {
 /* ── PLATTFORM ──────────────────────────────────────────── */
 function Platform() {
   return (
-    <Section id="product" eyebrow="DIE PLATTFORM" title="Evidence zuerst. Runtime danach." subtitle="Discover → Classify → Enforce → Prove — Evidence Vault als Kern, Monitoring und Policies als durchgängige Runtime.">
+    <Section id="product" eyebrow="DIE PLATTFORM" title="Evidence zuerst. Runtime danach." subtitle="Discover → Classify → Enforce → Prove — Evidence Vault als Kern, Monitoring und Policies als durchgängige Runtime. Alle Module arbeiten auf demselben Datenbestand: Vom ersten Scan bis zum Audit-Export entsteht ein lückenloser, kryptografisch gesicherter Prüfpfad, den Aufsichtsbehörden und Auditoren direkt nachvollziehen können.">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 border border-white/10 rounded-2xl overflow-hidden">
         {PLATFORM.map(({ icon: Icon, title, text }) => (
           <div key={title} className="group p-6 sm:p-8 bg-[rgb(3,7,18)] hover:bg-white/[0.03] transition-colors">
@@ -406,7 +420,10 @@ function Pricing() {
             {p.featured && (
               <span className="absolute -top-3 left-7 px-3 py-1 text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded-full">BELIEBT</span>
             )}
-            <h3 className="text-lg font-semibold mb-1">{p.name}</h3>
+            {/* p statt h3: Plan-Namen sind Karten-Labels, keine Dokumentstruktur —
+                reduziert die Überschriften-Dichte (38 Headings/838 Wörter,
+                SEO-Report 2026-08). Klassen unverändert, Darstellung identisch. */}
+            <p className="text-lg font-semibold mb-1">{p.name}</p>
             <div className="flex items-baseline gap-1 mb-6">
               <span className="font-mono text-3xl font-bold">{p.price} €</span>
               <span className="font-mono text-xs text-white/40">{p.cadence}</span>
@@ -431,7 +448,7 @@ function Pricing() {
             <Building2 className="w-5 h-5 text-cyan-400" strokeWidth={1.75} />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-semibold">Enterprise / On-Prem</h3>
+            <p className="text-base sm:text-lg font-semibold">Enterprise / On-Prem</p>
             <p className="text-xs sm:text-sm text-white/60 leading-relaxed">Custom Runtime, SLA, AI-Act-Modul, DSB-Integration, Private Cloud, unlimitierte Domains.</p>
           </div>
         </div>
@@ -451,7 +468,7 @@ function Security() {
     { icon: ShieldCheck, title: 'Service-Role-Isolation', text: 'Sensible Keys ausschließlich serverseitig. RLS schützt jede Tabelle auf Mandantenebene.' },
   ];
   return (
-    <Section id="security" eyebrow="SICHERHEIT & COMPLIANCE" title="Vertrauen ist in die Architektur eingebaut" subtitle="Nicht nachgelagert, sondern Fundament: Souveränität, Nachweisbarkeit und Isolation by Design.">
+    <Section id="security" eyebrow="SICHERHEIT & COMPLIANCE" title="Vertrauen ist in die Architektur eingebaut" subtitle="Nicht nachgelagert, sondern Fundament: Souveränität, Nachweisbarkeit und Isolation by Design. Hosting und Verarbeitung bleiben in der EU, jeder Nachweis ist signiert und mandantengetrennt gespeichert — so erfüllt die Plattform DSGVO Art. 32 und die Dokumentationspflichten des EU AI Act ohne zusätzlichen Werkzeugwechsel.">
       <div className="grid md:grid-cols-3 gap-6">
         {points.map(({ icon: Icon, title, text }) => (
           <div key={title} className="p-8 border border-white/10 rounded-2xl bg-white/[0.02]">
@@ -521,11 +538,14 @@ function FinalCta() {
             Starten Sie mit einem Free Audit — ohne Account, in unter fünf Minuten. Discover → Classify → Prove auf Ihrer Domain.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <SmartLink to="/flow/start-scan?source=home-final" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+            <SmartLink to="/flow/start-scan" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
               Free Audit starten<ArrowRight className="w-4 h-4" />
             </SmartLink>
-            <SmartLink to="/app" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-              <PlayCircle className="w-4 h-4" />Dashboard-Demo ansehen
+            {/* /demo-tour statt /app: gleicher Anker-Text zeigte vorher auf zwei
+                verschiedene Ziele (Hero: /demo-tour, hier: /app hinter Auth) —
+                doppelte Anker mit divergenten Zielen, SEO-Report 2026-08. */}
+            <SmartLink to="/demo-tour" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
+              <PlayCircle className="w-4 h-4" />Demo-Tour starten
             </SmartLink>
           </div>
           <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
@@ -581,10 +601,10 @@ function Footer() {
           </div>
           {cols.map((c) => (
             <div key={c.title}>
-              {/* h3, nicht h4: davor steht das h2 der FinalCta-Sektion — h4
-                  waere ein uebersprungenes Level. Klassen unveraendert, die
-                  Darstellung ist identisch (Groesse kommt aus text-[10px]). */}
-              <h3 className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase mb-3 sm:mb-4">{c.title}</h3>
+              {/* p statt Heading: Footer-Spaltentitel sind Navigations-Labels,
+                  keine Dokumentstruktur — reduziert die Überschriften-Dichte
+                  (SEO-Report 2026-08). Klassen unveraendert, Darstellung identisch. */}
+              <p className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase mb-3 sm:mb-4">{c.title}</p>
               <ul className="space-y-2">
                 {c.links.map((l) => (
                   <li key={l.label}><SmartLink to={l.to} className="text-xs sm:text-sm text-white/60 hover:text-white transition-colors">{l.label}</SmartLink></li>

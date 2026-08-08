@@ -133,9 +133,26 @@ Nach erfolgreichem Cloudflare-Deploy das Vercel-Projekt
 `real-sync-dynamics-ai-remu` trennen: Vercel → Project → **Settings → Git →
 Disconnect** (Details in `docs/infra/hosting-consolidation-cloudflare-pages.md`).
 
+## Post-Deploy Smoke-Check
+
+Nach dem Deploy die laufende Instanz gegen `/health` prüfen (validiert zugleich,
+dass Postgres/Redis/NATS aus der Cloud erreichbar sind — genau der häufigste
+Stolperstein):
+
+```bash
+npm run smoke -- https://realsync-runtime-core.<subdomain>.workers.dev
+# oder: RUNTIME_CORE_URL=https://…workers.dev npm run smoke
+```
+
+Exit-Code 0 = `status: ok` und alle Dependencies (`db`/`redis`/`nats`) `ok`;
+Exit-Code 1 sonst. Der Check macht mehrere Versuche mit Backoff (der erste
+Request nach Scale-to-zero fährt den Container erst hoch). Siehe
+`scripts/smoke.mjs`.
+
 ## Nicht aus dieser Session testbar
 
 Der tatsächliche Deploy braucht ein Cloudflare-Konto mit Containers, ein
 API-Token und aus der Cloud erreichbare PG/Redis/NATS-Endpunkte. Das Setup hier
 ist konventionskonform vorbereitet, aber **nicht end-to-end verifiziert** —
-bitte ersten Deploy manuell mit `npx wrangler deploy` fahren und `/health` prüfen.
+bitte ersten Deploy manuell mit `npx wrangler deploy` fahren und mit
+`npm run smoke -- <URL>` (bzw. `/health`) prüfen.

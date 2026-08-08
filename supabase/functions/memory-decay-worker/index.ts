@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
       await emitEvent({
         tenant_id: item.tenant_id,
         type: 'memory.purged',
-        severity: 'notice',
+        // runtime_events-CHECK erlaubt nur info|low|medium|high|critical;
+        // purge ist der DSGVO-relevante Löschnachweis → medium.
+        severity: 'medium',
         subject_ref: item.subject_ref,
         payload: {
           memory_id: item.id,

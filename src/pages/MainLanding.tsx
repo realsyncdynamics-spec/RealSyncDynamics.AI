@@ -206,7 +206,13 @@ function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" className="w-full h-full object-cover object-right" />
+        {/* WebP (120 KB) statt JPG (808 KB) als LCP-Bild; width/height gegen CLS,
+            fetchPriority weil Hero above-the-fold. Layout kommt weiter aus den
+            CSS-Klassen (object-cover), die Attribute aendern nichts Sichtbares. */}
+        <picture>
+          <source srcSet="/europe-globe.webp" type="image/webp" />
+          <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" width={1376} height={768} fetchPriority="high" className="w-full h-full object-cover object-right" />
+        </picture>
         <div className="absolute inset-0 bg-gradient-to-r from-[rgb(3,7,18)] via-[rgb(3,7,18)]/85 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-[rgb(3,7,18)]/40" />
       </div>

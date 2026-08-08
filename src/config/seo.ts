@@ -53,7 +53,7 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'AI Compliance Software für DSGVO & EU AI Act | RealSyncDynamicsAI',
+  title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
   description:
     'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
 };
@@ -222,7 +222,9 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'AI Compliance Software für DSGVO & EU AI Act | RealSyncDynamicsAI',
+    // 62 Zeichen — Keyword vollstaendig vorn; die 60er-Grenze wird nur vom
+    // Brand-Suffix ueberschritten, das in der SERP schlimmstenfalls trunkiert.
+    title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
     description:
       'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
     canonical: `${SITE_URL}/`,

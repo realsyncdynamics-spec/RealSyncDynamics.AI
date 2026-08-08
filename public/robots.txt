@@ -2,6 +2,8 @@ User-agent: *
 Allow: /
 
 # Auth-gated views — kein SEO-Wert
+Disallow: /app
+Disallow: /checkout/
 Disallow: /admin/
 Disallow: /settings/
 Disallow: /dashboard

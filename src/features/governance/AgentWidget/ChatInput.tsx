@@ -7,11 +7,22 @@ const TENANT_QUICK = [
   { label: 'Vendoren ohne DPA', text: 'Welche Vendoren haben noch keinen signed DPA?' },
 ];
 
+/**
+ * Schnellfragen des öffentlichen Assistenten.
+ *
+ * ⚠️ Bewusst ohne Mandantenbezug: Der anonyme Assistent hat per Design keinen
+ * Zugriff auf Tenant-Daten (rate-limited, read-only, kein RLS-Kontext). Fragen
+ * wie „Warum ist MEIN Risk Score 87?" oder „Zeig MEINE fehlenden Nachweise"
+ * könnte er deshalb nicht beantworten, sondern nur halluzinieren — sie sind
+ * hier absichtlich als Mechanik-Fragen formuliert („Wie entsteht …?").
+ * Die mandantenbezogene Variante gehört hinter die Auth-Schicht.
+ */
 export const ANON_QUICK = [
-  { label: 'DSGVO Art. 6', text: 'Welche Rechtsgrundlagen gibt es nach DSGVO Art. 6 für die Verarbeitung personenbezogener Daten?' },
-  { label: 'Cookie-Pflichten', text: 'Welche Cookie-Pflichten gelten in Deutschland nach TDDDG und DSGVO?' },
-  { label: 'EU AI Act', text: 'Was sind die wichtigsten Pflichten für KI-Systeme unter dem EU AI Act?' },
-  { label: 'Website-Audit', text: 'Was sollte ich bei einem DSGVO-Audit meiner Website prüfen?' },
+  { label: 'Was zuerst beheben?', text: 'Ich starte mit AI Governance. Welche Compliance-Lücken sollte ich typischerweise zuerst schließen und warum?' },
+  { label: 'Risk Score', text: 'Wie entsteht ein Compliance-Risk-Score und welche Faktoren senken ihn am stärksten?' },
+  { label: 'DSGVO-Nachweise', text: 'Welche Nachweise brauche ich, um DSGVO-Konformität gegenüber einer Aufsichtsbehörde zu belegen?' },
+  { label: 'Hochriskante KI', text: 'Welche KI-Systeme gelten nach EU AI Act als hochriskant und welche Pflichten folgen daraus?' },
+  { label: 'Evidence Vault', text: 'Wie funktioniert ein manipulationssicherer Nachweis-Speicher mit Hash-Chain?' },
 ];
 
 export function ChatInput(props: {

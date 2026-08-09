@@ -194,10 +194,86 @@ test.describe('MainLanding (/)', () => {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
+  test('Hero-Sequenz endet im Endzustand und ist als Vorschau markiert', async ({ page }) => {
+    // Die Sequenz läuft einmal durch und bleibt stehen — sie darf nicht als
+    // laufende Telemetrie erscheinen.
+    await expect(page.getByText(/CONTROL PLANE/i).first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Produktvorschau/i).first()).toBeVisible();
+  });
+
+  test('Event-Flow zeigt den Pfad eines Ereignisses', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /Ein Ereignis, ein durchgehender Pfad/i })).toBeVisible();
+    for (const stage of ['Neues KI-System erkannt', 'Risiko klassifiziert', 'Evidenz erzeugt', 'Auditfähig']) {
+      await expect(page.getByText(stage, { exact: true })).toBeVisible();
+    }
+  });
+
+  test('Audit-Einstieg übergibt an den echten Audit', async ({ page }) => {
+    // Schritt 1 ist bewusst kein Demo-Stepper, sondern die reale Übergabe.
+    const input = page.locator('#audit-domain');
+    await input.scrollIntoViewIfNeeded();
+    await input.fill('beispiel.de');
+    await page.getByRole('button', { name: /Audit starten/i }).click();
+    await expect(page).toHaveURL(/\/audit\?domain=beispiel\.de/);
+  });
+
+  test('Audit-Folgeschritte sind als Vorschau gekennzeichnet', async ({ page }) => {
+    await expect(page.getByText(/Was danach passiert/i)).toBeVisible();
+    await expect(page.getByText(/^Vorschau/).first()).toBeVisible();
+  });
+
   test('Keine verbotenen Sales/Pilot/Demo CTAs', async ({ page }) => {
     for (const pattern of FORBIDDEN_CTA) {
       await expect(page.getByRole('link', { name: pattern })).toHaveCount(0);
       await expect(page.getByRole('button', { name: pattern })).toHaveCount(0);
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// EU-Datenresidenz-Hotspots — nur Desktop (ab lg)
+// ─────────────────────────────────────────────────────────────────────
+test.describe('EU-Datenresidenz-Hotspots (/)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+  });
+
+  test('Hotspots sind vorhanden, beschriftet und per Tastatur bedienbar', async ({ page }) => {
+    for (const c of ['Amsterdam', 'Berlin', 'Frankfurt', 'Paris']) {
+      await expect(page.getByRole('button', { name: new RegExp(c, 'i') })).toHaveCount(1);
+    }
+
+    const frankfurt = page.getByRole('button', { name: /Frankfurt/i });
+    await expect(frankfurt).toHaveAttribute('aria-expanded', 'false');
+    await frankfurt.focus();
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
+  });
+
+  test('Hotspots werden nicht von den Metrik-Karten verdeckt', async ({ page }) => {
+    // Regression-Schutz: Die Marker lagen zunaechst unter dem Hero-Container
+    // und waren nur per Tastatur erreichbar. Geprueft wird der echte Treffertest.
+    const covered = await page.evaluate(() => {
+      const bad: string[] = [];
+      for (const btn of Array.from(document.querySelectorAll('button'))) {
+        const sr = btn.querySelector('.sr-only');
+        if (!sr || !/Produktvorschau, keine Live-Daten/.test(sr.textContent ?? '')) continue;
+        const r = btn.getBoundingClientRect();
+        const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        if (!(top === btn || btn.contains(top))) bad.push((sr.textContent ?? '').split(':')[0].trim());
+      }
+      return bad;
+    });
+    expect(covered).toEqual([]);
+  });
+
+  test('Die Hotspot-Ebene blockiert den Hero-CTA nicht', async ({ page }) => {
+    const cta = page.getByRole('link', { name: /Kostenlosen Compliance Audit starten/i }).first();
+    await cta.scrollIntoViewIfNeeded();
+    await cta.click();
+    await expect(page).toHaveURL(/\/flow\/start-scan/);
   });
 });

@@ -168,7 +168,7 @@ function AnonWidget({ open, onClose }: { open: boolean; onClose: () => void }) {
       aria-hidden={!open}
     >
       <WidgetHeader
-        label="KI-Assistent"
+        label="Compliance Runtime fragen"
         badge="Öffentlich · EU · keine Rechtsberatung"
         onReset={chat.reset}
         onClose={onClose}

@@ -66,7 +66,7 @@ export function AssistentChip() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Assistent öffnen"
+        aria-label="Compliance Runtime fragen"
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-hidden={heroVisible ? true : undefined}
@@ -86,7 +86,12 @@ export function AssistentChip() {
         <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-obsidian-900 ring-1 ring-titanium-700">
           <Mic className="h-4 w-4 text-titanium-100" />
         </span>
-        <span className="text-sm font-medium tracking-tight">Assistent</span>
+        {/* Kurzform auf sehr schmalen Displays, damit der Chip nicht über die
+            halbe Viewport-Breite läuft. */}
+        <span className="text-sm font-medium tracking-tight">
+          <span className="hidden min-[380px]:inline">Compliance Runtime fragen</span>
+          <span className="min-[380px]:hidden">Runtime fragen</span>
+        </span>
       </button>
 
       <AgentWidget mode="anon" open={open} onClose={() => setOpen(false)} />

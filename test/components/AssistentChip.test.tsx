@@ -63,7 +63,7 @@ function renderChipWithHero({ withHero }: { withHero: boolean }) {
 describe('<AssistentChip>', () => {
   it('renders visible by default when no [data-hero-cta] is present', () => {
     const { getByLabelText } = renderChipWithHero({ withHero: false });
-    const btn = getByLabelText('Assistent öffnen');
+    const btn = getByLabelText('Compliance Runtime fragen');
     expect(btn).toBeInTheDocument();
     expect(btn.className).toMatch(/opacity-100/);
     expect(btn.className).not.toMatch(/pointer-events-none/);
@@ -71,7 +71,7 @@ describe('<AssistentChip>', () => {
 
   it('hides when [data-hero-cta] is in the viewport', () => {
     const { getByLabelText } = renderChipWithHero({ withHero: true });
-    const btn = getByLabelText('Assistent öffnen');
+    const btn = getByLabelText('Compliance Runtime fragen');
 
     // Initially the observer hasn't fired — chip is "default visible".
     expect(btn.className).toMatch(/opacity-100/);
@@ -88,7 +88,7 @@ describe('<AssistentChip>', () => {
 
   it('reveals again when [data-hero-cta] leaves the viewport', () => {
     const { getByLabelText } = renderChipWithHero({ withHero: true });
-    const btn = getByLabelText('Assistent öffnen');
+    const btn = getByLabelText('Compliance Runtime fragen');
 
     act(() => { observers.forEach(o => o.trigger(true)); });
     expect(btn.className).toMatch(/opacity-0/);
@@ -105,7 +105,7 @@ describe('<AssistentChip>', () => {
         <AssistentChip />
       </MemoryRouter>,
     );
-    expect(queryByLabelText('Assistent öffnen')).toBeNull();
+    expect(queryByLabelText('Compliance Runtime fragen')).toBeNull();
   });
 
   it('hides on /governance/* subroutes but shows on /governance', () => {
@@ -114,7 +114,7 @@ describe('<AssistentChip>', () => {
         <AssistentChip />
       </MemoryRouter>,
     );
-    expect(onSub.queryByLabelText('Assistent öffnen')).toBeNull();
+    expect(onSub.queryByLabelText('Compliance Runtime fragen')).toBeNull();
     onSub.unmount();
 
     const onRoot = render(
@@ -122,7 +122,7 @@ describe('<AssistentChip>', () => {
         <AssistentChip />
       </MemoryRouter>,
     );
-    expect(onRoot.queryByLabelText('Assistent öffnen')).not.toBeNull();
+    expect(onRoot.queryByLabelText('Compliance Runtime fragen')).not.toBeNull();
   });
 
   it('mounts the public AnonWidget hidden by default; click reveals it', () => {
@@ -132,7 +132,7 @@ describe('<AssistentChip>', () => {
     const dialog = getByRole('dialog', { hidden: true });
     expect(dialog).toHaveAttribute('aria-hidden', 'true');
 
-    act(() => { getByLabelText('Assistent öffnen').click(); });
+    act(() => { getByLabelText('Compliance Runtime fragen').click(); });
 
     // After click the same dialog node is now exposed to a11y.
     expect(dialog).toHaveAttribute('aria-hidden', 'false');
@@ -142,7 +142,7 @@ describe('<AssistentChip>', () => {
 
   it('closes the widget via the WidgetHeader close button', () => {
     const { getByLabelText, getByRole } = renderChipWithHero({ withHero: false });
-    act(() => { getByLabelText('Assistent öffnen').click(); });
+    act(() => { getByLabelText('Compliance Runtime fragen').click(); });
 
     const dialog = getByRole('dialog', { hidden: true });
     expect(dialog).toHaveAttribute('aria-hidden', 'false');

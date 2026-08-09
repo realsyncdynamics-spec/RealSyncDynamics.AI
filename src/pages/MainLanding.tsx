@@ -3,6 +3,10 @@ import { SEOHead } from '../components/SEOHead';
 import { ComplianceControlRoom } from '../components/landing/ComplianceControlRoom';
 import { EvidenceChain } from '../components/landing/EvidenceChain';
 import { BeforeAfter } from '../components/landing/BeforeAfter';
+import { AuditExperience } from '../components/landing/AuditExperience';
+import { RealSyncEventFlow } from '../components/landing/RealSyncEventFlow';
+import { RuntimeSequence } from '../components/landing/RuntimeSequence';
+import { ResidencyHotspots } from '../components/landing/ResidencyHotspots';
 import { useHealthStatus } from '../hooks/useHealthStatus';
 import { planById, formatLimit, policyPacksFor, checkoutHrefForPlan, RUNTIME_PIPELINE, type PlanId } from '@/shared/pricing';
 import {
@@ -174,7 +178,9 @@ export function MainLanding() {
         <Evidence />
         <Platform />
         <Runtime />
+        <EventFlow />
         <Transformation />
+        <FreeAudit />
         <Industries />
         <ProofBand />
         <Pricing />
@@ -245,6 +251,7 @@ function Hero() {
         <div className="absolute inset-0 lg:hidden bg-gradient-to-b from-[rgb(3,7,18)]/90 via-[rgb(3,7,18)]/70 to-[rgb(3,7,18)]/95" />
       </div>
 
+
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -258,6 +265,8 @@ function Hero() {
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] sm:leading-[1.05] tracking-tight mb-4 sm:mb-6">
               AI Compliance<br />Operations OS<br />for <span className="text-cyan-400">Europe</span>
             </h1>
+
+            <RuntimeSequence />
 
             <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-7 sm:mb-8">
               Discover, classify, enforce and prove AI, website and vendor compliance continuously —
@@ -283,7 +292,10 @@ function Hero() {
 
             {/* Primär-CTA dominant (voller Cyan-Flächenkontrast), Sekundär-CTA
                 bewusst zurückhaltend — nur Rahmen, kein Flächen-Akzent. */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            {/* data-hero-cta: AssistentChip blendet sich aus, solange dieser
+                CTA im Viewport ist (IntersectionObserver in AssistentChip).
+                Ohne das Attribut lag der Chip über dem Hero-Inhalt. */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4" data-hero-cta>
               <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 min-h-[48px] text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
                 Kostenlosen Compliance Audit starten<ArrowRight className="w-4 h-4" aria-hidden="true" />
               </SmartLink>
@@ -336,6 +348,14 @@ function Hero() {
           </div>
         </div>
       </div>
+
+      {/* Datenresidenz-Marker über dem Globus — nur Desktop.
+          Bewusst NACH dem Inhalts-Container und mit höherem z-Index: der
+          Container spannt über den gesamten Hero und würde die Mausereignisse
+          der darunterliegenden Marker sonst vollständig abfangen. Die
+          Marker-Ebene selbst ist pointer-events-none, nur die Punkte nehmen
+          Ereignisse an — Karten und CTAs bleiben dadurch unberührt. */}
+      <ResidencyHotspots />
     </section>
   );
 }
@@ -376,6 +396,32 @@ function Evidence() {
       subtitle="Jede ausgeführte Kontrolle erzeugt einen kryptografisch verketteten Eintrag: Ergebnis, Evidenz-ID, Hash, Zeitstempel, Verifizierung. Das ist der Unterschied zwischen „dokumentiert“ und „beweisbar“."
     >
       <EvidenceChain />
+    </Section>
+  );
+}
+
+/* ── REALSYNC EVENT FLOW ────────────────────────────────── */
+function EventFlow() {
+  return (
+    <Section
+      eyebrow="REALSYNC"
+      title="Ein Ereignis, ein durchgehender Pfad"
+      subtitle="Wird ein neues KI-System erkannt, läuft es ohne Zutun durch Klassifizierung, Policy-Auswertung und Control-Prüfung — bis am Ende ein auditfähiger Nachweis steht."
+    >
+      <RealSyncEventFlow />
+    </Section>
+  );
+}
+
+/* ── FREE AUDIT ─────────────────────────────────────────── */
+function FreeAudit() {
+  return (
+    <Section
+      eyebrow="EINSTIEG"
+      title="Kostenloser Compliance Audit"
+      subtitle="Der schnellste Weg vom Lesen zum eigenen Befund: Domain eintragen, Scan starten, Risikobewertung erhalten."
+    >
+      <AuditExperience />
     </Section>
   );
 }

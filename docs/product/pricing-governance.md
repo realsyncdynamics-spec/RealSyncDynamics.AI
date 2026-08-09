@@ -48,14 +48,51 @@ Drei Bereiche, definiert in `PRODUCT_AREAS`:
 
 ## Pläne
 
-Genau sechs Pläne, in dieser Reihenfolge (`PLAN_ORDER`):
+### Abo-Leiter — genau sechs Pläne, in dieser Reihenfolge (`PLAN_ORDER`)
 
 `free` · `starter` · `growth` · `agency` · `enterprise` · `partner`
 
-Andere Plan-Namen sind unzulässig. Insbesondere existiert **kein Plan
+Andere Abo-Namen sind unzulässig. Insbesondere existiert **kein Plan
 „Scale"** mehr — er heißt seit dem Governance-Refactoring `partner`.
 Bestandsdaten werden über `normalizePlanKey()` abgebildet; die Migration
 `20260802001000_canonical_plan_catalog.sql` stellt die DB-Zeilen um.
+
+### Einmalprodukte (`purchaseMode: 'one_time'`)
+
+`governance_launch` — Governance Launch, 349 € einmalig.
+
+Einmalprodukte sind **kein Rang der Abo-Leiter**. Sie stehen deshalb nicht
+in `PLAN_ORDER` / `ORDERED_PLANS`, sondern in `ONE_TIME_PLANS`
+(`ALL_PLANS_ORDERED` enthält beides). Konkret gilt:
+
+| Aspekt | Verhalten |
+|---|---|
+| Preis | in `price.oneTimeEur`; `price.monthlyEur` ist 0, weil nichts wiederkehrend abgerechnet wird |
+| `planRank()` | `-1` — nicht auf der Leiter |
+| `isUpgrade()` | immer `false`, in beide Richtungen (unvergleichbar) |
+| Monotonie-Invarianten | gelten nicht (nur entlang `PLAN_ORDER`) |
+| Stripe | Checkout-Modus `payment`, kein `subscription_data`, kein Trial |
+| Persistenz | Grant in `public.entitlement_grants` — **nicht** `subscriptions` |
+| Entitlements | `tenant_entitlements()` vereinigt Abo + Grants per `MAX()` |
+| Frontend-Grids | `ONE_TIME_PRICING_TIERS`, **nicht** `PUBLIC_PRICING_TIERS` |
+
+Warum eine eigene Tabelle: Das Subscription-Modell ist „genau eine aktive
+Subscription pro Tenant" (im Repo per `UNIQUE(tenant_id)` erzwungen). Ein
+Einmalkauf dort würde das laufende Abo überschreiben. Zusätzlich wählt
+`tenant_entitlements()` per `ORDER BY updated_at DESC LIMIT 1` ohnehin nur
+EINE Subscription-Zeile — eine zweite Zeile wirkte also nicht additiv,
+sondern verdrängend. Grants sind deshalb eine eigene Achse.
+
+`entitlement_grants` ist bewusst generisch (`source`, `expires_at`): derselbe
+Mechanismus trägt Einmalkäufe, manuelle Kulanz-Grants und befristete Aktionen.
+Ein Grant verweist auf eine `products`-Zeile; deren `product_entitlements`
+definieren, was er gewährt — es gibt keine zweite Rechte-Definition.
+Idempotenz über `UNIQUE(source, purchase_reference)`.
+
+Warum nicht in `PUBLIC_PRICING_TIERS`: diese Liste ist an mehreren Stellen
+implizit die Abo-Leiter — `PlanUpgradeModal` leitet Upgrade/Downgrade aus
+der Position via `findIndex()` ab. Ein Einmalprodukt darin wäre als „höher
+als Partner" gewertet worden.
 
 ## Runtime-Architektur
 
@@ -146,7 +183,12 @@ policyPacks, features, addons, support
 
 ## Was die Tests garantieren
 
-- Genau sechs Pläne mit den vorgegebenen Preisen
+- Genau sechs Abo-Pläne mit den vorgegebenen Preisen; jeder Plan ist
+  entweder auf der Abo-Leiter oder ein Einmalprodukt
+- Einmalprodukte: Preis in `oneTimeEur`, `planRank() === -1`, kein
+  Trial-Parameter im Checkout-Ziel, in `isUpgrade()` unvergleichbar
+- Kein Plan verspricht ein Limit ohne die zugehörige Berechtigung
+  (API, Bulk Jobs; Behebungspläne mit dokumentierter Altabweichung)
 - Kein Plan-Bezeichner enthält „scale"; keine Legacy-Namen im Code
 - Module, Berechtigungen und Limits sind entlang der Plan-Reihenfolge
   monoton — ein höherer Plan kann nie weniger als ein niedrigerer

@@ -1,0 +1,14 @@
+{
+  "name": "@realsync/siteos-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RealSync SiteOS — framework- und laufzeitfreier Kern: Site-Blueprint, AI Builder, Runtime-Analyse, Scoring, Agenten-Registry.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "sideEffects": false,
+  "license": "UNLICENSED"
+}

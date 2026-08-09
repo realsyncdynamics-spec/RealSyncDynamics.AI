@@ -216,6 +216,16 @@ export function getConfidenceDecayAction(
 }
 
 /**
+ * Re-Validation-Fälligkeit je Aktion (Stunden) — Spiegel der Intervalle in
+ * governance_memory_confidence_reassess() (Migration 20260819000000).
+ * immediate_archive plant keine Re-Validation.
+ */
+export const REVALIDATION_DELAY_HOURS: Record<'cool_and_revalidate' | 'revalidate_only', number> = {
+  cool_and_revalidate: 24,
+  revalidate_only: 72,
+};
+
+/**
  * §8 Hardened Validation (RFC-003 §2)
  *
  * Immutability rules: UPDATE is forbidden; new rows with supersedes_id required.

@@ -19,6 +19,14 @@ Agenten-Systeme und Creator-Verifikation.
 - Schutz gegen Deepfakes
 - Nachweisbare Daten- und Content-Provenienz (Herkunftsnachweis)
 
+**Module (Phase 2)**
+- **Audit Module** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
+- **Policy Packs** (100%) — DSGVO, EU AI Act, Industrie-spezifisch; Auto-Empfehlung nach Tenant-Branche
+- **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
+- **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch
+- **Provenance (C2PA)** (80%) — Ed25519-Signatur, Custody-Auto-Capture, Externe Verifizierung
+- **SiteOS** (Phase 1) — AI-native Website-Ebene: AI Builder (Prompt → geprüfter Blueprint), 8 Runtime-Analysen, 5 Live-Scores, 7 asynchrone Agenten. Kern in `packages/siteos-core` (abhängigkeitsfrei, läuft in Browser/Deno/Node). Architektur + bewusste Abweichungen vom Auftrag: `docs/SITEOS_ARCHITECTURE.md`. **Regel**: Befund-Codes und Scoring-Gewichte sind versionsrelevant — nicht ohne Entscheidung ändern.
+
 **Compliance-Fokus**
 - EU AI Act
 - DSGVO
@@ -233,33 +241,81 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 Vor jeder Änderung erst analysieren:
 
 ```
-src/
-  pages/         104+ Seiten (1 Datei = 1 Route), public, eager imports
-  features/      Auth-gated Module (billing, governance, …), lazy-loaded
-  components/    Shared UI
-  config/        Zentrale Konfiguration (seo, industries) — Preise siehe shared/
-  core/          Provider (TenantProvider, DemoModeProvider, …)
-  lib/           Utilities (auth, tracking)
-  hooks/         React Hooks
-  enterprise-os/ Workspace-Layouts, Governance-Branding
-  flow/          Seitenbasierter Flow (/flow/*)
-  governance/    Governance-UI
-  runtime/       Agent-Integration, Telemetry-Typen
-  security/      Security-Utilities
-  sdk/           Client-SDK-Anbindung
-shared/
-  pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
-supabase/
-  functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
-  migrations/    243 Migrations
-apps/agent-runtime      Agent Runtime (Node/TS, Docker)
-services/               runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
-packages/sdk            Öffentliches SDK (CJS + ESM)
-connectors/             Externe Integrationen
-deploy/ docker/ infra/  VPS-Stack (Traefik, Ollama, n8n)
-scripts/                Build-, Release-, QA-Skripte
-test/ tests/ e2e/       Vitest + Playwright
+RealSyncDynamics.AI/
+├── src/
+│   ├── pages/         104+ Seiten (1 Datei = 1 Route), public, eager imports
+│   ├── features/      Auth-gated Module (billing, governance, …), lazy-loaded
+│   ├── components/    Shared UI
+│   ├── config/        Zentrale Konfiguration (seo, industries) — Preise siehe shared/
+│   ├── core/          Provider (TenantProvider, DemoModeProvider, …)
+│   ├── lib/           Utilities (auth, tracking)
+│   ├── hooks/         React Hooks
+│   ├── enterprise-os/ Workspace-Layouts, Governance-Branding
+│   ├── flow/          Seitenbasierter Flow (/flow/*)
+│   ├── governance/    Governance-UI
+│   ├── runtime/       Agent-Integration, Telemetry-Typen
+│   ├── security/      Security-Utilities
+│   └── sdk/           Client-SDK-Anbindung
+├── shared/
+│   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
+├── supabase/
+│   ├── functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    243 Migrations
+├── apps/
+│   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
+├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
+├── packages/sdk       Öffentliches SDK (CJS + ESM)
+├── connectors/        Externe Integrationen
+├── deploy/ docker/ infra/ VPS-Stack (Traefik, Ollama, n8n)
+├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** (siehe unten)
+├── scripts/           Build-, Release-, QA-Skripte
+└── test/ tests/ e2e/  Vitest + Playwright
 ```
+
+### 🏗️ Platform-Monorepo (`platform/`) — Website Builder + Governance
+
+In-sich-geschlossener Microservice-Stack für **automatisierte Website-Generierung mit Compliance-Gating**:
+
+**Struktur:**
+```
+platform/
+├── builder_orchestrator/    Python/FastAPI — AI-App-Builder
+│                             • Multi-Agent-Task-Graph
+│                             • BuildSpec → Code-Generierung
+│                             • OpenAPI: /docs
+├── governance_backend/       Python/FastAPI — Risk & Compliance Engine
+│                             • EU-AI-Act-Konformität
+│                             • CI/CD-Gate-Engine
+│                             • Audit-Log + Telemetrie
+├── nextjs_frontend/          Next.js — Builder-Cockpit + Governance-UI
+├── migrations/               SQL-Migrations (Postgres)
+├── docker-compose.yml        Lokale Orchestrierung (alle 4 Services)
+└── README.md                 Workflow, API-Nutzung, Start-Guide
+```
+
+**Start (lokal):**
+```bash
+cd platform
+cp .env.example .env
+docker compose up --build
+```
+
+**Zugang:**
+- Builder-API: http://builder.localhost/docs (Port 8001)
+- Governance-API: http://rsd.localhost/docs (Port 8002)
+- Frontend: http://app.localhost (Port 3000)
+- Traefik-Dashboard: http://localhost:8080
+
+**Zweck:** Die Seite wird **weder** von der Root-package.json noch vom Root-npm noch in den
+Root-CI/CD-Workflows verwaltet. Sie ist physisch ein eigenständiges Projekt, das
+`docker compose` koordiniert. Änderungen dort brauchen weder `npm run lint` noch
+`npm run build` in der Root — nur Docker.
+
+**Modifikationen im `platform/`:**
+- Keine Node-Dependencies (alles Python/Deno)
+- RLS + Migrations wie im Hauptrepo (selbe DB-Conn in `docker-compose.yml`)
+- OpenAPI-First: Endpoints mit `@app.post`, `@app.get` + Schemas in Pydantic
+- Prüfpfad: `audit_log` + `workflow_runs` (selbe Tabellen wie Root-Governance)
 
 ### Preise, Pläne und Berechtigungen
 
@@ -271,8 +327,13 @@ Runtime-Limits, Module, Berechtigungen, Feature-Listen und Add-ons.
 - `npm run check:pricing` prüft Deno-Zwilling und DB-Katalog gegen die Quelle
 - Zugriff **nie** über Plan-Namen (`if (plan === 'agency')`), sondern über
   `hasPermission()`, `hasModule()`, `limitOf()`
-- Es gibt genau sechs Pläne: Free Audit · Starter · Growth · Agency ·
+- Es gibt genau sechs **Abo-Pläne**: Free Audit · Starter · Growth · Agency ·
   Enterprise · Partner. Der Name „Scale" ist untersagt.
+- Daneben gibt es **Einmalprodukte** (`purchaseMode: 'one_time'`), derzeit
+  Governance Launch (349 € einmalig). Sie sind kein Rang der Abo-Leiter:
+  nicht in `PLAN_ORDER`, Preis in `price.oneTimeEur`, Persistenz als Grant in
+  `entitlement_grants` (nicht `subscriptions` — dort gilt „genau ein Abo pro
+  Tenant"), Anzeige über `ONE_TIME_PRICING_TIERS`.
 
 Vollständige Regeln: `docs/product/pricing-governance.md`
 

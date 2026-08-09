@@ -195,18 +195,32 @@ if (failed) {
   process.exit(1);
 }
 
-if (!parserLooksSane) {
-  console.error(
-    '\n⚠️  Keine einzige angewendete Remote-Version erkannt — vermutlich hat sich das\n' +
-    'Ausgabeformat von `supabase migration list` geaendert. Richtung-2-Pruefung\n' +
-    'uebersprungen, um Fehlalarme zu vermeiden. Bitte den Parser pruefen.',
-  );
-}
-
 if (unappliedRecent > 0) {
   console.log(
     `ℹ️  ${unappliedRecent} Repo-Migration(en) noch nicht angewendet, aber juenger als ` +
     `${MAX_UNAPPLIED_AGE_DAYS} Tage — im Rahmen (frisch gemergt/in Review).`,
   );
 }
+
+// Wenn der Parser keine einzige angewendete Version gefunden hat, ist NICHTS
+// geprueft worden — weder Richtung 1 noch Richtung 2. Dann darf hier keine
+// Entwarnung stehen: genau diese Kombination (Parser trifft nichts, Skript
+// meldet Erfolg) hat den Drift ueber Wochen unsichtbar gehalten. Die
+// Fehlalarm-Sorge aus dem parserLooksSane-Kommentar bleibt gewahrt — es wird
+// weiterhin kein einziger Phantom-Treffer gemeldet, nur eben auch kein gruener
+// Haken. Advisory-Laeufe (pull_request) bleiben wie gehabt nicht-blockierend.
+if (!parserLooksSane) {
+  console.error(
+    '\n❌ Keine einzige angewendete Remote-Version erkannt — vermutlich hat sich das\n' +
+    'Ausgabeformat von `supabase migration list` geaendert. Es wurde damit WEDER\n' +
+    'Richtung 1 NOCH Richtung 2 geprueft; dieser Lauf sagt nichts ueber Drift aus.\n' +
+    'Parser in scripts/check-migration-drift.mjs pruefen.',
+  );
+  if (ADVISORY) {
+    console.error('::warning::Drift-Check ergebnislos (Parser) — advisory, blockiert diesen PR nicht.');
+    process.exit(0);
+  }
+  process.exit(1);
+}
+
 console.log('✅ Kein Migrations-Drift in beide Richtungen.');

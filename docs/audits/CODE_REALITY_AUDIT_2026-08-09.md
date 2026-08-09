@@ -11,12 +11,90 @@ liefert hier falsche Ergebnisse (z. B. meldet sie `organizations` als „Tabelle
 obwohl sie längst zu `tenants` umbenannt wurde, und meldet `document_vault` als offen,
 obwohl die offene Policy nachträglich ersetzt wurde).
 
-**Nicht geprüft (Grenze dieses Audits):** der Live-Zustand von Datenbank und Edge Functions.
-Dieses Audit bewertet ausschließlich den Repo-Stand. `CLAUDE.md` dokumentiert eine erhebliche
-Lücke zwischen Repo und Produktion (69 nie deployte Functions, 118 nie angewendete
-Migrationen). Welche der unten aufgeführten Befunde bereits produktiv wirksam sind, lässt sich
-nur gegen die Live-DB bzw. `supabase functions list` entscheiden — das erfordert Credentials
-und war nicht Teil des Auftrags.
+---
+
+## 0. Nachtrag vom 2026-08-09 — Prod-Abgleich und Korrekturen
+
+Der ursprüngliche Bericht (Abschnitte 1–16) entstand rein aus dem Repo-Stand und schloss
+mit der Empfehlung, als **Stufe 0** den Live-Zustand zu prüfen. Das ist inzwischen geschehen:
+der Supabase-Connector war in der Folgesitzung verfügbar. Die Ergebnisse ändern die
+Priorisierung erheblich und korrigieren drei Zahlen. Der Rest des Berichts bleibt unverändert
+stehen, damit nachvollziehbar bleibt, was aus welcher Quelle stammt.
+
+### 0.1 Produktion war zum Prüfzeitpunkt sauber
+
+| Messung (Live-DB `ebljyceifhnlzhjfyxup`, 2026-08-09) | Wert |
+|---|---|
+| Angewendete Migrationen | **137** von 270 im Repo |
+| Neueste angewendete Migration | `20260802192603` |
+| Tabellen in `public` | 177 |
+| davon mit RLS | **177 — also keine einzige ohne** |
+| Policies | 291 |
+| Existenz der 7 C-01-Funktionen | **keine einzige vorhanden** |
+| `subscriptions_tenant_id_key` | **nicht vorhanden** |
+| Free-Tier-Trigger | **nicht vorhanden** |
+| `subscriptions` / `tenants` | 0 / 4 Zeilen |
+
+**C-01, C-02 und C-03 waren damit nicht produktiv wirksam.** Kein Datenschutzvorfall, keine
+Art.-33-Meldepflicht, kein aktuell blockierter Umsatz (es gibt schlicht noch keine
+Subscriptions).
+
+### 0.2 Das macht die Befunde nicht kleiner, sondern verschiebt sie
+
+Alle drei liegen im **nicht angewendeten Migrations-Rückstand**. Die offene P0.2-Reconciliation
+(`docs/runbooks/p0-2-migration-reconciliation.md`) ist damit kein reines Aufräumen: Sie würde
+in einem Zug 33 Tabellen ohne RLS anlegen, 7 anon-freigegebene IDOR-RPCs einführen, 10 Policies
+für `PUBLIC` öffnen und den C-02-Deadlock scharf schalten. Der Rückstand ist geladen, nicht harmlos.
+
+Die Reihenfolge in §16 gilt deshalb weiter — aber als **Vorbedingung für die Reconciliation**,
+nicht als Reparatur an laufender Produktion.
+
+### 0.3 C-04 war live und ausnutzbar
+
+Ein einzelner Probe-Request ohne jeden Header an die Produktions-Function:
+
+```
+POST https://<ref>.supabase.co/functions/v1/ai-gateway   {"op":"health"}
+→ HTTP 200
+  {"ok":true,
+   "primary": {"ok":false, "error":"… lmstudio.internal … dns error …"},
+   "fallback":[{"id":"anthropic","health":{"ok":true,"models":["claude-haiku-4-5-…"]}}]}
+```
+
+Zum Vergleich lieferte `ai-invoke` ohne Header korrekt `HTTP 401`.
+
+Zwei Dinge zugleich: Die Function nahm unauthentifizierte Requests an (C-04 bestätigt), **und**
+der EU-lokale Primärpfad war per DNS gar nicht erreichbar (`lmstudio.internal`), während der
+Anthropic-Fallback als gesund gemeldet wurde. C-05 war damit nicht theoretisch — zum
+Prüfzeitpunkt ging **jeder** Gateway-Request in die US-Cloud.
+
+### 0.4 Drei Korrekturen an Zahlen des Berichts
+
+| Stelle | Bericht | Tatsächlich | Ursache |
+|---|---|---|---|
+| M-03: `SECURITY DEFINER` ohne `search_path` | 5 | **18** | Der Parser erkannte `SECURITY DEFINER` nur vor dem `$$`-Body. Funktionen der Form `… AS $$ … $$ LANGUAGE plpgsql SECURITY DEFINER;` fielen durch. |
+| C-01: für `anon` ausführbare `SECURITY DEFINER`-RPCs | 7 | **73** | Der Bericht zählte nur explizite `GRANT … TO anon`. Postgres vergibt `EXECUTE` auf jede neue Funktion per Default an `PUBLIC` — ein vergessenes `REVOKE` genügt. Betroffen u. a. `tenant_entitlements(uuid)`, `has_feature(uuid,text)`, `recommend_governance_plan(uuid)`. |
+| §5.2: Policies, die `PUBLIC` treffen | 10 als Fehler gelistet | 10 bestätigt, **plus** eine Gruppe fälschlich unauffälliger | Policies wie `"vps_ssh_keys ist nur für Service-Role lesbar" … USING (false)` heißen nach Service-Role, gelten für `PUBLIC` und sind **korrekt** (fail-closed; `service_role` kommt über `BYPASSRLS` daran vorbei). Sie sind kein Befund. |
+
+Alle drei Korrekturen stammen daher, dass die Befunde in einer echten Datenbank gegengeprüft
+wurden statt nur in den Migrationsdateien. Das ist die Lehre aus M-01 in eigener Sache.
+
+### 0.5 Was daraufhin umgesetzt wurde
+
+Siehe `supabase/migrations/20260820000000_p0_security_hardening.sql`,
+`test/runtime/db/p0-hardening.db.test.ts`, `supabase/config.toml`,
+`supabase/functions/stripe-webhook/index.ts` und `.github/workflows/ci.yml`.
+Nachweis nach Anwendung gegen ein vollständig repliziertes Schema: **0 Tabellen ohne RLS**,
+**0 anon-ausführbare tenant-parametrisierte RPCs**, **0 SECURITY-DEFINER-Funktionen ohne
+`search_path`**, 8/8 Härtungstests grün.
+
+---
+
+**Nicht geprüft (Grenze des ursprünglichen Audits):** der Live-Zustand von Datenbank und Edge
+Functions. Die Abschnitte 1–16 bewerten ausschließlich den Repo-Stand; der Prod-Abgleich steht
+in §0. `CLAUDE.md` dokumentiert eine erhebliche Lücke zwischen Repo und Produktion (69 nie
+deployte Functions, 118 nie angewendete Migrationen) — nach eigener Messung sind es 133 nie
+angewendete Migrationen.
 
 ---
 

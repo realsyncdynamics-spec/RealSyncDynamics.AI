@@ -215,9 +215,30 @@ async function syncSubscription(admin: SupabaseAdminClient, sub: Stripe.Subscrip
     started_at: sub.start_date ? new Date(sub.start_date * 1000).toISOString() : null,
   };
 
+  // Konflikt-Ziel ist tenant_id, NICHT stripe_subscription_id.
+  //
+  // Warum: `subscriptions` traegt seit 20260711000001 UNIQUE (tenant_id) —
+  // die fachliche Regel "genau ein Abo pro Tenant". Gleichzeitig legt der
+  // Trigger aus 20260802000000 fuer jeden neuen Tenant eine Free-Tier-Zeile
+  // an, deren stripe_subscription_id NULL ist.
+  //
+  // Mit onConflict: 'stripe_subscription_id' lief das zwangslaeufig auf einen
+  // Deadlock hinaus: Postgres behandelt NULLs in Unique-Indizes als
+  // verschieden, der Konflikt griff also nicht, der Upsert wurde zum INSERT,
+  // und dieses INSERT verletzte subscriptions_tenant_id_key (23505). Der
+  // Webhook warf, Stripe retryte, das Ergebnis blieb identisch — die erste
+  // bezahlte Subscription eines Tenants konnte nie provisioniert werden.
+  //
+  // tenant_id als Konflikt-Ziel trifft die Free-Tier-Zeile und ersetzt sie
+  // durch das bezahlte Abo. Das ist genau das gewuenschte Verhalten: ein
+  // Tenant haelt eine Subscription-Zeile, deren Inhalt dem aktuellen Stripe-
+  // Zustand entspricht. Einmalkaeufe laufen ueber entitlement_grants und sind
+  // von diesem Pfad nicht betroffen (siehe Kommentar weiter unten).
+  //
+  // Siehe docs/audits/CODE_REALITY_AUDIT_2026-08-09.md, Befund C-02.
   const { error } = await admin
     .from('subscriptions')
-    .upsert(row, { onConflict: 'stripe_subscription_id' });
+    .upsert(row, { onConflict: 'tenant_id' });
   if (error) throw error;
 }
 

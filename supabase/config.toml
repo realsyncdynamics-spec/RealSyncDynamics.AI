@@ -124,12 +124,30 @@ verify_jwt = false
 [functions.browser-action-log]
 verify_jwt = false
 
-# AI Gateway — provider-neutral inference endpoint. Public per spec
-# (frontend talks to it directly without bearer tokens). The actual auth
-# + rate-limit + tenant-scope checks live inside the function once it
-# starts handling tenant-scoped traffic in a follow-up PR.
+# AI Gateway — provider-neutral inference endpoint.
+#
+# Stand vor dem 2026-08-09: verify_jwt = false, mit dem Vermerk, die Auth
+# komme "in a follow-up PR". Der PR kam nie. Ein Probe-Request ohne jeden
+# Header lieferte in Produktion HTTP 200 und meldete den Anthropic-Fallback
+# als `ok: true` — jeder im Internet konnte Inferenz auf Kosten des
+# Betreibers ausloesen. Das In-Memory-Rate-Limit im Function-Code schuetzt
+# davor nicht: es lebt pro Isolate, verfaellt bei jedem Cold Start und ist
+# per IP-Rotation umgehbar.
+#
+# Beide Clients (src/core/ai-gateway/edgeClient.ts und der Deno-Zwilling)
+# senden bereits `apikey` + `Authorization: Bearer <key>`. verify_jwt = true
+# ist damit fuer die bestehenden Aufrufer transparent und schliesst den
+# anonymen Zugriff von aussen.
+#
+# WICHTIG — das ist der erste Schritt, nicht die Loesung. Der Anon-Key steht
+# per Definition im Browser-Bundle. verify_jwt = true stoppt die anonyme
+# Nutzung durch Dritte ohne Key, nicht den Missbrauch durch jemanden, der
+# den Key aus dem Bundle liest. Offen bleiben: Tenant-Aufloesung,
+# persistentes Rate-Limit (Tabelle `_rate_limits` existiert bereits),
+# ai_tool_runs-Logging und Anbindung an _shared/cost-cap.ts.
+# Siehe docs/audits/CODE_REALITY_AUDIT_2026-08-09.md, Befund C-04.
 [functions.ai-gateway]
-verify_jwt = false
+verify_jwt = true
 
 [functions.audit-report-pdf]
 verify_jwt = false

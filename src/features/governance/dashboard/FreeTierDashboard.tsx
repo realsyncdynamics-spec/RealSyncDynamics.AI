@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { ORDERED_PLANS, type PlanId } from '@/shared/pricing';
+import { PLANS, type PlanId } from '@/shared/pricing';
 import { useNavigate } from 'react-router-dom';
 import { useEntitlements } from '../../../core/billing/useEntitlements';
 import { useTenant } from '../../../core/access/TenantProvider';
@@ -23,7 +23,9 @@ interface DashboardCard {
 }
 
 // Anzeigenamen kommen aus der Pricing-SSoT — keine zweite Namensliste.
-const TIER_LABELS: Record<PlanId, string> = ORDERED_PLANS.reduce(
+// Über PLANS, nicht ORDERED_PLANS: Letzteres enthält nur die Abo-Leiter,
+// womit Einmalprodukte kein Label bekämen und als `undefined` rendern.
+const TIER_LABELS: Record<PlanId, string> = PLANS.reduce(
   (acc, plan) => { acc[plan.id] = plan.name; return acc; },
   {} as Record<PlanId, string>,
 );

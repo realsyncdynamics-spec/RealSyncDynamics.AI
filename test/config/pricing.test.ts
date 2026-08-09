@@ -14,6 +14,8 @@ describe('pricing config (Single Source of Truth)', () => {
     const ids = PRICING_TIERS.map((tier) => tier.id);
     expect(ids).toEqual([
       'free', 'starter', 'growth', 'agency', 'enterprise', 'partner',
+      // Einmalprodukte stehen nach der Abo-Leiter und vor den Jahresvarianten.
+      'governance_launch',
       'starter_yearly', 'growth_yearly', 'agency_yearly', 'enterprise_yearly', 'partner_yearly',
     ]);
   });

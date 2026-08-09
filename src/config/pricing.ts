@@ -16,6 +16,7 @@
 import {
   PLANS,
   ORDERED_PLANS,
+  ONE_TIME_PLANS,
   PLAN_ORDER,
   planById,
   planByKey,
@@ -132,12 +133,20 @@ function flattenFeatures(matrix: PlanFeatureMatrix): string[] {
 
 function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
   const isYearly = interval === 'year';
-  const priceEur = isYearly ? (plan.price.yearlyEur ?? 0) : plan.price.monthlyEur;
+  const isOneTime = plan.purchaseMode === 'one_time';
+  // Einmalprodukte führen ihren Betrag in `price.oneTimeEur`; `monthlyEur`
+  // ist dort 0, weil nichts wiederkehrend abgerechnet wird. Der Betrag wird
+  // hier aus der SSoT gelesen und NICHT als Literal gepflegt.
+  const priceEur = isOneTime
+    ? (plan.price.oneTimeEur ?? 0)
+    : isYearly ? (plan.price.yearlyEur ?? 0) : plan.price.monthlyEur;
   const id = (isYearly ? `${plan.id}_yearly` : plan.id) as TierId;
 
-  const priceSuffix = plan.price.monthlyEur === 0
-    ? 'einmalig · kein Account'
-    : isYearly ? '/ Jahr' : '/ Monat';
+  const priceSuffix = isOneTime
+    ? 'einmalig'
+    : plan.price.monthlyEur === 0
+      ? 'einmalig · kein Account'
+      : isYearly ? '/ Jahr' : '/ Monat';
 
   return {
     id,
@@ -147,6 +156,9 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
     priceEur,
     priceString: new Intl.NumberFormat('de-DE').format(priceEur),
     priceSuffix,
+    // Free (0 €) und Einmalprodukte (Betrag in `oneTimeEur`) sind beide
+    // nicht wiederkehrend. Abo-Oberflächen unterscheiden hierüber, ob ein
+    // Tier ein laufendes Abo darstellt.
     recurring: plan.price.monthlyEur > 0,
     tagline: plan.outcomeHeadline,
     subline: plan.technicalSubheadline,
@@ -169,17 +181,40 @@ function toTier(plan: Plan, interval: 'month' | 'year'): PricingTier {
 }
 
 /**
- * Alle Tiers: erst die sechs Monatspläne in kanonischer Reihenfolge,
- * danach die Jahresvarianten in derselben Reihenfolge.
+ * Alle Tiers: erst die sechs Monatspläne in kanonischer Reihenfolge, dann
+ * die Einmalprodukte, danach die Jahresvarianten in derselben Reihenfolge.
+ *
+ * Einmalprodukte haben keine Jahresvariante — `interval` ist für sie
+ * bedeutungslos und wird auf `'month'` gesetzt, weil `toTier()` den Betrag
+ * ohnehin aus `price.oneTimeEur` liest.
  */
 export const PRICING_TIERS: PricingTier[] = [
   ...ORDERED_PLANS.map((plan) => toTier(plan, 'month')),
+  ...ONE_TIME_PLANS.map((plan) => toTier(plan, 'month')),
   ...ORDERED_PLANS.filter((plan) => plan.yearlyPlanKey !== null).map((plan) => toTier(plan, 'year')),
 ];
 
-/** Die fünf buchbaren Monatspläne (Starter … Partner) für Pricing-Grids. */
+/**
+ * Die fünf buchbaren Monats-ABOS (Starter … Partner) für Pricing-Grids.
+ *
+ * Bewusst OHNE Einmalprodukte. Diese Liste ist an vielen Stellen implizit
+ * die Abo-Leiter: `PlanUpgradeModal` leitet Upgrade/Downgrade aus dem
+ * `findIndex()` in dieser Reihenfolge ab, und mehrere Grids sind auf genau
+ * fünf Karten ausgelegt. Ein Einmalprodukt hier hätte beides still
+ * verfälscht — es wäre als „höher als Partner" gewertet worden.
+ * Einmalprodukte stehen in `ONE_TIME_PRICING_TIERS`.
+ */
 export const PUBLIC_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
-  (tier) => !tier.isYearly && tier.priceEur > 0,
+  (tier) => !tier.isYearly && tier.priceEur > 0 && tier.recurring,
+);
+
+/**
+ * Die Einmalprodukte (z.B. Governance Launch) — Käufe ohne Verlängerung.
+ * Getrennt von der Abo-Leiter, damit Oberflächen bewusst entscheiden, ob
+ * sie sie anzeigen, statt sie versehentlich als Abo-Rang zu behandeln.
+ */
+export const ONE_TIME_PRICING_TIERS: PricingTier[] = PRICING_TIERS.filter(
+  (tier) => tier.plan.purchaseMode === 'one_time',
 );
 
 /** Alle Monats-Tiers inklusive Free — für Vergleichstabellen. */
@@ -226,6 +261,9 @@ const PLAN_ACCENT: Record<PlanId, { border: string; text: string; ring: string }
   agency:     { border: 'border-t-violet-400',   text: 'text-violet-400',   ring: 'ring-violet-400/30' },
   enterprise: { border: 'border-t-emerald-400',  text: 'text-emerald-400',  ring: 'ring-emerald-400/30' },
   partner:    { border: 'border-t-gold-400',     text: 'text-gold-400',     ring: 'ring-gold-400/30' },
+  // Einmalprodukt: `petrol` ist der bestehende Landing-Akzent aus
+  // tailwind.config.ts — kein neues Design-Token, keine neue Variante.
+  governance_launch: { border: 'border-t-petrol', text: 'text-petrol', ring: 'ring-petrol/30' },
 };
 
 /** Akzentfarbe je Tier — Jahresvarianten erben die Farbe ihres Basisplans. */

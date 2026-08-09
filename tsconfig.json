@@ -38,6 +38,7 @@
     "services/realsync-evidence-runtime",
     "worker",
     "apps/agent-runtime",
+    "apps/mcp-server",
     "extension",
     "platform",
     "packages/sdk/examples",

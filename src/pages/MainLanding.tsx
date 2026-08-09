@@ -19,7 +19,6 @@ import {
   Landmark,
   Megaphone,
   Cloud,
-  Globe2,
   LineChart,
   Scan,
   MessageCircle,
@@ -57,13 +56,27 @@ const NAV_LINKS = [
   { label: 'Preise', to: '#pricing' },
 ];
 
-// Hero-Feature-Spalten — Workflow-orientiert (Discover / Classify / Prove).
-const HERO_FEATURES = [
-  { icon: ShieldCheck, title: 'DISCOVER', text: 'Assets, Vendoren und KI-Systeme automatisch erkennen.' },
-  { icon: Globe2, title: 'CLASSIFY', text: 'Risikoklassen nach EU AI Act & DSGVO zuordnen.' },
-  { icon: LineChart, title: 'PROVE', text: 'Evidence Vault: auditfähige Nachweise in Echtzeit.' },
+/**
+ * Hero-Prozessleiste — die vier Schritte der Runtime.
+ *
+ * Bis 2026-08 standen hier nur drei Spalten (Discover/Classify/Prove), während
+ * die Mono-Zeile darüber vier Schritte nannte. Beide Darstellungen sind zu
+ * einer zusammengeführt, damit der Workflow überall identisch gelesen wird.
+ */
+const HERO_PROCESS = [
+  { icon: Scan, title: 'DISCOVER', text: 'Assets, Vendoren und KI-Systeme erkennen.' },
+  { icon: Scale, title: 'CLASSIFY', text: 'Risikoklassen nach EU AI Act & DSGVO zuordnen.' },
+  { icon: ServerCog, title: 'ENFORCE', text: 'Policies zur Laufzeit durchsetzen.' },
+  { icon: FileLock2, title: 'PROVE', text: 'Auditfähige Nachweise im Evidence Vault.' },
 ];
 
+/**
+ * Regelwerke, an denen sich die Runtime ausrichtet.
+ *
+ * Bewusst „Ausgerichtet an" statt „Konform mit": Konformität ist eine
+ * Feststellung über den Kunden, die eine Software nicht für ihn treffen kann.
+ * Die Plattform unterstützt die Nachweisführung — sie erteilt keine Testate.
+ */
 const TRUST = ['DSGVO Art. 32', 'EU AI Act', 'TDDDG', 'BAIT', 'MaRisk', 'EU-Hosting'];
 
 const PLATFORM = [
@@ -149,16 +162,20 @@ export function MainLanding() {
     <div className="landing-context min-h-screen text-white antialiased" style={{ backgroundColor: BG, fontFamily: FONT_STACK }}>
       <SEOHead />
       <Header />
-      <Hero />
-      <TrustStrip />
-      <Platform />
-      <Runtime />
-      <Industries />
-      <ProofBand />
-      <Pricing />
-      <Security />
-      <ProductEntryPoints />
-      <FinalCta />
+      {/* <main> trennt den Seiteninhalt von Header/Footer — Screenreader und
+          Skip-Navigation brauchen den Landmark, das Markup bleibt sonst gleich. */}
+      <main>
+        <Hero />
+        <TrustStrip />
+        <Platform />
+        <Runtime />
+        <Industries />
+        <ProofBand />
+        <Pricing />
+        <Security />
+        <ProductEntryPoints />
+        <FinalCta />
+      </main>
       <Footer />
     </div>
   );
@@ -181,8 +198,13 @@ function Header() {
           ))}
           <SmartLink to="/welcome" className="text-sm text-white/70 hover:text-white transition-colors">Login</SmartLink>
         </nav>
-        <SmartLink to="/flow/start-scan?source=nav-startfree" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
-          Free Audit starten<ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        {/* Auf sehr schmalen Displays (<400px) kollidiert die Langform mit dem
+            Logo — dort trägt der CTA nur „Audit". Das aria-label bleibt in
+            jeder Breite vollständig, damit Screenreader das Ziel kennen. */}
+        <SmartLink to="/flow/start-scan?source=nav-startfree" ariaLabel="Free Audit starten" className="inline-flex items-center gap-2 px-4 sm:px-5 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg flex-shrink-0">
+          <span className="hidden min-[400px]:inline">Free Audit starten</span>
+          <span className="min-[400px]:hidden">Audit</span>
+          <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden="true" />
         </SmartLink>
       </div>
     </header>
@@ -195,19 +217,35 @@ function Hero() {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      <div className="absolute inset-0 z-0">
-        <img src="/europe-globe.jpg" alt="Europa-zentrierter Globus bei Nacht — Satellitenperspektive" className="w-full h-full object-cover object-right" />
+      {/*
+        Hintergrund = Atmosphäre, Inhalt = Hierarchie.
+        Der horizontale Verlauf trägt den Desktop-Split (Text links, Globus
+        rechts). Auf Mobile gibt es diesen Split nicht — dort lag der Text
+        direkt auf den hellen Lichtern Europas. Deshalb eine zusätzliche
+        vertikale Abdunklung, die ab `lg` wieder verschwindet: der Globus
+        bleibt sichtbar, konkurriert aber nicht mehr mit H1 und CTA.
+      */}
+      <div className="absolute inset-0 z-0" aria-hidden="true">
+        <img
+          src="/europe-globe.jpg"
+          alt=""
+          role="presentation"
+          fetchPriority="high"
+          decoding="async"
+          className="w-full h-full object-cover object-right"
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-[rgb(3,7,18)] via-[rgb(3,7,18)]/85 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-[rgb(3,7,18)]/40" />
+        <div className="absolute inset-0 lg:hidden bg-gradient-to-b from-[rgb(3,7,18)]/90 via-[rgb(3,7,18)]/70 to-[rgb(3,7,18)]/95" />
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pt-28 pb-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <SmartLink to="/claude-code-optimizer?source=home-hero-pill" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1 sm:py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
+            <SmartLink to="/claude-code-optimizer?source=home-hero-pill" className="group inline-flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 mb-6 sm:mb-8 border border-cyan-500/40 bg-cyan-500/5 hover:bg-cyan-500/10 hover:border-cyan-500/60 transition-colors rounded-full">
               <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold tracking-wider text-[rgb(3,7,18)] bg-cyan-400 rounded">NEU</span>
-              <span className="font-mono text-[10px] sm:text-xs tracking-widest text-cyan-300 flex items-center gap-1">
-                CLAUDE CODE OPTIMIZER<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
+              <span className="font-mono text-[10px] sm:text-xs tracking-wider text-cyan-300 flex items-center gap-1">
+                CLAUDE CODE GOVERNANCE<ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
               </span>
             </SmartLink>
 
@@ -215,58 +253,81 @@ function Hero() {
               AI Compliance<br />Operations OS<br />for <span className="text-cyan-400">Europe</span>
             </h1>
 
-            <p className="font-mono text-[11px] sm:text-sm tracking-[0.15em] text-cyan-400/90 mb-4 sm:mb-6">
-              DISCOVER → CLASSIFY → ENFORCE → PROVE
-            </p>
-
             <p className="text-sm sm:text-base md:text-lg text-white/70 max-w-xl leading-relaxed mb-7 sm:mb-8">
               Discover, classify, enforce and prove AI, website and vendor compliance continuously —
-              DSGVO-konform, EU-AI-Act-ready, evidence-backed.
+              DSGVO-Compliance kontinuierlich überwachen, EU-AI-Act-Readiness nachweisen, evidence-backed.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4 mb-8 sm:mb-10 max-w-xl">
-              {HERO_FEATURES.map(({ icon: Icon, title, text }) => (
-                <div key={title}>
+            {/* Prozessleiste: Desktop vierspaltig, Mobile 2×2 statt vier
+                gequetschter Spalten — lesbar ohne die Hero-Höhe zu sprengen. */}
+            <ol className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-4 mb-8 sm:mb-10 max-w-xl lg:max-w-2xl">
+              {HERO_PROCESS.map(({ icon: Icon, title, text }, i) => (
+                <li key={title}>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Icon className="w-4 h-4 text-cyan-400 shrink-0" strokeWidth={1.75} />
+                    <Icon className="w-4 h-4 text-cyan-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     <span className="font-mono text-[10px] sm:text-[11px] font-bold tracking-wider text-white/90">{title}</span>
+                    {i < HERO_PROCESS.length - 1 && (
+                      <span className="hidden lg:inline text-cyan-400/40 text-xs" aria-hidden="true">→</span>
+                    )}
                   </div>
                   <p className="text-xs text-white/55 leading-relaxed">{text}</p>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
 
+            {/* Primär-CTA dominant (voller Cyan-Flächenkontrast), Sekundär-CTA
+                bewusst zurückhaltend — nur Rahmen, kein Flächen-Akzent. */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
-                Free Audit starten<ArrowRight className="w-4 h-4" />
+              <SmartLink to="/flow/start-scan?source=home-hero" className="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 min-h-[48px] text-sm font-semibold text-[rgb(3,7,18)] bg-cyan-400 hover:bg-cyan-300 transition-colors rounded-lg">
+                Kostenlosen Compliance Audit starten<ArrowRight className="w-4 h-4" aria-hidden="true" />
               </SmartLink>
-              <SmartLink to="/demo-tour" className="inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors rounded-lg">
-                <PlayCircle className="w-4 h-4" />Dashboard-Demo ansehen
+              <SmartLink to="/demo-tour" className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 min-h-[44px] text-xs sm:text-sm font-medium text-white/70 border border-white/15 hover:text-white hover:border-white/35 hover:bg-white/5 transition-colors rounded-lg">
+                <PlayCircle className="w-4 h-4" aria-hidden="true" />Dashboard-Demo ansehen
               </SmartLink>
             </div>
           </div>
 
-          {/* Metrik-Karten über dem Globus — wie im Screenshot */}
-          <div className="relative hidden lg:block min-h-[560px]">
-            <MetricCard className="absolute top-0 right-24" metric={{ label: 'DSGVO', value: 'Konform', accent: true }} />
-            <RiskCard className="absolute top-24 right-0" />
-            <MetricCard className="absolute top-44 left-4" metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
-            <ClaudeCodeAuditCard className="absolute top-64 right-6" />
-            <MetricCard className="absolute top-64 right-64" metric={{ label: 'EU AI ACT', value: 'READY', accent: true }} />
-            <MonitoringCard className="absolute bottom-16 right-40" label={monitoringLabel} pulse={pulse} />
+          {/*
+            Proof-Ebene über dem Globus.
+
+            ⚠️ Claim-Disziplin: Alle Zahlen dieser Karten sind Beispielwerte aus
+            der Produktansicht, KEINE plattformweite Live-Telemetrie. Sie sind
+            deshalb ausdrücklich als Beispiel ausgezeichnet (`PreviewCaption`).
+            Einzige Ausnahme ist die MONITORING-Karte: die zieht ihren Status
+            live aus dem /health-Endpoint (useHealthStatus).
+            Wer echte Kennzahlen anbinden will, ersetzt die Literale durch eine
+            öffentliche, aggregierte Quelle — bis dahin bleibt das Label stehen.
+          */}
+          <div className="relative hidden lg:block min-h-[600px]">
+            <PreviewCaption className="absolute top-0 right-0" />
+            {/* Primäre Kennzahl: größte Karte, oberste visuelle Priorität. */}
+            <RiskCard primary className="absolute top-10 right-0 w-56" />
+            <MetricCard className="absolute top-2 right-64" metric={{ label: 'DSGVO', value: 'Überwacht', accent: true }} />
+            <MetricCard className="absolute top-52 left-4" metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
+            <MetricCard className="absolute top-56 right-56" metric={{ label: 'EU AI ACT', value: 'READINESS', accent: true }} />
+            <ClaudeCodeAuditCard className="absolute top-72 right-2" />
+            <MonitoringCard className="absolute bottom-20 right-44" label={monitoringLabel} pulse={pulse} />
             <ClaudeCodeIntegrationCard className="absolute bottom-0 left-0" />
           </div>
         </div>
 
-        {/* Mobile: Karten gestapelt */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-12 lg:hidden">
-          <MetricCard metric={{ label: 'DSGVO', value: 'Konform', accent: true }} />
-          <RiskCard />
-          <MetricCard metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
-          <MetricCard metric={{ label: 'EU AI ACT', value: 'READY', accent: true }} />
-          <ClaudeCodeAuditCard className="sm:col-span-2" />
-          <MonitoringCard label={monitoringLabel} pulse={pulse} />
-          <ClaudeCodeIntegrationCard className="sm:col-span-2" />
+        {/*
+          Mobile: gestaffelt statt gleichgewichtet. Der Risk Score steht als
+          primäre Kennzahl allein und über die volle Breite, die Sekundär-
+          Metriken folgen in kompakter 2er-Reihe. Vorher konkurrierten sieben
+          gleich große Karten miteinander und mit dem H1.
+        */}
+        <div className="mt-10 lg:hidden">
+          <PreviewCaption className="mb-3" />
+          <div className="grid grid-cols-2 gap-3">
+            <RiskCard primary className="col-span-2" />
+            <MetricCard metric={{ label: 'DSGVO', value: 'Überwacht', accent: true }} />
+            <MetricCard metric={{ label: 'EU AI ACT', value: 'READINESS', accent: true }} />
+            <MetricCard metric={{ label: 'EVIDENZ', value: '1.248', suffix: 'Nachweise' }} />
+            <MonitoringCard label={monitoringLabel} pulse={pulse} />
+            <ClaudeCodeAuditCard className="col-span-2" />
+            <ClaudeCodeIntegrationCard className="col-span-2 max-w-none" />
+          </div>
         </div>
       </div>
     </section>
@@ -278,7 +339,7 @@ function TrustStrip() {
   return (
     <section className="relative z-10 border-y border-white/10 bg-white/[0.02]">
       <div className="max-w-7xl mx-auto px-6 lg:px-10 py-5 sm:py-6 flex flex-wrap items-center justify-center gap-x-4 sm:gap-x-8 lg:gap-x-10 gap-y-2.5 sm:gap-y-3">
-        <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase">Konform mit</span>
+        <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-white/40 uppercase">Ausgerichtet an</span>
         {TRUST.map((t) => (
           <span key={t} className="font-mono text-[11px] sm:text-xs tracking-wider text-white/60">{t}</span>
         ))}
@@ -608,11 +669,11 @@ function Footer() {
 }
 
 /* ── HELPERS ────────────────────────────────────────────── */
-function SmartLink({ to, className, children }: { to: string; className?: string; children: React.ReactNode }) {
+function SmartLink({ to, className, ariaLabel, children }: { to: string; className?: string; ariaLabel?: string; children: React.ReactNode }) {
   if (to.startsWith('/')) {
-    return <Link to={to} className={className}>{children}</Link>;
+    return <Link to={to} className={className} aria-label={ariaLabel}>{children}</Link>;
   }
-  return <a href={to} className={className}>{children}</a>;
+  return <a href={to} className={className} aria-label={ariaLabel}>{children}</a>;
 }
 
 function Section({ id, eyebrow, title, subtitle, children }: { id?: string; eyebrow: string; title: string; subtitle: string; children: React.ReactNode }) {
@@ -640,33 +701,56 @@ function CardShell({ className = '', children }: { className?: string; children:
   );
 }
 
+/**
+ * Auszeichnung der Proof-Ebene als Produktansicht.
+ *
+ * Ohne diesen Hinweis lesen sich die Beispielwerte der Karten wie
+ * plattformweite Live-Kennzahlen — das wäre eine unbelegte Zahlenaussage.
+ */
+function PreviewCaption({ className = '' }: { className?: string }) {
+  return (
+    // Der Hinweis liegt auf dem hellsten Teil des Globus — Kontrast und ein
+    // leichter Backdrop halten ihn lesbar. Ein Disclaimer, den niemand liest,
+    // ist keiner.
+    <p className={`inline-block font-mono text-[9px] sm:text-[10px] tracking-widest text-white/60 uppercase px-2 py-1 rounded-md bg-[rgb(3,7,18)]/60 backdrop-blur-sm ${className}`}>
+      Produktansicht · Beispielwerte
+    </p>
+  );
+}
+
 function MetricCard({ metric, className = '' }: { metric: Metric; className?: string }) {
   return (
     <CardShell className={className}>
       <div className="flex items-center gap-2 mb-2">
-        {metric.accent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+        {metric.accent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" aria-hidden="true" />}
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">{metric.label}</span>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className={`font-mono font-bold ${metric.accent ? 'text-cyan-400 text-base sm:text-lg' : 'text-white text-xl sm:text-2xl'}`}>{metric.value}</span>
+      <div className="flex items-baseline gap-1.5 flex-wrap">
+        <span className={`font-mono font-bold ${metric.accent ? 'text-cyan-400 text-sm sm:text-base' : 'text-white text-lg sm:text-xl'}`}>{metric.value}</span>
         {metric.suffix && <span className="font-mono text-[11px] sm:text-xs text-white/40">{metric.suffix}</span>}
       </div>
     </CardShell>
   );
 }
 
-function RiskCard({ className = '' }: { className?: string }) {
+/**
+ * `primary` hebt den Risk Score als führende Kennzahl heraus — er ist die
+ * einzige Karte, die typografisch über die Sekundärmetriken hinausgeht (aber
+ * bewusst unter dem H1 bleibt).
+ */
+function RiskCard({ primary = false, className = '' }: { primary?: boolean; className?: string }) {
   return (
     <CardShell className={className}>
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" aria-hidden="true" />
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">RISK SCORE</span>
       </div>
-      <div className="flex items-baseline gap-1.5 mb-2">
-        <span className="font-mono font-bold text-white text-2xl sm:text-3xl">87</span>
+      <div className="flex items-baseline gap-1.5 mb-2.5">
+        <span className={`font-mono font-bold text-white ${primary ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}`}>87</span>
         <span className="font-mono text-[11px] sm:text-xs text-white/40">/100</span>
       </div>
-      <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+      {/* Fortschritt ist rein visuell — der Wert steht bereits als Text darüber. */}
+      <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden" aria-hidden="true">
         <div className="h-full w-[87%] rounded-full bg-cyan-400" />
       </div>
     </CardShell>
@@ -677,12 +761,16 @@ function MonitoringCard({ label, pulse, className = '' }: { label: string; pulse
   return (
     <CardShell className={className}>
       <div className="flex items-center gap-2 mb-2">
-        {pulse && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
+        {/* Der Punkt ist Dekoration: der Status steht zusätzlich als Text und
+            wird per aria-live nachgereicht, sobald /health antwortet. */}
+        {pulse && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" aria-hidden="true" />}
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">MONITORING</span>
       </div>
       <div className="flex items-center gap-2">
-        <LineChart className="w-4 h-4 text-cyan-400" strokeWidth={1.75} />
-        <span className="font-mono font-bold text-cyan-400 text-base sm:text-lg">{label}</span>
+        <LineChart className="w-4 h-4 text-cyan-400 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <span className="font-mono font-bold text-cyan-400 text-sm sm:text-base" aria-live="polite">
+          <span className="sr-only">Runtime-Status: </span>{label}
+        </span>
       </div>
     </CardShell>
   );
@@ -692,16 +780,16 @@ function ClaudeCodeAuditCard({ className = '' }: { className?: string }) {
   return (
     <CardShell className={className}>
       <div className="flex items-center gap-2 mb-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" aria-hidden="true" />
         <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE AUDIT</span>
       </div>
-      <div className="flex items-baseline gap-1.5 mb-2">
-        <span className="font-mono font-bold text-white text-2xl sm:text-3xl">94.2%</span>
+      <div className="flex items-baseline gap-1.5 mb-2 flex-wrap">
+        <span className="font-mono font-bold text-white text-xl sm:text-2xl">94,2 %</span>
         <span className="font-mono text-[11px] sm:text-xs text-cyan-400">Code-Ready</span>
       </div>
       <div className="space-y-0.5">
-        <div className="font-mono text-[10px] text-white/50">Analysierte Codezeilen: <span className="text-white/80">2.1 Mio</span></div>
-        <div className="font-mono text-[10px] text-white/50">Behobene Sicherheitslücken: <span className="text-white/80">11.350</span></div>
+        <div className="font-mono text-[10px] text-white/50">Analysierte Codezeilen: <span className="text-white/80">2,1 Mio</span></div>
+        <div className="font-mono text-[10px] text-white/50">Behobene Befunde: <span className="text-white/80">11.350</span></div>
       </div>
     </CardShell>
   );
@@ -711,11 +799,12 @@ function ClaudeCodeIntegrationCard({ className = '' }: { className?: string }) {
   return (
     <CardShell className={`max-w-xs ${className}`}>
       <div className="flex items-center gap-2 mb-2">
-        <Code2 className="w-3.5 h-3.5 text-cyan-400" strokeWidth={2} />
-        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE INTEGRATION</span>
+        <Code2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" strokeWidth={2} aria-hidden="true" />
+        <span className="font-mono text-[9px] sm:text-[10px] tracking-widest text-white/50">CLAUDE CODE GOVERNANCE</span>
       </div>
       <p className="text-[11px] sm:text-xs text-white/70 leading-relaxed">
-        Automatisierte Code-Analyse und Code-Fixes für datenschutz- und regelkonforme Softwareentwicklung.
+        Govern AI-generated code with evidence: automatisierte Code-Analyse, Security-Checks und
+        Compliance-Nachweise als Teil der Governance-Runtime.
       </p>
     </CardShell>
   );

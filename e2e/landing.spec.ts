@@ -91,43 +91,61 @@ test.describe('Marketing-Landing (/landing)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Governance-OS Workspace-Vorschau (/)
+// MainLanding (/)
+//
+// Der Block prüfte bis 2026-08 noch die PublicWorkspacePreview („Betriebssystem
+// für …"), die auf `/` längst durch MainLanding ersetzt war — die Assertions
+// liefen damit gegen Text, den es auf der Seite nicht mehr gibt. Getestet wird
+// jetzt der tatsächliche Kontrakt: Hero-Hierarchie, Prozesskette, CTAs und die
+// Claim-Disziplin der Proof-Karten.
 // ─────────────────────────────────────────────────────────────────────
-test.describe('Workspace-Vorschau (/)', () => {
+test.describe('MainLanding (/)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('Hero zeigt KI-Betriebssystem-Headline und CTAs', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /Betriebssystem für/i }),
-    ).toBeVisible();
-
-    await expect(page.getByText(/AI GOVERNANCE OS FOR TRUST & VALUE/i)).toBeVisible();
-
-    await expect(page.getByRole('link', { name: /KI-Betriebssystem entdecken/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Produkt-Tour ansehen/i })).toBeVisible();
+  test('Hero zeigt genau eine H1 mit der Positionierung', async ({ page }) => {
+    const h1 = page.locator('h1');
+    await expect(h1).toHaveCount(1);
+    await expect(h1).toContainText(/AI Compliance\s*Operations OS\s*for Europe/i);
   });
 
-  test('Branchen-Sektion verlinkt auf die Detailseite', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /Für jeden, der Daten verarbeitet oder KI einsetzt/i }),
-    ).toBeVisible();
-    // "FÜR WEN"-Karte navigiert in die jeweilige Branchen-Detailseite (/branchen/:slug).
-    await page.getByRole('link', { name: /Gesundheitswesen/i }).click();
-    await expect(page).toHaveURL(/\/branchen\/gesundheitswesen/);
-    await expect(
-      page.getByRole('heading', { name: /Compliance für Gesundheitsdaten und KI-Diagnostik/i }),
-    ).toBeVisible();
+  test('Prozesskette nennt alle vier Schritte', async ({ page }) => {
+    for (const step of ['DISCOVER', 'CLASSIFY', 'ENFORCE', 'PROVE']) {
+      await expect(page.getByText(step, { exact: true }).first()).toBeVisible();
+    }
   });
 
-  test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
+  test('Primär- und Sekundär-CTA sind erreichbar', async ({ page }) => {
+    // Auf die Hero-Section eingegrenzt: „Dashboard-Demo ansehen" kommt weiter
+    // unten (ProductEntryPoints) ein zweites Mal vor.
+    const hero = page.locator('main section').first();
     await expect(
-      page.getByRole('heading', { name: /Eine Runtime\. Vollständige KI-Governance\./i }),
+      hero.getByRole('link', { name: /Kostenlosen Compliance Audit starten/i }),
     ).toBeVisible();
-    // Eindeutige Plattform-Karten-Titel (nicht im Footer dupliziert).
-    for (const label of ['Governance-Runtime', 'Multi-Tenancy']) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    const secondary = hero.getByRole('link', { name: /Dashboard-Demo ansehen/i });
+    await expect(secondary).toBeVisible();
+    await expect(secondary).toHaveAttribute('href', '/demo-tour');
+  });
+
+  test('Proof-Karten sind als Beispielwerte ausgewiesen', async ({ page }) => {
+    // Schutz gegen Regression: Beispielzahlen dürfen nie unmarkiert als
+    // Live-Telemetrie erscheinen.
+    await expect(page.getByText(/Produktansicht · Beispielwerte/i).first()).toBeVisible();
+  });
+
+  test('Keine unbelegten Konformitäts-Claims im Hero', async ({ page }) => {
+    await expect(page.getByText(/^Konform$/)).toHaveCount(0);
+    await expect(page.getByText(/garantiert DSGVO|100\s*%\s*rechtssicher/i)).toHaveCount(0);
+  });
+
+  test('Kern-Sektionen sichtbar', async ({ page }) => {
+    for (const heading of [
+      /Evidence zuerst\. Runtime danach\./i,
+      /Ein Workflow\. Vier Schritte\./i,
+      /Vertrauen ist in die Architektur eingebaut/i,
+    ]) {
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
     }
   });
 

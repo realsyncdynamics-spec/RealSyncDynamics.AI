@@ -31,11 +31,17 @@ const ENDPOINT = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/health` : null;
 // Alle 60s neu pruefen — haeufiger waere fuer eine Marketing-Seite Overkill.
 const POLL_INTERVAL_MS = 60_000;
 
+/**
+ * 'unknown' hiess bis 2026-08 ebenfalls 'LIVE'. Damit zeigte die Landing-Page
+ * ein Live-Signal, obwohl der Health-Check gar nicht geantwortet hatte (kein
+ * Netz, CORS, fehlende Config) — eine Statusaussage ohne Beleg. Unbekannt wird
+ * jetzt als unbekannt ausgewiesen.
+ */
 const LABELS: Record<RuntimeHealth, string> = {
   live: 'LIVE',
   degraded: 'EINGESCHRÄNKT',
   offline: 'OFFLINE',
-  unknown: 'LIVE',
+  unknown: 'PRÜFUNG',
 };
 
 function toHealth(status: unknown): RuntimeHealth {
@@ -82,7 +88,8 @@ export function useHealthStatus(): HealthState {
   return {
     health,
     label: LABELS[health],
-    // Puls nur bei einem echten/angenommenen Live-Signal — nicht bei offline.
-    pulse: health === 'live' || health === 'unknown',
+    // Puls ausschliesslich bei einem bestaetigten Live-Signal — ein pulsierender
+    // Punkt ohne Antwort vom Endpoint waere ein vorgetaeuschter Zustand.
+    pulse: health === 'live',
   };
 }

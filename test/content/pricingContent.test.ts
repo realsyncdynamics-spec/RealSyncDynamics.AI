@@ -8,7 +8,9 @@ import {
   getPlansByFeature,
   ALL_PLAN_SLUGS,
   ALL_FEATURE_SLUGS,
+  planDetailSlugFor,
 } from '../../src/content/pricingContent';
+import { PRICING_TIERS } from '../../src/config/pricing';
 
 describe('pricingContent', () => {
   describe('Content Structure', () => {
@@ -350,6 +352,42 @@ describe('pricingContent', () => {
     it('scale should not have trial', () => {
       const scale = getPlanBySlug('scale');
       expect(scale?.trial).toBeUndefined();
+    });
+  });
+
+  /**
+   * Die Pricing-Karten verlinken ihren „Mehr erfahren"-Button auf
+   * /pricing/<tier.id>. Existiert dafür keine Detailseite, springt die Route
+   * stumm auf /pricing zurück — der Button sähe funktionsfähig aus, täte aber
+   * nichts. `planDetailSlugFor()` ist die einzige Stelle, die das entscheidet;
+   * Karte und Route nutzen sie gemeinsam.
+   */
+  describe('planDetailSlugFor — Detailseiten-Auflösung', () => {
+    it('bildet die Tier-Id des Free-Pakets auf den abweichenden Slug ab', () => {
+      // Tier heißt 'free', die Detailseite 'free-audit'.
+      expect(planDetailSlugFor('free')).toBe('free-audit');
+      expect(planDetailSlugFor('free_audit')).toBe('free-audit');
+    });
+
+    it('gibt für Tiers mit gleichnamiger Detailseite den Slug zurück', () => {
+      for (const slug of ['starter', 'growth', 'agency', 'enterprise', 'partner']) {
+        expect(planDetailSlugFor(slug), slug).toBe(slug);
+      }
+    });
+
+    it('liefert null für Tiers ohne Detailseite', () => {
+      // Einmalprodukte haben (noch) keine Detailseite — der Button entfällt.
+      expect(planDetailSlugFor('governance_launch')).toBeNull();
+      expect(planDetailSlugFor('gibt-es-nicht')).toBeNull();
+    });
+
+    it('löst jeden aufgelösten Slug auch tatsächlich auf einen Plan auf', () => {
+      // Schützt davor, dass ein Alias auf einen Slug zeigt, den es nicht gibt.
+      for (const tier of PRICING_TIERS) {
+        const slug = planDetailSlugFor(tier.id);
+        if (slug === null) continue;
+        expect(getPlanBySlug(slug), `${tier.id} -> ${slug}`).toBeDefined();
+      }
     });
   });
 });

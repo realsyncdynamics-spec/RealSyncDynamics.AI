@@ -6,7 +6,7 @@ import {
 import { Logo } from '../../components/Logo';
 import { SEOHead } from '../../components/SEOHead';
 import {
-  PUBLIC_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
+  PUBLIC_PRICING_TIERS, ONE_TIME_PRICING_TIERS, PRICING_TRUST_NOTE, PRICING_TAX_NOTE, TIER_ACCENT,
   PRODUCT_POSITIONING, ORDERED_PLANS, formatPriceEur, planById,
   type PricingTier, type PlanId,
 } from '../../config/pricing';
@@ -19,6 +19,7 @@ import {
   PlanFeatureGroups, PlanRuntimeLimits, PlanModuleAreas, PlanComparisonMatrix,
 } from '../../components/pricing/PlanFeatureGroups';
 import { GovernanceModuleMatrix } from '../../components/pricing/GovernanceModuleMatrix';
+import { planDetailSlugFor } from '../../content/pricingContent';
 
 /**
  * /pricing — öffentliche Preisseite der AI Governance Runtime.
@@ -145,6 +146,59 @@ export function PricingPage() {
           </div>
         </div>
       </section>
+
+      {/* Einmalprodukte — bewusst UNTER dem Abo-Grid und in einer eigenen
+          Sektion, nicht als sechste Karte darin. Das Fünf-Spalten-Grid bildet
+          die Abo-Leiter ab; ein Einmalkauf ist kein Rang darauf und würde dort
+          als „höher als Partner" missverstanden. Gerendert wird dieselbe
+          TierCard wie oben — keine neue Komponente, keine neue Variante. */}
+      {ONE_TIME_PRICING_TIERS.length > 0 && (
+        <section className="border-t border-silver-700/30 px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <div className="max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
+              <div>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-titanium-500 mb-2">
+                  Einmalig
+                </p>
+                <h2 className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-titanium-50 mb-3">
+                  Ohne Abo starten
+                </h2>
+                <p className="text-sm text-titanium-400 leading-relaxed mb-4">
+                  Eine einmalige Implementierung statt einer laufenden Bindung: Rahmenwerk
+                  konfiguriert, Evidence Vault eingerichtet, Audit Center betriebsbereit —
+                  für eine Domain.
+                </p>
+                <ul className="space-y-2 text-sm text-silver-300">
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-petrol mt-0.5 shrink-0" />
+                    <span>Einmalige Zahlung, keine Verlängerung, keine Kündigungsfrist</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-petrol mt-0.5 shrink-0" />
+                    <span>Auch ohne bestehendes Abo buchbar</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-petrol mt-0.5 shrink-0" />
+                    <span>
+                      Ergänzt ein laufendes Abo, statt es zu ersetzen — wo Ihr Plan mehr
+                      bietet, bleibt Ihr Plan maßgeblich
+                    </span>
+                  </li>
+                </ul>
+                <p className="mt-4 text-[10px] font-mono text-titanium-600">
+                  {PRICING_TAX_NOTE}
+                </p>
+              </div>
+
+              <div className="max-w-sm w-full">
+                {ONE_TIME_PRICING_TIERS.map((tier) => (
+                  <TierCard key={tier.id} tier={tier} selected={tier.id === selectedPlan} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Runtime-Architektur — dieselbe Kette wie auf der Landingpage */}
       <RuntimePipeline />
@@ -318,6 +372,7 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
   const TierIcon = PLAN_ICONS[plan.id];
   const priceDisplay = formatPriceEur(tier.priceEur);
   const accent = TIER_ACCENT[tier.id];
+  const detailSlug = planDetailSlugFor(tier.id);
 
   return (
     <div
@@ -408,14 +463,19 @@ function TierCard({ tier, selected = false }: { tier: PricingTier; selected?: bo
           </button>
         )}
 
-        {/* Secondary: More Info button (links to plan detail page) */}
-        <button
-          onClick={() => window.location.href = `/pricing/${tier.id}`}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold rounded-none border border-titanium-200/30 text-titanium-300 hover:text-titanium-50 hover:border-titanium-200/60 transition-colors"
-          data-testid={`pricing-info-${tier.id}`}
-        >
-          Mehr erfahren
-        </button>
+        {/* Secondary: More Info button (links to plan detail page).
+            Nur anbieten, wenn für den Tier auch wirklich eine Detailseite
+            existiert. Einmalprodukte haben keine — der Button spränge sonst
+            stumm auf /pricing zurück und wäre ein Element, das nichts tut. */}
+        {detailSlug && (
+          <button
+            onClick={() => window.location.href = `/pricing/${detailSlug}`}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold rounded-none border border-titanium-200/30 text-titanium-300 hover:text-titanium-50 hover:border-titanium-200/60 transition-colors"
+            data-testid={`pricing-info-${tier.id}`}
+          >
+            Mehr erfahren
+          </button>
+        )}
       </div>
     </div>
   );

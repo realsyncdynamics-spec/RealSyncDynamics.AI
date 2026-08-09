@@ -788,3 +788,28 @@ export function getFeaturesByPlan(planSlug: string): Feature[] {
 
 export const ALL_PLAN_SLUGS = pricingPlans.map((p) => p.slug);
 export const ALL_FEATURE_SLUGS = featureDetails.map((f) => f.slug);
+
+/**
+ * Tier-Id der Pricing-Karten → Slug der Detailseite.
+ *
+ * An einer Stelle weichen beide voneinander ab: das Free-Paket heißt als
+ * Tier `free`, seine Detailseite aber `free-audit`.
+ */
+const PLAN_DETAIL_SLUG_ALIASES: Record<string, string> = {
+  free: 'free-audit',
+  free_audit: 'free-audit',
+};
+
+/**
+ * Detailseiten-Slug zu einer Tier-Id — `null`, wenn es für diesen Tier
+ * KEINE Detailseite gibt (z.B. Einmalprodukte wie `governance_launch`).
+ *
+ * Einzige Quelle für diese Zuordnung: die Route `/pricing/:slug` nutzt sie
+ * zur Auflösung, und die Pricing-Karten entscheiden darüber, ob der
+ * „Mehr erfahren"-Button überhaupt angeboten wird. Ohne diese Prüfung
+ * zeigte die Karte einen Button, der stumm auf /pricing zurückspringt.
+ */
+export function planDetailSlugFor(tierId: string): string | null {
+  const target = PLAN_DETAIL_SLUG_ALIASES[tierId] ?? tierId;
+  return ALL_PLAN_SLUGS.includes(target) ? target : null;
+}

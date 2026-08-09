@@ -1,27 +1,22 @@
 import { useParams, Navigate } from 'react-router-dom';
 import { PlanDetailPage } from '../../components/pricing/PlanDetailPage';
-import { ALL_PLAN_SLUGS } from '../../content/pricingContent';
+import { planDetailSlugFor } from '../../content/pricingContent';
 
 // Die Pricing-Karten (src/config/pricing.ts) verlinken ihre Info-Buttons auf
-// /pricing/<tier.id>. Die Tier-Id des Free-Tiers ist 'free', die Content-
-// Detailseite heißt aber 'free-audit' — ohne Alias bounced der Info-Button
-// des Free-Pakets zurück auf /pricing.
-const SLUG_ALIASES: Record<string, string> = {
-  free: 'free-audit',
-  free_audit: 'free-audit',
-};
-
+// /pricing/<tier.id>. Die Zuordnung Tier-Id → Detailseiten-Slug (inklusive
+// des Alias free → free-audit) liegt in pricingContent.ts, damit die Karten
+// dieselbe Regel nutzen können, um den Button gar nicht erst anzubieten,
+// wenn es keine Detailseite gibt.
 export function PricingDetailPageWrapper() {
   const { slug } = useParams<{ slug: string }>();
 
-  const alias = slug ? SLUG_ALIASES[slug] : undefined;
-  if (alias) {
-    return <Navigate to={`/pricing/${alias}`} replace />;
-  }
-
-  if (!slug || !ALL_PLAN_SLUGS.includes(slug)) {
+  const target = slug ? planDetailSlugFor(slug) : null;
+  if (!target) {
     return <Navigate to="/pricing" replace />;
   }
+  if (target !== slug) {
+    return <Navigate to={`/pricing/${target}`} replace />;
+  }
 
-  return <PlanDetailPage planSlug={slug} />;
+  return <PlanDetailPage planSlug={target} />;
 }

@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
+import { ComplianceControlRoom } from '../components/landing/ComplianceControlRoom';
+import { EvidenceChain } from '../components/landing/EvidenceChain';
+import { BeforeAfter } from '../components/landing/BeforeAfter';
 import { useHealthStatus } from '../hooks/useHealthStatus';
 import { planById, formatLimit, policyPacksFor, checkoutHrefForPlan, RUNTIME_PIPELINE, type PlanId } from '@/shared/pricing';
 import {
@@ -167,8 +170,11 @@ export function MainLanding() {
       <main>
         <Hero />
         <TrustStrip />
+        <ControlRoom />
+        <Evidence />
         <Platform />
         <Runtime />
+        <Transformation />
         <Industries />
         <ProofBand />
         <Pricing />
@@ -345,6 +351,45 @@ function TrustStrip() {
         ))}
       </div>
     </section>
+  );
+}
+
+/* ── CONTROL ROOM ───────────────────────────────────────── */
+function ControlRoom() {
+  return (
+    <Section
+      eyebrow="DIE OBERFLÄCHE"
+      title="Ihr Compliance Control Room"
+      subtitle="Durchgehende Sicht auf KI-Systeme, Datenschutz, Vendoren und Nachweise — Risiko, Control-Status und Drift an einer Stelle. Die gezeigten Werte sind Beispieldaten einer Produktvorschau."
+    >
+      <ComplianceControlRoom />
+    </Section>
+  );
+}
+
+/* ── EVIDENCE CHAIN ─────────────────────────────────────── */
+function Evidence() {
+  return (
+    <Section
+      eyebrow="NACHWEISBARKEIT"
+      title="Von der Kontrolle zum prüfbaren Nachweis"
+      subtitle="Jede ausgeführte Kontrolle erzeugt einen kryptografisch verketteten Eintrag: Ergebnis, Evidenz-ID, Hash, Zeitstempel, Verifizierung. Das ist der Unterschied zwischen „dokumentiert“ und „beweisbar“."
+    >
+      <EvidenceChain />
+    </Section>
+  );
+}
+
+/* ── VORHER / NACHHER ───────────────────────────────────── */
+function Transformation() {
+  return (
+    <Section
+      eyebrow="DER UNTERSCHIED"
+      title="Von Compliance-Chaos zu laufender Kontrolle"
+      subtitle="Compliance ist kein Projekt mit Enddatum, sondern ein Zustand, der sich täglich ändert — und entsprechend laufend überwacht gehört."
+    >
+      <BeforeAfter />
+    </Section>
   );
 }
 

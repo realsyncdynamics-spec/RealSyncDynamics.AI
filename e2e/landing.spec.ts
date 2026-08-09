@@ -149,6 +149,51 @@ test.describe('MainLanding (/)', () => {
     }
   });
 
+  test('Control Room und Evidence Chain sind sichtbar', async ({ page }) => {
+    await expect(page.getByRole('heading', { name: /Ihr Compliance Control Room/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Von der Kontrolle zum prüfbaren Nachweis/i })).toBeVisible();
+    await expect(page.getByText('AKTIVE CONTROLS', { exact: true })).toBeVisible();
+    await expect(page.getByText('COMPLIANCE-DRIFT', { exact: true })).toBeVisible();
+    // Evidence-Kette: alle sechs Stufen, in ihrer Reihenfolge nummeriert.
+    for (const stage of ['CONTROL AUSGEFÜHRT', 'ERGEBNIS', 'EVIDENZ ERZEUGT', 'SHA-256', 'ZEITSTEMPEL', 'STATUS']) {
+      await expect(page.getByText(new RegExp(`\\d\\d · ${stage}`, 'i')).first()).toBeVisible();
+    }
+  });
+
+  test('Demo-Kennzeichnung begleitet jede erfundene Kennzahl', async ({ page }) => {
+    // Claim-Disziplin: Control Room und Evidence Chain zeigen Beispielwerte.
+    // Beide MÜSSEN sichtbar als DEMO markiert sein — sonst lesen sich Scores,
+    // Evidenz-IDs und Hashes wie echte Produktionsnachweise.
+    // Der sichtbare Text ist „DEMO", die Erläuterung folgt als sr-only-Span —
+    // geprüft wird beides zusammen, damit die Kennzeichnung auch ohne
+    // visuellen Kontext ankommt.
+    const badges = page.getByText(/^DEMO\s+—\s+Beispielwerte einer Produktvorschau/);
+    expect(await badges.count()).toBeGreaterThanOrEqual(2);
+    await expect(badges.first()).toBeVisible();
+  });
+
+  test('Risk-Score-Drilldown ist aufklappbar und tastaturbedienbar', async ({ page }) => {
+    const trigger = page.getByRole('button', { name: /RISK SCORE/i }).first();
+    await trigger.scrollIntoViewIfNeeded();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByText('AI Governance')).toBeHidden();
+
+    await trigger.click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByText('AI Governance')).toBeVisible();
+    await expect(page.getByText(/3 Controls brauchen eine Review/)).toBeVisible();
+
+    // aria-controls muss auf ein real existierendes Panel zeigen.
+    const controls = await trigger.getAttribute('aria-controls');
+    expect(controls).toBeTruthy();
+    await expect(page.locator(`[id="${controls}"]`)).toBeVisible();
+
+    // Tastatur: Enter schliesst wieder.
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('Keine verbotenen Sales/Pilot/Demo CTAs', async ({ page }) => {
     for (const pattern of FORBIDDEN_CTA) {
       await expect(page.getByRole('link', { name: pattern })).toHaveCount(0);

@@ -262,7 +262,10 @@ RealSyncDynamics.AI/
 │   ├── functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    243 Migrations
 ├── apps/
-│   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
+│   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
+│   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf
+│                      Evidence/Governance, API-Key-Auth + Prüfpfad
+│                      (eigenes tsconfig, aus dem Root-Lint ausgenommen)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
 ├── packages/sdk       Öffentliches SDK (CJS + ESM)
 ├── connectors/        Externe Integrationen

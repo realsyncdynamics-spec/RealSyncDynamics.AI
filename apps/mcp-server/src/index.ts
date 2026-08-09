@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import { testConnection } from './services/supabase.js';
-import { authenticateRequest } from './auth/api-key.js';
+import { authenticateRequest, logRequestUsage, requireScope } from './auth/api-key.js';
 import { MctAuthContext } from './types/index.js';
 import {
   listEvidence,
@@ -48,13 +48,25 @@ async function start() {
     (request as any).user = auth;
   });
 
+  // Prüfpfad: jeder authentifizierte Request wird protokolliert — zentral,
+  // nicht in den einzelnen Tools. Nur hier stehen Statuscode und Latenz zur
+  // Verfügung, und nur hier werden auch abgewiesene Requests (403, 500)
+  // erfasst; ein Protokoll, das nur die erfolgreichen Fälle kennt, taugt
+  // für den Nachweis nichts.
+  fastify.addHook('onResponse', async (request, reply) => {
+    if (request.url === '/health') {
+      return;
+    }
+    await logRequestUsage(request, reply.statusCode, Math.round(reply.elapsedTime));
+  });
+
   // Health check (no auth required)
   fastify.get('/health', async (request, reply) => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
   // ─── Evidence API ─────────────────────────────────────────
-  fastify.get('/evidence', async (request, reply) => {
+  fastify.get('/evidence', { preHandler: requireScope('evidence.read') }, async (request, reply) => {
     const auth = (request as any).user as MctAuthContext;
     const { subject_ref, limit } = request.query as Record<string, any>;
 
@@ -62,7 +74,7 @@ async function start() {
     return { data: evidence, count: evidence.length };
   });
 
-  fastify.get<{ Params: { id: string } }>('/evidence/:id', async (request, reply) => {
+  fastify.get<{ Params: { id: string } }>('/evidence/:id', { preHandler: requireScope('evidence.read') }, async (request, reply) => {
     const auth = (request as any).user as MctAuthContext;
     const evidence = await getEvidence(auth.tenantId, request.params.id);
 
@@ -73,7 +85,7 @@ async function start() {
     return { data: evidence };
   });
 
-  fastify.post<{ Params: { id: string } }>('/evidence/:id/verify-hash', async (request, reply) => {
+  fastify.post<{ Params: { id: string } }>('/evidence/:id/verify-hash', { preHandler: requireScope('evidence.read') }, async (request, reply) => {
     const auth = (request as any).user as MctAuthContext;
     const result = await verifyHashChain(auth.tenantId, request.params.id);
     return { data: result };
@@ -81,6 +93,7 @@ async function start() {
 
   fastify.get<{ Params: { controlId: string } }>(
     '/evidence/control/:controlId',
+    { preHandler: requireScope('evidence.read') },
     async (request, reply) => {
       const auth = (request as any).user as MctAuthContext;
       const evidence = await searchEvidenceByControl(auth.tenantId, request.params.controlId);
@@ -89,7 +102,7 @@ async function start() {
   );
 
   // ─── Governance API ──────────────────────────────────────────
-  fastify.get('/governance/status', async (request, reply) => {
+  fastify.get('/governance/status', { preHandler: requireScope('governance.read') }, async (request, reply) => {
     const auth = (request as any).user as MctAuthContext;
     const { framework_id } = request.query as Record<string, any>;
 
@@ -97,7 +110,7 @@ async function start() {
     return { data: status };
   });
 
-  fastify.get('/governance/controls', async (request, reply) => {
+  fastify.get('/governance/controls', { preHandler: requireScope('governance.read') }, async (request, reply) => {
     const auth = (request as any).user as MctAuthContext;
     const { framework_id } = request.query as Record<string, any>;
 
@@ -107,12 +120,24 @@ async function start() {
 
   fastify.get<{ Params: { controlId: string } }>(
     '/governance/controls/:controlId/compliance',
+    { preHandler: requireScope('governance.read') },
     async (request, reply) => {
       const auth = (request as any).user as MctAuthContext;
       const status = await checkComplianceStatus(auth.tenantId, request.params.controlId);
       return { data: status };
     },
   );
+
+  // Noch nicht implementierte Tools als 501 ausliefern, nicht als 500 —
+  // ein Agent soll unterscheiden können zwischen "geht noch nicht" und
+  // "ist kaputt".
+  fastify.setErrorHandler((error, request, reply) => {
+    if (error.name === 'NotImplementedError') {
+      return reply.code(501).send({ error: 'NOT_IMPLEMENTED', message: error.message });
+    }
+    request.log.error(error);
+    return reply.code(500).send({ error: 'INTERNAL' });
+  });
 
   // Start server
   try {

@@ -62,23 +62,26 @@ export async function logRequestUsage(
   });
 }
 
+/**
+ * preHandler, der einen Scope erzwingt.
+ *
+ * Ohne diese Prüfung wäre die Scope-Angabe eines Keys eine Absichtserklärung
+ * statt einer Kontrolle: Der Scope stünde in der Datenbank und im Auth-Kontext,
+ * ein Key mit ausschließlich `evidence.read` erreichte aber trotzdem jeden
+ * anderen Lesepfad.
+ */
 export function requireScope(scope: string) {
-  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-    const originalMethod = descriptor.value;
+  return async function (request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const auth = (request as any).user as MctAuthContext | undefined;
+    if (!auth) {
+      return reply.code(401).send({ error: 'UNAUTHORIZED' });
+    }
 
-    descriptor.value = async function (request: FastifyRequest, reply: FastifyReply) {
-      const auth = (request as any).user as MctAuthContext | undefined;
-      if (!auth) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-
-      if (!auth.scopes.includes(scope)) {
-        return reply.code(403).send({ error: 'Forbidden: insufficient scope' });
-      }
-
-      return originalMethod.call(this, request, reply);
-    };
-
-    return descriptor;
+    if (!auth.scopes.includes(scope)) {
+      return reply.code(403).send({
+        error: 'FORBIDDEN',
+        message: `Dieser Key hat den Scope "${scope}" nicht.`,
+      });
+    }
   };
 }

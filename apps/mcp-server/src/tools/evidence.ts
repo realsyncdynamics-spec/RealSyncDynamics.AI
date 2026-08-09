@@ -1,5 +1,4 @@
 import { supabase } from '../services/supabase.js';
-import { logAuditEvent } from '../services/audit.js';
 import { EvidenceSnapshot } from '../types/index.js';
 import crypto from 'crypto';
 
@@ -8,13 +7,6 @@ export async function listEvidence(
   subjectRef?: string,
   limit: number = 50,
 ): Promise<EvidenceSnapshot[]> {
-  await logAuditEvent({
-    tenantId,
-    action: 'evidence.list',
-    subject: subjectRef || '*',
-    actor: 'mcp-server',
-  });
-
   let query = supabase
     .from('evidence_snapshots')
     .select('*')
@@ -40,13 +32,6 @@ export async function getEvidence(
   tenantId: string,
   evidenceId: string,
 ): Promise<EvidenceSnapshot | null> {
-  await logAuditEvent({
-    tenantId,
-    action: 'evidence.get',
-    subject: evidenceId,
-    actor: 'mcp-server',
-  });
-
   const { data, error } = await supabase
     .from('evidence_snapshots')
     .select('*')
@@ -65,13 +50,6 @@ export async function verifyHashChain(
   tenantId: string,
   evidenceId: string,
 ): Promise<{ valid: boolean; chainLength: number }> {
-  await logAuditEvent({
-    tenantId,
-    action: 'evidence.verify_hash',
-    subject: evidenceId,
-    actor: 'mcp-server',
-  });
-
   const evidence = await getEvidence(tenantId, evidenceId);
   if (!evidence) {
     throw new Error('Evidence not found');
@@ -90,14 +68,6 @@ export async function searchEvidenceByControl(
   tenantId: string,
   controlId: string,
 ): Promise<EvidenceSnapshot[]> {
-  await logAuditEvent({
-    tenantId,
-    action: 'evidence.search',
-    subject: controlId,
-    actor: 'mcp-server',
-    details: { type: 'control_search' },
-  });
-
   // Phase 2: Semantic search via pgvector
   // For now: search by subject_ref pattern
   const { data, error } = await supabase

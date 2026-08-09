@@ -1,260 +1,203 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
+// mcp-api-key-manager — Lebenszyklus der MCP-Server-API-Keys.
+//
+// POST /functions/v1/mcp-api-key-manager
+// Auth: Authorization: Bearer <user JWT>
+// Body:
+//   { op: 'generate', tenant_id, name?, scopes?, expires_in_days? }
+//   { op: 'list',     tenant_id }
+//   { op: 'revoke',   tenant_id, key_id }
+//
+// Sicherheitsrelevanz: Diese Funktion vergibt Zugriff auf den MCP Governance
+// Server (Evidence Vault, Governance-Status). Der Klartext-Key existiert genau
+// einmal — in der Antwort auf 'generate'. Gespeichert wird nur der SHA-256-Hash,
+// ein verlorener Key kann also nicht wiederhergestellt, nur ersetzt werden.
+//
+// Bewusst NICHT enthalten: eine 'validate'-Operation. Der MCP Server prüft Keys
+// über die RPC mcp_key_is_valid mit service_role. Ein öffentlich erreichbarer
+// Validierungs-Endpunkt wäre ein Orakel, an dem sich gestohlene Hashes
+// gefahrlos durchprobieren ließen.
+//
+// EU AI Act / DSGVO: Jede Key-Vergabe und jeder Widerruf ist ein
+// Zugriffsereignis auf Compliance-Nachweise und wird doppelt protokolliert —
+// im Prüfpfad (audit) und über den DB-Trigger in mcp_key_usage.
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
+import { audit } from '../_shared/auditLog.ts';
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
+const KEY_PREFIX = 'rsmcp_';
+/** Anzahl Hex-Zeichen des Keys nach dem Präfix (32 Byte Entropie). */
+const KEY_BYTES = 32;
+/** Für die UI sichtbarer Anfang: Präfix + 8 Hex-Zeichen. */
+const DISPLAY_PREFIX_LEN = KEY_PREFIX.length + 8;
+
+const ALLOWED_SCOPES = ['evidence.read', 'governance.read', 'runtime.read'] as const;
+const DEFAULT_SCOPES = ['evidence.read', 'governance.read'];
+const MAX_EXPIRY_DAYS = 365;
+
+function bufToHex(buf: Uint8Array): string {
+  let out = '';
+  for (let i = 0; i < buf.length; i++) out += buf[i].toString(16).padStart(2, '0');
+  return out;
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-// Generate a random API key with rsmcp_ prefix
 function generateApiKey(): string {
-  const randomBytes = crypto.getRandomValues(new Uint8Array(32));
-  const randomHex = Array.from(randomBytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return `rsmcp_${randomHex}`;
+  return KEY_PREFIX + bufToHex(crypto.getRandomValues(new Uint8Array(KEY_BYTES)));
 }
 
-// Hash API key with SHA256
-async function hashApiKey(key: string): Promise<string> {
-  const msgUint8 = new TextEncoder().encode(key);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return bufToHex(new Uint8Array(digest));
 }
 
-// Get key prefix (first 8 chars)
-function getKeyPrefix(key: string): string {
-  return key.substring(0, 13); // rsmcp_ + 8 chars
+/** Unbekannte Scopes werden verworfen, statt sie ungeprüft zu speichern. */
+function sanitizeScopes(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return DEFAULT_SCOPES;
+  const valid = raw.filter(
+    (s): s is string => typeof s === 'string' && (ALLOWED_SCOPES as readonly string[]).includes(s),
+  );
+  return valid.length > 0 ? [...new Set(valid)] : DEFAULT_SCOPES;
 }
 
-type KeyAction =
-  | "generate"
-  | "list"
-  | "revoke"
-  | "rotate"
-  | "get_usage"
-  | "validate";
-
-interface KeyRequest {
-  action: KeyAction;
-  name?: string;
-  scopes?: string[];
-  key_id?: string;
-  key_hash?: string;
+function expiryFromDays(raw: unknown): string | null {
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw <= 0) return null;
+  const days = Math.min(Math.floor(raw), MAX_EXPIRY_DAYS);
+  return new Date(Date.now() + days * 86400000).toISOString();
 }
 
-interface KeyResponse {
-  success: boolean;
-  data?: unknown;
-  error?: string;
-}
+Deno.serve(async (req) => {
+  const preflight = handleOptions(req);
+  if (preflight) return preflight;
+  if (req.method !== 'POST') return methodNotAllowed();
 
-async function handleGenerateKey(req: KeyRequest): Promise<KeyResponse> {
-  const authHeader = Deno.env.get("AUTHORIZATION") || "";
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { success: false, error: "Unauthorized" };
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
   }
 
-  const token = authHeader.substring(7);
-
-  // Get user from token
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
-  if (!user) {
-    return { success: false, error: "Invalid token" };
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError(400, 'BAD_REQUEST', 'invalid json');
   }
 
-  // Get tenant
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return { success: false, error: "No tenant found" };
+  const op = String(body.op ?? '');
+  const tenantId = String(body.tenant_id ?? '');
+  if (!['generate', 'list', 'revoke'].includes(op)) {
+    return jsonError(400, 'BAD_REQUEST', 'op must be generate|list|revoke');
   }
+  if (!tenantId) return jsonError(400, 'BAD_REQUEST', 'tenant_id required');
 
-  // Generate new key
-  const plainKey = generateApiKey();
-  const keyHash = await hashApiKey(plainKey);
-  const keyPrefix = getKeyPrefix(plainKey);
-  const scopes = req.scopes || ["evidence.read", "governance.read"];
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  // Store key hash (never store plain key)
-  const { data: keyData, error: keyError } = await supabase
-    .from("mcp_api_keys")
-    .insert({
-      tenant_id: profile.tenant_id,
-      key_prefix: keyPrefix,
-      key_hash: keyHash,
-      name: req.name || `API Key ${new Date().toISOString()}`,
-      scopes,
-      created_by: user.id,
-    })
-    .select()
-    .single();
-
-  if (keyError) {
-    return { success: false, error: keyError.message };
-  }
-
-  // Return plain key ONLY at creation time (never again)
-  return {
-    success: true,
-    data: {
-      id: keyData.id,
-      key: plainKey, // Only shown once
-      key_prefix: keyPrefix,
-      name: keyData.name,
-      scopes: keyData.scopes,
-      created_at: keyData.created_at,
-      expires_at: keyData.expires_at,
-    },
-  };
-}
-
-async function handleListKeys(): Promise<KeyResponse> {
-  const authHeader = Deno.env.get("AUTHORIZATION") || "";
-  if (!authHeader) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  const token = authHeader.substring(7);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
-  if (!user) {
-    return { success: false, error: "Invalid token" };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) {
-    return { success: false, error: "No tenant found" };
-  }
-
-  // List keys (without key_hash)
-  const { data: keys, error } = await supabase
-    .from("mcp_api_keys")
-    .select("id, key_prefix, name, scopes, active, created_at, expires_at, last_used_at")
-    .eq("tenant_id", profile.tenant_id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true, data: keys };
-}
-
-async function handleRevokeKey(keyId: string): Promise<KeyResponse> {
-  const authHeader = Deno.env.get("AUTHORIZATION") || "";
-  if (!authHeader) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  const token = authHeader.substring(7);
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
-  if (!user) {
-    return { success: false, error: "Invalid token" };
-  }
-
-  // Verify ownership
-  const { data: key } = await supabase
-    .from("mcp_api_keys")
-    .select("tenant_id")
-    .eq("id", keyId)
-    .single();
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  if (!key || key.tenant_id !== profile.tenant_id) {
-    return { success: false, error: "Forbidden" };
-  }
-
-  // Revoke
-  const { error } = await supabase
-    .from("mcp_api_keys")
-    .update({ active: false })
-    .eq("id", keyId);
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  return { success: true, data: { id: keyId, revoked: true } };
-}
-
-async function handleValidateKey(keyHash: string): Promise<KeyResponse> {
-  // Called by MCP Server to validate a key
-  const { data: result } = await supabase.rpc("mcp_key_is_valid", {
-    p_key_hash: keyHash,
+  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false },
   });
+  const { data: userResp, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !userResp.user) return jsonError(401, 'UNAUTHORIZED', 'invalid token');
+  const userId = userResp.user.id;
+  const userEmail = userResp.user.email ?? null;
 
-  if (!result || result.length === 0) {
-    return { success: false, error: "Invalid key" };
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+
+  // Tenant-Zugehörigkeit prüfen — ohne sie darf niemand Keys für einen fremden
+  // Workspace ausstellen oder einsehen.
+  const { data: member } = await admin
+    .from('memberships')
+    .select('user_id')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of this tenant');
+
+  try {
+    if (op === 'generate') {
+      const plainKey = generateApiKey();
+      const keyHash = await sha256Hex(plainKey);
+      const keyPrefix = plainKey.slice(0, DISPLAY_PREFIX_LEN);
+      const scopes = sanitizeScopes(body.scopes);
+      const expiresAt = expiryFromDays(body.expires_in_days);
+      const name =
+        typeof body.name === 'string' && body.name.trim()
+          ? body.name.trim().slice(0, 120)
+          : `MCP Key ${new Date().toISOString().slice(0, 10)}`;
+
+      const { data: created, error: insertErr } = await admin
+        .from('mcp_api_keys')
+        .insert({
+          tenant_id: tenantId,
+          key_prefix: keyPrefix,
+          key_hash: keyHash,
+          name,
+          scopes,
+          expires_at: expiresAt,
+          created_by: userId,
+        })
+        .select('id, key_prefix, name, scopes, created_at, expires_at')
+        .single();
+
+      if (insertErr || !created) {
+        return jsonError(500, 'INTERNAL', 'could not create key');
+      }
+
+      await audit(admin, {
+        tenant_id: tenantId,
+        actor_user_id: userId,
+        actor_email: userEmail,
+        action: 'mcp.api_key.created',
+        target_type: 'mcp_api_key',
+        target_id: created.id,
+        payload: { key_prefix: keyPrefix, scopes, expires_at: expiresAt },
+      });
+
+      // key steht hier zum einzigen Mal im Klartext — danach nur noch der Hash.
+      return jsonResponse({ ok: true, key: plainKey, ...created });
+    }
+
+    if (op === 'list') {
+      const { data: keys, error: listErr } = await admin
+        .from('mcp_api_keys')
+        .select('id, key_prefix, name, scopes, active, created_at, expires_at, last_used_at')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false });
+
+      if (listErr) return jsonError(500, 'INTERNAL', 'could not list keys');
+      return jsonResponse({ ok: true, keys: keys ?? [] });
+    }
+
+    // op === 'revoke'
+    const keyId = String(body.key_id ?? '');
+    if (!keyId) return jsonError(400, 'BAD_REQUEST', 'key_id required');
+
+    // tenant_id im UPDATE-Filter: ein Key aus einem fremden Workspace bleibt
+    // unangetastet, auch wenn seine ID erraten wurde.
+    const { data: revoked, error: revokeErr } = await admin
+      .from('mcp_api_keys')
+      .update({ active: false })
+      .eq('id', keyId)
+      .eq('tenant_id', tenantId)
+      .select('id, key_prefix')
+      .maybeSingle();
+
+    if (revokeErr) return jsonError(500, 'INTERNAL', 'could not revoke key');
+    if (!revoked) return jsonError(404, 'NOT_FOUND', 'key not found in this tenant');
+
+    await audit(admin, {
+      tenant_id: tenantId,
+      actor_user_id: userId,
+      actor_email: userEmail,
+      action: 'mcp.api_key.revoked',
+      target_type: 'mcp_api_key',
+      target_id: revoked.id,
+      payload: { key_prefix: revoked.key_prefix },
+    });
+
+    return jsonResponse({ ok: true, id: revoked.id, active: false });
+  } catch (_e) {
+    return jsonError(500, 'INTERNAL', 'unexpected error');
   }
-
-  const [row] = result;
-  if (!row.valid) {
-    return { success: false, error: "Key expired or inactive" };
-  }
-
-  return {
-    success: true,
-    data: {
-      valid: true,
-      key_id: row.key_id,
-      tenant_id: row.tenant_id,
-      scopes: row.scopes,
-    },
-  };
-}
-
-serve(async (req: Request) => {
-  const requestBody: KeyRequest = await req.json().catch(() => ({}));
-  const action = requestBody.action || "list";
-
-  let response: KeyResponse;
-
-  switch (action) {
-    case "generate":
-      response = await handleGenerateKey(requestBody);
-      break;
-    case "list":
-      response = await handleListKeys();
-      break;
-    case "revoke":
-      response = await handleRevokeKey(requestBody.key_id || "");
-      break;
-    case "validate":
-      response = await handleValidateKey(requestBody.key_hash || "");
-      break;
-    default:
-      response = { success: false, error: `Unknown action: ${action}` };
-  }
-
-  return new Response(JSON.stringify(response), {
-    headers: { "Content-Type": "application/json" },
-    status: response.success ? 200 : 400,
-  });
 });

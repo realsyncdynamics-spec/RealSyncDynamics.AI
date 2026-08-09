@@ -77,6 +77,13 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
     WHERE k.key_hash = p_key_hash;
 $$;
 
+-- mcp_key_is_valid prüft Keys, bevor der Aufrufer einen Tenant nachweisen kann —
+-- deshalb SECURITY DEFINER. Damit ist die Funktion aber auch ein Orakel für
+-- gestohlene Hashes: Ausführung bleibt dem service_role vorbehalten (MCP Server),
+-- anon/authenticated dürfen nicht raten.
+REVOKE ALL ON FUNCTION public.mcp_key_is_valid(TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.mcp_key_is_valid(TEXT) TO service_role;
+
 -- Log key usage
 CREATE OR REPLACE FUNCTION public.mcp_log_usage(
     p_key_id UUID,
@@ -88,7 +95,9 @@ CREATE OR REPLACE FUNCTION public.mcp_log_usage(
     p_error TEXT DEFAULT NULL
 )
 RETURNS void
-LANGUAGE plpgsql
+-- Bewusst SECURITY INVOKER: nur der service_role (MCP Server) darf Usage-Zeilen
+-- schreiben. Als DEFINER könnte jeder Aufrufer fremde key_ids fälschen.
+LANGUAGE plpgsql SET search_path = ''
 AS $$
 BEGIN
     INSERT INTO public.mcp_key_usage (
@@ -100,49 +109,55 @@ BEGIN
 END;
 $$;
 
--- ─── 5. Audit Trail ──────────────────────────────────────────────────────
+REVOKE ALL ON FUNCTION public.mcp_log_usage(UUID, TEXT, INT, INET, TEXT, INT, TEXT)
+    FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.mcp_log_usage(UUID, TEXT, INT, INET, TEXT, INT, TEXT)
+    TO service_role;
+
+-- ─── 5. Prüfpfad für den Key-Lebenszyklus ────────────────────────────────
+--
+-- Der Lebenszyklus (angelegt / geändert / widerrufen) landet in derselben
+-- Tabelle wie die Nutzung: mcp_key_usage. Ein Trigger statt Anwendungscode,
+-- damit der Eintrag nicht umgangen werden kann — auch nicht vom service_role.
+--
+-- Bewusst NICHT in audit_evidence: diese Tabelle beschreibt Audit-Findings
+-- (audit_id + type mit CHECK-Constraint) und passt schematisch nicht zu
+-- Lebenszyklus-Ereignissen eines API-Keys.
+--
+-- DELETE wird nicht protokolliert: mcp_key_usage.key_id hängt per ON DELETE
+-- CASCADE am Key, der Eintrag würde in derselben Anweisung wieder verschwinden.
+-- Der vorgesehene Weg ist active = FALSE (Widerruf), nicht DELETE.
 CREATE OR REPLACE FUNCTION public.mcp_api_keys_audit()
 RETURNS TRIGGER LANGUAGE plpgsql SET search_path = '' AS $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO public.audit_evidence (tenant_id, subject, action, details, timestamp)
-        VALUES (
-            NEW.tenant_id,
-            'mcp_api_key:' || NEW.id,
-            'mcp_api_key.created',
-            jsonb_build_object('key_prefix', NEW.key_prefix, 'scopes', NEW.scopes),
-            now()
-        );
+        INSERT INTO public.mcp_key_usage (key_id, action, status)
+        VALUES (NEW.id, 'mcp_api_key.created', 201);
     ELSIF TG_OP = 'UPDATE' THEN
-        INSERT INTO public.audit_evidence (tenant_id, subject, action, details, timestamp)
+        INSERT INTO public.mcp_key_usage (key_id, action, status)
         VALUES (
-            NEW.tenant_id,
-            'mcp_api_key:' || NEW.id,
-            'mcp_api_key.updated',
-            jsonb_build_object(
-                'active', NEW.active,
-                'expires_at', NEW.expires_at,
-                'old_active', OLD.active
-            ),
-            now()
-        );
-    ELSIF TG_OP = 'DELETE' THEN
-        INSERT INTO public.audit_evidence (tenant_id, subject, action, details, timestamp)
-        VALUES (
-            OLD.tenant_id,
-            'mcp_api_key:' || OLD.id,
-            'mcp_api_key.deleted',
-            jsonb_build_object('key_prefix', OLD.key_prefix),
-            now()
+            NEW.id,
+            CASE WHEN OLD.active AND NOT NEW.active
+                 THEN 'mcp_api_key.revoked'
+                 ELSE 'mcp_api_key.updated'
+            END,
+            200
         );
     END IF;
     RETURN NULL;
 END;
 $$;
 
+-- Nur auf den Spalten feuern, die den Lebenszyklus beschreiben. Sonst würde
+-- jedes mcp_log_usage() (das last_used_at schreibt) eine Audit-Zeile erzeugen
+-- und sich selbst rekursiv aufschaukeln.
 DROP TRIGGER IF EXISTS trg_mcp_api_keys_audit ON public.mcp_api_keys;
-CREATE TRIGGER trg_mcp_api_keys_audit
-    AFTER INSERT OR UPDATE OR DELETE ON public.mcp_api_keys
+CREATE TRIGGER trg_mcp_api_keys_audit_insert
+    AFTER INSERT ON public.mcp_api_keys
+    FOR EACH ROW EXECUTE FUNCTION public.mcp_api_keys_audit();
+
+CREATE TRIGGER trg_mcp_api_keys_audit_update
+    AFTER UPDATE OF active, scopes, expires_at, name ON public.mcp_api_keys
     FOR EACH ROW EXECUTE FUNCTION public.mcp_api_keys_audit();
 
 -- ─── 6. Comments ──────────────────────────────────────────────────────────
@@ -153,6 +168,6 @@ COMMENT ON TABLE public.mcp_key_usage IS
 COMMENT ON COLUMN public.mcp_api_keys.key_hash IS
     'SHA256 hash of the API key. Only the hash is stored; the plain key is shown once at creation.';
 COMMENT ON COLUMN public.mcp_api_keys.key_prefix IS
-    'First 8 characters of the key for UI display. Unencrypted, used to help users identify their keys.';
+    'Präfix des Keys (rsmcp_ + 8 Hex-Zeichen) für die Anzeige in der UI. Unverschlüsselt — dient nur dazu, dass Nutzer ihre Keys wiedererkennen.';
 COMMENT ON COLUMN public.mcp_api_keys.scopes IS
     'Array of allowed scopes (evidence.read, governance.read, runtime.read, etc). Enforced by MCP Server.';

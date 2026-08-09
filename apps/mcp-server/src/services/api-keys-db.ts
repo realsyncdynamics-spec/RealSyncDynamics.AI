@@ -1,10 +1,10 @@
-import { supabase } from './supabase.js';
 import crypto from 'crypto';
+import { supabase } from './supabase.js';
 
 export interface ApiKey {
   id: string;
   keyPrefix: string;
-  name: string;
+  name: string | null;
   scopes: string[];
   active: boolean;
   createdAt: Date;
@@ -21,31 +21,36 @@ export interface KeyValidationResult {
 }
 
 /**
- * Validate an API key by checking its hash against the database.
- * This is called by the auth middleware on every request.
+ * SHA-256-Hash eines API-Keys.
+ *
+ * Muss byte-identisch zu der Berechnung in der Edge Function
+ * `mcp-api-key-manager` bleiben — sonst validiert kein einziger Key.
+ */
+export function hashApiKey(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+/**
+ * Prüft einen API-Key gegen die Datenbank.
+ *
+ * Läuft bei jedem Request durch die Auth-Middleware. Der Klartext-Key verlässt
+ * diese Funktion nie — verglichen wird ausschließlich der Hash.
  */
 export async function validateApiKey(apiKey: string): Promise<KeyValidationResult> {
   if (!apiKey.startsWith('rsmcp_') || apiKey.length < 20) {
     return { valid: false, error: 'Invalid key format' };
   }
 
-  const keyHash = hashApiKey(apiKey);
-
   try {
-    const { data: result, error } = await (supabase.rpc as any)('mcp_key_is_valid', {
-      p_key_hash: keyHash,
+    const { data, error } = await supabase.rpc('mcp_key_is_valid', {
+      p_key_hash: hashApiKey(apiKey),
     });
 
-    if (error || !result || result.length === 0) {
+    if (error || !data || data.length === 0) {
       return { valid: false, error: 'Key not found or invalid' };
     }
 
-    const [row] = result as Array<{
-      valid: boolean;
-      key_id: string;
-      tenant_id: string;
-      scopes: string[];
-    }>;
+    const [row] = data;
     if (!row.valid) {
       return { valid: false, error: 'Key expired or inactive' };
     }
@@ -63,7 +68,11 @@ export async function validateApiKey(apiKey: string): Promise<KeyValidationResul
 }
 
 /**
- * Log an API key usage event.
+ * Protokolliert eine Key-Nutzung.
+ *
+ * Wirft bewusst nicht: ein fehlgeschlagenes Protokoll darf den eigentlichen
+ * Request nicht scheitern lassen. Der Fehler wird geloggt, damit ein
+ * stillschweigender Ausfall des Prüfpfads auffällt.
  */
 export async function logKeyUsage(
   keyId: string,
@@ -77,29 +86,30 @@ export async function logKeyUsage(
   },
 ): Promise<void> {
   try {
-    await (supabase.rpc as any)('mcp_log_usage', {
+    const { error } = await supabase.rpc('mcp_log_usage', {
       p_key_id: keyId,
       p_action: action,
       p_status: status,
-      p_ip: options?.ip,
-      p_user_agent: options?.userAgent,
-      p_latency_ms: options?.latencyMs,
-      p_error: options?.error,
+      p_ip: options?.ip ?? null,
+      p_user_agent: options?.userAgent ?? null,
+      p_latency_ms: options?.latencyMs ?? null,
+      p_error: options?.error ?? null,
     });
+    if (error) {
+      console.error('Failed to log key usage:', error.message);
+    }
   } catch (err) {
     console.error('Failed to log key usage:', err);
   }
 }
 
 /**
- * List all API keys for a tenant.
- * Requires authentication with 'admin' scope.
+ * Listet die aktiven API-Keys eines Tenants (ohne key_hash).
  */
 export async function listApiKeys(tenantId: string): Promise<ApiKey[]> {
-  const { data, error } = await (supabase.from('mcp_api_keys') as any)
-    .select(
-      'id, key_prefix, name, scopes, active, created_at, expires_at, last_used_at',
-    )
+  const { data, error } = await supabase
+    .from('mcp_api_keys')
+    .select('id, key_prefix, name, scopes, active, created_at, expires_at, last_used_at')
     .eq('tenant_id', tenantId)
     .eq('active', true)
     .order('created_at', { ascending: false });
@@ -108,34 +118,27 @@ export async function listApiKeys(tenantId: string): Promise<ApiKey[]> {
     throw new Error(`Failed to list API keys: ${error.message}`);
   }
 
-  return (data || []).map(
-    (row: {
-      id: string;
-      key_prefix: string;
-      name: string;
-      scopes: string[];
-      active: boolean;
-      created_at: string;
-      expires_at?: string;
-      last_used_at?: string;
-    }) => ({
-      id: row.id,
-      keyPrefix: row.key_prefix,
-      name: row.name,
-      scopes: row.scopes,
-      active: row.active,
-      createdAt: new Date(row.created_at),
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-      lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : undefined,
-    }),
-  );
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    keyPrefix: row.key_prefix,
+    name: row.name,
+    scopes: row.scopes,
+    active: row.active,
+    createdAt: new Date(row.created_at),
+    expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
+    lastUsedAt: row.last_used_at ? new Date(row.last_used_at) : undefined,
+  }));
 }
 
 /**
- * Revoke an API key (set active = false).
+ * Widerruft einen API-Key (active = false).
+ *
+ * Der tenant_id-Filter gehört in die Query, nicht in eine vorgelagerte Prüfung:
+ * ein erratener Key aus einem fremden Workspace bleibt so unberührt.
  */
 export async function revokeApiKey(keyId: string, tenantId: string): Promise<void> {
-  const { error } = await (supabase.from('mcp_api_keys') as any)
+  const { error } = await supabase
+    .from('mcp_api_keys')
     .update({ active: false })
     .eq('id', keyId)
     .eq('tenant_id', tenantId);
@@ -145,44 +148,41 @@ export async function revokeApiKey(keyId: string, tenantId: string): Promise<voi
   }
 }
 
-/**
- * Hash an API key with SHA256.
- * Same method used in Edge Function and during validation.
- */
-export function hashApiKey(key: string): string {
-  return crypto.createHash('sha256').update(key).digest('hex');
-}
-
-/**
- * Get key statistics (usage, last used, etc).
- */
-export async function getKeyStats(keyId: string): Promise<{
+export interface KeyStats {
   totalRequests: number;
   lastUsedAt?: Date;
   averageLatencyMs?: number;
   errorRate: number;
-}> {
-  const { data, error } = await (supabase.from('mcp_key_usage') as any)
-    .select('status, latency_ms, timestamp')
-    .eq('key_id', keyId);
+}
 
-  if (error || !data) {
+/**
+ * Nutzungsstatistik eines Keys (Requests, Latenz, Fehlerquote).
+ */
+export async function getKeyStats(keyId: string): Promise<KeyStats> {
+  const { data, error } = await supabase
+    .from('mcp_key_usage')
+    .select('status, latency_ms, timestamp')
+    .eq('key_id', keyId)
+    .order('timestamp', { ascending: false });
+
+  if (error || !data || data.length === 0) {
     return { totalRequests: 0, errorRate: 0 };
   }
 
   const total = data.length;
-  const errors = data.filter((row: any) => row.status >= 400).length;
+  const errors = data.filter((row) => row.status >= 400).length;
   const latencies = data
-    .filter((row: any) => row.latency_ms)
-    .map((row: any) => row.latency_ms);
-  const avgLatency =
-    latencies.length > 0 ? latencies.reduce((a: number, b: number) => a + b, 0) / latencies.length : undefined;
-  const lastUsed = data.length > 0 ? new Date((data[0] as any).timestamp) : undefined;
+    .map((row) => row.latency_ms)
+    .filter((ms): ms is number => typeof ms === 'number');
 
   return {
     totalRequests: total,
-    lastUsedAt: lastUsed,
-    averageLatencyMs: avgLatency,
-    errorRate: total > 0 ? errors / total : 0,
+    // Nach timestamp DESC sortiert — die erste Zeile ist die jüngste Nutzung.
+    lastUsedAt: new Date(data[0].timestamp),
+    averageLatencyMs:
+      latencies.length > 0
+        ? latencies.reduce((sum, ms) => sum + ms, 0) / latencies.length
+        : undefined,
+    errorRate: errors / total,
   };
 }

@@ -35,7 +35,10 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
         };
-        Update: never;
+        // Append-only: die Tabelle hat einen Immutability-Trigger. Der leere
+        // Update-Typ macht schon im Compiler klar, dass es nichts zu ändern gibt.
+        Update: Record<string, never>;
+        Relationships: [];
       };
       tenants: {
         Row: {
@@ -51,6 +54,72 @@ export interface Database {
         Update: {
           name?: string;
         };
+        Relationships: [];
+      };
+      mcp_api_keys: {
+        Row: {
+          id: string;
+          tenant_id: string;
+          key_prefix: string;
+          key_hash: string;
+          name: string | null;
+          scopes: string[];
+          created_by: string | null;
+          created_at: string;
+          expires_at: string | null;
+          last_used_at: string | null;
+          last_used_ip: string | null;
+          active: boolean;
+          rotated_from: string | null;
+        };
+        Insert: {
+          id?: string;
+          tenant_id: string;
+          key_prefix: string;
+          key_hash: string;
+          name?: string | null;
+          scopes?: string[];
+          created_by?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          active?: boolean;
+          rotated_from?: string | null;
+        };
+        Update: {
+          name?: string | null;
+          scopes?: string[];
+          expires_at?: string | null;
+          active?: boolean;
+        };
+        Relationships: [];
+      };
+      mcp_key_usage: {
+        Row: {
+          id: string;
+          key_id: string;
+          action: string;
+          status: number;
+          ip_address: string | null;
+          user_agent: string | null;
+          timestamp: string;
+          latency_ms: number | null;
+          error_message: string | null;
+        };
+        Insert: {
+          id?: string;
+          key_id: string;
+          action: string;
+          status: number;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          timestamp?: string;
+          latency_ms?: number | null;
+          error_message?: string | null;
+        };
+        // Append-only: die Tabelle hat einen Immutability-Trigger. Der leere
+        // Update-Typ macht schon im Compiler klar, dass es nichts zu ändern gibt.
+        Update: Record<string, never>;
+        Relationships: [];
       };
     };
     Views: {};
@@ -72,6 +141,29 @@ export interface Database {
           created_at: string;
           on_hold: boolean;
         }>;
+      };
+      mcp_key_is_valid: {
+        Args: {
+          p_key_hash: string;
+        };
+        Returns: Array<{
+          valid: boolean;
+          key_id: string;
+          tenant_id: string;
+          scopes: string[];
+        }>;
+      };
+      mcp_log_usage: {
+        Args: {
+          p_key_id: string;
+          p_action: string;
+          p_status: number;
+          p_ip?: string | null;
+          p_user_agent?: string | null;
+          p_latency_ms?: number | null;
+          p_error?: string | null;
+        };
+        Returns: void;
       };
     };
   };

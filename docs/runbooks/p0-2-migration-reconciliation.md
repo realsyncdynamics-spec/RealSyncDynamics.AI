@@ -1,11 +1,32 @@
 # Runbook — P0-2: Migrations-Ledger reconcilen und `db push` entsperren
 
-**Stand:** 2026-08-03 · **Befund:** `DEBUG_ROOT_CAUSE_2026-08-02.md` · **Status:** noch nicht ausgeführt
+**Stand:** 2026-08-09 · **Befund:** `DEBUG_ROOT_CAUSE_2026-08-02.md` · **Status:** Vorbedingungen erfüllt, Ausführung steht aus
 
 Stellt den Produktions-Zustand wieder her, in dem `supabase db push` durchläuft.
-Aktuell erreichen **118 von 244** Migrationen die Produktion nicht, wodurch **66 von 148**
-vom Frontend abgefragten Tabellen fehlen (`HTTP 404` / `PGRST205`) und die Governance-UI
-leer bleibt.
+Aktuell erreichen **133 von 270** Migrationen die Produktion nicht, wodurch Tabellen
+fehlen (`HTTP 404` / `PGRST205`) und die Governance-UI leer bleibt. (Die Zahl war am
+2026-08-03 noch 118 von 244 — die Lücke wächst, weil weiter gemergt, aber nicht
+deployt wird.)
+
+> ### ✅ Vorprüfung vom 2026-08-09 — alles grün
+>
+> Gegen die Live-DB (`ebljyceifhnlzhjfyxup`, read-only) und einen lokalen Replay geprüft:
+>
+> | Prüfung | Ergebnis |
+> |---|---|
+> | Alle drei Vorbedingungs-PRs gemergt | ✅ #941, #942 (`4c942c27`), #932 (`8d58b6e`) |
+> | Ledger-Waisen (Remote-Version ohne Repo-Datei) | ✅ **0** — Schritt 1 ist damit ein No-op |
+> | Replay aller 270 Migrationen in Reihenfolge | ✅ **270/270**, 0 Fehlschläge (PostgreSQL 16 + pgvector, Bootstrap-Stub aus `ci.yml`) |
+> | `subscriptions` ADD UNIQUE(tenant_id) | ✅ 0 Zeilen, 0 doppelte `tenant_id` |
+> | `findings` SET NOT NULL | ✅ Migration füllt NULLs per UPDATE vorher |
+> | `scale` → `partner` in `products` | ✅ 1 Quellzeile, 0 Zielzeile → keine UNIQUE-Kollision |
+> | Kollision `agent_runs`/`agent_tasks`/`agent_events` | ✅ aufgelöst — die Migration legt jetzt `autonomous_agent_*` an, die produktiv nicht existieren |
+>
+> **Einzige verbleibende Bedingung:** vollständig und in Zeitstempel-Reihenfolge einspielen.
+> `subscriptions.plan_id` und `subscription_plans` fehlen produktiv und werden von
+> `20260704000000_billing_subscriptions.sql` (Position 58 im Rückstand) angelegt — nötig
+> für `20260802001000_canonical_plan_catalog.sql` (Position 123). Wer einzelne Migrationen
+> herauspickt, läuft genau hier in ein `42703`.
 
 ---
 
@@ -17,8 +38,8 @@ nicht kosmetisch:
 | PR | Warum zwingend vorher |
 |---|---|
 | ~~#941~~ ✅ **gemergt 2026-08-03** | Machte `20260608000001_user_consents` idempotent. Ohne das wäre `db push` an Position ~13 von 118 mit `42710 policy already exists` abgebrochen. Auf `main` verifiziert: zwei `DROP POLICY IF EXISTS` vorhanden. |
-| #942 | Benennt die `autonomous_agents_core`-Tabellen um. Ohne das aktiviert der Push RLS und legt Policies auf **drei produktiven Tabellen** an (`agent_runs`, `agent_tasks`, `agent_events`) — fehlerfrei und damit unbemerkt. |
-| #932 | Liefert die Repo-Dateien für die 11 Ledger-Waisen nach. **Damit entfällt die Ledger-Operation komplett** — siehe Schritt 1. |
+| ~~#942~~ ✅ **gemergt** (`4c942c27`) | Benannte die `autonomous_agents_core`-Tabellen um. Ohne das hätte der Push RLS aktiviert und Policies auf **drei produktiven Tabellen** angelegt (`agent_runs`, `agent_tasks`, `agent_events`) — fehlerfrei und damit unbemerkt. Verifiziert 2026-08-09: die Migration legt `autonomous_agent_*` an, produktiv existieren nur die alten `agent_*`. |
+| ~~#932~~ ✅ **gemergt** (`8d58b6e`) | Lieferte die Repo-Dateien für die 11 Ledger-Waisen nach. **Damit entfällt die Ledger-Operation komplett** — verifiziert 2026-08-09: 0 Waisen. |
 
 Zusätzlich:
 - **PITR-/Backup-Punkt** im Supabase-Dashboard anlegen und Zeitstempel notieren.
@@ -26,7 +47,7 @@ Zusätzlich:
 
 ---
 
-## Schritt 1 — Ledger: nichts tun (sofern #932 gemergt ist)
+## Schritt 1 — Ledger: nichts tun ✅ (erledigt, #932 ist gemergt)
 
 `db push` bricht ab, solange eine Remote-Version keine passende Repo-Datei hat
 (`Remote migration versions not found in local migrations directory`). Betroffen sind
@@ -75,6 +96,10 @@ supabase db push --include-all 2>&1 | tee /tmp/db-push.log
 Bricht der Push ab: **nicht wiederholen**, sondern die fehlgeschlagene Migration im Log
 identifizieren. Die Trockenanalyse fand genau einen Blocker (`user_consents`, via #941
 behoben) — ein weiterer wäre ein neuer Befund und gehört analysiert, nicht überfahren.
+
+Der Replay aller 270 Migrationen lief am 2026-08-09 lokal fehlerfrei durch (siehe
+Vorprüfung oben). Ein Abbruch hier wäre also datenbedingt, nicht syntaxbedingt — und
+damit ein echter neuer Befund.
 
 ---
 

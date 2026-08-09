@@ -177,7 +177,8 @@ tenant_id = (SELECT tenant_id FROM auth.users WHERE id = auth.uid() LIMIT 1)
 
 `auth.users` hat keine Spalte `tenant_id`. Zum Beleg, dass dieses Muster nie funktioniert hat:
 44 Migrationen im Repo verwenden es, und in Produktion referenziert **0** aktive Policy
-`FROM auth.users` — diese Migrationen gehören zu den 118 nie angewendeten.
+`FROM auth.users` — diese Migrationen gehören zum nie angewendeten Rückstand
+(Stand 2026-08-09: 133 von 270, siehe `p0-2-migration-reconciliation.md`).
 
 **Korrektes Muster** (in Produktion vorhanden und wirksam):
 

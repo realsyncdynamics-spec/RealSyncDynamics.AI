@@ -73,7 +73,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 16
 - **169 Edge Functions** (`supabase/functions/`, Deno/V8)
-- **243 Migrations** (`supabase/migrations/`)
+- **270 Migrations** (`supabase/migrations/`) — davon 137 in Produktion angewendet (Stand 2026-08-09)
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -179,14 +179,18 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Beides ist seit ~2026-07 auseinandergelaufen, weil der
 > `Deploy`-Workflow durchgehend fehlschlug (Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`).
 >
-> Messung vom 2026-08-02 — die Repo-Zahlen wachsen mit jedem Merge, entscheidend
-> ist die Lücke:
+> Die Repo-Zahlen wachsen mit jedem Merge, entscheidend ist die Lücke:
 >
-> | | Repo | in Produktion |
-> |---|---|---|
-> | Edge Functions | 169 | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
-> | Migrationen | 244 | 136 angewendet — **118 nie angewendet** |
-> | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** |
+> | | Repo | in Produktion | Messung |
+> |---|---|---|---|
+> | Edge Functions | 169 | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` | 2026-08-02 |
+> | Migrationen | 270 | 137 angewendet — **133 nie angewendet** | **2026-08-09** |
+> | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** | 2026-08-02 |
+>
+> Die Migrations-Zeile wurde am 2026-08-09 gegen die Live-DB nachgemessen (vorher
+> 244/136/118): **die Lücke wächst**, weil gemergt, aber nicht deployt wird. Die
+> beiden anderen Zeilen stammen unverändert vom 2026-08-02 und sind vermutlich
+> ebenfalls überholt.
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
 > egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
@@ -194,7 +198,9 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 >
 > Stand 2026-08-03 ist die erste Ursache (Syntaxfehler in `add-auditor`, blockierte
 > alle Function-Deploys) über #941 behoben; die Migrations-Seite läuft über
-> `docs/runbooks/p0-2-migration-reconciliation.md` und ist noch offen.
+> `docs/runbooks/p0-2-migration-reconciliation.md` und ist noch offen. Stand
+> 2026-08-09 sind dort alle Vorbedingungen erfüllt und der Rückstand als
+> replaybar verifiziert — das Einspielen selbst steht aus.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
@@ -260,7 +266,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    243 Migrations
+│   └── migrations/    270 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

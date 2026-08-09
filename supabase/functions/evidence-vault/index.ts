@@ -1,10 +1,11 @@
-// evidence-vault — Evidence Vault Advanced (Snapshots + Legal-Hold).
+// evidence-vault — Evidence Vault Advanced (Snapshots + Legal-Hold + Archive).
 //
 // POST /functions/v1/evidence-vault
 // Auth: Authorization: Bearer <user JWT>
 // Body:
 //   { op: 'snapshot', tenant_id, subject_ref, label?, content_sha256, retention_class? }
 //   { op: 'hold',      tenant_id, subject_ref, reason?, active: boolean }
+//   { op: 'archive',   tenant_id, subject_ref, archived: boolean }
 //
 // Gate: evidence.advanced (ab Agency). Snapshots sind append-only + pro
 // (tenant, subject) versioniert + über prev_hash verkettet + optional
@@ -28,7 +29,7 @@ function retainedUntil(cls: RetentionClass, fromMs: number): string | null {
   return new Date(fromMs + RET_DAYS[cls] * DAY_MS).toISOString();
 }
 
-// ── Kanonik + Hash (identisch zu src/lib/provenance-Stil) ────────────────────
+// Kanonik + Hash (identisch zu src/lib/provenance-Stil)
 function normalizeHex(h: string): string { return h.trim().toLowerCase().replace(/^0x/, ''); }
 function bufToHex(buf: Uint8Array): string { let o = ''; for (let i = 0; i < buf.length; i++) o += buf[i].toString(16).padStart(2, '0'); return o; }
 async function sha256Hex(bytes: Uint8Array): Promise<string> { return bufToHex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))); }
@@ -46,7 +47,11 @@ async function signHash(eventHash: string): Promise<string | null> {
 Deno.serve(async (req) => {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
-  if (req.method !== 'POST') return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST only');
+  
+  // Allow POST, PATCH, DELETE for archive operations
+  if (!['POST', 'PATCH', 'DELETE'].includes(req.method)) {
+    return jsonError(405, 'METHOD_NOT_ALLOWED', 'POST, PATCH, DELETE only');
+  }
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
@@ -57,7 +62,17 @@ Deno.serve(async (req) => {
   const op = String(body.op ?? '');
   const tenantId = String(body.tenant_id ?? '');
   const subjectRef = String(body.subject_ref ?? '').trim();
-  if (!['snapshot', 'hold'].includes(op)) return jsonError(400, 'BAD_REQUEST', 'op must be snapshot|hold');
+  
+  // Validate required fields based on operation
+  if (op === 'snapshot' && !['snapshot', 'hold', 'archive'].includes(op)) {
+    return jsonError(400, 'BAD_REQUEST', 'op must be snapshot|hold|archive');
+  }
+  if (op === 'hold' && !['snapshot', 'hold', 'archive'].includes(op)) {
+    return jsonError(400, 'BAD_REQUEST', 'op must be snapshot|hold|archive');
+  }
+  if (op === 'archive' && !['snapshot', 'hold', 'archive'].includes(op)) {
+    return jsonError(400, 'BAD_REQUEST', 'op must be snapshot|hold|archive');
+  }
   if (!tenantId || !subjectRef) return jsonError(400, 'BAD_REQUEST', 'tenant_id and subject_ref required');
 
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -86,6 +101,61 @@ Deno.serve(async (req) => {
   const nowIso = new Date(nowMs).toISOString();
 
   try {
+    // --- Archive Operation (PATCH/DELETE) ---
+    if (op === 'archive' || req.method === 'PATCH' || req.method === 'DELETE') {
+      const archived = body.archived === true || req.method === 'DELETE';
+      
+      if (archived) {
+        // Archive: Set archived_at timestamp
+        const { error: archiveError } = await admin
+          .from('evidence_snapshots')
+          .update({ archived_at: nowIso })
+          .eq('tenant_id', tenantId)
+          .eq('subject_ref', subjectRef)
+          .eq('archived_at', null);
+        
+        if (archiveError) {
+          return jsonError(500, 'INTERNAL', 'could not archive snapshot');
+        }
+        
+        await audit(admin, { 
+          tenant_id: tenantId, 
+          actor_user_id: userId, 
+          actor_email: userEmail, 
+          action: 'evidence.archive', 
+          target_type: 'evidence_snapshot', 
+          target_id: subjectRef, 
+          payload: {} 
+        });
+        
+        return jsonResponse({ ok: true, subject_ref: subjectRef, archived: true });
+      } else {
+        // Unarchive: Remove archived_at timestamp
+        const { error: unarchiveError } = await admin
+          .from('evidence_snapshots')
+          .update({ archived_at: null })
+          .eq('tenant_id', tenantId)
+          .eq('subject_ref', subjectRef);
+        
+        if (unarchiveError) {
+          return jsonError(500, 'INTERNAL', 'could not unarchive snapshot');
+        }
+        
+        await audit(admin, { 
+          tenant_id: tenantId, 
+          actor_user_id: userId, 
+          actor_email: userEmail, 
+          action: 'evidence.unarchive', 
+          target_type: 'evidence_snapshot', 
+          target_id: subjectRef, 
+          payload: {} 
+        });
+        
+        return jsonResponse({ ok: true, subject_ref: subjectRef, archived: false });
+      }
+    }
+
+    // --- Hold Operation ---
     if (op === 'hold') {
       const active = body.active === true;
       if (active) {
@@ -97,50 +167,56 @@ Deno.serve(async (req) => {
       return jsonResponse({ ok: true, subject_ref: subjectRef, legal_hold: active });
     }
 
-    // op === 'snapshot'
-    const contentSha = String(body.content_sha256 ?? '');
-    if (!/^[0-9a-fA-F]{64}$/.test(normalizeHex(contentSha))) return jsonError(400, 'BAD_REQUEST', 'content_sha256 must be a 64-char hex digest');
-    const retentionClass: RetentionClass = RET_CLASSES.includes(body.retention_class as RetentionClass) ? (body.retention_class as RetentionClass) : 'forever';
+    // --- Snapshot Operation ---
+    if (op === 'snapshot') {
+      const contentSha = String(body.content_sha256 ?? '');
+      if (!/^[0-9a-fA-F]{64}$/.test(normalizeHex(contentSha))) return jsonError(400, 'BAD_REQUEST', 'content_sha256 must be a 64-char hex digest');
+      const retentionClass: RetentionClass = RET_CLASSES.includes(body.retention_class as RetentionClass) ? (body.retention_class as RetentionClass) : 'forever';
 
-    // Version + prev_hash aus dem letzten Snapshot des Subjects.
-    const { data: last } = await admin
-      .from('evidence_snapshots').select('version, event_hash')
-      .eq('tenant_id', tenantId).eq('subject_ref', subjectRef)
-      .order('version', { ascending: false }).limit(1).maybeSingle<{ version: number; event_hash: string }>();
-    const version = (last?.version ?? 0) + 1;
-    const prevHash = last?.event_hash ?? null;
+      // Version + prev_hash aus dem letzten Snapshot des Subjects.
+      const { data: last } = await admin
+        .from('evidence_snapshots')
+        .select('version, event_hash')
+        .eq('tenant_id', tenantId).eq('subject_ref', subjectRef)
+        .eq('archived_at', null) // Nur nicht-archivierte Snapshots berücksichtigen
+        .order('version', { ascending: false }).limit(1).maybeSingle<{ version: number; event_hash: string }>();
+      const version = (last?.version ?? 0) + 1;
+      const prevHash = last?.event_hash ?? null;
 
-    const eventHash = await snapshotHash({ subjectRef, version, contentSha256: normalizeHex(contentSha), retentionClass, timestamp: nowIso, prevHash });
-    const signature = await signHash(eventHash);
-    const retUntil = retainedUntil(retentionClass, nowMs);
+      const eventHash = await snapshotHash({ subjectRef, version, contentSha256: normalizeHex(contentSha), retentionClass, timestamp: nowIso, prevHash });
+      const signature = await signHash(eventHash);
+      const retUntil = retainedUntil(retentionClass, nowMs);
 
-    const { data: created, error } = await admin.from('evidence_snapshots').insert({
-      tenant_id: tenantId, subject_ref: subjectRef,
-      label: typeof body.label === 'string' ? body.label.trim().slice(0, 200) || null : null,
-      version, content_sha256: normalizeHex(contentSha), prev_hash: prevHash, event_hash: eventHash,
-      signature, retention_class: retentionClass, retained_until: retUntil, created_by: userId,
-      event_timestamp: nowIso,
-    }).select('id').single();
-    if (error || !created) return jsonError(500, 'INTERNAL', 'could not create snapshot');
+      const { data: created, error } = await admin.from('evidence_snapshots').insert({
+        tenant_id: tenantId, subject_ref: subjectRef,
+        label: typeof body.label === 'string' ? body.label.trim().slice(0, 200) || null : null,
+        version, content_sha256: normalizeHex(contentSha), prev_hash: prevHash, event_hash: eventHash,
+        signature, retention_class: retentionClass, retained_until: retUntil, created_by: userId,
+        event_timestamp: nowIso,
+      }).select('id').single();
+      if (error || !created) return jsonError(500, 'INTERNAL', 'could not create snapshot');
 
-    await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.snapshot', target_type: 'evidence_snapshot', target_id: created.id, payload: { subject_ref: subjectRef, version, retention_class: retentionClass, signed: signature !== null } });
+      await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'evidence.snapshot', target_type: 'evidence_snapshot', target_id: created.id, payload: { subject_ref: subjectRef, version, retention_class: retentionClass, signed: signature !== null } });
 
-    // Phase 2b — Auto-Erfassung im Herkunftsnachweis: jeder Snapshot hängt ein
-    // Custody-Event an die Provenance-Kette desselben Subjects an. Best-effort:
-    // der Snapshot (Primärfunktion) darf niemals hieran scheitern.
-    let provenanceLinked = false;
-    try {
-      const r = await appendCustodyEvent(admin, {
-        tenantId, assetRef: subjectRef, contentSha256: normalizeHex(contentSha),
-        action: 'audited', issuer: `tenant:${tenantId}`, timestamp: nowIso,
-      });
-      provenanceLinked = true;
-      await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'provenance.auto', target_type: 'provenance_manifest', target_id: subjectRef, payload: { seq: r.seq, source: 'evidence.snapshot', event_hash: r.eventHash, signed: r.signed } });
-    } catch (provErr) {
-      console.error(JSON.stringify({ level: 'warn', scope: 'provenance_auto_link_failed', subject_ref: subjectRef, error: (provErr as Error)?.message ?? String(provErr) }));
+      // Phase 2b — Auto-Erfassung im Herkunftsnachweis
+      let provenanceLinked = false;
+      try {
+        const r = await appendCustodyEvent(admin, {
+          tenantId, assetRef: subjectRef, contentSha256: normalizeHex(contentSha),
+          action: 'audited', issuer: `tenant:${tenantId}`, timestamp: nowIso,
+        });
+        provenanceLinked = true;
+        await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'provenance.auto', target_type: 'provenance_manifest', target_id: subjectRef, payload: { seq: r.seq, source: 'evidence.snapshot', event_hash: r.eventHash, signed: r.signed } });
+      } catch (provErr) {
+        console.error(JSON.stringify({ level: 'warn', scope: 'provenance_auto_link_failed', subject_ref: subjectRef, error: (provErr as Error)?.message ?? String(provErr) }));
+      }
+
+      return jsonResponse({ ok: true, id: created.id, subject_ref: subjectRef, version, event_hash: eventHash, retained_until: retUntil, signed: signature !== null, provenance_linked: provenanceLinked });
     }
 
-    return jsonResponse({ ok: true, id: created.id, subject_ref: subjectRef, version, event_hash: eventHash, retained_until: retUntil, signed: signature !== null, provenance_linked: provenanceLinked });
+    // Unknown operation
+    return jsonError(400, 'BAD_REQUEST', 'unknown operation');
+
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'evidence_vault_failed', op, error: (e as Error)?.message ?? String(e) }));
     return jsonError(500, 'INTERNAL', 'evidence-vault operation failed');

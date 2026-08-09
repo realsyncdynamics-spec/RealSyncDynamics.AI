@@ -18,6 +18,7 @@ import {
   MemoryValidationError,
   canPurgeMemory,
   getEffectiveFreshness,
+  REVALIDATION_DELAY_HOURS,
 } from '@/src/core/governance/rfc003-memory';
 
 // ============================================================
@@ -287,6 +288,17 @@ describe('RFC-003 / confidence decay actions', () => {
   it('confidence ≥ 0.8 triggers revalidate only', () => {
     expect(getConfidenceDecayAction(0.8)).toBe('revalidate_only');
     expect(getConfidenceDecayAction(1.0)).toBe('revalidate_only');
+  });
+
+  // Die Intervalle stehen doppelt: hier und in
+  // governance_memory_confidence_reassess() (Migration 20260819000000).
+  // Driften sie auseinander, plant SQL andere Re-Validation-Termine als der
+  // TS-Aufrufer erwartet — dieser Test pinnt beide Werte.
+  it('cooling items are re-validated sooner than still-active ones', () => {
+    expect(REVALIDATION_DELAY_HOURS.cool_and_revalidate).toBe(24);
+    expect(REVALIDATION_DELAY_HOURS.revalidate_only).toBe(72);
+    expect(REVALIDATION_DELAY_HOURS.cool_and_revalidate)
+      .toBeLessThan(REVALIDATION_DELAY_HOURS.revalidate_only);
   });
 });
 

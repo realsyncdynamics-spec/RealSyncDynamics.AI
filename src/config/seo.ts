@@ -55,7 +55,7 @@ const SITE_URL = 'https://realsyncdynamicsai.de';
 export const DEFAULT_SEO: SEOConfig = {
   title: 'RealSyncDynamics.AI — DSGVO-konforme KI-Compliance-Plattform',
   description:
-    'EU-konforme KI-Infrastruktur für regulierte Branchen: EU-Datenresidenz, lückenloser Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). DSGVO Art. 32, AI Act, BAIT, MaRisk konform.',
+    'EU-konforme KI-Infrastruktur für regulierte Branchen: EU-Datenresidenz, lückenloser Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). Ausgerichtet an DSGVO Art. 32, AI Act, BAIT und MaRisk.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -224,11 +224,11 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/': {
     title: 'KI-Betriebssystem für DSGVO & EU AI Act | RealSyncDynamicsAI',
     description:
-      'Das KI-Betriebssystem für DSGVO & EU AI Act: überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready, auditierbar. EU-Hosting.',
+      'Das KI-Betriebssystem für DSGVO & EU AI Act: überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-Compliance überwachen, AI-Act-Readiness nachweisen, auditierbar. EU-Hosting.',
     canonical: `${SITE_URL}/`,
     ogTitle: 'Das KI-Betriebssystem für DSGVO & EU AI Act',
     ogDescription:
-      'RealSyncDynamics.AI überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
+      'RealSyncDynamics.AI überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-Compliance überwachen, AI-Act-Readiness nachweisen, auditierbar. Souveräne Compliance aus der EU.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

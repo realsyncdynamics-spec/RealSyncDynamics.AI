@@ -1,15 +1,8 @@
-import crypto from 'crypto';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MctAuthContext } from '../types/index.js';
+import { validateApiKey, logKeyUsage } from '../services/api-keys-db.js';
 
 const API_KEY_PREFIX = 'rsmcp_';
-
-export function hashApiKey(key: string): string {
-  return crypto
-    .createHash('sha256')
-    .update(key)
-    .digest('hex');
-}
 
 export function validateApiKeyFormat(key: string): boolean {
   return key.startsWith(API_KEY_PREFIX) && key.length > API_KEY_PREFIX.length;
@@ -28,16 +21,45 @@ export async function authenticateRequest(
     return null;
   }
 
-  // In Phase 1: placeholder. Phase 2 wird echte DB-Queries implementiert.
-  // Für jetzt: nur Struktur validieren.
-  const keyHash = hashApiKey(apiKey);
-  const keyId = apiKey.substring(0, 20); // Simplified for MVP
+  // Validate against database (Phase 2.1)
+  const validation = await validateApiKey(apiKey);
+  if (!validation.valid || !validation.keyId || !validation.tenantId) {
+    return null;
+  }
 
   return {
-    keyId,
-    tenantId: '', // würde aus DB kommen
-    scopes: ['evidence.read', 'governance.read'],
+    keyId: validation.keyId,
+    tenantId: validation.tenantId,
+    scopes: validation.scopes || [],
   };
+}
+
+/**
+ * Log key usage after request completes.
+ * Call this from route handlers.
+ */
+export async function logRequestUsage(
+  request: FastifyRequest,
+  statusCode: number,
+  latencyMs: number,
+): Promise<void> {
+  const auth = (request as any).user as MctAuthContext | undefined;
+  if (!auth) {
+    return;
+  }
+
+  const clientIp =
+    (request.headers['x-forwarded-for'] as string)?.split(',')[0] ||
+    request.socket.remoteAddress ||
+    'unknown';
+  const userAgent = request.headers['user-agent'] as string | undefined;
+  const action = `${request.method.toLowerCase()} ${request.url}`;
+
+  await logKeyUsage(auth.keyId, action, statusCode, {
+    ip: clientIp,
+    userAgent,
+    latencyMs,
+  });
 }
 
 export function requireScope(scope: string) {

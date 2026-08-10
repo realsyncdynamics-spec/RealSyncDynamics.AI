@@ -346,8 +346,7 @@ scripts/
 - ✅ Code complete (all 54 components wrapped)
 - ✅ Tests passing (2202/2202)
 - ✅ Cloudflare Pages deployment successful
-- ⏳ Awaiting review and merge approval
-- ⚠️ Vercel deployments failing (environmental config issue, not code)
+- ✅ Vercel removed from CI/CD pipeline (Phase 2b consolidation)
 
 ### Production Activation (Post-Merge)
 1. PR #817 merges to main

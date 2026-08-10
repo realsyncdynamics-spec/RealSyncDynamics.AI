@@ -86,11 +86,59 @@ curl -X POST "$SUPABASE_URL/functions/v1/mcp-api-key-manager" \
 
 ## 4. Anbindung
 
-Der Dienst spricht derzeit **HTTP, nicht das MCP-Protokoll**. Der native
-MCP-Transport steht noch aus (siehe Abschnitt 7). Bis dahin läuft die Anbindung
-über gewöhnliche Werkzeugdefinitionen.
+Es gibt zwei Wege: das **MCP-Protokoll** unter `POST /mcp` (empfohlen, der Agent
+entdeckt die Werkzeuge selbst) und die **HTTP-Endpunkte** für alles, was kein
+MCP spricht.
 
-### Als Werkzeug in einem Agenten
+### MCP-Protokoll (empfohlen)
+
+JSON-RPC 2.0 über einen einzigen Endpunkt. Der Key wandert wie überall in den
+`Authorization`-Header.
+
+```bash
+curl -X POST http://localhost:3001/mcp \
+  -H "Authorization: Bearer rsmcp_…" -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",
+       "params":{"protocolVersion":"2025-06-18","capabilities":{},
+                 "clientInfo":{"name":"hermes","version":"1.0"}}}'
+```
+
+```json
+{ "jsonrpc": "2.0", "id": 1, "result": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": { "tools": {} },
+    "serverInfo": { "name": "realsync-mcp-governance", "version": "0.1.0" } } }
+```
+
+Danach `notifications/initialized` senden (darauf antwortet der Server nicht,
+er quittiert mit 202), dann `tools/list` und `tools/call`.
+
+**`tools/list` zeigt nur Werkzeuge, für die der Key den Scope hat.** Ein Modell
+soll nichts vorgeschlagen bekommen, was anschließend an der Berechtigung
+scheitert. Ein Key mit ausschließlich `evidence.read` sieht vier Werkzeuge, die
+`governance_*` gar nicht.
+
+| Werkzeug | Scope |
+|---|---|
+| `evidence_list` · `evidence_get` · `evidence_verify_chain` · `evidence_search_by_control` | `evidence.read` |
+| `governance_status` · `governance_list_controls` · `governance_check_control` | `governance.read` |
+
+Unterstützte Protokollfassungen: `2025-06-18` (Standard), `2025-03-26`,
+`2024-11-05`. Nennt der Client eine davon, wird sie bestätigt; sonst antwortet
+der Server mit seiner eigenen.
+
+Der Server meldet ausschließlich die Fähigkeit `tools` — keine `resources`,
+keine `prompts`, kein `sampling`. Was nicht gemeldet wird, darf ein Client nicht
+anfragen.
+
+**Fehler kommen an zwei Stellen zurück, und der Unterschied ist beabsichtigt:**
+Protokollfehler (unbekannte Methode, unbekanntes Werkzeug) als JSON-RPC-`error`;
+Fehler bei der Ausführung — fehlender Scope, nicht implementiertes Werkzeug,
+ungültiges Argument — als Ergebnis mit `isError: true`. Nur so sieht das Modell
+die Begründung und kann sie dem Nutzer nennen, statt an einem Transportfehler
+zu scheitern.
+
+### Als HTTP-Werkzeug in einem Agenten
 
 ```ts
 const RSD = process.env.RSD_MCP_URL ?? 'http://localhost:3001';
@@ -210,14 +258,19 @@ Lesezugriff auf Compliance-Nachweise ist ein offenes Risiko.
 
 | Grenze | Bedeutung für die Anbindung |
 |---|---|
-| Kein MCP-Transport | Anbindung über HTTP-Werkzeuge, keine automatische Werkzeug-Erkennung |
 | Governance-Tools nicht implementiert | drei Endpunkte antworten mit 501 |
 | Keine semantische Suche | `evidence/control/:id` ist ein Textmuster über `subject_ref`, keine Bedeutungssuche |
 | Keine Key-Rotation | Ersatz nur durch Widerruf und Neuausstellung |
 | Legacy-Snapshots nicht nachrechenbar | Ketten aus der Zeit vor `event_timestamp` sind nur strukturell prüfbar |
 
-Am ehesten fällt der fehlende native MCP-Transport ins Gewicht: Werkzeuge
-müssen von Hand definiert werden, statt dass der Agent sie selbst entdeckt.
+Am ehesten fällt die fehlende semantische Suche ins Gewicht: `evidence_search_by_control`
+gleicht Text ab, kein leeres Ergebnis belegt daher die Abwesenheit von Nachweisen.
+Der Werkzeug-Beschreibungstext sagt das ausdrücklich, damit ein Modell nicht
+das Gegenteil schlussfolgert.
+
+Zum MCP-Transport: umgesetzt ist die Anfrage/Antwort-Hälfte über HTTP POST.
+Server-initiierte Nachrichten (SSE-Stream, Fortschritts-Benachrichtigungen,
+Sampling) fehlen — ein rein lesender Server hat nichts von sich aus zu senden.
 
 ---
 

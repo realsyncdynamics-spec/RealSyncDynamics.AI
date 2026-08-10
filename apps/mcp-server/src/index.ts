@@ -10,6 +10,16 @@ import {
   searchEvidenceByControl,
 } from './tools/evidence.js';
 import { getGovernanceStatus, listControls, checkComplianceStatus } from './tools/governance.js';
+import {
+  handleMessage,
+  isJsonRpcRequest,
+  rpcError,
+  RpcCode,
+} from './mcp/protocol.js';
+import { MCP_TOOLS, invokeTool } from './mcp/tools.js';
+
+/** Wird im MCP-Handshake als serverInfo.version gemeldet. */
+const SERVER_VERSION = '0.1.0';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -95,6 +105,48 @@ async function start() {
   // Health check (no auth required)
   fastify.get('/health', async (request, reply) => {
     return { status: 'ok', timestamp: new Date().toISOString() };
+  });
+
+  // ─── MCP-Protokoll ────────────────────────────────────────
+  //
+  // JSON-RPC 2.0 über POST. Auth, Scopes und Kontingent laufen über dieselben
+  // Hooks wie die HTTP-Routen — der Transport ändert nichts an den Regeln.
+  fastify.post('/mcp', async (request, reply) => {
+    const auth = (request as any).user as MctAuthContext;
+    const body = request.body;
+
+    // Stapelverarbeitung: der Client darf mehrere Nachrichten auf einmal
+    // schicken. Reihenfolge und Zuordnung laufen über die id.
+    const messages = Array.isArray(body) ? body : [body];
+    if (messages.length === 0) {
+      return reply.code(400).send(rpcError(null, RpcCode.INVALID_REQUEST, 'Leerer Stapel'));
+    }
+
+    const ctx = {
+      tools: MCP_TOOLS,
+      invoke: (name: string, args: Record<string, unknown>) =>
+        invokeTool(auth.tenantId, name, args),
+      scopes: auth.scopes,
+      serverName: 'realsync-mcp-governance',
+      serverVersion: SERVER_VERSION,
+    };
+
+    const responses: unknown[] = [];
+    for (const message of messages) {
+      if (!isJsonRpcRequest(message)) {
+        responses.push(rpcError(null, RpcCode.INVALID_REQUEST, 'Keine gültige JSON-RPC-Nachricht'));
+        continue;
+      }
+      const answer = await handleMessage(message, ctx);
+      if (answer) responses.push(answer);
+    }
+
+    // Bestand der Stapel nur aus Benachrichtigungen, gibt es nichts zu
+    // antworten — 202 statt eines leeren Rumpfes.
+    if (responses.length === 0) {
+      return reply.code(202).send();
+    }
+    return Array.isArray(body) ? responses : responses[0];
   });
 
   // ─── Evidence API ─────────────────────────────────────────

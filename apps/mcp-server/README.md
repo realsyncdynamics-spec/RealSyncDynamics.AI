@@ -23,8 +23,10 @@ Claude / Hermes / eigener Agent
    MCP Server (Fastify, Port 3001)
         │
         ├── Auth-Middleware   → mcp_key_is_valid (RPC, service_role)
-        ├── Tools             → Evidence · Governance
-        └── onResponse-Hook   → mcp_log_usage  (Prüfpfad)
+        ├── Kontingent        → mcp_quota_state  (plan_catalog)
+        ├── POST /mcp         → JSON-RPC 2.0 (tools/list · tools/call)
+        ├── HTTP-Routen       → Evidence · Governance
+        └── onResponse-Hook   → mcp_log_usage    (Prüfpfad)
         │
         ▼
    Supabase / PostgreSQL (RLS)
@@ -108,6 +110,20 @@ durchprobieren ließen. Der Server prüft Keys über die RPC mit `service_role`.
 ## Endpunkte
 
 Alle bis auf `/health` erwarten `Authorization: Bearer rsmcp_…`.
+
+### MCP-Protokoll
+
+`POST /mcp` — JSON-RPC 2.0. Methoden: `initialize`, `notifications/initialized`,
+`ping`, `tools/list`, `tools/call`. Gemeldete Fähigkeit ist ausschließlich
+`tools`. Protokollfassungen `2025-06-18` (Standard), `2025-03-26`, `2024-11-05`.
+
+`tools/list` zeigt nur Werkzeuge, für die der Key den Scope hat. Fehler bei der
+Ausführung kommen als Ergebnis mit `isError: true` zurück, nicht als
+JSON-RPC-Fehler — sonst sähe das Modell die Begründung nicht.
+
+Umgesetzt ohne `@modelcontextprotocol/sdk`: das SDK zieht 17 transitive
+Abhängigkeiten mit, darunter zod (laut CLAUDE.md nicht ohne Absprache
+einzuführen) und Express 5 neben dem hier verwendeten Fastify.
 
 ### Evidence — funktionsfähig
 
@@ -229,7 +245,6 @@ nichts liefern kann.
 | Lücke | Auswirkung |
 |---|---|
 | Governance-Tools sind Platzhalter | drei Endpunkte antworten mit 501 |
-| Kein MCP-Protokoll | Anbindung läuft über HTTP, nicht über MCP-Transport |
 | Keine Key-Rotation | `rotated_from` ist vorbereitet, es gibt keine Operation dafür |
 | Keine Oberfläche | Keys nur über die Edge Function |
 | Keine semantische Suche | `evidence/control/:id` sucht als Textmuster über `subject_ref` |

@@ -35,10 +35,19 @@ Tenants hinweg, oder Zugriff aus dem Browser.
 | API-Key | siehe Abschnitt 3 |
 | Plan mit API-Zugriff | ab Agency — darunter antwortet der Server mit 403 |
 
-> **Vor dem Produktivbetrieb prüfen:** Laut `CLAUDE.md` sind zahlreiche Edge
-> Functions und Migrationen im Repository nie deployt worden. Ob dieser Stand in
-> Produktion vorliegt, mit `supabase functions list` bzw. gegen die Live-DB
-> prüfen — nicht gegen den Repo-Stand.
+> **`mcp-api-key-manager` ist derzeit nicht deploybar.** Die Supabase-
+> Organisation läuft auf dem Free-Plan und steht bei 100 von 100 Edge
+> Functions; neue Functions werden mit `HTTP 402: Max number of functions
+> reached` abgewiesen. Bestehende werden weiter aktualisiert, neue nicht
+> angelegt. Ohne diese Function lassen sich keine Keys ausstellen, und ohne
+> Key ist der MCP Server nicht nutzbar.
+>
+> Vorgehen: [`docs/runbooks/edge-function-kontingent.md`](./runbooks/edge-function-kontingent.md).
+>
+> **Generell vor dem Produktivbetrieb prüfen:** Laut `CLAUDE.md` sind zahlreiche
+> Edge Functions und Migrationen im Repository nie deployt worden. Ob dieser
+> Stand in Produktion vorliegt, mit `supabase functions list` bzw. gegen die
+> Live-DB prüfen — nicht gegen den Repo-Stand.
 
 ---
 

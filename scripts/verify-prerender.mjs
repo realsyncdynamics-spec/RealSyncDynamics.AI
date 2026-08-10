@@ -140,6 +140,38 @@ async function main() {
     );
   }
 
+  // ── Check 3b: Duenne Sitemap-Seiten ─────────────────────────────────────
+  // Die sitemap.xml bewirbt eine URL als indexierbar. Liefert sie einem
+  // anonymen Besucher — und damit jedem Crawler — kaum Text, ist der
+  // Eintrag schaedlich statt nutzlos: er verbraucht Crawl-Budget und
+  // produziert Thin-Content-Signale.
+  //
+  // Gefunden am Preview von PR #947: /pilot-readiness (Priority 0.7)
+  // umschliesst seinen Inhalt mit <AuthGate> und rendert fuer Crawler nur
+  // "Bei Kodee anmelden" — 735 Zeichen. Aus der Sitemap entfernt; die Seite
+  // funktioniert fuer eingeloggte Nutzer unveraendert weiter.
+  //
+  // Der Check laeuft NUR gegen Sitemap-Routen. Auth-gated App-Routen
+  // (/app/*, /settings/*) sind voellig legitim duenn — sie stehen nur
+  // eben nicht in der Sitemap.
+  const sitemapRoutes = new Set();
+  try {
+    const xml = await readFile(join(DIST, 'sitemap.xml'), 'utf8');
+    for (const m of xml.matchAll(/<loc>\s*https?:\/\/[^/]+([^<\s]*)\s*<\/loc>/g)) {
+      sitemapRoutes.add(m[1].replace(/\/$/, '') || '/');
+    }
+  } catch { /* ohne Sitemap kein Scoping — Check entfaellt */ }
+
+  const thin = pages
+    .filter((p) => sitemapRoutes.has(p.route) && p.textLen < MIN_TEXT_CHARS)
+    .map((p) => `${p.route} (~${p.textLen} Zeichen)`);
+  if (sitemapRoutes.size > 0 && thin.length > 0) {
+    failures.push(
+      `${thin.length} Sitemap-URL(s) liefern kaum Text: ${thin.slice(0, 5).join(', ')}. ` +
+      'Entweder oeffentlichen Inhalt bereitstellen oder aus public/sitemap.xml entfernen.'
+    );
+  }
+
   // ── Check 4: Soft-404 ───────────────────────────────────────────────────
   // Eine Route, die in der sitemap.xml steht, aber im Router fehlt, rendert
   // die NotFound-Komponente — und wird trotzdem mit HTTP 200 ausgeliefert.
@@ -193,7 +225,7 @@ async function main() {
 
   // ── Report ──────────────────────────────────────────────────────────────
   console.log(`[verify] ${pages.length} HTML-Dateien · ${real.length} mit Content · ${uniqueTitles.size} unterschiedliche Titles`);
-  console.log(`[verify] Soft-404: ${soft404.length} · Headings: ${noH1.length} ohne h1 · ${manyH1.length} mit mehreren h1 · ${skips.length} mit Level-Sprung`);
+  console.log(`[verify] Duenne Sitemap-Seiten: ${thin.length} · Soft-404: ${soft404.length} · Headings: ${noH1.length} ohne h1 · ${manyH1.length} mit mehreren h1 · ${skips.length} mit Level-Sprung`);
   console.log(`[verify] Startseite: H1=${homeH1 ? JSON.stringify(homeH1.slice(0, 60)) : 'KEINE'} · ~${homeText} Zeichen Text`);
 
   if (failures.length > 0) {

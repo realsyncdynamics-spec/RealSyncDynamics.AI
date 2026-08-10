@@ -129,13 +129,14 @@ export function CostCalculator() {
                   max="300"
                   step="5"
                   value={params.hourlyRate}
-                  onChange={(e) => setParams({ ...params, hourlyRate: parseInt(e.target.value, 10) })}
+                  onChange={(e) => setParams({ ...params, hourlyRate: Math.max(40, Math.min(300, parseInt(e.target.value, 10))) })}
                   className="flex-1 h-2 bg-obsidian-800 rounded-none appearance-none cursor-pointer accent-cyan-400"
                 />
                 <div className="w-20 flex items-center gap-1">
                   <input
                     type="number"
                     min="40"
+                    max="300"
                     step="5"
                     value={params.hourlyRate}
                     onChange={handleHourlyRateChange}
@@ -211,7 +212,7 @@ export function CostCalculator() {
                     growth: 2.0,      // 20 Websites (mittlere Unternehmen)
                     agency: 4.0,      // 40 Websites (Agenturen)
                     enterprise: 5.0,  // 50 Websites (Großunternehmen)
-                    scale: 10.0,      // 100 Websites (Reseller mit Mandanten)
+                    partner: 10.0,    // 100 Websites (Reseller mit Mandanten)
                   };
                   const multiplier = websiteMultiplier[tier.id] || 1.0;
                   const scaledManualCost = calculations.totalManualCostPerYear * multiplier;
@@ -222,7 +223,7 @@ export function CostCalculator() {
                     growth: 0.62,     // 62% Automation
                     agency: 0.75,     // 75% Automation (Governance Agents)
                     enterprise: 0.82, // 82% Automation (erweiterte Features)
-                    scale: 0.88,      // 88% Automation (Multi-Tenant max)
+                    partner: 0.88,    // 88% Automation (Multi-Tenant max)
                   };
                   const efficiency = efficiencyMap[tier.id] || 0.45;
                   const automatedCostPerYear = scaledManualCost * (1 - efficiency);

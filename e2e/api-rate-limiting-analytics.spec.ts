@@ -7,11 +7,6 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Rate Limiting Analytics Features', () => {
-  test.beforeEach(async ({ page }) => {
-    // Would typically login here in a real scenario
-    // For now, we verify the routes are accessible
-  });
-
   test('should provide rate limiting analytics interface', async ({ page }) => {
     const rateLimitingUrl = '/app/api/rate-limiting';
     const response = await page.goto(rateLimitingUrl, { waitUntil: 'networkidle' });

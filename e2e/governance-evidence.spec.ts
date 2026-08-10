@@ -7,21 +7,11 @@
  * 3. Slack/Email Alerts bei Änderungen
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-// Test data
-const TENANT_EMAIL = 'test-governance@example.com';
-const TENANT_PASSWORD = 'TestPassword123!';
 
 test.describe('Governance Evidence Export', () => {
-  let page: Page;
-
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-    // Would auth here using TENANT_EMAIL / TENANT_PASSWORD
-  });
-
-  test('should export evidence as PDF', async () => {
+  test('should export evidence as PDF', async ({ page }) => {
     // Navigate to evidence dashboard
     await page.goto('/app/governance/evidence');
 
@@ -44,7 +34,7 @@ test.describe('Governance Evidence Export', () => {
     expect(buffer).toBeTruthy();
   });
 
-  test('should include custody chain in export', async () => {
+  test('should include custody chain in export', async ({ page }) => {
     await page.goto('/app/governance/evidence');
 
     // Select specific asset
@@ -60,7 +50,7 @@ test.describe('Governance Evidence Export', () => {
     expect(download.suggestedFilename()).toMatch(/evidence-export-\d+\.pdf/);
   });
 
-  test('should verify signature status in export', async () => {
+  test('should verify signature status in export', async ({ page }) => {
     await page.goto('/app/governance/evidence');
 
     // Open evidence item
@@ -72,7 +62,7 @@ test.describe('Governance Evidence Export', () => {
     expect(statusText).toMatch(/Ed25519|HMAC|Legacy/);
   });
 
-  test('should handle evidence verification', async () => {
+  test('should handle evidence verification', async ({ page }) => {
     await page.goto('/app/governance/evidence');
 
     // Click verify button on evidence
@@ -95,13 +85,7 @@ test.describe('Governance Evidence Export', () => {
 });
 
 test.describe('Policy-Pack Auto-Aktivierung', () => {
-  let page: Page;
-
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-  });
-
-  test('should recommend policy packs on asset creation', async () => {
+  test('should recommend policy packs on asset creation', async ({ page }) => {
     await page.goto('/app/governance/assets');
 
     // Create new asset
@@ -134,7 +118,7 @@ test.describe('Policy-Pack Auto-Aktivierung', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('should auto-activate recommended policy packs', async () => {
+  test('should auto-activate recommended policy packs', async ({ page }) => {
     await page.goto('/app/governance/assets');
 
     // Open asset with recommendations
@@ -162,7 +146,7 @@ test.describe('Policy-Pack Auto-Aktivierung', () => {
     }
   });
 
-  test('should show tenant industry signal in recommendations', async () => {
+  test('should show tenant industry signal in recommendations', async ({ page }) => {
     await page.goto('/app/governance/assets');
 
     // Create asset with healthcare context (if tenant is healthcare)
@@ -189,13 +173,7 @@ test.describe('Policy-Pack Auto-Aktivierung', () => {
 });
 
 test.describe('Policy Activation Alerts', () => {
-  let page: Page;
-
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-  });
-
-  test('should show toast notification on policy activation', async () => {
+  test('should show toast notification on policy activation', async ({ page }) => {
     await page.goto('/app/governance/assets');
 
     // Create asset and auto-activate policies (from previous test)
@@ -221,7 +199,7 @@ test.describe('Policy Activation Alerts', () => {
     }
   });
 
-  test('should list policy alert events in activity log', async () => {
+  test('should list policy alert events in activity log', async ({ page }) => {
     await page.goto('/app/governance/audit-log');
 
     // Filter for policy-related events
@@ -239,13 +217,7 @@ test.describe('Policy Activation Alerts', () => {
 });
 
 test.describe('Evidence Export Performance', () => {
-  let page: Page;
-
-  test.beforeAll(async ({ browser }) => {
-    page = await browser.newPage();
-  });
-
-  test('should export evidence within 5 seconds', async () => {
+  test('should export evidence within 5 seconds', async ({ page }) => {
     await page.goto('/app/governance/evidence');
 
     const startTime = Date.now();

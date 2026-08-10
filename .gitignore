@@ -15,6 +15,9 @@ coverage/
 test-results/
 playwright-report/
 playwright/.cache/
+# Angemeldeter Browser-Zustand aus e2e/auth.setup.ts — enthaelt ein gueltiges
+# Supabase-Access-Token und gehoert deshalb nie ins Repository.
+e2e/.auth/
 
 # Agent-Skills (installiert via `npx skills add ...`) — pro-Maschine,
 # nicht Teil des Produktcodes.

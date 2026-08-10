@@ -1,19 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('SEO-Marketing-Dashboard', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/demo-login');
-
-    // Perform demo login
-    await page.fill('input[name="email"]', 'demo@example.com');
-    await page.fill('input[name="password"]', 'demo123456');
-    await page.click('button[type="submit"]');
-
-    // Wait for dashboard redirect
-    await page.waitForURL(/\/app\/dashboard/, { timeout: 10000 });
-  });
-
   test('should load dashboard and display KPI cards', async ({ page }) => {
     // Navigate to SEO Marketing Dashboard
     await page.goto('/app/seo-marketing-dashboard');

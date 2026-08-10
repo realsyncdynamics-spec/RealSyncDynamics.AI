@@ -1,10 +1,7 @@
 {
-  "_comment": "Bekannter Altbestand: live deployte Edge Functions, die (noch) nicht im Repo liegen. Grandfathered, damit der Drift-Guard gruen startet und nur NEUEN Drift blockt. Beim Aufraeumen (supabase functions delete <slug>) Eintrag hier entfernen. Ziel: leere Liste. Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md.",
+  "_comment": "Bekannter Altbestand: live deployte Edge Functions, die (noch) nicht im Repo liegen. Grandfathered, damit der Drift-Guard gruen startet und nur NEUEN Drift blockt. Beim Aufraeumen (supabase functions delete <slug>) Eintrag hier entfernen. Ziel: leere Liste. Kontext: docs/runtime/SYSTEMCHECK-2026-05-28.md, Aufraeum-Runbook: docs/runbooks/edge-function-kontingent.md.",
+  "_stand_2026_08_10": "governance-dsr, governance-incidents, governance-connectors und governance-vendors liegen inzwischen im Repo und brauchen keine Ausnahme mehr — Eintraege entfernt. Die verbleibenden fuenf sind verwaist (live, aber nicht im Repo) und duerfen erst nach 'supabase functions delete <slug>' hier raus; vorher meldet der Drift-Guard sie als ORPHAN-Fehler.",
   "allow": [
-    "governance-dsr",
-    "governance-incidents",
-    "governance-connectors",
-    "governance-vendors",
     "debug-secret-shape",
     "vault-set-secret",
     "vault-key-setter",

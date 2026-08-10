@@ -48,19 +48,21 @@
 > die Spalte `uuid`. Wegen `add column if not exists` gibt das keinen Fehler — der
 > Typunterschied bleibt einfach bestehen.
 >
-> **Offene Entscheidung** (nicht eigenmächtig getroffen, weil architektonisch):
+> **Sofortmaßnahme umgesetzt (2026-08-10):** Die beiden Index-Statements in `kernel_v1`
+> stehen jetzt in einem `DO`-Block, der die tatsächlich vorhandene Zeitspalte nutzt
+> (`occurred_at` bevorzugt, sonst `ts`) und ohne Zeitspalte mit Notice überspringt.
+> Gegen die Live-DB in einer Rollback-Transaktion verifiziert: beide Indexe entstehen
+> auf `ts`, Rollback sauber. Zusätzlich geprüft: Das nachfolgende Backbone
+> (`20260602100000`, ebenfalls nicht im Prod-Ledger) ist gegen den Prod-Zustand
+> idempotent — `runtime_events` ist live partitioniert (`relkind='p'`, 8 Partitionen),
+> die Rename-Guard greift nur bei `relkind='r'`, `CREATE TABLE IF NOT EXISTS` ist ein
+> No-op. Keine Datenverschiebung.
 >
-> 1. *Index defensiv machen* — die beiden Index-Statements in einen `DO`-Block, der die
->    vorhandene Zeitspalte nutzt und sonst überspringt. Minimal-invasiv, entsperrt die
->    Pipeline, ändert keine Semantik.
-> 2. *`repair --status applied 20260602000000`* — überspringen, weil Backbone die
->    Migration überholt hat. Keine Code-Änderung, aber ein frisches Environment bekommt
->    die Spalten nie.
-> 3. *Klären, welches `runtime_events`-Design gelten soll,* und die unterlegene Migration
->    zurückbauen. Sauberste, aber größte Variante.
->
-> Empfehlung: (1) als Sofortmaßnahme, (3) als Nacharbeit — sonst bleibt die Divergenz
-> zwischen CI und Produktion bestehen und der nächste Schema-Konflikt kommt bestimmt.
+> **Als Nacharbeit offen:** Klären, welches `runtime_events`-Design gelten soll, und die
+> unterlegene Migration zurückbauen — sonst bleibt die Divergenz zwischen CI (frisches
+> Postgres, `runtime_core`-Schema) und Produktion (Backbone-Schema) bestehen und der
+> nächste Schema-Konflikt kommt bestimmt. Der `causation_id`-Typkonflikt (Repo `bigint`
+> vs. live `uuid`) gehört in dieselbe Klärung.
 >
 > **Unabhängig davon** blockiert das Supabase-Function-Limit den zweiten Deploy-Job:
 > `docs/runbooks/edge-function-kontingent.md`.

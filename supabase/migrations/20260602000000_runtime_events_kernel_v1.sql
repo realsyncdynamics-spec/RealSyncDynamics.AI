@@ -76,14 +76,44 @@ create index if not exists runtime_events_correlation_idx
   where correlation_id is not null;
 
 -- Tier-skopierte Tenant-Timeline — Read-Pfad für Governance-Audit
--- (T0/T1 only) und Operational-Dashboard (T2).
-create index if not exists runtime_events_tier_idx
-  on public.runtime_events (tenant_id, event_tier, occurred_at desc);
+-- (T0/T1 only) und Operational-Dashboard (T2), plus T0/T1-Replay-Index.
+--
+-- Defensiv gegen beide runtime_events-Designs: runtime_core
+-- (20260516300000) nennt die Zeitspalte `occurred_at`, das Backbone
+-- (20260602100000) nennt sie `ts`. Auf frischem Postgres (CI,
+-- `supabase db reset`) existiert hier `occurred_at`; in Produktion hat
+-- das Backbone-Schema gewonnen und die Spalte heißt `ts`. Ein hartes
+-- `occurred_at` brach den Prod-Push mit 42703 ab und rollte die gesamte
+-- Migration zurück (Befund: docs/runbooks/p0-2-migration-reconciliation.md,
+-- Nachtrag 2026-08-10). Wir indizieren die Spalte, die tatsächlich da ist.
+do $$
+declare
+  time_col text;
+begin
+  select column_name into time_col
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'runtime_events'
+    and column_name in ('occurred_at', 'ts')
+  order by case column_name when 'occurred_at' then 0 else 1 end
+  limit 1;
 
--- T0/T1 replay-fähig: explizit indiziert für Bundle-Build und Replay-Engine.
-create index if not exists runtime_events_replayable_idx
-  on public.runtime_events (tenant_id, occurred_at desc)
-  where replayable = true and event_tier in ('T0','T1');
+  if time_col is null then
+    raise notice 'runtime_events: weder occurred_at noch ts vorhanden — Tier-Indexe uebersprungen';
+    return;
+  end if;
+
+  execute format(
+    'create index if not exists runtime_events_tier_idx
+       on public.runtime_events (tenant_id, event_tier, %I desc)',
+    time_col);
+
+  -- T0/T1 replay-fähig: explizit indiziert für Bundle-Build und Replay-Engine.
+  execute format(
+    'create index if not exists runtime_events_replayable_idx
+       on public.runtime_events (tenant_id, %I desc)
+       where replayable = true and event_tier in (''T0'',''T1'')',
+    time_col);
+end $$;
 
 -- causation_id-FK ist als bigint deklariert, damit DAG-Walks
 -- effizient sind. Kein FOREIGN KEY auf runtime_events(id) selbst —

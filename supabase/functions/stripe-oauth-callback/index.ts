@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { jwtDecode } from 'https://deno.land/x/jwt@v1.0.0/mod.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,11 +10,6 @@ const corsHeaders = {
 interface CallbackRequest {
   code: string
   state: string
-}
-
-interface DecodedJwt {
-  sub: string;
-  [key: string]: unknown;
 }
 
 interface StripeOAuthResponse {
@@ -41,8 +35,24 @@ serve(async (req: Request) => {
     }
 
     const token = authHeader.replace('Bearer ', '')
-    const decoded: DecodedJwt = jwtDecode(token) as unknown as DecodedJwt
-    const userId = decoded.sub
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') || '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
+    )
+
+    // Token serverseitig verifizieren. Frueher wurde das JWT nur dekodiert und
+    // dem 'sub'-Feld vertraut — ohne Signaturpruefung haette ein selbst
+    // gebautes Token beliebige Nutzer imitiert und deren Stripe-Konto
+    // verknuepft.
+    const { data: userResp, error: authErr } = await supabase.auth.getUser(token)
+    if (authErr || !userResp?.user) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const userId = userResp.user.id
 
     const { code }: CallbackRequest = await req.json()
 
@@ -52,11 +62,6 @@ serve(async (req: Request) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') || '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-    )
 
     // Get tenant_id for user
     const { data: tenantData } = await supabase

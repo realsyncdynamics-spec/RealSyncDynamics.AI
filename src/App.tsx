@@ -261,6 +261,7 @@ const AuditorEngagementView = lazy(() => import('./features/governance/AuditorEn
 const CertificationReportGeneratorView = lazy(() => import('./features/governance/CertificationReportGeneratorView').then((m) => ({ default: m.CertificationReportGeneratorView })));
 const Iso42001CertificationHubView = lazy(() => import('./features/governance/Iso42001CertificationHubView').then((m) => ({ default: m.Iso42001CertificationHubView })));
 const Iso42001EvidenceVaultView = lazy(() => import('./features/governance/Iso42001EvidenceVaultView').then((m) => ({ default: m.Iso42001EvidenceVaultView })));
+const MemoryGovernanceView = lazy(() => import('./features/governance/MemoryGovernanceView').then((m) => ({ default: m.MemoryGovernanceView })));
 const Iso42001GapAnalysisView = lazy(() => import('./features/governance/Iso42001GapAnalysisView').then((m) => ({ default: m.Iso42001GapAnalysisView })));
 const Iso42001RemediationWorkflowView = lazy(() => import('./features/governance/Iso42001RemediationWorkflowView').then((m) => ({ default: m.Iso42001RemediationWorkflowView })));
 const Iso42001MaintenanceView = lazy(() => import('./features/governance/Iso42001MaintenanceView').then((m) => ({ default: m.Iso42001MaintenanceView })));
@@ -718,6 +719,7 @@ function RoutesWithTracking() {
       <Route path="/app/governance/ai-register" element={<GovernanceBrowserShell><AiRegisterView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/dsgvo-directory" element={<GovernanceBrowserShell><DsgvoDirectoryView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/ai-act-assessment" element={<GovernanceBrowserShell><AiActRiskAssessmentView /></GovernanceBrowserShell>} />
+      <Route path="/app/governance/memory" element={<GovernanceBrowserShell><MemoryGovernanceView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/nis2-incidents" element={<GovernanceBrowserShell><Nis2IncidentsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso27001" element={<GovernanceBrowserShell><Iso27001ControlsView /></GovernanceBrowserShell>} />
       <Route path="/app/governance/iso42001-hub" element={<GovernanceBrowserShell><Iso42001CertificationHubView /></GovernanceBrowserShell>} />

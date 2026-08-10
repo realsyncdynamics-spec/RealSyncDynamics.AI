@@ -72,8 +72,8 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 16
-- **169 Edge Functions** (`supabase/functions/`, Deno/V8)
-- **243 Migrations** (`supabase/migrations/`)
+- **178 Edge Functions** (`supabase/functions/`, Deno/V8)
+- **270 Migrations** (`supabase/migrations/`)
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -185,12 +185,14 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `Deploy`-Workflow durchgehend fehlschlug (Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`).
 >
 > Messung vom 2026-08-02 — die Repo-Zahlen wachsen mit jedem Merge, entscheidend
-> ist die Lücke:
+> ist die Lücke. Die Produktionsspalte ist seither **nicht neu erhoben**; sie
+> braucht Zugriff auf die Live-DB bzw. `supabase functions list`. Repo-Stand
+> heute (2026-08-10) in Klammern:
 >
 > | | Repo | in Produktion |
 > |---|---|---|
-> | Edge Functions | 169 | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
-> | Migrationen | 244 | 136 angewendet — **118 nie angewendet** |
+> | Edge Functions | 169 (heute 178) | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
+> | Migrationen | 244 (heute 270) | 136 angewendet — **118 nie angewendet** |
 > | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** |
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
@@ -206,6 +208,17 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 - **Evidence Vault** (90%) — Ingestion, Retrieval, Hash-Chain-Verifizierung, PDF/JSON-Export, Compliance-Hold
 - **Governance Runtime** (85%) — Sentinel-Loop, SLO-Tracking, Auto-Mapping (Asset → Control-Status), Incident-Dispatch
 - **Provenance / C2PA** (80%) — Ed25519-Signatur, Custody-Auto-Capture, externe Verifizierung
+- **Memory Governance / RFC-003** (Phase 3, im Repo vollständig) — temporaler Verfall,
+  Klassifikations-Unveränderlichkeit, Aufbewahrung mit Holds. Tabelle `governance_memory`,
+  Zustandsautomat `active → cooling → archived → expired → purged`.
+  Edge Functions: `governance-memory` (User-API), `memory-decay-worker` (stündlicher Cron),
+  `memory-confidence-trigger` (Re-Bewertung bei neuer Evidence).
+  UI: `/app/governance/memory`. Spezifikation: `docs/architecture/governance-memory-policy-rfc.md`.
+  **Regel**: Die Schwellen (0.5 / 0.2 / 0.8), Aufbewahrungsklassen und Grace-Perioden
+  stehen doppelt — in `src/core/governance/rfc003-memory.ts` und in der Migrations-SQL.
+  Nie einseitig ändern; `test/governance/rfc003-sql-parity.test.ts` bricht sonst.
+  **Betrieb**: Der Decay-Worker tickt nur, wenn der pg_cron-Job `memory-decay-hourly`
+  registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
@@ -248,7 +261,7 @@ Vor jeder Änderung erst analysieren:
 ```
 RealSyncDynamics.AI/
 ├── src/
-│   ├── pages/         104+ Seiten (1 Datei = 1 Route), public, eager imports
+│   ├── pages/         108 Seiten (1 Datei = 1 Route), public, eager imports
 │   ├── features/      Auth-gated Module (billing, governance, …), lazy-loaded
 │   ├── components/    Shared UI
 │   ├── config/        Zentrale Konfiguration (seo, industries) — Preise siehe shared/
@@ -264,8 +277,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     169 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    243 Migrations
+│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    270 Migrations
 ├── apps/
 │   ├── agent-runtime/ Agent Runtime (Node/TS, Docker)
 │   └── mcp-server/    MCP Governance Server — Lesezugriff für KI-Agenten auf

@@ -140,6 +140,31 @@ Deno.serve(async (req) => {
       console.error(JSON.stringify({ level: 'warn', scope: 'provenance_auto_link_failed', subject_ref: subjectRef, error: (provErr as Error)?.message ?? String(provErr) }));
     }
 
+    // RFC-003 §3.2 — Neue Evidence zu diesem Subject entwertet potenziell
+    // bestehende Inferenzen/Korrelationen. Der Confidence-Trigger bewertet sie
+    // nach der §3.2-Matrix neu (Outbox-Variante: asynchron, referenziert den
+    // Snapshot als auslösendes Event). Best-effort — die Snapshot-Erstellung
+    // als Primärfunktion darf hieran niemals scheitern.
+    try {
+      // deno-lint-ignore no-explicit-any
+      const er = (globalThis as any).EdgeRuntime;
+      const p = fetch(`${SUPABASE_URL}/functions/v1/memory-confidence-trigger`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SERVICE_ROLE}`,
+        },
+        body: JSON.stringify({
+          tenant_id: tenantId,
+          subject_ref: subjectRef,
+          trigger_event_id: created.id,
+        }),
+      }).catch(() => { /* ignore */ });
+      if (er?.waitUntil) er.waitUntil(p);
+    } catch {
+      /* swallow */
+    }
+
     return jsonResponse({ ok: true, id: created.id, subject_ref: subjectRef, version, event_hash: eventHash, retained_until: retUntil, signed: signature !== null, provenance_linked: provenanceLinked });
   } catch (e) {
     console.error(JSON.stringify({ level: 'error', scope: 'evidence_vault_failed', op, error: (e as Error)?.message ?? String(e) }));

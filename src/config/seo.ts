@@ -53,9 +53,9 @@ export interface SEOConfig {
 const SITE_URL = 'https://realsyncdynamicsai.de';
 
 export const DEFAULT_SEO: SEOConfig = {
-  title: 'RealSyncDynamics.AI — DSGVO-konforme KI-Compliance-Plattform',
+  title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
   description:
-    'EU-konforme KI-Infrastruktur für regulierte Branchen: EU-Datenresidenz, lückenloser Audit-Trail, automatisierte DSGVO-Selfservice (Art. 15 + 17). DSGVO Art. 32, AI Act, BAIT, MaRisk konform.',
+    'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
 };
 
 // ─── JSON-LD Templates (re-used) ─────────────────────────────────────────────
@@ -222,13 +222,15 @@ function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string
 export const SEO_CONFIG: Record<string, SEOConfig> = {
   // ─── Tier 1 — Hero / Top-Conversion ──────────────────────────────────────
   '/': {
-    title: 'KI-Betriebssystem für DSGVO & EU AI Act | RealSyncDynamicsAI',
+    // 62 Zeichen — Keyword vollstaendig vorn; die 60er-Grenze wird nur vom
+    // Brand-Suffix ueberschritten, das in der SERP schlimmstenfalls trunkiert.
+    title: 'AI Compliance Software: DSGVO & EU AI Act | RealSyncDynamicsAI',
     description:
-      'Das KI-Betriebssystem für DSGVO & EU AI Act: überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready, auditierbar. EU-Hosting.',
+      'AI Compliance Software für DSGVO & EU AI Act: Websites, Daten und KI-Systeme kontinuierlich überwachen, Risiken erkennen, Nachweise auditierbar sichern.',
     canonical: `${SITE_URL}/`,
-    ogTitle: 'Das KI-Betriebssystem für DSGVO & EU AI Act',
+    ogTitle: 'AI Compliance Software für DSGVO & EU AI Act',
     ogDescription:
-      'RealSyncDynamics.AI überwacht Websites, KI-Systeme, Risiken und Nachweise kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
+      'RealSyncDynamics.AI überwacht Websites, Daten und KI-Systeme kontinuierlich — DSGVO-konform, AI-Act-ready und auditierbar. Souveräne Compliance aus der EU.',
   },
   '/pricing': {
     title: 'Preise – Runtime-native AI-Governance-Plattform | RealSyncDynamics.AI',

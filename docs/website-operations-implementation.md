@@ -337,7 +337,7 @@ supabase functions deploy website-domain-manager
 ```bash
 npm install  # Existing dependencies (no new packages needed)
 npm run build
-npm run deploy  # Via GitHub Actions to Vercel/Cloudflare Pages
+npm run deploy  # Via GitHub Actions to Cloudflare Pages
 ```
 
 ### 4. Environment Variables (Supabase Dashboard)

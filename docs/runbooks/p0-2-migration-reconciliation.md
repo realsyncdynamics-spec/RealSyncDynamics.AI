@@ -1,6 +1,69 @@
 # Runbook — P0-2: Migrations-Ledger reconcilen und `db push` entsperren
 
-**Stand:** 2026-08-03 · **Befund:** `DEBUG_ROOT_CAUSE_2026-08-02.md` · **Status:** noch nicht ausgeführt
+**Stand:** 2026-08-03 · **Befund:** `DEBUG_ROOT_CAUSE_2026-08-02.md` · **Status:** teilweise erledigt
+
+> ## ⚠️ Nachtrag 2026-08-10 — Schritt 1 ist erledigt, die Blockade hat sich verschoben
+>
+> **Die Ledger-Waisen sind weg.** #932 ist gemergt; alle zwölf Versionen haben inzwischen
+> eine Repo-Datei (lokal verifiziert). `db push` bricht **nicht mehr** mit
+> „Remote migration versions not found" ab, sondern läuft an und wendet Migrationen an.
+> Schritt 1 unten ist damit gegenstandslos — der Notfallpfad (`repair --status reverted`)
+> erst recht.
+>
+> **Neue Blockade:** Der Push scheitert jetzt an der zweiten Migration:
+>
+> ```
+> Applying migration 20260602000000_runtime_events_kernel_v1.sql...
+> ERROR: column "occurred_at" does not exist (SQLSTATE 42703)
+> create index if not exists runtime_events_tier_idx
+>   on public.runtime_events (tenant_id, event_tier, occurred_at desc)
+> ```
+>
+> **Ursache — zwei konkurrierende `runtime_events`-Designs:**
+>
+> | | Zeitspalte | erstellt in |
+> |---|---|---|
+> | `runtime_core` | `occurred_at` | `20260516300000_runtime_core.sql` |
+> | Backbone | `ts` | `20260602100000_runtime_events_backbone.sql` |
+>
+> Produktion fährt das **Backbone-Schema** (verifiziert am 2026-08-10 gegen die Live-DB):
+> `global_seq, tenant_seq, id, spec_version, tenant_id, ts, ingested_at, type, severity,
+> source, review_status, subject_ref, payload, evidence_refs, trace_id, correlation_id,
+> causation_id, prev_hash, event_hash`.
+> Das ist auch die Struktur, gegen die alle Edge Functions schreiben.
+>
+> `kernel_v1` wurde dagegen für das `runtime_core`-Schema geschrieben und indiziert auf
+> `occurred_at` — eine Spalte, die es in Produktion nicht gibt. Die Migration läuft in
+> einer Transaktion, scheitert an Statement 11 und wird komplett zurückgerollt; deshalb
+> fehlt auch `event_tier` in der Live-Tabelle.
+>
+> **Warum CI das nicht fängt:** Die `Migration validation` startet auf leerem Postgres.
+> Dort läuft `runtime_core` zuerst und legt `occurred_at` an — der Index passt, der Job
+> ist grün. Gegen Produktion, wo die Tabelle bereits im Backbone-Schema existiert
+> (`create table if not exists` → `runtime_core` tat dort nichts, der Ledger-Eintrag
+> wurde trotzdem gesetzt), schlägt derselbe Befehl fehl. **CI und Produktion testen
+> unterschiedliche Schemata.**
+>
+> **Zweiter, stiller Konflikt:** `kernel_v1` will `causation_id bigint` anlegen; live ist
+> die Spalte `uuid`. Wegen `add column if not exists` gibt das keinen Fehler — der
+> Typunterschied bleibt einfach bestehen.
+>
+> **Offene Entscheidung** (nicht eigenmächtig getroffen, weil architektonisch):
+>
+> 1. *Index defensiv machen* — die beiden Index-Statements in einen `DO`-Block, der die
+>    vorhandene Zeitspalte nutzt und sonst überspringt. Minimal-invasiv, entsperrt die
+>    Pipeline, ändert keine Semantik.
+> 2. *`repair --status applied 20260602000000`* — überspringen, weil Backbone die
+>    Migration überholt hat. Keine Code-Änderung, aber ein frisches Environment bekommt
+>    die Spalten nie.
+> 3. *Klären, welches `runtime_events`-Design gelten soll,* und die unterlegene Migration
+>    zurückbauen. Sauberste, aber größte Variante.
+>
+> Empfehlung: (1) als Sofortmaßnahme, (3) als Nacharbeit — sonst bleibt die Divergenz
+> zwischen CI und Produktion bestehen und der nächste Schema-Konflikt kommt bestimmt.
+>
+> **Unabhängig davon** blockiert das Supabase-Function-Limit den zweiten Deploy-Job:
+> `docs/runbooks/edge-function-kontingent.md`.
 
 Stellt den Produktions-Zustand wieder her, in dem `supabase db push` durchläuft.
 Aktuell erreichen **118 von 244** Migrationen die Produktion nicht, wodurch **66 von 148**

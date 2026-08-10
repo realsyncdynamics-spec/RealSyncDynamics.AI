@@ -42,6 +42,7 @@ export async function logRequestUsage(
   request: FastifyRequest,
   statusCode: number,
   latencyMs: number,
+  options?: { countAgainstQuota?: boolean },
 ): Promise<void> {
   const auth = (request as any).user as MctAuthContext | undefined;
   if (!auth) {
@@ -59,6 +60,7 @@ export async function logRequestUsage(
     ip: clientIp,
     userAgent,
     latencyMs,
+    countAgainstQuota: options?.countAgainstQuota,
   });
 }
 

@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { testConnection } from './services/supabase.js';
 import { authenticateRequest, logRequestUsage, requireScope } from './auth/api-key.js';
+import { getQuotaState, secondsUntilQuotaReset } from './services/api-keys-db.js';
 import { MctAuthContext } from './types/index.js';
 import {
   listEvidence,
@@ -46,6 +47,32 @@ async function start() {
     }
 
     (request as any).user = auth;
+
+    // Kontingent nach der Authentifizierung, vor jeder Arbeit. Der Plan
+    // entscheidet zweifach: enthält er überhaupt API-Zugriff (ab Agency), und
+    // ist das Monatskontingent noch offen? Beides steht in plan_catalog, der
+    // aus shared/pricing.ts erzeugten Projektion.
+    const quota = await getQuotaState(auth.tenantId);
+    if (quota && !quota.allowed) {
+      (request as any).quotaRejected = true;
+
+      if (!quota.apiAccess) {
+        return reply.code(403).send({
+          error: 'PLAN_WITHOUT_API',
+          message: `Der Plan "${quota.planKey}" enthält keinen API-Zugriff. MCP-Zugriff ist ab Agency verfügbar.`,
+        });
+      }
+
+      const retryAfter = secondsUntilQuotaReset();
+      return reply
+        .code(429)
+        .header('Retry-After', String(retryAfter))
+        .send({
+          error: 'QUOTA_EXCEEDED',
+          message: `Monatskontingent ausgeschöpft (${quota.used} / ${quota.limitCalls}).`,
+          retry_after_seconds: retryAfter,
+        });
+    }
   });
 
   // Prüfpfad: jeder authentifizierte Request wird protokolliert — zentral,
@@ -57,7 +84,12 @@ async function start() {
     if (request.url === '/health') {
       return;
     }
-    await logRequestUsage(request, reply.statusCode, Math.round(reply.elapsedTime));
+    await logRequestUsage(request, reply.statusCode, Math.round(reply.elapsedTime), {
+      // Am Kontingent abgewiesen: gehört in den Prüfpfad, aber nicht in die
+      // Verbrauchszahl — sonst zählt ein Agent in einer Schleife Aufrufe mit,
+      // für die er nie eine Antwort bekommen hat.
+      countAgainstQuota: (request as any).quotaRejected !== true,
+    });
   });
 
   // Health check (no auth required)

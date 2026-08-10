@@ -196,6 +196,11 @@ geloggt, damit ein stiller Ausfall des Prüfpfads auffällt.
   `PUBLIC`, `anon` und `authenticated` gesperrt und nur für `service_role`
   ausführbar.
 - **Ablauf und Widerruf** wirken sofort, weil bei jedem Request geprüft wird.
+- **Plan-Gate und Kontingent.** MCP-Zugriff setzt die `api`-Berechtigung voraus
+  (ab Agency). Pläne ohne sie erhalten 403, ein ausgeschöpftes Monatskontingent
+  429 mit `Retry-After`. Die Zahlen stammen aus `plan_catalog` — der aus
+  `shared/pricing.ts` erzeugten Projektion, die `npm run check:pricing` gegen
+  die Quelle prüft.
 
 ---
 
@@ -225,7 +230,6 @@ nichts liefern kann.
 |---|---|
 | Governance-Tools sind Platzhalter | drei Endpunkte antworten mit 501 |
 | Kein MCP-Protokoll | Anbindung läuft über HTTP, nicht über MCP-Transport |
-| Kein Rate-Limiting | `mcp_key_usage` liefert die Datenbasis, die Durchsetzung fehlt |
 | Keine Key-Rotation | `rotated_from` ist vorbereitet, es gibt keine Operation dafür |
 | Keine Oberfläche | Keys nur über die Edge Function |
 | Keine semantische Suche | `evidence/control/:id` sucht als Textmuster über `subject_ref` |

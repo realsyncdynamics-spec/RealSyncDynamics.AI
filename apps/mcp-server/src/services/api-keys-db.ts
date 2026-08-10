@@ -83,6 +83,8 @@ export async function logKeyUsage(
     userAgent?: string;
     latencyMs?: number;
     error?: string;
+    /** false für Requests, die am Kontingent abgewiesen wurden. */
+    countAgainstQuota?: boolean;
   },
 ): Promise<void> {
   try {
@@ -94,6 +96,7 @@ export async function logKeyUsage(
       p_user_agent: options?.userAgent ?? null,
       p_latency_ms: options?.latencyMs ?? null,
       p_error: options?.error ?? null,
+      p_count: options?.countAgainstQuota ?? true,
     });
     if (error) {
       console.error('Failed to log key usage:', error.message);
@@ -146,6 +149,49 @@ export async function revokeApiKey(keyId: string, tenantId: string): Promise<voi
   if (error) {
     throw new Error(`Failed to revoke API key: ${error.message}`);
   }
+}
+
+export interface QuotaState {
+  /** Zugriff erlaubt: Plan enthält API-Zugriff UND Kontingent nicht ausgeschöpft. */
+  allowed: boolean;
+  /** Der Plan enthält überhaupt API-Zugriff (ab Agency). */
+  apiAccess: boolean;
+  used: number;
+  /** -1 = unbegrenzt. */
+  limitCalls: number;
+  planKey: string;
+}
+
+/**
+ * Kontingentstand des Tenants für den laufenden Kalendermonat.
+ *
+ * Die Limits stammen aus `plan_catalog` — der aus `shared/pricing.ts` erzeugten
+ * Projektion, die `npm run check:pricing` gegen die Quelle prüft. Bewusst nicht
+ * aus `tenant_entitlements()`: dessen Werte für `limit.api_calls_monthly`
+ * stammen aus einer Migration vom Juni und weichen von der Quelle ab.
+ */
+export async function getQuotaState(tenantId: string): Promise<QuotaState | null> {
+  const { data, error } = await supabase.rpc('mcp_quota_state', { p_tenant_id: tenantId });
+
+  if (error || !data || data.length === 0) {
+    if (error) console.error('Quota check failed:', error.message);
+    return null;
+  }
+
+  const [row] = data;
+  return {
+    allowed: row.allowed,
+    apiAccess: row.api_access,
+    used: Number(row.used),
+    limitCalls: row.limit_calls,
+    planKey: row.plan_key,
+  };
+}
+
+/** Sekunden bis zum Beginn des nächsten Kalendermonats (UTC) — für Retry-After. */
+export function secondsUntilQuotaReset(now: Date = new Date()): number {
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0);
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
 }
 
 export interface KeyStats {

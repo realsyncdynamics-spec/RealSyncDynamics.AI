@@ -116,6 +116,35 @@ Deno.serve(async (req) => {
 
   try {
     if (op === 'generate') {
+      // Gate nur beim Ausstellen. `list` und `revoke` bleiben absichtlich
+      // offen: wer heruntergestuft wurde, muss seine bestehenden Keys weiter
+      // sehen und widerrufen können — sonst blieben sie unkontrolliert gültig.
+      const { data: limitRows } = await admin.rpc('mcp_plan_limits', { p_tenant_id: tenantId });
+      const limits = (limitRows ?? [])[0] as
+        | { plan_key: string; api_access: boolean; max_keys: number }
+        | undefined;
+
+      if (!limits || !limits.api_access) {
+        return jsonError(
+          402,
+          'PAYMENT_REQUIRED',
+          `Der Plan "${limits?.plan_key ?? 'unbekannt'}" enthält keinen API-Zugriff. MCP-Keys sind ab Agency verfügbar.`,
+        );
+      }
+
+      if (limits.max_keys !== -1) {
+        const { data: activeCount } = await admin.rpc('mcp_active_key_count', {
+          p_tenant_id: tenantId,
+        });
+        if ((activeCount ?? 0) >= limits.max_keys) {
+          return jsonError(
+            409,
+            'LIMIT_REACHED',
+            `Das Kontingent von ${limits.max_keys} aktiven MCP-Keys ist ausgeschöpft. Zuerst einen bestehenden Key widerrufen.`,
+          );
+        }
+      }
+
       const plainKey = generateApiKey();
       const keyHash = await sha256Hex(plainKey);
       const keyPrefix = plainKey.slice(0, DISPLAY_PREFIX_LEN);

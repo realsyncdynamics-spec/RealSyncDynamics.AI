@@ -30,9 +30,10 @@ Tenants hinweg, oder Zugriff aus dem Browser.
 | | |
 |---|---|
 | Erreichbarer MCP Server | lokal `http://localhost:3001`, geplant `mcp.realsyncdynamicsai.de` |
-| Angewandte Migration | `20260820000000_mcp_api_keys.sql` |
+| Angewandte Migrationen | `20260820000000_mcp_api_keys.sql`, `20260821000000_mcp_quota.sql` |
 | Deployte Edge Function | `mcp-api-key-manager` |
 | API-Key | siehe Abschnitt 3 |
+| Plan mit API-Zugriff | ab Agency — darunter antwortet der Server mit 403 |
 
 > **Vor dem Produktivbetrieb prüfen:** Laut `CLAUDE.md` sind zahlreiche Edge
 > Functions und Migrationen im Repository nie deployt worden. Ob dieser Stand in
@@ -124,6 +125,8 @@ evidence_list — Listet Compliance-Nachweise (Evidence-Snapshots) des Tenants.
 | `200` | Erfolg | — |
 | `401` | Key fehlt, ungültig, abgelaufen oder widerrufen | Key prüfen, nicht wiederholen |
 | `404` | Nachweis existiert nicht in diesem Tenant | leeres Ergebnis melden |
+| `403` | Plan enthält keinen API-Zugriff (unter Agency) | dem Nutzer den Plan nennen, nicht wiederholen |
+| `429` | Monatskontingent ausgeschöpft | `Retry-After` beachten, nicht sofort erneut anfragen |
 | `501` | Endpunkt noch nicht implementiert | als „nicht verfügbar" melden, **nicht** als Befund |
 | `500` | Fehler im Dienst | begrenzt wiederholen |
 
@@ -200,16 +203,12 @@ Lesezugriff auf Compliance-Nachweise ist ein offenes Risiko.
 |---|---|
 | Kein MCP-Transport | Anbindung über HTTP-Werkzeuge, keine automatische Werkzeug-Erkennung |
 | Governance-Tools nicht implementiert | drei Endpunkte antworten mit 501 |
-| Kein Rate-Limiting | ein fehlerhafter Agent kann den Dienst ungebremst abfragen |
 | Keine semantische Suche | `evidence/control/:id` ist ein Textmuster über `subject_ref`, keine Bedeutungssuche |
 | Keine Key-Rotation | Ersatz nur durch Widerruf und Neuausstellung |
 | Legacy-Snapshots nicht nachrechenbar | Ketten aus der Zeit vor `event_timestamp` sind nur strukturell prüfbar |
 
-Am ehesten fällt das fehlende Rate-Limiting ins Gewicht: Ein Agent in einer
-Schleife kann den Dienst ungebremst abfragen. `mcp_key_usage` zeichnet das
-zwar auf, bremst aber nicht. Bis das nachgezogen ist, gehört die Nutzung
-neuer Keys in den ersten Tagen beobachtet — der Query aus Abschnitt 6 zeigt
-Ausreißer schnell.
+Am ehesten fällt der fehlende native MCP-Transport ins Gewicht: Werkzeuge
+müssen von Hand definiert werden, statt dass der Agent sie selbst entdeckt.
 
 ---
 

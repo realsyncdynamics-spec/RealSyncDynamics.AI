@@ -167,8 +167,21 @@ export interface Database {
           p_user_agent?: string | null;
           p_latency_ms?: number | null;
           p_error?: string | null;
+          p_count?: boolean;
         };
         Returns: void;
+      };
+      mcp_quota_state: {
+        Args: {
+          p_tenant_id: string;
+        };
+        Returns: Array<{
+          allowed: boolean;
+          api_access: boolean;
+          used: number;
+          limit_calls: number;
+          plan_key: string;
+        }>;
       };
     };
   };

@@ -20,6 +20,7 @@ const GOVERNANCE_NAV_ITEMS: NavItem[] = [
   { id: 'dsgvo-dir', label: 'DSGVO-Verzeichnis', path: '/app/governance/dsgvo-directory', feature: 'governance.dsgvo_directory', group: 'governance', icon: '📋' },
   { id: 'ai-register', label: 'AI-System-Verzeichnis', path: '/app/governance/ai-register', feature: 'governance.ai_register', group: 'governance', icon: '🤖' },
   { id: 'evidence-basic', label: 'Evidence Vault', path: '/app/evidence', feature: 'evidence.basic_vault', group: 'governance', icon: '🔐' },
+  { id: 'memory-governance', label: 'Memory Governance', path: '/app/governance/memory', feature: 'dashboard.access', group: 'governance', icon: '🧠' },
 
   // Starter+ Features
   { id: 'website-scan', label: 'Website-Scan', path: '/app/governance/website-scan', feature: 'website.scan', group: 'compliance', icon: '🌐' },

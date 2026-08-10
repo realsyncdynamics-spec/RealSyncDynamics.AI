@@ -32,11 +32,19 @@ const DIST = process.env.VERIFY_DIST ? resolve(process.env.VERIFY_DIST) : join(R
 const MIN_ROUTES = parseInt(process.env.VERIFY_MIN_ROUTES ?? '20', 10);
 
 // Ab wann gilt eine Seite als "hat echten Text"?
-// Gemessen am 2026-08-02-Build: der reine SPA-Shell kommt auf ~419 Zeichen
-// (noscript-Hinweis + Meta-Reste), eine prerenderte Landing-Page auf
-// 7.000+. Die Schwelle liegt bewusst deutlich ueber dem Shell-Wert, damit
-// "Shell mit ein bisschen Boilerplate" nicht als Content durchgeht.
-const MIN_TEXT_CHARS = parseInt(process.env.VERIFY_MIN_TEXT_CHARS ?? '1500', 10);
+//
+// Gemessen wird NUR der <body>. Die erste Fassung dieses Checks zaehlte das
+// ganze Dokument und damit ~640 Zeichen Head-Boilerplate mit, die auf jeder
+// Seite identisch sind — die Schwelle mass zu einem Drittel sich selbst.
+//
+// Kalibrierung am Build vom 2026-08-04 (Body-Text):
+//    145   SPA-Shell (index.html ohne Prerender)
+//    735   /pilot-readiness — nur die <AuthGate>-Loginmaske
+//   1328   /datenschutz-generator — formularlastig, aber echte Seite
+//  24932   /pricing — normale Landing-Page
+//
+// 900 trennt "im Wesentlichen leer" von "duenn, aber echt".
+const MIN_TEXT_CHARS = parseInt(process.env.VERIFY_MIN_TEXT_CHARS ?? '900', 10);
 
 async function exists(p) {
   try {
@@ -47,9 +55,16 @@ async function exists(p) {
   }
 }
 
-/** Sichtbaren Text grob schätzen: Tags raus, script/style-Inhalte raus. */
+/**
+ * Sichtbaren Text grob schätzen: nur <body>, Tags raus, script/style raus.
+ *
+ * Der Head ist bewusst ausgeschlossen — sein Textanteil (Title, noscript)
+ * ist auf allen Seiten gleich und würde jede Schwelle um denselben Sockel
+ * anheben, also gerade dort verwässern, wo es drauf ankommt.
+ */
 function visibleTextLength(html) {
-  return html
+  const bodyStart = html.indexOf('<body');
+  return (bodyStart === -1 ? html : html.slice(bodyStart))
     .replace(/<script[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, ' ')

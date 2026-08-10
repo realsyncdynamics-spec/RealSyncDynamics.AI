@@ -21,7 +21,8 @@ Authentifizierungsschicht der Edge Functions lückenhaft bleibt.
 | Frontend | 119 Seiten | ✅ deployt |
 | Typecheck | ✅ grün | — |
 | Unit-Tests | ✅ 2867 grün | — |
-| DB-/E2E-Tests | vorhanden | **laufen nie** |
+| Playwright-Katalog-Suite (`tests/e2e/`, 9) | vorhanden | ✅ läuft in CI |
+| DB-Tests (18) + App-E2E (`e2e/`, 38) | vorhanden | **laufen nie** |
 
 Die Modul-Prozentangaben in `CLAUDE.md` (Audit 95 %, Policy Packs 100 %,
 Evidence Vault 90 %, Governance Runtime 85 %, Provenance 80 %) beschreiben den
@@ -72,7 +73,7 @@ Legende: 🟢 verifiziert · 🟠 teilweise · 🔴 kaputt · ⚫ beworben, in P
 - [ ] **F-08** RLS auf 35 Tabellen
 - [ ] **F-09** 3 Policies auf `TO service_role` einschränken
 - [ ] **F-06** Drift-Guard ohne Credentials auf `exit 1`
-- [ ] **F-07** `test:db` + E2E in CI
+- [ ] **F-07** `test:db` + App-E2E-Suite (`npm run e2e`) in CI ergänzen
 - [ ] **F-G1/F-G2** Löschpfad vervollständigen, Account-Löschung bauen
 - [ ] **F-R1** Retry/DLQ/Webhook-Zustellung in Produktion
 - [ ] **F-10** Externe Verankerung — **oder** Claims „unveränderlich/revisionssicher"

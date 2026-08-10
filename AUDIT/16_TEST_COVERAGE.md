@@ -18,7 +18,8 @@ $ npm run lint      # tsc --noEmit, strict
 |---|---|---|
 | Vitest-Unit/Integration | 2867 | ✅ `ci.yml` |
 | **DB-Tests (`test/runtime/db/`)** | **18 Dateien** | ❌ **nein** |
-| **Playwright E2E** | **47 Specs** | ❌ **nein** |
+| Playwright — Katalog-Suite (`tests/e2e/`) | **9 Specs** | ✅ `e2e.yml` |
+| **Playwright — App-Suite (`e2e/`)** | **38 Specs** | ❌ **nein** |
 | Migrations-Validierung | ✅ | ✅ `ci.yml` (append-only-Prüfung) |
 | Edge-Function-Syntax | ✅ | ✅ `ci.yml` |
 | Edge-Function-Drift | ⚠️ | ✅ aber **stiller No-op** (F-06) |
@@ -28,8 +29,24 @@ $ npm run lint      # tsc --noEmit, strict
 
 ## 2. Die entscheidende Lücke
 
-Die Tests, die genau die Sicherheitsinvarianten prüfen, um die es in diesem Audit
-geht, **existieren bereits** — und laufen in keinem Workflow:
+Playwright läuft in CI — aber nur zur Hälfte. `e2e.yml` führt `npm run test:e2e`
+aus, das über `playwright.catalog.config.ts` ausschließlich `tests/e2e/` abdeckt:
+**9 Specs** gegen einen lokalen Preview-Build (öffentliche Routen, Navigation,
+Consent, Checkout, AI-Act, Audit, Rechtstexte, Fehlerbehandlung). Das ist eine
+ordentliche Absicherung der öffentlichen Oberfläche — der Consent-Test arbeitet
+sogar mit Dummy-Pixel-IDs, damit das Gating scharf gemessen wird statt trivial
+zu bestehen.
+
+**Nicht abgedeckt sind die 38 Specs in `e2e/`** (`npm run e2e`,
+`playwright.config.ts`) — genau die App-interne Suite: `governance-workflow`,
+`governance-memory`, `governance-evidence`, `evidence-vault-export`,
+`provenance-external-verification`, `workspace`, `tenant-admin`, `onboarding`,
+`api-endpoints`, `api-webhook-management`, `feature-oauth2-api`,
+`partners`, `phase2`–`phase6`. Diese Suite prüft die authentifizierten Module,
+also exakt jene Funktionalität, die laut F-01 in Produktion fehlt.
+
+Dazu die Tests, die die Sicherheitsinvarianten prüfen — sie **existieren bereits**
+und laufen in keinem Workflow:
 
 | Datei | Prüft |
 |---|---|
@@ -44,12 +61,12 @@ geht, **existieren bereits** — und laufen in keinem Workflow:
 | `test/runtime/db/partitioning.db.test.ts` | Partitionierung |
 | + 9 weitere | |
 
-`grep -rln 'test:db' .github/workflows/` → **keine Treffer**
-`grep -rln 'playwright test' .github/workflows/` → **keine Treffer**
+`grep -rn 'test:db\|runtime/db\|TEST_DB_URL' .github/workflows/` → **keine Treffer**
 
 Die Infrastruktur ist da (`scripts/test-db/up.sh`, `npm run test:db`). Es fehlt der
 CI-Job. Das ist die **billigste große Verbesserung** im gesamten Audit: ein
-Workflow-Block von ~15 Zeilen aktiviert 18 Sicherheitstests und 47 E2E-Specs.
+Workflow-Block von ~15 Zeilen aktiviert 18 Sicherheitstests, ein zweiter die
+38 App-E2E-Specs.
 
 ---
 
@@ -57,6 +74,8 @@ Workflow-Block von ~15 Zeilen aktiviert 18 Sicherheitstests und 47 E2E-Specs.
 
 | Pfad | Testabdeckung |
 |---|---|
+| Öffentliche Routen, Consent, Checkout-Einstieg, Rechtstexte | ✅ `tests/e2e/` läuft in CI |
+| Authentifizierte Module (Governance, Evidence, Workspace, API) | ⚠️ 38 Specs vorhanden, laufen nicht |
 | Authentifizierung der Edge Functions | ❌ **kein Test prüft „`Bearer invalid` → 401"** — deshalb blieb F-04 unentdeckt |
 | Autorisierung (Tenant A → Tenant B über Functions) | ❌ |
 | RLS-Vollständigkeit („jede Tabelle hat RLS") | ❌ — ein Einzeiler hätte alle 35 aus F-08 gefunden |
@@ -76,6 +95,7 @@ Workflow-Block von ~15 Zeilen aktiviert 18 Sicherheitstests und 47 E2E-Specs.
 | Invariante | Test vorhanden | Läuft |
 |---|---|---|
 | „Tenant A erreicht nie Tenant B" | ✅ `rls.db.test.ts` | ❌ |
+| „Pixel feuern nicht vor Consent" | ✅ `tests/e2e/consent.spec.ts` | ✅ |
 | „Nicht-Admin kann keine Admin-Aktion" | ❌ | — |
 | „Gelöschte Evidenz kann nicht still neu entstehen" | ✅ `append-only.db.test.ts` | ❌ |
 | „Stripe-Webhook kann keinen fremden Tenant ändern" | ❌ | — |
@@ -87,11 +107,16 @@ Workflow-Block von ~15 Zeilen aktiviert 18 Sicherheitstests und 47 E2E-Specs.
 
 ## 5. Bewertung
 
-**Testing: 55/100.**
+**Testing: 58/100.**
 
-Menge und Qualität der geschriebenen Tests sind gut — 2867 grüne Tests, saubere
-Struktur, echte DB-Tests für die schwierigen Invarianten. Das Problem ist
-ausschließlich die **Ausführung**: Die anspruchsvollsten Tests laufen nie, und die
-vorhandenen decken die Authentifizierungsschicht der Edge Functions nicht ab.
+Menge und Qualität der geschriebenen Tests sind gut — 2867 grüne Unit-Tests, eine
+in CI laufende Playwright-Katalog-Suite für die öffentliche Oberfläche, saubere
+Struktur und echte DB-Tests für die schwierigen Invarianten.
 
-Ein grünes CI hat hier über Monate Sicherheit suggeriert, die nicht geprüft wurde.
+Das Problem ist die **Ausführung des schwierigen Teils**: die 18 DB-Sicherheitstests
+und die 38 App-internen E2E-Specs laufen in keinem Workflow, und kein Test deckt die
+Authentifizierungsschicht der Edge Functions ab — deshalb konnte F-04 unentdeckt
+bleiben.
+
+Ein grünes CI hat hier über Monate mehr Sicherheit suggeriert, als tatsächlich
+geprüft wurde.

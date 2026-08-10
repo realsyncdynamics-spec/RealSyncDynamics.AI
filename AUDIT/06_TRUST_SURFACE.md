@@ -7,7 +7,7 @@ Statisch generiert über `scripts/generate-static-legal-pages.mjs` (Teil von
 
 | Seite | Route | Repo | Bemerkung |
 |---|---|---|---|
-| Impressum | `/impressum` | ✅ | eigener E2E-Spec `e2e/impressum.spec.ts` (läuft nicht in CI) |
+| Impressum | `/impressum` | ✅ | `e2e/impressum.spec.ts` (läuft **nicht** in CI); `tests/e2e/legal.spec.ts` läuft ✅ |
 | Datenschutz | `/datenschutz` | ✅ `src/features/legal/PrivacyPolicy.tsx` | |
 | AGB / Terms | `/agb` | ✅ | |
 | AVV / DPA | `/avv` | ✅ | Generator vorhanden |

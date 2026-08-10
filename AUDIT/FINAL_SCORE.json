@@ -1,9 +1,9 @@
 {
-  "overall": 46,
+  "overall": 47,
   "security": 42,
   "architecture": 68,
   "reliability": 45,
-  "testing": 55,
+  "testing": 58,
   "saas_readiness": 40,
   "multi_tenancy": 50,
   "gdpr_technical": 48,
@@ -13,6 +13,6 @@
   "p0": 5,
   "p1": 7,
   "p2": 8,
-  "p3": 5,
+  "p3": 6,
   "p4": 5
 }

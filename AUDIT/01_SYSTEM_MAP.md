@@ -161,5 +161,6 @@ siehe `05_BILLING_MATRIX.md` und F-03.
 | `deploy-cloudflare-pages.yml` | ✅ | Frontend → Pages |
 | `edge-function-drift.yml` | ⚠️ | **No-op ohne `SUPABASE_ACCESS_TOKEN`** — deshalb blieb die 83-Function-Lücke unentdeckt |
 | `migration-reconciliation.yml` | offen | Runbook `p0-2` noch nicht ausgeführt |
+| `e2e.yml` — Playwright | ✅ | `npm run test:e2e` → `playwright.catalog.config.ts` → **9 Specs** aus `tests/e2e/` gegen einen lokalen Preview-Build (öffentliche Routen, Consent, Checkout, AI-Act, Rechtstexte) |
 | **DB-Tests (`test:db`)** | ❌ | **Läuft in keinem Workflow** — 18 Sicherheits-Tests (RLS, Hash-Chain, Append-Only) ungenutzt |
-| **E2E (Playwright)** | ❌ | **Läuft in keinem Workflow** — 47 Specs ungenutzt |
+| **App-interne E2E (`npm run e2e`)** | ❌ | **Läuft in keinem Workflow** — **38 Specs** aus `e2e/` ungenutzt (Governance, Evidence-Vault, Workspace, API, Tenant-Admin) |

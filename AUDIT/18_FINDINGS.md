@@ -158,18 +158,37 @@ die Lücke auf 83 Functions anwachsen, während CI durchgehend grün war.
 
 ---
 
-### F-07 · Sicherheits-Tests existieren, laufen aber in keinem CI-Workflow · LIVE
-**Beweis:** `test/runtime/db/` enthält 18 DB-Tests, darunter `rls.db.test.ts`,
+### F-07 · DB-Sicherheitstests und die App-interne E2E-Suite laufen in keinem CI-Workflow · LIVE
+**Beweis:**
+```
+$ grep -rn 'test:db|runtime/db|TEST_DB_URL' .github/workflows/   → keine Treffer
+```
+`test/runtime/db/` enthält 18 DB-Tests, darunter `rls.db.test.ts`,
 `hash-chain.db.test.ts`, `hash-chain-corruption.db.test.ts`, `append-only.db.test.ts`,
-`entitlement-grants.db.test.ts`. Dazu 47 Playwright-Specs.
-`grep -rln 'test:db' .github/workflows/` → **keine Treffer**.
-`grep -rln 'playwright test' .github/workflows/` → **keine Treffer**.
+`entitlement-grants.db.test.ts` — **keiner davon läuft**.
 
-**Impact:** Genau die Tests, die Mandantentrennung und Evidenz-Integrität absichern,
-werden nie ausgeführt. `npm test` (das in CI läuft) deckt sie nicht ab — es sind
-reine Unit-Tests ohne Datenbank.
-**Fix:** `test:db` mit dem vorhandenen `scripts/test-db/up.sh` als CI-Job; E2E als
-Nightly + Pre-Deploy-Gate.
+Bei Playwright ist die Lage differenzierter: `e2e.yml` führt `npm run test:e2e` aus,
+das über `playwright.catalog.config.ts` **nur `tests/e2e/` (9 Specs)** gegen einen
+lokalen Preview-Build abdeckt — öffentliche Routen, Navigation, Consent, Checkout,
+AI-Act, Audit, Rechtstexte. Das läuft und ist grün. ✅
+
+**Nicht abgedeckt sind die 38 Specs in `e2e/`** (`npm run e2e`, `playwright.config.ts`)
+— die App-interne Suite: `governance-workflow`, `governance-memory`,
+`governance-evidence`, `evidence-vault-export`, `provenance-external-verification`,
+`workspace`, `tenant-admin`, `onboarding`, `api-endpoints`, `feature-oauth2-api`,
+`partners`, `phase2`–`phase6`.
+
+**Impact:** Die Tests für Mandantentrennung, Evidenz-Integrität und Entitlements
+werden nie ausgeführt. Die E2E-Suite, die genau die in F-01 fehlenden Module prüft,
+läuft ebenfalls nicht — sonst wäre die Deployment-Lücke aufgefallen. `npm test` (in
+CI) sind reine Unit-Tests ohne Datenbank.
+
+**Fix:** `test:db` mit dem vorhandenen `scripts/test-db/up.sh` als CI-Job; `npm run e2e`
+(App-Suite) als Nightly + Pre-Deploy-Gate ergänzend zur bestehenden Katalog-Suite.
+
+**Korrektur gegenüber einer früheren Fassung dieses Berichts:** dort stand, Playwright
+laufe in keinem Workflow. Das war falsch — `e2e.yml` existiert und ist grün; die
+Aussage gilt nur für die 38 App-internen Specs und die 18 DB-Tests.
 
 ---
 
@@ -342,6 +361,7 @@ gegenüber dem Migrations-Ledger; entfernen (Git-History bleibt).
 | F-22 | P3 | `evidence-export`: AAL2-Prüfung ist bewusst „OBSERVE ONLY, nicht blockend" (Kommentar Zeile 71) — dokumentierte, aber offene P0d-Schuld |
 | F-23 | P3 | `optimize-execute` nimmt `tenantId` **und** `userId` aus dem Body und schreibt mit `service_role`; nicht deployt, aber beim Deploy scharf |
 | F-24 | P3 | 104 übersprungene + 96 `todo` Tests — unklarer Abdeckungsstand in Kernpfaden |
+| F-31 | P3 | Zwei parallele Playwright-Configs (`playwright.config.ts` / `playwright.catalog.config.ts`) mit ähnlichen Skriptnamen (`e2e` / `test:e2e`) — leicht zu verwechseln; genau diese Doppelung hat in einer früheren Fassung dieses Audits zu einer Fehlbewertung geführt |
 | F-25 | P3 | `package.json` heißt `"react-example"`, Version `0.0.0` — kein Release-Versioning für ein Compliance-Produkt mit Nachweispflicht |
 | F-26 | P4 | Fünf verschiedene CORS-Implementierungen parallel (`_shared/gateway.ts` + Einzelkopien) — Migration unvollständig |
 | F-27 | P4 | `governance-agents-list` dupliziert Logik, die RLS-seitig günstiger wäre |
@@ -358,9 +378,9 @@ gegenüber dem Migrations-Ledger; entfernen (Git-History bleibt).
 | P0 | 5 |
 | P1 | 7 |
 | P2 | 8 |
-| P3 | 5 |
+| P3 | 6 |
 | P4 | 5 |
-| **Gesamt** | **30** |
+| **Gesamt** | **31** |
 
 ---
 
@@ -388,7 +408,10 @@ Diese Punkte wurden gezielt angegriffen und haben gehalten:
    Platzhalter (`sk_live_PLACEHOLDER`, `whsec_1234…`) und Testfixtures.
 7. **Consent-Gating der eigenen Pixel** — Google Consent Mode v2, Default `denied`,
    Laden erst nach expliziter Einwilligung.
-8. **Typecheck grün** (`tsc --noEmit`, strict) und **2867 Unit-Tests grün**.
+8. **Typecheck grün** (`tsc --noEmit`, strict), **2867 Unit-Tests grün** und eine
+   **in CI laufende Playwright-Katalog-Suite** (`tests/e2e/`, 9 Specs) für die
+   öffentliche Oberfläche — inklusive eines Consent-Tests, der mit Dummy-Pixel-IDs
+   arbeitet, damit das Gating scharf gemessen wird statt trivial zu bestehen.
 9. **Security-Header in Produktion** — HSTS mit `preload`, `X-Content-Type-Options`,
    `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors 'self'`, `object-src 'none'`.
 10. **Pricing Single Source of Truth** — `npm run check:pricing` bestätigt Synchronität

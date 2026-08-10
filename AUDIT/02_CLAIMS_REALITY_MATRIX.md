@@ -24,7 +24,7 @@ Quelle der Claims: ausgelieferte Produktionsseite https://realsyncdynamicsai.de
 | C-12 | „mandantengetrennt" | RLS-Pattern über `memberships` korrekt | Kern-Tabellen halten (anon = 0 Zeilen); aber F-04/F-05/F-08/F-09 | `rls.db.test.ts` läuft nicht in CI | **TEILWEISE** |
 | C-13 | „Human Oversight" (2×) | `governance-approvals` deployt, Approval-Evidenz real | funktioniert | Unit-Tests vorhanden | **BELEGT** |
 | C-14 | „C2PA" / „Chain-of-Custody" | `provenanceCore.ts`, Ed25519, `provenance_records` existiert | **`provenance`, `c2pa-manifest-generate` nicht deployt** | — | **NICHT BELEGT** (F-01) |
-| C-15 | „14 Tage kostenlos" (2×) | `trialDays` in `shared/pricing.ts` | **`create-trial-subscription` nicht deployt** | `pricing-flow.spec.ts` läuft nicht in CI | **NICHT BELEGT** |
+| C-15 | „14 Tage kostenlos" (2×) | `trialDays` in `shared/pricing.ts` | **`create-trial-subscription` nicht deployt** | `tests/e2e/pricing-flow.spec.ts` läuft in CI ✅ | **NICHT BELEGT** |
 | C-16 | „15 Minuten Account-Zugang" | Onboarding-Flow vorhanden | nicht messbar ohne E2E | keine | **GRAU** |
 | C-17 | „monatlich kündbar" | Stripe-Portal (`stripe-portal` deployt) | Portal erreichbar | keine | **BELEGT** |
 | C-18 | „API" | `api-gateway`, `api-audit`, `verify_api_key`-RPC real und korrekt | **beide nicht deployt** | — | **NICHT BELEGT** (F-01) |

@@ -28,7 +28,7 @@ vollständig umgeht.
 | Security | **42** / 100 |
 | Architecture | **68** / 100 |
 | Reliability | **45** / 100 |
-| Testing | **55** / 100 |
+| Testing | **58** / 100 |
 | SaaS Readiness | **40** / 100 |
 | Multi-Tenancy | **50** / 100 |
 | GDPR Technical | **48** / 100 |
@@ -46,7 +46,7 @@ ein Score von 40 ohne.
 | P0 | 5 |
 | P1 | 7 |
 | P2 | 8 |
-| P3 | 5 |
+| P3 | 6 |
 | P4 | 5 |
 
 ---
@@ -68,7 +68,8 @@ Diese Punkte wurden gezielt angegriffen und haben gehalten:
 7. **SSH-Zugriff (`kodee`)** — JWT, Action-Allowlist, `shellQuote()`. Keine
    Command-Injection.
 8. **Keine dynamische LLM-Tool-Loop** — Excessive Agency ist strukturell vermieden.
-9. **Typecheck grün, 2867 Unit-Tests grün, Pricing-Single-Source verifiziert.**
+9. **Typecheck grün, 2867 Unit-Tests grün, Playwright-Katalog-Suite in CI grün,
+   Pricing-Single-Source verifiziert.**
 
 ---
 
@@ -84,10 +85,13 @@ kennt das Problem — es ist nur nicht abgearbeitet.
 „✅ Kein blockierender Edge-Function-Drift" — Exit-Code 0, ohne irgendetwas geprüft
 zu haben. So konnte die Lücke auf 83 Functions wachsen, während CI grün blieb.
 
-**3. Die richtigen Tests existieren und laufen nicht.**
-18 DB-Sicherheitstests (RLS, Hash-Chain, Append-Only, Entitlements) und 47
-Playwright-Specs sind geschrieben — und in keinem CI-Workflow eingebunden. Ein
-CI-Job von etwa 15 Zeilen hätte mehrere P0-Befunde dieses Audits vorweggenommen.
+**3. Die schwierigen Tests existieren und laufen nicht.**
+Playwright läuft in CI, aber nur zur Hälfte: `e2e.yml` deckt die 9 Specs der
+öffentlichen Katalog-Suite ab (grün). Die **38 App-internen Specs** — Governance,
+Evidence Vault, Workspace, API, Tenant-Admin — und die **18 DB-Sicherheitstests**
+(RLS, Hash-Chain, Append-Only, Entitlements) sind geschrieben und in keinem
+Workflow eingebunden. Ein CI-Job von etwa 15 Zeilen hätte mehrere P0-Befunde dieses
+Audits vorweggenommen.
 
 ---
 

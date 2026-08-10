@@ -7,11 +7,6 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Webhook Management Features', () => {
-  test.beforeEach(async ({ page }) => {
-    // Would typically login here in a real scenario
-    // For now, we verify the routes are accessible
-  });
-
   test('should provide webhook retry management interface', async ({ page }) => {
     const response = await page.goto('/app/api/webhook-retry', { waitUntil: 'networkidle' });
 

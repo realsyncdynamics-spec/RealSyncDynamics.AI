@@ -1,19 +1,6 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('SEO-Dashboard Compliance & Audit', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/demo-login');
-
-    // Perform demo login
-    await page.fill('input[name="email"]', 'demo@example.com');
-    await page.fill('input[name="password"]', 'demo123456');
-    await page.click('button[type="submit"]');
-
-    // Wait for dashboard redirect
-    await page.waitForURL(/\/app\/dashboard/, { timeout: 10000 });
-  });
-
   test('should display compliance report panel', async ({ page }) => {
     await page.goto('/app/seo-marketing-dashboard');
     await page.waitForLoadState('networkidle');

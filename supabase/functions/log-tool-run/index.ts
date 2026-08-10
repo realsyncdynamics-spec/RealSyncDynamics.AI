@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.1';
-import { corsHeaders } from '../_shared/cors.ts';
+// _shared/cors.ts existiert nicht — corsHeaders kommt aus gateway.ts.
+import { corsHeaders } from '../_shared/gateway.ts';
 
 interface LogToolRunRequest {
   tool_key: string;

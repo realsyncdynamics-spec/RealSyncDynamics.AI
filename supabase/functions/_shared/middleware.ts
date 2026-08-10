@@ -2,7 +2,47 @@
  * Shared middleware for Edge Functions — Error handling, rate limiting, logging
  */
 
-import { retryWithBackoff } from '../../src/lib/circuit-breaker';
+/**
+ * Retry mit exponentiellem Backoff.
+ *
+ * Frueher aus `src/lib/circuit-breaker` importiert — der Pfad zeigte ins
+ * Vite-Frontend und existierte von hier aus gar nicht, wodurch jede Function
+ * mit diesem Import beim Bundling scheiterte. Edge Functions laufen in Deno
+ * und duerfen keinen Frontend-Code ziehen; die Funktion steht deshalb hier.
+ *
+ * Verhalten ist bewusst identisch zur Frontend-Variante: bei maxRetries=3 wird
+ * dreimal versucht und nur zwischen den Versuchen gewartet.
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  // maxDelay ist optional, weil withRetry() unten nur maxRetries und baseDelay
+  // durchreicht.
+  options: { maxRetries: number; baseDelay: number; maxDelay?: number } = {
+    maxRetries: 3,
+    baseDelay: 1000,
+    maxDelay: 30000,
+  },
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let i = 0; i < options.maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+
+      if (i < options.maxRetries - 1) {
+        const delay = Math.min(
+          options.baseDelay * Math.pow(2, i) + Math.random() * 1000,
+          options.maxDelay ?? 30000,
+        );
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error('Retry exhausted');
+}
 
 interface MiddlewareContext {
   userId: string;

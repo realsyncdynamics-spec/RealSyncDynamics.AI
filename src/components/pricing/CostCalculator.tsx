@@ -204,10 +204,32 @@ export function CostCalculator() {
                 {PUBLIC_PRICING_TIERS.filter(
                   (tier) => tier.id !== 'free' && !tier.id.includes('yearly'),
                 ).map((tier) => {
+                  // Aufwand-Skalierung pro Tier: höhere Tiers adressieren komplexere Setups
+                  // Starter: 5 Websites (Klein), Growth: 20 Websites (Mittel), Agency: 40 (Groß), etc.
+                  const websiteMultiplier: Record<string, number> = {
+                    starter: 0.5,     // 5 Websites statt 10 (kleine Unternehmen)
+                    growth: 2.0,      // 20 Websites (mittlere Unternehmen)
+                    agency: 4.0,      // 40 Websites (Agenturen)
+                    enterprise: 5.0,  // 50 Websites (Großunternehmen)
+                    scale: 10.0,      // 100 Websites (Reseller mit Mandanten)
+                  };
+                  const multiplier = websiteMultiplier[tier.id] || 1.0;
+                  const scaledManualCost = calculations.totalManualCostPerYear * multiplier;
+
+                  // Effizienzfaktoren pro Plan: höhere Tiers = bessere Automatisierung
+                  const efficiencyMap: Record<string, number> = {
+                    starter: 0.45,    // 45% Automation
+                    growth: 0.62,     // 62% Automation
+                    agency: 0.75,     // 75% Automation (Governance Agents)
+                    enterprise: 0.82, // 82% Automation (erweiterte Features)
+                    scale: 0.88,      // 88% Automation (Multi-Tenant max)
+                  };
+                  const efficiency = efficiencyMap[tier.id] || 0.45;
+                  const automatedCostPerYear = scaledManualCost * (1 - efficiency);
                   const yearlyCost = (tier.priceEur || 0) * 12;
-                  const savings = calculations.totalManualCostPerYear - yearlyCost;
-                  const savingsPercent = calculations.totalManualCostPerYear > 0
-                    ? Math.round((savings / calculations.totalManualCostPerYear) * 100)
+                  const savings = scaledManualCost - automatedCostPerYear - yearlyCost;
+                  const savingsPercent = scaledManualCost > 0
+                    ? Math.round((savings / scaledManualCost) * 100)
                     : 0;
                   const isSavings = savings > 0;
 

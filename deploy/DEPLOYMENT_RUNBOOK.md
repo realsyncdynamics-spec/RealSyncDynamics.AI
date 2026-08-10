@@ -198,6 +198,35 @@ gh run view <run-id> --log
 
 ### Common Issues
 
+#### VPS per SSH nicht erreichbar (beobachtet am 2026-08-03)
+
+Der Preflight-Schritt bricht ab mit:
+
+```
+::error::VPS auf Port 22 nicht erreichbar — Deployment abgebrochen, bevor rsync ins Timeout laeuft.
+```
+
+Ohne diesen Vorabtest zeigte sich derselbe Zustand als zweiminütiger Hänger im
+`rsync`, gefolgt von der wenig aussagekräftigen Meldung
+`rsync error: unexplained error (code 255)` — siehe Workflow-Lauf 94.
+
+Der Build ist in diesem Fall in Ordnung; nur die Verbindung fehlt. Gemessen
+wurde damals: Port 443 der Maschine antwortete, Port 22 nicht — der Server lief
+also, nur SSH war von außen zu.
+
+Drei übliche Ursachen, in dieser Reihenfolge prüfen:
+
+1. **Firewall.** GitHub-Runner haben wechselnde IPs aus großen Bereichen; eine
+   Allowlist auf einzelne Adressen sperrt sie aus.
+   Prüfen: hPanel → VPS → Firewall, auf dem Server `ufw status`.
+2. **Abweichender SSH-Port.** Dann genügt es, das Secret `VPS_SSH_PORT` zu
+   setzen — der Workflow liest es und muss nicht geändert werden.
+   Prüfen: `ss -ltnp | grep sshd`.
+3. **sshd läuft nicht.** Prüfen: `systemctl status ssh`.
+
+Ist SSH gesperrt, hilft die Browser-Konsole im hPanel: sie arbeitet unabhängig
+von SSH und erlaubt genau diese Diagnose auf dem Server selbst.
+
 #### Port 8090 already in use
 ```bash
 # On VPS, find what's using it

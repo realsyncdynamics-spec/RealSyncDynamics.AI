@@ -115,12 +115,30 @@ Alle bis auf `/health` erwarten `Authorization: Bearer rsmcp_…`.
 |---|---|---|
 | `GET` | `/evidence` | Snapshots des Tenants (`?subject_ref=`, `?limit=`) |
 | `GET` | `/evidence/:id` | einzelner Snapshot |
-| `POST` | `/evidence/:id/verify-hash` | Hash-Prüfung |
+| `POST` | `/evidence/:id/verify-hash` | verifiziert die gesamte Kette des Subjects |
 | `GET` | `/evidence/control/:controlId` | Suche über `subject_ref` |
 
 ```bash
 curl -H "Authorization: Bearer rsmcp_…" http://localhost:3001/evidence?limit=10
 ```
+
+`verify-hash` prüft nicht den einzelnen Snapshot, sondern die **gesamte Kette
+seines Subjects** — ein Snapshot für sich sagt nichts aus, seine Unversehrtheit
+ergibt sich erst aus der lückenlosen Verkettung ab Version 1:
+
+```json
+{ "data": { "subjectRef": "iso42001/A.5", "valid": true, "chainLength": 7,
+            "cryptoVerified": 5, "legacy": 2, "issues": [] } }
+```
+
+`legacy` zählt Snapshots ohne `event_timestamp` (vor Einführung der Spalte
+angelegt). Die sind nur strukturell prüfbar und gelten **nicht** als
+manipuliert — bei `cryptoVerified: 0` ist `valid: true` daher eine Aussage über
+die Struktur, nicht über die Kryptografie.
+
+Die Prüflogik liegt in `packages/evidence-chain` und wird von der SPA
+mitbenutzt; die Kanonisierung stimmt zeichengenau mit der Edge Function
+überein, die die Hashes erzeugt.
 
 ### Governance — antwortet mit 501
 
@@ -210,7 +228,6 @@ nichts liefern kann.
 | Kein Rate-Limiting | `mcp_key_usage` liefert die Datenbasis, die Durchsetzung fehlt |
 | Keine Key-Rotation | `rotated_from` ist vorbereitet, es gibt keine Operation dafür |
 | Keine Oberfläche | Keys nur über die Edge Function |
-| `verify-hash` prüft flach | belegt nur, dass Hashes vorhanden sind, verfolgt die Kette nicht |
 | Keine semantische Suche | `evidence/control/:id` sucht als Textmuster über `subject_ref` |
 
 ---

@@ -4,10 +4,10 @@
   "description": "MCP Governance Control Plane for RealSyncDynamics.AI — Evidence Vault, Governance Runtime, Agent Operations.",
   "type": "module",
   "private": true,
-  "main": "dist/index.js",
+  "main": "dist/apps/mcp-server/src/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "start": "node dist/apps/mcp-server/src/index.js",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test --import tsx ./test/*.test.ts",

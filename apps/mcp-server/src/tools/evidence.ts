@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import { supabase } from '../services/supabase.js';
 import { EvidenceSnapshot } from '../types/index.js';
-import crypto from 'crypto';
+import type { Database } from '../types/database.js';
+import { verifyChain, type ChainIssue } from '../../../../packages/evidence-chain/src/index.js';
 
 export async function listEvidence(
   tenantId: string,
@@ -46,21 +48,65 @@ export async function getEvidence(
   return data ? mapEvidenceRow(data) : null;
 }
 
+/** SHA-256 als Hex — injiziert in verifyChain, damit der Kern laufzeitfrei bleibt. */
+async function sha256Hex(input: string): Promise<string> {
+  return crypto.createHash('sha256').update(input, 'utf8').digest('hex');
+}
+
+export interface ChainVerification {
+  subjectRef: string;
+  /** Alle Prüfungen bestanden. */
+  valid: boolean;
+  /** Anzahl Snapshots in der Kette. */
+  chainLength: number;
+  /** Snapshots, deren event_hash erfolgreich nachgerechnet wurde. */
+  cryptoVerified: number;
+  /** Snapshots ohne event_timestamp — nur strukturell prüfbar, keine Manipulation. */
+  legacy: number;
+  issues: ChainIssue[];
+}
+
+/**
+ * Verifiziert die Hash-Kette des Subjects, zu dem der Snapshot gehört.
+ *
+ * Geprüft wird die gesamte Kette, nicht nur der angefragte Snapshot: Ein
+ * einzelner Snapshot für sich sagt nichts aus, seine Unversehrtheit ergibt
+ * sich erst aus der lückenlosen Verkettung ab Version 1.
+ *
+ * Die Prüflogik stammt aus `@realsync/evidence-chain` — demselben Modul, das
+ * die SPA verwendet, mit derselben Kanonisierung wie die Edge Function, die
+ * die Hashes erzeugt. Eine eigene Kopie hier würde irgendwann abweichen und
+ * die Verifizierung still falsch beantworten.
+ */
 export async function verifyHashChain(
   tenantId: string,
   evidenceId: string,
-): Promise<{ valid: boolean; chainLength: number }> {
-  const evidence = await getEvidence(tenantId, evidenceId);
-  if (!evidence) {
+): Promise<ChainVerification> {
+  const anchor = await getEvidence(tenantId, evidenceId);
+  if (!anchor) {
     throw new Error('Evidence not found');
   }
 
-  // Phase 1: Basic validation. Phase 2: Full hash chain verification
-  const isValid = !!(evidence.contentSha256 && evidence.eventHash);
+  const { data, error } = await supabase
+    .from('evidence_snapshots')
+    .select('subject_ref, version, content_sha256, retention_class, prev_hash, event_hash, event_timestamp')
+    .eq('tenant_id', tenantId)
+    .eq('subject_ref', anchor.subjectRef)
+    .order('version', { ascending: true });
+
+  if (error) {
+    throw new Error(`Chain load failed: ${error.message}`);
+  }
+
+  const report = await verifyChain(data ?? [], sha256Hex);
 
   return {
-    valid: isValid,
-    chainLength: evidence.version,
+    subjectRef: report.subjectRef,
+    valid: report.ok,
+    chainLength: report.count,
+    cryptoVerified: report.cryptoVerified,
+    legacy: report.legacy,
+    issues: report.issues,
   };
 }
 
@@ -84,20 +130,22 @@ export async function searchEvidenceByControl(
   return (data || []).map(mapEvidenceRow);
 }
 
-function mapEvidenceRow(row: any): EvidenceSnapshot {
+type EvidenceRow = Database['public']['Tables']['evidence_snapshots']['Row'];
+
+function mapEvidenceRow(row: EvidenceRow): EvidenceSnapshot {
   return {
     id: row.id,
     tenantId: row.tenant_id,
     subjectRef: row.subject_ref,
-    label: row.label,
+    label: row.label ?? undefined,
     version: row.version,
     contentSha256: row.content_sha256,
-    prevHash: row.prev_hash,
+    prevHash: row.prev_hash ?? undefined,
     eventHash: row.event_hash,
-    signature: row.signature,
+    signature: row.signature ?? undefined,
     retentionClass: row.retention_class,
     retainedUntil: row.retained_until ? new Date(row.retained_until) : undefined,
-    createdBy: row.created_by,
+    createdBy: row.created_by ?? undefined,
     createdAt: new Date(row.created_at),
   };
 }

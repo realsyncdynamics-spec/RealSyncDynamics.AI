@@ -83,6 +83,11 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 - `services/openclaw-agent` — Agent-Worker (systemd-Unit vorhanden)
 - `services/playwright-scanner` — Scan-Service (DSGVO-Audit)
 - `packages/sdk` — öffentliches SDK (CJS + ESM Builds)
+- `packages/evidence-chain` — Hash-Chain-Verifizierung des Evidence Vault
+  (abhängigkeitsfrei, Hash-Funktion injiziert). Genutzt von der SPA **und** vom
+  MCP Server. **Regel**: Die Kanonisierung in `serializeSnapshotForHash` muss
+  zeichengenau zu `supabase/functions/evidence-vault` passen — eine Abweichung
+  meldet unversehrte Ketten als manipuliert.
 - `connectors/` — externe Integrationen · `worker/` — Legacy-Jobs (deprecated → Edge Functions + Cron)
 
 **Architekturprinzip**
@@ -267,7 +272,10 @@ RealSyncDynamics.AI/
 │                      Evidence/Governance, API-Key-Auth + Prüfpfad
 │                      (eigenes tsconfig, aus dem Root-Lint ausgenommen)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
-├── packages/sdk       Öffentliches SDK (CJS + ESM)
+├── packages/
+│   ├── sdk            Öffentliches SDK (CJS + ESM)
+│   ├── siteos-core    SiteOS-Kern (abhängigkeitsfrei)
+│   └── evidence-chain Hash-Chain-Verifizierung (SPA + MCP Server)
 ├── connectors/        Externe Integrationen
 ├── deploy/ docker/ infra/ VPS-Stack (Traefik, Ollama, n8n)
 ├── platform/          🏗️ **WEBSITE BUILDER MONOREPO** (siehe unten)

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   verifyChain, verifyAllChains, serializeSnapshotForHash, normalizeHex,
   type SnapshotRecord, type HashHex,
-} from '../../src/lib/evidence/verifyChain';
+} from '../../packages/evidence-chain/src/index';
 
 // Echte SHA-256-Hex-Funktion (Node/Browser-WebCrypto) — identisch zur Edge-Fn.
 const sha256Hex: HashHex = async (input: string) => {

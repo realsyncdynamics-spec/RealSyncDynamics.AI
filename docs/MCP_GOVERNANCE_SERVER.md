@@ -147,10 +147,22 @@ Die Governance-Endpunkte antworten heute mit `501`. Ein Agent, der daraus einen
 Score ableitet, erfindet einen Befund. Genau deshalb liefern diese Endpunkte
 einen Fehler statt Null-Werten.
 
-Ebenso: `POST /evidence/:id/verify-hash` belegt derzeit nur, dass Hashwerte
-vorhanden sind — es verfolgt die Kette **nicht** über Versionen zurück. Ein
-`valid: true` ist damit kein Nachweis der Unversehrtheit und darf nicht als
-solcher formuliert werden.
+Bei `POST /evidence/:id/verify-hash` kommt es auf einen Unterschied an, den ein
+Agent mitsprechen muss. Geprüft wird die gesamte Kette des Subjects: Struktur,
+Verkettung und — sofern `event_timestamp` vorliegt — die Nachrechnung des
+`event_hash`. Snapshots ohne diesen Zeitstempel stammen aus der Zeit vor
+Einführung der Spalte; sie zählen als `legacy` und gelten ausdrücklich **nicht**
+als manipuliert.
+
+Daraus folgt:
+
+> „Die Kette zu `iso42001/A.5` ist unversehrt: 7 Snapshots, 5 kryptografisch
+> nachgerechnet, 2 ältere nur strukturell prüfbar."
+
+Nicht zulässig ist, `legacy` zu verschweigen. Bei `cryptoVerified: 0` ist ein
+`valid: true` eine Aussage über die Struktur, nicht über die Kryptografie — wer
+das als „kryptografisch bestätigt" formuliert, überschreibt den Vorbehalt, den
+die Daten ausdrücklich mitliefern.
 
 ---
 
@@ -191,6 +203,7 @@ Lesezugriff auf Compliance-Nachweise ist ein offenes Risiko.
 | Kein Rate-Limiting | ein fehlerhafter Agent kann den Dienst ungebremst abfragen |
 | Keine semantische Suche | `evidence/control/:id` ist ein Textmuster über `subject_ref`, keine Bedeutungssuche |
 | Keine Key-Rotation | Ersatz nur durch Widerruf und Neuausstellung |
+| Legacy-Snapshots nicht nachrechenbar | Ketten aus der Zeit vor `event_timestamp` sind nur strukturell prüfbar |
 
 Am ehesten fällt das fehlende Rate-Limiting ins Gewicht: Ein Agent in einer
 Schleife kann den Dienst ungebremst abfragen. `mcp_key_usage` zeichnet das

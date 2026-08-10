@@ -19,6 +19,10 @@ export interface Database {
           retained_until: string | null;
           created_by: string | null;
           created_at: string;
+          // Exakt in den event_hash eingegangener Zeitstempel. NULL bei
+          // Snapshots von vor Einführung der Spalte — die sind nur
+          // strukturell prüfbar, gelten aber nicht als manipuliert.
+          event_timestamp: string | null;
         };
         Insert: {
           id?: string;
@@ -34,6 +38,7 @@ export interface Database {
           retained_until?: string | null;
           created_by?: string | null;
           created_at?: string;
+          event_timestamp?: string | null;
         };
         // Append-only: die Tabelle hat einen Immutability-Trigger. Der leere
         // Update-Typ macht schon im Compiler klar, dass es nichts zu ändern gibt.

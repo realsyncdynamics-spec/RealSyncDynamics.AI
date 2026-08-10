@@ -199,24 +199,33 @@ export function GovernanceRecommendation() {
 
           {/* Plan benefits */}
           <div className="border border-titanium-700 bg-obsidian-900 p-6 rounded-none space-y-4">
-            <h2 className="font-display font-bold text-titanium-50 text-lg mb-4">Was ist inbegriffen</h2>
-            <div className="space-y-4">
+            <h2 className="font-display font-bold text-titanium-50 text-lg mb-1">Was ist inbegriffen</h2>
+            <p className="text-sm text-titanium-400 mb-4">
+              Jeder Baustein mit einer Erklärung, was er bedeutet — damit kein Begriff Auslegungssache bleibt.
+            </p>
+            <div className="space-y-6">
               {PRODUCT_AREAS.map((area) => {
                 const modules = modulesForArea(plan, area.id);
                 if (modules.length === 0) return null;
                 return (
                   <div key={area.id}>
-                    <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-titanium-500">
+                    <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.16em] text-titanium-500">
                       {area.label}
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <p className="mb-3 text-xs text-titanium-500 leading-relaxed">{area.summary}</p>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
                       {modules.map((module) => (
-                        <div key={module.id} className="flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                          <span className="text-sm text-titanium-300">{module.name}</span>
+                        <div key={module.id} className="flex gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <div>
+                            <dt className="text-sm font-semibold text-titanium-100">{module.name}</dt>
+                            <dd className="text-xs text-titanium-400 leading-relaxed mt-0.5">
+                              {module.description}
+                            </dd>
+                          </div>
                         </div>
                       ))}
-                    </div>
+                    </dl>
                   </div>
                 );
               })}

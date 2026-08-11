@@ -3,11 +3,10 @@
 // GET /functions/v1/governance-agents-list?tenant_id=...&status=active&capability=...&runtime=...
 //
 // Auth (F-05 remediation):
-//   - Requires valid user JWT
+//   - Requires valid user JWT (platform verify_jwt = true + in-function check)
 //   - tenant_id must belong to a membership of the caller
-//   - Replaced unsafe .or(`tenant_id.eq.${tenantId}...`) interpolation with safe filters
+//   - No string interpolation into PostgREST filter grammar
 
-import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { requireAuthAndTenant } from '../_shared/auth.ts';
 
@@ -41,34 +40,35 @@ Deno.serve(async (req) => {
     const auth = await requireAuthAndTenant(req, tenantId);
     if (auth instanceof Response) return auth;
 
-    // Safe query: only the caller's tenant + global agents (tenant_id IS NULL).
-    // No string interpolation into PostgREST filter grammar.
-    let query = auth.admin
-      .from('governance_agent_registry')
-      .select('id, agent_name, description, version, status, capabilities, runtime, metadata, tenant_id')
-      .eq('status', status)
-      .or(`tenant_id.eq.${auth.tenantId},tenant_id.is.null`);
+    // Two separate, fully parameterized queries — never interpolate into .or()
+    const baseSelect = 'id, agent_name, description, version, status, capabilities, runtime, metadata, tenant_id';
 
-    // Note: the .or() above still interpolates, but auth.tenantId is now a
-    // verified UUID from memberships, not raw client input. We still prefer
-    // two separate queries for maximum safety if the PostgREST grammar is a concern.
+    let tenantQuery = auth.admin
+      .from('governance_agent_registry')
+      .select(baseSelect)
+      .eq('status', status)
+      .eq('tenant_id', auth.tenantId);
+
+    let globalQuery = auth.admin
+      .from('governance_agent_registry')
+      .select(baseSelect)
+      .eq('status', status)
+      .is('tenant_id', null);
 
     if (runtime) {
-      query = query.eq('runtime', runtime);
+      tenantQuery = tenantQuery.eq('runtime', runtime);
+      globalQuery = globalQuery.eq('runtime', runtime);
     }
 
-    const { data, error } = await query;
+    const [tenantRes, globalRes] = await Promise.all([tenantQuery, globalQuery]);
 
-    if (error) {
-      throw new Error(`Query failed: ${error.message}`);
-    }
+    if (tenantRes.error) throw new Error(`Tenant query failed: ${tenantRes.error.message}`);
+    if (globalRes.error) throw new Error(`Global query failed: ${globalRes.error.message}`);
 
-    let rows = (data || []) as AgentListRow[];
-
-    // Extra safety filter in application space (defence in depth)
-    rows = rows.filter(
-      (row) => row.tenant_id === auth.tenantId || row.tenant_id === null,
-    );
+    let rows = [
+      ...((tenantRes.data || []) as AgentListRow[]),
+      ...((globalRes.data || []) as AgentListRow[]),
+    ];
 
     if (capabilities.length > 0) {
       rows = rows.filter((row) =>

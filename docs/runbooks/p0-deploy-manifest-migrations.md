@@ -37,10 +37,15 @@ Reconcile the production gap documented in Audit #1005:
 | Gap (repo present, not live) | ~65–70 |
 | Orphans remaining | 0 (allowlist empty) |
 
-Exact live list is obtained via:
+Exact live list / gap is obtained via the new helper:
 
 ```bash
-supabase functions list --project-ref ebljyceifhnlzhjfyxup
+# repo-only
+node scripts/edge-function-inventory.mjs
+
+# full diff (needs secrets)
+SUPABASE_ACCESS_TOKEN=… SUPABASE_PROJECT_ID=ebljyceifhnlzhjfyxup \
+  node scripts/edge-function-inventory.mjs
 ```
 
 or the temporary `list-edge-functions.yml` workflow.
@@ -78,9 +83,9 @@ Before any Tier-1 deploy: each function must have
 
 ## Planned contents of this PR (incremental)
 
-1. ✅ Status + gate update (this commit)
-2. Inventory strategy + priority tiers (this commit)
-3. Small inventory helper script (next commit) that diffs repo vs live list
+1. ✅ Status + gate update
+2. ✅ Inventory strategy + priority tiers
+3. ✅ Small inventory helper (`scripts/edge-function-inventory.mjs`)
 4. F-06: harden `scripts/check-edge-function-drift.mjs` so missing credentials in CI produce a clear warning / optional fail (currently graceful skip)
 5. Migration notes / residual ledger items (link to `p0-2-migration-reconciliation.md`)
 6. Explicit decision log: which functions we will **not** deploy and why
@@ -89,7 +94,7 @@ Before any Tier-1 deploy: each function must have
 
 ## Immediate next actions (safe, no new deploys)
 
-1. Generate a machine-readable inventory (repo set − live set) and commit it under `docs/inventory/` or `scripts/`.
+1. Run the inventory helper with credentials and commit a snapshot of the missing list (optional, under `docs/inventory/`).
 2. Review the top 8–10 Tier-1 functions for Auth patterns (copy the hardened helper from the three P0 endpoints).
 3. Decide plan upgrade vs. further cleanup of low-value live functions.
 4. Only then open selective deploy workflows for the first 1–2 Tier-1 functions.
@@ -101,4 +106,5 @@ Before any Tier-1 deploy: each function must have
 - Auth remediation: #1011, #1015, `docs/runbooks/edge-function-kontingent.md` §7
 - Migration residual: `docs/runbooks/p0-2-migration-reconciliation.md`
 - Drift guard: `scripts/check-edge-function-drift.mjs` + empty allowlist
+- Inventory helper: `scripts/edge-function-inventory.mjs`
 - Audit: #1005

@@ -45,13 +45,23 @@ INSERT INTO public.entitlements (key, description, kind) VALUES
 ON CONFLICT (key) DO NOTHING;
 
 -- 2. Sentinel-Produkte für die neuen Plan-Keys
+--
+-- `products` hat ZWEI Unique-Constraints: auf `stripe_price_id` und auf
+-- `default_for_plan_key`. Ein auf eine Spalte eingeschränktes ON CONFLICT
+-- faengt nur diesen einen Konflikt ab — in Produktion sind die Plan-Keys
+-- laengst mit den echten Stripe-Price-IDs belegt (z. B. starter →
+-- price_1TfsV8…), sodass der Insert auf `products_default_for_plan_key_key`
+-- mit 23505 abbrach und die gesamte Migrationskette blockierte.
+-- Ohne Spaltenangabe deckt DO NOTHING beide Constraints ab: Sentinel-Zeilen
+-- entstehen nur dort, wo weder Price-ID noch Plan-Key schon existieren.
+-- Bestehende Zeilen bleiben unangetastet.
 INSERT INTO public.products (stripe_price_id, name, default_for_plan_key) VALUES
     ('internal_default_starter',    'Starter (default)',    'starter'),
     ('internal_default_growth',     'Growth (default)',     'growth'),
     ('internal_default_agency',     'Agency (default)',     'agency'),
     ('internal_default_scale',      'Scale (default)',      'scale'),
     ('internal_default_enterprise', 'Enterprise (default)', 'enterprise')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+ON CONFLICT DO NOTHING;
 
 -- 3. Plan × Entitlement-Bindings (spiegelt src/lib/billing/planAccess.ts
 --    und die Bullet-Listen aus src/config/pricing.ts)

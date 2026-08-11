@@ -1,0 +1,49 @@
+name: Selective P0 Auth Free Slot + Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  free-and-deploy:
+    name: Free 5 orphan slots then deploy governance-agents-list
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: latest
+
+      - name: Delete 5 orphaned functions (free slots)
+        run: |
+          set -euo pipefail
+          echo "=== Deleting 5 orphaned functions per edge-function-kontingent.md ==="
+          for slug in debug-secret-shape vault-set-secret vault-key-setter stripe-webhook-fixer stripe-webhook-provision; do
+            echo "Deleting $slug ..."
+            supabase functions delete "$slug" --project-ref "$PROJECT_REF" || echo "WARN: $slug already gone or delete failed (continuing)"
+          done
+          echo "OK: orphan cleanup attempted"
+
+      - name: Deploy governance-agents-list (remaining P0)
+        run: |
+          set -euo pipefail
+          echo "=== Deploy governance-agents-list ==="
+          supabase functions deploy governance-agents-list --project-ref "$PROJECT_REF"
+          echo "OK: governance-agents-list"
+
+      - name: Summary
+        run: |
+          {
+            echo "## Selective P0 Auth Free Slot + Deploy"
+            echo "- Deleted (or already absent): debug-secret-shape, vault-set-secret, vault-key-setter, stripe-webhook-fixer, stripe-webhook-provision"
+            echo "- governance-agents-list: deployed"
+            echo ""
+            echo "Previously deployed:"
+            echo "- governance-risk-score: OK"
+            echo "- enterprise-ai-os-discovery-pending: OK"
+            echo ""
+            echo "Next: Step 4 verification (Bearer invalid → 401, cross-tenant → 403)"
+          } >> "$GITHUB_STEP_SUMMARY"

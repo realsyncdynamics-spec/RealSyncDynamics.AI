@@ -197,8 +197,10 @@ verify_jwt = false
 [functions.enterprise-ai-os-discovery-intake]
 verify_jwt = false
 
+# F-05 remediation (2026-08-11): previously public + global dump.
+# Now requires JWT + membership; platform gate enabled.
 [functions.enterprise-ai-os-discovery-pending]
-verify_jwt = false
+verify_jwt = true
 
 [functions.enterprise-ai-os-agents-list]
 verify_jwt = false
@@ -228,17 +230,19 @@ verify_jwt = false
 [functions.governance-approvals]
 verify_jwt = false
 
+# F-04 remediation (2026-08-11): previously only checked startsWith('Bearer ').
+# Now real JWT + membership before any service_role write.
 [functions.governance-risk-score]
-verify_jwt = false
+verify_jwt = true
 
 # governance-risk-escalate — internal function (called by governance-agent,
 # governance-ingest). Authenticated users; defaults to verify_jwt = true.
 [functions.governance-risk-escalate]
 
-# governance-agents-list — public discovery endpoint for agent registry.
-# No JWT required (tenant_id filtering in endpoint logic).
+# F-05 remediation (2026-08-11): previously public + PostgREST filter injection.
+# Now requires JWT + membership; platform gate enabled.
 [functions.governance-agents-list]
-verify_jwt = false
+verify_jwt = true
 
 [functions.governance-dpias]
 verify_jwt = false

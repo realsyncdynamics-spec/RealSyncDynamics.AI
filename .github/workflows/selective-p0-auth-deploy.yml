@@ -1,0 +1,49 @@
+name: Selective P0 Auth Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-three:
+    name: Deploy only the 3 hardened auth functions
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: latest
+
+      - name: Deploy governance-risk-score (1/3)
+        run: |
+          set -euo pipefail
+          echo "=== 1/3 governance-risk-score ==="
+          supabase functions deploy governance-risk-score --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+          echo "OK: governance-risk-score"
+
+      - name: Deploy enterprise-ai-os-discovery-pending (2/3)
+        run: |
+          set -euo pipefail
+          echo "=== 2/3 enterprise-ai-os-discovery-pending ==="
+          supabase functions deploy enterprise-ai-os-discovery-pending --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+          echo "OK: enterprise-ai-os-discovery-pending"
+
+      - name: Deploy governance-agents-list (3/3)
+        run: |
+          set -euo pipefail
+          echo "=== 3/3 governance-agents-list ==="
+          supabase functions deploy governance-agents-list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+          echo "OK: governance-agents-list"
+
+      - name: Summary
+        run: |
+          {
+            echo "## Selective P0 Auth Deploy"
+            echo "- governance-risk-score: deployed"
+            echo "- enterprise-ai-os-discovery-pending: deployed"
+            echo "- governance-agents-list: deployed"
+            echo ""
+            echo "Next: verify 401/403 (step 4)"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,18 @@
+{
+  "overall": 47,
+  "security": 42,
+  "architecture": 68,
+  "reliability": 45,
+  "testing": 58,
+  "saas_readiness": 40,
+  "multi_tenancy": 50,
+  "gdpr_technical": 48,
+  "ai_governance": 45,
+  "billing": 55,
+  "production_readiness": 32,
+  "p0": 5,
+  "p1": 7,
+  "p2": 8,
+  "p3": 6,
+  "p4": 5
+}

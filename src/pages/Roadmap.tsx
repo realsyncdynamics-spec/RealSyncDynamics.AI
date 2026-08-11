@@ -31,7 +31,8 @@ export function Roadmap() {
           <div className="w-8 h-8 rounded-none bg-gradient-to-br from-titanium-500 to-titanium-700 flex items-center justify-center">
             <Compass className="h-4 w-4 text-titanium-50" />
           </div>
-          <div className="font-display font-bold text-sm tracking-tight text-titanium-50">Roadmap</div>
+          {/* h1 statt div: /roadmap hatte als einzige indexierte Seite keine H1 (SEO-Audit 2026-08-11) */}
+          <h1 className="font-display font-bold text-sm tracking-tight text-titanium-50">Roadmap</h1>
         </div>
       </header>
 

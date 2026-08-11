@@ -1,0 +1,33 @@
+name: Delete Edge Function (one-shot)
+
+on:
+  workflow_dispatch:
+    inputs:
+      function_name:
+        description: 'Slug of the Edge Function to delete (e.g. skills)'
+        required: true
+        type: string
+
+jobs:
+  delete:
+    name: Delete ${{ inputs.function_name }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: latest
+
+      - name: Delete function
+        run: |
+          set -euo pipefail
+          echo "=== Deleting ${{ inputs.function_name }} ==="
+          supabase functions delete "${{ inputs.function_name }}" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
+          echo "OK: deleted ${{ inputs.function_name }}"
+
+      - name: Remaining count
+        run: |
+          echo "=== Remaining functions ==="
+          supabase functions list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" | wc -l

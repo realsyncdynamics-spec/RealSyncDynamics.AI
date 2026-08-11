@@ -20,7 +20,17 @@ import { loadCockpitData, type CockpitData } from './cockpitData';
 import { GovernanceBriefCard } from './GovernanceBriefCard';
 import { ApiStatusCard } from '../../../features/api/ApiStatusCard';
 
-export function CeoCockpitView() {
+export interface CeoCockpitViewProps {
+  /**
+   * Unterdrückt den First-Time-Hinweis. Wird direkt nach der Pilot-Aktivierung
+   * gesetzt, wo der `DashboardRouter` bereits ein eigenes Willkommensbanner
+   * zeigt — sonst stünden zwei Begrüßungen übereinander. Das normale
+   * First-Time-Verhalten bleibt für alle anderen Fälle unverändert.
+   */
+  suppressFirstTimeBanner?: boolean;
+}
+
+export function CeoCockpitView({ suppressFirstTimeBanner = false }: CeoCockpitViewProps = {}) {
   const navigate = useNavigate();
   const { activeTenantId, tenants } = useTenant();
   const tenantName = tenants.find((t) => t.tenantId === activeTenantId)?.name ?? null;
@@ -30,7 +40,7 @@ export function CeoCockpitView() {
   const [dismissed, setDismissed] = useState(false);
 
   // First-time user detection: kein Assets/Data vorhanden
-  const isFirstTime = data && !dismissed && (
+  const isFirstTime = data && !dismissed && !suppressFirstTimeBanner && (
     data.counts.incidents === 0 &&
     data.counts.dpias === 0 &&
     data.counts.dsr.total === 0 &&

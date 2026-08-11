@@ -6,6 +6,12 @@ import {
 import { OAuthProviderButtons } from '../features/auth/OAuthProviderButtons';
 import { Logo } from '../components/Logo';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
+import {
+  PILOT_ERROR_MESSAGES,
+  isPilotActivationError,
+  type PilotActivationError,
+  type PilotActivationResponse,
+} from '../types/pilot';
 
 /**
  * /welcome — Onboarding-Setup-Wizard nach Stripe-Checkout.
@@ -20,6 +26,106 @@ import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
  *
  * URL: /welcome?session=cs_...&product=...
  */
+const PENDING_AUDIT_KEY = 'rsd_pending_audit';
+
+/** Kanonisches Dashboard-Ziel — /dashboard und /app sind nur Aliase darauf. */
+const CANONICAL_DASHBOARD = '/app/dashboard';
+
+interface PendingPilot {
+  audit_id: string;
+  domain: string;
+  analytics_consent: boolean;
+}
+
+/**
+ * Ermittelt den ausstehenden Pilot-Kontext.
+ *
+ * Reihenfolge ist bewusst: URL-Parameter gewinnen, `sessionStorage` ist nur der
+ * Rückfallweg. Ein OAuth-Umweg über einen anderen Tab kann den Storage leeren,
+ * die Rücksprung-URL trägt die Werte aber weiterhin — und umgekehrt überlebt
+ * der Storage einen Provider, der die Query verkürzt.
+ *
+ * Die Werte sind reine Nachschlage-Parameter. Die Autorisierung passiert
+ * ausschließlich serverseitig in `pilot-activate` über das JWT.
+ */
+function resolvePendingPilot(): PendingPilot | null {
+  const params = new URLSearchParams(window.location.search);
+
+  let stored: Partial<PendingPilot> = {};
+  try {
+    const raw = sessionStorage.getItem(PENDING_AUDIT_KEY);
+    if (raw) stored = JSON.parse(raw) as Partial<PendingPilot>;
+  } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
+
+  const intent = params.get('intent');
+  const auditId = params.get('audit_id') ?? stored.audit_id ?? '';
+  const domain = params.get('domain') ?? stored.domain ?? '';
+
+  // Ohne explizites intent=pilot in der URL zählt nur ein vollständiger
+  // Storage-Eintrag — sonst würde jeder beliebige Login eine Aktivierung
+  // auslösen.
+  const wantsPilot = intent === 'pilot' || (!intent && Boolean(stored.audit_id && stored.domain));
+  if (!wantsPilot || !auditId || !domain) return null;
+
+  return {
+    audit_id: auditId,
+    domain,
+    analytics_consent: stored.analytics_consent === true,
+  };
+}
+
+/**
+ * Ruft `pilot-activate` auf und leitet bei Erfolg ins Dashboard weiter.
+ *
+ * Bewusst `sb.functions.invoke()`: es hängt den echten Session-JWT an. Der
+ * generische `postEdgeFunction`-Helfer liest `localStorage['sb-auth-token']`,
+ * ein Key, der nirgends gesetzt wird — er ist für authentifizierte Aufrufe
+ * unbrauchbar.
+ */
+async function activatePilot(
+  sb: ReturnType<typeof getSupabase>,
+  pending: PendingPilot,
+  navigate: (to: string, opts?: { replace?: boolean }) => void,
+  setError: (msg: string | null) => void,
+  setBusy: (busy: boolean) => void,
+): Promise<void> {
+  setBusy(true);
+  setError(null);
+  try {
+    const { data, error: invokeErr } = await sb.functions.invoke('pilot-activate', {
+      body: {
+        audit_id: pending.audit_id,
+        domain: pending.domain,
+        analytics_consent: pending.analytics_consent,
+      },
+    });
+
+    // Fehlerpfad: `invoke` meldet Nicht-2xx als Error, der Body kommt zusätzlich
+    // im einheitlichen { ok:false, error:{ code, message } }-Format.
+    const payload = data as PilotActivationResponse | PilotActivationError | null;
+    if (invokeErr || !payload || isPilotActivationError(payload)) {
+      const code = isPilotActivationError(payload) ? payload.error.code : null;
+      throw new Error(
+        code ? PILOT_ERROR_MESSAGES[code] : 'Die Aktivierung ist fehlgeschlagen. Bitte erneut versuchen.',
+      );
+    }
+
+    // Erst nach bestätigtem Erfolg aufräumen — bei einem Fehler soll ein
+    // erneuter Versuch denselben Audit noch finden.
+    try { sessionStorage.removeItem(PENDING_AUDIT_KEY); } catch { /* egal */ }
+
+    navigate(
+      `${CANONICAL_DASHBOARD}?welcome=pilot&domain=${encodeURIComponent(payload.domain)}`,
+      { replace: true },
+    );
+  } catch (err) {
+    // Nutzer bleibt angemeldet und im Wizard; der Pending-Audit bleibt liegen.
+    setError(err instanceof Error ? err.message : 'Die Aktivierung ist fehlgeschlagen.');
+  } finally {
+    setBusy(false);
+  }
+}
+
 export function Welcome() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -76,29 +182,18 @@ export function Welcome() {
         setEmail((prev) => prev || session.user.email || '');
         setStep((prev) => (prev === 1 ? 2 : prev));
 
+        // Pilot-Aktivierung hat Vorrang vor ?next=: der Audit-CTA schickt den
+        // Nutzer mit intent=pilot hierher, und die Aktivierung bestimmt das Ziel
+        // selbst (Dashboard mit Willkommensbanner).
+        const pending = resolvePendingPilot();
+        if (pending) {
+          void activatePilot(sb, pending, navigate, setError, setBusy);
+          return;
+        }
+
         // Nach Login: ?next= auslesen und weiterleiten (z.B. /checkout/starter?pilot=true)
         const nextParam = new URLSearchParams(window.location.search).get('next');
         if (nextParam) {
-          // Consent aus sessionStorage persistieren (fire-and-forget)
-          try {
-            const raw = sessionStorage.getItem('rsd_pending_audit');
-            if (raw) {
-              const pending = JSON.parse(raw) as {
-                audit_id: string; analytics_consent: boolean;
-                consent_version: string; consent_type: string;
-              };
-              if (pending.analytics_consent) {
-                sb.from('user_consents').insert({
-                  user_id: session.user.id,
-                  scan_result_id: pending.audit_id,
-                  consent_type: pending.consent_type,
-                  consent_version: pending.consent_version,
-                  granted: true,
-                }).then(() => {/* fire-and-forget */});
-              }
-              sessionStorage.removeItem('rsd_pending_audit');
-            }
-          } catch { /* sessionStorage nicht verfügbar */ }
           navigate(nextParam, { replace: true });
           return;
         }

@@ -418,7 +418,9 @@ const CONSENT_VERSION = '1.0';
 const CONSENT_TYPE = 'platform_improvement_analytics';
 const PENDING_AUDIT_KEY = 'rsd_pending_audit';
 
-function TrialCtaBlock({ report }: { report: Report }) {
+// Exportiert, damit der Conversion-Punkt direkt testbar ist — CTA-Text und
+// Ziel-URL sind vertragsrelevant und dürfen nicht unbemerkt driften.
+export function TrialCtaBlock({ report }: { report: Report }) {
   const navigate = useNavigate();
   const [analyticsConsent, setAnalyticsConsent] = useState(false);
 
@@ -437,11 +439,15 @@ function TrialCtaBlock({ report }: { report: Report }) {
       }));
     } catch { /* sessionStorage nicht verfügbar — kein Blocker */ }
 
-    // Kanonischer Weg: immer über die eine Paket-Auswahl (/pricing).
-    // CTA-Beschriftung lautet „Starter 14 Tage kostenlos aktivieren" —
-    // daher Starter-Plan vorwählen (nicht Growth).
+    // Direkt in den Pilot-Pfad, nicht mehr über /pricing: der Pilot ist
+    // kartenlos, es gibt nichts auszuwählen. `intent=pilot` löst nach der
+    // Anmeldung `pilot-activate` aus (siehe Welcome.tsx).
+    //
+    // audit_id und domain sind reine Nachschlage-Werte — die Autorisierung
+    // passiert serverseitig über das JWT, niemals über diese Parameter.
     navigate(
-      `/pricing?plan=starter&audit_id=${report.audit_id}&source=trial_cta`
+      `/login?intent=pilot&audit_id=${encodeURIComponent(report.audit_id)}` +
+      `&domain=${encodeURIComponent(report.domain)}&source=audit_cta`
     );
   }
 
@@ -455,7 +461,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
         <ShieldCheck className="h-6 w-6 text-cyan-400 shrink-0 mt-0.5" />
         <div>
           <p className="font-mono text-[10px] uppercase tracking-widest text-cyan-500 mb-1">
-            14 Tage kostenlos · Starter Trial
+            14 Tage kostenlos · Governance-Runtime-Pilot
           </p>
           <h2 className="font-display font-bold text-titanium-50 text-xl sm:text-2xl leading-tight">
             Diesen Befund 14 Tage kostenlos überwachen
@@ -498,7 +504,7 @@ function TrialCtaBlock({ report }: { report: Report }) {
           onClick={handleActivate}
           className="inline-flex items-center justify-center gap-2 bg-cyan-400 text-obsidian-950 px-6 py-3 text-sm font-bold hover:bg-cyan-300 transition-colors"
         >
-          Starter 14 Tage kostenlos aktivieren <ArrowRight className="h-4 w-4" />
+          Governance-Runtime 14 Tage kostenlos aktivieren <ArrowRight className="h-4 w-4" />
         </button>
         <button
           onClick={handleActivate}

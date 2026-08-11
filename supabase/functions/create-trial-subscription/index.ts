@@ -1,13 +1,51 @@
 // Create trial subscription for unified-entry flow
 // POST /functions/v1/create-trial-subscription
 // Auth: Required (bearer token or session)
-// Body: { tenantId?: string }
+// Body: { tenantId?: string; planKey?: string; preserveTrialWindow?: boolean }
 //
-// Creates a new trial subscription (14 days) for the authenticated user's tenant
-// Sets: status='trialing', trial_start=NOW, trial_end=NOW+14d, plan_key='free_audit'
+// Creates a 14-day trial subscription for the authenticated user's tenant.
+// Sets: status='trialing', trial_start=NOW, trial_end=NOW+14d.
+//
+// planKey ist optional und defaultet auf 'free_audit' — bestehende Aufrufer
+// bleiben damit unverändert. `pilot-activate` übergibt explizit 'starter',
+// weil tenant_entitlements() das Produkt über
+// products.default_for_plan_key = subscriptions.plan_key auflöst und erst der
+// Starter-Plan die Governance Runtime freischaltet.
+//
+// preserveTrialWindow=true lässt ein bereits gesetztes trial_start/trial_end
+// unangetastet. Ohne das würde eine wiederholte Aktivierung das Pilot-Ende nach
+// hinten schieben — der Pilot muss idempotent sein.
+//
+// Sicherheitsrelevanz
+//   `tenantId` kommt aus dem Request-Body. Früher wurde er ungeprüft
+//   übernommen: ein beliebiger authentifizierter User konnte damit die
+//   Subscription eines fremden Tenants überschreiben. Es wird jetzt gegen
+//   `memberships` verifiziert (Tenant-Isolation, DSGVO Art. 32).
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { resolveTenantForUser, userBelongsToTenant } from '../_shared/tenant.ts';
+
+/** Plan-Keys aus shared/pricing.ts. Alles andere wird abgewiesen. */
+const ALLOWED_PLAN_KEYS = new Set([
+  'free_audit',
+  'starter', 'starter_yearly',
+  'growth', 'growth_yearly',
+  'agency', 'agency_yearly',
+  'enterprise', 'enterprise_yearly',
+  'partner', 'partner_yearly',
+]);
+
+/** Nur valide IP-Literale dürfen in die INET-Spalte `ip_address`. */
+function parseClientIp(header: string | null): string | null {
+  if (!header) return null;
+  const first = header.split(',')[0]?.trim();
+  if (!first) return null;
+  const m = first.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) return m.slice(1).every((o) => Number(o) <= 255) ? first : null;
+  if (/^[0-9a-fA-F:]+$/.test(first) && first.includes(':')) return first;
+  return null;
+}
 
 Deno.serve(async (req) => {
   const preflight = handleOptions(req, corsHeaders);
@@ -20,7 +58,7 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) return jsonError(401, 'UNAUTHORIZED', 'Authorization header required');
 
-  let body: { tenantId?: string };
+  let body: { tenantId?: string; planKey?: string; preserveTrialWindow?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -37,23 +75,25 @@ Deno.serve(async (req) => {
     return jsonError(401, 'UNAUTHORIZED', 'Invalid token');
   }
 
-  // Get user's tenant
-  const tenantId = body.tenantId;
+  const planKey = typeof body.planKey === 'string' ? body.planKey : 'free_audit';
+  if (!ALLOWED_PLAN_KEYS.has(planKey)) {
+    return jsonError(400, 'BAD_REQUEST', 'unknown plan key');
+  }
 
+  // Tenant bestimmen. Ohne expliziten `tenantId` über die kanonische
+  // memberships-Auflösung — die frühere Variante las `profiles.active_tenant_id`,
+  // eine Spalte, die in keiner Migration existiert und diesen Pfad damit
+  // immer scheitern ließ.
+  let tenantId = typeof body.tenantId === 'string' ? body.tenantId.trim() : '';
   if (!tenantId) {
-    // If no tenantId provided, try to get user's active tenant
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('active_tenant_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile?.active_tenant_id) {
+    const resolved = await resolveTenantForUser(supabase, user.id);
+    if (!resolved) {
       return jsonError(400, 'TENANT_NOT_FOUND', 'No active tenant found');
     }
-
-    // Continue with the found tenant
-    body.tenantId = profile.active_tenant_id;
+    tenantId = resolved;
+  } else if (!(await userBelongsToTenant(supabase, user.id, tenantId))) {
+    // Ein vom Client gelieferter Tenant wird niemals ungeprüft übernommen.
+    return jsonError(403, 'TENANT_ACCESS_DENIED', 'no access to this workspace');
   }
 
   // Calculate trial dates
@@ -63,17 +103,31 @@ Deno.serve(async (req) => {
   const trialEndIso = trialEnd.toISOString();
 
   try {
+    // Bestehendes Trial-Fenster ermitteln, damit eine wiederholte Aktivierung
+    // es nicht verschiebt.
+    let trialStartValue = nowIso;
+    let trialEndValue = trialEndIso;
+
+    if (body.preserveTrialWindow === true) {
+      const { data: existing } = await supabase
+        .from('subscriptions')
+        .select('trial_start, trial_end')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      if (existing?.trial_start) trialStartValue = existing.trial_start;
+      if (existing?.trial_end) trialEndValue = existing.trial_end;
+    }
+
     // UPSERT: atomare Operation (INSERT falls nicht vorhanden, UPDATE falls bereits vorhanden)
     const { data: newSub, error: upsertError } = await supabase
       .from('subscriptions')
       .upsert({
-        tenant_id: body.tenantId,
+        tenant_id: tenantId,
         status: 'trialing',
-        plan_key: 'free_audit',
-        trial_start: nowIso,
-        trial_end: trialEndIso,
+        plan_key: planKey,
+        trial_start: trialStartValue,
+        trial_end: trialEndValue,
         billing_interval: 'month',
-        created_at: nowIso,
         updated_at: nowIso,
       }, {
         onConflict: 'tenant_id',  // Bei Konflikt: UPDATE statt Error
@@ -87,17 +141,20 @@ Deno.serve(async (req) => {
     await supabase
       .from('trial_audit_logs')
       .insert({
-        tenant_id: body.tenantId,
+        tenant_id: tenantId,
         user_id: user.id,
         resource_type: 'subscription',
         action: 'CREATE_TRIAL',
         new_values: {
           status: 'trialing',
+          plan_key: planKey,
           trial_start: newSub.trial_start,
           trial_end: newSub.trial_end,
         },
         source: 'unified-entry',
-        ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+        // `ip_address` ist INET — der frühere Fallback-String 'unknown' löste
+        // dort einen 22P02-Fehler aus. Lieber NULL als ein ungültiges Literal.
+        ip_address: parseClientIp(req.headers.get('x-forwarded-for')),
         user_agent: req.headers.get('user-agent'),
       })
       .catch((err) => {
@@ -106,6 +163,7 @@ Deno.serve(async (req) => {
       });
 
     return jsonResponse({
+      ok: true,
       success: true,
       subscription: {
         id: newSub.id,

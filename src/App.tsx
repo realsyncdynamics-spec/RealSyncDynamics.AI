@@ -10,6 +10,7 @@ import { RequireAal2 } from './core/access/RequireAal2';
 import { SupabaseAuthProvider } from './features/supabase/SupabaseAuthContext';
 import { ProtectedRoute } from './features/demo/ProtectedRoute';
 import { AppGate } from './features/auth/AppGate';
+import { PreserveQueryRedirect } from './components/PreserveQueryRedirect';
 import { DemoLoginPage } from './pages/DemoLoginPage';
 import { DemoGovernanceDashboard } from './pages/DemoGovernanceDashboard';
 import { DemoLandingPage } from './pages/DemoLandingPage';
@@ -694,7 +695,9 @@ function RoutesWithTracking() {
           Auth Guards bleiben in den View-Komponenten selbst (AuthGate / RequireAal2). */}
       {/* Onboarding-First-Routing: /app kanonisiert auf das gegatete Dashboard.
           Kein Onboarding-Zwang (kein Hard-Lockout) — nur Kanonisierung. */}
-      <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+      {/* Query-erhaltend, damit ?welcome=pilot&domain=… die Alias-Kette
+          /dashboard → /app → /app/dashboard überlebt. */}
+      <Route path="/app" element={<PreserveQueryRedirect to="/app/dashboard" />} />
       {/* Kanonisches, auth-gegatetes Dashboard-Ziel nach Checkout/Onboarding.
           Behebt die 404 auf /app/dashboard; nicht eingeloggte Besucher springen
           ueber AppGate nach /welcome?next=… und von dort zurueck (Login-Ruecksprung).
@@ -831,7 +834,7 @@ function RoutesWithTracking() {
           Alte URLs werden NICHT entfernt (keine 404 / keine toten Bookmarks).
           Chat bleibt als Assistent unter /assistant erreichbar. */}
       <Route path="/assistant" element={<CreatorDashboard />} />
-      <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+      <Route path="/dashboard" element={<PreserveQueryRedirect to="/app" />} />
       <Route path="/dashboard/business" element={<BusinessDashboard />} />
       <Route path="/dashboard/audit" element={<AuditDashboardView />} />
       <Route path="/dashboard/agents" element={<AgentOsAdminPage />} />
@@ -956,10 +959,14 @@ function RoutesWithTracking() {
 
       {/* Common auth entry points users expect */}
       {/* Auth Entry Points — Canonical path is /welcome (OTP magic link via Supabase) */}
-      <Route path="/login" element={<Navigate to="/welcome" replace />} />
-      <Route path="/signin" element={<Navigate to="/welcome" replace />} />
-      <Route path="/signup" element={<Navigate to="/welcome" replace />} />
-      <Route path="/register" element={<Navigate to="/welcome" replace />} />
+      {/* Query-erhaltend: der Audit-CTA ruft
+          /login?intent=pilot&audit_id=…&domain=… auf — mit einem nackten
+          <Navigate> ginge dieser Kontext beim Sprung nach /welcome verloren
+          und die Pilot-Aktivierung nach dem Login würde nie ausgelöst. */}
+      <Route path="/login" element={<PreserveQueryRedirect to="/welcome" />} />
+      <Route path="/signin" element={<PreserveQueryRedirect to="/welcome" />} />
+      <Route path="/signup" element={<PreserveQueryRedirect to="/welcome" />} />
+      <Route path="/register" element={<PreserveQueryRedirect to="/welcome" />} />
 
       {/* ── Enterprise OS Prototype — neues Designsystem + IA (Phase 1 Foundation) ──
           Eigenständiger Klick-Prototyp mit Mockdaten unter /os, /os/app/*.

@@ -16,6 +16,23 @@ jobs:
         with:
           version: latest
 
+      # Das Projekt steht exakt am Free-Plan-Limit (100 Functions) — ohne
+      # freien Slot schlägt jedes neue Deploy mit HTTP 402 fehl. Die fünf
+      # Slugs hier sind die verwaisten Alt-Deploys aus
+      # docs/runbooks/edge-function-kontingent.md (live, aber nicht im Repo).
+      - name: Free quota — delete orphaned functions (Runbook edge-function-kontingent)
+        run: |
+          set -uo pipefail
+          for slug in debug-secret-shape vault-set-secret vault-key-setter \
+                      stripe-webhook-fixer stripe-webhook-provision; do
+            echo "=== delete $slug ==="
+            if supabase functions delete "$slug" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
+              echo "DELETED: $slug"
+            else
+              echo "WARN: delete fehlgeschlagen für $slug (evtl. bereits gelöscht) — weiter"
+            fi
+          done
+
       - name: Deploy governance-risk-score (1/3)
         run: |
           set -euo pipefail
@@ -37,13 +54,30 @@ jobs:
           supabase functions deploy governance-agents-list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
           echo "OK: governance-agents-list"
 
+      # Schritt 4a der P0-Verifikation: ohne gültiges JWT muss jede der drei
+      # Functions 401 liefern. Der Cross-Tenant-403-Fall braucht ein echtes
+      # User-JWT und bleibt ein manueller Prüfschritt.
+      - name: Verify — invalid JWT returns 401
+        run: |
+          set -euo pipefail
+          BASE="https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1"
+          fail=0
+          for slug in governance-risk-score enterprise-ai-os-discovery-pending governance-agents-list; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer invalid" "$BASE/$slug")
+            echo "$slug -> HTTP $code (erwartet 401)"
+            if [ "$code" != "401" ]; then fail=1; fi
+          done
+          exit $fail
+
       - name: Summary
         run: |
           {
             echo "## Selective P0 Auth Deploy"
-            echo "- governance-risk-score: deployed"
-            echo "- enterprise-ai-os-discovery-pending: deployed"
-            echo "- governance-agents-list: deployed"
+            echo "- Quota-Cleanup: verwaiste Functions entfernt, soweit noch vorhanden (Runbook edge-function-kontingent)"
+            echo "- governance-risk-score: deployed, 401-Check grün"
+            echo "- enterprise-ai-os-discovery-pending: deployed, 401-Check grün"
+            echo "- governance-agents-list: deployed, 401-Check grün"
             echo ""
-            echo "Next: verify 401/403 (step 4)"
+            echo "Offen: Cross-Tenant-403-Check (Schritt 4b, braucht User-JWT)"
           } >> "$GITHUB_STEP_SUMMARY"

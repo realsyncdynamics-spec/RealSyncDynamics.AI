@@ -171,10 +171,25 @@ BEGIN
   RETURN NEW;
 END $$;
 
-DROP TRIGGER IF EXISTS audit_evidence_capture_activation ON public.audit_evidence;
-CREATE TRIGGER audit_evidence_capture_activation
-  AFTER INSERT ON public.audit_evidence
-  FOR EACH ROW EXECUTE FUNCTION public.tenant_activation_capture_report();
+-- Guard: `DROP TRIGGER IF EXISTS … ON <tabelle>` bezieht das IF EXISTS auf den
+-- TRIGGER, nicht auf die Tabelle — fehlt die Tabelle, bricht das Statement mit
+-- 42P01 ab und rollt die gesamte Migration zurück. Genau das passierte in Prod:
+-- `20260507100000_audit_evidence.sql` steht dort als angewendet im Ledger,
+-- die Tabelle `audit_evidence` existiert aber nicht (verifiziert 2026-08-11) und
+-- wird auch nicht nachgeholt. Auf frischem Postgres (CI, `db reset`) ist sie da.
+-- Der Trigger wird deshalb nur angelegt, wenn die Tabelle wirklich existiert.
+DO $$
+BEGIN
+  IF to_regclass('public.audit_evidence') IS NULL THEN
+    RAISE NOTICE 'audit_evidence fehlt — Aktivierungs-Trigger uebersprungen; first_report_exported_at bleibt bis zum Nachziehen der Tabelle unbefuellt';
+    RETURN;
+  END IF;
+
+  DROP TRIGGER IF EXISTS audit_evidence_capture_activation ON public.audit_evidence;
+  CREATE TRIGGER audit_evidence_capture_activation
+    AFTER INSERT ON public.audit_evidence
+    FOR EACH ROW EXECUTE FUNCTION public.tenant_activation_capture_report();
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 5. Backfill bestehender Tenants — kein Datenverlust für Kunden, die
@@ -204,26 +219,40 @@ ON CONFLICT (tenant_id) DO UPDATE
       );
 
 -- 5b. Backfill aus audit_evidence
-INSERT INTO public.tenant_activation
-  (tenant_id, first_report_exported_at, first_report_audit_id)
-SELECT
-  ae.tenant_id,
-  MIN(ae.created_at) AS first_export,
-  (SELECT audit_id FROM public.audit_evidence ae2
-    WHERE ae2.tenant_id = ae.tenant_id
-    ORDER BY ae2.created_at ASC LIMIT 1) AS first_audit
-FROM public.audit_evidence ae
-WHERE ae.tenant_id IS NOT NULL
-GROUP BY ae.tenant_id
-ON CONFLICT (tenant_id) DO UPDATE
-  SET first_report_exported_at = COALESCE(
-        public.tenant_activation.first_report_exported_at,
-        EXCLUDED.first_report_exported_at
-      ),
-      first_report_audit_id   = COALESCE(
-        public.tenant_activation.first_report_audit_id,
-        EXCLUDED.first_report_audit_id
-      );
+-- Gleicher Guard wie beim Trigger oben: Der Backfill referenziert
+-- audit_evidence direkt und wuerde ohne die Tabelle mit 42P01 abbrechen.
+-- Als dynamisches EXECUTE, damit der Parser die Tabelle nicht schon beim
+-- Planen aufloest.
+DO $$
+BEGIN
+  IF to_regclass('public.audit_evidence') IS NULL THEN
+    RAISE NOTICE 'audit_evidence fehlt — Report-Backfill uebersprungen';
+    RETURN;
+  END IF;
+
+  EXECUTE $sql$
+    INSERT INTO public.tenant_activation
+      (tenant_id, first_report_exported_at, first_report_audit_id)
+    SELECT
+      ae.tenant_id,
+      MIN(ae.created_at) AS first_export,
+      (SELECT audit_id FROM public.audit_evidence ae2
+        WHERE ae2.tenant_id = ae.tenant_id
+        ORDER BY ae2.created_at ASC LIMIT 1) AS first_audit
+    FROM public.audit_evidence ae
+    WHERE ae.tenant_id IS NOT NULL
+    GROUP BY ae.tenant_id
+    ON CONFLICT (tenant_id) DO UPDATE
+      SET first_report_exported_at = COALESCE(
+            public.tenant_activation.first_report_exported_at,
+            EXCLUDED.first_report_exported_at
+          ),
+          first_report_audit_id   = COALESCE(
+            public.tenant_activation.first_report_audit_id,
+            EXCLUDED.first_report_audit_id
+          )
+  $sql$;
+END $$;
 
 -- 5c. activated_at-Backfill für Zeilen, bei denen beide Meilensteine
 --     bereits gesetzt sind (der updated-Trigger feuert beim Backfill-

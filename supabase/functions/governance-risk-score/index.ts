@@ -1,31 +1,19 @@
 // Governance Risk Score Engine.
 //
 // POST /functions/v1/governance-risk-score
-// Authorization: Bearer <service_role JWT or ingest API key>
+// Authorization: Bearer <user JWT>
 // Body shapes:
 //   { asset_id: uuid }                            — recompute single asset
 //   { tenant_id: uuid, recalculate_all: true }    — recompute all tenant assets
 //
-// Weighted, transparent scoring (v1):
-//
-//   ai_act_class == 'high'                +30
-//   ai_act_class == 'prohibited'          +50
-//   asset_type == 'agent'                 +10
-//   per critical event in last 30d        +15 (max +30 from this rule)
-//   per high event in last 30d            +8  (max +24 from this rule)
-//   any event with policy_action='block'  +20 (once)
-//   data_types contains health_data       +15
-//   data_types contains applicant_data    +12
-//   data_types contains customer_data     +8
-//   no events in last 30 days             -10 (inactive penalty inverted)
-//   status == 'approved'                  -10
-//
-// Clamp [0, 100]. Persists new score on governance_assets and
-// appends a row to asset_risk_history with reason + contributing
-// event ids.
+// Auth (F-04 remediation):
+//   - Real JWT validation via auth.getUser()
+//   - Membership check before any service_role write
+//   - tenant_id from body is never trusted without membership verification
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { corsHeaders, handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { requireUser, requireTenantMembership } from '../_shared/auth.ts';
 
 interface SupabaseAdminClient {
   from(table: string): {
@@ -67,24 +55,42 @@ Deno.serve(async (req) => {
   const preflight = handleOptions(req); if (preflight) return preflight;
   if (req.method !== 'POST') return jsonError(405, 'BAD_REQUEST', 'POST only');
 
-  const auth = req.headers.get('Authorization');
-  if (!auth?.startsWith('Bearer ')) return jsonError(401, 'UNAUTHORIZED', 'missing bearer token');
-
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SRK = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const admin = createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } });
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return jsonError(400, 'BAD_REQUEST', 'invalid json'); }
 
   try {
     if (body.recalculate_all && body.tenant_id) {
-      const out = await recalcTenant(admin, body.tenant_id as string);
+      const tenantId = body.tenant_id as string;
+      const member = await requireTenantMembership(auth.admin, auth.user.id, tenantId);
+      if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of the requested tenant');
+
+      const out = await recalcTenant(auth.admin as unknown as SupabaseAdminClient, tenantId);
       return jsonResponse({ ok: true, ...out });
     }
+
     const asset_id = body.asset_id as string;
     if (!asset_id) return jsonError(400, 'BAD_REQUEST', 'asset_id required (or recalculate_all+tenant_id)');
-    const out = await recalcOne(admin, asset_id);
+
+    // Load asset first so we can verify membership against its real tenant_id
+    const { data: assetPreview, error: previewErr } = await auth.admin
+      .from('governance_assets')
+      .select('id, tenant_id')
+      .eq('id', asset_id)
+      .maybeSingle();
+
+    if (previewErr) throw previewErr;
+    if (!assetPreview) return jsonError(404, 'NOT_FOUND', 'asset not found');
+
+    const assetTenantId = (assetPreview as { tenant_id: string | null }).tenant_id;
+    if (!assetTenantId) return jsonError(400, 'BAD_REQUEST', 'asset has no tenant');
+
+    const member = await requireTenantMembership(auth.admin, auth.user.id, assetTenantId);
+    if (!member) return jsonError(403, 'FORBIDDEN', 'not a member of the asset tenant');
+
+    const out = await recalcOne(auth.admin as unknown as SupabaseAdminClient, asset_id);
     if (!out) return jsonError(404, 'NOT_FOUND', 'asset not found');
     return jsonResponse({ ok: true, ...out });
   } catch (e) {
@@ -133,8 +139,8 @@ async function recalcOne(admin: SupabaseAdminClient, assetId: string): Promise<{
   const highEvents = E.filter((x) => x.risk_level === 'high');
   const critPoints = Math.min(criticalEvents.length * 15, 30);
   const highPoints = Math.min(highEvents.length * 8, 24);
-  if (critPoints > 0) { score += critPoints; breakdown.push({ rule: `critical_events_30d×${criticalEvents.length}`, delta: critPoints }); }
-  if (highPoints > 0) { score += highPoints; breakdown.push({ rule: `high_events_30d×${highEvents.length}`, delta: highPoints }); }
+  if (critPoints > 0) { score += critPoints; breakdown.push({ rule: `critical_events_30d\u00d7${criticalEvents.length}`, delta: critPoints }); }
+  if (highPoints > 0) { score += highPoints; breakdown.push({ rule: `high_events_30d\u00d7${highEvents.length}`, delta: highPoints }); }
 
   const blockEvent = E.find((x) => x.policy_action === 'block');
   if (blockEvent) { score += 20; breakdown.push({ rule: 'policy_action=block triggered', delta: 20 }); }
@@ -178,4 +184,3 @@ async function recalcOne(admin: SupabaseAdminClient, assetId: string): Promise<{
 
   return { score, previous, delta: score - previous, reason };
 }
-

@@ -1,1 +1,6 @@
+# 301 www → non-www: kanonische Domain erzwingen (SEO-Report 2026-08,
+# Duplicate-Content-Risiko). Greift nur, wenn www.realsyncdynamicsai.de als
+# Custom Domain am Cloudflare-Pages-Projekt haengt — sonst ist die Regel wirkungslos.
+https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
+
 /*  /index.html  200

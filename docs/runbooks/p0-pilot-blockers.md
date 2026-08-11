@@ -116,7 +116,7 @@ Rotate every 6 months or on personnel change. Stripe restricted keys cannot be p
 ### Steps
 
 1. Stripe dashboard → **Developers** → **Webhooks** → **Live mode**.
-2. If an existing endpoint points to a stale Vercel/Netlify URL, **disable** it (don't delete — keep the audit trail).
+2. If an existing endpoint points to a stale URL, **disable** it (don't delete — keep the audit trail).
 3. **Add endpoint**:
    - URL: `https://ebljyceifhnlzhjfyxup.supabase.co/functions/v1/stripe-webhook`
    - API version: latest stable (Stripe will default to current).

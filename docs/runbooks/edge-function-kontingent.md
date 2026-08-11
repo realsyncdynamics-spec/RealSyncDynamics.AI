@@ -1,6 +1,6 @@
 # Runbook — Edge-Function-Kontingent aufräumen und erweitern
 
-**Stand:** 2026-08-10
+**Stand:** 2026-08-11
 **Auslöser:** Jeder `Deploy`-Lauf scheitert mit `HTTP 402: Max number of functions reached for project`.
 
 ---
@@ -42,7 +42,11 @@ Check rot, sobald er mit `SUPABASE_ACCESS_TOKEN` läuft.
 
 ---
 
-## 3 Die fünf verwaisten Functions löschen
+## 3 Die fünf verwaisten Functions löschen — ✅ erledigt 2026-08-11
+
+> Ausgeführt über den Workflow `Selective P0 Auth Free Slot + Deploy` (Run #1, success).
+> Live-Stand danach: Orphans entfernt, `governance-agents-list` deployt (P0 complete),
+> Allowlist geleert. Die Anleitung bleibt als Referenz für künftige Orphans stehen.
 
 Alle fünf existieren nicht mehr in `supabase/functions/` und wurden seinerzeit
 manuell deployt (erkennbar am `entrypoint_path` unter `/tmp/user_fn_…` statt
@@ -69,13 +73,13 @@ done
 `supabase functions download <slug> --project-ref ebljyceifhnlzhjfyxup`
 
 Danach die fünf Einträge aus `scripts/edge-function-drift-allowlist.json` entfernen —
-die Liste ist dann leer, was dem dort formulierten Ziel entspricht.
+die Liste ist dann leer, was dem dort formulierten Ziel entspricht. (✅ erledigt)
 
 ---
 
 ## 4 Kontingent erweitern
 
-Nach dem Aufräumen: 95 belegt, 5 frei, 83 fehlen weiterhin. Die Lücke schließt nur
+Nach dem Aufräumen: ~95 belegt, 5 frei, 83 fehlen weiterhin. Die Lücke schließt nur
 ein Plan-Wechsel.
 
 - **Pro-Plan**: 500 Edge Functions statt 100, ca. 25 USD/Monat
@@ -122,3 +126,19 @@ SUPABASE_ACCESS_TOKEN=… SUPABASE_PROJECT_ID=ebljyceifhnlzhjfyxup \
 Erfolgskriterium: Der `Deploy`-Workflow läuft ohne `402` durch, und
 `governance-memory`, `memory-decay-worker` sowie `memory-confidence-trigger`
 erscheinen in `supabase functions list`.
+
+---
+
+## 7 P0 Auth Hardening — ✅ 401-Verifikation 2026-08-11
+
+Die drei live P0-Functions wurden nach #1011 mit `requireAuthAndTenant` + `verify_jwt=true` gehärtet und selektiv deployt:
+
+| Function | 401 (invalid Bearer) |
+|---|---|
+| `governance-risk-score` | ✅ 401 `UNAUTHORIZED_INVALID_JWT_FORMAT` |
+| `governance-agents-list` | ✅ 401 |
+| `enterprise-ai-os-discovery-pending` | ✅ 401 |
+
+Cross-Tenant 403 (Schritt 4b) bleibt manuell (benötigt gültiges User-JWT eines Nicht-Mitglieds).
+
+**Gate für Deploy-Manifest (#1012) und Entitlement-Flow (#1013) ist damit offen.**

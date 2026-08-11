@@ -47,7 +47,16 @@ INSERT INTO public.products (stripe_price_id, name, default_for_plan_key) VALUES
   ('internal_default_agency',     'Agency (default)',     'agency'),
   ('internal_default_scale',      'Scale (default)',      'scale'),
   ('internal_default_enterprise', 'Enterprise (default)', 'enterprise')
-ON CONFLICT (stripe_price_id) DO NOTHING;
+-- `products` hat ZWEI Unique-Constraints: auf `stripe_price_id` und auf
+-- `default_for_plan_key`. Ein auf eine Spalte eingeschränktes ON CONFLICT
+-- fängt nur einen der beiden Fälle ab. In Produktion sind die Plan-Keys
+-- längst mit den echten Stripe-Price-IDs belegt (starter → price_1Tfs…),
+-- nicht mit den Sentinel-Werten — der Insert kollidierte dort auf dem
+-- ANDEREN Constraint und brach die gesamte Migrationskette ab (23505).
+-- Ohne Spaltenangabe deckt DO NOTHING beide Constraints ab; bestehende
+-- Zeilen bleiben unangetastet. Gleiche Korrektur wie in
+-- 20260618000000_pricing_tier_alignment.sql (#1018).
+ON CONFLICT DO NOTHING;
 
 -- Bind the new entitlement to every existing plan_key.
 -- Legacy keys (bronze/silver/gold/enterprise_public) carry forward to the

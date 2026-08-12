@@ -3,14 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { getSupabase, isSupabaseConfigured } from '../lib/supabase';
 import { useTenant } from '../core/access/TenantProvider';
+import WebsiteTransformationDashboard from './WebsiteTransformationDashboard';
 
 /**
  * Stripe handoff screen.
  *
  * The browser NEVER grants access. It polls the tenant read model until the
  * signed Stripe webhook has persisted either the subscription or the one-time
- * entitlement grant. If the webhook has not arrived yet, the customer remains
- * in a pending state instead of being shown a false success state.
+ * entitlement grant. Only then is the project dashboard rendered.
  */
 export default function PostStripeSuccess() {
   const [params] = useSearchParams();
@@ -79,38 +79,28 @@ export default function PostStripeSuccess() {
     };
   }, [activeTenantId, sessionId, attempts]);
 
+  if (status === 'ready') {
+    return <WebsiteTransformationDashboard />;
+  }
+
   const pending = status === 'confirming';
-  const ready = status === 'ready';
 
   return (
     <main className="min-h-screen bg-[rgb(3,7,18)] px-4 py-12 text-white">
       <div className="mx-auto max-w-xl text-center">
-        {pending ? <Loader2 className="mx-auto h-8 w-8 animate-spin text-cyan-300" /> : ready ? <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" /> : <ShieldCheck className="mx-auto h-10 w-10 text-amber-300" />}
-        <h1 className="mt-5 text-3xl font-semibold">
-          {pending ? 'Zahlung wird bestätigt …' : ready ? 'Projekt freigeschaltet' : 'Freischaltung wird noch verarbeitet'}
-        </h1>
+        {pending ? <Loader2 className="mx-auto h-8 w-8 animate-spin text-cyan-300" /> : <ShieldCheck className="mx-auto h-10 w-10 text-amber-300" />}
+        <h1 className="mt-5 text-3xl font-semibold">{pending ? 'Zahlung wird bestätigt …' : 'Freischaltung wird noch verarbeitet'}</h1>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-white/45">
           {pending
             ? 'Stripe hat den Checkout abgeschlossen. Wir warten auf die serverseitige Webhook-Verarbeitung.'
-            : ready
-              ? 'Dein Entitlement ist bestätigt. Du kannst jetzt mit deiner Website-Transformation arbeiten.'
-              : 'Die Zahlung wurde noch nicht im autoritativen Entitlement-Read-Model gefunden. Bitte nicht erneut bezahlen.'}
+            : 'Die Zahlung wurde noch nicht im autoritativen Entitlement-Read-Model gefunden. Bitte nicht erneut bezahlen.'}
         </p>
-
-        {ready && (
-          <div className="mt-7 flex flex-col gap-3">
-            <Link to="/app/siteos" className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] hover:bg-cyan-300">Zum Website-Transformation-Dashboard</Link>
-            <Link to="/app" className="rounded-xl border border-white/10 px-5 py-3 text-sm text-white/60 hover:bg-white/5 hover:text-white">Zum normalen Dashboard</Link>
-          </div>
-        )}
-
         {(status === 'timeout' || status === 'error') && (
           <div className="mt-7 flex flex-col gap-3">
             <button onClick={() => window.location.reload()} className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] hover:bg-cyan-300">Status erneut prüfen</button>
             <Link to="/app" className="rounded-xl border border-white/10 px-5 py-3 text-sm text-white/60 hover:bg-white/5 hover:text-white">Zum Dashboard</Link>
           </div>
         )}
-
         {sessionId && <p className="mt-6 font-mono text-[10px] text-white/20">Checkout · {sessionId.slice(0, 14)}…</p>}
         <div className="mt-10 flex items-center justify-center gap-2 text-[10px] text-white/25"><ShieldCheck className="h-3.5 w-3.5" /> Entitlements werden ausschließlich serverseitig vergeben.</div>
       </div>

@@ -34,11 +34,7 @@ export function WebsiteBuilderLanding() {
     if (!/^https?:\/\/[^\s]+$/i.test(clean)) { setError('Bitte eine vollständige URL inklusive https:// eingeben.'); return; }
     if (features.length === 0) { setError('Bitte mindestens eine Funktion auswählen.'); return; }
     const selectedLabels = FEATURES.filter((feature) => features.includes(feature.id)).map((feature) => feature.label);
-    if (!isAuthenticated) {
-      const next = `/handwerk-website?source_url=${encodeURIComponent(clean)}&features=${encodeURIComponent(features.join(','))}`;
-      navigate(`/welcome?next=${encodeURIComponent(next)}`);
-      return;
-    }
+    if (!isAuthenticated) { const next = `/handwerk-website?source_url=${encodeURIComponent(clean)}&features=${encodeURIComponent(features.join(','))}`; navigate(`/welcome?next=${encodeURIComponent(next)}`); return; }
     if (!activeTenantId) { setError('Für die Transformation ist noch kein aktiver Mandant verfügbar. Bitte zuerst den Workspace einrichten.'); return; }
 
     setBusy(true); setError('');
@@ -61,18 +57,14 @@ export function WebsiteBuilderLanding() {
       if (built.kind !== 'ok') { setError(errorMessage(built)); return; }
 
       let blueprintId = built.data.blueprint_id ?? null;
-      if (!blueprintId) {
-        const sites = await listSites(activeTenantId);
-        blueprintId = sites.find((site) => site.slug === built.data.slug)?.blueprint_id ?? null;
-      }
+      if (!blueprintId) { const sites = await listSites(activeTenantId); blueprintId = sites.find((site) => site.slug === built.data.slug)?.blueprint_id ?? null; }
       if (!blueprintId) { setError('Blueprint erstellt, aber die zugehörige Blueprint-ID konnte nicht aufgelöst werden.'); return; }
 
       const scanned = await runScan({ tenant_id: activeTenantId, url: discovered.source_url || clean, blueprint_id: blueprintId, trigger: 'manual' });
       if (scanned.kind !== 'ok') { setError(`Blueprint erstellt, aber der Live-Scan konnte nicht abgeschlossen werden: ${errorMessage(scanned)}`); return; }
       navigate(`/app/siteos?site=${encodeURIComponent(built.data.slug)}`);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Die Transformation konnte nicht gestartet werden.');
-    } finally { setBusy(false); }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Die Transformation konnte nicht gestartet werden.'); }
+    finally { setBusy(false); }
   };
 
   return (

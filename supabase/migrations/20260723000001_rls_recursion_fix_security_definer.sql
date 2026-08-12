@@ -251,12 +251,27 @@ CREATE POLICY incidents_tenant_read
 
 -- ─── Policy Refactoring: audit_evidence ───────────────────────────────────────
 
-DROP POLICY IF EXISTS audit_evidence_tenant_read ON public.audit_evidence;
-CREATE POLICY audit_evidence_tenant_read
-  ON public.audit_evidence
-  FOR SELECT
-  TO authenticated
-  USING (public.is_tenant_member(tenant_id));
+-- Guard: `DROP POLICY IF EXISTS … ON <tabelle>` bezieht das IF EXISTS auf die
+-- POLICY, nicht auf die Tabelle — fehlt die Tabelle, bricht das Statement mit
+-- 42P01 ab und rollt die gesamte Migration zurueck. In Prod steht
+-- `20260507100000_audit_evidence.sql` als angewendet im Ledger, die Tabelle
+-- existiert aber nicht (verifiziert 2026-08-12) und wird nicht nachgeholt; auf
+-- frischem Postgres (CI, `db reset`) ist sie vorhanden. Gleiche Absicherung wie
+-- fuer den Aktivierungs-Trigger in 20260619000000 (#1021).
+DO $$
+BEGIN
+  IF to_regclass('public.audit_evidence') IS NULL THEN
+    RAISE NOTICE 'audit_evidence fehlt — Policy-Refactoring uebersprungen';
+    RETURN;
+  END IF;
+
+  DROP POLICY IF EXISTS audit_evidence_tenant_read ON public.audit_evidence;
+  CREATE POLICY audit_evidence_tenant_read
+    ON public.audit_evidence
+    FOR SELECT
+    TO authenticated
+    USING (public.is_tenant_member(tenant_id));
+END $$;
 
 -- ─── Policy Refactoring: enterprise_agent_runs ──────────────────────────────────
 

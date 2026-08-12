@@ -1,1 +1,0 @@
-Control Plane release candidate: unified AI Command Surface, Website Builder, Governance AI, KPI context, activity feed and Guided Workflows.

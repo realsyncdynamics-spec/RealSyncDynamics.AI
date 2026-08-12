@@ -56,7 +56,11 @@ Deno.serve(async (req) => {
   const origin = req.headers.get('origin') ?? body.return_url ?? '';
   if (!origin) return jsonError(400, 'BAD_REQUEST', 'return_url required');
 
-  const metadata: Record<string, string> = { tenant_id: tenantId, plan_key: planKey, product_type: body.redesign ? 'siteos_website_redesign' : 'siteos_website' };
+  // `managed_website` is the existing webhook contract that queues the
+  // website rebuild after checkout.session.completed. The actual selected
+  // plan is carried independently in metadata.plan_key.
+  const metadata: Record<string, string> = { tenant_id: tenantId, plan_key: planKey, product_type: 'managed_website' };
+  if (body.redesign) metadata.redesign = 'true';
   if (sourceUrl) metadata.source_url = sourceUrl;
   if (body.site_slug) metadata.site_slug = body.site_slug;
   if (body.project_name) metadata.project_name = body.project_name;
@@ -66,7 +70,7 @@ Deno.serve(async (req) => {
       mode,
       line_items: [{ price: product.stripe_price_id, quantity: 1 }],
       metadata,
-      success_url: `${origin}/app/siteos/checkout-success?session_id={CHECKOUT_SESSION_ID}&site=${encodeURIComponent(body.site_slug ?? '')}`,
+      success_url: `${origin}/app/siteos?checkout=success&session_id={CHECKOUT_SESSION_ID}&site=${encodeURIComponent(body.site_slug ?? '')}`,
       cancel_url: `${origin}/app/siteos?checkout=cancelled`,
       allow_promotion_codes: true,
       customer_creation: mode === 'payment' ? 'always' : undefined,

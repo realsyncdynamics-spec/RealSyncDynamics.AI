@@ -64,6 +64,13 @@ jobs:
       - name: Bootstrap Supabase-equivalent stubs
         run: |
           psql -v ON_ERROR_STOP=1 <<'SQL'
+          -- `extensions` MUSS vor pgcrypto angelegt werden: mehrere
+          -- Migrationen und RPCs rufen extensions.digest(...) auf. Wird
+          -- pgcrypto zuerst nach public installiert, ist das spaetere
+          -- "WITH SCHEMA extensions" ein stiller No-op ("already exists,
+          -- skipping") und extensions.digest existiert nie.
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
           CREATE EXTENSION IF NOT EXISTS pgcrypto;
           CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
           CREATE EXTENSION IF NOT EXISTS vector;
@@ -93,8 +100,19 @@ jobs:
             raw_user_meta_data JSONB,
             created_at       TIMESTAMPTZ DEFAULT now()
           );
-          CREATE OR REPLACE FUNCTION auth.uid()  RETURNS UUID LANGUAGE sql STABLE AS 'SELECT NULL::uuid';
-          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS 'SELECT $$authenticated$$::text';
+          -- auth.uid()/auth.role() MUESSEN die JWT-Claims lesen, nicht
+          -- konstant antworten. Der frueherer Stub lieferte hart NULL::uuid.
+          -- Damit war is_tenant_member() immer false, jede RLS-Policy hat
+          -- immer gesperrt, und ein Isolationstest waere gruen geworden,
+          -- ohne irgendetwas zu pruefen — die gefaehrlichste Sorte Test.
+          -- Gleiche Semantik wie scripts/test-db/bootstrap.sql, das es
+          -- lokal schon richtig macht.
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS UUID LANGUAGE sql STABLE AS $fn$
+            SELECT NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid
+          $fn$;
+          CREATE OR REPLACE FUNCTION auth.role() RETURNS TEXT LANGUAGE sql STABLE AS $fn$
+            SELECT COALESCE(NULLIF(current_setting('request.jwt.claims', true)::jsonb ->> 'role', ''), 'authenticated')
+          $fn$;
 
           -- vault schema stub (Supabase Vault)
           CREATE SCHEMA IF NOT EXISTS vault;
@@ -186,6 +204,45 @@ jobs:
             psql -v ON_ERROR_STOP=1 -f "$f"
             echo "::endgroup::"
           done
+
+      # Supabase-aequivalente Default-Privileges. In einem echten Projekt
+      # haben anon/authenticated Tabellenrechte in `public` — genau deshalb
+      # ist eine Tabelle ohne RLS dort offen. Ohne diese GRANTs scheitert
+      # jeder RLS-Test an einem "permission denied" statt an einer Policy
+      # und beweist nichts ueber die Mandantentrennung.
+      - name: Grant Supabase-equivalent table privileges
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+          GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO anon, authenticated;
+          GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+          GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+          SQL
+
+      # M-01 aus docs/audits/CODE_REALITY_AUDIT_2026-08-09.md.
+      #
+      # Bis hierher validierte CI nur, dass die Migrationen fehlerfrei
+      # DURCHLAUFEN — nicht, ob das entstandene Schema die Mandanten
+      # tatsaechlich trennt. Die DB-Integrationstests sprangen mangels
+      # TEST_DB_URL still ab. Genau deshalb konnten 2851 gruene Tests und
+      # 33 Tabellen ohne RLS nebeneinander existieren.
+      #
+      # BEWUSST NUR p0-hardening, NICHT das ganze Verzeichnis:
+      # Die 17 aelteren Dateien in test/runtime/db/ sind gegen den minimalen
+      # Harness aus scripts/test-db/up.sh geschrieben (bootstrap.sql + vier
+      # SPEC-001-Migrationen). Gegen die hier voll migrierte DB scheitern sie
+      # an Umgebungsannahmen — gemessen am 2026-08-09: 82 Fehlschlaege, davon
+      # 61x `extensions.digest(...) does not exist`, 8x fehlendes
+      # `app_secrets`, dazu Fixture-Kollisionen auf auth.users.email.
+      # Das ganze Verzeichnis zu verdrahten wuerde CI dauerhaft rot faerben —
+      # schlimmer als der bisherige Zustand, weil dann auch echte Regressionen
+      # untergehen. Die Altlast-Suiten an das volle Schema anzupassen ist
+      # eigene Arbeit und bleibt offen; sie hier zu verschweigen waere genau
+      # der Fehler, den M-01 beschreibt.
+      - name: DB integration tests (RLS + tenant isolation)
+        env:
+          TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: npx vitest run test/runtime/db/p0-hardening.db.test.ts --no-file-parallelism
 
       - name: Verify migrations are append-only
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '[hotfix]')

@@ -137,6 +137,7 @@ import { BusseldRechner } from './pages/BusseldRechner';
 import { ToolsHub } from './pages/ToolsHub';
 // Industry + Competitor Doorways
 import { HealthTechLanding } from './pages/HealthTechLanding';
+import { KmuWebsiteLanding } from './pages/KmuWebsiteLanding';
 import { Branchen } from './pages/Branchen';
 import { IndustryDetail } from './pages/branchen/IndustryDetail';
 import { LegalTechLanding } from './pages/LegalTechLanding';
@@ -578,6 +579,9 @@ function RoutesWithTracking() {
       <Route path="/branchen" element={<Branchen />} />
       <Route path="/branchen/:slug" element={<IndustryDetail />} />
       <Route path="/healthtech" element={<HealthTechLanding />} />
+      {/* Website + Chat-/Telefon-Assistent für kleine Betriebe (Handwerk, Praxen, Kanzleien) */}
+      <Route path="/handwerk-website" element={<KmuWebsiteLanding />} />
+      <Route path="/kmu-website" element={<Navigate to="/handwerk-website" replace />} />
       <Route path="/legal-tech" element={<LegalTechLanding />} />
       {/* Competitor-Alternative-Doorways */}
       <Route path="/onetrust-alternative" element={<OneTrustAlternative />} />

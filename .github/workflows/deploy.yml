@@ -77,18 +77,31 @@ jobs:
       # Siehe DEBUG_ROOT_CAUSE_2026-08-02.md.
       #
       # Neu: pro Function deployen. Ein defektes Modul blockiert nur sich
-      # selbst; alles andere geht live. Am Ende exit != 0, damit der Fehler
-      # sichtbar bleibt und nicht still verschluckt wird.
+      # selbst; alles andere geht live. Das Plattform-Kontingent ist anders:
+      # bei HTTP 402 kann keine neue Function mehr angelegt werden. Weiter zu
+      # iterieren kostet dann nur Runner-Zeit und verschleiert den eigentlichen
+      # Betriebsblocker, deshalb wird sofort mit einem eindeutigen Fehler
+      # abgebrochen.
       - name: Deploy edge functions
         run: |
           set -uo pipefail
           ok=0; failed=""
+          deploy_log="$(mktemp)"
+          trap 'rm -f "$deploy_log"' EXIT
           for dir in supabase/functions/*/; do
             name="$(basename "$dir")"
             case "$name" in _*) continue ;; esac
             [ -f "$dir/index.ts" ] || continue
-            if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
+            if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" 2>&1 | tee "$deploy_log"; then
               ok=$((ok + 1))
+            elif grep -Fq 'Max number of functions reached for project' "$deploy_log"; then
+              {
+                echo "## Edge Functions"
+                echo "- deployt: $ok"
+                echo "- status: blockiert durch das Supabase Edge-Function-Kontingent"
+              } >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::Supabase Edge-Function-Kontingent erreicht. Neue Functions können erst nach einer Kontingenterweiterung deployt werden."
+              exit 1
             else
               failed="$failed $name"
               echo "::error::Edge Function '$name' konnte nicht deployt werden."

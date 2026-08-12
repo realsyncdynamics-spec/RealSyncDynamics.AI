@@ -1,1 +1,0 @@
-// This path is intentionally empty on main. SiteOS checkout implementation is reviewed in a feature branch.

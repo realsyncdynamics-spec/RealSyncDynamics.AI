@@ -557,6 +557,17 @@ function FinalCta() {
           <p className="mt-5 font-mono text-[10px] sm:text-xs tracking-wider text-white/40">
             Self-Service · ohne Account · kein Verkaufsgespräch nötig
           </p>
+          {/* Querverweis auf das KMU-Angebot (Website + Chat-/Telefon-Assistent).
+              Bewusst als Textzeile in der bestehenden Sektion statt als eigener
+              Abschnitt: andere Zielgruppe, soll die Governance-Positionierung
+              der Hauptseite nicht überlagern. */}
+          <p className="mt-4 text-xs sm:text-sm text-white/50">
+            Kleiner Betrieb ohne eigene IT?{' '}
+            <SmartLink to="/handwerk-website" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-4 transition-colors">
+              Website mit Chat- und Telefon-Assistent
+            </SmartLink>{' '}
+            — für Handwerk, Praxen und Kanzleien.
+          </p>
         </div>
       </div>
     </section>
@@ -575,6 +586,7 @@ function Footer() {
     { title: 'Lösungen', links: [
       { label: 'Agenturen', to: '/agencies' },
       { label: 'DSB-Kanzleien', to: '/legaltech' },
+      { label: 'Website & Assistenten (KMU)', to: '/handwerk-website' },
       { label: 'Branchen', to: '/branchen' },
       { label: 'Case Studies', to: '/case-studies' },
     ] },

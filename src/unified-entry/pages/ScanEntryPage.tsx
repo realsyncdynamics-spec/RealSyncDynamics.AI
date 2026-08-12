@@ -5,6 +5,7 @@ import { postEdgeFunction } from '../../lib/edgeFunction';
 export function ScanEntryPage() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -17,14 +18,20 @@ export function ScanEntryPage() {
       return;
     }
 
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const normalizedUrl = domain.trim().match(/^https?:\/\//i) ? domain.trim() : `https://${domain.trim()}`;
-      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false, daher
-      // kein JWT-Zwang (sonst Abbruch für nicht eingeloggte Besucher).
+      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false.
+      // Das Backend verlangt für den Audit aktuell eine E-Mail-Adresse.
       const data = await postEdgeFunction<{ audit_id?: string; id?: string }>('gdpr-audit', {
         url: normalizedUrl,
+        email: email.trim().toLowerCase(),
       }, { requireAuth: false });
 
       const auditId = data.audit_id || data.id;
@@ -47,7 +54,7 @@ export function ScanEntryPage() {
           Kostenlose Compliance-Analyse
         </h1>
         <p className="text-xl text-titanium-300">
-          Geben Sie Ihre Domain ein und erhalten Sie in wenigen Minuten eine personalisierte Governance-Analyse.
+          Geben Sie Ihre Domain und E-Mail-Adresse ein und erhalten Sie in wenigen Minuten eine personalisierte Governance-Analyse.
         </p>
       </div>
 
@@ -65,6 +72,25 @@ export function ScanEntryPage() {
             disabled={loading}
             className="w-full px-4 py-3 bg-obsidian-800 border border-titanium-700 rounded-lg text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-petrol-600 focus:ring-1 focus:ring-petrol-600 transition-colors disabled:opacity-50"
           />
+        </div>
+
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-titanium-200 mb-2">
+            E-Mail-Adresse
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="z.B. name@unternehmen.de"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            autoComplete="email"
+            className="w-full px-4 py-3 bg-obsidian-800 border border-titanium-700 rounded-lg text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-petrol-600 focus:ring-1 focus:ring-petrol-600 transition-colors disabled:opacity-50"
+          />
+          <p className="mt-2 text-xs text-titanium-500">
+            Die Adresse wird für den Audit-Bericht und die Zuordnung des Audits verwendet.
+          </p>
         </div>
 
         {error && (

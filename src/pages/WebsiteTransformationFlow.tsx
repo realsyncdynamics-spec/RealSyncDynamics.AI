@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getSupabase } from '../lib/supabase';
 import { useTenant } from '../core/access/TenantProvider';
 import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
+import { createSiteOsCheckoutSession } from '../features/billing/checkout';
 import { buildSite, errorMessage, runScan } from '../features/siteos/siteOsApi';
 import type { SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { renderSite } from '../../packages/siteos-core/src/render/renderer';
@@ -94,10 +95,33 @@ export function WebsiteTransformationFlow() {
 
   const goToOffer = () => { setDsgvoUpgrade(null); setPhase('offer'); };
 
-  const chooseTransformation = () => {
-    if (!launchTier?.cta.href) return;
+  const chooseTransformation = async () => {
+    if (!activeTenantId || !discovery) {
+      setError('Workspace oder Ausgangs-Website fehlt.');
+      return;
+    }
+    setBusy(true);
+    setError('');
     setDsgvoUpgrade(true);
-    window.location.href = launchTier.cta.href;
+    try {
+      const result = await createSiteOsCheckoutSession({
+        tenantId: activeTenantId,
+        sourceUrl: discovery.source_url,
+        siteSlug: blueprint?.slug,
+        projectName: discovery.title ?? discovery.h1 ?? undefined,
+      });
+      if (!result.ok || !result.url) {
+        setDsgvoUpgrade(false);
+        setError(result.error?.message ?? 'Stripe Checkout konnte nicht vorbereitet werden.');
+        return;
+      }
+      window.location.assign(result.url);
+    } catch (cause) {
+      setDsgvoUpgrade(false);
+      setError(cause instanceof Error ? cause.message : 'Stripe Checkout konnte nicht vorbereitet werden.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const declineTransformation = () => {
@@ -118,7 +142,7 @@ export function WebsiteTransformationFlow() {
 
           {phase === 'preview' && previewBlueprint && <div className="mt-8"><div className="mb-4 flex flex-wrap gap-2">{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`rounded-full border px-4 py-2 text-xs ${template === item.id ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/50'}`}>{item.label}</button>)}</div><div className="overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl"><iframe title="Neue Website Vorschau" srcDoc={previewHtml} className="h-[680px] w-full bg-white" sandbox="allow-same-origin" /></div><div className="mt-5 grid gap-3 sm:grid-cols-2">{FEATURES.map(([id,label,Icon]) => <div key={id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.03] p-3 text-xs"><Icon size={15} className="text-cyan-300"/><span>{label}</span><Check size={14} className="ml-auto text-emerald-400"/></div>)}</div><div className="mt-6 flex justify-end"><button onClick={goToOffer} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[rgb(3,7,18)]">Umbau & Angebot ansehen <ArrowRight size={15}/></button></div></div>}
 
-          {phase === 'offer' && <div className="mx-auto mt-10 max-w-2xl"><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.04] p-8"><div className="font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300">Website Transformation</div><h2 className="mt-3 text-2xl font-bold">DSGVO-/SEO-Umbau durchführen?</h2><p className="mt-3 text-sm leading-6 text-white/55">Wir haben deine bestehende Website geprüft und eine neue Version als SiteOS-Blueprint erzeugt. Der einmalige Umbaupreis kommt ausschließlich aus der zentralen Pricing-SSoT.</p><div className="mt-7 rounded-2xl border border-white/10 bg-black/20 p-5"><div className="text-xs text-white/40">Einmaliger Website-Umbau</div><div className="mt-2 text-4xl font-bold">{launchTier ? `${launchTier.priceString} €` : 'Preis folgt aus Pricing-SSoT'}</div><div className="mt-1 text-xs text-white/35">{launchTier?.priceSuffix ?? 'Einmalangebot'}</div></div><div className="mt-7 grid gap-3 sm:grid-cols-2"><button onClick={chooseTransformation} disabled={!launchTier} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[rgb(3,7,18)] disabled:opacity-40">Ja, Website umbauen <ArrowRight size={16}/></button><button onClick={declineTransformation} disabled={!planTier} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3.5 text-sm font-semibold hover:border-cyan-400/40 disabled:opacity-40">Nein, normale Pakete <ArrowRight size={16}/></button></div></div><div className="mt-4 text-center text-xs text-white/30">Ja → Stripe für den einmaligen Umbau. Nein → normale Stripe-Pakete. Nach dem Kauf → Dashboard.</div></div>}
+          {phase === 'offer' && <div className="mx-auto mt-10 max-w-2xl"><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.04] p-8"><div className="font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300">Website Transformation</div><h2 className="mt-3 text-2xl font-bold">DSGVO-/SEO-Umbau durchführen?</h2><p className="mt-3 text-sm leading-6 text-white/55">Wir haben deine bestehende Website geprüft und eine neue Version als SiteOS-Blueprint erzeugt. Der einmalige Umbaupreis kommt ausschließlich aus der zentralen Pricing-SSoT.</p><div className="mt-7 rounded-2xl border border-white/10 bg-black/20 p-5"><div className="text-xs text-white/40">Einmaliger Website-Umbau</div><div className="mt-2 text-4xl font-bold">{launchTier ? `${launchTier.priceString} €` : 'Preis folgt aus Pricing-SSoT'}</div><div className="mt-1 text-xs text-white/35">{launchTier?.priceSuffix ?? 'Einmalangebot'}</div></div><div className="mt-7 grid gap-3 sm:grid-cols-2"><button onClick={() => void chooseTransformation()} disabled={!launchTier || busy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[rgb(3,7,18)] disabled:opacity-40">{busy ? <Loader2 size={16} className="animate-spin"/> : null}{busy ? 'Stripe wird vorbereitet …' : 'Ja, Website umbauen'} {!busy && <ArrowRight size={16}/>}</button><button onClick={declineTransformation} disabled={busy || !planTier} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3.5 text-sm font-semibold hover:border-cyan-400/40 disabled:opacity-40">Nein, normale Pakete <ArrowRight size={16}/></button></div></div><div className="mt-4 text-center text-xs text-white/30">Ja → serverseitig geprüfter Stripe-Checkout für den einmaligen Umbau. Nein → normale Stripe-Pakete.</div></div>}
 
           {error && <p role="alert" className="mt-5 text-center text-xs text-rose-300">{error}</p>}
         </section>

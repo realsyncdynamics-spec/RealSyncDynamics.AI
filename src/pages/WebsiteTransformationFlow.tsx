@@ -8,6 +8,7 @@ import { buildSite, errorMessage, runScan } from '../features/siteos/siteOsApi';
 import type { SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { renderSite } from '../../packages/siteos-core/src/render/renderer';
 import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../packages/siteos-core/src/render/templates';
+import { ONE_TIME_PRICING_TIERS, PUBLIC_PRICING_TIERS, type PricingTier } from '../config/pricing';
 
 const FEATURES = [
   ['chatbot', 'Chatbot', Bot], ['phonebot', 'Telefonbot', Phone], ['booking', 'Booking', CalendarDays],
@@ -15,8 +16,16 @@ const FEATURES = [
 ] as const;
 
 type Discovery = { source_url: string; title: string | null; description: string | null; h1: string | null; services: string[]; visible_text: string };
-
 type Phase = 'input' | 'scan' | 'preview' | 'offer';
+
+function recommendedPlan(features: string[], scores: any): PricingTier | undefined {
+  const wantsAdvanced = features.includes('phonebot') || features.includes('booking') || features.includes('ai-act');
+  const candidates = PUBLIC_PRICING_TIERS.filter((tier) => !tier.isYearly);
+  if (!candidates.length) return undefined;
+  if (wantsAdvanced) return candidates.find((tier) => tier.planKey === 'growth') ?? candidates[1] ?? candidates[0];
+  if (typeof scores?.risk === 'number' && scores.risk < 70) return candidates.find((tier) => tier.planKey === 'growth') ?? candidates[1] ?? candidates[0];
+  return candidates.find((tier) => tier.planKey === 'starter') ?? candidates[0];
+}
 
 export function WebsiteTransformationFlow() {
   const navigate = useNavigate();
@@ -31,10 +40,12 @@ export function WebsiteTransformationFlow() {
   const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
   const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
   const [dsgvoUpgrade, setDsgvoUpgrade] = useState<boolean | null>(null);
-  const [features, setFeatures] = useState<string[]>(FEATURES.map(([id]) => id));
+  const [features] = useState<string[]>(FEATURES.map(([id]) => id));
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
   const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: url }).find((page) => page.path === '/')?.html ?? '' : '', [previewBlueprint, url]);
+  const launchTier = ONE_TIME_PRICING_TIERS.find((tier) => tier.planKey === 'governance_launch');
+  const planTier = recommendedPlan(features, scan?.scores);
 
   const startScan = async () => {
     const clean = url.trim();
@@ -87,7 +98,6 @@ export function WebsiteTransformationFlow() {
     <main className="min-h-screen bg-[rgb(3,7,18)] text-white antialiased">
       <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">
         <header className="flex items-center justify-between border-b border-white/10 pb-5"><span className="text-sm text-white/55">RealSyncDynamics.AI</span><span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300"><Sparkles size={13}/> SiteOS Website Transformation</span></header>
-
         <section className="mx-auto max-w-5xl py-12">
           <div className="text-center"><div className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">{phase === 'input' ? '01 / DISCOVER' : phase === 'scan' ? '02 / RESULT' : phase === 'preview' ? '03 / PREVIEW' : '04 / OFFER'}</div><h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-6xl">{phase === 'input' ? 'Welche Website sollen wir neu bauen?' : phase === 'scan' ? 'Das haben wir gefunden.' : phase === 'preview' ? 'Das ist dein neues Redesign.' : 'Wie möchtest du weitergehen?'}</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-white/50">{phase === 'input' ? 'Zuerst scannen wir die bestehende Website. Danach zeigen wir dir sichtbar, was wir daraus machen können.' : phase === 'scan' ? 'Der Scan bleibt die Grundlage für Design, SEO, DSGVO und die spätere Transformation.' : phase === 'preview' ? 'Kein Mockup: Die Vorschau wird aus dem SiteOS-Blueprint gerendert, der später als Basis für das Deployment dient.' : 'Du siehst vor dem Kauf den konkreten Umbau und die passende laufende Plattformleistung.'}</p></div>
 
@@ -97,7 +107,7 @@ export function WebsiteTransformationFlow() {
 
           {phase === 'preview' && previewBlueprint && <div className="mt-8"><div className="mb-4 flex flex-wrap gap-2">{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`rounded-full border px-4 py-2 text-xs ${template === item.id ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/50'}`}>{item.label}</button>)}</div><div className="overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl"><iframe title="Neue Website Vorschau" srcDoc={previewHtml} className="h-[680px] w-full bg-white" sandbox="allow-same-origin" /></div><div className="mt-5 grid gap-3 sm:grid-cols-2">{FEATURES.map(([id,label,Icon]) => <div key={id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.03] p-3 text-xs"><Icon size={15} className="text-cyan-300"/><span>{label}</span><Check size={14} className="ml-auto text-emerald-400"/></div>)}</div><div className="mt-6 flex justify-end"><button onClick={goToOffer} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[rgb(3,7,18)]">Umbau & Angebot ansehen <ArrowRight size={15}/></button></div></div>}
 
-          {phase === 'offer' && <div className="mx-auto mt-10 max-w-3xl"><div className="rounded-3xl border border-white/10 bg-white/[.03] p-7"><h2 className="text-xl font-bold">DSGVO-/SEO-Umbau durchführen?</h2><p className="mt-2 text-sm text-white/45">Wir übernehmen die Transformation der bestehenden Website auf Basis des geprüften neuen Blueprints.</p><div className="mt-6 grid gap-3 sm:grid-cols-2"><button onClick={() => setDsgvoUpgrade(true)} className={`rounded-2xl border p-5 text-left ${dsgvoUpgrade === true ? 'border-cyan-400 bg-cyan-400/10' : 'border-white/10'}`}><div className="font-semibold">Ja, Umbau durchführen</div><div className="mt-1 text-xs text-white/40">Einmaliges Umbauangebot + passendes laufendes Paket</div></button><button onClick={() => setDsgvoUpgrade(false)} className={`rounded-2xl border p-5 text-left ${dsgvoUpgrade === false ? 'border-cyan-400 bg-cyan-400/10' : 'border-white/10'}`}><div className="font-semibold">Nein, nur Plattform nutzen</div><div className="mt-1 text-xs text-white/40">Normale Stripe-Pakete anzeigen</div></button></div>{dsgvoUpgrade !== null && <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-400/[.04] p-5"><div className="text-xs uppercase tracking-wider text-cyan-300">Empfohlenes Paket</div><div className="mt-2 text-2xl font-bold">Growth</div><p className="mt-2 text-xs leading-5 text-white/45">Für Website-Transformation, SEO, Governance und laufendes Monitoring. Der finale Preis wird aus der zentralen Pricing-SSoT geladen.</p><button onClick={() => navigate('/pricing')} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[rgb(3,7,18)]">Stripe-Auswahl öffnen <ArrowRight size={15}/></button></div>}</div></div>}
+          {phase === 'offer' && <div className="mx-auto mt-10 max-w-4xl"><div className="grid gap-4 md:grid-cols-2"><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.04] p-7"><div className="font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300">Website Transformation</div><h2 className="mt-3 text-xl font-bold">DSGVO-/SEO-Umbau durchführen?</h2><p className="mt-2 text-sm text-white/45">Einmaliger Umbau des geprüften Blueprints. Der Preis wird ausschließlich aus der zentralen Pricing-SSoT geladen.</p><div className="mt-6 text-3xl font-bold">{launchTier ? `${launchTier.priceString} €` : 'Preis folgt aus Pricing-SSoT'}</div><div className="text-xs text-white/35">{launchTier?.priceSuffix ?? 'Einmalangebot'}</div><button onClick={() => setDsgvoUpgrade(true)} className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs font-bold ${dsgvoUpgrade === true ? 'bg-cyan-300 text-[rgb(3,7,18)]' : 'bg-cyan-400 text-[rgb(3,7,18)]'}`}>Ja, Umbau starten → Stripe <ArrowRight size={15}/></button></div><div className="rounded-3xl border border-white/10 bg-white/[.03] p-7"><div className="font-mono text-[10px] uppercase tracking-[.18em] text-white/35">Laufende Plattform</div><h2 className="mt-3 text-xl font-bold">Passendes Paket</h2><p className="mt-2 text-sm text-white/45">Die Empfehlung wird aus der bestehenden Pricing-SSoT abgeleitet. Keine Preise oder Planlimits sind hier dupliziert.</p>{planTier && <><div className="mt-6 text-3xl font-bold">{planTier.name}</div><div className="mt-1 text-sm text-cyan-300">{planTier.priceString} € {planTier.priceSuffix}</div><p className="mt-3 text-xs leading-5 text-white/40">{planTier.tagline}</p></>}<button onClick={() => navigate(planTier?.cta.href ?? '/pricing')} disabled={!planTier} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 text-xs font-bold hover:border-cyan-400/40">{dsgvoUpgrade === false ? 'Nein – normales Paket wählen' : 'Paket ansehen'} <ArrowRight size={15}/></button></div></div><div className="mt-4 text-center text-xs text-white/30">Ja: erst einmaliger Website-Umbau, danach laufendes Paket. Nein: direkt normale Paketauswahl.</div></div>}
 
           {error && <p role="alert" className="mt-5 text-center text-xs text-rose-300">{error}</p>}
         </section>

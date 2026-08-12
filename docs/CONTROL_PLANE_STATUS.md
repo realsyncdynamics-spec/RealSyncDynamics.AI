@@ -1,1 +1,0 @@
-Control Plane implementation status is tracked by CI and end-to-end tests on the release branch.

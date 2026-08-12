@@ -73,7 +73,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 16
 - **178 Edge Functions** (`supabase/functions/`, Deno/V8)
-- **270 Migrations** (`supabase/migrations/`)
+- **277 Migrations** (`supabase/migrations/`)
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -143,6 +143,36 @@ Service-Role umgeht RLS — deshalb **ausschließlich in Edge Functions**.
 - Bestehende RLS-Policies und öffentliche API-Contracts **niemals** brechen.
 - Lokal testen: `supabase db reset` → `npm run test:db`
 
+> ⚠️ **`IF EXISTS` bezieht sich nicht auf die Tabelle.** In
+> `DROP TRIGGER IF EXISTS x ON tabelle` und `DROP POLICY IF EXISTS x ON tabelle`
+> gilt das `IF EXISTS` dem Trigger bzw. der Policy. Fehlt die **Tabelle**, bricht
+> das Statement mit 42P01 ab und rollt die gesamte Migration zurück. Genau das hat
+> die Migrationskette in Produktion wochenlang blockiert, während CI grün blieb —
+> auf frischem Postgres existieren die Tabellen ja. Bei Tabellen, die in Prod
+> fehlen könnten: in einen `DO`-Block mit `to_regclass('public.x') IS NULL`-Guard
+> setzen (Beispiele: `20260619000000`, `20260723000001`).
+
+### Cron-Jobs → Edge Functions
+
+pg_cron ruft Edge Functions **ausschließlich** über `public.dispatch_cron_function()`
+auf (Migration `20260820000000`):
+
+```sql
+SELECT cron.schedule('mein-job', '0 * * * *',
+  $cron$ SELECT public.dispatch_cron_function('meine-function', 'mein_token_secret') $cron$);
+```
+
+- Basis-URL kommt aus `public.app_functions_base_url()` — Vault > GUC > Produktions-Literal
+- Tokens kommen aus Supabase Vault über `public.get_app_secret()`, **nie** aus einer GUC
+- Fehlt das Secret, bricht der Job mit Klartextmeldung ab statt still ein 401 zu erzeugen
+
+**Nicht** `current_setting('app.supabase_url')` oder `current_setting('app.service_role_key')`
+verwenden: Diese GUCs sind in Produktion nicht gesetzt, sechs Jobs feuerten deshalb
+monatelang ins Leere — darunter die DSGVO-Löschanträge.
+
+**Fehlende Vault-Secrets** (nur vom Betreiber anlegbar, blockieren sechs Jobs):
+`service_role_key`, `agent_os_runner_token`.
+
 ---
 
 ## 4. Security — harte Regeln
@@ -179,24 +209,40 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Produktion läuft. Beides ist seit ~2026-07 auseinandergelaufen, weil der
 > `Deploy`-Workflow durchgehend fehlschlug (Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`).
 >
-> Messung vom 2026-08-02 — die Repo-Zahlen wachsen mit jedem Merge, entscheidend
-> ist die Lücke. Die Produktionsspalte ist seither **nicht neu erhoben**; sie
-> braucht Zugriff auf die Live-DB bzw. `supabase functions list`. Repo-Stand
-> heute (2026-08-10) in Klammern:
+> **Messung vom 2026-08-12, gegen die Live-DB erhoben** (Projekt `ebljyceifhnlzhjfyxup`):
 >
 > | | Repo | in Produktion |
 > |---|---|---|
-> | Edge Functions | 169 (heute 178) | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
-> | Migrationen | 244 (heute 270) | 136 angewendet — **118 nie angewendet** |
-> | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** |
+> | Edge Functions | 178 | 100 — **78 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
+> | Migrationen | 277 | **277 angewendet — Lücke geschlossen** |
+> | Vom Frontend abgefragte Tabellen | 152 | 139 vorhanden — **13 liefern HTTP 404 (`PGRST205`)** |
+>
+> Zum Vergleich der Stand vom 2026-08-02: 136 von 244 Migrationen angewendet,
+> 82 von 148 Tabellen vorhanden.
+>
+> **Migrations-Seite: erledigt.** Die Kette lief am 2026-08-12 erstmals vollständig
+> durch, nachdem die letzten Stopper (#1009, #1019–#1022) behoben waren. Ursache
+> war durchgehend dasselbe Muster: `DROP TRIGGER/POLICY IF EXISTS x ON tabelle`
+> bezieht das `IF EXISTS` auf Trigger bzw. Policy, **nicht** auf die Tabelle — fehlt
+> die Tabelle, bricht die gesamte Migration mit 42P01 ab. Auf frischem Postgres (CI,
+> `db reset`) existieren diese Tabellen, in Prod nicht: deshalb blieb CI grün,
+> während Prod rot war. Runbook: `docs/runbooks/p0-2-migration-reconciliation.md`.
+>
+> **Function-Seite: weiterhin offen.** Der Syntaxfehler in `add-auditor` ist über
+> #941 behoben, aber das Deployment steht am **Function-Limit des Free-Plans (100)**;
+> weitere Deploys scheitern mit HTTP 402. Das löst nur ein Plan-Upgrade.
+>
+> Diese 13 Tabellen fehlen in Prod und liefern dem Frontend 404:
+> `asset_policy_pack_mappings`, `audit_jobs`, `compliance_audit_log`,
+> `compliance_snapshots`, `generated_reports`, `governance_admin_audit_log`,
+> `monitored_domains`, `report_configurations`, `runtime_approval_gates`,
+> `runtime_executions`, `scans`, `tenant_users`, `workspace_members`.
+> Sie stehen teils als angewendet im Ledger, ohne dass die Tabelle existiert —
+> dieselbe historische Divergenz, die die Migrationskette blockiert hat.
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
 > egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
 > immer gegen die Live-DB bzw. `supabase functions list` prüfen, nicht gegen diese Liste.
->
-> Stand 2026-08-03 ist die erste Ursache (Syntaxfehler in `add-auditor`, blockierte
-> alle Function-Deploys) über #941 behoben; die Migrations-Seite läuft über
-> `docs/runbooks/p0-2-migration-reconciliation.md` und ist noch offen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
@@ -214,6 +260,8 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
   Nie einseitig ändern; `test/governance/rfc003-sql-parity.test.ts` bricht sonst.
   **Betrieb**: Der Decay-Worker tickt nur, wenn der pg_cron-Job `memory-decay-hourly`
   registriert ist (Migration `20260819000000`) — ohne ihn verfällt kein Memory.
+  Der Job ist registriert, braucht aber das Vault-Secret `service_role_key`
+  (siehe Cron-Dispatch unten); ohne dieses Secret bricht er mit Klartextmeldung ab.
 
 ### Dashboard-Module (modulare Reihenfolge)
 1. **Agent Registry** — Liste, Status, Risiko, Details
@@ -273,7 +321,7 @@ RealSyncDynamics.AI/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
 │   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    270 Migrations
+│   └── migrations/    277 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

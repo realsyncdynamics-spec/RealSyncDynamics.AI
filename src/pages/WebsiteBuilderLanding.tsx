@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { ArrowRight, Bot, Check, Globe2, Phone, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Bot, Check, Globe2, Loader2, Phone, ShieldCheck, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTenant } from '../core/access/TenantProvider';
+import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
+import { buildSite, errorMessage, runScan } from '../features/siteos/siteOsApi';
 
 const FEATURES = [
   { id: 'modern-site', label: 'Neue moderne Website', icon: Globe2 },
@@ -15,20 +18,29 @@ const FEATURES = [
 
 /**
  * Customer-facing SiteOS transformation entry.
- * The source URL is analysed as input material; the product creates a new
- * SiteBlueprint/deployment rather than copying the source DOM into the browser.
+ *
+ * Authenticated tenants use the real SiteOS write path:
+ * URL + capabilities → SiteOS Builder → Blueprint/Hash/Findings → Runtime scan.
+ * Unauthenticated visitors are sent through the normal login return path with
+ * their requested transformation preserved in the URL.
+ *
+ * The source URL is input material only; the product never executes or injects
+ * the source DOM/JavaScript into the browser.
  */
 export function WebsiteBuilderLanding() {
   const navigate = useNavigate();
+  const { activeTenantId } = useTenant();
+  const { isAuthenticated } = useSupabaseAuth();
   const [url, setUrl] = useState('');
   const [features, setFeatures] = useState<string[]>(FEATURES.map((feature) => feature.id));
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const toggle = (id: string) => {
     setFeatures((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   };
 
-  const start = () => {
+  const start = async () => {
     const clean = url.trim();
     if (!/^https?:\/\/[^\s]+$/i.test(clean)) {
       setError('Bitte eine vollständige URL inklusive https:// eingeben.');
@@ -38,9 +50,65 @@ export function WebsiteBuilderLanding() {
       setError('Bitte mindestens eine Funktion auswählen.');
       return;
     }
+
+    const selectedLabels = FEATURES
+      .filter((feature) => features.includes(feature.id))
+      .map((feature) => feature.label);
+
+    // Preserve the complete request through authentication instead of sending
+    // unauthenticated website content to a privileged Edge Function.
+    if (!isAuthenticated) {
+      const next = `/handwerk-website?source_url=${encodeURIComponent(clean)}&features=${encodeURIComponent(features.join(','))}`;
+      navigate(`/welcome?next=${encodeURIComponent(next)}`);
+      return;
+    }
+
+    if (!activeTenantId) {
+      setError('Für die Transformation ist noch kein aktiver Mandant verfügbar. Bitte zuerst den Workspace einrichten.');
+      return;
+    }
+
+    setBusy(true);
     setError('');
-    const params = new URLSearchParams({ source_url: clean, features: features.join(',') });
-    navigate(`/contact-sales?source=website-builder&${params.toString()}`);
+
+    const prompt = [
+      `Transformiere die bestehende Website ${clean} in ein neues RealSync SiteOS-Projekt.`,
+      `Die URL ist ausschließlich Quellenmaterial für Inhalte, Struktur und Geschäftsmerkmale; niemals fremden DOM oder JavaScript ausführen oder übernehmen.`,
+      `Gewünschte Fähigkeiten: ${selectedLabels.join(', ')}.`,
+      'Erzeuge eine moderne, eigenständige Kunden-Website mit sauberem Seitenplan, professioneller Informationsarchitektur und den im SiteOS-Blueprint vorgesehenen Governance-, SEO- und Accessibility-Anforderungen.',
+      'Die bestehende Website bleibt unverändert. Das Ergebnis muss als neuer Blueprint mit Preview und späterem Domain-Deployment behandelt werden.',
+    ].join('\n');
+
+    try {
+      const built = await buildSite({
+        tenant_id: activeTenantId,
+        prompt,
+        locale: 'de',
+      });
+
+      if (built.kind !== 'ok') {
+        setError(errorMessage(built));
+        return;
+      }
+
+      // The builder produces the immutable blueprint evidence chain. A live
+      // scan is deliberately a second step: it observes the source site and
+      // cannot mutate the generated blueprint.
+      if (built.data.blueprint_id) {
+        await runScan({
+          tenant_id: activeTenantId,
+          url: clean,
+          blueprint_id: built.data.blueprint_id,
+          trigger: 'manual',
+        });
+      }
+
+      navigate(`/app/siteos?site=${encodeURIComponent(built.data.slug)}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Die Transformation konnte nicht gestartet werden.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -96,6 +164,7 @@ export function WebsiteBuilderLanding() {
                       type="button"
                       onClick={() => toggle(id)}
                       aria-pressed={active}
+                      disabled={busy}
                       className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left text-sm transition ${active ? 'border-cyan-400/45 bg-cyan-400/10 text-white' : 'border-white/10 bg-white/[.02] text-white/55'}`}
                     >
                       <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${active ? 'bg-cyan-400 text-[rgb(3,7,18)]' : 'bg-white/5'}`}>
@@ -112,10 +181,13 @@ export function WebsiteBuilderLanding() {
 
             <button
               type="button"
-              onClick={start}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-4 text-sm font-bold text-[rgb(3,7,18)] transition hover:bg-cyan-300"
+              onClick={() => void start()}
+              disabled={busy}
+              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-4 text-sm font-bold text-[rgb(3,7,18)] transition hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
             >
-              <Sparkles size={17} /> Neue Website erstellen <ArrowRight size={17} />
+              {busy ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />}
+              {busy ? 'SiteOS erstellt Blueprint …' : 'Neue Website erstellen'}
+              {!busy && <ArrowRight size={17} />}
             </button>
             <p className="mt-3 text-center text-[11px] text-white/35">Analyse → Konzept → Generierung → Governance → Preview → Freigabe → Deployment</p>
           </section>

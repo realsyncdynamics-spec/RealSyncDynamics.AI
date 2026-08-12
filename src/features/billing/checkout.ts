@@ -1,14 +1,6 @@
 import { getSupabase } from '../../lib/supabase';
 import { normalizePlanKey, planByKey, type PlanKey } from '@/shared/pricing';
 
-/**
- * Plan-Bezeichner kommen ausschliesslich aus der Pricing-SSoT.
- *
- * Frueher stand hier eine eigene Union mit Altschreibweisen (`free`,
- * `free-audit`). Eine zweite Plan-Liste im Frontend laeuft zwangslaeufig
- * gegen `shared/pricing.ts` auseinander — die Altschreibweisen loest jetzt
- * `normalizePlanKey()` auf.
- */
 export type { PlanKey };
 
 export interface CheckoutResult {
@@ -18,60 +10,64 @@ export interface CheckoutResult {
   error?: { code: string; message: string };
 }
 
-/**
- * Asks the stripe-checkout edge function for a Stripe Checkout Session.
- * On success, navigate window.location to the returned URL.
- *
- * pilot=true enables the 14-day-trial mode used for post-demo conversion
- * (see marketing/demo-skript.md). Auto-detected from URL query `?pilot=true`
- * if not passed explicitly.
- */
+async function readCheckoutError(error: unknown): Promise<CheckoutResult> {
+  const ctx = (error as { context?: Response })?.context;
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const body = (await ctx.json()) as CheckoutResult;
+      if (body?.error?.code) return { ok: false, error: body.error };
+    } catch { /* fall through */ }
+  }
+  return {
+    ok: false,
+    error: {
+      code: 'NETWORK',
+      message: error instanceof Error ? error.message : 'Checkout konnte nicht vorbereitet werden.',
+    },
+  };
+}
+
+/** Standard billing checkout using the canonical pricing SSoT. */
 export async function createCheckoutSession(
   tenantId: string,
   planKey: string,
   pilot?: boolean,
 ): Promise<CheckoutResult> {
-  // Gleiche Reihenfolge wie in der Edge Function `stripe-checkout`: erst
-  // normalisieren, dann ueber den Kaufmodus des Plans entscheiden — kein
-  // Vergleich gegen Plan-Namen.
   const key = normalizePlanKey(planKey);
   const plan = key ? planByKey(key) : null;
-  if (!key || !plan) {
-    return { ok: false, error: { code: 'UNKNOWN_PLAN', message: `Unbekannter Plan: ${planKey}` } };
-  }
-  if (plan.purchaseMode === 'free') {
-    return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free Audit braucht keinen Checkout' } };
-  }
-  if (plan.purchaseMode === 'inquiry') {
-    return {
-      ok: false,
-      error: { code: 'INQUIRY_ONLY', message: `${plan.name} wird über /contact-sales abgeschlossen` },
-    };
-  }
+  if (!key || !plan) return { ok: false, error: { code: 'UNKNOWN_PLAN', message: `Unbekannter Plan: ${planKey}` } };
+  if (plan.purchaseMode === 'free') return { ok: false, error: { code: 'BAD_REQUEST', message: 'Free Audit braucht keinen Checkout' } };
+  if (plan.purchaseMode === 'inquiry') return { ok: false, error: { code: 'INQUIRY_ONLY', message: `${plan.name} wird über /contact-sales abgeschlossen` } };
+
   const isPilot = pilot ?? new URLSearchParams(window.location.search).get('pilot') === 'true';
-  const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('stripe-checkout', {
+  const { data, error } = await getSupabase().functions.invoke('stripe-checkout', {
     body: { tenant_id: tenantId, plan_key: key, return_url: window.location.origin, pilot: isPilot },
   });
-  if (error) {
-    // FunctionsHttpError.message ist immer nur "non-2xx status code" — der
-    // echte Server-Fehler ({code, message} aus jsonError) steckt im
-    // Response-Body unter error.context. Ohne dieses Auslesen zeigt die UI
-    // fuer jeden Fehler (403, PRICE_NOT_CONFIGURED, STRIPE_ERROR, ...) nur
-    // den generischen "Checkout konnte nicht vorbereitet werden"-Text.
-    const ctx = (error as { context?: Response }).context;
-    if (ctx && typeof ctx.json === 'function') {
-      try {
-        const body = (await ctx.json()) as CheckoutResult;
-        if (body?.error?.code) {
-          // Fuer den Operator: echte Ursache in die Konsole (UI zeigt
-          // bewusst nur die kategorisierte Diagnose, nie rohe Stripe-Bodies).
-          console.error('[stripe-checkout]', body.error.code, body.error.message);
-          return { ok: false, error: body.error };
-        }
-      } catch { /* Body war kein JSON — unten generisch weitermelden */ }
-    }
-    return { ok: false, error: { code: 'NETWORK', message: error.message } };
-  }
+  if (error) return readCheckoutError(error);
+  return data as CheckoutResult;
+}
+
+/**
+ * Paid handoff after the SiteOS redesign preview.
+ * The server resolves the canonical Governance Launch product and verifies
+ * tenant membership before creating the Stripe Checkout Session.
+ */
+export async function createSiteOsCheckoutSession(args: {
+  tenantId: string;
+  sourceUrl: string;
+  siteSlug?: string;
+  projectName?: string;
+}): Promise<CheckoutResult> {
+  const { data, error } = await getSupabase().functions.invoke('checkout-siteos-project', {
+    body: {
+      tenant_id: args.tenantId,
+      source_url: args.sourceUrl,
+      site_slug: args.siteSlug,
+      project_name: args.projectName,
+      redesign: true,
+      return_url: window.location.origin,
+    },
+  });
+  if (error) return readCheckoutError(error);
   return data as CheckoutResult;
 }

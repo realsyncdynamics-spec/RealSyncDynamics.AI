@@ -9,8 +9,12 @@ import { BranchenLanding, Section, UseCaseGrid } from './branchen/BranchenLandin
  * Ansprache, anderer Preispunkt. Verlinkt wird von MainLanding aus.
  *
  * Ehrlichkeitsregel (CLAUDE.md §14): Die Seite bewirbt kein fertiges
- * Self-Service-Produkt. Der Einstieg läuft über ein Erstgespräch
+ * Self-Service-Produkt. Der Einstieg läuft über Founding Access
  * (/contact-sales) — kein Checkout, der ins Leere führt.
+ *
+ * CTA-Vokabular: nur Labels aus `src/content/runtimeVocab.ts` → CTA.
+ * Termin-/Beratungssprache ist CI-gesperrt (cta-enforcement.yml), weil die
+ * Positionierung „Tools statt Beratung" auch für diese Zielgruppe gilt.
  */
 export function KmuWebsiteLanding() {
   return (
@@ -35,11 +39,11 @@ export function KmuWebsiteLanding() {
           </>
         ),
         cta: {
-          heading: 'Erstgespräch: 20 Minuten, unverbindlich.',
-          sub: 'Wir schauen uns Ihre aktuelle Seite an und sagen ehrlich, ob sich der Aufwand für Sie lohnt.',
+          heading: 'Founding Access: die ersten Betriebe bestimmen mit.',
+          sub: 'Sie schildern Ihren Betrieb in fünf Minuten, wir antworten mit einer ehrlichen Einschätzung — auch wenn die ehrliche Antwort „lohnt sich für Sie nicht" lautet.',
           buttons: [
-            { to: '/contact-sales?source=kmu-website', label: 'Erstgespräch vereinbaren', variant: 'primary' },
-            { to: '/audit', label: 'Kostenloser DSGVO-Scan Ihrer Seite', variant: 'secondary' },
+            { to: '/contact-sales?source=kmu-website', label: 'Founding Access sichern', variant: 'primary' },
+            { to: '/audit', label: 'Kostenlosen Audit starten', variant: 'secondary' },
             { to: '/pricing', label: 'Preise ansehen', variant: 'ghost' },
           ],
         },
@@ -141,8 +145,8 @@ export function KmuWebsiteLanding() {
         <ul className="space-y-1.5 text-sm">
           <li className="flex items-start gap-2">
             <Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-            <strong className="text-titanium-50">Erstgespräch, 20 Minuten</strong> — wir sehen uns
-            Ihre jetzige Seite an und sagen ehrlich, ob sich der Aufwand lohnt
+            <strong className="text-titanium-50">Anfrage über das Formular</strong> — wir sehen uns
+            Ihre jetzige Seite an und antworten mit einer ehrlichen Einschätzung
           </li>
           <li className="flex items-start gap-2">
             <Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />

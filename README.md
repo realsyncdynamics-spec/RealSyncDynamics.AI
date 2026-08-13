@@ -100,6 +100,7 @@ Eine **in sich geschlossene Microservice-Suite** für Website-Automation mit Com
   - Risk-Evaluator für EU-AI-Act-Konformität
   - CI/CD-Gate-Engine
   - Telemetrie- und Audit-Log
+  - **Start:** `cd platform && docker compose up --build`
   - **Docs:** http://rsd.localhost/docs (OpenAPI)
 
 - **nextjs_frontend** (Port 3000, `app.localhost`)
@@ -209,3 +210,7 @@ Proprietär — © 2026 RealSync Dynamics. Alle Rechte vorbehalten.
 
 - Sales: [sales@realsyncdynamicsai.de](mailto:sales@realsyncdynamicsai.de)
 - Privacy: [privacy@realsyncdynamicsai.de](mailto:privacy@realsyncdynamicsai.de)
+
+## SiteOS Customer Builder
+
+Der Website-Transformation-Flow erzeugt nach dem Audit einen echten SiteOS-Blueprint und rendert daraus eine vollständige Website-Preview für Desktop/Tablet/Mobile. Die Preview ist der Einstieg in den Builder und nicht nur eine statische Designauswahl.

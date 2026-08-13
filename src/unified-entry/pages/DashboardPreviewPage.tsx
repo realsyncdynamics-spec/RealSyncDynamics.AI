@@ -12,6 +12,11 @@ export function DashboardPreviewPage() {
   const [loading, setLoading] = useState(true);
 
   const auditId = searchParams.get('auditId');
+  const scanDomain = searchParams.get('domain');
+  const scanScore = Number(searchParams.get('score'));
+  const scanTrackers = Number(searchParams.get('trackers'));
+  const scanCookies = Number(searchParams.get('cookies'));
+  const scanSeverity = searchParams.get('severity') ?? 'low';
 
   useEffect(() => {
     if (!auditId) {
@@ -29,18 +34,28 @@ export function DashboardPreviewPage() {
     );
   }
 
-  const data = MOCK_DASHBOARD_DATA;
+  const data = {
+    ...MOCK_DASHBOARD_DATA,
+    scanDomain: scanDomain || MOCK_DASHBOARD_DATA.scanDomain,
+    complianceScore: Number.isFinite(scanScore) ? scanScore : MOCK_DASHBOARD_DATA.complianceScore,
+    scanResults: {
+      ...MOCK_DASHBOARD_DATA.scanResults,
+      trackersFound: Number.isFinite(scanTrackers) ? scanTrackers : MOCK_DASHBOARD_DATA.scanResults.trackersFound,
+      cookiesDetected: Number.isFinite(scanCookies) ? scanCookies : MOCK_DASHBOARD_DATA.scanResults.cookiesDetected,
+    },
+  };
 
   return (
     <div className="space-y-8">
-      {/* Header with timer */}
       <div className="flex items-start justify-between gap-6">
         <div className="space-y-3 flex-1">
+          <p className="text-sm font-medium text-petrol-500 uppercase tracking-wider">Website Scan abgeschlossen</p>
           <h1 className="text-4xl font-bold text-titanium-50">
-            Ihre personalisierte Dashboard-Vorschau
+            Das können wir aus Ihrer Website machen
           </h1>
           <p className="text-lg text-titanium-300">
-            So sieht Ihre Governance-Platform aus — maßgeschneidert auf Ihre Anforderungen.
+            Erste Live-Analyse für <span className="text-titanium-100 font-medium">{data.scanDomain}</span>.
+            Jetzt folgt die moderne Redesign-Vorschau.
           </p>
         </div>
         <TrialTimer
@@ -50,14 +65,27 @@ export function DashboardPreviewPage() {
         />
       </div>
 
+      <div className="bg-obsidian-800 border border-petrol-700 rounded-lg p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-titanium-400">Live Scan</p>
+            <p className="text-3xl font-bold text-petrol-500">{data.complianceScore}%</p>
+          </div>
+          <div className="text-sm text-titanium-300">
+            <span className="font-medium text-titanium-100">{data.scanResults.trackersFound}</span> Tracker ·{' '}
+            <span className="font-medium text-titanium-100">{data.scanResults.cookiesDetected}</span> Cookies ·{' '}
+            <span className="font-medium text-titanium-100 capitalize">{scanSeverity}</span>
+          </div>
+        </div>
+      </div>
+
       {isExpired && (
         <div className="p-4 bg-red-900/20 border border-red-700 rounded-lg text-red-300">
           <p className="font-medium">Ihre Preview ist abgelaufen.</p>
-          <p className="text-sm mt-1">Registrieren Sie sich jetzt, um 14 Tage kostenlos Zugriff zu erhalten.</p>
+          <p className="text-sm mt-1">Registrieren Sie sich jetzt, um Zugriff zu erhalten.</p>
         </div>
       )}
 
-      {/* Compliance Score Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-obsidian-800 border border-titanium-700 rounded-lg p-6">
           <p className="text-sm text-titanium-400 mb-2">Compliance Score</p>
@@ -74,13 +102,12 @@ export function DashboardPreviewPage() {
             </div>
           </div>
           <p className="text-xs text-titanium-500 mt-3">
-            {data.scanDomain} — gescannt vor 2 Min
+            {data.scanDomain} — gerade live gescannt
           </p>
         </div>
 
-        {/* Key Findings */}
         <div className="bg-obsidian-800 border border-titanium-700 rounded-lg p-6">
-          <p className="text-sm text-titanium-400 mb-4">Kritische Findings</p>
+          <p className="text-sm text-titanium-400 mb-4">Erste Findings</p>
           <div className="space-y-2">
             {data.findings.slice(0, 3).map((finding) => (
               <div key={finding.id} className="flex items-start gap-2">
@@ -104,7 +131,6 @@ export function DashboardPreviewPage() {
           </div>
         </div>
 
-        {/* Scan Stats */}
         <div className="bg-obsidian-800 border border-titanium-700 rounded-lg p-6">
           <p className="text-sm text-titanium-400 mb-4">Scan-Statistiken</p>
           <div className="space-y-3">
@@ -124,7 +150,6 @@ export function DashboardPreviewPage() {
         </div>
       </div>
 
-      {/* Compliance Dimensions */}
       <div className="bg-obsidian-800 border border-titanium-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-titanium-50 mb-6">Governance Dimensionen</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -145,49 +170,35 @@ export function DashboardPreviewPage() {
         </div>
       </div>
 
-      {/* All Findings */}
       <div className="bg-obsidian-800 border border-titanium-700 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-titanium-50 mb-4">Alle Findings ({data.findings.length})</h3>
-        <div className="space-y-3">
-          {data.findings.map((finding) => (
-            <div key={finding.id} className="flex items-start gap-3 p-3 bg-obsidian-900 rounded-lg">
-              <div
-                className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
-                  finding.severity === 'high'
-                    ? 'bg-red-500'
-                    : finding.severity === 'medium'
-                      ? 'bg-amber-500'
-                      : 'bg-blue-500'
-                }`}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-titanium-50">{finding.title}</p>
-                <p className="text-sm text-titanium-400 mt-1">{finding.description}</p>
-                <p className="text-xs text-titanium-500 mt-2">{finding.count} Instanzen gefunden</p>
-              </div>
-              <span className="text-xs font-medium text-titanium-400 flex-shrink-0 capitalize">
-                {finding.severity === 'high' ? 'Kritisch' : finding.severity === 'medium' ? 'Mittel' : 'Niedrig'}
-              </span>
-            </div>
-          ))}
+        <h3 className="text-lg font-semibold text-titanium-50 mb-4">Nächster Schritt</h3>
+        <p className="text-titanium-300 mb-4">
+          Die erste Analyse zeigt den Ausgangspunkt. Jetzt können wir daraus eine echte moderne Website erstellen — mit SEO-Optimierung, DSGVO-/AI-Act-Anforderungen und den von Ihnen gewünschten KI-Funktionen.
+        </p>
+        <div className="flex flex-wrap gap-3 text-sm text-titanium-300">
+          <span className="px-3 py-1 rounded-full bg-obsidian-900 border border-titanium-700">Modernes Redesign</span>
+          <span className="px-3 py-1 rounded-full bg-obsidian-900 border border-titanium-700">SEO</span>
+          <span className="px-3 py-1 rounded-full bg-obsidian-900 border border-titanium-700">DSGVO</span>
+          <span className="px-3 py-1 rounded-full bg-obsidian-900 border border-titanium-700">EU AI Act</span>
+          <span className="px-3 py-1 rounded-full bg-obsidian-900 border border-titanium-700">Chatbot</span>
+          <span className="px-3 py-1 rounded-full bg-obsidian-900 border border-titanium-700">Telefonbot</span>
         </div>
       </div>
 
-      {/* CTA Buttons */}
       <div className="flex gap-4 pt-6 border-t border-titanium-700">
         <button
           onClick={() => navigate('/unified-entry/trial-offer')}
           disabled={isExpired}
           className="flex-1 px-6 py-3 bg-petrol-600 hover:bg-petrol-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
         >
-          {isExpired ? 'Preview beendet' : '14 Tage kostenlos starten'}
+          {isExpired ? 'Preview beendet' : 'Website neu erstellen'}
         </button>
         <button
           onClick={() => navigate('/unified-entry/register')}
           disabled={isExpired}
           className="flex-1 px-6 py-3 bg-obsidian-700 hover:bg-obsidian-600 border border-titanium-600 disabled:opacity-50 disabled:cursor-not-allowed text-titanium-200 font-medium rounded-lg transition-colors"
         >
-          {isExpired ? 'Registrieren' : 'Jetzt registrieren'}
+          {isExpired ? 'Registrieren' : 'Anforderungen festlegen'}
         </button>
       </div>
     </div>

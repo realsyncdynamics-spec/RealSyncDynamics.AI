@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, Bot, CalendarDays, Check, Globe2, Loader2, Phone, Search, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Bot, CalendarDays, Check, Globe2, Loader2, Phone, Search, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getSupabase } from '../lib/supabase';
 import { useTenant } from '../core/access/TenantProvider';
@@ -12,8 +12,8 @@ import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate
 import { ONE_TIME_PRICING_TIERS, PUBLIC_PRICING_TIERS, type PricingTier } from '../config/pricing';
 
 const FEATURES = [
-  ['chatbot', 'Chatbot', Bot], ['phonebot', 'Telefonbot', Phone], ['booking', 'Booking', CalendarDays],
-  ['seo', 'SEO', Search], ['accessibility', 'Barrierefreiheit', Check], ['dsgvo', 'DSGVO', ShieldCheck], ['ai-act', 'AI Act', ShieldCheck],
+  ['chatbot', 'AI-Chat', Bot], ['phonebot', 'Telefon-AI', Phone], ['booking', 'Terminbuchung', CalendarDays],
+  ['seo', 'SEO', Search], ['accessibility', 'Barrierefreiheit', Check], ['dsgvo', 'DSGVO', ShieldCheck], ['ai-act', 'EU AI Act', ShieldCheck],
 ] as const;
 
 type Discovery = { source_url: string; title: string | null; description: string | null; h1: string | null; services: string[]; visible_text: string };
@@ -28,6 +28,13 @@ function recommendedPlan(features: string[], scores: any): PricingTier | undefin
   return candidates.find((tier) => tier.planKey === 'starter') ?? candidates[0];
 }
 
+const PHASES: Array<{ id: Phase; label: string }> = [
+  { id: 'input', label: 'Analyse' },
+  { id: 'scan', label: 'Befund' },
+  { id: 'preview', label: 'Vorschau' },
+  { id: 'offer', label: 'Transformation' },
+];
+
 export function WebsiteTransformationFlow() {
   const navigate = useNavigate();
   const { activeTenantId } = useTenant();
@@ -40,13 +47,13 @@ export function WebsiteTransformationFlow() {
   const [scan, setScan] = useState<{ scores: any; findings: any[] } | null>(null);
   const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
   const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
-  const [dsgvoUpgrade, setDsgvoUpgrade] = useState<boolean | null>(null);
   const [features] = useState<string[]>(FEATURES.map(([id]) => id));
 
   const previewBlueprint = useMemo(() => blueprint ? applySiteDesignTemplate(blueprint, template) : null, [blueprint, template]);
   const previewHtml = useMemo(() => previewBlueprint ? renderSite(previewBlueprint, { baseUrl: url }).find((page) => page.path === '/')?.html ?? '' : '', [previewBlueprint, url]);
   const launchTier = ONE_TIME_PRICING_TIERS.find((tier) => tier.planKey === 'governance_launch');
   const planTier = recommendedPlan(features, scan?.scores);
+  const currentPhaseIndex = PHASES.findIndex((item) => item.id === phase);
 
   const startScan = async () => {
     const clean = url.trim();
@@ -93,16 +100,9 @@ export function WebsiteTransformationFlow() {
     finally { setBusy(false); }
   };
 
-  const goToOffer = () => { setDsgvoUpgrade(null); setPhase('offer'); };
-
   const chooseTransformation = async () => {
-    if (!activeTenantId || !discovery) {
-      setError('Workspace oder Ausgangs-Website fehlt.');
-      return;
-    }
-    setBusy(true);
-    setError('');
-    setDsgvoUpgrade(true);
+    if (!activeTenantId || !discovery) { setError('Workspace oder Ausgangs-Website fehlt.'); return; }
+    setBusy(true); setError('');
     try {
       const result = await createSiteOsCheckoutSession({
         tenantId: activeTenantId,
@@ -110,42 +110,70 @@ export function WebsiteTransformationFlow() {
         siteSlug: blueprint?.slug,
         projectName: discovery.title ?? discovery.h1 ?? undefined,
       });
-      if (!result.ok || !result.url) {
-        setDsgvoUpgrade(false);
-        setError(result.error?.message ?? 'Stripe Checkout konnte nicht vorbereitet werden.');
-        return;
-      }
+      if (!result.ok || !result.url) { setError(result.error?.message ?? 'Stripe Checkout konnte nicht vorbereitet werden.'); return; }
       window.location.assign(result.url);
-    } catch (cause) {
-      setDsgvoUpgrade(false);
-      setError(cause instanceof Error ? cause.message : 'Stripe Checkout konnte nicht vorbereitet werden.');
-    } finally {
-      setBusy(false);
-    }
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Stripe Checkout konnte nicht vorbereitet werden.'); }
+    finally { setBusy(false); }
   };
 
-  const declineTransformation = () => {
-    setDsgvoUpgrade(false);
-    navigate(planTier?.cta.href ?? '/pricing');
-  };
+  const declineTransformation = () => navigate(planTier?.cta.href ?? '/pricing');
+
+  const phaseCopy = {
+    input: {
+      eyebrow: 'SITEOS · WEBSITE TRANSFORMATION',
+      title: 'Ihre Website. Klarer. Schneller. Stärker.',
+      text: 'Wir analysieren Ihre bestehende Website und zeigen Ihnen konkret, wo Design, SEO, Performance und Compliance verbessert werden können.',
+    },
+    scan: {
+      eyebrow: 'ANALYSE · LIVE BEFUND',
+      title: 'Jetzt sehen Sie, was wirklich zählt.',
+      text: 'Technische Schwachstellen, SEO-Potenzial und Compliance-Risiken — kompakt auf einer Oberfläche.',
+    },
+    preview: {
+      eyebrow: 'TRANSFORMATION · VORSCHAU',
+      title: 'So kann Ihre Website aussehen.',
+      text: 'Aus dem Befund entsteht eine echte SiteOS-Vorschau — nicht nur ein Screenshot und kein loses Design-Mockup.',
+    },
+    offer: {
+      eyebrow: 'TRANSFORMATION · NÄCHSTER SCHRITT',
+      title: 'Vom Befund zur fertigen Website.',
+      text: 'Sie entscheiden, ob die geprüfte Website jetzt als moderne, SEO-starke und compliance-bewusste Version umgesetzt wird.',
+    },
+  }[phase];
 
   return (
-    <main className="min-h-screen bg-[rgb(3,7,18)] text-white antialiased">
-      <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">
-        <header className="flex items-center justify-between border-b border-white/10 pb-5"><span className="text-sm text-white/55">RealSyncDynamics.AI</span><span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300"><Sparkles size={13}/> SiteOS Website Transformation</span></header>
-        <section className="mx-auto max-w-5xl py-12">
-          <div className="text-center"><div className="font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">{phase === 'input' ? '01 / DISCOVER' : phase === 'scan' ? '02 / RESULT' : phase === 'preview' ? '03 / PREVIEW' : '04 / OFFER'}</div><h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-6xl">{phase === 'input' ? 'Welche Website sollen wir neu bauen?' : phase === 'scan' ? 'Das haben wir gefunden.' : phase === 'preview' ? 'Das ist dein neues Redesign.' : 'Möchtest du die Website umbauen?'}</h1><p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-white/50">{phase === 'input' ? 'Zuerst scannen wir die bestehende Website. Danach zeigen wir dir sichtbar, was wir daraus machen können.' : phase === 'scan' ? 'Der Scan bleibt die Grundlage für Design, SEO, DSGVO und die spätere Transformation.' : phase === 'preview' ? 'Kein Mockup: Die Vorschau wird aus dem SiteOS-Blueprint gerendert, der später als Basis für das Deployment dient.' : 'Nach der Vorschau entscheidest du ausdrücklich, ob der DSGVO-/SEO-Umbau beauftragt werden soll.'}</p></div>
+    <main className="min-h-screen bg-[#050914] text-white antialiased">
+      <div className="mx-auto max-w-7xl px-5 py-5 sm:px-8">
+        <header className="flex items-center justify-between border-b border-white/[.08] pb-5">
+          <div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-lg border border-cyan-400/20 bg-cyan-400/10"><Sparkles size={15} className="text-cyan-300" /></span><span className="text-sm font-semibold tracking-tight">RealSyncDynamics.AI</span></div>
+          <div className="hidden items-center gap-6 text-xs text-white/45 sm:flex"><span>Website Transformation</span><span>AI Governance</span><button onClick={() => navigate('/login')} className="text-white/70 hover:text-white">Login</button></div>
+        </header>
 
-          {phase === 'input' && <div className="mx-auto mt-10 max-w-3xl rounded-3xl border border-white/10 bg-white/[.035] p-3"><div className="flex flex-col gap-3 sm:flex-row"><div className="flex flex-1 items-center rounded-2xl border border-white/10 bg-black/25 px-4"><Globe2 className="mr-3 text-cyan-400" size={18}/><input autoFocus value={url} onChange={e => { setUrl(e.target.value); setError(''); }} placeholder="https://deine-website.de" className="w-full bg-transparent py-4 text-sm outline-none placeholder:text-white/25" /></div><button onClick={() => void startScan()} disabled={busy} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 text-sm font-bold text-[rgb(3,7,18)]">{busy ? <Loader2 className="animate-spin" size={17}/> : <Search size={17}/>} {busy ? 'Scanne …' : 'Website scannen'}<ArrowRight size={17}/></button></div></div>}
+        <div className="mx-auto max-w-5xl pt-7">
+          <div className="flex items-center justify-center gap-2 sm:gap-4">
+            {PHASES.map((item, index) => <div key={item.id} className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[.16em]"><span className={`grid h-6 w-6 place-items-center rounded-full border ${index <= currentPhaseIndex ? 'border-cyan-400/60 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/25'}`}>{index + 1}</span><span className={index <= currentPhaseIndex ? 'text-white/65' : 'hidden text-white/25 sm:inline'}>{item.label}</span>{index < PHASES.length - 1 && <span className="mx-1 h-px w-4 bg-white/10 sm:w-10" />}</div>)}
+          </div>
 
-          {phase === 'scan' && scan && <div className="mt-10"><div className="grid gap-3 sm:grid-cols-5">{[['Health', scan.scores.health], ['DSGVO', scan.scores.compliance], ['Performance', scan.scores.performance], ['AI Risk', scan.scores.aiRisk], ['Risiken', scan.scores.risk]].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-white/10 bg-white/[.03] p-5"><div className="text-xs text-white/40">{label}</div><div className="mt-2 text-3xl font-bold">{typeof value === 'number' ? Math.round(value) : '—'}<span className="text-sm text-white/25">/100</span></div></div>)}</div><div className="mt-5 rounded-2xl border border-white/10 bg-white/[.03] p-5"><div className="flex items-center justify-between"><span className="text-sm font-semibold">{scan.findings.length} Findings erkannt</span><span className="font-mono text-[10px] text-cyan-300">SCAN EVIDENCE</span></div><div className="mt-4 grid gap-2 md:grid-cols-2">{scan.findings.slice(0, 6).map((finding) => <div key={finding.code} className="rounded-xl border border-white/10 p-3 text-xs"><span className="font-mono text-cyan-300">{finding.severity}</span><div className="mt-1 text-white/70">{finding.title}</div></div>)}</div></div><div className="mt-6 flex justify-end"><button onClick={() => void buildPreview()} disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[rgb(3,7,18)]">{busy ? <Loader2 className="animate-spin" size={15}/> : <Sparkles size={15}/>} Neue Website generieren <ArrowRight size={15}/></button></div></div>}
+          <section className="relative overflow-hidden pb-14 pt-14 text-center sm:pt-20">
+            <div className="pointer-events-none absolute left-1/2 top-8 h-72 w-72 -translate-x-1/2 rounded-full bg-cyan-400/[.06] blur-3xl" />
+            <div className="relative"><div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/[.06] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[.2em] text-cyan-300"><Zap size={11} /> {phaseCopy.eyebrow}</div><h1 className="mx-auto mt-6 max-w-4xl text-4xl font-extrabold leading-[1.04] tracking-[-.035em] sm:text-6xl lg:text-7xl">{phaseCopy.title}</h1><p className="mx-auto mt-6 max-w-2xl text-sm leading-7 text-white/50 sm:text-base">{phaseCopy.text}</p></div>
 
-          {phase === 'preview' && previewBlueprint && <div className="mt-8"><div className="mb-4 flex flex-wrap gap-2">{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`rounded-full border px-4 py-2 text-xs ${template === item.id ? 'border-cyan-400 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/50'}`}>{item.label}</button>)}</div><div className="overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl"><iframe title="Neue Website Vorschau" srcDoc={previewHtml} className="h-[680px] w-full bg-white" sandbox="allow-same-origin" /></div><div className="mt-5 grid gap-3 sm:grid-cols-2">{FEATURES.map(([id,label,Icon]) => <div key={id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.03] p-3 text-xs"><Icon size={15} className="text-cyan-300"/><span>{label}</span><Check size={14} className="ml-auto text-emerald-400"/></div>)}</div><div className="mt-6 flex justify-end"><button onClick={goToOffer} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[rgb(3,7,18)]">Umbau & Angebot ansehen <ArrowRight size={15}/></button></div></div>}
+            {phase === 'input' && <>
+              <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-white/[.10] bg-white/[.035] p-2 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-3"><div className="flex flex-col gap-2 sm:flex-row"><div className="flex min-w-0 flex-1 items-center rounded-xl border border-white/[.08] bg-black/25 px-4 sm:rounded-2xl"><Globe2 className="mr-3 shrink-0 text-cyan-400" size={18}/><input autoFocus value={url} onChange={e => { setUrl(e.target.value); setError(''); }} onKeyDown={e => { if (e.key === 'Enter') void startScan(); }} placeholder="https://ihre-website.de" className="w-full bg-transparent py-4 text-sm outline-none placeholder:text-white/25" aria-label="Website URL" /></div><button onClick={() => void startScan()} disabled={busy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-4 text-sm font-bold text-[#050914] transition hover:bg-cyan-300 disabled:opacity-50 sm:rounded-2xl">{busy ? <Loader2 className="animate-spin" size={17}/> : <Search size={17}/>} {busy ? 'Website wird analysiert …' : 'Website analysieren'}<ArrowRight size={17}/></button></div></div>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] text-white/30"><span>URL genügt</span><span>Keine Änderung an Ihrer Website</span><span>Ergebnis in wenigen Minuten</span></div>
+            </>}
+          </section>
 
-          {phase === 'offer' && <div className="mx-auto mt-10 max-w-2xl"><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.04] p-8"><div className="font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300">Website Transformation</div><h2 className="mt-3 text-2xl font-bold">DSGVO-/SEO-Umbau durchführen?</h2><p className="mt-3 text-sm leading-6 text-white/55">Wir haben deine bestehende Website geprüft und eine neue Version als SiteOS-Blueprint erzeugt. Der einmalige Umbaupreis kommt ausschließlich aus der zentralen Pricing-SSoT.</p><div className="mt-7 rounded-2xl border border-white/10 bg-black/20 p-5"><div className="text-xs text-white/40">Einmaliger Website-Umbau</div><div className="mt-2 text-4xl font-bold">{launchTier ? `${launchTier.priceString} €` : 'Preis folgt aus Pricing-SSoT'}</div><div className="mt-1 text-xs text-white/35">{launchTier?.priceSuffix ?? 'Einmalangebot'}</div></div><div className="mt-7 grid gap-3 sm:grid-cols-2"><button onClick={() => void chooseTransformation()} disabled={!launchTier || busy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[rgb(3,7,18)] disabled:opacity-40">{busy ? <Loader2 size={16} className="animate-spin"/> : null}{busy ? 'Stripe wird vorbereitet …' : 'Ja, Website umbauen'} {!busy && <ArrowRight size={16}/>}</button><button onClick={declineTransformation} disabled={busy || !planTier} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3.5 text-sm font-semibold hover:border-cyan-400/40 disabled:opacity-40">Nein, normale Pakete <ArrowRight size={16}/></button></div></div><div className="mt-4 text-center text-xs text-white/30">Ja → serverseitig geprüfter Stripe-Checkout für den einmaligen Umbau. Nein → normale Stripe-Pakete.</div></div>}
+          {phase === 'input' && <section className="grid gap-4 border-t border-white/[.08] py-12 sm:grid-cols-3"><div className="rounded-2xl border border-white/[.08] bg-white/[.025] p-6"><div className="font-mono text-[10px] text-cyan-300">01</div><h2 className="mt-4 text-base font-semibold">Verstehen</h2><p className="mt-2 text-xs leading-6 text-white/40">Wir erfassen Struktur, Inhalte, Technik und sichtbare Conversion-Punkte Ihrer bestehenden Website.</p></div><div className="rounded-2xl border border-white/[.08] bg-white/[.025] p-6"><div className="font-mono text-[10px] text-cyan-300">02</div><h2 className="mt-4 text-base font-semibold">Bewerten</h2><p className="mt-2 text-xs leading-6 text-white/40">SEO, Performance, DSGVO und AI-Act-relevante Risiken werden in einem Befund zusammengeführt.</p></div><div className="rounded-2xl border border-white/[.08] bg-white/[.025] p-6"><div className="font-mono text-[10px] text-cyan-300">03</div><h2 className="mt-4 text-base font-semibold">Transformieren</h2><p className="mt-2 text-xs leading-6 text-white/40">Aus den Ergebnissen entsteht eine echte SiteOS-Vorschau mit klarer Informationsarchitektur.</p></div></section>}
 
-          {error && <p role="alert" className="mt-5 text-center text-xs text-rose-300">{error}</p>}
-        </section>
+          {phase === 'scan' && scan && <section className="pb-14"><div className="grid gap-3 sm:grid-cols-5">{[['Website Health', scan.scores.health], ['DSGVO', scan.scores.compliance], ['Performance', scan.scores.performance], ['AI Risk', scan.scores.aiRisk], ['Risiko', scan.scores.risk]].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-white/[.08] bg-white/[.025] p-5"><div className="text-xs text-white/40">{label}</div><div className="mt-2 text-3xl font-bold tracking-tight">{typeof value === 'number' ? Math.round(value) : '—'}<span className="text-sm font-normal text-white/20">/100</span></div></div>)}</div><div className="mt-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="text-sm font-semibold">{scan.findings.length} relevante Findings</div><div className="mt-1 text-xs text-white/35">Die wichtigsten Punkte aus dem aktuellen Scan.</div></div><span className="font-mono text-[9px] uppercase tracking-[.18em] text-cyan-300">Evidence trail</span></div><div className="mt-5 grid gap-2 md:grid-cols-2">{scan.findings.slice(0, 6).map((finding) => <div key={finding.code} className="rounded-xl border border-white/[.07] bg-black/15 p-4"><span className="font-mono text-[9px] uppercase text-cyan-300">{finding.severity}</span><div className="mt-1 text-xs text-white/70">{finding.title}</div></div>)}</div></div><div className="mt-5 flex justify-end"><button onClick={() => void buildPreview()} disabled={busy} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[#050914] hover:bg-cyan-300 disabled:opacity-50">{busy ? <Loader2 className="animate-spin" size={15}/> : <Sparkles size={15}/>} Transformation vorbereiten <ArrowRight size={15}/></button></div></section>}
+
+          {phase === 'preview' && previewBlueprint && <section className="pb-14"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2">{SITE_DESIGN_TEMPLATES.map(item => <button key={item.id} onClick={() => setTemplate(item.id)} className={`rounded-full border px-4 py-2 text-xs transition ${template === item.id ? 'border-cyan-400/60 bg-cyan-400/10 text-cyan-300' : 'border-white/10 text-white/45 hover:text-white'}`}>{item.label}</button>)}</div><span className="text-[10px] uppercase tracking-[.15em] text-white/25">Live Blueprint Preview</span></div><div className="overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl shadow-black/40"><iframe title="Neue Website Vorschau" srcDoc={previewHtml} className="h-[680px] w-full bg-white" sandbox="allow-same-origin" /></div><div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{FEATURES.map(([id,label,Icon]) => <div key={id} className="flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.025] p-3 text-xs"><Icon size={15} className="text-cyan-300"/><span className="text-white/60">{label}</span><Check size={14} className="ml-auto text-emerald-400"/></div>)}</div><div className="mt-6 flex justify-end"><button onClick={() => setPhase('offer')} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-xs font-bold text-[#050914] hover:bg-cyan-300">Umsetzung ansehen <ArrowRight size={15}/></button></div></section>}
+
+          {phase === 'offer' && <section className="mx-auto max-w-3xl pb-14"><div className="grid gap-4 sm:grid-cols-[1.4fr_.8fr]"><div className="rounded-3xl border border-white/[.08] bg-white/[.025] p-7 sm:p-8"><div className="font-mono text-[9px] uppercase tracking-[.2em] text-cyan-300">SiteOS Transformation</div><h2 className="mt-3 text-2xl font-bold tracking-tight">Aus Analyse wird Umsetzung.</h2><p className="mt-3 text-sm leading-6 text-white/45">Ihre bestehende Website wird auf Basis des Befunds neu strukturiert, modernisiert und als SiteOS-Projekt vorbereitet. Die alte Website bleibt dabei unangetastet.</p><div className="mt-7 space-y-3 text-sm text-white/60"><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> Modernere Informationsarchitektur</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> SEO- und Performance-Fokus</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> DSGVO- und AI-Act-Workflow</div><div className="flex items-center gap-3"><Check size={15} className="text-emerald-400"/> Nachvollziehbare Evidence-Kette</div></div></div><div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/[.045] p-7 sm:p-8"><div className="text-xs text-white/40">Einmalige Transformation</div><div className="mt-2 text-4xl font-bold tracking-tight">{launchTier ? `${launchTier.priceString} €` : '—'}</div><div className="mt-1 text-xs text-white/30">{launchTier?.priceSuffix ?? 'Preis aus Pricing-SSoT'}</div><button onClick={() => void chooseTransformation()} disabled={!launchTier || busy} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[#050914] hover:bg-cyan-300 disabled:opacity-40">{busy ? <Loader2 size={16} className="animate-spin"/> : null}{busy ? 'Checkout wird vorbereitet …' : 'Website transformieren'} {!busy && <ArrowRight size={16}/>}</button><button onClick={declineTransformation} disabled={busy || !planTier} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3.5 text-xs font-semibold text-white/55 hover:border-white/20 hover:text-white disabled:opacity-40">Normale Pakete ansehen <ArrowRight size={14}/></button></div></div></section>}
+
+          {error && <div role="alert" className="mx-auto mb-10 max-w-2xl rounded-xl border border-rose-400/20 bg-rose-400/[.06] px-4 py-3 text-center text-xs text-rose-300">{error}</div>}
+        </div>
       </div>
     </main>
   );

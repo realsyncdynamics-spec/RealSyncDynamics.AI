@@ -1,31 +1,29 @@
-import { Bot, MessageCircle, Phone, ArrowRight } from 'lucide-react';
+import { Bot, MessageCircle, Phone, ArrowRight, Globe2, Code2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const BG = 'rgb(3, 7, 18)';
 
 const TOOLS = [
   {
     eyebrow: 'AUTOMATION · WHATSAPP',
     title: 'WhatsApp Bot',
     icon: MessageCircle,
-    text: 'Automatisierte Kundenkommunikation über WhatsApp — mit eigener Wissensbasis, Policies, Termin- und Anfrageprozessen und nachvollziehbarer Governance.',
-    bullets: ['WhatsApp-Kommunikation', 'Termin- & Anfrageflows', 'Governance & Evidence'],
-    href: '/command-center',
-    cta: 'WhatsApp Bot öffnen',
+    text: 'WhatsApp-Kundenkommunikation über den echten Bot-Builder — mit Persona, Wissensbasis, Termin- und Anfrageprozessen sowie Governance und Evidence.',
+    bullets: ['WhatsApp-Kanal', 'Termin- & Anfrageflows', 'Governance & Evidence'],
+    href: '/app/bots?channel=whatsapp',
+    cta: 'WhatsApp Bot konfigurieren',
   },
   {
     eyebrow: 'VOICE · GOVERNANCE',
     title: 'Telefonbot',
     icon: Phone,
-    text: 'KI-Telefonassistenz für eingehende Gespräche — mit Human Handoff, Terminannahme, Policy Enforcement und auditierbarer Gesprächsdokumentation.',
-    bullets: ['Anrufe annehmen', 'Human Handoff', 'Auditierbare Gespräche'],
-    href: '/phonebot/start',
-    cta: 'Telefonbot öffnen',
+    text: 'KI-Telefonassistenz über den bestehenden Bot-Builder — mit Voice-Kanal, Human Handoff, Terminannahme, Policy Enforcement und auditierbaren Gesprächen.',
+    bullets: ['Voice-Kanal', 'Human Handoff', 'Auditierbare Gespräche'],
+    href: '/app/bots?channel=voice',
+    cta: 'Telefonbot konfigurieren',
   },
   {
     eyebrow: 'AI · WEBSITE',
     title: 'DSGVO Web App Builder',
-    icon: Bot,
+    icon: Globe2,
     text: 'Bestehende Website analysieren und aus dem Befund eine moderne, SEO-starke und compliance-bewusste Web-App-Transformation erzeugen.',
     bullets: ['DSGVO', 'SEO & Accessibility', 'EU AI Act'],
     href: '/website-builder',
@@ -34,7 +32,7 @@ const TOOLS = [
   {
     eyebrow: 'ENGINEERING · GOVERNANCE',
     title: 'Claude Code Optimizer',
-    icon: Bot,
+    icon: Code2,
     text: 'Repository auf DSGVO- und EU-AI-Act-Risiken prüfen, konkrete Fixes erzeugen und Prüfungen als Evidence in den Entwicklungsworkflow integrieren.',
     bullets: ['Repository Audit', 'Fix-Code', 'Evidence & PR'],
     href: '/claude-code-optimizer',
@@ -70,7 +68,7 @@ export function LandingChannelTools() {
                       <h3 className="text-xl font-semibold">{title}</h3>
                     </div>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-[9px] text-white/40">LIVE</span>
+                  <span className="rounded-full border border-white/10 px-3 py-1 text-[9px] text-white/40">PRODUCT</span>
                 </div>
                 <p className="mt-5 text-sm leading-relaxed text-white/55">{text}</p>
               </div>

@@ -6,7 +6,7 @@ import { useTenant } from '../core/access/TenantProvider';
 import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
 import { createSiteOsCheckoutSession } from '../features/billing/checkout';
 import { buildSite, errorMessage, runScan } from '../features/siteos/siteOsApi';
-import type { SiteBlueprint } from '../../packages/siteos-core/src/index';
+import type { SiteBlueprint, ScoreSet } from '../../packages/siteos-core/src/index';
 import { renderSite } from '../../packages/siteos-core/src/render/renderer';
 import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../packages/siteos-core/src/render/templates';
 import { ONE_TIME_PRICING_TIERS, PUBLIC_PRICING_TIERS, type PricingTier } from '../config/pricing';
@@ -19,14 +19,13 @@ const FEATURES = [
 type Discovery = { source_url: string; title: string | null; description: string | null; h1: string | null; services: string[]; visible_text: string };
 type Phase = 'input' | 'report' | 'preview' | 'offer';
 type Generation = { id: number; template: SiteDesignTemplate; blueprint: SiteBlueprint };
-
 type ScoreKey = 'health' | 'compliance' | 'performance' | 'aiRisk' | 'risk';
 
 function score(value: unknown) {
   return typeof value === 'number' ? Math.max(0, Math.min(100, Math.round(value))) : null;
 }
 
-function modernizationPotential(scores: Record<string, unknown> | undefined, findings: any[]) {
+function modernizationPotential(scores: ScoreSet | undefined, findings: any[]) {
   if (!scores) return Math.min(100, findings.length * 6);
   const health = score(scores.health) ?? 50;
   const compliance = score(scores.compliance) ?? 50;
@@ -35,7 +34,7 @@ function modernizationPotential(scores: Record<string, unknown> | undefined, fin
   return Math.max(0, Math.min(100, Math.round((100 - health) * 0.35 + (100 - compliance) * 0.25 + (100 - performance) * 0.2 + risk * 0.2 + Math.min(findings.length * 2, 10))));
 }
 
-function recommendedPlan(features: string[], scores: any): PricingTier | undefined {
+function recommendedPlan(features: string[], scores: ScoreSet | undefined): PricingTier | undefined {
   const advanced = features.includes('phonebot') || features.includes('booking') || features.includes('ai-act');
   const candidates = PUBLIC_PRICING_TIERS.filter((tier) => !tier.isYearly);
   if (!candidates.length) return undefined;
@@ -56,7 +55,7 @@ export function WebsiteTransformationFlow() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [discovery, setDiscovery] = useState<Discovery | null>(null);
-  const [scan, setScan] = useState<{ scores: Record<string, unknown>; findings: any[] } | null>(null);
+  const [scan, setScan] = useState<{ scores: ScoreSet; findings: any[] } | null>(null);
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [activeGeneration, setActiveGeneration] = useState(0);
   const [template, setTemplate] = useState<SiteDesignTemplate>('modern-minimal');
@@ -85,7 +84,7 @@ export function WebsiteTransformationFlow() {
       const scanned = await runScan({ tenant_id: activeTenantId, url: found.source_url, trigger: 'manual' });
       if (scanned.kind !== 'ok') throw new Error(errorMessage(scanned));
       setDiscovery(found);
-      setScan({ scores: scanned.data.scores ?? {}, findings: scanned.data.findings ?? [] });
+      setScan({ scores: scanned.data.scores, findings: scanned.data.findings ?? [] });
       setGenerations([]); setActiveGeneration(0); setPhase('report');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Der Scan konnte nicht gestartet werden.'); }
     finally { setBusy(false); }

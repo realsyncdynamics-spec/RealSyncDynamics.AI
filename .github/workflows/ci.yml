@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feat/governance-ai-product]
+    branches: [main, feat/governance-ai-product, feat/governance-ai-recovery]
 
 jobs:
   build:

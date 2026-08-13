@@ -49,8 +49,9 @@ export async function createCheckoutSession(
 
 /**
  * Paid handoff after the SiteOS redesign preview.
- * The server resolves the canonical Governance Launch product and verifies
- * tenant membership before creating the Stripe Checkout Session.
+ * Uses the canonical production website-rebuild checkout. The server resolves
+ * the Governance Launch product, enforces tenant membership, and verifies
+ * the one-time Stripe Price before creating the Checkout Session.
  */
 export async function createSiteOsCheckoutSession(args: {
   tenantId: string;
@@ -58,12 +59,13 @@ export async function createSiteOsCheckoutSession(args: {
   siteSlug?: string;
   projectName?: string;
 }): Promise<CheckoutResult> {
-  const { data, error } = await getSupabase().functions.invoke('checkout-siteos-project', {
+  const { data, error } = await getSupabase().functions.invoke('checkout-website-rebuild', {
     body: {
       tenant_id: args.tenantId,
       source_url: args.sourceUrl,
       site_slug: args.siteSlug,
       project_name: args.projectName,
+      tier: 'governance_launch',
       redesign: true,
       return_url: window.location.origin,
     },

@@ -1,10 +1,8 @@
 name: Deploy to Hostinger VPS (No Vercel)
 
-# Der build-Job ("Build & Test") laeuft weiter auf Push — er ist ein nuetzlicher
-# CI-Check und beruehrt weder VPS-Secrets noch ssh/scp. Die VPS-Jobs unten sind
-# am 2026-08-03 auf manuelle Ausloesung umgestellt worden, weil der Host ueber
-# Port 22 nicht erreichbar ist (`dial tcp :22 i/o timeout`). Der Trigger
-# pull_request wurde in #967 entfernt und bleibt entfernt.
+# Production deployment for main. Build/test runs on every push; after a
+# successful build the VPS deployment runs automatically. Manual dispatch is
+# retained for explicit redeploys.
 on:
   push:
     branches: [main]
@@ -17,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d8 # v4
 
       - name: Setup Node.js 20
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -44,8 +42,7 @@ jobs:
     name: Deploy to Hostinger VPS
     runs-on: ubuntu-latest
     needs: build
-    # Nur noch manuell — nicht mehr bei jedem Push nach main.
-    if: github.event_name == 'workflow_dispatch'
+    if: needs.build.result == 'success'
 
     steps:
       - name: Checkout code
@@ -80,8 +77,6 @@ jobs:
     name: Telegram Notification
     runs-on: ubuntu-latest
     needs: [build, deploy]
-    # An deploy gekoppelt: sonst meldete dieser Job den uebersprungenen Deploy als
-    # Fehlschlag und riss den ganzen Lauf mit `exit 1` ins Rote.
     if: always() && github.event_name == 'workflow_dispatch'
     steps:
       - name: Send status to Telegram

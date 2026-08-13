@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "realsyncdynamics-workers",
+  "main": "src/workers/index.ts",
+  "compatibility_date": "2026-08-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "api.realsyncdynamicsai.de",
+      "custom_domain": true
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "POLICY_CACHE"
+    },
+    {
+      "binding": "SESSION_CACHE"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE_VAULT",
+      "bucket_name": "realsyncdynamics-evidence-vault-prod"
+    }
+  ],
+  "secrets": {
+    "required": [
+      "SUPABASE_JWT_SECRET",
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  },
+  "vars": {
+    "ENVIRONMENT": "production"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

@@ -1,7 +1,8 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Code2, FileCheck2, Globe2, Lock, Scan, ShieldCheck, Snowflake, Terminal, Zap } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Lock, Scan, ShieldCheck, Snowflake } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
+import { LandingChannelTools } from '../components/landing/LandingChannelTools';
 
 const BG = 'rgb(3, 7, 18)';
 const SANS = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -28,7 +29,6 @@ const PLATFORM = [
 export function MainLanding() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
-  const [builderUrl, setBuilderUrl] = useState('');
 
   const startScan = (event: FormEvent) => {
     event.preventDefault();
@@ -36,124 +36,30 @@ export function MainLanding() {
     navigate(value ? `/unified-entry/scan?domain=${encodeURIComponent(value)}` : '/unified-entry/scan');
   };
 
-  const startBuilder = (event: FormEvent) => {
-    event.preventDefault();
-    const value = builderUrl.trim();
-    navigate(value ? `/website-builder?source_url=${encodeURIComponent(value)}` : '/website-builder');
-  };
-
   return (
     <div className="landing-context min-h-screen bg-[rgb(3,7,18)] text-white antialiased" style={{ backgroundColor: BG, fontFamily: SANS }}>
       <SEOHead
         title="RealSyncDynamics.AI — KI-Governance für DSGVO, EU AI Act & Code"
-        description="Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance. Website-Governance, Claude Code Optimizer, Evidence Vault und kontinuierliches Monitoring in einer Runtime."
+        description="Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance. Website-Governance, Claude Code Optimizer, WhatsApp Bot, Telefonbot, Evidence Vault und kontinuierliches Monitoring in einer Runtime."
         canonical="/"
         ogTitle="Sichern Sie die Zukunft Ihres KI-gesteuerten Unternehmens."
-        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance und auditfähige Evidence in einer operativen Governance-Runtime."
+        ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, WhatsApp, Voice und auditfähige Evidence in einer operativen Governance-Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10">
-          <Link to="/" className="flex items-center gap-2.5">
-            <Snowflake className="h-6 w-6 text-cyan-400" strokeWidth={1.5} />
-            <span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span>
-          </Link>
-          <nav className="hidden items-center gap-7 md:flex">
-            <a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a>
-            <a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a>
-            <Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link>
-            <Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link>
-            <Link to="/unified-entry/scan" className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten</Link>
-          </nav>
-        </div>
-      </header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-cyan-400" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/unified-entry/scan" className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten</Link></nav></div></header>
 
       <main>
-        <section className="relative min-h-[820px] overflow-hidden">
-          <div className="absolute inset-0">
-            <picture>
-              <source srcSet="/europe-globe.webp" type="image/webp" />
-              <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-75" />
-            </picture>
-            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/95 to-black/30" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/40" />
-          </div>
+        <section className="relative min-h-[820px] overflow-hidden"><div className="absolute inset-0"><picture><source srcSet="/europe-globe.webp" type="image/webp" /><img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-75" /></picture><div className="absolute inset-0 bg-gradient-to-r from-black via-black/95 to-black/30" /><div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/40" /></div><div className="relative z-10 mx-auto grid min-h-[820px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[.9fr_1.1fr] lg:px-10"><div className="max-w-3xl"><div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300"><Scan className="h-3.5 w-3.5" /> AI Governance Runtime</div><h1 className="text-5xl leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-8xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Sichern Sie die Zukunft Ihres <span className="text-cyan-400">KI-gesteuerten Unternehmens.</span></h1><p className="mt-7 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">Das KI-Betriebssystem für DSGVO, EU AI Act &amp; Code-Compliance. RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Evidenz kontinuierlich — mit WhatsApp- und Telefonbots auf derselben Governance-Ebene.</p><div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/50"><span>✓ DSGVO</span><span>✓ EU AI Act</span><span>✓ WhatsApp &amp; Voice</span><span>✓ Continuous Monitoring</span><span>✓ Audit Evidence</span></div><div className="mt-9 flex flex-wrap gap-3"><Link to="/unified-entry/scan" className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link><a href="#tools" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 font-medium text-white transition hover:border-white/50 hover:bg-white/5">Live Tools ansehen</a></div><form onSubmit={startScan} className="mt-5 max-w-2xl"><div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row"><input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website für den kostenlosen Governance-Audit" aria-label="Website-URL für Governance-Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" /><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-50">Audit starten <ArrowRight className="h-4 w-4" /></button></div><p className="mt-2 text-[10px] text-white/35">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p></form></div><div className="hidden lg:block"><div className="ml-auto max-w-xl rounded-[2rem] border border-white/15 bg-black/35 p-5 shadow-2xl backdrop-blur-xl"><div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="font-mono text-[10px] tracking-[.22em] text-cyan-300">GOVERNANCE RUNTIME · LIVE</span><span className="flex items-center gap-2 text-[10px] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />ACTIVE</span></div><div className="grid grid-cols-2 gap-3 py-5 sm:grid-cols-4">{[['RISK SCORE','87/100'],['EVIDENCE','1,248'],['AI SYSTEMS','04'],['CODE READY','94.2%']].map(([label,value]) => <div key={label} className="rounded-xl border border-white/10 bg-white/[.035] p-3"><div className="font-mono text-[8px] tracking-wider text-white/35">{label}</div><div className="mt-2 text-xl font-semibold text-white">{value}</div></div>)}</div><div className="space-y-2.5 font-mono text-[10px] text-white/45"><div className="flex justify-between"><span>DSGVO / CONSENT</span><span className="text-emerald-300">PASS</span></div><div className="flex justify-between"><span>EU AI ACT</span><span className="text-emerald-300">READY</span></div><div className="flex justify-between"><span>WHATSAPP / VOICE</span><span className="text-cyan-300">GOVERNED</span></div><div className="flex justify-between"><span>EVIDENCE CHAIN</span><span className="text-cyan-300">VERIFIED</span></div></div></div></div></div></section>
 
-          <div className="relative z-10 mx-auto grid min-h-[820px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[.9fr_1.1fr] lg:px-10">
-            <div className="max-w-3xl">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300"><Scan className="h-3.5 w-3.5" /> AI Governance Runtime</div>
-              <h1 className="text-5xl leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-8xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
-                Sichern Sie die Zukunft Ihres <span className="text-cyan-400">KI-gesteuerten Unternehmens.</span>
-              </h1>
-              <p className="mt-7 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">Das KI-Betriebssystem für DSGVO, EU AI Act &amp; Code-Compliance. RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Evidenz kontinuierlich — DSGVO-konform, AI-Act-ready, Claude-Code-auditiert und prüfbar.</p>
-              <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/50"><span>✓ DSGVO-konform</span><span>✓ AI-Act-ready</span><span>✓ Continuous Monitoring</span><span>✓ Audit Evidence</span></div>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Link to="/unified-entry/scan" className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link>
-                <a href="#tools" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 font-medium text-white transition hover:border-white/50 hover:bg-white/5">Live Tools ansehen</a>
-              </div>
-              <form onSubmit={startScan} className="mt-5 max-w-2xl"><div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row"><input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website für den kostenlosen Governance-Audit" aria-label="Website-URL für Governance-Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" /><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-50">Audit starten <ArrowRight className="h-4 w-4" /></button></div><p className="mt-2 text-[10px] text-white/35">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p></form>
-            </div>
+        <LandingChannelTools />
 
-            <div className="hidden lg:block">
-              <div className="ml-auto max-w-xl rounded-[2rem] border border-white/15 bg-black/35 p-5 shadow-2xl backdrop-blur-xl">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="font-mono text-[10px] tracking-[.22em] text-cyan-300">GOVERNANCE RUNTIME · LIVE</span><span className="flex items-center gap-2 text-[10px] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />ACTIVE</span></div>
-                <div className="grid grid-cols-2 gap-3 py-5 sm:grid-cols-4">{[['RISK SCORE', '87/100'], ['EVIDENCE', '1,248'], ['AI SYSTEMS', '04'], ['CODE READY', '94.2%']].map(([label, value]) => <div key={label} className="rounded-xl border border-white/10 bg-white/[.035] p-3"><div className="font-mono text-[8px] tracking-wider text-white/35">{label}</div><div className="mt-2 text-xl font-semibold text-white">{value}</div></div>)}</div>
-                <div className="space-y-2.5 font-mono text-[10px] text-white/45"><div className="flex justify-between"><span>DSGVO / CONSENT</span><span className="text-emerald-300">PASS</span></div><div className="flex justify-between"><span>EU AI ACT</span><span className="text-emerald-300">READY</span></div><div className="flex justify-between"><span>CLAUDE CODE AUDIT</span><span className="text-cyan-300">94.2%</span></div><div className="flex justify-between"><span>EVIDENCE CHAIN</span><span className="text-cyan-300">VERIFIED</span></div></div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">DIE PLATTFORM</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Eine Runtime. <span className="text-cyan-400">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div><div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{PLATFORM.map(([title,text]) => <div key={title} className="bg-[rgb(3,7,18)] p-7"><h3 className="text-base font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
 
-        <section id="tools" className="relative border-y border-white/10 bg-white/[.02] py-20 md:py-28">
-          <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">LIVE GOVERNANCE TOOLS</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Nicht nur zeigen. <span className="text-cyan-400">Direkt ausprobieren.</span></h2><p className="mt-5 max-w-2xl leading-relaxed text-white/55">Die beiden wichtigsten Einstiegspunkte sitzen direkt im Landing-Frontend: Website analysieren und transformieren — oder den Code-Workflow mit Claude Code prüfen.</p></div>
+        <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><div><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Compliance, die sich <span className="text-cyan-400">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel, Evidence Vault und nachvollziehbare Prüfpfade. Auch Bot-Konversationen und Voice-Prozesse werden in die Governance-Historie eingebunden.</p></div><div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Evidence im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Evidence Vault" text="Versionierte Nachweise und Audit-Trails statt statischer Behauptungen." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div></div></div></section>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <article className="overflow-hidden rounded-[1.75rem] border border-cyan-400/20 bg-black/30 shadow-2xl">
-                <div className="border-b border-white/10 bg-gradient-to-r from-cyan-400/[.08] to-transparent p-6 sm:p-8">
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10"><Globe2 className="h-5 w-5 text-cyan-300" /></span><div><p className="font-mono text-[9px] tracking-[.2em] text-cyan-400">SITEOS · DSGVO</p><h3 className="text-xl font-semibold">DSGVO Web App Builder</h3></div></div><span className="rounded-full border border-white/10 px-3 py-1 text-[9px] text-white/40">LIVE</span></div>
-                  <p className="mt-5 text-sm leading-relaxed text-white/55">Website eingeben, analysieren und aus dem Befund eine moderne, SEO-starke und compliance-bewusste Website-Transformation erzeugen. Der vorhandene SiteOS-Flow bleibt der eigentliche Builder — hier wird er direkt aus der Landingpage gestartet.</p>
-                </div>
-                <form onSubmit={startBuilder} className="p-6 sm:p-8">
-                  <label className="mb-2 block font-mono text-[9px] uppercase tracking-[.18em] text-white/35">Website URL</label>
-                  <div className="flex flex-col gap-2 sm:flex-row"><div className="flex min-w-0 flex-1 items-center rounded-xl border border-white/10 bg-white/[.035] px-4"><Globe2 className="mr-3 h-4 w-4 shrink-0 text-cyan-400" /><input value={builderUrl} onChange={e => setBuilderUrl(e.target.value)} placeholder="https://ihre-website.de" className="w-full bg-transparent py-3.5 text-sm outline-none placeholder:text-white/25" aria-label="Website URL für DSGVO Web App Builder" /></div><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3.5 text-sm font-bold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Analysieren <ArrowRight className="h-4 w-4" /></button></div>
-                  <div className="mt-5 grid grid-cols-2 gap-2 text-[10px] text-white/40 sm:grid-cols-4"><span>✓ DSGVO</span><span>✓ SEO</span><span>✓ AI Act</span><span>✓ Accessibility</span></div>
-                </form>
-              </article>
+        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-cyan-400">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} className="rounded-2xl border border-white/10 bg-white/[.02] p-7"><span className="font-mono text-3xl text-cyan-400/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
 
-              <article className="overflow-hidden rounded-[1.75rem] border border-cyan-400/20 bg-black/30 shadow-2xl">
-                <div className="border-b border-white/10 bg-gradient-to-r from-cyan-400/[.08] to-transparent p-6 sm:p-8">
-                  <div className="flex items-center justify-between"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl border border-cyan-400/20 bg-cyan-400/10"><Code2 className="h-5 w-5 text-cyan-300" /></span><div><p className="font-mono text-[9px] tracking-[.2em] text-cyan-400">ENGINEERING · GOVERNANCE</p><h3 className="text-xl font-semibold">Claude Code Optimizer</h3></div></div><span className="rounded-full border border-white/10 px-3 py-1 text-[9px] text-white/40">LIVE</span></div>
-                  <p className="mt-5 text-sm leading-relaxed text-white/55">Repository prüfen, DSGVO- und EU-AI-Act-Risiken erkennen, konkreten Fix-Code erhalten und jeden Merge als auditfähige Evidenz sichern — direkt im Entwicklungsworkflow.</p>
-                </div>
-                <div className="p-6 sm:p-8">
-                  <div className="grid grid-cols-2 gap-3"><div className="rounded-xl border border-white/10 bg-white/[.035] p-4"><Terminal className="h-4 w-4 text-cyan-400" /><p className="mt-3 text-xs font-semibold">Repository Audit</p><p className="mt-1 text-[10px] leading-relaxed text-white/40">DSGVO, AI Act und Datenflüsse im Code prüfen.</p></div><div className="rounded-xl border border-white/10 bg-white/[.035] p-4"><Zap className="h-4 w-4 text-cyan-400" /><p className="mt-3 text-xs font-semibold">Fix-Code</p><p className="mt-1 text-[10px] leading-relaxed text-white/40">Konkrete, begründete Remediation statt Warnungen.</p></div><div className="rounded-xl border border-white/10 bg-white/[.035] p-4"><FileCheck2 className="h-4 w-4 text-cyan-400" /><p className="mt-3 text-xs font-semibold">Evidence</p><p className="mt-1 text-[10px] leading-relaxed text-white/40">Prüflauf und Merge nachvollziehbar sichern.</p></div><div className="rounded-xl border border-white/10 bg-white/[.035] p-4"><GitHubIcon /><p className="mt-3 text-xs font-semibold">Pull Request</p><p className="mt-1 text-[10px] leading-relaxed text-white/40">Findings direkt in den Entwicklungsworkflow bringen.</p></div></div>
-                  <Link to="/claude-code-optimizer" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/[.06] px-5 py-3.5 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-400/[.12]">Claude Code Optimizer öffnen <ArrowRight className="h-4 w-4" /></Link>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section id="platform" className="py-20 md:py-28">
-          <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">DIE PLATTFORM</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Eine Runtime. <span className="text-cyan-400">Vollständige KI-Governance.</span></h2><p className="mt-5 leading-relaxed text-white/55">RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p></div>
-            <div className="grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{PLATFORM.map(([title, text]) => <div key={title} className="bg-[rgb(3,7,18)] p-7"><h3 className="text-base font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div>
-          </div>
-        </section>
-
-        <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28">
-          <div className="mx-auto max-w-7xl px-6 lg:px-10">
-            <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
-              <div><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Compliance, die sich <span className="text-cyan-400">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel, Evidence Vault und nachvollziehbare Prüfpfade. Wenn Management, Kunde oder Aufsicht fragt, was wann geprüft und entschieden wurde, bleibt die Historie erhalten.</p></div>
-              <div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Evidence im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Evidence Vault" text="Versionierte Nachweise und Audit-Trails statt statischer Behauptungen." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-cyan-400">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no, title, text]) => <div key={no} className="rounded-2xl border border-white/10 bg-white/[.02] p-7"><span className="font-mono text-3xl text-cyan-400/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
-
-        <section className="border-t border-white/10 bg-black py-20 md:py-28"><div className="mx-auto max-w-4xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">ONE GOVERNANCE PLANE</p><h2 className="mt-4 text-4xl tracking-tight sm:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Governance statt Checkliste.</h2><p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55">Compliance statt Selbstauskunft. Evidence statt Behauptung. Enforcement statt Empfehlung.</p><div className="mt-8 flex flex-wrap justify-center gap-3 text-xs text-white/50"><span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span><span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span><span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span><span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span><span className="rounded-full border border-white/10 px-4 py-2">Continuous Monitoring</span></div><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/unified-entry/scan" className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link><Link to="/pricing" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-7 py-3.5 font-semibold text-white transition hover:border-white/40">Preise ansehen</Link></div></div></section>
+        <section className="border-t border-white/10 bg-black py-20 md:py-28"><div className="mx-auto max-w-4xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">ONE GOVERNANCE PLANE</p><h2 className="mt-4 text-4xl tracking-tight sm:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Governance statt Checkliste.</h2><p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55">Compliance statt Selbstauskunft. Evidence statt Behauptung. Enforcement statt Empfehlung.</p><div className="mt-8 flex flex-wrap justify-center gap-3 text-xs text-white/50"><span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span><span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span><span className="rounded-full border border-white/10 px-4 py-2">WhatsApp Bot</span><span className="rounded-full border border-white/10 px-4 py-2">Telefonbot</span><span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span><span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span></div><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/unified-entry/scan" className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link><Link to="/pricing" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-7 py-3.5 font-semibold text-white transition hover:border-white/40">Preise ansehen</Link></div></div></section>
       </main>
 
       <footer className="border-t border-white/10 py-8"><div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-white/40 sm:flex-row lg:px-10"><span>© 2026 RealSync Dynamics.AI</span><div className="flex gap-5"><Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link></div></div></footer>
@@ -163,8 +69,4 @@ export function MainLanding() {
 
 function TrustItem({ icon: Icon, title, text }: { icon: typeof ShieldCheck; title: string; text: string }) {
   return <div className="rounded-2xl border border-white/10 bg-[rgb(3,7,18)] p-6"><Icon className="h-5 w-5 text-cyan-400" /><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>;
-}
-
-function GitHubIcon() {
-  return <span className="inline-flex h-4 w-4 items-center justify-center font-mono text-xs font-bold text-cyan-400">GH</span>;
 }

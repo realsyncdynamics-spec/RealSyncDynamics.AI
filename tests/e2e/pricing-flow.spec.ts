@@ -23,15 +23,15 @@ const DETAIL_SLUGS = [
   'partner_yearly',
 ];
 
+// Partner is an inquiry/sales flow, not a self-service checkout.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
   'agency',
-  'partner',
   'starter_yearly',
   'growth_yearly',
   'agency_yearly',
-  'partner_yearly',
+  'enterprise',
 ];
 
 test.describe('Pricing Flow', () => {
@@ -101,7 +101,7 @@ test.describe('Pricing Flow', () => {
       }
     });
 
-    test('all bookable checkout pages should be accessible', async ({ page }) => {
+    test('all self-service checkout pages should be accessible', async ({ page }) => {
       for (const planKey of CHECKOUT_PLAN_KEYS) {
         await page.goto(`${BASE_URL}/checkout/${planKey}`);
         await page.waitForLoadState('domcontentloaded');
@@ -118,7 +118,6 @@ test.describe('Pricing Flow', () => {
 
     test('enterprise checkout should stay on checkout page', async ({ page }) => {
       await page.goto(`${BASE_URL}/checkout/enterprise`);
-      // Enterprise ist Self-Service-Checkout wie Agency — kein redirect zu contact-sales.
       await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(/\/checkout\/enterprise/);
     });

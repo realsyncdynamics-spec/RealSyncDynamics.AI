@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { ArrowRight, Check, Lock, Scan, ShieldCheck, Snowflake } from 'lucide-react';
@@ -9,9 +8,9 @@ const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 /**
  * Conversion-first public landing page.
  *
- * The public entry point intentionally has one primary job:
- * get the visitor to submit a website URL. Product dashboards, demo tours
- * and multi-path CTAs stay inside the application and are not promoted here.
+ * One public CTA: submit a website URL. Product dashboards, dashboard tests,
+ * pricing grids and demo tours stay inside the application and are not
+ * promoted from the public landing page.
  */
 export function MainLanding() {
   const navigate = useNavigate();
@@ -20,11 +19,9 @@ export function MainLanding() {
   const startScan = (event: React.FormEvent) => {
     event.preventDefault();
     const value = domain.trim();
-    if (!value) {
-      navigate('/unified-entry/scan');
-      return;
-    }
-    navigate(`/unified-entry/scan?domain=${encodeURIComponent(value)}`);
+    navigate(value
+      ? `/unified-entry/scan?domain=${encodeURIComponent(value)}`
+      : '/unified-entry/scan');
   };
 
   return (
@@ -41,7 +38,6 @@ export function MainLanding() {
           </Link>
           <nav className="hidden md:flex items-center gap-7">
             <a href="#how" className="text-sm text-white/65 hover:text-white transition-colors">So funktioniert's</a>
-            <a href="#pricing" className="text-sm text-white/65 hover:text-white transition-colors">Preise</a>
             <a href="#security" className="text-sm text-white/65 hover:text-white transition-colors">Sicherheit</a>
             <Link to="/welcome" className="text-sm text-white/65 hover:text-white transition-colors">Login</Link>
           </nav>
@@ -83,10 +79,7 @@ export function MainLanding() {
                   aria-label="Website-URL"
                   className="flex-1 min-w-0 px-5 py-4 bg-transparent text-white placeholder:text-white/35 outline-none text-base"
                 />
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors"
-                >
+                <button type="submit" className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors">
                   Website prüfen <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -105,14 +98,14 @@ export function MainLanding() {
             <div className="max-w-2xl mb-12">
               <p className="font-mono text-[10px] tracking-[0.25em] text-cyan-400 mb-3">DER FLOW</p>
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Erst zeigen. Dann verkaufen.</h2>
-              <p className="mt-4 text-white/60 leading-relaxed">Der Besucher muss nicht zuerst ein Paket verstehen. Er muss nur seine Website zeigen.</p>
+              <p className="mt-4 text-white/60 leading-relaxed">Der Besucher muss kein Dashboard, keine Demo und kein Paket auswählen. Er muss nur seine Website zeigen.</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-5">
               {[
                 ['01', 'Website scannen', 'URL eingeben und Live-Daten zur bestehenden Website erfassen.'],
-                ['02', 'Redesign sichtbar machen', 'Score, Findings und konkrete Modernisierungsmöglichkeiten zeigen.'],
-                ['03', 'Angebot per E-Mail', 'Nach dem Ergebnis Kontaktdaten erfassen und das passende Angebot senden.'],
+                ['02', 'Ergebnis sichtbar machen', 'Score, Findings und konkrete Modernisierungsmöglichkeiten zeigen.'],
+                ['03', 'Angebot per E-Mail', 'Nach dem Ergebnis Kontaktdaten erfassen und das Starter-Angebot senden.'],
               ].map(([no, title, text]) => (
                 <div key={no} className="p-7 rounded-2xl border border-white/10 bg-white/[0.02]">
                   <span className="font-mono text-4xl font-bold text-cyan-400/25">{no}</span>
@@ -120,29 +113,6 @@ export function MainLanding() {
                   <p className="mt-2 text-sm text-white/58 leading-relaxed">{text}</p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="py-20 md:py-24">
-          <div className="max-w-5xl mx-auto px-6 lg:px-10">
-            <div className="max-w-2xl mb-10">
-              <p className="font-mono text-[10px] tracking-[0.25em] text-cyan-400 mb-3">PREISE</p>
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Weniger Auswahl. Klarere Entscheidung.</h2>
-              <p className="mt-4 text-white/60">Die detaillierte Paketwahl kommt erst nach dem Domaincheck. Auf der Startseite zählt der nächste sinnvolle Schritt.</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-5">
-              <div className="p-7 rounded-2xl border border-cyan-400/40 bg-cyan-500/[0.06]">
-                <p className="font-mono text-[10px] tracking-widest text-cyan-300">GROWTH</p>
-                <div className="mt-3 flex items-baseline gap-2"><span className="text-4xl font-bold">249 €</span><span className="text-white/45">/Monat</span></div>
-                <p className="mt-3 text-white/70">14 Tage kostenlos — ausschließlich für Growth.</p>
-              </div>
-              <div className="p-7 rounded-2xl border border-white/10 bg-white/[0.02]">
-                <p className="font-mono text-[10px] tracking-widest text-cyan-300">STARTER-ANGEBOT</p>
-                <div className="mt-3 text-3xl font-bold">3 Monate gratis</div>
-                <p className="mt-3 text-white/70">Nach dem Domaincheck erhalten passende Leads das Starter-Angebot per E-Mail.</p>
-              </div>
             </div>
           </div>
         </section>
@@ -165,7 +135,7 @@ export function MainLanding() {
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-6 text-center">
             <h2 className="text-3xl md:text-4xl font-extrabold">Zeig uns deine Website.</h2>
-            <p className="mt-4 text-white/60">Wir zeigen dir zuerst das Ergebnis. Die Paketwahl kommt danach.</p>
+            <p className="mt-4 text-white/60">Wir zeigen dir zuerst das Ergebnis. Danach kannst du das Starter-Angebot anfordern.</p>
             <Link to="/unified-entry/scan" className="mt-7 inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors">
               Domain prüfen <ArrowRight className="w-4 h-4" />
             </Link>

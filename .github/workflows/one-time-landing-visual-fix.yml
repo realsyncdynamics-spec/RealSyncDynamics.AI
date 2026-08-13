@@ -1,0 +1,38 @@
+name: One-time landing visual refinement
+
+on:
+  push:
+    branches: [feat/main-landing-governance-os]
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: ${{ github.event.head_commit.message != 'fix(landing): refine hero headline and globe visibility' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refine hero
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/pages/MainLanding.tsx')
+          s = p.read_text()
+          s = s.replace('opacity-80', 'opacity-[0.94]')
+          s = s.replace('via-black/95 to-black/25', 'via-black/80 to-black/15')
+          s = s.replace('to-black/45', 'to-black/30')
+          s = s.replace('rgba(34,211,238,.12),transparent_25%', 'rgba(34,211,238,.16),transparent_25%')
+          s = s.replace('Das KI-Betriebssystem<br />für <span className="text-cyan-400">DSGVO, EU AI Act</span><br />&amp; Code-Compliance', 'The AI Governance<br />Operating System<br /><span className="text-cyan-400">for Europe</span>')
+          s = s.replace('RealSyncDynamics.AI — KI-Betriebssystem für DSGVO, EU AI Act & Code', 'RealSyncDynamics.AI — The AI Governance Operating System for Europe')
+          s = s.replace('Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance. Governance Runtime, Website Audit, Claude Code Optimizer, Evidence Vault, WhatsApp, Voice und Continuous Monitoring.', 'The AI Governance Operating System for Europe — DSGVO, EU AI Act und Code-Compliance in einer kontinuierlichen Governance Runtime.')
+          s = s.replace('Das KI-Betriebssystem für DSGVO, EU AI Act & Code-Compliance', 'The AI Governance Operating System for Europe')
+          s = s.replace('AI GOVERNANCE & CODE OPTIMIZATION OS FOR TRUST & VALUE', 'DSGVO · EU AI ACT · CODE · EVIDENCE · CONTINUOUS GOVERNANCE')
+          s = s.replace('RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Evidenz kontinuierlich — DSGVO-konform, EU-AI-Act-ready, Claude-Code-geprüft und auditierbar.', 'Die Governance Runtime für Websites, KI-Systeme und Code — kontinuierlich überwacht, technisch steuerbar und auditfähig.')
+          p.write_text(s)
+          PY
+          git config user.name 'realsyncdynamics-spec'
+          git config user.email '256874684+realsyncdynamics-spec@users.noreply.github.com'
+          git add src/pages/MainLanding.tsx
+          git commit -m 'fix(landing): refine hero headline and globe visibility'
+          git push origin HEAD:feat/main-landing-governance-os

@@ -31,7 +31,6 @@ function BrowserFrame({ children, dark = false }: { children: React.ReactNode; d
 function SitePreview({ variant, domain }: { variant: Variant; domain: string }) {
   const dark = variant.layout === 'dark';
   const surface = dark ? '#0b0f14' : '#ffffff';
-  const soft = dark ? '#121923' : '#f5f7fa';
   const text = dark ? '#f8fafc' : '#111827';
   const muted = dark ? '#94a3b8' : '#64748b';
 
@@ -41,7 +40,7 @@ function SitePreview({ variant, domain }: { variant: Variant; domain: string }) 
         <div style={{ background: surface, color: text, minHeight: 390 }}>
           <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #edf0f4' }}>
             <strong style={{ fontSize: 13 }}>{domain || 'Ihre Marke'}</strong>
-            <nav style={{ display: 'flex', gap: 14, color: muted, fontSize: 9 }}><span>Leistungen</span><span>Über uns</span><span>Kontakt</span><b style={{ color: text }}>Termin buchen</b></nav>
+            <nav style={{ display: 'flex', gap: 14, color: muted, fontSize: 9 }}><span>Leistungen</span><span>Über uns</span><span>Kontakt</span><b style={{ color: text }}>Jetzt entdecken</b></nav>
           </header>
           <div style={{ padding: 22, background: 'linear-gradient(145deg,#f8fafc,#eef2ff)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1.25fr .75fr', gap: 12 }}>
@@ -77,7 +76,7 @@ function SitePreview({ variant, domain }: { variant: Variant; domain: string }) 
             <div style={{ color: variant.accent, fontSize: 8, fontWeight: 850, letterSpacing: '.18em' }}>NEUER DIGITALER AUFTRITT</div>
             <div style={{ fontSize: 32, lineHeight: 1.02, fontWeight: 850, letterSpacing: '-.045em', marginTop: 9 }}>{dark ? 'Souverän. Klar. Digital.' : 'Mehr Wirkung für Ihre Marke.'}</div>
             <p style={{ color: muted, fontSize: 10, lineHeight: 1.55, maxWidth: 410, margin: '13px 0 18px' }}>Eine vollständig neu strukturierte Website mit klarer Positionierung, moderner UX und einem Auftritt, der Vertrauen schafft.</p>
-            <div style={{ display: 'flex', gap: 8 }}><span style={{ background: variant.accent, color: dark ? '#06120b' : '#fff', borderRadius: 8, padding: '9px 12px', fontSize: 9, fontWeight: 850 }}>Gespräch starten →</span><span style={{ border: `1px solid ${dark ? '#334155' : '#d7dde5'}`, borderRadius: 8, padding: '9px 12px', fontSize: 9 }}>Leistungen ansehen</span></div>
+            <div style={{ display: 'flex', gap: 8 }}><span style={{ background: variant.accent, color: dark ? '#06120b' : '#fff', borderRadius: 8, padding: '9px 12px', fontSize: 9, fontWeight: 850 }}>Jetzt entdecken →</span><span style={{ border: `1px solid ${dark ? '#334155' : '#d7dde5'}`, borderRadius: 8, padding: '9px 12px', fontSize: 9 }}>Leistungen ansehen</span></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 9, marginTop: 26 }}>
             {[['01', 'Klar positioniert'], ['02', 'Mobile optimiert'], ['03', 'Conversion-ready']].map(([n, x]) => <div key={n} style={{ background: dark ? '#101720' : '#fff', border: `1px solid ${dark ? '#26313d' : '#e5e9ef'}`, borderRadius: 10, padding: 12 }}><div style={{ color: variant.accent, fontSize: 8, fontWeight: 800 }}>{n}</div><b style={{ display: 'block', marginTop: 6, fontSize: 10 }}>{x}</b><span style={{ color: muted, fontSize: 8 }}>Bereits umgesetzt</span></div>)}

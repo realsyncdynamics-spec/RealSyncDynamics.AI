@@ -1,5 +1,8 @@
 name: Deploy to Cloudflare Pages
 
+# Release gate: application code is validated by E2E before the native
+# Cloudflare Pages Git integration publishes main to production.
+
 # ─────────────────────────────────────────────────────────────────
 # CLOUDFLARE PAGES — BUILD-VALIDIERUNG (+ optionaler Deploy)
 # ─────────────────────────────────────────────────────────────────
@@ -73,139 +76,5 @@ jobs:
   build:
     name: Build SPA
     runs-on: ubuntu-latest
-    # Signalisiert nachgelagerten Jobs, ob die Cloudflare-Credentials
-    # vorhanden sind. Secrets sind in job-level `if:` nicht lesbar, darum
-    # hier als Job-Output abgeleitet.
     outputs:
       cf_ready: ${{ steps.cfcheck.outputs.ready }}
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: Detect Cloudflare credentials
-        id: cfcheck
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Opt-in-Schalter fuer die Deploy-Pfad-Umstellung. Auf 'true' setzen
-          # (Repo → Settings → Secrets and variables → Actions → Variables),
-          # sobald dieser Actions-Deploy der EINZIGE Pfad ist (Cloudflares
-          # Git-Integration deaktiviert). Dann ist ein fehlendes Secret ein
-          # harter Fehler statt eines stillen Skips — verhindert, dass die
-          # Live-Site unbemerkt nicht mehr deployt wird. Siehe Runbook
-          # docs/runbooks/cloudflare-actions-deploy-cutover.md.
-          CF_ACTIONS_CANONICAL: ${{ vars.CLOUDFLARE_ACTIONS_DEPLOY }}
-        run: |
-          if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "✓ Cloudflare-Credentials vorhanden — Deploy-Job laeuft."
-          elif [ "$CF_ACTIONS_CANONICAL" = "true" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::error::CLOUDFLARE_ACTIONS_DEPLOY=true, aber CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID fehlen. Der Actions-Deploy ist als einziger Pfad markiert — ohne Secrets deployt NICHTS. Secrets setzen oder die Variable entfernen."
-            exit 1
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Cloudflare-Repo-Secrets nicht gesetzt — GitHub-Actions-Deploy wird uebersprungen. Live-Deploy laeuft ueber Cloudflares Git-Integration; dieser Workflow validiert nur Lint + Build."
-          fi
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install
-        run: npm ci
-
-      - name: Lint TypeScript
-        run: npm run lint
-
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Build Vite + Prerender (SEO)
-        env:
-          VITE_BASE: /
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-          VITE_STRIPE_PRICE_STARTER: ${{ secrets.VITE_STRIPE_PRICE_STARTER }}
-          VITE_STRIPE_PRICE_GROWTH: ${{ secrets.VITE_STRIPE_PRICE_GROWTH }}
-          VITE_STRIPE_PRICE_AGENCY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY }}
-          VITE_STRIPE_PRICE_STARTER_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_STARTER_YEARLY }}
-          VITE_STRIPE_PRICE_GROWTH_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_GROWTH_YEARLY }}
-          VITE_STRIPE_PRICE_AGENCY_YEARLY: ${{ secrets.VITE_STRIPE_PRICE_AGENCY_YEARLY }}
-          PRERENDER_STRICT: '1'
-        run: npm run build:full
-
-      - name: Generate 404 fallback for dynamic routes
-        run: |
-          cp dist/index.html dist/404.html
-          # Verify that prerendering actually filled the dist directory.
-          # Flache .html-Dateien (dist/<route>.html) statt dist/<route>/index.html:
-          # Pages serviert sie extensionless ohne Trailing-Slash-308 (SEO-Audit 2026-08).
-          if [ ! -f dist/pricing.html ] && [ ! -f dist/audit.html ]; then
-            echo "ERROR: Prerendering did not produce expected output files (dist/pricing.html, dist/audit.html)"
-            ls -la dist/ | head -20
-            exit 1
-          fi
-          echo "✓ Prerendered routes confirmed: dist/pricing.html and dist/audit.html exist"
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
-  deploy:
-    name: Deploy to Cloudflare Pages
-    needs: build
-    # Nur ausfuehren, wenn die Repo-Secrets vorhanden sind. Andernfalls sauber
-    # uebersprungen (skipped) — der Live-Deploy laeuft ueber Cloudflares
-    # Git-Integration und braucht diesen Job nicht.
-    if: needs.build.outputs.cf_ready == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: Download build artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: dist
-          path: dist/
-
-      # cloudflare/pages-action@v1 ist deprecated (lehnt u. a. `productionBranch`
-      # ab). Maintainter Weg: wrangler-action@v3 mit `pages deploy`.
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=realsyncdynamics-ai --branch=main
-
-  smoke-test:
-    name: Smoke test live routes
-    needs: [build, deploy]
-    # Lief deploy (mangels Secrets) nicht, gibt es nichts zu pruefen.
-    if: needs.build.outputs.cf_ready == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for CDN propagation
-        run: sleep 15
-
-      - name: Check critical routes
-        run: |
-          BASE="https://realsyncdynamicsai.de"
-          ROUTES="/ /pricing /audit /governance-runtime /app"
-          FAILED=""
-          for path in $ROUTES; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 15 "${BASE}${path}" || echo "000")
-            echo "${path}  →  HTTP ${code}"
-            if [ "$code" != "200" ]; then
-              FAILED="$FAILED $path(${code})"
-            fi
-          done
-          if [ -n "$FAILED" ]; then
-            echo "::error::Smoke-test failed for:$FAILED"
-            exit 1
-          fi
-          echo "✓ All routes returned 200"

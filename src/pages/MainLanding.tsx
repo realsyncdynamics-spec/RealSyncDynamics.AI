@@ -7,11 +7,11 @@ const BG = 'rgb(3, 7, 18)';
 const FONT_STACK = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 
 /**
- * Conversion-first public landing page.
+ * Governance-first public landing page.
  *
- * One public CTA: submit a website URL. Product dashboards, dashboard tests,
- * pricing grids and demo tours stay inside the application and are not
- * promoted from the public landing page.
+ * The public entry point positions RealSyncDynamics.AI as an AI Governance
+ * Runtime: continuous control, policy enforcement and auditable evidence.
+ * The existing URL scan remains the primary conversion path.
  */
 export function MainLanding() {
   const navigate = useNavigate();
@@ -38,8 +38,8 @@ export function MainLanding() {
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-7">
-            <a href="#how" className="text-sm text-white/65 hover:text-white transition-colors">So funktioniert's</a>
-            <a href="#security" className="text-sm text-white/65 hover:text-white transition-colors">Sicherheit</a>
+            <a href="#how" className="text-sm text-white/65 hover:text-white transition-colors">Governance</a>
+            <a href="#controls" className="text-sm text-white/65 hover:text-white transition-colors">Kontrollen</a>
             <Link to="/welcome" className="text-sm text-white/65 hover:text-white transition-colors">Login</Link>
           </nav>
         </div>
@@ -58,52 +58,59 @@ export function MainLanding() {
 
           <div className="relative z-10 w-full max-w-5xl mx-auto px-6 lg:px-10 pt-28 pb-20 text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-7 rounded-full border border-cyan-500/30 bg-cyan-500/5 font-mono text-[10px] tracking-[0.2em] text-cyan-300 uppercase">
-              <Scan className="w-3.5 h-3.5" /> Website Intelligence
+              <Scan className="w-3.5 h-3.5" /> AI Governance Runtime
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold leading-[1.04] tracking-tight">
-              Welche Website sollen wir{' '}
-              <span className="text-cyan-400">neu bauen?</span>
+              KI nicht nur prüfen.{' '}
+              <span className="text-cyan-400">KI kontrollieren.</span>
             </h1>
 
-            <p className="max-w-2xl mx-auto mt-6 text-base sm:text-lg md:text-xl text-white/68 leading-relaxed">
-              Wir scannen zuerst Ihre bestehende Website. Danach sehen Sie konkret,
-              was wir daraus machen können — moderner, SEO-stärker und mit DSGVO- und EU-AI-Act-Anforderungen im Workflow.
+            <p className="max-w-3xl mx-auto mt-6 text-base sm:text-lg md:text-xl text-white/68 leading-relaxed">
+              RealSyncDynamics.AI ist die operative Governance-Schicht für KI-Systeme,
+              Datenverarbeitung und digitale Prozesse – mit kontinuierlichen DSGVO-,
+              EU-AI-Act- und Policy-Kontrollen.
             </p>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/45">
+              <span>✓ Continuous Governance</span>
+              <span>✓ Policy Enforcement</span>
+              <span>✓ Audit Evidence</span>
+              <span>✓ EU AI Act</span>
+            </div>
 
             <form onSubmit={startScan} className="max-w-3xl mx-auto mt-10">
               <div className="flex flex-col sm:flex-row gap-3 p-2 rounded-2xl border border-white/15 bg-black/35 backdrop-blur-xl shadow-2xl">
-                <input value={domain} onChange={(event) => setDomain(event.target.value)} placeholder="z. B. realsyncdynamicsai.de" aria-label="Website-URL" className="flex-1 min-w-0 px-5 py-4 bg-transparent text-white placeholder:text-white/35 outline-none text-base" />
+                <input value={domain} onChange={(event) => setDomain(event.target.value)} placeholder="Governance-Einstieg: z. B. realsyncdynamicsai.de" aria-label="Website-URL für Governance-Scan" className="flex-1 min-w-0 px-5 py-4 bg-transparent text-white placeholder:text-white/35 outline-none text-base" />
                 <button type="submit" className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors">
-                  Website prüfen <ArrowRight className="w-4 h-4" />
+                  Governance starten <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </form>
 
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-white/45">
-              <span>✓ URL zuerst</span>
-              <span>✓ Kein Account vor dem Scan</span>
-              <span>✓ Ergebnis in Minuten</span>
-            </div>
+            <p className="mt-4 text-xs text-white/40">URL zuerst · Kein Account vor dem Einstieg · Ergebnis in Minuten</p>
           </div>
         </section>
 
         <section id="how" className="py-20 md:py-28 border-y border-white/10 bg-white/[0.02]">
           <div className="max-w-6xl mx-auto px-6 lg:px-10">
-            <div className="max-w-2xl mb-12">
-              <p className="font-mono text-[10px] tracking-[0.25em] text-cyan-400 mb-3">DER FLOW</p>
-              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Erst zeigen. Dann verkaufen.</h2>
-              <p className="mt-4 text-white/60 leading-relaxed">Der Besucher muss kein Dashboard, keine Demo und kein Paket auswählen. Er muss nur seine Website zeigen.</p>
+            <div className="max-w-3xl mb-12">
+              <p className="font-mono text-[10px] tracking-[0.25em] text-cyan-400 mb-3">GOVERNANCE RUNTIME</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Von der KI-Nutzung zur kontrollierten KI-Organisation.</h2>
+              <p className="mt-4 text-white/60 leading-relaxed">KI-Governance endet nicht bei einer Prüfung. RealSyncDynamics.AI verbindet Erkennung, Risikobewertung, Policies, Enforcement und Evidence zu einem durchgängigen operativen Kontrollprozess.</p>
             </div>
             <div className="grid md:grid-cols-3 gap-5">
               {[
-                ['01', 'Website scannen', 'URL eingeben und Live-Daten zur bestehenden Website erfassen.'],
-                ['02', 'Ergebnis sichtbar machen', 'Score, Findings und konkrete Modernisierungsmöglichkeiten zeigen.'],
-                ['03', 'Angebot per E-Mail', 'Nach dem Ergebnis Kontaktdaten erfassen und das Starter-Angebot senden.'],
+                ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
+                ['02', 'ASSESS', 'Risiken bewerten und Systeme gegen definierte Governance-, DSGVO- und EU-AI-Act-Kriterien prüfen.'],
+                ['03', 'GOVERN', 'Verbindliche Policies, Verantwortlichkeiten und Kontrollanforderungen zentral definieren.'],
+                ['04', 'ENFORCE', 'Governance-Regeln operativ durchsetzen und Abweichungen kontrolliert behandeln.'],
+                ['05', 'EVIDENCE', 'Prüfungen, Entscheidungen, Änderungen und Kontrollen nachvollziehbar dokumentieren.'],
+                ['06', 'AUDIT', 'Eine konsistente Governance-Historie für interne Kontrollen, Management und Audits bereitstellen.'],
               ].map(([no, title, text]) => (
                 <div key={no} className="p-7 rounded-2xl border border-white/10 bg-white/[0.02]">
-                  <span className="font-mono text-4xl font-bold text-cyan-400/25">{no}</span>
-                  <h3 className="mt-4 text-xl font-semibold">{title}</h3>
+                  <span className="font-mono text-3xl font-bold text-cyan-400/25">{no}</span>
+                  <h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3>
                   <p className="mt-2 text-sm text-white/58 leading-relaxed">{text}</p>
                 </div>
               ))}
@@ -111,13 +118,21 @@ export function MainLanding() {
           </div>
         </section>
 
-        <section id="security" className="py-20 md:py-24 border-t border-white/10 bg-white/[0.02]">
-          <div className="max-w-5xl mx-auto px-6 lg:px-10">
+        <section id="controls" className="py-20 md:py-24 border-t border-white/10">
+          <div className="max-w-6xl mx-auto px-6 lg:px-10">
+            <div className="max-w-2xl mb-12">
+              <p className="font-mono text-[10px] tracking-[0.25em] text-cyan-400 mb-3">OPERATIONAL CONTROL</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Governance, die tatsächlich läuft.</h2>
+              <p className="mt-4 text-white/60 leading-relaxed">Compliance wird vom Dokument zum ausführbaren Kontrollmechanismus.</p>
+            </div>
             <div className="grid md:grid-cols-3 gap-5">
               {[
-                [ShieldCheck, 'DSGVO', 'Datenschutz als Teil des Prüf- und Umbauprozesses.'],
-                [Lock, 'EU AI Act', 'KI-Anforderungen werden im Ergebnis und später im Governance-Workspace berücksichtigt.'],
-                [Check, 'Evidence', 'Der Weg vom Scan zum Ergebnis bleibt nachvollziehbar.'],
+                [ShieldCheck, 'DSGVO', 'Datenschutz wird zum operativen Kontrollbestandteil: Verarbeitung, Risiko, Policy und Evidence im laufenden Governance-Prozess.'],
+                [Lock, 'EU AI Act', 'KI-Systeme werden strukturiert bewertet und gegen relevante Governance- und Compliance-Anforderungen kontrolliert.'],
+                [Check, 'POLICY ENGINE', 'Governance-Regeln werden nicht nur dokumentiert, sondern als ausführbare Kontrolllogik in den Runtime-Prozess integriert.'],
+                [ShieldCheck, 'CONTINUOUS MONITORING', 'Veränderungen, neue Risiken und Governance-Abweichungen werden kontinuierlich erkennbar.'],
+                [Lock, 'ENFORCEMENT', 'Von der Erkennung bis zur definierten Reaktion: Regeln werden operativ durchgesetzt.'],
+                [Check, 'AUDIT EVIDENCE', 'Jede relevante Governance-Aktion erzeugt nachvollziehbare Nachweise für Management und Audit.'],
               ].map(([Icon, title, text]) => {
                 const Component = Icon as typeof ShieldCheck;
                 return <div key={title as string} className="p-6 rounded-2xl border border-white/10 bg-[rgb(3,7,18)]"><Component className="w-5 h-5 text-cyan-400 mb-4" /><h3 className="font-semibold">{title as string}</h3><p className="mt-2 text-sm text-white/55 leading-relaxed">{text as string}</p></div>;
@@ -126,12 +141,19 @@ export function MainLanding() {
           </div>
         </section>
 
-        <section className="py-16">
+        <section className="py-20 border-y border-white/10 bg-white/[0.02]">
           <div className="max-w-4xl mx-auto px-6 text-center">
-            <h2 className="text-3xl md:text-4xl font-extrabold">Zeig uns deine Website.</h2>
-            <p className="mt-4 text-white/60">Wir zeigen dir zuerst das Ergebnis. Danach kannst du das Starter-Angebot anfordern.</p>
-            <Link to="/unified-entry/scan" className="mt-7 inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors">
-              Domain prüfen <ArrowRight className="w-4 h-4" />
+            <p className="font-mono text-[10px] tracking-[0.25em] text-cyan-400 mb-4">ONE GOVERNANCE PLANE</p>
+            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight">Ihr KI-Betrieb. Eine Governance-Ebene.</h2>
+            <p className="mt-5 text-white/60 text-lg leading-relaxed">DISCOVER → ASSESS → GOVERN → ENFORCE → EVIDENCE → AUDIT</p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 text-sm text-white/55">
+              <span className="px-4 py-2 rounded-full border border-white/10">Governance statt Checkliste</span>
+              <span className="px-4 py-2 rounded-full border border-white/10">Compliance statt Selbstauskunft</span>
+              <span className="px-4 py-2 rounded-full border border-white/10">Evidence statt Behauptung</span>
+              <span className="px-4 py-2 rounded-full border border-white/10">Enforcement statt Empfehlung</span>
+            </div>
+            <Link to="/unified-entry/scan" className="mt-9 inline-flex items-center gap-2 px-7 py-3.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors">
+              Governance Runtime starten <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </section>

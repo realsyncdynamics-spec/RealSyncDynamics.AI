@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { SEOHead } from '../components/SEOHead';
 import { ArrowRight, Check, Lock, Scan, ShieldCheck, Snowflake } from 'lucide-react';
@@ -72,13 +73,7 @@ export function MainLanding() {
 
             <form onSubmit={startScan} className="max-w-3xl mx-auto mt-10">
               <div className="flex flex-col sm:flex-row gap-3 p-2 rounded-2xl border border-white/15 bg-black/35 backdrop-blur-xl shadow-2xl">
-                <input
-                  value={domain}
-                  onChange={(event) => setDomain(event.target.value)}
-                  placeholder="z. B. realsyncdynamicsai.de"
-                  aria-label="Website-URL"
-                  className="flex-1 min-w-0 px-5 py-4 bg-transparent text-white placeholder:text-white/35 outline-none text-base"
-                />
+                <input value={domain} onChange={(event) => setDomain(event.target.value)} placeholder="z. B. realsyncdynamicsai.de" aria-label="Website-URL" className="flex-1 min-w-0 px-5 py-4 bg-transparent text-white placeholder:text-white/35 outline-none text-base" />
                 <button type="submit" className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-[rgb(3,7,18)] font-bold transition-colors">
                   Website prüfen <ArrowRight className="w-4 h-4" />
                 </button>
@@ -100,7 +95,6 @@ export function MainLanding() {
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Erst zeigen. Dann verkaufen.</h2>
               <p className="mt-4 text-white/60 leading-relaxed">Der Besucher muss kein Dashboard, keine Demo und kein Paket auswählen. Er muss nur seine Website zeigen.</p>
             </div>
-
             <div className="grid md:grid-cols-3 gap-5">
               {[
                 ['01', 'Website scannen', 'URL eingeben und Live-Daten zur bestehenden Website erfassen.'],

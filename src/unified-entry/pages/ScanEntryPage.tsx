@@ -2,10 +2,35 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 
+interface CookieScanResponse {
+  ok: true;
+  url: string;
+  domain: string;
+  fetched_status: number | null;
+  fetch_error: string | null;
+  scanned_at: string;
+  cookies: unknown[];
+  trackers: Array<{ id: string; name: string; category: string }>;
+  privacy_analytics: unknown[];
+  consent_manager_detected: boolean;
+  score: number;
+  severity: 'pass' | 'low' | 'medium' | 'high' | 'critical';
+  summary: string;
+  forms?: {
+    total_forms: number;
+    has_email_field: boolean;
+    has_password_field: boolean;
+    has_phone_field: boolean;
+    contact_form_detected: boolean;
+    signup_form_detected: boolean;
+    visible_consent_link: boolean;
+  };
+  unknown_scripts_count?: number;
+}
+
 export function ScanEntryPage() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -18,29 +43,33 @@ export function ScanEntryPage() {
       return;
     }
 
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const normalizedUrl = domain.trim().match(/^https?:\/\//i) ? domain.trim() : `https://${domain.trim()}`;
-      // Öffentlicher Free-Audit-Flow: gdpr-audit ist verify_jwt=false.
-      // Das Backend verlangt für den Audit aktuell eine E-Mail-Adresse.
-      const data = await postEdgeFunction<{ audit_id?: string; id?: string }>('gdpr-audit', {
+      const normalizedUrl = domain.trim().match(/^https?:\/\//i)
+        ? domain.trim()
+        : `https://${domain.trim()}`;
+
+      const data = await postEdgeFunction<CookieScanResponse>('cookie-scan', {
         url: normalizedUrl,
-        email: email.trim().toLowerCase(),
       }, { requireAuth: false });
 
-      const auditId = data.audit_id || data.id;
-
-      if (!auditId) {
-        throw new Error('Keine Audit-ID in Antwort erhalten');
+      if (!data?.ok) {
+        throw new Error(data?.fetch_error || 'Der Website-Scan konnte nicht abgeschlossen werden');
       }
 
-      navigate(`/unified-entry/preview?auditId=${auditId}`);
+      const params = new URLSearchParams({
+        auditId: `urlscan-${Date.now()}`,
+        domain: data.domain,
+        url: data.url,
+        score: String(data.score),
+        severity: data.severity,
+        trackers: String(data.trackers?.length ?? 0),
+        cookies: String(data.cookies?.length ?? 0),
+        consent: data.consent_manager_detected ? '1' : '0',
+      });
+
+      navigate(`/unified-entry/preview?${params.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');
       setLoading(false);
@@ -51,46 +80,28 @@ export function ScanEntryPage() {
     <div className="space-y-8">
       <div className="space-y-4">
         <h1 className="text-4xl font-bold text-titanium-50">
-          Kostenlose Compliance-Analyse
+          Welche Website sollen wir neu bauen?
         </h1>
         <p className="text-xl text-titanium-300">
-          Geben Sie Ihre Domain und E-Mail-Adresse ein und erhalten Sie in wenigen Minuten eine personalisierte Governance-Analyse.
+          Zuerst scannen wir die bestehende Website. Danach zeigen wir dir sichtbar,
+          was wir daraus machen können.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="domain" className="block text-sm font-medium text-titanium-200 mb-2">
-            Website Domain
+            Website-URL
           </label>
           <input
             id="domain"
             type="text"
-            placeholder="z.B. example.com oder https://example.com"
+            placeholder="z.B. realsyncdynamicsai.de"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             disabled={loading}
-            className="w-full px-4 py-3 bg-obsidian-800 border border-titanium-700 rounded-lg text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-petrol-600 focus:ring-1 focus:ring-petrol-600 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-4 bg-obsidian-800 border border-titanium-700 rounded-lg text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-petrol-600 focus:ring-1 focus:ring-petrol-600 transition-colors disabled:opacity-50"
           />
-        </div>
-
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-titanium-200 mb-2">
-            E-Mail-Adresse
-          </label>
-          <input
-            id="email"
-            type="email"
-            placeholder="z.B. name@unternehmen.de"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-            autoComplete="email"
-            className="w-full px-4 py-3 bg-obsidian-800 border border-titanium-700 rounded-lg text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-petrol-600 focus:ring-1 focus:ring-petrol-600 transition-colors disabled:opacity-50"
-          />
-          <p className="mt-2 text-xs text-titanium-500">
-            Die Adresse wird für den Audit-Bericht und die Zuordnung des Audits verwendet.
-          </p>
         </div>
 
         {error && (
@@ -102,24 +113,24 @@ export function ScanEntryPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-6 py-3 bg-petrol-600 hover:bg-petrol-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
+          className="w-full px-6 py-4 bg-petrol-600 hover:bg-petrol-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
         >
-          {loading ? 'Scan wird gestartet...' : 'Kostenlos starten'}
+          {loading ? 'Website wird gescannt...' : 'Website scannen'}
         </button>
       </form>
 
       <div className="grid grid-cols-3 gap-4 pt-4">
         <div className="space-y-2">
-          <div className="text-2xl font-bold text-petrol-500">5 Min</div>
-          <p className="text-sm text-titanium-400">Scan-Zeit</p>
+          <div className="text-2xl font-bold text-petrol-500">URL zuerst</div>
+          <p className="text-sm text-titanium-400">Kein Account nötig</p>
         </div>
         <div className="space-y-2">
-          <div className="text-2xl font-bold text-petrol-500">0€</div>
-          <p className="text-sm text-titanium-400">Kein Abo nötig</p>
+          <div className="text-2xl font-bold text-petrol-500">Live Scan</div>
+          <p className="text-sm text-titanium-400">Bestehende Website</p>
         </div>
         <div className="space-y-2">
-          <div className="text-2xl font-bold text-petrol-500">∞</div>
-          <p className="text-sm text-titanium-400">Detailliertes Report</p>
+          <div className="text-2xl font-bold text-petrol-500">Preview</div>
+          <p className="text-sm text-titanium-400">Danach sichtbar neu bauen</p>
         </div>
       </div>
     </div>

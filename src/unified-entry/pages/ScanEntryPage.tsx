@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 
 interface CookieScanResponse {
@@ -30,9 +30,15 @@ interface CookieScanResponse {
 
 export function ScanEntryPage() {
   const navigate = useNavigate();
-  const [domain, setDomain] = useState('');
+  const [searchParams] = useSearchParams();
+  const [domain, setDomain] = useState(searchParams.get('domain') ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const queryDomain = searchParams.get('domain');
+    if (queryDomain) setDomain(queryDomain);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,36 +85,29 @@ export function ScanEntryPage() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h1 className="text-4xl font-bold text-titanium-50">
-          Welche Website sollen wir neu bauen?
-        </h1>
+        <h1 className="text-4xl font-bold text-titanium-50">Welche Website sollen wir neu bauen?</h1>
         <p className="text-xl text-titanium-300">
-          Zuerst scannen wir die bestehende Website. Danach zeigen wir dir sichtbar,
+          Erst scannen wir Ihre Website. Danach zeigen wir Ihnen sichtbar,
           was wir daraus machen können.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="domain" className="block text-sm font-medium text-titanium-200 mb-2">
-            Website-URL
-          </label>
+          <label htmlFor="domain" className="block text-sm font-medium text-titanium-200 mb-2">Website-URL</label>
           <input
             id="domain"
             type="text"
-            placeholder="z.B. realsyncdynamicsai.de"
+            placeholder="z. B. realsyncdynamicsai.de"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
             disabled={loading}
+            autoFocus={!domain}
             className="w-full px-4 py-4 bg-obsidian-800 border border-titanium-700 rounded-lg text-titanium-50 placeholder-titanium-500 focus:outline-none focus:border-petrol-600 focus:ring-1 focus:ring-petrol-600 transition-colors disabled:opacity-50"
           />
         </div>
 
-        {error && (
-          <div className="px-4 py-3 bg-red-900/20 border border-red-700 rounded-lg text-red-300 text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="px-4 py-3 bg-red-900/20 border border-red-700 rounded-lg text-red-300 text-sm">{error}</div>}
 
         <button
           type="submit"
@@ -120,18 +119,9 @@ export function ScanEntryPage() {
       </form>
 
       <div className="grid grid-cols-3 gap-4 pt-4">
-        <div className="space-y-2">
-          <div className="text-2xl font-bold text-petrol-500">URL zuerst</div>
-          <p className="text-sm text-titanium-400">Kein Account nötig</p>
-        </div>
-        <div className="space-y-2">
-          <div className="text-2xl font-bold text-petrol-500">Live Scan</div>
-          <p className="text-sm text-titanium-400">Bestehende Website</p>
-        </div>
-        <div className="space-y-2">
-          <div className="text-2xl font-bold text-petrol-500">Preview</div>
-          <p className="text-sm text-titanium-400">Danach sichtbar neu bauen</p>
-        </div>
+        <div><div className="text-2xl font-bold text-petrol-500">URL zuerst</div><p className="text-sm text-titanium-400">Kein Account nötig</p></div>
+        <div><div className="text-2xl font-bold text-petrol-500">Live Scan</div><p className="text-sm text-titanium-400">Bestehende Website</p></div>
+        <div><div className="text-2xl font-bold text-petrol-500">Preview</div><p className="text-sm text-titanium-400">Danach sichtbar neu bauen</p></div>
       </div>
     </div>
   );

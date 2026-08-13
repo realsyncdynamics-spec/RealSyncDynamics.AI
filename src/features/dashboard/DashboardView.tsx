@@ -77,9 +77,9 @@ interface KpiCard {
 }
 
 const actionCards: ActionCard[] = [
-  { label: 'Website prüfen', hint: 'Vollständiger Audit', icon: Search, path: '/website-builder' },
-  { label: 'Website bauen', hint: 'Neue Website erstellen', icon: Wand2, path: '/website-builder' },
-  { label: 'Website verbessern', hint: 'SEO, DSGVO, Performance', icon: Activity, path: '/website-builder' },
+  { label: 'Website prüfen', hint: 'Vollständiger Audit', icon: Search, path: '/unified-entry/scan' },
+  { label: 'Website bauen', hint: 'Neue Website erstellen', icon: Wand2, path: '/unified-entry/scan' },
+  { label: 'Website verbessern', hint: 'SEO, DSGVO, Performance', icon: Activity, path: '/unified-entry/scan' },
   { label: 'AI Act Check', hint: 'KI-System prüfen', icon: ShieldCheck, path: '/app/governance/ai-act-assessment' },
   { label: 'Risikoanalyse', hint: 'Risiken identifizieren', icon: AlertTriangle, path: '/app/governance/gaps' },
   { label: 'Bericht erstellen', hint: 'Compliance Report', icon: FileCheck2, path: '/app/governance/report-builder' },
@@ -158,7 +158,7 @@ export function DashboardView() {
     const value = command.trim().toLowerCase();
     if (!value) return;
     if (value.includes('website') || value.includes('seo') || value.includes('landingpage')) {
-      navigate('/website-builder');
+      navigate('/unified-entry/scan');
     } else if (value.includes('ai act') || value.includes('ki-system') || value.includes('ki system')) {
       navigate('/app/governance/ai-act-assessment');
     } else if (value.includes('risiko')) {
@@ -259,7 +259,7 @@ export function DashboardView() {
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h3 className="font-semibold">Aktueller Kontext</h3><LayoutDashboard size={16} className="text-slate-400" /></div><div className="mt-4 rounded-2xl bg-slate-50 p-4"><div className="text-xs text-slate-400">Aktuelle Compliance</div><div className="mt-1 flex items-end justify-between"><span className="text-3xl font-bold">{compliance}%</span><span className="text-xs font-semibold text-emerald-600">{latestScore?.trend_direction === 'declining' ? 'sinkend' : 'stabil / steigend'}</span></div></div><div className="mt-4 space-y-3 text-sm"><div className="flex justify-between"><span className="text-slate-500">AI Act</span><span className="font-semibold">{latestScore?.score_ai_act ?? '—'}%</span></div><div className="flex justify-between"><span className="text-slate-500">DSGVO</span><span className="font-semibold">{latestScore?.score_gdpr ?? '—'}%</span></div><div className="flex justify-between"><span className="text-slate-500">NIS2</span><span className="font-semibold">{latestScore?.score_nis2 ?? '—'}%</span></div></div></section>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-semibold">Schnellaktionen</h3><div className="mt-3 space-y-1">{[
-                { label: 'Neuen Scan starten', icon: Search, path: '/website-builder' },
+                { label: 'Neuen Scan starten', icon: Search, path: '/unified-entry/scan' },
                 { label: 'Website in Comet öffnen', icon: Globe2, path: '/app/websites' },
                 { label: 'Chatbot konfigurieren', icon: MessageSquare, path: '/app/chatbot' },
                 { label: 'Telefonbot konfigurieren', icon: Mic, path: '/app/phonebot' },

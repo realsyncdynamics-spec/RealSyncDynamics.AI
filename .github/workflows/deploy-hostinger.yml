@@ -52,9 +52,9 @@ jobs:
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
           host: ${{ secrets.VPS_SSH_HOST }}
+          port: 65002
           username: ${{ secrets.VPS_SSH_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          known_hosts: ${{ secrets.VPS_SSH_KNOWN_HOST }}
           script: |
             set -e
             echo "==> Pulling latest code..."

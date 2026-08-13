@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bot, Check, Code2, FileCheck2, Globe2, Lock, Scan, ShieldCheck, Snowflake, Terminal, Zap } from 'lucide-react';
+import { ArrowRight, Code2, FileCheck2, Globe2, Lock, Scan, ShieldCheck, Snowflake, Terminal, Zap } from 'lucide-react';
 import { SEOHead } from '../components/SEOHead';
 
 const BG = 'rgb(3, 7, 18)';
@@ -91,14 +91,13 @@ export function MainLanding() {
                 <Link to="/unified-entry/scan" className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link>
                 <a href="#tools" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 font-medium text-white transition hover:border-white/50 hover:bg-white/5">Live Tools ansehen</a>
               </div>
+              <form onSubmit={startScan} className="mt-5 max-w-2xl"><div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row"><input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website für den kostenlosen Governance-Audit" aria-label="Website-URL für Governance-Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" /><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-50">Audit starten <ArrowRight className="h-4 w-4" /></button></div><p className="mt-2 text-[10px] text-white/35">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p></form>
             </div>
 
             <div className="hidden lg:block">
               <div className="ml-auto max-w-xl rounded-[2rem] border border-white/15 bg-black/35 p-5 shadow-2xl backdrop-blur-xl">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="font-mono text-[10px] tracking-[.22em] text-cyan-300">GOVERNANCE RUNTIME · LIVE</span><span className="flex items-center gap-2 text-[10px] text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />ACTIVE</span></div>
-                <div className="grid grid-cols-2 gap-3 py-5 sm:grid-cols-4">
-                  {[['RISK SCORE', '87/100'], ['EVIDENCE', '1,248'], ['AI SYSTEMS', '04'], ['CODE READY', '94.2%']].map(([label, value]) => <div key={label} className="rounded-xl border border-white/10 bg-white/[.035] p-3"><div className="font-mono text-[8px] tracking-wider text-white/35">{label}</div><div className="mt-2 text-xl font-semibold text-white">{value}</div></div>)}
-                </div>
+                <div className="grid grid-cols-2 gap-3 py-5 sm:grid-cols-4">{[['RISK SCORE', '87/100'], ['EVIDENCE', '1,248'], ['AI SYSTEMS', '04'], ['CODE READY', '94.2%']].map(([label, value]) => <div key={label} className="rounded-xl border border-white/10 bg-white/[.035] p-3"><div className="font-mono text-[8px] tracking-wider text-white/35">{label}</div><div className="mt-2 text-xl font-semibold text-white">{value}</div></div>)}</div>
                 <div className="space-y-2.5 font-mono text-[10px] text-white/45"><div className="flex justify-between"><span>DSGVO / CONSENT</span><span className="text-emerald-300">PASS</span></div><div className="flex justify-between"><span>EU AI ACT</span><span className="text-emerald-300">READY</span></div><div className="flex justify-between"><span>CLAUDE CODE AUDIT</span><span className="text-cyan-300">94.2%</span></div><div className="flex justify-between"><span>EVIDENCE CHAIN</span><span className="text-cyan-300">VERIFIED</span></div></div>
               </div>
             </div>

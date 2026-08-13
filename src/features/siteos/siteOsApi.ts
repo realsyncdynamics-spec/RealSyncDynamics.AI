@@ -57,6 +57,13 @@ export interface ScanRow {
   observed_at: string;
 }
 
+export interface BuildEnrichment {
+  name?: string;
+  summary?: string;
+  services?: string[];
+  locality?: string | null;
+}
+
 export interface BuildResponse {
   ok: true;
   unchanged: boolean;
@@ -114,6 +121,7 @@ export async function buildSite(args: {
   prompt: string;
   project_id?: string;
   locale?: string;
+  enrichment?: BuildEnrichment;
 }): Promise<SiteOsResult<BuildResponse>> {
   const sb = getSupabase();
   const { data, error } = await sb.functions.invoke('siteos-builder', { body: args });

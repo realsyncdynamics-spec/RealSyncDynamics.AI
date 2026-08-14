@@ -86,6 +86,25 @@ export interface ScanResponse {
   scores: ScoreBreakdown;
 }
 
+export interface PublicAiStudioScanResponse {
+  ok: true;
+  source_url: string;
+  evidence_hash?: string;
+  audit?: { scores?: Partial<ScoreBreakdown>; findings?: RuntimeFinding[] };
+  scores?: Partial<ScoreBreakdown>;
+  findings?: RuntimeFinding[];
+  blueprint?: SiteBlueprint;
+  pages?: unknown[];
+  discovery?: {
+    title?: string | null;
+    description?: string | null;
+    h1?: string | null;
+    services?: string[];
+    visible_text?: string;
+  };
+  variants?: unknown[];
+}
+
 export type SiteOsError =
   | { kind: 'forbidden' }
   | { kind: 'payment_required'; message: string }
@@ -93,7 +112,9 @@ export type SiteOsError =
   | { kind: 'unreachable'; message: string }
   | { kind: 'error'; message: string };
 
-export type SiteOsResult<T> = { kind: 'ok'; data: T } | SiteOsError;
+export type SiteOsResult<T> =
+  | { kind: 'ok'; data: T }
+  | SiteOsError;
 
 function mapError(error: unknown): SiteOsError {
   const status = (error as { context?: { status?: number } }).context?.status;
@@ -111,6 +132,34 @@ export function errorMessage(e: SiteOsError): string {
     case 'payment_required': return 'SiteOS ist in diesem Tarif nicht enthalten.';
     case 'unreachable': return `Die Adresse war nicht erreichbar: ${e.message}`;
     default: return e.message;
+  }
+}
+
+// ── Public AI Studio ─────────────────────────────────────────────────────
+// Dieser Pfad ist absichtlich tenant- und login-frei. Er liefert nur Evidence,
+// Audit und strukturierte Transformationsdaten; persistente SiteOS-Schreibpfade
+// bleiben weiterhin hinter dem authentifizierten Builder.
+export async function runPublicAiStudioScan(args: {
+  url: string;
+  locale?: string;
+}): Promise<SiteOsResult<PublicAiStudioScanResponse>> {
+  try {
+    const response = await fetch('/api/v1/public/ai-studio/scan', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: args.url, locale: args.locale ?? 'de' }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message = data?.message ?? data?.error ?? `Public AI Studio Scan fehlgeschlagen (${response.status}).`;
+      if (response.status === 400) return { kind: 'bad_request', message };
+      if (response.status === 502) return { kind: 'unreachable', message };
+      return { kind: 'error', message };
+    }
+    if (!data?.ok || !data?.source_url) return { kind: 'error', message: 'Der öffentliche AI-Studio-Scan lieferte kein gültiges Ergebnis.' };
+    return { kind: 'ok', data: data as PublicAiStudioScanResponse };
+  } catch (error) {
+    return { kind: 'error', message: error instanceof Error ? error.message : 'Public AI Studio Scan konnte nicht erreicht werden.' };
   }
 }
 
@@ -183,26 +232,11 @@ export async function listAgentRuns(tenantId: string): Promise<AgentRunRow[]> {
 export async function listScans(tenantId: string, limit = 20): Promise<ScanRow[]> {
   const sb = getSupabase();
   const { data, error } = await sb
-    .from('siteos_runtime_scans')
+    .from('siteos_scans')
     .select('id, url, scope, trigger, status, finding_count, severity_max, findings, observed_at')
     .eq('tenant_id', tenantId)
     .order('observed_at', { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
   return (data ?? []) as ScanRow[];
-}
-
-/** Nachweiskette einer Site: alle Versionen mit Hash und Vorgänger-Hash. */
-export async function listBlueprintChain(tenantId: string, slug: string): Promise<{
-  id: string; version: number; content_sha256: string; prev_hash: string | null;
-  status: string; origin_model: string | null; created_at: string;
-}[]> {
-  const sb = getSupabase();
-  const { data, error } = await sb
-    .from('siteos_blueprints')
-    .select('id, version, content_sha256, prev_hash, status, origin_model, created_at')
-    .eq('tenant_id', tenantId).eq('slug', slug)
-    .order('version', { ascending: true });
-  if (error) throw new Error(error.message);
-  return data ?? [];
 }

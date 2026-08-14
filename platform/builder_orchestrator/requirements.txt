@@ -2,9 +2,9 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 httpx==0.28.1
+playwright==1.55.0
 
-# LLM-Provider. Optional: ohne ANTHROPIC_API_KEY antwortet der Stub-Provider,
-# der Stack startet also auch ohne Zugangsdaten (siehe app/services/llm.py).
+# LLM-Provider. Optional: without ANTHROPIC_API_KEY the stub provider can run.
 anthropic==0.120.2
 
 # Persistenz (optional — ohne DATABASE_URL laeuft alles In-Memory)

@@ -11,7 +11,7 @@
  * Updates audit_reports with latest scores for reporting.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -36,7 +36,6 @@ Deno.serve(async (req: Request) => {
   try {
     console.log('Starting compliance score calculation...');
 
-    // Get all active tenants
     const { data: tenants, error: tenantsError } = await supabase
       .from('tenants')
       .select('id')
@@ -51,7 +50,6 @@ Deno.serve(async (req: Request) => {
     for (const tenant of tenants) {
       const scores = await calculateTenantScores(tenant.id);
 
-      // Update or create audit report entry
       const { error } = await supabase
         .from('audit_reports')
         .upsert({
@@ -102,11 +100,7 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-/**
- * Calculate compliance scores for a tenant across all frameworks
- */
 async function calculateTenantScores(tenantId: string): Promise<ComplianceScores> {
-  // ISO 27001: (implemented + optimized) / total * 100
   const { data: iso27001 } = await supabase
     .from('iso27001_implementations')
     .select('status')
@@ -116,7 +110,6 @@ async function calculateTenantScores(tenantId: string): Promise<ComplianceScores
     ? (iso27001.filter(c => ['implemented', 'optimized'].includes(c.status)).length / iso27001.length) * 100
     : 0;
 
-  // ISO 42001: same calculation
   const { data: iso42001 } = await supabase
     .from('iso42001_implementations')
     .select('status')
@@ -126,7 +119,6 @@ async function calculateTenantScores(tenantId: string): Promise<ComplianceScores
     ? (iso42001.filter(c => ['implemented', 'optimized'].includes(c.status)).length / iso42001.length) * 100
     : 0;
 
-  // AI Act: average of all risk assessments
   const { data: aiAct } = await supabase
     .from('ai_act_assessments')
     .select('overall_risk_score')
@@ -135,9 +127,8 @@ async function calculateTenantScores(tenantId: string): Promise<ComplianceScores
 
   const aiActScore = aiAct && aiAct.length > 0
     ? aiAct.reduce((sum, a) => sum + a.overall_risk_score, 0) / aiAct.length
-    : 50; // Default to 50 if no assessments
+    : 50;
 
-  // DSGVO: (data processing with dpia) / total * 100
   const { data: dsgvo } = await supabase
     .from('data_processing_records')
     .select('has_dpia')
@@ -147,7 +138,6 @@ async function calculateTenantScores(tenantId: string): Promise<ComplianceScores
     ? (dsgvo.filter(d => d.has_dpia).length / dsgvo.length) * 100
     : 0;
 
-  // NIS2: % of incident deadlines met
   const { data: nis2 } = await supabase
     .from('nis2_incident_deadlines')
     .select('status')
@@ -155,9 +145,8 @@ async function calculateTenantScores(tenantId: string): Promise<ComplianceScores
 
   const nis2Score = nis2
     ? (nis2.filter(n => ['completed', 'on_track'].includes(n.status)).length / nis2.length) * 100
-    : 100; // Assume 100 if no incidents
+    : 100;
 
-  // Calculate weighted overall score
   const overallScore = Math.round(
     (iso27001Score * 0.25 +
       iso42001Score * 0.20 +

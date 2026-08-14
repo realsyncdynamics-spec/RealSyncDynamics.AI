@@ -6,10 +6,7 @@ import { getSupabase } from '../../lib/supabase';
 import { getPostCheckoutReturn, clearPostCheckoutReturn } from '../../lib/optimizer/state';
 
 const API_ENABLED_TIERS = ['agency', 'partner', 'enterprise'];
-const RECURRING_PLAN_LABELS: Record<string, string> = {
-  starter: 'Starter', growth: 'Growth', agency: 'Agency', enterprise: 'Enterprise', partner: 'Partner',
-};
-
+const RECURRING_PLAN_LABELS: Record<string, string> = { starter: 'Starter', growth: 'Growth', agency: 'Agency', enterprise: 'Enterprise', partner: 'Partner' };
 type PurchaseState = { kind: 'subscription' | 'governance_launch'; plan: string; status: string; expiresAt?: string };
 
 /** Post-checkout gate. Stripe webhook remains authoritative for entitlement grants. */
@@ -18,8 +15,8 @@ export function CheckoutSuccessPage() {
   const navigate = useNavigate();
   const { activeTenantId } = useTenant();
   const sessionId = searchParams.get('session_id') || searchParams.get('session');
+  const projectId = searchParams.get('project');
   const [state, setState] = useState<PurchaseState | null>(null);
-  const [recommendedPlan, setRecommendedPlan] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(4);
@@ -33,11 +30,13 @@ export function CheckoutSuccessPage() {
 
   useEffect(() => {
     if (!state || verifying || error) return;
-    const target = state.kind === 'governance_launch' ? '/app/siteos' : '/app';
+    const target = state.kind === 'governance_launch'
+      ? (projectId ? `/app/siteos?project=${encodeURIComponent(projectId)}` : '/app/siteos')
+      : '/app';
     const timer = window.setInterval(() => setCountdown((value) => Math.max(0, value - 1)), 1000);
     const redirect = window.setTimeout(() => navigate(target), 4000);
     return () => { window.clearInterval(timer); window.clearTimeout(redirect); };
-  }, [state, verifying, error, navigate]);
+  }, [state, verifying, error, navigate, projectId]);
 
   async function verifyPurchase() {
     setVerifying(true); setError(null);
@@ -50,7 +49,7 @@ export function CheckoutSuccessPage() {
         if (grantError) throw new Error(`Zahlungsfreigabe konnte nicht geprüft werden: ${grantError.message}`);
         if (grant?.plan_key === 'governance_launch') {
           setState({ kind: 'governance_launch', plan: grant.plan_key, status: grant.status, expiresAt: grant.expires_at ?? undefined });
-          setRecommendedPlan('growth'); return;
+          return;
         }
       }
       const { data: subscription, error: subscriptionError } = await sb.from('subscriptions')
@@ -64,9 +63,7 @@ export function CheckoutSuccessPage() {
   }
 
   const planLabel = state ? (RECURRING_PLAN_LABELS[state.plan] ?? state.plan) : null;
-
   if (verifying) return <div className="min-h-screen bg-obsidian-900 text-titanium-50 flex items-center justify-center px-4"><div className="max-w-md text-center border border-titanium-700 bg-obsidian-800 p-8 rounded"><Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-security-400" /><h1 className="text-xl font-bold">Zahlung wird verifiziert …</h1><p className="mt-3 text-sm text-titanium-400">Wir warten auf die serverseitige Stripe-Freischaltung.</p></div></div>;
-
   if (error || !state) return <div className="min-h-screen bg-obsidian-900 text-titanium-50 flex items-center justify-center px-4"><div className="max-w-lg text-center border border-red-700 bg-obsidian-800 p-8 rounded"><h1 className="text-xl font-bold text-red-400">Freischaltung noch nicht bestätigt</h1><p className="mt-3 text-sm text-titanium-300">{error ?? 'Kein aktiver Kauf gefunden.'}</p><button onClick={() => void verifyPurchase()} className="mt-6 px-5 py-3 bg-security-500 text-white font-bold uppercase">Erneut prüfen</button></div></div>;
 
   if (state.kind === 'governance_launch') return (
@@ -75,7 +72,7 @@ export function CheckoutSuccessPage() {
         <div className="flex items-center gap-4"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15"><Check className="h-7 w-7 text-emerald-400" /></div><div><p className="font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300">Website Transformation</p><h1 className="text-2xl font-bold">Ihre neue Landingpage ist freigeschaltet</h1></div></div>
         <p className="mt-6 text-sm leading-6 text-slate-300">Die €349 Governance Launch Zahlung wurde serverseitig bestätigt. Ihr Projekt-Dashboard ist jetzt bereit: Analyse, neue Landingpage, Governance-Gate und Veröffentlichung an einem Ort.</p>
         <div className="mt-7 grid gap-3 sm:grid-cols-3">{['Landingpage', 'DSGVO / SEO', 'Governance Gate'].map((item) => <div key={item} className="rounded-2xl border border-slate-700 bg-slate-950 p-4"><Check className="h-4 w-4 text-emerald-400" /><p className="mt-2 text-sm font-semibold">{item}</p><p className="mt-1 text-xs text-slate-500">Freigeschaltet</p></div>)}</div>
-        <div className="mt-8 flex flex-wrap gap-3"><Link to="/app/siteos" className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-bold text-slate-950">Transformation öffnen <ArrowRight className="h-4 w-4" /></Link>{optimizerReturn && <Link to={optimizerReturn} onClick={() => clearPostCheckoutReturn()} className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-300">Zum Ausgangsprojekt</Link>}</div>
+        <div className="mt-8 flex flex-wrap gap-3"><Link to={projectId ? `/app/siteos?project=${encodeURIComponent(projectId)}` : '/app/siteos'} className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 font-bold text-slate-950">Transformation öffnen <ArrowRight className="h-4 w-4" /></Link>{optimizerReturn && <Link to={optimizerReturn} onClick={() => clearPostCheckoutReturn()} className="rounded-xl border border-slate-700 px-5 py-3 text-sm text-slate-300">Zum Ausgangsprojekt</Link>}</div>
         <p className="mt-5 text-center text-xs font-mono text-slate-500">Dashboard-Weiterleitung in {countdown} Sekunden …</p>
       </div>
     </div>

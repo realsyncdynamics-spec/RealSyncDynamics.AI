@@ -1,11 +1,10 @@
-"""App Builder Orchestrator — FastAPI-Einstiegspunkt.
+"""App Builder Orchestrator — FastAPI entry point.
 
-Ablauf eines Builds:
-  1. BuildSpec entgegennehmen
-  2. Projekt beim Governance-Backend registrieren (Risikoklasse + Gates)
-  3. Task-Graph aufbauen und den Scheduler anstoßen
-  4. Fortschritt über task-status (Pull) oder events (SSE, Push) verfolgen
-  5. Website-Audit über Playwright -> Evidence -> Gemini
+Customer transformation flow:
+  domain -> Playwright evidence -> governance findings -> Gemini AI Studio
+  reasoning -> PageSpec -> SiteOS preview. The public audit endpoints are
+  deliberately read/generate only; customer backend/API/auth are never passed
+  as mutation targets.
 """
 
 from __future__ import annotations
@@ -62,6 +61,7 @@ class GenerateVariantsRequest(BaseModel):
     project_id: str = Field(default="", max_length=160)
     audit: AuditResult | None = None
     evidence: EvidenceSnapshot | None = None
+    include_visuals: bool = True
 
 
 @asynccontextmanager
@@ -79,7 +79,12 @@ async def lifespan(_: FastAPI):
         await db.disconnect()
 
 
-app = FastAPI(title="App Builder Orchestrator", version="0.5.0", description="RealSyncDynamicsAI Builder + Playwright Evidence + Gemini + SiteOS.", lifespan=lifespan)
+app = FastAPI(
+    title="RealSync AI Studio Builder",
+    version="0.6.0",
+    description="RealSyncDynamicsAI Builder + Playwright Evidence + Gemini AI Studio + SiteOS.",
+    lifespan=lifespan,
+)
 app.add_middleware(CORSMiddleware, allow_origins=os.getenv("CORS_ORIGINS", "*").split(","), allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
@@ -92,7 +97,15 @@ tracer = get_tracer(__name__)
 @app.get("/health")
 async def health() -> dict:
     provider = llm.get_provider()
-    return {"status": "ok", "service": "builder_orchestrator", "storage": "postgres" if db.is_enabled() else "memory", "llm_provider": provider.name, "llm_model": getattr(provider, "model", "?"), "auth": "enabled" if auth.is_enabled() else "disabled"}
+    return {
+        "status": "ok",
+        "service": "builder_orchestrator",
+        "product_surface": "RealSync AI Studio",
+        "storage": "postgres" if db.is_enabled() else "memory",
+        "llm_provider": provider.name,
+        "llm_model": getattr(provider, "model", "?"),
+        "auth": "enabled" if auth.is_enabled() else "disabled",
+    }
 
 
 @app.post("/api/v1/builder/create-spec", dependencies=[Depends(auth.require_tenant)], response_model=TaskGraph)
@@ -119,9 +132,34 @@ async def ai_edit(payload: AIEditRequest) -> AIEditResponse:
     return result
 
 
+# Public value-first funnel. These endpoints are intentionally read/generate
+# only. Playwright's SSRF guard + service rate limiting protect the anonymous
+# surface; authentication is required once a customer enters the workspace.
+@app.post("/api/v1/public/ai-studio/scan")
+async def public_ai_studio_scan(payload: AuditRequest) -> dict:
+    try:
+        snapshot, audit = await run_audit(payload.url)
+        specs = await generate_variants(
+            company_context=f"Website domain: {snapshot.domain}",
+            snapshot=snapshot,
+            audit=audit,
+            project_id=snapshot.domain,
+            include_visuals=False,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"AI Studio Transformation konnte nicht gestartet werden: {exc}") from exc
+    return {
+        "product": "RealSync AI Studio",
+        "mode": "public_preview",
+        "backend_preservation": "preserve_all",
+        "evidence": snapshot.model_dump(),
+        "audit": audit.model_dump(),
+        "variants": [s.model_dump() for s in specs],
+    }
+
+
 @app.post("/api/v1/builder/audit/scan", dependencies=[Depends(auth.require_tenant)])
 async def audit_scan(payload: AuditRequest) -> dict:
-    """Run a real browser scan and return the normalized evidence + audit result."""
     try:
         snapshot, audit = await run_audit(payload.url)
     except Exception as exc:
@@ -131,13 +169,18 @@ async def audit_scan(payload: AuditRequest) -> dict:
 
 @app.post("/api/v1/builder/audit/generate", dependencies=[Depends(auth.require_tenant)])
 async def audit_generate(payload: GenerateVariantsRequest) -> dict:
-    """Generate four SiteOS PageSpec AST variants from audit evidence."""
     try:
         if payload.evidence is None or payload.audit is None:
             evidence, audit = await run_audit(payload.url, payload.project_id)
         else:
             evidence, audit = payload.evidence, payload.audit
-        specs = await generate_variants(company_context=payload.company_context, snapshot=evidence, audit=audit, project_id=payload.project_id)
+        specs = await generate_variants(
+            company_context=payload.company_context,
+            snapshot=evidence,
+            audit=audit,
+            project_id=payload.project_id,
+            include_visuals=payload.include_visuals,
+        )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Landingpage-Generierung fehlgeschlagen: {exc}") from exc
     return {"evidence_hash": evidence.evidence_hash, "audit": audit.model_dump(), "variants": [s.model_dump() for s in specs]}

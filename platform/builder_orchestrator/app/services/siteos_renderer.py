@@ -1,9 +1,4 @@
-"""Deterministic SiteOS renderer for AI Studio PageSpec previews.
-
-The renderer accepts only the typed PageSpec contract. It emits frontend HTML
-for preview purposes and has no capability to access a customer backend,
-execute scripts, or perform network requests.
-"""
+"""Deterministic SiteOS renderer for AI Studio PageSpec previews."""
 
 from __future__ import annotations
 

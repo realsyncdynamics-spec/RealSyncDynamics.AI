@@ -29,21 +29,7 @@ jobs:
           version: latest
       - name: Link project
         run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-      # Frueher: "supabase db push --include-all 2>&1 || true" — das hat JEDEN
-      # Migrationsfehler still verschluckt (Job blieb gruen). Genau das hat den
-      # P0a-Constraint-Fehler zunaechst unsichtbar gemacht.
-      #
-      # Eine spaetere Zwischenstufe erfasste den Exit-Code zwar als ::error +
-      # Step-Summary, liess den Job aber NICHT hart fehlschlagen — eine
-      # ::error::-Annotation allein faellt den Job nicht, nur ein Exit-Code != 0.
-      # Damit blieb der Job gruen, obwohl KEINE Migration deployt wurde
-      # (P0.2 / 20260626000000 erreichte Prod nie).
-      #
-      # Neu: bei jedem db-push-Fehler exit != 0 -> der Job faellt hart. Solange
-      # der Remote-Ledger-Drift (Orphan-Version 20260510, siehe
-      # docs/infra/migration-drift.md) nicht reconciled ist, schlaegt dieser Job
-      # bewusst fehl — das ist der ehrliche Zustand: Migrationen deployen derzeit
-      # NICHT. functions-deploy laeuft unabhaengig (kein needs) weiter.
+      # Remote migration ledger drift is intentionally surfaced as a hard failure.
       - name: Push migrations
         run: |
           set +e
@@ -51,7 +37,7 @@ jobs:
           code=${PIPESTATUS[0]}
           set -e
           if [ "$code" -ne 0 ]; then
-            echo "::error::supabase db push exited with code $code — Migration nicht sauber durchgelaufen (siehe Log)."
+            echo "::error::supabase db push exited with code $code — Migration nicht sauber durchgelaufen."
             echo "## db push fehlgeschlagen (exit $code)" >> "$GITHUB_STEP_SUMMARY"
             tail -n 20 /tmp/db-push.log >> "$GITHUB_STEP_SUMMARY"
             exit "$code"
@@ -62,31 +48,80 @@ jobs:
   functions-deploy:
     name: Deploy edge functions
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 2
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
-      # Frueher: "supabase functions deploy" ohne Argument — die CLI baut dann
-      # EINEN Modulgraph ueber alle Functions. Ein einziger Syntaxfehler
-      # ("failed to create the graph") hat damit den Deploy ALLER Functions
-      # gekippt: 73 von 168 erreichten die Produktion wochenlang nie.
-      # Siehe DEBUG_ROOT_CAUSE_2026-08-02.md.
-      #
-      # Neu: pro Function deployen. Ein defektes Modul blockiert nur sich
-      # selbst; alles andere geht live. Am Ende exit != 0, damit der Fehler
-      # sichtbar bleibt und nicht still verschluckt wird.
-      - name: Deploy edge functions
+      - name: Deploy changed edge functions
+        shell: bash
         run: |
           set -uo pipefail
-          ok=0; failed=""
-          for dir in supabase/functions/*/; do
-            name="$(basename "$dir")"
-            case "$name" in _*) continue ;; esac
-            [ -f "$dir/index.ts" ] || continue
+
+          ok=0
+          failed=""
+          deploy_all=false
+          functions=()
+
+          mapfile -t changed_files < <(git diff --name-only HEAD^ HEAD)
+
+          for file in "${changed_files[@]}"; do
+            case "$file" in
+              supabase/config.toml|supabase/functions/_shared/*)
+                deploy_all=true
+                break
+                ;;
+            esac
+          done
+
+          if [ "$deploy_all" = true ]; then
+            while IFS= read -r dir; do
+              name="$(basename "$dir")"
+              case "$name" in _*) continue ;; esac
+              [ -f "$dir/index.ts" ] || continue
+              functions+=("$name")
+            done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
+          else
+            declare -A seen=()
+            for file in "${changed_files[@]}"; do
+              case "$file" in
+                supabase/functions/*/*)
+                  rest="${file#supabase/functions/}"
+                  name="${rest%%/*}"
+                  case "$name" in _*) continue ;; esac
+                  if [ -f "supabase/functions/$name/index.ts" ] && [ -z "${seen[$name]+x}" ]; then
+                    functions+=("$name")
+                    seen[$name]=1
+                  fi
+                  ;;
+              esac
+            done
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.deploy_functions }}" = "true" ] && [ "${#functions[@]}" -eq 0 ]; then
+            deploy_all=true
+            while IFS= read -r dir; do
+              name="$(basename "$dir")"
+              case "$name" in _*) continue ;; esac
+              [ -f "$dir/index.ts" ] || continue
+              functions+=("$name")
+            done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
+          fi
+
+          if [ "${#functions[@]}" -eq 0 ]; then
+            echo "Keine geänderte Edge Function — Deploy übersprungen." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "Deploy scope: ${#functions[@]} Function(s)"
+
+          for name in "${functions[@]}"; do
             if supabase functions deploy "$name" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
               ok=$((ok + 1))
             else
@@ -94,8 +129,10 @@ jobs:
               echo "::error::Edge Function '$name' konnte nicht deployt werden."
             fi
           done
+
           {
             echo "## Edge Functions"
+            echo "- scope: ${#functions[@]}"
             echo "- deployt: $ok"
             if [ -n "$failed" ]; then
               echo "- fehlgeschlagen:$failed"
@@ -103,8 +140,10 @@ jobs:
               echo "- fehlgeschlagen: keine"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
           if [ -n "$failed" ]; then
             echo "Fehlgeschlagen:$failed"
             exit 1
           fi
-          echo "Alle $ok Edge Functions deployt."
+
+          echo "Alle ${#functions[@]} Edge Functions erfolgreich deployt."

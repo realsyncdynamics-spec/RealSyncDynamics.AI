@@ -8,6 +8,7 @@ on:
       - 'supabase/migrations/**'
       - 'supabase/functions/**'
       - 'supabase/config.toml'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
       deploy_functions:

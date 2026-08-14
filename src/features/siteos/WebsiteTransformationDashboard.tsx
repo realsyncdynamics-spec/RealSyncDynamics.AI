@@ -4,8 +4,11 @@ import { Link } from 'react-router-dom';
 import { useTenant } from '../../core/access/TenantProvider';
 import { getSupabase } from '../../lib/supabase';
 import { listScans, listSites, type ScanRow, type SiteOverviewRow } from './siteOsApi';
+import { renderSite } from '../../../packages/siteos-core/src/render/renderer';
+import type { SiteBlueprint } from '../../../packages/siteos-core/src/index';
 
 type Grant = { plan_key: string; status: string; stripe_checkout_session_id: string | null };
+type Subscription = { plan_key: string; status: string; current_period_end: string | null };
 
 const stages = [
   { key: 'paid', label: 'Zahlung bestätigt' },
@@ -19,8 +22,10 @@ const stages = [
 export function WebsiteTransformationDashboard() {
   const { activeTenantId } = useTenant();
   const [grant, setGrant] = useState<Grant | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [sites, setSites] = useState<SiteOverviewRow[]>([]);
   const [scans, setScans] = useState<ScanRow[]>([]);
+  const [blueprint, setBlueprint] = useState<SiteBlueprint | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +35,7 @@ export function WebsiteTransformationDashboard() {
     setRefreshing(true);
     try {
       const sb = getSupabase();
-      const [{ data: grantRow, error: grantError }, siteRows, scanRows] = await Promise.all([
+      const [{ data: grantRow, error: grantError }, { data: subscriptionRow, error: subscriptionError }, siteRows, scanRows] = await Promise.all([
         sb.from('entitlement_grants')
           .select('plan_key,status,stripe_checkout_session_id')
           .eq('tenant_id', activeTenantId)
@@ -39,13 +44,37 @@ export function WebsiteTransformationDashboard() {
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
+        sb.from('subscriptions')
+          .select('plan_key,status,current_period_end')
+          .eq('tenant_id', activeTenantId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
         listSites(activeTenantId),
         listScans(activeTenantId, 8),
       ]);
       if (grantError) throw new Error(`Entitlement konnte nicht geladen werden: ${grantError.message}`);
+      if (subscriptionError) throw new Error(`Governance-Paket konnte nicht geladen werden: ${subscriptionError.message}`);
+
       setGrant(grantRow);
+      setSubscription(subscriptionRow);
       setSites(siteRows);
       setScans(scanRows);
+
+      const latestSite = siteRows[0];
+      if (latestSite?.slug) {
+        const { data: blueprintRow, error: blueprintError } = await sb.from('siteos_blueprints')
+          .select('blueprint')
+          .eq('tenant_id', activeTenantId)
+          .eq('slug', latestSite.slug)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (blueprintError) throw new Error(`Landingpage konnte nicht geladen werden: ${blueprintError.message}`);
+        setBlueprint((blueprintRow?.blueprint as SiteBlueprint | null) ?? null);
+      } else {
+        setBlueprint(null);
+      }
       setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Dashboard konnte nicht geladen werden.');
@@ -59,14 +88,18 @@ export function WebsiteTransformationDashboard() {
 
   const site = sites[0];
   const latestScan = scans[0];
-  const hasLanding = Boolean(site);
-  const governancePassed = Boolean(site && site.status !== 'blocked' && (site.compliance ?? 0) >= 80);
+  const hasLanding = Boolean(site || blueprint);
+  const governancePassed = Boolean(site && site.status === 'approved' || site && site.status === 'deployed');
   const currentStage = governancePassed ? 5 : hasLanding ? 4 : latestScan ? 2 : 1;
   const domain = useMemo(() => {
     const raw = latestScan?.url;
     if (!raw) return site?.slug || 'Ihre Website';
     try { return new URL(raw).hostname; } catch { return raw; }
   }, [latestScan, site]);
+  const previewHtml = useMemo(() => {
+    if (!blueprint) return '';
+    return renderSite(blueprint, { baseUrl: latestScan?.url ?? undefined }).find((page) => page.path === '/')?.html ?? '';
+  }, [blueprint, latestScan]);
 
   if (loading) {
     return <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center"><Loader2 className="h-7 w-7 animate-spin text-cyan-400" /></div>;
@@ -86,17 +119,17 @@ export function WebsiteTransformationDashboard() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-semibold text-cyan-600">Ihr Projekt</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">{domain}</h1><p className="mt-2 max-w-2xl text-sm text-slate-500">Ihre neue Landingpage wird auf Basis der bestehenden Website erzeugt. Backend, API, Authentifizierung und Datenbank bleiben unverändert.</p></div><div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Paket</div><div className="mt-1 font-semibold">Governance Launch · €349</div><div className="mt-1 text-xs text-emerald-600">Stripe bestätigt</div></div></div>
+        <div className="mb-7 flex flex-wrap items-end justify-between gap-4"><div><p className="text-sm font-semibold text-cyan-600">Ihr Projekt</p><h1 className="mt-1 text-3xl font-semibold tracking-tight">{domain}</h1><p className="mt-2 max-w-2xl text-sm text-slate-500">Ihre neue Landingpage wird auf Basis der bestehenden Website erzeugt. Backend, API, Authentifizierung und Datenbank bleiben unverändert.</p></div><div className="flex gap-3"><div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Transformation</div><div className="mt-1 font-semibold">Governance Launch · €349</div><div className="mt-1 text-xs text-emerald-600">Stripe bestätigt</div></div>{subscription && <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"><div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Governance-Paket</div><div className="mt-1 font-semibold">{subscription.plan_key}</div><div className="mt-1 text-xs text-emerald-600">{subscription.status}</div></div>}</div></div>
 
         <section className="mb-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-6 py-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">Transformation</h2><p className="mt-1 text-xs text-slate-500">Von der Analyse bis zum sicheren Frontend-Launch.</p></div><span className="text-xs font-semibold text-slate-500">Schritt {currentStage + 1} / {stages.length}</span></div></div>
+          <div className="border-b border-slate-100 px-6 py-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">Transformation</h2><p className="mt-1 text-xs text-slate-500">Von der Analyse bis zum sicheren Frontend-Launch.</p></div><span className="text-xs font-semibold text-slate-500">Schritt {Math.min(currentStage + 1, stages.length)} / {stages.length}</span></div></div>
           <div className="grid gap-2 p-5 sm:grid-cols-3 lg:grid-cols-6">{stages.map((stage, index) => { const done = index < currentStage; const active = index === currentStage; return <div key={stage.key} className={`rounded-2xl border p-3 ${done ? 'border-emerald-200 bg-emerald-50' : active ? 'border-cyan-200 bg-cyan-50' : 'border-slate-100 bg-slate-50'}`}><div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${done ? 'bg-emerald-500 text-white' : active ? 'bg-cyan-500 text-white' : 'bg-white text-slate-400'}`}>{done ? <Check size={14} /> : index + 1}</div><div className="mt-3 text-xs font-semibold">{stage.label}</div></div>; })}</div>
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-start justify-between gap-4"><div><div className="flex items-center gap-2"><Eye size={16} className="text-cyan-500" /><h2 className="font-semibold">Neue Landingpage</h2></div><p className="mt-1 text-xs text-slate-500">Die neue Oberfläche ersetzt ausschließlich die Präsentationsschicht.</p></div><span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">AI Studio</span></div>
-            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"><div className="flex h-8 items-center gap-1 border-b border-slate-200 bg-white px-3"><span className="h-2 w-2 rounded-full bg-slate-300" /><span className="h-2 w-2 rounded-full bg-slate-300" /><span className="h-2 w-2 rounded-full bg-slate-300" /><div className="ml-3 h-4 flex-1 rounded bg-slate-100" /></div><div className="min-h-[330px] bg-gradient-to-br from-slate-950 via-slate-800 to-cyan-950 p-8 text-white"><div className="max-w-xl pt-8"><div className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-300">Generated experience</div><h3 className="mt-4 text-4xl font-semibold leading-tight">Ihre Website. Neu gedacht.</h3><p className="mt-4 max-w-lg text-sm leading-6 text-slate-300">Eine moderne, conversion-orientierte Landingpage aus den Beweisen Ihrer bestehenden Website.</p><button className="mt-7 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-slate-900">Vorschau öffnen</button></div></div></div>
+            <div className="flex items-start justify-between gap-4"><div><div className="flex items-center gap-2"><Eye size={16} className="text-cyan-500" /><h2 className="font-semibold">Ihre neue Landingpage</h2></div><p className="mt-1 text-xs text-slate-500">Die generierte SiteOS-Version — nicht nur ein Screenshot.</p></div><span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">RealSync AI Studio</span></div>
+            {previewHtml ? <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100"><div className="flex h-8 items-center gap-1 border-b border-slate-200 bg-white px-3"><span className="h-2 w-2 rounded-full bg-slate-300" /><span className="h-2 w-2 rounded-full bg-slate-300" /><span className="h-2 w-2 rounded-full bg-slate-300" /><div className="ml-3 h-4 flex-1 rounded bg-slate-100" /></div><iframe title="Generierte Landingpage" srcDoc={previewHtml} className="h-[520px] w-full bg-white" sandbox="allow-same-origin" /></div> : <div className="mt-5 flex min-h-[330px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center"><div><Sparkles className="mx-auto h-8 w-8 text-cyan-500" /><p className="mt-4 font-semibold">Landingpage wird vorbereitet</p><p className="mt-2 text-xs text-slate-500">Der Build-Job erzeugt die erste SiteOS-Version. Aktualisieren Sie das Dashboard, sobald die Generierung abgeschlossen ist.</p></div></div>}
             <div className="mt-4 flex flex-wrap gap-3"><Link to="/app/siteos" className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Im Builder öffnen <ExternalLink size={14} /></Link><span className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs text-slate-500"><ShieldCheck size={14} className="text-emerald-500" /> Backend bleibt unverändert</span></div>
           </section>
 

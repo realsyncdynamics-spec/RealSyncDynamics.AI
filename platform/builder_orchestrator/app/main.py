@@ -3,8 +3,8 @@
 Customer transformation flow:
   domain -> Playwright evidence -> governance findings -> Gemini AI Studio
   reasoning -> PageSpec -> SiteOS preview. The public audit endpoints are
-  deliberately read/generate only; customer backend/API/auth are never passed
-  as mutation targets.
+  read/generate only; customer backend/API/auth are never passed as mutation
+  targets.
 """
 
 from __future__ import annotations
@@ -12,10 +12,12 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -27,13 +29,16 @@ from .middleware import ErrorSanitizationMiddleware, RateLimitMiddleware, Reques
 from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
 from .services import agent_runner, budget, db, events, llm, repository, task_graph
-from .services.audit_contracts import AuditResult, EvidenceSnapshot, PageSpec
+from .services.audit_contracts import AuditResult, EvidenceSnapshot
 from .services.audit_pipeline import generate_variants, run_audit
 from .services.audit_log import records as audit_records
 from .services.gemini import GeminiProvider
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
+_PUBLIC_TRANSFORM_WINDOW_SECONDS = 60
+_PUBLIC_TRANSFORM_MAX = 3
+_public_transform_hits: dict[str, deque[float]] = defaultdict(deque)
 
 
 class AIEditRequest(BaseModel):
@@ -44,16 +49,13 @@ class AIEditRequest(BaseModel):
     title: str = Field(default="", max_length=500)
     body: str = Field(default="", max_length=4000)
 
-
 class AIEditResponse(BaseModel):
     eyebrow: str
     title: str
     body: str
 
-
 class AuditRequest(BaseModel):
     url: str = Field(min_length=4, max_length=2048)
-
 
 class GenerateVariantsRequest(BaseModel):
     url: str = Field(min_length=4, max_length=2048)
@@ -62,6 +64,23 @@ class GenerateVariantsRequest(BaseModel):
     audit: AuditResult | None = None
     evidence: EvidenceSnapshot | None = None
     include_visuals: bool = True
+
+
+def public_transform_guard(request: Request) -> None:
+    """Cheap per-process defense-in-depth for the anonymous AI funnel.
+
+    Cloudflare should provide the distributed edge rate limit in production;
+    this guard prevents a single Builder instance from being hammered even
+    before that edge policy is evaluated.
+    """
+    now = time.monotonic()
+    ip = request.client.host if request.client else "unknown"
+    hits = _public_transform_hits[ip]
+    while hits and now - hits[0] >= _PUBLIC_TRANSFORM_WINDOW_SECONDS:
+        hits.popleft()
+    if len(hits) >= _PUBLIC_TRANSFORM_MAX:
+        raise HTTPException(status_code=429, detail="Zu viele AI-Studio-Transformationen. Bitte später erneut versuchen.")
+    hits.append(now)
 
 
 @asynccontextmanager
@@ -78,7 +97,6 @@ async def lifespan(_: FastAPI):
     finally:
         await db.disconnect()
 
-
 app = FastAPI(
     title="RealSync AI Studio Builder",
     version="0.6.0",
@@ -93,20 +111,14 @@ app.add_middleware(ErrorSanitizationMiddleware)
 setup_tracing(app, service_name="builder_orchestrator")
 tracer = get_tracer(__name__)
 
-
 @app.get("/health")
 async def health() -> dict:
     provider = llm.get_provider()
     return {
-        "status": "ok",
-        "service": "builder_orchestrator",
-        "product_surface": "RealSync AI Studio",
-        "storage": "postgres" if db.is_enabled() else "memory",
-        "llm_provider": provider.name,
-        "llm_model": getattr(provider, "model", "?"),
-        "auth": "enabled" if auth.is_enabled() else "disabled",
+        "status": "ok", "service": "builder_orchestrator", "product_surface": "RealSync AI Studio",
+        "storage": "postgres" if db.is_enabled() else "memory", "llm_provider": provider.name,
+        "llm_model": getattr(provider, "model", "?"), "auth": "enabled" if auth.is_enabled() else "disabled",
     }
-
 
 @app.post("/api/v1/builder/create-spec", dependencies=[Depends(auth.require_tenant)], response_model=TaskGraph)
 async def create_spec(spec: BuildSpec) -> TaskGraph:
@@ -123,7 +135,6 @@ async def create_spec(spec: BuildSpec) -> TaskGraph:
         await agent_runner.enqueue_initial_tasks(graph)
         return graph
 
-
 @app.post("/api/v1/builder/ai-edit", dependencies=[Depends(auth.require_tenant)], response_model=AIEditResponse)
 async def ai_edit(payload: AIEditRequest) -> AIEditResponse:
     system = "You are the RealSyncDynamics SiteOS visual website editor. Rewrite only the requested section, preserve factual meaning, avoid invented claims, keep it premium and conversion-focused, and return only the requested JSON fields."
@@ -131,32 +142,22 @@ async def ai_edit(payload: AIEditRequest) -> AIEditResponse:
     result, _ = await llm.complete_json(system=system, user=user, model_cls=AIEditResponse, effort="medium", project_id="")
     return result
 
-
-# Public value-first funnel. These endpoints are intentionally read/generate
-# only. Playwright's SSRF guard + service rate limiting protect the anonymous
-# surface; authentication is required once a customer enters the workspace.
-@app.post("/api/v1/public/ai-studio/scan")
+# Public value-first funnel. It never mutates a customer system.
+@app.post("/api/v1/public/ai-studio/scan", dependencies=[Depends(public_transform_guard)])
 async def public_ai_studio_scan(payload: AuditRequest) -> dict:
     try:
         snapshot, audit = await run_audit(payload.url)
         specs = await generate_variants(
-            company_context=f"Website domain: {snapshot.domain}",
-            snapshot=snapshot,
-            audit=audit,
-            project_id=snapshot.domain,
-            include_visuals=False,
+            company_context=f"Website domain: {snapshot.domain}", snapshot=snapshot, audit=audit,
+            project_id=snapshot.domain, include_visuals=False,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"AI Studio Transformation konnte nicht gestartet werden: {exc}") from exc
     return {
-        "product": "RealSync AI Studio",
-        "mode": "public_preview",
-        "backend_preservation": "preserve_all",
-        "evidence": snapshot.model_dump(),
-        "audit": audit.model_dump(),
+        "product": "RealSync AI Studio", "mode": "public_preview", "backend_preservation": "preserve_all",
+        "evidence": snapshot.model_dump(), "audit": audit.model_dump(),
         "variants": [s.model_dump() for s in specs],
     }
-
 
 @app.post("/api/v1/builder/audit/scan", dependencies=[Depends(auth.require_tenant)])
 async def audit_scan(payload: AuditRequest) -> dict:
@@ -166,7 +167,6 @@ async def audit_scan(payload: AuditRequest) -> dict:
         raise HTTPException(status_code=502, detail=f"Audit konnte nicht durchgeführt werden: {exc}") from exc
     return {"evidence": snapshot.model_dump(), "audit": audit.model_dump()}
 
-
 @app.post("/api/v1/builder/audit/generate", dependencies=[Depends(auth.require_tenant)])
 async def audit_generate(payload: GenerateVariantsRequest) -> dict:
     try:
@@ -175,16 +175,12 @@ async def audit_generate(payload: GenerateVariantsRequest) -> dict:
         else:
             evidence, audit = payload.evidence, payload.audit
         specs = await generate_variants(
-            company_context=payload.company_context,
-            snapshot=evidence,
-            audit=audit,
-            project_id=payload.project_id,
-            include_visuals=payload.include_visuals,
+            company_context=payload.company_context, snapshot=evidence, audit=audit,
+            project_id=payload.project_id, include_visuals=payload.include_visuals,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Landingpage-Generierung fehlgeschlagen: {exc}") from exc
     return {"evidence_hash": evidence.evidence_hash, "audit": audit.model_dump(), "variants": [s.model_dump() for s in specs]}
-
 
 @app.get("/api/v1/builder/task-status", dependencies=[Depends(auth.require_tenant)], response_model=TaskGraph)
 async def get_task_status(project_id: str) -> TaskGraph:
@@ -193,7 +189,6 @@ async def get_task_status(project_id: str) -> TaskGraph:
         raise HTTPException(status_code=404, detail=f"Kein Task-Graph für {project_id}")
     return graph
 
-
 @app.post("/api/v1/builder/cancel", dependencies=[Depends(auth.require_tenant)], response_model=TaskGraph)
 async def cancel(payload: CancelRequest) -> TaskGraph:
     graph = await agent_runner.cancel_graph(payload.project_id)
@@ -201,14 +196,12 @@ async def cancel(payload: CancelRequest) -> TaskGraph:
         raise HTTPException(status_code=404, detail=f"Kein Task-Graph für {payload.project_id}")
     return graph
 
-
 @app.get("/api/v1/builder/events", dependencies=[Depends(auth.require_tenant)])
 async def stream_events(project_id: str) -> StreamingResponse:
     async def event_source():
         async for event in events.subscribe(project_id):
             yield f"data: {json.dumps(event.model_dump())}\n\n"
     return StreamingResponse(event_source(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
-
 
 @app.get("/api/v1/builder/audit", dependencies=[Depends(auth.require_tenant)])
 async def get_audit(project_id: str) -> dict:

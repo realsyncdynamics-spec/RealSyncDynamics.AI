@@ -3,16 +3,12 @@
 from __future__ import annotations
 
 from typing import Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, HttpUrl, confloat
+from pydantic import BaseModel, Field, confloat
 
 
 AuditCategory = Literal[
-    "privacy_dsgvo",
-    "ttdsg_consent",
-    "legal_notices",
-    "accessibility_wcag",
-    "third_party_leak",
-    "ai_act_readiness",
+    "privacy_dsgvo", "ttdsg_consent", "legal_notices",
+    "accessibility_wcag", "third_party_leak", "ai_act_readiness",
 ]
 Severity = Literal["critical", "warning", "recommendation"]
 
@@ -66,7 +62,7 @@ class AuditResult(BaseModel):
 
 SectionType = Literal[
     "problem_grid", "trust_badges", "solution_feature",
-    "compliance_comparison", "faq", "cta_banner"
+    "compliance_comparison", "faq", "cta_banner",
 ]
 
 
@@ -86,11 +82,21 @@ class PageSection(BaseModel):
 class DesignTokens(BaseModel):
     theme: Literal["light", "dark", "system"] = "light"
     density: Literal["compact", "comfortable", "spacious"] = "comfortable"
-    accent_color: str = "#4f46e5"
+    accent_color: str = "#4C82FF"
 
 
 class PageSpec(BaseModel):
+    """AI Studio output consumed by the deterministic SiteOS renderer."""
+
+    schema_version: int = Field(default=1, ge=1)
     variant: Literal["executive", "modern", "authority", "minimal"]
+    source_domain: str = ""
+    evidence_hash: str = ""
+    # Hard boundary: generated frontend may not mutate customer backend/API/auth.
+    backend_preservation: Literal["preserve_all"] = "preserve_all"
     hero: Dict[str, object]
     sections: List[PageSection]
     design_tokens: DesignTokens
+    # Prompts are instructions for optional visual asset generation, never URLs.
+    asset_prompts: List[Dict[str, str]] = Field(default_factory=list)
+    ai_disclosure_required: bool = True

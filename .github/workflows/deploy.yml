@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ebd13914f8d5 # v4
         with:
           fetch-depth: 2
-      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+      - uses: supabase/setup-cli@ab058987d8d6c7259716cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
       - name: Deploy changed edge functions

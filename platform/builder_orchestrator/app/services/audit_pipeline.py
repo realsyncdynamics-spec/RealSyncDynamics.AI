@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any
 
 from . import llm
 from .audit_contracts import AuditResult, EvidenceSnapshot, PageSpec
@@ -39,12 +38,10 @@ async def run_audit(url: str, project_id: str = "") -> tuple[EvidenceSnapshot, A
     prompt = json.dumps(snapshot.model_dump(), ensure_ascii=False, separators=(",", ":"))
     result, _ = await llm.complete_json(
         system=AUDIT_SYSTEM,
-        user=(
-            "Evidence snapshot:\n" + prompt
-            + "\n\nClassify the findings, calculate a 0-100 risk/readiness score, "
-            "write a concise summary and remediation plan. Preserve evidence_hash: "
-            + snapshot.evidence_hash
-        ),
+        user=("Evidence snapshot:\n" + prompt
+              + "\n\nClassify the findings, calculate a 0-100 risk/readiness score, "
+                "write a concise summary and remediation plan. Preserve evidence_hash: "
+                + snapshot.evidence_hash),
         model_cls=AuditResult,
         effort="high",
         provider=llm.get_provider(),
@@ -62,26 +59,21 @@ async def run_audit(url: str, project_id: str = "") -> tuple[EvidenceSnapshot, A
     return snapshot, result
 
 
-async def _generate_hero_visual(provider: Any, prompt: str) -> dict[str, str] | None:
-    generator = getattr(provider, "generate_image", None)
-    if generator is None:
-        return None
-    try:
-        return await generator(prompt=prompt, aspect_ratio="16:9", image_size="1K")
-    except Exception:
-        # Visual assets are enhancement, never a reason to lose the complete
-        # PageSpec. The governed text/structure result remains authoritative.
-        return None
-
-
 async def generate_variants(
     *,
     company_context: str,
     snapshot: EvidenceSnapshot,
     audit: AuditResult,
     project_id: str = "",
-    include_visuals: bool = True,
+    include_visuals: bool = False,
 ) -> list[PageSpec]:
+    """Generate independent SiteOS AST variants in parallel.
+
+    Visual asset prompts are part of the PageSpec. Actual image bytes are kept
+    out of the structured-output contract and should be persisted by the
+    future R2 asset layer; this prevents base64 payloads from polluting the
+    model response and keeps preview generation fast.
+    """
     variants = ["executive", "modern", "authority", "minimal"]
     evidence = json.dumps(snapshot.model_dump(), ensure_ascii=False, separators=(",", ":"))
     findings = json.dumps(audit.model_dump(), ensure_ascii=False, separators=(",", ":"))
@@ -106,15 +98,6 @@ async def generate_variants(
         result.source_domain = snapshot.domain
         result.evidence_hash = snapshot.evidence_hash
         result.backend_preservation = "preserve_all"
-
-        if include_visuals and result.asset_prompts:
-            provider = llm.get_provider()
-            prompt = result.asset_prompts[0].get("prompt", "")
-            if prompt:
-                result.visual_asset = await _generate_hero_visual(provider, prompt)
         return result
 
-    # PageSpecs are independent and can run concurrently. This is the first
-    # scalability boundary: one scan can fan out to four variants without
-    # serially multiplying customer wait time.
     return await asyncio.gather(*(generate_one(v) for v in variants))

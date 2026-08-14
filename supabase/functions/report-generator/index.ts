@@ -7,7 +7,7 @@
  * Triggered by: ReportBuilderView or scheduled cron jobs
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -71,15 +71,12 @@ Deno.serve(async (req: Request) => {
       branding,
     } = body;
 
-    // Validate input
     if (!tenant_id || !title) {
       throw new Error('Missing required fields: tenant_id, title');
     }
 
-    // Fetch compliance data for selected frameworks
     const complianceData = await fetchComplianceData(tenant_id, frameworks);
 
-    // Generate report content
     let pdfUrl: string | null = null;
     let excelUrl: string | null = null;
 
@@ -102,7 +99,6 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Store report metadata
     const { error: insertError } = await supabase
       .from('compliance_reports')
       .insert({
@@ -149,11 +145,7 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-/**
- * Fetch compliance data across all requested frameworks
- */
 async function fetchComplianceData(tenantId: string, frameworks: string[]): Promise<ComplianceData> {
-  // Fetch ISO 27001 data
   const { data: iso27001 } = await supabase
     .from('iso27001_implementations')
     .select('*')
@@ -163,7 +155,6 @@ async function fetchComplianceData(tenantId: string, frameworks: string[]): Prom
     ? (iso27001.filter((c) => ['implemented', 'optimized'].includes(c.status)).length / iso27001.length) * 100
     : 0;
 
-  // Fetch ISO 42001 data
   const { data: iso42001 } = await supabase
     .from('iso42001_implementations')
     .select('*')
@@ -173,7 +164,6 @@ async function fetchComplianceData(tenantId: string, frameworks: string[]): Prom
     ? (iso42001.filter((c) => ['implemented', 'optimized'].includes(c.status)).length / iso42001.length) * 100
     : 0;
 
-  // Fetch AI Act assessments
   const { data: aiAct } = await supabase
     .from('ai_act_assessments')
     .select('overall_risk_score')
@@ -184,7 +174,6 @@ async function fetchComplianceData(tenantId: string, frameworks: string[]): Prom
     ? aiAct.reduce((sum, a) => sum + a.overall_risk_score, 0) / aiAct.length
     : 50;
 
-  // Fetch DSGVO compliance
   const { data: dsgvo } = await supabase
     .from('data_processing_records')
     .select('*')
@@ -194,7 +183,6 @@ async function fetchComplianceData(tenantId: string, frameworks: string[]): Prom
     ? (dsgvo.filter((d) => d.has_dpia).length / dsgvo.length) * 100
     : 0;
 
-  // Fetch NIS2 status
   const { data: nis2 } = await supabase
     .from('nis2_incident_deadlines')
     .select('*')
@@ -204,7 +192,6 @@ async function fetchComplianceData(tenantId: string, frameworks: string[]): Prom
     ? (nis2.filter((n) => ['completed', 'on_track'].includes(n.status)).length / nis2.length) * 100
     : 100;
 
-  // Fetch gaps
   const { data: gaps } = await supabase
     .from('compliance_gaps')
     .select('*')
@@ -221,28 +208,21 @@ async function fetchComplianceData(tenantId: string, frameworks: string[]): Prom
     controls_total: (iso27001?.length ?? 0) + (iso42001?.length ?? 0),
     controls_implemented: (iso27001?.filter((c) => c.status === 'implemented').length ?? 0) +
       (iso42001?.filter((c) => c.status === 'implemented').length ?? 0),
-    gaps_open: gaps_open,
+    gaps_open,
     findings: gaps ?? [],
   };
 }
 
-/**
- * Generate PDF report (simplified - in production would use proper PDF library)
- */
 async function generatePdfReport(
   tenantId: string,
   title: string,
   data: ComplianceData,
   options: ReportOptions
 ): Promise<string> {
-  // In production, would use pdfkit or puppeteer for proper PDF generation
-  // For now, simulating with placeholder
-
   const reportContent = generateReportContent(title, data, options);
   const fileName = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
-  // Store in Supabase Storage
-  const { data: uploadData, error } = await supabase
+  const { error } = await supabase
     .storage
     .from('compliance-reports')
     .upload(`${tenantId}/${fileName}`, new Blob([reportContent]), {
@@ -261,23 +241,16 @@ async function generatePdfReport(
   return publicUrl.publicUrl;
 }
 
-/**
- * Generate Excel report
- */
 async function generateExcelReport(
   tenantId: string,
   title: string,
   data: ComplianceData,
   options: ReportOptions
 ): Promise<string> {
-  // In production, would use xlsx or exceljs library
-  // For now, simulating with placeholder
-
   const reportContent = generateReportContent(title, data, options);
   const fileName = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
-  // Store in Supabase Storage
-  const { data: uploadData, error } = await supabase
+  const { error } = await supabase
     .storage
     .from('compliance-reports')
     .upload(`${tenantId}/${fileName}`, new Blob([reportContent]), {
@@ -296,9 +269,6 @@ async function generateExcelReport(
   return publicUrl.publicUrl;
 }
 
-/**
- * Generate report content (can be HTML, JSON, etc.)
- */
 function generateReportContent(title: string, data: ComplianceData, options: ReportOptions): string {
   const lines: string[] = [
     `Title: ${title}`,

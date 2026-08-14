@@ -18,6 +18,7 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 
 from . import auth
 from .clients import rsd_client
@@ -32,27 +33,46 @@ from .otel import get_tracer, setup_tracing
 from .schemas import BuildSpec, CancelRequest, TaskGraph
 from .services import agent_runner, budget, db, events, llm, repository, task_graph
 from .services.audit_log import records as audit_records
+from .services.gemini import GeminiProvider
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
 
 
+class AIEditRequest(BaseModel):
+    """Context sent by the visual SiteOS editor to Gemini."""
+
+    project_name: str = Field(min_length=1, max_length=160)
+    prompt: str = Field(min_length=1, max_length=4000)
+    section_name: str = Field(min_length=1, max_length=120)
+    eyebrow: str = Field(default="", max_length=300)
+    title: str = Field(default="", max_length=500)
+    body: str = Field(default="", max_length=4000)
+
+
+class AIEditResponse(BaseModel):
+    """Structured section update returned by Gemini."""
+
+    eyebrow: str
+    title: str
+    body: str
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Validiert Konfiguration, verbindet die Datenbank und wählt das Backend.
-
-    Ohne erreichbare Datenbank läuft der Orchestrator prozesslokal weiter —
-    Builds gehen dann bei einem Neustart verloren, aber der Dienst nimmt
-    weiterhin Aufträge an. Welcher Modus aktiv ist, steht unter /health.
-    """
-    # Konfiguration validieren vor dem Starten
+    """Validiert Konfiguration, verbindet die Datenbank und wählt das Backend."""
     get_config()
 
     if await db.connect():
         await db.apply_migrations(str(MIGRATION))
     repository.select_backend()
     llm.select_provider()
+
+    # Google AI Studio supplies the Gemini API key. The key stays server-side;
+    # the browser only talks to this authenticated Builder API.
+    if os.getenv("LLM_PROVIDER", "").lower() == "gemini" or os.getenv("GEMINI_API_KEY"):
+        llm.set_provider(GeminiProvider())
     try:
         yield
     finally:
@@ -61,8 +81,8 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title="App Builder Orchestrator",
-    version="0.3.0",
-    description="Multi-Agent-Task-Graph für den AI-App-Builder, gekoppelt an RealSyncDynamicsAI.",
+    version="0.4.0",
+    description="Multi-Agent-Task-Graph für den AI-App-Builder, gekoppelt an RealSyncDynamicsAI und Gemini.",
     lifespan=lifespan,
 )
 
@@ -73,7 +93,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Sicherheits-Middlewares (Reihenfolge: SecurityHeaders → RateLimit → RequestSize → ErrorSanitization → App)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=100)
 app.add_middleware(RequestSizeLimitMiddleware)
@@ -85,9 +104,6 @@ tracer = get_tracer(__name__)
 
 @app.get("/health")
 async def health() -> dict:
-    # `storage` macht sichtbar, ob laufende Builds einen Neustart überleben,
-    # `llm_provider`, ob wirklich ein Modell antwortet oder der Stub — beides
-    # sind Betriebszustände, die man von außen sehen können muss.
     provider = llm.get_provider()
     return {
         "status": "ok",
@@ -95,8 +111,6 @@ async def health() -> dict:
         "storage": "postgres" if db.is_enabled() else "memory",
         "llm_provider": provider.name,
         "llm_model": getattr(provider, "model", "?"),
-        # Ein Dienst, der versehentlich ohne Auth laeuft, soll das nicht
-        # verstecken — deshalb steht der Zustand hier und nicht nur im Log.
         "auth": "enabled" if auth.is_enabled() else "disabled",
     }
 
@@ -115,7 +129,6 @@ async def create_spec(spec: BuildSpec) -> TaskGraph:
         try:
             project = await rsd_client.register_project(spec)
         except rsd_client.GovernanceUnavailableError as exc:
-            # Ohne Governance-Einstufung wird nicht gebaut (Fail-Closed).
             raise HTTPException(
                 status_code=502,
                 detail=f"Governance-Backend nicht erreichbar: {exc}",
@@ -127,6 +140,45 @@ async def create_spec(spec: BuildSpec) -> TaskGraph:
         graph = task_graph.build_graph(spec, project)
         await agent_runner.enqueue_initial_tasks(graph)
         return graph
+
+
+@app.post(
+    "/api/v1/builder/ai-edit",
+    dependencies=[Depends(auth.require_tenant)],
+    response_model=AIEditResponse,
+    summary="Gemini AI Studio Editor: Abschnitt anhand eines Prompts umschreiben",
+)
+async def ai_edit(payload: AIEditRequest) -> AIEditResponse:
+    """Apply an AI Studio-style natural-language edit to one visual section.
+
+    The same structured-output and budget enforcement used by the agent graph
+    is reused here. No Gemini key or raw provider call is exposed to the client.
+    """
+    system = (
+        "You are the RealSyncDynamics SiteOS visual website editor. "
+        "Rewrite only the requested website section. Preserve factual meaning, "
+        "avoid invented claims, keep language conversion-focused and premium, "
+        "and return only the requested JSON fields. Consider EU privacy, "
+        "accessibility, SEO and AI-governance implications."
+    )
+    user = (
+        f"Project: {payload.project_name}\n"
+        f"Section: {payload.section_name}\n"
+        f"Current eyebrow: {payload.eyebrow}\n"
+        f"Current title: {payload.title}\n"
+        f"Current body: {payload.body}\n\n"
+        f"Requested change: {payload.prompt}\n\n"
+        "Return an improved eyebrow, title and body for this section."
+    )
+
+    result, _ = await llm.complete_json(
+        system=system,
+        user=user,
+        model_cls=AIEditResponse,
+        effort="medium",
+        project_id="",
+    )
+    return result
 
 
 @app.get(
@@ -161,12 +213,6 @@ async def cancel(payload: CancelRequest) -> TaskGraph:
     summary="Task-Übergänge als Server-Sent-Events",
 )
 async def stream_events(project_id: str) -> StreamingResponse:
-    """Live-Stream der Statuswechsel — das Frontend muss nicht pollen.
-
-    Den Ausgangszustand holt der Client über `task-status`; hier kommen nur
-    die Übergänge ab dem Verbindungszeitpunkt.
-    """
-
     async def event_source():
         async for event in events.subscribe(project_id):
             yield f"data: {json.dumps(event.model_dump())}\n\n"
@@ -184,8 +230,6 @@ async def stream_events(project_id: str) -> StreamingResponse:
     summary="Prüfpfad der Agentenläufe eines Projekts",
 )
 async def get_audit(project_id: str) -> dict:
-    # Der Verbrauch kommt aus denselben Datensaetzen — kein zweiter Zaehler,
-    # der irgendwann abweicht.
     return {
         "records": [r.model_dump() for r in audit_records(project_id)],
         "usage": budget.summary(project_id),

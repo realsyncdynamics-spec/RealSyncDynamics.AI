@@ -19,16 +19,49 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 // Wenn nicht da: Fallback auf Supabase Vault via SECURITY-DEFINER-RPC.
 // service_role darf get_app_secret() aufrufen — der von Supabase auto-injizierte
 // SUPABASE_SERVICE_ROLE_KEY ist immer im Edge-Function-Env.
+//
+// A warm Edge-Function isolate may serve many requests. Cache Vault lookups
+// briefly and deduplicate concurrent misses for the same secret. This avoids a
+// network/RPC round-trip on every provider call without weakening the existing
+// service_role-only Vault access boundary.
+const SECRET_CACHE_TTL_MS = 60_000;
+const secretCache = new Map<string, { value: string | null; expiresAt: number }>();
+const secretInflight = new Map<string, Promise<string | null>>();
+
 async function getApiKey(envVar: string, vaultName: string): Promise<string | null> {
   const fromEnv = Deno.env.get(envVar);
   if (fromEnv) return fromEnv;
-  const url = Deno.env.get('SUPABASE_URL');
-  const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !srk) return null;
-  const admin = createClient(url, srk, { auth: { persistSession: false } });
-  const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
-  if (error) return null;
-  return typeof data === 'string' && data.length > 0 ? data : null;
+
+  const now = Date.now();
+  const cached = secretCache.get(vaultName);
+  if (cached && cached.expiresAt > now) return cached.value;
+
+  const pending = secretInflight.get(vaultName);
+  if (pending) return pending;
+
+  const load = (async (): Promise<string | null> => {
+    const url = Deno.env.get('SUPABASE_URL');
+    const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !srk) return null;
+
+    const admin = createClient(url, srk, { auth: { persistSession: false } });
+    const { data, error } = await admin.rpc('get_app_secret', { secret_name: vaultName });
+    if (error) return null;
+
+    const value = typeof data === 'string' && data.length > 0 ? data : null;
+    secretCache.set(vaultName, {
+      value,
+      expiresAt: Date.now() + SECRET_CACHE_TTL_MS,
+    });
+    return value;
+  })();
+
+  secretInflight.set(vaultName, load);
+  try {
+    return await load;
+  } finally {
+    secretInflight.delete(vaultName);
+  }
 }
 
 export type ProviderId = 'anthropic' | 'google' | 'openai' | 'ollama';

@@ -37,9 +37,21 @@ export interface TenantSummary {
 /** Returns all tenants the current user is a member of, with their role. */
 export async function listMyTenants(): Promise<TenantSummary[]> {
   const sb = getSupabase();
+
+  // RLS remains the authoritative security boundary. The explicit user filter
+  // prevents PostgREST from scanning the whole memberships relation on every
+  // client call and lets PostgreSQL use idx_memberships_user directly.
+  const {
+    data: { session },
+  } = await sb.auth.getSession();
+
+  const userId = session?.user?.id;
+  if (!userId) return [];
+
   const { data, error } = await sb
     .from('memberships')
     .select('role,tenant:tenants(id,name,is_public_sector,industry)')
+    .eq('user_id', userId)
     .order('created_at', { ascending: true });
   if (error) throw error;
   return ((data ?? []) as unknown as MembershipRow[])

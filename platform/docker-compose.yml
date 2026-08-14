@@ -1,12 +1,6 @@
 # AI-App-Builder + RealSyncDynamicsAI-Governance — lokaler Stack.
 #
-# Start:  docker compose up --build
-# Hosts:  http://builder.localhost | http://rsd.localhost | http://app.localhost
-#         https://builder.localhost | https://rsd.localhost | https://app.localhost (selbstsigniertes Zert)
-#         traefik.localhost:8080 (Dashboard)
-#
-# Hinweis: *.localhost löst auf den meisten Systemen automatisch auf 127.0.0.1 auf.
-# Falls nicht, Einträge in /etc/hosts ergänzen. Browser-Warnung bei HTTPS ignorieren (self-signed cert).
+# Start: docker compose up --build
 
 services:
   traefik:
@@ -24,8 +18,7 @@ services:
       - ./traefik/certs:/etc/traefik/certs:ro
       - ./traefik/acme.json:/etc/traefik/acme.json
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - rsd_net
+    networks: [rsd_net]
 
   governance_backend:
     build: ./governance_backend
@@ -38,22 +31,21 @@ services:
       GOVERNANCE_AUTH_TOKENS: ${GOVERNANCE_AUTH_TOKENS:-}
       GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
       GOVERNANCE_WEBHOOK_URL: ""
-    ports:
-      - "8002:8002"
+    ports: ["8002:8002"]
     depends_on:
-      supabase_db:
-        condition: service_healthy
+      supabase_db: { condition: service_healthy }
     labels:
       - traefik.enable=true
       - traefik.http.routers.governance.rule=Host(`rsd.localhost`)
       - traefik.http.routers.governance.entrypoints=web,websecure
       - traefik.http.routers.governance.tls=true
       - traefik.http.services.governance.loadbalancer.server.port=8002
-    networks:
-      - rsd_net
+    networks: [rsd_net]
 
   builder_orchestrator:
-    build: ./builder_orchestrator
+    build:
+      context: ./builder_orchestrator
+      dockerfile: Dockerfile.playwright
     container_name: rsd_builder
     environment:
       ENVIRONMENT: local
@@ -64,8 +56,6 @@ services:
       GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
       BUILDER_MAX_CONCURRENCY: "4"
-      # LLM-Provider: Google AI Studio -> Gemini API. Der Key bleibt
-      # ausschließlich im serverseitigen Builder-Container.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
       LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
@@ -76,23 +66,18 @@ services:
       BUILDER_TOKEN_BUDGET: ${BUILDER_TOKEN_BUDGET:-0}
       BUILDER_WORKSPACE_ROOT: /workspaces
       BUILDER_TEST_COMMAND: ${BUILDER_TEST_COMMAND:-}
-    volumes:
-      - builder_workspaces:/workspaces
-    ports:
-      - "8001:8001"
+    volumes: [builder_workspaces:/workspaces]
+    ports: ["8001:8001"]
     depends_on:
-      governance_backend:
-        condition: service_started
-      supabase_db:
-        condition: service_healthy
+      governance_backend: { condition: service_started }
+      supabase_db: { condition: service_healthy }
     labels:
       - traefik.enable=true
       - traefik.http.routers.builder.rule=Host(`builder.localhost`)
       - traefik.http.routers.builder.entrypoints=web,websecure
       - traefik.http.routers.builder.tls=true
       - traefik.http.services.builder.loadbalancer.server.port=8001
-    networks:
-      - rsd_net
+    networks: [rsd_net]
 
   nextjs_frontend:
     build: ./nextjs_frontend
@@ -100,19 +85,15 @@ services:
     environment:
       NEXT_PUBLIC_BUILDER_URL: ${NEXT_PUBLIC_BUILDER_URL:-http://builder.localhost}
       NEXT_PUBLIC_GOVERNANCE_URL: ${NEXT_PUBLIC_GOVERNANCE_URL:-http://rsd.localhost}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - builder_orchestrator
-      - governance_backend
+    ports: ["3000:3000"]
+    depends_on: [builder_orchestrator, governance_backend]
     labels:
       - traefik.enable=true
       - traefik.http.routers.frontend.rule=Host(`app.localhost`)
       - traefik.http.routers.frontend.entrypoints=web,websecure
       - traefik.http.routers.frontend.tls=true
       - traefik.http.services.frontend.loadbalancer.server.port=3000
-    networks:
-      - rsd_net
+    networks: [rsd_net]
 
   supabase_db:
     image: postgres:16-alpine
@@ -121,17 +102,14 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - rsd_pgdata:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+    volumes: [rsd_pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      - rsd_net
+    networks: [rsd_net]
 
 volumes:
   rsd_pgdata:

@@ -47,12 +47,7 @@ export async function createCheckoutSession(
   return data as CheckoutResult;
 }
 
-/**
- * Paid handoff after the SiteOS redesign preview.
- * Uses the canonical production website-rebuild checkout. The server resolves
- * the Governance Launch product, enforces tenant membership, and verifies the
- * one-time Stripe Price before creating the Checkout Session.
- */
+/** Paid handoff after the SiteOS redesign preview. */
 export async function createSiteOsCheckoutSession(args: {
   tenantId: string;
   sourceUrl: string;
@@ -77,8 +72,7 @@ export async function createSiteOsCheckoutSession(args: {
 /**
  * Combined offer: €349 one-time Website Transformation + one recurring
  * governance plan in a single Stripe Checkout Session. The server resolves
- * both prices from the pricing/catalog SSoT; the browser never supplies a
- * Stripe Price ID.
+ * both prices from the catalog SSoT; the browser never supplies Stripe IDs.
  */
 export async function createSiteOsBundleCheckoutSession(args: {
   tenantId: string;
@@ -90,7 +84,9 @@ export async function createSiteOsBundleCheckoutSession(args: {
   const key = normalizePlanKey(args.planKey);
   const plan = key ? planByKey(key) : null;
   if (!key || !plan) return { ok: false, error: { code: 'UNKNOWN_PLAN', message: `Unbekannter Plan: ${args.planKey}` } };
-  if (plan.purchaseMode !== 'subscription') return { ok: false, error: { code: 'INVALID_BUNDLE_PLAN', message: 'Für das Bundle ist ein laufendes Governance-Paket erforderlich.' } };
+  if (plan.purchaseMode !== 'checkout' || plan.billingInterval === 'one_time') {
+    return { ok: false, error: { code: 'INVALID_BUNDLE_PLAN', message: 'Für das Bundle ist ein laufendes Governance-Paket erforderlich.' } };
+  }
 
   const { data, error } = await getSupabase().functions.invoke('checkout-website-bundle', {
     body: {

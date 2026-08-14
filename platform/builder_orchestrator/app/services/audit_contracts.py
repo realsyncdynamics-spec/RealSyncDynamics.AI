@@ -85,6 +85,12 @@ class DesignTokens(BaseModel):
     accent_color: str = "#4C82FF"
 
 
+class VisualAsset(BaseModel):
+    mime_type: str
+    data_base64: str
+    model: str
+
+
 class PageSpec(BaseModel):
     """AI Studio output consumed by the deterministic SiteOS renderer."""
 
@@ -92,11 +98,11 @@ class PageSpec(BaseModel):
     variant: Literal["executive", "modern", "authority", "minimal"]
     source_domain: str = ""
     evidence_hash: str = ""
-    # Hard boundary: generated frontend may not mutate customer backend/API/auth.
     backend_preservation: Literal["preserve_all"] = "preserve_all"
     hero: Dict[str, object]
     sections: List[PageSection]
     design_tokens: DesignTokens
-    # Prompts are instructions for optional visual asset generation, never URLs.
     asset_prompts: List[Dict[str, str]] = Field(default_factory=list)
+    # Ephemeral preview payload. Production persistence belongs in R2/assets.
+    visual_asset: Optional[VisualAsset] = None
     ai_disclosure_required: bool = True

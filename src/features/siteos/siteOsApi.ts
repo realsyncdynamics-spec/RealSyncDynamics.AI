@@ -86,14 +86,31 @@ export interface ScanResponse {
   scores: ScoreBreakdown;
 }
 
+export interface PublicAiStudioScanResponse {
+  ok: true;
+  source_url: string;
+  evidence_hash?: string;
+  audit?: { scores?: Partial<ScoreBreakdown>; findings?: RuntimeFinding[] };
+  scores?: Partial<ScoreBreakdown>;
+  findings?: RuntimeFinding[];
+  blueprint?: SiteBlueprint;
+  pages?: unknown[];
+  discovery?: {
+    title?: string | null;
+    description?: string | null;
+    h1?: string | null;
+    services?: string[];
+    visible_text?: string;
+  };
+  variants?: unknown[];
+}
+
 export type SiteOsError =
   | { kind: 'forbidden' }
   | { kind: 'payment_required'; message: string }
   | { kind: 'bad_request'; message: string }
   | { kind: 'unreachable'; message: string }
   | { kind: 'error'; message: string };
-
-export type SiteOsResult<T> = { kind: 'ok'; data: T } | SiteOsError;
 
 function mapError(error: unknown): SiteOsError {
   const status = (error as { context?: { status?: number } }).context?.status;
@@ -111,6 +128,34 @@ export function errorMessage(e: SiteOsError): string {
     case 'payment_required': return 'SiteOS ist in diesem Tarif nicht enthalten.';
     case 'unreachable': return `Die Adresse war nicht erreichbar: ${e.message}`;
     default: return e.message;
+  }
+}
+
+// ── Public AI Studio ─────────────────────────────────────────────────────
+// Dieser Pfad ist absichtlich tenant- und login-frei. Er liefert nur Evidence,
+// Audit und strukturierte Transformationsdaten; persistente SiteOS-Schreibpfade
+// bleiben weiterhin hinter dem authentifizierten Builder.
+export async function runPublicAiStudioScan(args: {
+  url: string;
+  locale?: string;
+}): Promise<SiteOsResult<PublicAiStudioScanResponse>> {
+  try {
+    const response = await fetch('/api/v1/public/ai-studio/scan', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: args.url, locale: args.locale ?? 'de' }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message = data?.message ?? data?.error ?? `Public AI Studio Scan fehlgeschlagen (${response.status}).`;
+      if (response.status === 400) return { kind: 'bad_request', message };
+      if (response.status === 502) return { kind: 'unreachable', message };
+      return { kind: 'error', message };
+    }
+    if (!data?.ok || !data?.source_url) return { kind: 'error', message: 'Der öffentliche AI-Studio-Scan lieferte kein gültiges Ergebnis.' };
+    return { kind: 'ok', data: data as PublicAiStudioScanResponse };
+  } catch (error) {
+    return { kind: 'error', message: error instanceof Error ? error.message : 'Public AI Studio Scan konnte nicht erreicht werden.' };
   }
 }
 

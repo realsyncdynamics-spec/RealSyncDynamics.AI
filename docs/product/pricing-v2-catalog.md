@@ -2,24 +2,28 @@
 
 This is the proposed commercial catalog for validation. It is intentionally **not** yet the production Stripe catalog. `shared/pricing.ts` remains authoritative until this proposal is approved and migrated with compatibility tests.
 
-## Entry
+## Entry and transformation
 
-### Free Audit — €0
-- One public audit/scan
-- Evidence summary
-- Governance score
-- Preview/offer entry point
-- No recurring entitlement
+### Free first check — €0
+
+The public first check is an acquisition/value demonstration, not the recurring product unit.
+
+It provides enough initial evidence to demonstrate the customer's current situation and introduce the transformation offer. It creates no recurring monitoring entitlement.
 
 ### Website Transformation — €349 one-time
-- Scan + evidence context
-- Gemini-driven transformation
-- Four landing-page variants
+
+The one-time transformation turns the customer's existing website into a governed, modern landing-page experience:
+
+- initial evidence context
+- Gemini-driven transformation reasoning
+- four landing-page variants
 - SiteOS deterministic rendering
-- Before/after preview
-- Governance validation before publish
-- Backend preservation: `preserve_all`
-- Separate from subscription and website capacity
+- before/after preview
+- governance validation before publish
+- backend preservation: `preserve_all`
+- separate from subscription and website capacity
+
+The transformation is intentionally independent from recurring monitoring. A customer can buy the transformation and subsequently choose the monitoring capability that fits the operation.
 
 ## Core
 
@@ -27,20 +31,25 @@ This is the proposed commercial catalog for validation. It is intentionally **no
 
 Designed to be a complete, credible one-website governance product.
 
+**The recurring promise is continuous monitoring, not a monthly scan allowance.**
+
 Includes:
-- 1 website/domain
-- continuous monitoring
-- DSGVO baseline
+- 1 website/domain under continuous monitoring
+- recurring change/drift detection at the supported baseline
+- evidence collection and history
+- DSGVO baseline governance
 - basic AI governance analysis
 - Audit Center
 - Evidence Vault baseline
 - compliance reports
-- basic alerts
+- basic alerts/notifications
 - remediation tracking baseline
 - 1 seat
 - standard support
 
 The customer does **not** need to buy another tier to make the base product legitimate.
+
+Monitoring cadence is an operational/product parameter. It must not be marketed as an arbitrary number of scans per month.
 
 ## Compliance packs
 
@@ -144,11 +153,11 @@ Actual connector availability is subject to the customer's connected services an
 
 ## Capacity
 
-Capacity is independent from capability.
+Capacity is independent from capability. Website capacity means **additional websites under continuous monitoring**, not additional scan credits.
 
 ### Website Capacity
 
-| Capacity | Increment |
+| Websites continuously monitored | Increment |
 |---|---:|
 | 1 website | included |
 | 5 websites | +€29/month |
@@ -160,9 +169,9 @@ Capacity is independent from capability.
 
 Usage-based expansions should be added only where infrastructure cost materially scales with consumption:
 
-- AI inference/answer quota
-- automation runs
-- evidence storage
+- AI inference/answer volume
+- automation executions
+- evidence storage/retention
 - API calls
 - bulk operations
 - seats
@@ -192,7 +201,7 @@ The €499 figure is a positioning floor for validation, not a production price 
 ## Example customer configurations
 
 ### Solo professional — one normal website
-Core = €79/month.
+Core = €79/month for continuous monitoring.
 
 ### Solo professional — complex legal requirements
 Core €79 + Legal Pack €39 = **€118/month**.
@@ -201,7 +210,7 @@ Core €79 + Legal Pack €39 = **€118/month**.
 Core €79 + Health Pack €49 = **€128/month**.
 
 ### Small company — five websites
-Core €79 + Website Capacity €29 = **€108/month**.
+Core €79 + Website Capacity €29 = **€108/month** for five continuously monitored websites.
 
 ### Agency — 25 websites + automation
 Core €79 + Capacity €99 + AI Automation €49 + Developer Integration €49 = **€276/month**.
@@ -211,14 +220,17 @@ Core + required compliance/integration capabilities + organizational Enterprise 
 
 ## Commercial rules
 
-1. €349 transformation is independent of subscription tier.
-2. Core must be sufficient for a normal single-site customer.
-3. Regulatory depth is sold through coherent packs, not forced tier jumps.
-4. Website capacity is sold independently from feature capability.
-5. No customer is forced to purchase AI, Voice, White Label or Agency functionality to add websites.
-6. No customer is forced into Enterprise solely because its regulatory requirements are complex.
-7. Packs are outcome-oriented; avoid one-feature pricing wherever possible.
-8. Usage pricing is introduced only where variable infrastructure cost justifies it.
-9. Existing plan keys remain compatible during migration.
-10. Stripe Price IDs remain server-side and are resolved from canonical plan/product keys.
-11. The production SSoT must be updated only after this catalog passes product, margin, entitlement and migration review.
+1. The public first check is acquisition/value demonstration, not a recurring scan allowance.
+2. €349 transformation is independent of subscription tier.
+3. Core must be sufficient for a normal single-site customer and must deliver continuous monitoring.
+4. Regulatory depth is sold through coherent packs, not forced tier jumps.
+5. Website capacity is sold as additional continuously monitored websites, independently from feature capability.
+6. No customer is forced to purchase AI, Voice, White Label or Agency functionality to add websites.
+7. No customer is forced into Enterprise solely because its regulatory requirements are complex.
+8. Packs are outcome-oriented; avoid one-feature pricing wherever possible.
+9. Usage pricing is introduced only where variable infrastructure cost justifies it.
+10. Existing plan keys remain compatible during migration.
+11. Stripe Price IDs remain server-side and are resolved from canonical plan/product keys.
+12. The production SSoT must be updated only after this catalog passes product, margin, entitlement and migration review.
+13. Marketing must not describe monitoring capacity as a number of scans per month.
+14. The product should be positioned on individual value and infrastructure fit, not on artificial feature gates or enterprise-only pricing cliffs.

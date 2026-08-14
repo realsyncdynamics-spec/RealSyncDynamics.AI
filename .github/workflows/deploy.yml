@@ -24,7 +24,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ebd13914f8d5 # v4
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
         with:
           version: latest
@@ -34,8 +34,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # One-time reconciliation documented in docs/runbooks/edge-function-kontingent.md.
-          # This changes only supabase_migrations.schema_migrations; it does not execute/revert SQL.
+          # These migration versions already exist in the production schema.
+          # Mark them as applied in the remote ledger so db push does not replay them.
           versions=(
             20260628121531
             20260628121551
@@ -66,8 +66,8 @@ jobs:
             20260814014724
           )
           for version in "${versions[@]}"; do
-            echo "Repairing migration history: $version => reverted"
-            supabase migration repair "$version" --status reverted
+            echo "Reconciling migration history: $version => applied"
+            supabase migration repair "$version" --status applied
           done
       - name: Push migrations
         run: |
@@ -92,7 +92,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ebd13914f8d5 # v4
         with:
           fetch-depth: 2
       - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1

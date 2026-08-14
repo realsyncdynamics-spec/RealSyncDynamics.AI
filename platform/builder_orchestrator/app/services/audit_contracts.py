@@ -76,11 +76,6 @@ class DesignTokens(BaseModel):
     density: Literal["compact", "comfortable", "spacious"] = "comfortable"
     accent_color: str = "#4C82FF"
 
-class VisualAsset(BaseModel):
-    mime_type: str
-    data_base64: str
-    model: str
-
 class PageSpec(BaseModel):
     """AI Studio output consumed by the deterministic SiteOS renderer."""
     schema_version: int = Field(default=1, ge=1)
@@ -92,5 +87,4 @@ class PageSpec(BaseModel):
     sections: List[PageSection]
     design_tokens: DesignTokens
     asset_prompts: List[Dict[str, str]] = Field(default_factory=list)
-    visual_asset: Optional[VisualAsset] = Field(default=None, json_schema_extra={"exclude_from_generation": True})
     ai_disclosure_required: bool = True

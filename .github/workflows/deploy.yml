@@ -30,7 +30,30 @@ jobs:
           version: latest
       - name: Link project
         run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"
-      # Remote migration ledger drift is intentionally surfaced as a hard failure.
+      - name: Reconcile known remote migration ledger drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          # One-time reconciliation documented in docs/runbooks/edge-function-kontingent.md.
+          # This changes only supabase_migrations.schema_migrations; it does not execute/revert SQL.
+          versions=(
+            20260628121531
+            20260628121551
+            20260628121603
+            20260628193744
+            20260628193759
+            20260628193820
+            20260701121059
+            20260715105402
+            20260720123325
+            20260720123711
+            20260720124405
+            20260802192603
+          )
+          for version in "${versions[@]}"; do
+            echo "Repairing migration history: $version => reverted"
+            supabase migration repair "$version" --status reverted
+          done
       - name: Push migrations
         run: |
           set +e

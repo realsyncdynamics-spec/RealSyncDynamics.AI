@@ -3,10 +3,10 @@
 import { useMemo, useState } from 'react';
 
 const BUILDER_URL = process.env.NEXT_PUBLIC_BUILDER_URL ?? 'http://builder.localhost';
+const AI_STUDIO_URL = 'https://aistudio.google.com/';
 
 type Device = 'desktop' | 'tablet' | 'mobile';
 type Section = { id: string; name: string; eyebrow: string; title: string; body: string };
-
 type AgentTask = { id: string; agent_type: string; status: string; depends_on: string[] };
 type TaskGraph = { project_id: string; tasks: AgentTask[] };
 
@@ -30,10 +30,10 @@ export default function BuilderPage() {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState('Draft');
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const selected = sections.find((section) => section.id === selectedId) ?? sections[0];
   const canvasWidth = device === 'desktop' ? 'min(100%, 920px)' : device === 'tablet' ? '768px' : '390px';
-
   const completion = useMemo(() => Math.min(100, 74 + sections.length * 4), [sections.length]);
 
   function updateSelected(key: 'eyebrow' | 'title' | 'body', value: string) {
@@ -55,14 +55,49 @@ export default function BuilderPage() {
     try {
       const response = await fetch(`${BUILDER_URL}/api/v1/builder/create-spec`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_name: projectName, description: prompt.slice(0, 200), prompt, data_types: ['customer_data'], data_subjects: ['customers'], models: ['claude-3-5-sonnet'], llm_provider: 'anthropic', jurisdiction: 'eu', target_stack: 'nextjs_supabase' }),
+        body: JSON.stringify({
+          project_name: projectName,
+          description: prompt.slice(0, 200),
+          prompt,
+          data_types: ['customer_data'],
+          data_subjects: ['customers'],
+          models: ['gemini-3.5-flash'],
+          llm_provider: 'gemini',
+          jurisdiction: 'eu',
+          target_stack: 'nextjs_supabase',
+        }),
       });
       if (!response.ok) throw new Error(`Builder API ${response.status}`);
       setGraph(await response.json());
-      setStatus('Build queued');
+      setStatus('Build queued · Gemini');
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally { setLoading(false); }
+  }
+
+  async function applyWithGemini() {
+    setAiLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${BUILDER_URL}/api/v1/builder/ai-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_name: projectName,
+          prompt,
+          section_name: selected.name,
+          eyebrow: selected.eyebrow,
+          title: selected.title,
+          body: selected.body,
+        }),
+      });
+      if (!response.ok) throw new Error(`Gemini Editor ${response.status}`);
+      const result: Pick<Section, 'eyebrow' | 'title' | 'body'> = await response.json();
+      setSections((current) => current.map((section) => section.id === selectedId ? { ...section, ...result } : section));
+      setStatus('AI change applied · Gemini');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setAiLoading(false); }
   }
 
   return (
@@ -71,16 +106,18 @@ export default function BuilderPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <strong style={{ letterSpacing: '-.02em', fontSize: 18 }}>RealSync <span style={{ color: '#8b9cff' }}>SiteOS</span></strong>
           <span style={{ color: '#7d879b', fontSize: 13 }}>/ Website Builder</span>
+          <span style={{ color: '#8fe7c5', fontSize: 11, border: '1px solid #2d5f4f', background: '#0d211b', borderRadius: 999, padding: '5px 9px' }}>Gemini · AI Studio</span>
           <input value={projectName} onChange={(e) => setProjectName(e.target.value)} style={{ background: '#121827', border: '1px solid #283249', borderRadius: 8, color: '#fff', padding: '7px 10px', width: 150 }} />
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {(['desktop', 'tablet', 'mobile'] as Device[]).map((item) => <button key={item} onClick={() => setDevice(item)} style={buttonStyle(device === item)}>{item}</button>)}
+          <a href={AI_STUDIO_URL} target="_blank" rel="noreferrer" style={{ ...buttonStyle(false), textDecoration: 'none' }}>AI Studio</a>
           <button onClick={() => setStatus('Saved')} style={buttonStyle(false)}>Save</button>
           <button onClick={buildApp} disabled={loading} style={{ ...buttonStyle(false), background: '#eef2ff', color: '#090c14' }}>{loading ? 'Building…' : 'Publish'}</button>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '230px 1fr 290px', minHeight: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '230px 1fr 310px', minHeight: 0 }}>
         <aside style={{ borderRight: '1px solid #202637', background: '#0b0f19', padding: 16, overflow: 'auto' }}>
           <small style={label}>PAGES</small>
           <div style={pageItem}>⌂ Home</div><div style={pageItem}>About</div><div style={pageItem}>Services</div><div style={pageItem}>Contact</div>
@@ -108,16 +145,26 @@ export default function BuilderPage() {
           <small style={label}>BODY</small><textarea value={selected.body} onChange={(e) => updateSelected('body', e.target.value)} rows={5} style={inputStyle} />
           <small style={label}>STYLE</small>
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>{palettes.map((p, i) => <button key={p} onClick={() => { setPalette(i); setStatus('Unsaved changes'); }} style={{ width: 32, height: 32, borderRadius: 8, border: i === palette ? '2px solid #fff' : '1px solid #30394d', background: p }} />)}</div>
-          <div style={{ border: '1px solid #283249', borderRadius: 12, padding: 14, background: '#101625' }}><strong style={{ fontSize: 13 }}>AI EDITOR</strong><p style={{ color: '#8f9ab0', fontSize: 12, lineHeight: 1.5 }}>Describe a change and SiteOS will apply it to the selected section.</p><textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} style={inputStyle} /><button onClick={() => { updateSelected('title', selected.title.includes('premium') ? selected.title : `${selected.title} — premium, clearer and conversion-focused`); setStatus('AI change applied'); }} style={{ width: '100%', padding: 10, borderRadius: 8, border: 0, background: '#6675ff', color: '#fff', fontWeight: 700 }}>Apply with AI</button></div>
+
+          <div style={{ border: '1px solid #283249', borderRadius: 12, padding: 14, background: '#101625' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <strong style={{ fontSize: 13 }}>AI EDITOR</strong>
+              <span style={{ color: '#8fe7c5', fontSize: 10, fontWeight: 800 }}>GEMINI</span>
+            </div>
+            <p style={{ color: '#8f9ab0', fontSize: 12, lineHeight: 1.5 }}>Describe the change naturally — SiteOS sends only this section context to the server-side Gemini provider and applies the structured result to the canvas.</p>
+            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5} style={inputStyle} />
+            <button onClick={applyWithGemini} disabled={aiLoading} style={{ width: '100%', padding: 10, borderRadius: 8, border: 0, background: '#6675ff', color: '#fff', fontWeight: 700 }}>{aiLoading ? 'Gemini is editing…' : 'Apply with Gemini'}</button>
+          </div>
+
           <small style={{ ...label, display: 'block', marginTop: 22 }}>GOVERNANCE</small>
           {['SEO', 'Privacy / DSGVO', 'Accessibility', 'EU AI Act', 'Evidence'].map((item) => <div key={item} style={{ padding: '8px 0', fontSize: 13, color: '#b7c0d2' }}>✓ {item}</div>)}
           <div style={{ marginTop: 16, fontSize: 12, color: '#7d879b' }}>Readiness <strong style={{ color: '#dfe5ff' }}>{completion}%</strong> · {status}</div>
-          {error && <div style={{ color: '#ff8e9d', marginTop: 12, fontSize: 12 }}>{error}</div>}
           {graph && <div style={{ marginTop: 12, color: '#7d879b', fontSize: 11 }}>{graph.tasks.length} build tasks queued</div>}
+          {error && <div style={{ color: '#ff8e9d', marginTop: 12, fontSize: 12 }}>{error}</div>}
         </aside>
       </div>
 
-      <footer style={{ borderTop: '1px solid #202637', background: '#0b0f19', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#7d879b', fontSize: 12 }}><span>RealSync SiteOS · Governance-aware website builder</span><span>Draft · {status}</span></footer>
+      <footer style={{ borderTop: '1px solid #202637', background: '#0b0f19', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#7d879b', fontSize: 12 }}><span>RealSync SiteOS · AI Studio / Gemini Builder Runtime</span><span>Draft · {status}</span></footer>
     </main>
   );
 }

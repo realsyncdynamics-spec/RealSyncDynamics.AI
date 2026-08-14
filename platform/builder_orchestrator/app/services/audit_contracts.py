@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field, confloat
 
 AuditCategory = Literal[
     "privacy_dsgvo", "ttdsg_consent", "legal_notices",
-    "accessibility_wcag", "third_party_leak", "ai_act_readiness",
+    "accessibility_wcag", "security_headers", "performance", "seo",
+    "third_party_leak", "ai_act_readiness",
 ]
 Severity = Literal["critical", "warning", "recommendation"]
 
@@ -91,5 +92,5 @@ class PageSpec(BaseModel):
     sections: List[PageSection]
     design_tokens: DesignTokens
     asset_prompts: List[Dict[str, str]] = Field(default_factory=list)
-    visual_asset: Optional[VisualAsset] = None
+    visual_asset: Optional[VisualAsset] = Field(default=None, json_schema_extra={"exclude_from_generation": True})
     ai_disclosure_required: bool = True

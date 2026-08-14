@@ -5,13 +5,11 @@ from __future__ import annotations
 from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, confloat
 
-
 AuditCategory = Literal[
     "privacy_dsgvo", "ttdsg_consent", "legal_notices",
     "accessibility_wcag", "third_party_leak", "ai_act_readiness",
 ]
 Severity = Literal["critical", "warning", "recommendation"]
-
 
 class EvidenceTrace(BaseModel):
     initiator_url: Optional[str] = None
@@ -20,7 +18,6 @@ class EvidenceTrace(BaseModel):
     cookies_set: List[str] = Field(default_factory=list)
     timestamp: str
     detail: Optional[str] = None
-
 
 class EvidenceFinding(BaseModel):
     finding_id: str
@@ -31,7 +28,6 @@ class EvidenceFinding(BaseModel):
     evidence: EvidenceTrace
     remediation_hint: str
     confidence: confloat(ge=0, le=1)
-
 
 class EvidenceSnapshot(BaseModel):
     domain: str
@@ -49,7 +45,6 @@ class EvidenceSnapshot(BaseModel):
     content: Dict[str, object] = Field(default_factory=dict)
     deterministic_findings: List[EvidenceFinding] = Field(default_factory=list)
 
-
 class AuditResult(BaseModel):
     score: int = Field(ge=0, le=100)
     critical_findings: List[EvidenceFinding] = Field(default_factory=list)
@@ -59,17 +54,14 @@ class AuditResult(BaseModel):
     summary: str
     remediation_plan: List[str] = Field(default_factory=list)
 
-
 SectionType = Literal[
     "problem_grid", "trust_badges", "solution_feature",
     "compliance_comparison", "faq", "cta_banner",
 ]
 
-
 class CTA(BaseModel):
     label: str
     action: str
-
 
 class PageSection(BaseModel):
     id: str
@@ -78,22 +70,18 @@ class PageSection(BaseModel):
     subtitle: Optional[str] = None
     items: List[Dict[str, object]] = Field(default_factory=list)
 
-
 class DesignTokens(BaseModel):
     theme: Literal["light", "dark", "system"] = "light"
     density: Literal["compact", "comfortable", "spacious"] = "comfortable"
     accent_color: str = "#4C82FF"
-
 
 class VisualAsset(BaseModel):
     mime_type: str
     data_base64: str
     model: str
 
-
 class PageSpec(BaseModel):
     """AI Studio output consumed by the deterministic SiteOS renderer."""
-
     schema_version: int = Field(default=1, ge=1)
     variant: Literal["executive", "modern", "authority", "minimal"]
     source_domain: str = ""
@@ -103,6 +91,5 @@ class PageSpec(BaseModel):
     sections: List[PageSection]
     design_tokens: DesignTokens
     asset_prompts: List[Dict[str, str]] = Field(default_factory=list)
-    # Ephemeral preview payload. Production persistence belongs in R2/assets.
     visual_asset: Optional[VisualAsset] = None
     ai_disclosure_required: bool = True

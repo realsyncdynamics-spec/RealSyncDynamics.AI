@@ -56,13 +56,13 @@ jobs:
         run: |
           if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
-          elif [ "$CF_ACTIONS_CANONICAL" = "true" ]; then
+          elif [ "$CF_ACTIONS_CANONICAL" = "true" ] && [ "$GITHUB_EVENT_NAME" = "push" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::error::Cloudflare Actions deploy is required but credentials are missing."
             exit 1
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Cloudflare Actions deploy skipped; native Cloudflare Git integration remains the deployment path."
+            echo "::notice::Cloudflare production deploy is disabled for pull requests."
           fi
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -106,7 +106,7 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Pages
     needs: build
-    if: needs.build.outputs.cf_ready == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -125,7 +125,7 @@ jobs:
   smoke-test:
     name: Smoke test live routes
     needs: [build, deploy]
-    if: needs.build.outputs.cf_ready == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.outputs.cf_ready == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Wait for CDN propagation

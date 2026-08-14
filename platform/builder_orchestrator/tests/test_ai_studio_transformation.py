@@ -1,9 +1,4 @@
-from app.services.audit_contracts import (
-    DesignTokens,
-    PageSection,
-    PageSpec,
-    VisualAsset,
-)
+from app.services.audit_contracts import DesignTokens, PageSection, PageSpec
 
 
 def test_pagespec_preserves_customer_backend_boundary():
@@ -22,19 +17,16 @@ def test_pagespec_preserves_customer_backend_boundary():
     assert spec.ai_disclosure_required is True
 
 
-def test_visual_asset_is_optional_and_separate_from_pagespec_structure():
+def test_asset_prompts_are_spec_instructions_not_generated_markup():
     spec = PageSpec(
         variant="executive",
         hero={"headline": "Executive"},
         sections=[],
         design_tokens=DesignTokens(),
-        visual_asset=VisualAsset(
-            mime_type="image/png",
-            data_base64="ZmFrZQ==",
-            model="gemini-3.1-flash-image",
-        ),
+        asset_prompts=[{"slot": "hero", "prompt": "Premium B2B hero visual"}],
     )
 
-    assert spec.visual_asset is not None
-    assert spec.visual_asset.model == "gemini-3.1-flash-image"
-    assert spec.sections == []
+    assert spec.asset_prompts[0]["slot"] == "hero"
+    assert "Premium" in spec.asset_prompts[0]["prompt"]
+    assert not hasattr(spec, "html")
+    assert not hasattr(spec, "backend_code")

@@ -17,7 +17,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080" # Dashboard (nur lokal!)
+      - "8080:8080"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
@@ -34,15 +34,10 @@ services:
       ENVIRONMENT: local
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
-      # Gesetzt = Inventar und Befunde liegen in Postgres und überleben einen
-      # Neustart. Leeren, um bewusst In-Memory zu fahren.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
-      # Auth. Leer = aus (nur lokal!) — /health meldet den Zustand.
       GOVERNANCE_AUTH_TOKENS: ${GOVERNANCE_AUTH_TOKENS:-}
       GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
-      # Incident-Dispatch an n8n; leer = Befunde nur über die API sichtbar.
       GOVERNANCE_WEBHOOK_URL: ""
-      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     ports:
       - "8002:8002"
     depends_on:
@@ -65,31 +60,22 @@ services:
       LOG_LEVEL: INFO
       CORS_ORIGINS: "*"
       GOVERNANCE_BASE_URL: http://governance_backend:8002
-      # Auth. Leer = aus (nur lokal!). Das Service-Token muss dem des
-      # Governance-Backends entsprechen, sonst weist es die Aufrufe ab.
       BUILDER_AUTH_TOKENS: ${BUILDER_AUTH_TOKENS:-}
       GOVERNANCE_SERVICE_TOKEN: ${GOVERNANCE_SERVICE_TOKEN:-}
-      # Gesetzt = laufende und abgeschlossene Builds überleben einen Neustart.
       DATABASE_URL: postgresql://postgres:postgres@supabase_db:5432/postgres
       BUILDER_MAX_CONCURRENCY: "4"
-      # LLM-Provider. Ohne Key antwortet der Stub-Provider deterministisch —
-      # der Stack startet also auch ohne Zugangsdaten, die Agenten liefern
-      # dann leere, aber schema-konforme Ergebnisse. Für echte Läufe den Key
-      # in eine .env legen (nicht ins Repo).
+      # LLM-Provider: Google AI Studio -> Gemini API. Der Key bleibt
+      # ausschließlich im serverseitigen Builder-Container.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
-      # EU-lokale Alternative: LLM_PROVIDER=ollama + OLLAMA_BASE_URL setzen.
-      LLM_PROVIDER: ${LLM_PROVIDER:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
       LLM_MAX_REPAIRS: ${LLM_MAX_REPAIRS:-1}
-      # Token-Obergrenze je Build. 0 = unbegrenzt.
       BUILDER_TOKEN_BUDGET: ${BUILDER_TOKEN_BUDGET:-0}
-      # Generierte Dateien. Ohne Volume sind sie nach einem Neustart weg —
-      # der Task-Graph in Postgres verweist dann auf ein leeres Verzeichnis.
       BUILDER_WORKSPACE_ROOT: /workspaces
-      # Leer = kein Testnachweis => das Gate blockiert (fail-closed).
       BUILDER_TEST_COMMAND: ${BUILDER_TEST_COMMAND:-}
-      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
     volumes:
       - builder_workspaces:/workspaces
     ports:
@@ -112,8 +98,6 @@ services:
     build: ./nextjs_frontend
     container_name: rsd_frontend
     environment:
-      # Browser-seitige Calls laufen über Traefik, nicht über Container-Namen.
-      # Lokal: HTTP; Prod: HTTPS (über Umgebungsvariable setzen).
       NEXT_PUBLIC_BUILDER_URL: ${NEXT_PUBLIC_BUILDER_URL:-http://builder.localhost}
       NEXT_PUBLIC_GOVERNANCE_URL: ${NEXT_PUBLIC_GOVERNANCE_URL:-http://rsd.localhost}
     ports:
@@ -141,9 +125,6 @@ services:
       - "5432:5432"
     volumes:
       - rsd_pgdata:/var/lib/postgresql/data
-      # Die Migration wendet das Backend beim Start selbst an (sie ist
-      # wiederholbar). Der initdb-Hook wäre unzuverlässig, weil er nur beim
-      # allerersten Start eines leeren Volumes läuft.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -154,9 +135,6 @@ services:
 
 volumes:
   rsd_pgdata:
-  # Generierte Anwendungsdateien. Eigenes Volume, damit ein Neustart des
-  # Orchestrators die Ergebnisse nicht mitnimmt — der Task-Graph in Postgres
-  # zeigt sonst auf ein leeres Verzeichnis.
   builder_workspaces:
 
 networks:

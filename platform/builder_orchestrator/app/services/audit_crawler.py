@@ -17,78 +17,51 @@ from urllib.parse import urlparse
 
 from .audit_contracts import EvidenceFinding, EvidenceSnapshot, EvidenceTrace
 
-LEGAL_PATTERNS = {
-    "impressum": re.compile(r"(?:impressum|imprint)", re.I),
-    "datenschutz": re.compile(r"(?:datenschutz|privacy|privacy-policy)", re.I),
-    "cookie": re.compile(r"(?:cookie|consent|einwilligung)", re.I),
-}
-TRACKING_HOSTS = {
-    "google-analytics.com": "Google Analytics", "googletagmanager.com": "Google Tag Manager",
-    "doubleclick.net": "Google Ads/DoubleClick", "facebook.net": "Meta Pixel",
-    "connect.facebook.net": "Meta Pixel", "hotjar.com": "Hotjar", "clarity.ms": "Microsoft Clarity",
-}
+LEGAL_PATTERNS = {"impressum": re.compile(r"(?:impressum|imprint)", re.I), "datenschutz": re.compile(r"(?:datenschutz|privacy|privacy-policy)", re.I), "cookie": re.compile(r"(?:cookie|consent|einwilligung)", re.I)}
+TRACKING_HOSTS = {"google-analytics.com": "Google Analytics", "googletagmanager.com": "Google Tag Manager", "doubleclick.net": "Google Ads/DoubleClick", "facebook.net": "Meta Pixel", "connect.facebook.net": "Meta Pixel", "hotjar.com": "Hotjar", "clarity.ms": "Microsoft Clarity"}
 
 
 def _technology(host: str) -> str | None:
     for pattern, name in TRACKING_HOSTS.items():
-        if host == pattern or host.endswith("." + pattern):
-            return name
+        if host == pattern or host.endswith("." + pattern): return name
     return None
 
 
 def _is_public_host(hostname: str) -> bool:
-    if not hostname:
-        return False
+    if not hostname: return False
     host = hostname.strip("[]").lower()
-    if host in {"localhost", "localhost.localdomain", "metadata.google.internal"}:
-        return False
-    try:
-        return ipaddress.ip_address(host).is_global
-    except ValueError:
-        pass
-    try:
-        addresses = {info[4][0] for info in socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)}
-    except socket.gaierror as exc:
-        raise ValueError(f"Host konnte nicht aufgelöst werden: {host}") from exc
+    if host in {"localhost", "localhost.localdomain", "metadata.google.internal"}: return False
+    try: return ipaddress.ip_address(host).is_global
+    except ValueError: pass
+    try: addresses = {info[4][0] for info in socket.getaddrinfo(host, None, type=socket.SOCK_STREAM)}
+    except socket.gaierror as exc: raise ValueError(f"Host konnte nicht aufgelöst werden: {host}") from exc
     return bool(addresses) and all(ipaddress.ip_address(addr).is_global for addr in addresses)
 
 
 def _validate_public_url(url: str) -> str:
     target = url if "://" in url else "https://" + url
     parsed = urlparse(target)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise ValueError("Audit-URL muss http:// oder https:// verwenden")
-    if not _is_public_host(parsed.hostname):
-        raise ValueError("Audit-Ziel liegt nicht in einem öffentlich erreichbaren Netzwerk")
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname: raise ValueError("Audit-URL muss http:// oder https:// verwenden")
+    if not _is_public_host(parsed.hostname): raise ValueError("Audit-Ziel liegt nicht in einem öffentlich erreichbaren Netzwerk")
     return target
 
 
 def _hash_payload(payload: dict) -> str:
-    canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
 
 def _finding(fid: str, category: str, severity: str, title: str, description: str, url: str, hint: str, confidence: float, detail: str = "") -> EvidenceFinding:
-    return EvidenceFinding(
-        finding_id=fid, category=category, severity=severity, title=title, description=description,
-        evidence=EvidenceTrace(resource_url=url, timestamp=datetime.now(timezone.utc).isoformat(), detail=detail),
-        remediation_hint=hint, confidence=confidence,
-    )
+    return EvidenceFinding(finding_id=fid, category=category, severity=severity, title=title, description=description, evidence=EvidenceTrace(resource_url=url, timestamp=datetime.now(timezone.utc).isoformat(), detail=detail), remediation_hint=hint, confidence=confidence)
 
 
 async def collect(url: str, timeout_ms: int = 30000) -> EvidenceSnapshot:
     try:
         from playwright.async_api import async_playwright
-    except ImportError as exc:
-        raise RuntimeError("Playwright ist im Builder-Image nicht installiert") from exc
-
+    except ImportError as exc: raise RuntimeError("Playwright ist im Builder-Image nicht installiert") from exc
     target = _validate_public_url(url)
     parsed = urlparse(target)
     captured_at = datetime.now(timezone.utc).isoformat()
-    requests: list[dict[str, str]] = []
-    cookies_before: list[dict] = []
-    cookies_after: list[dict] = []
-    technologies: set[str] = set()
+    requests: list[dict[str, str]] = []; cookies_before: list[dict] = []; cookies_after: list[dict] = []; technologies: set[str] = set()
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
@@ -97,73 +70,41 @@ async def collect(url: str, timeout_ms: int = 30000) -> EvidenceSnapshot:
 
         async def guard_route(route):
             host = urlparse(route.request.url).hostname
-            try:
-                allowed = _is_public_host(host or "")
-            except ValueError:
-                allowed = False
-            await route.continue_() if allowed else route.abort("blockedbyclient")
+            try: allowed = _is_public_host(host or "")
+            except ValueError: allowed = False
+            if allowed:
+                await route.continue_()
+            else:
+                await route.abort("blockedbyclient")
 
         async def on_request(request):
-            host = urlparse(request.url).hostname or ""
-            tech = _technology(host)
+            host = urlparse(request.url).hostname or ""; tech = _technology(host)
             if tech:
-                technologies.add(tech)
-                requests.append({"url": request.url[:500], "method": request.method, "technology": tech, "resource_type": request.resource_type})
+                technologies.add(tech); requests.append({"url": request.url[:500], "method": request.method, "technology": tech, "resource_type": request.resource_type})
 
-        await page.route("**/*", guard_route)
-        page.on("request", on_request)
+        await page.route("**/*", guard_route); page.on("request", on_request)
         try:
-            await page.goto(target, wait_until="domcontentloaded", timeout=timeout_ms)
-            await page.wait_for_timeout(1500)
-            cookies_before = await context.cookies()
-            title = await page.title()
-            meta = await page.locator('meta[name="description"]').get_attribute("content") or ""
+            await page.goto(target, wait_until="domcontentloaded", timeout=timeout_ms); await page.wait_for_timeout(1500)
+            cookies_before = await context.cookies(); title = await page.title(); meta = await page.locator('meta[name="description"]').get_attribute("content") or ""
             body_text = (await page.locator("body").inner_text())[:12000]
             links = await page.locator("a").evaluate_all("els => els.map(a => ({text:(a.innerText||'').trim(), href:a.href}))")
-            scripts = await page.locator("script[src]").evaluate_all("els => els.map(s => s.src)")
-            img_missing_alt = await page.locator("img:not([alt])").count()
-            buttons = await page.locator("button, [role=button]").count()
+            scripts = await page.locator("script[src]").evaluate_all("els => els.map(s => s.src)"); img_missing_alt = await page.locator("img:not([alt])").count(); buttons = await page.locator("button, [role=button]").count()
             legal = {name: any(PAT.search((x.get("text") or "") + " " + (x.get("href") or "")) for x in links) for name, PAT in LEGAL_PATTERNS.items() if name in ("impressum", "datenschutz")}
             consent_detected = bool(LEGAL_PATTERNS["cookie"].search(body_text))
             accept = page.get_by_role("button", name=re.compile(r"accept|allow|zustimmen|akzeptieren|einverstanden", re.I))
             if consent_detected and await accept.count():
-                try:
-                    await accept.first.click(timeout=1500)
-                    await page.wait_for_timeout(500)
-                except Exception:
-                    pass
+                try: await accept.first.click(timeout=1500); await page.wait_for_timeout(500)
+                except Exception: pass
             cookies_after = await context.cookies()
-        finally:
-            await browser.close()
+        finally: await browser.close()
 
-    cookie_names_before = {c.get("name") for c in cookies_before}
-    new_cookies = [c for c in cookies_after if c.get("name") not in cookie_names_before]
-    third_party = [r for r in requests if r.get("technology")]
-    findings: list[EvidenceFinding] = []
-    if not legal.get("impressum", False):
-        findings.append(_finding("LEGAL-IMPRESSUM-01", "legal_notices", "warning", "Impressum link not detected", "No obvious Impressum/Imprint link was detected in the captured navigation.", target, "Verify the applicable provider identification and make it directly accessible.", .91))
-    if not legal.get("datenschutz", False):
-        findings.append(_finding("LEGAL-PRIVACY-01", "privacy_dsgvo", "warning", "Privacy policy link not detected", "No obvious Datenschutz/Privacy link was detected in the captured navigation.", target, "Verify that applicable privacy information is accessible before relevant processing.", .91))
-    if third_party and not consent_detected:
-        findings.append(_finding("COOKIE-PRECONSENT-01", "ttdsg_consent", "critical", "Third-party tracking signal without detected consent UI", "Third-party analytics/advertising resources were observed while no obvious consent interface was detected.", target, "Verify consent collection and prior blocking of non-essential third-party resources.", .84, ", ".join(sorted(technologies))))
-    if img_missing_alt:
-        findings.append(_finding("A11Y-ALT-01", "accessibility_wcag", "recommendation", "Images without alt attributes detected", f"{img_missing_alt} image elements had no alt attribute in the captured DOM.", target, "Add meaningful alternative text or explicitly mark decorative images as empty-alt.", .96))
-    if new_cookies and not consent_detected:
-        findings.append(_finding("COOKIE-NEW-01", "ttdsg_consent", "warning", "Cookies set without detected consent interface", "New cookies appeared during the browser session while no obvious consent interface was detected.", target, "Classify cookies and verify that non-essential cookies are not set before valid consent.", .88, ", ".join(sorted(str(c.get("name")) for c in new_cookies))))
+    cookie_names_before = {c.get("name") for c in cookies_before}; new_cookies = [c for c in cookies_after if c.get("name") not in cookie_names_before]; third_party = [r for r in requests if r.get("technology")]; findings: list[EvidenceFinding] = []
+    if not legal.get("impressum", False): findings.append(_finding("LEGAL-IMPRESSUM-01", "legal_notices", "warning", "Impressum link not detected", "No obvious Impressum/Imprint link was detected in the captured navigation.", target, "Verify the applicable provider identification and make it directly accessible.", .91))
+    if not legal.get("datenschutz", False): findings.append(_finding("LEGAL-PRIVACY-01", "privacy_dsgvo", "warning", "Privacy policy link not detected", "No obvious Datenschutz/Privacy link was detected in the captured navigation.", target, "Verify that applicable privacy information is accessible before relevant processing.", .91))
+    if third_party and not consent_detected: findings.append(_finding("COOKIE-PRECONSENT-01", "ttdsg_consent", "critical", "Third-party tracking signal without detected consent UI", "Third-party analytics/advertising resources were observed while no obvious consent interface was detected.", target, "Verify consent collection and prior blocking of non-essential third-party resources.", .84, ", ".join(sorted(technologies))))
+    if img_missing_alt: findings.append(_finding("A11Y-ALT-01", "accessibility_wcag", "recommendation", "Images without alt attributes detected", f"{img_missing_alt} image elements had no alt attribute in the captured DOM.", target, "Add meaningful alternative text or explicitly mark decorative images as empty-alt.", .96))
+    if new_cookies and not consent_detected: findings.append(_finding("COOKIE-NEW-01", "ttdsg_consent", "warning", "Cookies set without detected consent interface", "New cookies appeared during the browser session while no obvious consent interface was detected.", target, "Classify cookies and verify that non-essential cookies are not set before valid consent.", .88, ", ".join(sorted(str(c.get("name")) for c in new_cookies))))
 
-    payload = {
-        "domain": parsed.hostname or "", "final_url": target, "title": title, "meta_description": meta,
-        "legal_pages": legal, "technologies": sorted(technologies), "third_party_requests": third_party[:50],
-        "cookies": [{"name": c.get("name", ""), "domain": c.get("domain", ""), "path": c.get("path", "")} for c in cookies_after[:50]],
-        "consent": {"banner_detected": consent_detected, "new_cookies_after_interaction": [c.get("name", "") for c in new_cookies]},
-        "accessibility": {"images_missing_alt": img_missing_alt, "interactive_controls": buttons},
-        "content": {"body_text": body_text[:4000], "script_count": len(scripts)},
-        "deterministic_findings": [f.model_dump() for f in findings],
-    }
+    payload = {"domain": parsed.hostname or "", "final_url": target, "title": title, "meta_description": meta, "legal_pages": legal, "technologies": sorted(technologies), "third_party_requests": third_party[:50], "cookies": [{"name": c.get("name", ""), "domain": c.get("domain", ""), "path": c.get("path", "")} for c in cookies_after[:50]], "consent": {"banner_detected": consent_detected, "new_cookies_after_interaction": [c.get("name", "") for c in new_cookies]}, "accessibility": {"images_missing_alt": img_missing_alt, "interactive_controls": buttons}, "content": {"body_text": body_text[:4000], "script_count": len(scripts)}, "deterministic_findings": [f.model_dump() for f in findings]}
     evidence_hash = _hash_payload(payload)
-    return EvidenceSnapshot(
-        domain=parsed.hostname or "", final_url=target, captured_at=captured_at, evidence_hash=evidence_hash,
-        title=title, meta_description=meta, legal_pages=legal, technologies=sorted(technologies),
-        third_party_requests=third_party[:50], cookies=[{"name": c.get("name", ""), "domain": c.get("domain", "")} for c in cookies_after[:50]],
-        consent=payload["consent"], accessibility=payload["accessibility"], content=payload["content"], deterministic_findings=findings,
-    )
+    return EvidenceSnapshot(domain=parsed.hostname or "", final_url=target, captured_at=captured_at, evidence_hash=evidence_hash, title=title, meta_description=meta, legal_pages=legal, technologies=sorted(technologies), third_party_requests=third_party[:50], cookies=[{"name": c.get("name", ""), "domain": c.get("domain", "")} for c in cookies_after[:50]], consent=payload["consent"], accessibility=payload["accessibility"], content=payload["content"], deterministic_findings=findings)

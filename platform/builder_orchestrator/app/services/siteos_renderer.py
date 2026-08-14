@@ -14,9 +14,7 @@ from .audit_contracts import PageSpec
 
 
 def _text(value: Any, default: str = "") -> str:
-    if value is None:
-        return default
-    return escape(str(value))
+    return escape(str(value)) if value is not None else default
 
 
 def _items(items: list[dict[str, object]]) -> str:
@@ -25,7 +23,9 @@ def _items(items: list[dict[str, object]]) -> str:
         title = _text(item.get("title") or item.get("name") or item.get("label"), "Feature")
         body = _text(item.get("description") or item.get("body") or item.get("text"), "")
         cards.append(f'<article class="card"><h3>{title}</h3><p>{body}</p></article>')
-    return "".join(cards)
+    if not cards:
+        return ""
+    return '<div class="card-grid">' + "".join(cards) + "</div>"
 
 
 def render_page_spec(spec: PageSpec) -> str:
@@ -46,14 +46,14 @@ def render_page_spec(spec: PageSpec) -> str:
     cta = hero.get("primary_cta")
     cta_label = _text(cta.get("label") if isinstance(cta, dict) else None, "Kontakt aufnehmen")
 
-    sections: list[str] = []
+    rendered_sections: list[str] = []
     for section in spec.sections:
         title = _text(section.title)
         subtitle = _text(section.subtitle)
         content = _items(section.items)
         if not content:
             content = f'<p class="section-copy">{subtitle}</p>'
-        sections.append(
+        rendered_sections.append(
             f'<section class="section"><div class="section-head"><h2>{title}</h2><p>{subtitle}</p></div>{content}</section>'
         )
 
@@ -61,10 +61,10 @@ def render_page_spec(spec: PageSpec) -> str:
         '<div class="disclosure">KI-generierte Vorschau · Inhalte vor Veröffentlichung prüfen</div>'
         if spec.ai_disclosure_required else ""
     )
+    sections_html = "".join(f'<div class="wrap">{section}</div>' for section in rendered_sections)
 
     return f"""<!doctype html>
-<html lang="de">
-<head>
+<html lang="de"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{_text(spec.source_domain, 'RealSync AI Studio')}</title>
 <style>
@@ -78,5 +78,4 @@ def render_page_spec(spec: PageSpec) -> str:
 </style></head><body>
 <div class="bar"><div class="wrap">RealSync AI Studio · {_text(spec.variant)} · {_text(spec.source_domain)}</div></div>
 <main><section class="hero"><div class="wrap"><div class="eyebrow">{eyebrow}</div><h1>{headline}</h1><p class="lead">{subheadline}</p><a class="cta" href="#contact">{cta_label}</a></div></section>
-{''.join(f'<div class="wrap">{s.replace(chr(34)+"<article class=", chr(34)+"<div class=\"card-grid\"><article class=").replace(chr(34)+"</article>", chr(34)+"</article></div>")}</div>' for s in sections)}
-</main>{disclosure}</body></html>"""
+{sections_html}</main>{disclosure}</body></html>"""

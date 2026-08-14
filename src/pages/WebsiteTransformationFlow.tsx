@@ -5,8 +5,8 @@ import { getSupabase } from '../lib/supabase';
 import { useTenant } from '../core/access/TenantProvider';
 import { useSupabaseAuth } from '../features/supabase/SupabaseAuthContext';
 import { createCheckoutSession, createSiteOsBundleCheckoutSession, createSiteOsCheckoutSession } from '../features/billing/checkout';
-import { buildSite, errorMessage, runScan } from '../features/siteos/siteOsApi';
-import type { SiteBlueprint } from '../../packages/siteos-core/src/index';
+import { buildSite, errorMessage, runPublicAiStudioScan, runScan, type PublicAiStudioScanResponse } from '../features/siteos/siteOsApi';
+import type { SiteBlueprint, SitePage } from '../../packages/siteos-core/src/index';
 import { renderSite } from '../../packages/siteos-core/src/render/renderer';
 import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../packages/siteos-core/src/render/templates';
 import { ONE_TIME_PRICING_TIERS, PUBLIC_PRICING_TIERS, type PricingTier } from '../config/pricing';
@@ -32,6 +32,50 @@ function recommendedPlan(features: string[], scores?: ScoreSet): PricingTier | u
   if (wantsAdvanced) return candidates.find((tier) => tier.planKey === 'growth') ?? candidates[1] ?? candidates[0];
   if (typeof scores?.risk === 'number' && scores.risk < 70) return candidates.find((tier) => tier.planKey === 'growth') ?? candidates[1] ?? candidates[0];
   return candidates.find((tier) => tier.planKey === 'starter') ?? candidates[0];
+}
+
+/** Convert the public AI Studio PageSpec payload into the deterministic SiteOS preview contract. */
+function publicBlueprint(data: PublicAiStudioScanResponse, sourceUrl: string): SiteBlueprint | null {
+  if (data.blueprint) return data.blueprint;
+  if (!Array.isArray(data.pages) || data.pages.length === 0) return null;
+
+  const pages = data.pages.map((raw, index) => {
+    const page = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const blocks = Array.isArray(page.blocks) ? page.blocks : [];
+    return {
+      path: typeof page.path === 'string' ? page.path : index === 0 ? '/' : `/page-${index + 1}`,
+      title: typeof page.title === 'string' ? page.title : 'Neue Website',
+      description: typeof page.description === 'string' ? page.description : '',
+      blocks: blocks.map((block, blockIndex) => {
+        const value = (block && typeof block === 'object' ? block : {}) as Record<string, unknown>;
+        return {
+          id: typeof value.id === 'string' ? value.id : `public-${index}-${blockIndex}`,
+          kind: (typeof value.kind === 'string' ? value.kind : 'hero') as SitePage['blocks'][number]['kind'],
+          content: (value.content && typeof value.content === 'object' ? value.content : {}) as Record<string, unknown>,
+          processesPersonalData: Boolean(value.processesPersonalData),
+          thirdPartyHosts: Array.isArray(value.thirdPartyHosts) ? value.thirdPartyHosts.filter((item): item is string => typeof item === 'string') : [],
+          aiGenerated: true,
+        };
+      }),
+      noindex: Boolean(page.noindex),
+    } satisfies SitePage;
+  });
+
+  const title = data.discovery?.title ?? data.discovery?.h1 ?? 'Neue Website';
+  const description = data.discovery?.description ?? 'AI-gestützte Website-Transformation auf Basis von Evidence.';
+  return {
+    schemaVersion: 1,
+    slug: new URL(sourceUrl).hostname.replace(/^www\./, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase(),
+    name: title,
+    industry: 'sonstiges',
+    locales: { default: 'de', supported: ['de'] },
+    theme: { mode: 'light', accent: '#145CFF', surface: '#F7F8FA', foreground: '#111827', fontDisplay: 'Inter, system-ui, sans-serif', fontBody: 'Inter, system-ui, sans-serif', radiusPx: 14 },
+    pages,
+    seo: { siteName: title, defaultTitle: title, defaultDescription: description, keywords: [], structuredDataType: 'WebPage', locality: null },
+    compliance: { specialCategories: false, legalBases: [], consentCategories: [], policyPackIds: [], controlRefs: [], dpiaRequired: false },
+    transformation: { variant: 'modern', source_domain: new URL(sourceUrl).hostname, evidence_hash: data.evidence_hash ?? 'public-ai-studio', backend_preservation: 'preserve_all' },
+    origin: { source: 'ai-builder', model: 'public-ai-studio', promptSha256: null, createdAt: new Date().toISOString() },
+  };
 }
 
 const PHASES = [
@@ -67,10 +111,35 @@ export function WebsiteTransformationFlow() {
   async function startScan() {
     const clean = url.trim();
     if (!/^https?:\/\/[^\s]+$/i.test(clean)) { setError('Bitte eine vollständige URL inklusive https:// eingeben.'); return; }
-    if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(`/handwerk-website?source_url=${encodeURIComponent(clean)}`)}`); return; }
-    if (!activeTenantId) { setError('Bitte zuerst den Workspace einrichten.'); return; }
     setBusy(true); setError('');
     try {
+      if (!isAuthenticated) {
+        const result = await runPublicAiStudioScan({ url: clean, locale: 'de' });
+        if (result.kind !== 'ok') throw new Error(errorMessage(result));
+        const data = result.data;
+        const found: Discovery = {
+          source_url: data.source_url,
+          title: data.discovery?.title ?? null,
+          description: data.discovery?.description ?? null,
+          h1: data.discovery?.h1 ?? null,
+          services: data.discovery?.services ?? [],
+          visible_text: data.discovery?.visible_text ?? '',
+        };
+        const scores = data.audit?.scores ?? data.scores ?? {};
+        const findings = data.audit?.findings ?? data.findings ?? [];
+        const generatedBlueprint = publicBlueprint(data, data.source_url);
+        setDiscovery(found);
+        setScan({ scores, findings });
+        if (generatedBlueprint) {
+          setBlueprint(generatedBlueprint);
+          setPhase('preview');
+        } else {
+          setPhase('scan');
+        }
+        return;
+      }
+
+      if (!activeTenantId) { setError('Bitte zuerst den Workspace einrichten.'); return; }
       const sb = getSupabase();
       const { data, error: discoveryError } = await sb.functions.invoke('siteos-discover', { body: { tenant_id: activeTenantId, url: clean } });
       if (discoveryError) throw discoveryError;
@@ -86,9 +155,19 @@ export function WebsiteTransformationFlow() {
   }
 
   async function generateLanding() {
-    if (!discovery || !activeTenantId) return;
+    if (!discovery) return;
     setBusy(true); setError('');
     try {
+      if (!isAuthenticated) {
+        const result = await runPublicAiStudioScan({ url: discovery.source_url, locale: 'de' });
+        if (result.kind !== 'ok') throw new Error(errorMessage(result));
+        const generatedBlueprint = publicBlueprint(result.data, result.data.source_url);
+        if (!generatedBlueprint) throw new Error('Der öffentliche AI-Studio-Befund enthält noch keine renderbare PageSpec.');
+        setBlueprint(generatedBlueprint);
+        setPhase('preview');
+        return;
+      }
+      if (!activeTenantId) { setError('Bitte zuerst den Workspace einrichten.'); return; }
       const selected = FEATURES.map(([, label]) => label).join(', ');
       const prompt = [
         'Erstelle ein vollständiges Redesign der bestehenden Website als neues RealSync SiteOS-Projekt.',
@@ -110,7 +189,13 @@ export function WebsiteTransformationFlow() {
   }
 
   async function checkout() {
-    if (!activeTenantId || !discovery) { setError('Workspace oder Ausgangs-Website fehlt.'); return; }
+    if (!discovery) { setError('Ausgangs-Website fehlt.'); return; }
+    if (!isAuthenticated) {
+      const next = `/handwerk-website?source_url=${encodeURIComponent(discovery.source_url)}`;
+      navigate(`/welcome?next=${encodeURIComponent(next)}`);
+      return;
+    }
+    if (!activeTenantId) { setError('Bitte zuerst den Workspace einrichten.'); return; }
     if (offerMode !== 'landing' && !selectedPlan) { setError('Bitte ein Governance-Paket auswählen.'); return; }
     setBusy(true); setError('');
     try {

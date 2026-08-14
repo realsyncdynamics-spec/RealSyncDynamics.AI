@@ -1,8 +1,10 @@
-"""Audit pipeline: Playwright evidence -> deterministic findings -> Gemini."""
+"""Audit pipeline: Playwright evidence -> deterministic findings -> Gemini -> SiteOS."""
 
 from __future__ import annotations
 
+import asyncio
 import json
+from typing import Any
 
 from . import llm
 from .audit_contracts import AuditResult, EvidenceSnapshot, PageSpec
@@ -16,11 +18,19 @@ them. Use cautious compliance language: identify technical/documentary
 indicators and remediation needs, not definitive legal judgments. Return only
 the requested JSON schema."""
 
-PAGESPEC_SYSTEM = """You are the RealSyncDynamicsAI SiteOS Page Specification generator.
-Generate a production-oriented PageSpec JSON for a website modernization.
-Use the supplied company context and audit evidence. Never invent regulatory
-certifications, customer logos, statistics, legal claims, or guarantees. The
-output is a component AST consumed by SiteOS; do not output HTML or CSS."""
+PAGESPEC_SYSTEM = """You are the RealSyncDynamicsAI SiteOS transformation engine.
+You are the reasoning/design layer behind RealSync AI Studio. Transform the
+supplied existing website evidence into a complete modern landingpage
+specification. Preserve factual company information and use audit findings as
+remediation context. Never invent certifications, customer logos, statistics,
+legal guarantees, prices, testimonials, or regulatory conclusions.
+
+Hard boundary: generate a frontend specification only. Never emit HTML/CSS,
+backend code, database changes, API changes, credentials, authentication
+changes, or instructions to mutate the customer's backend. Set
+backend_preservation to preserve_all. The result is a component AST consumed
+by SiteOS, not production source code. Include concise asset_prompts when a
+hero visual would improve the design. Return only the requested JSON schema."""
 
 
 async def run_audit(url: str, project_id: str = "") -> tuple[EvidenceSnapshot, AuditResult]:
@@ -30,16 +40,16 @@ async def run_audit(url: str, project_id: str = "") -> tuple[EvidenceSnapshot, A
     result, _ = await llm.complete_json(
         system=AUDIT_SYSTEM,
         user=(
-            "Evidence snapshot:\n" + prompt +
-            "\n\nClassify the findings, calculate a 0-100 risk/readiness score, "
-            "write a concise summary and remediation plan. Preserve evidence_hash: " + snapshot.evidence_hash
+            "Evidence snapshot:\n" + prompt
+            + "\n\nClassify the findings, calculate a 0-100 risk/readiness score, "
+            "write a concise summary and remediation plan. Preserve evidence_hash: "
+            + snapshot.evidence_hash
         ),
         model_cls=AuditResult,
         effort="high",
         provider=llm.get_provider(),
         project_id=project_id,
     )
-    # Gemini must not be able to silently detach findings from their evidence.
     known = {f.finding_id: f for f in deterministic}
     merged = {f.finding_id: f for f in result.critical_findings + result.warnings + result.recommendations}
     for fid, finding in known.items():
@@ -52,25 +62,40 @@ async def run_audit(url: str, project_id: str = "") -> tuple[EvidenceSnapshot, A
     return snapshot, result
 
 
+async def _generate_hero_visual(provider: Any, prompt: str) -> dict[str, str] | None:
+    generator = getattr(provider, "generate_image", None)
+    if generator is None:
+        return None
+    try:
+        return await generator(prompt=prompt, aspect_ratio="16:9", image_size="1K")
+    except Exception:
+        # Visual assets are enhancement, never a reason to lose the complete
+        # PageSpec. The governed text/structure result remains authoritative.
+        return None
+
+
 async def generate_variants(
     *,
     company_context: str,
     snapshot: EvidenceSnapshot,
     audit: AuditResult,
     project_id: str = "",
+    include_visuals: bool = True,
 ) -> list[PageSpec]:
     variants = ["executive", "modern", "authority", "minimal"]
-    specs: list[PageSpec] = []
     evidence = json.dumps(snapshot.model_dump(), ensure_ascii=False, separators=(",", ":"))
     findings = json.dumps(audit.model_dump(), ensure_ascii=False, separators=(",", ":"))
-    for variant in variants:
+
+    async def generate_one(variant: str) -> PageSpec:
         result, _ = await llm.complete_json(
             system=PAGESPEC_SYSTEM,
             user=(
                 f"Generate variant '{variant}'.\nCompany context:\n{company_context[:6000]}\n"
-                f"Audit:\n{findings}\nEvidence:\n{evidence[:10000]}\n"
-                "The generated page must address the remediation opportunities without making legal guarantees. "
-                f"Set variant exactly to '{variant}'."
+                f"Audit:\n{findings}\nEvidence:\n{evidence[:12000]}\n"
+                "Create a complete landingpage structure, not a single hero. "
+                "Address remediation opportunities without making legal guarantees. "
+                f"Set variant exactly to '{variant}', source_domain to '{snapshot.domain}', "
+                f"evidence_hash to '{snapshot.evidence_hash}', and backend_preservation to 'preserve_all'."
             ),
             model_cls=PageSpec,
             effort="high",
@@ -78,5 +103,18 @@ async def generate_variants(
             project_id=project_id,
         )
         result.variant = variant
-        specs.append(result)
-    return specs
+        result.source_domain = snapshot.domain
+        result.evidence_hash = snapshot.evidence_hash
+        result.backend_preservation = "preserve_all"
+
+        if include_visuals and result.asset_prompts:
+            provider = llm.get_provider()
+            prompt = result.asset_prompts[0].get("prompt", "")
+            if prompt:
+                result.visual_asset = await _generate_hero_visual(provider, prompt)
+        return result
+
+    # PageSpecs are independent and can run concurrently. This is the first
+    # scalability boundary: one scan can fan out to four variants without
+    # serially multiplying customer wait time.
+    return await asyncio.gather(*(generate_one(v) for v in variants))

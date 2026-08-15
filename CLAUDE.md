@@ -44,6 +44,12 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 ## 2. Architektur (Ist-Zustand)
 
+> **Zielarchitektur**: `docs/architecture/target-architecture.md` — Fünf-Ebenen-Modell,
+> Asset Lifecycle, Governance Engine, normativer SiteOS-Publish-Gate-Contract und
+> Pricing-Achsen (BASE + MODULE + SCALE). Das ist das **Zielbild**; dieser Abschnitt
+> bleibt der Ist-Zustand. Bei Widerspruch gilt für Implementierungsfragen dieser
+> Abschnitt, für Richtungsfragen das Zieldokument.
+
 ### Frontend — Vite SPA, **kein Next.js**
 
 | Baustein | Stand |
@@ -537,6 +543,10 @@ stillschweigend übergangen.
 ### Aktuelle Ziele
 
 - 🔄 **Phase 3 vorbereiten**: Cloudflare-Optimierung (Cache, KV, R2), Social-Orchestrator, Dashboard-UI-Rest
+- 🎯 **Zielarchitektur umsetzen** (`docs/architecture/target-architecture.md`) in dieser
+  Reihenfolge: Asset-Objektebene + Lebenszyklus → Publish Gate → Workflows →
+  Integrationen → Pricing-Achsen. Der **Publish Gate muss vor dem ersten
+  SiteOS-Publish-Pfad** stehen, nicht danach.
 - ⚠️ Migrations sauber additiv halten (RLS nicht brechen)
 - ⚠️ Tests (Vitest/Playwright) für neue Features ergänzen
 - ⚠️ Refactorings ohne Breaking Changes an öffentlichen Routen

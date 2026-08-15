@@ -7,9 +7,22 @@
 
 ## Product Layer Overview
 
-Three-layer architecture:
+The platform target model has **five layers** — see
+[`target-architecture.md`](./target-architecture.md), the canonical target
+architecture:
 
 | Layer | Name | Description |
+|---|---|---|
+| Layer 1 | Customer Experience | `/app` control plane and `/app/siteos` transformation workspace |
+| Layer 2 | SiteOS / Control Plane | Digital assets, asset lifecycle, projects, workflows, integrations |
+| Layer 3 | Governance Engine | Policy + Evidence + Context + Risk → Decision → Approval → Action |
+| Layer 4 | Agent / Automation | Skills, workflows, agents, continuous monitoring, remediation |
+| Layer 5 | Infrastructure | Customer systems: website, CMS, GitHub, Cloudflare, CRM, identity, APIs |
+
+The runtime layering used by the documents below is the **inner** view of layers
+2–3 and stays valid:
+
+| Runtime Layer | Name | Description |
 |---|---|---|
 | Layer 1 | Public Conversational Entry | Anonymous governance agent, KI-Pill, AssistentChip |
 | Layer 2 | Governance Runtime | RuntimeEvent standard, policy engine, shadow validation, evidence anchoring |
@@ -29,6 +42,7 @@ Three-layer architecture:
 | 6 | [`roadmap.md`](./roadmap.md) | Architecture Roadmap | cross | `adopted` | Phase-by-phase build sequence from RuntimeEvent foundation to Governance Intelligence. |
 | 7 | [`runtime-governance-social.md`](./runtime-governance-social.md) | Runtime → Governance → Social | cross | `experimental` | Describes the transition path from compliance scanning to runtime governance to social proof and trust signals. |
 | 8 | [`runtime-kernel-rfc.md`](./runtime-kernel-rfc.md) | Operational Governance Kernel v0 | Layer 2 | `proposed` | runtime_events Foundation, Replay Isolation, subject_ref Lifecycle, Memory Decay, tenant_cost_ledger. Master-RFC für den Governance-Runtime-Kernel mit konkreten Schema-Diffs + Code-Stubs. |
+| 9 | [`target-architecture.md`](./target-architecture.md) | Zielarchitektur (Plattformmodell) | cross | `adopted` | **Kanonische Zielarchitektur.** Fünf Ebenen, Trennung `/app` ↔ `/app/siteos`, Asset Lifecycle, Continuous Observation, Governance Engine, normativer SiteOS-Publish-Gate-Contract, Truth Layer (keine erfundenen Kennzahlen), AI Gateway statt hart verdrahtetem Provider, Free Baseline auf dem bestehenden `gdpr-audit`-Flow, Skills/Workflows, Integrationen, Pricing-Achsen (BASE + MODULE + SCALE), Delta Ist→Ziel und Phasen A–C. Löst den Produktebenen-Teil von `docs/ARCHITECTURE.md` ab. |
 
 ---
 
@@ -89,6 +103,9 @@ Brief table of the most important architectural decisions and why they were made
 | No big-bang PRs | Keeps architecture reviewable and reversible |
 | Shadow validation before rejection | Prevents hard runtime breaks |
 | `supersedes` not `delete` | Enables forensic auditability and replay |
+| Publish gate evaluated server-side | A client-derived `publishable` is manipulable and therefore not evidence |
+| Asset lifecycle instead of scan runs | A scan is a tool of the observation layer, not the product |
+| Price by governance depth, not site count | Site count punishes small, complex customers and misses delivered value |
 | RuntimeCanvas marked as Demo | Prevents misleading live-telemetry claims |
 
 ---

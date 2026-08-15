@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 /**
  * Cookie-Consent: Reject-Equivalence (Befund #3, findings-2026-05-14.md).
  *
- * DSGVO Art. 7 III + TTDSG §25 verlangen, dass „Ablehnen" UI-gleichwertig
+ * DSGVO Art. 7 III + TDDDG § 25 verlangen, dass „Ablehnen" UI-gleichwertig
  * zu „Akzeptieren" ist. „Volumen" interpretieren wir hier als
  * Bounding-Box-Fläche; Farb-Differenzierung bleibt erlaubt, solange beide
  * Buttons gleich sichtbar, gleich groß und nicht hinter Mehr-Klick versteckt sind.

@@ -356,7 +356,7 @@ function Pillars() {
     { law: 'DSGVO Art. 6 Abs. 1', issue: 'Tracker ohne Consent', max: 'Rechtsgrundlage erforderlich' },
     { law: 'DSGVO Art. 13',       issue: 'Fehlende Datenschutzerklärung', max: 'Informationspflicht' },
     { law: '§ 25 TDDDG',          issue: 'Cookies vor Consent', max: 'Einwilligung erforderlich' },
-    { law: '§ 5 TMG',             issue: 'Fehlendes Impressum', max: 'Anbieterkennzeichnung erforderlich' },
+    { law: '§ 5 DDG',             issue: 'Fehlendes Impressum', max: 'Anbieterkennzeichnung erforderlich' },
   ];
   return (
     <div className="mt-12">

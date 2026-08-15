@@ -157,7 +157,7 @@ HERO:
 H1: "DSGVO + AI-Act: jede Sekunde compliance-konform"
 Sub: "Continuous Compliance Monitoring für Websites + KI-Systeme. EU-Hosted. Anwalts-grade Befund in 24h."
 CTA: "Free Audit starten →" (Email + Domain)
-Trust: "${auditCount}+ Audits live · DSGVO + AI-Act + TTDSG"
+Trust: "${auditCount}+ Audits live · DSGVO + AI-Act + TDDDG"
 
 PROBLEM: DSGVO ist nicht "einmal einrichten" — Cookies, Tools, Tracker ändern sich. Drift schleicht ein. €20k Bußgeld pro Verstoß.
 
@@ -168,7 +168,7 @@ ABLAUF (3 Steps):
 2) 5-Min-Scan
 3) Mail mit Score + Maßnahmen
 
-FAQ (4): "DSGVO oder TTDSG?" · "Was kostet?" · "Wie schnell?" · "Anwaltsprüfung?"
+FAQ (4): "DSGVO oder TDDDG?" · "Was kostet?" · "Wie schnell?" · "Anwaltsprüfung?"
 
 CTA (Footer): "Jetzt Free Audit" + Trust-Badges.
 

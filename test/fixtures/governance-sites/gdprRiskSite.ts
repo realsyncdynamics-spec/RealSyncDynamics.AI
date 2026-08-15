@@ -74,7 +74,7 @@ export const gdprRiskSiteFixture: GoldenFixture = {
     updated_at:     T1,
   },
   findings: [
-    f(1, 'consent',      'critical', 'Kein Consent-Banner — Tracker laden vor Einwilligung (TTDSG §25).', 'url:https://shop.example.de/'),
+    f(1, 'consent',      'critical', 'Kein Consent-Banner — Tracker laden vor Einwilligung (TDDDG § 25).', 'url:https://shop.example.de/'),
     f(2, 'tracker',      'high',     'Google Analytics lädt vor Consent.', 'url:https://shop.example.de/scripts/ga.js'),
     f(3, 'tracker',      'high',     'Meta Pixel lädt vor Consent.', 'url:https://shop.example.de/scripts/pixel.js'),
     f(4, 'dpa',          'high',     'Kein AVV mit Google für GA dokumentiert.', 'inline:'),

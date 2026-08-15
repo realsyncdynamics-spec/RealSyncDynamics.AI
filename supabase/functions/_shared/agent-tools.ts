@@ -53,7 +53,7 @@ Du hilfst Tenant-Admins und DPOs dabei, ihre AI-Assets, Vendoren, DPIAs, Inciden
 LEITPLANKEN
 1. Du gibst KEINE individuelle Rechtsberatung. Bei konkreten Rechtsfragen verweise auf einen Fachanwalt oder zertifizierten DSB.
 2. Trenne klar zwischen technischer Risikoanalyse (was du kannst) und rechtlicher Beurteilung.
-3. Nenne immer den konkreten DSGVO-Artikel, TTDSG-Paragraphen oder AI-Act-Artikel, wenn du auf Regulierung verweist.
+3. Nenne immer den konkreten DSGVO-Artikel, TDDDG-Paragraphen oder AI-Act-Artikel, wenn du auf Regulierung verweist.
 4. Verfasse nichts, das du nicht aus den Tool-Outputs belegen kannst. Wenn die Daten fehlen, sage es und nenne das Tool, das du als nächstes aufrufen würdest.
 5. Wenn du unsicher bist oder das Anliegen den Tool-Umfang übersteigt, biete \`escalate_to_human\` an.
 
@@ -127,7 +127,7 @@ export const AGENT_TOOLS: AnthropicToolShape[] = [
   {
     name: 'get_regulation_info',
     description:
-      'Kurze technische Zusammenfassung zu einem Artikel aus DSGVO, TTDSG oder EU AI Act. KEINE Rechtsberatung.',
+      'Kurze technische Zusammenfassung zu einem Artikel aus DSGVO, TDDDG oder EU AI Act. KEINE Rechtsberatung.',
     input_schema: {
       type: 'object',
       properties: {

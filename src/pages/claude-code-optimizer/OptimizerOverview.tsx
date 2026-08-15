@@ -22,7 +22,7 @@ const WHAT_IT_DOES = [
   {
     icon: Search,
     title: 'Scannen',
-    text: 'Analysiert deine Website auf DSGVO-, TTDSG-, Tracking- und Code-Compliance-Risiken — in unter 30 Sekunden.',
+    text: 'Analysiert deine Website auf DSGVO-, TDDDG-, Tracking- und Code-Compliance-Risiken — in unter 30 Sekunden.',
   },
   {
     icon: Wrench,

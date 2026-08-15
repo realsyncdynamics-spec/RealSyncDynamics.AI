@@ -23,15 +23,21 @@ const DETAIL_SLUGS = [
   'partner_yearly',
 ];
 
+// Nur Pläne mit `purchaseMode: 'checkout'`. Partner ist `inquiry` und leitet
+// bewusst auf /contact-sales um (CheckoutPage.tsx setzt window.location.href) —
+// die Seite ist damit kein buchbarer Checkout und gehört nicht in diese Liste.
+// Der Redirect wird stattdessen unten ausdrücklich geprüft.
+//
+// Vorher stand Partner hier drin. Der Test bestand nur, solange die
+// URL-Prüfung das Rennen gegen den Redirect gewann; in CI verlor er es und
+// riss die Navigation der nächsten Schleifenrunde mit.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
   'agency',
-  'partner',
   'starter_yearly',
   'growth_yearly',
   'agency_yearly',
-  'partner_yearly',
 ];
 
 test.describe('Pricing Flow', () => {
@@ -108,6 +114,14 @@ test.describe('Pricing Flow', () => {
 
         expect(page.url()).toContain(`/checkout/${planKey}`);
       }
+    });
+
+    test('partner checkout should redirect to contact-sales', async ({ page }) => {
+      // Partner ist `purchaseMode: 'inquiry'` — kein Self-Service-Checkout.
+      // Der Redirect wird hier zugesichert, statt ihn nur zu umgehen.
+      await page.goto(`${BASE_URL}/checkout/partner`);
+      await page.waitForURL(/\/contact-sales/);
+      await expect(page).toHaveURL(/plan=partner/);
     });
 
     test('free audit plan should redirect to audit page', async ({ page }) => {

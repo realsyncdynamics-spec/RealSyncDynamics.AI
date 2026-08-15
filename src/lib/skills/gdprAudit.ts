@@ -35,7 +35,7 @@ const FINDINGS: Record<string, { severity: AuditSeverity; remediation: string }>
   no_consent_banner:           { severity: 'high',     remediation: 'DSGVO-/TDDDG-konformes Consent-Banner mit echtem "Ablehnen" einbinden.' },
   analytics_no_consent:        { severity: 'high',     remediation: 'Analytics (z.B. Google Analytics) hinter Consent legen oder auf einwilligungsfreie Loesung umstellen.' },
   social_pixel_no_consent:     { severity: 'high',     remediation: 'Marketing-Pixel (Meta/LinkedIn/TikTok) nur nach Einwilligung laden.' },
-  missing_imprint:             { severity: 'high',     remediation: 'Impressum nach §5 DDG/TMG ergaenzen und erreichbar machen.' },
+  missing_imprint:             { severity: 'high',     remediation: 'Impressum nach §5 DDG ergaenzen und erreichbar machen.' },
   insecure_transport:          { severity: 'high',     remediation: 'TLS erzwingen (HTTPS-Redirect, HSTS), unverschluesselte Uebertragung beenden.' },
   third_party_fonts:           { severity: 'medium',   remediation: 'Google Fonts u. a. selbst hosten statt per Hotlink (Schrems-/IP-Uebermittlung vermeiden).' },
   external_media_embed:        { severity: 'medium',   remediation: 'Externe Einbettungen (YouTube/Maps) mit 2-Klick-/Consent-Loesung kapseln.' },

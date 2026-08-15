@@ -3,10 +3,10 @@
     {
       "id": "GA4_WITHOUT_CONSENT",
       "title": "Google Analytics ohne Einwilligung",
-      "description": "GA4-Script wird vor User-Consent geladen. Verstößt gegen § 25 Abs. 1 TTDSG (Einwilligung vor Speicherung im Endgerät) und Art. 6 Abs. 1 DSGVO.",
+      "description": "GA4-Script wird vor User-Consent geladen. Verstößt gegen § 25 Abs. 1 TDDDG (Einwilligung vor Speicherung im Endgerät) und Art. 6 Abs. 1 DSGVO.",
       "category": "tracking",
       "severity": "high",
-      "norms": ["DSGVO Art. 6 Abs. 1", "DSGVO Art. 44", "TTDSG § 25 Abs. 1"],
+      "norms": ["DSGVO Art. 6 Abs. 1", "DSGVO Art. 44", "TDDDG § 25 Abs. 1"],
       "conditions": [
         { "fact": "tracker.google_analytics.detected", "operator": "equals", "value": true },
         { "fact": "consent.banner.detected", "operator": "equals", "value": false }
@@ -29,7 +29,7 @@
       "description": "Facebook/Meta-Pixel wird vor Consent geladen. Drittland-Übermittlung an USA-Server ohne Rechtsgrundlage.",
       "category": "tracking",
       "severity": "high",
-      "norms": ["DSGVO Art. 6 Abs. 1 lit. a", "DSGVO Art. 44", "TTDSG § 25 Abs. 1"],
+      "norms": ["DSGVO Art. 6 Abs. 1 lit. a", "DSGVO Art. 44", "TDDDG § 25 Abs. 1"],
       "conditions": [
         { "fact": "tracker.meta_pixel.detected", "operator": "equals", "value": true },
         { "fact": "consent.detected_before_load", "operator": "equals", "value": false }
@@ -51,7 +51,7 @@
       "description": "Pflichtangabe nach Art. 13 DSGVO fehlt oder ist nicht von jeder Seite aus verlinkt.",
       "category": "documentation",
       "severity": "critical",
-      "norms": ["DSGVO Art. 13", "TMG § 13"],
+      "norms": ["DSGVO Art. 13"],
       "conditions": [
         { "fact": "page.privacy_policy.url_found", "operator": "equals", "value": false }
       ],
@@ -70,15 +70,15 @@
     {
       "id": "MISSING_IMPRESSUM",
       "title": "Fehlendes oder unvollständiges Impressum",
-      "description": "Pflichtangabe nach § 5 TMG / § 18 MStV nicht oder unvollständig vorhanden.",
+      "description": "Pflichtangabe nach § 5 DDG / § 18 MStV nicht oder unvollständig vorhanden.",
       "category": "documentation",
       "severity": "critical",
-      "norms": ["TMG § 5", "MStV § 18"],
+      "norms": ["DDG § 5", "MStV § 18"],
       "conditions": [
         { "fact": "page.impressum.url_found", "operator": "equals", "value": false }
       ],
       "remediation": {
-        "summary": "§-5-TMG-konformes Impressum mit Anbieter, Vertretungsberechtigtem, Kontakt, Register-Eintrag.",
+        "summary": "§-5-DDG-konformes Impressum mit Anbieter, Vertretungsberechtigtem, Kontakt, Register-Eintrag.",
         "steps": [
           "/impressum oder /legal/impressum Seite anlegen",
           "Pflichtangaben: Name, Anschrift, Telefon, E-Mail, Vertretungsberechtigter, USt-IdNr, HR-Eintrag",
@@ -95,7 +95,7 @@
       "description": "Banner zeigt prominenten Accept-All-Button ohne sichtbar gleichwertigen Reject-All-Button. Verstößt gegen BfDI 2024 Guidelines + LG-Düsseldorf-Rechtsprechung.",
       "category": "consent",
       "severity": "medium",
-      "norms": ["DSGVO Art. 7", "TTDSG § 25", "BfDI 2024 Guidelines"],
+      "norms": ["DSGVO Art. 7", "TDDDG § 25", "BfDI 2024 Guidelines"],
       "conditions": [
         { "fact": "consent.banner.detected", "operator": "equals", "value": true },
         { "fact": "consent.banner.reject_button_equal_prominence", "operator": "equals", "value": false }

@@ -3,9 +3,14 @@
 Bis hierher waren die Agenten Stubs mit fertigen System-Prompts. Diese Schicht
 hängt sie an ein echtes Modell — ohne dass ein Agent wissen muss, welches.
 
-**Drei Provider hinter einem Vertrag:**
+**Vier Provider hinter einem Vertrag:**
 
-  * `anthropic` — Claude (Standard, sobald `ANTHROPIC_API_KEY` gesetzt ist).
+  * `gemini`    — Google Gemini (Standard des AI Studio, sobald
+                  `GEMINI_API_KEY` gesetzt ist). Hat Vorrang vor Claude, weil
+                  die Transformation auf Gemini-Kosten kalkuliert ist; ein
+                  stiller Wechsel auf einen anderen Anbieter faellt sonst erst
+                  auf der Rechnung auf.
+  * `anthropic` — Claude (sobald `ANTHROPIC_API_KEY` gesetzt ist).
   * `ollama`    — EU-lokales Modell auf eigener Hardware. Für Kunden, die
                   keine Daten an einen US-Anbieter geben dürfen; die Plattform
                   verkauft EU-Souveränität, also muss dieser Weg existieren.
@@ -57,6 +62,10 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3")
+
+# Nur die Anwesenheit wird hier geprueft; Modell und Basis-URL gehoeren zum
+# Adapter (services/gemini.py) und werden dort gelesen.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Erzwingt einen Provider. Leer = Auto-Erkennung (siehe `select_provider`).
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "")
@@ -319,22 +328,45 @@ def _skeleton_from_schema(schema: Dict[str, Any]) -> Any:
 _provider: Any = None
 
 
+def _gemini_provider() -> Any:
+    """Erzeugt den Gemini-Adapter.
+
+    Lazy importiert: `services/gemini.py` importiert `LLMResponse` und
+    `LLMUnavailableError` aus diesem Modul — ein Top-Level-Import waere ein
+    Zyklus.
+    """
+    from .gemini import GeminiProvider
+
+    return GeminiProvider()
+
+
 def select_provider() -> Any:
     """Wählt den Provider anhand der Umgebung und merkt ihn sich.
 
-    Reihenfolge: explizite Vorgabe → Claude (Key vorhanden) → Ollama (URL
-    vorhanden) → Stub. Der Stub am Ende ist Absicht: Ein fehlender Key soll
-    den Dienst nicht am Starten hindern, sondern sichtbar degradieren.
+    Reihenfolge: explizite Vorgabe → Gemini (Key vorhanden) → Claude (Key
+    vorhanden) → Ollama (URL vorhanden) → Stub. Der Stub am Ende ist Absicht:
+    Ein fehlender Key soll den Dienst nicht am Starten hindern, sondern sichtbar
+    degradieren.
+
+    Gemini steht vor Claude, weil diese Funktion die *einzige* Stelle sein muss,
+    an der die Providerwahl faellt. Zuvor traf sie der FastAPI-Lifespan, der das
+    Ergebnis nachtraeglich ueberschrieb — mit der Folge, dass jeder Einstiegs-
+    punkt ohne Lifespan (Worker, CLI, Test) still bei Claude landete, obwohl
+    `GEMINI_API_KEY` gesetzt war. Zwei Wahrheiten ueber denselben Zustand.
     """
     global _provider
 
     choice = LLM_PROVIDER.lower()
-    if choice == "anthropic":
+    if choice == "gemini":
+        _provider = _gemini_provider()
+    elif choice == "anthropic":
         _provider = AnthropicProvider()
     elif choice == "ollama":
         _provider = OllamaProvider()
     elif choice == "stub":
         _provider = StubProvider()
+    elif GEMINI_API_KEY:
+        _provider = _gemini_provider()
     elif ANTHROPIC_API_KEY:
         _provider = AnthropicProvider()
     elif OLLAMA_BASE_URL:

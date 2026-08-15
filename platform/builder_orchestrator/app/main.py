@@ -32,7 +32,6 @@ from .services import agent_runner, budget, db, events, llm, repository, task_gr
 from .services.audit_contracts import AuditResult, EvidenceSnapshot
 from .services.audit_pipeline import generate_variants, run_audit
 from .services.audit_log import records as audit_records
-from .services.gemini import GeminiProvider
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 MIGRATION = Path(__file__).resolve().parent.parent / "migrations" / "0001_init.sql"
@@ -89,9 +88,11 @@ async def lifespan(_: FastAPI):
     if await db.connect():
         await db.apply_migrations(str(MIGRATION))
     repository.select_backend()
+    # Die Providerwahl faellt ausschliesslich in llm.select_provider() —
+    # inklusive Gemini. Frueher stand hier ein Override, der das Ergebnis
+    # nachtraeglich ersetzte; jeder Einstiegspunkt ohne diesen Lifespan
+    # (Worker, CLI, Test) bekam dadurch einen anderen Provider als der Dienst.
     llm.select_provider()
-    if os.getenv("LLM_PROVIDER", "").lower() == "gemini" or os.getenv("GEMINI_API_KEY"):
-        llm.set_provider(GeminiProvider())
     try:
         yield
     finally:

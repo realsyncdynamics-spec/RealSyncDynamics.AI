@@ -10,7 +10,7 @@
  * For production: call these endpoints from Edge Functions that handle publishing.
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,

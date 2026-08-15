@@ -35,7 +35,18 @@ from . import audit_log
 logger = logging.getLogger("builder.budget")
 
 # Obergrenze (Ein- und Ausgabe zusammen) je Build. 0 = unbegrenzt.
-TOKEN_BUDGET = int(os.getenv("BUILDER_TOKEN_BUDGET", "0"))
+#
+# Der Default ist bewusst eine echte Zahl und nicht 0: Ein Budget, das
+# standardmaessig aus ist, ist kein Budget. Die Grenze greift damit auch dort,
+# wo niemand daran gedacht hat, sie zu setzen — und genau dort entstehen die
+# Kosten (Retry-Kaskaden, Agent-Schleifen, wiederholtes "nochmal generieren").
+#
+# 200_000 ist so gewaehlt, dass ein regulaerer Lauf sie nie beruehrt: Eine
+# vollstaendige Website-Transformation (ein Audit-Aufruf plus vier PageSpecs)
+# liegt bei rund 73_000 Tokens inklusive Ein- und Ausgabe. Selbst mit einer
+# Reparaturrunde je Aufruf bleibt mehr als das Doppelte Luft. Wer mehr
+# braucht, setzt BUILDER_TOKEN_BUDGET hoch; 0 schaltet die Grenze ab.
+TOKEN_BUDGET = int(os.getenv("BUILDER_TOKEN_BUDGET", "200000"))
 
 
 class BudgetExceeded(RuntimeError):

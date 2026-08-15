@@ -339,10 +339,21 @@ erneut auf.
 ## Token-Budget
 
 `BUILDER_TOKEN_BUDGET` begrenzt den Verbrauch je Build (Ein- und Ausgabe
-zusammen, 0 = unbegrenzt). Ohne Grenze startet ein breiter Modulschnitt zwölf
-Coder-Läufe mit Retries, und niemand hält an — auf einer Plattform mit
-verbrauchsabhängiger Abrechnung ist das die Lücke, die am schnellsten Geld
-kostet.
+zusammen). Ohne Grenze startet ein breiter Modulschnitt zwölf Coder-Läufe mit
+Retries, und niemand hält an — auf einer Plattform mit verbrauchsabhängiger
+Abrechnung ist das die Lücke, die am schnellsten Geld kostet.
+
+**Der Default ist 200 000 Tokens, die Grenze ist also aktiv.** Ein Budget, das
+standardmäßig aus ist, ist kein Budget: Es greift sonst genau dort nicht, wo
+niemand daran gedacht hat — und genau dort entstehen die Kosten. Ein regulärer
+Lauf berührt die Grenze nicht: Eine vollständige Website-Transformation (ein
+Audit-Aufruf plus vier PageSpecs) liegt bei rund 73 000 Tokens; selbst mit
+einer Reparaturrunde je Aufruf bleibt mehr als das Doppelte Luft.
+
+`BUILDER_TOKEN_BUDGET=0` schaltet die Grenze ab — sinnvoll für lokale
+Experimente, nicht für den Betrieb. Der aktuelle Verbrauch steht in jeder
+Audit-Antwort (`tokens_used`, `token_budget`, `tokens_remaining`) und stammt
+aus dem Prüfpfad, nicht aus einem zweiten Zähler.
 
 Zwei Entscheidungen dahinter:
 

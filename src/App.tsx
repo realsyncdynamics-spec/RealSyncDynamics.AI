@@ -56,6 +56,7 @@ import { MonitoringPage, MonitoringSurface } from './pages/MonitoringPage';
 import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
 import { AiDsgvoBotPage } from './pages/AiDsgvoBotPage';
+import { WaitlistLanding } from './pages/WaitlistLanding';
 import { ClaudeCodeOptimizer } from './pages/ClaudeCodeOptimizer';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
@@ -487,6 +488,9 @@ function RoutesWithTracking() {
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       <Route path="/ai-dsgvo-bot" element={<AiDsgvoBotPage />} />
+      {/* Warteliste — /waitlist ist das englische Alias, canonical bleibt /warteliste */}
+      <Route path="/warteliste" element={<WaitlistLanding />} />
+      <Route path="/waitlist"   element={<WaitlistLanding />} />
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />

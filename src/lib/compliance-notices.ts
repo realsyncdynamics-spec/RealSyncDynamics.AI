@@ -117,7 +117,7 @@ export function generateImpressumText(): string {
 
   return `
 IMPRESSUM
-Angaben gemäß § 5 TMG und § 18 MStV:
+Angaben gemäß § 5 DDG und § 18 MStV:
 
 Betreiber:
 ${getCompanyDisplayName(true)}

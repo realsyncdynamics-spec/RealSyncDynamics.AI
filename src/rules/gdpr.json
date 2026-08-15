@@ -51,7 +51,7 @@
       "description": "Pflichtangabe nach Art. 13 DSGVO fehlt oder ist nicht von jeder Seite aus verlinkt.",
       "category": "documentation",
       "severity": "critical",
-      "norms": ["DSGVO Art. 13", "TMG § 13"],
+      "norms": ["DSGVO Art. 13"],
       "conditions": [
         { "fact": "page.privacy_policy.url_found", "operator": "equals", "value": false }
       ],
@@ -70,15 +70,15 @@
     {
       "id": "MISSING_IMPRESSUM",
       "title": "Fehlendes oder unvollständiges Impressum",
-      "description": "Pflichtangabe nach § 5 TMG / § 18 MStV nicht oder unvollständig vorhanden.",
+      "description": "Pflichtangabe nach § 5 DDG / § 18 MStV nicht oder unvollständig vorhanden.",
       "category": "documentation",
       "severity": "critical",
-      "norms": ["TMG § 5", "MStV § 18"],
+      "norms": ["DDG § 5", "MStV § 18"],
       "conditions": [
         { "fact": "page.impressum.url_found", "operator": "equals", "value": false }
       ],
       "remediation": {
-        "summary": "§-5-TMG-konformes Impressum mit Anbieter, Vertretungsberechtigtem, Kontakt, Register-Eintrag.",
+        "summary": "§-5-DDG-konformes Impressum mit Anbieter, Vertretungsberechtigtem, Kontakt, Register-Eintrag.",
         "steps": [
           "/impressum oder /legal/impressum Seite anlegen",
           "Pflichtangaben: Name, Anschrift, Telefon, E-Mail, Vertretungsberechtigter, USt-IdNr, HR-Eintrag",

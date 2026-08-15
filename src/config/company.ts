@@ -32,7 +32,7 @@ export interface CompanyConfig {
   supportEmail: string;
   supportPhoneOptional?: string;
 
-  // ─── Legal Registration (Impressum §5 TMG / §18 MStV) ────────────────────
+  // ─── Legal Registration (Impressum §5 DDG / §18 MStV) ────────────────────
   /** Handelsregister-Eintrag (z.B. "HRB 12345 (Amtsgericht Jena)") */
   registryEntry: string | null;
   /** Umsatzsteuer-Identifikationsnummer */

@@ -1,12 +1,12 @@
-import { WebsiteTransformationDashboard } from './WebsiteTransformationDashboard';
+import { SiteOsCustomerCommandCenter } from './SiteOsCustomerCommandCenter';
 
 /**
  * Customer-facing SiteOS entry after Governance Launch checkout.
  *
- * The primary product value is the new landing page. Advanced governance
- * tooling remains available from the Control Plane; this route is deliberately
- * project-centric and shows the transformation, audit basis and publish gate.
+ * The customer sees the transformation first: the generated landing page,
+ * real pipeline state, findings, governance gate and publish action. The
+ * enterprise Control Plane remains separate at /app.
  */
 export function SiteOsDashboardView() {
-  return <WebsiteTransformationDashboard />;
+  return <SiteOsCustomerCommandCenter />;
 }

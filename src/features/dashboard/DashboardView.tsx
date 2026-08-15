@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity,
@@ -23,26 +23,13 @@ import {
 } from 'lucide-react';
 import { getSupabase } from '../../lib/supabase';
 import { useTenant } from '../../core/access/TenantProvider';
+import {
+  EMPTY_TENANT_STATUS,
+  formatMetric,
+  loadTenantStatus,
+  type TenantStatus,
+} from '../../lib/status/statusAdapter';
 import { WorkflowView } from './components/WorkflowView';
-
-interface ComplianceScore {
-  score_overall: number;
-  score_gdpr?: number;
-  score_nis2?: number;
-  score_dsa?: number;
-  score_ai_act?: number;
-  trend_direction: 'improving' | 'stable' | 'declining';
-  recorded_at: string;
-}
-
-interface RiskMetrics {
-  critical_risks_count: number;
-  high_risks_count: number;
-  medium_risks_count: number;
-  low_risks_count: number;
-  open_incidents_count: number;
-  overdue_remediations: number;
-}
 
 interface DashboardInsight {
   id: string;
@@ -53,13 +40,6 @@ interface DashboardInsight {
   created_at: string;
 }
 
-interface DashboardKPI {
-  domains_active: number;
-  policies_documented: number;
-  vendors_managed: number;
-  avg_incident_response_hours?: number;
-  audit_coverage_percent?: number;
-}
 
 interface ActionCard {
   label: string;
@@ -96,10 +76,8 @@ export function DashboardView() {
   const supabase = getSupabase();
   const { activeTenantId: tenantId } = useTenant();
   const navigate = useNavigate();
-  const [latestScore, setLatestScore] = useState<ComplianceScore | null>(null);
-  const [risks, setRisks] = useState<RiskMetrics | null>(null);
+  const [status, setStatus] = useState<TenantStatus>(EMPTY_TENANT_STATUS);
   const [insights, setInsights] = useState<DashboardInsight[]>([]);
-  const [kpis, setKpis] = useState<DashboardKPI | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'workflows'>('dashboard');
@@ -116,18 +94,16 @@ export function DashboardView() {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        const [scoreResult, riskResult, insightsResult, kpiResult] = await Promise.all([
-          supabase.from('compliance_score_history').select('*').eq('tenant_id', tenantId).order('recorded_at', { ascending: false }).limit(1),
-          supabase.from('risk_dashboard_summary').select('*').eq('tenant_id', tenantId).single(),
+        // Kennzahlen ausschließlich über den Status Adapter — er unterscheidet
+        // „nicht belegbar" (null → „—") von „gemessene Null".
+        const [tenantStatus, insightsResult] = await Promise.all([
+          loadTenantStatus(supabase, tenantId),
           supabase.from('dashboard_insights').select('*').eq('tenant_id', tenantId).eq('status', 'active').order('created_at', { ascending: false }).limit(5),
-          supabase.from('dashboard_kpis').select('*').eq('tenant_id', tenantId).single(),
         ]);
 
         if (cancelled) return;
-        setLatestScore(scoreResult.data?.[0] ?? null);
-        setRisks(riskResult.data ?? null);
+        setStatus(tenantStatus);
         setInsights(insightsResult.data ?? []);
-        setKpis(kpiResult.data ?? null);
         setError(null);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Dashboard konnte nicht geladen werden');
@@ -144,15 +120,7 @@ export function DashboardView() {
     };
   }, [supabase, tenantId]);
 
-  const totalRisks = useMemo(
-    () => risks ? risks.critical_risks_count + risks.high_risks_count + risks.medium_risks_count + risks.low_risks_count : 0,
-    [risks],
-  );
-  const compliance = Math.round(latestScore?.score_overall ?? kpis?.audit_coverage_percent ?? 0);
-  const criticalRisks = risks?.critical_risks_count ?? 0;
-  const aiSystems = kpis?.vendors_managed ?? 0;
-  const websites = kpis?.domains_active ?? 0;
-  const evidence = kpis?.policies_documented ?? 0;
+  const criticalRisks = status.criticalRisks;
 
   const runCommand = () => {
     const value = command.trim().toLowerCase();
@@ -168,13 +136,15 @@ export function DashboardView() {
     }
   };
 
+  // Jede Kachel nennt ihre Quelle im Untertitel. Nicht belegbare Werte zeigen
+  // „—" statt einer Null, die wie ein Messwert aussieht.
   const kpiCards: KpiCard[] = [
-    { label: 'Websites', value: websites, sub: '+3 diese Woche', icon: Globe2, color: 'text-sky-600' },
-    { label: 'Risiken', value: totalRisks, sub: criticalRisks ? `${criticalRisks} kritisch` : 'Keine kritischen', icon: AlertTriangle, color: 'text-red-500' },
-    { label: 'Compliance', value: `${compliance}%`, sub: 'Durchschnittlicher Score', icon: ShieldCheck, color: 'text-emerald-600' },
-    { label: 'AI Systeme', value: aiSystems, sub: 'Aktive Systeme', icon: Bot, color: 'text-violet-600' },
-    { label: 'Evidence Items', value: evidence, sub: 'Nachweise', icon: FileCheck2, color: 'text-blue-600' },
-    { label: 'Offene Aufgaben', value: risks?.overdue_remediations ?? 0, sub: 'Benötigen Aufmerksamkeit', icon: Target, color: 'text-amber-600' },
+    { label: 'Websites', value: formatMetric(status.websites), sub: 'Registrierte Domains', icon: Globe2, color: 'text-sky-600' },
+    { label: 'Risiken', value: formatMetric(status.totalRisks), sub: criticalRisks ? `${criticalRisks} kritisch` : 'Keine kritischen', icon: AlertTriangle, color: 'text-red-500' },
+    { label: 'Compliance', value: formatMetric(status.compliancePercent, '%'), sub: 'Letzter Score', icon: ShieldCheck, color: 'text-emerald-600' },
+    { label: 'AI Systeme', value: formatMetric(status.aiSystems), sub: 'Registrierte KI-Systeme', icon: Bot, color: 'text-violet-600' },
+    { label: 'Evidence Items', value: formatMetric(status.evidenceItems), sub: 'Nachweise im Vault', icon: FileCheck2, color: 'text-blue-600' },
+    { label: 'Offene Aufgaben', value: formatMetric(status.openRemediations), sub: 'Benötigen Aufmerksamkeit', icon: Target, color: 'text-amber-600' },
   ];
 
   if (isLoading) {
@@ -256,7 +226,7 @@ export function DashboardView() {
             </main>
 
             <aside className="space-y-4">
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h3 className="font-semibold">Aktueller Kontext</h3><LayoutDashboard size={16} className="text-slate-400" /></div><div className="mt-4 rounded-2xl bg-slate-50 p-4"><div className="text-xs text-slate-400">Aktuelle Compliance</div><div className="mt-1 flex items-end justify-between"><span className="text-3xl font-bold">{compliance}%</span><span className="text-xs font-semibold text-emerald-600">{latestScore?.trend_direction === 'declining' ? 'sinkend' : 'stabil / steigend'}</span></div></div><div className="mt-4 space-y-3 text-sm"><div className="flex justify-between"><span className="text-slate-500">AI Act</span><span className="font-semibold">{latestScore?.score_ai_act ?? '—'}%</span></div><div className="flex justify-between"><span className="text-slate-500">DSGVO</span><span className="font-semibold">{latestScore?.score_gdpr ?? '—'}%</span></div><div className="flex justify-between"><span className="text-slate-500">NIS2</span><span className="font-semibold">{latestScore?.score_nis2 ?? '—'}%</span></div></div></section>
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h3 className="font-semibold">Aktueller Kontext</h3><LayoutDashboard size={16} className="text-slate-400" /></div><div className="mt-4 rounded-2xl bg-slate-50 p-4"><div className="text-xs text-slate-400">Aktuelle Compliance</div><div className="mt-1 flex items-end justify-between"><span className="text-3xl font-bold">{formatMetric(status.compliancePercent, '%')}</span><span className="text-xs font-semibold text-emerald-600">{status.scoreDetail ? (status.scoreDetail.trend_direction === 'declining' ? 'sinkend' : 'stabil / steigend') : 'kein Verlauf'}</span></div></div><div className="mt-4 space-y-3 text-sm"><div className="flex justify-between"><span className="text-slate-500">AI Act</span><span className="font-semibold">{formatMetric(status.scoreDetail?.score_ai_act ?? null, '%')}</span></div><div className="flex justify-between"><span className="text-slate-500">DSGVO</span><span className="font-semibold">{formatMetric(status.scoreDetail?.score_gdpr ?? null, '%')}</span></div><div className="flex justify-between"><span className="text-slate-500">NIS2</span><span className="font-semibold">{formatMetric(status.scoreDetail?.score_nis2 ?? null, '%')}</span></div></div></section>
 
               <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-semibold">Schnellaktionen</h3><div className="mt-3 space-y-1">{[
                 { label: 'Neuen Scan starten', icon: Search, path: '/unified-entry/scan' },
@@ -266,7 +236,7 @@ export function DashboardView() {
                 { label: 'Workflow starten', icon: Workflow, path: '/app/workflows' },
               ].map(({ label, icon: Icon, path }) => <button type="button" key={label} onClick={() => navigate(path)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left text-sm hover:bg-slate-50"><Icon size={16} className="text-slate-500" /><span className="flex-1">{label}</span><ArrowRight size={14} className="text-slate-300" /></button>)}</div></section>
 
-              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-semibold">Governance Status</h3><div className="mt-4 space-y-3"><div className="flex items-center justify-between"><span className="text-sm text-slate-500">Risiken</span><span className="font-semibold text-slate-800">{totalRisks}</span></div><div className="flex items-center justify-between"><span className="text-sm text-slate-500">Critical</span><span className="font-semibold text-red-600">{criticalRisks}</span></div><div className="flex items-center justify-between"><span className="text-sm text-slate-500">Offene Remediations</span><span className="font-semibold text-amber-600">{risks?.overdue_remediations ?? 0}</span></div></div></section>
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><h3 className="font-semibold">Governance Status</h3><div className="mt-4 space-y-3"><div className="flex items-center justify-between"><span className="text-sm text-slate-500">Risiken</span><span className="font-semibold text-slate-800">{formatMetric(status.totalRisks)}</span></div><div className="flex items-center justify-between"><span className="text-sm text-slate-500">Critical</span><span className="font-semibold text-red-600">{formatMetric(status.criticalRisks)}</span></div><div className="flex items-center justify-between"><span className="text-sm text-slate-500">Offene Remediations</span><span className="font-semibold text-amber-600">{formatMetric(status.openRemediations)}</span></div></div></section>
             </aside>
           </div>
         ) : <WorkflowView tenantId={tenantId!} />}

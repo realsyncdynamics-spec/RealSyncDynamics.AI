@@ -1,12 +1,25 @@
-# RealSyncDynamics.AI — Zielarchitektur
+# RealSyncDynamics.AI — Zielarchitektur (Technik-Entwurf 2026-05, teilweise abgelöst)
 
-**Status:** Strategisches Referenz-Dokument
-**Letzte Aktualisierung:** 2026-05-07
+> **⚠️ Abgelöst für die Zielarchitektur auf Produktebene.**
+> Maßgeblich ist [`docs/architecture/target-architecture.md`](./architecture/target-architecture.md).
+>
+> Der hier beschriebene **Ziel-Stack** (Next.js App Router, Fastify, Prisma,
+> BullMQ, Keycloak, Meilisearch, Coolify/K8s) wird **nicht verfolgt**. Er
+> widerspricht dem Ist-Zustand und den verbindlichen Regeln in `CLAUDE.md`
+> (Vite-SPA, Supabase Edge Functions, Cloudflare Pages; keine Next.js-Patterns).
+> Vorschläge daraus nicht als Vorgabe verwenden.
+>
+> **Fachlich weiterhin gültig und lesenswert**: Evidence Layer, entkoppelte
+> Rule Engine, Audit-Pipeline als Queue-System, normalisierte Findings,
+> AI-Act-Modellierung, Document Engine als Block-System, Defensible Assets.
+
+**Status:** `deprecated` (Stack) / Referenz (Fachkonzepte)
+**Letzte inhaltliche Aktualisierung:** 2026-05-07
 **Verbundene ADRs:** [0001](./adr/0001-stay-on-supabase-gh-pages-for-v1.md) (current), [0002](./adr/0002-future-monorepo-migration.md) (deferred)
 
-Dieses Dokument beschreibt die langfristige Zielarchitektur. Die aktuelle
-Implementierung ist bewusst eine *pragmatische v1* (siehe ADR 0001) und wird
-schrittweise an dieses Ziel herangeführt.
+Dieses Dokument beschrieb die langfristige Zielarchitektur aus Sicht Mai 2026.
+Die Produktebenen-Sicht ist inzwischen durch das Fünf-Ebenen-Modell in
+`docs/architecture/target-architecture.md` ersetzt.
 
 ## Strategische Weichenstellung
 
@@ -319,6 +332,8 @@ Nicht alles in CRUD-Komponenten verlieren. Energie auf die defensiblen Assets fo
 
 ---
 
-*Diese Architektur ist die Ziel-Zustand. Aktuelle Implementierung ist v1
-(Supabase + GH-Pages + Vite-React) per ADR 0001. Migration zu vollständiger
-Architektur erfolgt bei Erfüllung der Trigger in ADR 0001.*
+*Stand Mai 2026. Der hier skizzierte Stack-Wechsel wird nicht verfolgt (siehe
+Hinweis am Seitenanfang); die aktuelle Implementierung auf Supabase + Vite-React
++ Cloudflare Pages ist per ADR 0001 die gesetzte Grundlage. Die gültige
+Zielarchitektur auf Produktebene steht in
+[`docs/architecture/target-architecture.md`](./architecture/target-architecture.md).*

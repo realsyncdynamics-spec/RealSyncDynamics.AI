@@ -116,3 +116,91 @@ describe('checkHealth', () => {
     expect(summary.checks.database.error).toBe('network timeout');
   });
 });
+
+/**
+ * Verbundstatus (Truth Layer, docs/architecture/target-architecture.md §3.1).
+ *
+ * Der Kern dieser Tests: 'unknown' ist ein eigener Zustand. Ein Baustein, den
+ * wir nicht messen koennen, darf weder als gesund gemeldet werden noch den
+ * Gesamtstatus verschlechtern.
+ */
+describe('checkHealth — Bausteine', () => {
+  function dbWithTables(errors: Record<string, string> = {}): HealthDbClient {
+    return {
+      rpc: vi.fn().mockResolvedValue({ data: 'ok', error: null }),
+      from: (table: string) => ({
+        select: () => ({
+          limit: async () => ({ error: errors[table] ? { message: errors[table] } : null }),
+        }),
+      }),
+    };
+  }
+
+  it('meldet Bausteine als unknown, wenn keine Tabellensonde vorhanden ist', async () => {
+    const summary = await checkHealth({ db: mockDb({ data: 'ok' }), env: FULL_ENV, version: 'test' });
+
+    expect(summary.checks.automation.status).toBe('unknown');
+    expect(summary.checks.bot_layer.status).toBe('unknown');
+    expect(summary.checks.evidence.status).toBe('unknown');
+    // Entscheidend: unknown zieht den Gesamtstatus NICHT herunter.
+    expect(summary.status).toBe('ok');
+  });
+
+  it('meldet unknown niemals als ok', async () => {
+    const summary = await checkHealth({ db: mockDb({ data: 'ok' }), env: FULL_ENV, version: 'test' });
+
+    expect(summary.checks.automation.ok).toBe(false);
+    expect(summary.checks.ai_gateway.ok).toBe(false);
+  });
+
+  it('meldet erreichbare Tabellen als ok', async () => {
+    const summary = await checkHealth({ db: dbWithTables(), env: FULL_ENV, version: 'test' });
+
+    expect(summary.checks.automation.status).toBe('ok');
+    expect(summary.checks.bot_layer.status).toBe('ok');
+    expect(summary.checks.evidence.status).toBe('ok');
+    expect(summary.status).toBe('ok');
+  });
+
+  it('meldet eine fehlende Tabelle als down und den Gesamtstatus als degraded', async () => {
+    // PGRST205 = Tabelle im Schema-Cache nicht vorhanden (Migration nie angewendet).
+    const summary = await checkHealth({
+      db: dbWithTables({ evidence_items: 'PGRST205: Could not find the table' }),
+      env: FULL_ENV,
+      version: 'test',
+    });
+
+    expect(summary.checks.evidence.status).toBe('down');
+    expect(summary.checks.evidence.error).toContain('PGRST205');
+    expect(summary.status).toBe('degraded');
+    // Eine kaputte Tabelle darf die anderen Bausteine nicht mitreissen.
+    expect(summary.checks.automation.status).toBe('ok');
+  });
+
+  it('meldet das AI Gateway als ok, sobald ein Provider-Secret gesetzt ist', async () => {
+    const summary = await checkHealth({
+      db: dbWithTables(),
+      env: { ...FULL_ENV, OLLAMA_URL: 'https://ollama.example.de' },
+      version: 'test',
+    });
+
+    expect(summary.checks.ai_gateway.status).toBe('ok');
+  });
+
+  it('meldet das AI Gateway als unknown statt down, wenn kein Env-Secret sichtbar ist', async () => {
+    // Begruendung: getApiKey() faellt auf den Vault zurueck, den dieser Check
+    // nicht einsehen kann. 'down' waere hier eine Behauptung, kein Befund.
+    const summary = await checkHealth({ db: dbWithTables(), env: FULL_ENV, version: 'test' });
+
+    expect(summary.checks.ai_gateway.status).toBe('unknown');
+    expect(summary.status).toBe('ok');
+  });
+
+  it('loest keinen Provider-Aufruf aus (Health darf nichts kosten)', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    await checkHealth({ db: dbWithTables(), env: { ...FULL_ENV, ANTHROPIC_API_KEY: 'k' }, version: 'test' });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+});

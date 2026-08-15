@@ -3,6 +3,14 @@
 // Each template requires a fixed set of params (validated below) and
 // produces a copy-paste-ready snippet with title, rationale, and
 // references to the relevant regulations.
+//
+// Zum Schlüssel `TTDSG_25`: Das TTDSG heißt seit dem 14.05.2024 TDDDG, die
+// Paragraphennummer ist unverändert. Der Schlüssel behält trotzdem den alten
+// Namen — er ist eine **Kennung**, kein Anzeigetext, und liegt so bereits in
+// `remediation_snippets.regulation_refs` in der Datenbank. Ein Umbenennen
+// würde bestehende Zeilen von ihren Vorlagen trennen, ohne dass ein Kunde
+// etwas Richtigeres zu sehen bekäme. Sichtbare Zitate stehen in `rationale`
+// und sind auf TDDDG umgestellt.
 
 export type Pattern =
   | 'csp_header_block'
@@ -119,7 +127,7 @@ document.addEventListener('rsd:consent.granted', (e) => {
 </script>`;
   return {
     title: `Consent-Wrapper für ${scriptSrc}`,
-    rationale: `Das Script ${scriptSrc} fällt unter TTDSG §25 und braucht aktive Einwilligung vor Ausführung. Der Wrapper lädt es zunächst als type="text/plain" (Browser ignoriert es), und erst nach \`rsd:consent.granted\`-Event in der Kategorie ${category} wird es zu einem echten <script>-Tag transformiert. Funktioniert mit den 4 großen CMPs.`,
+    rationale: `Das Script ${scriptSrc} fällt unter TDDDG § 25 und braucht aktive Einwilligung vor Ausführung. Der Wrapper lädt es zunächst als type="text/plain" (Browser ignoriert es), und erst nach \`rsd:consent.granted\`-Event in der Kategorie ${category} wird es zu einem echten <script>-Tag transformiert. Funktioniert mit den 4 großen CMPs.`,
     snippet,
     target_lang: 'html',
     applies_to: 'Stelle wo das Original-Script eingebunden ist',

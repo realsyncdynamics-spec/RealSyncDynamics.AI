@@ -118,7 +118,7 @@ function renderDeck(opts: { prospect: string; company: string; snap: AuditSnap |
         <tr><th>DSGVO Art. 32</th><td>Stand der Technik bei AI-Verarbeitung</td><td class="bad">bis 4 % Jahresumsatz</td></tr>
         <tr><th>DSGVO Art. 28</th><td>AVV-Pflicht mit AI-Anbieter</td><td class="bad">+ Mitverantwortung</td></tr>
         <tr><th>EU AI Act</th><td>Risk-Klassifikation + Audit-Log ab 2026</td><td class="bad">bis 7 % Jahresumsatz</td></tr>
-        <tr><th>§ 25 TTDSG</th><td>Cookies + Tracking nur mit Consent</td><td class="bad">bis 300 k€ pro Fall</td></tr>
+        <tr><th>§ 25 TDDDG</th><td>Cookies + Tracking nur mit Consent</td><td class="bad">bis 300 k€ pro Fall</td></tr>
       </table>
       <p class="footnote">Quellen: EuGH Schrems II · BGH Cookie II · BfDI · EDSA Guidelines 03/2022</p>
     </section>`;

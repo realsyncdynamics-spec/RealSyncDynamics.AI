@@ -87,7 +87,7 @@ Plus two extras: `LearningNote` (cross-agent knowledge) and `PeerHelpRequest` (t
   "context_summary": "LinkedIn-Post braucht zwei unabhängige Quellen für die Tracker-Aussage.",
   "known_facts": [
     "Audit fand 3 GA-Tracker vor Consent.",
-    "DSGVO Art. 6 + TTDSG §25 relevant."
+    "DSGVO Art. 6 + TDDDG § 25 relevant."
   ],
   "open_questions": [
     "Gibt es eine Aufsichtsbehörden-Entscheidung als Präzedenzfall?"

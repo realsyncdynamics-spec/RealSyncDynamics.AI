@@ -183,7 +183,7 @@ describe('Issue-Shape contract', () => {
       severity: 'high',
       title: 'Tracker vor Einwilligung erkannt',
       detail: 'Meta Pixel lädt vor consent.granted.',
-      paragraph_ref: 'TTDSG §25',
+      paragraph_ref: 'TDDDG § 25',
     };
     expect(typeof example.id).toBe('string');
     expect(['low', 'medium', 'high', 'critical']).toContain(example.severity);

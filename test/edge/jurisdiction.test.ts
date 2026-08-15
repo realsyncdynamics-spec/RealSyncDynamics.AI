@@ -2,10 +2,10 @@ import { describe, expect, test } from 'vitest';
 import { isLikelyGermanJurisdiction } from '../../supabase/functions/_shared/jurisdiction';
 
 /**
- * Schützt den gdpr-audit-Scanner vor False-Positive § 5 TMG-Befunden
+ * Schützt den gdpr-audit-Scanner vor False-Positive § 5 DDG-Befunden
  * gegen ausländische Sites (gmail.com, github.com, ...). PR-Kontext:
  * Screenshots zeigten Score 61/100 „KRITISCH — handeln" für gmail.com
- * aufgrund eines „Kein Impressum-Link"-Befunds — § 5 TMG ist deutsches
+ * aufgrund eines „Kein Impressum-Link"-Befunds — § 5 DDG ist deutsches
  * Recht und greift dort nicht.
  */
 

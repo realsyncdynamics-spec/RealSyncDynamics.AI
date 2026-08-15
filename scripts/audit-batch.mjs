@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Passive Web-Audit-Batch — scannt eine Liste öffentlicher Domains
-// auf typische DSGVO/TTDSG-Befunde (Tracker, Fonts, Headers, Consent,
+// auf typische DSGVO/TDDDG-Befunde (Tracker, Fonts, Headers, Consent,
 // Impressum/Datenschutz). Schreibt JSON + Markdown nach scans/.
 //
 // Usage: node scripts/audit-batch.mjs
@@ -201,7 +201,7 @@ async function auditDomain(domain) {
     result.findings.push({
       severity: 'high',
       code: 'tracker_without_consent_manager',
-      msg: `Tracker geladen, aber kein Consent-Manager erkannt. Verstoß gegen § 25 TTDSG sehr wahrscheinlich.`,
+      msg: `Tracker geladen, aber kein Consent-Manager erkannt. Verstoß gegen § 25 TDDDG sehr wahrscheinlich.`,
     });
   }
 
@@ -215,7 +215,7 @@ async function auditDomain(domain) {
   }
 
   if (!result.has_imprint_link) {
-    result.findings.push({ severity: 'high', code: 'missing_imprint', msg: 'Kein Impressum-Link auf der Startseite gefunden (§ 5 TMG).' });
+    result.findings.push({ severity: 'high', code: 'missing_imprint', msg: 'Kein Impressum-Link auf der Startseite gefunden (§ 5 DDG).' });
   }
   if (!result.has_privacy_link) {
     result.findings.push({ severity: 'high', code: 'missing_privacy', msg: 'Kein Datenschutzerklärung-Link auf der Startseite gefunden (Art. 13 DSGVO).' });
@@ -315,7 +315,7 @@ function renderSummary(results) {
     );
   }
   lines.push('');
-  lines.push(`Legende: **High** = wahrscheinlicher DSGVO/TTDSG-Verstoß · **Med** = Best-Practice-Empfehlung · **GFonts** = Google Fonts lokal eingebunden · **Impr/DS** = Impressum/Datenschutz-Link auf Startseite`);
+  lines.push(`Legende: **High** = wahrscheinlicher DSGVO/TDDDG-Verstoß · **Med** = Best-Practice-Empfehlung · **GFonts** = Google Fonts lokal eingebunden · **Impr/DS** = Impressum/Datenschutz-Link auf Startseite`);
   return lines.join('\n');
 }
 

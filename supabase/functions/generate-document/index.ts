@@ -65,8 +65,8 @@ function todayDe(): string {
 function detectTrackers(issues: AuditIssue[]): { id: string; name: string; norm: string }[] {
   const trackers: { id: string; name: string; norm: string }[] = [];
   for (const iss of issues) {
-    if (iss.id === 'GA4_WITHOUT_CONSENT')        trackers.push({ id: 'ga4',        name: 'Google Analytics 4',  norm: '§ 25 Abs. 1 TTDSG, Art. 6 Abs. 1 lit. a DSGVO' });
-    if (iss.id === 'META_PIXEL_WITHOUT_CONSENT') trackers.push({ id: 'meta_pixel', name: 'Meta Pixel (Facebook)', norm: '§ 25 Abs. 1 TTDSG, Art. 6 Abs. 1 lit. a DSGVO' });
+    if (iss.id === 'GA4_WITHOUT_CONSENT')        trackers.push({ id: 'ga4',        name: 'Google Analytics 4',  norm: '§ 25 Abs. 1 TDDDG, Art. 6 Abs. 1 lit. a DSGVO' });
+    if (iss.id === 'META_PIXEL_WITHOUT_CONSENT') trackers.push({ id: 'meta_pixel', name: 'Meta Pixel (Facebook)', norm: '§ 25 Abs. 1 TDDDG, Art. 6 Abs. 1 lit. a DSGVO' });
     if (iss.id === 'GOOGLE_FONTS_EMBEDDED')      trackers.push({ id: 'gfonts',     name: 'Google Fonts (extern eingebunden)', norm: 'Art. 6 Abs. 1 lit. a DSGVO, BGH 2022' });
   }
   return trackers;
@@ -131,7 +131,7 @@ function renderDSE(audit: AuditRow): string {
     ? `<p>Beim automatischen Audit wurden keine Tracker oder externe Embeds erkannt, die einer expliziten Einwilligung bedürfen. Bei späteren Erweiterungen ist diese Erklärung anzupassen.</p>`
     : trackers.map((t) => `
         <h3>${escape(t.name)}</h3>
-        <p>Diese Website setzt ${escape(t.name)} ein. Die Verarbeitung erfolgt ausschließlich auf Basis Ihrer Einwilligung gemäß § 25 Abs. 1 TTDSG i. V. m. Art. 6 Abs. 1 lit. a DSGVO. Sie können Ihre Einwilligung jederzeit über den Cookie-Banner widerrufen.</p>
+        <p>Diese Website setzt ${escape(t.name)} ein. Die Verarbeitung erfolgt ausschließlich auf Basis Ihrer Einwilligung gemäß § 25 Abs. 1 TDDDG i. V. m. Art. 6 Abs. 1 lit. a DSGVO. Sie können Ihre Einwilligung jederzeit über den Cookie-Banner widerrufen.</p>
         <p class="muted">Rechtsgrundlage: ${escape(t.norm)}</p>`).join('');
 
   const body = html`
@@ -147,7 +147,7 @@ function renderDSE(audit: AuditRow): string {
     <p>Diese Website wird in der Europäischen Union gehostet. Mit dem Hosting-Provider besteht ein Auftragsverarbeitungsvertrag (AVV) nach Art. 28 DSGVO.</p>
 
     <h2>3. Cookies und Tracking</h2>
-    <p>Diese Website verwendet Cookies. Cookies, die für den Betrieb erforderlich sind, basieren auf § 25 Abs. 2 Nr. 2 TTDSG. Alle weiteren Cookies werden ausschließlich auf Basis Ihrer Einwilligung (§ 25 Abs. 1 TTDSG) gesetzt.</p>
+    <p>Diese Website verwendet Cookies. Cookies, die für den Betrieb erforderlich sind, basieren auf § 25 Abs. 2 Nr. 2 TDDDG. Alle weiteren Cookies werden ausschließlich auf Basis Ihrer Einwilligung (§ 25 Abs. 1 TDDDG) gesetzt.</p>
     ${trackerSections}
 
     <h2>4. Ihre Rechte</h2>
@@ -346,7 +346,7 @@ function renderTOM(audit: AuditRow): string {
     <h2>6. Datenschutzfreundliche Voreinstellungen (Art. 25)</h2>
     <ul>
       ${checkbox(false, 'Privacy by Design + Privacy by Default in Produkt-Entwicklung')}
-      ${checkbox(open('COOKIE_BANNER_DARK_PATTERN'), 'Cookie-Banner mit echter Wahlfreiheit (TTDSG § 25)')}
+      ${checkbox(open('COOKIE_BANNER_DARK_PATTERN'), 'Cookie-Banner mit echter Wahlfreiheit (TDDDG § 25)')}
       ${checkbox(false, 'Minimal-Data-Prinzip in Formularen')}
     </ul>
 

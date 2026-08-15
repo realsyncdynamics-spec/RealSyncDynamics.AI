@@ -45,7 +45,7 @@
             "detector": "cookie-scanner",
             "category": "consent",
             "severity": "critical",
-            "summary": "Tracker (Google Tag Manager) feuert vor Consent-Banner — Verstoß gegen TTDSG §25.",
+            "summary": "Tracker (Google Tag Manager) feuert vor Consent-Banner — Verstoß gegen TDDDG § 25.",
             "evidence_kind": "sha256",
             "evidence_source": "<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-XYZ\"></script>",
             "raw_payload": {
@@ -130,7 +130,7 @@
       "id": "site-05-missing-impressum",
       "website_id": "11111111-1111-4111-8111-111111111105",
       "url": "https://test-missing-impressum.example",
-      "label": "Fehlendes Impressum (TMG §5)",
+      "label": "Fehlendes Impressum (DDG § 5)",
       "raw_html_sample": "<html><body><footer>Datenschutz | AGB</footer></body></html>",
       "expected": {
         "finding_count": 1,
@@ -141,7 +141,7 @@
             "detector": "gdpr-audit",
             "category": "transparency",
             "severity": "high",
-            "summary": "Impressum-Link fehlt im Footer — Verstoß gegen TMG §5 / DDG §5.",
+            "summary": "Impressum-Link fehlt im Footer — Verstoß gegen DDG § 5 / DDG §5.",
             "evidence_kind": "url",
             "evidence_url": "https://test-missing-impressum.example/#footer",
             "raw_payload": {

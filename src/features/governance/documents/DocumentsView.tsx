@@ -108,7 +108,7 @@ const DOCUMENTS: GovernanceDoc[] = [
     id: 'impressum',
     title: 'Impressum',
     subtitle: 'IMP',
-    reference: 'TMG §5',
+    reference: 'DDG § 5',
     status: 'aktuell',
     updatedAt: '10.01.2026',
     version: 'v1.0',

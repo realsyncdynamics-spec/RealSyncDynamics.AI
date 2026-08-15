@@ -28,7 +28,7 @@ const FINDING: AuditFindingInput = {
   severity: 'high',
   title: 'Google Fonts wird ohne Consent geladen',
   detail: 'CSS-Anfrage an fonts.googleapis.com vor Cookie-Consent.',
-  paragraph_ref: 'TTDSG § 25',
+  paragraph_ref: 'TDDDG § 25',
 };
 
 describe('generateFixSnippet', () => {
@@ -123,7 +123,7 @@ describe('generateRemediationPlan', () => {
           { title: 'Google Fonts lokal', detail: 'Fonts self-hosten.' },
           { title: 'Audit-Trail', detail: 'Consent-Events loggen.' },
         ],
-        legal_reference: 'DSGVO Art. 6 Abs. 1 lit. a + TTDSG § 25',
+        legal_reference: 'DSGVO Art. 6 Abs. 1 lit. a + TDDDG § 25',
       },
       trace_id: 't', latency_ms: 1,
     };

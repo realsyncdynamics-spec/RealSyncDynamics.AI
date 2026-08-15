@@ -31,7 +31,16 @@ Deno.serve(async (req) => {
 
   const summary = await checkHealth({
     db,
-    env: { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY: SRK },
+    env: {
+      SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: SRK,
+      // Nur Anwesenheit wird geprueft — die Werte verlassen den Prozess nie.
+      ANTHROPIC_API_KEY: Deno.env.get('ANTHROPIC_API_KEY'),
+      OPENAI_API_KEY: Deno.env.get('OPENAI_API_KEY'),
+      GEMINI_API_KEY: Deno.env.get('GEMINI_API_KEY'),
+      GOOGLE_API_KEY: Deno.env.get('GOOGLE_API_KEY'),
+      OLLAMA_URL: Deno.env.get('OLLAMA_URL'),
+    },
     version: VERSION,
   });
 

@@ -163,6 +163,73 @@ Leitfrage: *Was passiert mit **diesem** Asset?*
 Ein Feature, das in beiden Welten auftaucht, ist ein Hinweis auf einen
 Modellfehler — nicht auf einen Bedarf nach Duplikat.
 
+### 3.1 Truth Layer: die Oberfläche zeigt nur, was belegt ist
+
+Die Ebene 1 erfindet nichts. Sie stellt dar, was die darunterliegenden Ebenen
+tatsächlich liefern.
+
+```text
+Supabase
+   ├── governance analytics
+   ├── health
+   ├── evidence
+   └── tenant data
+          ↓
+     Status Adapter
+          ↓
+   Customer Dashboard
+```
+
+**Regeln**
+
+1. **Jede angezeigte Zahl hat eine definierte Metrik.** Wer `87/100` anzeigt,
+   muss benennen können, aus welcher Metrik über welchen Zeitraum die Zahl
+   entsteht.
+2. **Fehlt die belastbare Metrik, wird `—` angezeigt** — nicht ein plausibler
+   Platzhalter. Eine hübsche Lüge im Dashboard einer Compliance-Plattform ist
+   teurer als eine sichtbare Lücke.
+3. **Demo-Daten sind als Demo gekennzeichnet.** Der Demo-Modus
+   (`DemoModeProvider`) ist ein expliziter, sichtbarer Zustand — nie ein
+   stiller Rückfall, wenn eine echte Quelle nicht antwortet.
+4. **Ein Status Adapter, keine verstreuten Fetches.** Die Zusammenführung aus
+   Analytics, Health, Evidence und Tenant-Daten liegt an genau einer Stelle.
+   Neue Kacheln docken dort an, statt eigene Endpunkte zu erfinden.
+5. **Kein neuer Sammelendpunkt, wo bereits einer existiert.** Vorhanden sind
+   u. a. `governance-analytics-aggregator`, `governance-risk-score`,
+   `health`, `evidence-export`. Der Adapter schließt sie an, er ersetzt sie nicht.
+
+**Health als echter Verbundstatus.** `health` liefert heute
+(`supabase/functions/_shared/health.ts`) `database` und `env` — also
+Erreichbarkeit, nicht Betriebsfähigkeit. Ziel ist ein Verbundstatus über die
+tragenden Komponenten:
+
+```text
+Supabase       ✓
+AI Gateway     ✓
+Automation     ✓
+Bot Layer      ✓
+Evidence       ✓
+```
+
+Fremdbetriebene Bausteine (VPS, Ollama, n8n) werden **getrennt** überwacht und
+getrennt ausgewiesen: ihr Ausfall darf den Kernstatus nicht grün färben und
+nicht fälschlich rot.
+
+### 3.2 Navigation spricht Produktsprache, nicht Systemsprache
+
+Die öffentliche Navigation spiegelt nicht die interne Modulstruktur:
+
+```text
+Plattform            Lösungen                       Evidence     Preise
+   ↓                    ↓                              ↓            ↓
+Governance +      Creator / Promotion /            Beweis      SaaS-
+Transformation    Market / Industry                            Modularität
+```
+
+`Login` steht separat rechts. Die Regel dahinter: Navigationspunkte benennen
+**Kundennutzen**, nicht Systembestandteile. Interne Begriffe (Runtime,
+Aggregator, Kernel) erscheinen nicht in der öffentlichen Navigation.
+
 ---
 
 ## 4. Ebene 2 — SiteOS als digitale Objektebene
@@ -308,6 +375,28 @@ Website
 5. **Beobachtung ist quellenagnostisch.** Ein Crawl, ein Webhook einer
    Integration, ein Repository-Diff und ein Konfigurationsabruf erzeugen
    dieselbe Ereignisform.
+
+### 5.1 Der Einstieg: Free Baseline statt „Free Audit"
+
+Der kostenlose Einstieg ist die **erste Beobachtung** eines Assets, nicht ein
+eigenständiges Produkt:
+
+```text
+Free Baseline → Evidence → Continuous Monitoring
+```
+
+Damit ist der Einstieg architektonisch derselbe Vorgang wie jede spätere
+Beobachtung — nur der erste. Er erzeugt ein Asset im Zustand `observed`,
+hinterlässt Nachweise und mündet in den Regelbetrieb.
+
+**Es wird kein zweiter Audit-Pfad gebaut.** Der bestehende Flow bleibt und wird
+positioniert, nicht ersetzt: `gdpr-audit`, `audit-monitor-cron`,
+`audit-recheck-weekly`, `audit-report-email`, `audit-report-pdf` samt
+Audit-Migrationen und den Einstiegsflächen (`AuditLanding`, `AuditChatHero`).
+Das Datenmodell trägt bereits `audit_id`, `scan_run_id`, Score, Findings und
+Evidence-Metadaten — die fehlende Arbeit ist Anschluss und Aufräumen, nicht
+Neubau. Ein zweiter Audit-Pfad wäre eine zweite Wahrheit über denselben
+Gegenstand und fällt unter denselben Ausschluss wie eine zweite Evidence-Kette.
 
 ---
 
@@ -500,6 +589,42 @@ Behebung, sowie `automation_skills` / `automation_runs` als Datenmodell für
 Skill-Läufe. Die Zusammenfassung zu benannten **Workflows** über Assetgrenzen
 hinweg fehlt noch.
 
+### 8.1 Der Assistent kennt keinen Provider
+
+Der Kundenassistent — Web, WhatsApp, Voice — spricht **nie** direkt mit einem
+Modellanbieter. Zwischen Oberfläche und Anbieter liegt das Gateway:
+
+```text
+Customer Assistant
+        ↓
+AI Gateway
+        ↓
+Policy / Tenant / Entitlement
+        ↓
+Provider Router
+   ┌────┴────┐
+Ollama   Anthropic
+   │
+VPS / n8n / Tools
+```
+
+**Regeln**
+
+1. **Kein hart verdrahteter Provider in der Produktoberfläche.** Ein Pfad wie
+   „Web → Ollama `qwen2.5:3b` → Fallback Anthropic" verdrahtet eine
+   Betriebsentscheidung in die Experience-Ebene. Modellwahl, Fallback und
+   Reihenfolge sind Konfiguration des Routers.
+2. **Ollama ist der bevorzugte Provider (EU-lokal), nicht der einzige.** Die
+   Bevorzugung ist eine Router-Regel und bleibt änderbar, ohne die Oberfläche
+   anzufassen.
+3. **Policy, Mandant und Berechtigung liegen vor dem Router**, nicht dahinter.
+   Was ein Assistent darf, entscheidet die Governance-Ebene — nicht das Modell.
+4. **Jeder Aufruf wird protokolliert** (`ai_tool_runs` / `workflow_runs`),
+   unabhängig vom gewählten Anbieter.
+5. Vorhanden und wiederzuverwenden: `ai-gateway`, `bot-chat`,
+   `bot-voice-webhook`. Kanäle sind Eingänge in dieselbe Kette, keine
+   getrennten Assistenten.
+
 ---
 
 ## 9. Ebene 5 — Integrations & Infrastructure
@@ -663,9 +788,35 @@ auf bestehende Modul-Schlüssel abgebildet, nicht als zweite Modul-Welt eingefü
 | Skills / Workflows | 7 SiteOS-Agenten, `automation_skills`/`automation_runs` | 8 Skills als Vokabular, Workflows über Assetgrenzen |
 | Integrationen | `integration_connectors`, `remediation_actions`, Feature `src/features/integrations` | beidseitige Integrationen als Beobachtungs- **und** Aktionsquelle |
 | Pricing | 6 Abo-Pläne + Einmalprodukte in `shared/pricing.ts` | BASE + MODULE + SCALE als Katalogänderung |
+| Truth Layer / Status Adapter | `governance-analytics-aggregator`, `governance-risk-score`, `evidence-export` vorhanden; Zusammenführung fehlt | ein Adapter, jede Zahl mit definierter Metrik, `—` statt Platzhalter |
+| Health | `health` prüft `database` + `env` (`_shared/health.ts`) | Verbundstatus über Supabase · AI Gateway · Automation · Bot Layer · Evidence; VPS/Ollama/n8n getrennt |
+| Assistent | `ai-gateway`, `bot-chat`, `bot-voice-webhook` vorhanden | Provider Router hinter dem Gateway, Policy/Tenant/Entitlement davor |
+| Free Baseline | vollständiger `gdpr-audit`-Flow inkl. Cron, Report-Mail, PDF, `AuditLanding`, `AuditChatHero` | Positionierung als erste Beobachtung, Anschluss an Continuous Monitoring — **kein** Neubau |
 
-Die Reihenfolge der Umsetzung folgt der Abhängigkeit, nicht der Sichtbarkeit:
+### Umsetzungsreihenfolge
+
+Der aktuelle Engpass ist nicht fehlende Infrastruktur, sondern ihr fehlender
+Anschluss: die Oberfläche muss beweisen, dass die bereits gebaute Infrastruktur
+tatsächlich läuft. Daraus folgen drei Arbeitspakete — in dieser Reihenfolge:
+
+| Phase | Inhalt | Ergebnis |
+| --- | --- | --- |
+| **A — Truth Layer** | Dashboard, Evidence und Health ausschließlich an echte Quellen hängen: Health · Analytics · Evidence · Tenant · Governance. Keine Demo-Zahlen außerhalb des gekennzeichneten Demo-Modus. | Jede angezeigte Zahl ist belegbar (§3.1) |
+| **B — Conversion Layer** | `Landing → Free Baseline → Score → Evidence → Signup → Continuous Monitoring → Transformation`, auf dem bestehenden `gdpr-audit`-Flow. | Der Einstieg mündet in den Regelbetrieb statt in einen Bericht (§5.1) |
+| **C — Assistant Layer** | Web · WhatsApp · Voice → AI Gateway → Governance → Tools / n8n / Ollama / APIs. | Ein governter Assistent über alle Kanäle (§8.1) |
+
+Der strukturelle Ausbau läuft entlang derselben Abhängigkeitslogik:
 **Objektebene + Lebenszyklus → Publish Gate → Workflows → Integrationen → Pricing.**
+Unabhängig von der Phase gilt: der **Publish Gate steht vor dem ersten
+Publish-Pfad**, nicht danach.
+
+Ausdrücklich **nicht** Teil dieser Reihenfolge: eine Framework-Migration
+Vite → Next.js. SEO-kritische Seiten (Home, Pricing, Product, Evidence,
+Solutions, Audit) werden über den vorhandenen Prerender-Pfad
+(`scripts/prerender.mjs`, `npm run build:full`) sauber ausgeliefert und
+gemessen. Eine Migration kommt erst infrage, wenn dieser Weg nachweislich nicht
+reicht — und wäre ohnehin gegen `CLAUDE.md` zu entscheiden, das Next.js-Patterns
+in der Vite-SPA ausschließt.
 
 ---
 
@@ -681,6 +832,10 @@ Die Reihenfolge der Umsetzung folgt der Abhängigkeit, nicht der Sichtbarkeit:
 | Feature-Einstiege ohne Skill-/Workflow-Zuordnung | Führt zur Button-Sammlung statt zu einer Plattform. |
 | Automatisch erfundene Inhalte in Compliance-Pfaden | Verdeckt einen offenen Befund und erzeugt zusätzliches Rechtsrisiko. |
 | Stiller Ausfall einer Beobachtung oder Integration | Eine nicht stattgefundene Prüfung darf nie wie eine bestandene aussehen. |
+| Erfundene oder platzhaltende Kennzahlen in der Oberfläche | `—` ist ehrlich, eine plausible Zahl ohne Metrik ist eine Falschaussage über den Compliance-Zustand (§3.1). |
+| Hart verdrahteter Modellanbieter in der Experience-Ebene | Bindet eine Betriebsentscheidung an die Oberfläche und verhindert den Anbieterwechsel (§8.1). |
+| Zweiter Audit-Pfad neben `gdpr-audit` | Zweite Wahrheit über denselben Gegenstand — derselbe Fehler wie eine zweite Evidence-Kette (§5.1). |
+| Framework-Migration Vite → Next.js als Vorleistung | Großes technisches Projekt ohne belegten Engpass. SEO läuft über den vorhandenen Prerender-Pfad; zuerst messen, dann entscheiden (§11). |
 
 ---
 

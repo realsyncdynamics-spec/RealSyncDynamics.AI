@@ -92,6 +92,24 @@ describe('WaitlistLanding — Rendering', () => {
   });
 });
 
+describe('Warteliste — Alias /waitlist', () => {
+  it('ist als 301 in public/_redirects hinterlegt, damit Crawler ohne JS nicht auf der Startseite landen', async () => {
+    const { readFileSync } = await import('node:fs');
+    const redirects = readFileSync('public/_redirects', 'utf8');
+    // Der /*-Fallback liefert sonst die index.html der Startseite samt deren
+    // canonical — das Alias wuerde auf / statt auf /warteliste konsolidiert.
+    expect(redirects).toMatch(/^\/waitlist\s+\/warteliste\s+301$/m);
+    // Die Redirect-Regel muss VOR dem SPA-Fallback stehen, sonst greift sie nie.
+    expect(redirects.indexOf('/waitlist')).toBeLessThan(redirects.indexOf('/*  /index.html'));
+  });
+
+  it('hat keinen eigenen SEO-Eintrag — die Seite rendert unter /waitlist nie', async () => {
+    const { SEO_CONFIG } = await import('../../src/config/seo');
+    expect(SEO_CONFIG['/waitlist']).toBeUndefined();
+    expect(SEO_CONFIG['/warteliste']?.canonical).toContain('/warteliste');
+  });
+});
+
 describe('WaitlistLanding — Anmeldezähler', () => {
   it('zeigt die reale Anzahl aus der Edge Function', async () => {
     vi.stubGlobal('fetch', mockFetch({ count: 137 }));

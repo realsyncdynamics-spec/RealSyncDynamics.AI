@@ -367,9 +367,9 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'AI Act Governance', url: '/ai-act' },
     ]),
   },
-  // Warteliste. /waitlist ist ein reines Alias und zeigt per canonical auf die
-  // deutsche URL — beide rendern WaitlistLanding, Duplicate Content wird so
-  // auf /warteliste konsolidiert.
+  // Warteliste. Das englische Alias /waitlist bekommt hier bewusst keinen
+  // eigenen Eintrag: es wird per 301 (public/_redirects) auf diese URL
+  // umgeleitet und rendert nie selbst.
   '/warteliste': {
     title: 'Warteliste — Früher Zugang zur AI Governance Runtime | RealSyncDynamics.AI',
     description:
@@ -385,12 +385,6 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       ]),
       WAITLIST_FAQ_JSONLD,
     ],
-  },
-  '/waitlist': {
-    title: 'Warteliste — Früher Zugang zur AI Governance Runtime | RealSyncDynamics.AI',
-    description:
-      'Sichern Sie sich Ihren Platz für Governance Runtime, Evidence Vault, Policy Packs und Herkunftsnachweis. Kostenlos, unverbindlich, Position sofort sichtbar — EU-gehostet in Frankfurt.',
-    canonical: `${SITE_URL}/warteliste`,
   },
   '/governance-score': {
     title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',

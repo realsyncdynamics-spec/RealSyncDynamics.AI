@@ -488,9 +488,11 @@ function RoutesWithTracking() {
       <Route path="/ai-act"     element={<AiActPage />} />
       <Route path="/ai-governance" element={<Navigate to="/ai-act" replace />} />
       <Route path="/ai-dsgvo-bot" element={<AiDsgvoBotPage />} />
-      {/* Warteliste — /waitlist ist das englische Alias, canonical bleibt /warteliste */}
+      {/* Warteliste. /waitlist ist das englische Alias und leitet weiter —
+          serverseitig via public/_redirects (301), hier fuer die
+          Client-Navigation. Kein zweiter Renderpfad, kein Duplicate Content. */}
       <Route path="/warteliste" element={<WaitlistLanding />} />
-      <Route path="/waitlist"   element={<WaitlistLanding />} />
+      <Route path="/waitlist"   element={<Navigate to="/warteliste" replace />} />
       <Route path="/docs"       element={<DocsRuntimePage />} />
       <Route path="/agencies" element={<AgenciesLanding />} />
       <Route path="/audit" element={<AuditLanding />} />

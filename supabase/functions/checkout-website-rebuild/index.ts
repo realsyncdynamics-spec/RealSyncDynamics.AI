@@ -5,6 +5,7 @@
 import Stripe from 'npm:stripe@16.12.0';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
+import { writeTransformationEvent } from '../_shared/transformation-event-ledger.ts';
 
 const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -77,6 +78,23 @@ Deno.serve(async (req) => {
     custom_text: { submit: { message: `DSGVO-konformer Rebuild für ${domain} — Bestätigung & Setup-Link kommen per E-Mail.` } },
     ...(mode === 'subscription' && body.tenant_id ? { subscription_data: { metadata: { tenant_id: body.tenant_id, plan_key: planKey } } } : {}),
   };
-  try { const session = await stripe.checkout.sessions.create(sessionParams); return jsonResponse({ ok: true, url: session.url, session_id: session.id, tier, mode, domain, plan_key: planKey }); }
+  try {
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    try {
+      await writeTransformationEvent({
+        event_id: crypto.randomUUID(),
+        event_name: 'checkout_started',
+        tenant_id: body.tenant_id?.trim(),
+        price_cohort: tier === 'governance_launch' ? 'reference_349' : 'not_applicable',
+        currency: 'EUR',
+        metadata: { checkout_mode: mode, source: 'checkout-website-rebuild' },
+      });
+    } catch (eventError) {
+      // Analytics is non-authoritative. A metrics failure must never invalidate
+      // an already-created Stripe Checkout session.
+      console.warn(`[checkout-website-rebuild] metrics write failed: ${(eventError as Error).message}`);
+    }
+    return jsonResponse({ ok: true, url: session.url, session_id: session.id, tier, mode, domain, plan_key: planKey });
+  }
   catch (e) { return jsonError(500, 'STRIPE_CREATE_FAILED', (e as Error).message); }
 });

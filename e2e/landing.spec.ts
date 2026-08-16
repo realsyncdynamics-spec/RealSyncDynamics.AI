@@ -93,42 +93,49 @@ test.describe('Marketing-Landing (/landing)', () => {
 // ─────────────────────────────────────────────────────────────────────
 // Governance-OS Workspace-Vorschau (/)
 // ─────────────────────────────────────────────────────────────────────
-test.describe('Workspace-Vorschau (/)', () => {
+// Seit dem Governance-AI-Landing (a5479fcb / 1e948122) rendert `/` die
+// Governance-AI-Seite, nicht mehr die Workspace-Vorschau. Diese Suite läuft
+// nicht in CI (dort läuft nur `npm run test:e2e`), deshalb war sie unbemerkt
+// gegen eine Landing gerichtet, die es nicht mehr gibt.
+test.describe('Governance-AI-Landing (/)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('Hero zeigt KI-Betriebssystem-Headline und CTAs', async ({ page }) => {
+  test('Hero zeigt Governance-AI-Headline und CTAs', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: /Betriebssystem für/i }),
+      page.getByRole('heading', { name: /Ihre KI wird EU-ready/i }),
     ).toBeVisible();
 
-    await expect(page.getByText(/AI GOVERNANCE OS FOR TRUST & VALUE/i)).toBeVisible();
+    await expect(page.getByText(/REALSYNC GOVERNANCE RUNTIME/i).first()).toBeVisible();
 
-    await expect(page.getByRole('link', { name: /KI-Betriebssystem entdecken/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Produkt-Tour ansehen/i })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Kostenlosen Audit starten/i }).first(),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /Einführung/i })).toBeVisible();
   });
 
-  test('Branchen-Sektion verlinkt auf die Detailseite', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /Für jeden, der Daten verarbeitet oder KI einsetzt/i }),
-    ).toBeVisible();
-    // "FÜR WEN"-Karte navigiert in die jeweilige Branchen-Detailseite (/branchen/:slug).
-    await page.getByRole('link', { name: /Gesundheitswesen/i }).click();
-    await expect(page).toHaveURL(/\/branchen\/gesundheitswesen/);
-    await expect(
-      page.getByRole('heading', { name: /Compliance für Gesundheitsdaten und KI-Diagnostik/i }),
-    ).toBeVisible();
+  test('Control Plane ist als Beispielansicht gekennzeichnet', async ({ page }) => {
+    // Truth Layer: ein anonymer Besucher hat keinen Mandanten und damit keine
+    // belegbaren Kennzahlen — das Panel darf sich nicht als "LIVE" ausgeben.
+    await expect(page.getByText(/Beispielansicht/i).first()).toBeVisible();
+    await expect(page.getByText(/Governance AI · Control Plane/i)).toBeVisible();
   });
 
   test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
+    const platform = page.locator('#platform');
     await expect(
-      page.getByRole('heading', { name: /Eine Runtime\. Vollständige KI-Governance\./i }),
+      platform.getByRole('heading', { name: /Eine Runtime\. Ihre Regeln\./i }),
     ).toBeVisible();
-    // Eindeutige Plattform-Karten-Titel (nicht im Footer dupliziert).
-    for (const label of ['Governance-Runtime', 'Multi-Tenancy']) {
-      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    for (const label of ['Policy Engine', 'Runtime Monitoring']) {
+      await expect(platform.getByText(label, { exact: true })).toBeVisible();
     }
+  });
+
+  test('Rechtslinks im Footer sind erreichbar (§ 5 DDG)', async ({ page }) => {
+    const footer = page.locator('footer');
+    await expect(footer.getByRole('link', { name: /^Impressum$/ })).toBeVisible();
+    await expect(footer.getByRole('link', { name: /^Datenschutz$/ })).toBeVisible();
   });
 
   test('Keine verbotenen Sales/Pilot/Demo CTAs', async ({ page }) => {

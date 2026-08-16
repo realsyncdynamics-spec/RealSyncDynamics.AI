@@ -3,8 +3,14 @@ name: Deploy Frontend to Production
 # Stillgelegt am 2026-08-03: Production-Ziel des Frontends ist Cloudflare Pages
 # (CLAUDE.md §2). Dieser Workflow deployte parallel auf den Hostinger-VPS und
 # schlug bei jedem Push nach main fehl — der VPS ist ueber Port 22 nicht
-# erreichbar (`dial tcp :22 i/o timeout`, siehe deploy-hostinger.yml).
+# erreichbar (`dial tcp :22 i/o timeout`).
 # Nur noch manuell ausloesbar, damit main nicht dauerhaft rot ist.
+#
+# Der zweite VPS-Workflow (`deploy-hostinger.yml`) ist am 2026-08-16 entfernt
+# worden: er lief bei jedem Push nach main, verband sich auf Port 65002 (das ist
+# der SSH-Port des Shared Hostings, nicht des VPS) und rief anschliessend
+# `pm2 start npm -- start` auf — ein `start`-Script existiert in dieser
+# Vite-SPA nicht. Beide Fehler stecken potenziell auch hier drin.
 #
 # Die Secret-Namen unten sind seit #967 korrekt (VPS_SSH_*). Das behebt aber nur
 # den frueheren `exit 255` (ssh ohne Zielhost), nicht die Ursache: der VPS

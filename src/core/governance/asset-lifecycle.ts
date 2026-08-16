@@ -2,7 +2,7 @@
  * Asset Lifecycle — TypeScript-Spiegel der serverseitigen Ableitung.
  *
  * Vertrag: docs/architecture/asset-lifecycle-contract.md §6.
- * SQL-Original: supabase/migrations/20260822000000_b3_asset_monitoring_lifecycle.sql
+ * SQL-Original: supabase/migrations/20260823000000_b3_asset_monitoring_lifecycle.sql
  *               (`public.asset_lifecycle_state`).
  *
  * **Die Datenbank ist die Wahrheit.** Diese Datei ist die Referenz für

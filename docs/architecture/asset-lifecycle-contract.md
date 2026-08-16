@@ -289,7 +289,7 @@ Beim Erstellen dieses Vertrags gefunden, alle am Code verifiziert:
 | D1 | keine Relation `websites` ↔ `governance_assets` | beide Migrationen | Befund und Nachweis nicht zusammenführbar | **behoben** (B2, `20260821000000`) |
 | D2 | `governance_assets.tenant_id` ist **nullable** | `20260512000000:3` | verletzt die Mandantenregel aus `CLAUDE.md` §3 | **offen** |
 | D3 | `findings.scan_run_id` ohne Fremdschlüssel | `20260610200000:45` (im Code als bekannt kommentiert) | Befunde können auf nicht existierende Runs zeigen | **behoben** (B2) |
-| D4 | `findings.evidence_ref` ist `TEXT`, kein Fremdschlüssel | `20260610200000` | Nachweisbezug nicht referenziell gesichert | **behoben** (B3, `20260822000000`) |
+| D4 | `findings.evidence_ref` ist `TEXT`, kein Fremdschlüssel | `20260610200000` | Nachweisbezug nicht referenziell gesichert | **behoben** (B3, `20260823000000`) |
 | D5 | `scan_schedules.domains` ist `TEXT[]` statt Asset-Bezug | `20260701130000` | Monitoring nicht eindeutig einem Asset zuordenbar | **behoben** (B3) |
 | D6 | `audit_recheck_subscriptions` ohne Schreibpfad | repo-weit | Cron läuft dauerhaft gegen leere Tabelle | **offen — Produktentscheidung** |
 

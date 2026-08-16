@@ -1,7 +1,7 @@
 // Monitoring-Beziehung Asset ↔ Zeitplan pflegen (B3).
 //
 // Vertrag: docs/architecture/asset-lifecycle-contract.md §5.
-// Tabelle:  scan_schedule_assets (Migration 20260822000000).
+// Tabelle:  scan_schedule_assets (Migration 20260823000000).
 //
 // Warum hier und nicht im Aufrufer: `asset_lifecycle_state` leitet
 // "Monitoring aktiv" ausschliesslich aus dieser Relation ab. Wenn jeder

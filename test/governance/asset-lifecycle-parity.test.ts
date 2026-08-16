@@ -21,7 +21,7 @@ import {
 } from '@/src/core/governance/asset-lifecycle';
 
 const migrationSql = readFileSync(
-  resolve(__dirname, '../../supabase/migrations/20260822000000_b3_asset_monitoring_lifecycle.sql'),
+  resolve(__dirname, '../../supabase/migrations/20260823000000_b3_asset_monitoring_lifecycle.sql'),
   'utf8',
 );
 

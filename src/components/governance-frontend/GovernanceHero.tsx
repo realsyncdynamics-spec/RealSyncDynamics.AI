@@ -2,6 +2,7 @@ import { useState, type MouseEvent, type ReactNode } from 'react';
 import { Activity, ArrowRight, Menu, PlayCircle, ShieldCheck, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from './Button';
+import { HERO_HEADLINE_LINES } from './hero-content';
 import { handleAnchorClick } from './scroll';
 
 type HeroSectionProps = { onStart?: () => void };
@@ -170,8 +171,11 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
           </a>
 
           <h1 className="max-w-[760px] text-balance text-[56px] font-black leading-[.9] tracking-[-.055em] sm:text-[70px] lg:text-[82px] xl:text-[94px]" style={{ textShadow: '0 2px 0 #f3fbff, 0 4px 0 #a9bfd0, 0 7px 0 #506a80, 0 11px 0 #21384c, 0 18px 34px rgba(0,0,0,.92), 0 0 48px rgba(119,222,255,.30)' }}>
-            <span className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">AI Governance</span>
-            <span className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">Runtime</span>
+            {/* Text aus hero-content.ts — dieselbe Quelle, gegen die FE-001 prueft.
+                Hartkodierte Headlines hier haben den Test dreimal brechen lassen. */}
+            {HERO_HEADLINE_LINES.map((line) => (
+              <span key={line} className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">{line}</span>
+            ))}
           </h1>
 
           <p className="mt-7 max-w-[680px] text-xl leading-8 text-slate-100 sm:text-2xl lg:text-[24px] lg:leading-9 xl:text-[25px]">Das KI-Betriebssystem für <span className="font-semibold text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,.22)]">DSGVO, EU AI Act &amp; Code-Compliance.</span></p>

@@ -36,6 +36,17 @@ jobs:
           set -euo pipefail
           # These migration versions already exist in the production schema.
           # Mark them as applied in the remote ledger so db push does not replay them.
+          #
+          # `supabase migration repair` verlangt die zugehoerige Datei im Repo und
+          # bricht sonst mit "glob ...: file does not exist" ab. Wegen `set -e` riss
+          # ein einziger fehlender Eintrag den ganzen Schritt mit — und damit auch
+          # das nachgelagerte `db push`, das dann uebersprungen wurde.
+          #
+          # Am 2026-08-16 standen hier 15 Versionen (20260813053820 bis
+          # 20260814014724), die es weder als Datei im Repo noch als Zeile im
+          # Prod-Ledger gab. Sie wurden entfernt: ohne Datei gibt es nichts zu
+          # replayen, und ein "repair" haette nur Phantom-Zeilen ins Ledger
+          # geschrieben — genau die Divergenz, die diese Liste verhindern soll.
           versions=(
             20260628121531
             20260628121551
@@ -49,23 +60,14 @@ jobs:
             20260720123711
             20260720124405
             20260802192603
-            20260813053820
-            20260813055456
-            20260813065822
-            20260813073503
-            20260813073526
-            20260813073849
-            20260813074134
-            20260813074204
-            20260813095138
-            20260813095413
-            20260813100130
-            20260813193341
-            20260813193412
-            20260813204530
-            20260814014724
           )
           for version in "${versions[@]}"; do
+            # Schutz gegen Wiederholung: fehlt die Datei, ist der Eintrag wirkungslos.
+            # Ueberspringen statt den Deploy zu stoppen.
+            if ! compgen -G "supabase/migrations/${version}_*.sql" > /dev/null; then
+              echo "::warning::$version uebersprungen — keine Migrationsdatei im Repo"
+              continue
+            fi
             echo "Reconciling migration history: $version => applied"
             supabase migration repair "$version" --status applied
           done

@@ -8,6 +8,7 @@ import json
 from . import llm
 from .audit_contracts import AuditResult, EvidenceSnapshot, PageSpec
 from .audit_crawler import collect
+from .gemini import GeminiProvider
 
 AUDIT_SYSTEM = """You are the RealSyncDynamicsAI website governance auditor.
 Analyze ONLY the supplied evidence snapshot. Do not invent network requests,
@@ -44,7 +45,7 @@ async def run_audit(url: str, project_id: str = "") -> tuple[EvidenceSnapshot, A
                 + snapshot.evidence_hash),
         model_cls=AuditResult,
         effort="high",
-        provider=llm.get_provider(),
+        provider=GeminiProvider(),
         project_id=project_id,
     )
     known = {f.finding_id: f for f in deterministic}
@@ -73,10 +74,16 @@ async def generate_variants(
     out of the structured-output contract and should be persisted by the
     future R2 asset layer; this prevents base64 payloads from polluting the
     model response and keeps preview generation fast.
+
+    AI Studio transformations deliberately use Gemini directly rather than the
+    generic builder provider auto-router. This prevents an available
+    ANTHROPIC_API_KEY from silently moving this product path to another model
+    and makes the transformation's cost model measurable and reproducible.
     """
     variants = ["executive", "modern", "authority", "minimal"]
     evidence = json.dumps(snapshot.model_dump(), ensure_ascii=False, separators=(",", ":"))
     findings = json.dumps(audit.model_dump(), ensure_ascii=False, separators=(",", ":"))
+    gemini = GeminiProvider()
 
     async def generate_one(variant: str) -> PageSpec:
         result, _ = await llm.complete_json(
@@ -91,7 +98,7 @@ async def generate_variants(
             ),
             model_cls=PageSpec,
             effort="high",
-            provider=llm.get_provider(),
+            provider=gemini,
             project_id=project_id,
         )
         result.variant = variant

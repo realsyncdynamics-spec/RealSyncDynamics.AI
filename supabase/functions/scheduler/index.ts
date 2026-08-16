@@ -16,6 +16,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleOptions, jsonResponse, jsonError } from '../_shared/gateway.ts';
 import { gateFeature, EntitlementError } from '../_shared/entitlements.ts';
 import { audit } from '../_shared/auditLog.ts';
+import { syncScheduleAssets } from '../_shared/schedule-assets.ts';
 
 type Frequency = 'daily' | 'weekly' | 'monthly';
 
@@ -129,16 +130,26 @@ Deno.serve(async (req) => {
         row.created_by = userId;
         const { data, error } = await admin.from('scan_schedules').insert(row).select('id').single();
         if (error || !data) return jsonError(500, 'INTERNAL', 'could not create schedule');
-        await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'scheduler.create', target_type: 'scan_schedule', target_id: data.id, payload: { frequency: spec.frequency, domains: domains.length } });
-        return jsonResponse({ ok: true, id: data.id, next_run_at: nextRun });
+        // B3 (Contract §5): Die Monitoring-Beziehung ist die einzige Quelle für
+        // „Monitoring aktiv". Sie hier zu setzen ist kein Nice-to-have — ohne
+        // sie meldet asset_lifecycle_state weiter MONITORING_ACTIVE = false,
+        // obwohl der Zeitplan läuft.
+        const sync = await syncScheduleAssets(admin, data.id, tenantId, domains);
+        await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'scheduler.create', target_type: 'scan_schedule', target_id: data.id, payload: { frequency: spec.frequency, domains: domains.length, assets_linked: sync.linked, domains_without_asset: sync.unresolved } });
+        return jsonResponse({ ok: true, id: data.id, next_run_at: nextRun, assets_linked: sync.linked, domains_without_asset: sync.unresolved });
       }
 
       const id = String(body.id ?? '');
       if (!id) return jsonError(400, 'BAD_REQUEST', 'id required');
       const { error } = await admin.from('scan_schedules').update(row).eq('id', id).eq('tenant_id', tenantId);
       if (error) return jsonError(500, 'INTERNAL', 'could not update schedule');
-      await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'scheduler.update', target_type: 'scan_schedule', target_id: id, payload: {} });
-      return jsonResponse({ ok: true, id, next_run_at: nextRun });
+      // Nur abgleichen, wenn die Domain-Liste Teil des Updates war — ein
+      // Update von Uhrzeit oder Frequenz darf die Beziehung nicht abräumen.
+      const sync = domains.length > 0
+        ? await syncScheduleAssets(admin, id, tenantId, domains)
+        : { ok: true, linked: 0, unresolved: [] as string[] };
+      await audit(admin, { tenant_id: tenantId, actor_user_id: userId, actor_email: userEmail, action: 'scheduler.update', target_type: 'scan_schedule', target_id: id, payload: { assets_linked: sync.linked, domains_without_asset: sync.unresolved } });
+      return jsonResponse({ ok: true, id, next_run_at: nextRun, assets_linked: sync.linked, domains_without_asset: sync.unresolved });
     }
 
     // pause / resume / delete

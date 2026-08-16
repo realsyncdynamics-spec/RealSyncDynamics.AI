@@ -280,22 +280,39 @@ Tabelle wird nicht zur Grundlage einer Anzeige.
 
 ---
 
-## 9. Defekte, die B2 additiv beheben muss
+## 9. Defekte, die B2/B3 additiv beheben müssen
 
 Beim Erstellen dieses Vertrags gefunden, alle am Code verifiziert:
 
-| # | Defekt | Fundstelle | Wirkung |
-| --- | --- | --- | --- |
-| D1 | keine Relation `websites` ↔ `governance_assets` | beide Migrationen | Befund und Nachweis nicht zusammenführbar |
-| D2 | `governance_assets.tenant_id` ist **nullable** | `20260512000000:3` | verletzt die Mandantenregel aus `CLAUDE.md` §3 |
-| D3 | `findings.scan_run_id` ohne Fremdschlüssel | `20260610200000:45` (im Code als bekannt kommentiert) | Befunde können auf nicht existierende Runs zeigen |
-| D4 | `findings.evidence_ref` ist `TEXT`, kein Fremdschlüssel | `20260610200000` | Nachweisbezug nicht referenziell gesichert |
-| D5 | `scan_schedules.domains` ist `TEXT[]` statt Asset-Bezug | `20260701130000` | Monitoring nicht eindeutig einem Asset zuordenbar |
-| D6 | `audit_recheck_subscriptions` ohne Schreibpfad | repo-weit | Cron läuft dauerhaft gegen leere Tabelle |
+| # | Defekt | Fundstelle | Wirkung | Stand |
+| --- | --- | --- | --- | --- |
+| D1 | keine Relation `websites` ↔ `governance_assets` | beide Migrationen | Befund und Nachweis nicht zusammenführbar | **behoben** (B2, `20260821000000`) |
+| D2 | `governance_assets.tenant_id` ist **nullable** | `20260512000000:3` | verletzt die Mandantenregel aus `CLAUDE.md` §3 | **offen** |
+| D3 | `findings.scan_run_id` ohne Fremdschlüssel | `20260610200000:45` (im Code als bekannt kommentiert) | Befunde können auf nicht existierende Runs zeigen | **behoben** (B2) |
+| D4 | `findings.evidence_ref` ist `TEXT`, kein Fremdschlüssel | `20260610200000` | Nachweisbezug nicht referenziell gesichert | **behoben** (B3, `20260823000000`) |
+| D5 | `scan_schedules.domains` ist `TEXT[]` statt Asset-Bezug | `20260701130000` | Monitoring nicht eindeutig einem Asset zuordenbar | **behoben** (B3) |
+| D6 | `audit_recheck_subscriptions` ohne Schreibpfad | repo-weit | Cron läuft dauerhaft gegen leere Tabelle | **offen — Produktentscheidung** |
 
 D2 ist der schwerwiegendste: Ein Asset ohne Mandant ist nicht mandantengetrennt
-abfragbar. Vor dem Backfill in B2 muss geklärt sein, wem die eine vorhandene
-Zeile gehört.
+abfragbar. In Produktion existiert genau eine solche Zeile; ein `SET NOT NULL`
+würde entweder blind fehlschlagen oder blind zuordnen. Vor der Auflösung muss
+geklärt sein, wem sie gehört. Neue Assets tragen den Mandanten seit B2 immer.
+
+**D6 wird bewusst nicht durch eine Migration entschieden.** Der Cron
+`audit-recheck-weekly` läuft seit `20260506290000` gegen eine Tabelle, in die
+nie jemand schreibt. Zwei Wege stehen offen — den Schreibpfad im anonymen
+Lead-Funnel bauen, oder den Cron abstellen. Beides ist eine Produktentscheidung
+über einen Funnel, keine Schema-Frage.
+
+> **Abweichung zu §5**: Dort steht, `scan_schedules` bekomme „in B2" den
+> Asset-Bezug. Die B2-Migration hat D5 ausdrücklich nach B3 verschoben, weil
+> Monitoring nicht zur Brücke Audit → Asset gehört. Der Vollzug in B3 gilt;
+> §5 ist an dieser Stelle überholt.
+
+Die Relation ist als Zuordnungstabelle `scan_schedule_assets` umgesetzt, nicht
+als Feld: Ein Zeitplan deckt mehrere Domains ab, eine Domain kann in mehreren
+Zeitplänen stehen. `domains TEXT[]` bleibt als Ausführungsliste des Dispatchers
+bestehen — die Relation steht daneben, nicht an seiner Stelle.
 
 ---
 

@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { HERO_HEADLINE_TEST_SUBSTRING } from '../src/components/governance-frontend/hero-content';
 
 /**
  * E2E für die öffentlichen Einstiegsseiten.
@@ -92,46 +91,37 @@ test.describe('Marketing-Landing (/landing)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-// Governance-OS Workspace-Vorschau (/)
+// Runtime-Landing (/) — historische 2026-05-15-Landing, Headline 9ec088e
 // ─────────────────────────────────────────────────────────────────────
-// Seit dem Governance-AI-Landing (a5479fcb / 1e948122) rendert `/` die
-// Governance-AI-Seite, nicht mehr die Workspace-Vorschau. Diese Suite läuft
-// nicht in CI (dort läuft nur `npm run test:e2e`), deshalb war sie unbemerkt
-// gegen eine Landing gerichtet, die es nicht mehr gibt.
-test.describe('Governance-AI-Landing (/)', () => {
+// `/` rendert die historische Runtime-Landing (legacy-landing-1505) mit der
+// geschärften Headline „AI Governance. Continuous by design.". Diese Suite
+// läuft nicht in CI (dort läuft nur `npm run test:e2e`), prüft aber denselben
+// Hero-Kontrakt wie FE-001 in tests/e2e/public-routes.spec.ts.
+test.describe('Runtime-Landing (/)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });
 
-  test('Hero zeigt Governance-Headline und CTAs', async ({ page }) => {
-    // Erwartung aus derselben Quelle wie die H1 — sonst driftet der Test bei
-    // jedem Landing-Umbau weg (genau das ist zwischen 13.08. und 16.08.
-    // siebenmal passiert).
+  test('Hero zeigt Governance-Headline und Scan-CTA', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: new RegExp(HERO_HEADLINE_TEST_SUBSTRING, 'i') }).first(),
+      page.getByRole('heading', { name: /AI Governance\. Continuous by design\./i }).first(),
     ).toBeVisible();
 
-    await expect(page.getByText(/DSGVO, EU AI Act & Code-Compliance/i).first()).toBeVisible();
+    await expect(page.getByText(/audit-ready evidence/i).first()).toBeVisible();
 
-    await expect(page.getByRole('button', { name: /Kostenlos starten/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Plattform ansehen/i }).first()).toBeVisible();
-  });
-
-  test('Kennzahlen im Hero sind als Beispielwerte gekennzeichnet', async ({ page }) => {
-    // Truth Layer: ein anonymer Besucher hat keinen Mandanten und damit keine
-    // belegbaren Kennzahlen. Die Karten dürfen sich nicht als Messwerte oder
-    // als "Live" ausgeben.
-    await expect(page.getByText(/Beispielansicht mit Musterwerten/i)).toBeVisible();
-    await expect(page.getByText(/^Live\b/)).toHaveCount(0);
-  });
-
-  test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
-    const platform = page.locator('#platform');
     await expect(
-      platform.getByRole('heading', { name: /Eine Runtime\. Ihre Regeln\./i }),
+      page.getByRole('button', { name: /Start free governance scan/i }).first(),
     ).toBeVisible();
-    for (const label of ['Policy Engine', 'Runtime Monitoring']) {
-      await expect(platform.getByText(label, { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Audit starten/i }).first()).toBeVisible();
+  });
+
+  test('Kern-Sektionen sichtbar', async ({ page }) => {
+    for (const heading of [
+      /Events continuously happen\./i,
+      /AI systems are governed operationally\./i,
+      /Turn visibility into continuous governance\./i,
+    ]) {
+      await expect(page.getByRole('heading', { name: heading }).first()).toBeVisible();
     }
   });
 

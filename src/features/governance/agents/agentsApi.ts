@@ -1,7 +1,7 @@
 // Frontend wrapper around the Enterprise AI OS agent Edge Functions.
 //
-// - Run:   POST enterprise-ai-os-agents-run         (public, via functions.invoke)
-// - Runs:  GET  enterprise-ai-os-agent-runs-list    (public, via fetch + query)
+// - Run:   POST enterprise-ai-os/agents-run         (public, via functions.invoke)
+// - Runs:  GET  enterprise-ai-os/agent-runs-list    (public, via fetch + query)
 //
 // Die Agenten-Definitionen kommen aus der lokalen Registry
 // (src/lib/enterprise-ai-os/agents/registry.ts) — kein Netzwerk nötig.
@@ -37,7 +37,7 @@ export interface AgentRunRow {
   status: string;
   summary: string;
   created_at: string;
-  // Full run detail (returned by enterprise-ai-os-agent-runs-list). Optional so
+  // Full run detail (returned by enterprise-ai-os/agent-runs-list). Optional so
   // older cached responses without these fields still typecheck.
   findings?: Array<Record<string, unknown>>;
   recommendations?: Array<Record<string, unknown>>;
@@ -94,7 +94,7 @@ export function runRowToResult(row: AgentRunRow): AgentRunResult {
   };
 }
 
-/** Calls `enterprise-ai-os-agents-run`. */
+/** Calls `enterprise-ai-os/agents-run`. */
 export async function runAgent(input: {
   agentId: AgentId;
   tenantId?: string;
@@ -102,7 +102,7 @@ export async function runAgent(input: {
   payload?: Record<string, unknown>;
 }): Promise<{ ok: boolean; error?: string; result?: AgentRunResult }> {
   const sb = getSupabase();
-  const { data, error } = await sb.functions.invoke('enterprise-ai-os-agents-run', {
+  const { data, error } = await sb.functions.invoke('enterprise-ai-os/agents-run', {
     body: {
       agentId: input.agentId,
       tenantId: input.tenantId,
@@ -119,14 +119,14 @@ export async function runAgent(input: {
 }
 
 /**
- * Calls `enterprise-ai-os-agent-runs-list` (GET). Optional tenant filter and
+ * Calls `enterprise-ai-os/agent-runs-list` (GET). Optional tenant filter and
  * limit. Returns the most recent runs ordered newest first.
  */
 export async function fetchAgentRuns(tenantId?: string, limit = 25): Promise<AgentRunRow[]> {
   const base = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
   if (!base || !anon) throw new Error('Supabase nicht konfiguriert');
-  const url = new URL(`${base}/functions/v1/enterprise-ai-os-agent-runs-list`);
+  const url = new URL(`${base}/functions/v1/enterprise-ai-os/agent-runs-list`);
   if (tenantId) url.searchParams.set('tenantId', tenantId);
   url.searchParams.set('limit', String(limit));
   const res = await fetch(url.toString(), {

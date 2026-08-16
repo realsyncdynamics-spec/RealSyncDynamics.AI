@@ -1,6 +1,6 @@
 // AgentsCenterView — Enterprise Skills Agent Center
 // Echte Enterprise-AI-OS-Agenten (Registry), angebunden an die
-// enterprise-ai-os-agents-run / -agent-runs-list Edge Functions.
+// enterprise-ai-os/agents-run und /agent-runs-list Router-Endpunkte.
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Bot,

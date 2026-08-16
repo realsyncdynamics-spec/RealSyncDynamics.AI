@@ -220,6 +220,13 @@ verify_jwt = false
 [functions.enterprise-ai-os-agent-runs-list]
 verify_jwt = false
 
+# K1-Router (Konsolidierung, docs/runbooks/edge-function-konsolidierung.md):
+# buendelt die sieben oeffentlichen enterprise-ai-os-*-Endpunkte. Anonymer
+# Ingress wie bei den Einzel-Functions; Auth-Endpunkt discovery-pending bleibt
+# eigenstaendig (verify_jwt=true).
+[functions.enterprise-ai-os]
+verify_jwt = false
+
 # ── Governance public surfaces (were verify_jwt=false before the CI race) ──
 [functions.governance-keys]
 verify_jwt = false

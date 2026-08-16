@@ -56,7 +56,7 @@ export function DiscoveryIntakeForm({
     setError(null);
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/enterprise-ai-os-discovery-intake`,
+        `${SUPABASE_URL}/functions/v1/enterprise-ai-os/discovery-intake`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

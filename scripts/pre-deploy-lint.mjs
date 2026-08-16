@@ -173,6 +173,7 @@ const REQUIRED_PUBLIC_FUNCTIONS = new Set([
   'agent-os-runner',
 
   // Enterprise AI OS public surfaces.
+  'enterprise-ai-os',
   'enterprise-ai-os-discovery-intake',
   'enterprise-ai-os-discovery-pending',
   'enterprise-ai-os-agents-list',

@@ -30,7 +30,7 @@ export function EnterpriseFeedbackWidget() {
 
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/enterprise-ai-os-feedback`,
+        `${SUPABASE_URL}/functions/v1/enterprise-ai-os/feedback`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

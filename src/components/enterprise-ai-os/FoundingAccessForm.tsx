@@ -26,7 +26,7 @@ export function FoundingAccessForm() {
 
     try {
       const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/enterprise-ai-os-founding-access`,
+        `${SUPABASE_URL}/functions/v1/enterprise-ai-os/founding-access`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -28,7 +28,7 @@ function useRecentAgentRuns(limit = 10) {
   useEffect(() => {
     if (!SUPABASE_URL) return;
     let cancelled = false;
-    fetch(`${SUPABASE_URL}/functions/v1/enterprise-ai-os-agent-runs-list?limit=${limit}`)
+    fetch(`${SUPABASE_URL}/functions/v1/enterprise-ai-os/agent-runs-list?limit=${limit}`)
       .then((r) => r.json())
       .then((body) => {
         if (cancelled) return;
@@ -263,7 +263,7 @@ export function EnterpriseAiOsDashboard() {
           {recentRuns.length === 0 && !runsError && (
             <div className="mt-6 rounded-2xl border border-dashed border-white/10 bg-black/20 p-6 text-sm text-zinc-500">
               Noch keine Agent Runs persistiert. Sobald ein Agent über{' '}
-              <code className="text-zinc-300">/functions/v1/enterprise-ai-os-agents-run</code>{' '}
+              <code className="text-zinc-300">/functions/v1/enterprise-ai-os/agents-run</code>{' '}
               läuft, erscheint er hier.
             </div>
           )}

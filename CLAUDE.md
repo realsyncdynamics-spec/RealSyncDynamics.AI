@@ -77,9 +77,9 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 ### Backend
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
-- PostgreSQL 16
-- **178 Edge Functions** (`supabase/functions/`, Deno/V8)
-- **270 Migrations** (`supabase/migrations/`)
+- PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
+- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **100 davon in Produktion**, siehe §5
+- **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -182,27 +182,50 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > #### ⚠️ Repo-Stand ≠ Produktions-Stand
 >
 > Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
-> Produktion läuft. Beides ist seit ~2026-07 auseinandergelaufen, weil der
-> `Deploy`-Workflow durchgehend fehlschlug (Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`).
+> Produktion läuft.
 >
-> Messung vom 2026-08-02 — die Repo-Zahlen wachsen mit jedem Merge, entscheidend
-> ist die Lücke. Die Produktionsspalte ist seither **nicht neu erhoben**; sie
-> braucht Zugriff auf die Live-DB bzw. `supabase functions list`. Repo-Stand
-> heute (2026-08-10) in Klammern:
+> **Messung vom 2026-08-16**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
+> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17) erhoben — nicht geschätzt:
 >
-> | | Repo | in Produktion |
-> |---|---|---|
-> | Edge Functions | 169 (heute 178) | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
-> | Migrationen | 244 (heute 270) | 136 angewendet — **118 nie angewendet** |
-> | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** |
+> | | Repo | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
+> | Edge Functions | 180 | 100 | **80** |
+> | Tabellen in `public` | — | 341 | — |
+>
+> **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
+> „118 nie angewendet" — das gilt seit der Reconciliation nicht mehr. Es fehlt
+> genau eine: `20260821000000_b2_website_asset_relation` (B2, gemergt am
+> 2026-08-16, in Produktion nicht angekommen). Am Schema geprüft, nicht aus der
+> Migrationsliste geschlossen: `websites.governance_asset_id`,
+> `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
+> live **nicht**.
+>
+> **Die Function-Seite hat eine andere Ursache als bisher angenommen.** Der
+> Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
+> mehr. Die verbleibende Lücke ist kein Code-Fehler:
+>
+> - Alle 80 fehlenden Functions liegen **alphabetisch nach `api-gateway`**,
+>   keine einzige davor. Ein sauberer Schnitt bei exakt 100.
+> - Typfehler erklären ihn nicht: `health`, `governance-agent` und `ai-gateway`
+>   sind live und scheitern an `deno check` genauso wie die nicht deployten.
+> - Die Organisation läuft auf **Plan `free`**.
+>
+> Exakt 100 deployte Functions plus harter alphabetischer Schnitt deutet auf das
+> **Function-Kontingent des Free-Tarifs**, nicht auf einen Deploy-Bug. Vor einer
+> Gegenmaßnahme gegen Supabase' aktuelle Limits gegenprüfen — aber kein Code-Fix
+> deployt Function 101. Betroffen sind genau die Module, die diese Liste als
+> weitgehend fertig führt: `evidence-vault`, `policy-packs`, `provenance`, alle
+> `iso42001-*`.
+>
+> Der Free-Tarif bedeutet zusätzlich: keine täglichen Backups, kein
+> Point-in-Time-Recovery, kein SLA, Projekt-Pausierung bei Inaktivität. Für ein
+> Produkt, das Prüfpfad, Evidence-Hash-Ketten und ISO-orientierte Prozesse
+> zusagt, ist das ein eigener Governance-Befund — unabhängig vom Limit.
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
 > egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
 > immer gegen die Live-DB bzw. `supabase functions list` prüfen, nicht gegen diese Liste.
->
-> Stand 2026-08-03 ist die erste Ursache (Syntaxfehler in `add-auditor`, blockierte
-> alle Function-Deploys) über #941 behoben; die Migrations-Seite läuft über
-> `docs/runbooks/p0-2-migration-reconciliation.md` und ist noch offen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
@@ -278,8 +301,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    270 Migrations
+│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    279 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner

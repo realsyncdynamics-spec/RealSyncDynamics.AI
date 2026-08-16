@@ -1,0 +1,71 @@
+name: Free-Plan Slot Swap (one-shot)
+
+# Das Projekt steht exakt am Free-Plan-Limit (100 Edge Functions). Statt eines
+# Plan-Upgrades werden Slots getauscht: Live-Functions ohne einen einzigen
+# Aufrufer (kein Treffer im gesamten Repo-Aufrufkorpus, 0 Invocations in den
+# Edge-Logs, Messung 2026-08-16) machen Platz für Functions, die das Frontend
+# heute mit 404 aufruft bzw. gegen die aktive pg_cron-Jobs ins Leere feuern
+# (memory-decay-hourly → memory-decay-worker, scan-scheduler-dispatch →
+# scheduler-dispatch).
+#
+# Löschen ist hier slot-, nicht code-destruktiv: der Code aller gelöschten
+# Functions bleibt unter supabase/functions/ und ist jederzeit redeploybar.
+# Befund und Auswahl: docs/runbooks/edge-function-kontingent.md.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  swap:
+    name: 12 tote Slots freigeben, 12 Prioritäts-Functions deployen
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: latest
+
+      - name: Slots freigeben — Live-Functions ohne Aufrufer löschen
+        run: |
+          set -uo pipefail
+          # Tolerant gegen "bereits gelöscht", damit der Lauf wiederholbar ist.
+          for slug in pitch-deck-pdf hostinger-agent-brief mfa-admin-reset \
+                      governance-analytics-aggregator legal-embed appointment-book \
+                      bot-chat bot-voice-webhook order-intake agent-scheduler \
+                      ai-act-auto-classify api-gateway; do
+            echo "=== delete $slug ==="
+            if supabase functions delete "$slug" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
+              echo "DELETED: $slug"
+            else
+              echo "WARN: delete fehlgeschlagen für $slug (evtl. bereits gelöscht) — weiter"
+            fi
+          done
+
+      - name: Prioritäts-Functions deployen
+        run: |
+          set -uo pipefail
+          failed=""
+          for slug in scheduler scheduler-dispatch memory-decay-worker \
+                      governance-memory evidence-vault policy-packs provenance \
+                      stripe-checkout-verify iso42001-controls-library \
+                      iso42001-control-detail iso42001-gap-analysis \
+                      iso42001-evidence-vault; do
+            echo "=== deploy $slug ==="
+            if supabase functions deploy "$slug" --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}"; then
+              echo "OK: $slug"
+            else
+              failed="$failed $slug"
+              echo "::error::Edge Function '$slug' konnte nicht deployt werden."
+            fi
+          done
+          if [ -n "$failed" ]; then
+            echo "Fehlgeschlagen:$failed"
+            exit 1
+          fi
+
+      - name: Slot-Bilanz
+        run: |
+          echo "=== Live-Functions nach dem Tausch ==="
+          supabase functions list --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" | wc -l

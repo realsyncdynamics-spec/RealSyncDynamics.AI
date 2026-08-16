@@ -43,6 +43,75 @@ const TOOLS = [
 export function LandingChannelTools() {
   return (
     <section id="tools" className="relative border-y border-white/10 bg-white/[.02] py-20 md:py-28">
+      <style>{`
+        /* Hero globe: keep the existing 3D transforms intact and animate only visual properties.
+           The previous orbit keyframes animated transform itself, which replaced rotateX/rotateY
+           and made the rings appear effectively static/flat. */
+        @keyframes rs-globe-intensity {
+          0%, 100% { filter: brightness(1) saturate(1.15) drop-shadow(0 0 28px rgba(34,211,238,.18)); }
+          50% { filter: brightness(1.32) saturate(1.55) drop-shadow(0 0 58px rgba(34,211,238,.52)); }
+        }
+        @keyframes rs-orbit-intensity {
+          0%, 100% { opacity: .28; filter: drop-shadow(0 0 3px rgba(34,211,238,.12)); }
+          50% { opacity: 1; filter: drop-shadow(0 0 12px rgba(34,211,238,.75)); }
+        }
+        @keyframes rs-orbit-sweep {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes rs-globe-highlight {
+          0%, 100% { opacity: .25; transform: translateX(-38%) rotate(-18deg); }
+          50% { opacity: .9; transform: translateX(18%) rotate(-18deg); }
+        }
+        .landing-context .rs-globe-wrap {
+          animation: rs-globe-intensity 5.5s ease-in-out infinite !important;
+        }
+        .landing-context .rs-globe-wrap::after {
+          content: '';
+          position: absolute;
+          inset: 5%;
+          border-radius: 9999px;
+          padding: 2px;
+          background: conic-gradient(from 0deg, transparent 0deg, rgba(34,211,238,.08) 40deg, rgba(103,232,249,.95) 95deg, transparent 145deg, transparent 250deg, rgba(56,189,248,.7) 300deg, transparent 345deg);
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          pointer-events: none;
+          animation: rs-orbit-sweep 9s linear infinite;
+          filter: drop-shadow(0 0 12px rgba(34,211,238,.35));
+          z-index: 12;
+        }
+        .landing-context .rs-orbit-a,
+        .landing-context .rs-orbit-b,
+        .landing-context .rs-orbit-c {
+          animation: rs-orbit-intensity 2.8s ease-in-out infinite !important;
+          transform-style: preserve-3d;
+          will-change: opacity, filter;
+        }
+        .landing-context .rs-orbit-b { animation-delay: -.9s !important; }
+        .landing-context .rs-orbit-c { animation-delay: -1.7s !important; }
+        .landing-context .rs-globe-wrap > div:nth-child(2)::after {
+          content: '';
+          position: absolute;
+          inset: -10%;
+          border-radius: 9999px;
+          background: linear-gradient(100deg, transparent 20%, rgba(103,232,249,.5) 46%, rgba(255,255,255,.9) 50%, rgba(103,232,249,.28) 54%, transparent 80%);
+          mix-blend-mode: screen;
+          filter: blur(10px);
+          animation: rs-globe-highlight 6s ease-in-out infinite;
+          pointer-events: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .landing-context .rs-globe-wrap,
+          .landing-context .rs-globe-wrap::after,
+          .landing-context .rs-orbit-a,
+          .landing-context .rs-orbit-b,
+          .landing-context .rs-orbit-c,
+          .landing-context .rs-globe-wrap > div:nth-child(2)::after {
+            animation: none !important;
+          }
+        }
+      `}</style>
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="mb-12 max-w-3xl">
           <p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">LIVE GOVERNANCE TOOLS</p>

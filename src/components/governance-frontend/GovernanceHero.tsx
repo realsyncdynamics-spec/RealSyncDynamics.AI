@@ -3,6 +3,7 @@ import { Activity, ArrowRight, Menu, PlayCircle, ShieldCheck, X } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import Button from './Button';
 import { handleAnchorClick } from './scroll';
+import { HERO_HEADLINE } from './hero-content';
 
 type HeroSectionProps = { onStart?: () => void };
 type NavItem = { label: string; href: string; fallback?: string };
@@ -169,9 +170,18 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
             <ArrowRight className="h-3.5 w-3.5" />
           </a>
 
+          {/* Die H1 rendert aus hero-content.ts — derselben Quelle, aus der
+              FE-001 seine Erwartung zieht. Vorher stand die Headline hier
+              hartkodiert, waehrend die "Single Source of Truth" nur noch den
+              Test speiste: genau deshalb war main seit 07805ddc siebenmal in
+              Folge rot. Headline-Aenderungen gehoeren ausschliesslich in
+              hero-content.ts. */}
           <h1 className="max-w-[760px] text-balance text-[56px] font-black leading-[.9] tracking-[-.055em] sm:text-[70px] lg:text-[82px] xl:text-[94px]" style={{ textShadow: '0 2px 0 #f3fbff, 0 4px 0 #a9bfd0, 0 7px 0 #506a80, 0 11px 0 #21384c, 0 18px 34px rgba(0,0,0,.92), 0 0 48px rgba(119,222,255,.30)' }}>
-            <span className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">AI Governance</span>
-            <span className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">Runtime</span>
+            {HERO_HEADLINE.map((segments, i) => (
+              <span key={i} className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">
+                {segments.map((s, j) => <span key={j} className={s.accent ? 'text-cyan-300' : undefined}>{s.text}</span>)}
+              </span>
+            ))}
           </h1>
 
           <p className="mt-7 max-w-[680px] text-xl leading-8 text-slate-100 sm:text-2xl lg:text-[24px] lg:leading-9 xl:text-[25px]">Das KI-Betriebssystem für <span className="font-semibold text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,.22)]">DSGVO, EU AI Act &amp; Code-Compliance.</span></p>
@@ -212,12 +222,22 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
           </GovernanceCard>
 
           <GovernanceCard className="left-[42%] top-[71%] w-44 xl:left-[39%]">
-            <div className="flex items-center gap-2"><Activity className="h-5 w-5 text-cyan-300" /><div><div className="text-sm font-medium">MONITORING</div><div className="text-xs text-slate-300">Live <span className="text-emerald-400">●</span></div></div></div>
+            <div className="flex items-center gap-2"><Activity className="h-5 w-5 text-cyan-300" /><div><div className="text-sm font-medium">MONITORING</div><div className="text-xs text-slate-300">Kontinuierlich</div></div></div>
           </GovernanceCard>
 
           <GovernanceCard className="right-[1%] top-[68%] w-44 sm:right-[3%] xl:right-[5%]">
             <div className="flex items-center gap-3"><ShieldCheck className="h-7 w-7 text-cyan-300" /><div className="text-sm font-semibold">EU AI ACT<br />READY</div></div>
           </GovernanceCard>
+
+          {/* Truth Layer (docs/architecture/target-architecture.md §3.1): Ein
+              anonymer Besucher hat keinen Mandanten und damit keine belegbaren
+              Kennzahlen. Die Karten oben zeigen Beispielwerte — das muss am
+              Bildschirm stehen, nicht nur im Code, sonst behauptet die Seite
+              Messwerte, die es nicht gibt. Aus demselben Grund traegt die
+              Monitoring-Karte kein "Live" mehr: nichts davon laeuft live. */}
+          <p className="absolute inset-x-4 bottom-0 z-20 text-center text-[11px] leading-relaxed text-slate-400/80 sm:inset-x-10">
+            Beispielansicht mit Musterwerten. Ihre echten Kennzahlen entstehen mit dem ersten Audit.
+          </p>
         </div>
       </div>
 

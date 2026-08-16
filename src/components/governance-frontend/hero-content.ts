@@ -11,10 +11,10 @@ export type HeroHeadlineSegment = {
   accent?: boolean;
 };
 
-/** Governance-Level Hero — Positionierung v2. */
+/** Governance-Level Hero — Positionierung v3 (Produktname als Headline). */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
-  [{ text: 'KI nicht nur prüfen.' }],
-  [{ text: 'KI ' }, { text: 'kontrollieren.', accent: true }],
+  [{ text: 'AI Governance' }],
+  [{ text: 'Runtime' }],
 ];
 
 /** Reine Textzeilen der H1 — für Tests und Accessible-Name-Abgleich. */
@@ -23,7 +23,7 @@ export const HERO_HEADLINE_LINES: readonly string[] = HERO_HEADLINE.map((segment
 );
 
 /** Substring für den FE-001-Check. Muss vollständig innerhalb einer Zeile liegen. */
-export const HERO_HEADLINE_TEST_SUBSTRING = 'KI kontrollieren.';
+export const HERO_HEADLINE_TEST_SUBSTRING = 'AI Governance';
 
 if (!HERO_HEADLINE_LINES.some((line) => line.includes(HERO_HEADLINE_TEST_SUBSTRING))) {
   throw new Error(

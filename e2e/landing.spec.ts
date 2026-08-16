@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { HERO_HEADLINE_TEST_SUBSTRING } from '../src/components/governance-frontend/hero-content';
 
 /**
  * E2E für die öffentlichen Einstiegsseiten.
@@ -102,24 +103,26 @@ test.describe('Governance-AI-Landing (/)', () => {
     await page.goto('/');
   });
 
-  test('Hero zeigt Governance-AI-Headline und CTAs', async ({ page }) => {
+  test('Hero zeigt Governance-Headline und CTAs', async ({ page }) => {
+    // Erwartung aus derselben Quelle wie die H1 — sonst driftet der Test bei
+    // jedem Landing-Umbau weg (genau das ist zwischen 13.08. und 16.08.
+    // siebenmal passiert).
     await expect(
-      page.getByRole('heading', { name: /Ihre KI wird EU-ready/i }),
+      page.getByRole('heading', { name: new RegExp(HERO_HEADLINE_TEST_SUBSTRING, 'i') }).first(),
     ).toBeVisible();
 
-    await expect(page.getByText(/REALSYNC GOVERNANCE RUNTIME/i).first()).toBeVisible();
+    await expect(page.getByText(/DSGVO, EU AI Act & Code-Compliance/i).first()).toBeVisible();
 
-    await expect(
-      page.getByRole('button', { name: /Kostenlosen Audit starten/i }).first(),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: /Einführung/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Kostenlos starten/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Plattform ansehen/i }).first()).toBeVisible();
   });
 
-  test('Control Plane ist als Beispielansicht gekennzeichnet', async ({ page }) => {
+  test('Kennzahlen im Hero sind als Beispielwerte gekennzeichnet', async ({ page }) => {
     // Truth Layer: ein anonymer Besucher hat keinen Mandanten und damit keine
-    // belegbaren Kennzahlen — das Panel darf sich nicht als "LIVE" ausgeben.
-    await expect(page.getByText(/Beispielansicht/i).first()).toBeVisible();
-    await expect(page.getByText(/Governance AI · Control Plane/i)).toBeVisible();
+    // belegbaren Kennzahlen. Die Karten dürfen sich nicht als Messwerte oder
+    // als "Live" ausgeben.
+    await expect(page.getByText(/Beispielansicht mit Musterwerten/i)).toBeVisible();
+    await expect(page.getByText(/^Live\b/)).toHaveCount(0);
   });
 
   test('Plattform-Module-Sektion sichtbar', async ({ page }) => {

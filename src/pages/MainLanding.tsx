@@ -34,14 +34,22 @@ export function MainLanding() {
     <section id="platform" className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">THE CONTROL LAYER</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{fontFamily:SERIF,fontWeight:500}}>Eine Runtime. <span className="text-cyan-400">Ihre Regeln.</span></h2><p className="mt-5 max-w-3xl text-white/55">Policy Engine, Risk Engine, Agent Governance, Continuous Monitoring und Evidence arbeiten als eine operative Governance-Ebene.</p><div className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 md:grid-cols-2 lg:grid-cols-3">{PLATFORM.map(([t,d])=><div key={t} className="bg-[#02060d] p-7"><h3 className="text-base font-semibold">{t}</h3><p className="mt-2 text-sm leading-relaxed text-white/45">{d}</p></div>)}</div></div></section>
     <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center"><div><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">EVIDENCE & TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{fontFamily:SERIF,fontWeight:500}}>Compliance, die sich <span className="text-cyan-400">beweisen lässt.</span></h2><p className="mt-5 text-white/55">Events, Policies, Evaluations, Entscheidungen und Nachweise bleiben in einem nachvollziehbaren Governance-Kontext.</p></div><div className="grid gap-3 sm:grid-cols-2">{[["DSGVO",ShieldCheck,"Verarbeitung, Risiko, Policy und Evidence."],["EU AI Act",Lock,"Klassifikation, Transparenz und Dokumentation."],["Evidence Vault",FileCheck2,"Versionierte Nachweise und Audit-Trails."],["Continuous Monitoring",Activity,"Drift erkennen und Governance verifizieren."]].map(([t,I,d])=>{const Icon=I as typeof ShieldCheck;return <div key={t as string} className="rounded-2xl border border-white/10 bg-black/20 p-6"><Icon className="h-5 w-5 text-cyan-300"/><h3 className="mt-4 font-semibold">{t as string}</h3><p className="mt-2 text-sm leading-relaxed text-white/45">{d as string}</p></div>})}</div></div></div></section>
     <section className="py-20 md:py-28"><div className="mx-auto max-w-5xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">FREE GOVERNANCE AUDIT</p><h2 className="mt-4 text-4xl tracking-tight sm:text-6xl" style={{fontFamily:SERIF,fontWeight:500}}>Wie governable ist Ihr Unternehmen?</h2><p className="mx-auto mt-5 max-w-2xl text-white/50">Starten Sie mit einer Website. RealSync zeigt Governance-, Datenschutz-, AI- und technische Signale.</p><form onSubmit={startScan} className="mx-auto mt-8 flex max-w-2xl flex-col gap-2 rounded-2xl border border-white/15 bg-black/30 p-2 sm:flex-row"><input value={domain} onChange={e=>setDomain(e.target.value)} placeholder="Ihre Website" aria-label="Website für Governance Audit" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/25"/><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-[#02060d]">Audit starten <ArrowRight size={16}/></button></form></div></section>
-    {/* Footer mit Rechtslinks — Impressumspflicht; von tests/e2e/navigation.spec.ts (FE-004) geprüft. */}
+    {/* Pflichtangaben: § 5 DDG verlangt das Impressum "leicht erkennbar und
+        unmittelbar erreichbar" — die Startseite braucht den Link deshalb selbst,
+        es gibt kein globales Footer-Layout um <Route path="/">. Der Testkatalog
+        haelt das als FE-004 fest (tests/e2e/navigation.spec.ts). */}
     <footer className="border-t border-white/10 py-8">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 text-xs text-white/40 sm:flex-row lg:px-10">
         <div>
-          <div className="font-semibold text-white/65">RealSync Dynamics.AI</div>
+          <div className="font-semibold text-white/65">Governance AI by RealSyncDynamics.AI</div>
           <span>© 2026 RealSync Dynamics.AI · Powered by RealSync Governance Runtime™</span>
         </div>
-        <div className="flex gap-5"><Link to="/impressum">Impressum</Link><Link to="/datenschutz">Datenschutz</Link><Link to="/agb">AGB</Link></div>
+        <nav className="flex flex-wrap justify-center gap-5" aria-label="Rechtliches">
+          <Link to="/impressum" className="hover:text-white">Impressum</Link>
+          <Link to="/datenschutz" className="hover:text-white">Datenschutz</Link>
+          <Link to="/agb" className="hover:text-white">AGB</Link>
+          <Link to="/sicherheit" className="hover:text-white">Sicherheit</Link>
+        </nav>
       </div>
     </footer>
   </div>;

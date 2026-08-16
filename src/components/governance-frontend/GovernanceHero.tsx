@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import SpaceBackdrop from './SpaceBackdrop';
 import GlobeVisual from './GlobeVisual';
 import Button from './Button';
@@ -20,19 +20,20 @@ import { handleAnchorClick, resolveHref } from './scroll';
 import { HERO_HEADLINE } from './hero-content';
 import type { HeroHeadlineSegment } from './hero-content';
 
-/**
- * Navigation des Hero-Headers. Anker zeigen auf Sektionen der MainLanding;
- * `fallback` greift, falls eine Sektion (noch) nicht existiert.
- */
-const navItems = [
-  { label: 'Produkt', href: '#produkt' },
-  { label: 'Runtime', href: '#intro' },
-  { label: 'Plattform', href: '#platform', fallback: '#intro' },
-  { label: 'Evidence', href: '#evidence', fallback: '#intro' },
-  { label: 'Preise', href: '/pricing' },
-] as const;
-
-const LOGIN_ROUTE = '/welcome';
+// Jeder Navigationspunkt zeigt auf ein Ziel, das es wirklich gibt (CLAUDE.md §14:
+// keine Elemente vortaeuschen, die nichts tun). `hash` scrollt innerhalb der
+// Landing (mit Header-Offset via handleAnchorClick), `to` wechselt die Route —
+// Letzteres ueber <Link>, damit die SPA nicht neu laedt. Zielliste aus #1072.
+const navItems: ReadonlyArray<{ label: string; hash?: string; to?: string }> = [
+  { label: 'Produkt', hash: '#produkt' },
+  { label: 'Automatisierung', hash: '#tools' },
+  { label: 'Runtime', hash: '#intro' },
+  { label: 'Evidence', hash: '#evidence' },
+  { label: 'AI Act', to: '/ai-act' },
+  { label: 'Sicherheit', to: '/sicherheit' },
+  { label: 'Preise', to: '/pricing' },
+  { label: 'Login', to: '/welcome' },
+];
 
 const highlights = [
   {
@@ -105,12 +106,22 @@ function CardLabel({ children, tone = 'cyan' }: { children: React.ReactNode; ton
   );
 }
 
-/** Die schwebenden Status-Karten aus dem Referenzdesign (Upload 2026-08-16). */
+/**
+ * Die schwebenden Status-Karten aus dem Referenzdesign (Upload 2026-08-16).
+ *
+ * Beispielwerte — bewusst KEINE Live-Daten. Ein anonymer Besucher hat keinen
+ * Mandanten und damit keine belegbaren Kennzahlen; die Karten werden deshalb
+ * als Beispielansicht ausgewiesen (Truth Layer, wie in #1072 etabliert).
+ */
 function StatusCards() {
   return (
     <>
       {/* Desktop: frei positioniert über dem Globus */}
       <div className="pointer-events-none absolute inset-0 z-10 hidden lg:block">
+        <span className="absolute right-[2%] top-[2%] rounded-full border border-white/20 bg-[#071320]/80 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/50 backdrop-blur-md">
+          Beispielansicht
+        </span>
+
         <CardShell className="absolute left-[8%] top-[1%] w-[150px]">
           <CardLabel tone="emerald">DSGVO</CardLabel>
           <p className="mt-1 text-xs text-slate-300">Compliant</p>
@@ -167,6 +178,9 @@ function StatusCards() {
 
       {/* Mobil/Tablet: als Raster unter dem Text */}
       <div className="grid grid-cols-2 gap-3 lg:hidden">
+        <span className="col-span-2 justify-self-start rounded-full border border-white/20 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-white/50">
+          Beispielansicht
+        </span>
         <CardShell>
           <CardLabel>Risk Score</CardLabel>
           <p className="mt-1 text-2xl font-semibold text-white">
@@ -188,6 +202,9 @@ function StatusCards() {
           <p className="mt-1 text-xl font-semibold text-white">Ready</p>
           <p className="text-[11px] text-slate-500">DSGVO compliant</p>
         </CardShell>
+        <p className="col-span-2 text-[10px] leading-relaxed text-white/35">
+          Beispielwerte zur Veranschaulichung. Ihre echten Kennzahlen entstehen erst mit dem ersten Audit.
+        </p>
       </div>
     </>
   );
@@ -221,22 +238,26 @@ export default function GovernanceHero({ onStart }: { onStart?: () => void }) {
           aria-label="Hauptnavigation"
           className="hidden items-center gap-7 text-sm text-slate-300 lg:flex"
         >
-          {navItems.map((item) => (
-            <a
-              key={item.label}
-              href={resolveHref(item.href, 'fallback' in item ? item.fallback : undefined)}
-              onClick={(e) => handleAnchorClick(e, item.href, 'fallback' in item ? item.fallback : undefined)}
-              className="rounded-md transition-colors hover:text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-            >
-              {item.label}
-            </a>
-          ))}
-          <a
-            href={LOGIN_ROUTE}
-            className="rounded-md transition-colors hover:text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-          >
-            Login
-          </a>
+          {navItems.map((item) =>
+            item.to ? (
+              <Link
+                key={item.label}
+                to={item.to}
+                className="rounded-md transition-colors hover:text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.label}
+                href={resolveHref(item.hash ?? '#produkt')}
+                onClick={(e) => handleAnchorClick(e, item.hash ?? '#produkt')}
+                className="rounded-md transition-colors hover:text-cyan-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
+              >
+                {item.label}
+              </a>
+            )
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -265,23 +286,24 @@ export default function GovernanceHero({ onStart }: { onStart?: () => void }) {
           <ul className="flex flex-col gap-3 text-sm text-slate-300">
             {navItems.map((item) => (
               <li key={item.label}>
-                <a
-                  href={resolveHref(item.href, 'fallback' in item ? item.fallback : undefined)}
-                  onClick={(e) => {
-                    handleAnchorClick(e, item.href, 'fallback' in item ? item.fallback : undefined);
-                    setMenuOpen(false);
-                  }}
-                  className="hover:text-cyan-300"
-                >
-                  {item.label}
-                </a>
+                {item.to ? (
+                  <Link to={item.to} onClick={() => setMenuOpen(false)} className="hover:text-cyan-300">
+                    {item.label}
+                  </Link>
+                ) : (
+                  <a
+                    href={resolveHref(item.hash ?? '#produkt')}
+                    onClick={(e) => {
+                      handleAnchorClick(e, item.hash ?? '#produkt');
+                      setMenuOpen(false);
+                    }}
+                    className="hover:text-cyan-300"
+                  >
+                    {item.label}
+                  </a>
+                )}
               </li>
             ))}
-            <li>
-              <a href={LOGIN_ROUTE} className="hover:text-cyan-300">
-                Login
-              </a>
-            </li>
             <li className="pt-1">
               <Button
                 fullWidth

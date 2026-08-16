@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
-import { RUNTIME_MOCK_EVENTS, KIND_COLOR, KIND_LABEL, type RuntimeEvent } from '../lib/runtimeMockEvents';
+import { RUNTIME_MOCK_EVENTS, KIND_COLOR, KIND_LABEL, type RuntimeEvent } from './runtimeMockEvents';
 
 const ROLLING_INTERVAL_MS = 220;
 export function GlobalRuntimeFeedSection() {

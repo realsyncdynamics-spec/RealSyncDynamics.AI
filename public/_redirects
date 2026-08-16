@@ -3,4 +3,11 @@
 # Custom Domain am Cloudflare-Pages-Projekt haengt — sonst ist die Regel wirkungslos.
 https://www.realsyncdynamicsai.de/* https://realsyncdynamicsai.de/:splat 301
 
+# Englisches Alias der Warteliste. Als SPA-Route waere /waitlist nicht
+# prerendert — der /*-Fallback unten liefert dann die index.html der
+# Startseite samt deren canonical, und Crawler ohne JS konsolidieren das
+# Alias auf / statt auf /warteliste. Ein 301 loest das Duplicate-Content-
+# Problem an der Wurzel, statt es per canonical zu reparieren.
+/waitlist  /warteliste  301
+
 /*  /index.html  200

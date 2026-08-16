@@ -145,6 +145,7 @@ export function LandingFooter() {
         { label: 'DSGVO Website Audit', to: '/audit' },
         { label: 'AI DSGVO Bot', to: '/ai-dsgvo-bot' },
         { label: 'Preise', to: '/pricing' },
+        { label: 'Warteliste', to: '/warteliste' },
       ],
     },
     {

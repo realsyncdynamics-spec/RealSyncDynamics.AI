@@ -9,11 +9,13 @@ Konfigurationsdatei: [`.mcp.json`](../../.mcp.json) im Repo-Root.
 
 ## Warum Projekt-Scope
 
-Die Produktions-Infrastruktur läuft auf einem Hostinger-VPS (siehe
-`.github/workflows/deploy-hostinger.yml`, `deploy/` — Traefik, Ollama, n8n) sowie auf
-Hostinger-verwalteten Domains/DNS. `.mcp.json` liegt deshalb im Repo, damit jede/r im
-Team dieselben Server-Definitionen bekommt; der **Token bleibt lokal** und wird per
-`${HOSTINGER_API_TOKEN}` zur Laufzeit expandiert.
+Die Produktions-Infrastruktur läuft auf einem Hostinger-VPS (siehe `deploy/` —
+Traefik, Ollama, n8n) sowie auf Hostinger-verwalteten Domains/DNS. Das **Frontend**
+gehört ausdrücklich nicht dazu: dessen Production-Ziel ist Cloudflare Pages
+(`CLAUDE.md` §2, `.github/workflows/deploy-cloudflare-pages.yml`).
+
+`.mcp.json` liegt im Repo, damit jede/r im Team dieselben Server-Definitionen bekommt;
+der **Token bleibt lokal** und wird per `${HOSTINGER_API_TOKEN}` zur Laufzeit expandiert.
 
 > **Niemals** einen echten Token in `.mcp.json` schreiben. Die Datei ist eingecheckt —
 > ein Literal wäre ein committetes Secret.
@@ -61,7 +63,7 @@ der Hostinger-API — kein stiller Fallback.
 
 - `npx --package=hostinger-api-mcp@latest` zieht bei jedem Start die aktuelle Version.
   Für reproduzierbare Umgebungen kann `@latest` gegen eine feste Version getauscht werden.
-- Node.js 20+ (identisch zum CI, siehe `deploy-hostinger.yml`).
+- Node.js 20+ (identisch zum CI, siehe `.github/workflows/ci.yml`).
 - Server einzeln deaktivieren: Eintrag aus `.mcp.json` entfernen oder in der lokalen
   `.claude/settings.local.json` über `disabledMcpjsonServers` abschalten — so bleibt die
   geteilte Konfiguration unverändert.

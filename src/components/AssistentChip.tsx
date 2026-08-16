@@ -21,7 +21,10 @@ import { AgentWidget } from '../features/governance/AgentWidget/AgentWidget';
 //   - Hero-CTA-Coexistence: while a [data-hero-cta] is intersecting,
 //     the chip fades out so it doesn't compete with the primary CTA.
 
-const HIDDEN_PREFIXES = ['/dashboard', '/app', '/checkout', '/audit'];
+// '/' — die Startseite bringt seit dem Gemini-Hero eine eigene AssistantBar
+// im Hero mit (GovernanceHero); zwei "Assistent"-Elemente uebereinander am
+// unteren Rand waeren doppelt. Exakter Match, kein Prefix (siehe shouldHide).
+const HIDDEN_PREFIXES = ['/', '/dashboard', '/app', '/checkout', '/audit'];
 
 function shouldHide(pathname: string): boolean {
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;

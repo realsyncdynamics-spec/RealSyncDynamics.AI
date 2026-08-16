@@ -57,7 +57,6 @@ import { AgentsPage } from './pages/AgentsPage';
 import { AiActPage } from './pages/AiActPage';
 import { AiDsgvoBotPage } from './pages/AiDsgvoBotPage';
 import { WaitlistLanding } from './pages/WaitlistLanding';
-import { ClaudeCodeOptimizer } from './pages/ClaudeCodeOptimizer';
 import { DocsRuntimePage } from './pages/DocsRuntimePage';
 import { EvidencePage } from './pages/EvidencePage';
 import { DigitalSovereignty } from './pages/DigitalSovereignty';
@@ -861,7 +860,6 @@ function RoutesWithTracking() {
       <Route path="/checkout/cancelled" element={<CheckoutCancelledPage />} />
       <Route path="/checkout/:planKey" element={<CheckoutPage />} />
       {/* End of Pricing Detail Routes */}
-      <Route path="/claude-code-optimizer" element={<ClaudeCodeOptimizer />} />
       {/* Konsolidiert auf eine kanonische Paket-Auswahl unter /pricing */}
       <Route path="/governance-os-pricing" element={<Navigate to="/pricing" replace />} />
       <Route path="/solutions/saas" element={<SaaSSolution />} />

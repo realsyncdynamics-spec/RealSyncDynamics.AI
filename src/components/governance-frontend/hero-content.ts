@@ -11,7 +11,7 @@ export type HeroHeadlineSegment = {
   accent?: boolean;
 };
 
-/** Governance-Level Hero — Positionierung v3 (Produktname als Headline). */
+/** Governance-Level Hero — Positionierung v3 (Enterprise-Hero, 2026-08-16). */
 export const HERO_HEADLINE: readonly (readonly HeroHeadlineSegment[])[] = [
   [{ text: 'AI Governance' }],
   [{ text: 'Runtime' }],

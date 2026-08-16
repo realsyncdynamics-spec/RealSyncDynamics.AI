@@ -201,14 +201,19 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
 > live **nicht**.
 >
-> **Die Function-Seite hat eine andere Ursache als bisher angenommen.** Der
+> **Die Function-Seite braucht eine andere Erklärung als bisher.** Der
 > Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
-> mehr. Die verbleibende Lücke ist kein Code-Fehler:
+> mehr. Was zur verbleibenden Lücke belegt ist — und was nicht:
 >
 > - Alle 80 fehlenden Functions liegen **alphabetisch nach `api-gateway`**,
 >   keine einzige davor. Ein sauberer Schnitt bei exakt 100.
-> - Typfehler erklären ihn nicht: `health`, `governance-agent` und `ai-gateway`
->   sind live und scheitern an `deno check` genauso wie die nicht deployten.
+> - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
+>   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
+>   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions
+>   (`health`, `governance-agent`, `ai-gateway`) — allerdings an der
+>   Paketauflösung (`Could not find a matching package for
+>   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
+>   will, braucht `deno install` gegen die echten Dependencies.
 > - Die Organisation läuft auf **Plan `free`**.
 >
 > Exakt 100 deployte Functions plus harter alphabetischer Schnitt deutet auf das

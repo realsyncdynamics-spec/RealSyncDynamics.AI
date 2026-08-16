@@ -242,3 +242,70 @@ describe('cancelScanRun', () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// B2 (Audit → Asset): startScanRun stempelt asset_id aus der Website-
+// Projektion (Contract §4). Zwei Zusicherungen: der Anker kommt aus der
+// DB-Relation, nicht vom Aufrufer — und ein fehlender Anker verhindert
+// die Beobachtung nicht.
+// ─────────────────────────────────────────────────────────────────────
+describe('startScanRun — Asset-Anker (B2)', () => {
+  function mockAdminWithWebsite(assetId: string | null): { admin: AdminLike; inserted: Record<string, unknown>[] } {
+    const inserted: Record<string, unknown>[] = [];
+    const admin = {
+      from(table: string) {
+        return {
+          insert(row: Record<string, unknown>) {
+            inserted.push({ table, ...row });
+            return Promise.resolve({ data: null, error: null });
+          },
+          select() {
+            return {
+              eq() {
+                const rows = table === 'websites' && assetId !== undefined
+                  ? [{ governance_asset_id: assetId }]
+                  : [];
+                return Promise.resolve({ data: rows, error: null });
+              },
+            };
+          },
+          update() {
+            return { eq: () => Promise.resolve({ error: null }) };
+          },
+        };
+      },
+    } as unknown as AdminLike;
+    return { admin, inserted };
+  }
+
+  it('stempelt asset_id aus websites.governance_asset_id', async () => {
+    const { admin, inserted } = mockAdminWithWebsite('asset-123');
+    const res = await startScanRun(admin, {
+      tenant_id: 't1', website_id: 'w1', detector: 'gdpr',
+    });
+    expect(res.ok).toBe(true);
+    expect(inserted[0].asset_id).toBe('asset-123');
+    expect(inserted[0].website_id).toBe('w1');
+  });
+
+  it('startet den Run auch ohne aufloesbares Asset — asset_id bleibt null', async () => {
+    // Eine Website ohne Asset (Alt-Datensatz vor dem Backfill) darf die
+    // Beobachtung nicht verhindern; der fehlende Anker ist am Datensatz
+    // sichtbar (null), nicht als Abbruch.
+    const { admin, inserted } = mockAdminWithWebsite(null);
+    const res = await startScanRun(admin, {
+      tenant_id: 't1', website_id: 'w1', detector: 'gdpr',
+    });
+    expect(res.ok).toBe(true);
+    expect(inserted[0].asset_id).toBeNull();
+  });
+
+  it('ohne website_id findet kein Lookup statt und asset_id ist null', async () => {
+    const { admin, inserted } = mockAdminWithWebsite('asset-123');
+    const res = await startScanRun(admin, {
+      tenant_id: 't1', detector: 'gdpr',
+    });
+    expect(res.ok).toBe(true);
+    expect(inserted[0].asset_id).toBeNull();
+  });
+});

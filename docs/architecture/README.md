@@ -43,6 +43,7 @@ The runtime layering used by the documents below is the **inner** view of layers
 | 7 | [`runtime-governance-social.md`](./runtime-governance-social.md) | Runtime → Governance → Social | cross | `experimental` | Describes the transition path from compliance scanning to runtime governance to social proof and trust signals. |
 | 8 | [`runtime-kernel-rfc.md`](./runtime-kernel-rfc.md) | Operational Governance Kernel v0 | Layer 2 | `proposed` | runtime_events Foundation, Replay Isolation, subject_ref Lifecycle, Memory Decay, tenant_cost_ledger. Master-RFC für den Governance-Runtime-Kernel mit konkreten Schema-Diffs + Code-Stubs. |
 | 9 | [`target-architecture.md`](./target-architecture.md) | Zielarchitektur (Plattformmodell) | cross | `adopted` | **Kanonische Zielarchitektur.** Fünf Ebenen, Trennung `/app` ↔ `/app/siteos`, Asset Lifecycle, Continuous Observation, Governance Engine, normativer SiteOS-Publish-Gate-Contract, Truth Layer (keine erfundenen Kennzahlen), AI Gateway statt hart verdrahtetem Provider, Free Baseline auf dem bestehenden `gdpr-audit`-Flow, Skills/Workflows, Integrationen, Pricing-Achsen (BASE + MODULE + SCALE), Delta Ist→Ziel und Phasen A–C. Löst den Produktebenen-Teil von `docs/ARCHITECTURE.md` ab. |
+| 10 | [`asset-lifecycle-contract.md`](./asset-lifecycle-contract.md) | Asset Lifecycle Contract (Phase B1) | Layer 2 | `proposed` | Datenvertrag für `Audit → Asset → Findings → Evidence → Subscription → Observation Run`. Legt `governance_assets` als kanonisches Asset fest, `websites` als Projektion, `governance_evidence` als Nachweisquelle der Beobachtung, `scan_runs` als Observation Run und `scan_schedules` als Monitoring-Beziehung. Lifecycle-Zustände werden serverseitig abgeleitet, nie als Statusspalte geführt. Enthält sechs verifizierte Schema-Defekte für B2. |
 
 ---
 
@@ -106,6 +107,9 @@ Brief table of the most important architectural decisions and why they were made
 | Publish gate evaluated server-side | A client-derived `publishable` is manipulable and therefore not evidence |
 | Asset lifecycle instead of scan runs | A scan is a tool of the observation layer, not the product |
 | Price by governance depth, not site count | Site count punishes small, complex customers and misses delivered value |
+| `governance_assets` canonical, `websites` a projection | The platform will monitor more than websites; a website-shaped asset table forces the same migration again later |
+| Lifecycle derived, never a status column | A stored `continuously_monitored` claims a state the data may not carry — the Phase A problem one layer down |
+| Anonymous baseline re-run, not claimed | Re-attributing anonymous `email`/`ip_hash` to a tenant changes the processing purpose; the first authenticated run starts the evidence chain |
 | RuntimeCanvas marked as Demo | Prevents misleading live-telemetry claims |
 
 ---

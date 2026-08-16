@@ -101,10 +101,28 @@ export async function startScanRun(
   const correlation_id = input.correlation_id ?? uuidv4();
   const now            = new Date().toISOString();
 
+  // B2 (Contract §4): Ein Observation Run gehoert zum Asset, nicht nur zur
+  // Website-Projektion. Aufgeloest wird hier — nicht im Aufrufer —, damit
+  // jeder Pfad durch die Pipeline den Anker bekommt. Schlaegt die Aufloesung
+  // fehl, startet der Run trotzdem: ein fehlender Anker ist ein Befund im
+  // Datenmodell, aber kein Grund, die Beobachtung selbst zu verhindern.
+  let asset_id: string | null = null;
+  if (input.website_id) {
+    const lookup = await admin
+      .from('websites')
+      .select('governance_asset_id')
+      .eq('id', input.website_id);
+    const rows = (lookup?.data ?? null) as
+      | Array<{ governance_asset_id: string | null }>
+      | null;
+    asset_id = rows?.[0]?.governance_asset_id ?? null;
+  }
+
   const { error } = await admin.from('scan_runs').insert({
     id,
     tenant_id:      input.tenant_id,
     website_id:     input.website_id     ?? null,
+    asset_id,
     detector:       input.detector,
     status:         'running',
     started_at:     now,

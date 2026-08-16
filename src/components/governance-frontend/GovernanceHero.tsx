@@ -1,93 +1,236 @@
-import { ArrowRight, BadgeCheck, Menu, PlayCircle, ShieldCheck, ScrollText, Activity, X } from 'lucide-react';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import GlobeVisual from './GlobeVisual';
+import { useState, type MouseEvent, type ReactNode } from 'react';
+import { Activity, ArrowRight, Menu, PlayCircle, ShieldCheck, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import Button from './Button';
+import { HERO_HEADLINE_LINES } from './hero-content';
+import { handleAnchorClick } from './scroll';
 
-const highlights = [
-  ['DSGVO-konform','Nachweise, Prozesse und Richtlinien automatisiert.', ShieldCheck],
-  ['AI-Act-ready','Risikobewertung, Transparenz & Dokumentation.', ScrollText],
-  ['Kontinuierlich','Monitoring, Alerts & Evidence in Echtzeit.', Activity],
-] as const;
+type HeroSectionProps = { onStart?: () => void };
+type NavItem = { label: string; href: string; fallback?: string };
 
-// Jeder Navigationspunkt zeigt auf ein Ziel, das es wirklich gibt (CLAUDE.md §14:
-// keine Elemente vortaeuschen, die nichts tun). `hash` scrollt innerhalb der
-// Landing, `to` wechselt die Route — Letzteres ueber <Link>, damit die SPA nicht
-// neu laedt.
-const NAV: ReadonlyArray<{ label: string; hash?: string; to?: string }> = [
-  { label: 'Produkt',          hash: '#produkt' },
-  { label: 'Automatisierung',  hash: '#tools' },
-  { label: 'Runtime',          hash: '#intro' },
-  { label: 'Evidence',         hash: '#evidence' },
-  { label: 'AI Act',           to: '/ai-act' },
-  { label: 'Sicherheit',       to: '/sicherheit' },
-  { label: 'Preise',           to: '/pricing' },
-  { label: 'Login',            to: '/welcome' },
+const navItems: NavItem[] = [
+  { label: 'Produkt', href: '#produkt' },
+  { label: 'Automatisierung', href: '#platform', fallback: '#intro' },
+  { label: 'Evidence', href: '#evidence', fallback: '#intro' },
+  { label: 'AI Act', href: '#evidence', fallback: '#intro' },
+  { label: 'Sicherheit', href: '#evidence', fallback: '#intro' },
+  { label: 'Preise', href: '#intro', fallback: '#intro' },
 ];
 
-// Beispielwerte — bewusst KEINE Live-Daten. Ein anonymer Besucher hat keinen
-// Mandanten und damit keine belegbaren Kennzahlen; das Panel wird deshalb als
-// Beispielansicht ausgewiesen statt als "LIVE" (Truth Layer,
-// docs/architecture/target-architecture.md §3.1).
-const SAMPLE_METRICS = [['RISK','87/100'],['EVIDENCE','1.248'],['AI SYSTEMS','04']] as const;
-const SAMPLE_STATES = [
-  ['DSGVO','PASS','text-emerald-300'],
-  ['EU AI ACT','READY','text-cyan-300'],
-  ['AI AGENTS','GOVERNED','text-cyan-300'],
-  ['EVIDENCE','VERIFIED','text-cyan-300'],
-] as const;
+function Logo() {
+  return (
+    <a href="#produkt" onClick={(e) => handleAnchorClick(e, '#produkt')} className="group flex items-center gap-3 rounded-md text-white">
+      <svg viewBox="0 0 40 40" className="h-9 w-9 text-cyan-300 drop-shadow-[0_0_14px_rgba(34,211,238,.65)]" aria-hidden="true">
+        <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M20 2v36M2 20h36M7 7l26 26M33 7L7 33" />
+        </g>
+        <circle cx="20" cy="20" r="3.2" fill="currentColor" />
+      </svg>
+      <span className="text-[18px] font-semibold tracking-tight">RealSync <span className="font-normal text-slate-300">Dynamics.AI</span></span>
+    </a>
+  );
+}
 
-export default function GovernanceHero({ onStart }: { onStart?: () => void }) {
+function GlassCard({ className = '', children }: { className?: string; children: ReactNode }) {
+  return (
+    <div className={`rounded-2xl border border-white/15 bg-[#061321]/80 p-4 shadow-[0_20px_60px_-25px_rgba(0,0,0,.95),0_0_35px_rgba(0,210,255,.12)] backdrop-blur-xl ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function Signal({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-[.12em] text-cyan-100">
+      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_12px_#22d3ee]" />
+      {children}
+    </span>
+  );
+}
+
+function Stars() {
+  const stars = Array.from({ length: 105 }, (_, i) => ({
+    left: `${(i * 37) % 100}%`,
+    top: `${(i * 61) % 88}%`,
+    size: i % 13 === 0 ? 2 : i % 3 === 0 ? 1.4 : 1,
+    opacity: i % 7 === 0 ? 0.8 : 0.32,
+  }));
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {stars.map((star, i) => (
+        <span key={i} className="absolute rounded-full bg-white" style={{ left: star.left, top: star.top, width: star.size, height: star.size, opacity: star.opacity }} />
+      ))}
+    </div>
+  );
+}
+
+function Skyline() {
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-[220px] overflow-hidden sm:h-[250px] lg:h-[285px]" aria-hidden="true">
+      <div className="absolute inset-0 bg-gradient-to-t from-[#010409] via-[#02070e]/55 to-transparent" />
+      <div className="absolute bottom-0 left-1/2 h-[175px] w-[150%] -translate-x-1/2 opacity-95 sm:h-[205px] lg:h-[220px]">
+        <svg viewBox="0 0 1600 260" preserveAspectRatio="none" className="h-full w-full">
+          <defs>
+            <linearGradient id="cityFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#17344b" stopOpacity=".72" />
+              <stop offset="1" stopColor="#01050a" stopOpacity="1" />
+            </linearGradient>
+            <linearGradient id="cityWindows" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#fff4c7" stopOpacity=".95" />
+              <stop offset=".6" stopColor="#67e8f9" stopOpacity=".42" />
+              <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d="M0 260V178h70v-25h58v46h54v-72h45v53h53v-90h50v82h36v-38h64v63h45v-105h42v74h28v-38h50v57h44v-120h43v105h27v-55h60v80h43v-135h46v116h29v-69h50v88h52v-105h36v93h43v-54h55v76h38v-96h42v110h54v-66h54v75h43v-125h40v103h40v-75h54v93h54v-112h46v138h50v-83h70v169Z" fill="url(#cityFade)" />
+          <g fill="url(#cityWindows)">
+            {Array.from({ length: 185 }, (_, i) => (
+              <rect key={i} x={(i * 83) % 1580 + 5} y={132 + ((i * 29) % 98)} width="2" height="5" rx="1" />
+            ))}
+          </g>
+          <path d="M720 260V92h15V54h8v38h15v168" fill="#06101a" stroke="#4edcff" strokeOpacity=".25" />
+          <path d="M726 53h12M729 39h6M732 25v14" stroke="#7eeaff" strokeOpacity=".55" strokeWidth="2" />
+          <path d="M0 225 C250 195 420 247 650 222 S1100 204 1600 231" fill="none" stroke="#7be8ff" strokeOpacity=".18" strokeWidth="2" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function EarthScene() {
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div className="absolute right-[-27%] top-[5%] h-[560px] w-[820px] sm:right-[-22%] sm:top-[3%] sm:h-[690px] sm:w-[1040px] lg:right-[-17%] lg:top-[-1%] lg:h-[820px] lg:w-[1220px] xl:right-[-12%] xl:h-[900px] xl:w-[1340px]">
+        <div className="absolute inset-[9%] rounded-full bg-cyan-400/15 blur-[95px]" />
+        <img src="/europe-globe.webp" alt="" className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_0_105px_rgba(40,210,255,.34)]" />
+        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_66%_31%,rgba(255,246,214,.55),transparent_7%,transparent_25%),radial-gradient(circle_at_56%_52%,transparent_42%,rgba(0,0,0,.58)_76%)]" />
+        <div className="absolute right-[18%] top-[11%] h-20 w-20 rounded-full bg-white/95 blur-[8px] shadow-[0_0_80px_30px_rgba(255,190,105,.42)]" />
+        <div className="absolute right-[21%] top-[16%] h-2 w-32 rotate-[16deg] rounded-full bg-white/75 blur-[3px] shadow-[0_0_35px_12px_rgba(255,196,116,.5)]" />
+        <div className="absolute left-[19%] top-[42%] h-32 w-32 rounded-full bg-cyan-300/10 blur-3xl" />
+      </div>
+      <div className="absolute right-[5%] top-[29%] h-28 w-28 rounded-full border border-cyan-200/20 bg-cyan-300/5 blur-[1px]" />
+    </div>
+  );
+}
+
+function Connector({ className }: { className: string }) {
+  return <span className={`pointer-events-none absolute z-20 hidden h-px origin-left bg-gradient-to-r from-cyan-300/70 to-transparent shadow-[0_0_10px_rgba(34,211,238,.45)] xl:block ${className}`} aria-hidden="true" />;
+}
+
+function GovernanceCard({ className, children }: { className: string; children: ReactNode }) {
+  return <GlassCard className={`absolute z-40 ${className}`}>{children}</GlassCard>;
+}
+
+export default function GovernanceHero({ onStart }: HeroSectionProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const start = () => onStart ? onStart() : navigate('/unified-entry/scan');
-  const navClass = 'text-sm text-white/60 transition-colors hover:text-white';
+  const start = () => (onStart ? onStart() : navigate('/unified-entry/scan'));
 
-  return <section id="produkt" className="relative isolate min-h-screen overflow-hidden bg-[#02060d] text-slate-200">
-    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_44%,rgba(34,211,238,.16),transparent_36%),radial-gradient(circle_at_90%_12%,rgba(14,165,233,.12),transparent_28%),#02060d]"/><div className="absolute -right-[18%] top-[8%] h-[900px] w-[900px] rounded-full bg-cyan-400/[.07] blur-[130px]"/><div className="absolute inset-0 bg-[linear-gradient(90deg,#02060d_0%,rgba(2,6,13,.96)_28%,rgba(2,6,13,.55)_58%,rgba(2,6,13,.08)_100%)]"/><div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#02060d] to-transparent"/>
-    </div>
+  const handleNav = (event: MouseEvent<HTMLAnchorElement>, item: NavItem) => {
+    const target = document.querySelector(item.href) ? item.href : item.fallback ?? '#intro';
+    handleAnchorClick(event, target);
+    setMenuOpen(false);
+  };
 
-    <header className="relative z-30 mx-auto flex h-20 max-w-[1400px] items-center justify-between px-6 lg:px-10">
-      <Link to="/" className="flex items-center gap-2.5 text-white"><span className="grid h-8 w-8 place-items-center rounded-full border border-cyan-400/40 bg-cyan-400/10 text-cyan-300" aria-hidden="true">✦</span><span className="text-[17px] font-semibold tracking-tight">RealSync <span className="font-normal text-white/75">Dynamics.AI</span></span></Link>
-      <nav className="hidden items-center gap-6 lg:flex">
-        {NAV.map(item => item.to
-          ? <Link key={item.label} to={item.to} className={navClass}>{item.label}</Link>
-          : <a key={item.label} href={item.hash} className={navClass}>{item.label}</a>)}
-        <button onClick={start} className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-[#031019] shadow-[0_0_40px_-10px_rgba(34,211,238,.9)] transition hover:bg-cyan-300">Kostenlosen Audit starten</button>
-      </nav>
-      <button onClick={()=>setMenuOpen(v=>!v)} className="rounded-lg border border-white/10 p-2 lg:hidden" aria-label="Menü" aria-expanded={menuOpen}>{menuOpen?<X size={18}/>:<Menu size={18}/>}</button>
-    </header>
+  return (
+    <section id="produkt" className="relative isolate min-h-[860px] overflow-hidden bg-[#02060d] text-white sm:min-h-[930px] lg:min-h-[980px] xl:min-h-[1000px]">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,#02060d_0%,#03111d_43%,#071a28_70%,#02060d_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_76%_36%,rgba(22,170,231,.25),transparent_34%),radial-gradient(ellipse_at_78%_72%,rgba(255,172,75,.20),transparent_24%),radial-gradient(ellipse_at_24%_45%,rgba(17,75,111,.25),transparent_34%)]" />
+      <Stars />
+      <EarthScene />
+      <div className="absolute inset-x-0 bottom-0 z-[25] h-[38%] bg-gradient-to-t from-[#010409] via-[#010409]/60 to-transparent" />
 
-    {menuOpen&&<div className="relative z-30 mx-6 rounded-2xl border border-white/10 bg-[#071320]/95 p-5 backdrop-blur-xl lg:hidden">
-      <div className="flex flex-col gap-4 text-sm text-white/70">
-        {NAV.map(item => item.to
-          ? <Link key={item.label} to={item.to} onClick={()=>setMenuOpen(false)}>{item.label}</Link>
-          : <a key={item.label} href={item.hash} onClick={()=>setMenuOpen(false)}>{item.label}</a>)}
-        <button onClick={()=>{setMenuOpen(false);start()}} className="rounded-full bg-cyan-400 px-5 py-3 font-semibold text-[#031019]">Kostenlosen Audit starten</button>
-      </div>
-    </div>}
+      <header className="relative z-[70] mx-auto flex max-w-[1448px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10 xl:py-6">
+        <Logo />
+        <nav className="hidden items-center gap-7 text-sm text-slate-200 xl:flex" aria-label="Hauptnavigation">
+          {navItems.map((item) => <a key={item.label} href={item.href} onClick={(e) => handleNav(e, item)} className="transition hover:text-white">{item.label}</a>)}
+        </nav>
+        <div className="hidden items-center gap-4 xl:flex">
+          <a href="/welcome" className="px-3 py-2 text-sm text-slate-300 transition hover:text-white">Login</a>
+          <Button onClick={start} variant="primary" size="md">Kostenlos starten <ArrowRight className="h-4 w-4" /></Button>
+        </div>
+        <button type="button" aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'} aria-expanded={menuOpen} onClick={() => setMenuOpen((v) => !v)} className="rounded-xl border border-white/15 bg-black/20 p-2.5 xl:hidden">{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+      </header>
 
-    <div className="relative z-10 mx-auto grid min-h-[calc(100vh-80px)] max-w-[1400px] items-center gap-8 px-6 pb-14 pt-8 lg:grid-cols-[.82fr_1.18fr] lg:px-10 lg:pb-16">
-      <div className="max-w-[46rem]"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/35 bg-cyan-400/[.07] px-3.5 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300">GOVERNANCE AI · BY REALSYNCDYNAMICS.AI</div><div className="mb-4 font-mono text-[10px] uppercase tracking-[.24em] text-white/40">REALSYNC GOVERNANCE RUNTIME™</div><h1 className="text-[2.8rem] font-medium leading-[.96] tracking-[-.04em] text-white sm:text-6xl lg:text-[5.5rem]" style={{fontFamily:"Georgia,'Times New Roman',serif"}}>Ihre Prozesse bleiben Ihre.<br/><span className="text-cyan-300 [text-shadow:0_0_35px_rgba(34,211,238,.28)]">Ihre KI wird EU-ready.</span></h1><p className="mt-7 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">Governance AI by RealSyncDynamics.AI macht KI-gestützte Geschäftsprozesse kontrollierbar, nachvollziehbar und EU-ready – für DSGVO, EU AI Act und Ihre eigenen Unternehmensregeln.</p><p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/50 sm:text-base">Ihre Systeme bleiben bestehen. Die Governance Runtime legt eine technische Kontrollschicht darüber, prüft Prozesse kontinuierlich und erzeugt belastbare Evidence.</p><div className="mt-6 grid gap-5 sm:grid-cols-3">{highlights.map(([title,desc,Icon])=><div key={title}><div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.14em] text-cyan-300"><Icon size={14}/>{title}</div><p className="mt-2 text-[12px] leading-relaxed text-white/45">{desc}</p></div>)}</div><div className="mt-9 flex flex-wrap gap-3"><button onClick={start} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-teal-300 px-7 py-3.5 font-semibold text-[#03212b] shadow-[0_0_45px_-8px_rgba(34,211,238,.95)] hover:brightness-110">Kostenlosen Audit starten <ArrowRight size={16}/></button><a href="#intro" className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[.03] px-7 py-3.5 font-medium text-white hover:border-cyan-300/50 hover:bg-cyan-400/[.06]"><PlayCircle size={17} className="text-cyan-300"/> Einführung</a></div><p className="mt-6 flex items-center gap-2 text-xs text-white/35"><BadgeCheck size={14} className="text-emerald-400"/> Hosting &amp; Verarbeitung in der EU · ISO-orientierte Prozesse</p></div>
+      {menuOpen && (
+        <div className="relative z-[80] mx-5 rounded-2xl border border-white/10 bg-[#061321]/95 p-4 shadow-2xl backdrop-blur-xl xl:hidden">
+          <nav className="flex flex-col gap-1">
+            {navItems.map((item) => <a key={item.label} href={item.href} onClick={(e) => handleNav(e, item)} className="rounded-xl px-3 py-3 text-sm text-slate-200 hover:bg-white/5">{item.label}</a>)}
+            <a href="/welcome" className="rounded-xl px-3 py-3 text-sm text-slate-200">Login</a>
+            <Button onClick={() => { setMenuOpen(false); start(); }} variant="primary" size="md" className="mt-2 w-full justify-center">Kostenlos starten <ArrowRight className="h-4 w-4" /></Button>
+          </nav>
+        </div>
+      )}
 
-      <div className="relative min-h-[560px] lg:min-h-[760px]">
-        <GlobeVisual/>
-        <div className="pointer-events-none absolute inset-x-[8%] top-[18%] z-20 rounded-2xl border border-cyan-300/30 bg-[#06131f]/72 p-5 shadow-[0_0_100px_rgba(34,211,238,.22)] backdrop-blur-xl">
-          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[.18em] text-cyan-300">
-            <span>Governance AI · Control Plane</span>
-            <span className="rounded-full border border-white/20 px-2 py-0.5 text-[9px] tracking-[.14em] text-white/50">Beispielansicht</span>
+      <div className="relative z-40 mx-auto grid max-w-[1448px] grid-cols-1 px-5 pb-36 pt-12 sm:px-8 sm:pt-14 lg:grid-cols-[47%_53%] lg:px-10 lg:pt-16 xl:grid-cols-[45%_55%]">
+        <div className="relative z-50 max-w-[690px] lg:pt-3 xl:pt-5">
+          <a href="#intro" onClick={(e) => handleAnchorClick(e, '#intro')} className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/45 bg-cyan-300/[.08] px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[.12em] text-cyan-100 shadow-[0_0_35px_rgba(34,211,238,.13)]">
+            <span className="rounded-full bg-cyan-300 px-2 py-0.5 text-[9px] font-bold text-[#03202a]">NEU</span>
+            CLAUDE CODE OPTIMIZER
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+
+          <h1 className="max-w-[760px] text-balance text-[56px] font-black leading-[.9] tracking-[-.055em] sm:text-[70px] lg:text-[82px] xl:text-[94px]" style={{ textShadow: '0 2px 0 #f3fbff, 0 4px 0 #a9bfd0, 0 7px 0 #506a80, 0 11px 0 #21384c, 0 18px 34px rgba(0,0,0,.92), 0 0 48px rgba(119,222,255,.30)' }}>
+            {/* Text aus hero-content.ts — dieselbe Quelle, gegen die FE-001 prueft.
+                Hartkodierte Headlines hier haben den Test dreimal brechen lassen. */}
+            {HERO_HEADLINE_LINES.map((line) => (
+              <span key={line} className="block bg-gradient-to-b from-white via-[#eaf7ff] via-[42%] to-[#7592aa] bg-clip-text text-transparent">{line}</span>
+            ))}
+          </h1>
+
+          <p className="mt-7 max-w-[680px] text-xl leading-8 text-slate-100 sm:text-2xl lg:text-[24px] lg:leading-9 xl:text-[25px]">Das KI-Betriebssystem für <span className="font-semibold text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,.22)]">DSGVO, EU AI Act &amp; Code-Compliance.</span></p>
+          <p className="mt-5 max-w-[640px] text-base leading-7 text-slate-300 sm:text-lg">Kontinuierliche Governance, Monitoring und beweisfähige Evidence für KI-Systeme, Daten und Code – in einer operativen Control Plane.</p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button onClick={start} variant="primary" size="lg">Kostenlos starten <ArrowRight className="h-5 w-5" /></Button>
+            <a href="#intro" onClick={(e) => handleAnchorClick(e, '#intro')} className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/20 bg-[#071521]/65 px-5 text-sm font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,.08),0_10px_30px_rgba(0,0,0,.35)] backdrop-blur-md transition hover:bg-white/10"><PlayCircle className="h-4 w-4" />Plattform ansehen</a>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {SAMPLE_METRICS.map(([label,value])=><div key={label} className="rounded-lg border border-white/10 bg-black/25 p-3"><span className="font-mono text-[9px] text-white/35">{label}</span><strong className="mt-1 block text-xl text-white">{value}</strong></div>)}
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {['GDPR', 'Risk Score', 'Claude Code Audit', 'EU AI Act'].map((item) => <span key={item} className="rounded-full border border-cyan-300/35 bg-[#061321]/70 px-4 py-2 text-xs font-medium text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,.06)]">{item}</span>)}
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-[9px] uppercase tracking-[.12em]">
-            {SAMPLE_STATES.map(([label,state,tone])=><span key={label} className="text-white/40">{label} <b className={`float-right ${tone}`}>{state}</b></span>)}
-          </div>
-          <p className="mt-4 border-t border-white/10 pt-3 text-[10px] leading-relaxed text-white/35">
-            Beispielwerte zur Veranschaulichung. Ihre echten Kennzahlen entstehen erst mit dem ersten Audit.
-          </p>
+        </div>
+
+        <div className="relative min-h-[540px] sm:min-h-[640px] lg:min-h-[680px] xl:min-h-[710px]">
+          <Connector className="left-[10%] top-[13%] w-[25%] rotate-[7deg]" />
+          <Connector className="right-[16%] top-[27%] w-[26%] rotate-[170deg]" />
+          <Connector className="left-[20%] top-[55%] w-[24%] rotate-[-7deg]" />
+          <Connector className="right-[25%] top-[51%] w-[24%] rotate-[168deg]" />
+          <Connector className="left-[44%] top-[77%] w-[22%] rotate-[176deg]" />
+          <Connector className="right-[12%] top-[74%] w-[23%] rotate-[174deg]" />
+
+          <GovernanceCard className="left-[0%] top-[5%] w-44 sm:left-[2%] lg:left-[-1%] xl:left-[2%]">
+            <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-8 w-8 text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,.4)]" /><div><div className="text-sm font-semibold">DSGVO</div><div className="mt-1 text-xs text-slate-300">Compliant</div></div></div>
+          </GovernanceCard>
+
+          <GovernanceCard className="right-[1%] top-[22%] w-40 sm:right-[4%] xl:right-[7%]">
+            <Signal>Risk Score</Signal><div className="mt-1 text-4xl font-light">87<span className="text-lg text-slate-400">/100</span></div><div className="mt-2 h-1 rounded-full bg-slate-700"><div className="h-full w-[87%] rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee]" /></div>
+          </GovernanceCard>
+
+          <GovernanceCard className="left-[8%] top-[50%] w-44 sm:left-[14%] xl:left-[16%]">
+            <Signal>Evidence</Signal><div className="mt-1 text-3xl font-semibold">1,248</div><div className="text-xs text-slate-400">Nachweise</div>
+          </GovernanceCard>
+
+          <GovernanceCard className="right-[9%] top-[43%] w-64 sm:right-[14%] xl:right-[17%]">
+            <Signal>Claude Code Audit</Signal><div className="mt-2 flex items-baseline gap-2"><span className="text-4xl font-light">94.2%</span><span className="text-xs text-slate-300">Code-Ready</span></div><p className="mt-2 text-xs leading-5 text-slate-300">Analysierte Codezeilen: 2.1 Mio<br />Sicherheitslücken behoben: 11,350</p>
+          </GovernanceCard>
+
+          <GovernanceCard className="left-[42%] top-[71%] w-44 xl:left-[39%]">
+            <div className="flex items-center gap-2"><Activity className="h-5 w-5 text-cyan-300" /><div><div className="text-sm font-medium">MONITORING</div><div className="text-xs text-slate-300">Live <span className="text-emerald-400">●</span></div></div></div>
+          </GovernanceCard>
+
+          <GovernanceCard className="right-[1%] top-[68%] w-44 sm:right-[3%] xl:right-[5%]">
+            <div className="flex items-center gap-3"><ShieldCheck className="h-7 w-7 text-cyan-300" /><div className="text-sm font-semibold">EU AI ACT<br />READY</div></div>
+          </GovernanceCard>
         </div>
       </div>
-    </div>
-  </section>;
+
+      <Skyline />
+
+      <div className="absolute bottom-7 left-1/2 z-30 hidden -translate-x-1/2 text-center xl:block">
+        <div className="mb-2 text-[10px] font-medium uppercase tracking-[.25em] text-slate-400">EUROPEAN AI GOVERNANCE</div>
+        <div className="flex items-center gap-10 whitespace-nowrap text-xs font-semibold text-slate-300/75"><span>GDPR</span><span>EU AI ACT</span><span>CODE SECURITY</span><span>EVIDENCE</span><span>CONTINUOUS MONITORING</span></div>
+      </div>
+    </section>
+  );
 }

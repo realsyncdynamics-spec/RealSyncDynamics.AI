@@ -204,6 +204,46 @@ const AI_ACT_FAQ_JSONLD = {
   ],
 };
 
+/**
+ * FAQ der Warteliste-Landingpage. Liegt hier statt in der Page, weil derselbe
+ * Text zweimal gebraucht wird: sichtbar im Akkordeon und als FAQPage-JSON-LD.
+ * Google straft Schema-Inhalt ab, der nicht auf der Seite steht — eine zweite
+ * Kopie waere ein Drift-Risiko, deshalb eine Quelle fuer beides.
+ * Konsumiert von src/pages/WaitlistLanding.tsx.
+ */
+export const WAITLIST_FAQ: ReadonlyArray<{ q: string; a: string }> = [
+  {
+    q: 'Kostet die Warteliste etwas?',
+    a: 'Nein. Der Eintrag ist kostenlos und unverbindlich. Es entsteht kein Vertrag und keine Zahlungspflicht — erst beim tatsächlichen Start entscheiden Sie über einen Plan.',
+  },
+  {
+    q: 'Warum gibt es überhaupt eine Warteliste?',
+    a: 'Zum Onboarding gehört bei uns ein begleitetes Setup — KI-Inventar, Policy Packs, erste Risikoklassifikation. Das ist pro Woche nur für eine begrenzte Zahl von Organisationen sinnvoll leistbar.',
+  },
+  {
+    q: 'Muss ich warten, um überhaupt loszulegen?',
+    a: 'Nein. Der DSGVO-Website-Scan und die kostenlosen Tools sind sofort verfügbar. Die Warteliste betrifft nur Module, deren Freigabe gestaffelt erfolgt.',
+  },
+  {
+    q: 'Was passiert mit meinen Daten?',
+    a: 'Ihre Angaben werden ausschließlich für die Kontaktaufnahme zur Freigabe verwendet — kein Newsletter, keine Weitergabe an Dritte. Gespeichert wird in Frankfurt; von Ihrer IP-Adresse wird nur ein Hash zur Missbrauchsabwehr abgelegt, nie die Adresse selbst.',
+  },
+  {
+    q: 'Wie komme ich schneller dran?',
+    a: 'Beschreiben Sie im Formular kurz Ihren Anwendungsfall. Wenn ein Modul dazu schon freigegeben ist, melden wir uns direkt — und wenn Sie eine feste Frist haben (etwa eine anstehende Prüfung), sagen Sie es dort.',
+  },
+];
+
+const WAITLIST_FAQ_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: WAITLIST_FAQ.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
+
 function breadcrumbs(items: Array<{ name: string; url: string }>): Record<string, unknown> {
   return {
     '@context': 'https://schema.org',
@@ -326,6 +366,25 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
       { name: 'Home', url: '/' },
       { name: 'AI Act Governance', url: '/ai-act' },
     ]),
+  },
+  // Warteliste. Das englische Alias /waitlist bekommt hier bewusst keinen
+  // eigenen Eintrag: es wird per 301 (public/_redirects) auf diese URL
+  // umgeleitet und rendert nie selbst.
+  '/warteliste': {
+    title: 'Warteliste — Früher Zugang zur AI Governance Runtime | RealSyncDynamics.AI',
+    description:
+      'Sichern Sie sich Ihren Platz für Governance Runtime, Evidence Vault, Policy Packs und Herkunftsnachweis. Kostenlos, unverbindlich, Position sofort sichtbar — EU-gehostet in Frankfurt.',
+    canonical: `${SITE_URL}/warteliste`,
+    ogTitle: 'Warteliste — Früher Zugang zur AI Governance Runtime',
+    ogDescription:
+      'Module werden in Wellen freigegeben. Tragen Sie sich ein und erhalten Sie die Einladung, sobald ein Platz frei wird.',
+    jsonLd: [
+      breadcrumbs([
+        { name: 'Home', url: '/' },
+        { name: 'Warteliste', url: '/warteliste' },
+      ]),
+      WAITLIST_FAQ_JSONLD,
+    ],
   },
   '/governance-score': {
     title: 'Governance Complexity Score — passende Governance-Abdeckung | RealSyncDynamics.AI',

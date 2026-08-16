@@ -20,15 +20,15 @@ import {
   LandingFooter,
   SCAN_CTA,
 } from '../components/landing/LandingShell';
-import { WaitlistForm } from '../components/landing/WaitlistForm';
+import { WaitlistForm, WAITLIST_ENDPOINT } from '../components/landing/WaitlistForm';
 
 /**
  * WaitlistLanding — /warteliste (Alias /waitlist).
  *
  * Einstieg fuer Interessenten, die auf Modul-Freigaben warten. Bewusst ohne
- * erfundene Zahlen: der Anmeldezaehler kommt live aus `waitlist-join` (GET)
- * und wird ausgeblendet, wenn das Backend nicht antwortet — lieber kein
- * Sozialbeweis als ein geratener.
+ * erfundene Zahlen: der Anmeldezaehler kommt live aus `sales-lead`
+ * (GET ?mode=waitlist) und wird ausgeblendet, wenn das Backend nicht
+ * antwortet — lieber kein Sozialbeweis als ein geratener.
  *
  * Design folgt dem Light-Theme "European Enterprise Trust" aus CLAUDE.md §10
  * und verwendet ausschliesslich bestehende Tokens (petrol/slate,
@@ -315,7 +315,7 @@ function useWaitlistCount(): number | null {
     const baseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
     if (!baseUrl) return;
     const controller = new AbortController();
-    fetch(`${baseUrl}/functions/v1/waitlist-join`, { signal: controller.signal })
+    fetch(`${baseUrl}${WAITLIST_ENDPOINT}?mode=waitlist`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.ok && typeof data.count === 'number') setCount(data.count);

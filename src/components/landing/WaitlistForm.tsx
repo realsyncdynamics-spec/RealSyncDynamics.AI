@@ -5,14 +5,19 @@ import { ArrowRight, CheckCircle2, Loader2, AlertTriangle } from 'lucide-react';
 /**
  * WaitlistForm — Anmeldeformular der Warteliste (/warteliste).
  *
- * Sendet an die Edge Function `waitlist-join` (verify_jwt = false), die als
- * einzige Instanz schreibend auf `waitlist_signups` zugreift. Der Browser
- * bekommt weder Service-Role-Key noch direkten Tabellenzugriff.
+ * Sendet an die Edge Function `sales-lead` mit `mode: 'waitlist'`. Bewusst
+ * kein eigener Endpunkt: das Supabase-Projekt hat sein Function-Limit
+ * erreicht, eine neue Function liesse sich nicht deployen. `sales-lead` ist
+ * bereits live, oeffentlich (verify_jwt = false) und deckt denselben Fall ab.
+ * Der Browser bekommt weder Service-Role-Key noch direkten Tabellenzugriff.
  *
  * Die zurueckgegebene Position kommt aus der Datenbank (BIGSERIAL) — es wird
  * nie eine Zahl geschaetzt oder hochgezaehlt. Ohne erreichbares Backend zeigt
  * das Formular einen Fehler statt einer falschen Erfolgsmeldung.
  */
+
+/** Gemeinsamer Endpunkt fuer Anmeldung (POST) und Zaehler (GET ?mode=waitlist). */
+export const WAITLIST_ENDPOINT = '/functions/v1/sales-lead';
 
 /**
  * Lazy statt Modul-Konstante: die Env wird erst beim Absenden gelesen, damit
@@ -68,14 +73,17 @@ export function WaitlistForm({ source = 'warteliste', compact = false, id }: Pro
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${baseUrl}/functions/v1/waitlist-join`, {
+      const res = await fetch(`${baseUrl}${WAITLIST_ENDPOINT}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          mode: 'waitlist',
           email: String(data.get('email') ?? '').trim().toLowerCase(),
           company: String(data.get('company') ?? '').trim() || undefined,
           role: String(data.get('role') ?? '').trim() || undefined,
-          interest: String(data.get('interest') ?? 'runtime'),
+          // `use_case` ist das Feld, aus dem der Endpunkt `interest` liest —
+          // es traegt bereits im Sales-Pfad die Kategorie-Auswahl.
+          use_case: String(data.get('interest') ?? 'runtime'),
           team_size: String(data.get('team_size') ?? '') || undefined,
           note: String(data.get('note') ?? '').trim() || undefined,
           source,

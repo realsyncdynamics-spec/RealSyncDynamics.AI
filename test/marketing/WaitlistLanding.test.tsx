@@ -1,12 +1,14 @@
 /**
  * Tests für die Warteliste-Landingpage (/warteliste) und das Anmeldeformular.
  *
- * Der Schwerpunkt liegt auf zwei Zusagen, die im Produkt gelten sollen:
+ * Der Schwerpunkt liegt auf drei Zusagen, die im Produkt gelten sollen:
  *  1. Es wird nie eine Wartelistenposition oder Anmeldezahl erfunden — beides
- *     kommt aus der Edge Function `waitlist-join`. Antwortet sie nicht, bleibt
- *     der Zähler unsichtbar und die Anmeldung meldet einen Fehler.
+ *     kommt aus der Edge Function `sales-lead` (mode=waitlist). Antwortet sie
+ *     nicht, bleibt der Zähler unsichtbar und die Anmeldung meldet einen Fehler.
  *  2. Die Anmeldung geht ausschließlich über die Edge Function, nie direkt
  *     gegen die Tabelle (kein Client-seitiger Tabellenzugriff).
+ *  3. Sie nutzt den bereits deployten `sales-lead`-Endpunkt — eine eigene
+ *     Function liesse sich wegen des Supabase-Function-Limits nicht deployen.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
@@ -112,10 +114,15 @@ describe('Warteliste — Alias /waitlist', () => {
 
 describe('WaitlistLanding — Anmeldezähler', () => {
   it('zeigt die reale Anzahl aus der Edge Function', async () => {
-    vi.stubGlobal('fetch', mockFetch({ count: 137 }));
+    const fetchMock = mockFetch({ count: 137 });
+    vi.stubGlobal('fetch', fetchMock);
     renderPage();
 
     expect(await screen.findByText(/137 Anmeldungen bisher/i)).toBeInTheDocument();
+
+    // Ohne ?mode=waitlist antwortet sales-lead mit 405 — der Zaehler waere still weg.
+    const getCall = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === undefined);
+    expect(String(getCall![0])).toContain('/functions/v1/sales-lead?mode=waitlist');
   });
 
   it('bleibt unsichtbar, wenn das Backend nicht antwortet — keine geratene Zahl', async () => {
@@ -151,10 +158,14 @@ describe('WaitlistForm — Absenden', () => {
     const postCall = fetchMock.mock.calls.find(([, init]) => (init as RequestInit)?.method === 'POST');
     expect(postCall).toBeDefined();
     // Der Client spricht die Edge Function an, nie /rest/v1/waitlist_signups.
-    expect(String(postCall![0])).toContain('/functions/v1/waitlist-join');
+    expect(String(postCall![0])).toContain('/functions/v1/sales-lead');
+    expect(String(postCall![0])).not.toContain('/rest/v1/');
     const sent = JSON.parse((postCall![1] as RequestInit).body as string);
+    expect(sent.mode).toBe('waitlist');
     expect(sent.email).toBe('test@firma.de');
     expect(sent.source).toBe('warteliste-hero');
+    // `use_case` traegt die Interessen-Auswahl — so liest der Endpunkt sie aus.
+    expect(sent.use_case).toBe('runtime');
   });
 
   it('meldet vorhandene Anmeldungen als solche statt als Fehler', async () => {

@@ -140,11 +140,6 @@ verify_jwt = false
 [functions.newsletter-subscribe]
 verify_jwt = false
 
-# Warteliste: oeffentliche Anmeldung vor der Registrierung — es gibt noch
-# keinen Account und damit kein JWT.
-[functions.waitlist-join]
-verify_jwt = false
-
 [functions.track-pageview]
 verify_jwt = false
 

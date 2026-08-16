@@ -17,6 +17,8 @@ import SpaceBackdrop from './SpaceBackdrop';
 import GlobeVisual from './GlobeVisual';
 import Button from './Button';
 import { handleAnchorClick, resolveHref } from './scroll';
+import { HERO_HEADLINE } from './hero-content';
+import type { HeroHeadlineSegment } from './hero-content';
 
 /**
  * Navigation des Hero-Headers. Anker zeigen auf Sektionen der MainLanding;
@@ -311,12 +313,22 @@ export default function GovernanceHero({ onStart }: { onStart?: () => void }) {
             <ArrowRight size={13} />
           </a>
 
+          {/* Headline kommt aus hero-content.ts — dort auch die FE-001-Test-Erwartung. */}
           <h1 className="mt-6 text-[2.15rem] font-semibold leading-[1.08] tracking-tight text-white sm:text-[2.9rem] lg:text-[3.2rem] xl:text-[3.65rem]">
-            Das KI-Betriebssystem
-            <br />
-            für <span className="text-cyan-400">DSGVO, EU AI Act</span>
-            <br />
-            <span className="text-cyan-400">&amp; Code-Compliance</span>
+            {HERO_HEADLINE.map((segments: readonly HeroHeadlineSegment[], lineIndex: number) => (
+              <span key={lineIndex}>
+                {lineIndex > 0 && <br />}
+                {segments.map((segment: HeroHeadlineSegment, segmentIndex: number) =>
+                  segment.accent ? (
+                    <span key={segmentIndex} className="text-cyan-400">
+                      {segment.text}
+                    </span>
+                  ) : (
+                    <span key={segmentIndex}>{segment.text}</span>
+                  )
+                )}
+              </span>
+            ))}
           </h1>
 
           <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.22em] text-slate-500 sm:text-xs">

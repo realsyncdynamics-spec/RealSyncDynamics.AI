@@ -1,17 +1,19 @@
 import { test, expect } from '@playwright/test';
+import { HERO_HEADLINE_TEST_SUBSTRING } from '../../src/components/governance-frontend/hero-content';
 
 const BASE_URL = process.env.TEST_BASE_URL || process.env.BASE_URL || 'http://localhost:4173';
+
+/** Regex-sicher escapen — der Substring ist Text, keine Regex-Syntax. */
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const publicRoutes = [
   // `heading`: stabiler Substring der jeweiligen Hero-Headline (bestätigt,
   // dass die richtige Seite rendert — nicht nur HTTP 200 via SPA-Fallback).
-  // FE-001: Governance-AI-Hero der Startseite ("Das KI-Betriebssystem für
-  // DSGVO, EU AI Act & Code-Compliance", Referenzdesign-Upload 2026-08-16).
-  // Beim Umbau der Landing MUSS dieser Substring mitgezogen werden — sonst ist
-  // main rot und blockiert jeden offenen PR (dreimal passiert: 13.08., 15.08.,
-  // 16.08.). Der Substring bleibt bewusst innerhalb einer Hero-Zeile, weil die
-  // <br />-Umbrüche in den Accessible Name einfließen.
-  { id: 'FE-001', path: '/', label: 'Startseite', heading: /Das KI-Betriebssystem/i },
+  // FE-001: Die Erwartung kommt aus hero-content.ts — derselben Quelle, aus
+  // der die H1 gerendert wird. Headline-Änderungen ziehen den Test damit
+  // automatisch mit (zwischen 13.08. und 16.08. brach FE-001 dreimal, weil
+  // Landing-Umbauten den Test vergassen).
+  { id: 'FE-001', path: '/', label: 'Startseite', heading: new RegExp(escapeRegex(HERO_HEADLINE_TEST_SUBSTRING), 'i') },
   { id: 'FE-003', path: '/audit', label: 'Audit', heading: /Kostenloser DSGVO- und Tracking-Audit/i },
   { id: 'FE-004', path: '/ai-act/', label: 'AI Act', heading: /AI Act compliance without a consulting engagement/i },
   { id: 'FE-005', path: '/oeffentliche-verwaltung/', label: 'Öffentliche Verwaltung', heading: /KI in der öffentlichen Verwaltung/i },

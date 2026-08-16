@@ -14,9 +14,9 @@ die Anbindung an das **bestehende** Backend.
 Der Prompt unten enthält an drei Stellen eine Vorbelegung. Wer sie anders will,
 ändert genau diese Zeilen — sonst generiert das Modell an der Realität vorbei.
 
-| # | Entscheidung | Vorbelegung im Prompt | Warum das zählt |
+| # | Entscheidung | Stand | Warum das zählt |
 | --- | --- | --- | --- |
-| 1 | **Sprache der Oberfläche** | **Deutsch** | Die Screen-Spezifikation ist auf Englisch verfasst, das bestehende Produkt (`/app`, Landing, Rechtstexte, Fehlermeldungen) ist durchgehend deutsch. Zwei Sprachen im selben Dashboard sind kein Stilproblem, sondern ein Vertrauensproblem. |
+| 1 | **Sprache der Oberfläche** | **Deutsch — entschieden (2026-08-16)** | Die Screen-Spezifikation ist auf Englisch verfasst, das bestehende Produkt (`/app`, Landing, Rechtstexte, Fehlermeldungen) ist durchgehend deutsch. Zwei Sprachen im selben Dashboard sind kein Stilproblem, sondern ein Vertrauensproblem. **Alle sichtbaren Texte, Beschriftungen, Zustände, Fehlermeldungen und Leerzustände sind deutsch — ohne Ausnahme.** Englisch bleibt nur in Code-Bezeichnern und Maschinen-Schlüsseln. |
 | 2 | **Startseite** | **nicht anfassen** | `src/pages/MainLanding.tsx` ist design-locked (`CLAUDE.md` §10, Baseline `3b972f3`). Screen 1 der Spezifikation ist ein Neuentwurf und braucht eine ausdrückliche Freigabe. Der Prompt legt sie deshalb unter einer **neuen Route** an, statt die bestehende zu überschreiben. |
 | 3 | **Preise im UI** | **aus der SSoT** | Alle Beträge in der Spezifikation (79 €, 18,40 €, 29 €/Monat …) sind Beispielwerte. Hartkodiert wären sie sofort falsch. |
 
@@ -42,6 +42,22 @@ Konkret verboten:
 - Keine neuen Endpunkte. Wenn dir Daten fehlen, zeige den Zustand „nicht verfügbar" —
   erfinde keinen Endpunkt und keine Zahl.
 - Keine Änderung an Auth-Flows, Tenant-Auflösung oder Berechtigungslogik.
+
+## 0.1 Sprache: Deutsch — ohne Ausnahme
+
+**Jeder sichtbare Text ist deutsch**: Überschriften, Beschriftungen, Buttons,
+Navigations­einträge, Zustandsanzeigen, Fehlermeldungen, Leerzustände, Tooltips,
+`aria-label`s, Datums- und Zahlenformate (`de-DE`, `Intl.NumberFormat('de-DE')`).
+
+Englisch bleibt ausschließlich in Code-Bezeichnern, Maschinen-Schlüsseln und
+etablierten Fachbegriffen, die das Produkt bereits führt (z. B. „Evidence Vault",
+„Governance Score", „AI Workspace" als Produktnamen). Zustandswerte wie
+`ACTIVE`/`AVAILABLE` aus dem Datenmodell werden in der Anzeige übersetzt
+(„Aktiv" / „Verfügbar") — der Schlüssel bleibt englisch, die Anzeige nicht.
+
+Etablierte Terminologie des Produkts: „Prüfpfad" statt „Audit Trail",
+„Herkunftsnachweis" statt „Provenance". Ein Screen, der englische UI-Texte
+enthält, gilt als nicht abgenommen.
 
 ## 1. Technischer Rahmen — nicht verhandelbar
 
@@ -438,6 +454,7 @@ Ein Screen gilt als fertig, wenn:
 6. Kein Statusabzeichen erscheint, das nicht aus Daten folgt.
 7. Die Ansicht auf 360 px Breite ohne horizontales Scrollen benutzbar ist.
 8. Das Backend unverändert ist.
+9. Kein sichtbarer Text englisch ist (§0.1) — Zahlen- und Datumsformate `de-DE`.
 
 ---
 
@@ -456,3 +473,6 @@ Der Prompt erzeugt eine Oberfläche, keine Wahrheit. Vor dem Übernehmen prüfen
 - **Next.js-Reste** — nach `use client`, `next/`, `shadcn` suchen.
 - **Design-Lock** — `src/pages/MainLanding.tsx` darf unverändert sein.
 - **Tote Buttons** — jede Aktion einmal klicken.
+- **Englische UI-Texte** — Generatoren fallen mitten im Screen ins Englische zurück
+  („Loading…", „No data available", „Submit"). Nach solchen Resten suchen; jeder
+  Fund verletzt Abnahmekriterium 9.

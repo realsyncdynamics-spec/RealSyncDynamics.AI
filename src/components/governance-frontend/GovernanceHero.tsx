@@ -1,5 +1,5 @@
 import { useState, type MouseEvent, type ReactNode } from 'react';
-import { Activity, ArrowRight, Menu, PlayCircle, ShieldCheck, X } from 'lucide-react';
+import { Activity, ArrowRight, FileText, Menu, PlayCircle, ShieldCheck, SquareCheckBig, User, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from './Button';
 import { handleAnchorClick } from './scroll';
@@ -102,7 +102,19 @@ function EarthScene() {
     <div className="pointer-events-none absolute inset-0" aria-hidden="true">
       <div className="absolute right-[-27%] top-[5%] h-[560px] w-[820px] sm:right-[-22%] sm:top-[3%] sm:h-[690px] sm:w-[1040px] lg:right-[-17%] lg:top-[-1%] lg:h-[820px] lg:w-[1220px] xl:right-[-12%] xl:h-[900px] xl:w-[1340px]">
         <div className="absolute inset-[9%] rounded-full bg-cyan-400/15 blur-[95px]" />
-        <img src="/europe-globe.webp" alt="" className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_0_105px_rgba(40,210,255,.34)]" />
+        {/* Das Bild bringt einen eigenen dunklen Sternenhintergrund mit. Ohne
+            Maske zeichnet sich sein Rechteck als harte Kante gegen den Hero ab
+            (ab ~1900px Breite deutlich sichtbar). Die radiale Maske blendet die
+            Raender aus, damit die Kugel im Verlauf steht statt in einem Kasten. */}
+        <img
+          src="/europe-globe.webp"
+          alt=""
+          className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_0_105px_rgba(40,210,255,.34)]"
+          style={{
+            maskImage: 'radial-gradient(circle at 50% 46%, #000 52%, transparent 72%)',
+            WebkitMaskImage: 'radial-gradient(circle at 50% 46%, #000 52%, transparent 72%)',
+          }}
+        />
         <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_66%_31%,rgba(255,246,214,.55),transparent_7%,transparent_25%),radial-gradient(circle_at_56%_52%,transparent_42%,rgba(0,0,0,.58)_76%)]" />
         <div className="absolute right-[18%] top-[11%] h-20 w-20 rounded-full bg-white/95 blur-[8px] shadow-[0_0_80px_30px_rgba(255,190,105,.42)]" />
         <div className="absolute right-[21%] top-[16%] h-2 w-32 rotate-[16deg] rounded-full bg-white/75 blur-[3px] shadow-[0_0_35px_12px_rgba(255,196,116,.5)]" />
@@ -115,6 +127,17 @@ function EarthScene() {
 
 function Connector({ className }: { className: string }) {
   return <span className={`pointer-events-none absolute z-20 hidden h-px origin-left bg-gradient-to-r from-cyan-300/70 to-transparent shadow-[0_0_10px_rgba(34,211,238,.45)] xl:block ${className}`} aria-hidden="true" />;
+}
+
+// Nutzer-Knoten auf der Kugel — im Zielentwurf sitzen drei davon zwischen den
+// Karten und zeigen, dass die Runtime Menschen und Systeme verbindet. Rein
+// dekorativ, deshalb aria-hidden ueber den Container.
+function UserNode({ className }: { className: string }) {
+  return (
+    <span className={`pointer-events-none absolute z-30 hidden h-9 w-9 place-items-center rounded-full border border-cyan-200/45 bg-[#08202f]/80 text-cyan-100 shadow-[0_0_22px_rgba(34,211,238,.35)] backdrop-blur-sm lg:grid ${className}`}>
+      <User className="h-4 w-4" />
+    </span>
+  );
 }
 
 function GovernanceCard({ className, children }: { className: string; children: ReactNode }) {
@@ -184,7 +207,9 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
             ))}
           </h1>
 
-          <p className="mt-7 max-w-[680px] text-xl leading-8 text-slate-100 sm:text-2xl lg:text-[24px] lg:leading-9 xl:text-[25px]">Das KI-Betriebssystem für <span className="font-semibold text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,.22)]">DSGVO, EU AI Act &amp; Code-Compliance.</span></p>
+          {/* Umbruch fest gesetzt: Die Akzentzeile traegt die Positionierung und
+              soll geschlossen stehen, nicht mitten in "Code-Compliance" brechen. */}
+          <p className="mt-7 max-w-[680px] text-xl leading-8 text-slate-100 sm:text-2xl lg:text-[24px] lg:leading-9 xl:text-[25px]">Das KI-Betriebssystem für <span className="font-semibold text-cyan-300 drop-shadow-[0_0_15px_rgba(34,211,238,.22)] lg:block">DSGVO, EU AI Act &amp; Code-Compliance.</span></p>
           <p className="mt-5 max-w-[640px] text-base leading-7 text-slate-300 sm:text-lg">Kontinuierliche Governance, Monitoring und beweisfähige Evidence für KI-Systeme, Daten und Code – in einer operativen Control Plane.</p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -213,12 +238,15 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
             <Signal>Risk Score</Signal><div className="mt-1 text-4xl font-light">87<span className="text-lg text-slate-400">/100</span></div><div className="mt-2 h-1 rounded-full bg-slate-700"><div className="h-full w-[87%] rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee]" /></div>
           </GovernanceCard>
 
-          <GovernanceCard className="left-[8%] top-[50%] w-44 sm:left-[14%] xl:left-[16%]">
-            <Signal>Evidence</Signal><div className="mt-1 text-3xl font-semibold">1,248</div><div className="text-xs text-slate-400">Nachweise</div>
+          <GovernanceCard className="left-[8%] top-[50%] w-48 sm:left-[14%] xl:left-[16%]">
+            <div className="flex items-start gap-3">
+              <FileText className="mt-1 h-7 w-7 shrink-0 text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,.4)]" />
+              <div><Signal>Evidence</Signal><div className="mt-1 text-3xl font-semibold">1,248</div><div className="text-xs text-slate-400">Nachweise</div></div>
+            </div>
           </GovernanceCard>
 
           <GovernanceCard className="right-[9%] top-[43%] w-64 sm:right-[14%] xl:right-[17%]">
-            <Signal>Claude Code Audit</Signal><div className="mt-2 flex items-baseline gap-2"><span className="text-4xl font-light">94.2%</span><span className="text-xs text-slate-300">Code-Ready</span></div><p className="mt-2 text-xs leading-5 text-slate-300">Analysierte Codezeilen: 2.1 Mio<br />Sicherheitslücken behoben: 11,350</p>
+            <div className="flex items-center gap-2"><SquareCheckBig className="h-4 w-4 text-cyan-300" /><Signal>Claude Code Audit</Signal></div><div className="mt-2 flex items-baseline gap-2"><span className="text-4xl font-light">94.2%</span><span className="text-xs text-slate-300">Code-Ready</span></div><p className="mt-2 text-xs leading-5 text-slate-300">Analysierte Codezeilen: 2.1 Mio<br />Sicherheitslücken behoben: 11,350</p>
           </GovernanceCard>
 
           <GovernanceCard className="left-[42%] top-[71%] w-44 xl:left-[39%]">
@@ -226,8 +254,12 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
           </GovernanceCard>
 
           <GovernanceCard className="right-[1%] top-[68%] w-44 sm:right-[3%] xl:right-[5%]">
-            <div className="flex items-center gap-3"><ShieldCheck className="h-7 w-7 text-cyan-300" /><div className="text-sm font-semibold">EU AI ACT<br />READY</div></div>
+            <div className="flex items-center gap-3"><SquareCheckBig className="h-7 w-7 text-cyan-300 drop-shadow-[0_0_10px_rgba(34,211,238,.4)]" /><div className="text-sm font-semibold">EU AI ACT<br />READY</div></div>
           </GovernanceCard>
+
+          <UserNode className="left-[38%] top-[9%]" />
+          <UserNode className="left-[18%] top-[38%]" />
+          <UserNode className="right-[2%] top-[34%]" />
 
           {/* Truth Layer (docs/architecture/target-architecture.md §3.1): Ein
               anonymer Besucher hat keinen Mandanten und damit keine belegbaren
@@ -235,7 +267,10 @@ export default function GovernanceHero({ onStart }: HeroSectionProps) {
               Bildschirm stehen, nicht nur im Code, sonst behauptet die Seite
               Messwerte, die es nicht gibt. Aus demselben Grund traegt die
               Monitoring-Karte kein "Live" mehr: nichts davon laeuft live. */}
-          <p className="absolute inset-x-4 bottom-0 z-20 text-center text-[11px] leading-relaxed text-slate-400/80 sm:inset-x-10">
+          {/* Auf grossen Schirmen sitzt der Hinweis unter dem Kartenfeld. Auf
+              schmalen stapeln die Karten und schoben ihn unter die Falz — dort
+              erfuellt er seinen Zweck nicht, also steht er dort im Fluss. */}
+          <p className="relative z-20 mt-6 text-center text-[11px] leading-relaxed text-slate-400/80 lg:absolute lg:inset-x-10 lg:bottom-0 lg:mt-0">
             Beispielansicht mit Musterwerten. Ihre echten Kennzahlen entstehen mit dem ersten Audit.
           </p>
         </div>

@@ -51,9 +51,12 @@ beforeEach(() => {
   (globalThis as unknown as { IntersectionObserver: typeof MockIO }).IntersectionObserver = MockIO;
 });
 
+// '/pricing' statt '/': Auf der Startseite ist der Chip seit dem Gemini-Hero
+// ausgeblendet (der Hero bringt eine eigene AssistantBar mit) — die
+// Verhaltens-Tests brauchen eine Route, auf der der Chip sichtbar ist.
 function renderChipWithHero({ withHero }: { withHero: boolean }) {
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={['/pricing']}>
       {withHero && <form data-hero-cta><button>Run Scan</button></form>}
       <AssistentChip />
     </MemoryRouter>,
@@ -97,6 +100,15 @@ describe('<AssistentChip>', () => {
     expect(btn.className).toMatch(/opacity-100/);
     expect(btn).not.toHaveAttribute('aria-hidden');
     expect(btn).toHaveAttribute('tabindex', '0');
+  });
+
+  it('hides on the landing page — the hero ships its own AssistantBar', () => {
+    const { queryByLabelText } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <AssistentChip />
+      </MemoryRouter>,
+    );
+    expect(queryByLabelText('Assistent öffnen')).toBeNull();
   });
 
   it('hides entirely on auth-gated routes', () => {

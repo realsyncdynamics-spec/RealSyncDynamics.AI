@@ -23,15 +23,18 @@ const DETAIL_SLUGS = [
   'partner_yearly',
 ];
 
+// Nur Pläne mit `purchaseMode: 'checkout'` (shared/pricing.ts) bleiben auf der
+// Checkout-Seite stehen. `partner` ist 'inquiry' und leitet auf /contact-sales
+// um — in dieser Liste erzeugte er ein Rennen zwischen page.goto und dem
+// Redirect, das der Test mal gewann und mal verlor. Der Redirect wird unten
+// eigens geprüft statt hier ignoriert.
 const CHECKOUT_PLAN_KEYS = [
   'starter',
   'growth',
   'agency',
-  'partner',
   'starter_yearly',
   'growth_yearly',
   'agency_yearly',
-  'partner_yearly',
 ];
 
 test.describe('Pricing Flow', () => {
@@ -107,6 +110,14 @@ test.describe('Pricing Flow', () => {
         await page.waitForLoadState('domcontentloaded');
 
         expect(page.url()).toContain(`/checkout/${planKey}`);
+      }
+    });
+
+    test('partner checkout should redirect to contact-sales', async ({ page }) => {
+      for (const planKey of ['partner', 'partner_yearly']) {
+        await page.goto(`${BASE_URL}/checkout/${planKey}`);
+        await page.waitForURL(/\/contact-sales/);
+        await expect(page).toHaveURL(/plan=partner/);
       }
     });
 

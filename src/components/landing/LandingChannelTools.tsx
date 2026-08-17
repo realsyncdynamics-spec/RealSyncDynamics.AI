@@ -113,7 +113,7 @@ export function LandingChannelTools() {
                 </Link>
                 {!live && (
                   <p className="mt-3 text-[11px] leading-relaxed text-white/35">
-                    Das Backend dieses Moduls ist noch nicht in Produktion. Wir zeigen es an, statt einen Konfigurator anzubieten, der nichts speichert.
+                    Der Bot lässt sich bereits anlegen — beantworten kann er noch nichts. Die Laufzeit-Functions sind nicht in Produktion.
                   </p>
                 )}
               </div>

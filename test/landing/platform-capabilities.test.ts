@@ -137,6 +137,54 @@ describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () 
   });
 });
 
+describe('Kaufwege für Module ohne Laufzeit tragen einen Hinweis', () => {
+  /**
+   * Diese Seiten bewerben die Bot-Laufzeit und führen zu Anmeldung oder
+   * Checkout. `/pricing/whatsapp` verlinkt direkt auf
+   * `/checkout/growth?channel=whatsapp` — und Growth führt das Modul
+   * `whatsapp` laut `shared/pricing.ts` als enthaltene Leistung.
+   *
+   * Solange die vier Bot-Functions nicht deployt sind, kann ein Kunde dort
+   * für etwas bezahlen, das keine Nachricht beantwortet. Der Hinweis muss
+   * deshalb auf dem Kaufweg stehen, nicht im Kleingedruckten.
+   *
+   * Nicht in dieser Liste, bewusst: `/ai-dsgvo-bot`. Das ist ein
+   * Compliance-Copilot über `ai-gateway`/`ai-invoke` — beide in Produktion.
+   * Eine Warnung dort wäre so falsch wie eine fehlende hier.
+   */
+  const PURCHASE_PATHS = [
+    'src/pages/WhatsAppPricingPage.tsx',
+    'src/pages/product-entry-points/ChatbotStartPage.tsx',
+    'src/pages/product-entry-points/PhonebotStartPage.tsx',
+  ];
+
+  const botsCapability = PLATFORM_CAPABILITIES.find((c) => c.id === 'bots');
+
+  it.each(PURCHASE_PATHS)('%s weist den Zustand der Bot-Laufzeit aus', (rel) => {
+    if (botsCapability?.status === 'live') return; // Hinweis entfällt zu Recht.
+    const source = readFileSync(resolve(__dirname, '../..', rel), 'utf8');
+    expect(
+      source,
+      `${rel} bewirbt die Bot-Laufzeit und führt zu Anmeldung oder Checkout, ` +
+        'ohne auszuweisen, dass sie nicht in Produktion ist.',
+    ).toContain('CapabilityAvailabilityNotice');
+    expect(source).toContain('capabilityId="bots"');
+  });
+
+  it('der Hinweis verschwindet durch das Deployment, nicht durch einen Commit', () => {
+    const component = readFileSync(
+      resolve(__dirname, '../../src/components/landing/CapabilityAvailabilityNotice.tsx'),
+      'utf8',
+    );
+    expect(
+      component,
+      'Der Hinweis muss sich aus platform-capabilities.ts ableiten. Sonst muss ' +
+        'jemand daran denken, ihn zu entfernen — und genau das passiert nicht.',
+    ).toContain("status === 'live'");
+    expect(component).toContain('PLATFORM_CAPABILITIES');
+  });
+});
+
 describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
   const landing = readFileSync(
     resolve(__dirname, '../../src/pages/MainLanding.tsx'),

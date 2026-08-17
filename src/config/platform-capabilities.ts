@@ -99,12 +99,18 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'bots',
-    name: 'WhatsApp- & Telefonbot',
+    // Nicht „WhatsApp- & Telefonbot": `bot-chat` bedient auch den Website-Chat.
+    // Der frühere Name legte nahe, der Website-Bot sei davon nicht betroffen.
+    name: 'Bot-Laufzeit — Chat, WhatsApp, Telefon',
     description:
       'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.',
     status: 'building',
     backedBy: ['bot-chat', 'bot-voice-webhook', 'appointment-book', 'order-intake'],
-    note: 'Keine der vier tragenden Functions ist in Produktion (Messung 2026-08-17).',
+    // Genau diese Trennung, weil sie den Kunden unterschiedlich trifft: Die
+    // Tabellen (bots, bot_conversations, bot_messages, bot_appointments,
+    // bot_orders) existieren in Produktion mit RLS — Anlegen und Speichern
+    // funktioniert. Keine der vier Functions ist deployt — Antworten nicht.
+    note: 'Bots lassen sich anlegen und speichern; die Laufzeit, die Nachrichten beantwortet, ist nicht in Produktion (Messung 2026-08-17).',
   },
   {
     id: 'ai-gateway',

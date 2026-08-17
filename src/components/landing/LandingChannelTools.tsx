@@ -50,7 +50,7 @@ export function LandingChannelTools() {
             Ihre KI-Kanäle. <span className="text-cyan-400">Eine Governance-Ebene.</span>
           </h2>
           <p className="mt-5 max-w-2xl leading-relaxed text-white/55">
-            Website, Code, WhatsApp und Telefon laufen nicht als isolierte Tools. Sie werden über dieselbe Governance-Runtime, Policy Engine und Evidence-Schicht kontrollierbar.
+            Website, Code, WhatsApp und Telefon laufen nicht als isolierte Tools. Sie werden über dieselbe Governance-Runtime, Risikobewertung und Nachweis-Schicht kontrollierbar.
           </p>
         </div>
 

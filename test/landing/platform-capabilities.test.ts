@@ -65,11 +65,23 @@ describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () 
     }
   });
 
-  it('die vier gemessenen Lücken stehen nicht auf live', () => {
-    // Am 2026-08-17 gegen Produktion gemessen: diese Functions sind nicht
-    // deployt. Wer eine davon auf 'live' hebt, muss vorher neu messen — und
-    // dann fällt dieser Test auf, statt dass die Landing still lügt.
-    const notDeployed = ['evidence-vault', 'policy-packs', 'provenance', 'c2pa-manifest-generate'];
+  it('die gemessenen Lücken stehen nicht auf live', () => {
+    // Am 2026-08-17 (zweite Messung, nachmittags) gegen Produktion geprüft:
+    // diese Functions sind nicht deployt.
+    //
+    // Die Liste hat sich am selben Tag geändert — `evidence-vault`,
+    // `policy-packs` und `provenance` wurden zwischen den beiden Messungen
+    // deployt. Wer hier etwas streicht oder ergänzt, misst vorher gegen
+    // `supabase functions list` und zieht CAPABILITIES_MEASURED_AT mit.
+    //
+    // Grenze des Tests, ausdrücklich: Er kennt nur diese handgepflegte Liste.
+    // Eine Function, die niemand hier einträgt, kann unbemerkt auf 'live'
+    // stehen — genau so stand „WhatsApp- & Telefonbot" mit 0 von 4 deployten
+    // Functions als verfügbar auf der Startseite.
+    const notDeployed = [
+      'bot-chat', 'bot-voice-webhook', 'appointment-book', 'order-intake',
+      'ai-act-auto-classify', 'c2pa-manifest-generate',
+    ];
     const wrongly = LIVE_CAPABILITIES
       .filter((cap) => cap.backedBy.some((fn) => notDeployed.includes(fn)))
       .map((cap) => cap.name);
@@ -159,17 +171,25 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
   });
 
   it('die Statuszeilen zeigen nur Module mit deploytem Backend', () => {
-    // Die frühere Zeile „EVIDENCE CHAIN · VERIFIED" gehörte zum Evidence
-    // Vault. Ein Beispiel für ein Modul, das es in Produktion nicht gibt,
-    // ist auch nur eine Behauptung — nur eine bebilderte.
-    const buildingWords = BUILDING_CAPABILITIES
-      .map((c) => c.name.toUpperCase().replace(/\s*\(.*\)/, ''))
-      .concat('EVIDENCE CHAIN');
+    // Ein Beispiel für ein Modul, das es in Produktion nicht gibt, ist auch nur
+    // eine Behauptung — nur eine bebilderte.
+    //
+    // Auf ganze Modulnamen zu prüfen reicht nicht: Die Zeile „WHATSAPP / VOICE"
+    // enthält den Namen „WhatsApp- & Telefonbot" nicht und rutschte deshalb
+    // durch, obwohl sie genau dieses Modul zeigte. Geprüft wird darum jedes
+    // aussagekräftige Wort des Namens einzeln.
+    const buildingWords = BUILDING_CAPABILITIES.flatMap((c) =>
+      c.name
+        .toUpperCase()
+        .split(/[^A-ZÄÖÜ0-9]+/)
+        .filter((w) => w.length > 3),
+    );
+    expect(buildingWords.length, 'Keine Wörter zum Prüfen extrahiert').toBeGreaterThan(0);
     for (const row of RUNTIME_PREVIEW_ROWS) {
       for (const word of buildingWords) {
         expect(
           row.label.toUpperCase(),
-          `Die Beispielzeile „${row.label}" zeigt ein Modul ohne Backend.`,
+          `Die Beispielzeile „${row.label}" zeigt „${word}" — ein Modul ohne Backend in Produktion.`,
         ).not.toContain(word);
       }
     }

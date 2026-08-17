@@ -56,13 +56,15 @@ export interface RuntimePreviewRow {
 }
 
 /**
- * Statuszeilen. Bewusst nur Module mit deploytem Backend — die frühere Zeile
- * „EVIDENCE CHAIN · VERIFIED" gehörte zum Evidence Vault, der nicht in
- * Produktion läuft.
+ * Statuszeilen. Bewusst nur Module mit deploytem Backend.
+ *
+ * Die Zeile „WHATSAPP / VOICE · GOVERNED" ist entfallen: Von den vier Functions
+ * hinter dem Bot-Modul ist keine in Produktion (Messung 2026-08-17). An ihre
+ * Stelle tritt der Evidence Vault, der am selben Tag deployt wurde.
  */
 export const RUNTIME_PREVIEW_ROWS: readonly RuntimePreviewRow[] = [
   { label: 'DSGVO / CONSENT', state: 'PASS', tone: 'ok' },
   { label: 'EU AI ACT', state: 'READY', tone: 'ok' },
-  { label: 'WHATSAPP / VOICE', state: 'GOVERNED', tone: 'info' },
+  { label: 'EVIDENCE VAULT', state: 'VERIFIED', tone: 'info' },
   { label: 'NACHWEIS-EXPORT', state: 'BEREIT', tone: 'info' },
 ];

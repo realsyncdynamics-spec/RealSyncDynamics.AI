@@ -31,6 +31,7 @@ export const WAITLIST_INTERESTS = [
   { value: 'runtime', label: 'Governance Runtime' },
   { value: 'siteos', label: 'SiteOS / Website-Ebene' },
   { value: 'evidence', label: 'Evidence Vault' },
+  { value: 'bots', label: 'WhatsApp- & Telefonbot' },
   { value: 'provenance', label: 'Herkunftsnachweis (C2PA)' },
   { value: 'audit', label: 'DSGVO-Audit' },
   { value: 'other', label: 'Etwas anderes' },

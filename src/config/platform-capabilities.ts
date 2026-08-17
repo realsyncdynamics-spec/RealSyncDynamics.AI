@@ -4,16 +4,28 @@
  * ## Warum diese Datei existiert
  *
  * Am 2026-08-17 wurde der Produktionsstand gegen das Live-Projekt gemessen
- * (`RealSyncDynamicsLive`, eu-central-1). Ergebnis: Von 180 Edge Functions im
- * Repository laufen **100** in Produktion. Vier Module, die die Startseite als
- * fertig auswies, haben dort **kein Backend**:
- *
- *   evidence-vault · policy-packs · provenance · c2pa-manifest-generate
+ * (`RealSyncDynamicsLive`, eu-central-1, `supabase functions list`). Ergebnis:
+ * Von 180 Edge Functions im Repository laufen **100** in Produktion.
  *
  * Ein Compliance-Produkt, das Nachweisbarkeit verkauft, darf auf seiner eigenen
  * Startseite keine Fähigkeit behaupten, die es nicht erbringt. Deshalb steht
  * hier, was jedes Modul trägt — und die Landing rendert daraus, statt eine
  * separate Marketingliste zu pflegen, die auseinanderläuft.
+ *
+ * ## Warum diese Datei zweimal an einem Tag korrigiert wurde
+ *
+ * Die erste Fassung stützte sich auf eine Messung vom Vormittag und stellte
+ * `evidence-vault`, `policy-packs` und `provenance` auf `'building'`. Die zweite
+ * Messung am selben Tag zeigte sie als deployt — dazwischen lief ein Deploy.
+ *
+ * Gleichzeitig fiel der umgekehrte, schwerere Fehler auf: „WhatsApp- &
+ * Telefonbot" stand auf `'live'`, obwohl **keine** der vier tragenden Functions
+ * in Produktion ist. Der Test hatte das nicht gefunden, weil er Existenz im
+ * Repository prüft, nicht Deployment — das kann er ohne Live-Zugriff auch nicht.
+ *
+ * Daraus die eigentliche Lehre: `status` ist eine **Momentaufnahme mit
+ * Verfallsdatum**, kein Attribut. Wer sie liest, ohne neu zu messen, liest
+ * Geschichte.
  *
  * ## Regeln
  *
@@ -62,7 +74,9 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     description:
       'KI-Systeme nach Risikoklasse einordnen, Anforderungen ableiten und den Bestand als Inventar führen.',
     status: 'live',
-    backedBy: ['ai-act-classify', 'ai-act-auto-classify', 'ai-act-risk-inventory'],
+    // `ai-act-auto-classify` gehört bewusst nicht dazu: nicht in Produktion.
+    // Die Klassifizierung arbeitet ohne sie, die Automatik ist der Aufsatz.
+    backedBy: ['ai-act-classify', 'ai-act-risk-inventory'],
   },
   {
     id: 'governance-runtime',
@@ -88,8 +102,9 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     name: 'WhatsApp- & Telefonbot',
     description:
       'Kundenkommunikation über Chat und Sprache auf derselben Governance-Ebene — mit Prüfpfad je Gespräch.',
-    status: 'live',
+    status: 'building',
     backedBy: ['bot-chat', 'bot-voice-webhook', 'appointment-book', 'order-intake'],
+    note: 'Keine der vier tragenden Functions ist in Produktion (Messung 2026-08-17).',
   },
   {
     id: 'ai-gateway',
@@ -104,18 +119,16 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     name: 'Evidence Vault',
     description:
       'Hash-verkettete Nachweiskette mit Aufbewahrung, Compliance-Hold und Integritätsprüfung.',
-    status: 'building',
+    status: 'live',
     backedBy: ['evidence-vault'],
-    note: 'Datenmodell steht, Backend noch nicht in Produktion.',
   },
   {
     id: 'policy-engine',
     name: 'Policy Engine',
     description:
       'Governance-Regeln nicht nur dokumentieren, sondern als ausführbare Kontrolllogik durchsetzen.',
-    status: 'building',
+    status: 'live',
     backedBy: ['policy-packs'],
-    note: 'Regelwerke vorbereitet, Ausführungsschicht noch nicht in Produktion.',
   },
   {
     id: 'provenance',
@@ -124,7 +137,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
       'Inhalte signieren und ihre Herkunft überprüfbar machen — Ed25519, C2PA Content Credentials.',
     status: 'building',
     backedBy: ['provenance', 'c2pa-manifest-generate'],
-    note: 'Signaturverfahren implementiert, Dienst noch nicht in Produktion.',
+    note: 'Signaturdienst läuft, die C2PA-Manifest-Erzeugung noch nicht in Produktion.',
   },
 ];
 

@@ -12,43 +12,62 @@
 # HTML darf NICHT stundenlang gecacht werden: mit dem frueheren
 # `max-age=3600, s-maxage=86400` lieferten Browser/Edges nach einem Deploy bis zu
 # 24 h den alten Stand — ein frischer Deploy war auf der Domain nicht sichtbar.
-# Statische Assets bekommen ihre langen Cache-Zeiten unten explizit zurueck.
+#
+# WICHTIG — `! Cache-Control` in jeder spezifischeren Regel: Pages ueberschreibt
+# Header aus frueheren Regeln NICHT, sondern haengt sie aneinander. Ohne Detach
+# liefern Assets `max-age=0, must-revalidate, max-age=31536000, immutable` in
+# EINEM Header — laut RFC 9111 gilt eine Response mit doppeltem max-age als
+# stale, das lange Asset-Caching waere damit faktisch abgeschaltet.
 
 /index.html
+  ! Cache-Control
   Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
 
 /assets/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /*.js
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /*.css
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 # Bilder/Fonts ausserhalb von /assets/ (public/-Dateien wie europe-globe.webp):
 # lange cachen, aber nicht immutable — sie sind nicht content-gehasht.
 /*.webp
+  ! Cache-Control
   Cache-Control: public, max-age=86400, s-maxage=604800
 /*.jpg
+  ! Cache-Control
   Cache-Control: public, max-age=86400, s-maxage=604800
 /*.png
+  ! Cache-Control
   Cache-Control: public, max-age=86400, s-maxage=604800
 /*.svg
+  ! Cache-Control
   Cache-Control: public, max-age=86400, s-maxage=604800
 /*.avif
+  ! Cache-Control
   Cache-Control: public, max-age=86400, s-maxage=604800
 /*.ico
+  ! Cache-Control
   Cache-Control: public, max-age=86400, s-maxage=604800
 /*.woff2
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /api/*
+  ! Cache-Control
   Cache-Control: private, max-age=0, no-cache
 
 /governance/*
+  ! Cache-Control
   Cache-Control: public, max-age=300, s-maxage=3600
 
 /audit/*
+  ! Cache-Control
   Cache-Control: public, max-age=60, s-maxage=600

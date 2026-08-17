@@ -105,7 +105,14 @@ Jeder externe Call wird in `ai_tool_runs` / `workflow_runs` geloggt.
 
 **Production: Cloudflare**
 - **Cloudflare Pages** (`wrangler.toml` → `pages_build_output_dir = "dist"`)
-- Deploy via GitHub Actions → `wrangler pages deploy dist`
+- **Deploy-Pfad (Ist)**: Cloudflares **native Git-Integration** baut und deployt bei
+  jedem Push auf `main` eigenständig (Dashboard-Build: `npm run build`).
+  Der Actions-Workflow `deploy-cloudflare-pages.yml` baut nur zur Validierung und
+  deployt **erst**, wenn `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` als
+  Repo-Secrets gesetzt sind (Cutover: `docs/runbooks/cloudflare-actions-deploy-cutover.md`).
+  Ein grüner Actions-Build allein ist **kein** Deployment-Nachweis — dafür gibt es
+  den Job `verify-live`, der den `<meta name="rsd-build">`-Commit-Stempel
+  (injiziert in `vite.config.ts`) gegen die Live-Domain prüft.
 - Cloudflare Workers / KV / R2 wo sinnvoll (Phase 3, siehe `PHASE_3_CLOUDFLARE_OPTIMIZATION.md`)
 - Edge-Config: `_headers`, `_redirects`
 

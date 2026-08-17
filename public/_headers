@@ -6,26 +6,68 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Content-Security-Policy: default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
-  Cache-Control: public, max-age=3600, s-maxage=86400
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Der Catch-all oben trifft auch alle prerenderten HTML-Routen (/, /pricing, …).
+# HTML darf NICHT stundenlang gecacht werden: mit dem frueheren
+# `max-age=3600, s-maxage=86400` lieferten Browser/Edges nach einem Deploy bis zu
+# 24 h den alten Stand — ein frischer Deploy war auf der Domain nicht sichtbar.
+#
+# WICHTIG — `! Cache-Control` in jeder spezifischeren Regel: Pages ueberschreibt
+# Header aus frueheren Regeln NICHT, sondern haengt sie aneinander. Ohne Detach
+# liefern Assets `max-age=0, must-revalidate, max-age=31536000, immutable` in
+# EINEM Header — laut RFC 9111 gilt eine Response mit doppeltem max-age als
+# stale, das lange Asset-Caching waere damit faktisch abgeschaltet.
 
 /index.html
-  Cache-Control: public, max-age=0, s-maxage=3600, must-revalidate
+  ! Cache-Control
+  Cache-Control: public, max-age=0, must-revalidate
   X-Content-Type-Options: nosniff
 
 /assets/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /*.js
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /*.css
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# Bilder/Fonts ausserhalb von /assets/ (public/-Dateien wie europe-globe.webp):
+# lange cachen, aber nicht immutable — sie sind nicht content-gehasht.
+/*.webp
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, s-maxage=604800
+/*.jpg
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, s-maxage=604800
+/*.png
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, s-maxage=604800
+/*.svg
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, s-maxage=604800
+/*.avif
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, s-maxage=604800
+/*.ico
+  ! Cache-Control
+  Cache-Control: public, max-age=86400, s-maxage=604800
+/*.woff2
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 /api/*
+  ! Cache-Control
   Cache-Control: private, max-age=0, no-cache
 
 /governance/*
+  ! Cache-Control
   Cache-Control: public, max-age=300, s-maxage=3600
 
 /audit/*
+  ! Cache-Control
   Cache-Control: public, max-age=60, s-maxage=600

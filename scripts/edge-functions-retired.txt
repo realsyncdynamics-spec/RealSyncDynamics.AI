@@ -1,0 +1,33 @@
+# Bewusst ausser Betrieb genommene Edge Functions ("retired").
+#
+# Diese Functions existieren weiter unter supabase/functions/ — ihr Code bleibt
+# erhalten und ist jederzeit redeploybar —, sind aber absichtlich NICHT in
+# Produktion. Der Deploy-Workflow ueberspringt sie.
+#
+# Warum diese Liste noetig ist: `deploy.yml` schaltet bei einer Aenderung an
+# supabase/config.toml oder supabase/functions/_shared/* auf deploy_all um und
+# deployt dann jedes Verzeichnis. Ohne diese Liste wuerden die im Slot-Swap
+# (free-plan-slot-swap.yml) freigegebenen Slots beim naechsten solchen Merge
+# still wieder von genau den Functions belegt, die dafuer entfernt wurden —
+# und das Free-Plan-Kontingent waere erneut voll.
+#
+# Befund und Auswahlkriterium (Messung 2026-08-16): keine einzige Referenz im
+# Repo-Aufrufkorpus und 0 Invocations in den Edge-Logs.
+# Kontext: docs/runbooks/edge-function-konsolidierung.md
+#
+# Eintrag entfernen = Function wird beim naechsten Deploy wieder angelegt.
+# Das braucht einen freien Slot; vorher docs/runbooks/edge-function-kontingent.md
+# pruefen.
+
+pitch-deck-pdf
+hostinger-agent-brief
+mfa-admin-reset
+governance-analytics-aggregator
+legal-embed
+appointment-book
+bot-chat
+bot-voice-webhook
+order-intake
+agent-scheduler
+ai-act-auto-classify
+api-gateway

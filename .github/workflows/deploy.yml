@@ -155,6 +155,37 @@ jobs:
             done < <(find supabase/functions -mindepth 1 -maxdepth 1 -type d | sort)
           fi
 
+          # Ausser Betrieb genommene Functions herausfiltern. Ohne diesen Schritt
+          # legt ein deploy_all-Lauf (config.toml- oder _shared-Aenderung) die im
+          # Slot-Swap entfernten Functions wieder an — die freigegebenen Slots des
+          # Free-Plans waeren sofort wieder belegt.
+          retired_file="scripts/edge-functions-retired.txt"
+          if [ -f "$retired_file" ]; then
+            declare -A retired=()
+            while IFS= read -r line; do
+              line="${line%%#*}"
+              line="$(echo "$line" | tr -d '[:space:]')"
+              [ -n "$line" ] && retired[$line]=1
+            done < "$retired_file"
+
+            kept=()
+            skipped=""
+            # Leeres Array unter `set -u` abgesichert: hier ist noch nicht
+            # geprueft, ob ueberhaupt eine Function ansteht.
+            for name in "${functions[@]+"${functions[@]}"}"; do
+              if [ -n "${retired[$name]+x}" ]; then
+                skipped="$skipped $name"
+              else
+                kept+=("$name")
+              fi
+            done
+            functions=("${kept[@]+"${kept[@]}"}")
+            if [ -n "$skipped" ]; then
+              echo "Uebersprungen (ausser Betrieb, $retired_file):$skipped"
+              echo "Übersprungen (außer Betrieb):$skipped" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
           if [ "${#functions[@]}" -eq 0 ]; then
             echo "Keine geänderte Edge Function — Deploy übersprungen." >> "$GITHUB_STEP_SUMMARY"
             exit 0

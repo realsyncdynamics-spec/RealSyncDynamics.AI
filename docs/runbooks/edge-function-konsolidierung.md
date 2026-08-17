@@ -65,6 +65,22 @@ keinen Slot-Tausch mehr.
   importieren Handler aus den alten Verzeichnissen — nach Abschluss jeder
   Stufe werden die alten Verzeichnisse in den Router gezogen und gelöscht,
   sonst deployt der Pfad-Filter ins Leere.
+
+- **`deploy_all` macht Slot-Freigaben rückgängig — abgesichert.** Ändert ein
+  Merge `supabase/config.toml` oder `supabase/functions/_shared/*`, deployt
+  `deploy.yml` *jedes* Verzeichnis, nicht nur die geänderten. Für aus
+  Produktion entfernte Functions heißt das: freier Slot vorhanden → sie werden
+  wieder angelegt, und das Kontingent ist erneut voll. Jede Konsolidierungs-
+  stufe ändert `config.toml`, löst also genau diesen Pfad aus.
+  Gegenmaßnahme: [`scripts/edge-functions-retired.txt`](../../scripts/edge-functions-retired.txt)
+  listet die bewusst außer Betrieb genommenen Slugs; der Deploy-Job filtert sie
+  heraus und protokolliert das in der Job-Summary. Regel nach jeder Löschung
+  einer Live-Function, im selben PR zu erledigen:
+  **Verzeichnis bleibt im Repo → Slug in die Retired-Liste.**
+  **Verzeichnis wird mitgelöscht** (Normalfall der Konsolidierung: der Handler
+  zieht in den Router um) **→ nichts nötig**, `deploy_all` findet dann kein
+  Verzeichnis mehr. Wird beides versäumt, hält die Slot-Freigabe nur bis zum
+  nächsten `config.toml`-Merge.
 - **`supabase/config.toml`** führt `verify_jwt` je Function — jede Stufe zieht
   die Einträge nach (alte raus, Router rein), sonst schlägt der Drift-Guard an.
 - **pg_cron-Ziele** (`memory-decay-worker`, `scheduler-dispatch`,

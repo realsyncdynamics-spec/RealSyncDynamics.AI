@@ -56,6 +56,7 @@ jobs:
         run: |
           if [ -n "$CF_API_TOKEN" ] && [ -n "$CF_ACCOUNT_ID" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "## Deploy-Pfad: GitHub Actions (wrangler pages deploy)" >> "$GITHUB_STEP_SUMMARY"
           elif [ "$CF_ACTIONS_CANONICAL" = "true" ]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::error::Cloudflare Actions deploy is required but credentials are missing."
@@ -63,6 +64,14 @@ jobs:
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Cloudflare Actions deploy skipped; native Cloudflare Git integration remains the deployment path."
+            {
+              echo "## ⚠️ Deploy-Pfad: Cloudflare-Git-Integration (NICHT dieser Workflow)"
+              echo ""
+              echo "Dieser Workflow **baut nur** (CLOUDFLARE_API_TOKEN/ACCOUNT_ID nicht gesetzt)."
+              echo "Ein grüner Build hier heißt NICHT, dass deployt wurde — das Live-Deployment"
+              echo "macht Cloudflares Git-Integration eigenständig. Ob der Stand wirklich live"
+              echo "ist, prüft der Job **verify-live** unten."
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -121,6 +130,65 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=realsyncdynamics-ai --branch=main
+
+  # Prüft, ob der gepushte Commit die Domain wirklich erreicht hat — egal ob per
+  # Actions-Deploy oder per Cloudflare-Git-Integration. Grundlage ist der
+  # <meta name="rsd-build">-Stempel aus vite.config.ts. Läuft NUR für main-Pushes:
+  # PR-Builds deployen nicht und würden hier immer scheitern.
+  verify-live:
+    name: Verify commit reached live domain
+    needs: [build, deploy]
+    if: always() && needs.build.result == 'success' && github.ref == 'refs/heads/main' && needs.deploy.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+      - name: Poll live build stamp
+        run: |
+          set -u
+          BASE="https://realsyncdynamicsai.de"
+          WANT="${{ github.sha }}"
+          echo "Erwarteter Commit: $WANT"
+          deadline=$((SECONDS + 1500))  # 25 min — Pages-Git-Build braucht einige Minuten
+          while [ $SECONDS -lt $deadline ]; do
+            live=$(curl -sS --max-time 20 -H 'Cache-Control: no-cache' "$BASE/?nocache=$SECONDS" \
+              | grep -oE '<meta name="rsd-build" content="[0-9a-f]{7,40}"' \
+              | grep -oE '[0-9a-f]{7,40}' | tail -1 || true)
+            if [ -z "$live" ]; then
+              echo "Noch kein rsd-build-Marker im Live-HTML (alter Build ohne Stempel?) — warte…"
+            elif [ "$live" = "$WANT" ]; then
+              echo "✅ Live-Domain liefert $live — Deployment bestätigt."
+              echo "verify-live: ✅ Domain liefert Commit \`$live\`" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            elif git merge-base --is-ancestor "$WANT" "$live" 2>/dev/null; then
+              echo "✅ Live-Domain liefert $live, das diesen Commit enthält (neuerer Push hat überholt)."
+              echo "verify-live: ✅ Domain liefert Nachfolger-Commit \`$live\`" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            else
+              echo "Live liefert $live, erwartet $WANT — warte auf Propagation…"
+            fi
+            sleep 30
+          done
+          echo "::error::Build war grün, aber die Domain liefert diesen Commit nach 25 min nicht. Cloudflare-Pages-Git-Integration (Dashboard → Deployments) und Zonen-Cache prüfen."
+          {
+            echo "verify-live: ❌ Domain liefert Commit \`${live:-unbekannt}\` statt \`$WANT\`."
+            echo "→ Cloudflare Dashboard → Pages → realsyncdynamics-ai → Deployments prüfen."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+      - name: Check critical routes
+        run: |
+          BASE="https://realsyncdynamicsai.de"
+          ROUTES="/ /pricing /audit /governance-runtime /app"
+          FAILED=""
+          for path in $ROUTES; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 15 "${BASE}${path}" || echo "000")
+            echo "${path} → HTTP ${code}"
+            if [ "$code" != "200" ]; then FAILED="$FAILED $path($code)"; fi
+          done
+          if [ -n "$FAILED" ]; then echo "::error::Route-Check failed:$FAILED"; exit 1; fi
+          echo "✓ All routes returned 200"
 
   smoke-test:
     name: Smoke test live routes

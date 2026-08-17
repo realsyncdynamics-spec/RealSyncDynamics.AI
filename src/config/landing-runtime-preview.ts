@@ -14,57 +14,57 @@
  *
  * Eine Seite, die zwei Abschnitte weiter unten „Evidence statt Behauptung"
  * schreibt, darf im Hero keine Behauptung als Messwert ausgeben. Deshalb
- * bleibt das Panel — es zeigt, wie das Produkt aussieht — aber es ist als
+ * bleibt die Ansicht — sie zeigt, wie das Produkt aussieht — aber sie ist als
  * Beispiel gekennzeichnet, nicht als Zustand.
  *
  * ## Regeln
  *
  * - Diese Werte sind **Beispielwerte**. Sie dürfen nie ohne den Marker
  *   `RUNTIME_PREVIEW_LABEL` gerendert werden.
- * - Die Zeilen benennen nur Module, die in Produktion laufen
+ * - Es werden nur Module gezeigt, die in Produktion laufen
  *   (`src/config/platform-capabilities.ts`, `status: 'live'`). Ein Beispiel
- *   für ein Modul, das es nicht gibt, ist auch nur eine Behauptung.
+ *   für ein Modul, das es nicht gibt, ist auch nur eine Behauptung — nur eine
+ *   bebilderte. Die frühere Karte „WHATSAPP / VOICE · GOVERNED" ist genau
+ *   daran gescheitert: keine der vier Bot-Functions ist deployt.
+ * - Kumulative Unternehmenskennzahlen („2,1 Mio analysierte Codezeilen",
+ *   „11.350 behobene Sicherheitslücken") gehören **nicht** hierher. Das sind
+ *   keine Beispielwerte eines Kunden, sondern nachprüfbare Tatsachen-
+ *   behauptungen über RealSyncDynamics — belegt oder gar nicht.
  * - Echte Werte gehören hinter die Anmeldung, wo ein Tenant existiert.
  *   `test/landing/platform-capabilities.test.ts` hält das fest.
  */
 
-/** Kopfzeile des Panels. Ersetzt das frühere „LIVE" — das war unzutreffend. */
+/** Marker über der Kartengruppe. Ersetzt das frühere „LIVE" — das war unzutreffend. */
 export const RUNTIME_PREVIEW_LABEL = 'GOVERNANCE RUNTIME · BEISPIELANSICHT';
 
-/** Fußnote unter dem Panel. Sagt, woher echte Werte kommen. */
+/** Fußnote unter der Gruppe. Sagt, woher echte Werte kommen. */
 export const RUNTIME_PREVIEW_NOTE =
   'Beispielansicht des Dashboards. Ihre Werte entstehen mit dem ersten Scan.';
 
-export interface RuntimePreviewMetric {
+export interface RuntimePreviewCard {
+  id: string;
+  /** Kopfzeile der Karte, z. B. „RISK SCORE". */
   label: string;
+  /** Der angezeigte Wert — Zahl oder Zustand. */
   value: string;
-}
-
-/** Kacheln im Panel — illustrativ, nicht gemessen. */
-export const RUNTIME_PREVIEW_METRICS: readonly RuntimePreviewMetric[] = [
-  { label: 'RISK SCORE', value: '87/100' },
-  { label: 'EVIDENCE', value: '1,248' },
-  { label: 'AI SYSTEMS', value: '04' },
-  { label: 'CODE READY', value: '94.2%' },
-];
-
-export interface RuntimePreviewRow {
-  label: string;
-  state: string;
+  /** Optionale zweite Zeile, erklärt den Wert. */
+  detail?: string;
   /** 'ok' → grün, 'info' → cyan. Keine eigenen Farbwerte in der Komponente. */
   tone: 'ok' | 'info';
+  /** Anteil 0..1 für den Balken. Nur setzen, wo eine Skala sinnvoll ist. */
+  ratio?: number;
+  /**
+   * Horizontaler Versatz im Cluster (ab `lg`). Erzeugt die gestaffelte
+   * Anordnung des Entwurfs, ohne absolute Positionierung — die bricht auf
+   * Zwischenbreiten und bei längeren Texten.
+   */
+  offset: string;
 }
 
-/**
- * Statuszeilen. Bewusst nur Module mit deploytem Backend.
- *
- * Die Zeile „WHATSAPP / VOICE · GOVERNED" ist entfallen: Von den vier Functions
- * hinter dem Bot-Modul ist keine in Produktion (Messung 2026-08-17). An ihre
- * Stelle tritt der Evidence Vault, der am selben Tag deployt wurde.
- */
-export const RUNTIME_PREVIEW_ROWS: readonly RuntimePreviewRow[] = [
-  { label: 'DSGVO / CONSENT', state: 'PASS', tone: 'ok' },
-  { label: 'EU AI ACT', state: 'READY', tone: 'ok' },
-  { label: 'EVIDENCE VAULT', state: 'VERIFIED', tone: 'info' },
-  { label: 'NACHWEIS-EXPORT', state: 'BEREIT', tone: 'info' },
+export const RUNTIME_PREVIEW_CARDS: readonly RuntimePreviewCard[] = [
+  { id: 'gdpr',       label: 'DSGVO',          value: 'BESTANDEN', detail: 'Consent, Cookies, Drittanbieter', tone: 'ok',   offset: 'lg:ml-20' },
+  { id: 'risk',       label: 'RISK SCORE',     value: '87/100',    detail: 'Governance-Risiko, gewichtet',    tone: 'info', ratio: 0.87, offset: 'lg:ml-0' },
+  { id: 'evidence',   label: 'EVIDENCE VAULT', value: '1.248',     detail: 'Nachweise in der Hash-Kette',     tone: 'info', offset: 'lg:ml-28' },
+  { id: 'ai-act',     label: 'EU AI ACT',      value: 'BEREIT',    detail: 'Risikoklassen zugeordnet',        tone: 'ok',   offset: 'lg:ml-8' },
+  { id: 'monitoring', label: 'MONITORING',     value: 'AKTIV',     detail: 'Wiederkehrende Nachprüfung',      tone: 'info', offset: 'lg:ml-24' },
 ];

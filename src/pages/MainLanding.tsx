@@ -7,13 +7,20 @@ import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../config/platform-cap
 import {
   RUNTIME_PREVIEW_LABEL,
   RUNTIME_PREVIEW_NOTE,
-  RUNTIME_PREVIEW_METRICS,
-  RUNTIME_PREVIEW_ROWS,
+  RUNTIME_PREVIEW_CARDS,
 } from '../config/landing-runtime-preview';
+import { HERO_HEADLINE } from '../components/governance-frontend/hero-content';
 
 const BG = 'rgb(3, 7, 18)';
 const SANS = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
 const SERIF = "Georgia, 'Times New Roman', serif";
+
+/** Drei Säulen unter der Headline. Nur Module, die in Produktion laufen. */
+const HERO_PILLARS: readonly (readonly [string, string])[] = [
+  ['DSGVO-KONFORM', 'Nachweise, Prozesse und Richtlinien laufen automatisiert mit.'],
+  ['AI-ACT-BEREIT', 'Risikobewertung, Transparenz und Dokumentation je KI-System.'],
+  ['DURCHGEHEND', 'Wiederkehrende Nachprüfung, Meldungen und Belege statt Stichproben.'],
+];
 
 const GOVERNANCE_STEPS = [
   ['01', 'DISCOVER', 'KI-Systeme, Anwendungen, Datenflüsse und relevante Verarbeitungsvorgänge erfassen.'],
@@ -40,14 +47,102 @@ export function MainLanding() {
         title="RealSyncDynamics.AI — KI-Governance für DSGVO, EU AI Act & Code"
         description="Das KI-Betriebssystem für DSGVO, EU AI Act und Code-Compliance. Website-Governance, Claude Code Optimizer, Evidence Vault, Policy Packs, auditfähiger Nachweis-Export und kontinuierliches Monitoring in einer Runtime."
         canonical="/"
-        ogTitle="Sichern Sie die Zukunft Ihres KI-gesteuerten Unternehmens."
+        ogTitle="Das KI-Betriebssystem für DSGVO, EU AI Act & Code-Compliance"
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
       <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-cyan-400" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/unified-entry/scan" className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten</Link></nav></div></header>
 
       <main>
-        <section className="relative min-h-[820px] overflow-hidden"><div className="absolute inset-0"><picture><source srcSet="/europe-globe.webp" type="image/webp" /><img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-75" /></picture><div className="absolute inset-0 bg-gradient-to-r from-black via-black/95 to-black/30" /><div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/40" /></div><div className="relative z-10 mx-auto grid min-h-[820px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[.9fr_1.1fr] lg:px-10"><div className="max-w-3xl"><div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300"><Scan className="h-3.5 w-3.5" /> AI Governance Runtime</div><h1 className="text-5xl leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-8xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Sichern Sie die Zukunft Ihres <span className="text-cyan-400">KI-gesteuerten Unternehmens.</span></h1><p className="mt-7 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">Das KI-Betriebssystem für DSGVO, EU AI Act &amp; Code-Compliance. RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Nachweise kontinuierlich — Regeln, Prüfungen und Belege auf derselben Governance-Ebene.</p><div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/50"><span>✓ DSGVO</span><span>✓ EU AI Act</span><span>✓ Policy-Durchsetzung</span><span>✓ Continuous Monitoring</span><span>✓ Evidence Vault</span></div><div className="mt-9 flex flex-wrap gap-3"><Link to="/unified-entry/scan" className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link><a href="#tools" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 font-medium text-white transition hover:border-white/50 hover:bg-white/5">Live Tools ansehen</a></div><form onSubmit={startScan} className="mt-5 max-w-2xl"><div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row"><input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website für den kostenlosen Governance-Audit" aria-label="Website-URL für Governance-Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" /><button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-50">Audit starten <ArrowRight className="h-4 w-4" /></button></div><p className="mt-2 text-[10px] text-white/35">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p></form></div><div className="hidden lg:block"><div className="ml-auto max-w-xl rounded-[2rem] border border-white/15 bg-black/35 p-5 shadow-2xl backdrop-blur-xl"><div className="flex items-center justify-between border-b border-white/10 pb-4"><span className="font-mono text-[10px] tracking-[.22em] text-cyan-300">{RUNTIME_PREVIEW_LABEL}</span></div><div className="grid grid-cols-2 gap-3 py-5 sm:grid-cols-4">{RUNTIME_PREVIEW_METRICS.map(metric => <div key={metric.label} className="rounded-xl border border-white/10 bg-white/[.035] p-3"><div className="font-mono text-[8px] tracking-wider text-white/35">{metric.label}</div><div className="mt-2 text-xl font-semibold text-white">{metric.value}</div></div>)}</div><div className="space-y-2.5 font-mono text-[10px] text-white/45">{RUNTIME_PREVIEW_ROWS.map(row => <div key={row.label} className="flex justify-between"><span>{row.label}</span><span className={row.tone === 'ok' ? 'text-emerald-300' : 'text-cyan-300'}>{row.state}</span></div>)}</div><p className="mt-5 border-t border-white/10 pt-4 text-[10px] leading-relaxed text-white/35">{RUNTIME_PREVIEW_NOTE}</p></div></div></div></section>
+        <section className="relative min-h-[880px] overflow-hidden">
+          <div className="absolute inset-0">
+            <picture>
+              <source srcSet="/europe-globe.webp" type="image/webp" />
+              <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-75" />
+            </picture>
+            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/95 to-black/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/40" />
+          </div>
+
+          <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
+            <div className="max-w-3xl">
+              <Link to="/claude-code-optimizer" className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-cyan-500/30 bg-cyan-500/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[.2em] text-cyan-300 transition hover:border-cyan-400/50 hover:bg-cyan-500/10">
+                <span className="rounded-full bg-cyan-400 px-1.5 py-0.5 text-[9px] font-semibold text-[rgb(3,7,18)]">NEU</span>
+                Claude Code Optimizer <ArrowRight className="h-3 w-3" />
+              </Link>
+
+              {/* H1 aus hero-content.ts — nicht hartkodieren. Siehe FE-001 dort. */}
+              {/* lg:text-6xl, nicht groesser: „Das KI-Betriebssystem" bricht sonst
+                  mitten im Wort um, weil die linke Spalte ~640px breit ist. */}
+              <h1 className="text-4xl leading-[1.02] tracking-[-.03em] sm:text-5xl lg:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>
+                {HERO_HEADLINE.map((segments, line) => (
+                  <span key={line} className="block">
+                    {segments.map((segment, i) => (
+                      <span key={i} className={segment.accent ? 'text-cyan-400' : undefined}>{segment.text}</span>
+                    ))}
+                  </span>
+                ))}
+              </h1>
+
+              <p className="mt-5 font-mono text-[11px] uppercase tracking-[.28em] text-white/35">
+                <Scan className="mr-2 inline h-3.5 w-3.5" />KI-Governance &amp; Code-Optimierung
+              </p>
+
+              <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/65 sm:text-lg">
+                RealSyncDynamics.AI überwacht Websites, KI-Systeme, Code und Nachweise kontinuierlich — Regeln, Prüfungen und Belege auf derselben Governance-Ebene.
+              </p>
+
+              <div className="mt-7 grid gap-6 border-t border-white/10 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-white/10">
+                {HERO_PILLARS.map(([title, text], i) => (
+                  <div key={title} className={i > 0 ? 'sm:pl-6' : undefined}>
+                    <p className="font-mono text-[10px] tracking-[.18em] text-cyan-300">{title}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/unified-entry/scan" className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Kostenlos starten <ArrowRight className="h-4 w-4" /></Link>
+                <a href="#platform" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-7 py-3.5 font-medium text-white transition hover:border-white/50 hover:bg-white/5">Plattform ansehen</a>
+              </div>
+
+              <form onSubmit={startScan} className="mt-5 max-w-2xl">
+                <div className="flex flex-col gap-2 rounded-2xl border border-white/15 bg-black/35 p-2 backdrop-blur-xl sm:flex-row">
+                  <input value={domain} onChange={event => setDomain(event.target.value)} placeholder="Ihre Website für den kostenlosen Governance-Audit" aria-label="Website-URL für Governance-Scan" className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/30" />
+                  <button type="submit" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-50">Audit starten <ArrowRight className="h-4 w-4" /></button>
+                </div>
+                <p className="mt-2 text-[10px] text-white/35">URL genügt · kein Account vor dem Einstieg · Ergebnis in wenigen Minuten</p>
+              </form>
+            </div>
+
+            {/*
+              Kartengruppe: zeigt, wie das Dashboard aussieht. Ausdrücklich als
+              Beispiel gekennzeichnet — ein anonymer Besucher hat keinen Tenant,
+              dort ist nichts messbar. Werte kommen aus landing-runtime-preview.ts.
+            */}
+            <div className="hidden lg:block">
+              <p className="mb-4 text-right font-mono text-[10px] tracking-[.22em] text-cyan-300/70">{RUNTIME_PREVIEW_LABEL}</p>
+              <div className="space-y-3">
+                {RUNTIME_PREVIEW_CARDS.map(card => (
+                  <div key={card.id} className={`${card.offset} max-w-[19rem] rounded-2xl border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`h-1.5 w-1.5 rounded-full ${card.tone === 'ok' ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
+                      <span className="font-mono text-[9px] tracking-[.18em] text-white/45">{card.label}</span>
+                    </div>
+                    <div className={`mt-2 text-2xl font-semibold ${card.tone === 'ok' ? 'text-emerald-300' : 'text-white'}`}>{card.value}</div>
+                    {card.ratio !== undefined && (
+                      <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-white/10">
+                        <div className="h-full rounded-full bg-cyan-400" style={{ width: `${Math.round(card.ratio * 100)}%` }} />
+                      </div>
+                    )}
+                    {card.detail && <p className="mt-2 text-[11px] leading-relaxed text-white/40">{card.detail}</p>}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 max-w-[19rem] text-[10px] leading-relaxed text-white/35 lg:ml-24">{RUNTIME_PREVIEW_NOTE}</p>
+            </div>
+          </div>
+        </section>
 
         <LandingChannelTools />
 

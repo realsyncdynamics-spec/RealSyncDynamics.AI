@@ -29,8 +29,7 @@ import {
 import {
   RUNTIME_PREVIEW_LABEL,
   RUNTIME_PREVIEW_NOTE,
-  RUNTIME_PREVIEW_METRICS,
-  RUNTIME_PREVIEW_ROWS,
+  RUNTIME_PREVIEW_CARDS,
 } from '@/src/config/landing-runtime-preview';
 
 const FUNCTIONS_DIR = resolve(__dirname, '../../supabase/functions');
@@ -159,18 +158,18 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
     // Nur Werte mit Trennzeichen prüfen. Eine blanke `'04'` kollidiert mit der
     // Schrittnummer in GOVERNANCE_STEPS — der Treffer wäre ein Fehlalarm und
     // würde den Wächter unglaubwürdig machen.
-    const distinctive = RUNTIME_PREVIEW_METRICS.filter((m) => /[/,%]/.test(m.value));
+    const distinctive = RUNTIME_PREVIEW_CARDS.filter((c) => /[/.,%]/.test(c.value));
     expect(distinctive.length, 'Kein Beispielwert ist eindeutig genug zum Prüfen').toBeGreaterThan(0);
-    for (const metric of distinctive) {
+    for (const card of distinctive) {
       expect(
         landing,
-        `Der Beispielwert „${metric.value}" ist in MainLanding.tsx hartkodiert. ` +
+        `Der Beispielwert „${card.value}" ist in MainLanding.tsx hartkodiert. ` +
           'Dann kann er ohne den Beispiel-Marker gerendert werden.',
-      ).not.toContain(metric.value);
+      ).not.toContain(card.value);
     }
   });
 
-  it('die Statuszeilen zeigen nur Module mit deploytem Backend', () => {
+  it('die Beispielkarten zeigen nur Module mit deploytem Backend', () => {
     // Ein Beispiel für ein Modul, das es in Produktion nicht gibt, ist auch nur
     // eine Behauptung — nur eine bebilderte.
     //
@@ -185,13 +184,30 @@ describe('Hero-Panel — Beispiel ist als Beispiel gekennzeichnet', () => {
         .filter((w) => w.length > 3),
     );
     expect(buildingWords.length, 'Keine Wörter zum Prüfen extrahiert').toBeGreaterThan(0);
-    for (const row of RUNTIME_PREVIEW_ROWS) {
+    for (const card of RUNTIME_PREVIEW_CARDS) {
+      const text = `${card.label} ${card.detail ?? ''}`.toUpperCase();
       for (const word of buildingWords) {
         expect(
-          row.label.toUpperCase(),
-          `Die Beispielzeile „${row.label}" zeigt „${word}" — ein Modul ohne Backend in Produktion.`,
+          text,
+          `Die Beispielkarte „${card.label}" zeigt „${word}" — ein Modul ohne Backend in Produktion.`,
         ).not.toContain(word);
       }
+    }
+  });
+
+  it('keine kumulative Unternehmenskennzahl in den Beispielkarten', () => {
+    // „2,1 Mio analysierte Codezeilen", „11.350 behobene Sicherheitsluecken":
+    // Solche Werte stehen nicht fuer einen Beispielkunden, sondern fuer
+    // RealSyncDynamics selbst. Das ist eine nachpruefbare Tatsachenbehauptung
+    // (§5 UWG) und gehoert belegt oder gar nicht — jedenfalls nicht in eine
+    // Ansicht, die ausdruecklich als Beispiel ausgewiesen ist.
+    const corporate = /\b(mio|mrd|millionen|milliarden|insgesamt|bisher|weltweit)\b/i;
+    for (const card of RUNTIME_PREVIEW_CARDS) {
+      const text = `${card.label} ${card.value} ${card.detail ?? ''}`;
+      expect(
+        corporate.test(text),
+        `Die Beispielkarte „${card.label}" liest sich wie eine Unternehmenskennzahl: „${text.trim()}".`,
+      ).toBe(false);
     }
   });
 });

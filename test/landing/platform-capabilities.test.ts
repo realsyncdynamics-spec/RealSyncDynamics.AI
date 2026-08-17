@@ -137,6 +137,29 @@ describe('Plattform-Fähigkeiten — Behauptung deckt sich mit dem Backend', () 
   });
 });
 
+describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt', () => {
+  /**
+   * CLAUDE.md §14: „Fertiger Code, den niemand erreichen kann, ist
+   * verschwendete Arbeit."
+   *
+   * `/ai-act` und `/sicherheit` existieren, werden prerendert und sind aus
+   * der `LandingNavbar` der übrigen öffentlichen Seiten verlinkt — nur die
+   * Startseite baut ihre Kopfzeile inline und ließ beide aus. Ein Besucher,
+   * der auf `/` landet, fand von dort keinen Weg dorthin.
+   *
+   * Der Test prüft beide Richtungen: Der Link steht auf der Startseite, und
+   * die Route existiert wirklich. Ein Link ins Leere wäre nicht besser als
+   * gar keiner.
+   */
+  const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+  const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
+
+  it.each(['/ai-act', '/sicherheit'])('%s ist verlinkt und geroutet', (path) => {
+    expect(landing, `Die Startseite verlinkt ${path} nicht.`).toContain(`to="${path}"`);
+    expect(app, `${path} hat keine Route — der Link ginge ins Leere.`).toContain(`path="${path}"`);
+  });
+});
+
 describe('Kaufwege für Module ohne Laufzeit tragen einen Hinweis', () => {
   /**
    * Diese Seiten bewerben die Bot-Laufzeit und führen zu Anmeldung oder

@@ -293,7 +293,7 @@ export const SEO_LANDING_IDEAS: SEOLandingIdea[] = [
       'BAIT Risiko-Analyse Bank',
       'Finanzaufsicht DSGVO Audit',
     ],
-    targetUrl: '/bait-marisk-guide',
+    targetUrl: '/bait-marisk-compliance-guide',
     intentTier: 'comparative',
     existsAsRoute: true,
     rationale: 'Existierende Page für FinTech / Banken-Audience. Niedrigvolumen, hoher Vertragswert.',

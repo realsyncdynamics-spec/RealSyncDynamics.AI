@@ -598,7 +598,7 @@
     <loc>https://realsyncdynamicsai.de/vvt-wizard</loc>
     <lastmod>2026-05-09</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.5</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/governance-runtime</loc>
@@ -668,6 +668,24 @@
   </url>
   <url>
     <loc>https://realsyncdynamicsai.de/deployment-governance</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/pre-consent-tracking</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/evidence</loc>
+    <lastmod>2026-08-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://realsyncdynamicsai.de/google-analytics-consent</loc>
     <lastmod>2026-08-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

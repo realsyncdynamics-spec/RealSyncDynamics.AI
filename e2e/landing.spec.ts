@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { HERO_HEADLINE_TEST_SUBSTRING } from '../src/components/governance-frontend/hero-content';
+import { LIVE_CAPABILITIES, BUILDING_CAPABILITIES } from '../src/config/platform-capabilities';
+import {
+  RUNTIME_PREVIEW_LABEL,
+  RUNTIME_PREVIEW_NOTE,
+} from '../src/config/landing-runtime-preview';
 
 /**
  * E2E für die öffentlichen Einstiegsseiten.
@@ -111,9 +116,13 @@ test.describe('Governance-AI-Landing (/)', () => {
       page.getByRole('heading', { name: new RegExp(HERO_HEADLINE_TEST_SUBSTRING, 'i') }).first(),
     ).toBeVisible();
 
-    await expect(page.getByText(/DSGVO, EU AI Act & Code-Compliance/i).first()).toBeVisible();
+    // Nicht auf den zusammengesetzten Fliesstext pruefen: Die H1 rendert je
+    // Zeile ein eigenes Block-Element, zwischen denen kein Leerzeichen steht.
+    await expect(page.getByRole('heading', { level: 1 }).first()).toContainText('Code-Compliance');
 
-    await expect(page.getByRole('button', { name: /Kostenlos starten/i }).first()).toBeVisible();
+    // Beide CTAs sind Links (<Link> bzw. <a href="#platform">), keine Buttons.
+    // Die frueher hier erwartete Button-Rolle traf auf keinen von beiden zu.
+    await expect(page.getByRole('link', { name: /Kostenlos starten/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Plattform ansehen/i }).first()).toBeVisible();
   });
 
@@ -121,17 +130,30 @@ test.describe('Governance-AI-Landing (/)', () => {
     // Truth Layer: ein anonymer Besucher hat keinen Mandanten und damit keine
     // belegbaren Kennzahlen. Die Karten dürfen sich nicht als Messwerte oder
     // als "Live" ausgeben.
-    await expect(page.getByText(/Beispielansicht mit Musterwerten/i)).toBeVisible();
+    // Wortlaut aus landing-runtime-preview.ts, nicht abgeschrieben — sonst
+    // driftet der Test beim naechsten Umbau wieder weg.
+    await expect(page.getByText(RUNTIME_PREVIEW_LABEL)).toBeVisible();
+    await expect(page.getByText(RUNTIME_PREVIEW_NOTE)).toBeVisible();
     await expect(page.getByText(/^Live\b/)).toHaveCount(0);
   });
 
-  test('Plattform-Module-Sektion sichtbar', async ({ page }) => {
+  test('Plattform-Sektion rendert die Faehigkeitsquelle, nicht eine eigene Liste', async ({ page }) => {
     const platform = page.locator('#platform');
-    await expect(
-      platform.getByRole('heading', { name: /Eine Runtime\. Ihre Regeln\./i }),
-    ).toBeVisible();
-    for (const label of ['Policy Engine', 'Runtime Monitoring']) {
-      await expect(platform.getByText(label, { exact: true })).toBeVisible();
+    await expect(platform.getByRole('heading', { name: /^Eine Runtime\./i })).toBeVisible();
+
+    // Die frueher hier erwarteten Labels ('Policy Engine', 'Runtime
+    // Monitoring') waren aus einer Marketingliste abgeschrieben, die es nicht
+    // mehr gibt. Gepruef wird jetzt gegen platform-capabilities.ts: Was dort
+    // steht, muss auf der Seite stehen — und umgekehrt.
+    for (const cap of LIVE_CAPABILITIES) {
+      await expect(platform.getByText(cap.name, { exact: true })).toBeVisible();
+    }
+
+    for (const cap of BUILDING_CAPABILITIES) {
+      await expect(platform.getByText(cap.name, { exact: true })).toBeVisible();
+    }
+    if (BUILDING_CAPABILITIES.length > 0) {
+      await expect(platform.getByText('IN ENTWICKLUNG')).toBeVisible();
     }
   });
 

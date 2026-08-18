@@ -54,6 +54,18 @@ export interface PlatformCapability {
   backedBy: readonly string[];
   /** Nur bei 'building': warum, in einem Satz, für die Oberfläche. */
   note?: string;
+  /**
+   * Öffentliche Fachseite zu diesem Modul, falls es eine gibt.
+   *
+   * Sechs solcher Seiten existieren unter `src/pages/content/` — technisch
+   * ausführlich, untereinander verlinkt und von der Startseite aus bislang
+   * **nicht erreichbar**. Fertiger Text, den niemand findet, ist verschwendete
+   * Arbeit (CLAUDE.md §14).
+   *
+   * Muss eine echte Route in `src/App.tsx` sein; `test/landing/
+   * platform-capabilities.test.ts` prüft beide Richtungen.
+   */
+  learnMorePath?: string;
 }
 
 /** Datum der letzten Messung gegen Produktion. Bei Statuswechsel mitziehen. */
@@ -70,6 +82,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'ai-act',
+    learnMorePath: '/ai-act-governance',
     name: 'EU-AI-Act-Klassifizierung',
     description:
       'KI-Systeme nach Risikoklasse einordnen, Anforderungen ableiten und den Bestand als Inventar führen.',
@@ -122,6 +135,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'evidence-vault',
+    learnMorePath: '/evidence-vault',
     name: 'Evidence Vault',
     description:
       'Hash-verkettete Nachweiskette mit Aufbewahrung, Compliance-Hold und Integritätsprüfung.',
@@ -130,6 +144,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
   {
     id: 'policy-engine',
+    learnMorePath: '/policy-engine',
     name: 'Policy Engine',
     description:
       'Governance-Regeln nicht nur dokumentieren, sondern als ausführbare Kontrolllogik durchsetzen.',

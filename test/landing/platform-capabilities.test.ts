@@ -160,6 +160,40 @@ describe('Erreichbarkeit — fertige Seiten sind von der Startseite aus verlinkt
   });
 });
 
+describe('Fachseiten sind von der Startseite aus erreichbar', () => {
+  /**
+   * Sechs technische Modulseiten liegen unter `src/pages/content/` — jede mit
+   * eigener Route, untereinander verlinkt, und von der Startseite aus bislang
+   * nicht auffindbar. Genau der Fall aus CLAUDE.md §14: fertiger Text, den
+   * niemand erreicht.
+   *
+   * Geprüft wird beides. Ein Link ohne Route wäre nicht besser als kein Link.
+   */
+  const app = readFileSync(resolve(__dirname, '../../src/App.tsx'), 'utf8');
+  const withPage = PLATFORM_CAPABILITIES.filter((c) => c.learnMorePath);
+
+  it('mindestens eine Fähigkeit führt auf ihre Fachseite', () => {
+    expect(withPage.length).toBeGreaterThan(0);
+  });
+
+  it.each(withPage.map((c) => [c.name, c.learnMorePath!] as const))(
+    '%s → %s ist geroutet',
+    (_name, path) => {
+      expect(app, `${path} hat keine Route in App.tsx — der Link ginge ins Leere.`)
+        .toContain(`path="${path}"`);
+    },
+  );
+
+  it('die Startseite rendert die Verweise, statt sie nur zu speichern', () => {
+    const landing = readFileSync(resolve(__dirname, '../../src/pages/MainLanding.tsx'), 'utf8');
+    expect(
+      landing,
+      'MainLanding wertet `learnMorePath` nicht aus — dann bleiben die ' +
+        'Fachseiten unerreichbar, obwohl die Quelle sie kennt.',
+    ).toContain('learnMorePath');
+  });
+});
+
 describe('Kaufwege für Module ohne Laufzeit tragen einen Hinweis', () => {
   /**
    * Diese Seiten bewerben die Bot-Laufzeit und führen zu Anmeldung oder

@@ -59,7 +59,8 @@ Registrierung, bekommt ein Konto — und bleibt im letzten Schritt stehen. Weder
 Firmenprofil noch Trial werden angelegt.
 
 Das ist kein Frontend-Fehler. Kein Code-Fix im Frontend behebt es; die
-Functions müssen deployt werden.
+Functions müssen deployt werden — und dafür braucht es zwei freie Slots
+(siehe unten).
 
 ## Betroffene Oberflächen
 
@@ -128,12 +129,55 @@ done < /tmp/missing.txt
 4. Stichprobe gegen Produktion mit `curl` bestätigen (siehe oben). Der
    `grep`-Treffer allein beweist nichts — er findet auch Kommentare und Tests.
 
+## Warum die 80 fehlen — das ist geklärt, nicht offen
+
+Die Supabase-Organisation läuft auf dem **Free-Plan mit einem harten Limit von
+100 Edge Functions**. Der Beleg ist keine Statistik, sondern die Fehlermeldung
+selbst: `HTTP 402: Max number of functions reached for project`. Bestehende
+Functions lassen sich weiter aktualisieren, neue nicht anlegen. Vollständig in
+[`edge-function-kontingent.md`](./edge-function-kontingent.md) (Stand
+2026-08-11).
+
+**Ein Slot ist nur gegen einen anderen zu haben.** Genau das ist am 2026-08-16
+passiert: `.github/workflows/free-plan-slot-swap.yml` löscht zwölf Functions
+und deployt zwölf andere — deshalb stand die Summe an beiden Messtagen bei
+exakt 100, obwohl sich die Zusammensetzung änderte.
+
+| aus Produktion entfernt | dafür deployt |
+|---|---|
+| `pitch-deck-pdf`, `hostinger-agent-brief`, `mfa-admin-reset`, `governance-analytics-aggregator`, `legal-embed`, **`appointment-book`**, **`bot-chat`**, **`bot-voice-webhook`**, **`order-intake`**, `agent-scheduler`, `ai-act-auto-classify`, `api-gateway` | `scheduler`, `scheduler-dispatch`, `memory-decay-worker`, `governance-memory`, `evidence-vault`, `policy-packs`, `provenance`, `stripe-checkout-verify`, alle vier `iso42001-*` |
+
+Das war eine bewusste, begründete Abwägung: Ausgewählt wurden Functions **ohne
+einen einzigen Aufrufer** — kein Treffer im Repo-Aufrufkorpus, 0 Invocations in
+den Edge-Logs.
+
+### Der Haken an dieser Auswahl
+
+Für die vier Bot-Functions stimmt „kein Aufrufer" im Repo-Sinn: Die
+Bot-Oberfläche greift über PostgREST direkt auf die Tabellen zu, nicht über
+die Functions. Ihre echten Aufrufer sind **eingehende Webhooks** von WhatsApp
+und Telefonie — die tauchen in keinem `grep` auf und erzeugen 0 Invocations,
+solange kein Bot live ist.
+
+Damit wurde die Bot-Laufzeit abgeschaltet, während `/pricing/whatsapp`
+weiterhin auf `/checkout/growth?channel=whatsapp` verlinkt und Growth das
+Modul `whatsapp` laut `shared/pricing.ts` als enthaltene Leistung führt. Das
+ist kein Vorwurf an den Tausch — die Slots mussten irgendwo herkommen — aber
+es ist der Grund, warum die Kaufwege den Zustand ausweisen müssen
+(`src/components/landing/CapabilityAvailabilityNotice.tsx`).
+
+**Regel daraus:** „Keine Aufrufer im Repo" ist für Functions, die von außen
+angesprochen werden (Webhooks, Cron, öffentliche APIs), kein taugliches
+Kriterium. Vor dem nächsten Tausch die Aufrufrichtung prüfen, nicht nur den
+Aufrufkorpus.
+
 ## Was diese Liste nicht sagt
 
-- **Warum** die 80 fehlen. Zur Vermutung „Function-Kontingent des
-  Free-Tarifs" siehe CLAUDE.md §5. Belegt ist: Die Summe stand am 2026-08-16
-  und am 2026-08-17 bei exakt 100, obwohl dazwischen mindestens zwölf
-  Functions neu deployt wurden. Nicht belegt: der Grenzwert selbst.
 - **Ob** eine Oberfläche ohne ihre Function unbrauchbar ist. Manche fangen den
   Fehler ab und zeigen einen leeren Zustand; das Onboarding oben tut es nicht.
   Wer eine Zeile abarbeitet, prüft den Einzelfall.
+- **Was der Tausch kostet.** Jede der 32 Zeilen oben ist ein Kandidat für den
+  nächsten Slot — und jeder gewonnene Slot nimmt einen anderen weg, solange
+  der Free-Plan gilt. Die Konsolidierung mehrerer Functions hinter einem
+  Router (siehe #1087) ist der einzige Weg, der Slots schafft statt sie zu
+  verschieben.

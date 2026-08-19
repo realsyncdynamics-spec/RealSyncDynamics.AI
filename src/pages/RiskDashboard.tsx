@@ -270,11 +270,21 @@ function AddDomainModal({
     if (!domain.trim()) { setErr('Domain erforderlich'); return; }
     setLoading(true); setErr('');
     const user = await supabase.auth.getUser();
-    const { data: tenant } = await supabase
-      .from('tenant_users').select('tenant_id').eq('user_id', user.data.user?.id ?? '').single();
+    const userId = user.data.user?.id;
+    if (!userId) { setErr('Nicht angemeldet'); setLoading(false); return; }
+
+    // `memberships` ist die Tabelle, die die Workspace-Zugehoerigkeit haelt.
+    // Zuvor stand hier `tenant_users` — eine Tabelle, die es weder im Repo noch
+    // in Produktion gibt; die Abfrage lief in einen 404 (PGRST205) und das
+    // Hinzufuegen einer Domain schlug immer fehl.
+    const { data: membership, error: membershipError } = await supabase
+      .from('memberships').select('tenant_id').eq('user_id', userId).limit(1).maybeSingle();
+
+    if (membershipError) { setErr(membershipError.message); setLoading(false); return; }
+    if (!membership?.tenant_id) { setErr('Kein Workspace gefunden'); setLoading(false); return; }
 
     const { error } = await supabase.from('monitored_domains').insert({
-      tenant_id: tenant?.tenant_id,
+      tenant_id: membership.tenant_id,
       domain: domain.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''),
       alert_email: email.trim() || null,
       tier: 'growth',

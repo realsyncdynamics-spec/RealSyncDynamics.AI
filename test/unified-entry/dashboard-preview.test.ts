@@ -13,13 +13,32 @@
  *
  * **Die Seite behauptete mehr, als sie tut.** Der Scan ist echt — Score,
  * Tracker und Cookies kommen aus der URL des tatsächlichen Audits. Die drei
- * Entwürfe sind es nicht: `previewHtml()` liefert für jeden Besucher dieselben
- * Vorlagen und übernimmt nur den Domainnamen in die Kopfzeile. Sätze wie „So
- * könnte deine Website aussehen" versprachen eine Ableitung aus den Inhalten
- * des Besuchers, die nicht stattfindet.
+ * Entwürfe waren es nicht: `previewHtml()` lieferte für jeden Besucher
+ * dieselben Vorlagen und übernahm nur den Domainnamen in die Kopfzeile. Sätze
+ * wie „So könnte deine Website aussehen" versprachen eine Ableitung aus den
+ * Inhalten des Besuchers, die nicht stattfand.
  *
  * Der Unterschied ist wichtig genug für einen Test: Er ist die Grenze zwischen
  * einem Musterlayout und einer Aussage über das Eigentum des Kunden.
+ *
+ * ## Was sich 2026-08-19 geändert hat
+ *
+ * Die Seite ruft jetzt den vorhandenen Generator auf: `parseBrief` →
+ * `synthesizeBlueprint` → `applySiteDesignTemplate` → `renderSite`. Die
+ * Entwürfe sind damit **echt erzeugt** und je Domain verschieden — das Wort
+ * „Musterlayout" wäre nun die falsche Aussage.
+ *
+ * Die Sperre bleibt, ihre Richtung dreht sich:
+ *
+ * - Vorher erzwungen: nenne die Entwürfe Musterlayouts.
+ * - Jetzt erzwungen: rufe den Generator wirklich auf (kein Rückfall auf
+ *   handgebautes HTML) **und** behaupte trotzdem nicht, die Texte stammten aus
+ *   den bestehenden Inhalten des Besuchers.
+ *
+ * Denn genau das tun sie nicht: Sie stammen aus Domainname und erkannter
+ * Branche. Die echten Inhalte liest `siteos/discover`, und das braucht einen
+ * angemeldeten Tenant. Zwischen „echt erzeugt" und „aus deinen Inhalten"
+ * liegt weiterhin eine Grenze — sie verläuft nur an einer anderen Stelle.
  */
 
 import { readFileSync } from 'node:fs';
@@ -62,18 +81,41 @@ describe('Vorschaubilder werden skaliert, nicht gestaucht', () => {
 });
 
 describe('Die Seite verspricht nur, was sie tut', () => {
-  it('nennt die Entwürfe Musterlayouts', () => {
-    expect(code).toContain('Musterlayout');
+  it('erzeugt die Entwürfe wirklich, statt HTML zusammenzusetzen', () => {
+    // Der Rückfall, den dieser Test verhindert: wieder eine handgebaute
+    // `previewHtml()`, die drei feste Vorlagen liefert. Wer die Kette hier
+    // herausnimmt, muss auch die Zusagen in der Seite zurücknehmen.
+    for (const call of ['parseBrief(', 'synthesizeBlueprint(', 'applySiteDesignTemplate(', 'renderSite(']) {
+      expect(code, `Generator-Aufruf fehlt: ${call}`).toContain(call);
+    }
+    expect(code, 'Handgebautes Vorschau-HTML ist zurück').not.toContain('function previewHtml');
   });
 
-  it('behauptet nicht, die Vorschau sei die Website des Besuchers', () => {
+  it('führt die drei Auswahlkarten auf die echten Templates zurück', () => {
+    // Die alten Varianten waren Nachbauten von SITE_DESIGN_TEMPLATES. Ein
+    // zweiter Satz eigener IDs würde denselben Zustand wiederherstellen.
+    expect(code).toContain('SITE_DESIGN_TEMPLATES');
+    for (const id of ['modern-minimal', 'bento-bold', 'dark-professional']) {
+      expect(code, `Template-ID fehlt: ${id}`).toContain(id);
+    }
+  });
+
+  it('behauptet nicht, die Vorschau sei aus den Inhalten des Besuchers gebaut', () => {
+    // Erzeugt ist sie — aber aus Domain und Branche, nicht aus den
+    // bestehenden Texten. Diese Grenze bleibt bestehen.
     for (const claim of [
       'So könnte deine Website aussehen',
       'werden aus deiner bestehenden Website neu aufgebaut',
       'drei unterschiedliche Wege, sie sichtbar zu modernisieren',
+      'aus deinen bestehenden Inhalten neu aufgebaut',
     ]) {
       expect(code, `Überholte Zusage steht wieder in der Seite: „${claim}"`).not.toContain(claim);
     }
+  });
+
+  it('benennt, woher die Texte stammen', () => {
+    // Ohne diesen Satz stünde eine erzeugte Seite ohne Herkunftsangabe da.
+    expect(code).toContain('erkannten Branche');
   });
 
   it('behält die Aussage zum Scan — die ist belegt', () => {

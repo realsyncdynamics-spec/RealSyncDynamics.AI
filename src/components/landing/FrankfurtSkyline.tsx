@@ -34,6 +34,15 @@ type Building = {
 const GROUND = 260;
 
 /**
+ * Luft ueber der hoechsten Spitze.
+ *
+ * Commerzbank-Tower: 212 hoch, Antenne 54 — die Spitze liegt bei
+ * 260 - 212 - 54 = -6. Der Domturm reicht mit seiner Spire aehnlich weit.
+ * Ohne diesen Rand schneidet die viewBox beides ab.
+ */
+const HEADROOM = 24;
+
+/**
  * Die vier Wahrzeichen plus Füllbebauung. Reihenfolge von links nach rechts
  * entspricht grob dem Blick aus Süden über den Main.
  */
@@ -106,7 +115,11 @@ function shapeOf({ x, w, h, top = 'flat' }: Building): string {
 export function FrankfurtSkyline({ className }: { className?: string }) {
   return (
     <svg
-      viewBox={`0 0 1600 ${GROUND}`}
+      // Der Ursprung liegt bei -HEADROOM, nicht bei 0: Die Antenne des
+      // hoechsten Baus reicht bis y = -6 und waere sonst abgeschnitten.
+      // `test/landing/frankfurt-skyline.test.ts` rechnet das nach, statt es
+      // zu glauben — der Fehler war in der Datenliste nicht zu sehen.
+      viewBox={`0 ${-HEADROOM} 1600 ${GROUND + HEADROOM}`}
       // `slice` statt `meet`: Auf schmalen Bildschirmen soll die Reihe seitlich
       // beschnitten werden, nicht in der Höhe schrumpfen — eine flachgedrückte
       // Skyline sieht nach Fehler aus.

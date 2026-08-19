@@ -81,6 +81,39 @@ describe('Frankfurter Skyline', () => {
     expect(new Set(keys).size, 'doppelter Schlüssel in BUILDINGS').toBe(keys.length);
   });
 
+  it('schneidet keine Spitze an der oberen viewBox-Kante ab', () => {
+    // Der Fehler, den dieser Fall fand: Die Antenne des Commerzbank-Towers
+    // reichte bis y = -6, die viewBox begann bei y = 0. Sechs Einheiten der
+    // Spitze fehlten — sichtbar nur im Bild, nicht in der Datenliste. Genau
+    // deshalb rechnet dieser Test die Formen nach, statt Werte zu vergleichen.
+    const ground = Number(/const GROUND = (\d+)/.exec(code)?.[1]);
+    const headroom = Number(/const HEADROOM = (\d+)/.exec(code)?.[1]);
+    expect(ground, 'GROUND nicht gefunden').toBeGreaterThan(0);
+    expect(headroom, 'HEADROOM nicht gefunden').toBeGreaterThan(0);
+
+    let highest = ground;
+    for (const b of buildings) {
+      const roof = ground - b.h;
+      const tops = [roof];
+      if (b.rest.includes("'pyramid'")) tops.push(roof - b.w * 0.62);
+      if (b.rest.includes("'spire'")) tops.push(roof - b.w * 1.9);
+      if (b.rest.includes("'crown'")) tops.push(roof - b.w / 2.6);
+      const mast = /mast:\s*(\d+)/.exec(b.rest);
+      if (mast) tops.push(roof - Number(mast[1]));
+      highest = Math.min(highest, ...tops);
+    }
+
+    expect(
+      highest,
+      `Höchste Spitze liegt bei y=${highest}, die viewBox beginnt bei ` +
+        `y=${-headroom}. HEADROOM erhöhen, sonst wird die Spitze abgeschnitten.`
+    ).toBeGreaterThanOrEqual(-headroom);
+  });
+
+  it('bindet die viewBox an HEADROOM statt an eine getippte Zahl', () => {
+    expect(code).toContain('viewBox={`0 ${-HEADROOM} 1600 ${GROUND + HEADROOM}`}');
+  });
+
   it('ist dekorativ und wird nicht vorgelesen', () => {
     expect(source).toContain('aria-hidden="true"');
     expect(source).toContain('focusable="false"');

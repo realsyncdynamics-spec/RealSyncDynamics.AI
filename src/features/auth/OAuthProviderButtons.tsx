@@ -31,6 +31,24 @@ import { getSupabase, isSupabaseConfigured } from '../../lib/supabase';
  * VITE_AUTH_LINKEDIN_ENABLED=true gesetzt ist. Sobald LinkedIn in Supabase
  * (Auth → Providers → LinkedIn OIDC) mit Client-ID/Secret eingerichtet ist,
  * genuegt dieses eine Flag, um den Button wieder zu zeigen.
+ *
+ * ## GitHub und Microsoft ebenfalls opt-IN (2026-08-19, Freigabe eingeholt)
+ *
+ * Am Live-Projekt gemessen, nicht vermutet: `/auth/v1/authorize?provider=…`
+ * leitet fuer beide korrekt zum Anbieter weiter — aber mit der **Google**-
+ * Client-ID `1036000996285-…apps.googleusercontent.com`. Dieselbe ID steht
+ * auch bei Facebook. Eine Google-Client-ID funktioniert weder bei github.com
+ * noch bei login.microsoftonline.com; wer klickt, landet auf der Fehlerseite
+ * des Anbieters.
+ *
+ * Nur Google traegt eine echte eigene ID (`285969423992-…`).
+ *
+ * Der Fehler liegt also in der Supabase-Konfiguration, nicht hier — bis er
+ * behoben ist, zeigt die Oberflaeche die Buttons aber nicht an. Beide sind
+ * per Flag sofort wieder da:
+ *   VITE_AUTH_GITHUB_ENABLED=true
+ *   VITE_AUTH_AZURE_ENABLED=true
+ * Kein Code-Deploy noetig — genau dafuer sind die Flags da.
  */
 
 type Provider = 'google' | 'azure' | 'linkedin_oidc' | 'github';
@@ -50,9 +68,11 @@ function flagOptIn(value: string | undefined): boolean {
 
 const PROVIDER_ENABLED: Record<Provider, boolean> = {
   google:        flagOn(import.meta.env.VITE_AUTH_GOOGLE_ENABLED),
-  azure:         flagOn(import.meta.env.VITE_AUTH_AZURE_ENABLED),
+  // azure/github: opt-IN, solange in Supabase die Google-Client-ID hinterlegt
+  // ist (siehe Kopfkommentar). flagOn haette sie sichtbar gelassen.
+  azure:         flagOptIn(import.meta.env.VITE_AUTH_AZURE_ENABLED),
   linkedin_oidc: flagOptIn(import.meta.env.VITE_AUTH_LINKEDIN_ENABLED),
-  github:        flagOn(import.meta.env.VITE_AUTH_GITHUB_ENABLED),
+  github:        flagOptIn(import.meta.env.VITE_AUTH_GITHUB_ENABLED),
 };
 
 interface ProviderConfig {

@@ -20,8 +20,9 @@ import {
  *
  * Analyse, Scan und Neubau sind drei Pfade **eines** Slots:
  * `siteos/discover`, `siteos/runtime-scan`, `siteos/builder`. Der Slot laeuft
- * derzeit nicht in Produktion (Messung 2026-08-19,
- * `src/config/production-edge-functions.ts`).
+ * seit dem 2026-08-19 in Produktion — die Pruefung bleibt trotzdem stehen:
+ * Sie haengt an der Messung in `src/config/production-edge-functions.ts` und
+ * greift von selbst wieder, falls der Slot verschwindet.
  *
  * Anders als beim Onboarding wird hier **vor** dem Versuch geprueft, und der
  * Unterschied ist kein Zufall: Der erste Klick schickt einen nicht

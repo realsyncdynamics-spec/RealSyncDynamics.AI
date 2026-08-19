@@ -78,7 +78,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **100 davon in Produktion**, siehe §5
+- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **101 davon in Produktion**, siehe §5
 - **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
@@ -190,7 +190,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > | | Repo | in Produktion | Lücke |
 > |---|---|---|---|
 > | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
-> | Edge Functions | 180 | 100 | **80** |
+> | Edge Functions | 177 | **101** (neu gemessen 2026-08-19, 16:45 Uhr) | **76** |
 > | Tabellen in `public` | — | 341 | — |
 >
 > **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
@@ -221,12 +221,32 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 >   will, braucht `deno install` gegen die echten Dependencies.
 > - Die Organisation läuft auf **Plan `free`**.
 >
-> Exakt 100 deployte Functions plus harter alphabetischer Schnitt deutet auf das
-> **Function-Kontingent des Free-Tarifs**, nicht auf einen Deploy-Bug. Vor einer
-> Gegenmaßnahme gegen Supabase' aktuelle Limits gegenprüfen — aber kein Code-Fix
-> deployt Function 101. Betroffen sind genau die Module, die diese Liste als
-> weitgehend fertig führt: `evidence-vault`, `policy-packs`, `provenance`, alle
-> `iso42001-*`.
+> **Diese Erklärung ist am 2026-08-19 gefallen.** Der frühere Stand schloss:
+> „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
+> Code-Fix deployt Function 101." Der Router `siteos` **ist** als Function 101
+> durchgelaufen — Deploy-Lauf 32277074625, `Deployed Functions on project:
+> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Eine
+> Neumessung über alle 177 Verzeichnisse ergibt 101 deployt, 76 fehlend.
+>
+> Was daraus folgt und was nicht:
+>
+> - Die Zahl 100 war eine **Beobachtung**, das Kontingent eine **Schlussfolgerung
+>   daraus**. Das 402 war echt, aber es belegte den Zustand von damals, nicht
+>   eine dauerhafte Schranke. Wo die Grenze heute liegt, ist **nicht gemessen**.
+> - „Kann nicht deployt werden" ist für die verbleibenden 76 keine belegte
+>   Aussage mehr. Wer eine davon braucht, probiert den Deploy — das kostet einen
+>   Workflow-Lauf und beantwortet die Frage, die keine Herleitung beantwortet
+>   hat.
+> - Der alphabetische Schnitt war von Anfang an als Indiz gekennzeichnet. Er hat
+>   in die Irre geführt; das ist der Grund, warum hier künftig gemessen und
+>   nicht geschlossen wird.
+>
+> Betroffen sind weiterhin die Module, die diese Liste als weitgehend fertig
+> führt: `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` —
+> allerdings sind `evidence-vault`, `policy-packs`, `provenance` und die vier
+> `iso42001-*` inzwischen deployt. Vor jeder Aussage zum Produktionsstand gilt
+> unverändert: gegen `src/config/production-edge-functions.ts` bzw. die Live-DB
+> prüfen.
 >
 > Der Free-Tarif bedeutet zusätzlich: keine täglichen Backups, kein
 > Point-in-Time-Recovery, kein SLA, Projekt-Pausierung bei Inaktivität. Für ein
@@ -311,7 +331,7 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
+│   ├── functions/     177 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    279 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)

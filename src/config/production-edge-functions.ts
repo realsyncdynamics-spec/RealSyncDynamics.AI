@@ -8,12 +8,24 @@
  * dieses Repos: Er ist in keinem Build, keinem Lint und keinem Typecheck
  * sichtbar, weil Vite und `tsc` nur Strings sehen.
  *
- * Der Grund ist strukturell, nicht schlampig: Die Organisation läuft auf dem
- * Supabase-Free-Plan mit **hartem Limit von 100 Functions**. Belegt sind 100.
- * Jeder weitere Deploy scheitert mit `HTTP 402: Max number of functions
- * reached for project`. Im Repository liegen ~180 Functions — die Differenz
- * ist nicht „noch nicht deployt", sondern „kann derzeit nicht deployt werden".
- * Siehe `docs/runbooks/edge-function-kontingent.md`.
+ * Im Repository liegen 177 Function-Verzeichnisse, in Produktion laufen 101.
+ * Die Differenz ist **nicht** erklärt.
+ *
+ * ## Was mit der Obergrenze war — und was davon noch gilt
+ *
+ * Bis zum 2026-08-19 galt hier: Free-Plan, hartes Limit 100, belegt 100,
+ * jeder weitere Deploy scheitert mit `HTTP 402: Max number of functions
+ * reached for project`. Das 402 war echt und der Zählstand von exakt 100 auch.
+ *
+ * Am selben Tag ist der Router `siteos` als **einhundertunderste** Function
+ * ohne Fehler durchgelaufen (Deploy-Lauf 32277074625, `Deployed Functions on
+ * project: siteos`), anschließend über HTTP nachgewiesen. Damit ist die
+ * Obergrenze von 100 als *aktuelle* Schranke widerlegt — wo sie heute liegt,
+ * ist unbekannt und ausdrücklich nicht gemessen.
+ *
+ * Für die verbleibenden 76 heißt das: „kann nicht deployt werden" ist keine
+ * belegte Aussage mehr. Wer sie braucht, probiert einen Deploy — das ist
+ * billiger als jede Herleitung. Siehe `docs/runbooks/edge-function-kontingent.md`.
  *
  * Solange das so ist, muss die Oberfläche wissen, was sie erreichen kann.
  *
@@ -28,11 +40,17 @@
  * `UNBACKED_CALLERS` durchsehen (siehe dort).
  */
 
-/** Hartes Limit des aktuellen Supabase-Plans. Mehr geht nur im Tausch. */
-export const EDGE_FUNCTION_PLAN_LIMIT = 100;
+/**
+ * Der höchste Stand, der nachweislich gleichzeitig deployt war.
+ *
+ * Bewusst kein „Plan-Limit": Diese Zahl ist eine Beobachtung, keine Schranke.
+ * Sie darf steigen, sobald jemand einen höheren Stand misst — und sie ist
+ * kein Argument dafür, dass ein weiterer Deploy scheitern wird.
+ */
+export const EDGE_FUNCTIONS_OBSERVED_MAX = 101;
 
 /** Datum der letzten Messung gegen das Live-Projekt. */
-export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-19';
+export const PRODUCTION_EDGE_FUNCTIONS_MEASURED_AT = '2026-08-19T16:45Z';
 
 /**
  * Die in Produktion aktiven Function-Slugs — alphabetisch, damit ein Diff
@@ -122,6 +140,7 @@ export const PRODUCTION_EDGE_FUNCTIONS: readonly string[] = [
   'shopify-install',
   'shopify-scan',
   'shopify-webhooks',
+  'siteos',
   'stripe-checkout',
   'stripe-checkout-verify',
   'stripe-meter-sync',
@@ -180,22 +199,10 @@ export const UNBACKED_CALLERS: readonly UnbackedCaller[] = [
     surface: '/unified-entry/onboarding — Schritt „Growth starten"',
     publicPath: true,
   },
-  {
-    // Ein Eintrag für vier Endpunkte: Seit der Zusammenfassung zum Router
-    // `siteos` (`/discover`, `/builder`, `/runtime-scan`, `/agents`) kostet
-    // SiteOS **einen** Slot statt vier. Das ist der Unterschied zwischen
-    // „braucht einen Tausch" und „braucht vier".
-    //
-    // Korrigiert am 2026-08-19: Der erste Eintrag nannte
-    // `/unified-entry/preview`. Diese Route rendert `DashboardPreviewPage`,
-    // nicht den Builder. Der echte öffentliche Aufrufer ist
-    // `/handwerk-website` — über die Wiederausfuhr-Kette KmuWebsiteLanding →
-    // WebsiteBuilderLanding → WebsiteTransformationFlow, weshalb weder die
-    // Route noch der Dateiname im Router auftaucht.
-    slug: 'siteos',
-    surface: '/handwerk-website · /app/siteos/builder — Analyse, Blueprint, Scan, Agenten',
-    publicPath: true,
-  },
+  // `siteos` stand hier bis zum 2026-08-19, 16:45 Uhr. Der Router ist seit
+  // 16:39 Uhr deployt und über alle vier Pfade nachgewiesen — der Eintrag ist
+  // deshalb weg und der Hinweis in der Oberfläche verschwindet von selbst.
+  //
   // Öffentlich dokumentierte, aber nicht existierende API-Endpunkte.
   // ApiDocs kennzeichnet sie inzwischen — siehe src/pages/ApiDocs.tsx.
   { slug: 'audit', surface: '/api-docs — dokumentierter Endpunkt', publicPath: true },

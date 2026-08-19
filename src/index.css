@@ -713,3 +713,73 @@ html, body {
     transform: none;
   }
 }
+
+/* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
+   Kein neuer Farbton: Der Verlauf laeuft von reinem Weiss ueber ein sehr
+   helles Cyan zurueck ins Weiss — dieselben zwei Farben, die die Seite
+   ohnehin fuehrt. Was ihn edel macht, ist nicht die Farbe, sondern der
+   schmale Lichtsaum und dass die Kante darunter leicht abdunkelt.
+
+   `background-clip: text` statt `text-shadow` auf der Fuellung: Ein
+   Schatten auf einer Serifenschrift bei 72px verschmiert die feinen
+   Haarstriche, ein Verlauf laesst sie scharf.
+
+   Der Lichtsaum liegt als eigene, absolut positionierte Kopie darunter
+   (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
+   Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
+.hero-shine {
+  background-image: linear-gradient(
+    174deg,
+    #ffffff 0%,
+    #ffffff 34%,
+    #eafcff 52%,
+    #ffffff 72%,
+    #d8eef3 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Fallback fuer Engines ohne background-clip: text — ohne diese Zeile
+     bliebe die Headline unsichtbar statt schlicht weiss. */
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .hero-shine {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+}
+
+/* Die Akzentzeilen behalten Cyan, bekommen aber denselben Lichtverlauf. */
+.hero-shine-accent {
+  background-image: linear-gradient(
+    174deg,
+    #67e8f9 0%,
+    #22d3ee 40%,
+    #67e8f9 62%,
+    #0e9fb8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .hero-shine-accent {
+    color: #22d3ee;
+    -webkit-text-fill-color: #22d3ee;
+  }
+}
+
+/* Weicher Lichthof hinter der Headline. Sehr niedrig dosiert: Er soll den
+   Text vom Bild abheben, nicht leuchten. */
+.hero-shine-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: blur(28px);
+  opacity: .35;
+  z-index: -1;
+}

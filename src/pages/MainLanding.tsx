@@ -90,7 +90,7 @@ export function MainLanding() {
                 {HERO_HEADLINE.map((segments, line) => (
                   <span key={line} className="block">
                     {segments.map((segment, i) => (
-                      <span key={i} className={segment.accent ? 'text-cyan-400' : undefined}>{segment.text}</span>
+                      <span key={i} className={segment.accent ? 'hero-shine-accent' : 'hero-shine'}>{segment.text}</span>
                     ))}
                   </span>
                 ))}

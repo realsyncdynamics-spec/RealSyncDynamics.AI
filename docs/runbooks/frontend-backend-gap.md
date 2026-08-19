@@ -138,10 +138,15 @@ Functions lassen sich weiter aktualisieren, neue nicht anlegen. Vollständig in
 [`edge-function-kontingent.md`](./edge-function-kontingent.md) (Stand
 2026-08-11).
 
-**Ein Slot ist nur gegen einen anderen zu haben.** Genau das ist am 2026-08-16
-passiert: `.github/workflows/free-plan-slot-swap.yml` löscht zwölf Functions
-und deployt zwölf andere — deshalb stand die Summe an beiden Messtagen bei
+**Ein Slot war nur gegen einen anderen zu haben.** Genau das ist am 2026-08-16
+passiert: `.github/workflows/free-plan-slot-swap.yml` löschte zwölf Functions
+und deployte zwölf andere — deshalb stand die Summe an beiden Messtagen bei
 exakt 100, obwohl sich die Zusammensetzung änderte.
+
+Seit dem 2026-08-19 gilt das nicht mehr: die Organisation läuft auf Plan `pro`,
+das Limit ist aufgehoben und der Workflow wurde entfernt. Der Rollout der
+fehlenden Functions läuft über `deploy.yml` mit dem Input `functions`
+(`edge-function-kontingent.md`).
 
 | aus Produktion entfernt | dafür deployt |
 |---|---|

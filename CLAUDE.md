@@ -217,11 +217,12 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > `functions` = Slug-Liste und `push_migrations = false`. Danach diese Tabelle
 > gegen `supabase functions list` neu erheben, nicht schätzen.
 >
-> **Die Slot-Tausch-Workflows sind damit überholt und gefährlich.**
-> `free-plan-slot-swap.yml`, `k1-slots-freigeben.yml`,
-> `selective-p0-auth-free-slot.yml` und `selective-p0-auth-deploy.yml` löschen
-> live deployte Functions, um Platz unter einem Limit zu schaffen, das es nicht
-> mehr gibt. Nicht mehr starten.
+> **Die vier Slot-Tausch-Workflows sind entfernt.** `free-plan-slot-swap.yml`,
+> `k1-slots-freigeben.yml`, `selective-p0-auth-free-slot.yml` und
+> `selective-p0-auth-deploy.yml` löschten live deployte Functions, um Platz
+> unter einem Limit zu schaffen, das es nicht mehr gibt — ein Fehlklick in
+> Actions wäre ein Löschbefehl auf produktive Functions gewesen. Der Code liegt
+> in der Git-History; wiederherstellen wäre ein Rückschritt, kein Notfallplan.
 >
 > Was vom Free-Tarif als Befund bleibt, ist die Betriebsseite: tägliche Backups,
 > Point-in-Time-Recovery und SLA hängen am Plan. Der Pro-Tarif bringt tägliche

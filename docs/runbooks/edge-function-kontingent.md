@@ -9,10 +9,11 @@
 >
 > Damit gilt für alles unterhalb dieser Zeile: **historischer Befund**. Kein
 > Slot-Tausch mehr, keine Löschung live deployter Functions, um Platz zu schaffen.
-> Die vier One-Shot-Workflows dazu sind überholt und dürfen nicht mehr gestartet
-> werden — sie löschen produktive Functions ohne Gegenwert:
+> Die vier One-Shot-Workflows dazu sind am 2026-08-19 **entfernt** worden —
 > `free-plan-slot-swap.yml`, `k1-slots-freigeben.yml`,
-> `selective-p0-auth-free-slot.yml`, `selective-p0-auth-deploy.yml`.
+> `selective-p0-auth-free-slot.yml`, `selective-p0-auth-deploy.yml`. Sie
+> löschten produktive Functions ohne Gegenwert; der Code steht in der
+> Git-History, falls jemand die damalige Auswahl nachlesen will.
 >
 > ### Offen: 80 Functions nachziehen
 >

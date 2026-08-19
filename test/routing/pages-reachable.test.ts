@@ -50,11 +50,9 @@ const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
  */
 const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
   'src/pages/WebsiteBuilderWowFlow.tsx':
-    'Wiederausfuhr von PreviewSelectionPage, selbst nicht geroutet.',
+    'Wiederausfuhr von PreviewSelectionPage. Die Seite selbst ist seit dem 2026-08-19 unter /app/siteos/builder erreichbar; dieser Wrapper bleibt ungenutzt.',
   'src/pages/WowWebsitePreview.tsx':
     'Variante der Builder-Vorschau ohne Route.',
-  'src/unified-entry/pages/PreviewSelectionPage.tsx':
-    'SiteOS-Builder-Oberfläche. Ihre Functions (siteos-discover, siteos-builder) sind nicht in Produktion — verlinken würde eine defekte Seite sichtbar machen.',
   'src/unified-entry/pages/TransformationPreviewPage.tsx':
     'Zweite Vorschau-Variante derselben Funktion, ohne Route.',
   'src/unified-entry/pages/WebsitePreviewRoute.tsx':
@@ -62,7 +60,7 @@ const KNOWN_UNREACHABLE: Readonly<Record<string, string>> = {
   'src/unified-entry/pages/WowPreviewEntryPage.tsx':
     'Einstiegsvariante der Builder-Vorschau, ohne Route.',
   'src/unified-entry/pages/WowPreviewPage.tsx':
-    'Wiederausfuhr von PreviewSelectionPage, selbst nicht geroutet.',
+    'Wiederausfuhr von PreviewSelectionPage. Die Seite selbst ist geroutet; dieser Wrapper bleibt ungenutzt.',
 };
 
 function resolveSpecifier(fromFile: string, spec: string): string | null {

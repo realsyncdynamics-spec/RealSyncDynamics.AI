@@ -1,87 +1,130 @@
 # Runbook — Edge-Function-Kontingent aufräumen und erweitern
 
-> ## ✅ Status 2026-08-19 — das Limit ist weg, der Rollout steht aus
+> ## Status 2026-08-19 — das Free-Kontingent ist weg, der Rollout läuft
 >
-> Die Organisation `kejfpjavqgqrecnbhzex` läuft seit dem Billing-Upgrade auf Plan
-> **`pro`** (geprüft über die Management-API, nicht angenommen). Das Free-Limit von
-> 100 Edge Functions gilt nicht mehr; `HTTP 402: Max number of functions reached`
-> kann nicht mehr auftreten.
+> Die Organisation `kejfpjavqgqrecnbhzex` läuft auf Plan **`pro`** — am 2026-08-19
+> zweimal über die Management-API erhoben, nicht angenommen. Das frühere
+> `HTTP 402: Max number of functions reached` war echt; es belegte den Zustand
+> unter `free`. **Wo die Grenze im Pro-Tarif liegt, ist nicht gemessen** — die
+> Lehre aus #1101 gilt weiter: probieren und messen, nicht herleiten.
 >
-> Damit gilt für alles unterhalb dieser Zeile: **historischer Befund**. Kein
+> Damit ist alles unterhalb dieser Zeile **historischer Befund**. Kein
 > Slot-Tausch mehr, keine Löschung live deployter Functions, um Platz zu schaffen.
 > Die vier One-Shot-Workflows dazu sind am 2026-08-19 **entfernt** worden —
 > `free-plan-slot-swap.yml`, `k1-slots-freigeben.yml`,
-> `selective-p0-auth-free-slot.yml`, `selective-p0-auth-deploy.yml`. Sie
-> löschten produktive Functions ohne Gegenwert; der Code steht in der
-> Git-History, falls jemand die damalige Auswahl nachlesen will.
+> `selective-p0-auth-free-slot.yml`, `selective-p0-auth-deploy.yml`. Der Code
+> steht in der Git-History, falls jemand die damalige Auswahl nachlesen will.
 >
-> ### Offen: 80 Functions nachziehen
+> ### Messung 2026-08-19, abends
 >
-> Messung 2026-08-19 gegen `RealSyncDynamicsLive` (`ebljyceifhnlzhjfyxup`):
-> 180 Functions im Repo, 100 live, **80 fehlen**. Der Code ist vollständig — es
-> ist ein reiner Rollout.
+> `scripts/smoke-edge-functions.mjs` gegen die Live-URL:
 >
-> **Durchführung** (GitHub → Actions → *Deploy* → *Run workflow*):
+> | | Wert |
+> |---|---|
+> | Functions im Repo | 177 |
+> | nicht deployt | **74** |
+> | deployt, aber ohne Handler auf dem Basispfad | 1 (`siteos`) |
+> | mit 5xx | 0 |
+>
+> Zur dritten Zeile: `siteos` ist deployt (Management-API: ACTIVE, v2), antwortet
+> auf dem nackten Pfad aber selbst mit 404, weil der Router dort keinen Handler
+> hat. Eine reine Statuscode-Zählung hätte es als fehlend geführt. Das Skript
+> unterscheidet deshalb am Antwortkörper: die Plattform meldet wörtlich
+> „Requested function was not found", jede Function-eigene Antwort sieht anders aus.
+>
+> Seit der Morgenmessung sind `save-company-profile` und `create-trial-subscription`
+> live (über #1103 auf `main`, Push-Trigger von `deploy.yml`), und die vier
+> `siteos-*` sind im Router `siteos` aufgegangen (#1100).
+>
+> ### Durchführung
+>
+> GitHub → Actions → *Deploy* → *Run workflow*:
 >
 > | Feld | Wert |
 > |---|---|
 > | Use workflow from | der Branch mit dem erweiterten `deploy.yml` |
 > | `deploy_functions` | `true` |
 > | `push_migrations` | **`false`** — reiner Function-Rollout, Prod-Schema bleibt unberührt |
-> | `functions` | die 80 Slugs unten, leerzeichengetrennt |
+> | `functions` | die Slugs unten, leerzeichengetrennt |
 >
 > Der Input `functions` hat Vorrang vor der Changed-Files-Auswahl; ein Slug ohne
 > `supabase/functions/<slug>/index.ts` bricht den Lauf ab, bevor irgendetwas
 > deployt wird.
+>
+> **Nicht mit ausrollen:** `oauth2-token`. `verifyClientSecret()` ist dort ein
+> Platzhalter (`return hash.length > 0`) und akzeptiert jedes Secret; ein
+> `verify_jwt = true` schützt nicht, weil der Anon-Key ein gültiges Projekt-JWT
+> ist und öffentlich im Frontend steht.
 >
 > ```
 > agent-scheduler ai-act-auto-classify api-gateway api-webhook-deliver
 > appointment-book audit-determinism-verify auditor-engagement automation-trigger-trial-webhook
 > bot-chat bot-voice-webhook bulk-scan c2pa-manifest-generate
 > calculate-seo-metrics certification-readiness checkout-siteos-project cloudflare-deployer
-> compliance-alert-trigger compliance-remediation-execute create-trial-subscription dashboard-digest-generate
-> dashboard-intelligence email-delivery-webhook email-notify-send export-audit
-> generate-certification-report generate-compliance-report governance-analytics-aggregator governance-audit-report-gen
-> governance-deadline-monitor governance-evidence-handler governance-gap-analyzer governance-risk-escalate
-> governance-score-calculator governance-workflow-intake hostinger-agent-brief invoice-email
-> legal-embed log-tool-run maintenance-schedule memory-confidence-trigger
-> mfa-admin-reset nis2-deadline-calculator notify-terminal-event oauth2-apps
-> oauth2-token optimize-analyze optimize-execute order-intake
-> partner-provision-tenant pitch-deck-pdf plans remediation-workflow
-> report-generator save-company-profile schedule-data-syncs seed-integrations
-> seo-dashboard-data share-dashboard siteos-agents siteos-builder
-> siteos-discover siteos-runtime-scan skills social-orchestrator-persistence
-> social-publisher-worker stripe-oauth-callback stripe-token-meter-sync sync-ga-metrics
-> sync-stripe-metrics tenant-branding-get tenant-branding-update train-forecast-models
-> update-member-role webhook-deliver webhook-dispatcher webhook-retry-cron
-> website-domain-manager website-maintenance-agent website-maintenance-daily-cron website-operations-agent
+> compliance-alert-trigger compliance-remediation-execute dashboard-digest-generate dashboard-intelligence
+> email-delivery-webhook email-notify-send export-audit generate-certification-report
+> generate-compliance-report governance-analytics-aggregator governance-audit-report-gen governance-deadline-monitor
+> governance-evidence-handler governance-gap-analyzer governance-risk-escalate governance-score-calculator
+> governance-workflow-intake hostinger-agent-brief invoice-email legal-embed
+> log-tool-run maintenance-schedule memory-confidence-trigger mfa-admin-reset
+> nis2-deadline-calculator notify-terminal-event oauth2-apps oauth2-token
+> optimize-analyze optimize-execute order-intake partner-provision-tenant
+> pitch-deck-pdf plans remediation-workflow report-generator
+> schedule-data-syncs seed-integrations seo-dashboard-data share-dashboard
+> skills social-orchestrator-persistence social-publisher-worker stripe-oauth-callback
+> stripe-token-meter-sync sync-ga-metrics sync-stripe-metrics tenant-branding-get
+> tenant-branding-update train-forecast-models update-member-role webhook-deliver
+> webhook-dispatcher webhook-retry-cron website-domain-manager website-maintenance-agent
+> website-maintenance-daily-cron website-operations-agent
 > ```
 >
-> **Danach prüfen** — gemessen, nicht geschätzt:
-> `supabase functions list --project-ref ebljyceifhnlzhjfyxup | wc -l` muss 180
-> ergeben. Anschließend die Tabelle in `CLAUDE.md` §5 aktualisieren.
->
-> **Was der Rollout freischaltet** (Auszug): `save-company-profile` und
-> `create-trial-subscription` — beide werden von `/unified-entry/onboarding`
-> aufgerufen und antworten heute mit 404, der Registrierungsabschluss bricht dort
-> ab (siehe `frontend-backend-gap.md`). Dazu die `siteos-*`-Runtime, `oauth2-*`,
-> die `webhook-*`-Zustellung und die Reporting-Functions.
->
-> ### Weiterhin offen, unabhängig vom Limit
->
-> Point-in-Time-Recovery ist auch im Pro-Tarif ein Zusatz. Solange er nicht
-> gebucht ist, steht die Zusage „auditierbarer Prüfpfad" ohne PITR da — eigener
-> Governance-Befund, nicht Teil dieses Rollouts.
+> **Danach prüfen** — gemessen, nicht geschätzt: `node scripts/smoke-edge-functions.mjs`
+> erneut laufen lassen und auf 5xx achten (deployt, aber startet nicht, meist ein
+> fehlendes Secret). Anschließend die Tabelle in `CLAUDE.md` §5 nachziehen.
 
----
-
-
-**Stand:** 2026-08-11
+**Stand:** 2026-08-11 · **Prämisse widerlegt am 2026-08-19**
 **Auslöser:** Jeder `Deploy`-Lauf scheitert mit `HTTP 402: Max number of functions reached for project`.
 
 ---
 
-## 1 Befund
+## 0 Korrektur vom 2026-08-19 — die Schranke liegt nicht mehr bei 100
+
+> Alles ab Abschnitt 1 beschreibt den Stand vom August 2026 und ist als
+> **Verfahren** weiterhin gültig: Slot löschen, Allowlist nachziehen, Drift-Guard
+> beachten. Die **Begründung** stimmt nicht mehr.
+>
+> Am 2026-08-19 um 16:39 Uhr ist der Router `siteos` als **101. Function**
+> deployt worden — ohne 402. Belegt durch Deploy-Lauf 32277074625
+> (`Deployed Functions on project: siteos`) und anschließend über HTTP an allen
+> vier Router-Pfaden nachgewiesen.
+>
+> Eine Neumessung derselben Stunde über alle 177 Verzeichnisse im Repo:
+>
+> | | Anzahl |
+> |---|---|
+> | Live in Supabase | **101** |
+> | Im Repo | 177 |
+> | Nicht deployt | **76** |
+>
+> **Was das heißt.** Das 402 von 2026-08-10 war echt, aber es belegte einen
+> Zustand, keine dauerhafte Grenze. Wo die Grenze heute liegt, ist **nicht
+> gemessen** — bekannt ist nur, dass sie über 100 liegt.
+>
+> **Was daraus folgt.** Für jede der 76 fehlenden Functions ist „kann nicht
+> deployt werden" keine belegte Aussage mehr. Der billigste Weg zur Antwort ist
+> ein Deploy-Versuch, nicht eine Herleitung aus Zählständen. Insbesondere
+> `save-company-profile` und `create-trial-subscription` — die beiden, an denen
+> die Registrierung hängt (`docs/runbooks/frontend-backend-gap.md`) — sind damit
+> wieder Kandidaten.
+>
+> **Was schon nachgezogen ist.** `evidence-vault`, `policy-packs`, `provenance`,
+> alle vier `iso42001-*`, `governance-memory` und `memory-decay-worker` laufen
+> inzwischen in Produktion; Abschnitt 1 führt sie noch als fehlend. Von den
+> RFC-003-Functions fehlt nur noch `memory-confidence-trigger`.
+
+---
+
+## 1 Befund (Stand 2026-08-10 — Prämisse überholt, siehe Abschnitt 0)
 
 Die Supabase-Organisation läuft auf dem **Free-Plan** (Limit: 100 Edge Functions).
 Gemessen am 2026-08-10 über die Management-API:

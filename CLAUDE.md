@@ -78,7 +78,7 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
 - PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
-- **180 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **100 davon in Produktion**, siehe §5
+- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **101 davon in Produktion**, siehe §5
 - **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
@@ -190,7 +190,7 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > | | Repo | in Produktion | Lücke |
 > |---|---|---|---|
 > | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
-> | Edge Functions | 180 | 100 | **80** |
+> | Edge Functions | 177 | **101** (neu gemessen 2026-08-19, 16:45 Uhr) | **76** |
 > | Tabellen in `public` | — | 341 | — |
 > | Organisations-Plan | — | **`pro`** | — |
 >
@@ -208,14 +208,64 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > Deploy-Bug und kein Typfehler. Seit dem Billing-Upgrade läuft die Organisation
 > auf Plan **`pro`**; das Limit von 100 existiert nicht mehr.
 >
-> Damit ist die Lücke von 80 Functions ab sofort eine reine **Rollout**-Aufgabe:
-> deployen, nicht debuggen. Betroffen sind unter anderem `siteos-*`,
-> `oauth2-*`, `webhook-*`, `save-company-profile` und `create-trial-subscription`
-> (die beiden brechen bis dahin den Onboarding-Abschluss mit 404).
+> - Zum Messzeitpunkt lagen alle 80 fehlenden Functions **alphabetisch nach
+>   `api-gateway`**, keine einzige davor — ein sauberer Schnitt bei exakt 100.
+>   Seit dem Slot-Swap gilt das nicht mehr: `agent-scheduler` und
+>   `ai-act-auto-classify` wurden bewusst entfernt und liegen davor
+>   (`scripts/edge-functions-retired.txt`). Der Schnitt war ein Indiz, kein
+>   Beweis — belegt ist das Kontingent durch `HTTP 402: Max number of
+>   functions reached for project`.
+> - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
+>   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
+>   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions
+>   (`health`, `governance-agent`, `ai-gateway`) — allerdings an der
+>   Paketauflösung (`Could not find a matching package for
+>   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
+>   will, braucht `deno install` gegen die echten Dependencies.
+> - Die Organisation lief zum Messzeitpunkt auf **Plan `free`**. Am 2026-08-19
+>   über die Management-API erhoben: **`pro`**. Das erklärt Function 101 ohne
+>   Widerspruch — das Kontingent hat existiert, es ist mit dem Upgrade
+>   weggefallen.
 >
-> Der Rollout läuft über `deploy.yml` (workflow_dispatch) mit dem Input
-> `functions` = Slug-Liste und `push_migrations = false`. Danach diese Tabelle
-> gegen `supabase functions list` neu erheben, nicht schätzen.
+> **Diese Erklärung ist am 2026-08-19 gefallen.** Der frühere Stand schloss:
+> „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
+> Code-Fix deployt Function 101." Der Router `siteos` **ist** als Function 101
+> durchgelaufen — Deploy-Lauf 32277074625, `Deployed Functions on project:
+> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Eine
+> Neumessung über alle 177 Verzeichnisse ergibt 101 deployt, 76 fehlend.
+>
+> Was daraus folgt und was nicht:
+>
+> - Die Zahl 100 war eine **Beobachtung**, das Kontingent eine **Schlussfolgerung
+>   daraus**. Das 402 war echt, aber es belegte den Zustand von damals, nicht
+>   eine dauerhafte Schranke. Wo die Grenze heute liegt, ist **nicht gemessen**.
+> - „Kann nicht deployt werden" ist für die verbleibenden 76 keine belegte
+>   Aussage mehr. Wer eine davon braucht, probiert den Deploy — das kostet einen
+>   Workflow-Lauf und beantwortet die Frage, die keine Herleitung beantwortet
+>   hat.
+> - Der alphabetische Schnitt war von Anfang an als Indiz gekennzeichnet. Er hat
+>   in die Irre geführt; das ist der Grund, warum hier künftig gemessen und
+>   nicht geschlossen wird.
+>
+> Betroffen sind weiterhin die Module, die diese Liste als weitgehend fertig
+> führt: `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` —
+> allerdings sind `evidence-vault`, `policy-packs`, `provenance` und die vier
+> `iso42001-*` inzwischen deployt. Vor jeder Aussage zum Produktionsstand gilt
+> unverändert: gegen `src/config/production-edge-functions.ts` bzw. die Live-DB
+> prüfen.
+>
+> **Rollout-Mechanik.** `deploy.yml` nimmt per `workflow_dispatch` den Input
+> `functions` = Slug-Liste entgegen; er hat Vorrang vor der Changed-Files-Auswahl
+> und bricht bei einem unbekannten Slug ab, bevor irgendetwas deployt wird. Mit
+> `push_migrations = false` bleibt das Prod-Schema unberührt. Damit lässt sich in
+> Wellen ausrollen, statt 177 Deploys in einen Lauf zu legen.
+>
+> **Messung 2026-08-19, abends** (`scripts/smoke-edge-functions.mjs` gegen die
+> Live-URL, nicht geschätzt): 177 Functions im Repo, **74 nicht deployt**, 0 mit
+> 5xx. Dazu eine Besonderheit, die eine reine 404-Zählung falsch macht: `siteos`
+> ist deployt (Management-API: ACTIVE, v2), antwortet auf dem nackten Pfad aber
+> selbst mit 404, weil der Router dort keinen Handler hat. Ein 404 belegt also
+> nicht, dass eine Function fehlt — unterschieden wird am Antwortkörper.
 >
 > **Die vier Slot-Tausch-Workflows sind entfernt.** `free-plan-slot-swap.yml`,
 > `k1-slots-freigeben.yml`, `selective-p0-auth-free-slot.yml` und
@@ -307,7 +357,7 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     180 Edge Functions (einziger Ort für Service-Role-Keys)
+│   ├── functions/     177 Edge Functions (einziger Ort für Service-Role-Keys)
 │   └── migrations/    279 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)

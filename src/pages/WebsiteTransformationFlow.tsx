@@ -16,9 +16,13 @@ import {
 } from '../components/landing/EdgeFunctionAvailabilityNotice';
 
 /**
- * Die drei Functions, auf denen dieser Ablauf steht: Analyse, Scan, Neubau.
- * Keine davon laeuft derzeit in Produktion (Messung 2026-08-19,
- * `src/config/production-edge-functions.ts`).
+ * Die Function, auf der dieser Ablauf steht.
+ *
+ * Analyse, Scan und Neubau sind drei Pfade **eines** Slots:
+ * `siteos/discover`, `siteos/runtime-scan`, `siteos/builder`. Der Slot laeuft
+ * seit dem 2026-08-19 in Produktion — die Pruefung bleibt trotzdem stehen:
+ * Sie haengt an der Messung in `src/config/production-edge-functions.ts` und
+ * greift von selbst wieder, falls der Slot verschwindet.
  *
  * Anders als beim Onboarding wird hier **vor** dem Versuch geprueft, und der
  * Unterschied ist kein Zufall: Der erste Klick schickt einen nicht
@@ -26,7 +30,7 @@ import {
  * erfaehrt, dass die Funktion nicht existiert, hat bereits bezahlt — mit
  * seinen Daten. Ein Vorbehalt gehoert vor die Kosten, nicht dahinter.
  */
-const SITEOS_FLOW_FUNCTIONS = ['siteos-discover', 'siteos-runtime-scan', 'siteos-builder'] as const;
+const SITEOS_FLOW_FUNCTIONS = ['siteos'] as const;
 
 const FEATURES = [
   ['chatbot', 'AI-Chat', Bot], ['phonebot', 'Telefon-AI', Phone], ['booking', 'Terminbuchung', CalendarDays],
@@ -85,7 +89,7 @@ export function WebsiteTransformationFlow() {
     setBusy(true); setError('');
     try {
       const sb = getSupabase();
-      const { data, error: discoveryError } = await sb.functions.invoke('siteos-discover', { body: { tenant_id: activeTenantId, url: clean } });
+      const { data, error: discoveryError } = await sb.functions.invoke('siteos/discover', { body: { tenant_id: activeTenantId, url: clean } });
       if (discoveryError) throw discoveryError;
       const found = data as Discovery;
       if (!found?.source_url) throw new Error('Die Website konnte nicht analysiert werden.');

@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
+import { useTenant } from '../../core/access/TenantProvider';
 import { postEdgeFunction } from '../../lib/edgeFunction';
 import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
 
 /**
- * Die beiden Functions, die diesen Schritt tragen. Beide liegen im Repository,
- * beide sind wegen des 100er-Limits des Supabase-Plans derzeit nicht deployt
- * (`src/config/production-edge-functions.ts`).
+ * Die beiden Functions, die diesen Schritt tragen.
  *
- * Bewusst wird trotzdem zuerst aufgerufen und erst der Fehlschlag erklärt:
- * Wäre die Verfügbarkeit vorab aus der Liste abgeleitet, würde ein Nutzer
- * auch dann blockiert, wenn das Backend längst nachgezogen und nur die Liste
- * nicht gepflegt wurde. Messung darf erklaeren, nicht verhindern.
+ * Bewusst wird zuerst aufgerufen und erst der Fehlschlag erklärt: Wäre die
+ * Verfügbarkeit vorab aus der Liste abgeleitet, würde ein Nutzer auch dann
+ * blockiert, wenn das Backend längst nachgezogen und nur die Liste nicht
+ * gepflegt wurde. Messung darf erklaeren, nicht verhindern.
  */
 const SETUP_FUNCTIONS = ['save-company-profile', 'create-trial-subscription'] as const;
 
@@ -35,6 +34,7 @@ const CONTEXT_QUESTIONS = [
 export function PostRegisterOnboardingPage() {
   const navigate = useNavigate();
   const { user } = useSupabaseAuth();
+  const { activeTenantId } = useTenant();
   const [step, setStep] = useState<'sector' | 'questions' | 'success' | 'incomplete'>('sector');
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -53,8 +53,13 @@ export function PostRegisterOnboardingPage() {
 
     setLoading(true);
     try {
-      await postEdgeFunction('save-company-profile', { sector: selectedSector, answers });
-      await postEdgeFunction('create-trial-subscription', { planKey: 'growth' });
+      // `tenantId` mitschicken, wenn der Kontext ihn schon kennt: Gehört der
+      // Nutzer zu mehreren Arbeitsbereichen, kann die Function ihn nicht
+      // erraten und antwortet mit TENANT_AMBIGUOUS. Fehlt er, löst sie ihn
+      // über `memberships` auf — der frische Registrierungsfall.
+      const tenant = activeTenantId ? { tenantId: activeTenantId } : {};
+      await postEdgeFunction('save-company-profile', { sector: selectedSector, answers, ...tenant });
+      await postEdgeFunction('create-trial-subscription', { planKey: 'growth', ...tenant });
       setStep('success');
     } catch (err) {
       // Der Fehlschlag hat zwei sehr verschiedene Ursachen, und der Unterschied

@@ -483,6 +483,32 @@ darüber hinaus.
 
 Ein „Ja" zu einer früheren Änderung gilt nicht für die nächste.
 
+#### Erteilte Freigaben
+
+Damit die nächste Sitzung nicht für einen Regelbruch hält, was abgestimmt war,
+wird jede erteilte Freigabe hier festgehalten — mit ihrem Umfang, denn sie gilt
+nur für diesen.
+
+**2026-08-19 — Enterprise-Ebene der Startseite**
+
+| Frage | Antwort |
+|---|---|
+| 1. Zweiter Akzent (Champagner/Gold) als neues Token, nur für VIP-Flächen | **Nein** |
+| 2. Neues Materialbild für bestehende Panels (Glas, Haarlinien, gestaffelte Schatten) | **Ja** |
+| 3. Eigene Enterprise-Sektion plus gestaffeltes Einblenden und Parallax auf der Weltkugel | **Ja** |
+
+Zur ersten Frage kam der Zusatz „komplett next level Frontend und allgemeines
+Webdesign". Der Umfang ist damit **breiter** als die drei Fragen, aber die
+Farbentscheidung steht: Es bleibt bei Cyan auf Obsidian, ein zweiter
+Farbakzent ist ausdrücklich abgelehnt.
+
+Umgesetzt: `.surface-panel` / `.hairline` und die Reveal-Regeln in
+`src/index.css`, `src/hooks/useStagedReveal.ts`, `src/hooks/useHeroParallax.ts`,
+`src/components/landing/EnterpriseAccessSection.tsx`.
+
+Was **nicht** freigegeben ist und weiterhin unter §10.1 fällt: Sektionsreihenfolge,
+Grid, Typografie-Skala, Icon-Set, Farbpalette.
+
 #### Faustregel
 
 **Hinzufügen ja, Ändern nur nach Rückfrage, Design gar nicht.**

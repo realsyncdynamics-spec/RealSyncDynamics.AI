@@ -625,3 +625,91 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .landing-hero-card { animation: none; }
 }
+
+/* ── Materialebene der Startseite ────────────────────────────────────────
+   Freigegeben am 2026-08-19 (Frage 2 der Drei-Fragen-Regel, CLAUDE.md §10.4).
+   Bewusst *ohne* neue Farbe: Frage 1 wurde verneint. Die gehobene Wirkung
+   entsteht aus Material und Licht, nicht aus einem zweiten Akzent.
+
+   Drei Schichten, die zusammen die Tiefe machen:
+     1. Verlauf von oben nach unten — Licht faellt von oben ein
+     2. Haarlinie als `inset`-Schatten statt `border`: eine echte 1px-Kante
+        bleibt bei Retina-Skalierung sichtbar scharf, ein Border rundet
+     3. weit gestreuter, sehr dunkler Aussenschatten — traegt die Flaeche,
+        ohne als Schlagschatten aufzufallen
+   `backdrop-filter` zuletzt, damit der Hintergrund durchscheint. */
+.surface-panel {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.055),
+    0 24px 60px -32px rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(14px);
+  transition: box-shadow 260ms ease, background-color 260ms ease, transform 260ms ease;
+}
+
+/* Nur fuer Flaechen, die tatsaechlich anklickbar sind. Eine Karte, die sich
+   beim Ueberfahren hebt, ohne irgendwohin zu fuehren, ist eine Luege. */
+.surface-panel-interactive:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(103, 232, 249, 0.22),
+    0 30px 70px -30px rgba(0, 0, 0, 0.95);
+  transform: translateY(-2px);
+}
+
+/* Trennlinie, die an den Raendern ausblendet. Eine durchgezogene Linie
+   schneidet den Abschnitt hart ab; diese laesst ihn auslaufen. */
+.hairline {
+  height: 1px;
+  border: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.14) 18%,
+    rgba(255, 255, 255, 0.14) 82%,
+    transparent
+  );
+}
+
+/* ── Gestaffeltes Einblenden ─────────────────────────────────────────────
+   Freigegeben am 2026-08-19 (Frage 3).
+
+   Verborgen wird ausschliesslich, wenn JS die Wurzel als bereit markiert
+   hat. Andernfalls waere der praerenderte HTML-Stand (scripts/prerender.mjs)
+   unsichtbar — fuer Suchmaschinen und fuer jeden ohne aktives JavaScript.
+   Sichtbarkeit darf nicht von einem Skript abhaengen, das erst laufen muss.
+
+   `transition-delay` statt Keyframe-Animation: Die Staffelung kommt aus
+   einer Custom Property, und nicht registrierte Custom Properties
+   interpolieren nicht — in einem @keyframes wuerde sie springen. Als
+   Verzoegerungswert wird sie nur einmal gelesen, das ist unkritisch. */
+[data-reveal-root='ready'] [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+[data-reveal-root='ready'] [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Kein Einblenden und keine Verzoegerung — sofort sichtbar. */
+  [data-reveal-root='ready'] [data-reveal],
+  [data-reveal-root='ready'] [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .surface-panel,
+  .surface-panel-interactive:hover {
+    transition: none;
+    transform: none;
+  }
+}

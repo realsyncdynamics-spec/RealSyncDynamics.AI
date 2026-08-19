@@ -10,6 +10,9 @@ import {
   RUNTIME_PREVIEW_CARDS,
 } from '../config/landing-runtime-preview';
 import { HERO_HEADLINE } from '../components/governance-frontend/hero-content';
+import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { useStagedReveal } from '../hooks/useStagedReveal';
+import { useHeroParallax } from '../hooks/useHeroParallax';
 
 const BG = 'rgb(3, 7, 18)';
 const SANS = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -34,6 +37,11 @@ const GOVERNANCE_STEPS = [
 export function MainLanding() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
+  // Ein Observer fuer die ganze Seite (siehe useStagedReveal), Parallax nur
+  // auf der Hero-Bildebene — nicht auf dem Text darueber, sonst wandert die
+  // Headline unter dem Leser weg.
+  const revealRoot = useStagedReveal<HTMLElement>();
+  const heroImage = useHeroParallax<HTMLDivElement>();
 
   const startScan = (event: FormEvent) => {
     event.preventDefault();
@@ -51,11 +59,11 @@ export function MainLanding() {
         ogDescription="RealSyncDynamics.AI verbindet DSGVO, EU AI Act, Code-Compliance, Policy-Durchsetzung und auditfähige Nachweise in einer operativen Governance-Runtime."
       />
 
-      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-cyan-400" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/unified-entry/scan" className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten</Link></nav></div></header>
+      <header className="absolute inset-x-0 top-0 z-30"><div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-10"><Link to="/" className="flex items-center gap-2.5"><Snowflake className="h-6 w-6 text-cyan-400" strokeWidth={1.5} /><span className="text-base font-semibold tracking-tight sm:text-lg">RealSync <span className="font-normal text-white/80">Dynamics.AI</span></span></Link><nav className="hidden items-center gap-7 md:flex"><a href="#tools" className="text-sm text-white/65 transition-colors hover:text-white">Tools</a><a href="#platform" className="text-sm text-white/65 transition-colors hover:text-white">Produkt</a><a href="#evidence" className="text-sm text-white/65 transition-colors hover:text-white">Evidence</a><a href="#enterprise" className="hidden text-sm text-white/65 transition-colors hover:text-white lg:block">Enterprise</a><Link to="/ai-act" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">EU AI Act</Link><Link to="/sicherheit" className="hidden text-sm text-white/65 transition-colors hover:text-white xl:block">Sicherheit</Link><Link to="/pricing" className="text-sm text-white/65 transition-colors hover:text-white">Preise</Link><Link to="/welcome" className="text-sm text-white/65 transition-colors hover:text-white">Login</Link><Link to="/unified-entry/scan" className="rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten</Link></nav></div></header>
 
-      <main>
+      <main ref={revealRoot}>
         <section className="relative min-h-[880px] overflow-hidden">
-          <div className="absolute inset-0">
+          <div className="absolute inset-0" ref={heroImage}>
             <picture>
               <source srcSet="/europe-globe.webp" type="image/webp" />
               <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-90" />
@@ -130,7 +138,7 @@ export function MainLanding() {
                 {RUNTIME_PREVIEW_CARDS.map((card, i) => (
                   <div
                     key={card.id}
-                    className={`${card.offset} landing-hero-card max-w-[19rem] rounded-2xl border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl`}
+                    className={`${card.offset} landing-hero-card surface-panel max-w-[19rem] rounded-2xl bg-black/45 p-4`}
                     style={{ animationDelay: `${i * 0.9}s` }}
                   >
                     <div className="flex items-center gap-2">
@@ -159,13 +167,15 @@ export function MainLanding() {
                  Seiten lagen bislang ohne Einstieg von der Startseite herum (§14). */
               const body = <><h3 className="text-base font-semibold">{cap.name}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{cap.description}</p>{cap.learnMorePath && <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-cyan-300">Mehr erfahren <ArrowRight className="h-3.5 w-3.5" /></span>}</>;
               return cap.learnMorePath
-                ? <Link key={cap.id} to={cap.learnMorePath} className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03]">{body}</Link>
-                : <div key={cap.id} className="bg-[rgb(3,7,18)] p-7">{body}</div>;
+                ? <Link key={cap.id} to={cap.learnMorePath} data-reveal data-reveal-group="platform" className="block bg-[rgb(3,7,18)] p-7 transition hover:bg-white/[.03]">{body}</Link>
+                : <div key={cap.id} data-reveal data-reveal-group="platform" className="bg-[rgb(3,7,18)] p-7">{body}</div>;
             })}</div>{BUILDING_CAPABILITIES.length > 0 && <div className="mt-10"><p className="font-mono text-[10px] tracking-[.25em] text-white/35">IN ENTWICKLUNG</p><div className="mt-4 grid gap-4 md:grid-cols-3">{BUILDING_CAPABILITIES.map(cap => <div key={cap.id} className="rounded-xl border border-dashed border-white/15 p-5"><div className="flex items-center gap-2"><h3 className="text-sm font-medium text-white/70">{cap.name}</h3><span className="rounded-full border border-white/15 px-2 py-0.5 font-mono text-[9px] tracking-[.12em] text-white/40">GEPLANT</span></div><p className="mt-2 text-xs leading-relaxed text-white/40">{cap.description}</p>{cap.note && <p className="mt-2 text-[11px] leading-relaxed text-white/30">{cap.note}</p>}</div>)}</div><p className="mt-4 text-[11px] text-white/30">Diese Module sind noch nicht in Produktion verfügbar. Wir weisen sie aus, statt sie mitzuverkaufen.</p></div>}</div></section>
 
         <section id="evidence" className="border-y border-white/10 bg-white/[.02] py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-end"><div><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">EVIDENCE &amp; TRUST</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Compliance, die sich <span className="text-cyan-400">beweisen lässt.</span></h2><p className="mt-5 leading-relaxed text-white/55">PDFs, Logs, Zeitstempel und nachvollziehbare Prüfpfade. Jede Prüfung, jede Entscheidung und jede Änderung landet in derselben Governance-Historie.</p></div><div className="grid gap-3 sm:grid-cols-2"><TrustItem icon={ShieldCheck} title="DSGVO" text="Verarbeitung, Risiko, Policy und Nachweis im laufenden Governance-Prozess." /><TrustItem icon={Lock} title="EU AI Act" text="Risikoklassifikation, Transparenz und Dokumentation für KI-Systeme." /><TrustItem icon={FileCheck2} title="Nachweis-Export" text="Prüfungen und Entscheidungen als auditfähiger Export — für interne Kontrollen und externe Prüfer." /><TrustItem icon={Code2} title="Code Compliance" text="Claude Code prüft und unterstützt konkrete technische Remediation." /></div></div></div></section>
 
-        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-cyan-400">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} className="rounded-2xl border border-white/10 bg-white/[.02] p-7"><span className="font-mono text-3xl text-cyan-400/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
+        <section className="py-20 md:py-28"><div className="mx-auto max-w-7xl px-6 lg:px-10"><div className="mb-12 max-w-3xl"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">GOVERNANCE RUNTIME</p><h2 className="mt-3 text-4xl tracking-tight sm:text-5xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Von der KI-Nutzung zur <span className="text-cyan-400">kontrollierten KI-Organisation.</span></h2></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{GOVERNANCE_STEPS.map(([no,title,text]) => <div key={no} data-reveal data-reveal-group="runtime" className="surface-panel rounded-2xl p-7"><span className="font-mono text-3xl text-cyan-400/35">{no}</span><h3 className="mt-4 text-lg font-semibold tracking-wide">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>)}</div></div></section>
+
+        <EnterpriseAccessSection />
 
         <section className="border-t border-white/10 bg-black py-20 md:py-28"><div className="mx-auto max-w-4xl px-6 text-center"><p className="font-mono text-[10px] tracking-[.25em] text-cyan-400">ONE GOVERNANCE PLANE</p><h2 className="mt-4 text-4xl tracking-tight sm:text-6xl" style={{ fontFamily: SERIF, fontWeight: 500 }}>Governance statt Checkliste.</h2><p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-white/55">Compliance statt Selbstauskunft. Evidence statt Behauptung. Enforcement statt Empfehlung.</p><div className="mt-8 flex flex-wrap justify-center gap-3 text-xs text-white/50"><span className="rounded-full border border-white/10 px-4 py-2">DSGVO</span><span className="rounded-full border border-white/10 px-4 py-2">EU AI Act</span><span className="rounded-full border border-white/10 px-4 py-2">Policy Packs</span><span className="rounded-full border border-white/10 px-4 py-2">Evidence Vault</span><span className="rounded-full border border-white/10 px-4 py-2">Claude Code</span><span className="rounded-full border border-white/10 px-4 py-2">Nachweis-Export</span></div><div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row"><Link to="/unified-entry/scan" className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 font-semibold text-[rgb(3,7,18)] transition hover:bg-cyan-300">Free Audit starten <ArrowRight className="h-4 w-4" /></Link><Link to="/pricing" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-7 py-3.5 font-semibold text-white transition hover:border-white/40">Preise ansehen</Link></div></div></section>
       </main>
@@ -176,5 +186,5 @@ export function MainLanding() {
 }
 
 function TrustItem({ icon: Icon, title, text }: { icon: typeof ShieldCheck; title: string; text: string }) {
-  return <div className="rounded-2xl border border-white/10 bg-[rgb(3,7,18)] p-6"><Icon className="h-5 w-5 text-cyan-400" /><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>;
+  return <div data-reveal data-reveal-group="evidence" className="surface-panel rounded-2xl p-6"><Icon className="h-5 w-5 text-cyan-400" /><h3 className="mt-4 font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-white/50">{text}</p></div>;
 }

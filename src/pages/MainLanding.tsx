@@ -11,6 +11,7 @@ import {
 } from '../config/landing-runtime-preview';
 import { HERO_HEADLINE } from '../components/governance-frontend/hero-content';
 import { EnterpriseAccessSection } from '../components/landing/EnterpriseAccessSection';
+import { FrankfurtSkyline } from '../components/landing/FrankfurtSkyline';
 import { useStagedReveal } from '../hooks/useStagedReveal';
 import { useHeroParallax } from '../hooks/useHeroParallax';
 
@@ -68,12 +69,25 @@ export function MainLanding() {
               <source srcSet="/europe-globe.webp" type="image/webp" />
               <img src="/europe-globe.jpg" alt="Europa bei Nacht mit digitalen Datenströmen" width={1376} height={768} fetchPriority="high" className="h-full w-full object-cover object-right opacity-90" />
             </picture>
+            {/* Morgenlicht und Skyline liegen ueber dem Bild, aber unter den
+                Verlaeufen: So bleibt die Textspalte links lesbar, waehrend
+                rechts die Stadt gegen den aufhellenden Horizont steht. */}
+            <div className="hero-dawn" aria-hidden="true" />
+            <FrankfurtSkyline className="hero-skyline" />
+            <div className="hero-dawn-rim" aria-hidden="true" />
+
             {/* Der Verlauf haelt die Textspalte lesbar, gibt den Globus rechts aber
                 frei. Vorher lag bis 95% Schwarz darueber — Europa war kaum zu sehen. */}
             <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)] via-transparent to-black/30" />
-            {/* Vignette: zieht den Blick zur Bildmitte, ohne die Kanten zu haerten. */}
-            <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 68% 45%, transparent 0%, transparent 42%, rgba(3,7,18,.55) 100%)' }} />
+            {/* Fusspunkt heller als zuvor (from-…/80 statt volldeckend): Die
+                Skyline steht sonst in einer schwarzen Wanne statt auf einem
+                Horizont. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgb(3,7,18)]/80 via-transparent to-black/30" />
+            {/* Vignette: zieht den Blick zur Bildmitte, ohne die Kanten zu
+                haerten. Mittelpunkt seit dem Neuausleuchten etwas tiefer (52 %
+                statt 45 %), damit der Lichtsaum am Horizont im offenen Teil
+                liegt und nicht im abgedunkelten Rand. */}
+            <div className="absolute inset-0" style={{ background: 'radial-gradient(126% 96% at 66% 52%, transparent 0%, transparent 44%, rgba(3,7,18,.5) 100%)' }} />
           </div>
 
           <div className="relative z-10 mx-auto grid min-h-[880px] max-w-7xl items-center gap-10 px-6 pb-20 pt-28 lg:grid-cols-[1.05fr_.95fr] lg:px-10">

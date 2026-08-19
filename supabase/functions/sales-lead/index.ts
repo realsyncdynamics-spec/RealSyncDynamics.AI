@@ -38,7 +38,11 @@ const RESEND_API_URL = 'https://api.resend.com/emails';
 const FROM_EMAIL = 'alerts@realsyncdynamicsai.de';
 
 /** Erlaubte Werte der Wartelisten-Spalten — Spiegel der CHECK-Constraints. */
-const WAITLIST_INTERESTS = ['runtime', 'siteos', 'evidence', 'provenance', 'audit', 'other'];
+// `bots` gehoert dazu, weil die Landingpage genau diesen Wert sendet
+// (src/components/landing/WaitlistForm.tsx). Fehlte er hier, fiel jede
+// Bot-Anmeldung auf `other` zurueck — ausgerechnet fuer das eine Modul, das
+// noch nicht ausliefert und dessen Nachfrage gemessen werden sollte.
+const WAITLIST_INTERESTS = ['runtime', 'siteos', 'evidence', 'provenance', 'audit', 'bots', 'other'];
 const WAITLIST_TEAM_SIZES = ['1-9', '10-49', '50-249', '250-999', '1000+'];
 /** Wartelisten-Anmeldungen pro IP-Hash und Stunde. */
 const WAITLIST_RATE_LIMIT = 5;

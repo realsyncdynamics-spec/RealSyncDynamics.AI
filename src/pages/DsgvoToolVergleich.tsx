@@ -11,6 +11,7 @@ import {
   PRICING_DISCLAIMER,
   TRANSFER_LABEL,
   toolsByCategory,
+  toolByName,
   type DsgvoTool,
   type Rating,
 } from '../config/dsgvo-tool-landscape';
@@ -35,6 +36,9 @@ function originChip(origin: DsgvoTool['origin']) {
     </span>
   );
 }
+
+const OWN_TOOL = toolByName('RealSyncDynamics.AI');
+const ONETRUST_TOOL = toolByName('OneTrust');
 
 export function DsgvoToolVergleich() {
   return (
@@ -274,7 +278,12 @@ export function DsgvoToolVergleich() {
                 <p className="text-sm text-titanium-300 leading-relaxed">
                   Die anderen sind stark in Cookie-Banner oder AVV. Aber niemand außer uns deckt KI-Compliance ab —
                   Audit-Log pro AI-Call, AI-Act-Risk-Klassifikation, BAIT-Doku-Export, EU-local-Modus mit Ollama.
-                  Bei 5× günstigerem Pricing als OneTrust.
+                  {OWN_TOOL && ONETRUST_TOOL && (
+                    <>
+                      {' '}Einstieg ab {OWN_TOOL.pricingFrom}; Enterprise-Suiten wie {ONETRUST_TOOL.name} liegen
+                      laut öffentlichen Angaben bei {ONETRUST_TOOL.pricingFrom}.
+                    </>
+                  )}
                 </p>
               </div>
             </div>

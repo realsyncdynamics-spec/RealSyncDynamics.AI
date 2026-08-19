@@ -10,6 +10,7 @@ import {
   TOOL_CATEGORIES,
   TRANSFER_LABEL,
   toolsByCategory,
+  toolByName,
 } from '../../src/config/dsgvo-tool-landscape';
 
 describe('DSGVO-Tool-Landschaft', () => {
@@ -88,6 +89,15 @@ describe('DSGVO-Tool-Landschaft', () => {
   it('verlinkt Anbieter ausschliesslich ueber HTTPS', () => {
     const insecure = DSGVO_TOOLS.filter((t) => !t.url.startsWith('https://'));
     expect(insecure.map((t) => t.url)).toEqual([]);
+  });
+
+  it('findet die im CTA-Fliesstext genannten Anbieter', () => {
+    // Der Preissatz im CTA-Block rendert nur, wenn beide Lookups treffen.
+    // Eine Umbenennung wuerde ihn sonst lautlos verschwinden lassen — und
+    // der Block behielte eine Aussage ohne die Zahlen, die sie belegen.
+    for (const name of ['RealSyncDynamics.AI', 'OneTrust']) {
+      expect(toolByName(name), `${name} nicht auffindbar`).toBeDefined();
+    }
   });
 
   it('datiert den Preis-Disclaimer', () => {

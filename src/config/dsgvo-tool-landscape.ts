@@ -587,6 +587,14 @@ export const MATRIX_TOOLS: readonly (DsgvoTool & { matrix: CapabilityMatrix })[]
     (t): t is DsgvoTool & { matrix: CapabilityMatrix } => t.matrix !== undefined,
   );
 
+/**
+ * Ein Anbieter per Name. Wird fuer Fliesstext gebraucht, der konkrete
+ * Preise nennt — so steht die Zahl im Text nie im Widerspruch zur Tabelle.
+ */
+export function toolByName(name: string): DsgvoTool | undefined {
+  return DSGVO_TOOLS.find((t) => t.name === name);
+}
+
 /** Anbieter einer Kategorie, Reihenfolge wie in DSGVO_TOOLS. */
 export function toolsByCategory(key: CategoryKey): readonly DsgvoTool[] {
   return DSGVO_TOOLS.filter((t) => t.category === key);

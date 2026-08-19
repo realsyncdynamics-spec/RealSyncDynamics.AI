@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
  */
 
 const redirects = readFileSync('public/_redirects', 'utf8');
-const FALLBACK = '/*  /404';
+const FALLBACK = '/*  /index.html';
 
 describe('Rechtstext-Aliase in public/_redirects', () => {
   it('leitet das englische /legal/imprint auf den kanonischen Pfad', async () => {
@@ -36,21 +36,15 @@ describe('Rechtstext-Aliase in public/_redirects', () => {
       .split('\n')
       .map((l) => l.trim())
       .filter((l) => l !== '' && !l.startsWith('#'));
-    expect(lines[lines.length - 1]).toBe('/*  /404  200');
+    expect(lines[lines.length - 1]).toBe('/*  /index.html  200');
   });
 
-  it('liefert als Fallback ein noindex-Dokument statt der Startseite', () => {
-    // index.html traegt Titel, Canonical und `robots: index, follow` der
-    // Startseite. Stuende die hier, praesentierte sich jede unbekannte URL
-    // einem Abruf ohne JS als indexierbare Startseite.
-    expect(redirects).not.toMatch(/^\/\*\s+\/index\.html/m);
-    expect(redirects).toMatch(/^\/\*\s+\/404\s+200$/m);
-  });
-
-  it('nennt das Fallback-Ziel ohne .html-Endung', () => {
-    // Cloudflare Pages kanonisiert /404.html per 308 auf /404. Als
-    // Rewrite-Ziel erzeugt die Endung deshalb eine Endlosschleife: /404
-    // trifft erneut auf /*. Am Preview-Deploy nachgewiesen.
-    expect(redirects).not.toMatch(/^\/\*\s+\/404\.html/m);
+  it('haelt den Fallback auf index.html — kein 404-Dokument', () => {
+    // Zwei Versuche mit einem 404-Dokument sind am Preview-Deploy gescheitert:
+    // mit .html-Endung entsteht eine 308-Endlosschleife, ohne Endung liefert
+    // jede echte Seite das noindex-Dokument, sobald der nicht-strikte
+    // Prerender im Pages-Build ausfaellt. Die Begruendung steht im _redirects.
+    expect(redirects).toMatch(/^\/\*\s+\/index\.html\s+200$/m);
+    expect(redirects).not.toMatch(/^\/\*\s+\/404/m);
   });
 });

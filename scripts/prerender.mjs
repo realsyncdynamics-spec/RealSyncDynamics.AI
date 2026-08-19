@@ -142,34 +142,6 @@ async function renderRoute(browser, route) {
   }
 }
 
-/**
- * Erzeugt das Dokument, das der SPA-Fallback ausliefert.
- *
- * Bisher zeigte `/*` in public/_redirects auf die index.html der Startseite.
- * Jede unbekannte URL antwortete damit HTTP 200 mit Titel, Canonical und
- * `robots: index, follow` der Startseite. Erst nach dem JS-Rendering setzte
- * NotFoundPage den noindex — Googlebot rendert JS und sieht ihn, jeder andere
- * Abruf nicht.
- *
- * Deshalb rendert der Fallback jetzt die 404-Seite: derselbe Bundle, dieselbe
- * Client-Navigation (React Router liest window.location, nicht den Dateinamen),
- * aber im Roh-HTML steht „Seite nicht gefunden" mit noindex statt der Startseite.
- *
- * Der Statuscode bleibt bewusst 200. Ein echter 404 setzte eine Allowlist
- * ueber alle 459 Router-Pfade voraus; jede dort fehlende Route waere sofort
- * tot. Ein falscher Statuscode ist ein SEO-Mangel, eine fehlende Route ein
- * Ausfall — die Abwaegung faellt eindeutig aus.
- */
-async function writeFallbackDocument(browser) {
-  // Ein Pfad, den der Router garantiert nicht kennt: erzwingt NotFoundPage.
-  const html = await renderRoute(browser, '/__prerender-not-found__');
-  if (!/name="robots"\s+content="noindex/.test(html)) {
-    throw new Error('Fallback-Dokument traegt kein noindex — NotFoundPage/SEOHead pruefen.');
-  }
-  await writeFile(join(DIST, '404.html'), html, 'utf8');
-  console.log('[prerender] ✓ 404.html (SPA-Fallback, noindex)');
-}
-
 // ─── Write HTML to dist/<route>.html ─────────────────────────────────────────
 // Flache .html-Dateien statt dist/<route>/index.html: Cloudflare Pages serviert
 // <route>.html extensionless unter /<route> OHNE Trailing-Slash. Die fruehere
@@ -296,7 +268,6 @@ async function main() {
         await writeRoute(item.route, html);
         console.log(`[prerender] ✓ ${item.route} (priority ${item.prio})`);
       }, CONCURRENCY);
-      await writeFallbackDocument(browser);
     } finally {
       await browser.close();
     }

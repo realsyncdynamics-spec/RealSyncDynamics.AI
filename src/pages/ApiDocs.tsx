@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Code2, Key, FileText, AlertTriangle } from 'lucide-react';
+import { isEdgeFunctionInProduction } from '../config/production-edge-functions';
 
 type Endpoint = {
   method: 'GET' | 'POST' | 'DELETE';
@@ -95,6 +96,19 @@ const METHOD_COLOR: Record<Endpoint['method'], string> = {
   DELETE: 'text-red-400 border-red-900 bg-red-950/40',
 };
 
+/**
+ * Aus `/functions/v1/audit?id=<uuid>` wird `audit`.
+ *
+ * Die Pfade oben sind die Dokumentation; ob dahinter etwas antwortet,
+ * entscheidet allein die Messung in `production-edge-functions.ts`. Ein
+ * Compliance-Produkt darf keine API-Referenz veröffentlichen, deren
+ * Endpunkte 404 liefern — wer danach integriert, baut gegen nichts.
+ */
+function slugOf(path: string): string {
+  return path.replace('/functions/v1/', '').split(/[?/#]/)[0];
+}
+
+
 export function ApiDocs() {
   return (
     <div className="min-h-screen bg-obsidian-950 text-titanium-100">
@@ -143,13 +157,20 @@ export function ApiDocs() {
 
           <Section title="Endpoints" icon={<FileText className="h-5 w-5 text-security-400" />}>
             <div className="space-y-2">
-              {ENDPOINTS.map((e) => (
+              {ENDPOINTS.map((e) => {
+                const live = isEdgeFunctionInProduction(slugOf(e.path));
+                return (
                 <div key={e.path + e.method} className="p-3 bg-obsidian-900 border border-titanium-900 rounded-none">
                   <div className="flex items-start gap-3 flex-wrap">
                     <span className={`inline-flex items-center px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider border rounded-none shrink-0 ${METHOD_COLOR[e.method]}`}>
                       {e.method}
                     </span>
-                    <code className="text-titanium-100 text-sm font-mono">{e.path}</code>
+                    <code className={`text-sm font-mono ${live ? 'text-titanium-100' : 'text-titanium-400'}`}>{e.path}</code>
+                    {!live && (
+                      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-amber-900 bg-amber-950/40 text-amber-400 rounded-none shrink-0">
+                        Noch nicht verfügbar
+                      </span>
+                    )}
                     <span className="text-[10px] uppercase tracking-wider text-titanium-500 font-bold ml-auto">
                       {e.auth === 'bearer' ? '🔒 Bearer' : '· Public'}
                     </span>
@@ -160,8 +181,15 @@ export function ApiDocs() {
                       <code className="text-emerald-300 text-[11px] font-mono leading-relaxed">{e.example}</code>
                     </div>
                   )}
+                  {!live && (
+                    <p className="text-[11px] text-amber-400/80 leading-relaxed mt-2">
+                      Dieser Endpunkt ist dokumentiert, aber derzeit nicht in Produktion erreichbar.
+                      Bitte nicht dagegen integrieren, bis die Kennzeichnung verschwindet.
+                    </p>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </Section>
 

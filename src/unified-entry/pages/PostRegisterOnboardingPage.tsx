@@ -2,6 +2,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../features/supabase/SupabaseAuthContext';
 import { postEdgeFunction } from '../../lib/edgeFunction';
+import { isEdgeFunctionInProduction } from '../../config/production-edge-functions';
+
+/**
+ * Die beiden Functions, die diesen Schritt tragen. Beide liegen im Repository,
+ * beide sind wegen des 100er-Limits des Supabase-Plans derzeit nicht deployt
+ * (`src/config/production-edge-functions.ts`).
+ *
+ * Bewusst wird trotzdem zuerst aufgerufen und erst der Fehlschlag erklärt:
+ * Wäre die Verfügbarkeit vorab aus der Liste abgeleitet, würde ein Nutzer
+ * auch dann blockiert, wenn das Backend längst nachgezogen und nur die Liste
+ * nicht gepflegt wurde. Messung darf erklaeren, nicht verhindern.
+ */
+const SETUP_FUNCTIONS = ['save-company-profile', 'create-trial-subscription'] as const;
 
 type Sector = 'saas' | 'agency' | 'healthcare' | 'public_sector' | 'generic';
 
@@ -22,7 +35,7 @@ const CONTEXT_QUESTIONS = [
 export function PostRegisterOnboardingPage() {
   const navigate = useNavigate();
   const { user } = useSupabaseAuth();
-  const [step, setStep] = useState<'sector' | 'questions' | 'success'>('sector');
+  const [step, setStep] = useState<'sector' | 'questions' | 'success' | 'incomplete'>('sector');
   const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -44,11 +57,53 @@ export function PostRegisterOnboardingPage() {
       await postEdgeFunction('create-trial-subscription', { planKey: 'growth' });
       setStep('success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');
+      // Der Fehlschlag hat zwei sehr verschiedene Ursachen, und der Unterschied
+      // gehört dem Nutzer gesagt: Ist die Function gar nicht deployt, hilft
+      // kein zweiter Versuch — das Konto besteht, nur die Einrichtung fehlt.
+      // Alles andere kann vorübergehend sein und bleibt ein Wiederholungsfall.
+      const backendMissing = SETUP_FUNCTIONS.some((fn) => !isEdgeFunctionInProduction(fn));
+      if (backendMissing) {
+        setStep('incomplete');
+      } else {
+        setError(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Kein „Growth ist bereit", wenn kein Growth angelegt wurde. Die Seite hat
+  // an dieser Stelle bislang einen rohen HTTP-Fehler gezeigt und den Nutzer
+  // stehen lassen — Konto vorhanden, kein Weg weiter, keine Erklärung.
+  if (step === 'incomplete') {
+    return (
+      <div className="max-w-md mx-auto text-center space-y-6">
+        <h1 className="text-3xl font-bold text-titanium-50">Ihr Konto steht.</h1>
+        <p className="text-lg text-titanium-300">
+          Die automatische Einrichtung von Branche und Testphase konnten wir gerade nicht
+          abschließen. Ihre Registrierung ist davon nicht betroffen — Sie sind angemeldet.
+        </p>
+        <p className="text-sm text-titanium-400">
+          Wir richten den Growth-Testzeitraum manuell ein. Bis dahin steht Ihnen das
+          Dashboard offen.
+        </p>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => navigate('/app/dashboard')}
+            className="w-full px-6 py-3 bg-petrol-600 hover:bg-petrol-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Zum Dashboard
+          </button>
+          <button
+            onClick={() => navigate('/contact-sales?source=onboarding-incomplete')}
+            className="w-full px-6 py-3 bg-obsidian-700 hover:bg-obsidian-600 border border-titanium-600 text-titanium-200 font-medium rounded-lg transition-colors"
+          >
+            Einrichtung anfordern
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (step === 'success') {
     return (

@@ -6,11 +6,13 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Content-Security-Policy: default-src 'self' https://*.supabase.co data:; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://analytics.tiktok.com https://snap.licdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://www.facebook.com https://www.google-analytics.com https://analytics.tiktok.com https://*.tiktok.com https://px.ads.linkedin.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
-  Cache-Control: public, max-age=3600, s-maxage=86400
-
-/index.html
-  Cache-Control: public, max-age=0, s-maxage=3600, must-revalidate
-  X-Content-Type-Options: nosniff
+  # HTML nie im Browser-Cache halten. Die Regel stand vorher unter
+  # /index.html und griff dadurch nie: Cloudflare Pages matcht gegen den
+  # Request-Pfad, und der ist "/" bzw. "/pricing" — nie "/index.html".
+  # Folge war bis zu 1 h altes HTML und damit ein altes JS-Bundle nach
+  # jedem Deploy. s-maxage bleibt hoch, der Edge-Cache wird beim Deploy
+  # ohnehin invalidiert.
+  Cache-Control: public, max-age=0, must-revalidate, s-maxage=86400
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
@@ -20,6 +22,20 @@
 
 /*.css
   Cache-Control: public, max-age=31536000, immutable
+
+# Bilder tragen keinen Hash im Namen, deshalb kein "immutable" — aber eine
+# Woche Browser-Cache. Bei einem Motivwechsel genuegt ein neuer Dateiname.
+/*.webp
+  Cache-Control: public, max-age=604800
+
+/*.jpg
+  Cache-Control: public, max-age=604800
+
+/*.png
+  Cache-Control: public, max-age=604800
+
+/*.svg
+  Cache-Control: public, max-age=604800
 
 /api/*
   Cache-Control: private, max-age=0, no-cache

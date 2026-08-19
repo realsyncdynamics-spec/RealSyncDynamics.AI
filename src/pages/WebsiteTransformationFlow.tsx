@@ -10,6 +10,27 @@ import type { SiteBlueprint } from '../../packages/siteos-core/src/index';
 import { renderSite } from '../../packages/siteos-core/src/render/renderer';
 import { applySiteDesignTemplate, SITE_DESIGN_TEMPLATES, type SiteDesignTemplate } from '../../packages/siteos-core/src/render/templates';
 import { ONE_TIME_PRICING_TIERS, PUBLIC_PRICING_TIERS, type PricingTier } from '../config/pricing';
+import {
+  EdgeFunctionAvailabilityNotice,
+  allEdgeFunctionsAvailable,
+} from '../components/landing/EdgeFunctionAvailabilityNotice';
+
+/**
+ * Die Function, auf der dieser Ablauf steht.
+ *
+ * Analyse, Scan und Neubau sind drei Pfade **eines** Slots:
+ * `siteos/discover`, `siteos/runtime-scan`, `siteos/builder`. Der Slot laeuft
+ * seit dem 2026-08-19 in Produktion — die Pruefung bleibt trotzdem stehen:
+ * Sie haengt an der Messung in `src/config/production-edge-functions.ts` und
+ * greift von selbst wieder, falls der Slot verschwindet.
+ *
+ * Anders als beim Onboarding wird hier **vor** dem Versuch geprueft, und der
+ * Unterschied ist kein Zufall: Der erste Klick schickt einen nicht
+ * angemeldeten Besucher zur Registrierung. Wer sich anmeldet und danach
+ * erfaehrt, dass die Funktion nicht existiert, hat bereits bezahlt — mit
+ * seinen Daten. Ein Vorbehalt gehoert vor die Kosten, nicht dahinter.
+ */
+const SITEOS_FLOW_FUNCTIONS = ['siteos'] as const;
 
 const FEATURES = [
   ['chatbot', 'AI-Chat', Bot], ['phonebot', 'Telefon-AI', Phone], ['booking', 'Terminbuchung', CalendarDays],
@@ -58,12 +79,17 @@ export function WebsiteTransformationFlow() {
   const startScan = async () => {
     const clean = url.trim();
     if (!/^https?:\/\/[^\s]+$/i.test(clean)) { setError('Bitte eine vollständige URL inklusive https:// eingeben.'); return; }
+    // Vor dem Login-Redirect, nicht danach — siehe SITEOS_FLOW_FUNCTIONS.
+    if (!allEdgeFunctionsAvailable(SITEOS_FLOW_FUNCTIONS)) {
+      setError('Die Website-Analyse ist derzeit nicht verfügbar. Bitte legen Sie dafür kein Konto an — wir schalten sie frei, sobald der Dienst läuft.');
+      return;
+    }
     if (!isAuthenticated) { navigate(`/welcome?next=${encodeURIComponent(`/handwerk-website?source_url=${encodeURIComponent(clean)}`)}`); return; }
     if (!activeTenantId) { setError('Bitte zuerst den Workspace einrichten.'); return; }
     setBusy(true); setError('');
     try {
       const sb = getSupabase();
-      const { data, error: discoveryError } = await sb.functions.invoke('siteos-discover', { body: { tenant_id: activeTenantId, url: clean } });
+      const { data, error: discoveryError } = await sb.functions.invoke('siteos/discover', { body: { tenant_id: activeTenantId, url: clean } });
       if (discoveryError) throw discoveryError;
       const found = data as Discovery;
       if (!found?.source_url) throw new Error('Die Website konnte nicht analysiert werden.');
@@ -160,6 +186,12 @@ export function WebsiteTransformationFlow() {
 
             {phase === 'input' && <>
               <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-white/[.10] bg-white/[.035] p-2 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-3"><div className="flex flex-col gap-2 sm:flex-row"><div className="flex min-w-0 flex-1 items-center rounded-xl border border-white/[.08] bg-black/25 px-4 sm:rounded-2xl"><Globe2 className="mr-3 shrink-0 text-cyan-400" size={18}/><input autoFocus value={url} onChange={e => { setUrl(e.target.value); setError(''); }} onKeyDown={e => { if (e.key === 'Enter') void startScan(); }} placeholder="https://ihre-website.de" className="w-full bg-transparent py-4 text-sm outline-none placeholder:text-white/25" aria-label="Website URL" /></div><button onClick={() => void startScan()} disabled={busy} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 py-4 text-sm font-bold text-[#050914] transition hover:bg-cyan-300 disabled:opacity-50 sm:rounded-2xl">{busy ? <Loader2 className="animate-spin" size={17}/> : <Search size={17}/>} {busy ? 'Website wird analysiert …' : 'Website analysieren'}<ArrowRight size={17}/></button></div></div>
+              <EdgeFunctionAvailabilityNotice
+                functions={SITEOS_FLOW_FUNCTIONS}
+                title="Die Website-Analyse ist derzeit nicht verfügbar"
+                detail="Der Dienst, der Ihre Website liest und daraus einen Entwurf baut, läuft noch nicht in Produktion. Wir weisen das hier aus, statt Sie erst nach der Registrierung damit zu überraschen."
+                className="mx-auto mt-4 max-w-3xl"
+              />
               <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] text-white/30"><span>URL genügt</span><span>Keine Änderung an Ihrer Website</span><span>Ergebnis in wenigen Minuten</span></div>
             </>}
           </section>

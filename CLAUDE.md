@@ -77,9 +77,9 @@ Menschen · Unternehmen · KI-Agenten · Daten · Entscheidungen.
 ### Backend
 
 **Primär: Supabase Cloud (EU / Frankfurt)**
-- PostgreSQL 16
-- **178 Edge Functions** (`supabase/functions/`, Deno/V8)
-- **270 Migrations** (`supabase/migrations/`)
+- PostgreSQL 17 (Live-Projekt, Stand 2026-08-16)
+- **177 Edge Functions** im Repo (`supabase/functions/`, Deno/V8) — **101 davon in Produktion**, siehe §5
+- **279 Migrations** (`supabase/migrations/`) — 278 angewendet, siehe §5
 - RLS auf allen App-Tabellen · Realtime Subscriptions
 
 **Node/TypeScript-Services** (containerisiert — **kein Go im Repo**)
@@ -182,27 +182,80 @@ Jeder Agent braucht vier Dimensionen — fehlt eine, ist er nicht governance-fä
 > #### ⚠️ Repo-Stand ≠ Produktions-Stand
 >
 > Die Prozentangaben unten beschreiben den **Stand im Repository**, nicht was in
-> Produktion läuft. Beides ist seit ~2026-07 auseinandergelaufen, weil der
-> `Deploy`-Workflow durchgehend fehlschlug (Befund: `DEBUG_ROOT_CAUSE_2026-08-02.md`).
+> Produktion läuft.
 >
-> Messung vom 2026-08-02 — die Repo-Zahlen wachsen mit jedem Merge, entscheidend
-> ist die Lücke. Die Produktionsspalte ist seither **nicht neu erhoben**; sie
-> braucht Zugriff auf die Live-DB bzw. `supabase functions list`. Repo-Stand
-> heute (2026-08-10) in Klammern:
+> **Messung vom 2026-08-16**, direkt gegen das Live-Projekt `RealSyncDynamicsLive`
+> (`ebljyceifhnlzhjfyxup`, eu-central-1, PostgreSQL 17) erhoben — nicht geschätzt:
 >
-> | | Repo | in Produktion |
-> |---|---|---|
-> | Edge Functions | 169 (heute 178) | 100 — **69 nie deployt**, u. a. `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` |
-> | Migrationen | 244 (heute 270) | 136 angewendet — **118 nie angewendet** |
-> | Vom Frontend abgefragte Tabellen | 148 | 82 vorhanden — **66 liefern HTTP 404 (`PGRST205`)** |
+> | | Repo | in Produktion | Lücke |
+> |---|---|---|---|
+> | Migrationen | 279 | 278 (neueste `20260820000000`) | **1** |
+> | Edge Functions | 177 | **101** (neu gemessen 2026-08-19, 16:45 Uhr) | **76** |
+> | Tabellen in `public` | — | 341 | — |
+>
+> **Die Migrations-Seite ist geschlossen.** Frühere Stände dieser Datei nannten
+> „118 nie angewendet" — das gilt seit der Reconciliation nicht mehr. Es fehlt
+> genau eine: `20260821000000_b2_website_asset_relation` (B2, gemergt am
+> 2026-08-16, in Produktion nicht angekommen). Am Schema geprüft, nicht aus der
+> Migrationsliste geschlossen: `websites.governance_asset_id`,
+> `scan_runs.asset_id` und der Constraint `findings_scan_run_fk` existieren
+> live **nicht**.
+>
+> **Die Function-Seite braucht eine andere Erklärung als bisher.** Der
+> Syntaxfehler in `add-auditor` ist über #941 behoben, blockiert also nichts
+> mehr. Was zur verbleibenden Lücke belegt ist — und was nicht:
+>
+> - Zum Messzeitpunkt lagen alle 80 fehlenden Functions **alphabetisch nach
+>   `api-gateway`**, keine einzige davor — ein sauberer Schnitt bei exakt 100.
+>   Seit dem Slot-Swap gilt das nicht mehr: `agent-scheduler` und
+>   `ai-act-auto-classify` wurden bewusst entfernt und liegen davor
+>   (`scripts/edge-functions-retired.txt`). Der Schnitt war ein Indiz, kein
+>   Beweis — belegt ist das Kontingent durch `HTTP 402: Max number of
+>   functions reached for project`.
+> - Ein Zusammenhang mit Typfehlern liess sich **nicht** herstellen. `deno check`
+>   ist als Beleg untauglich, solange es nicht in einer Umgebung mit aufgelösten
+>   npm-Abhängigkeiten läuft: dort scheitern auch live deployte Functions
+>   (`health`, `governance-agent`, `ai-gateway`) — allerdings an der
+>   Paketauflösung (`Could not find a matching package for
+>   'npm:@supabase/realtime-js'`), nicht an ihrem Code. Wer die These prüfen
+>   will, braucht `deno install` gegen die echten Dependencies.
+> - Die Organisation läuft auf **Plan `free`**.
+>
+> **Diese Erklärung ist am 2026-08-19 gefallen.** Der frühere Stand schloss:
+> „Exakt 100 plus harter alphabetischer Schnitt = Free-Tarif-Kontingent, kein
+> Code-Fix deployt Function 101." Der Router `siteos` **ist** als Function 101
+> durchgelaufen — Deploy-Lauf 32277074625, `Deployed Functions on project:
+> siteos`, anschließend über HTTP an allen vier Pfaden nachgewiesen. Eine
+> Neumessung über alle 177 Verzeichnisse ergibt 101 deployt, 76 fehlend.
+>
+> Was daraus folgt und was nicht:
+>
+> - Die Zahl 100 war eine **Beobachtung**, das Kontingent eine **Schlussfolgerung
+>   daraus**. Das 402 war echt, aber es belegte den Zustand von damals, nicht
+>   eine dauerhafte Schranke. Wo die Grenze heute liegt, ist **nicht gemessen**.
+> - „Kann nicht deployt werden" ist für die verbleibenden 76 keine belegte
+>   Aussage mehr. Wer eine davon braucht, probiert den Deploy — das kostet einen
+>   Workflow-Lauf und beantwortet die Frage, die keine Herleitung beantwortet
+>   hat.
+> - Der alphabetische Schnitt war von Anfang an als Indiz gekennzeichnet. Er hat
+>   in die Irre geführt; das ist der Grund, warum hier künftig gemessen und
+>   nicht geschlossen wird.
+>
+> Betroffen sind weiterhin die Module, die diese Liste als weitgehend fertig
+> führt: `evidence-vault`, `policy-packs`, `provenance`, alle `iso42001-*` —
+> allerdings sind `evidence-vault`, `policy-packs`, `provenance` und die vier
+> `iso42001-*` inzwischen deployt. Vor jeder Aussage zum Produktionsstand gilt
+> unverändert: gegen `src/config/production-edge-functions.ts` bzw. die Live-DB
+> prüfen.
+>
+> Der Free-Tarif bedeutet zusätzlich: keine täglichen Backups, kein
+> Point-in-Time-Recovery, kein SLA, Projekt-Pausierung bei Inaktivität. Für ein
+> Produkt, das Prüfpfad, Evidence-Hash-Ketten und ISO-orientierte Prozesse
+> zusagt, ist das ein eigener Governance-Befund — unabhängig vom Limit.
 >
 > Ein Modul, dessen Backend nie deployt wurde, ist in Produktion **nicht** verfügbar,
 > egal wie vollständig der Code im Repo ist. Vor Aussagen zum Produktionsstand daher
 > immer gegen die Live-DB bzw. `supabase functions list` prüfen, nicht gegen diese Liste.
->
-> Stand 2026-08-03 ist die erste Ursache (Syntaxfehler in `add-auditor`, blockierte
-> alle Function-Deploys) über #941 behoben; die Migrations-Seite läuft über
-> `docs/runbooks/p0-2-migration-reconciliation.md` und ist noch offen.
 
 - **Audit** (95%) — DSGVO-Scan, Recheck-Cron, Email-Drip, Share-Token
 - **Policy Packs** (100%) — DSGVO, EU AI Act, branchenspezifisch; Auto-Empfehlung nach Tenant-Branche
@@ -278,8 +331,8 @@ RealSyncDynamics.AI/
 ├── shared/
 │   └── pricing.ts     Single Source of Truth für Produkt-, Preis- und Berechtigungsmodell
 ├── supabase/
-│   ├── functions/     178 Edge Functions (einziger Ort für Service-Role-Keys)
-│   └── migrations/    270 Migrations
+│   ├── functions/     177 Edge Functions (einziger Ort für Service-Role-Keys)
+│   └── migrations/    279 Migrations
 ├── apps/
 │   └── agent-runtime/ Agent Runtime (Node/TS, Docker)
 ├── services/          runtime-core · evidence-runtime · openclaw-agent · playwright-scanner
@@ -438,14 +491,19 @@ die Git-History bleibt als Archiv erhalten.
 
 ### 🔒 Design-Freeze — verbindlich seit 2026-08-19
 
-**Baseline: Commit `f0c03bd`** (Governance-OS-Hero, PR #1091). Das ist der
-Stand, der auf Cloudflare deployt wurde und vom Eigentümer ausdrücklich als
-fertig abgenommen ist. Er gilt als eingefroren.
+**Baseline: Commit `339b08e7`** auf `main` — „feat(landing): Enterprise Ultra
+Plus frontend". Das ist der Stand, der vom Eigentümer abgenommen wurde und
+seit dem 2026-08-19 auf `realsyncdynamicsai.de` ausgeliefert wird. Er gilt als
+eingefroren.
 
-> Zum Zeitpunkt der Festlegung liegt `f0c03bd` auf dem Branch
-> `claude/enterprise-frontend-capability-truth` und **nicht** in Produktion.
-> `realsyncdynamicsai.de` zeigt bis zum Merge von #1091 den älteren Hero. Der
-> Freeze bezieht sich trotzdem auf `f0c03bd`, nicht auf den Produktionsstand.
+> Die erste Fassung dieser Regel nannte `f0c03bd` — den Commit auf dem Branch
+> `claude/enterprise-frontend-capability-truth`. PR #1091 wurde als **Squash**
+> gemergt, wodurch die fünfzehn Einzel-Commits zu `339b08e7` zusammengefasst
+> wurden. `f0c03bd` existiert in `main` deshalb nicht; die Baseline zeigte auf
+> einen Commit, den dort niemand findet.
+>
+> Lehre für den nächsten Freeze: Ein Baseline-Verweis gehört erst gesetzt,
+> wenn der Stand auf `main` liegt — vorher ist die SHA nicht die endgültige.
 
 #### 1. Am Design wird nichts mehr geändert
 
@@ -482,6 +540,32 @@ beantwortet sind, ist die Änderung freigegeben — für genau diesen Umfang, ni
 darüber hinaus.
 
 Ein „Ja" zu einer früheren Änderung gilt nicht für die nächste.
+
+#### Erteilte Freigaben
+
+Damit die nächste Sitzung nicht für einen Regelbruch hält, was abgestimmt war,
+wird jede erteilte Freigabe hier festgehalten — mit ihrem Umfang, denn sie gilt
+nur für diesen.
+
+**2026-08-19 — Enterprise-Ebene der Startseite**
+
+| Frage | Antwort |
+|---|---|
+| 1. Zweiter Akzent (Champagner/Gold) als neues Token, nur für VIP-Flächen | **Nein** |
+| 2. Neues Materialbild für bestehende Panels (Glas, Haarlinien, gestaffelte Schatten) | **Ja** |
+| 3. Eigene Enterprise-Sektion plus gestaffeltes Einblenden und Parallax auf der Weltkugel | **Ja** |
+
+Zur ersten Frage kam der Zusatz „komplett next level Frontend und allgemeines
+Webdesign". Der Umfang ist damit **breiter** als die drei Fragen, aber die
+Farbentscheidung steht: Es bleibt bei Cyan auf Obsidian, ein zweiter
+Farbakzent ist ausdrücklich abgelehnt.
+
+Umgesetzt: `.surface-panel` / `.hairline` und die Reveal-Regeln in
+`src/index.css`, `src/hooks/useStagedReveal.ts`, `src/hooks/useHeroParallax.ts`,
+`src/components/landing/EnterpriseAccessSection.tsx`.
+
+Was **nicht** freigegeben ist und weiterhin unter §10.1 fällt: Sektionsreihenfolge,
+Grid, Typografie-Skala, Icon-Set, Farbpalette.
 
 #### Faustregel
 

@@ -1,11 +1,48 @@
 # Runbook — Edge-Function-Kontingent aufräumen und erweitern
 
-**Stand:** 2026-08-11
+**Stand:** 2026-08-11 · **Prämisse widerlegt am 2026-08-19**
 **Auslöser:** Jeder `Deploy`-Lauf scheitert mit `HTTP 402: Max number of functions reached for project`.
 
 ---
 
-## 1 Befund
+## 0 Korrektur vom 2026-08-19 — die Schranke liegt nicht mehr bei 100
+
+> Alles ab Abschnitt 1 beschreibt den Stand vom August 2026 und ist als
+> **Verfahren** weiterhin gültig: Slot löschen, Allowlist nachziehen, Drift-Guard
+> beachten. Die **Begründung** stimmt nicht mehr.
+>
+> Am 2026-08-19 um 16:39 Uhr ist der Router `siteos` als **101. Function**
+> deployt worden — ohne 402. Belegt durch Deploy-Lauf 32277074625
+> (`Deployed Functions on project: siteos`) und anschließend über HTTP an allen
+> vier Router-Pfaden nachgewiesen.
+>
+> Eine Neumessung derselben Stunde über alle 177 Verzeichnisse im Repo:
+>
+> | | Anzahl |
+> |---|---|
+> | Live in Supabase | **101** |
+> | Im Repo | 177 |
+> | Nicht deployt | **76** |
+>
+> **Was das heißt.** Das 402 von 2026-08-10 war echt, aber es belegte einen
+> Zustand, keine dauerhafte Grenze. Wo die Grenze heute liegt, ist **nicht
+> gemessen** — bekannt ist nur, dass sie über 100 liegt.
+>
+> **Was daraus folgt.** Für jede der 76 fehlenden Functions ist „kann nicht
+> deployt werden" keine belegte Aussage mehr. Der billigste Weg zur Antwort ist
+> ein Deploy-Versuch, nicht eine Herleitung aus Zählständen. Insbesondere
+> `save-company-profile` und `create-trial-subscription` — die beiden, an denen
+> die Registrierung hängt (`docs/runbooks/frontend-backend-gap.md`) — sind damit
+> wieder Kandidaten.
+>
+> **Was schon nachgezogen ist.** `evidence-vault`, `policy-packs`, `provenance`,
+> alle vier `iso42001-*`, `governance-memory` und `memory-decay-worker` laufen
+> inzwischen in Produktion; Abschnitt 1 führt sie noch als fehlend. Von den
+> RFC-003-Functions fehlt nur noch `memory-confidence-trigger`.
+
+---
+
+## 1 Befund (Stand 2026-08-10 — Prämisse überholt, siehe Abschnitt 0)
 
 Die Supabase-Organisation läuft auf dem **Free-Plan** (Limit: 100 Edge Functions).
 Gemessen am 2026-08-10 über die Management-API:

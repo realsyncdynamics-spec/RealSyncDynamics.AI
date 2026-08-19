@@ -122,6 +122,36 @@ async function startPreviewServer() {
   throw new Error('vite preview did not respond within 15s');
 }
 
+
+// ─── Snapshot-Hygiene ────────────────────────────────────────────────────────
+// `page.content()` serialisiert den *lebenden* DOM. Alles, was JavaScript bis
+// dahin hineingeschrieben hat, landet in der ausgelieferten HTML-Datei — auch
+// Zustand, der ausdruecklich nur gilt, solange JavaScript laeuft.
+//
+// Konkreter Fall (2026-08-19): `useStagedReveal` markiert seinen Container mit
+// `data-reveal-root="ready"`, damit die Regel in index.css die Karten vor dem
+// Einblenden verbergen darf. Der Prerenderer ist eine JS-Umgebung, also wurde
+// genau dieses Attribut mitgespeichert — der IntersectionObserver aber lief vor
+// dem Serialisieren nicht mehr, also fehlte `is-revealed`. Ergebnis: 22 sichtbar
+// gemeinte Elemente standen in der Datei auf `opacity: 0`, darunter die
+// komplette Enterprise-Sektion. Wer die Seite ohne ausgefuehrtes JavaScript
+// liest — Crawler, abgebrochenes Bundle, JS aus —, sah sie nicht.
+//
+// Das Verstecken darf deshalb nie im gespeicherten HTML stehen. Sichtbarkeit
+// ist der Grundzustand; die Bewegung ist der Aufsatz.
+async function stripRuntimeOnlyState(page) {
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('[data-reveal-root]')) {
+      el.removeAttribute('data-reveal-root');
+    }
+    for (const el of document.querySelectorAll('[data-reveal]')) {
+      el.classList.remove('is-revealed');
+      el.style.removeProperty('--reveal-delay');
+      if (el.getAttribute('style') === '') el.removeAttribute('style');
+    }
+  });
+}
+
 // ─── Render single route ─────────────────────────────────────────────────────
 async function renderRoute(browser, route) {
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 } });
@@ -134,6 +164,8 @@ async function renderRoute(browser, route) {
 
     // Canonical wird vom SEOHead-Component aus src/config/seo.ts gesetzt
     // (auch fuer Alias-Routes auf die Primary-URL). Hier nicht ueberschreiben.
+
+    await stripRuntimeOnlyState(page);
 
     const html = await page.content();
     return html;

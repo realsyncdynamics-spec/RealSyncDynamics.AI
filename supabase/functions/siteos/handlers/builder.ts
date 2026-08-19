@@ -1,6 +1,6 @@
 // siteos-builder — AI Builder: Prompt → geprüfter, nachweisbarer Blueprint.
 //
-// POST /functions/v1/siteos-builder
+// POST /functions/v1/siteos/builder
 // Auth: Authorization: Bearer <user JWT>
 // Body:
 //   {
@@ -22,19 +22,19 @@
 // Nebeneffekt: ein Blueprint ohne Nachweis gilt hier als nicht erzeugt.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../_shared/gateway.ts';
-import { audit } from '../_shared/auditLog.ts';
-import { appendCustodyEvent } from '../_shared/provenanceCore.ts';
+import { handleOptions, jsonResponse, jsonError, methodNotAllowed } from '../../_shared/gateway.ts';
+import { audit } from '../../_shared/auditLog.ts';
+import { appendCustodyEvent } from '../../_shared/provenanceCore.ts';
 import {
   buildSiteFromPrompt,
   planAgentTasks,
   type Locale,
-} from '../../../packages/siteos-core/src/index.ts';
+} from '../../../../packages/siteos-core/src/index.ts';
 
 const MAX_PROMPT_LENGTH = 2000;
 const VALID_LOCALES = new Set<Locale>(['de', 'en', 'fr', 'it', 'es', 'nl', 'pl']);
 
-Deno.serve(async (req) => {
+export async function handle(req: Request): Promise<Response> {
   const preflight = handleOptions(req);
   if (preflight) return preflight;
   if (req.method !== 'POST') return methodNotAllowed();
@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
     }));
     return jsonError(500, 'INTERNAL', 'siteos-builder failed');
   }
-});
+}
 
 /**
  * Nimmt nur die vier compliance-neutralen Felder an. Alles andere aus

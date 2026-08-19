@@ -78,9 +78,13 @@ packages/siteos-core/          Framework- und laufzeitfreier Kern
   src/pipeline.ts              Verbindliche Reihenfolge in einem Aufruf
 
 supabase/functions/
-  siteos-builder/              Prompt → geprüfter, nachweisbarer Blueprint
-  siteos-runtime-scan/         Acht Analysen gegen die Live-Site
-  siteos-agents/               Asynchrone Agentenausführung
+  siteos/                      Ein Function-Slot, vier Endpunkte (Router)
+    index.ts                   Route-Map
+    resolve.ts                 Pfad → Endpunkt (reine Funktion, testbar)
+    handlers/discover.ts       Ausgangsseite lesen
+    handlers/builder.ts        Prompt → geprüfter, nachweisbarer Blueprint
+    handlers/runtime-scan.ts   Acht Analysen gegen die Live-Site
+    handlers/agents.ts         Asynchrone Agentenausführung
 
 supabase/migrations/
   20260728000000_siteos_core.sql   4 Tabellen + 1 RPC, additiv, RLS-gehärtet
@@ -262,7 +266,7 @@ Hash nicht ändern. Beide Eigenschaften sind getestet.
 
 ### 3.8 Datenminimierung im Scanner
 
-`siteos-runtime-scan` liest das HTML für die Analyse, speichert es aber nicht.
+`siteos/runtime-scan` liest das HTML für die Analyse, speichert es aber nicht.
 Persistiert werden nur die abgeleiteten Signale (Header, TTFB, Transfergröße,
 Drittanbieter-Hosts, Cookie-Namen). Ein HTML-Archiv fremder Websites wäre eine
 Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
@@ -275,7 +279,7 @@ Datenhaltung ohne Zweck (Art. 5 Abs. 1 lit. c DSGVO).
   ausschließlich `SELECT`-Policies für Tenant-Mitglieder. Versionsnummern und
   Hash-Verkettung dürfen nicht clientseitig gesetzt werden — sonst ist der
   Prüfpfad manipulierbar.
-- **SSRF-Schranke.** `siteos-runtime-scan` ruft eine vom Aufrufer bestimmte URL
+- **SSRF-Schranke.** `siteos/runtime-scan` ruft eine vom Aufrufer bestimmte URL
   ab. Erlaubt sind nur `http`/`https` auf Standard-Ports und öffentliche Hosts;
   private Adressliterale (10/8, 172.16/12, 192.168/16, 127/8, 169.254/16, IPv6
   ULA/Link-local) und interne Namen werden abgewiesen.
@@ -321,7 +325,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
   Auslieferungsartefakt — was fehlt, ist der Upload samt Domain-Anbindung.
   Dafür sind Cloudflare-Zugangsdaten und eine Entscheidung über das
   Deployment-Ziel nötig (`website_projects.cloudflare_project_id` ist
-  vorbereitet). Bis dahin arbeitet `siteos-runtime-scan` gegen extern
+  vorbereitet). Bis dahin arbeitet `siteos/runtime-scan` gegen extern
   gehostete Adressen.
 - **Rechtstexte im gerenderten HTML.** Der Renderer setzt für
   `legal-text`-Blöcke nur die Stelle (`<!-- legal:content -->`) und das
@@ -347,7 +351,7 @@ Behebung, Datenmodell mit RLS, drei Edge Functions, Dashboard unter
 npm run lint                     # tsc --noEmit
 npx vitest run test/siteos/      # 155 Tests des Kerns
 supabase db push                 # Migration
-supabase functions deploy siteos-builder siteos-runtime-scan siteos-agents
+supabase functions deploy siteos            # ein Slot, vier Endpunkte
 ```
 
 Optionale Umgebungsvariable: `SITEOS_BUILDER_MODEL` — Modell-ID für den

@@ -625,3 +625,220 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .landing-hero-card { animation: none; }
 }
+
+/* ── Materialebene der Startseite ────────────────────────────────────────
+   Freigegeben am 2026-08-19 (Frage 2 der Drei-Fragen-Regel, CLAUDE.md §10.4).
+   Bewusst *ohne* neue Farbe: Frage 1 wurde verneint. Die gehobene Wirkung
+   entsteht aus Material und Licht, nicht aus einem zweiten Akzent.
+
+   Drei Schichten, die zusammen die Tiefe machen:
+     1. Verlauf von oben nach unten — Licht faellt von oben ein
+     2. Haarlinie als `inset`-Schatten statt `border`: eine echte 1px-Kante
+        bleibt bei Retina-Skalierung sichtbar scharf, ein Border rundet
+     3. weit gestreuter, sehr dunkler Aussenschatten — traegt die Flaeche,
+        ohne als Schlagschatten aufzufallen
+   `backdrop-filter` zuletzt, damit der Hintergrund durchscheint. */
+.surface-panel {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.055),
+    0 24px 60px -32px rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(14px);
+  transition: box-shadow 260ms ease, background-color 260ms ease, transform 260ms ease;
+}
+
+/* Nur fuer Flaechen, die tatsaechlich anklickbar sind. Eine Karte, die sich
+   beim Ueberfahren hebt, ohne irgendwohin zu fuehren, ist eine Luege. */
+.surface-panel-interactive:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(103, 232, 249, 0.22),
+    0 30px 70px -30px rgba(0, 0, 0, 0.95);
+  transform: translateY(-2px);
+}
+
+/* Trennlinie, die an den Raendern ausblendet. Eine durchgezogene Linie
+   schneidet den Abschnitt hart ab; diese laesst ihn auslaufen. */
+.hairline {
+  height: 1px;
+  border: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.14) 18%,
+    rgba(255, 255, 255, 0.14) 82%,
+    transparent
+  );
+}
+
+/* ── Gestaffeltes Einblenden ─────────────────────────────────────────────
+   Freigegeben am 2026-08-19 (Frage 3).
+
+   Verborgen wird ausschliesslich, wenn JS die Wurzel als bereit markiert
+   hat. Andernfalls waere der praerenderte HTML-Stand (scripts/prerender.mjs)
+   unsichtbar — fuer Suchmaschinen und fuer jeden ohne aktives JavaScript.
+   Sichtbarkeit darf nicht von einem Skript abhaengen, das erst laufen muss.
+
+   `transition-delay` statt Keyframe-Animation: Die Staffelung kommt aus
+   einer Custom Property, und nicht registrierte Custom Properties
+   interpolieren nicht — in einem @keyframes wuerde sie springen. Als
+   Verzoegerungswert wird sie nur einmal gelesen, das ist unkritisch. */
+[data-reveal-root='ready'] [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+[data-reveal-root='ready'] [data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Kein Einblenden und keine Verzoegerung — sofort sichtbar. */
+  [data-reveal-root='ready'] [data-reveal],
+  [data-reveal-root='ready'] [data-reveal].is-revealed {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .surface-panel,
+  .surface-panel-interactive:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ── Glanz auf der Hero-Headline ─────────────────────────────────────────
+   Kein neuer Farbton: Der Verlauf laeuft von reinem Weiss ueber ein sehr
+   helles Cyan zurueck ins Weiss — dieselben zwei Farben, die die Seite
+   ohnehin fuehrt. Was ihn edel macht, ist nicht die Farbe, sondern der
+   schmale Lichtsaum und dass die Kante darunter leicht abdunkelt.
+
+   `background-clip: text` statt `text-shadow` auf der Fuellung: Ein
+   Schatten auf einer Serifenschrift bei 72px verschmiert die feinen
+   Haarstriche, ein Verlauf laesst sie scharf.
+
+   Der Lichtsaum liegt als eigene, absolut positionierte Kopie darunter
+   (`.hero-shine-glow`), damit er die Textkontur nicht aufweicht und von
+   Screenreadern nicht doppelt gelesen wird (aria-hidden am Element). */
+.hero-shine {
+  background-image: linear-gradient(
+    174deg,
+    #ffffff 0%,
+    #ffffff 34%,
+    #eafcff 52%,
+    #ffffff 72%,
+    #d8eef3 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Fallback fuer Engines ohne background-clip: text — ohne diese Zeile
+     bliebe die Headline unsichtbar statt schlicht weiss. */
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .hero-shine {
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+  }
+}
+
+/* Die Akzentzeilen behalten Cyan, bekommen aber denselben Lichtverlauf. */
+.hero-shine-accent {
+  background-image: linear-gradient(
+    174deg,
+    #67e8f9 0%,
+    #22d3ee 40%,
+    #67e8f9 62%,
+    #0e9fb8 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .hero-shine-accent {
+    color: #22d3ee;
+    -webkit-text-fill-color: #22d3ee;
+  }
+}
+
+/* Weicher Lichthof hinter der Headline. Sehr niedrig dosiert: Er soll den
+   Text vom Bild abheben, nicht leuchten. */
+.hero-shine-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  filter: blur(28px);
+  opacity: .35;
+  z-index: -1;
+}
+
+/* ── Kaltes Morgenlicht hinter der Erdkugel ──────────────────────────────
+   Freigegeben am 2026-08-19 (Frage 1: „kaltes Morgenlicht", der warme
+   Sonnenaufgang wurde erneut abgelehnt). Das Licht steigt vom Horizont auf
+   und bleibt dabei in Cyan/Weiss — dieselbe Farbwelt wie der Rest.
+
+   `mix-blend-mode: screen` statt einer halbtransparenten Flaeche: Screen
+   hellt nur auf und kann die Sterne und Lichtpunkte im Bild nicht
+   zudecken. Eine normale Ueberlagerung wuerde sie milchig verwaschen. */
+.hero-dawn {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(58% 34% at 62% 88%, rgba(103, 232, 249, .34) 0%, rgba(34, 211, 238, .16) 38%, transparent 72%),
+    radial-gradient(26% 15% at 62% 92%, rgba(226, 254, 255, .5) 0%, rgba(226, 254, 255, .12) 55%, transparent 100%);
+}
+
+/* Der schmale Lichtsaum genau auf der Horizontlinie. Getrennt vom Schein
+   darueber, damit er scharf bleibt, waehrend jener weich ausblendet. */
+.hero-dawn-rim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14%;
+  height: 1px;
+  pointer-events: none;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(103, 232, 249, .0) 22%,
+    rgba(186, 246, 255, .45) 62%,
+    rgba(103, 232, 249, .0) 88%,
+    transparent 100%
+  );
+}
+
+/* ── Skyline-Band ────────────────────────────────────────────────────────
+   Sitzt auf der Horizontlinie des Dawn-Saums. Die Hoehe ist bewusst in
+   `vh` gedeckelt: Auf einem 4K-Bildschirm wuerde eine prozentuale Hoehe
+   die halbe Flaeche einnehmen und vom Globus ablenken. */
+.hero-skyline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(96px, 22vh, 210px);
+  pointer-events: none;
+  opacity: .78;
+}
+
+@media (max-width: 640px) {
+  /* Auf dem Telefon steht die Headline tiefer; die Skyline wuerde sie sonst
+     hinterlaufen. Niedriger und blasser statt ausgeblendet — sie traegt die
+     Ortsaussage „Frankfurt", und die soll nicht nur am Desktop gelten. */
+  .hero-skyline { height: 84px; opacity: .55; }
+  .hero-dawn-rim { bottom: 10%; }
+}
